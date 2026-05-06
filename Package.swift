@@ -44,6 +44,15 @@ let package = Package(
             name: "FitnessAppCoreTests",
             dependencies: ["FitnessAppCore"],
             path: "Tests/FitnessAppCoreTests"
+        ),
+        .testTarget(
+            // Integration tests for SwiftData-backed sync logic (PersonalRecordSync etc).
+            // All test bodies are #if canImport(SwiftData)-gated so the file compiles
+            // empty on Windows where SwiftData isn't available; on Codemagic-Mac the
+            // tests actually run against an in-memory ModelContainer.
+            name: "FitnessAppDataTests",
+            dependencies: ["FitnessAppData", "FitnessAppCore"],
+            path: "Tests/FitnessAppDataTests"
         )
     ]
 )
