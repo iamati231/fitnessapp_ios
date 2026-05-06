@@ -18,6 +18,7 @@ public struct ActiveWorkoutView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppNavigation.self) private var navigation
     @Environment(RestTimerActivityController.self) private var restTimerActivity
+    @Environment(PRNotificationCenter.self) private var prNotifications
 
     @State private var now: Date = Date()
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -264,12 +265,26 @@ public struct ActiveWorkoutView: View {
         // Persist any newly-set PRs to the Trophy Room (`PersonalRecordEntry`).
         // Runs against all OTHER completed sessions in the store as history —
         // strict-greater-than only, so a tied session produces no rows.
-        PersonalRecordSync.recordPRs(for: session, in: modelContext)
+        let detectedPRs = PersonalRecordSync.recordPRs(for: session, in: modelContext)
 
-        // Clear any running rest timer (in-app + Live Activity) so neither keeps
-        // ticking while the user reviews the Summary.
+        // Clear any running rest timer (in-app + Live Activity). Branching:
+        //   - PRs detected → push a final celebration state with trophy headline,
+        //     fire a local notification (lock-screen banner), let the activity
+        //     linger ~8s so the Dynamic Island shows the brag.
+        //   - No PRs → quiet skip-dismiss as before.
         restTimerEnd = nil
-        Task { await restTimerActivity.endRestTimer(reason: .skipped) }
+        let celebration = PRCelebration.make(from: detectedPRs)
+        Task { [celebration] in
+            if let celebration {
+                await restTimerActivity.endRestTimerWithPR(prMessage: celebration.activityLine)
+                await prNotifications.scheduleCelebration(
+                    title: celebration.title,
+                    body: celebration.body
+                )
+            } else {
+                await restTimerActivity.endRestTimer(reason: .skipped)
+            }
+        }
 
         // Push the summary onto the workout-tab navigation stack. The user reviews
         // the workout there and ends the flow with "Speichern & zum Dashboard".

@@ -13,15 +13,27 @@ public struct RestTimerAttributes: ActivityAttributes {
     /// Dynamic part — the only thing that changes during the activity's life.
     /// `endDate` lets the widget render a self-updating timer via `Text(timerInterval:)`
     /// without us pushing every second from the app side.
+    ///
+    /// **`prMessage`** is the post-finish celebration: when the user ends a workout
+    /// with at least one PR, we push a final state with this set, replacing the
+    /// timer surface with a trophy headline like "🏆 100 kg Bankdruecken". The
+    /// activity dismisses itself ~8s later via `.after(...)` policy.
     public struct ContentState: Codable, Hashable {
         public let endDate: Date
         public let originalSeconds: Int
         public let isFinished: Bool
+        public let prMessage: String?
 
-        public init(endDate: Date, originalSeconds: Int, isFinished: Bool = false) {
+        public init(
+            endDate: Date,
+            originalSeconds: Int,
+            isFinished: Bool = false,
+            prMessage: String? = nil
+        ) {
             self.endDate = endDate
             self.originalSeconds = originalSeconds
             self.isFinished = isFinished
+            self.prMessage = prMessage
         }
     }
 

@@ -3,6 +3,7 @@ import SwiftUI
 import SwiftData
 import FitnessAppCore
 import FitnessAppData
+import FitnessAppActivities
 
 /// First-launch profile setup. Captures the inputs that drive every body-composition
 /// formula downstream: sex (Navy/Deurenberg/Mifflin), birth date (age in BMR), height
@@ -14,6 +15,7 @@ import FitnessAppData
 public struct OnboardingView: View {
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(PRNotificationCenter.self) private var prNotifications
 
     @State private var profileSex: BodyFormulaProfile = .male
     @State private var birthDate: Date = Self.defaultBirthDate
@@ -165,6 +167,12 @@ public struct OnboardingView: View {
         modelContext.insert(profile)
         // No navigation push — RootView's @Query observes profiles and swaps to MainTabView
         // automatically as soon as this insert is visible to the context.
+
+        // Graceful first-touch authorization for PR-celebration notifications.
+        // Asking right after the user committed to the app is the calmest moment
+        // — they have context, they've already invested. The system prompt
+        // appears once; a denied user just gets silent celebrations later.
+        Task { await prNotifications.requestAuthorization() }
     }
 
     // MARK: Static helpers

@@ -30,11 +30,15 @@ public enum PersonalRecordSync {
     ///
     /// History is fetched via `FetchDescriptor` so this works without a
     /// `@Query` host view (we're called from `finishWorkout`, not a body).
+    ///
+    /// Returns the detected PRs as value-types so callers can drive UI
+    /// celebrations (notifications, live-activity headlines) without re-fetching.
+    @discardableResult
     public static func recordPRs(
         for session: WorkoutSession,
         in context: ModelContext
-    ) {
-        guard session.isCompleted else { return }
+    ) -> [PersonalRecord] {
+        guard session.isCompleted else { return [] }
 
         let sessionLifts = liftAttempts(from: session.logs)
         let history = fetchHistoricalLifts(excluding: session, in: context)
@@ -44,6 +48,7 @@ public enum PersonalRecordSync {
             let entry = PersonalRecordEntry(record: record, session: session)
             context.insert(entry)
         }
+        return prs
     }
 
     // MARK: - Full rebuild (Trophy-Room manual button + first-run backfill)

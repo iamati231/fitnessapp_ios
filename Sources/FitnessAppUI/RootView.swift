@@ -22,6 +22,7 @@ public struct RootView: View {
     @State private var navigation = AppNavigation()
     @State private var healthKit = HealthKitController()
     @State private var restTimerActivity = RestTimerActivityController()
+    @State private var prNotifications = PRNotificationCenter()
 
     public init() {}
 
@@ -39,11 +40,13 @@ public struct RootView: View {
         .environment(navigation)
         .environment(healthKit)
         .environment(restTimerActivity)
+        .environment(prNotifications)
         .task {
             // Refresh per-launch availability for native integrations. Both checks
             // are cheap; both are no-ops when their frameworks aren't present.
             await healthKit.refreshAuthorizationStatus()
             restTimerActivity.refreshAvailability()
+            await prNotifications.refreshAuthorizationStatus()
 
             // Seed the canonical exercise library on first launch (idempotent
             // — fetchCount short-circuits when rows already exist).

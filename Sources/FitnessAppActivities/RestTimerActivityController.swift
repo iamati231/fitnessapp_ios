@@ -124,4 +124,34 @@ public final class RestTimerActivityController {
         self.current = nil
         #endif
     }
+
+    /// Posts a one-shot PR-celebration as the final state of the running activity,
+    /// then dismisses ~8 seconds later. Use when the workout finished with at
+    /// least one new personal record — the headline (e.g. "🏆 100 kg Bankdruecken")
+    /// replaces the timer surface in both the Lock-Screen and Dynamic-Island
+    /// renderings.
+    ///
+    /// No-op when no activity is running — finishing a workout without a timer
+    /// in flight just means the celebration only goes via local notification.
+    public func endRestTimerWithPR(prMessage: String) async {
+        #if os(iOS)
+        guard let current else { return }
+
+        let celebrationState = RestTimerAttributes.ContentState(
+            endDate: Date(),                // already "over"
+            originalSeconds: 0,
+            isFinished: true,
+            prMessage: prMessage
+        )
+        let celebrationContent = ActivityContent(
+            state: celebrationState,
+            staleDate: Date().addingTimeInterval(30)
+        )
+        await current.end(
+            celebrationContent,
+            dismissalPolicy: .after(Date().addingTimeInterval(8))
+        )
+        self.current = nil
+        #endif
+    }
 }
