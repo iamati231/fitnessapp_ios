@@ -6,6 +6,10 @@ iOS-Port der Android-Fitness-App (`../fitnessapp/`). Domaenen-Logik und Datenmod
 
 ```
 fitnessapp_ios/
+|-- project.yml                # XcodeGen spec — source of truth fuer das App-Target
+|-- App/
+|   |-- FitnessApp/            # App-Entry-Point + Info.plist + Entitlements + Assets
+|   `-- FitnessAppWidgets/     # Live-Activity-Widget-Extension
 |-- Package.swift              # Swift-Package (iOS 17+, macOS 14+)
 |-- Sources/
 |   |-- FitnessAppCore/        # Reine Berechnungs-Logik (kein UIKit, kein SwiftData)
