@@ -5,8 +5,12 @@ import Foundation
 /// strictly exceeds the lifter's prior best.
 public struct PersonalRecord: Sendable, Hashable, Identifiable {
 
-    /// Distinct PR categories. We track three because they can diverge: a higher
-    /// weight at fewer reps doesn't always mean a higher 1RM estimate.
+    /// Distinct PR categories. Five kinds spread across three exercise-types:
+    ///   - **Weighted lifts** (any attempt has weight > 0): heaviestWeight, bestSet, estimated1RM.
+    ///   - **Bodyweight** (all attempts weight == 0, not time-based): maxReps.
+    ///   - **Time-based / isometric** (Plank, Wall Sit, Mountain Climbers): maxHoldSeconds.
+    /// Cardio (treadmill, bike) is intentionally excluded — different metric domain
+    /// (pace / distance / heart-rate) belongs in a separate detector.
     public enum Kind: Sendable, Hashable, CaseIterable {
         /// Heaviest single weight ever lifted, regardless of reps.
         case heaviestWeight
@@ -14,6 +18,10 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
         case bestSet
         /// Highest Epley/Brzycki-average 1RM estimate.
         case estimated1RM
+        /// Highest reps achieved in a bodyweight-only exercise (Klimmzuege, Liegestuetze, Dips).
+        case maxReps
+        /// Longest hold for an isometric / time-based exercise (Plank, Wall Sit, Seitstuetz).
+        case maxHoldSeconds
     }
 
     /// Stable identifier — allows `ForEach(prs) {}` without needing manual id-mapping.

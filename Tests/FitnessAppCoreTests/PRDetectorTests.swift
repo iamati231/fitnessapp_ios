@@ -113,18 +113,9 @@ final class PRDetectorTests: XCTestCase {
                       "Cardio attempts have different PR semantics — filtered out for v1")
     }
 
-    func testTimeBasedAttemptsAreIgnored() {
-        let plank = LiftAttempt(
-            exerciseName: "Plank", weightKg: 0, reps: 60,
-            date: now, isTimeBased: true
-        )
-        let prs = PRDetector.detectPRs(
-            sessionLifts: [plank],
-            history: [LiftAttempt(exerciseName: "Plank", weightKg: 0, reps: 30,
-                                  date: weekAgo, isTimeBased: true)]
-        )
-        XCTAssertTrue(prs.isEmpty)
-    }
+    // (Time-based exercises now produce maxHoldSeconds PRs — see the dedicated
+    // section below. The old "ignored" behavior was lifted in the categorization
+    // refactor.)
 
     func testMixedSessionDetectsLiftPRsAndIgnoresCardio() {
         let cardio = LiftAttempt(exerciseName: "Laufband", weightKg: 0, reps: 30,
@@ -182,5 +173,167 @@ final class PRDetectorTests: XCTestCase {
         XCTAssertNotNil(heaviest)
         XCTAssertEqual(heaviest?.delta, 20)
         XCTAssertEqual(heaviest!.deltaPercent, 0.25, accuracy: 1e-9)
+    }
+
+    // MARK: Bodyweight — maxReps
+
+    private func pushup(_ reps: Int, _ date: Date? = nil) -> LiftAttempt {
+        LiftAttempt(exerciseName: "Liegestuetze", weightKg: 0, reps: reps,
+                    date: date ?? now)
+    }
+
+    func testPushupMaxRepsPR_detectsNewMax() {
+        // Best so far: 12 reps. Session: 15 reps → maxReps PR.
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [pushup(15)],
+            history: [pushup(10, weekAgo), pushup(12, weekAgo)]
+        )
+        XCTAssertEqual(prs.count, 1)
+        let pr = prs.first
+        XCTAssertEqual(pr?.kind, .maxReps)
+        XCTAssertEqual(pr?.exerciseName, "Liegestuetze")
+        XCTAssertEqual(pr?.reps, 15)
+        XCTAssertEqual(pr?.weightKg, 0)
+        XCTAssertEqual(pr?.previousValue, 12)
+        XCTAssertEqual(pr?.newValue, 15)
+    }
+
+    func testPushupMaxRepsTied_isNotAPR() {
+        // 12 reps history vs 12 reps session → strict > only, no PR.
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [pushup(12)],
+            history: [pushup(12, weekAgo)]
+        )
+        XCTAssertTrue(prs.isEmpty, "Tied bodyweight reps must not produce a PR")
+    }
+
+    func testPushupNoHistory_noMaxRepsPR() {
+        // First session, no history → no baseline, no PR.
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [pushup(20)],
+            history: []
+        )
+        XCTAssertTrue(prs.isEmpty)
+    }
+
+    func testPushupMultipleSetsCreditsBestSet() {
+        // Three sets, BEST attempt should be credited even when the user did them
+        // in non-monotonic order.
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [pushup(13), pushup(18), pushup(15)],
+            history: [pushup(12, weekAgo)]
+        )
+        let maxReps = prs.filter { $0.kind == .maxReps }
+        XCTAssertEqual(maxReps.count, 1, "At most one maxReps PR per (exercise, kind)")
+        XCTAssertEqual(maxReps.first?.reps, 18)
+    }
+
+    // MARK: Time-based — maxHoldSeconds
+
+    private func plank(_ seconds: Int, _ weight: Double = 0, _ date: Date? = nil) -> LiftAttempt {
+        LiftAttempt(exerciseName: "Plank", weightKg: weight, reps: seconds,
+                    date: date ?? now, isTimeBased: true)
+    }
+
+    func testPlankMaxHoldSecondsPR_detectsNewTime() {
+        // 30s history → 60s session = new max-hold PR.
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [plank(60)],
+            history: [plank(30, 0, weekAgo)]
+        )
+        XCTAssertEqual(prs.count, 1)
+        let pr = prs.first
+        XCTAssertEqual(pr?.kind, .maxHoldSeconds)
+        XCTAssertEqual(pr?.exerciseName, "Plank")
+        XCTAssertEqual(pr?.reps, 60)
+        XCTAssertEqual(pr?.previousValue, 30)
+        XCTAssertEqual(pr?.newValue, 60)
+    }
+
+    func testPlankShorterTime_isNotAPR() {
+        // 60s history vs 45s session → no PR (didn't beat best).
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [plank(45)],
+            history: [plank(60, 0, weekAgo)]
+        )
+        XCTAssertTrue(prs.isEmpty)
+    }
+
+    func testPlankTiedTime_isNotAPR() {
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [plank(60)],
+            history: [plank(60, 0, weekAgo)]
+        )
+        XCTAssertTrue(prs.isEmpty, "Tied hold-time must not produce a PR")
+    }
+
+    func testWeightedPlank_stillUsesMaxHoldSeconds() {
+        // A weighted plank (10 kg belt, 50s) — weight is irrelevant for time-based.
+        // Category is timeBased because at least one attempt has isTimeBased==true,
+        // so we expect a maxHoldSeconds PR (50s > 40s) and NO weighted PRs.
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [plank(50, 10)],
+            history: [plank(40, 0, weekAgo)]
+        )
+        XCTAssertEqual(prs.count, 1)
+        XCTAssertEqual(prs.first?.kind, .maxHoldSeconds)
+        XCTAssertEqual(prs.first?.reps, 50)
+    }
+
+    // MARK: Weighted-pullup fallback (the critical edge case)
+
+    private func pullup(_ weight: Double, _ reps: Int, _ date: Date? = nil) -> LiftAttempt {
+        LiftAttempt(exerciseName: "Klimmzuege", weightKg: weight, reps: reps,
+                    date: date ?? now)
+    }
+
+    func testWeightedPullup_fallsBackToWeightedLogic() {
+        // History: pure bodyweight pullups (12 reps).
+        // Session: user adds a 10kg belt for 8 reps — weighted attempt → category
+        // flips to .weighted for the WHOLE exercise, so we get a heaviestWeight PR
+        // (10 > 0), NOT a maxReps PR (since session reps 8 < history 12 anyway).
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [pullup(10, 8)],
+            history: [pullup(0, 10, weekAgo), pullup(0, 12, weekAgo)]
+        )
+        // Expect weighted PRs (heaviestWeight + bestSet + estimated1RM possible),
+        // but NEVER a maxReps PR for this exercise.
+        let kinds = Set(prs.map(\.kind))
+        XCTAssertFalse(kinds.contains(.maxReps),
+                       "A weighted attempt must shift the category — no maxReps PR allowed")
+        XCTAssertTrue(kinds.contains(.heaviestWeight),
+                      "10kg over a 0kg history is a clear heaviestWeight PR")
+        let heaviest = prs.first { $0.kind == .heaviestWeight }
+        XCTAssertEqual(heaviest?.weightKg, 10)
+        XCTAssertEqual(heaviest?.previousValue, 0)
+        XCTAssertEqual(heaviest?.newValue, 10)
+    }
+
+    func testMixedSession_anyWeightedAttemptTriggersWeightedLogic() {
+        // Same exercise, mixed session: one bodyweight set + one weighted set.
+        // The single weighted attempt anywhere flips the category to .weighted.
+        // History only has bodyweight, so weighted PRs are easy wins.
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [pullup(0, 14), pullup(5, 6)],
+            history: [pullup(0, 10, weekAgo)]
+        )
+        let kinds = Set(prs.map(\.kind))
+        XCTAssertFalse(kinds.contains(.maxReps),
+                       "Mixed bodyweight + weighted = weighted branch only")
+        XCTAssertTrue(kinds.contains(.heaviestWeight),
+                      "5kg over a 0kg history is a heaviestWeight PR")
+    }
+
+    func testHistoryWeightedSessionBodyweight_stillWeightedBranch() {
+        // Inverse direction: history has weighted attempts, session is pure bodyweight.
+        // Category still resolves to .weighted (history attempts contribute), so the
+        // bodyweight session attempts get filtered out of weighted-detection (weight==0)
+        // and produce no PRs — and crucially NO maxReps PR either.
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [pullup(0, 15)],
+            history: [pullup(10, 5, weekAgo)]
+        )
+        XCTAssertTrue(prs.isEmpty,
+                      "Weighted history + bodyweight session = no PR (weighted branch, no weighted attempt this session)")
     }
 }

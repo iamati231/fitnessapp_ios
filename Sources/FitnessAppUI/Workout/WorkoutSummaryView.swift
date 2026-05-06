@@ -110,7 +110,7 @@ public struct WorkoutSummaryView: View {
                 Text("Personal Records")
             }
         } footer: {
-            Text("Erkannt durch Vergleich mit allen vorherigen abgeschlossenen Sessions. Cardio + Plank zaehlen nicht — andere PR-Semantik.")
+            Text("Erkannt durch Vergleich mit allen vorherigen abgeschlossenen Sessions. Cardio bleibt aussen vor — andere Metrik-Domaene.")
                 .font(.footnote)
         }
     }
@@ -390,45 +390,64 @@ private struct PRBadge: View {
 
     private var kindIcon: String {
         switch record.kind {
-        case .estimated1RM:   "bolt.fill"
-        case .heaviestWeight: "scalemass.fill"
-        case .bestSet:        "chart.bar.fill"
+        case .estimated1RM:    "bolt.fill"
+        case .heaviestWeight:  "scalemass.fill"
+        case .bestSet:         "chart.bar.fill"
+        case .maxReps:         "arrow.up.arrow.down"
+        case .maxHoldSeconds:  "stopwatch.fill"
         }
     }
 
     private var kindColor: Color {
         switch record.kind {
-        case .estimated1RM:   .orange
-        case .heaviestWeight: .red
-        case .bestSet:        .blue
+        case .estimated1RM:    .orange
+        case .heaviestWeight:  .red
+        case .bestSet:         .blue
+        case .maxReps:         .purple
+        case .maxHoldSeconds:  .yellow
         }
     }
 
     private var kindLabel: String {
         switch record.kind {
-        case .estimated1RM:   "Neuer 1RM (geschaetzt)"
-        case .heaviestWeight: "Neues Maximalgewicht"
-        case .bestSet:        "Neuer Bestsatz (Volumen)"
+        case .estimated1RM:    "Neuer 1RM (geschaetzt)"
+        case .heaviestWeight:  "Neues Maximalgewicht"
+        case .bestSet:         "Neuer Bestsatz (Volumen)"
+        case .maxReps:         "Neuer Reps-Rekord"
+        case .maxHoldSeconds:  "Neue Bestzeit"
         }
     }
 
+    /// Per-kind detail string. Three flavors:
+    ///   - Weighted PRs: "X kg × Y → Z kg (vorher V kg)"  (or " kg-Vol" for bestSet)
+    ///   - maxReps:      "Y Wdh → Y Wdh (vorher V Wdh)"   (weight always 0 here)
+    ///   - maxHoldSeconds: "Y Sek → Y Sek (vorher V Sek)"
     private var detailLine: String {
-        let weightStr = formatWeight(record.weightKg)
-        let prevStr: String = {
-            switch record.kind {
-            case .estimated1RM:   return "\(formatWeight(record.previousValue)) kg"
-            case .heaviestWeight: return "\(formatWeight(record.previousValue)) kg"
-            case .bestSet:        return "\(formatWeight(record.previousValue)) kg-Vol"
-            }
-        }()
-        let nowStr: String = {
-            switch record.kind {
-            case .estimated1RM:   return "\(formatWeight(record.newValue)) kg"
-            case .heaviestWeight: return "\(formatWeight(record.newValue)) kg"
-            case .bestSet:        return "\(formatWeight(record.newValue)) kg-Vol"
-            }
-        }()
-        return "\(weightStr) kg × \(record.reps) → \(nowStr) (vorher \(prevStr))"
+        switch record.kind {
+        case .maxReps:
+            let prev = Int(record.previousValue.rounded())
+            return "\(record.reps) Wdh (vorher \(prev) Wdh)"
+
+        case .maxHoldSeconds:
+            let prev = Int(record.previousValue.rounded())
+            return "\(record.reps) Sek (vorher \(prev) Sek)"
+
+        case .estimated1RM, .heaviestWeight, .bestSet:
+            let weightStr = formatWeight(record.weightKg)
+            let prevStr: String = {
+                switch record.kind {
+                case .bestSet:        return "\(formatWeight(record.previousValue)) kg-Vol"
+                default:              return "\(formatWeight(record.previousValue)) kg"
+                }
+            }()
+            let nowStr: String = {
+                switch record.kind {
+                case .bestSet:        return "\(formatWeight(record.newValue)) kg-Vol"
+                default:              return "\(formatWeight(record.newValue)) kg"
+                }
+            }()
+            return "\(weightStr) kg × \(record.reps) → \(nowStr) (vorher \(prevStr))"
+        }
     }
 
     private func formatWeight(_ w: Double) -> String {
