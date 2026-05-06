@@ -37,6 +37,7 @@ Xcode hat dir eine `FitnessAppApp.swift` generiert. Inhalt komplett ersetzen mit
 
 ```swift
 import SwiftUI
+import SwiftData
 import FitnessAppUI
 import FitnessAppData
 
@@ -46,14 +47,18 @@ struct FitnessAppApp: App {
         WindowGroup {
             RootView()
         }
-        // AppSchema.types ist eine vorbereitete Liste aller acht @Model-Klassen.
-        // Wenn wir spaeter neue Models hinzufuegen, brauchen wir HIER nichts zu aendern.
+        // AppSchema.types ist die zentrale Liste aller @Model-Klassen (aktuell 9:
+        // UserBodyProfile, BodyMeasurement, TrainingPlan/Day/Exercise/Log,
+        // WorkoutSession, ExerciseTemplate, WaterEntry). Wenn neue Models
+        // dazukommen, aendert sich HIER nichts — nur AppSchema.types waechst.
         .modelContainer(for: AppSchema.types)
     }
 }
 ```
 
-Das war's. **Drei Imports, eine Scene.** `RootView` regelt den Onboarding-vs-MainTabView-Switch automatisch via `@Query` auf `UserBodyProfile`.
+`import SwiftData` ist Pflicht — `.modelContainer(for:)` ist ein SwiftData-Scene-Modifier und ohne den Import nicht sichtbar (auch wenn `RootView` aus FitnessAppUI SwiftData intern nutzt, re-exportieren Swift-Module standardmaessig nicht).
+
+`RootView` regelt den Onboarding-vs-MainTabView-Switch automatisch via `@Query` auf `UserBodyProfile` und stellt die drei `@Observable`-Controller (`AppNavigation`, `HealthKitController`, `RestTimerActivityController`) ueber den Environment bereit. Du musst nichts weiter injizieren.
 
 ## 4. Verifikation
 
