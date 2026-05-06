@@ -36,6 +36,7 @@ public struct DashboardView: View {
                 heroMetrics
                 planDayCard
                 trendChart
+                compoundLiftChart
                 recentWorkoutsCard
             }
             .padding(.horizontal)
@@ -350,6 +351,122 @@ public struct DashboardView: View {
         navigation.selectedTab = .plan
     }
 
+    // MARK: - Compound Lift Chart
+
+    /// Names of the five canonical compound lifts (matches `isSystemCompound: true`
+    /// in `ExerciseLibraryData`). Hard-coded here so the dashboard doesn't need to
+    /// query the seed library at every render.
+    private static let compoundLiftNames = [
+        "Kniebeuge",
+        "Bankdruecken",
+        "Kreuzheben (konventionell)",
+        "Schulterdruecken (stehend)",
+        "Rudern vorgebeugt"
+    ]
+
+    /// One series per compound lift. Each series carries one point per session
+    /// (the best estimated 1RM of any set in that session). Lifts with fewer
+    /// than 2 data points are dropped — a "trend" needs at least two sessions.
+    private var compoundSeries: [CompoundSeries] {
+        let liftNames = Set(Self.compoundLiftNames)
+
+        return Self.compoundLiftNames.compactMap { name in
+            // All logs across all completed sessions for this lift
+            let liftLogs = completedSessions.flatMap { session in
+                session.logs.filter { log in
+                    log.exercise.map { liftNames.contains($0.name) && $0.name == name } ?? false
+                }
+            }
+
+            // Group by session, pick best 1RM per session
+            let bySession = Dictionary(grouping: liftLogs) { log in
+                log.session?.persistentModelID
+            }
+
+            let points: [CompoundPoint] = bySession.compactMap { (_, logs) -> CompoundPoint? in
+                let estimates = logs.compactMap { log -> Double? in
+                    ExerciseCalculations.estimate1RMAverage(weightKg: log.weight, reps: log.reps)
+                }
+                guard let best = estimates.max(),
+                      let firstDate = logs.map(\.date).min() else { return nil }
+                return CompoundPoint(date: firstDate, oneRM: best)
+            }
+            .sorted { $0.date < $1.date }
+
+            // Need ≥2 points for a meaningful line
+            guard points.count >= 2 else { return nil }
+            return CompoundSeries(exerciseName: name, points: points)
+        }
+    }
+
+    @ViewBuilder
+    private var compoundLiftChart: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Compound-Lift-Trend")
+                    .font(.headline)
+                Spacer()
+                Text("Geschaetztes 1RM")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            let series = compoundSeries
+            if series.isEmpty {
+                HStack(spacing: 12) {
+                    Image(systemName: "chart.xyaxis.line")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Noch zu wenig Daten")
+                            .font(.subheadline)
+                        Text("Sobald du eine Compound-Uebung in zwei Sessions geloggt hast, erscheint hier der Trend.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.secondary.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else {
+                Chart {
+                    ForEach(series) { line in
+                        ForEach(line.points) { point in
+                            LineMark(
+                                x: .value("Datum", point.date),
+                                y: .value("1RM (kg)", point.oneRM),
+                                series: .value("Lift", line.exerciseName)
+                            )
+                            .interpolationMethod(.monotone)
+                            .foregroundStyle(by: .value("Lift", line.exerciseName))
+                            .symbol(by: .value("Lift", line.exerciseName))
+
+                            PointMark(
+                                x: .value("Datum", point.date),
+                                y: .value("1RM (kg)", point.oneRM)
+                            )
+                            .foregroundStyle(by: .value("Lift", line.exerciseName))
+                            .symbolSize(40)
+                        }
+                    }
+                }
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                        AxisGridLine()
+                        AxisTick()
+                        AxisValueLabel(format: .dateTime.day().month(.abbreviated))
+                    }
+                }
+                .chartLegend(position: .bottom, alignment: .leading)
+                .frame(height: 220)
+                .padding()
+                .background(Color.secondary.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
+    }
+
     // MARK: - Recent workouts
 
     private var recentWorkoutsCard: some View {
@@ -409,6 +526,22 @@ public struct DashboardView: View {
             }
         }
     }
+}
+
+// MARK: - Compound Lift Chart data
+
+@available(iOS 17.0, macOS 14.0, *)
+struct CompoundPoint: Identifiable, Hashable {
+    let id = UUID()
+    let date: Date
+    let oneRM: Double
+}
+
+@available(iOS 17.0, macOS 14.0, *)
+struct CompoundSeries: Identifiable {
+    let id = UUID()
+    let exerciseName: String
+    let points: [CompoundPoint]
 }
 
 // MARK: - Recent-row subview

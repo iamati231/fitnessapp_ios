@@ -15,6 +15,13 @@ public struct WorkoutSummaryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var navigation
 
+    /// All ExerciseLogs across the model. Filtered in-memory for the PR-detection
+    /// history. SwiftData `@Query` doesn't (yet) reliably support nested-relationship
+    /// predicates like `$0.session?.isCompleted == true`, so we keep the predicate
+    /// in Swift instead.
+    @Query(sort: \ExerciseLog.date)
+    private var allLogs: [ExerciseLog]
+
     /// True when invoked from history (`WorkoutHistoryView`) — hides the finish-CTA,
     /// disables swipe-to-delete on sets, makes notes read-only, and re-enables the
     /// system back button so the user can return to the history list.
@@ -28,6 +35,9 @@ public struct WorkoutSummaryView: View {
     public var body: some View {
         List {
             heroSection
+            if !personalRecords.isEmpty {
+                prSection
+            }
             statsSection
             notesSection
             breakdownSections
@@ -46,6 +56,66 @@ public struct WorkoutSummaryView: View {
     }
 
     // MARK: Sections
+
+    // MARK: - Personal Records
+
+    private var personalRecords: [PersonalRecord] {
+        PRDetector.detectPRs(sessionLifts: sessionLifts, history: historicalLifts)
+    }
+
+    private var sessionLifts: [LiftAttempt] {
+        session.logs.compactMap { log -> LiftAttempt? in
+            guard let exercise = log.exercise else { return nil }
+            return LiftAttempt(
+                exerciseName: exercise.name,
+                weightKg: log.weight,
+                reps: log.reps,
+                date: log.date,
+                isCardio: exercise.isCardio,
+                isTimeBased: exercise.isTimeBased
+            )
+        }
+    }
+
+    /// All logs from completed sessions OTHER than this one — the baseline against
+    /// which `PRDetector` measures.
+    private var historicalLifts: [LiftAttempt] {
+        let thisSessionID = session.persistentModelID
+        return allLogs.compactMap { log -> LiftAttempt? in
+            guard let exercise = log.exercise,
+                  let logSession = log.session,
+                  logSession.isCompleted,
+                  logSession.persistentModelID != thisSessionID
+            else { return nil }
+            return LiftAttempt(
+                exerciseName: exercise.name,
+                weightKg: log.weight,
+                reps: log.reps,
+                date: log.date,
+                isCardio: exercise.isCardio,
+                isTimeBased: exercise.isTimeBased
+            )
+        }
+    }
+
+    private var prSection: some View {
+        Section {
+            ForEach(personalRecords) { record in
+                PRBadge(record: record)
+            }
+        } header: {
+            HStack(spacing: 6) {
+                Image(systemName: "trophy.fill")
+                    .foregroundStyle(.yellow)
+                Text("Personal Records")
+            }
+        } footer: {
+            Text("Erkannt durch Vergleich mit allen vorherigen abgeschlossenen Sessions. Cardio + Plank zaehlen nicht — andere PR-Semantik.")
+                .font(.footnote)
+        }
+    }
+
+    // MARK: -
 
     private var heroSection: some View {
         Section {
@@ -275,6 +345,93 @@ public struct WorkoutSummaryView: View {
 }
 
 // MARK: - Subviews
+
+// MARK: - PR Badge
+
+@available(iOS 17.0, macOS 14.0, *)
+private struct PRBadge: View {
+    let record: PersonalRecord
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: kindIcon)
+                .font(.title3)
+                .foregroundStyle(.white)
+                .frame(width: 36, height: 36)
+                .background(kindColor.gradient)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(record.exerciseName)
+                    .font(.body.weight(.semibold))
+                Text(kindLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(detailLine)
+                    .font(.callout.monospacedDigit())
+                    .foregroundStyle(.primary)
+            }
+            Spacer()
+            Text("+\(formatDelta(record.deltaPercent))")
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.green)
+                .monospacedDigit()
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var kindIcon: String {
+        switch record.kind {
+        case .estimated1RM:   "bolt.fill"
+        case .heaviestWeight: "scalemass.fill"
+        case .bestSet:        "chart.bar.fill"
+        }
+    }
+
+    private var kindColor: Color {
+        switch record.kind {
+        case .estimated1RM:   .orange
+        case .heaviestWeight: .red
+        case .bestSet:        .blue
+        }
+    }
+
+    private var kindLabel: String {
+        switch record.kind {
+        case .estimated1RM:   "Neuer 1RM (geschaetzt)"
+        case .heaviestWeight: "Neues Maximalgewicht"
+        case .bestSet:        "Neuer Bestsatz (Volumen)"
+        }
+    }
+
+    private var detailLine: String {
+        let weightStr = formatWeight(record.weightKg)
+        let prevStr: String = {
+            switch record.kind {
+            case .estimated1RM:   return "\(formatWeight(record.previousValue)) kg"
+            case .heaviestWeight: return "\(formatWeight(record.previousValue)) kg"
+            case .bestSet:        return "\(formatWeight(record.previousValue)) kg-Vol"
+            }
+        }()
+        let nowStr: String = {
+            switch record.kind {
+            case .estimated1RM:   return "\(formatWeight(record.newValue)) kg"
+            case .heaviestWeight: return "\(formatWeight(record.newValue)) kg"
+            case .bestSet:        return "\(formatWeight(record.newValue)) kg-Vol"
+            }
+        }()
+        return "\(weightStr) kg × \(record.reps) → \(nowStr) (vorher \(prevStr))"
+    }
+
+    private func formatWeight(_ w: Double) -> String {
+        w == w.rounded() ? "\(Int(w))" : w.truncated(to: 2).formattedTwoDecimals
+    }
+
+    private func formatDelta(_ percent: Double) -> String {
+        // Round to nearest %, integer display
+        "\(Int((percent * 100).rounded())) %"
+    }
+}
 
 @available(iOS 17.0, macOS 14.0, *)
 private struct SummaryStat: View {
