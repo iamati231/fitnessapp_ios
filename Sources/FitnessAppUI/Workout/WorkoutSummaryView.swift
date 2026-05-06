@@ -95,16 +95,20 @@ public struct WorkoutSummaryView: View {
                 }
             }
         } else {
-            Section("Notiz") {
+            Section {
                 TextField(
-                    "Wie war's? Schmerzen, Pump, Performance ...",
                     text: Binding(
                         get: { session.notes ?? "" },
                         set: { session.notes = $0.isEmpty ? nil : $0 }
                     ),
+                    prompt: Text("Wie war's? Schmerzen, Pump, Performance ..."),
                     axis: .vertical
-                )
+                ) {
+                    Text("Notiz")
+                }
                 .lineLimit(3...8)
+            } header: {
+                Text("Notiz")
             } footer: {
                 Text("Tauchen spaeter in der History pro Session auf — gut fuer Form-Cues und Verletzungs-Tracking.")
                     .font(.footnote)

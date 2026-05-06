@@ -62,20 +62,22 @@ public struct TDEEView: View {
     }
 
     private func inputsSection(_ profile: UserBodyProfile) -> some View {
-        Section("Aktuelles Gewicht & Aktivitaet") {
-            // Trailing-closure Label form — see OneRepMaxView for the rationale
-            // (cross-platform overload ambiguity in `value:format:` form).
+        Section {
             TextField(value: $weightKg, format: .number,
                       prompt: Text("z.B. \(profile.goalWeightKg.map { "\(Int($0))" } ?? "80")")) {
                 Text("Gewicht (kg)")
             }
             .decimalKeyboard()
 
-            Picker("Aktivitaet", selection: $activity) {
+            Picker(selection: $activity) {
                 ForEach(ActivityLevel.allCases, id: \.self) { level in
                     Text(level.label).tag(level)
                 }
+            } label: {
+                Text("Aktivitaet")
             }
+        } header: {
+            Text("Aktuelles Gewicht & Aktivitaet")
         } footer: {
             Text(activity.description)
                 .font(.footnote)

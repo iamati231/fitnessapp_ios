@@ -31,9 +31,10 @@ public struct OneRepMaxView: View {
     // MARK: Sections
 
     private var inputsSection: some View {
-        Section("Eingabe") {
-            // Trailing-closure Label form avoids the LocalizedStringKey/String overload
-            // ambiguity that interpolated titles trigger on macOS toolchains.
+        // `Section(_ titleKey:content:footer:)` (positional title + footer) confuses
+        // the macOS 14 type checker. Use the explicit `header:` / `footer:` form,
+        // which only matches one overload.
+        Section {
             TextField(value: $weight, format: .number, prompt: Text("z.B. 100")) {
                 Text("Gewicht (\(unit))")
             }
@@ -42,6 +43,8 @@ public struct OneRepMaxView: View {
             Stepper(value: $reps, in: 1...36) {
                 LabeledContent("Wiederholungen", value: "\(reps)")
             }
+        } header: {
+            Text("Eingabe")
         } footer: {
             Text("Gueltig fuer 1-36 Reps. Bei sehr hohen Reps wird die Schaetzung unzuverlaessig — die Formeln liefern nur fuer den Hypertrophie- bis Kraft-Bereich (~1-12 Reps) brauchbare Werte.")
                 .font(.footnote)

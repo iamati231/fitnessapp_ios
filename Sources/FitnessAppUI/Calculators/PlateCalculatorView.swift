@@ -53,9 +53,7 @@ public struct PlateCalculatorView: View {
     }
 
     private var inputsSection: some View {
-        Section("Zielgewicht & Stange") {
-            // Trailing-closure Label form — interpolated titles in the positional form
-            // trigger LocalizedStringKey/String overload ambiguity on macOS toolchains.
+        Section {
             TextField(value: $targetWeight, format: .number,
                       prompt: Text("z.B. \(unit == .kg ? "100" : "225")")) {
                 Text("Zielgewicht (\(unit.rawValue))")
@@ -67,6 +65,8 @@ public struct PlateCalculatorView: View {
                 Text("Stange (\(unit.rawValue))")
             }
             .decimalKeyboard()
+        } header: {
+            Text("Zielgewicht & Stange")
         } footer: {
             VStack(alignment: .leading, spacing: 2) {
                 if let targetWeight, targetWeight > unit.maxTarget {
