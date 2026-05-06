@@ -35,6 +35,15 @@ public struct MeasurementView: View {
     /// task from clobbering user-typed values if the @Query updates while the view
     /// is on screen.
     @State private var didAttemptHealthKitAutofill = false
+    /// True when the current `weightKg` value came from HealthKit (auto-fill or
+    /// manual pull). Reset as soon as the user types — at that point the value
+    /// is "theirs" again and the badge would be misleading.
+    @State private var weightCameFromHealth = false
+    /// Snapshot of the value we wrote into `weightKg` from HealthKit. Lets the
+    /// `onChange` discriminate between "user typed" (new value differs from
+    /// snapshot → drop the badge) and "we just programmatically set the field"
+    /// (new value matches → keep the badge).
+    @State private var lastHealthFilledWeight: Double?
 
     public init() {}
 
@@ -85,6 +94,21 @@ public struct MeasurementView: View {
     private func measurementsSection(forProfile profile: UserBodyProfile) -> some View {
         Section("Messwerte") {
             decimalField("Gewicht (kg)", value: $weightKg)
+                .onChange(of: weightKg) { _, newValue in
+                    // Drop the "from Health" badge ONLY when the new value
+                    // differs from what we programmatically wrote — otherwise
+                    // we'd nuke the badge during the auto-fill itself.
+                    if weightCameFromHealth, newValue != lastHealthFilledWeight {
+                        weightCameFromHealth = false
+                        lastHealthFilledWeight = nil
+                    }
+                }
+            if weightCameFromHealth, weightKg != nil {
+                Label("Aus Apple Health uebernommen", systemImage: "heart.fill")
+                    .font(.caption)
+                    .foregroundStyle(.pink)
+                    .listRowSeparator(.hidden)
+            }
             decimalField("Hals (cm)",    value: $neckCm)
             decimalField("Taille (cm)",  value: $waistCm)
             // Hip is REQUIRED for Navy KFA on female profiles. Keep it visible for males
@@ -300,6 +324,10 @@ public struct MeasurementView: View {
 
         // Re-check user input now that the await may have introduced a typing window.
         if weightKg == nil {
+            // Set the snapshot BEFORE the binding so onChange's comparison
+            // sees the matching value and doesn't drop the badge.
+            lastHealthFilledWeight = kg
+            weightCameFromHealth = true
             weightKg = kg
         }
     }
@@ -308,6 +336,8 @@ public struct MeasurementView: View {
     /// "Aktuelles Gewicht aus Apple Health"-button, so the overwrite is intentional.
     private func pullLatestWeightFromHealth() async {
         guard let kg = await healthKit.latestWeightKg() else { return }
+        lastHealthFilledWeight = kg
+        weightCameFromHealth = true
         weightKg = kg
     }
 }

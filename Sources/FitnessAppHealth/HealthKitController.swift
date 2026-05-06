@@ -134,4 +134,31 @@ public final class HealthKitController {
         }
         #endif
     }
+
+    /// Best-effort push of a completed strength-training workout to Apple Health.
+    /// Fills the Activity rings and shows up in the Fitness app like a watch-
+    /// recorded session. Errors land in `lastError`; the caller's main flow
+    /// (saving the SwiftData session, navigating to summary) is never blocked.
+    public func saveWorkout(
+        startDate: Date,
+        endDate: Date,
+        totalSets: Int,
+        totalVolumeKg: Double
+    ) async {
+        #if canImport(HealthKit)
+        guard let service, authorizationStatus == .sharingAuthorized else { return }
+        do {
+            try await service.saveStrengthTrainingWorkout(
+                startDate: startDate,
+                endDate: endDate,
+                totalSets: totalSets,
+                totalVolumeKg: totalVolumeKg
+            )
+            lastSyncDate = Date()
+            lastError = nil
+        } catch {
+            lastError = error
+        }
+        #endif
+    }
 }

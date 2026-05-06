@@ -35,7 +35,13 @@ public actor HealthKitService {
     // MARK: Authorization
 
     public func requestAuthorization() async throws {
-        let toShare: Set<HKSampleType> = [Self.weightType, Self.bodyFatType, Self.leanMassType]
+        // workoutType is *only* a write target — HealthKit never lets us read
+        // workouts from other apps anyway, so leaving it out of toRead matches
+        // reality.
+        let toShare: Set<HKSampleType> = [
+            Self.weightType, Self.bodyFatType, Self.leanMassType,
+            HKObjectType.workoutType()
+        ]
         let toRead:  Set<HKObjectType> = [Self.weightType, Self.bodyFatType, Self.leanMassType]
         do {
             try await store.requestAuthorization(toShare: toShare, read: toRead)
@@ -106,6 +112,54 @@ public actor HealthKitService {
         let q = HKQuantity(unit: .gramUnit(with: .kilo), doubleValue: kg)
         let sample = HKQuantitySample(type: Self.leanMassType, quantity: q, start: date, end: date)
         try await persist(sample)
+    }
+
+    /// Pushes a finished strength-training workout to Apple Health. The user's
+    /// Activity rings (Move + Exercise) and the Fitness app's "Workouts" list
+    /// pick this up — same surface as an Apple-Watch-recorded workout.
+    ///
+    /// **No `totalEnergyBurned`** by design: without live heart-rate samples we
+    /// can't estimate calories accurately, and shipping a fabricated number
+    /// would corrupt the user's energy data. Apple Health falls back to a
+    /// conservative estimate from background pulse data, which is the right
+    /// behavior.
+    ///
+    /// **Custom metadata** uses bundle-prefixed keys so other apps that read
+    /// our workouts (rare, but possible) can find our specifics without
+    /// colliding with Apple's reserved namespace.
+    public func saveStrengthTrainingWorkout(
+        startDate: Date,
+        endDate: Date,
+        totalSets: Int,
+        totalVolumeKg: Double
+    ) async throws {
+        let configuration = HKWorkoutConfiguration()
+        configuration.activityType = .traditionalStrengthTraining
+        configuration.locationType = .indoor
+
+        let builder = HKWorkoutBuilder(
+            healthStore: store,
+            configuration: configuration,
+            device: nil
+        )
+
+        // HKMetadataKeyIndoorWorkout is Apple's standard flag — the Fitness
+        // app uses it to skip GPS-route rendering. The bundle-prefixed keys
+        // are our own.
+        let metadata: [String: Any] = [
+            HKMetadataKeyIndoorWorkout: true,
+            "com.atamya.FitnessApp.TotalSets": totalSets,
+            "com.atamya.FitnessApp.TotalVolumeKg": totalVolumeKg
+        ]
+
+        do {
+            try await builder.beginCollection(at: startDate)
+            try await builder.addMetadata(metadata)
+            try await builder.endCollection(at: endDate)
+            _ = try await builder.finishWorkout()
+        } catch {
+            throw HealthKitError.saveFailed(reason: error.localizedDescription)
+        }
     }
 
     // MARK: Internals

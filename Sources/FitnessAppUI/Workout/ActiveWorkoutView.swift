@@ -4,6 +4,7 @@ import SwiftData
 import FitnessAppCore
 import FitnessAppData
 import FitnessAppActivities
+import FitnessAppHealth
 
 /// Active workout screen — Phase-2: per-exercise cards, set logging, rest timer.
 ///
@@ -19,6 +20,7 @@ public struct ActiveWorkoutView: View {
     @Environment(AppNavigation.self) private var navigation
     @Environment(RestTimerActivityController.self) private var restTimerActivity
     @Environment(PRNotificationCenter.self) private var prNotifications
+    @Environment(HealthKitController.self) private var healthKit
 
     @State private var now: Date = Date()
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -266,6 +268,24 @@ public struct ActiveWorkoutView: View {
         // Runs against all OTHER completed sessions in the store as history —
         // strict-greater-than only, so a tied session produces no rows.
         let detectedPRs = PersonalRecordSync.recordPRs(for: session, in: modelContext)
+
+        // Push the workout to Apple Health as a strength-training session.
+        // Best-effort: when HealthKit is unauthorised or unavailable, this is a
+        // no-op. Captures startTime/endTime/totalSets/totalVolumeKg so the
+        // Fitness app and Activity rings update without the user having to
+        // re-log anything. Snapshotted now because session.* may mutate later.
+        let workoutStart = session.startTime
+        let workoutEnd = endTime
+        let workoutSets = session.totalSets
+        let workoutVolume = session.totalVolumeKg
+        Task {
+            await healthKit.saveWorkout(
+                startDate: workoutStart,
+                endDate: workoutEnd,
+                totalSets: workoutSets,
+                totalVolumeKg: workoutVolume
+            )
+        }
 
         // Clear any running rest timer (in-app + Live Activity). Branching:
         //   - PRs detected → push a final celebration state with trophy headline,
