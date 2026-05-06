@@ -261,6 +261,11 @@ public struct ActiveWorkoutView: View {
         session.totalVolumeKg = logs.reduce(0.0) { $0 + $1.weight * Double($1.reps) }
         session.isCompleted = true
 
+        // Persist any newly-set PRs to the Trophy Room (`PersonalRecordEntry`).
+        // Runs against all OTHER completed sessions in the store as history —
+        // strict-greater-than only, so a tied session produces no rows.
+        PersonalRecordSync.recordPRs(for: session, in: modelContext)
+
         // Clear any running rest timer (in-app + Live Activity) so neither keeps
         // ticking while the user reviews the Summary.
         restTimerEnd = nil

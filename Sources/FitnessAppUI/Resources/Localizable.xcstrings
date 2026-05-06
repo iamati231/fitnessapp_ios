@@ -582,6 +582,78 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Save & to dashboard" } },
         "de" : { "stringUnit" : { "state" : "translated", "value" : "Speichern & zum Dashboard" } }
       }
+    },
+
+    "trophy.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Trophy Room" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Trophy Room" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Rekor Odası" } }
+      }
+    },
+    "trophy.empty.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No records yet" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch keine Rekorde" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Henüz rekor yok" } }
+      }
+    },
+    "trophy.action.rebuild" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rebuild from history" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aus History neu berechnen" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Geçmişten yeniden hesapla" } }
+      }
+    },
+    "trophy.action.detect" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Detect from history" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aus History detektieren" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Geçmişten tespit et" } }
+      }
+    },
+    "trophy.kind.estimated1RM" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "1RM" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "1RM" } }
+      }
+    },
+    "trophy.kind.heaviestWeight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Top Weight" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Max-Gewicht" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Maks. Ağırlık" } }
+      }
+    },
+    "trophy.kind.bestSet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Best Set" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bestsatz" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "En İyi Set" } }
+      }
+    },
+    "trophy.kind.maxReps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Max Reps" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Max Wdh." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Maks. Tekrar" } }
+      }
+    },
+    "trophy.kind.maxHoldSeconds" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Best Hold" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bestzeit" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "En İyi Süre" } }
+      }
     }
   }
 }

@@ -11,7 +11,10 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
     ///   - **Time-based / isometric** (Plank, Wall Sit, Mountain Climbers): maxHoldSeconds.
     /// Cardio (treadmill, bike) is intentionally excluded — different metric domain
     /// (pace / distance / heart-rate) belongs in a separate detector.
-    public enum Kind: Sendable, Hashable, CaseIterable {
+    /// String-rawvalue so persistence layers (`PersonalRecordEntry` @Model) can
+     /// round-trip the kind without a custom codable shim. Stable identifiers —
+     /// renaming a case here is a database-migration event.
+    public enum Kind: String, Sendable, Hashable, CaseIterable, Codable {
         /// Heaviest single weight ever lifted, regardless of reps.
         case heaviestWeight
         /// Highest `weight × reps` (single-set volume).

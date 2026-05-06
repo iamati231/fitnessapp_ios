@@ -35,7 +35,8 @@ public enum AppSchema {
         ExerciseLog.self,
         WorkoutSession.self,
         ExerciseTemplate.self,
-        WaterEntry.self
+        WaterEntry.self,
+        PersonalRecordEntry.self
     ]
 }
 #endif

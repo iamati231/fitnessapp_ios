@@ -28,6 +28,11 @@ public struct DashboardView: View {
            sort: \WorkoutSession.startTime, order: .reverse)
     private var completedSessions: [WorkoutSession]
 
+    /// Trophy-Room teaser uses this to show count + latest exercise.
+    /// Reverse-sort so `.first` is the most recent PR.
+    @Query(sort: \PersonalRecordEntry.date, order: .reverse)
+    private var personalRecords: [PersonalRecordEntry]
+
     public init() {}
 
     public var body: some View {
@@ -35,6 +40,7 @@ public struct DashboardView: View {
             VStack(alignment: .leading, spacing: 16) {
                 heroMetrics
                 planDayCard
+                trophyRoomCard
                 trendChart
                 compoundLiftChart
                 recentWorkoutsCard
@@ -53,6 +59,60 @@ public struct DashboardView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Trophy Room teaser
+
+    /// Compact entry-point to `PRHistoryView`. Counts personal-record entries
+    /// across the store and shows the latest exercise that produced one — gives
+    /// the user something to tap on even when the rest of the dashboard is dense.
+    private var trophyRoomCard: some View {
+        NavigationLink {
+            PRHistoryView()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "trophy.fill")
+                    .font(.title2)
+                    .foregroundStyle(.white)
+                    .frame(width: 38, height: 38)
+                    .background(Color.yellow.gradient)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Trophy Room")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    if prCount == 0 {
+                        Text("Noch keine PRs — beende ein Workout, um den ersten zu setzen.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("\(prCount) Rekorde\(latestPRSummary.map { " • \($0)" } ?? "")")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.secondary.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var prCount: Int { personalRecords.count }
+
+    /// "Bankdruecken vor 2 Tagen" — short last-PR teaser when the table has rows.
+    private var latestPRSummary: String? {
+        guard let latest = personalRecords.first else { return nil }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        let relative = formatter.localizedString(for: latest.date, relativeTo: Date())
+        return "\(latest.exerciseName) \(relative)"
     }
 
     // MARK: - Hero metrics
