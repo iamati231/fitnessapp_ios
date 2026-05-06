@@ -1,6 +1,6 @@
 import Foundation
 import Observation
-#if canImport(ActivityKit)
+#if os(iOS)
 import ActivityKit
 #endif
 
@@ -28,7 +28,7 @@ public final class RestTimerActivityController {
     public private(set) var isAvailable: Bool = false
     public private(set) var lastError: (any Error)?
 
-    #if canImport(ActivityKit)
+    #if os(iOS)
     /// Currently-running activity, nil between sets.
     private var current: Activity<RestTimerAttributes>?
     #endif
@@ -40,7 +40,7 @@ public final class RestTimerActivityController {
     /// Pulls the current "are activities enabled" flag. Cheap; safe to call from
     /// `.task` blocks on view appearance.
     public func refreshAvailability() {
-        #if canImport(ActivityKit)
+        #if os(iOS)
         isAvailable = ActivityAuthorizationInfo().areActivitiesEnabled
         #else
         isAvailable = false
@@ -56,7 +56,7 @@ public final class RestTimerActivityController {
         endDate: Date,
         originalSeconds: Int
     ) async {
-        #if canImport(ActivityKit)
+        #if os(iOS)
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
             isAvailable = false
             return
@@ -99,7 +99,7 @@ public final class RestTimerActivityController {
 
     /// Ends the current activity with a dismissal-policy that depends on the reason.
     public func endRestTimer(reason: RestTimerEndReason = .skipped) async {
-        #if canImport(ActivityKit)
+        #if os(iOS)
         guard let current else { return }
 
         switch reason {
