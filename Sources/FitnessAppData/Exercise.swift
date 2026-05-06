@@ -1,0 +1,58 @@
+#if canImport(SwiftData)
+import Foundation
+import SwiftData
+import FitnessAppCore
+
+@Model
+public final class Exercise {
+    public var name: String
+    public var sets: Int
+    public var repsMin: Int
+    public var repsMax: Int
+    public var restSeconds: Int
+    public var notes: String?
+    public var suggestedWeight: Double?
+    public var orderIndex: Int
+    public var targetRir: Float
+    public var weightReducedNote: String?
+    /// True for cardio finishers — UI shows duration/level instead of kg/reps (F153).
+    public var isCardio: Bool
+    /// True for isometric/time-based exercises (Plank, Wall Sit) — reps record seconds (F161).
+    public var isTimeBased: Bool
+
+    public var day: TrainingDay?
+
+    @Relationship(deleteRule: .cascade, inverse: \ExerciseLog.exercise)
+    public var logs: [ExerciseLog] = []
+
+    public init(
+        name: String,
+        sets: Int = 3,
+        repsMin: Int = 8,
+        repsMax: Int = 12,
+        restSeconds: Int = 90,
+        notes: String? = nil,
+        suggestedWeight: Double? = nil,
+        orderIndex: Int = 0,
+        targetRir: Float = 2.0,
+        weightReducedNote: String? = nil,
+        isCardio: Bool = false,
+        isTimeBased: Bool = false,
+        day: TrainingDay? = nil
+    ) {
+        self.name = name
+        self.sets = sets
+        self.repsMin = repsMin
+        self.repsMax = repsMax
+        self.restSeconds = restSeconds
+        self.notes = notes
+        self.suggestedWeight = suggestedWeight
+        self.orderIndex = orderIndex
+        self.targetRir = targetRir
+        self.weightReducedNote = weightReducedNote
+        self.isCardio = isCardio
+        self.isTimeBased = isTimeBased
+        self.day = day
+    }
+}
+#endif

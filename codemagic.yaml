@@ -1,0 +1,94 @@
+# Codemagic CI/CD configuration for the FitnessApp Swift Package.
+#
+# Aktuell baut/testet diese Pipeline NUR das Swift-Package — das eigentliche
+# iOS-App-Target lebt im Schwester-Repo (oder Schwester-Ordner) und wird via
+# lokaler Package-Dependency eingebunden. Sobald die App-Target-`.xcodeproj` in
+# diesem Repo lebt, kommt ein zweiter Workflow `ios-app` dazu, der `xcodebuild`
+# laeuft + ein Archive baut + nach TestFlight hochschiebt.
+
+workflows:
+  swift-package:
+    name: Swift Package CI
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+
+    triggering:
+      events:
+        - push
+        - pull_request
+      branch_patterns:
+        - pattern: '*'
+          include: true
+          source: true
+
+    environment:
+      # Xcode "latest" picked von Codemagic — aktuell Xcode 16.x mit Swift 6.x.
+      # Falls wir auf eine spezifische Version pinnen wollen: `xcode: 16.0`.
+      xcode: latest
+
+    scripts:
+      - name: Show toolchain
+        script: |
+          set -e
+          swift --version
+          xcodebuild -version
+
+      - name: Resolve dependencies
+        script: |
+          set -e
+          swift package resolve
+
+      - name: Build (debug)
+        script: |
+          set -e
+          swift build
+
+      - name: Run unit tests
+        script: |
+          set -e
+          swift test --parallel
+
+      - name: Build for iOS Simulator (sanity)
+        # Stellt sicher, dass FitnessAppData / FitnessAppHealth / FitnessAppActivities
+        # / FitnessAppUI auch fuer iOS-Targets sauber kompilieren — nicht nur fuer
+        # den nativen macOS-Build, der `swift build` standardmaessig benutzt.
+        script: |
+          set -e
+          xcodebuild \
+            -scheme FitnessAppCore \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            build
+          xcodebuild \
+            -scheme FitnessAppData \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            build
+          xcodebuild \
+            -scheme FitnessAppHealth \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            build
+          xcodebuild \
+            -scheme FitnessAppActivities \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            build
+          xcodebuild \
+            -scheme FitnessAppUI \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            build
+
+    artifacts:
+      - .build/**/*.xctest
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.app
+
+    publishing:
+      # Email-Notification bei Build-Failures fuer den Owner.
+      email:
+        recipients:
+          - a.isik@atamya.com
+        notify:
+          success: false
+          failure: true

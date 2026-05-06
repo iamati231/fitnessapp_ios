@@ -1,0 +1,587 @@
+{
+  "sourceLanguage" : "en",
+  "version" : "1.0",
+  "strings" : {
+    "tab.dashboard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dashboard" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Dashboard" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Panel" } }
+      }
+    },
+    "tab.plan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Plan" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Plan" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Plan" } }
+      }
+    },
+    "tab.measurement" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Measurement" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Messung" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ölçüm" } }
+      }
+    },
+    "tab.calculators" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tools" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Rechner" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Araçlar" } }
+      }
+    },
+    "tab.more" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "More" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mehr" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Daha Fazla" } }
+      }
+    },
+
+    "common.save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Speichern" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kaydet" } }
+      }
+    },
+    "common.cancel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Abbrechen" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "İptal" } }
+      }
+    },
+    "common.discard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Discard" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verwerfen" } }
+      }
+    },
+    "common.done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Done" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fertig" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bitti" } }
+      }
+    },
+
+    "sex.male" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Male" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Männlich" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Erkek" } }
+      }
+    },
+    "sex.female" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Female" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Weiblich" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kadın" } }
+      }
+    },
+
+    "environment.gym" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Gym" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gym" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Spor Salonu" } }
+      }
+    },
+    "environment.home_gym" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Home Gym" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Home-Gym" } }
+      }
+    },
+    "environment.no_equipment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No Equipment" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ohne Equipment" } }
+      }
+    },
+
+    "equipment.barbell" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Barbell" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Langhantel" } }
+      }
+    },
+    "equipment.dumbbell" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dumbbell" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kurzhantel" } }
+      }
+    },
+    "equipment.bodyweight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Bodyweight" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Körpergewicht" } }
+      }
+    },
+    "equipment.machine" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Machine" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Maschine" } }
+      }
+    },
+    "equipment.cable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cable" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kabel" } }
+      }
+    },
+    "equipment.kettlebell" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Kettlebell" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kettlebell" } }
+      }
+    },
+    "equipment.band" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Resistance Band" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Widerstandsband" } }
+      }
+    },
+
+    "muscle.chest" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Chest" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Brust" } }
+      }
+    },
+    "muscle.back" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Back" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Rücken" } }
+      }
+    },
+    "muscle.shoulders" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shoulders" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Schultern" } }
+      }
+    },
+    "muscle.biceps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Biceps" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bizeps" } }
+      }
+    },
+    "muscle.triceps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Triceps" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Trizeps" } }
+      }
+    },
+    "muscle.quads" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Quadriceps" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Quadrizeps" } }
+      }
+    },
+    "muscle.hamstrings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hamstrings" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Hamstrings" } }
+      }
+    },
+    "muscle.glutes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Glutes" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gesäß" } }
+      }
+    },
+    "muscle.calves" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Calves" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Waden" } }
+      }
+    },
+    "muscle.core" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Core" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Core" } }
+      }
+    },
+
+    "day_type.chest" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Chest" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Brust" } }
+      }
+    },
+    "day_type.back" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Back" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Rücken" } }
+      }
+    },
+    "day_type.legs" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Legs" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Beine" } }
+      }
+    },
+    "day_type.shoulders" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shoulders" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Schultern" } }
+      }
+    },
+    "day_type.arms" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Arms" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Arme" } }
+      }
+    },
+    "day_type.push" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Push" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Push" } }
+      }
+    },
+    "day_type.pull" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pull" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Pull" } }
+      }
+    },
+    "day_type.upper" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Upper" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Oberkörper" } }
+      }
+    },
+    "day_type.lower" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lower" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Unterkörper" } }
+      }
+    },
+    "day_type.full_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Full Body" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ganzkörper" } }
+      }
+    },
+    "day_type.rest" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rest" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ruhetag" } }
+      }
+    },
+    "day_type.custom" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Custom" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Custom" } }
+      }
+    },
+
+    "day_intensity.normal" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Normal" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Normal" } }
+      }
+    },
+    "day_intensity.light" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Light" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Leicht" } }
+      }
+    },
+    "day_intensity.heavy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Heavy" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Schwer" } }
+      }
+    },
+
+    "difficulty.beginner" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Beginner" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Anfänger" } }
+      }
+    },
+    "difficulty.intermediate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Intermediate" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fortgeschritten" } }
+      }
+    },
+    "difficulty.advanced" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Advanced" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Profi" } }
+      }
+    },
+
+    "onboarding.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Welcome" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Willkommen" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hoş Geldin" } }
+      }
+    },
+    "onboarding.intro.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Let's get started" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Lass uns starten" } }
+      }
+    },
+    "onboarding.intro.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "For accurate calculations (BMI, body-fat, FFMI, BMR) we need sex, age, and height. You can change everything later in your profile." } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Für akkurate Berechnungen (BMI, KFA, FFMI, BMR) brauchen wir Sex, Alter und Größe. Alle Werte kannst du später unter Profil ändern." } }
+      }
+    },
+    "onboarding.section.profile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Profile" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Profil" } }
+      }
+    },
+    "onboarding.section.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Body Measurements" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Körpermaße" } }
+      }
+    },
+    "onboarding.section.goals" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Goals & Training" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ziel & Training" } }
+      }
+    },
+    "onboarding.field.sex" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sex" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Sex" } }
+      }
+    },
+    "onboarding.field.birthdate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Birth date" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Geburtsdatum" } }
+      }
+    },
+    "onboarding.field.height" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Height (cm)" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Größe (cm)" } }
+      }
+    },
+    "onboarding.field.goal_weight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Goal weight (kg, optional)" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zielgewicht (kg, optional)" } }
+      }
+    },
+    "onboarding.field.environment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Training Location" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Trainingsort" } }
+      }
+    },
+    "onboarding.action.create" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create profile" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Profil anlegen" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Profil Oluştur" } }
+      }
+    },
+
+    "settings.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Einstellungen" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ayarlar" } }
+      }
+    },
+    "settings.section.profile_goals" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Profile & Goals" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Profil & Ziele" } }
+      }
+    },
+    "settings.section.preferences" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Preferences" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Präferenzen" } }
+      }
+    },
+    "settings.section.about" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "About" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Über" } }
+      }
+    },
+    "settings.section.danger_zone" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Data Management" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Daten-Management" } }
+      }
+    },
+    "settings.preferences.units" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Units" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Einheiten" } }
+      }
+    },
+    "settings.preferences.units.metric" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Metric (kg / cm)" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Metrisch (kg / cm)" } }
+      }
+    },
+    "settings.preferences.units.imperial" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Imperial (lbs / in)" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Imperial (lbs / in)" } }
+      }
+    },
+    "settings.action.reset" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reset App" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "App zurücksetzen" } }
+      }
+    },
+    "settings.confirm.reset.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Really reset the app?" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "App wirklich zurücksetzen?" } }
+      }
+    },
+    "settings.confirm.reset.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Profile, all measurements, plans, and workouts will be IRRECOVERABLY lost. The app will start in onboarding." } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Profil, alle Messungen, Pläne und Workout-Sessions gehen UNWIDERRUFLICH verloren. Die App startet danach im Onboarding." } }
+      }
+    },
+    "settings.confirm.reset.action" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete everything" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Alles löschen" } }
+      }
+    },
+
+    "active.action.save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save workout" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Training speichern" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Antrenmanı Kaydet" } }
+      }
+    },
+    "active.action.discard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Discard" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verwerfen" } }
+      }
+    },
+    "active.confirm.finish.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Finish workout?" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Training abschließen?" } }
+      }
+    },
+    "active.confirm.discard.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Discard workout?" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Training verwerfen?" } }
+      }
+    },
+
+    "summary.hero.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Workout completed" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Workout abgeschlossen" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Antrenman Tamamlandı" } }
+      }
+    },
+    "summary.action.finish" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save & to dashboard" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Speichern & zum Dashboard" } }
+      }
+    }
+  }
+}
