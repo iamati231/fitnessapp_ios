@@ -30,6 +30,8 @@ public struct PlansListView: View {
            sort: \WorkoutSession.startTime, order: .reverse)
     private var activeSessions: [WorkoutSession]
 
+    @State private var showingTemplatePicker = false
+
     public init() {}
 
     public var body: some View {
@@ -63,12 +65,24 @@ public struct PlansListView: View {
         .navigationTitle("Plan")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    createNewPlan()
+                Menu {
+                    Button {
+                        showingTemplatePicker = true
+                    } label: {
+                        Label("Aus Template anlegen", systemImage: "rectangle.stack.fill.badge.plus")
+                    }
+                    Button {
+                        createNewPlan()
+                    } label: {
+                        Label("Leerer Plan", systemImage: "plus")
+                    }
                 } label: {
                     Label("Neuer Plan", systemImage: "plus.circle.fill")
                 }
             }
+        }
+        .sheet(isPresented: $showingTemplatePicker) {
+            ProgramTemplatePickerView()
         }
     }
 
@@ -80,11 +94,22 @@ public struct PlansListView: View {
             Text("Lege deinen ersten Trainings-Plan an — Tage, Uebungen, Saetze. Der Plan ist die Grundlage fuer jede Session.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Button {
-                createNewPlan()
-            } label: {
-                Label("Neuen Plan anlegen", systemImage: "plus")
-                    .font(.callout.weight(.semibold))
+            HStack(spacing: 8) {
+                Button {
+                    showingTemplatePicker = true
+                } label: {
+                    Label("Aus Template", systemImage: "rectangle.stack.fill.badge.plus")
+                        .font(.callout.weight(.semibold))
+                }
+                .buttonStyle(.borderedProminent)
+
+                Button {
+                    createNewPlan()
+                } label: {
+                    Label("Leer", systemImage: "plus")
+                        .font(.callout)
+                }
+                .buttonStyle(.bordered)
             }
             .padding(.top, 4)
         }

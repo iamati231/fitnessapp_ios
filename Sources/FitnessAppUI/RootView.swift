@@ -15,6 +15,8 @@ import FitnessAppActivities
 @available(iOS 17.0, macOS 14.0, *)
 public struct RootView: View {
 
+    @Environment(\.modelContext) private var modelContext
+
     @Query private var profiles: [UserBodyProfile]
 
     @State private var navigation = AppNavigation()
@@ -42,6 +44,10 @@ public struct RootView: View {
             // are cheap; both are no-ops when their frameworks aren't present.
             await healthKit.refreshAuthorizationStatus()
             restTimerActivity.refreshAvailability()
+
+            // Seed the canonical exercise library on first launch (idempotent
+            // — fetchCount short-circuits when rows already exist).
+            LibrarySeeder.seedIfNeeded(in: modelContext)
         }
     }
 }
