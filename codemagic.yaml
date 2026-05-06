@@ -148,3 +148,142 @@ workflows:
         notify:
           success: true
           failure: true
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 3) TestFlight Release — code-signs + uploads to App Store Connect
+  #
+  # Triggers ONLY on git tags matching `v*` (e.g. `v0.1.0`, `v0.2.0-beta.1`).
+  # We deliberately don't auto-publish on every push — TestFlight has rate
+  # limits and cluttered build numbers slow the review process.
+  #
+  # PRE-FLIGHT (one-time, after Apple Developer Program is active):
+  #   1. App Store Connect → My Apps → "+" → New App.
+  #      - Bundle ID: com.atamya.FitnessApp
+  #      - SKU: fitnessapp-ios (any unique string)
+  #      - Primary language: English
+  #
+  #   2. App Store Connect → Users and Access → Integrations → App Store
+  #      Connect API → "+" → Generate API Key.
+  #      - Access: "App Manager" (sufficient for TestFlight uploads)
+  #      - Download the .p8 file IMMEDIATELY (you can't re-download later)
+  #      - Note the Issuer ID (top of page) and Key ID (next to the key)
+  #
+  #   3. Codemagic UI → Teams → Personal Account → Integrations → App Store
+  #      Connect → Add new key:
+  #      - Name: atamya-asc-key
+  #      - Issuer ID: <from step 2>
+  #      - Key ID: <from step 2>
+  #      - API key: paste contents of the .p8 file
+  #
+  #   4. In the workflow's "App Store Connect" section below, the
+  #      `app_store_connect:` block references that key by name. Codemagic
+  #      automatically creates / renews the signing certs + provisioning
+  #      profiles via the API key — no manual cert juggling required.
+  #
+  # See `TestFlightSetup.md` in the repo root for screenshots + detailed
+  # walkthrough.
+  # ─────────────────────────────────────────────────────────────────────────
+  testflight:
+    name: TestFlight Release
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: 'v*'
+          include: true
+
+    environment:
+      xcode: latest
+
+      # Codemagic-managed signing — fills in DEVELOPMENT_TEAM + provisioning
+      # profile automatically once the App Store Connect key is registered
+      # in the Codemagic UI (see step 3 above). Bundle identifiers must match
+      # `project.yml`.
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.atamya.FitnessApp
+
+      # Reads the App Store Connect API key registered in Codemagic-Teams →
+      # Integrations. The literal "atamya-asc-key" name must match step 3.
+      # Both values are set in Codemagic UI Environment Variables, NOT here:
+      #   - APP_STORE_CONNECT_KEY_IDENTIFIER  (the Key ID)
+      #   - APP_STORE_CONNECT_ISSUER_ID
+      #   - APP_STORE_CONNECT_PRIVATE_KEY    (the .p8 file content)
+      groups:
+        - app_store_credentials   # define this group in Codemagic UI
+
+      vars:
+        XCODE_PROJECT: 'FitnessApp.xcodeproj'
+        XCODE_SCHEME: 'FitnessApp'
+        APP_STORE_APP_ID: ''      # fill in after creating the app record
+                                  # in App Store Connect — found under
+                                  # App Information → "Apple ID" (numeric)
+
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          set -e
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+
+      - name: Generate Xcode project
+        script: |
+          set -e
+          xcodegen generate
+
+      - name: Set build number
+        # CURRENT_PROJECT_VERSION (build number) must increase monotonically
+        # for every TestFlight upload. We pull the latest build number from
+        # App Store Connect and add 1 — guarantees no "build number already
+        # exists"-rejection regardless of what's in project.yml.
+        script: |
+          set -e
+          BUILD_NUMBER=$(($(app-store-connect get-latest-app-store-build-number "$APP_STORE_APP_ID") + 1))
+          echo "Using build number: $BUILD_NUMBER"
+          agvtool new-version -all $BUILD_NUMBER
+
+      - name: Resolve Swift Package dependencies
+        script: |
+          set -e
+          xcodebuild \
+            -resolvePackageDependencies \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME"
+
+      - name: Build .ipa for App Store distribution
+        script: |
+          set -e
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME" \
+            --config Release
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM.zip
+
+    publishing:
+      app_store_connect:
+        # Uses the API key registered in Codemagic-Teams → Integrations.
+        # `submit_to_testflight: true` makes the build immediately available
+        # to internal testers — no review step. External testers (public
+        # link) require a separate manual approval per Apple.
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
+        # Internal testers group — create in App Store Connect → TestFlight
+        # → Internal Testing. Builds appear there automatically once uploaded.
+        beta_groups:
+          - 'Atamya Internal'
+
+      email:
+        recipients:
+          - a.isik@atamya.com
+        notify:
+          success: true
+          failure: true

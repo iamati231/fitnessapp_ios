@@ -335,7 +335,20 @@ private struct ExerciseTrophySection: View {
                 .foregroundStyle(.secondary)
                 .padding(.bottom, 4)
             ForEach(visibleEntries) { entry in
-                PRHistoryRow(entry: entry)
+                // NavigationLink only when the originating session still exists
+                // (deleteRule on session is .nullify, so a deleted-session PRE
+                // survives but loses its back-link). Disabled-row fallback is
+                // visually identical, just non-tappable.
+                if let session = entry.session {
+                    NavigationLink {
+                        WorkoutSummaryView(session: session, isReadOnly: true)
+                    } label: {
+                        PRHistoryRow(entry: entry)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    PRHistoryRow(entry: entry)
+                }
                 if entry.id != visibleEntries.last?.id {
                     Divider().opacity(0.4)
                 }
