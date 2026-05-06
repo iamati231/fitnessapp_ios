@@ -29,19 +29,28 @@ public struct ProfileEditorView: View {
     }
 
     private var personSection: some View {
-        Section("Person") {
-            Picker("Sex", selection: $profile.profile) {
+        // All inner widgets use trailing-closure Label forms — same pattern as
+        // OnboardingView. The positional `Picker(_ titleKey:)` / `DatePicker(_ titleKey:)` /
+        // `TextField(_ titleKey:value:format:)` forms confuse the type checker on macOS
+        // toolchains when nested inside Section + footer + multiple statements.
+        Section {
+            Picker(selection: $profile.profile) {
                 Text("Maennlich").tag(BodyFormulaProfile.male)
                 Text("Weiblich").tag(BodyFormulaProfile.female)
+            } label: {
+                Text("Sex")
             }
             .pickerStyle(.segmented)
 
             DatePicker(
-                "Geburtsdatum",
                 selection: $profile.birthDate,
                 in: Self.minBirthDate ... Date(),
                 displayedComponents: .date
-            )
+            ) {
+                Text("Geburtsdatum")
+            }
+        } header: {
+            Text("Person")
         } footer: {
             Text("Sex steuert die Navy/Deurenberg-Formeln; das Alter geht in Mifflin-St-Jeor-BMR und Deurenberg ein.")
                 .font(.footnote)
@@ -49,11 +58,14 @@ public struct ProfileEditorView: View {
     }
 
     private var bodySection: some View {
-        Section("Koerpermasse") {
-            TextField("Groesse (cm)",
-                      value: $profile.heightCm, format: .number,
-                      prompt: Text("z.B. 180"))
-                .decimalKeyboard()
+        Section {
+            TextField(value: $profile.heightCm, format: .number,
+                      prompt: Text("z.B. 180")) {
+                Text("Groesse (cm)")
+            }
+            .decimalKeyboard()
+        } header: {
+            Text("Koerpermasse")
         } footer: {
             if !Self.heightRange.contains(profile.heightCm) {
                 Text("Plausibel: \(Int(Self.heightRange.lowerBound))–\(Int(Self.heightRange.upperBound)) cm.")
@@ -67,17 +79,22 @@ public struct ProfileEditorView: View {
     }
 
     private var goalSection: some View {
-        Section("Ziel & Training") {
-            TextField("Zielgewicht (kg, optional)",
-                      value: $profile.goalWeightKg, format: .number,
-                      prompt: Text("z.B. 75"))
-                .decimalKeyboard()
+        Section {
+            TextField(value: $profile.goalWeightKg, format: .number,
+                      prompt: Text("z.B. 75")) {
+                Text("Zielgewicht (kg, optional)")
+            }
+            .decimalKeyboard()
 
-            Picker("Trainingsort", selection: $profile.environment) {
+            Picker(selection: $profile.environment) {
                 Text("Gym").tag(EnvironmentType.gym)
                 Text("Home-Gym").tag(EnvironmentType.homeGym)
                 Text("Ohne Equipment").tag(EnvironmentType.noEquipment)
+            } label: {
+                Text("Trainingsort")
             }
+        } header: {
+            Text("Ziel & Training")
         } footer: {
             Text("Das Zielgewicht erscheint als gruene Linie im Dashboard-Trend-Chart. Trainingsort filtert spaeter Plan-Empfehlungen.")
                 .font(.footnote)

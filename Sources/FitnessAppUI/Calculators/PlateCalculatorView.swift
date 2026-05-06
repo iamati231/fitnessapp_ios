@@ -54,15 +54,19 @@ public struct PlateCalculatorView: View {
 
     private var inputsSection: some View {
         Section("Zielgewicht & Stange") {
-            TextField("Zielgewicht (\(unit.rawValue))",
-                      value: $targetWeight, format: .number,
-                      prompt: Text("z.B. \(unit == .kg ? "100" : "225")"))
-                .decimalKeyboard()
+            // Trailing-closure Label form — interpolated titles in the positional form
+            // trigger LocalizedStringKey/String overload ambiguity on macOS toolchains.
+            TextField(value: $targetWeight, format: .number,
+                      prompt: Text("z.B. \(unit == .kg ? "100" : "225")")) {
+                Text("Zielgewicht (\(unit.rawValue))")
+            }
+            .decimalKeyboard()
 
-            TextField("Stange (\(unit.rawValue))",
-                      value: $barWeight, format: .number,
-                      prompt: Text("z.B. \(unit == .kg ? "20" : "45")"))
-                .decimalKeyboard()
+            TextField(value: $barWeight, format: .number,
+                      prompt: Text("z.B. \(unit == .kg ? "20" : "45")")) {
+                Text("Stange (\(unit.rawValue))")
+            }
+            .decimalKeyboard()
         } footer: {
             VStack(alignment: .leading, spacing: 2) {
                 if let targetWeight, targetWeight > unit.maxTarget {

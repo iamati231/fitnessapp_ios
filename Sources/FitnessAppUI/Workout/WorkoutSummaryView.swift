@@ -35,7 +35,9 @@ public struct WorkoutSummaryView: View {
                 finishSection
             }
         }
+        #if os(iOS)
         .listStyle(.insetGrouped)
+        #endif
         .navigationTitle(isReadOnly ? "Workout-Detail" : "Zusammenfassung")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)

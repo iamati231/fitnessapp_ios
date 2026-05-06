@@ -32,10 +32,12 @@ public struct OneRepMaxView: View {
 
     private var inputsSection: some View {
         Section("Eingabe") {
-            TextField("Gewicht (\(unit))",
-                      value: $weight, format: .number,
-                      prompt: Text("z.B. 100"))
-                .decimalKeyboard()
+            // Trailing-closure Label form avoids the LocalizedStringKey/String overload
+            // ambiguity that interpolated titles trigger on macOS toolchains.
+            TextField(value: $weight, format: .number, prompt: Text("z.B. 100")) {
+                Text("Gewicht (\(unit))")
+            }
+            .decimalKeyboard()
 
             Stepper(value: $reps, in: 1...36) {
                 LabeledContent("Wiederholungen", value: "\(reps)")

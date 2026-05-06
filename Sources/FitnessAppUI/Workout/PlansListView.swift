@@ -12,9 +12,19 @@ public struct PlansListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var navigation
 
-    @Query(sort: [SortDescriptor(\TrainingPlan.isActive, order: .reverse),
-                  SortDescriptor(\TrainingPlan.name)])
-    private var plans: [TrainingPlan]
+    /// Single-key @Query (sort by name) + in-memory secondary sort by `isActive`.
+    /// SortDescriptor with a Bool key-path requires `Compared : NSObject`, which
+    /// SwiftData @Model classes are NOT — so multi-descriptor arrays don't compile
+    /// on macOS toolchains. Client-side sort is the cleanest workaround.
+    @Query(sort: \TrainingPlan.name)
+    private var plansByName: [TrainingPlan]
+
+    private var plans: [TrainingPlan] {
+        plansByName.sorted { lhs, rhs in
+            if lhs.isActive != rhs.isActive { return lhs.isActive }
+            return lhs.name < rhs.name
+        }
+    }
 
     @Query(filter: #Predicate<WorkoutSession> { !$0.isCompleted },
            sort: \WorkoutSession.startTime, order: .reverse)

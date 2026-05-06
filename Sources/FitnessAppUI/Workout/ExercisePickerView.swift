@@ -34,8 +34,9 @@ public struct ExercisePickerView: View {
                 customSection
                 librarySection
             }
-            .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always),
-                        prompt: "Suche")
+            // `.navigationBarDrawer(displayMode:)` is iOS-only; default placement
+            // works on both iOS and macOS toolchains.
+            .searchable(text: $search, prompt: "Suche")
             .navigationTitle("Uebung waehlen")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
