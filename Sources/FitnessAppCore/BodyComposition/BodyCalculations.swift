@@ -155,6 +155,21 @@ public enum BodyCalculations {
         return (20.0...400.0).contains(projected) ? projected : nil
     }
 
+    /// Weight delta vs. the most recent measurement at least 6 days older than
+    /// the latest one. Returns nil when no such reference exists (only one
+    /// measurement, or all measurements within a week of the latest).
+    ///
+    /// Six-day threshold (rather than strict 7) is intentional — users don't
+    /// measure on the dot. Any reasonably-spaced "last week" sample counts.
+    /// Used by `DashboardView`'s "+0.40 kg / Wo." badge.
+    public static func weeklyWeightDelta(measurements: [some WeightSample]) -> Double? {
+        let sorted = measurements.sorted { $0.date > $1.date }
+        guard let latest = sorted.first else { return nil }
+        let cutoff = latest.date.addingTimeInterval(-6 * 24 * 3600)
+        guard let weekAgo = sorted.first(where: { $0.date <= cutoff }) else { return nil }
+        return latest.weightKg - weekAgo.weightKg
+    }
+
     /// True when recent measurements show a >2 kg standard deviation — signals the
     /// projection is unreliable and the UI should hide it (or warn the user).
     public static func isTrendUnreliable(measurements: [some WeightSample]) -> Bool {

@@ -27,4 +27,10 @@ public struct LiftAttempt: Sendable, Hashable {
         self.isCardio = isCardio
         self.isTimeBased = isTimeBased
     }
+
+    /// Weight × reps. The standard "set volume" metric used by `WorkoutAnalytics.bestSet`,
+    /// `PRDetector` (best-set kind), and downstream widget surfaces.
+    public var volume: Double {
+        weightKg * Double(reps)
+    }
 }

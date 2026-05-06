@@ -206,6 +206,57 @@ final class BodyCalculationsTests: XCTestCase {
         XCTAssertTrue(BodyCalculations.isTrendUnreliable(measurements: samples))
     }
 
+    // MARK: weeklyWeightDelta
+
+    func testWeeklyDeltaReturnsNilForEmptyMeasurements() {
+        XCTAssertNil(BodyCalculations.weeklyWeightDelta(measurements: [] as [StubSample]))
+    }
+
+    func testWeeklyDeltaReturnsNilWhenAllMeasurementsWithinSixDays() {
+        // All measurements clustered within ~3 days — no >=6-day-old reference exists
+        let now = Date(timeIntervalSinceReferenceDate: 0)
+        let day: TimeInterval = 24 * 3600
+        let samples: [StubSample] = [
+            StubSample(date: now,                            weightKg: 78.0),
+            StubSample(date: now.addingTimeInterval(-day),    weightKg: 78.5),
+            StubSample(date: now.addingTimeInterval(-3 * day), weightKg: 79.0)
+        ]
+        XCTAssertNil(BodyCalculations.weeklyWeightDelta(measurements: samples))
+    }
+
+    func testWeeklyDeltaIsLatestMinusReference() {
+        // 80 kg now, 82 kg 7 days ago → delta = -2 kg (loss)
+        let now = Date(timeIntervalSinceReferenceDate: 0)
+        let week: TimeInterval = 7 * 24 * 3600
+        let samples: [StubSample] = [
+            StubSample(date: now,                          weightKg: 80.0),
+            StubSample(date: now.addingTimeInterval(-week), weightKg: 82.0)
+        ]
+        XCTAssertEqual(
+            BodyCalculations.weeklyWeightDelta(measurements: samples)!,
+            -2.0,
+            accuracy: 1e-9
+        )
+    }
+
+    func testWeeklyDeltaPicksMostRecentReferenceAtSixPlusDays() {
+        // Mix: latest now, 4d ago (too recent), 8d ago (qualifies, 79kg), 14d ago (older, 81kg)
+        // Expected: pick 8d-ago reference (most recent qualifying), delta = 78 - 79 = -1
+        let now = Date(timeIntervalSinceReferenceDate: 0)
+        let day: TimeInterval = 24 * 3600
+        let samples: [StubSample] = [
+            StubSample(date: now,                             weightKg: 78.0),
+            StubSample(date: now.addingTimeInterval(-4 * day),  weightKg: 78.4),
+            StubSample(date: now.addingTimeInterval(-8 * day),  weightKg: 79.0),
+            StubSample(date: now.addingTimeInterval(-14 * day), weightKg: 81.0)
+        ]
+        XCTAssertEqual(
+            BodyCalculations.weeklyWeightDelta(measurements: samples)!,
+            -1.0,
+            accuracy: 1e-9
+        )
+    }
+
     func testIsTrendUnreliableFalseForStableProgression() {
         let now = Date()
         let week: TimeInterval = 7 * 24 * 3600

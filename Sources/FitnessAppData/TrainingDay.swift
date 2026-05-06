@@ -29,4 +29,10 @@ public final class TrainingDay {
         self.plan = plan
     }
 }
+
+// MARK: - Core protocol conformances
+
+/// Lets `PlanNavigator.sortByWeekdayMondayFirst` sort `[TrainingDay]` directly
+/// without the view layer projecting weekdays into a separate value array.
+extension TrainingDay: WeekdayProvider {}
 #endif

@@ -176,10 +176,11 @@ public struct WaterTrackerView: View {
         todayEntries.reduce(0) { $0 + $1.amountMl }
     }
 
-    /// Daily target = weight × 35ml. Falls through measurement → goal-weight → 70 kg.
+    /// Daily target — delegates the math to `NutritionCalculations.dailyWaterTargetMl`
+    /// (Core, widget-shareable). Reference weight falls through measurement →
+    /// goal-weight → 70 kg default.
     private var targetMl: Int {
-        let kg = referenceWeightKg
-        return Int((kg * 35.0).rounded())
+        NutritionCalculations.dailyWaterTargetMl(weightKg: referenceWeightKg)
     }
 
     private var referenceWeightKg: Double {

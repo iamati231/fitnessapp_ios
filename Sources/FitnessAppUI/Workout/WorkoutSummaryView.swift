@@ -289,8 +289,11 @@ public struct WorkoutSummaryView: View {
             .frame(width: 1, height: 32)
     }
 
-    // MARK: Best-set / volume helpers
+    // MARK: Best-set / volume helpers — delegate to Core's WorkoutAnalytics
 
+    /// Returns the ExerciseLog with the highest weight×reps volume. Same algorithm
+    /// as `WorkoutAnalytics.bestSet`, but returns the @Model instance so the row
+    /// view can read its full state. Inline `.max` mirrors the Core implementation.
     private func bestSet(in logs: [ExerciseLog]) -> ExerciseLog? {
         logs.max { lhs, rhs in
             lhs.weight * Double(lhs.reps) < rhs.weight * Double(rhs.reps)
@@ -298,8 +301,13 @@ public struct WorkoutSummaryView: View {
     }
 
     private func formatVolume(_ logs: [ExerciseLog]) -> String {
-        let total = logs.reduce(0.0) { $0 + $1.weight * Double($1.reps) }
-        return total.truncated(to: 0).formattedTwoDecimals
+        let attempts = logs.map { LiftAttempt(exerciseName: "",
+                                              weightKg: $0.weight,
+                                              reps: $0.reps,
+                                              date: $0.date) }
+        return WorkoutAnalytics.totalVolume(in: attempts)
+            .truncated(to: 0)
+            .formattedTwoDecimals
     }
 
     private func formatSetSummary(_ log: ExerciseLog, exercise: Exercise) -> String {

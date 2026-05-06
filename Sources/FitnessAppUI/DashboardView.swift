@@ -86,13 +86,11 @@ public struct DashboardView: View {
         }
     }
 
-    /// Weight delta vs. the most recent measurement that's at least 6 days older.
-    /// Returns nil if no such reference exists.
+    /// Thin glue over `BodyCalculations.weeklyWeightDelta`. The Core algorithm
+    /// is widget/watch-shareable; this view-side wrapper just adapts the @Query
+    /// result to the value-type API.
     private func weeklyWeightDelta() -> Double? {
-        guard let latest = measurements.first else { return nil }
-        let cutoff = latest.date.addingTimeInterval(-6 * 24 * 3600)
-        guard let weekAgo = measurements.first(where: { $0.date <= cutoff }) else { return nil }
-        return latest.weightKg - weekAgo.weightKg
+        BodyCalculations.weeklyWeightDelta(measurements: measurements)
     }
 
     // MARK: - Trend chart
@@ -301,16 +299,18 @@ public struct DashboardView: View {
         }
     }
 
-    /// Sequential rotation: the next training day is `(completedSessionsForThisPlan
-    /// % numberOfDays)`. Independent of weekday — works even for users who don't
-    /// always train on the same days. Days are ordered by weekday with Monday first.
+    /// Sequential-rotation pick. Delegates to `PlanNavigator` (Core) so widgets
+    /// + watch can reuse the exact same logic without dragging FitnessAppData in.
     private func nextScheduledDay(in plan: TrainingPlan) -> TrainingDay {
-        let days = plan.days.sorted { weekdayOrder($0.weekday) < weekdayOrder($1.weekday) }
+        let sortedDays = PlanNavigator.sortByWeekdayMondayFirst(plan.days)
         let completedCount = completedSessions.filter {
             $0.day?.plan?.persistentModelID == plan.persistentModelID
         }.count
-        let nextIndex = days.isEmpty ? 0 : completedCount % days.count
-        return days[nextIndex]
+        let idx = PlanNavigator.nextScheduledIndex(
+            dayCount: sortedDays.count,
+            completedSessions: completedCount
+        ) ?? 0
+        return sortedDays[idx]
     }
 
     private func exercisesPreview(for day: TrainingDay) -> String {
@@ -320,11 +320,6 @@ public struct DashboardView: View {
             .map(\.name)
         let suffix = day.exercises.count > 3 ? " …" : ""
         return "\(day.exercises.count) Uebungen — \(names.joined(separator: ", "))\(suffix)"
-    }
-
-    /// Translate Calendar's Sun=1..Sat=7 into Mon=0..Sun=6 for European display order.
-    private func weekdayOrder(_ weekday: Int) -> Int {
-        weekday == 1 ? 6 : weekday - 2
     }
 
     /// Deep-link from Dashboard into ActiveWorkout: build a stack [plan, day, active]

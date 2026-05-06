@@ -95,14 +95,9 @@ public struct PlanEditorView: View {
 
     // MARK: Derived
 
-    /// Days sorted by weekday (Mon=2 ... Sun=1 → reorder so Mon comes first, Sun last).
+    /// Days sorted Mon-first via the shared `PlanNavigator` helper.
     private var orderedDays: [TrainingDay] {
-        plan.days.sorted { weekdayOrder($0.weekday) < weekdayOrder($1.weekday) }
-    }
-
-    /// Translates Calendar's 1=Sun..7=Sat into 0=Mon..6=Sun for display ordering.
-    private func weekdayOrder(_ weekday: Int) -> Int {
-        weekday == 1 ? 6 : weekday - 2
+        PlanNavigator.sortByWeekdayMondayFirst(plan.days)
     }
 
     // MARK: Actions
