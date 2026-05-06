@@ -1,12 +1,17 @@
-# Codemagic CI/CD configuration for the FitnessApp Swift Package.
+# Codemagic CI/CD configuration.
 #
-# Aktuell baut/testet diese Pipeline NUR das Swift-Package — das eigentliche
-# iOS-App-Target lebt im Schwester-Repo (oder Schwester-Ordner) und wird via
-# lokaler Package-Dependency eingebunden. Sobald die App-Target-`.xcodeproj` in
-# diesem Repo lebt, kommt ein zweiter Workflow `ios-app` dazu, der `xcodebuild`
-# laeuft + ein Archive baut + nach TestFlight hochschiebt.
+# Two workflows:
+#   1. swift-package — runs `swift build` + `swift test` + iOS-Simulator builds
+#      of every library product. Catches cross-platform regressions early.
+#   2. ios-app — generates the Xcode project from `project.yml` via XcodeGen,
+#      then builds the iOS app + widget extension for the iOS Simulator. No
+#      code signing here (we don't have an Apple Developer team yet); when a
+#      team is registered, a third `testflight` workflow will archive + upload.
 
 workflows:
+  # ─────────────────────────────────────────────────────────────────────────
+  # 1) Swift Package CI — runs on every push/PR
+  # ─────────────────────────────────────────────────────────────────────────
   swift-package:
     name: Swift Package CI
     instance_type: mac_mini_m2
@@ -22,8 +27,6 @@ workflows:
           source: true
 
     environment:
-      # Xcode "latest" picked von Codemagic — aktuell Xcode 16.x mit Swift 6.x.
-      # Falls wir auf eine spezifische Version pinnen wollen: `xcode: 16.0`.
       xcode: latest
 
     scripts:
@@ -48,47 +51,100 @@ workflows:
           set -e
           swift test --parallel
 
-      - name: Build for iOS Simulator (sanity)
+      - name: Build library products for iOS Simulator
         # Stellt sicher, dass FitnessAppData / FitnessAppHealth / FitnessAppActivities
         # / FitnessAppUI auch fuer iOS-Targets sauber kompilieren — nicht nur fuer
         # den nativen macOS-Build, der `swift build` standardmaessig benutzt.
         script: |
           set -e
-          xcodebuild \
-            -scheme FitnessAppCore \
-            -destination 'generic/platform=iOS Simulator' \
-            -configuration Debug \
-            build
-          xcodebuild \
-            -scheme FitnessAppData \
-            -destination 'generic/platform=iOS Simulator' \
-            -configuration Debug \
-            build
-          xcodebuild \
-            -scheme FitnessAppHealth \
-            -destination 'generic/platform=iOS Simulator' \
-            -configuration Debug \
-            build
-          xcodebuild \
-            -scheme FitnessAppActivities \
-            -destination 'generic/platform=iOS Simulator' \
-            -configuration Debug \
-            build
-          xcodebuild \
-            -scheme FitnessAppUI \
-            -destination 'generic/platform=iOS Simulator' \
-            -configuration Debug \
-            build
+          for scheme in FitnessAppCore FitnessAppData FitnessAppHealth FitnessAppActivities FitnessAppUI; do
+            echo "── Building $scheme for iOS Simulator ──"
+            xcodebuild \
+              -scheme "$scheme" \
+              -destination 'generic/platform=iOS Simulator' \
+              -configuration Debug \
+              build
+          done
 
     artifacts:
       - .build/**/*.xctest
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.app
 
     publishing:
-      # Email-Notification bei Build-Failures fuer den Owner.
       email:
         recipients:
           - a.isik@atamya.com
         notify:
           success: false
+          failure: true
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 2) iOS App build — generates the .xcodeproj via XcodeGen, then builds
+  #    the app + widget extension for iOS Simulator. No signing.
+  # ─────────────────────────────────────────────────────────────────────────
+  ios-app:
+    name: iOS App Build
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+
+    triggering:
+      events:
+        - push
+        - pull_request
+      branch_patterns:
+        - pattern: '*'
+          include: true
+          source: true
+
+    environment:
+      xcode: latest
+
+    scripts:
+      - name: Install XcodeGen
+        # Pre-installed on Codemagic m2 runners but `brew upgrade` keeps us on the
+        # latest stable so newer SwiftUI / WidgetKit features generate correctly.
+        script: |
+          set -e
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          xcodegen --version
+
+      - name: Generate Xcode project
+        script: |
+          set -e
+          xcodegen generate
+          ls -la FitnessApp.xcodeproj
+
+      - name: Resolve Swift Package dependencies
+        # SPM resolution against the local package referenced from project.yml.
+        script: |
+          set -e
+          xcodebuild \
+            -resolvePackageDependencies \
+            -project FitnessApp.xcodeproj \
+            -scheme FitnessApp
+
+      - name: Build app + widget for iOS Simulator
+        # No code signing for simulator builds — CODE_SIGNING_ALLOWED=NO covers both
+        # the app target and embedded extensions. Validates that the entire app
+        # compiles, links, and embeds the widget cleanly.
+        script: |
+          set -e
+          xcodebuild \
+            -project FitnessApp.xcodeproj \
+            -scheme FitnessApp \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+    artifacts:
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.app
+
+    publishing:
+      email:
+        recipients:
+          - a.isik@atamya.com
+        notify:
+          success: true
           failure: true
