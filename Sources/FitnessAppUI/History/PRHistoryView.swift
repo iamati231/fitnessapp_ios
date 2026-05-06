@@ -471,10 +471,15 @@ private struct KindChip: View {
         return PRKindStyle.shortLabel(kind)
     }
 
+    /// `AnyGradient` is a `ShapeStyle`, not a `View` — wrapping it in a Rectangle
+    /// (clipped by the parent's Capsule) is the canonical workaround. Returning
+    /// the gradient directly trips a `buildExpression` error in macOS 14's
+    /// stricter ViewBuilder.
     @ViewBuilder
     private var background: some View {
         if isSelected {
-            (kind.map(PRKindStyle.color) ?? .accentColor).gradient
+            Rectangle()
+                .fill((kind.map(PRKindStyle.color) ?? .accentColor).gradient)
         } else {
             Color.secondary.opacity(0.10)
         }
