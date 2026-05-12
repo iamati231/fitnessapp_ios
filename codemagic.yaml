@@ -271,42 +271,44 @@ workflows:
           xcodegen generate
 
       - name: Set up code signing
-        # Codemagic CLI's `@file:PATH` syntax reads a flag value directly
-        # from a file — bypasses env-var-inheritance issues we saw with
-        # the export-and-hope approach.
+        # Persistent-key approach (v0.1.10+) — solves the Apple 2-certs-per-
+        # team-per-type cap by reusing ONE Distribution cert across all builds.
         #
-        # Each fetch-signing-files call:
-        #   - Generates a CSR using the file-loaded private key
-        #   - Sends to Apple, gets back a Distribution certificate
-        #   - Creates a provisioning profile for the bundle ID
-        #   - Saves both to disk for keychain ingestion below
+        # The private key lives as a secure env var APP_STORE_CONNECT_CERTIFICATE_KEY
+        # in the Codemagic `app_store_credentials` group. It was generated
+        # once locally (ssh-keygen -t rsa -b 2048 -m PEM) and pasted into the
+        # Codemagic UI. The corresponding Distribution cert is created in
+        # Apple's DB on the FIRST build that uses this key and then re-fetched
+        # (not re-created) on every subsequent build.
         #
-        # 2-certs-per-team Apple cap: each build creates a new cert. After
-        # 2 successful builds the third fails. Long-term fix: persist the
-        # PEM as a Codemagic env var, reuse across builds. For now, revoke
-        # old certs manually if we hit the limit.
+        # If we ever need to rotate the key (compromise, etc.):
+        #   1. Revoke the existing Distribution cert in Developer Portal
+        #   2. Generate a fresh PEM locally, update the Codemagic env var
+        #   3. Next build creates a new cert tied to the new key
+        #
+        # Migration notes (v0.1.10 was the cutover from inline ssh-keygen):
+        # before the first build with this yaml, ALL pre-existing Distribution
+        # certs were revoked in Developer Portal to start clean.
         script: |
           set -e
           keychain initialize
 
-          # Fresh RSA private key for this build's CSR. Generated inline
-          # because the Codemagic runner doesn't have a persistent key.
-          CERT_KEY_PATH="$CM_BUILD_DIR/cert_private_key.pem"
-          ssh-keygen -t rsa -b 2048 -m PEM -f "$CERT_KEY_PATH" -q -N ""
-          echo "Generated CSR private key at $CERT_KEY_PATH"
-
-          # Cert + provisioning profile for the main app.
+          # Cert + provisioning profile for the main app. `--certificate-key`
+          # with `@env:` syntax loads the PEM from the Codemagic env var; the
+          # cert is auto-created on first run and re-fetched thereafter.
           app-store-connect fetch-signing-files \
             "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --certificate-key=@file:"$CERT_KEY_PATH" \
+            --certificate-key=@env:APP_STORE_CONNECT_CERTIFICATE_KEY \
             --create
 
-          # Same for the widget extension.
+          # Same for the widget extension — reuses the SAME cert (Apple links
+          # one cert to many provisioning profiles, the profiles differ by
+          # bundle ID).
           app-store-connect fetch-signing-files \
             "$WIDGET_BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --certificate-key=@file:"$CERT_KEY_PATH" \
+            --certificate-key=@env:APP_STORE_CONNECT_CERTIFICATE_KEY \
             --create
 
           # Cert + private key into the build keychain, then wire profiles
