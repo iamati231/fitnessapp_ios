@@ -218,9 +218,10 @@ workflows:
       vars:
         XCODE_PROJECT: 'FitnessApp.xcodeproj'
         XCODE_SCHEME: 'FitnessApp'
-        APP_STORE_APP_ID: ''      # fill in after creating the app record
-                                  # in App Store Connect — found under
-                                  # App Information → "Apple ID" (numeric)
+        # App Store Connect "Apple ID" of the Deltiq app record. Used by the
+        # `app-store-connect get-latest-app-store-build-number` lookup so each
+        # TestFlight upload gets a monotonically-increasing build number.
+        APP_STORE_APP_ID: '6768627358'
 
     scripts:
       - name: Install XcodeGen
