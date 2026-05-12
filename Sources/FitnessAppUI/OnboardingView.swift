@@ -289,20 +289,45 @@ public struct OnboardingView: View {
             }
 
             Section {
-                ForEach(ProgramTemplates.all) { template in
-                    Button {
-                        // Toggle-Verhalten: erneut tippen deselektiert.
-                        selectedTemplate = (selectedTemplate?.id == template.id) ? nil : template
-                    } label: {
-                        templateRow(template)
+                if filteredTemplates.isEmpty {
+                    Text("Keine Templates für '\(environment.localizedName)'. Du kannst trotzdem ohne Plan starten und später einen eigenen anlegen.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(filteredTemplates) { template in
+                        Button {
+                            // Toggle-Verhalten: erneut tippen deselektiert.
+                            selectedTemplate = (selectedTemplate?.id == template.id) ? nil : template
+                        } label: {
+                            templateRow(template)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             } header: {
-                Text("Trainingsplan")
+                Text("Trainingsplan für \(environment.localizedName)")
             } footer: {
-                Text("Optional — du kannst auch ohne Plan starten und später unter Plan einen anlegen.")
+                Text("Templates sind nach deinem Trainingsort gefiltert (\(environment.localizedName)) — passende Bodyweight-Pläne für 'Ohne Equipment', Hantel-/Maschinen-Pläne für 'Gym'. Optional — auch ohne Plan starten ist okay.")
                     .font(.footnote)
+            }
+        }
+    }
+
+    /// Templates passend zum gewaehlten Trainingsort.
+    ///   - `.gym`: alle Templates (Vollgym hat alles, was alle anderen brauchen)
+    ///   - `.homeGym`: homeGym + noEquipment (Bodyweight-Sachen gehen ueberall)
+    ///   - `.noEquipment`: strikt nur noEquipment-Templates (sonst landet der
+    ///     User in einem Plan, fuer den ihm das Equipment fehlt)
+    private var filteredTemplates: [ProgramTemplate] {
+        ProgramTemplates.all.filter { template in
+            switch environment {
+            case .gym:
+                return true
+            case .homeGym:
+                return template.targetEnvironment == .homeGym
+                    || template.targetEnvironment == .noEquipment
+            case .noEquipment:
+                return template.targetEnvironment == .noEquipment
             }
         }
     }

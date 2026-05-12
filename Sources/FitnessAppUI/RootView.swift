@@ -24,6 +24,11 @@ public struct RootView: View {
     @State private var restTimerActivity = RestTimerActivityController()
     @State private var prNotifications = PRNotificationCenter()
 
+    /// DEL-018: User-Praeferenz fuer Hell/Dunkel/System. Wird in SettingsView
+    /// per Picker gesetzt und hier global via .preferredColorScheme() auf die
+    /// ganze App angewandt. "system" → nil (folgt iOS-Einstellung).
+    @AppStorage("pref_appearance") private var appearanceRaw: String = "system"
+
     public init() {}
 
     public var body: some View {
@@ -41,6 +46,7 @@ public struct RootView: View {
         .environment(healthKit)
         .environment(restTimerActivity)
         .environment(prNotifications)
+        .preferredColorScheme(preferredColorScheme)
         .task {
             // Refresh per-launch availability for native integrations. Both checks
             // are cheap; both are no-ops when their frameworks aren't present.
@@ -51,6 +57,17 @@ public struct RootView: View {
             // Seed the canonical exercise library on first launch (idempotent
             // — fetchCount short-circuits when rows already exist).
             LibrarySeeder.seedIfNeeded(in: modelContext)
+        }
+    }
+
+    /// Mappt den AppStorage-String auf SwiftUI's ColorScheme?. `nil` =
+    /// "System" (folgt iOS-Einstellung), `.light` = forciert hell,
+    /// `.dark` = forciert dunkel.
+    private var preferredColorScheme: ColorScheme? {
+        switch appearanceRaw {
+        case "light": return .light
+        case "dark":  return .dark
+        default:      return nil
         }
     }
 }

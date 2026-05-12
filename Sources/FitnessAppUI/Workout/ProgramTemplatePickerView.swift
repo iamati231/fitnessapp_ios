@@ -16,13 +16,17 @@ public struct ProgramTemplatePickerView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppNavigation.self) private var navigation
 
+    /// Lesen das User-Profil, um die Templates nach passendem
+    /// Trainingsort vorzufiltern (DEL-012).
+    @Query private var profiles: [UserBodyProfile]
+
     public init() {}
 
     public var body: some View {
         NavigationStack {
             List {
                 Section {
-                    ForEach(ProgramTemplates.all) { template in
+                    ForEach(filteredTemplates) { template in
                         Button {
                             instantiate(template)
                         } label: {
@@ -31,7 +35,7 @@ public struct ProgramTemplatePickerView: View {
                         .buttonStyle(.plain)
                     }
                 } footer: {
-                    Text("Templates aus dem Android-Repo 1:1 portiert. Nach dem Anlegen kannst du jeden Tag und jede Übung im Plan-Editor anpassen.")
+                    Text("Gefiltert nach deinem Trainingsort (\(userEnvironmentLabel)). Im Profil anpassen, wenn du auch andere Plaene sehen willst.")
                         .font(.footnote)
                 }
             }
@@ -45,6 +49,29 @@ public struct ProgramTemplatePickerView: View {
                 }
             }
         }
+    }
+
+    /// Filtert nach `profile.environment`. Same Logik wie OnboardingView:
+    ///   - gym: alle Templates
+    ///   - homeGym: homeGym + noEquipment
+    ///   - noEquipment: nur noEquipment
+    /// Falls noch kein Profil existiert (sollte hier eigentlich nicht passieren
+    /// — Profil ist Voraussetzung fuer MainTabView), fallen wir auf alle Plaene
+    /// zurueck statt eine leere Liste zu zeigen.
+    private var filteredTemplates: [ProgramTemplate] {
+        guard let env = profiles.first?.environment else { return ProgramTemplates.all }
+        return ProgramTemplates.all.filter { template in
+            switch env {
+            case .gym:         return true
+            case .homeGym:     return template.targetEnvironment == .homeGym
+                                     || template.targetEnvironment == .noEquipment
+            case .noEquipment: return template.targetEnvironment == .noEquipment
+            }
+        }
+    }
+
+    private var userEnvironmentLabel: String {
+        profiles.first?.environment.localizedName ?? "alle"
     }
 
     private func instantiate(_ template: ProgramTemplate) {

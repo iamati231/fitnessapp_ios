@@ -21,6 +21,15 @@ public struct SettingsView: View {
     @Query private var profiles: [UserBodyProfile]
 
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
+    // DEL-018: Theme + Timer-Feedback + Reminder-Praeferenzen
+    @AppStorage("pref_appearance") private var appearanceRaw: String = "system"   // system|light|dark
+    @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
+    @AppStorage("pref_timer_haptics") private var timerHapticsEnabled: Bool = true
+    @AppStorage("pref_water_reminder") private var waterReminderEnabled: Bool = true
+    @AppStorage("pref_water_reminder_hours") private var waterReminderHours: Int = 3
+    @AppStorage("pref_measurement_reminder") private var measurementReminderEnabled: Bool = true
+    @AppStorage("pref_measurement_reminder_weekday") private var measurementWeekday: Int = 1  // 1=So, 2=Mo, ..., 7=Sa
+    @AppStorage("pref_measurement_reminder_hour") private var measurementHour: Int = 8
 
     @State private var showingResetConfirm = false
     @State private var resetErrorMessage: String?
@@ -31,6 +40,9 @@ public struct SettingsView: View {
         List {
             profileSection
             preferencesSection
+            appearanceSection
+            timerFeedbackSection
+            remindersSection
             healthKitSection
             aboutSection
             dangerZoneSection
@@ -127,6 +139,90 @@ public struct SettingsView: View {
             Text("settings.section.preferences", bundle: .module)
         } footer: {
             Text("Die DB speichert immer metrisch. Diese Einstellung steuert nur die Anzeige in Eingabe-Feldern, im Hantel-Rechner und auf den Karten.")
+                .font(.footnote)
+        }
+    }
+
+    // DEL-018: Theme-Picker
+    private var appearanceSection: some View {
+        Section {
+            Picker(selection: $appearanceRaw) {
+                Text("System").tag("system")
+                Text("Hell").tag("light")
+                Text("Dunkel").tag("dark")
+            } label: {
+                Label("Erscheinungsbild", systemImage: "circle.lefthalf.filled")
+            }
+            .pickerStyle(.segmented)
+        } header: {
+            Text("Erscheinungsbild")
+        } footer: {
+            Text("Greift in alle Views der App. 'System' folgt der iOS-Einstellung.")
+                .font(.footnote)
+        }
+    }
+
+    // DEL-018: Timer-Feedback (Ton + Vibration beim Pause-Ende)
+    private var timerFeedbackSection: some View {
+        Section {
+            Toggle(isOn: $timerSoundEnabled) {
+                Label("Ton abspielen", systemImage: "speaker.wave.2.fill")
+            }
+            Toggle(isOn: $timerHapticsEnabled) {
+                Label("Vibrieren", systemImage: "iphone.radiowaves.left.and.right")
+            }
+        } header: {
+            Text("Pausen-Timer-Feedback")
+        } footer: {
+            Text("Wird beim Ablauf des Pausen-Timers ausgeloest. Vibrations-Toggle hat auf iPads keine Wirkung.")
+                .font(.footnote)
+        }
+    }
+
+    // DEL-018: Reminder (Wasser-Frequenz + Mess-Wochentag/Uhrzeit)
+    private var remindersSection: some View {
+        Section {
+            Toggle(isOn: $waterReminderEnabled) {
+                Label("Wasser erinnern", systemImage: "drop.fill")
+            }
+            if waterReminderEnabled {
+                Picker(selection: $waterReminderHours) {
+                    Text("Alle 2 Stunden").tag(2)
+                    Text("Alle 3 Stunden").tag(3)
+                    Text("Alle 4 Stunden").tag(4)
+                    Text("Alle 5 Stunden").tag(5)
+                } label: {
+                    Text("Haeufigkeit")
+                }
+            }
+
+            Toggle(isOn: $measurementReminderEnabled) {
+                Label("Messung erinnern", systemImage: "scalemass.fill")
+            }
+            if measurementReminderEnabled {
+                Picker(selection: $measurementWeekday) {
+                    Text("Sonntag").tag(1)
+                    Text("Montag").tag(2)
+                    Text("Dienstag").tag(3)
+                    Text("Mittwoch").tag(4)
+                    Text("Donnerstag").tag(5)
+                    Text("Freitag").tag(6)
+                    Text("Samstag").tag(7)
+                } label: {
+                    Text("Wochentag")
+                }
+                Picker(selection: $measurementHour) {
+                    ForEach(6..<23, id: \.self) { hour in
+                        Text("\(hour):00 Uhr").tag(hour)
+                    }
+                } label: {
+                    Text("Uhrzeit")
+                }
+            }
+        } header: {
+            Text("Erinnerungen")
+        } footer: {
+            Text("Praeferenzen werden gespeichert. Die tatsaechliche Local-Notification-Planung folgt in einer kuenftigen Version — vorerst dienen die Toggles als Setup-Stub.")
                 .font(.footnote)
         }
     }

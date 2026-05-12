@@ -30,6 +30,21 @@ public struct MeasurementView: View {
     @State private var waistCm:  Double?
     @State private var hipCm:    Double?
 
+    // DEL-016: Erweiterte optionale Maße
+    @State private var chestCm:           Double?
+    @State private var shoulderCm:        Double?
+    @State private var upperArmLeftCm:    Double?
+    @State private var upperArmRightCm:   Double?
+    @State private var thighLeftCm:       Double?
+    @State private var thighRightCm:      Double?
+    @State private var calfCm:            Double?
+
+    /// Historie der letzten Messungen — Reverse-chronologisch, oben ist neuestes.
+    /// Limited auf 12 Eintraege im UI; "Alle anzeigen"-Link fuehrt zum vollen
+    /// History-Screen (Future-TODO, vorerst zeigen wir die ersten 12 inline).
+    @Query(sort: \BodyMeasurement.date, order: .reverse)
+    private var historicalMeasurements: [BodyMeasurement]
+
     @State private var lastSavedAt: Date?
     /// Set to true once the auto-fill task ran for THIS view appearance. Prevents the
     /// task from clobbering user-typed values if the @Query updates while the view
@@ -52,9 +67,11 @@ public struct MeasurementView: View {
             if let profile = profiles.first {
                 profileSection(profile)
                 measurementsSection(forProfile: profile)
+                extendedMeasurementsSection
                 healthKitSection
                 derivedSection(forProfile: profile)
                 actionsSection(forProfile: profile)
+                historySection
             } else {
                 ContentUnavailableView(
                     "Kein Profil",
@@ -120,6 +137,53 @@ public struct MeasurementView: View {
                 Text("* Hüfte ist Pflicht für Navy KFA bei weiblichem Profil.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// DEL-016: zusaetzliche Umfaenge fuer Body-Tracking (Brust, Schulter,
+    /// Bizeps links/rechts, Oberschenkel links/rechts, Wade). Alle optional —
+    /// gehen NICHT in die Navy-Formel ein, dienen nur dem User-Progress-
+    /// Tracking ("ist mein Bizeps gewachsen?").
+    @ViewBuilder
+    private var extendedMeasurementsSection: some View {
+        Section {
+            decimalField("Brust (cm)",          value: $chestCm)
+            decimalField("Schulter (cm)",       value: $shoulderCm)
+            decimalField("Bizeps links (cm)",   value: $upperArmLeftCm)
+            decimalField("Bizeps rechts (cm)",  value: $upperArmRightCm)
+            decimalField("Oberschenkel links (cm)",  value: $thighLeftCm)
+            decimalField("Oberschenkel rechts (cm)", value: $thighRightCm)
+            decimalField("Wade (cm)",           value: $calfCm)
+        } header: {
+            Text("Weitere Umfänge (optional)")
+        } footer: {
+            Text("Diese Werte fließen NICHT in die KFA/Navy-Berechnung — sie dienen deinem persönlichen Progress-Tracking im Verlauf.")
+                .font(.footnote)
+        }
+    }
+
+    /// Historie der bisherigen Messungen — zeigt die letzten 12 chronologisch
+    /// runter. Jeder Eintrag: Datum + Gewicht + (KFA wenn vorhanden) +
+    /// (Bizeps-Mittelwert wenn beide Seiten gemessen).
+    @ViewBuilder
+    private var historySection: some View {
+        Section {
+            if historicalMeasurements.isEmpty {
+                Text("Noch keine Messungen — speichere oben deinen ersten Wert.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(Array(historicalMeasurements.prefix(12))) { m in
+                    HistoryRow(measurement: m)
+                }
+            }
+        } header: {
+            Text("Verlauf")
+        } footer: {
+            if historicalMeasurements.count > 12 {
+                Text("Älteste \(historicalMeasurements.count - 12) Messungen ausgeblendet.")
+                    .font(.footnote)
             }
         }
     }
@@ -281,15 +345,22 @@ public struct MeasurementView: View {
             profile: profile.profile,
             neckCm: neckCm,
             waistCm: waistCm,
-            hipCm: hipCm
+            hipCm: hipCm,
+            shoulderCm: shoulderCm,
+            chestCm: chestCm,
+            calfCm: calfCm
         )
+        // Set DEL-016 left/right fields after derive (makeDerived signature doesn't
+        // include them — only the Navy/Deurenberg formulas care about neck/waist/hip).
+        measurement.upperArmLeftCm = upperArmLeftCm
+        measurement.upperArmRightCm = upperArmRightCm
+        measurement.thighLeftCm = thighLeftCm
+        measurement.thighRightCm = thighRightCm
         modelContext.insert(measurement)
         lastSavedAt = measurement.date
 
         // Best-effort Apple Health sync. No UI feedback on failure here — the next
         // open of this screen surfaces it via `healthKit.lastError` if needed.
-        // Body-fat preference: prefer the user-selected value (e.g., navy when valid),
-        // fall back to deurenberg so HealthKit never gets a Navy-failed nil.
         let bodyFatPct = measurement.selectedBodyFatPct
             ?? measurement.navyBodyFatPct
             ?? measurement.deurenbergBodyFatPct
@@ -307,6 +378,13 @@ public struct MeasurementView: View {
         self.neckCm   = nil
         self.waistCm  = nil
         self.hipCm    = nil
+        self.chestCm = nil
+        self.shoulderCm = nil
+        self.upperArmLeftCm = nil
+        self.upperArmRightCm = nil
+        self.thighLeftCm = nil
+        self.thighRightCm = nil
+        self.calfCm = nil
     }
 
     // MARK: HealthKit auto-fill
@@ -340,6 +418,59 @@ public struct MeasurementView: View {
         lastHealthFilledWeight = kg
         weightCameFromHealth = true
         weightKg = kg
+    }
+}
+
+// MARK: - History Row (DEL-016)
+
+@available(iOS 17.0, macOS 14.0, *)
+private struct HistoryRow: View {
+    let measurement: BodyMeasurement
+
+    var body: some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(measurement.date.formatted(date: .abbreviated, time: .omitted))
+                    .font(.body.weight(.semibold))
+                if let kfa = bestBodyFatPct {
+                    Text("KFA \(kfa.truncated(to: 1).formattedTwoDecimals) %")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("\(measurement.weightKg.truncated(to: 2).formattedTwoDecimals) kg")
+                    .font(.body.monospacedDigit())
+                if let bicepsAvg = bicepsAverage {
+                    Text("Bizeps Ø \(bicepsAvg.truncated(to: 1).formattedTwoDecimals) cm")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    /// Bevorzugt Navy → Deurenberg → user-selected. Erste verfügbare wird gezeigt.
+    private var bestBodyFatPct: Double? {
+        measurement.selectedBodyFatPct
+            ?? measurement.navyBodyFatPct
+            ?? measurement.deurenbergBodyFatPct
+    }
+
+    /// Mittelwert aus L+R wenn beide gesetzt; einer der beiden wenn nur ein Wert
+    /// vorhanden; nil wenn keiner.
+    private var bicepsAverage: Double? {
+        let l = measurement.upperArmLeftCm
+        let r = measurement.upperArmRightCm
+        switch (l, r) {
+        case let (.some(l), .some(r)): return (l + r) / 2.0
+        case let (.some(l), nil):       return l
+        case let (nil, .some(r)):       return r
+        default:                         return nil
+        }
     }
 }
 

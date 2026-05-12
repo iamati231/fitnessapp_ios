@@ -21,9 +21,17 @@ public final class BodyMeasurement: WeightSample {
     public var hipCm: Double?
     public var shoulderCm: Double?
     public var chestCm: Double?
+    /// Legacy single-arm-Umfang. Pre-DEL-016 verwendet — UI nutzt jetzt
+    /// links/rechts (`upperArmLeftCm`/`upperArmRightCm`). Bleibt im Schema,
+    /// damit existing Daten erhalten bleiben.
     public var upperArmCm: Double?
-    public var thighCm: Double?
+    public var thighCm: Double?  // siehe upperArmCm-Hinweis
     public var calfCm: Double?
+    // DEL-016: Left/Right-Pairs fuer Bizeps + Oberschenkel.
+    public var upperArmLeftCm: Double?
+    public var upperArmRightCm: Double?
+    public var thighLeftCm: Double?
+    public var thighRightCm: Double?
 
     // Derived metrics — populated at save time via BodyCalculations.computeDerivedFields.
     public var bmi: Double?
@@ -47,6 +55,10 @@ public final class BodyMeasurement: WeightSample {
         upperArmCm: Double? = nil,
         thighCm: Double? = nil,
         calfCm: Double? = nil,
+        upperArmLeftCm: Double? = nil,
+        upperArmRightCm: Double? = nil,
+        thighLeftCm: Double? = nil,
+        thighRightCm: Double? = nil,
         bmi: Double? = nil,
         navyBodyFatPct: Double? = nil,
         deurenbergBodyFatPct: Double? = nil,
@@ -67,6 +79,10 @@ public final class BodyMeasurement: WeightSample {
         self.upperArmCm = upperArmCm
         self.thighCm = thighCm
         self.calfCm = calfCm
+        self.upperArmLeftCm = upperArmLeftCm
+        self.upperArmRightCm = upperArmRightCm
+        self.thighLeftCm = thighLeftCm
+        self.thighRightCm = thighRightCm
         self.bmi = bmi
         self.navyBodyFatPct = navyBodyFatPct
         self.deurenbergBodyFatPct = deurenbergBodyFatPct
