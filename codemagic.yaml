@@ -249,18 +249,19 @@ workflows:
         # When the design team has a real icon, drop a 1024×1024 PNG into
         # App/FitnessApp/Assets.xcassets/AppIcon.appiconset/icon-1024.png
         # and remove this script step.
+        #
+        # No text/font: the runner's ImageMagick install can't find
+        # "Helvetica-Bold" (v0.1.7 failure), and chasing the right font
+        # path is not worth the hassle for a placeholder. A radial-
+        # gradient looks less janky than a flat fill.
         script: |
           set -e
           ICON_DIR="App/FitnessApp/Assets.xcassets/AppIcon.appiconset"
           mkdir -p "$ICON_DIR"
-          # Warm yellow background + dark "D" centered. Same brand-vibe as
-          # the Trophy-Room's yellow-gradient PR cards.
-          magick -size 1024x1024 xc:'rgb(255,200,50)' \
-            -fill 'rgb(20,20,20)' \
-            -font Helvetica-Bold \
-            -pointsize 700 \
-            -gravity center \
-            -annotate +0-50 'D' \
+          # Warm-yellow → amber radial gradient. Brand-vibe match to the
+          # Trophy-Room's yellow-gradient PR cards.
+          magick -size 1024x1024 \
+            radial-gradient:'rgb(255,215,80)-rgb(210,150,30)' \
             "$ICON_DIR/icon-1024.png"
           echo "Generated $ICON_DIR/icon-1024.png ($(stat -f%z "$ICON_DIR/icon-1024.png") bytes)"
 
