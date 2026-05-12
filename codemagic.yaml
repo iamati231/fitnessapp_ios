@@ -236,6 +236,34 @@ workflows:
             brew install xcodegen
           fi
 
+      - name: Generate placeholder app icon
+        # Generates a 1024×1024 brand-colored PNG icon inline at build time —
+        # avoids committing binary assets while still satisfying Apple's
+        # upload validator (errors 90022, 90023, 90713 in v0.1.6).
+        #
+        # Xcode 15+ + iOS-17-deployment-target auto-derives all required
+        # smaller sizes (120, 152, 167, 180, etc.) from this single master
+        # at archive time, so we only need to provide the 1024 version.
+        #
+        # ImageMagick is pre-installed on Codemagic mac_mini_m2 runners.
+        # When the design team has a real icon, drop a 1024×1024 PNG into
+        # App/FitnessApp/Assets.xcassets/AppIcon.appiconset/icon-1024.png
+        # and remove this script step.
+        script: |
+          set -e
+          ICON_DIR="App/FitnessApp/Assets.xcassets/AppIcon.appiconset"
+          mkdir -p "$ICON_DIR"
+          # Warm yellow background + dark "D" centered. Same brand-vibe as
+          # the Trophy-Room's yellow-gradient PR cards.
+          magick -size 1024x1024 xc:'rgb(255,200,50)' \
+            -fill 'rgb(20,20,20)' \
+            -font Helvetica-Bold \
+            -pointsize 700 \
+            -gravity center \
+            -annotate +0-50 'D' \
+            "$ICON_DIR/icon-1024.png"
+          echo "Generated $ICON_DIR/icon-1024.png ($(stat -f%z "$ICON_DIR/icon-1024.png") bytes)"
+
       - name: Generate Xcode project
         script: |
           set -e

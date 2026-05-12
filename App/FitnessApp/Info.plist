@@ -18,6 +18,11 @@
          targets, bundle IDs, or source dirs. -->
     <key>CFBundleDisplayName</key>
     <string>Deltiq</string>
+    <!-- Required by App Store Connect's upload validator (error 90713).
+         References the AppIcon set in Assets.xcassets — must match
+         ASSETCATALOG_COMPILER_APPICON_NAME from project.yml. -->
+    <key>CFBundleIconName</key>
+    <string>AppIcon</string>
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>

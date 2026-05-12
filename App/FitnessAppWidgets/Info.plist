@@ -12,6 +12,10 @@
     <string>6.0</string>
     <key>CFBundleName</key>
     <string>$(PRODUCT_NAME)</string>
+    <!-- Required by App Store Connect's upload validator (error 90360).
+         Shown in iOS' widget gallery + Live-Activities-list. -->
+    <key>CFBundleDisplayName</key>
+    <string>Deltiq Widgets</string>
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
