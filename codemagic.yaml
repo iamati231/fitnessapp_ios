@@ -242,45 +242,42 @@ workflows:
           xcodegen generate
 
       - name: Set up code signing
-        # Codemagic CLI auto-picks up the private key from the env var
-        # APP_STORE_CONNECT_CERTIFICATE_KEY — we generate a fresh PEM with
-        # ssh-keygen and export it, then run `fetch-signing-files --create`
-        # which handles BOTH cert AND profile creation when the env var
-        # is set.
+        # Codemagic CLI's `@file:PATH` syntax reads a flag value directly
+        # from a file — bypasses env-var-inheritance issues we saw with
+        # the export-and-hope approach.
         #
-        # Why no separate `certificates create`: `fetch-signing-files
-        # --create` with a private key available will create the cert too.
-        # The earlier "Cannot save Signing Certificates without certificate
-        # private key" error came from the missing env var, not a missing
-        # explicit cert step.
+        # Each fetch-signing-files call:
+        #   - Generates a CSR using the file-loaded private key
+        #   - Sends to Apple, gets back a Distribution certificate
+        #   - Creates a provisioning profile for the bundle ID
+        #   - Saves both to disk for keychain ingestion below
         #
         # 2-certs-per-team Apple cap: each build creates a new cert. After
         # 2 successful builds the third fails. Long-term fix: persist the
-        # PEM as a stable Codemagic env var (instead of generating fresh).
-        # For now, get the first build through and revoke certs manually
-        # in Developer Portal if needed.
+        # PEM as a Codemagic env var, reuse across builds. For now, revoke
+        # old certs manually if we hit the limit.
         script: |
           set -e
           keychain initialize
 
-          # Generate a fresh RSA private key for this build's CSR.
+          # Fresh RSA private key for this build's CSR. Generated inline
+          # because the Codemagic runner doesn't have a persistent key.
           CERT_KEY_PATH="$CM_BUILD_DIR/cert_private_key.pem"
           ssh-keygen -t rsa -b 2048 -m PEM -f "$CERT_KEY_PATH" -q -N ""
           echo "Generated CSR private key at $CERT_KEY_PATH"
 
-          # Export as env var — Codemagic CLI's certificates/fetch-signing-
-          # files commands auto-discover the key via this name.
-          export APP_STORE_CONNECT_CERTIFICATE_KEY="$(cat "$CERT_KEY_PATH")"
-
-          # Create cert (implicit) + provisioning profiles for both bundle IDs.
+          # Cert + provisioning profile for the main app.
           app-store-connect fetch-signing-files \
             "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key=@file:"$CERT_KEY_PATH" \
             --create
 
+          # Same for the widget extension.
           app-store-connect fetch-signing-files \
             "$WIDGET_BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key=@file:"$CERT_KEY_PATH" \
             --create
 
           # Cert + private key into the build keychain, then wire profiles
