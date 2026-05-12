@@ -195,20 +195,21 @@ workflows:
         - pattern: 'v*'
           include: true
 
+    # The `integrations.app_store_connect` reference binds the workflow to the
+    # API key the user registered in Codemagic UI (Phase 3 of TestFlightSetup.md).
+    # Without this, the `ios_signing` block below has no way to authenticate
+    # with Apple and the build fails at sign-time with "No matching profiles
+    # found". The string MUST match the key's display name in Codemagic
+    # Teams → Integrations → App Store Connect.
+    integrations:
+      app_store_connect: atamya-asc-key
+
     environment:
       xcode: latest
 
-      # Codemagic-managed signing — fills in DEVELOPMENT_TEAM + provisioning
-      # profile automatically once the App Store Connect key is registered
-      # in the Codemagic UI (see step 3 above). Bundle identifiers must match
-      # `project.yml`.
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.atamya.FitnessApp
-
       # Reads the App Store Connect API key registered in Codemagic-Teams →
-      # Integrations. The literal "atamya-asc-key" name must match step 3.
-      # Both values are set in Codemagic UI Environment Variables, NOT here:
+      # Integrations. Three secrets defined in the Codemagic UI Environment
+      # Variables, NOT here:
       #   - APP_STORE_CONNECT_KEY_IDENTIFIER  (the Key ID)
       #   - APP_STORE_CONNECT_ISSUER_ID
       #   - APP_STORE_CONNECT_PRIVATE_KEY    (the .p8 file content)
@@ -222,6 +223,12 @@ workflows:
         # `app-store-connect get-latest-app-store-build-number` lookup so each
         # TestFlight upload gets a monotonically-increasing build number.
         APP_STORE_APP_ID: '6768627358'
+        # Bundle IDs for the main app + widget extension. Both must be
+        # registered as App IDs in the Apple Developer Portal (Identifiers).
+        # The signing-files step uses these to fetch (or --create) the
+        # required provisioning profiles.
+        BUNDLE_ID: 'com.atamya.FitnessApp'
+        WIDGET_BUNDLE_ID: 'com.atamya.FitnessApp.widgets'
 
     scripts:
       - name: Install XcodeGen
@@ -235,6 +242,34 @@ workflows:
         script: |
           set -e
           xcodegen generate
+
+      - name: Set up code signing
+        # Explicit profile management — more reliable than relying on the
+        # `ios_signing` magic config.
+        #
+        # The `--create` flag tells Codemagic to AUTO-CREATE the provisioning
+        # profile if it doesn't exist yet in the developer portal. We need
+        # one profile per bundle ID (main app + widget extension).
+        #
+        # `keychain initialize` + `add-certificates` set up a temporary
+        # keychain on the Mac runner with the Distribution certificate that
+        # Codemagic creates on-the-fly via the App Store Connect API.
+        #
+        # `xcode-project use-profiles` then registers the fetched profiles
+        # with the Xcode build system so the archive step picks them up.
+        script: |
+          set -e
+          keychain initialize
+          app-store-connect fetch-signing-files \
+            "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          app-store-connect fetch-signing-files \
+            "$WIDGET_BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
 
       - name: Set build number
         # CURRENT_PROJECT_VERSION (build number) must increase monotonically
