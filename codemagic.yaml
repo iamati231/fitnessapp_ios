@@ -242,44 +242,62 @@ workflows:
           xcodegen generate
 
       - name: Set up code signing
-        # Two-step explicit signing flow — needed because the declarative
-        # `ios_signing` block alone failed with "No matching profiles found"
-        # (it doesn't pass --create to fetch-signing-files internally), and
-        # the simple fetch-signing-files-only flow failed at the keychain
-        # step ("Cannot save Signing Certificates without certificate
-        # private key") because fetch-signing-files only creates PROFILES,
-        # not CERTIFICATES.
+        # Full explicit signing flow with inline private-key generation.
         #
-        # Solution: do both explicitly.
-        #   1. `certificates create --save`  → fresh Distribution cert, with
-        #      its private key written to a discoverable spot on the runner.
-        #   2. `fetch-signing-files --create` (per bundle ID)  → creates the
-        #      provisioning profiles, linking them to the cert from step 1.
-        #   3. `keychain add-certificates`  → cert + private key into the
-        #      build keychain.
-        #   4. `xcode-project use-profiles`  → wires profiles into the Xcode
-        #      build settings, so `build-ipa` later can sign without prompts.
+        # Why so much fiddling: Codemagic CLI's `certificates create` command
+        # needs a private key to generate the CSR — but a fresh Codemagic
+        # runner has no key. On a real Mac, you'd reuse the one in your
+        # Keychain. Here, we generate a fresh RSA key per build via
+        # ssh-keygen and pass it explicitly to every signing CLI call.
         #
-        # Note on the 2-cert limit: Apple caps Distribution certs at 2 per
-        # team. After two builds, this step will fail with "Maximum number
-        # of certificates of type DISTRIBUTION generated". Fix when we hit
-        # it: either revoke old certs in Developer Portal, or migrate to a
-        # `--certificate-key=@env:...` flow that reuses a pre-stored private
-        # key across builds.
+        # Flow:
+        #   1. ssh-keygen → fresh 2048-bit RSA private key in PEM format.
+        #   2. certificates create --certificate-key-path  → Apple signs a
+        #      fresh Distribution cert against that key.
+        #   3. fetch-signing-files --create (x2, one per bundle ID) → creates
+        #      provisioning profiles linked to the new cert.
+        #   4. keychain add-certificates → cert + key into build keychain.
+        #   5. xcode-project use-profiles → wires profiles into Xcode build
+        #      settings so build-ipa later signs without prompts.
+        #
+        # The 2-certs-per-team Apple limit: each successful build creates a
+        # new Distribution cert. After two, the third build fails with
+        # "Maximum number of certificates of type DISTRIBUTION generated".
+        # Then either:
+        #   - Revoke old certs manually in Developer Portal → Certificates
+        #   - Migrate to `--certificate-key=@env:CERT_KEY` with a stable,
+        #     user-generated PEM stored in app_store_credentials group.
+        # First fix is faster; second is the long-term solution.
         script: |
           set -e
           keychain initialize
+
+          # Generate a fresh RSA private key for this build's CSR.
+          CERT_KEY_PATH="$CM_BUILD_DIR/cert_private_key.pem"
+          ssh-keygen -t rsa -b 2048 -m PEM -f "$CERT_KEY_PATH" -q -N ""
+          echo "Generated CSR private key at $CERT_KEY_PATH"
+
+          # Distribution certificate — Apple signs it against our private key.
           app-store-connect certificates create \
             --type IOS_DISTRIBUTION \
+            --certificate-key-path "$CERT_KEY_PATH" \
             --save
+
+          # Provisioning profiles — one per bundle ID, linked to the cert above.
           app-store-connect fetch-signing-files \
             "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key-path "$CERT_KEY_PATH" \
             --create
+
           app-store-connect fetch-signing-files \
             "$WIDGET_BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key-path "$CERT_KEY_PATH" \
             --create
+
+          # Cert + private key into the build keychain, then wire profiles
+          # into Xcode build settings.
           keychain add-certificates
           xcode-project use-profiles
 
