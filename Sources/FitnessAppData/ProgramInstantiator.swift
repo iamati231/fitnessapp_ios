@@ -40,14 +40,17 @@ public enum ProgramInstantiator {
                 .map { $0.name }
         )
 
-        // 3) Create new active plan.
+        // 3) Create new active plan. `isTemplate: true` triggert die Read-
+        // Only-Logik in den Editoren — User kann Trainings-Parameter (Pause,
+        // RIR, Gewicht) anpassen, aber Name/Tage/Uebungs-Struktur sind locked.
         let plan = TrainingPlan(
             name: template.name,
             programType: template.id,
             descriptionText: template.tagline,
             weeks: 12,
             isActive: true,
-            targetEnvironment: template.targetEnvironment
+            targetEnvironment: template.targetEnvironment,
+            isTemplate: true
         )
         context.insert(plan)
 

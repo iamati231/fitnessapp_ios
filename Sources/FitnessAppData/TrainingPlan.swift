@@ -13,6 +13,13 @@ public final class TrainingPlan {
     /// Environment this plan is designed for — used to filter recommendations (F154).
     public var targetEnvironment: EnvironmentType
 
+    /// True wenn der Plan via `ProgramInstantiator` aus einer kuratierten
+    /// `ProgramTemplate` erzeugt wurde. Read-Only-Logik in Plan/Day/Exercise-
+    /// Editoren prueft DIESEN Flag, NICHT `programType.isEmpty` — sonst
+    /// sperrt sich die UI sobald der User in einem Custom-Plan einen
+    /// Programm-Typ eintippt (DEL-013-Bug).
+    public var isTemplate: Bool = false
+
     @Relationship(deleteRule: .cascade, inverse: \TrainingDay.plan)
     public var days: [TrainingDay] = []
 
@@ -22,7 +29,8 @@ public final class TrainingPlan {
         descriptionText: String = "",
         weeks: Int = 12,
         isActive: Bool = false,
-        targetEnvironment: EnvironmentType = .gym
+        targetEnvironment: EnvironmentType = .gym,
+        isTemplate: Bool = false
     ) {
         self.name = name
         self.programType = programType
@@ -30,6 +38,7 @@ public final class TrainingPlan {
         self.weeks = weeks
         self.isActive = isActive
         self.targetEnvironment = targetEnvironment
+        self.isTemplate = isTemplate
     }
 }
 #endif

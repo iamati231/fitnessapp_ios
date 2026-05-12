@@ -233,48 +233,56 @@ public struct SettingsView: View {
     /// so the app re-renders into Onboarding. Apple-Health-Daten bleiben unangetastet
     /// (sind Eigentum des Users in einer separaten Datenbank).
     ///
-    /// Add new `@Model` types to the delete sequence below — missing entries leave
-    /// orphan rows that surface as "ghost data" after the supposed reset.
+    /// **Crash-safe Reset-Pattern** (v0.1.17 DEL-017-Fix): Wir leeren ERST
+    /// `navigation.workoutPath` und schicken den Tab auf Dashboard — das raeumt
+    /// jede `@Bindable`-Referenz auf gleich zu loeschende Models aus dem
+    /// SwiftUI-View-Tree. ERST DANACH stossen wir die Loeschungen via
+    /// `DispatchQueue.main.async` an. Synchrones Delete + Save HIER wuerde
+    /// SwiftUI mid-render mit halb-leerem Model-Graph konfrontieren und einen
+    /// EXC_BREAKPOINT-Crash ausloesen, weil @Bindable/@Query-Subscriber auf
+    /// gerade geloeschte UserBodyProfile-Refs zugreifen.
     ///
-    /// **Why fetch-then-delete-each instead of `delete(model:)`** (v0.1.13 bugfix):
-    /// SwiftData's bulk `delete(model:)` builds an NSBatchDeleteRequest under
-    /// the hood. That bypasses the @Relationship cascade/nullify rules and trips
-    /// "mandatory OTO nullify inverse"-violations when models reference each
-    /// other (here: ExerciseLog.exercise as the inverse of Exercise.logs).
-    /// Fetching each instance and calling `modelContext.delete(item)` triggers
-    /// the proper rule-aware deletion path.
+    /// **Per-instance statt batch-delete** (v0.1.13 DEL-006-Fix): SwiftData's
+    /// bulk `delete(model:)` baut intern ein NSBatchDeleteRequest und umgeht
+    /// die @Relationship-Cascade/Nullify-Regeln → "mandatory OTO nullify
+    /// inverse"-Violations. Fetch + delete-each respektiert die Regeln.
+    ///
+    /// Neue `@Model`-Typen MUESSEN in `deleteAll`-Sequenz unten — sonst
+    /// "Geist"-Daten nach dem vermeintlichen Reset.
     private func resetApp() {
-        do {
-            // Children-first ordering. With per-instance deletes the cascade/nullify
-            // rules from each @Relationship fire correctly, so this order is
-            // belt-and-suspenders rather than strictly required.
-            try deleteAll(of: PersonalRecordEntry.self)
-            try deleteAll(of: ExerciseLog.self)
-            try deleteAll(of: WorkoutSession.self)
-            try deleteAll(of: Exercise.self)
-            try deleteAll(of: TrainingDay.self)
-            try deleteAll(of: TrainingPlan.self)
-            try deleteAll(of: ExerciseTemplate.self)
-            try deleteAll(of: WaterEntry.self)
-            try deleteAll(of: BodyMeasurement.self)
-            try deleteAll(of: UserBodyProfile.self)
-            // Explicit save is the trigger that flushes the deletes to the store
-            // AND fires the @Query change-notification that swaps RootView from
-            // MainTabView back to OnboardingView. Without this save, the deletes
-            // live in memory until the next implicit autosave.
-            try modelContext.save()
+        // 1) Navigation-State sofort zuruecksetzen — entfernt @Bindable-
+        //    References auf gleich-zu-loeschende UserBodyProfile/Plan/Day.
+        navigation.workoutPath = NavigationPath()
+        navigation.selectedTab = .dashboard
 
-            // Clear our AppStorage keys — leave system defaults alone.
-            for key in ["weight_unit", "height_unit", "unit_system"] {
-                UserDefaults.standard.removeObject(forKey: key)
+        // 2) AppStorage-Keys sofort wegwerfen (synchron OK, kein Model).
+        for key in ["weight_unit", "height_unit", "unit_system"] {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+
+        // 3) Die eigentlichen SwiftData-Loeschungen ans Ende des aktuellen
+        //    Render-Cycles schicken. Erst wenn SwiftUI den Tab-Switch
+        //    verarbeitet hat (und die alten Subscriber aufgeloest sind),
+        //    fahren wir die Deletes durch und savnen — der RootView-@Query
+        //    sieht dann das Empty-State und swappt sauber auf Onboarding.
+        DispatchQueue.main.async {
+            do {
+                // Children-first ordering. Per-instance-Delete respektiert
+                // @Relationship-Rules.
+                try self.deleteAll(of: PersonalRecordEntry.self)
+                try self.deleteAll(of: ExerciseLog.self)
+                try self.deleteAll(of: WorkoutSession.self)
+                try self.deleteAll(of: Exercise.self)
+                try self.deleteAll(of: TrainingDay.self)
+                try self.deleteAll(of: TrainingPlan.self)
+                try self.deleteAll(of: ExerciseTemplate.self)
+                try self.deleteAll(of: WaterEntry.self)
+                try self.deleteAll(of: BodyMeasurement.self)
+                try self.deleteAll(of: UserBodyProfile.self)
+                try self.modelContext.save()
+            } catch {
+                self.resetErrorMessage = error.localizedDescription
             }
-
-            // Reset navigation: workoutPath may hold references to now-deleted models,
-            // and the user should land on the Dashboard tab once Onboarding completes.
-            navigation.workoutPath = NavigationPath()
-            navigation.selectedTab = .dashboard
-        } catch {
-            resetErrorMessage = error.localizedDescription
         }
     }
 

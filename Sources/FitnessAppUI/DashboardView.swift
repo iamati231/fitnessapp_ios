@@ -41,6 +41,7 @@ public struct DashboardView: View {
                 heroMetrics
                 planDayCard
                 trophyRoomCard
+                historyCard
                 trendChart
                 compoundLiftChart
                 recentWorkoutsCard
@@ -113,6 +114,58 @@ public struct DashboardView: View {
         formatter.unitsStyle = .short
         let relative = formatter.localizedString(for: latest.date, relativeTo: Date())
         return "\(latest.exerciseName) \(relative)"
+    }
+
+    // MARK: - History teaser (DEL-019)
+
+    /// Prominent entry point to the full WorkoutHistoryView. Mirror der Trophy-
+    /// Room-Card: kompakt, klickbar, mit Count und letztem-Workout-Teaser.
+    /// Vorher war die History nur ueber "Alle anzeigen" am Ende der Recent-
+    /// Workouts-Sektion erreichbar — User-Feedback war "find ich nicht".
+    private var historyCard: some View {
+        NavigationLink {
+            WorkoutHistoryView()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "calendar.badge.clock")
+                    .font(.title2)
+                    .foregroundStyle(.white)
+                    .frame(width: 38, height: 38)
+                    .background(Color.blue.gradient)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Trainingsverlauf")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    Text(historyTeaserText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.secondary.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var historyTeaserText: String {
+        let real = completedSessions.filter { !$0.isRestDay }
+        if real.isEmpty {
+            return "Noch keine Trainings — starte oben dein erstes."
+        }
+        if let latest = real.first {
+            let formatter = RelativeDateTimeFormatter()
+            formatter.unitsStyle = .short
+            let relative = formatter.localizedString(for: latest.startTime, relativeTo: Date())
+            return "\(real.count) Trainings • zuletzt \(relative)"
+        }
+        return "\(real.count) Trainings"
     }
 
     // MARK: - Hero metrics

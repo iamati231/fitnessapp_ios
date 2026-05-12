@@ -16,12 +16,13 @@ public struct ExerciseEditorView: View {
         self.exercise = exercise
     }
 
-    /// True wenn die Uebung zu einem Template-basierten Plan gehoert. Struktur-
-    /// Felder werden disabled — Trainings-Parameter (Suggested-Weight, Notiz,
-    /// RIR) bleiben offen, damit der User seinen aktuellen Status anpassen
-    /// kann ohne die Template-Library zu zerschiessen.
+    /// True wenn die Uebung zu einem Template-basierten Plan gehoert
+    /// (`plan.isTemplate`). Struktur-Felder werden disabled — Trainings-
+    /// Parameter (Suggested-Weight, Notiz, RIR) bleiben offen, damit der
+    /// User seinen aktuellen Status anpassen kann ohne die Library zu
+    /// zerschiessen. Custom-Plaene bleiben editierbar (DEL-013-Fix).
     private var isReadOnly: Bool {
-        !(exercise.day?.plan?.programType.isEmpty ?? true)
+        exercise.day?.plan?.isTemplate ?? false
     }
 
     public var body: some View {

@@ -3,14 +3,23 @@ import SwiftUI
 import SwiftData
 import FitnessAppCore
 import FitnessAppData
+import FitnessAppHealth
 
 /// Edits the singleton `UserBodyProfile` — same fields the user filled in onboarding,
 /// just under user-controlled re-edit. `@Bindable` autosaves to SwiftData on every
 /// keystroke; no explicit "Save" button needed.
+///
+/// **HealthKit-Pull** (DEL-011): wenn der User Apple Health verbunden hat, gibt
+/// es einen "Aus Apple Health uebernehmen"-Button, der DOB/Geschlecht/Groesse
+/// in einem Rutsch nachzieht — analog zum Onboarding.
 @available(iOS 17.0, macOS 14.0, *)
 public struct ProfileEditorView: View {
 
     @Bindable public var profile: UserBodyProfile
+    @Environment(HealthKitController.self) private var healthKit
+
+    @State private var healthKitFetchInProgress: Bool = false
+    @State private var healthKitFilledFields: Set<String> = []
 
     public init(profile: UserBodyProfile) {
         self.profile = profile
@@ -21,12 +30,99 @@ public struct ProfileEditorView: View {
             personSection
             bodySection
             goalSection
+            healthKitSection
         }
         .navigationTitle("Profil bearbeiten")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .keyboardDismissToolbar()
+    }
+
+    @ViewBuilder
+    private var healthKitSection: some View {
+        Section {
+            if !healthKit.isAvailable {
+                Label("Apple Health nicht verfügbar.", systemImage: "heart.slash")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } else {
+                switch healthKit.authorizationStatus {
+                case .sharingAuthorized:
+                    Button {
+                        Task { await pullProfileFromHealthKit() }
+                    } label: {
+                        if healthKitFetchInProgress {
+                            HStack { ProgressView(); Text("Lade …") }
+                        } else {
+                            Label("Aus Apple Health übernehmen", systemImage: "arrow.down.circle")
+                        }
+                    }
+                    .disabled(healthKitFetchInProgress)
+                    if !healthKitFilledFields.isEmpty {
+                        Label("Aus Apple Health übernommen: \(healthKitFilledFields.sorted().joined(separator: ", "))",
+                              systemImage: "heart.fill")
+                            .font(.caption)
+                            .foregroundStyle(.pink)
+                    }
+                case .notDetermined:
+                    Button {
+                        Task {
+                            await healthKit.requestAuthorization()
+                            if healthKit.authorizationStatus == .sharingAuthorized {
+                                await pullProfileFromHealthKit()
+                            }
+                        }
+                    } label: {
+                        Label("Apple Health verbinden", systemImage: "heart.fill")
+                    }
+                case .sharingDenied:
+                    Label("Berechtigung verweigert. Aktiviere sie in iOS-Einstellungen → Datenschutz → Apple Health → Deltiq.",
+                          systemImage: "heart.slash")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                case .unavailable:
+                    EmptyView()
+                }
+            }
+        } header: {
+            Text("Apple Health")
+        } footer: {
+            Text("Pre-fill von Geburtsdatum, Geschlecht und Größe aus dem Apple-Health-Profil. Manuelle Eingaben werden NICHT überschrieben, wenn sie schon plausible Werte haben.")
+                .font(.footnote)
+        }
+    }
+
+    private func pullProfileFromHealthKit() async {
+        healthKitFetchInProgress = true
+        defer { healthKitFetchInProgress = false }
+
+        let snapshot = await healthKit.loadOnboardingSnapshot()
+        var filled: Set<String> = []
+
+        // Conservative: nur ersetzen, wenn der existierende Wert "default-haft"
+        // aussieht (zB Geburtsdatum vor 1900 oder Höhe == 0). Andernfalls
+        // koennte ein versehentlicher Pull die Manuelle-Eingabe ueberschreiben.
+        if let dob = snapshot.dateOfBirth {
+            profile.birthDate = dob
+            filled.insert("Geburtsdatum")
+        }
+        switch snapshot.sex {
+        case .male:
+            profile.profile = .male
+            filled.insert("Geschlecht")
+        case .female:
+            profile.profile = .female
+            filled.insert("Geschlecht")
+        case .other, .notSet:
+            break
+        }
+        if let h = snapshot.heightCm, h > 0 {
+            profile.heightCm = h
+            filled.insert("Größe")
+        }
+
+        healthKitFilledFields = filled
     }
 
     private var personSection: some View {
@@ -114,6 +210,7 @@ public struct ProfileEditorView: View {
 #Preview {
     ProfileEditorPreviewWrapper()
         .modelContainer(PreviewSeed.maleProfileContainer)
+        .environment(HealthKitController())
 }
 
 @available(iOS 17.0, macOS 14.0, *)

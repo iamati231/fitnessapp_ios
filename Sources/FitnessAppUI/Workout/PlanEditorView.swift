@@ -35,11 +35,12 @@ public struct PlanEditorView: View {
         #endif
     }
 
-    /// True wenn der Plan via `ProgramInstantiator` aus einem Template generiert
-    /// wurde — erkennbar an einem non-empty `plan.programType` (das die
-    /// `ProgramTemplate.id` haelt). Custom-Plaene starten mit `programType=""`.
+    /// True wenn der Plan via `ProgramInstantiator` aus einem Template
+    /// generiert wurde (`isTemplate=true`). Custom-Plaene starten mit
+    /// `isTemplate=false` und bleiben editierbar — auch wenn der User
+    /// manuell einen Programm-Typ eintippt (DEL-013-Fix).
     private var isReadOnly: Bool {
-        !plan.programType.isEmpty
+        plan.isTemplate
     }
 
     // MARK: Sections

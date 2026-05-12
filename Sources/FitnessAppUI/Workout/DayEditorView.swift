@@ -22,10 +22,20 @@ public struct DayEditorView: View {
     }
 
     public var body: some View {
-        Form {
-            metaSection
-            startSection
-            exercisesSection
+        Group {
+            if isRestDay {
+                // Ruhetag bekommt eine drastisch reduzierte Layout-Variante
+                // (DEL-015) — keine Picker, keine Übungen-Section, nur Hero-
+                // Icon + Skip-Button. Vermeidet die irritierenden "0 Übungen"-
+                // und "Intensität: Keine"-Eintraege.
+                restDayLayout
+            } else {
+                Form {
+                    metaSection
+                    startSection
+                    exercisesSection
+                }
+            }
         }
         .navigationTitle(day.name.isEmpty ? "Tag" : day.name)
         #if os(iOS)
@@ -44,13 +54,63 @@ public struct DayEditorView: View {
         }
     }
 
+    /// Hero-Card-Layout fuer Ruhetage: grosses Sofa-Icon, klare Botschaft,
+    /// prominenter "Abschliessen"-Button. Versteckt alle Editor-Metadaten,
+    /// die fuer einen "Tag-ohne-Training" sinnlos sind.
+    @ViewBuilder
+    private var restDayLayout: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            Image(systemName: "figure.mind.and.body")
+                .font(.system(size: 96))
+                .foregroundStyle(.white)
+                .frame(width: 140, height: 140)
+                .background(Color.purple.gradient)
+                .clipShape(RoundedRectangle(cornerRadius: 28))
+
+            VStack(spacing: 8) {
+                Text(day.name.isEmpty ? "Ruhetag" : day.name)
+                    .font(.title.weight(.bold))
+                Text("Regeneration ist Teil des Plans. Hak den Tag ab, wenn du durch bist — dein Plan-Pointer springt automatisch zum naechsten echten Training.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+            }
+
+            Spacer()
+
+            Button {
+                markRestDaySkipped()
+            } label: {
+                HStack {
+                    Spacer()
+                    Label("Ruhetag abschließen", systemImage: "checkmark.circle.fill")
+                        .font(.headline)
+                    Spacer()
+                }
+                .padding(.vertical, 14)
+                .background(Color.purple.gradient)
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal)
+            .padding(.bottom, 20)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.secondary.opacity(0.05))
+    }
+
     // MARK: Sections
 
     /// True wenn der Tag aus einem Template-basierten Plan stammt
-    /// (`plan.programType` non-empty). Editor-Felder werden dann disabled
-    /// um die kuratierte Library-Struktur nicht versehentlich zu zerschiessen.
+    /// (`plan.isTemplate`). Editor-Felder werden dann disabled um die
+    /// kuratierte Library-Struktur nicht versehentlich zu zerschiessen.
+    /// Custom-Plaene bleiben editierbar (DEL-013-Fix).
     private var isReadOnly: Bool {
-        !(day.plan?.programType.isEmpty ?? true)
+        day.plan?.isTemplate ?? false
     }
 
     /// True wenn der Tag entweder explizit als `.rest` markiert ist oder
