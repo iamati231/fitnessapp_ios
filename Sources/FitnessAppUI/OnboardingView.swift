@@ -4,6 +4,7 @@ import SwiftData
 import FitnessAppCore
 import FitnessAppData
 import FitnessAppHealth
+import FitnessAppActivities
 
 /// First-launch profile setup as a three-step wizard:
 ///   1. **Apple Health verbinden** — optional Pre-Fill von Alter / Geschlecht /
