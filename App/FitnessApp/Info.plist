@@ -12,6 +12,12 @@
     <string>6.0</string>
     <key>CFBundleName</key>
     <string>$(PRODUCT_NAME)</string>
+    <!-- User-facing app name shown on the Home Screen + Settings → Apps list.
+         Decouples the display name from the internal product/target name
+         (FitnessApp), so we can rename the brand without renaming Xcode
+         targets, bundle IDs, or source dirs. -->
+    <key>CFBundleDisplayName</key>
+    <string>Deltiq</string>
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
