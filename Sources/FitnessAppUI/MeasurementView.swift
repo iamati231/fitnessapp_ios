@@ -59,7 +59,7 @@ public struct MeasurementView: View {
                 ContentUnavailableView(
                     "Kein Profil",
                     systemImage: "person.crop.circle.badge.exclamationmark",
-                    description: Text("Lege erst dein Profil im Onboarding an, danach koennen wir Messwerte berechnen.")
+                    description: Text("Lege erst dein Profil im Onboarding an, danach können wir Messwerte berechnen.")
                 )
             }
         }
@@ -67,6 +67,7 @@ public struct MeasurementView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .keyboardDismissToolbar()
         .task {
             // Refresh status (covers permission changes via Settings while backgrounded).
             await healthKit.refreshAuthorizationStatus()
@@ -78,12 +79,12 @@ public struct MeasurementView: View {
 
     private func profileSection(_ profile: UserBodyProfile) -> some View {
         Section("Profil (Single Source of Truth)") {
-            LabeledContent("Groesse",
+            LabeledContent("Größe",
                 value: profile.heightCm.formattedTwoDecimals + " cm")
             LabeledContent("Alter",
                 value: "\(ageYears(for: profile)) Jahre")
             LabeledContent("Sex",
-                value: profile.profile == .male ? "Maennlich" : "Weiblich")
+                value: profile.profile == .male ? "Männlich" : "Weiblich")
             if let goal = profile.goalWeightKg {
                 LabeledContent("Zielgewicht",
                     value: goal.formattedTwoDecimals + " kg")
@@ -104,7 +105,7 @@ public struct MeasurementView: View {
                     }
                 }
             if weightCameFromHealth, weightKg != nil {
-                Label("Aus Apple Health uebernommen", systemImage: "heart.fill")
+                Label("Aus Apple Health übernommen", systemImage: "heart.fill")
                     .font(.caption)
                     .foregroundStyle(.pink)
                     .listRowSeparator(.hidden)
@@ -113,10 +114,10 @@ public struct MeasurementView: View {
             decimalField("Taille (cm)",  value: $waistCm)
             // Hip is REQUIRED for Navy KFA on female profiles. Keep it visible for males
             // anyway — Android stores it for general progress tracking even when unused.
-            decimalField("Huefte (cm)" + (profile.profile == .female ? " *" : ""),
+            decimalField("Hüfte (cm)" + (profile.profile == .female ? " *" : ""),
                          value: $hipCm)
             if profile.profile == .female {
-                Text("* Huefte ist Pflicht fuer Navy KFA bei weiblichem Profil.")
+                Text("* Hüfte ist Pflicht für Navy KFA bei weiblichem Profil.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -127,7 +128,7 @@ public struct MeasurementView: View {
     private var healthKitSection: some View {
         Section {
             if !healthKit.isAvailable {
-                Label("Apple Health auf diesem Geraet nicht verfuegbar.",
+                Label("Apple Health auf diesem Gerät nicht verfügbar.",
                       systemImage: "heart.slash")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -157,12 +158,12 @@ public struct MeasurementView: View {
                         Label("Aktuelles Gewicht aus Apple Health", systemImage: "arrow.down.circle")
                     }
                 case .sharingDenied:
-                    Label("Apple Health blockiert. Aendere die Berechtigung in den iOS-Einstellungen.",
+                    Label("Apple Health blockiert. Ändere die Berechtigung in den iOS-Einstellungen.",
                           systemImage: "heart.slash")
                         .font(.caption)
                         .foregroundStyle(.orange)
                 case .unavailable:
-                    Label("Apple Health nicht verfuegbar.",
+                    Label("Apple Health nicht verfügbar.",
                           systemImage: "heart.slash")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -172,7 +173,7 @@ public struct MeasurementView: View {
             Text("Apple Health")
         } footer: {
             if healthKit.authorizationStatus == .sharingAuthorized {
-                Text("Bei Verbindung wird das aktuellste Waagen-Gewicht beim Oeffnen vorausgefuellt. Beim Speichern werden Gewicht, KFA und FFM zurueck nach Apple Health geschrieben.")
+                Text("Bei Verbindung wird das aktuellste Waagen-Gewicht beim Öffnen vorausgefüllt. Beim Speichern werden Gewicht, KFA und FFM zurück nach Apple Health geschrieben.")
                     .font(.footnote)
             }
         }
@@ -231,7 +232,7 @@ public struct MeasurementView: View {
                     .fontWeight(.semibold)
             } else {
                 Text(profileSex == .female
-                     ? "Hals/Taille/Huefte erforderlich"
+                     ? "Hals/Taille/Hüfte erforderlich"
                      : "Hals/Taille erforderlich")
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -346,7 +347,7 @@ public struct MeasurementView: View {
 
 #if DEBUG
 @available(iOS 17.0, macOS 14.0, *)
-#Preview("Maennliches Profil") {
+#Preview("Männliches Profil") {
     NavigationStack {
         MeasurementView()
     }

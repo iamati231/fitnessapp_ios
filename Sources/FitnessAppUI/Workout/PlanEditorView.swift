@@ -83,7 +83,7 @@ public struct PlanEditorView: View {
                 Button {
                     createNewDay()
                 } label: {
-                    Label("Hinzufuegen", systemImage: "plus")
+                    Label("Hinzufügen", systemImage: "plus")
                         .labelStyle(.iconOnly)
                 }
             }
@@ -151,7 +151,7 @@ private struct DayRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(day.name)
                     .font(.body.weight(.medium))
-                Text("\(day.exercises.count) Uebungen • \(intensityLabel(day.nextIntensity))")
+                Text("\(day.exercises.count) Übungen • \(intensityLabel(day.nextIntensity))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

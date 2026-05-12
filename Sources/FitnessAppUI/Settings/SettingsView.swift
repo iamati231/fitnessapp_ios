@@ -37,7 +37,7 @@ public struct SettingsView: View {
         }
         .navigationTitle(Text("settings.title", bundle: .module))
         .alert(
-            "Fehler beim Zuruecksetzen",
+            "Fehler beim Zurücksetzen",
             isPresented: Binding(
                 get: { resetErrorMessage != nil },
                 set: { if !$0 { resetErrorMessage = nil } }
@@ -84,7 +84,7 @@ public struct SettingsView: View {
                 profileSummary(profile)
             }
         } else {
-            Text("Kein Profil vorhanden — App neu starten oder zuruecksetzen.")
+            Text("Kein Profil vorhanden — App neu starten oder zurücksetzen.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -93,7 +93,7 @@ public struct SettingsView: View {
     private func profileSummary(_ profile: UserBodyProfile) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
-                Text(profile.profile == .male ? "Maennlich" : "Weiblich")
+                Text(profile.profile == .male ? "Männlich" : "Weiblich")
                     .font(.body.weight(.semibold))
                 Text("•")
                 Text("\(ageYears(for: profile)) Jahre")
@@ -146,7 +146,7 @@ public struct SettingsView: View {
         } header: {
             Text("Apple Health")
         } footer: {
-            Text("Bei aktivierter Verbindung wird im Messwerte-Formular das letzte Waagen-Gewicht vorausgefuellt. Beim Speichern werden Gewicht, KFA und Magere Masse zurueck nach Apple Health geschrieben.")
+            Text("Bei aktivierter Verbindung wird im Messwerte-Formular das letzte Waagen-Gewicht vorausgefüllt. Beim Speichern werden Gewicht, KFA und Magere Masse zurück nach Apple Health geschrieben.")
                 .font(.footnote)
         }
     }
@@ -177,7 +177,7 @@ public struct SettingsView: View {
             Label("Berechtigung verweigert", systemImage: "heart.slash")
                 .foregroundStyle(.orange)
         case .unavailable:
-            Label("Nicht verfuegbar", systemImage: "heart.slash")
+            Label("Nicht verfügbar", systemImage: "heart.slash")
                 .foregroundStyle(.secondary)
         }
     }
@@ -190,7 +190,7 @@ public struct SettingsView: View {
                 UIApplication.shared.open(url)
             }
         } label: {
-            Label("In iOS-Einstellungen oeffnen", systemImage: "gear")
+            Label("In iOS-Einstellungen öffnen", systemImage: "gear")
         }
         #endif
     }
@@ -222,7 +222,7 @@ public struct SettingsView: View {
         } header: {
             Text("settings.section.danger_zone", bundle: .module)
         } footer: {
-            Text("Loescht Profil, Messungen, Plaene, Trainings-Templates und Workout-Sessions vollstaendig. Die Apple-Health-Daten bleiben erhalten — die loescht du in der Health-App selber.")
+            Text("Löscht Profil, Messungen, Pläne, Trainings-Templates und Workout-Sessions vollständig. Die Apple-Health-Daten bleiben erhalten — die löscht du in der Health-App selber.")
                 .font(.footnote)
         }
     }
@@ -232,19 +232,28 @@ public struct SettingsView: View {
     /// Wipes all SwiftData entities and our `@AppStorage` keys, then resets navigation
     /// so the app re-renders into Onboarding. Apple-Health-Daten bleiben unangetastet
     /// (sind Eigentum des Users in einer separaten Datenbank).
+    ///
+    /// Add new `@Model` types to the delete sequence below — missing entries leave
+    /// orphan rows that surface as "ghost data" after the supposed reset.
     private func resetApp() {
         do {
             // Delete in dependency order — children first, parents last. SwiftData
             // would cascade automatically, but explicit ordering avoids any partial
             // state if a single delete fails mid-operation.
+            try modelContext.delete(model: PersonalRecordEntry.self)
             try modelContext.delete(model: ExerciseLog.self)
             try modelContext.delete(model: WorkoutSession.self)
             try modelContext.delete(model: Exercise.self)
             try modelContext.delete(model: TrainingDay.self)
             try modelContext.delete(model: TrainingPlan.self)
             try modelContext.delete(model: ExerciseTemplate.self)
+            try modelContext.delete(model: WaterEntry.self)
             try modelContext.delete(model: BodyMeasurement.self)
             try modelContext.delete(model: UserBodyProfile.self)
+            // Explicit save is the trigger that flushes the deletes to the store
+            // AND fires the @Query change-notification that swaps RootView from
+            // MainTabView back to OnboardingView. Without this save, the deletes
+            // live in memory until the next implicit autosave.
             try modelContext.save()
 
             // Clear our AppStorage keys — leave system defaults alone.

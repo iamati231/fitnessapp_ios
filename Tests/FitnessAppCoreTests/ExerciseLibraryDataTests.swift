@@ -42,11 +42,11 @@ final class ExerciseLibraryDataTests: XCTestCase {
             .sorted()
 
         let expected = [
-            "Bankdruecken",
+            "Bankdrücken",
             "Kniebeuge",
             "Kreuzheben (konventionell)",
             "Rudern vorgebeugt",
-            "Schulterdruecken (stehend)"
+            "Schulterdrücken (stehend)"
         ].sorted()
 
         XCTAssertEqual(compoundNames, expected,
@@ -56,7 +56,7 @@ final class ExerciseLibraryDataTests: XCTestCase {
     // MARK: Time-based exercises
 
     func testTimeBasedFlagOnIsometrics() {
-        // Plank, Wall Sit, Seitstuetz are all isometric. These are also referenced
+        // Plank, Wall Sit, Seitstütz are all isometric. These are also referenced
         // by the bodyweight programs — flag must be set for the auto-propagation
         // in `ProgramInstantiator` to work.
         let timeBased = Set(
@@ -65,7 +65,7 @@ final class ExerciseLibraryDataTests: XCTestCase {
                 .map(\.name)
         )
 
-        for required in ["Plank", "Seitstuetz", "Wall Sit", "Mountain Climbers", "Burpees"] {
+        for required in ["Plank", "Seitstütz", "Wall Sit", "Mountain Climbers", "Burpees"] {
             XCTAssertTrue(timeBased.contains(required),
                           "Library spec '\(required)' should have isTimeBased = true")
         }

@@ -106,7 +106,7 @@ public struct DashboardView: View {
 
     private var prCount: Int { personalRecords.count }
 
-    /// "Bankdruecken vor 2 Tagen" — short last-PR teaser when the table has rows.
+    /// "Bankdrücken vor 2 Tagen" — short last-PR teaser when the table has rows.
     private var latestPRSummary: String? {
         guard let latest = personalRecords.first else { return nil }
         let formatter = RelativeDateTimeFormatter()
@@ -179,7 +179,7 @@ public struct DashboardView: View {
                         LineMark(
                             x: .value("Datum", p.date),
                             y: .value("Gewicht (kg)", p.weight),
-                            series: .value("Serie", "Tatsaechlich")
+                            series: .value("Serie", "Tatsächlich")
                         )
                         .interpolationMethod(.monotone)
                         .foregroundStyle(.blue)
@@ -233,7 +233,7 @@ public struct DashboardView: View {
                         .font(.caption)
                         .foregroundStyle(.orange)
                 } else if forecastPoints.isEmpty && measurements.count >= 3 {
-                    Label("Mehr Werte ueber mind. 1 Woche fuer eine Prognose noetig.",
+                    Label("Mehr Werte über mind. 1 Woche für eine Prognose nötig.",
                           systemImage: "info.circle")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -293,7 +293,7 @@ public struct DashboardView: View {
                         .background(Color.blue.gradient)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Naechstes Training")
+                        Text("Nächstes Training")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Text(day.name)
@@ -341,7 +341,7 @@ public struct DashboardView: View {
                         .font(.body.weight(.semibold))
                     Text(activePlans.isEmpty
                          ? "Lege im Plan-Tab deinen ersten Trainings-Plan an."
-                         : "Fuege deinem aktiven Plan im Plan-Tab Tage und Uebungen hinzu.")
+                         : "Füge deinem aktiven Plan im Plan-Tab Tage und Übungen hinzu.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -379,7 +379,7 @@ public struct DashboardView: View {
             .prefix(3)
             .map(\.name)
         let suffix = day.exercises.count > 3 ? " …" : ""
-        return "\(day.exercises.count) Uebungen — \(names.joined(separator: ", "))\(suffix)"
+        return "\(day.exercises.count) Übungen — \(names.joined(separator: ", "))\(suffix)"
     }
 
     /// Deep-link from Dashboard into ActiveWorkout: build a stack [plan, day, active]
@@ -413,9 +413,9 @@ public struct DashboardView: View {
     /// query the seed library at every render.
     private static let compoundLiftNames = [
         "Kniebeuge",
-        "Bankdruecken",
+        "Bankdrücken",
         "Kreuzheben (konventionell)",
-        "Schulterdruecken (stehend)",
+        "Schulterdrücken (stehend)",
         "Rudern vorgebeugt"
     ]
 
@@ -461,7 +461,7 @@ public struct DashboardView: View {
                 Text("Compound-Lift-Trend")
                     .font(.headline)
                 Spacer()
-                Text("Geschaetztes 1RM")
+                Text("Geschätztes 1RM")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -475,7 +475,7 @@ public struct DashboardView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Noch zu wenig Daten")
                             .font(.subheadline)
-                        Text("Sobald du eine Compound-Uebung in zwei Sessions geloggt hast, erscheint hier der Trend.")
+                        Text("Sobald du eine Compound-Übung in zwei Sessions geloggt hast, erscheint hier der Trend.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -619,7 +619,7 @@ private struct DashboardSessionRow: View {
                     Text("•")
                     Text("\(session.durationMinutes) Min")
                     Text("•")
-                    Text("\(session.totalSets) Saetze")
+                    Text("\(session.totalSets) Sätze")
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -722,7 +722,7 @@ private struct InsufficientDataCard: View {
     let currentCount: Int
 
     var body: some View {
-        Label("\(currentCount) von 3 noetigen Messungen — Linear-Regression startet ab 3 Werten ueber mind. 1 Woche.",
+        Label("\(currentCount) von 3 nötigen Messungen — Linear-Regression startet ab 3 Werten über mind. 1 Woche.",
               systemImage: "chart.line.uptrend.xyaxis")
             .font(.callout)
             .foregroundStyle(.secondary)

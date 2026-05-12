@@ -38,6 +38,7 @@ public struct OnboardingView: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
             #endif
+            .keyboardDismissToolbar()
         }
     }
 
@@ -93,11 +94,11 @@ public struct OnboardingView: View {
             Text("onboarding.section.body", bundle: .module)
         } footer: {
             if let heightCm, !Self.heightRange.contains(heightCm) {
-                Text("Groesse zwischen \(Int(Self.heightRange.lowerBound)) und \(Int(Self.heightRange.upperBound)) cm.")
+                Text("Größe zwischen \(Int(Self.heightRange.lowerBound)) und \(Int(Self.heightRange.upperBound)) cm.")
                     .font(.footnote)
                     .foregroundStyle(.red)
             } else {
-                Text("Wird gespeichert wie eingegeben — die App rechnet bei lbs/in-Anzeige nur fuer die UI um.")
+                Text("Wird gespeichert wie eingegeben — die App rechnet bei lbs/in-Anzeige nur für die UI um.")
                     .font(.footnote)
             }
         }
@@ -121,7 +122,7 @@ public struct OnboardingView: View {
         } header: {
             Text("onboarding.section.goals", bundle: .module)
         } footer: {
-            Text("Trainingsort filtert spaeter Plan-Empfehlungen und die Equipment-Auswahl beim Uebungs-Tausch.")
+            Text("Trainingsort filtert später Plan-Empfehlungen und die Equipment-Auswahl beim Übungs-Tausch.")
                 .font(.footnote)
         }
     }

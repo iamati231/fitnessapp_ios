@@ -86,7 +86,7 @@ public enum PRCelebration {
     private static func detail(for record: PersonalRecord) -> String {
         switch record.kind {
         case .estimated1RM:
-            return "\(record.exerciseName) — \(formatNumber(record.newValue)) kg geschaetzt (vorher \(formatNumber(record.previousValue)) kg)"
+            return "\(record.exerciseName) — \(formatNumber(record.newValue)) kg geschätzt (vorher \(formatNumber(record.previousValue)) kg)"
         case .heaviestWeight:
             return "\(record.exerciseName) — \(formatNumber(record.newValue)) kg (vorher \(formatNumber(record.previousValue)) kg)"
         case .bestSet:

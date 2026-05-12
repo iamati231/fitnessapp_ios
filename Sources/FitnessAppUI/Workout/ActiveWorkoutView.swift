@@ -51,6 +51,7 @@ public struct ActiveWorkoutView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .navigationBarBackButtonHidden(true)
+        .keyboardDismissToolbar()
         .onReceive(tick) { now = $0 }
         .safeAreaInset(edge: .bottom) {
             if let end = restTimerEnd {
@@ -80,7 +81,7 @@ public struct ActiveWorkoutView: View {
                 Text("common.cancel", bundle: .module)
             }
         } message: {
-            Text("Dauer wird auf \(formattedDuration) gesetzt, \(loggedSetsCount) Saetze und \(formatVolume()) kg Volumen geloggt.")
+            Text("Dauer wird auf \(formattedDuration) gesetzt, \(loggedSetsCount) Sätze und \(formatVolume()) kg Volumen geloggt.")
         }
         .confirmationDialog(
             Text("active.confirm.discard.title", bundle: .module),
@@ -96,7 +97,7 @@ public struct ActiveWorkoutView: View {
                 Text("common.cancel", bundle: .module)
             }
         } message: {
-            Text("Die Session und alle \(loggedSetsCount) bisher geloggten Saetze gehen verloren.")
+            Text("Die Session und alle \(loggedSetsCount) bisher geloggten Sätze gehen verloren.")
         }
     }
 
@@ -106,7 +107,7 @@ public struct ActiveWorkoutView: View {
         HStack(spacing: 0) {
             StatBlock(label: "Dauer", value: formattedDuration, monospacedDigit: true)
             divider
-            StatBlock(label: "Saetze", value: "\(loggedSetsCount)", monospacedDigit: true)
+            StatBlock(label: "Sätze", value: "\(loggedSetsCount)", monospacedDigit: true)
             divider
             StatBlock(label: "Volumen kg", value: formatVolume(), monospacedDigit: true)
         }
@@ -135,9 +136,9 @@ public struct ActiveWorkoutView: View {
             }
         } else {
             VStack(alignment: .leading, spacing: 6) {
-                Label("Diese Session hat keine Uebungen.", systemImage: "exclamationmark.triangle")
+                Label("Diese Session hat keine Übungen.", systemImage: "exclamationmark.triangle")
                     .font(.headline)
-                Text("Vermutlich wurde der Plan-Tag nach dem Start geleert. Du kannst die Session verwerfen oder ohne Saetze beenden.")
+                Text("Vermutlich wurde der Plan-Tag nach dem Start geleert. Du kannst die Session verwerfen oder ohne Sätze beenden.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

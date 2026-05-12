@@ -189,7 +189,7 @@ public enum PreviewSeed {
         let plan = TrainingPlan(
             name: "Push/Pull/Legs",
             programType: "PPL",
-            descriptionText: "3-Tage-Split fuer Hypertrophie",
+            descriptionText: "3-Tage-Split für Hypertrophie",
             weeks: 12,
             isActive: true,
             targetEnvironment: .gym
@@ -203,9 +203,9 @@ public enum PreviewSeed {
         ctx.insert(push); ctx.insert(pull); ctx.insert(legs)
 
         let pushExercises: [(String, Int, Int, Int, Int)] = [
-            ("Bankdruecken",      4, 6, 10, 120),
-            ("Schraegbankdruecken (KH)", 3, 8, 12, 90),
-            ("Schulterdruecken",  3, 8, 12, 90),
+            ("Bankdrücken",      4, 6, 10, 120),
+            ("Schrägbankdrücken (KH)", 3, 8, 12, 90),
+            ("Schulterdrücken",  3, 8, 12, 90),
             ("Trizeps-Pushdown",  3, 10, 15, 60)
         ]
         for (i, e) in pushExercises.enumerated() {
@@ -215,7 +215,7 @@ public enum PreviewSeed {
 
         let pullExercises: [(String, Int, Int, Int, Int)] = [
             ("Kreuzheben",        3, 4, 6, 180),
-            ("Klimmzuege",        4, 6, 10, 120),
+            ("Klimmzüge",        4, 6, 10, 120),
             ("Langhantel-Rudern", 3, 8, 12, 90),
             ("Bizeps-Curls",      3, 10, 15, 60)
         ]
@@ -226,7 +226,7 @@ public enum PreviewSeed {
 
         let legsExercises: [(String, Int, Int, Int, Int)] = [
             ("Kniebeuge",         4, 5, 8, 180),
-            ("Rumaenisches KH",   3, 8, 10, 120),
+            ("Rumänisches KH",   3, 8, 10, 120),
             ("Beinpresse",        3, 10, 15, 90),
             ("Wadenheben",        4, 12, 20, 60)
         ]
@@ -286,10 +286,10 @@ public enum PreviewSeed {
         let lower = exerciseName.lowercased()
         if lower.contains("kreuzheben")   { return 120 }
         if lower.contains("kniebeuge")    { return 100 }
-        if lower.contains("rumaen")       { return 80  }
+        if lower.contains("rumän")       { return 80  }
         if lower.contains("bank")         { return 80  }
         if lower.contains("rudern")       { return 70  }
-        if lower.contains("schulter") || lower.contains("druecken") { return 50 }
+        if lower.contains("schulter") || lower.contains("drücken") { return 50 }
         if lower.contains("klimmzug")     { return 0   }   // bodyweight
         if lower.contains("dip")          { return 0   }
         if lower.contains("pushdown")     { return 25  }
@@ -304,12 +304,12 @@ public enum PreviewSeed {
     /// accessories — covers all major muscle groups.
     private static func seedSampleTemplates(in ctx: ModelContext) {
         let templates: [(String, Equipment, MuscleGroup, Bool)] = [
-            ("Bankdruecken",      .barbell,    .chest,      true),
+            ("Bankdrücken",      .barbell,    .chest,      true),
             ("Kniebeuge",         .barbell,    .quads,      true),
             ("Kreuzheben",        .barbell,    .back,       true),
-            ("Schulterdruecken",  .barbell,    .shoulders,  true),
+            ("Schulterdrücken",  .barbell,    .shoulders,  true),
             ("Langhantel-Rudern", .barbell,    .back,       true),
-            ("Klimmzuege",        .bodyweight, .back,       false),
+            ("Klimmzüge",        .bodyweight, .back,       false),
             ("Dips",              .bodyweight, .triceps,    false),
             ("Bizeps-Curls",      .dumbbell,   .biceps,     false),
             ("Trizeps-Pushdown",  .cable,      .triceps,    false),

@@ -71,7 +71,7 @@ struct RestTimerBar: View {
                         .background(Color.blue.opacity(0.10), in: Capsule())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Pause ueberspringen")
+                .accessibilityLabel("Pause überspringen")
             }
             .padding(.horizontal)
             .padding(.vertical, 10)

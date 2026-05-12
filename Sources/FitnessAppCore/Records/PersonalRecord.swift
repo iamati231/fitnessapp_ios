@@ -21,9 +21,9 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
         case bestSet
         /// Highest Epley/Brzycki-average 1RM estimate.
         case estimated1RM
-        /// Highest reps achieved in a bodyweight-only exercise (Klimmzuege, Liegestuetze, Dips).
+        /// Highest reps achieved in a bodyweight-only exercise (Klimmzüge, Liegestütze, Dips).
         case maxReps
-        /// Longest hold for an isometric / time-based exercise (Plank, Wall Sit, Seitstuetz).
+        /// Longest hold for an isometric / time-based exercise (Plank, Wall Sit, Seitstütz).
         case maxHoldSeconds
     }
 

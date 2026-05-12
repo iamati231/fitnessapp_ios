@@ -39,7 +39,7 @@ public struct WaterTrackerView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    Button("Heute zuruecksetzen", role: .destructive) {
+                    Button("Heute zurücksetzen", role: .destructive) {
                         deleteTodayEntries()
                     }
                     .disabled(todayEntries.isEmpty)
@@ -156,7 +156,7 @@ public struct WaterTrackerView: View {
                 Text("Heute")
                 Spacer()
                 if !todayEntries.isEmpty {
-                    Text("\(todayEntries.count) Eintraege")
+                    Text("\(todayEntries.count) Einträge")
                         .font(.caption)
                         .textCase(nil)
                         .foregroundStyle(.secondary)

@@ -26,6 +26,7 @@ public struct OneRepMaxView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .keyboardDismissToolbar()
     }
 
     // MARK: Sections
@@ -46,13 +47,13 @@ public struct OneRepMaxView: View {
         } header: {
             Text("Eingabe")
         } footer: {
-            Text("Gueltig fuer 1-36 Reps. Bei sehr hohen Reps wird die Schaetzung unzuverlaessig — die Formeln liefern nur fuer den Hypertrophie- bis Kraft-Bereich (~1-12 Reps) brauchbare Werte.")
+            Text("Gültig für 1-36 Reps. Bei sehr hohen Reps wird die Schätzung unzuverlässig — die Formeln liefern nur für den Hypertrophie- bis Kraft-Bereich (~1-12 Reps) brauchbare Werte.")
                 .font(.footnote)
         }
     }
 
     private var estimatesSection: some View {
-        Section("Geschaetztes 1RM") {
+        Section("Geschätztes 1RM") {
             if let weight,
                let epley   = ExerciseCalculations.estimate1RM(weightKg: weight, reps: reps),
                let brzycki = ExerciseCalculations.estimate1RMBrzycki(weightKg: weight, reps: reps),
@@ -95,7 +96,7 @@ public struct OneRepMaxView: View {
         } header: {
             Text("Trainings-Last (vom Mittelwert-1RM)")
         } footer: {
-            Text("Rep-Hints sind Faustwerte. Effektive Reps haengen vom Trainings-Status und der Bewegung ab.")
+            Text("Rep-Hints sind Faustwerte. Effektive Reps hängen vom Trainings-Status und der Bewegung ab.")
                 .font(.footnote)
         }
     }

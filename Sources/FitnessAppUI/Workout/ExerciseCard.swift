@@ -38,7 +38,7 @@ struct ExerciseCard: View {
             }
 
             if completedSetCount >= exercise.sets {
-                Label("Alle Saetze erledigt", systemImage: "flag.checkered")
+                Label("Alle Sätze erledigt", systemImage: "flag.checkered")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.green)
                     .padding(.top, 4)

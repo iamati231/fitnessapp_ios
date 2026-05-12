@@ -6,7 +6,7 @@ import FitnessAppData
 
 /// Read-only list of all completed `WorkoutSession`s, grouped by month. Tapping a
 /// row pushes `WorkoutSummaryView` in read-only mode, so the user can scroll
-/// through past saetze + notes without risking accidental edits.
+/// through past sätze + notes without risking accidental edits.
 @available(iOS 17.0, macOS 14.0, *)
 public struct WorkoutHistoryView: View {
 

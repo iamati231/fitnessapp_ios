@@ -127,7 +127,7 @@ public final class RestTimerActivityController {
 
     /// Posts a one-shot PR-celebration as the final state of the running activity,
     /// then dismisses ~8 seconds later. Use when the workout finished with at
-    /// least one new personal record — the headline (e.g. "🏆 100 kg Bankdruecken")
+    /// least one new personal record — the headline (e.g. "🏆 100 kg Bankdrücken")
     /// replaces the timer surface in both the Lock-Screen and Dynamic-Island
     /// renderings.
     ///

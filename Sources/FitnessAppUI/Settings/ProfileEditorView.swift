@@ -26,6 +26,7 @@ public struct ProfileEditorView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .keyboardDismissToolbar()
     }
 
     private var personSection: some View {
@@ -35,7 +36,7 @@ public struct ProfileEditorView: View {
         // toolchains when nested inside Section + footer + multiple statements.
         Section {
             Picker(selection: $profile.profile) {
-                Text("Maennlich").tag(BodyFormulaProfile.male)
+                Text("Männlich").tag(BodyFormulaProfile.male)
                 Text("Weiblich").tag(BodyFormulaProfile.female)
             } label: {
                 Text("Sex")
@@ -61,18 +62,18 @@ public struct ProfileEditorView: View {
         Section {
             TextField(value: $profile.heightCm, format: .number,
                       prompt: Text("z.B. 180")) {
-                Text("Groesse (cm)")
+                Text("Größe (cm)")
             }
             .decimalKeyboard()
         } header: {
-            Text("Koerpermasse")
+            Text("Körpermasse")
         } footer: {
             if !Self.heightRange.contains(profile.heightCm) {
                 Text("Plausibel: \(Int(Self.heightRange.lowerBound))–\(Int(Self.heightRange.upperBound)) cm.")
                     .font(.footnote)
                     .foregroundStyle(.red)
             } else {
-                Text("Alle Berechnungen lesen Hoehe metrisch aus dieser Quelle.")
+                Text("Alle Berechnungen lesen Höhe metrisch aus dieser Quelle.")
                     .font(.footnote)
             }
         }
@@ -96,7 +97,7 @@ public struct ProfileEditorView: View {
         } header: {
             Text("Ziel & Training")
         } footer: {
-            Text("Das Zielgewicht erscheint als gruene Linie im Dashboard-Trend-Chart. Trainingsort filtert spaeter Plan-Empfehlungen.")
+            Text("Das Zielgewicht erscheint als grüne Linie im Dashboard-Trend-Chart. Trainingsort filtert später Plan-Empfehlungen.")
                 .font(.footnote)
         }
     }

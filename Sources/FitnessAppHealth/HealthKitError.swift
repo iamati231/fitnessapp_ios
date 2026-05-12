@@ -13,7 +13,7 @@ public enum HealthKitError: Error, Sendable, LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .unavailable:
-            return "Apple Health ist auf diesem Geraet nicht verfuegbar."
+            return "Apple Health ist auf diesem Gerät nicht verfügbar."
         case .authorizationFailed(let reason):
             return "HealthKit-Berechtigung fehlgeschlagen: \(reason)"
         case .queryFailed(let reason):
@@ -21,7 +21,7 @@ public enum HealthKitError: Error, Sendable, LocalizedError {
         case .saveFailed(let reason):
             return "HealthKit-Speichern fehlgeschlagen: \(reason)"
         case .invalidValue(let reason):
-            return "Ungueltiger Health-Wert: \(reason)"
+            return "Ungültiger Health-Wert: \(reason)"
         }
     }
 }

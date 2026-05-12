@@ -49,7 +49,7 @@ public struct PlansListView: View {
                 }
             }
 
-            Section("Plaene") {
+            Section("Pläne") {
                 if plans.isEmpty {
                     emptyState
                 } else {
@@ -91,7 +91,7 @@ public struct PlansListView: View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Noch kein Plan", systemImage: "list.bullet.rectangle.portrait")
                 .font(.headline)
-            Text("Lege deinen ersten Trainings-Plan an — Tage, Uebungen, Saetze. Der Plan ist die Grundlage fuer jede Session.")
+            Text("Lege deinen ersten Trainings-Plan an — Tage, Übungen, Sätze. Der Plan ist die Grundlage für jede Session.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             HStack(spacing: 8) {
@@ -202,7 +202,7 @@ private struct ActiveSessionBanner: View {
                 .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(session.dayName ?? "Training laeuft")
+                Text(session.dayName ?? "Training läuft")
                     .font(.body.weight(.semibold))
                 Text("Gestartet \(session.startTime.formatted(.relative(presentation: .named)))")
                     .font(.caption)

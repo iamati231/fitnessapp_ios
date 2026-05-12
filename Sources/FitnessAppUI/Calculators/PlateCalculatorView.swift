@@ -33,6 +33,7 @@ public struct PlateCalculatorView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .keyboardDismissToolbar()
         .onAppear { ensureDefaultsForCurrentUnit() }
         .onChange(of: weightUnitRaw) { _, _ in resetForCurrentUnit() }
     }
@@ -47,7 +48,7 @@ public struct PlateCalculatorView: View {
             }
             .pickerStyle(.segmented)
         } footer: {
-            Text("App-weit umschaltbar. DB speichert immer metrisch — nur die Anzeige aendert sich.")
+            Text("App-weit umschaltbar. DB speichert immer metrisch — nur die Anzeige ändert sich.")
                 .font(.footnote)
         }
     }
@@ -114,7 +115,7 @@ public struct PlateCalculatorView: View {
             ForEach(unit.availablePlates, id: \.self) { plate in
                 inventoryRow(for: plate)
             }
-            Button("Inventar zuruecksetzen") {
+            Button("Inventar zurücksetzen") {
                 inventory = unit.defaultInventory
             }
             .font(.callout)
@@ -192,7 +193,7 @@ public struct PlateCalculatorView: View {
         if let t = targetWeight, let b = barWeight, t <= b {
             return "Zielgewicht muss schwerer sein als die Stange."
         }
-        return "Mit dem aktuellen Inventar bleibt nichts ueber der Stange."
+        return "Mit dem aktuellen Inventar bleibt nichts über der Stange."
     }
 
     // MARK: Lifecycle helpers

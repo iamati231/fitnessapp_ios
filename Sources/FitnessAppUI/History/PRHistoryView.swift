@@ -69,7 +69,7 @@ public struct PRHistoryView: View {
                 rebuild()
             }
         } message: {
-            Text("Setzt alle gespeicherten Rekorde zurueck und detektiert sie aus deiner kompletten History neu. Nuetzlich nach geloeschten Sessions.")
+            Text("Setzt alle gespeicherten Rekorde zurück und detektiert sie aus deiner kompletten History neu. Nützlich nach gelöschten Sessions.")
         }
         .overlay(alignment: .bottom) {
             if let toast = rebuildToast {

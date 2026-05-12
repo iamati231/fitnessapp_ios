@@ -16,7 +16,7 @@ public struct RestTimerAttributes: ActivityAttributes {
     ///
     /// **`prMessage`** is the post-finish celebration: when the user ends a workout
     /// with at least one PR, we push a final state with this set, replacing the
-    /// timer surface with a trophy headline like "🏆 100 kg Bankdruecken". The
+    /// timer surface with a trophy headline like "🏆 100 kg Bankdrücken". The
     /// activity dismisses itself ~8s later via `.after(...)` policy.
     public struct ContentState: Codable, Hashable {
         public let endDate: Date

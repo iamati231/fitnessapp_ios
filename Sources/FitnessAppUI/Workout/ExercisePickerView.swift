@@ -37,7 +37,7 @@ public struct ExercisePickerView: View {
             // `.navigationBarDrawer(displayMode:)` is iOS-only; default placement
             // works on both iOS and macOS toolchains.
             .searchable(text: $search, prompt: "Suche")
-            .navigationTitle("Uebung waehlen")
+            .navigationTitle("Übung wählen")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -52,9 +52,9 @@ public struct ExercisePickerView: View {
     // MARK: Sections
 
     private var customSection: some View {
-        Section("Eigene Uebung") {
+        Section("Eigene Übung") {
             HStack {
-                TextField("Name (z.B. Bankdruecken)", text: $customName)
+                TextField("Name (z.B. Bankdrücken)", text: $customName)
                 Button {
                     let trimmed = customName.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !trimmed.isEmpty else { return }
@@ -75,11 +75,11 @@ public struct ExercisePickerView: View {
         if filteredTemplates.isEmpty {
             Section("Bibliothek") {
                 if search.isEmpty {
-                    Text("Bibliothek ist leer — leg oben deine erste eigene Uebung an.")
+                    Text("Bibliothek ist leer — leg oben deine erste eigene Übung an.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 } else {
-                    Text("Keine Treffer fuer „\(search)\".")
+                    Text("Keine Treffer für „\(search)\".")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
@@ -165,7 +165,7 @@ private struct TemplateRow: View {
         switch e {
         case .barbell:     return "Langhantel"
         case .dumbbell:    return "Kurzhantel"
-        case .bodyweight:  return "Koerpergewicht"
+        case .bodyweight:  return "Körpergewicht"
         case .machine:     return "Maschine"
         case .cable:       return "Kabel"
         case .kettlebell:  return "Kettlebell"
@@ -176,13 +176,13 @@ private struct TemplateRow: View {
     private func muscleLabel(_ m: MuscleGroup) -> String {
         switch m {
         case .chest:      return "Brust"
-        case .back:       return "Ruecken"
+        case .back:       return "Rücken"
         case .shoulders:  return "Schultern"
         case .biceps:     return "Bizeps"
         case .triceps:    return "Trizeps"
         case .quads:      return "Quadrizeps"
         case .hamstrings: return "Hamstrings"
-        case .glutes:     return "Gesaess"
+        case .glutes:     return "Gesäß"
         case .calves:     return "Waden"
         case .core:       return "Core"
         }

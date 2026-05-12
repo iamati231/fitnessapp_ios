@@ -62,7 +62,7 @@ public struct DayEditorView: View {
                 }
             }
 
-            Picker("Naechste Intensitaet", selection: $day.nextIntensity) {
+            Picker("Nächste Intensität", selection: $day.nextIntensity) {
                 Text("Leicht").tag(DayIntensity.light)
                 Text("Normal").tag(DayIntensity.normal)
                 Text("Schwer").tag(DayIntensity.heavy)
@@ -85,7 +85,7 @@ public struct DayEditorView: View {
             .disabled(day.exercises.isEmpty)
         } footer: {
             if day.exercises.isEmpty {
-                Text("Fuege erst mindestens eine Uebung hinzu, dann kannst du das Training starten.")
+                Text("Füge erst mindestens eine Übung hinzu, dann kannst du das Training starten.")
                     .font(.footnote)
             }
         }
@@ -94,7 +94,7 @@ public struct DayEditorView: View {
     private var exercisesSection: some View {
         Section {
             if day.exercises.isEmpty {
-                Text("Noch keine Uebungen.")
+                Text("Noch keine Übungen.")
                     .foregroundStyle(.secondary)
                     .font(.callout)
             } else {
@@ -111,18 +111,18 @@ public struct DayEditorView: View {
             }
         } header: {
             HStack {
-                Text("Uebungen")
+                Text("Übungen")
                 Spacer()
                 Button {
                     showingPicker = true
                 } label: {
-                    Label("Hinzufuegen", systemImage: "plus")
+                    Label("Hinzufügen", systemImage: "plus")
                         .labelStyle(.iconOnly)
                 }
             }
         } footer: {
             if !day.exercises.isEmpty {
-                Text("Tippe eine Uebung an um sie zu bearbeiten. Halten + ziehen aendert die Reihenfolge.")
+                Text("Tippe eine Übung an um sie zu bearbeiten. Halten + ziehen ändert die Reihenfolge.")
                     .font(.footnote)
             }
         }
@@ -217,15 +217,15 @@ public struct DayEditorView: View {
     private func typeLabel(_ type: DayType) -> String {
         switch type {
         case .chest:     return "Brust"
-        case .back:      return "Ruecken"
+        case .back:      return "Rücken"
         case .legs:      return "Beine"
         case .shoulders: return "Schultern"
         case .arms:      return "Arme"
         case .push:      return "Push"
         case .pull:      return "Pull"
-        case .upper:     return "Oberkoerper"
-        case .lower:     return "Unterkoerper"
-        case .fullBody:  return "Ganzkoerper"
+        case .upper:     return "Oberkörper"
+        case .lower:     return "Unterkörper"
+        case .fullBody:  return "Ganzkörper"
         case .rest:      return "Ruhetag"
         case .custom:    return "Custom"
         }
@@ -275,7 +275,7 @@ private struct ExerciseRow: View {
             ? "\(exercise.repsMin)"
             : "\(exercise.repsMin)-\(exercise.repsMax)"
         let unit = exercise.isTimeBased ? "Sek" : "Wdh"
-        return "\(exercise.sets) Saetze • \(repsText) \(unit) • \(exercise.restSeconds)s Pause"
+        return "\(exercise.sets) Sätze • \(repsText) \(unit) • \(exercise.restSeconds)s Pause"
     }
 }
 #endif

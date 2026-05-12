@@ -25,9 +25,9 @@ public struct ExerciseEditorView: View {
             }
 
             if !exercise.isCardio {
-                Section("Saetze & Wiederholungen") {
+                Section("Sätze & Wiederholungen") {
                     Stepper(value: $exercise.sets, in: 1...20) {
-                        LabeledContent("Saetze", value: "\(exercise.sets)")
+                        LabeledContent("Sätze", value: "\(exercise.sets)")
                     }
                     Stepper(value: $exercise.repsMin, in: 1...100) {
                         LabeledContent(exercise.isTimeBased ? "Sek. min" : "Wdh. min",
@@ -43,7 +43,7 @@ public struct ExerciseEditorView: View {
                 }
             }
 
-            Section("Pause & Intensitaet") {
+            Section("Pause & Intensität") {
                 Stepper(value: $exercise.restSeconds, in: 0...600, step: 15) {
                     LabeledContent("Pause", value: "\(exercise.restSeconds)s")
                 }
@@ -73,10 +73,11 @@ public struct ExerciseEditorView: View {
                     .lineLimit(2...6)
             }
         }
-        .navigationTitle(exercise.name.isEmpty ? "Uebung" : exercise.name)
+        .navigationTitle(exercise.name.isEmpty ? "Übung" : exercise.name)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .keyboardDismissToolbar()
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Fertig") { dismiss() }

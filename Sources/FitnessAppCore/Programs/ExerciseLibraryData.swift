@@ -10,10 +10,10 @@ public enum ExerciseLibraryData {
 
     public static let all: [ExerciseTemplateSpec] = [
         // ── BARBELL · CHEST ────────────────────────────────────────────────
-        ExerciseTemplateSpec(name: "Bankdruecken",                     equipment: .barbell, primaryMuscle: .chest,      isSystemCompound: true),
-        ExerciseTemplateSpec(name: "Schraegbankdruecken (aufwaerts)",  equipment: .barbell, primaryMuscle: .chest),
-        ExerciseTemplateSpec(name: "Schraegbankdruecken (abwaerts)",   equipment: .barbell, primaryMuscle: .chest),
-        ExerciseTemplateSpec(name: "Enges Bankdruecken",               equipment: .barbell, primaryMuscle: .triceps),
+        ExerciseTemplateSpec(name: "Bankdrücken",                     equipment: .barbell, primaryMuscle: .chest,      isSystemCompound: true),
+        ExerciseTemplateSpec(name: "Schrägbankdrücken (aufwärts)",  equipment: .barbell, primaryMuscle: .chest),
+        ExerciseTemplateSpec(name: "Schrägbankdrücken (abwärts)",   equipment: .barbell, primaryMuscle: .chest),
+        ExerciseTemplateSpec(name: "Enges Bankdrücken",               equipment: .barbell, primaryMuscle: .triceps),
 
         // ── BARBELL · BACK ─────────────────────────────────────────────────
         ExerciseTemplateSpec(name: "Kreuzheben (konventionell)",       equipment: .barbell, primaryMuscle: .back,       difficultyLevel: .advanced, isSystemCompound: true),
@@ -23,16 +23,16 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "T-Bar Rudern",                     equipment: .barbell, primaryMuscle: .back),
 
         // ── BARBELL · SHOULDERS ────────────────────────────────────────────
-        ExerciseTemplateSpec(name: "Schulterdruecken (stehend)",       equipment: .barbell, primaryMuscle: .shoulders,  isSystemCompound: true),
+        ExerciseTemplateSpec(name: "Schulterdrücken (stehend)",       equipment: .barbell, primaryMuscle: .shoulders,  isSystemCompound: true),
         ExerciseTemplateSpec(name: "Push Press",                       equipment: .barbell, primaryMuscle: .shoulders,  difficultyLevel: .advanced),
-        ExerciseTemplateSpec(name: "Nackendruecken",                   equipment: .barbell, primaryMuscle: .shoulders,  difficultyLevel: .advanced),
+        ExerciseTemplateSpec(name: "Nackendrücken",                   equipment: .barbell, primaryMuscle: .shoulders,  difficultyLevel: .advanced),
         ExerciseTemplateSpec(name: "Langhantel Shrug",                 equipment: .barbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner),
 
         // ── BARBELL · LEGS ─────────────────────────────────────────────────
         ExerciseTemplateSpec(name: "Kniebeuge",                        equipment: .barbell, primaryMuscle: .quads,      isSystemCompound: true),
         ExerciseTemplateSpec(name: "Front Squat",                      equipment: .barbell, primaryMuscle: .quads,      difficultyLevel: .advanced),
         ExerciseTemplateSpec(name: "Zercher Squat",                    equipment: .barbell, primaryMuscle: .quads,      difficultyLevel: .advanced),
-        ExerciseTemplateSpec(name: "Rumaenisches Kreuzheben",          equipment: .barbell, primaryMuscle: .hamstrings),
+        ExerciseTemplateSpec(name: "Rumänisches Kreuzheben",          equipment: .barbell, primaryMuscle: .hamstrings),
         ExerciseTemplateSpec(name: "Hip Thrust (LH)",                  equipment: .barbell, primaryMuscle: .glutes),
         ExerciseTemplateSpec(name: "Ausfallschritte (LH)",             equipment: .barbell, primaryMuscle: .quads),
         ExerciseTemplateSpec(name: "Good Morning",                     equipment: .barbell, primaryMuscle: .hamstrings, difficultyLevel: .advanced),
@@ -44,10 +44,10 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Skull Crusher",                    equipment: .barbell, primaryMuscle: .triceps),
 
         // ── DUMBBELL · CHEST ───────────────────────────────────────────────
-        ExerciseTemplateSpec(name: "KH-Bankdruecken",                  equipment: .dumbbell, primaryMuscle: .chest),
-        ExerciseTemplateSpec(name: "KH-Schraegbankdruecken (aufwaerts)", equipment: .dumbbell, primaryMuscle: .chest),
+        ExerciseTemplateSpec(name: "KH-Bankdrücken",                  equipment: .dumbbell, primaryMuscle: .chest),
+        ExerciseTemplateSpec(name: "KH-Schrägbankdrücken (aufwärts)", equipment: .dumbbell, primaryMuscle: .chest),
         ExerciseTemplateSpec(name: "KH-Flyes (flach)",                 equipment: .dumbbell, primaryMuscle: .chest,      difficultyLevel: .beginner),
-        ExerciseTemplateSpec(name: "KH-Flyes (Schraegbank)",           equipment: .dumbbell, primaryMuscle: .chest,      difficultyLevel: .beginner),
+        ExerciseTemplateSpec(name: "KH-Flyes (Schrägbank)",           equipment: .dumbbell, primaryMuscle: .chest,      difficultyLevel: .beginner),
 
         // ── DUMBBELL · BACK ────────────────────────────────────────────────
         ExerciseTemplateSpec(name: "KH-Rudern einarmig",               equipment: .dumbbell, primaryMuscle: .back),
@@ -55,7 +55,7 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "KH-Pullover",                      equipment: .dumbbell, primaryMuscle: .back),
 
         // ── DUMBBELL · SHOULDERS ───────────────────────────────────────────
-        ExerciseTemplateSpec(name: "KH-Schulterdruecken",              equipment: .dumbbell, primaryMuscle: .shoulders),
+        ExerciseTemplateSpec(name: "KH-Schulterdrücken",              equipment: .dumbbell, primaryMuscle: .shoulders),
         ExerciseTemplateSpec(name: "Seitheben",                        equipment: .dumbbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner),
         ExerciseTemplateSpec(name: "Frontheben",                       equipment: .dumbbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner),
         ExerciseTemplateSpec(name: "Reverse Flyes (KH)",               equipment: .dumbbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner),
@@ -73,23 +73,23 @@ public enum ExerciseLibraryData {
         // ── DUMBBELL · ARMS ────────────────────────────────────────────────
         ExerciseTemplateSpec(name: "KH-Curl",                          equipment: .dumbbell, primaryMuscle: .biceps,     difficultyLevel: .beginner),
         ExerciseTemplateSpec(name: "Hammer Curl",                      equipment: .dumbbell, primaryMuscle: .biceps,     difficultyLevel: .beginner),
-        ExerciseTemplateSpec(name: "Schraegbank Curl",                 equipment: .dumbbell, primaryMuscle: .biceps),
+        ExerciseTemplateSpec(name: "Schrägbank Curl",                 equipment: .dumbbell, primaryMuscle: .biceps),
         ExerciseTemplateSpec(name: "Konzentrations Curl",              equipment: .dumbbell, primaryMuscle: .biceps,     difficultyLevel: .beginner),
         ExerciseTemplateSpec(name: "KH Overhead Trizep Extension",     equipment: .dumbbell, primaryMuscle: .triceps),
         ExerciseTemplateSpec(name: "Trizep Kickback (KH)",             equipment: .dumbbell, primaryMuscle: .triceps),
 
         // ── BODYWEIGHT · UPPER ─────────────────────────────────────────────
-        ExerciseTemplateSpec(name: "Klimmzuege (weit)",                equipment: .bodyweight, primaryMuscle: .back),
-        ExerciseTemplateSpec(name: "Klimmzuege (eng/Chin-up)",         equipment: .bodyweight, primaryMuscle: .back),
+        ExerciseTemplateSpec(name: "Klimmzüge (weit)",                equipment: .bodyweight, primaryMuscle: .back),
+        ExerciseTemplateSpec(name: "Klimmzüge (eng/Chin-up)",         equipment: .bodyweight, primaryMuscle: .back),
         ExerciseTemplateSpec(name: "Australian Pull-ups",              equipment: .bodyweight, primaryMuscle: .back),
-        ExerciseTemplateSpec(name: "Handtuch-Rudern (Tuerrahmen)",     equipment: .bodyweight, primaryMuscle: .back,      difficultyLevel: .beginner),
-        ExerciseTemplateSpec(name: "Liegestuetze",                     equipment: .bodyweight, primaryMuscle: .chest,     difficultyLevel: .beginner),
-        ExerciseTemplateSpec(name: "Diamant-Liegestuetze",             equipment: .bodyweight, primaryMuscle: .triceps),
-        ExerciseTemplateSpec(name: "Breite Liegestuetze",              equipment: .bodyweight, primaryMuscle: .chest),
+        ExerciseTemplateSpec(name: "Handtuch-Rudern (Türrahmen)",     equipment: .bodyweight, primaryMuscle: .back,      difficultyLevel: .beginner),
+        ExerciseTemplateSpec(name: "Liegestütze",                     equipment: .bodyweight, primaryMuscle: .chest,     difficultyLevel: .beginner),
+        ExerciseTemplateSpec(name: "Diamant-Liegestütze",             equipment: .bodyweight, primaryMuscle: .triceps),
+        ExerciseTemplateSpec(name: "Breite Liegestütze",              equipment: .bodyweight, primaryMuscle: .chest),
         ExerciseTemplateSpec(name: "Dips (Brust)",                     equipment: .bodyweight, primaryMuscle: .chest),
         ExerciseTemplateSpec(name: "Dips (Trizeps)",                   equipment: .bodyweight, primaryMuscle: .triceps),
-        ExerciseTemplateSpec(name: "Pike Liegestuetze",                equipment: .bodyweight, primaryMuscle: .shoulders),
-        ExerciseTemplateSpec(name: "Handstand-Liegestuetze",           equipment: .bodyweight, primaryMuscle: .shoulders, difficultyLevel: .advanced),
+        ExerciseTemplateSpec(name: "Pike Liegestütze",                equipment: .bodyweight, primaryMuscle: .shoulders),
+        ExerciseTemplateSpec(name: "Handstand-Liegestütze",           equipment: .bodyweight, primaryMuscle: .shoulders, difficultyLevel: .advanced),
 
         // ── BODYWEIGHT · LOWER ─────────────────────────────────────────────
         ExerciseTemplateSpec(name: "Kniebeuge (BW)",                   equipment: .bodyweight, primaryMuscle: .quads,     difficultyLevel: .beginner),
@@ -104,7 +104,7 @@ public enum ExerciseLibraryData {
 
         // ── BODYWEIGHT · CORE ──────────────────────────────────────────────
         ExerciseTemplateSpec(name: "Plank",                            equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isTimeBased: true),
-        ExerciseTemplateSpec(name: "Seitstuetz",                       equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isTimeBased: true),
+        ExerciseTemplateSpec(name: "Seitstütz",                       equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isTimeBased: true),
         ExerciseTemplateSpec(name: "Mountain Climbers",                equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isTimeBased: true),
         ExerciseTemplateSpec(name: "Burpees",                          equipment: .bodyweight, primaryMuscle: .core,      isTimeBased: true),
         ExerciseTemplateSpec(name: "Sit-ups",                          equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner),
@@ -115,7 +115,7 @@ public enum ExerciseLibraryData {
         // ── MACHINE / CABLE · CHEST ────────────────────────────────────────
         ExerciseTemplateSpec(name: "Kabel Crossover",                  equipment: .cable,    primaryMuscle: .chest),
         ExerciseTemplateSpec(name: "Pec Deck (Butterfly)",             equipment: .machine,  primaryMuscle: .chest,       difficultyLevel: .beginner),
-        ExerciseTemplateSpec(name: "Brust-Drueckmaschine",             equipment: .machine,  primaryMuscle: .chest,       difficultyLevel: .beginner),
+        ExerciseTemplateSpec(name: "Brust-Drückmaschine",             equipment: .machine,  primaryMuscle: .chest,       difficultyLevel: .beginner),
 
         // ── MACHINE / CABLE · BACK ─────────────────────────────────────────
         ExerciseTemplateSpec(name: "Latzug (weit)",                    equipment: .machine,  primaryMuscle: .back,        difficultyLevel: .beginner),
@@ -125,7 +125,7 @@ public enum ExerciseLibraryData {
         // ── MACHINE / CABLE · SHOULDERS ────────────────────────────────────
         ExerciseTemplateSpec(name: "Kabel Seitheben",                  equipment: .cable,    primaryMuscle: .shoulders,   difficultyLevel: .beginner),
         ExerciseTemplateSpec(name: "Face Pull",                        equipment: .cable,    primaryMuscle: .shoulders),
-        ExerciseTemplateSpec(name: "Schulterdrueck-Maschine",          equipment: .machine,  primaryMuscle: .shoulders,   difficultyLevel: .beginner),
+        ExerciseTemplateSpec(name: "Schulterdrück-Maschine",          equipment: .machine,  primaryMuscle: .shoulders,   difficultyLevel: .beginner),
 
         // ── MACHINE / CABLE · ARMS ─────────────────────────────────────────
         ExerciseTemplateSpec(name: "Trizep Pushdown (Kabel)",          equipment: .cable,    primaryMuscle: .triceps),

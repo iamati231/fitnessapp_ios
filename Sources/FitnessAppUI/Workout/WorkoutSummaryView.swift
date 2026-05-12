@@ -110,7 +110,7 @@ public struct WorkoutSummaryView: View {
                 Text("Personal Records")
             }
         } footer: {
-            Text("Erkannt durch Vergleich mit allen vorherigen abgeschlossenen Sessions. Cardio bleibt aussen vor — andere Metrik-Domaene.")
+            Text("Erkannt durch Vergleich mit allen vorherigen abgeschlossenen Sessions. Cardio bleibt aussen vor — andere Metrik-Domäne.")
                 .font(.footnote)
         }
     }
@@ -143,7 +143,7 @@ public struct WorkoutSummaryView: View {
             HStack(spacing: 0) {
                 SummaryStat(label: "Dauer", value: formattedDuration)
                 statDivider
-                SummaryStat(label: "Saetze", value: "\(session.totalSets)")
+                SummaryStat(label: "Sätze", value: "\(session.totalSets)")
                 statDivider
                 SummaryStat(label: "Volumen kg", value: formattedVolume)
             }
@@ -180,7 +180,7 @@ public struct WorkoutSummaryView: View {
             } header: {
                 Text("Notiz")
             } footer: {
-                Text("Tauchen spaeter in der History pro Session auf — gut fuer Form-Cues und Verletzungs-Tracking.")
+                Text("Tauchen später in der History pro Session auf — gut für Form-Cues und Verletzungs-Tracking.")
                     .font(.footnote)
             }
         }
@@ -189,8 +189,8 @@ public struct WorkoutSummaryView: View {
     @ViewBuilder
     private var breakdownSections: some View {
         if exercisesWithLogs.isEmpty {
-            Section("Saetze") {
-                Text("Keine Saetze geloggt.")
+            Section("Sätze") {
+                Text("Keine Sätze geloggt.")
                     .foregroundStyle(.secondary)
                     .font(.callout)
             }
@@ -229,7 +229,7 @@ public struct WorkoutSummaryView: View {
                 }
             }
         } footer: {
-            Text("\(logs.count) Saetze • \(formatVolume(logs)) kg Volumen")
+            Text("\(logs.count) Sätze • \(formatVolume(logs)) kg Volumen")
                 .font(.footnote)
         }
     }
@@ -254,7 +254,7 @@ public struct WorkoutSummaryView: View {
             }
             .listRowBackground(Color.green)
         } footer: {
-            Text("Die Session ist bereits gespeichert. Der Button schliesst die Zusammenfassung und bringt dich zurueck aufs Dashboard.")
+            Text("Die Session ist bereits gespeichert. Der Button schliesst die Zusammenfassung und bringt dich zurück aufs Dashboard.")
                 .font(.footnote)
         }
     }
@@ -410,7 +410,7 @@ private struct PRBadge: View {
 
     private var kindLabel: String {
         switch record.kind {
-        case .estimated1RM:    "Neuer 1RM (geschaetzt)"
+        case .estimated1RM:    "Neuer 1RM (geschätzt)"
         case .heaviestWeight:  "Neues Maximalgewicht"
         case .bestSet:         "Neuer Bestsatz (Volumen)"
         case .maxReps:         "Neuer Reps-Rekord"

@@ -31,11 +31,11 @@ public struct ProgramTemplatePickerView: View {
                         .buttonStyle(.plain)
                     }
                 } footer: {
-                    Text("Templates aus dem Android-Repo 1:1 portiert. Nach dem Anlegen kannst du jeden Tag und jede Uebung im Plan-Editor anpassen.")
+                    Text("Templates aus dem Android-Repo 1:1 portiert. Nach dem Anlegen kannst du jeden Tag und jede Übung im Plan-Editor anpassen.")
                         .font(.footnote)
                 }
             }
-            .navigationTitle("Programm waehlen")
+            .navigationTitle("Programm wählen")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif

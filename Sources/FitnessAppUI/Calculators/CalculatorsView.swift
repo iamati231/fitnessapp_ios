@@ -16,7 +16,7 @@ public struct CalculatorsView: View {
                         icon: "scalemass.fill",
                         tint: .blue,
                         title: "Hantel-Rechner",
-                        subtitle: "Welche Plates fuer dein Zielgewicht — mit Inventar-Cap und visualer Stange."
+                        subtitle: "Welche Plates für dein Zielgewicht — mit Inventar-Cap und visualer Stange."
                     )
                 }
                 NavigationLink(destination: OneRepMaxView()) {
@@ -32,7 +32,7 @@ public struct CalculatorsView: View {
                         icon: "flame.fill",
                         tint: .red,
                         title: "Kalorien-Rechner",
-                        subtitle: "BMR + TDEE aus deinem Profil und Aktivitaets-Level."
+                        subtitle: "BMR + TDEE aus deinem Profil und Aktivitäts-Level."
                     )
                 }
                 NavigationLink(destination: WaterTrackerView()) {

@@ -40,6 +40,7 @@ public struct TDEEView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .keyboardDismissToolbar()
         .onAppear {
             // Prefill with latest measured weight when the user lands on the screen.
             if weightKg == nil {
@@ -53,10 +54,10 @@ public struct TDEEView: View {
     private func profileSummarySection(_ profile: UserBodyProfile) -> some View {
         Section("Aus deinem Profil") {
             LabeledContent("Sex",
-                value: profile.profile == .male ? "Maennlich" : "Weiblich")
+                value: profile.profile == .male ? "Männlich" : "Weiblich")
             LabeledContent("Alter",
                 value: "\(ageYears(for: profile)) Jahre")
-            LabeledContent("Groesse",
+            LabeledContent("Größe",
                 value: "\(profile.heightCm.truncated(to: 2).formattedTwoDecimals) cm")
         }
     }
@@ -74,10 +75,10 @@ public struct TDEEView: View {
                     Text(level.label).tag(level)
                 }
             } label: {
-                Text("Aktivitaet")
+                Text("Aktivität")
             }
         } header: {
-            Text("Aktuelles Gewicht & Aktivitaet")
+            Text("Aktuelles Gewicht & Aktivität")
         } footer: {
             Text(activity.description)
                 .font(.footnote)
@@ -175,7 +176,7 @@ public enum ActivityLevel: String, CaseIterable, Sendable {
 
     public var label: String {
         switch self {
-        case .sedentary:  return "Buerojob (1.2)"
+        case .sedentary:  return "Bürojob (1.2)"
         case .light:      return "Leicht aktiv (1.375)"
         case .moderate:   return "Moderat (1.55)"
         case .active:     return "Aktiv (1.725)"
@@ -185,11 +186,11 @@ public enum ActivityLevel: String, CaseIterable, Sendable {
 
     public var description: String {
         switch self {
-        case .sedentary:  return "Buerojob, kaum Bewegung neben dem Alltag."
+        case .sedentary:  return "Bürojob, kaum Bewegung neben dem Alltag."
         case .light:      return "1-2 leichte Trainings pro Woche."
-        case .moderate:   return "3-5 Trainings pro Woche (Default fuer Hobby-Lifter)."
-        case .active:     return "6-7 Trainings pro Woche oder koerperlicher Beruf."
-        case .veryActive: return "Tag-taeglich intensives Training oder schwere koerperliche Arbeit."
+        case .moderate:   return "3-5 Trainings pro Woche (Default für Hobby-Lifter)."
+        case .active:     return "6-7 Trainings pro Woche oder körperlicher Beruf."
+        case .veryActive: return "Tag-täglich intensives Training oder schwere körperliche Arbeit."
         }
     }
 }
