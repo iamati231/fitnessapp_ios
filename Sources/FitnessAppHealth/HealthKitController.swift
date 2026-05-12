@@ -95,6 +95,46 @@ public final class HealthKitController {
         #endif
     }
 
+    /// Aggregate pull used by the onboarding HealthKit-step. Fetches DOB, sex,
+    /// height, and weight in parallel. Returns `OnboardingHealthSnapshot.empty`
+    /// when HealthKit is unavailable / unauthorized — caller checks individual
+    /// optionals and falls back to manual entry per field.
+    public func loadOnboardingSnapshot() async -> OnboardingHealthSnapshot {
+        #if canImport(HealthKit)
+        guard let service, authorizationStatus == .sharingAuthorized else {
+            return .empty
+        }
+
+        // Run the four reads in parallel — none depends on another.
+        async let dob = service.dateOfBirth()
+        async let sexHK = service.biologicalSex()
+        async let height: Double? = {
+            do { return try await service.latestHeightCm() } catch { return nil }
+        }()
+        async let weight: Double? = {
+            do { return try await service.latestWeight()?.weightKg } catch { return nil }
+        }()
+
+        let mappedSex: BiologicalSex
+        switch await sexHK {
+        case .male:    mappedSex = .male
+        case .female:  mappedSex = .female
+        case .other:   mappedSex = .other
+        case .notSet:  mappedSex = .notSet
+        @unknown default: mappedSex = .notSet
+        }
+
+        return OnboardingHealthSnapshot(
+            dateOfBirth: await dob,
+            sex: mappedSex,
+            heightCm: await height,
+            weightKg: await weight
+        )
+        #else
+        return .empty
+        #endif
+    }
+
     // MARK: Writes
 
     /// Best-effort write of a complete body-composition snapshot. Each metric is

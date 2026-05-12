@@ -30,3 +30,34 @@ public struct WeightReading: Sendable, Equatable {
         self.sourceName = sourceName
     }
 }
+
+/// Cross-platform mirror of `HKBiologicalSex`. Returning this enum from
+/// `HealthKitController` keeps the SwiftUI layer free of `#if canImport(HealthKit)`
+/// gates — callers branch on `.male`/`.female` without importing HealthKit.
+public enum BiologicalSex: Sendable, Equatable {
+    case male
+    case female
+    case other
+    case notSet
+}
+
+/// Bundle of values pulled from the Apple Health profile during onboarding.
+/// All fields optional — Apple Health doesn't guarantee any particular
+/// characteristic has been set by the user.
+public struct OnboardingHealthSnapshot: Sendable, Equatable {
+    public let dateOfBirth: Date?
+    public let sex: BiologicalSex
+    public let heightCm: Double?
+    public let weightKg: Double?
+
+    public init(dateOfBirth: Date?, sex: BiologicalSex, heightCm: Double?, weightKg: Double?) {
+        self.dateOfBirth = dateOfBirth
+        self.sex = sex
+        self.heightCm = heightCm
+        self.weightKg = weightKg
+    }
+
+    public static let empty = OnboardingHealthSnapshot(
+        dateOfBirth: nil, sex: .notSet, heightCm: nil, weightKg: nil
+    )
+}

@@ -18,6 +18,9 @@ public actor HealthKitService {
     private static let weightType   = HKQuantityType(.bodyMass)
     private static let bodyFatType  = HKQuantityType(.bodyFatPercentage)
     private static let leanMassType = HKQuantityType(.leanBodyMass)
+    private static let heightType   = HKQuantityType(.height)
+    private static let dobType      = HKCharacteristicType(.dateOfBirth)
+    private static let sexType      = HKCharacteristicType(.biologicalSex)
 
     // MARK: Lifecycle
 
@@ -38,11 +41,18 @@ public actor HealthKitService {
         // workoutType is *only* a write target — HealthKit never lets us read
         // workouts from other apps anyway, so leaving it out of toRead matches
         // reality.
+        //
+        // Characteristic types (dateOfBirth, biologicalSex) are read-only by
+        // design; they're set in the user's Health profile and we can pre-fill
+        // them into onboarding.
         let toShare: Set<HKSampleType> = [
             Self.weightType, Self.bodyFatType, Self.leanMassType,
             HKObjectType.workoutType()
         ]
-        let toRead:  Set<HKObjectType> = [Self.weightType, Self.bodyFatType, Self.leanMassType]
+        let toRead:  Set<HKObjectType> = [
+            Self.weightType, Self.bodyFatType, Self.leanMassType,
+            Self.heightType, Self.dobType, Self.sexType
+        ]
         do {
             try await store.requestAuthorization(toShare: toShare, read: toRead)
         } catch {
@@ -83,6 +93,37 @@ public actor HealthKitService {
     public func latestLeanBodyMassKg() async throws -> Double? {
         guard let sample = try await latestSample(of: Self.leanMassType) else { return nil }
         return sample.quantity.doubleValue(for: .gramUnit(with: .kilo))
+    }
+
+    /// Most recent height in centimetres. Comes from manual entries in Apple
+    /// Health (no device auto-measures height), so it's typically the value
+    /// the user originally set in the Health-App profile and never updates.
+    public func latestHeightCm() async throws -> Double? {
+        guard let sample = try await latestSample(of: Self.heightType) else { return nil }
+        return sample.quantity.doubleValue(for: HKUnit.meterUnit(with: .centi))
+    }
+
+    /// Returns the user's date of birth from the Health profile, or nil if
+    /// not set. Characteristic types throw a "no data" error when unset —
+    /// we catch that and return nil so the caller can fall back gracefully.
+    public func dateOfBirth() async -> Date? {
+        do {
+            let components = try store.dateOfBirthComponents()
+            return Calendar.current.date(from: components)
+        } catch {
+            return nil
+        }
+    }
+
+    /// Returns the biological sex from the Health profile, or .notSet if the
+    /// user hasn't set it. Maps to our domain enum via `BodyFormulaProfile(hk:)`
+    /// extension in `HealthKitController`.
+    public func biologicalSex() async -> HKBiologicalSex {
+        do {
+            return try store.biologicalSex().biologicalSex
+        } catch {
+            return .notSet
+        }
     }
 
     // MARK: Writes
