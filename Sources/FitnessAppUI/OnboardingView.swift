@@ -290,7 +290,7 @@ public struct OnboardingView: View {
 
             Section {
                 if filteredTemplates.isEmpty {
-                    Text("Keine Templates für '\(environment.localizedName)'. Du kannst trotzdem ohne Plan starten und später einen eigenen anlegen.")
+                    Text("Keine Templates für '\(environmentLabel)'. Du kannst trotzdem ohne Plan starten und später einen eigenen anlegen.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 } else {
@@ -305,12 +305,20 @@ public struct OnboardingView: View {
                     }
                 }
             } header: {
-                Text("Trainingsplan für \(environment.localizedName)")
+                Text("Trainingsplan für \(environmentLabel)")
             } footer: {
-                Text("Templates sind nach deinem Trainingsort gefiltert (\(environment.localizedName)) — passende Bodyweight-Pläne für 'Ohne Equipment', Hantel-/Maschinen-Pläne für 'Gym'. Optional — auch ohne Plan starten ist okay.")
+                Text("Templates sind nach deinem Trainingsort gefiltert (\(environmentLabel)) — passende Bodyweight-Pläne für 'Ohne Equipment', Hantel-/Maschinen-Pläne für 'Gym'. Optional — auch ohne Plan starten ist okay.")
                     .font(.footnote)
             }
         }
+    }
+
+    /// String-Repraesentation des aktuellen Environments fuer Section-Header/
+    /// Footer-Interpolation. `LocalizedStringResource` direkt in einen
+    /// String-Interpolation-Context zu stecken faellt auf macOS-strict
+    /// Toolchain durch — `String(localized:)` ist der Cast.
+    private var environmentLabel: String {
+        String(localized: environment.localizedName)
     }
 
     /// Templates passend zum gewaehlten Trainingsort.

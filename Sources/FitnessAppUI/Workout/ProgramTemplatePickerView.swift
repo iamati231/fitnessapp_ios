@@ -71,7 +71,11 @@ public struct ProgramTemplatePickerView: View {
     }
 
     private var userEnvironmentLabel: String {
-        profiles.first?.environment.localizedName ?? "alle"
+        guard let env = profiles.first?.environment else { return "alle" }
+        // LocalizedStringResource → String via String(localized:) — Text-Inter-
+        // polation wuerde es direkt nehmen, aber wir bauen hier einen reinen
+        // String fuer die Section-Footer-Interpolation.
+        return String(localized: env.localizedName)
     }
 
     private func instantiate(_ template: ProgramTemplate) {
