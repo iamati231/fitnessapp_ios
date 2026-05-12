@@ -42,6 +42,14 @@
     <key>NSSupportsLiveActivities</key>
     <true/>
 
+    <!-- Export Compliance: false = we use ONLY Apple's built-in encryption
+         (HTTPS, HealthKit, SwiftData internals). No custom crypto, no
+         bundled libsodium/OpenSSL. Skipping this key forces the user to
+         answer the same question manually for every TestFlight build via
+         App Store Connect. -->
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+
     <!-- HealthKit usage descriptions. iOS shows these in the permission dialog. -->
     <key>NSHealthShareUsageDescription</key>
     <string>Liest dein Gewicht und Koerperfett aus Apple Health, damit du Werte nicht doppelt eintragen musst.</string>
