@@ -235,21 +235,29 @@ public struct SettingsView: View {
     ///
     /// Add new `@Model` types to the delete sequence below — missing entries leave
     /// orphan rows that surface as "ghost data" after the supposed reset.
+    ///
+    /// **Why fetch-then-delete-each instead of `delete(model:)`** (v0.1.13 bugfix):
+    /// SwiftData's bulk `delete(model:)` builds an NSBatchDeleteRequest under
+    /// the hood. That bypasses the @Relationship cascade/nullify rules and trips
+    /// "mandatory OTO nullify inverse"-violations when models reference each
+    /// other (here: ExerciseLog.exercise as the inverse of Exercise.logs).
+    /// Fetching each instance and calling `modelContext.delete(item)` triggers
+    /// the proper rule-aware deletion path.
     private func resetApp() {
         do {
-            // Delete in dependency order — children first, parents last. SwiftData
-            // would cascade automatically, but explicit ordering avoids any partial
-            // state if a single delete fails mid-operation.
-            try modelContext.delete(model: PersonalRecordEntry.self)
-            try modelContext.delete(model: ExerciseLog.self)
-            try modelContext.delete(model: WorkoutSession.self)
-            try modelContext.delete(model: Exercise.self)
-            try modelContext.delete(model: TrainingDay.self)
-            try modelContext.delete(model: TrainingPlan.self)
-            try modelContext.delete(model: ExerciseTemplate.self)
-            try modelContext.delete(model: WaterEntry.self)
-            try modelContext.delete(model: BodyMeasurement.self)
-            try modelContext.delete(model: UserBodyProfile.self)
+            // Children-first ordering. With per-instance deletes the cascade/nullify
+            // rules from each @Relationship fire correctly, so this order is
+            // belt-and-suspenders rather than strictly required.
+            try deleteAll(of: PersonalRecordEntry.self)
+            try deleteAll(of: ExerciseLog.self)
+            try deleteAll(of: WorkoutSession.self)
+            try deleteAll(of: Exercise.self)
+            try deleteAll(of: TrainingDay.self)
+            try deleteAll(of: TrainingPlan.self)
+            try deleteAll(of: ExerciseTemplate.self)
+            try deleteAll(of: WaterEntry.self)
+            try deleteAll(of: BodyMeasurement.self)
+            try deleteAll(of: UserBodyProfile.self)
             // Explicit save is the trigger that flushes the deletes to the store
             // AND fires the @Query change-notification that swaps RootView from
             // MainTabView back to OnboardingView. Without this save, the deletes
@@ -267,6 +275,18 @@ public struct SettingsView: View {
             navigation.selectedTab = .dashboard
         } catch {
             resetErrorMessage = error.localizedDescription
+        }
+    }
+
+    /// Fetches every instance of `T` and deletes them one by one. Rule-aware
+    /// alternative to `modelContext.delete(model:)`, which uses NSBatchDeleteRequest
+    /// under the hood and trips constraint violations on cascade/nullify
+    /// relationships.
+    private func deleteAll<T: PersistentModel>(of type: T.Type) throws {
+        let descriptor = FetchDescriptor<T>()
+        let items = try modelContext.fetch(descriptor)
+        for item in items {
+            modelContext.delete(item)
         }
     }
 
