@@ -19,6 +19,15 @@ public final class WorkoutSession {
     public var notes: String?
     public var isCompleted: Bool
 
+    /// True when this session is a "Ruhetag uebersprungen"-marker rather than
+    /// a real workout. The session lives in the store with `isCompleted=true`
+    /// so the `PlanNavigator` advances its pointer past the rest-day, but the
+    /// History/Dashboard/Trophy-Room surfaces filter these out so the user
+    /// never sees empty "phantom" sessions. Persists as an explicit flag
+    /// (default false) so a missed-write doesn't accidentally hide real
+    /// sessions.
+    public var isRestDay: Bool = false
+
     /// Snapshotted day name at session start — keeps history readable even after
     /// the source `TrainingDay` is renamed or deleted (F123 Bug #2).
     public var dayName: String?
@@ -38,6 +47,7 @@ public final class WorkoutSession {
         totalVolumeKg: Double = 0.0,
         notes: String? = nil,
         isCompleted: Bool = false,
+        isRestDay: Bool = false,
         dayName: String? = nil,
         day: TrainingDay? = nil
     ) {
@@ -49,8 +59,17 @@ public final class WorkoutSession {
         self.totalVolumeKg = totalVolumeKg
         self.notes = notes
         self.isCompleted = isCompleted
+        self.isRestDay = isRestDay
         self.dayName = dayName
         self.day = day
+    }
+
+    /// True when this is a finished, non-rest-day session — i.e., a real
+    /// trainings-session that should be visible in History/Trophy-Room and
+    /// counted in PR-Detection and analytics. Use this everywhere instead of
+    /// `isCompleted` alone, otherwise rest-day-marker rows leak into UI.
+    public var isRealWorkout: Bool {
+        isCompleted && !isRestDay
     }
 }
 #endif

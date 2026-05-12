@@ -46,57 +46,114 @@ public struct DayEditorView: View {
 
     // MARK: Sections
 
+    /// True wenn der Tag aus einem Template-basierten Plan stammt
+    /// (`plan.programType` non-empty). Editor-Felder werden dann disabled
+    /// um die kuratierte Library-Struktur nicht versehentlich zu zerschiessen.
+    private var isReadOnly: Bool {
+        !(day.plan?.programType.isEmpty ?? true)
+    }
+
+    /// True wenn der Tag entweder explizit als `.rest` markiert ist oder
+    /// einfach leer ist (Ruhetag im Custom-Plan). In dem Fall blenden wir
+    /// "Training starten" aus und zeigen stattdessen "Ruhetag abschließen".
+    private var isRestDay: Bool {
+        day.type == .rest || day.exercises.isEmpty
+    }
+
     private var metaSection: some View {
-        Section("Tag-Info") {
+        Section {
             TextField("Name", text: $day.name)
+                .disabled(isReadOnly)
 
             Picker("Wochentag", selection: $day.weekday) {
                 ForEach(weekdayOptions, id: \.self) { weekday in
                     Text(weekdayName(weekday)).tag(weekday)
                 }
             }
+            .disabled(isReadOnly)
 
             Picker("Typ", selection: $day.type) {
                 ForEach(DayType.allCases, id: \.self) { type in
                     Text(typeLabel(type)).tag(type)
                 }
             }
+            .disabled(isReadOnly)
 
             Picker("Nächste Intensität", selection: $day.nextIntensity) {
                 Text("Leicht").tag(DayIntensity.light)
                 Text("Normal").tag(DayIntensity.normal)
                 Text("Schwer").tag(DayIntensity.heavy)
             }
+        } header: {
+            Text("Tag-Info")
+        } footer: {
+            if isReadOnly {
+                Text("Dieser Tag gehört zu einem vorgefertigten Plan-Template und kann strukturell nicht bearbeitet werden. Du kannst aber die Trainings-Intensität anpassen.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
+    @ViewBuilder
     private var startSection: some View {
-        Section {
-            Button {
-                startSession()
-            } label: {
-                HStack {
-                    Spacer()
-                    Label("Training starten", systemImage: "play.fill")
-                        .font(.headline)
-                    Spacer()
+        if isRestDay {
+            Section {
+                Button {
+                    markRestDaySkipped()
+                } label: {
+                    HStack {
+                        Spacer()
+                        Label("Ruhetag abschließen", systemImage: "checkmark.circle.fill")
+                            .font(.headline)
+                        Spacer()
+                    }
                 }
-            }
-            .disabled(day.exercises.isEmpty)
-        } footer: {
-            if day.exercises.isEmpty {
-                Text("Füge erst mindestens eine Übung hinzu, dann kannst du das Training starten.")
+            } footer: {
+                Text("Markiert den Ruhetag als erledigt — kein leerer Eintrag in der History, aber der Plan-Pointer rückt zum nächsten echten Training.")
                     .font(.footnote)
             }
+        } else {
+            Section {
+                Button {
+                    startSession()
+                } label: {
+                    HStack {
+                        Spacer()
+                        Label("Training starten", systemImage: "play.fill")
+                            .font(.headline)
+                        Spacer()
+                    }
+                }
+                .disabled(day.exercises.isEmpty)
+            } footer: {
+                if day.exercises.isEmpty {
+                    Text("Füge erst mindestens eine Übung hinzu, dann kannst du das Training starten.")
+                        .font(.footnote)
+                }
+            }
         }
     }
 
+    @ViewBuilder
     private var exercisesSection: some View {
         Section {
             if day.exercises.isEmpty {
-                Text("Noch keine Übungen.")
+                Text(isRestDay ? "Ruhetag — keine Übungen." : "Noch keine Übungen.")
                     .foregroundStyle(.secondary)
                     .font(.callout)
+            } else if isReadOnly {
+                // Template — Reorder/Delete deaktiviert. Einzelne Übung tappen
+                // führt weiterhin in den ExerciseEditor (der seinerseits read-
+                // only ist und nur die Trainings-Parameter sichtbar macht).
+                ForEach(orderedExercises) { exercise in
+                    Button {
+                        exerciseToEdit = exercise
+                    } label: {
+                        ExerciseRow(exercise: exercise)
+                    }
+                    .buttonStyle(.plain)
+                }
             } else {
                 ForEach(orderedExercises) { exercise in
                     Button {
@@ -113,15 +170,20 @@ public struct DayEditorView: View {
             HStack {
                 Text("Übungen")
                 Spacer()
-                Button {
-                    showingPicker = true
-                } label: {
-                    Label("Hinzufügen", systemImage: "plus")
-                        .labelStyle(.iconOnly)
+                if !isReadOnly {
+                    Button {
+                        showingPicker = true
+                    } label: {
+                        Label("Hinzufügen", systemImage: "plus")
+                            .labelStyle(.iconOnly)
+                    }
                 }
             }
         } footer: {
-            if !day.exercises.isEmpty {
+            if isReadOnly {
+                Text("Template-Plan — Übungen sind festgelegt. Du kannst sie ansehen, aber nicht hinzufügen, entfernen oder umsortieren.")
+                    .font(.footnote)
+            } else if !day.exercises.isEmpty {
                 Text("Tippe eine Übung an um sie zu bearbeiten. Halten + ziehen ändert die Reihenfolge.")
                     .font(.footnote)
             }
@@ -204,6 +266,34 @@ public struct DayEditorView: View {
         )
         modelContext.insert(session)
         navigation.workoutPath.append(ActiveSessionRoute(session: session))
+    }
+
+    /// Schreibt eine isRestDay=true-Session in den Store. Der PlanNavigator zaehlt
+    /// alle completed-Sessions, also rueckt der Pointer auf den naechsten echten
+    /// Tag. Da isRestDay=true, taucht der Eintrag NICHT in History/Trophy-Room
+    /// /Recent-Workouts auf. Nach dem Insert poppen wir ein Step im NavigationStack
+    /// zurueck zum Plan-Editor, damit der User direkt sieht, dass der Tag erledigt
+    /// ist.
+    private func markRestDaySkipped() {
+        let now = Date()
+        let session = WorkoutSession(
+            startTime: now,
+            endTime: now,
+            durationMinutes: 0,
+            exerciseCount: 0,
+            totalSets: 0,
+            totalVolumeKg: 0,
+            isCompleted: true,
+            isRestDay: true,
+            dayName: day.name,
+            day: day
+        )
+        modelContext.insert(session)
+        // Aus dem DayEditor zurueck ins parent (PlanEditor) — der naechste echte
+        // Trainings-Tag steht dann direkt im Dashboard-Plan-Day-Card.
+        if !navigation.workoutPath.isEmpty {
+            navigation.workoutPath.removeLast()
+        }
     }
 
     // MARK: Labels

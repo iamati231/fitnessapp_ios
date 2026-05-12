@@ -284,16 +284,17 @@ public struct DashboardView: View {
     private var planDayCard: some View {
         if let plan = activePlans.first, !plan.days.isEmpty {
             let day = nextScheduledDay(in: plan)
+            let isRestDay = day.type == .rest || day.exercises.isEmpty
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
-                    Image(systemName: "calendar.badge.clock")
+                    Image(systemName: isRestDay ? "bed.double.fill" : "calendar.badge.clock")
                         .font(.title2)
                         .foregroundStyle(.white)
                         .frame(width: 38, height: 38)
-                        .background(Color.blue.gradient)
+                        .background((isRestDay ? Color.purple : Color.blue).gradient)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Nächstes Training")
+                        Text(isRestDay ? "Heute: Ruhetag" : "Nächstes Training")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Text(day.name)
@@ -302,29 +303,50 @@ public struct DashboardView: View {
                     Spacer()
                 }
 
-                if !day.exercises.isEmpty {
+                if isRestDay {
+                    Text("Regeneration ist Teil des Plans. Wenn du den Tag durch hast, hak ihn ab — dann zeigt dir das Dashboard morgen das nächste echte Training.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                } else if !day.exercises.isEmpty {
                     Text(exercisesPreview(for: day))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
 
-                Button {
-                    startWorkoutDeepLink(plan: plan, day: day)
-                } label: {
-                    HStack {
-                        Spacer()
-                        Label("Direkt starten", systemImage: "play.fill")
-                            .font(.subheadline.weight(.semibold))
-                        Spacer()
+                if isRestDay {
+                    Button {
+                        markRestDaySkipped(plan: plan, day: day)
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Label("Ruhetag abschließen", systemImage: "checkmark.circle.fill")
+                                .font(.subheadline.weight(.semibold))
+                            Spacer()
+                        }
+                        .padding(.vertical, 10)
+                        .background(Color.purple.gradient)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
                     }
-                    .padding(.vertical, 10)
-                    .background(day.exercises.isEmpty ? Color.gray.gradient : Color.blue.gradient)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .buttonStyle(.plain)
+                } else {
+                    Button {
+                        startWorkoutDeepLink(plan: plan, day: day)
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Label("Direkt starten", systemImage: "play.fill")
+                                .font(.subheadline.weight(.semibold))
+                            Spacer()
+                        }
+                        .padding(.vertical, 10)
+                        .background(Color.blue.gradient)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                .disabled(day.exercises.isEmpty)
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -404,6 +426,27 @@ public struct DashboardView: View {
         navigation.workoutPath.append(day)
         navigation.workoutPath.append(ActiveSessionRoute(session: session))
         navigation.selectedTab = .plan
+    }
+
+    /// Erzeugt eine "skipped"-WorkoutSession fuer einen Ruhetag. Die Session
+    /// ist `isCompleted=true` (damit der PlanNavigator-Pointer auf den
+    /// naechsten echten Tag advanced), `isRestDay=true` (damit History,
+    /// Trophy-Room und Recent-Workouts-Card sie nicht anzeigen).
+    private func markRestDaySkipped(plan: TrainingPlan, day: TrainingDay) {
+        let now = Date()
+        let session = WorkoutSession(
+            startTime: now,
+            endTime: now,
+            durationMinutes: 0,
+            exerciseCount: 0,
+            totalSets: 0,
+            totalVolumeKg: 0,
+            isCompleted: true,
+            isRestDay: true,
+            dayName: day.name,
+            day: day
+        )
+        modelContext.insert(session)
     }
 
     // MARK: - Compound Lift Chart
@@ -530,7 +573,7 @@ public struct DashboardView: View {
                 Text("Letzte Workouts")
                     .font(.headline)
                 Spacer()
-                if !completedSessions.isEmpty {
+                if completedSessions.contains(where: { !$0.isRestDay }) {
                     NavigationLink {
                         WorkoutHistoryView()
                     } label: {
@@ -540,7 +583,9 @@ public struct DashboardView: View {
                 }
             }
 
-            if completedSessions.isEmpty {
+            // Rest-day-marker sessions don't count as "Trainingseinheiten".
+            let realRecentSessions = completedSessions.filter { !$0.isRestDay }
+            if realRecentSessions.isEmpty {
                 HStack(spacing: 12) {
                     Image(systemName: "dumbbell")
                         .font(.title2)
@@ -559,7 +604,7 @@ public struct DashboardView: View {
                 .background(Color.secondary.opacity(0.08))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
-                let recent = Array(completedSessions.prefix(5))
+                let recent = Array(realRecentSessions.prefix(5))
                 VStack(spacing: 0) {
                     ForEach(Array(recent.enumerated()), id: \.element.persistentModelID) { idx, session in
                         NavigationLink {

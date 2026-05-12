@@ -10,7 +10,10 @@ import FitnessAppData
 @available(iOS 17.0, macOS 14.0, *)
 public struct WorkoutHistoryView: View {
 
-    @Query(filter: #Predicate<WorkoutSession> { $0.isCompleted == true },
+    // Rest-day-marker sessions (skipped rest days from the Dashboard) live
+    // in the store with isCompleted=true so the PlanNavigator advances its
+    // pointer, but they aren't workouts and don't belong in History.
+    @Query(filter: #Predicate<WorkoutSession> { $0.isCompleted == true && $0.isRestDay == false },
            sort: \WorkoutSession.startTime, order: .reverse)
     private var sessions: [WorkoutSession]
 

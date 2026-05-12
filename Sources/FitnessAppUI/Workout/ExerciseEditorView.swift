@@ -16,12 +16,31 @@ public struct ExerciseEditorView: View {
         self.exercise = exercise
     }
 
+    /// True wenn die Uebung zu einem Template-basierten Plan gehoert. Struktur-
+    /// Felder werden disabled — Trainings-Parameter (Suggested-Weight, Notiz,
+    /// RIR) bleiben offen, damit der User seinen aktuellen Status anpassen
+    /// kann ohne die Template-Library zu zerschiessen.
+    private var isReadOnly: Bool {
+        !(exercise.day?.plan?.programType.isEmpty ?? true)
+    }
+
     public var body: some View {
         Form {
-            Section("Allgemein") {
+            Section {
                 TextField("Name", text: $exercise.name)
+                    .disabled(isReadOnly)
                 Toggle("Cardio", isOn: $exercise.isCardio)
+                    .disabled(isReadOnly)
                 Toggle("Zeit-basiert (Plank, Wall Sit)", isOn: $exercise.isTimeBased)
+                    .disabled(isReadOnly)
+            } header: {
+                Text("Allgemein")
+            } footer: {
+                if isReadOnly {
+                    Text("Template-Uebung — Name und Cardio/Zeit-Flags sind festgelegt.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             if !exercise.isCardio {
@@ -29,20 +48,25 @@ public struct ExerciseEditorView: View {
                     Stepper(value: $exercise.sets, in: 1...20) {
                         LabeledContent("Sätze", value: "\(exercise.sets)")
                     }
+                    .disabled(isReadOnly)
                     Stepper(value: $exercise.repsMin, in: 1...100) {
                         LabeledContent(exercise.isTimeBased ? "Sek. min" : "Wdh. min",
                                        value: "\(exercise.repsMin)")
                     }
+                    .disabled(isReadOnly)
                     Stepper(value: $exercise.repsMax, in: max(exercise.repsMin, 1)...200) {
                         LabeledContent(exercise.isTimeBased ? "Sek. max" : "Wdh. max",
                                        value: "\(exercise.repsMax)")
                     }
+                    .disabled(isReadOnly)
                     .onChange(of: exercise.repsMin) { _, newMin in
                         if exercise.repsMax < newMin { exercise.repsMax = newMin }
                     }
                 }
             }
 
+            // Pause + Ziel-RIR bleiben editierbar — Trainings-Parameter, die
+            // sich legitim individuell anpassen lassen.
             Section("Pause & Intensität") {
                 Stepper(value: $exercise.restSeconds, in: 0...600, step: 15) {
                     LabeledContent("Pause", value: "\(exercise.restSeconds)s")
@@ -52,6 +76,8 @@ public struct ExerciseEditorView: View {
                 }
             }
 
+            // Suggested-Weight + Notizen bleiben offen — User-eigene Trainings-
+            // Daten, gehoeren nicht zur Template-Struktur.
             Section("Vorgeschlagenes Gewicht (optional)") {
                 TextField("kg",
                           value: Binding(

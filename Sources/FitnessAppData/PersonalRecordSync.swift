@@ -69,9 +69,9 @@ public enum PersonalRecordSync {
         let existing = (try? context.fetch(FetchDescriptor<PersonalRecordEntry>())) ?? []
         for row in existing { context.delete(row) }
 
-        // 2) Pull every completed session, oldest-first.
+        // 2) Pull every REAL completed session (no rest-day-markers), oldest-first.
         var sessionDescriptor = FetchDescriptor<WorkoutSession>(
-            predicate: #Predicate { $0.isCompleted == true },
+            predicate: #Predicate { $0.isCompleted == true && $0.isRestDay == false },
             sortBy: [SortDescriptor(\.startTime, order: .forward)]
         )
         sessionDescriptor.relationshipKeyPathsForPrefetching = [\.logs]

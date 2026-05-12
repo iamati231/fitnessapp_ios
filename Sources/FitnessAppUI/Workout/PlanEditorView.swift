@@ -22,6 +22,9 @@ public struct PlanEditorView: View {
 
     public var body: some View {
         Form {
+            if isReadOnly {
+                templateBanner
+            }
             metaSection
             settingsSection
             daysSection
@@ -32,18 +35,53 @@ public struct PlanEditorView: View {
         #endif
     }
 
+    /// True wenn der Plan via `ProgramInstantiator` aus einem Template generiert
+    /// wurde — erkennbar an einem non-empty `plan.programType` (das die
+    /// `ProgramTemplate.id` haelt). Custom-Plaene starten mit `programType=""`.
+    private var isReadOnly: Bool {
+        !plan.programType.isEmpty
+    }
+
     // MARK: Sections
+
+    private var templateBanner: some View {
+        Section {
+            HStack(spacing: 12) {
+                Image(systemName: "lock.shield.fill")
+                    .font(.title3)
+                    .foregroundStyle(.white)
+                    .frame(width: 32, height: 32)
+                    .background(Color.indigo.gradient)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Template-Plan")
+                        .font(.body.weight(.semibold))
+                    Text("Struktur ist festgelegt. Du kannst Trainingsort und Wochen anpassen, aber Name/Tage/Übungen nicht ändern.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .listRowBackground(Color.indigo.opacity(0.08))
+    }
 
     private var metaSection: some View {
         Section("Plan-Info") {
             TextField("Name", text: $plan.name)
-            TextField("Programm-Typ (optional)", text: $plan.programType)
+                .disabled(isReadOnly)
+            TextField("Programm-Typ", text: $plan.programType)
+                .disabled(isReadOnly)
             TextField("Beschreibung (optional)", text: $plan.descriptionText, axis: .vertical)
                 .lineLimit(2...5)
+                .disabled(isReadOnly)
         }
     }
 
     private var settingsSection: some View {
+        // Wochen + Trainingsort bleiben editierbar — der User kann sein
+        // Template kuerzen oder die Equipment-Auswahl anpassen, ohne die
+        // Uebungs-Struktur zu zerschiessen. Active-Toggle bleibt fuer Plan-
+        // Wechsel offen.
         Section("Einstellungen") {
             Stepper(value: $plan.weeks, in: 1...52) {
                 LabeledContent("Wochen", value: "\(plan.weeks)")
@@ -62,12 +100,22 @@ public struct PlanEditorView: View {
         }
     }
 
+    @ViewBuilder
     private var daysSection: some View {
         Section {
             if plan.days.isEmpty {
-                Text("Noch keine Trainings-Tage. Tippe '+' oben rechts um deinen ersten Tag anzulegen.")
+                Text(isReadOnly
+                     ? "Template hat keine Trainings-Tage konfiguriert (sollte nicht passieren)."
+                     : "Noch keine Trainings-Tage. Tippe '+' oben rechts um deinen ersten Tag anzulegen.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
+            } else if isReadOnly {
+                ForEach(orderedDays) { day in
+                    NavigationLink(value: day) {
+                        DayRow(day: day)
+                    }
+                }
+                // onDelete bewusst NICHT registriert — Template-Tage sind gesetzt
             } else {
                 ForEach(orderedDays) { day in
                     NavigationLink(value: day) {
@@ -80,15 +128,19 @@ public struct PlanEditorView: View {
             HStack {
                 Text("Trainings-Tage")
                 Spacer()
-                Button {
-                    createNewDay()
-                } label: {
-                    Label("Hinzufügen", systemImage: "plus")
-                        .labelStyle(.iconOnly)
+                if !isReadOnly {
+                    Button {
+                        createNewDay()
+                    } label: {
+                        Label("Hinzufügen", systemImage: "plus")
+                            .labelStyle(.iconOnly)
+                    }
                 }
             }
         } footer: {
-            Text("Sortiert nach Wochentag (Mo-So). Editiere den Wochentag im Tag selber.")
+            Text(isReadOnly
+                 ? "Template — Tage sind festgelegt. Tippe einen Tag an, um die Übungen zu sehen."
+                 : "Sortiert nach Wochentag (Mo-So). Editiere den Wochentag im Tag selber.")
                 .font(.footnote)
         }
     }
