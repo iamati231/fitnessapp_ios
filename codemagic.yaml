@@ -242,32 +242,23 @@ workflows:
           xcodegen generate
 
       - name: Set up code signing
-        # Full explicit signing flow with inline private-key generation.
+        # Codemagic CLI auto-picks up the private key from the env var
+        # APP_STORE_CONNECT_CERTIFICATE_KEY — we generate a fresh PEM with
+        # ssh-keygen and export it, then run `fetch-signing-files --create`
+        # which handles BOTH cert AND profile creation when the env var
+        # is set.
         #
-        # Why so much fiddling: Codemagic CLI's `certificates create` command
-        # needs a private key to generate the CSR — but a fresh Codemagic
-        # runner has no key. On a real Mac, you'd reuse the one in your
-        # Keychain. Here, we generate a fresh RSA key per build via
-        # ssh-keygen and pass it explicitly to every signing CLI call.
+        # Why no separate `certificates create`: `fetch-signing-files
+        # --create` with a private key available will create the cert too.
+        # The earlier "Cannot save Signing Certificates without certificate
+        # private key" error came from the missing env var, not a missing
+        # explicit cert step.
         #
-        # Flow:
-        #   1. ssh-keygen → fresh 2048-bit RSA private key in PEM format.
-        #   2. certificates create --certificate-key-path  → Apple signs a
-        #      fresh Distribution cert against that key.
-        #   3. fetch-signing-files --create (x2, one per bundle ID) → creates
-        #      provisioning profiles linked to the new cert.
-        #   4. keychain add-certificates → cert + key into build keychain.
-        #   5. xcode-project use-profiles → wires profiles into Xcode build
-        #      settings so build-ipa later signs without prompts.
-        #
-        # The 2-certs-per-team Apple limit: each successful build creates a
-        # new Distribution cert. After two, the third build fails with
-        # "Maximum number of certificates of type DISTRIBUTION generated".
-        # Then either:
-        #   - Revoke old certs manually in Developer Portal → Certificates
-        #   - Migrate to `--certificate-key=@env:CERT_KEY` with a stable,
-        #     user-generated PEM stored in app_store_credentials group.
-        # First fix is faster; second is the long-term solution.
+        # 2-certs-per-team Apple cap: each build creates a new cert. After
+        # 2 successful builds the third fails. Long-term fix: persist the
+        # PEM as a stable Codemagic env var (instead of generating fresh).
+        # For now, get the first build through and revoke certs manually
+        # in Developer Portal if needed.
         script: |
           set -e
           keychain initialize
@@ -277,23 +268,19 @@ workflows:
           ssh-keygen -t rsa -b 2048 -m PEM -f "$CERT_KEY_PATH" -q -N ""
           echo "Generated CSR private key at $CERT_KEY_PATH"
 
-          # Distribution certificate — Apple signs it against our private key.
-          app-store-connect certificates create \
-            --type IOS_DISTRIBUTION \
-            --certificate-key-path "$CERT_KEY_PATH" \
-            --save
+          # Export as env var — Codemagic CLI's certificates/fetch-signing-
+          # files commands auto-discover the key via this name.
+          export APP_STORE_CONNECT_CERTIFICATE_KEY="$(cat "$CERT_KEY_PATH")"
 
-          # Provisioning profiles — one per bundle ID, linked to the cert above.
+          # Create cert (implicit) + provisioning profiles for both bundle IDs.
           app-store-connect fetch-signing-files \
             "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --certificate-key-path "$CERT_KEY_PATH" \
             --create
 
           app-store-connect fetch-signing-files \
             "$WIDGET_BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --certificate-key-path "$CERT_KEY_PATH" \
             --create
 
           # Cert + private key into the build keychain, then wire profiles
