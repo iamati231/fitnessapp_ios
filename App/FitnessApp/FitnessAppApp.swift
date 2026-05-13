@@ -22,6 +22,11 @@ struct FitnessAppApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                // DEL-045-Update Punkt 2: App-weite Akzentfarbe. Alle nativen
+                // SwiftUI-Komponenten (Buttons, Toggles, Slider, NavigationLink-
+                // Chevrons, TabView-Selection, Progress-Indikatoren) erben den
+                // Tint automatisch — kein Per-View-Tinting mehr noetig.
+                .tint(Color.deltiqOrange)
                 .onOpenURL { url in
                     handleDeepLink(url)
                 }

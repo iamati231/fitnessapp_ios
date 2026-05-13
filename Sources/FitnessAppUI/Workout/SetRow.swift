@@ -5,9 +5,6 @@ import FitnessAppData
 #if canImport(UIKit)
 import UIKit
 #endif
-#if canImport(AudioToolbox)
-import AudioToolbox
-#endif
 
 /// Single row inside an `ExerciseCard` — represents one planned set of an exercise.
 ///
@@ -118,7 +115,10 @@ struct SetRow: View {
     }
 
     private var weightInput: some View {
-        TextField("-", value: $weight, format: .number, prompt: Text("-"))
+        // DEL-045-Update: Bodyweight-Fix. Placeholder ist "BW" — wenn der User
+        // das Feld leer laesst, wird der Satz als 0.0 kg geloggt (Liegestuetze,
+        // Pull-ups, etc.). Kein Validierungs-Blocker mehr auf weight.
+        TextField("BW", value: $weight, format: .number, prompt: Text("BW"))
             .decimalKeyboard()
             .frame(width: 56)
             .padding(.horizontal, 8)
@@ -409,14 +409,12 @@ struct SetRow: View {
 
     // MARK: - Audio + Haptic Helpers
 
-    /// Kurzer hoher Beep bei jedem Countdown-Tick (3, 2, 1). DEL-045.
+    /// Kurzer hoher Beep bei jedem Countdown-Tick (3, 2, 1). DEL-045-Update
+    /// Punkt 4: AVAudioPlayer + `beep_short.wav` statt System-Sound.
     private func playCountdownBeep() {
-        #if canImport(AudioToolbox)
         if timerSoundEnabled {
-            // SystemSoundID 1057 = "Tink"-Sound, kurz + hoch — ideal als Counter-Pip.
-            AudioServicesPlaySystemSound(1057)
+            TimerSoundPlayer.shared.playShort()
         }
-        #endif
         #if canImport(UIKit) && !os(watchOS)
         if timerHapticsEnabled {
             UISelectionFeedbackGenerator().selectionChanged()
@@ -424,15 +422,12 @@ struct SetRow: View {
         #endif
     }
 
-    /// Laengerer, deutlich anderer Ton fuer "GO" (Start-Signal). DEL-045.
+    /// Laengerer, deutlich anderer Ton fuer "GO" (Start-Signal). DEL-045-
+    /// Update Punkt 4: AVAudioPlayer + `beep_long.wav` statt System-Sound.
     private func playGoSound() {
-        #if canImport(AudioToolbox)
         if timerSoundEnabled {
-            // 1320 = "Beep"-System-Sound, tiefer als 1057, signalisiert klar
-            // "jetzt gehts los".
-            AudioServicesPlaySystemSound(1320)
+            TimerSoundPlayer.shared.playLong()
         }
-        #endif
         #if canImport(UIKit) && !os(watchOS)
         if timerHapticsEnabled {
             UINotificationFeedbackGenerator().notificationOccurred(.success)
@@ -447,11 +442,11 @@ struct SetRow: View {
             UINotificationFeedbackGenerator().notificationOccurred(.success)
         }
         #endif
-        #if canImport(AudioToolbox)
         if timerSoundEnabled {
-            AudioServicesPlaySystemSound(1005)
+            // Auch hier der laengere Ton — gleicher GO-Klang als "Du hast es
+            // geschafft"-Signal.
+            TimerSoundPlayer.shared.playLong()
         }
-        #endif
     }
 
     // MARK: - State init / formatting / logging
@@ -488,16 +483,31 @@ struct SetRow: View {
 
     private func midpoint(_ a: Int, _ b: Int) -> Int { (a + b) / 2 }
 
+    /// DEL-045-Update: Bodyweight-Fix. Ein Satz ist speicherbar, sobald reps > 0
+    /// gesetzt sind — Gewicht ist OPTIONAL. Leeres Feld = 0.0 kg (Bodyweight).
     private var canLog: Bool {
-        guard reps > 0 else { return false }
-        if exercise.isCardio || exercise.isTimeBased { return true }
-        return (weight ?? 0) > 0
+        reps > 0
     }
 
     private func logCurrentValues() {
         guard canLog else { return }
+        // Tastatur sofort dismissen — keyboardDismissToolbar liefert auf iOS
+        // keinen "Fertig"-Button mehr, daher hier explizit resignen (DEL-045-
+        // Update Punkt 3).
+        dismissKeyboard()
         let w = (exercise.isCardio || exercise.isTimeBased) ? 0.0 : (weight ?? 0)
         onLogged(w, reps, rir)
+    }
+
+    /// Resigne der gerade-fokussierten responder-Kette. iOS-only; auf macOS
+    /// ein No-Op (es gibt dort keine On-Screen-Tastatur).
+    private func dismissKeyboard() {
+        #if os(iOS)
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil, from: nil, for: nil
+        )
+        #endif
     }
 
     private func formatWeight(_ w: Double) -> String {

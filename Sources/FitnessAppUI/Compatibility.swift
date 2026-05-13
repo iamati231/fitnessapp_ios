@@ -29,38 +29,40 @@ extension View {
         #endif
     }
 
-    /// Adds a native "Fertig" toolbar button INTO the keyboard's accessory
-    /// bar (the gray strip directly above the keyboard) — NOT a floating
-    /// pill above the keyboard. Without this, the decimal-pad keyboard
-    /// covers the bottom of the screen and the user has no way to navigate
-    /// back, since Apple's number-pad keyboards have no built-in
-    /// return/dismiss key.
+    /// Lets the user dismiss the keyboard by:
+    ///   1. Swiping the Form/ScrollView downward (`.scrollDismissesKeyboard(.interactively)`)
+    ///   2. Tapping anywhere in the empty background area (added via the
+    ///      `.onTapGesture` chain below, which fires `resignFirstResponder`
+    ///      on the responder chain).
     ///
-    /// Plus: `.scrollDismissesKeyboard(.interactively)` lets the user
-    /// dismiss the keyboard by swiping the Form/ScrollView downward —
-    /// matches the Notes-/Mail-/Reminders-app gesture (DEL-036).
+    /// DEL-045-Update Punkt 3: Wir haben den frueheren "Fertig"-Button im
+    /// keyboard-accessory entfernt, weil er Platz wegnimmt und unsauber
+    /// aussieht. Die Dismiss-UX laeuft jetzt rein ueber Hintergrund-Tap +
+    /// Scroll-Geste — was wesentlich naeher am System-Default ist (Notes-/
+    /// Mail-App).
     ///
-    /// Uses `UIResponder.resignFirstResponder` (instead of `@FocusState`)
-    /// so the modifier is fully stateless and can be applied at any view
-    /// level via a one-liner. No-op on macOS.
+    /// No-op on macOS (keine On-Screen-Tastatur).
     @ViewBuilder
     func keyboardDismissToolbar() -> some View {
         #if os(iOS)
         self
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button {
+            .scrollDismissesKeyboard(.interactively)
+            .background(
+                // Voll-flaechige Tap-Catcher hinter der View — fuengt Tippen
+                // ins "Leere" ab und dismissed die Tastatur. WICHTIG: NICHT
+                // .contentShape(Rectangle()) auf self setzen, weil das Taps
+                // auf Buttons/Slider/etc. schluckt. Stattdessen ein hinten-
+                // liegender Color.clear-Layer, der nur dann triggert wenn
+                // kein interaktives Element vorne den Tap absorbiert hat.
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture {
                         UIApplication.shared.sendAction(
                             #selector(UIResponder.resignFirstResponder),
                             to: nil, from: nil, for: nil
                         )
-                    } label: {
-                        Text("Fertig").fontWeight(.semibold)
                     }
-                }
-            }
-            .scrollDismissesKeyboard(.interactively)
+            )
         #else
         self
         #endif
