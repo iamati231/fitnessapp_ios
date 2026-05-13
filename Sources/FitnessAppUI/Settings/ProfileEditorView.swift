@@ -65,21 +65,31 @@ public struct ProfileEditorView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .keyboardDismissToolbar()
-        // DEL-047 + DEL-049: Trainingsort-Aenderung im Profil triggert
-        // EINEN von zwei Dialogen je nach Situation:
-        //  * Restore-Prompt (DEL-049 "Urlaub zu Ende"): wenn irgendein Plan
-        //    aktive Ersatz-Uebungen mit `swappedFromOriginal` haelt, deren
-        //    Originale im neuen Env wieder kompatibel waeren.
-        //  * Adapt-Prompt (DEL-047 Standard): Top-Down-Anpassung wie bisher.
-        // Pruefung erst NACH oldValue!=newValue UND nach dem
-        // mind-ein-Plan-mit-Uebungen-Check, damit der initiale Profile-Set
-        // im Onboarding NICHT nervt.
+        // DEL-047 + DEL-049 + DEL-050: Trainingsort-Aenderung im Profil
+        // triggert zwei sequentielle Schritte:
+        //
+        //   * SCHRITT 1 (DEL-050 Top-Down-Sync): Plan-Metadaten unbedingt
+        //     mit-aktualisieren, BEVOR der User die "anpassen?"-Frage
+        //     beantwortet. Sonst koennte er "Nein, so lassen" sagen und es
+        //     entstuende ein Mismatch (Profil = BW, Plan = Gym). Dies passiert
+        //     ohne Prompt — Profil ist die Source of Truth fuer alle Plaene.
+        //
+        //   * SCHRITT 2 (DEL-047/049): Adapt- oder Restore-Prompt
+        //     ueber die Uebungen. Adapt bei "frischer" Aenderung, Restore wenn
+        //     irgendein Plan archivierte Originale hat, die im neuen Env wieder
+        //     passen.
         .onChange(of: profile.environment) { oldValue, newValue in
-            guard oldValue != newValue,
-                  allPlans.contains(where: { plan in
-                      plan.days.contains(where: { !$0.activeExercises.isEmpty })
-                  })
-            else { return }
+            guard oldValue != newValue else { return }
+
+            // ── SCHRITT 1: DEL-050 Top-Down-Sync (immer, ohne Prompt). ──
+            for plan in allPlans where plan.targetEnvironment != newValue {
+                plan.targetEnvironment = newValue
+            }
+
+            // ── SCHRITT 2: Adapt-oder-Restore-Frage (nur wenn relevant). ──
+            guard allPlans.contains(where: { plan in
+                plan.days.contains(where: { !$0.activeExercises.isEmpty })
+            }) else { return }
             let pending = PendingProfileEnvSwap(oldEnv: oldValue, newEnv: newValue)
             if PlanEnvironmentMigrator.hasAnyRestorableOriginals(
                 plans: allPlans, forEnvironment: newValue

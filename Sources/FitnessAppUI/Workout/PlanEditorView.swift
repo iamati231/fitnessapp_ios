@@ -16,12 +16,27 @@ public struct PlanEditorView: View {
 
     @Query private var allPlans: [TrainingPlan]
 
+    /// DEL-050: alle aktuell als `isActive == true` markierten Plaene. Wenn das
+    /// genau {self} oder leer ist, syncen wir den Profile-Env still mit; sonst
+    /// stellen wir dem User die Multi-Plan-Frage.
+    @Query(filter: #Predicate<TrainingPlan> { $0.isActive == true })
+    private var activePlans: [TrainingPlan]
+
+    /// DEL-050: Source of Truth fuer den globalen Trainingsort. Ein Profil-
+    /// Eintrag pro App-Install (Singleton-Convention). Wenn nil, ist der User
+    /// noch im Onboarding und es gibt keinen globalen Env zu syncen — der
+    /// Bottom-Up-Pfad bleibt dann lokal.
+    @Query private var userProfiles: [UserBodyProfile]
+
     // DEL-022 — Environment-Swap-State
     @State private var pendingEnvironmentSwap: PendingEnvironmentSwap?
     // DEL-049 — Restore-Prompt-State (Urlaubs-Modus zu Ende). Separat vom
     // adapt-State, weil das UI-Wording, die Buttons UND die ausgefuehrte
     // Aktion komplett andere sind.
     @State private var pendingEnvironmentRestore: PendingEnvironmentSwap?
+    /// DEL-050 — Multi-Plan-Sync-Prompt-State. Nur gesetzt wenn der User
+    /// mehrere aktive Plaene hat und EINEN davon umstellt.
+    @State private var pendingGlobalSync: PendingEnvironmentSwap?
     @State private var swapResultToast: String?
 
     public init(plan: TrainingPlan) {
@@ -43,24 +58,70 @@ public struct PlanEditorView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        // DEL-022 + DEL-031 + DEL-049 — Trainingsort-Wechsel triggert
-        // EINEN von zwei Dialogen:
-        //  * Restore: Plan hat aktive Ersatz-Uebungen mit `swappedFromOriginal`,
-        //    deren Originale im neuen Env wieder kompatibel sind → fragen wir
-        //    nach "Wiederherstellen?".
-        //  * Adapt: sonst der klassische Top-Down-Swap.
+        // DEL-022 + DEL-031 + DEL-049 + DEL-050 — Trainingsort-Wechsel feuert
+        // einen mehrstufigen Flow:
+        //
+        //   * SCHRITT A (DEL-050 Bottom-Up-Sync): je nach Anzahl anderer
+        //     aktiver Plaene entweder still den Profile-Env synchronisieren
+        //     ODER den User mit dem Multi-Plan-Sync-Dialog fragen, ob alle
+        //     anderen Plaene mit umgestellt werden sollen. Nur wenn der User
+        //     "Nur fuer diesen Plan" waehlt, bleibt der globale Wert wie er
+        //     war.
+        //
+        //   * SCHRITT B (DEL-049 Restore vs. DEL-022 Adapt): Frage nach den
+        //     Uebungen DIESES Plans. Restore wenn archivierte Originale im
+        //     neuen Env wieder passen, sonst klassischer Adapt-Prompt. Wird
+        //     vom Schritt-A-Flow direkt im Anschluss aufgerufen.
+        //
+        // Leerer Plan (keine aktiven Uebungen) skipped Schritt B, aber
+        // Schritt A laeuft trotzdem — Metadaten-Sync ist auch ohne Uebungen
+        // relevant (User koennte spaeter welche hinzufuegen wollen).
         .onChange(of: plan.targetEnvironment) { oldValue, newValue in
-            guard oldValue != newValue,
-                  plan.days.contains(where: { !$0.activeExercises.isEmpty })
-            else { return }
+            guard oldValue != newValue else { return }
             let pending = PendingEnvironmentSwap(oldEnv: oldValue, newEnv: newValue)
-            if PlanEnvironmentMigrator.hasRestorableOriginals(
-                plan: plan, forEnvironment: newValue
-            ) {
-                pendingEnvironmentRestore = pending
+
+            // SCHRITT A — DEL-050.
+            // `otherActivePlans` = aktive Plaene OHNE den Plan, den wir gerade
+            // editieren. Wenn leer, sind wir entweder der einzige aktive Plan
+            // oder gar keiner ist aktiv → silent sync.
+            let others = otherActivePlans
+            if others.isEmpty {
+                if let profile = userProfiles.first {
+                    profile.environment = newValue
+                }
+                continueWithAdaptOrRestorePrompt(pending)
             } else {
-                pendingEnvironmentSwap = pending
+                // Mehrere aktive Plaene → User darf entscheiden.
+                pendingGlobalSync = pending
             }
+        }
+        // DEL-050 — Multi-Plan-Sync-Dialog. Erscheint nur wenn der User
+        // mehrere aktive Plaene hat. Drei Buttons: alle + global syncen,
+        // nur diesen Plan aendern, oder die Picker-Aenderung verwerfen.
+        .confirmationDialog(
+            "Auch andere Pläne anpassen?",
+            isPresented: Binding(
+                get: { pendingGlobalSync != nil },
+                set: { if !$0 { pendingGlobalSync = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: pendingGlobalSync
+        ) { swap in
+            Button("Für alle anpassen") {
+                applyGlobalSync(newEnv: swap.newEnv)
+                continueWithAdaptOrRestorePrompt(swap)
+                pendingGlobalSync = nil
+            }
+            Button("Nur für diesen Plan") {
+                continueWithAdaptOrRestorePrompt(swap)
+                pendingGlobalSync = nil
+            }
+            Button("Abbrechen", role: .cancel) {
+                plan.targetEnvironment = swap.oldEnv
+                pendingGlobalSync = nil
+            }
+        } message: { swap in
+            Text("Du hast mehrere aktive Pläne. Soll dein globaler Trainingsort und deine anderen aktiven Pläne ebenfalls auf \(environmentLabel(swap.newEnv)) geändert werden?")
         }
         .confirmationDialog(
             "Trainingsort geändert",
@@ -128,6 +189,69 @@ public struct PlanEditorView: View {
     private struct PendingEnvironmentSwap: Equatable {
         let oldEnv: EnvironmentType
         let newEnv: EnvironmentType
+    }
+
+    // MARK: - DEL-050 Bottom-Up Sync helpers
+
+    /// Aktive Plaene ohne den, den wir gerade editieren. Wenn leer →
+    /// silent-sync zum Profile-Env; sonst Multi-Plan-Frage.
+    private var otherActivePlans: [TrainingPlan] {
+        activePlans.filter { $0.persistentModelID != plan.persistentModelID }
+    }
+
+    /// Stage 2 vom DEL-050-Flow: Nachdem der globale Sync-Pfad entschieden
+    /// wurde (silent oder via Dialog), entscheidet diese Methode zwischen
+    /// dem DEL-049-Restore- und dem DEL-022-Adapt-Prompt fuer DIESEN Plan.
+    /// Leere Plaene skipen den Prompt.
+    private func continueWithAdaptOrRestorePrompt(_ swap: PendingEnvironmentSwap) {
+        guard plan.days.contains(where: { !$0.activeExercises.isEmpty })
+        else { return }
+        if PlanEnvironmentMigrator.hasRestorableOriginals(
+            plan: plan, forEnvironment: swap.newEnv
+        ) {
+            pendingEnvironmentRestore = swap
+        } else {
+            pendingEnvironmentSwap = swap
+        }
+    }
+
+    /// User hat "Fuer alle anpassen" gewaehlt → globaler Trainingsort UND
+    /// alle anderen aktiven Plaene werden synchron mitgezogen. Der Migrator
+    /// laeuft auf den anderen Plaenen direkt durch (Adapt-Pfad), damit
+    /// derEx-Bestand auch dort konsistent wird. Toast meldet das Ergebnis.
+    private func applyGlobalSync(newEnv: EnvironmentType) {
+        if let profile = userProfiles.first {
+            profile.environment = newEnv
+        }
+        let others = otherActivePlans
+        guard !others.isEmpty else { return }
+        let outcome = PlanEnvironmentMigrator.migrateAll(
+            plans: others,
+            toEnvironment: newEnv,
+            modelContext: modelContext
+        )
+        // Toast mit dem Aggregat-Ergebnis der OTHERS (ohne diesen Plan,
+        // der durch den Folge-Dialog gleich noch eigene Counts erzeugt).
+        var parts: [String] = []
+        parts.append("\(outcome.plansTouched) andere\(outcome.plansTouched == 1 ? "r Plan" : " Pläne") synchronisiert")
+        if outcome.result.swapped > 0 { parts.append("\(outcome.result.swapped) ersetzt") }
+        let message = parts.joined(separator: " · ")
+        withAnimation(.easeOut(duration: 0.2)) {
+            swapResultToast = message
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            withAnimation(.easeIn(duration: 0.2)) {
+                swapResultToast = nil
+            }
+        }
+    }
+
+    private func environmentLabel(_ env: EnvironmentType) -> String {
+        switch env {
+        case .gym:         return "Gym"
+        case .homeGym:     return "Home-Gym"
+        case .noEquipment: return "Bodyweight"
+        }
     }
 
     /// DEL-030: Plaene sind jetzt IMMER editierbar. `plan.isTemplate` bleibt
