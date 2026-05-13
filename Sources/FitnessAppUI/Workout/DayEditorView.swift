@@ -17,6 +17,19 @@ public struct DayEditorView: View {
     @State private var showingPicker = false
     @State private var exerciseToEdit: Exercise?
 
+    // DEL-048: Bottom-Up Konflikt-Detection. Wenn der User eine Uebung aus
+    // dem Picker waehlt, deren Equipment im aktuellen Plan-Env nicht
+    // funktioniert (z.B. Beinpresse in einem Bodyweight-Plan), halten wir
+    // sie hier zwischen und zeigen einen Confirmation-Dialog.
+    @State private var pendingEquipmentConflict: PendingEquipmentConflict?
+    @State private var swapResultToast: String?
+
+    private struct PendingEquipmentConflict: Equatable {
+        let template: ExerciseTemplate
+        let requiredEnv: EnvironmentType   // minimal-fitting env (.gym oder .homeGym)
+        let planEnv: EnvironmentType
+    }
+
     /// DEL-042: laeuft eine WorkoutSession noch im Hintergrund (z.B. wegen
     /// App-Crash oder vergessenes Speichern)? Wenn ja, blockiert ein Confirm-
     /// Dialog den Direktstart und gibt dem User drei Optionen.
@@ -52,9 +65,49 @@ public struct DayEditorView: View {
         #endif
         .sheet(isPresented: $showingPicker) {
             ExercisePickerView(
-                onSelect: { template in addExercise(from: template) },
+                planEnvironment: day.plan?.targetEnvironment,
+                onSelect: { template in handleExerciseSelection(template) },
                 onCreateCustom: { name in addCustomExercise(named: name) }
             )
+        }
+        // DEL-048: Equipment-Konflikt-Confirmation. Wenn der User mit Filter
+        // OFF eine inkompatible Uebung gewaehlt hat, fragen wir hier nach.
+        .confirmationDialog(
+            "Equipment-Konflikt",
+            isPresented: Binding(
+                get: { pendingEquipmentConflict != nil },
+                set: { if !$0 { pendingEquipmentConflict = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: pendingEquipmentConflict
+        ) { conflict in
+            // Option A: Plan-Env auf Gym/Home umstellen UND Uebung adden.
+            Button("Plan auf \(environmentLabel(conflict.requiredEnv)) umstellen") {
+                switchPlanEnvAndAdd(conflict: conflict)
+                pendingEquipmentConflict = nil
+            }
+            // Option B: Trotzdem adden, Plan-Env unveraendert lassen. Die
+            // Uebung wird vermutlich beim ersten Workout-Start als "kein
+            // Equipment vorhanden" stossen, aber der User hat die freie Wahl.
+            Button("Nur Übung hinzufügen") {
+                addExercise(from: conflict.template)
+                pendingEquipmentConflict = nil
+            }
+            Button("Abbrechen", role: .cancel) {
+                pendingEquipmentConflict = nil
+            }
+        } message: { conflict in
+            Text("„\(conflict.template.name)\" erfordert Equipment, das in \(environmentLabel(conflict.planEnv))-Plänen normalerweise nicht verfügbar ist. Möchtest du den Plan-Typ entsprechend anpassen?")
+        }
+        .overlay(alignment: .bottom) {
+            if let msg = swapResultToast {
+                Label(msg, systemImage: "arrow.triangle.2.circlepath")
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                    .padding(.bottom, 24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
         .sheet(item: $exerciseToEdit) { exercise in
             NavigationStack {
@@ -296,6 +349,83 @@ public struct DayEditorView: View {
     }
 
     // MARK: Actions
+
+    /// DEL-048: Entry-Point fuer eine Picker-Auswahl. Checked, ob das
+    /// Template-Equipment zum aktuellen Plan-Env passt. Bei Konflikt wird
+    /// statt sofortigem Insert der Confirmation-Dialog aufgemacht.
+    /// Custom-Templates werden NIE als Konflikt gewertet — der User hat sie
+    /// bewusst angelegt.
+    private func handleExerciseSelection(_ template: ExerciseTemplate) {
+        guard let planEnv = day.plan?.targetEnvironment,
+              !template.isCustom,
+              !ExerciseLibraryData.isEquipment(template.equipment, compatibleWith: planEnv)
+        else {
+            addExercise(from: template)
+            return
+        }
+        // Konflikt: schlage das minimal-passende Env vor (homeGym fuer KH/KB/
+        // Band, Gym fuer Maschinen/Kabel/LH).
+        let required = minimumEnvironment(for: template.equipment)
+        pendingEquipmentConflict = PendingEquipmentConflict(
+            template: template,
+            requiredEnv: required,
+            planEnv: planEnv
+        )
+    }
+
+    /// DEL-048: Mappt Equipment auf das niedrigst-passende Env, das der User
+    /// braucht, um die Uebung sinnvoll auszufuehren. Dumbbells/Kettlebells/
+    /// Bands gehen schon in HomeGym; Barbell/Machine/Cable brauchen Gym.
+    private func minimumEnvironment(for equipment: Equipment) -> EnvironmentType {
+        switch equipment {
+        case .bodyweight:                                return .noEquipment
+        case .dumbbell, .kettlebell, .band:              return .homeGym
+        case .barbell, .machine, .cable:                 return .gym
+        }
+    }
+
+    /// DEL-048: User waehlt "Plan umstellen". Wir setzen das neue Env auf
+    /// dem Plan UND lassen den `PlanEnvironmentMigrator` ueber die bereits
+    /// vorhandenen Uebungen drueberlaufen (damit z.B. eine KH-Variante nicht
+    /// neben einer auf einmal hinfaelligen BW-Variante stehen bleibt). Dann
+    /// adden wir die ausloesende Uebung als ganz normale neue Exercise.
+    private func switchPlanEnvAndAdd(conflict: PendingEquipmentConflict) {
+        guard let plan = day.plan else {
+            addExercise(from: conflict.template)
+            return
+        }
+        plan.targetEnvironment = conflict.requiredEnv
+        let r = PlanEnvironmentMigrator.migrate(
+            plan: plan,
+            toEnvironment: conflict.requiredEnv,
+            modelContext: modelContext
+        )
+        // Eigentliche neue Uebung adden (NACH dem Migrator, sonst wird sie
+        // selber gleich umsortiert/ersetzt).
+        addExercise(from: conflict.template)
+
+        // Toast
+        var parts: [String] = []
+        parts.append("Plan auf \(environmentLabel(conflict.requiredEnv))")
+        if r.swapped > 0 { parts.append("\(r.swapped) ersetzt") }
+        let message = parts.joined(separator: " · ")
+        withAnimation(.easeOut(duration: 0.2)) {
+            swapResultToast = message
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            withAnimation(.easeIn(duration: 0.2)) {
+                swapResultToast = nil
+            }
+        }
+    }
+
+    private func environmentLabel(_ env: EnvironmentType) -> String {
+        switch env {
+        case .gym:         return "Gym"
+        case .homeGym:     return "Home-Gym"
+        case .noEquipment: return "Bodyweight"
+        }
+    }
 
     private func addExercise(from template: ExerciseTemplate) {
         let exercise = Exercise(

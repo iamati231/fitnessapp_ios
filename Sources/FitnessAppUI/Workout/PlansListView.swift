@@ -98,7 +98,12 @@ public struct PlansListView: View {
                 Button {
                     showingTemplatePicker = true
                 } label: {
-                    Label("Aus Template", systemImage: "rectangle.stack.fill.badge.plus")
+                    // DEL-046: vorher `rectangle.stack.fill.badge.plus` — das
+                    // gerenderte SF-Symbol war auf `.borderedProminent` un-
+                    // sichtbar (vermutlich wegen `.badge.plus`-Komposition
+                    // + Tint-Override). `list.bullet.clipboard` rendert sauber
+                    // und harmonisiert visuell mit dem `+` des Leer-Buttons.
+                    Label("Aus Template", systemImage: "list.bullet.clipboard")
                         .font(.callout.weight(.semibold))
                 }
                 .buttonStyle(.borderedProminent)

@@ -426,13 +426,23 @@ public enum ExerciseLibraryData {
         _ spec: ExerciseTemplateSpec,
         with env: EnvironmentType
     ) -> Bool {
+        isEquipment(spec.equipment, compatibleWith: env)
+    }
+
+    /// Publiche Variante derselben Check — wird von der UI fuer Bottom-Up-
+    /// Konflikt-Detection benutzt (DEL-048): "Diese Maschinen-Uebung passt
+    /// nicht zum Bodyweight-Plan — willst du den Plan auf Gym umstellen?"
+    public static func isEquipment(
+        _ equipment: Equipment,
+        compatibleWith env: EnvironmentType
+    ) -> Bool {
         switch env {
         case .gym:
             return true   // gym has everything
         case .homeGym:
-            return [.bodyweight, .dumbbell, .kettlebell, .band].contains(spec.equipment)
+            return [.bodyweight, .dumbbell, .kettlebell, .band].contains(equipment)
         case .noEquipment:
-            return spec.equipment == .bodyweight
+            return equipment == .bodyweight
         }
     }
 }

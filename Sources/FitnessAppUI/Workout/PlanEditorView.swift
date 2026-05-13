@@ -274,65 +274,22 @@ public struct PlanEditorView: View {
         }
     }
 
-    /// DEL-022: Geht alle Uebungen des Plans durch und ersetzt sie pro Mapping
-    /// aus `ExerciseLibraryData.alternatives`. Drei Resolutions:
-    ///   - `.swap`: neue Uebung mit gleichem orderIndex + day einfuegen, alte
-    ///     loeschen (sauberer SwiftData-Lifecycle).
-    ///   - `.keep`: keine Alternative — bleibt im Plan, faellt in den "manuell
-    ///     ueberpruefen"-Bucket.
-    ///   - `.stayCompatible`: Uebung ist nativ im neuen Env nutzbar, kein Swap.
-    ///
-    /// `suggestedWeight` wird beim Swap auf nil gesetzt — die alte Last
-    /// passt selten zur neuen Uebung. User trifft beim ersten Workout neu.
+    /// DEL-022 / DEL-047: Delegiert an `PlanEnvironmentMigrator` (FitnessAppData).
+    /// Die eigentliche Swap-Logik lebt dort, damit Profil-Sync (DEL-047) und
+    /// Bottom-Up-Konflikt-Detection (DEL-048) den selben Algorithmus nutzen
+    /// koennen.
     private func performEnvironmentSwap(to newEnv: EnvironmentType) {
-        var swapped = 0
-        var kept = 0
-        var compatible = 0
-
-        for day in plan.days {
-            let snapshot = day.exercises.sorted { $0.orderIndex < $1.orderIndex }
-            for exercise in snapshot {
-                switch ExerciseLibraryData.resolveAlternative(
-                    forExerciseName: exercise.name,
-                    targetEnvironment: newEnv
-                ) {
-                case .swap(let altSpec):
-                    let newExercise = Exercise(
-                        name: altSpec.name,
-                        sets: exercise.sets,
-                        repsMin: exercise.repsMin,
-                        repsMax: exercise.repsMax,
-                        restSeconds: exercise.restSeconds,
-                        notes: exercise.notes,
-                        suggestedWeight: nil,   // andere Uebung → Last neu kalibrieren
-                        orderIndex: exercise.orderIndex,
-                        targetRir: exercise.targetRir,
-                        weightReducedNote: exercise.weightReducedNote,
-                        // ExerciseTemplateSpec hat (noch) kein isCardio-Flag —
-                        // unsere Alternative-Mappings sind alle Strength-Lifts,
-                        // also hardcode false. Wenn das Mapping spaeter Cardio-
-                        // Substitutes bekommt, hier Detection via Name oder
-                        // dedicated Spec-Feld nachruesten.
-                        isCardio: false,
-                        isTimeBased: altSpec.isTimeBased,
-                        day: day
-                    )
-                    modelContext.insert(newExercise)
-                    modelContext.delete(exercise)
-                    swapped += 1
-                case .keep:
-                    kept += 1
-                case .stayCompatible:
-                    compatible += 1
-                }
-            }
-        }
+        let result = PlanEnvironmentMigrator.migrate(
+            plan: plan,
+            toEnvironment: newEnv,
+            modelContext: modelContext
+        )
 
         // Toast-Message bauen
         var parts: [String] = []
-        if swapped > 0    { parts.append("\(swapped) ersetzt") }
-        if kept > 0       { parts.append("\(kept) ohne Alternative") }
-        if compatible > 0 { parts.append("\(compatible) unverändert") }
+        if result.swapped > 0    { parts.append("\(result.swapped) ersetzt") }
+        if result.kept > 0       { parts.append("\(result.kept) ohne Alternative") }
+        if result.compatible > 0 { parts.append("\(result.compatible) unverändert") }
         let message = parts.isEmpty ? "Keine Übungen zum Anpassen" : parts.joined(separator: " · ")
 
         withAnimation(.easeOut(duration: 0.2)) {

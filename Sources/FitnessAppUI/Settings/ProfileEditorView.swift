@@ -17,9 +17,32 @@ public struct ProfileEditorView: View {
 
     @Bindable public var profile: UserBodyProfile
     @Environment(HealthKitController.self) private var healthKit
+    @Environment(\.modelContext) private var modelContext
 
     @State private var healthKitFetchInProgress: Bool = false
     @State private var healthKitFilledFields: Set<String> = []
+
+    // DEL-047: aktive Plaene laden, damit wir bei einer Trainingsort-Aenderung
+    // einen Sync-Prompt anbieten koennen. Wir laden alle Plaene (auch
+    // inaktive) — der User-Erwartung nach soll sich "mein Trainingsort" auch
+    // auf seine Programm-Bibliothek auswirken, nicht nur den aktuell aktiven
+    // Plan.
+    @Query(sort: \TrainingPlan.name)
+    private var allPlans: [TrainingPlan]
+
+    /// DEL-047: gehaltete `oldEnv`-Referenz fuer den Confirmation-Dialog. Wenn
+    /// non-nil, wird der Dialog angezeigt; alle drei Dialog-Aktionen setzen
+    /// das Feld wieder auf nil zurueck.
+    @State private var pendingProfileEnvSwap: PendingProfileEnvSwap?
+
+    /// Optionaler Ergebnis-Toast nach erfolgreichem Bulk-Sync, analog zum
+    /// PlanEditor-Toast. Nil = nichts anzeigen.
+    @State private var profileSwapToast: String?
+
+    private struct PendingProfileEnvSwap: Equatable {
+        let oldEnv: EnvironmentType
+        let newEnv: EnvironmentType
+    }
 
     public init(profile: UserBodyProfile) {
         self.profile = profile
@@ -37,6 +60,88 @@ public struct ProfileEditorView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .keyboardDismissToolbar()
+        // DEL-047: Trainingsort-Aenderung im Profil triggert Sync-Frage.
+        // `oldValue != newValue` schliesst den initialen "set existing value"-
+        // Tick aus. `allPlans.contains(where: !empty)` skipped, wenn der
+        // User gar keine Plaene mit Uebungen hat — dann gibt es nichts zu
+        // syncen und der Prompt waere reine Stoerung.
+        .onChange(of: profile.environment) { oldValue, newValue in
+            guard oldValue != newValue,
+                  allPlans.contains(where: { plan in
+                      plan.days.contains(where: { !$0.exercises.isEmpty })
+                  })
+            else { return }
+            pendingProfileEnvSwap = PendingProfileEnvSwap(
+                oldEnv: oldValue, newEnv: newValue
+            )
+        }
+        .confirmationDialog(
+            "Trainingsort geändert",
+            isPresented: Binding(
+                get: { pendingProfileEnvSwap != nil },
+                set: { if !$0 { pendingProfileEnvSwap = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: pendingProfileEnvSwap
+        ) { swap in
+            Button("Ja, Pläne anpassen") {
+                applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
+                pendingProfileEnvSwap = nil
+            }
+            Button("Nein, so lassen") {
+                pendingProfileEnvSwap = nil
+            }
+        } message: { swap in
+            Text("Du hast deinen Trainingsort auf \(environmentLabel(swap.newEnv)) geändert. Sollen deine bestehenden Trainingspläne automatisch an das dort verfügbare Equipment angepasst werden?")
+        }
+        .overlay(alignment: .bottom) {
+            if let msg = profileSwapToast {
+                Label(msg, systemImage: "checkmark.seal.fill")
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                    .padding(.bottom, 24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+    }
+
+    /// DEL-047: bulk-migration ueber den `PlanEnvironmentMigrator`. Setzt jedem
+    /// Plan das neue `targetEnvironment` und ersetzt Uebungen, die im neuen
+    /// Env nicht gehen, durch die Alternative-Liste. Ergebnis-Toast zeigt
+    /// die Aggregat-Counts.
+    private func applyEnvironmentSwapToAllPlans(newEnv: EnvironmentType) {
+        let outcome = PlanEnvironmentMigrator.migrateAll(
+            plans: allPlans,
+            toEnvironment: newEnv,
+            modelContext: modelContext
+        )
+        let plansTouched = outcome.plansTouched
+        let r = outcome.result
+
+        var parts: [String] = []
+        parts.append("\(plansTouched) Plan\(plansTouched == 1 ? "" : "e")")
+        if r.swapped > 0    { parts.append("\(r.swapped) ersetzt") }
+        if r.kept > 0       { parts.append("\(r.kept) ohne Alternative") }
+        if r.compatible > 0 { parts.append("\(r.compatible) unverändert") }
+        let message = parts.joined(separator: " · ")
+
+        withAnimation(.easeOut(duration: 0.2)) {
+            profileSwapToast = message
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
+            withAnimation(.easeIn(duration: 0.2)) {
+                profileSwapToast = nil
+            }
+        }
+    }
+
+    private func environmentLabel(_ env: EnvironmentType) -> String {
+        switch env {
+        case .gym:         return "Gym"
+        case .homeGym:     return "Home-Gym"
+        case .noEquipment: return "ohne Equipment"
+        }
     }
 
     @ViewBuilder

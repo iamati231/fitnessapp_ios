@@ -7,11 +7,20 @@ import FitnessAppData
 /// Sheet for picking an exercise: searchable list of `ExerciseTemplate`s plus an
 /// inline form for adding a custom exercise. Both branches return via callbacks so
 /// the caller (DayEditor) owns the actual `Exercise` insertion.
+///
+/// **DEL-048**: optionaler `planEnvironment`-Parameter aktiviert eine Filter-
+/// Toggle "Nur Übungen für meinen Plan-Typ". Wenn gesetzt + Toggle an,
+/// blendet die Liste alle Uebungen aus, deren Equipment im aktuellen Plan-
+/// Env nicht funktioniert (z.B. Maschinen in einem Bodyweight-Plan).
 @available(iOS 17.0, macOS 14.0, *)
 public struct ExercisePickerView: View {
 
     public var onSelect: (ExerciseTemplate) -> Void
     public var onCreateCustom: (String) -> Void
+
+    /// DEL-048: aktueller Plan-Env-Kontext. Nil = kein Filter (zB Open-from-
+    /// Settings o.ae.). Non-nil aktiviert die Equipment-Filter-Toggle.
+    public var planEnvironment: EnvironmentType?
 
     @Environment(\.dismiss) private var dismiss
 
@@ -19,11 +28,14 @@ public struct ExercisePickerView: View {
 
     @State private var search: String = ""
     @State private var customName: String = ""
+    @State private var filterToPlanEnv: Bool = true
 
     public init(
+        planEnvironment: EnvironmentType? = nil,
         onSelect: @escaping (ExerciseTemplate) -> Void,
         onCreateCustom: @escaping (String) -> Void
     ) {
+        self.planEnvironment = planEnvironment
         self.onSelect = onSelect
         self.onCreateCustom = onCreateCustom
     }
@@ -31,6 +43,9 @@ public struct ExercisePickerView: View {
     public var body: some View {
         NavigationStack {
             List {
+                if planEnvironment != nil {
+                    filterSection
+                }
                 customSection
                 librarySection
             }
@@ -46,6 +61,33 @@ public struct ExercisePickerView: View {
                     Button("Abbrechen") { dismiss() }
                 }
             }
+        }
+    }
+
+    /// DEL-048: Equipment-Filter-Toggle. Default an, sodass der User in einem
+    /// Bodyweight-Plan gar nicht erst Maschinen-Uebungen sieht. Toggle aus =
+    /// volle Bibliothek + Bottom-Up-Konflikt-Detection im Caller springt an,
+    /// wenn der User trotzdem eine inkompatible Uebung waehlt.
+    @ViewBuilder
+    private var filterSection: some View {
+        if let env = planEnvironment {
+            Section {
+                Toggle(isOn: $filterToPlanEnv) {
+                    Label("Nur Übungen für \(environmentLabel(env))",
+                          systemImage: "line.3.horizontal.decrease.circle")
+                }
+            } footer: {
+                Text("Wenn aus, siehst du auch Übungen, die zu deinem Plan-Typ nicht passen. Die App fragt dann beim Hinzufügen nach, ob du den Plan umstellen willst.")
+                    .font(.footnote)
+            }
+        }
+    }
+
+    private func environmentLabel(_ env: EnvironmentType) -> String {
+        switch env {
+        case .gym:         return "Gym"
+        case .homeGym:     return "Home-Gym"
+        case .noEquipment: return "Bodyweight"
         }
     }
 
@@ -103,8 +145,20 @@ public struct ExercisePickerView: View {
 
     private var filteredTemplates: [ExerciseTemplate] {
         let trimmed = search.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return templates }
-        return templates.filter { $0.name.localizedCaseInsensitiveContains(trimmed) }
+        var list = templates
+        // DEL-048: Equipment-Filter VOR Suche, damit der Suchindex die
+        // Maschinen-Uebungen in einem Bodyweight-Plan gar nicht erst trifft.
+        if let env = planEnvironment, filterToPlanEnv {
+            list = list.filter {
+                // Custom-Uebungen werden NICHT gefiltert — der User hat sie
+                // bewusst angelegt und weiss, was er tut. Sonst riskieren wir,
+                // dass eigene "Pull-up @ Tuerrahmen" in einem Gym-Plan
+                // ausgeblendet werden.
+                $0.isCustom || ExerciseLibraryData.isEquipment($0.equipment, compatibleWith: env)
+            }
+        }
+        guard !trimmed.isEmpty else { return list }
+        return list.filter { $0.name.localizedCaseInsensitiveContains(trimmed) }
     }
 }
 
