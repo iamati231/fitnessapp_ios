@@ -272,9 +272,9 @@ public struct DayEditorView: View {
                         Spacer()
                     }
                 }
-                .disabled(day.exercises.isEmpty)
+                .disabled(day.activeExercises.isEmpty)
             } footer: {
-                if day.exercises.isEmpty {
+                if day.activeExercises.isEmpty {
                     Text("Füge erst mindestens eine Übung hinzu, dann kannst du das Training starten.")
                         .font(.footnote)
                 }
@@ -285,7 +285,7 @@ public struct DayEditorView: View {
     @ViewBuilder
     private var exercisesSection: some View {
         Section {
-            if day.exercises.isEmpty {
+            if day.activeExercises.isEmpty {
                 Text(isRestDay ? "Ruhetag — keine Übungen." : "Noch keine Übungen.")
                     .foregroundStyle(.secondary)
                     .font(.callout)
@@ -330,7 +330,7 @@ public struct DayEditorView: View {
             if isReadOnly {
                 Text("Template-Plan — Übungen sind festgelegt. Du kannst sie ansehen, aber nicht hinzufügen, entfernen oder umsortieren.")
                     .font(.footnote)
-            } else if !day.exercises.isEmpty {
+            } else if !day.activeExercises.isEmpty {
                 Text("Tippe eine Übung an um sie zu bearbeiten. Halten + ziehen ändert die Reihenfolge.")
                     .font(.footnote)
             }
@@ -339,8 +339,10 @@ public struct DayEditorView: View {
 
     // MARK: Derived
 
+    /// DEL-049: archivierte Snapshots (Urlaubs-Modus) sind aus der UI raus —
+    /// nur aktive Uebungen anzeigen + sortieren.
     private var orderedExercises: [Exercise] {
-        day.exercises.sorted { $0.orderIndex < $1.orderIndex }
+        day.activeExercises.sorted { $0.orderIndex < $1.orderIndex }
     }
 
     private var weekdayOptions: [Int] {
@@ -430,7 +432,7 @@ public struct DayEditorView: View {
     private func addExercise(from template: ExerciseTemplate) {
         let exercise = Exercise(
             name: template.name,
-            orderIndex: day.exercises.count,
+            orderIndex: day.activeExercises.count,
             isTimeBased: template.isTimeBased,
             day: day
         )
@@ -453,7 +455,7 @@ public struct DayEditorView: View {
 
         let exercise = Exercise(
             name: trimmed,
-            orderIndex: day.exercises.count,
+            orderIndex: day.activeExercises.count,
             day: day
         )
         modelContext.insert(exercise)
@@ -467,10 +469,21 @@ public struct DayEditorView: View {
         }
     }
 
+    /// DEL-049: Loescht eine aktive Uebung UND ihren archivierten Urlaubs-
+    /// Modus-Snapshot (`swappedFromOriginal`), sonst bleibt ein toter
+    /// Eintrag in der Datenbank zurueck, den der User nirgendwo mehr sieht.
     private func deleteExercises(at offsets: IndexSet) {
         let arr = orderedExercises
         for index in offsets {
-            modelContext.delete(arr[index])
+            let exercise = arr[index]
+            // Original mit-cascaden (chain-cleanup, falls Doppel-Swap).
+            var cur: Exercise? = exercise.swappedFromOriginal
+            while let next = cur {
+                let nextOriginal = next.swappedFromOriginal
+                modelContext.delete(next)
+                cur = nextOriginal
+            }
+            modelContext.delete(exercise)
         }
         // Re-index remaining exercises so orderIndex stays a contiguous 0..n-1.
         for (i, exercise) in orderedExercises.enumerated() {
@@ -496,7 +509,7 @@ public struct DayEditorView: View {
             startTime: Date(),
             endTime: Date(),
             durationMinutes: 0,
-            exerciseCount: day.exercises.count,
+            exerciseCount: day.activeExercises.count,
             isCompleted: false,
             dayName: day.name,
             day: day

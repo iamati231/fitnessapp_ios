@@ -18,6 +18,10 @@ public struct PlanEditorView: View {
 
     // DEL-022 — Environment-Swap-State
     @State private var pendingEnvironmentSwap: PendingEnvironmentSwap?
+    // DEL-049 — Restore-Prompt-State (Urlaubs-Modus zu Ende). Separat vom
+    // adapt-State, weil das UI-Wording, die Buttons UND die ausgefuehrte
+    // Aktion komplett andere sind.
+    @State private var pendingEnvironmentRestore: PendingEnvironmentSwap?
     @State private var swapResultToast: String?
 
     public init(plan: TrainingPlan) {
@@ -39,19 +43,24 @@ public struct PlanEditorView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        // DEL-022 + DEL-031 — Trainingsort-Wechsel triggert Confirmation-Dialog.
-        // Vorher per isReadOnly-Check blockiert; jetzt feuert er fuer alle
-        // (custom + Template-Origin) Plaene.
+        // DEL-022 + DEL-031 + DEL-049 — Trainingsort-Wechsel triggert
+        // EINEN von zwei Dialogen:
+        //  * Restore: Plan hat aktive Ersatz-Uebungen mit `swappedFromOriginal`,
+        //    deren Originale im neuen Env wieder kompatibel sind → fragen wir
+        //    nach "Wiederherstellen?".
+        //  * Adapt: sonst der klassische Top-Down-Swap.
         .onChange(of: plan.targetEnvironment) { oldValue, newValue in
             guard oldValue != newValue,
-                  // Nur wenn es ueberhaupt Uebungen gibt — leerer Plan braucht
-                  // keinen Swap.
-                  plan.days.contains(where: { !$0.exercises.isEmpty })
+                  plan.days.contains(where: { !$0.activeExercises.isEmpty })
             else { return }
-            pendingEnvironmentSwap = PendingEnvironmentSwap(
-                oldEnv: oldValue,
-                newEnv: newValue
-            )
+            let pending = PendingEnvironmentSwap(oldEnv: oldValue, newEnv: newValue)
+            if PlanEnvironmentMigrator.hasRestorableOriginals(
+                plan: plan, forEnvironment: newValue
+            ) {
+                pendingEnvironmentRestore = pending
+            } else {
+                pendingEnvironmentSwap = pending
+            }
         }
         .confirmationDialog(
             "Trainingsort geändert",
@@ -76,6 +85,31 @@ public struct PlanEditorView: View {
             }
         } message: { swap in
             Text("Sollen die Übungen an deinen neuen Trainingsort angepasst werden? Übungen ohne passende Alternative bleiben im Plan und brauchen manuelle Anpassung.")
+        }
+        // DEL-049 — Restore-Dialog ("Urlaubs-Modus zu Ende").
+        .confirmationDialog(
+            "Ursprüngliche Übungen wiederherstellen?",
+            isPresented: Binding(
+                get: { pendingEnvironmentRestore != nil },
+                set: { if !$0 { pendingEnvironmentRestore = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: pendingEnvironmentRestore
+        ) { swap in
+            Button("Ja, wiederherstellen") {
+                performEnvironmentRestore(to: swap.newEnv)
+                pendingEnvironmentRestore = nil
+            }
+            Button("Nein, neu anpassen") {
+                performEnvironmentSwap(to: swap.newEnv)
+                pendingEnvironmentRestore = nil
+            }
+            Button("Abbrechen", role: .cancel) {
+                plan.targetEnvironment = swap.oldEnv
+                pendingEnvironmentRestore = nil
+            }
+        } message: { swap in
+            Text("Wir haben gespeicherte Original-Übungen aus einem früheren Equipment-Wechsel gefunden. Möchtest du diese wiederherstellen (inkl. der letzten Arbeitsgewichte aus der Historie), statt das aktuelle Setup neu anzupassen?")
         }
         .overlay(alignment: .bottom) {
             if let msg = swapResultToast {
@@ -274,19 +308,36 @@ public struct PlanEditorView: View {
         }
     }
 
-    /// DEL-022 / DEL-047: Delegiert an `PlanEnvironmentMigrator` (FitnessAppData).
-    /// Die eigentliche Swap-Logik lebt dort, damit Profil-Sync (DEL-047) und
-    /// Bottom-Up-Konflikt-Detection (DEL-048) den selben Algorithmus nutzen
-    /// koennen.
+    /// DEL-022 / DEL-047 / DEL-049: Delegiert an `PlanEnvironmentMigrator`.
+    /// Die eigentliche Swap-Logik lebt dort, damit Profil-Sync, Bottom-Up
+    /// und Urlaubs-Modus-Restore alle den selben Algorithmus nutzen.
+    /// Archive-statt-delete-Semantik: die alten Uebungen werden NICHT
+    /// geloescht, sondern als `isArchived = true` zur Seite gelegt; die
+    /// neue Ersatz-Uebung haelt eine Referenz auf das Original via
+    /// `swappedFromOriginal`.
     private func performEnvironmentSwap(to newEnv: EnvironmentType) {
         let result = PlanEnvironmentMigrator.migrate(
             plan: plan,
             toEnvironment: newEnv,
             modelContext: modelContext
         )
+        showSwapToast(result: result)
+    }
 
-        // Toast-Message bauen
+    /// DEL-049: gegen-Operation zu `performEnvironmentSwap`. Reaktiviert die
+    /// archivierten Originale und entsorgt die Urlaubs-Modus-Ersatzuebungen.
+    private func performEnvironmentRestore(to newEnv: EnvironmentType) {
+        let result = PlanEnvironmentMigrator.restoreOriginals(
+            plan: plan,
+            toEnvironment: newEnv,
+            modelContext: modelContext
+        )
+        showSwapToast(result: result)
+    }
+
+    private func showSwapToast(result: PlanEnvironmentSwapResult) {
         var parts: [String] = []
+        if result.restored > 0   { parts.append("\(result.restored) wiederhergestellt") }
         if result.swapped > 0    { parts.append("\(result.swapped) ersetzt") }
         if result.kept > 0       { parts.append("\(result.kept) ohne Alternative") }
         if result.compatible > 0 { parts.append("\(result.compatible) unverändert") }
@@ -323,7 +374,7 @@ private struct DayRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(day.name)
                     .font(.body.weight(.medium))
-                Text("\(day.exercises.count) Übungen • \(intensityLabel(day.nextIntensity))")
+                Text("\(day.activeExercises.count) Übungen • \(intensityLabel(day.nextIntensity))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

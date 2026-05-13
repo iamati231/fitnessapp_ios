@@ -20,6 +20,22 @@ public final class Exercise {
     /// True for isometric/time-based exercises (Plank, Wall Sit) — reps record seconds (F161).
     public var isTimeBased: Bool
 
+    /// DEL-049: Urlaubs-Modus / Equipment-Wechsel Snapshot.
+    /// True wenn diese Uebung NICHT mehr im aktiven Plan-Slot steht, sondern
+    /// als Fallback aufgehoben wird, weil sie durch eine Alternative ersetzt
+    /// wurde (z.B. Bankdruecken im Gym-Plan → Liegestuetze im BW-Modus).
+    /// Views nutzen `TrainingDay.activeExercises` statt `day.exercises`, um
+    /// archivierte Eintraege aus der UI auszublenden. Die ExerciseLog-
+    /// Relationship bleibt erhalten — wir verlieren also KEINE Historie.
+    public var isArchived: Bool = false
+
+    /// DEL-049: Wenn diese Uebung als Ersatz fuer eine andere eingefuegt wurde
+    /// (Top-Down-Migration), zeigt das Property auf das Original. Beim
+    /// Rueckweg ("Urlaub zu Ende") liest der Migrator dieses Feld, hebt das
+    /// Original wieder aktiv und entsorgt die Ersatz-Uebung — inklusive
+    /// Restore des letzten bekannten Arbeitsgewichts via Original-Logs.
+    public var swappedFromOriginal: Exercise?
+
     public var day: TrainingDay?
 
     @Relationship(deleteRule: .cascade, inverse: \ExerciseLog.exercise)
@@ -38,6 +54,8 @@ public final class Exercise {
         weightReducedNote: String? = nil,
         isCardio: Bool = false,
         isTimeBased: Bool = false,
+        isArchived: Bool = false,
+        swappedFromOriginal: Exercise? = nil,
         day: TrainingDay? = nil
     ) {
         self.name = name
@@ -52,6 +70,8 @@ public final class Exercise {
         self.weightReducedNote = weightReducedNote
         self.isCardio = isCardio
         self.isTimeBased = isTimeBased
+        self.isArchived = isArchived
+        self.swappedFromOriginal = swappedFromOriginal
         self.day = day
     }
 }

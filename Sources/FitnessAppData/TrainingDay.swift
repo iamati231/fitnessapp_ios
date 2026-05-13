@@ -15,6 +15,25 @@ public final class TrainingDay {
     @Relationship(deleteRule: .cascade, inverse: \Exercise.day)
     public var exercises: [Exercise] = []
 
+    // MARK: - DEL-049 Archive-aware accessors
+
+    /// User-facing exercise list: nur Uebungen, die der User aktiv sehen und
+    /// trainieren soll. Filtert archivierte Eintraege (Urlaubs-Modus-Snapshots)
+    /// aus, ohne sie zu loeschen. ALLE Views, die die "echte" Uebungs-Liste
+    /// rendern (DayEditor, ActiveWorkout, Dashboard, PlanEditor-DayRow),
+    /// muessen DIESE Property statt `exercises` lesen — sonst doppeln sich
+    /// nach einem Equipment-Swap die Eintraege.
+    public var activeExercises: [Exercise] {
+        exercises.filter { !$0.isArchived }
+    }
+
+    /// Inverse — alle archivierten Snapshots. Wird vom
+    /// `PlanEnvironmentMigrator.restoreOriginals` durchsucht: jeder archivierte
+    /// Eintrag, dessen Equipment im neuen Env wieder passt, wird reaktiviert.
+    public var archivedExercises: [Exercise] {
+        exercises.filter { $0.isArchived }
+    }
+
     public init(
         name: String,
         weekday: Int,

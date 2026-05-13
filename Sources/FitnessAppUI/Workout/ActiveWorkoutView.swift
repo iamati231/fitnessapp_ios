@@ -135,7 +135,7 @@ public struct ActiveWorkoutView: View {
     /// Zeit, den Rest-Timer-Start zu registrieren).
     @ViewBuilder
     private var paginatedBody: some View {
-        if let day = session.day, !day.exercises.isEmpty {
+        if let day = session.day, !day.activeExercises.isEmpty {
             let exercises = orderedExercises(in: day)
             #if os(iOS)
             TabView(selection: $currentPageIndex) {
@@ -267,8 +267,11 @@ public struct ActiveWorkoutView: View {
 
     // MARK: Derived
 
+    /// DEL-049: filtert archivierte Urlaubs-Modus-Snapshots aus dem Active-
+    /// Workout-Flow — sonst sieht der User bei Plan-Switch Geist-Uebungen
+    /// in der TabView.
     private func orderedExercises(in day: TrainingDay) -> [Exercise] {
-        day.exercises.sorted { $0.orderIndex < $1.orderIndex }
+        day.activeExercises.sorted { $0.orderIndex < $1.orderIndex }
     }
 
     private var formattedDuration: String {
@@ -346,7 +349,7 @@ public struct ActiveWorkoutView: View {
 
         session.endTime = endTime
         session.durationMinutes = max(0, Int(endTime.timeIntervalSince(session.startTime) / 60))
-        session.exerciseCount = session.day?.exercises.count ?? 0
+        session.exerciseCount = session.day?.activeExercises.count ?? 0
         session.totalSets = logs.count
         session.totalVolumeKg = logs.reduce(0.0) { $0 + $1.weight * Double($1.reps) }
         session.isCompleted = true

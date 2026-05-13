@@ -403,7 +403,7 @@ public struct DashboardView: View {
                     Text("Regeneration ist Teil des Plans. Wenn du den Tag durch hast, hak ihn ab — dann zeigt dir das Dashboard morgen das nächste echte Training.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
-                } else if !day.exercises.isEmpty {
+                } else if !day.activeExercises.isEmpty {
                     Text(exercisesPreview(for: day))
                         .font(.callout)
                         .foregroundStyle(.secondary)
@@ -481,12 +481,16 @@ public struct DashboardView: View {
     }
 
     private func exercisesPreview(for day: TrainingDay) -> String {
-        let names = day.exercises
+        // DEL-049: archivierte Snapshots (Urlaubs-Modus) gehoeren nicht in
+        // die Dashboard-Vorschau — sonst zeigt der Card "Bankdruecken" auch
+        // wenn der User nur noch Liegestuetze trainiert.
+        let active = day.activeExercises
+        let names = active
             .sorted { $0.orderIndex < $1.orderIndex }
             .prefix(3)
             .map(\.name)
-        let suffix = day.exercises.count > 3 ? " …" : ""
-        return "\(day.exercises.count) Übungen — \(names.joined(separator: ", "))\(suffix)"
+        let suffix = active.count > 3 ? " …" : ""
+        return "\(active.count) Übungen — \(names.joined(separator: ", "))\(suffix)"
     }
 
     /// DEL-042: Adaptive Start-Button. Drei States:
@@ -575,13 +579,13 @@ public struct DashboardView: View {
     /// on the workout tab so the user can back out to DayEditor (after Discard) or
     /// PlanEditor without losing context.
     private func actuallyStartNewWorkout(plan: TrainingPlan, day: TrainingDay) {
-        guard !day.exercises.isEmpty else { return }
+        guard !day.activeExercises.isEmpty else { return }
 
         let session = WorkoutSession(
             startTime: Date(),
             endTime: Date(),
             durationMinutes: 0,
-            exerciseCount: day.exercises.count,
+            exerciseCount: day.activeExercises.count,
             isCompleted: false,
             dayName: day.name,
             day: day

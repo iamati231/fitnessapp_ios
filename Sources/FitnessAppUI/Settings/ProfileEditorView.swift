@@ -35,6 +35,11 @@ public struct ProfileEditorView: View {
     /// das Feld wieder auf nil zurueck.
     @State private var pendingProfileEnvSwap: PendingProfileEnvSwap?
 
+    /// DEL-049: Urlaubs-Modus-Restore-Dialog. Separat vom adapt-Pfad, weil
+    /// das UI-Wording grundlegend anders ist ("wiederherstellen?" vs.
+    /// "anpassen?").
+    @State private var pendingProfileEnvRestore: PendingProfileEnvSwap?
+
     /// Optionaler Ergebnis-Toast nach erfolgreichem Bulk-Sync, analog zum
     /// PlanEditor-Toast. Nil = nichts anzeigen.
     @State private var profileSwapToast: String?
@@ -60,20 +65,29 @@ public struct ProfileEditorView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .keyboardDismissToolbar()
-        // DEL-047: Trainingsort-Aenderung im Profil triggert Sync-Frage.
-        // `oldValue != newValue` schliesst den initialen "set existing value"-
-        // Tick aus. `allPlans.contains(where: !empty)` skipped, wenn der
-        // User gar keine Plaene mit Uebungen hat — dann gibt es nichts zu
-        // syncen und der Prompt waere reine Stoerung.
+        // DEL-047 + DEL-049: Trainingsort-Aenderung im Profil triggert
+        // EINEN von zwei Dialogen je nach Situation:
+        //  * Restore-Prompt (DEL-049 "Urlaub zu Ende"): wenn irgendein Plan
+        //    aktive Ersatz-Uebungen mit `swappedFromOriginal` haelt, deren
+        //    Originale im neuen Env wieder kompatibel waeren.
+        //  * Adapt-Prompt (DEL-047 Standard): Top-Down-Anpassung wie bisher.
+        // Pruefung erst NACH oldValue!=newValue UND nach dem
+        // mind-ein-Plan-mit-Uebungen-Check, damit der initiale Profile-Set
+        // im Onboarding NICHT nervt.
         .onChange(of: profile.environment) { oldValue, newValue in
             guard oldValue != newValue,
                   allPlans.contains(where: { plan in
-                      plan.days.contains(where: { !$0.exercises.isEmpty })
+                      plan.days.contains(where: { !$0.activeExercises.isEmpty })
                   })
             else { return }
-            pendingProfileEnvSwap = PendingProfileEnvSwap(
-                oldEnv: oldValue, newEnv: newValue
-            )
+            let pending = PendingProfileEnvSwap(oldEnv: oldValue, newEnv: newValue)
+            if PlanEnvironmentMigrator.hasAnyRestorableOriginals(
+                plans: allPlans, forEnvironment: newValue
+            ) {
+                pendingProfileEnvRestore = pending
+            } else {
+                pendingProfileEnvSwap = pending
+            }
         }
         .confirmationDialog(
             "Trainingsort geändert",
@@ -93,6 +107,28 @@ public struct ProfileEditorView: View {
             }
         } message: { swap in
             Text("Du hast deinen Trainingsort auf \(environmentLabel(swap.newEnv)) geändert. Sollen deine bestehenden Trainingspläne automatisch an das dort verfügbare Equipment angepasst werden?")
+        }
+        // DEL-049 "Urlaub zu Ende": ein anderer Dialog, weil der User
+        // gespeicherte Gym-Originale aus dem Urlaubs-Modus zurueckholen will.
+        .confirmationDialog(
+            "Ursprüngliche Übungen wiederherstellen?",
+            isPresented: Binding(
+                get: { pendingProfileEnvRestore != nil },
+                set: { if !$0 { pendingProfileEnvRestore = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: pendingProfileEnvRestore
+        ) { swap in
+            Button("Ja, wiederherstellen") {
+                applyEnvironmentRestoreToAllPlans(newEnv: swap.newEnv)
+                pendingProfileEnvRestore = nil
+            }
+            Button("Nein, neu anpassen") {
+                applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
+                pendingProfileEnvRestore = nil
+            }
+        } message: { swap in
+            Text("Wir haben Original-Übungen aus einem früheren Equipment-Wechsel gespeichert. Möchtest du diese in deinen Plänen wiederherstellen (inkl. der letzten Arbeitsgewichte)?")
         }
         .overlay(alignment: .bottom) {
             if let msg = profileSwapToast {
@@ -116,11 +152,25 @@ public struct ProfileEditorView: View {
             toEnvironment: newEnv,
             modelContext: modelContext
         )
-        let plansTouched = outcome.plansTouched
-        let r = outcome.result
+        showAggregateToast(plansTouched: outcome.plansTouched, result: outcome.result)
+    }
 
+    /// DEL-049: gegen-Operation. Restored alle Urlaubs-Modus-Originale ueber
+    /// alle Plaene. Plaene ohne Originale werden trotzdem auf `targetEnvironment`
+    /// gesetzt, sodass der User nicht hinterher noch eine Inkonsistenz hat.
+    private func applyEnvironmentRestoreToAllPlans(newEnv: EnvironmentType) {
+        let outcome = PlanEnvironmentMigrator.restoreAll(
+            plans: allPlans,
+            toEnvironment: newEnv,
+            modelContext: modelContext
+        )
+        showAggregateToast(plansTouched: outcome.plansTouched, result: outcome.result)
+    }
+
+    private func showAggregateToast(plansTouched: Int, result r: PlanEnvironmentSwapResult) {
         var parts: [String] = []
         parts.append("\(plansTouched) Plan\(plansTouched == 1 ? "" : "e")")
+        if r.restored > 0   { parts.append("\(r.restored) wiederhergestellt") }
         if r.swapped > 0    { parts.append("\(r.swapped) ersetzt") }
         if r.kept > 0       { parts.append("\(r.kept) ohne Alternative") }
         if r.compatible > 0 { parts.append("\(r.compatible) unverändert") }
