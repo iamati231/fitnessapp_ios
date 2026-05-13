@@ -53,7 +53,7 @@ public struct TDEEView: View {
 
     private func profileSummarySection(_ profile: UserBodyProfile) -> some View {
         Section("Aus deinem Profil") {
-            LabeledContent("Sex",
+            LabeledContent("Geschlecht",
                 value: profile.profile == .male ? "Männlich" : "Weiblich")
             LabeledContent("Alter",
                 value: "\(ageYears(for: profile)) Jahre")

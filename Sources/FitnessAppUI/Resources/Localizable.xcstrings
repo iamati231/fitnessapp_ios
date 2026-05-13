@@ -412,7 +412,7 @@
       "extractionState" : "manual",
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Sex" } },
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Sex" } }
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Geschlecht" } }
       }
     },
     "onboarding.field.birthdate" : {

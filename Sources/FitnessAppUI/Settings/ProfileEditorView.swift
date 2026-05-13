@@ -135,7 +135,7 @@ public struct ProfileEditorView: View {
                 Text("Männlich").tag(BodyFormulaProfile.male)
                 Text("Weiblich").tag(BodyFormulaProfile.female)
             } label: {
-                Text("Sex")
+                Text("Geschlecht")
             }
             .pickerStyle(.segmented)
 

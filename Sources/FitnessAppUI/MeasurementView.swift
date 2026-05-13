@@ -7,21 +7,26 @@ import FitnessAppHealth
 
 /// Entry form for a new (or existing) body measurement.
 ///
+/// **Sektion-Struktur (DEL-029)** — geschlechtsabhaengig:
+///
+///   1. **Pflichtwerte**: Gewicht + die zwingenden Umfaenge fuer die Navy-KFA-
+///      Formel.
+///        - Mann: Gewicht, Hals, Taille (Schulter direkt darunter als
+///          optionales Ratio-Feld).
+///        - Frau: Gewicht, Hals, Taille, Hüfte.
+///   2. **Auswertung**: Live-Vorschau aller Derived-Metrics + geschlechts-
+///      spezifische Ratio-Kachel (SWR fuer Maenner, WHR fuer Frauen).
+///   3. **Weitere Umfaenge**: Optionale Felder, die NICHT in die Formeln
+///      fliessen — fuer Progress-Tracking. Geschlechtsspezifische Reihen-
+///      folge.
+///
 /// **Two modes** (DEL-025):
-///   - `init()`  → New-Mode: leere Felder, neuer `BodyMeasurement`-Insert beim
-///     Speichern. Historie-Liste am Ende der View.
-///   - `init(editing:)`  → Edit-Mode: alle Felder mit den Werten der uebergebenen
-///     `BodyMeasurement` vorbefuellt. Speichern ueberschreibt den Datensatz
-///     statt neu zu insertieren. Historie wird ausgeblendet (User schaut auf
-///     ein einzelnes Record).
+///   - `init()`            → New-Mode (Insert)
+///   - `init(editing:)`    → Edit-Mode (Update existing record)
 ///
-/// Reads the singleton `UserBodyProfile` from the SwiftData context (height, sex, age),
-/// lets the user enter weight + circumferences, and shows ALL derived metrics
-/// (BMI, Navy/Deurenberg KFA, FFM, FFMI, BMR, WHR/SWR) live as the user types.
-///
-/// **Apple Health integration**: when authorized, the view auto-fills the weight from
-/// the latest HealthKit body-mass sample on appear (only in New-Mode), and after
-/// saving writes weight + body-fat % + lean body mass back to HealthKit.
+/// **Apple Health integration**: in New-Mode auto-fill Gewicht aus dem
+/// neuesten HK-Sample. Beim Speichern werden Gewicht + KFA + FFM zurueck
+/// nach Apple Health geschrieben.
 @available(iOS 17.0, macOS 14.0, *)
 public struct MeasurementView: View {
 
@@ -31,37 +36,26 @@ public struct MeasurementView: View {
 
     @Query private var profiles: [UserBodyProfile]
 
-    /// Wenn nicht-nil, sind wir im Edit-Mode und ueberschreiben diesen
-    /// Datensatz beim Speichern. Wird vom Caller (HistoryRow-NavigationLink
-    /// oder direkter Settings-Klick) gesetzt.
     private let editingMeasurement: BodyMeasurement?
 
     @State private var weightKg: Double?
     @State private var neckCm:   Double?
     @State private var waistCm:  Double?
     @State private var hipCm:    Double?
+    @State private var shoulderCm: Double?
 
-    // DEL-027: Zusatz-Umfaenge als Single-Felder (kein L/R mehr — User-Spec).
-    // Schema behaelt die L/R-Felder fuer legacy data; UI nutzt nur die Single-
-    // Varianten. Beim Edit eines alten Records mit nur L/R-Daten zeigen wir
-    // den Mittelwert vorgefuellt und ueberschreiben beim Save in Single.
     @State private var chestCm:     Double?
-    @State private var shoulderCm:  Double?
-    @State private var upperArmCm:  Double?
+    @State private var bicepsCm:    Double?  // = upperArmCm im Model
     @State private var thighCm:     Double?
     @State private var calfCm:      Double?
 
-    /// Historie der letzten Messungen — Reverse-chronologisch, oben ist neuestes.
-    /// Nur in New-Mode angezeigt; im Edit-Mode wuerde es Verwirrung stiften.
     @Query(sort: \BodyMeasurement.date, order: .reverse)
     private var historicalMeasurements: [BodyMeasurement]
 
     @State private var lastSavedAt: Date?
-    /// Set to true once the auto-fill task ran for THIS view appearance.
     @State private var didAttemptHealthKitAutofill = false
     @State private var weightCameFromHealth = false
     @State private var lastHealthFilledWeight: Double?
-    /// Tracking-Flag, ob die Edit-Mode-Pre-Fill schon gelaufen ist.
     @State private var didPrefillFromExisting = false
 
     public init() {
@@ -78,13 +72,17 @@ public struct MeasurementView: View {
         Form {
             if let profile = profiles.first {
                 profileSection(profile)
-                measurementsSection(forProfile: profile)
-                extendedMeasurementsSection
+                // ── Sektion 1: Pflichtwerte (geschlechtsspezifisch)
+                requiredFieldsSection(forProfile: profile)
+                // ── Sektion 2: Auswertung (KFA/BMI/FFMI/Ratios)
+                derivedSection(forProfile: profile)
+                ratiosSection(forProfile: profile)
+                // ── Sektion 3: Weitere Umfaenge (optional, geschlechtsspez.)
+                additionalMeasurementsSection(forProfile: profile)
+                // HealthKit + Actions + History
                 if !isEditMode {
                     healthKitSection
                 }
-                derivedSection(forProfile: profile)
-                ratiosSection(forProfile: profile)
                 actionsSection(forProfile: profile)
                 if !isEditMode {
                     historySection
@@ -103,12 +101,10 @@ public struct MeasurementView: View {
         #endif
         .keyboardDismissToolbar()
         .task {
-            // Edit-Mode: Felder einmalig vorfuellen.
             if isEditMode, !didPrefillFromExisting, let m = editingMeasurement {
                 applyExistingMeasurement(m)
                 didPrefillFromExisting = true
             }
-            // New-Mode: HealthKit-Auto-Fill versuchen.
             if !isEditMode {
                 await healthKit.refreshAuthorizationStatus()
                 await tryAutoFillFromHealthKit()
@@ -116,15 +112,15 @@ public struct MeasurementView: View {
         }
     }
 
-    // MARK: Sections
+    // MARK: - Profile-Section (Single-Source-of-Truth)
 
     private func profileSection(_ profile: UserBodyProfile) -> some View {
-        Section("Profil (Single Source of Truth)") {
+        Section("Profil") {
             LabeledContent("Größe",
                 value: profile.heightCm.formattedTwoDecimals + " cm")
             LabeledContent("Alter",
                 value: "\(ageYears(for: profile)) Jahre")
-            LabeledContent("Sex",
+            LabeledContent("Geschlecht",
                 value: profile.profile == .male ? "Männlich" : "Weiblich")
             if let goal = profile.goalWeightKg {
                 LabeledContent("Zielgewicht",
@@ -133,8 +129,19 @@ public struct MeasurementView: View {
         }
     }
 
-    private func measurementsSection(forProfile profile: UserBodyProfile) -> some View {
-        Section("Messwerte") {
+    // MARK: - Sektion 1: Pflichtwerte (geschlechtsspezifisch)
+
+    /// **Pflichtfelder fuer KFA-Berechnung**:
+    ///   - Mann: Gewicht, Hals, Taille. Schulter darunter als optional fuer
+    ///     SWR-Ratio.
+    ///   - Frau: Gewicht, Hals, Taille, Hüfte.
+    ///
+    /// Apple-Health-Badge wird unter dem Gewichtsfeld eingeblendet, wenn der
+    /// Wert per Auto-Fill aus dem HK-Profil kam.
+    @ViewBuilder
+    private func requiredFieldsSection(forProfile profile: UserBodyProfile) -> some View {
+        Section {
+            // Gewicht (immer Pflicht)
             decimalField("Gewicht (kg)", value: $weightKg)
                 .onChange(of: weightKg) { _, newValue in
                     if weightCameFromHealth, newValue != lastHealthFilledWeight {
@@ -148,67 +155,185 @@ public struct MeasurementView: View {
                     .foregroundStyle(.pink)
                     .listRowSeparator(.hidden)
             }
-            decimalField("Hals (cm)",    value: $neckCm)
-            decimalField("Taille (cm)",  value: $waistCm)
-            decimalField("Hüfte (cm)" + (profile.profile == .female ? " *" : ""),
-                         value: $hipCm)
+
+            // Hals (immer Pflicht)
+            decimalField("Halsumfang (cm)", value: $neckCm)
+            Text("Messen Sie knapp unterhalb des Kehlkopfs, Band waagrecht und leicht anliegend.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .listRowSeparator(.hidden)
+
+            // Taille (immer Pflicht, sex-spezifischer Hint)
+            decimalField("Taille (cm)", value: $waistCm)
+            Text(profile.profile == .male
+                 ? "Im Bereich des Bauchnabels."
+                 : "Es sollte an der schmalsten Stelle entnommen werden.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .listRowSeparator(.hidden)
+
+            // Hüfte: Pflicht bei Frauen, optional/anders gruppiert bei Maennern
             if profile.profile == .female {
-                Text("* Hüfte ist Pflicht für Navy KFA bei weiblichem Profil.")
+                decimalField("Hüfte (cm)", value: $hipCm)
+                Text("Es sollte an der breitesten Stelle abgenommen werden.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .listRowSeparator(.hidden)
+            } else {
+                // Männer: Schulter direkt in Pflicht-Section (optional fuer SWR-Ratio).
+                decimalField("Schulterumfang (cm)", value: $shoulderCm)
+                Text("Es sollte an der breitesten Stelle abgenommen werden.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .listRowSeparator(.hidden)
             }
-        }
-    }
-
-    /// DEL-027: Zusatz-Umfaenge als Single-Felder. Optional, nur fuer User-
-    /// Progress-Tracking — keine Formel-Inputs (KFA/Navy/Deurenberg nutzen
-    /// nur Hals/Taille/Huefte). Schulterumfang ist zusaetzlich Input fuer
-    /// SWR (Schulter-zu-Taillen-Verhaeltnis) bei Maennern (DEL-026).
-    @ViewBuilder
-    private var extendedMeasurementsSection: some View {
-        Section {
-            decimalField("Brust (cm)",        value: $chestCm)
-            decimalField("Schulter (cm)",     value: $shoulderCm)
-            decimalField("Bizeps (cm)",       value: $upperArmCm)
-            decimalField("Oberschenkel (cm)", value: $thighCm)
-            decimalField("Wade (cm)",         value: $calfCm)
         } header: {
-            Text("Zusätzliche Umfänge")
+            Text("Pflichtwerte")
         } footer: {
-            Text("Diese Werte fließen NICHT in die KFA/Navy-Berechnung — sie dienen deinem persönlichen Progress-Tracking. Schulter zusätzlich für das Schulter-zu-Taille-Verhältnis bei Männern.")
+            Text(profile.profile == .female
+                 ? "Gewicht, Hals, Taille und Hüfte werden für die Navy-KFA-Berechnung benötigt."
+                 : "Gewicht, Hals und Taille werden für die Navy-KFA-Berechnung benötigt. Schulter optional für das Schulter-zu-Taillen-Verhältnis.")
                 .font(.footnote)
         }
     }
 
+    // MARK: - Sektion 3: Weitere Umfaenge (geschlechtsspezifische Reihenfolge)
+
     @ViewBuilder
-    private var historySection: some View {
+    private func additionalMeasurementsSection(forProfile profile: UserBodyProfile) -> some View {
         Section {
-            if historicalMeasurements.isEmpty {
-                Text("Noch keine Messungen — speichere oben deinen ersten Wert.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+            if profile.profile == .male {
+                // Maenner: Brust, Bizeps, Hüfte, Oberschenkel, Wade
+                // (Schulter ist schon oben als Pflicht-optional)
+                decimalField("Brust (cm)",        value: $chestCm)
+                decimalField("Bizeps (cm)",       value: $bicepsCm)
+                decimalField("Hüfte (cm)",        value: $hipCm)
+                decimalField("Oberschenkel (cm)", value: $thighCm)
+                decimalField("Wade (cm)",         value: $calfCm)
             } else {
-                // DEL-025: jede Zeile als NavigationLink in Edit-Mode.
-                ForEach(Array(historicalMeasurements.prefix(12))) { m in
-                    NavigationLink {
-                        MeasurementView(editing: m)
-                    } label: {
-                        HistoryRow(measurement: m)
-                    }
+                // Frauen: Schulter, Brust, Bizeps, Oberschenkel, Wade
+                // (Hüfte ist schon oben als Pflicht)
+                decimalField("Schulter (cm)",     value: $shoulderCm)
+                if shoulderCm != nil {
+                    Text("Es sollte an der breitesten Stelle abgenommen werden.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .listRowSeparator(.hidden)
                 }
+                decimalField("Brust (cm)",        value: $chestCm)
+                decimalField("Bizeps (cm)",       value: $bicepsCm)
+                decimalField("Oberschenkel (cm)", value: $thighCm)
+                decimalField("Wade (cm)",         value: $calfCm)
             }
         } header: {
-            Text("Verlauf")
+            Text("Weitere Umfänge")
         } footer: {
-            if historicalMeasurements.count > 12 {
-                Text("Älteste \(historicalMeasurements.count - 12) Messungen ausgeblendet.")
-                    .font(.footnote)
-            } else if !historicalMeasurements.isEmpty {
-                Text("Tippe einen Eintrag an, um die Werte zu bearbeiten.")
-                    .font(.footnote)
+            Text("Diese Werte fließen NICHT in die KFA/Navy-Berechnung — sie dienen deinem persönlichen Progress-Tracking.")
+                .font(.footnote)
+        }
+    }
+
+    // MARK: - Sektion 2: Auswertung
+
+    private func derivedSection(forProfile profile: UserBodyProfile) -> some View {
+        Section("Live-Auswertung") {
+            if let derived = derivedMetrics(for: profile) {
+                metricRow("BMI", value: derived.bmi)
+                navyRow(derived.navyBodyFatPct, profileSex: profile.profile)
+                metricRow("KFA Deurenberg", value: derived.deurenbergBodyFatPct, suffix: " %")
+                metricRow("Fettfreie Masse", value: derived.fatFreeMassKg, suffix: " kg")
+                metricRow("FFMI", value: derived.ffmi)
+                metricRow("Norm. FFMI", value: derived.normalizedFfmi)
+                metricRow("BMR", value: derived.bmr, suffix: " kcal")
+            } else {
+                Text("Trage Gewicht ein, um die Auswertung zu sehen.")
+                    .foregroundStyle(.secondary)
             }
         }
     }
+
+    /// DEL-026: Geschlechtsspezifische Body-Ratio-Tile. Nur sichtbar wenn die
+    /// noetigen Werte ausgefuellt sind.
+    @ViewBuilder
+    private func ratiosSection(forProfile profile: UserBodyProfile) -> some View {
+        switch profile.profile {
+        case .female:
+            if let waist = waistCm, let hip = hipCm, waist > 0, hip > 0 {
+                Section {
+                    ratioTile(
+                        title: "WHR — Taille/Hüfte",
+                        value: waist / hip,
+                        label: whrLabel(waist / hip),
+                        icon: "figure.dress.line.vertical.figure",
+                        tint: .purple
+                    )
+                } header: {
+                    Text("Körper-Proportion")
+                } footer: {
+                    Text("WHR < 0,80 = gesundes Risikoprofil bei Frauen. > 0,85 = erhöhtes Risiko.")
+                        .font(.footnote)
+                }
+            }
+        case .male:
+            if let shoulder = shoulderCm, let waist = waistCm, shoulder > 0, waist > 0 {
+                Section {
+                    ratioTile(
+                        title: "SWR — Schulter/Taille",
+                        value: shoulder / waist,
+                        label: swrLabel(shoulder / waist),
+                        icon: "figure.arms.open",
+                        tint: .blue
+                    )
+                } header: {
+                    Text("Körper-Proportion")
+                } footer: {
+                    Text("Goldener V-Schnitt ~ 1,618 (Schulter ≈ 1,6× Taille). SWR < 1,3 = wenig V-Form, > 1,5 = ausgeprägt.")
+                        .font(.footnote)
+                }
+            }
+        }
+    }
+
+    private func ratioTile(title: String, value: Double, label: String, icon: String, tint: Color) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(.white)
+                .frame(width: 36, height: 36)
+                .background(tint.gradient)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(value.truncated(to: 2).formattedTwoDecimals)
+                    .font(.title3.weight(.semibold).monospacedDigit())
+            }
+            Spacer()
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func whrLabel(_ ratio: Double) -> String {
+        switch ratio {
+        case ..<0.80: return "Gesund"
+        case ..<0.85: return "Grenzwert"
+        default:      return "Erhöht"
+        }
+    }
+
+    private func swrLabel(_ ratio: Double) -> String {
+        switch ratio {
+        case ..<1.30: return "Schmal"
+        case ..<1.50: return "Mittel"
+        case ..<1.62: return "Ausgeprägt"
+        default:      return "V-Shape"
+        }
+    }
+
+    // MARK: - HealthKit + Actions + History sections (unveraendert vs. DEL-025)
 
     @ViewBuilder
     private var healthKitSection: some View {
@@ -265,107 +390,6 @@ public struct MeasurementView: View {
         }
     }
 
-    private func derivedSection(forProfile profile: UserBodyProfile) -> some View {
-        Section("Live-Auswertung") {
-            if let derived = derivedMetrics(for: profile) {
-                metricRow("BMI", value: derived.bmi)
-                navyRow(derived.navyBodyFatPct, profileSex: profile.profile)
-                metricRow("KFA Deurenberg", value: derived.deurenbergBodyFatPct, suffix: " %")
-                metricRow("Fettfreie Masse", value: derived.fatFreeMassKg, suffix: " kg")
-                metricRow("FFMI", value: derived.ffmi)
-                metricRow("Norm. FFMI", value: derived.normalizedFfmi)
-                metricRow("BMR", value: derived.bmr, suffix: " kcal")
-            } else {
-                Text("Trage Gewicht ein, um die Auswertung zu sehen.")
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    /// DEL-026: Geschlechtsspezifische Koerper-Proportions-Tiles.
-    ///   - Frauen: WHR (Waist-to-Hip-Ratio = Taille / Huefte)
-    ///   - Maenner: SWR (Shoulder-to-Waist-Ratio = Schulter / Taille)
-    @ViewBuilder
-    private func ratiosSection(forProfile profile: UserBodyProfile) -> some View {
-        switch profile.profile {
-        case .female:
-            if let waist = waistCm, let hip = hipCm, waist > 0, hip > 0 {
-                Section {
-                    HStack(spacing: 12) {
-                        Image(systemName: "figure.dress.line.vertical.figure")
-                            .font(.title3)
-                            .foregroundStyle(.white)
-                            .frame(width: 36, height: 36)
-                            .background(Color.purple.gradient)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("WHR — Taille/Hüfte")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Text((waist / hip).truncated(to: 2).formattedTwoDecimals)
-                                .font(.title3.weight(.semibold).monospacedDigit())
-                        }
-                        Spacer()
-                        Text(whrLabel(waist / hip))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                } header: {
-                    Text("Körper-Proportion")
-                } footer: {
-                    Text("WHR < 0,80 = gesundes Risikoprofil bei Frauen. > 0,85 = erhöhtes Risiko.")
-                        .font(.footnote)
-                }
-            }
-        case .male:
-            if let shoulder = shoulderCm, let waist = waistCm, shoulder > 0, waist > 0 {
-                Section {
-                    HStack(spacing: 12) {
-                        Image(systemName: "figure.arms.open")
-                            .font(.title3)
-                            .foregroundStyle(.white)
-                            .frame(width: 36, height: 36)
-                            .background(Color.blue.gradient)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("SWR — Schulter/Taille")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Text((shoulder / waist).truncated(to: 2).formattedTwoDecimals)
-                                .font(.title3.weight(.semibold).monospacedDigit())
-                        }
-                        Spacer()
-                        Text(swrLabel(shoulder / waist))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                } header: {
-                    Text("Körper-Proportion")
-                } footer: {
-                    Text("Goldener V-Schnitt ~ 1,618 (Schulter ≈ 1,6× Taille). SWR < 1,3 = wenig V-Form, > 1,5 = ausgeprägt.")
-                        .font(.footnote)
-                }
-            }
-        }
-    }
-
-    private func whrLabel(_ ratio: Double) -> String {
-        switch ratio {
-        case ..<0.80: return "Gesund"
-        case ..<0.85: return "Grenzwert"
-        default:      return "Erhöht"
-        }
-    }
-
-    private func swrLabel(_ ratio: Double) -> String {
-        switch ratio {
-        case ..<1.30: return "Schmal"
-        case ..<1.50: return "Mittel"
-        case ..<1.62: return "Ausgeprägt"
-        default:      return "V-Shape"
-        }
-    }
-
     private func actionsSection(forProfile profile: UserBodyProfile) -> some View {
         Section {
             Button {
@@ -374,7 +398,7 @@ public struct MeasurementView: View {
                 Label(isEditMode ? "Änderungen speichern" : "Messung speichern",
                       systemImage: "tray.and.arrow.down")
             }
-            .disabled(!canSave)
+            .disabled(!canSave(profile: profile))
 
             if isEditMode {
                 Button(role: .destructive) {
@@ -391,10 +415,45 @@ public struct MeasurementView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+        } footer: {
+            if !canSave(profile: profile) {
+                Text(missingFieldsHint(profile: profile))
+                    .font(.footnote)
+                    .foregroundStyle(.orange)
+            }
         }
     }
 
-    // MARK: Row helpers
+    @ViewBuilder
+    private var historySection: some View {
+        Section {
+            if historicalMeasurements.isEmpty {
+                Text("Noch keine Messungen — speichere oben deinen ersten Wert.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(Array(historicalMeasurements.prefix(12))) { m in
+                    NavigationLink {
+                        MeasurementView(editing: m)
+                    } label: {
+                        HistoryRow(measurement: m)
+                    }
+                }
+            }
+        } header: {
+            Text("Verlauf")
+        } footer: {
+            if historicalMeasurements.count > 12 {
+                Text("Älteste \(historicalMeasurements.count - 12) Messungen ausgeblendet.")
+                    .font(.footnote)
+            } else if !historicalMeasurements.isEmpty {
+                Text("Tippe einen Eintrag an, um die Werte zu bearbeiten.")
+                    .font(.footnote)
+            }
+        }
+    }
+
+    // MARK: - Row helpers
 
     private func metricRow(_ label: String, value: Double, suffix: String = "") -> some View {
         LabeledContent(label, value: value.truncated(to: 2).formattedTwoDecimals + suffix)
@@ -425,11 +484,8 @@ public struct MeasurementView: View {
             .decimalKeyboard()
     }
 
-    // MARK: Edit-Mode pre-fill
+    // MARK: - Edit-Mode pre-fill
 
-    /// Schreibt die Werte einer bestehenden Messung in die @State-Variablen.
-    /// Wird einmalig pro View-Erscheinung in `.task` gerufen, wenn
-    /// `editingMeasurement != nil`.
     private func applyExistingMeasurement(_ m: BodyMeasurement) {
         weightKg   = m.weightKg
         neckCm     = m.neckCm
@@ -438,9 +494,7 @@ public struct MeasurementView: View {
         shoulderCm = m.shoulderCm
         chestCm    = m.chestCm
         calfCm     = m.calfCm
-        // Single-Feld-Fallback fuer legacy L/R-Daten: nimm Mittelwert wenn
-        // L+R gesetzt aber kein Single-Wert.
-        upperArmCm = m.upperArmCm ?? averageOrNil(m.upperArmLeftCm, m.upperArmRightCm)
+        bicepsCm   = m.upperArmCm ?? averageOrNil(m.upperArmLeftCm, m.upperArmRightCm)
         thighCm    = m.thighCm    ?? averageOrNil(m.thighLeftCm, m.thighRightCm)
     }
 
@@ -453,7 +507,7 @@ public struct MeasurementView: View {
         }
     }
 
-    // MARK: Domain glue
+    // MARK: - Domain glue + validation
 
     private func ageYears(for profile: UserBodyProfile) -> Int {
         Calendar.current.dateComponents([.year], from: profile.birthDate, to: Date()).year ?? 0
@@ -472,17 +526,41 @@ public struct MeasurementView: View {
         )
     }
 
-    private var canSave: Bool {
-        guard let weightKg, weightKg > 0 else { return false }
-        return profiles.first != nil
+    /// DEL-029: Pflicht-Validation. Save-Button bleibt disabled bis alle
+    /// geschlechtsspezifischen Pflichtfelder gefuellt UND > 0 sind.
+    ///   Maenner: Gewicht, Hals, Taille
+    ///   Frauen:  Gewicht, Hals, Taille, Hüfte
+    private func canSave(profile: UserBodyProfile) -> Bool {
+        guard let w = weightKg, w > 0,
+              let n = neckCm, n > 0,
+              let waist = waistCm, waist > 0
+        else { return false }
+        if profile.profile == .female {
+            guard let h = hipCm, h > 0 else { return false }
+        }
+        return true
     }
 
+    /// Erklaerung welche Pflichtfelder noch fehlen — zeigt's im
+    /// Actions-Footer wenn `canSave` false ist.
+    private func missingFieldsHint(profile: UserBodyProfile) -> String {
+        var missing: [String] = []
+        if (weightKg ?? 0) <= 0 { missing.append("Gewicht") }
+        if (neckCm ?? 0)   <= 0 { missing.append("Hals") }
+        if (waistCm ?? 0)  <= 0 { missing.append("Taille") }
+        if profile.profile == .female, (hipCm ?? 0) <= 0 {
+            missing.append("Hüfte")
+        }
+        return "Pflichtfeld\(missing.count == 1 ? "" : "er") noch leer: \(missing.joined(separator: ", "))."
+    }
+
+    // MARK: - Save / Delete
+
     private func save(profile: UserBodyProfile) {
-        guard let weightKg else { return }
+        guard let weightKg, canSave(profile: profile) else { return }
 
         if let existing = editingMeasurement {
-            // Edit-Mode: ueberschreibe das existing Record, behalte die date.
-            // Derived-Felder neu berechnen via makeDerived-Helper.
+            // Edit-Mode: ueberschreibe existing Record.
             let recomputed = BodyMeasurement.makeDerived(
                 date: existing.date,
                 ageYears: existing.ageYearsAtMeasurement,
@@ -494,12 +572,10 @@ public struct MeasurementView: View {
                 hipCm: hipCm,
                 shoulderCm: shoulderCm,
                 chestCm: chestCm,
-                upperArmCm: upperArmCm,
+                upperArmCm: bicepsCm,
                 thighCm: thighCm,
                 calfCm: calfCm
             )
-            // Werte 1-zu-1 ins existing record schreiben — Identitaet bleibt erhalten,
-            // alle Foreign-References (z.B. Reset-Audit-Trails spaeter) intakt.
             existing.weightKg = recomputed.weightKg
             existing.neckCm = recomputed.neckCm
             existing.waistCm = recomputed.waistCm
@@ -509,7 +585,6 @@ public struct MeasurementView: View {
             existing.upperArmCm = recomputed.upperArmCm
             existing.thighCm = recomputed.thighCm
             existing.calfCm = recomputed.calfCm
-            // Legacy L/R-Felder auf nil setzen — neue Welt nutzt nur Single.
             existing.upperArmLeftCm = nil
             existing.upperArmRightCm = nil
             existing.thighLeftCm = nil
@@ -524,10 +599,8 @@ public struct MeasurementView: View {
             existing.bmr = recomputed.bmr
 
             lastSavedAt = Date()
-            // Edit-Mode: dismiss zurueck zur History-Liste statt zu reseten.
             dismiss()
         } else {
-            // New-Mode: insert neuen Datensatz.
             let measurement = BodyMeasurement.makeDerived(
                 ageYears: ageYears(for: profile),
                 weightKg: weightKg,
@@ -538,15 +611,13 @@ public struct MeasurementView: View {
                 hipCm: hipCm,
                 shoulderCm: shoulderCm,
                 chestCm: chestCm,
-                upperArmCm: upperArmCm,
+                upperArmCm: bicepsCm,
                 thighCm: thighCm,
                 calfCm: calfCm
             )
             modelContext.insert(measurement)
             lastSavedAt = measurement.date
 
-            // Apple-Health-Sync nur in New-Mode (Edit ueberschreibt lokal,
-            // HK kennt die historische Messung schon).
             let bodyFatPct = measurement.selectedBodyFatPct
                 ?? measurement.navyBodyFatPct
                 ?? measurement.deurenbergBodyFatPct
@@ -559,7 +630,6 @@ public struct MeasurementView: View {
                 )
             }
 
-            // Reset Eingabefelder.
             resetFields()
         }
     }
@@ -575,14 +645,14 @@ public struct MeasurementView: View {
         neckCm   = nil
         waistCm  = nil
         hipCm    = nil
-        chestCm = nil
         shoulderCm = nil
-        upperArmCm = nil
+        chestCm = nil
+        bicepsCm = nil
         thighCm = nil
         calfCm = nil
     }
 
-    // MARK: HealthKit auto-fill (only in New-Mode)
+    // MARK: - HealthKit auto-fill (only in New-Mode)
 
     private func tryAutoFillFromHealthKit() async {
         guard !didAttemptHealthKitAutofill else { return }
@@ -608,7 +678,7 @@ public struct MeasurementView: View {
     }
 }
 
-// MARK: - History Row (DEL-016 + DEL-025)
+// MARK: - History Row
 
 @available(iOS 17.0, macOS 14.0, *)
 private struct HistoryRow: View {
@@ -646,8 +716,6 @@ private struct HistoryRow: View {
             ?? measurement.deurenbergBodyFatPct
     }
 
-    /// Display-Wert fuer Bizeps: Single-Feld bevorzugt, sonst L/R-Mittel
-    /// (Legacy-Daten von vor DEL-027).
     private var bicepsDisplay: Double? {
         if let single = measurement.upperArmCm { return single }
         switch (measurement.upperArmLeftCm, measurement.upperArmRightCm) {
