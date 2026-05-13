@@ -16,6 +16,10 @@ public struct PlanEditorView: View {
 
     @Query private var allPlans: [TrainingPlan]
 
+    // DEL-022 — Environment-Swap-State
+    @State private var pendingEnvironmentSwap: PendingEnvironmentSwap?
+    @State private var swapResultToast: String?
+
     public init(plan: TrainingPlan) {
         self.plan = plan
     }
@@ -33,6 +37,61 @@ public struct PlanEditorView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        // DEL-022 — Trainingsort-Wechsel triggert Confirmation-Dialog mit
+        // Optionen "Übungen anpassen" / "Nur Trainingsort ändern" / "Abbrechen".
+        .onChange(of: plan.targetEnvironment) { oldValue, newValue in
+            guard oldValue != newValue,
+                  // Nur wenn es ueberhaupt Uebungen gibt — leerer Plan braucht
+                  // keinen Swap.
+                  plan.days.contains(where: { !$0.exercises.isEmpty }),
+                  !isReadOnly
+            else { return }
+            pendingEnvironmentSwap = PendingEnvironmentSwap(
+                oldEnv: oldValue,
+                newEnv: newValue
+            )
+        }
+        .confirmationDialog(
+            "Trainingsort geändert",
+            isPresented: Binding(
+                get: { pendingEnvironmentSwap != nil },
+                set: { if !$0 { pendingEnvironmentSwap = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: pendingEnvironmentSwap
+        ) { swap in
+            Button("Übungen anpassen") {
+                performEnvironmentSwap(to: swap.newEnv)
+                pendingEnvironmentSwap = nil
+            }
+            Button("Nur Trainingsort ändern") {
+                pendingEnvironmentSwap = nil
+            }
+            Button("Abbrechen", role: .cancel) {
+                // Picker rueckgaengig machen
+                plan.targetEnvironment = swap.oldEnv
+                pendingEnvironmentSwap = nil
+            }
+        } message: { swap in
+            Text("Sollen die Übungen an deinen neuen Trainingsort angepasst werden? Übungen ohne passende Alternative bleiben im Plan und brauchen manuelle Anpassung.")
+        }
+        .overlay(alignment: .bottom) {
+            if let msg = swapResultToast {
+                Label(msg, systemImage: "checkmark.seal.fill")
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                    .padding(.bottom, 24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+    }
+
+    /// Bundle der zwei Environments fuer den ConfirmationDialog. Equatable
+    /// damit der Dialog korrekt presenting-binden kann.
+    private struct PendingEnvironmentSwap: Equatable {
+        let oldEnv: EnvironmentType
+        let newEnv: EnvironmentType
     }
 
     /// True wenn der Plan via `ProgramInstantiator` aus einem Template
@@ -208,6 +267,72 @@ public struct PlanEditorView: View {
         let toDelete = offsets.map { orderedDays[$0] }
         for day in toDelete {
             modelContext.delete(day)
+        }
+    }
+
+    /// DEL-022: Geht alle Uebungen des Plans durch und ersetzt sie pro Mapping
+    /// aus `ExerciseLibraryData.alternatives`. Drei Resolutions:
+    ///   - `.swap`: neue Uebung mit gleichem orderIndex + day einfuegen, alte
+    ///     loeschen (sauberer SwiftData-Lifecycle).
+    ///   - `.keep`: keine Alternative — bleibt im Plan, faellt in den "manuell
+    ///     ueberpruefen"-Bucket.
+    ///   - `.stayCompatible`: Uebung ist nativ im neuen Env nutzbar, kein Swap.
+    ///
+    /// `suggestedWeight` wird beim Swap auf nil gesetzt — die alte Last
+    /// passt selten zur neuen Uebung. User trifft beim ersten Workout neu.
+    private func performEnvironmentSwap(to newEnv: EnvironmentType) {
+        var swapped = 0
+        var kept = 0
+        var compatible = 0
+
+        for day in plan.days {
+            let snapshot = day.exercises.sorted { $0.orderIndex < $1.orderIndex }
+            for exercise in snapshot {
+                switch ExerciseLibraryData.resolveAlternative(
+                    forExerciseName: exercise.name,
+                    targetEnvironment: newEnv
+                ) {
+                case .swap(let altSpec):
+                    let newExercise = Exercise(
+                        name: altSpec.name,
+                        sets: exercise.sets,
+                        repsMin: exercise.repsMin,
+                        repsMax: exercise.repsMax,
+                        restSeconds: exercise.restSeconds,
+                        notes: exercise.notes,
+                        suggestedWeight: nil,   // andere Uebung → Last neu kalibrieren
+                        orderIndex: exercise.orderIndex,
+                        targetRir: exercise.targetRir,
+                        weightReducedNote: exercise.weightReducedNote,
+                        isCardio: altSpec.isCardio,
+                        isTimeBased: altSpec.isTimeBased,
+                        day: day
+                    )
+                    modelContext.insert(newExercise)
+                    modelContext.delete(exercise)
+                    swapped += 1
+                case .keep:
+                    kept += 1
+                case .stayCompatible:
+                    compatible += 1
+                }
+            }
+        }
+
+        // Toast-Message bauen
+        var parts: [String] = []
+        if swapped > 0    { parts.append("\(swapped) ersetzt") }
+        if kept > 0       { parts.append("\(kept) ohne Alternative") }
+        if compatible > 0 { parts.append("\(compatible) unverändert") }
+        let message = parts.isEmpty ? "Keine Übungen zum Anpassen" : parts.joined(separator: " · ")
+
+        withAnimation(.easeOut(duration: 0.2)) {
+            swapResultToast = message
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            withAnimation(.easeIn(duration: 0.2)) {
+                swapResultToast = nil
+            }
         }
     }
 }

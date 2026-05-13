@@ -4,6 +4,7 @@ import SwiftData
 import FitnessAppCore
 import FitnessAppData
 import FitnessAppHealth
+import FitnessAppActivities
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -17,6 +18,7 @@ public struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var navigation
     @Environment(HealthKitController.self) private var healthKit
+    @Environment(PRNotificationCenter.self) private var prNotifications
 
     @Query private var profiles: [UserBodyProfile]
 
@@ -179,11 +181,16 @@ public struct SettingsView: View {
         }
     }
 
-    // DEL-018: Reminder (Wasser-Frequenz + Mess-Wochentag/Uhrzeit)
+    // DEL-018 + DEL-028: Reminder (Wasser-Frequenz + Mess-Wochentag/Uhrzeit).
+    // Jede Aenderung triggert `rescheduleReminders()`, das ueber ReminderScheduler
+    // re-schedulet — inkl. automatischem Cancel-Plus-Re-Add fuer Spam-Schutz.
     private var remindersSection: some View {
         Section {
             Toggle(isOn: $waterReminderEnabled) {
                 Label("Wasser erinnern", systemImage: "drop.fill")
+            }
+            .onChange(of: waterReminderEnabled) { _, _ in
+                Task { await rescheduleReminders() }
             }
             if waterReminderEnabled {
                 Picker(selection: $waterReminderHours) {
@@ -192,12 +199,18 @@ public struct SettingsView: View {
                     Text("Alle 4 Stunden").tag(4)
                     Text("Alle 5 Stunden").tag(5)
                 } label: {
-                    Text("Haeufigkeit")
+                    Text("Häufigkeit")
+                }
+                .onChange(of: waterReminderHours) { _, _ in
+                    Task { await rescheduleReminders() }
                 }
             }
 
             Toggle(isOn: $measurementReminderEnabled) {
                 Label("Messung erinnern", systemImage: "scalemass.fill")
+            }
+            .onChange(of: measurementReminderEnabled) { _, _ in
+                Task { await rescheduleReminders() }
             }
             if measurementReminderEnabled {
                 Picker(selection: $measurementWeekday) {
@@ -211,6 +224,9 @@ public struct SettingsView: View {
                 } label: {
                     Text("Wochentag")
                 }
+                .onChange(of: measurementWeekday) { _, _ in
+                    Task { await rescheduleReminders() }
+                }
                 Picker(selection: $measurementHour) {
                     ForEach(6..<23, id: \.self) { hour in
                         Text("\(hour):00 Uhr").tag(hour)
@@ -218,12 +234,48 @@ public struct SettingsView: View {
                 } label: {
                     Text("Uhrzeit")
                 }
+                .onChange(of: measurementHour) { _, _ in
+                    Task { await rescheduleReminders() }
+                }
             }
         } header: {
             Text("Erinnerungen")
         } footer: {
-            Text("Praeferenzen werden gespeichert. Die tatsaechliche Local-Notification-Planung folgt in einer kuenftigen Version — vorerst dienen die Toggles als Setup-Stub.")
+            Text("Lokale Benachrichtigungen — keine Server-Verbindung. Tippen auf eine Erinnerung öffnet direkt den passenden Tab.")
                 .font(.footnote)
+        }
+    }
+
+    /// Wendet alle Reminder-Praeferenzen via ReminderScheduler auf das System
+    /// an. Triggert bei jedem Toggle/Picker-Wechsel UND beim SettingsView-
+    /// `.task` (damit ein Reset oder ein cold-start die Schedules wieder
+    /// herstellt).
+    ///
+    /// Spam-Schutz lebt im ReminderScheduler — pre-cancel der alten Schedules
+    /// vor dem add.
+    private func rescheduleReminders() async {
+        // Permission anfordern wenn aktiviert und noch nicht entschieden.
+        if waterReminderEnabled || measurementReminderEnabled {
+            await prNotifications.refreshAuthorizationStatus()
+            if prNotifications.isAuthorized == nil {
+                _ = await prNotifications.requestAuthorization()
+            }
+        }
+        // Wasser-Reminder
+        if waterReminderEnabled {
+            await ReminderScheduler.scheduleWaterReminders(everyHours: waterReminderHours)
+        } else {
+            await ReminderScheduler.cancelWaterReminders()
+        }
+        // Mess-Reminder
+        if measurementReminderEnabled {
+            await ReminderScheduler.scheduleMeasurementReminder(
+                weekday: measurementWeekday,
+                hour: measurementHour,
+                minute: 0
+            )
+        } else {
+            await ReminderScheduler.cancelMeasurementReminder()
         }
     }
 

@@ -158,4 +158,180 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Kettlebell Clean & Press",         equipment: .kettlebell, primaryMuscle: .shoulders),
         ExerciseTemplateSpec(name: "Kettlebell Halo",                  equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .beginner)
     ]
+
+    /// Alternative-Mapping fuer den Environment-Swap (DEL-022). Bei einem
+    /// Plan-Wechsel von z.B. `.gym` zu `.homeGym` oder `.noEquipment` ersetzt
+    /// der PlanEditor jede Uebung durch die Alternative aus diesem Mapping.
+    ///
+    /// Schema: `[Quell-Uebungsname: [Ziel-Environment: Alternative-Uebungsname]]`
+    /// — Ziel-Namen MUESSEN in `Self.all` existieren, damit der Swap eine
+    /// vollwertige Uebung mit den richtigen `isCardio`/`isTimeBased`-Flags
+    /// anlegen kann.
+    ///
+    /// **Fallback**: Wenn fuer eine Quell-Uebung kein Mapping fuer das
+    /// Ziel-Environment existiert, laesst der PlanEditor die Uebung
+    /// unveraendert stehen (mit Warn-Indicator). User entscheidet selbst,
+    /// ob er sie behalten, manuell ersetzen oder loeschen will.
+    public static let alternatives: [String: [EnvironmentType: String]] = [
+        // ── CHEST ──────────────────────────────────────────────────────────
+        "Bankdrücken": [
+            .homeGym:     "KH-Bankdrücken",
+            .noEquipment: "Liegestütze"
+        ],
+        "Schrägbankdrücken (aufwärts)": [
+            .homeGym:     "KH-Schrägbankdrücken (aufwärts)",
+            .noEquipment: "Pike Liegestütze"
+        ],
+        "Schrägbankdrücken (abwärts)": [
+            .homeGym:     "KH-Bankdrücken",
+            .noEquipment: "Dips (Brust)"
+        ],
+        "KH-Bankdrücken": [
+            .noEquipment: "Liegestütze"
+        ],
+        "KH-Flyes (flach)": [
+            .noEquipment: "Breite Liegestütze"
+        ],
+
+        // ── BACK ───────────────────────────────────────────────────────────
+        "Kreuzheben (konventionell)": [
+            .homeGym:     "KH-Romanian Deadlift",
+            .noEquipment: "Glute Bridge (BW)"
+        ],
+        "Rumänisches Kreuzheben": [
+            .homeGym:     "KH-Romanian Deadlift",
+            .noEquipment: "Nordic Curls"
+        ],
+        "Rudern vorgebeugt": [
+            .homeGym:     "KH-Rudern einarmig",
+            .noEquipment: "Klimmzüge"
+        ],
+        "Pendlay Row": [
+            .homeGym:     "KH-Rudern einarmig",
+            .noEquipment: "Australian Pull-ups"
+        ],
+        "KH-Rudern einarmig": [
+            .noEquipment: "Australian Pull-ups"
+        ],
+
+        // ── SHOULDERS ──────────────────────────────────────────────────────
+        "Schulterdrücken (stehend)": [
+            .homeGym:     "KH-Schulterdrücken",
+            .noEquipment: "Pike Liegestütze"
+        ],
+        "Push Press": [
+            .homeGym:     "KH-Schulterdrücken",
+            .noEquipment: "Handstand-Liegestütze"
+        ],
+        "Nackendrücken": [
+            .homeGym:     "KH-Schulterdrücken",
+            .noEquipment: "Pike Liegestütze"
+        ],
+        "KH-Schulterdrücken": [
+            .noEquipment: "Pike Liegestütze"
+        ],
+
+        // ── LEGS · QUADS ───────────────────────────────────────────────────
+        "Kniebeuge": [
+            .homeGym:     "Goblet Squat",
+            .noEquipment: "Kniebeuge (BW)"
+        ],
+        "Front Squat": [
+            .homeGym:     "Goblet Squat",
+            .noEquipment: "Bulgarische Kniebeuge (KH)"
+        ],
+        "Goblet Squat": [
+            .noEquipment: "Kniebeuge (BW)"
+        ],
+        "Bulgarische Kniebeuge (KH)": [
+            .noEquipment: "Ausfallschritte (BW)"
+        ],
+        "Ausfallschritte (LH)": [
+            .homeGym:     "KH-Ausfallschritte",
+            .noEquipment: "Ausfallschritte (BW)"
+        ],
+        "KH-Ausfallschritte": [
+            .noEquipment: "Ausfallschritte (BW)"
+        ],
+
+        // ── LEGS · HAMSTRINGS / GLUTES ────────────────────────────────────
+        "Hip Thrust (LH)": [
+            .homeGym:     "Banded Hip Thrust",
+            .noEquipment: "Hip Thrust (BW)"
+        ],
+        "Good Morning": [
+            .homeGym:     "KH-Romanian Deadlift",
+            .noEquipment: "Nordic Curls"
+        ],
+
+        // ── CALVES ─────────────────────────────────────────────────────────
+        "Wadenheben (stehend, LH)": [
+            .homeGym:     "Wadenheben (BW)",
+            .noEquipment: "Wadenheben (BW)"
+        ],
+
+        // ── ARMS ───────────────────────────────────────────────────────────
+        "Langhantel Curl": [
+            .homeGym:     "Band Curls",
+            .noEquipment: "Klimmzüge (eng/Chin-up)"
+        ],
+        "Skull Crusher": [
+            .homeGym:     "Diamant-Liegestütze",
+            .noEquipment: "Diamant-Liegestütze"
+        ],
+        "Enges Bankdrücken": [
+            .homeGym:     "Diamant-Liegestütze",
+            .noEquipment: "Diamant-Liegestütze"
+        ]
+    ]
+
+    /// Resolves the best alternative for `exerciseName` in `environment`. Returns:
+    ///   - `.swap(spec)`: a different exercise should replace the old one
+    ///   - `.keep`: no mapping exists, leave the exercise in place (user will see
+    ///     a Warn-Indicator in the UI)
+    ///   - `.stayCompatible`: the exercise is already compatible with the target
+    ///     environment, no swap needed
+    public static func resolveAlternative(
+        forExerciseName name: String,
+        targetEnvironment env: EnvironmentType
+    ) -> AlternativeResolution {
+        // Find the source spec to check its native equipment.
+        let sourceSpec = all.first { $0.name == name }
+        if let sourceSpec, isCompatible(sourceSpec, with: env) {
+            return .stayCompatible
+        }
+
+        guard let altName = alternatives[name]?[env],
+              let altSpec = all.first(where: { $0.name == altName })
+        else {
+            return .keep
+        }
+        return .swap(altSpec)
+    }
+
+    /// Whether an exercise's native equipment is doable in the target environment.
+    /// Pragmatic-loose: `.bodyweight` works everywhere, `.band` works in home-
+    /// gym + noEquipment, etc. Anything else is gym-only.
+    private static func isCompatible(
+        _ spec: ExerciseTemplateSpec,
+        with env: EnvironmentType
+    ) -> Bool {
+        switch env {
+        case .gym:
+            return true   // gym has everything
+        case .homeGym:
+            return [.bodyweight, .dumbbell, .kettlebell, .band].contains(spec.equipment)
+        case .noEquipment:
+            return spec.equipment == .bodyweight
+        }
+    }
+}
+
+/// Result of an alternative lookup. Surfaces the three real cases as distinct
+/// values so the UI can decide separately (swap → silent, keep → warning,
+/// stayCompatible → no-op).
+public enum AlternativeResolution: Equatable {
+    case swap(ExerciseTemplateSpec)
+    case keep
+    case stayCompatible
 }

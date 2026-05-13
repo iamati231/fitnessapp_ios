@@ -79,6 +79,11 @@ public struct RootView: View {
 struct MainTabView: View {
     @Environment(AppNavigation.self) private var navigation
 
+    /// DEL-028: Beobachtet den NotificationRouter und routet Notification-Taps
+    /// (Cold-Start + Background) auf die richtige Tab. Eine `@State`-Property,
+    /// damit SwiftUI das @Observable-Tracking automatisch einrichtet.
+    @State private var notificationRouter = NotificationRouter.shared
+
     var body: some View {
         @Bindable var navigation = navigation
         TabView(selection: $navigation.selectedTab) {
@@ -141,6 +146,26 @@ struct MainTabView: View {
                 }
             }
             .tag(AppTab.settings)
+        }
+        // DEL-028 — Notification-Tap-Routing. Wird sowohl beim Cold-Start
+        // (Router-Set vor MainTabView-First-Render) als auch im Background-
+        // Path (Router-Set waehrend App schon laeuft) sauber gehandelt.
+        .onAppear { applyPendingRouteIfAny() }
+        .onChange(of: notificationRouter.pendingRoute) { _, _ in
+            applyPendingRouteIfAny()
+        }
+    }
+
+    private func applyPendingRouteIfAny() {
+        guard let route = notificationRouter.consumePendingRoute() else { return }
+        switch route {
+        case .waterTracker:
+            navigation.selectedTab = .calculators
+            // TODO: Sub-Push WaterTracker — aktuell landet User auf Calculators-
+            // Tab, der WaterTracker als Tile zeigt. Deep-Push waere ein
+            // CalculatorsRoute, der's gezielt oeffnet — kommt mit DEL-014.
+        case .measurement:
+            navigation.selectedTab = .measurement
         }
     }
 }

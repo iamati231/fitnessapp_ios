@@ -14,6 +14,11 @@ import FitnessAppActivities
 @main
 struct FitnessAppApp: App {
 
+    /// Adapter haengt den AppDelegate in den SwiftUI-App-Lifecycle. Wichtig
+    /// fuer den UNUserNotificationCenterDelegate-Setup, der COLD-START-safe
+    /// sein muss (siehe Kommentare in AppDelegate.swift).
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     var body: some Scene {
         WindowGroup {
             RootView()
