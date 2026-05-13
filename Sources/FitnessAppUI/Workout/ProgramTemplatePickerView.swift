@@ -27,12 +27,16 @@ public struct ProgramTemplatePickerView: View {
             List {
                 Section {
                     ForEach(filteredTemplates) { template in
-                        Button {
-                            instantiate(template)
+                        // DEL-037: Tap oeffnet die Preview, kein direktes
+                        // instantiate mehr. Erst nach "Plan uebernehmen" in
+                        // der Preview wird die Tiefkopie erstellt.
+                        NavigationLink {
+                            TemplatePreviewView(template: template) {
+                                instantiate(template)
+                            }
                         } label: {
                             ProgramRow(template: template)
                         }
-                        .buttonStyle(.plain)
                     }
                 } footer: {
                     Text("Gefiltert nach deinem Trainingsort (\(userEnvironmentLabel)). Im Profil anpassen, wenn du auch andere Plaene sehen willst.")
@@ -130,6 +134,140 @@ private struct ProgramRow: View {
         }
         .padding(.vertical, 4)
         .contentShape(Rectangle())
+    }
+}
+
+// MARK: - DEL-037 Template-Preview-View
+
+/// Read-Only-Vorschau eines `ProgramTemplate` vor dem Uebernehmen in den
+/// User-Bestand. Zeigt Tage + Uebungen, damit der User die Struktur
+/// inspizieren kann; erst der "Plan uebernehmen"-Button startet die Tiefkopie.
+@available(iOS 17.0, macOS 14.0, *)
+private struct TemplatePreviewView: View {
+    let template: ProgramTemplate
+    /// Action, die getriggert wird wenn der User die Tiefkopie tatsaechlich
+    /// erstellen will. Wird vom Parent (Picker-View) injected, damit dort
+    /// die Insert + Navigation + Sheet-Dismiss orchestriert wird.
+    let onAdopt: () -> Void
+
+    var body: some View {
+        List {
+            heroSection
+            ForEach(orderedDays, id: \.weekday) { day in
+                daySection(day)
+            }
+            adoptSection
+        }
+        .navigationTitle(template.name)
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+    }
+
+    // MARK: Subsections
+
+    private var heroSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
+                    Image(systemName: template.iconSystemName)
+                        .font(.title2)
+                        .foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                        .background(Color.blue.gradient)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(template.focus)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.blue)
+                        Text(template.tagline)
+                            .font(.body.weight(.semibold))
+                    }
+                }
+                Text(template.descriptionText)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    @ViewBuilder
+    private func daySection(_ day: DaySpec) -> some View {
+        Section {
+            if day.exercises.isEmpty {
+                HStack(spacing: 10) {
+                    Image(systemName: "bed.double.fill")
+                        .foregroundStyle(.purple)
+                    Text("Ruhetag")
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                ForEach(Array(day.exercises.enumerated()), id: \.offset) { _, exercise in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(exercise.name)
+                            .font(.body.weight(.medium))
+                        Text("\(exercise.sets) × \(exercise.repsMin)-\(exercise.repsMax) Wdh · \(exercise.restSeconds)s Pause")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+        } header: {
+            HStack(spacing: 6) {
+                Text(weekdayLabel(day.weekday))
+                    .textCase(nil)
+                Text("·").foregroundStyle(.tertiary)
+                Text(day.name)
+                    .textCase(nil)
+                    .foregroundStyle(.primary)
+            }
+        }
+    }
+
+    private var adoptSection: some View {
+        Section {
+            Button {
+                onAdopt()
+            } label: {
+                HStack {
+                    Spacer()
+                    Label("Diesen Plan übernehmen", systemImage: "checkmark.circle.fill")
+                        .font(.headline)
+                    Spacer()
+                }
+                .padding(.vertical, 6)
+                .foregroundStyle(.white)
+            }
+            .listRowBackground(Color.blue)
+        } footer: {
+            Text("Beim Übernehmen wird eine Tiefkopie für deine eigene Bibliothek angelegt — Tage, Übungen, Sätze sind danach frei editierbar.")
+                .font(.footnote)
+        }
+    }
+
+    // MARK: Helpers
+
+    /// DaySpec hat einen weekday-Int (1=So, 2=Mo, ..., 7=Sa). Wir sortieren
+    /// Mon-first via PlanNavigator's existing Helper-Logik — DaySpec konformt
+    /// nicht zum Protocol, also lokale Sortier-Variante.
+    private var orderedDays: [DaySpec] {
+        template.days.sorted { lhs, rhs in
+            // Mo (2) zuerst, So (1) zuletzt — Mo-First-Convention.
+            europeanWeekday(lhs.weekday) < europeanWeekday(rhs.weekday)
+        }
+    }
+
+    private func europeanWeekday(_ apple: Int) -> Int {
+        // 2=Mo→0, 3=Di→1, ..., 1=So→6
+        apple == 1 ? 6 : apple - 2
+    }
+
+    private func weekdayLabel(_ weekday: Int) -> String {
+        let symbols = Calendar.current.standaloneWeekdaySymbols
+        guard (1...7).contains(weekday) else { return "?" }
+        return symbols[weekday - 1]
     }
 }
 

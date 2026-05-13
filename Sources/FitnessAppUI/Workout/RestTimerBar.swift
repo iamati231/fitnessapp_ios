@@ -3,6 +3,9 @@ import SwiftUI
 #if canImport(UIKit)
 import UIKit
 #endif
+#if canImport(AudioToolbox)
+import AudioToolbox
+#endif
 
 /// Sticky rest-timer bar that lives in the safe-area-inset of `ActiveWorkoutView`.
 /// Counts down from the most recent set's `restSeconds`, fires a success haptic at
@@ -27,6 +30,11 @@ struct RestTimerBar: View {
 
     @State private var now: Date = Date()
     private let tick = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
+
+    /// DEL-041: User-Praeferenzen fuer Timer-Feedback. Werden in SettingsView
+    /// als Toggle gepflegt — Default beide ON.
+    @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
+    @AppStorage("pref_timer_haptics") private var timerHapticsEnabled: Bool = true
 
     private var remaining: Int {
         max(0, Int(endDate.timeIntervalSince(now).rounded(.up)))
@@ -96,9 +104,9 @@ struct RestTimerBar: View {
         .background(.regularMaterial)
         .onReceive(tick) { now = $0 }
         .onChange(of: remaining) { oldValue, newValue in
-            // Fire success haptic exactly once at the transition.
+            // Fire feedback exactly once at the 0-Transition.
             if oldValue > 0 && newValue == 0 {
-                triggerHaptic()
+                triggerEndOfRestFeedback()
                 // Auto-dismiss after 3s so the bar doesn't linger on screen.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                     onDismiss(.completed)
@@ -113,9 +121,21 @@ struct RestTimerBar: View {
         return String(format: "%d:%02d", mins, secs)
     }
 
-    private func triggerHaptic() {
+    /// DEL-041: Sound + Haptic-Burst beim Pausen-Ende. Beides an die User-
+    /// Praeferenzen aus DEL-018 gekoppelt — wer Sound/Haptics in Settings
+    /// abgestellt hat, bekommt nur das jeweils andere (oder gar nichts).
+    private func triggerEndOfRestFeedback() {
         #if canImport(UIKit) && !os(watchOS)
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        if timerHapticsEnabled {
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
+        #endif
+        #if canImport(AudioToolbox)
+        if timerSoundEnabled {
+            // SystemSoundID 1005 = "New Mail"-Ding (kurz, klar, nicht aufdringlich).
+            // Alternative: 1003 = "SMS-Recieved", 1322 = "Tweet-Sent".
+            AudioServicesPlaySystemSound(1005)
+        }
         #endif
     }
 }

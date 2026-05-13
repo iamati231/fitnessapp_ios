@@ -585,59 +585,62 @@ private struct SetSummaryRow: View {
     }
 
     /// DEL-032 Edit-Modus: Gewicht/Reps als TextField + RIR als Stepper.
-    /// Layout-Lite — nur das Wesentliche, Form-Layout uebernimmt das Sectioning.
+    /// DEL-038 Layout-Fix: drei klar getrennte Spalten mit festen Frames,
+    /// Spacer dazwischen statt der Overlay-Hack-Loesung von Welle 5.
     @ViewBuilder
     private var editRow: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Satz \(log.setIndex + 1)")
                 .font(.subheadline.weight(.semibold))
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 if !exercise.isCardio && !exercise.isTimeBased {
                     weightField
+                    Divider().frame(height: 24)
                 }
                 repsField
-                rirStepper
+                Spacer(minLength: 12)
+                rirBlock
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
     }
 
     private var weightField: some View {
-        HStack(spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             TextField("kg", value: $log.weight, format: .number)
-                .frame(width: 60)
-                .multilineTextAlignment(.trailing)
+                .frame(width: 56)
+                .multilineTextAlignment(.leading)
+                .font(.title3.monospacedDigit())
                 #if os(iOS)
                 .keyboardType(.decimalPad)
                 #endif
-            Text("kg").font(.caption).foregroundStyle(.secondary)
+            Text("kg").font(.caption2).foregroundStyle(.secondary)
         }
     }
 
     private var repsField: some View {
-        HStack(spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             TextField(exercise.isTimeBased ? "Sek" : "Wdh", value: $log.reps, format: .number)
-                .frame(width: 50)
-                .multilineTextAlignment(.trailing)
+                .frame(width: 48)
+                .multilineTextAlignment(.leading)
+                .font(.title3.monospacedDigit())
                 #if os(iOS)
                 .keyboardType(.numberPad)
                 #endif
-            Text(exercise.isTimeBased ? "Sek" : "Wdh").font(.caption).foregroundStyle(.secondary)
+            Text(exercise.isTimeBased ? "Sek" : "Wdh").font(.caption2).foregroundStyle(.secondary)
         }
     }
 
-    private var rirStepper: some View {
-        Stepper(value: $log.rir, in: 0...10, step: 0.5) {
+    /// RIR-Block: Label oben, Stepper darunter — kein Overlay-Trick mehr.
+    private var rirBlock: some View {
+        VStack(alignment: .trailing, spacing: 2) {
             Text("RIR \(formatRIR(log.rir))")
-                .font(.caption)
-                .monospacedDigit()
-        }
-        .labelsHidden()
-        .overlay(alignment: .leading) {
-            Text("RIR \(formatRIR(log.rir))")
-                .font(.caption)
-                .monospacedDigit()
-                .offset(x: -40)
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+            Stepper(value: $log.rir, in: 0...10, step: 0.5) {
+                EmptyView()
+            }
+            .labelsHidden()
         }
     }
 

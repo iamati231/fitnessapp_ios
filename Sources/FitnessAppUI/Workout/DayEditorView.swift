@@ -17,6 +17,15 @@ public struct DayEditorView: View {
     @State private var showingPicker = false
     @State private var exerciseToEdit: Exercise?
 
+    /// DEL-042: laeuft eine WorkoutSession noch im Hintergrund (z.B. wegen
+    /// App-Crash oder vergessenes Speichern)? Wenn ja, blockiert ein Confirm-
+    /// Dialog den Direktstart und gibt dem User drei Optionen.
+    @Query(filter: #Predicate<WorkoutSession> { $0.isCompleted == false && $0.isRestDay == false },
+           sort: \WorkoutSession.startTime, order: .reverse)
+    private var openSessions: [WorkoutSession]
+
+    @State private var showingOpenSessionDialog = false
+
     public init(day: TrainingDay) {
         self.day = day
     }
@@ -50,6 +59,30 @@ public struct DayEditorView: View {
         .sheet(item: $exerciseToEdit) { exercise in
             NavigationStack {
                 ExerciseEditorView(exercise: exercise)
+            }
+        }
+        // DEL-042: Open-Session-Recovery-Dialog. Triggered von startSession()
+        // wenn eine ungespeicherte Session existiert. Drei Optionen plus Cancel.
+        .confirmationDialog(
+            "Laufendes Training",
+            isPresented: $showingOpenSessionDialog,
+            titleVisibility: .visible
+        ) {
+            Button("Fortsetzen") {
+                resumeOpenSession()
+            }
+            Button("Speichern & neu starten") {
+                completeOpenSessionAndStartNew()
+            }
+            Button("Verwerfen & neu starten", role: .destructive) {
+                discardOpenSessionAndStartNew()
+            }
+            Button("Abbrechen", role: .cancel) { }
+        } message: {
+            if let open = openSessions.first {
+                Text("Es gibt bereits ein angefangenes Training (\(open.dayName ?? "Unbekannt"), gestartet \(open.startTime.formatted(.relative(presentation: .named)))). Was möchtest du tun?")
+            } else {
+                Text("Es gibt bereits ein angefangenes Training.")
             }
         }
     }
@@ -315,7 +348,20 @@ public struct DayEditorView: View {
         }
     }
 
+    /// Triggered vom "Training starten"-Button. Wenn eine ungespeicherte
+    /// Session existiert (DEL-042), oeffnet sich der Recovery-Dialog —
+    /// erst nach User-Entscheidung wird tatsaechlich neu gestartet.
     private func startSession() {
+        if !openSessions.isEmpty {
+            showingOpenSessionDialog = true
+        } else {
+            actuallyStartNewSession()
+        }
+    }
+
+    /// Erstellt + navigiert in eine neue Session. Wird sowohl direkt
+    /// (kein Konflikt) als auch nach Recovery-Entscheidung aufgerufen.
+    private func actuallyStartNewSession() {
         let session = WorkoutSession(
             startTime: Date(),
             endTime: Date(),
@@ -327,6 +373,43 @@ public struct DayEditorView: View {
         )
         modelContext.insert(session)
         navigation.workoutPath.append(ActiveSessionRoute(session: session))
+    }
+
+    /// DEL-042 "Fortsetzen": navigiere in die existing offene Session ohne
+    /// eine neue zu erstellen.
+    private func resumeOpenSession() {
+        guard let open = openSessions.first else { return }
+        navigation.workoutPath.append(ActiveSessionRoute(session: open))
+    }
+
+    /// DEL-042 "Speichern & neu starten": markiere die alte Session als
+    /// isCompleted=true (mit den bisher geloggten Saetzen), rechne totals
+    /// und starte dann eine neue Session.
+    private func completeOpenSessionAndStartNew() {
+        guard let open = openSessions.first else {
+            actuallyStartNewSession()
+            return
+        }
+        let now = Date()
+        open.endTime = now
+        open.durationMinutes = max(0, Int(now.timeIntervalSince(open.startTime) / 60))
+        open.totalSets = open.logs.count
+        open.totalVolumeKg = open.logs.reduce(0.0) { $0 + $1.weight * Double($1.reps) }
+        open.isCompleted = true
+        try? modelContext.save()
+        actuallyStartNewSession()
+    }
+
+    /// DEL-042 "Verwerfen": lösche die alte Session inkl. ihrer Logs
+    /// (cascade) und starte neu.
+    private func discardOpenSessionAndStartNew() {
+        guard let open = openSessions.first else {
+            actuallyStartNewSession()
+            return
+        }
+        modelContext.delete(open)
+        try? modelContext.save()
+        actuallyStartNewSession()
     }
 
     /// Schreibt eine isRestDay=true-Session in den Store. Der PlanNavigator zaehlt

@@ -25,6 +25,10 @@ public struct ActiveWorkoutView: View {
     @State private var now: Date = Date()
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
+    /// DEL-039: aktuelle Page in der paginierten TabView. 0..N-1 sind die
+    /// Uebungs-Pages, Page N ist die "Finish"-Seite mit Save/Discard.
+    @State private var currentPageIndex: Int = 0
+
     @State private var showingFinishConfirm = false
     @State private var showingDiscardConfirm = false
 
@@ -37,13 +41,16 @@ public struct ActiveWorkoutView: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(spacing: 14) {
-                statsCard
-                exerciseCards
-                actionsCard
-            }
-            .padding()
+        // DEL-039: paginierte Ansicht statt scrollbarer Single-Page-List.
+        // Stats oben fix, dann TabView mit einer Page pro Uebung + einer
+        // finalen "Finish"-Page (Save/Discard). User swipt horizontal
+        // zwischen Uebungen, page-indicator unten zeigt Position.
+        VStack(spacing: 0) {
+            statsCard
+                .padding(.horizontal)
+                .padding(.top, 8)
+
+            paginatedBody
         }
         .background(Color(.gray).opacity(0.04).ignoresSafeArea())
         .navigationTitle(session.dayName ?? "Training")
@@ -122,30 +129,94 @@ public struct ActiveWorkoutView: View {
             .frame(width: 1, height: 32)
     }
 
+    /// DEL-039: paginierte TabView mit einer Übung pro Seite + finaler Save/
+    /// Discard-Seite. Page-Indicator unten zeigt Position. Auto-Advance bei
+    /// vollständig geloggter Übung nach kurzer Verzögerung (1.2s — gibt User
+    /// Zeit, den Rest-Timer-Start zu registrieren).
     @ViewBuilder
-    private var exerciseCards: some View {
+    private var paginatedBody: some View {
         if let day = session.day, !day.exercises.isEmpty {
-            ForEach(orderedExercises(in: day)) { exercise in
-                ExerciseCard(
-                    exercise: exercise,
-                    session: session,
-                    onSetLogged: { setIndex in
-                        startRestTimer(for: exercise, setIndex: setIndex)
+            let exercises = orderedExercises(in: day)
+            #if os(iOS)
+            TabView(selection: $currentPageIndex) {
+                ForEach(Array(exercises.enumerated()), id: \.offset) { idx, exercise in
+                    ScrollView {
+                        ExerciseCard(
+                            exercise: exercise,
+                            session: session,
+                            onSetLogged: { setIndex in
+                                startRestTimer(for: exercise, setIndex: setIndex)
+                                maybeAutoAdvance(after: exercise, exercises: exercises, currentIndex: idx)
+                            }
+                        )
+                        .padding()
                     }
-                )
+                    .tag(idx)
+                }
+                // Finish-Page als letzte Tab
+                ScrollView {
+                    actionsCard
+                        .padding()
+                }
+                .tag(exercises.count)
             }
+            .tabViewStyle(.page(indexDisplayMode: .always))
+            .indexViewStyle(.page(backgroundDisplayMode: .always))
+            #else
+            // macOS-Preview-Fallback: keine paginierte TabView, klassische
+            // ScrollView-Liste.
+            ScrollView {
+                VStack(spacing: 14) {
+                    ForEach(exercises) { exercise in
+                        ExerciseCard(
+                            exercise: exercise,
+                            session: session,
+                            onSetLogged: { setIndex in
+                                startRestTimer(for: exercise, setIndex: setIndex)
+                            }
+                        )
+                    }
+                    actionsCard
+                }
+                .padding()
+            }
+            #endif
         } else {
-            VStack(alignment: .leading, spacing: 6) {
-                Label("Diese Session hat keine Übungen.", systemImage: "exclamationmark.triangle")
-                    .font(.headline)
-                Text("Vermutlich wurde der Plan-Tag nach dem Start geleert. Du kannst die Session verwerfen oder ohne Sätze beenden.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Diese Session hat keine Übungen.", systemImage: "exclamationmark.triangle")
+                        .font(.headline)
+                    Text("Vermutlich wurde der Plan-Tag nach dem Start geleert. Du kannst die Session verwerfen oder ohne Sätze beenden.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.secondary.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                actionsCard
+                    .padding(.horizontal)
+                    .padding(.top, 12)
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.secondary.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    /// Wenn alle Saetze der aktuellen Uebung jetzt geloggt sind, swipe nach
+    /// kurzer Pause auf die naechste Page. Gibt dem User Zeit, den Rest-Timer-
+    /// Start visuell zu registrieren (kommt parallel als safeAreaInset).
+    private func maybeAutoAdvance(after exercise: Exercise,
+                                   exercises: [Exercise],
+                                   currentIndex idx: Int) {
+        let loggedSets = exercise.logs.filter { $0.session?.persistentModelID == session.persistentModelID }.count
+        // Alle Saetze inkl. dem gerade geloggten sind durch?
+        guard loggedSets >= exercise.sets else { return }
+        // Bereits auf der letzten Page? Naechste waere die Finish-Page —
+        // advance ist hier OK (zeigt automatisch Save/Discard).
+        let nextIndex = idx + 1
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentPageIndex = nextIndex
+            }
         }
     }
 

@@ -2,6 +2,12 @@
 import SwiftUI
 import FitnessAppCore
 import FitnessAppData
+#if canImport(UIKit)
+import UIKit
+#endif
+#if canImport(AudioToolbox)
+import AudioToolbox
+#endif
 
 /// Single row inside an `ExerciseCard` — represents one planned set of an exercise.
 ///
@@ -27,12 +33,29 @@ struct SetRow: View {
     @State private var rir: Float = 2.0
     @State private var didInit = false
 
+    /// DEL-040: Zustands-Maschine fuer den Halte-Timer bei isTimeBased-Uebungen.
+    @State private var holdState: HoldState = .idle
+
+    /// Local-Timer fuer Countdown/Hold-Tick. Wird in den entsprechenden
+    /// State-Transitions aufgesetzt + invalidated.
+    @State private var holdTimer: Timer?
+
+    @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
+    @AppStorage("pref_timer_haptics") private var timerHapticsEnabled: Bool = true
+
+    enum HoldState: Equatable {
+        case idle
+        case countingDown(secondsLeft: Int)
+        case holding(elapsedSeconds: Int)
+    }
+
     var body: some View {
         if let existingLog {
             completedView(log: existingLog)
         } else {
             editableView
                 .onAppear { initializeOnce() }
+                .onDisappear { invalidateHoldTimer() }
         }
     }
 
@@ -51,16 +74,32 @@ struct SetRow: View {
                 Spacer()
             }
 
+            // DEL-040: bei isTimeBased komplett anderer UI-Flow — Start-Button
+            // statt Reps-Input, Countdown-Overlay, Live-Hold-Timer mit
+            // automatischem Set-Abschluss bei Ziel-Zeit.
+            if exercise.isTimeBased && !exercise.isCardio {
+                holdTimerControl
+            } else {
+                manualInputControl
+            }
+        }
+        .padding(.vertical, 6)
+    }
+
+    /// Klassischer Manual-Input fuer Strength + Cardio: Gewicht/Reps-TextFields,
+    /// RIR-Stepper, "Satz speichern"-Button.
+    private var manualInputControl: some View {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 if !exercise.isCardio {
                     weightField
-                    Text(exercise.isTimeBased ? "" : "kg")
+                    Text("kg")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 repsField
-                Text(exercise.isTimeBased ? "Sek" : "Wdh")
+                Text("Wdh")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -95,7 +134,186 @@ struct SetRow: View {
             .buttonStyle(.plain)
             .disabled(!canLog)
         }
-        .padding(.vertical, 6)
+    }
+
+    // MARK: - DEL-040 Hold-Timer-Control
+
+    @ViewBuilder
+    private var holdTimerControl: some View {
+        switch holdState {
+        case .idle:
+            holdIdleView
+        case .countingDown(let secondsLeft):
+            holdCountdownView(secondsLeft: secondsLeft)
+        case .holding(let elapsed):
+            holdRunningView(elapsedSeconds: elapsed)
+        }
+    }
+
+    private var holdIdleView: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Ziel: \(targetHoldSeconds) Sek halten")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
+            Button {
+                startCountdown()
+            } label: {
+                HStack {
+                    Spacer()
+                    Image(systemName: "play.fill")
+                    Text("Start")
+                        .font(.headline)
+                    Spacer()
+                }
+                .padding(.vertical, 12)
+                .background(Color.cyan.gradient)
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func holdCountdownView(secondsLeft: Int) -> some View {
+        VStack(spacing: 6) {
+            Text(secondsLeft == 0 ? "GO!" : "\(secondsLeft)")
+                .font(.system(size: 80, weight: .bold, design: .rounded))
+                .foregroundStyle(.cyan)
+                .frame(maxWidth: .infinity)
+                .contentTransition(.numericText())
+                .animation(.easeOut(duration: 0.2), value: secondsLeft)
+            Text("Mach dich bereit ...")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 12)
+    }
+
+    private func holdRunningView(elapsedSeconds elapsed: Int) -> some View {
+        let target = targetHoldSeconds
+        let progress = min(1.0, Double(elapsed) / Double(max(target, 1)))
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("\(elapsed)")
+                    .font(.system(size: 48, weight: .bold, design: .rounded).monospacedDigit())
+                    .contentTransition(.numericText())
+                Text("/ \(target) Sek")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if elapsed >= target {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.title2)
+                        .foregroundStyle(.green)
+                }
+            }
+            // Progress-Bar in Cyan, wechselt auf Grün bei Ziel-Erreichung.
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                    Rectangle()
+                        .fill(elapsed >= target ? Color.green : Color.cyan)
+                        .frame(width: geo.size.width * progress)
+                        .animation(.linear(duration: 0.5), value: progress)
+                }
+            }
+            .frame(height: 4)
+            .clipShape(Capsule())
+
+            Button {
+                stopHoldAndLog()
+            } label: {
+                HStack {
+                    Spacer()
+                    Image(systemName: "stop.fill")
+                    Text(elapsed >= target ? "Satz speichern" : "Stoppen & speichern")
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                }
+                .padding(.vertical, 8)
+                .background(elapsed >= target ? Color.green.opacity(0.18) : Color.orange.opacity(0.18))
+                .foregroundStyle(elapsed >= target ? .green : .orange)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    /// Ziel-Sekunden fuer die Halte-Uebung. Nehmen den repsMin-Wert
+    /// (= Minimum-Ziel) als primaere Zielzeit. Wenn nichts gesetzt, fallback 30s.
+    private var targetHoldSeconds: Int {
+        exercise.repsMin > 0 ? exercise.repsMin : 30
+    }
+
+    private func startCountdown() {
+        holdState = .countingDown(secondsLeft: 3)
+        // 3 ticks im 1s-Intervall — 3 -> 2 -> 1 -> GO -> dann holding.
+        holdTimer?.invalidate()
+        holdTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+            Task { @MainActor in
+                guard case .countingDown(let left) = holdState else {
+                    timer.invalidate()
+                    return
+                }
+                if left > 1 {
+                    holdState = .countingDown(secondsLeft: left - 1)
+                } else if left == 1 {
+                    // Zeige "GO!" kurz, dann starte holding.
+                    holdState = .countingDown(secondsLeft: 0)
+                } else {
+                    timer.invalidate()
+                    startHolding()
+                }
+            }
+        }
+    }
+
+    private func startHolding() {
+        holdState = .holding(elapsedSeconds: 0)
+        let target = targetHoldSeconds
+        var didFireFinishedFeedback = false
+        holdTimer?.invalidate()
+        holdTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+            Task { @MainActor in
+                guard case .holding(let elapsed) = holdState else {
+                    timer.invalidate()
+                    return
+                }
+                let next = elapsed + 1
+                holdState = .holding(elapsedSeconds: next)
+                if next == target && !didFireFinishedFeedback {
+                    didFireFinishedFeedback = true
+                    triggerHoldCompleteFeedback()
+                }
+            }
+        }
+    }
+
+    private func stopHoldAndLog() {
+        invalidateHoldTimer()
+        guard case .holding(let elapsed) = holdState else { return }
+        // Logge die tatsaechlich gehaltene Zeit als reps. Weight stays 0.
+        onLogged(0, elapsed, 0)
+        holdState = .idle
+    }
+
+    private func invalidateHoldTimer() {
+        holdTimer?.invalidate()
+        holdTimer = nil
+    }
+
+    private func triggerHoldCompleteFeedback() {
+        #if canImport(UIKit) && !os(watchOS)
+        if timerHapticsEnabled {
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
+        #endif
+        #if canImport(AudioToolbox)
+        if timerSoundEnabled {
+            AudioServicesPlaySystemSound(1005)
+        }
+        #endif
     }
 
     private var weightField: some View {
