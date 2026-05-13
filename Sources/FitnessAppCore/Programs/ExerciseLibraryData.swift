@@ -90,6 +90,9 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Dips (Trizeps)",                   equipment: .bodyweight, primaryMuscle: .triceps),
         ExerciseTemplateSpec(name: "Pike Liegestütze",                equipment: .bodyweight, primaryMuscle: .shoulders),
         ExerciseTemplateSpec(name: "Handstand-Liegestütze",           equipment: .bodyweight, primaryMuscle: .shoulders, difficultyLevel: .advanced),
+        // Rear-Delt-Isolation ohne Equipment — Bauchlage, Arme zur Seite, Schulter-
+        // blaetter zusammenziehen. Beste BW-Alternative zu Face Pulls / Reverse Flys.
+        ExerciseTemplateSpec(name: "Back Widows",                      equipment: .bodyweight, primaryMuscle: .shoulders, difficultyLevel: .beginner),
 
         // ── BODYWEIGHT · LOWER ─────────────────────────────────────────────
         ExerciseTemplateSpec(name: "Kniebeuge (BW)",                   equipment: .bodyweight, primaryMuscle: .quads,     difficultyLevel: .beginner),
@@ -97,6 +100,8 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Ausfallschritte (BW)",             equipment: .bodyweight, primaryMuscle: .quads,     difficultyLevel: .beginner),
         ExerciseTemplateSpec(name: "Box Jump",                         equipment: .bodyweight, primaryMuscle: .quads),
         ExerciseTemplateSpec(name: "Wall Sit",                         equipment: .bodyweight, primaryMuscle: .quads,     difficultyLevel: .beginner, isTimeBased: true),
+        // Beste BW-Quad-Isolation — als Substitute fuer Beinstrecker (Maschine).
+        ExerciseTemplateSpec(name: "Sissy Squats (BW)",                equipment: .bodyweight, primaryMuscle: .quads,     difficultyLevel: .advanced),
         ExerciseTemplateSpec(name: "Nordic Curls",                     equipment: .bodyweight, primaryMuscle: .hamstrings),
         ExerciseTemplateSpec(name: "Glute Bridge (BW)",                equipment: .bodyweight, primaryMuscle: .glutes,    difficultyLevel: .beginner),
         ExerciseTemplateSpec(name: "Hip Thrust (BW)",                  equipment: .bodyweight, primaryMuscle: .glutes,    difficultyLevel: .beginner),
@@ -107,6 +112,9 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Seitstütz",                       equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isTimeBased: true),
         ExerciseTemplateSpec(name: "Mountain Climbers",                equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isTimeBased: true),
         ExerciseTemplateSpec(name: "Burpees",                          equipment: .bodyweight, primaryMuscle: .core,      isTimeBased: true),
+        // Standard-Substitutes fuer Kabel-Crunches und haengendes Beinheben.
+        ExerciseTemplateSpec(name: "Crunches (BW)",                    equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner),
+        ExerciseTemplateSpec(name: "Beinheben (liegend)",              equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner),
         ExerciseTemplateSpec(name: "Sit-ups",                          equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner),
         ExerciseTemplateSpec(name: "Beinstrecker liegend",             equipment: .bodyweight, primaryMuscle: .core),
         ExerciseTemplateSpec(name: "Russian Twists",                   equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner),
@@ -282,6 +290,108 @@ public enum ExerciseLibraryData {
         "Enges Bankdrücken": [
             .homeGym:     "Diamant-Liegestütze",
             .noEquipment: "Diamant-Liegestütze"
+        ],
+
+        // ── MACHINES · CHEST ────────────────────────────────────────────────
+        "Brustpresse (Maschine)": [
+            .homeGym:     "KH-Bankdrücken",
+            .noEquipment: "Liegestütze"
+        ],
+        "Cable Crossover": [
+            .homeGym:     "KH-Flyes (flach)",
+            .noEquipment: "Breite Liegestütze"
+        ],
+        "Flys (Maschine / Butterfly)": [
+            .homeGym:     "KH-Flyes (flach)",
+            .noEquipment: "Breite Liegestütze"
+        ],
+
+        // ── MACHINES / CABLES · BACK ────────────────────────────────────────
+        "Latzug (breit)": [
+            .homeGym:     "Klimmzüge (weit)",
+            .noEquipment: "Australian Pull-ups"
+        ],
+        "Latzug (eng)": [
+            .homeGym:     "Klimmzüge (eng/Chin-up)",
+            .noEquipment: "Australian Pull-ups"
+        ],
+        "Rudern (Maschine)": [
+            .homeGym:     "KH-Rudern einarmig",
+            .noEquipment: "Australian Pull-ups"
+        ],
+
+        // ── MACHINES / CABLES · SHOULDERS ──────────────────────────────────
+        "Seitheben (Kabel)": [
+            .homeGym:     "Seitheben",
+            .noEquipment: "Pike Liegestütze"
+        ],
+        "Face Pulls": [
+            .homeGym:     "Reverse Flyes (KH)",
+            .noEquipment: "Back Widows"
+        ],
+        "Reverse Flys (Maschine)": [
+            .homeGym:     "Reverse Flyes (KH)",
+            .noEquipment: "Back Widows"
+        ],
+        "Schulterdrücken (Maschine)": [
+            .homeGym:     "KH-Schulterdrücken",
+            .noEquipment: "Pike Liegestütze"
+        ],
+
+        // ── MACHINES · LEGS (QUADS) ────────────────────────────────────────
+        "Beinpresse": [
+            .homeGym:     "Goblet Squat",
+            .noEquipment: "Kniebeuge (BW)"
+        ],
+        "Beinstrecker (Maschine)": [
+            .homeGym:     "Goblet Squat",
+            .noEquipment: "Sissy Squats (BW)"
+        ],
+        "Hackenschmidt-Kniebeuge (Maschine)": [
+            .homeGym:     "KH-Ausfallschritte",
+            .noEquipment: "Kniebeuge (BW)"
+        ],
+
+        // ── MACHINES · LEGS (HAMSTRINGS / GLUTES) ──────────────────────────
+        "Beinbeuger (sitzend)": [
+            .homeGym:     "KH-Romanian Deadlift",
+            .noEquipment: "Nordic Curls"
+        ],
+        "Beinbeuger (liegend)": [
+            .homeGym:     "KH-Romanian Deadlift",
+            .noEquipment: "Nordic Curls"
+        ],
+        "Hip Thrust (Maschine)": [
+            .homeGym:     "Banded Hip Thrust",
+            .noEquipment: "Hip Thrust (BW)"
+        ],
+
+        // ── CABLES · ARMS ──────────────────────────────────────────────────
+        "Trizeps-Drücken (Kabel)": [
+            .homeGym:     "Trizep Kickback (KH)",
+            .noEquipment: "Diamant-Liegestütze"
+        ],
+        "Trizeps-Drücken über Kopf (Kabel)": [
+            .homeGym:     "KH Overhead Trizep Extension",
+            .noEquipment: "Dips (Trizeps)"
+        ],
+        "Bizepscurls (Kabel)": [
+            .homeGym:     "Hammer Curl",
+            .noEquipment: "Klimmzüge (eng/Chin-up)"
+        ],
+        "Preacher Curls": [
+            .homeGym:     "Konzentrations Curl",
+            .noEquipment: "Klimmzüge (eng/Chin-up)"
+        ],
+
+        // ── CABLES · CORE ──────────────────────────────────────────────────
+        "Crunches (Kabel)": [
+            .homeGym:     "Crunches (BW)",
+            .noEquipment: "Crunches (BW)"
+        ],
+        "Beinheben (hängend)": [
+            .homeGym:     "Beinheben (liegend)",
+            .noEquipment: "Beinheben (liegend)"
         ]
     ]
 
