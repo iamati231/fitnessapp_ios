@@ -319,7 +319,27 @@ public struct PlanEditorView: View {
                 get: { plan.isActive },
                 set: { setActive($0) }
             ))
+
+            // DEL-053 — globaler Plan-Override fuer die RIR-Schwelle der
+            // Smart-Progression. Auto = pro-Uebung-Default (Compound: RIR<=3,
+            // Isolation: RIR<=1). User kann den Override hier auf einen
+            // strengeren Wert setzen, z.B. RIR<=2 fuer alle Uebungen.
+            Picker("Progressions-Ziel-RIR", selection: progressionRIRBinding) {
+                Text("Auto (pro Uebung)").tag(Optional<Float>.none)
+                Text("RIR ≤ 0 (zum Versagen)").tag(Optional<Float>.some(0))
+                Text("RIR ≤ 1").tag(Optional<Float>.some(1))
+                Text("RIR ≤ 2").tag(Optional<Float>.some(2))
+                Text("RIR ≤ 3").tag(Optional<Float>.some(3))
+            }
         }
+    }
+
+    /// DEL-053 — Picker-Binding fuer den optionalen Plan-RIR-Override.
+    private var progressionRIRBinding: Binding<Float?> {
+        Binding(
+            get: { plan.progressionTargetRIROverride },
+            set: { plan.progressionTargetRIROverride = $0 }
+        )
     }
 
     @ViewBuilder

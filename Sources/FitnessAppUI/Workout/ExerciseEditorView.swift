@@ -90,6 +90,14 @@ public struct ExerciseEditorView: View {
                     .decimalKeyboard()
             }
 
+            // DEL-052/053 — Smart-Progression-Settings pro Uebung. Nur
+            // sinnvoll fuer Strength-Lifts; bei Cardio/TimeBased blenden wir
+            // die Section komplett aus (das Gewichts-Tracking gibts dort
+            // gar nicht).
+            if !exercise.isCardio, !exercise.isTimeBased {
+                progressionSection
+            }
+
             Section("Notizen") {
                 TextField("Notiz (optional)",
                           text: Binding(
@@ -114,6 +122,54 @@ public struct ExerciseEditorView: View {
 
     private func rirString(_ rir: Float) -> String {
         rir == rir.rounded() ? String(format: "%.0f", rir) : String(format: "%.1f", rir)
+    }
+
+    // MARK: - DEL-052/053 Smart-Progression
+
+    @ViewBuilder
+    private var progressionSection: some View {
+        Section {
+            Toggle("Smart Overload aktivieren", isOn: $exercise.smartProgressionEnabled)
+            if exercise.smartProgressionEnabled {
+                Toggle("Compound-Lift", isOn: $exercise.isCompound)
+                Picker("Inkrement", selection: stepBinding) {
+                    ForEach(ProgressionStep.allCases, id: \.self) { step in
+                        Text(step.label).tag(step)
+                    }
+                }
+            }
+        } header: {
+            Text("Smart-Progression")
+        } footer: {
+            if exercise.smartProgressionEnabled {
+                Text(progressionFooterText)
+                    .font(.footnote)
+            } else {
+                Text("Aus = das Gewicht wird nie automatisch geaendert. Du behaeltst die volle Kontrolle.")
+                    .font(.footnote)
+            }
+        }
+    }
+
+    /// Footer-Wording erklaert die RIR-Schwelle. Wird je nach Compound-Toggle
+    /// dynamisch angepasst, damit der User direkt sieht, wann die App
+    /// progressed.
+    private var progressionFooterText: String {
+        if exercise.isCompound {
+            return "Compound: Wenn alle Saetze die obere Rep-Grenze schaffst UND der letzte Satz RIR <= 3 hatte, steigt das Gewicht beim naechsten Mal automatisch um den eingestellten Inkrement."
+        } else {
+            return "Isolation: Wenn alle Saetze die obere Rep-Grenze schaffst UND der letzte Satz RIR <= 1 hatte (also nah am Versagen), steigt das Gewicht beim naechsten Mal um den eingestellten Inkrement."
+        }
+    }
+
+    /// Picker bindet auf das `ProgressionStep`-enum, persistiert wird der
+    /// Double-Wert. `ProgressionStep(closestTo:)` mappt aus dem rohen Wert
+    /// auf das naechstgelegene Quick-Picker-Element.
+    private var stepBinding: Binding<ProgressionStep> {
+        Binding(
+            get: { ProgressionStep(closestTo: exercise.progressionStep) },
+            set: { exercise.progressionStep = $0.rawValue }
+        )
     }
 }
 #endif

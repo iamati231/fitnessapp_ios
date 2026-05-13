@@ -359,6 +359,15 @@ public struct ActiveWorkoutView: View {
         // strict-greater-than only, so a tied session produces no rows.
         let detectedPRs = PersonalRecordSync.recordPRs(for: session, in: modelContext)
 
+        // DEL-052/053 — Smart Auto-Progression. Iteriert ueber die
+        // Plan-Uebungen der Session, evaluiert pro Uebung "Double-Progression"
+        // und schreibt das neue Ziel-Gewicht in `Exercise.suggestedWeight`.
+        // Side-effects sind unkritisch fuer die nachfolgenden Steps —
+        // PR-Sync + HealthKit-Push haben die Logs schon konsumiert.
+        // Die `ProgressionApplicator`-Result wird IM SUMMARY-VIEW erneut
+        // (read-only) berechnet, daher hier Discard.
+        _ = ProgressionApplicator.apply(to: session, in: modelContext)
+
         // Push the workout to Apple Health as a strength-training session.
         // Best-effort: when HealthKit is unauthorised or unavailable, this is a
         // no-op. Captures startTime/endTime/totalSets/totalVolumeKg so the

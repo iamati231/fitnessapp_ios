@@ -55,6 +55,12 @@ public struct WorkoutSummaryView: View {
             if !personalRecords.isEmpty {
                 prSection
             }
+            // DEL-052/053: Smart-Progression-Celebration nur im New-Mode, nicht
+            // in History-Replays. Im History-Replay wuerden die Outcomes stale
+            // sein (suggestedWeight wurde seither evtl. mehrfach weiter-geupdated).
+            if !isReadOnly, !progressionOutcomes.isEmpty {
+                progressionSection
+            }
             statsSection
             notesSection
             breakdownSections
@@ -184,6 +190,33 @@ public struct WorkoutSummaryView: View {
             }
         } footer: {
             Text("Erkannt durch Vergleich mit allen vorherigen abgeschlossenen Sessions. Cardio bleibt aussen vor — andere Metrik-Domäne.")
+                .font(.footnote)
+        }
+    }
+
+    // MARK: - DEL-052/053 Smart Auto-Progression
+
+    /// Read-only re-evaluation der Progression-Outcomes. Read-only weil
+    /// `ActiveWorkoutView.finishWorkout` bereits den Mutating-Pass gemacht
+    /// hat — wir wollen die Celebration hier nur RENDERN, nicht
+    /// weiterschieben.
+    private var progressionOutcomes: [ProgressionApplicator.ProgressionOutcome] {
+        ProgressionApplicator.evaluateOnly(for: session)
+    }
+
+    private var progressionSection: some View {
+        Section {
+            ForEach(progressionOutcomes) { outcome in
+                ProgressionBadge(outcome: outcome)
+            }
+        } header: {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.up.right.circle.fill")
+                    .foregroundStyle(Color.deltiqOrange)
+                Text("Smart-Progression")
+            }
+        } footer: {
+            Text("Ziel erreicht? Die App passt das Gewicht fürs nächste Workout automatisch an. Aenderbar pro Übung im Editor.")
                 .font(.footnote)
         }
     }
@@ -536,6 +569,97 @@ private struct PRBadge: View {
     private func formatDelta(_ percent: Double) -> String {
         // Round to nearest %, integer display
         "\(Int((percent * 100).rounded())) %"
+    }
+}
+
+// MARK: - DEL-052/053 Progression Badge
+
+/// Eine Zeile in der Smart-Progression-Section von WorkoutSummary. Pro
+/// Uebung zeigt sie das alte/neue Ziel-Gewicht (oder "Deload"-Hinweis) plus
+/// einen kurzen Motivations-Text. Hold-Outcomes landen nicht hier (sie
+/// kommen nicht vom Applicator).
+@available(iOS 17.0, macOS 14.0, *)
+private struct ProgressionBadge: View {
+    let outcome: ProgressionApplicator.ProgressionOutcome
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(.white)
+                .frame(width: 36, height: 36)
+                .background(tint.gradient)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(outcome.exerciseName)
+                    .font(.body.weight(.semibold))
+                Text(headlineText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(detailText)
+                    .font(.callout.monospacedDigit())
+                    .foregroundStyle(.primary)
+            }
+            Spacer()
+            deltaPill
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var icon: String {
+        switch outcome.action {
+        case .increaseWeight: return "arrow.up.right.circle.fill"
+        case .deload:         return "arrow.down.right.circle.fill"
+        case .hold:           return "minus.circle.fill"   // unreachable
+        }
+    }
+
+    private var tint: Color {
+        switch outcome.action {
+        case .increaseWeight: return Color.deltiqOrange
+        case .deload:         return .gray
+        case .hold:           return .secondary
+        }
+    }
+
+    private var headlineText: String {
+        switch outcome.action {
+        case .increaseWeight: return "🎯 Ziel erreicht — nächstes Mal mehr"
+        case .deload:         return "Lass uns kurz zurückrudern"
+        case .hold:           return ""
+        }
+    }
+
+    /// Detail-Zeile: zeigt das neue Ziel-Gewicht plus den Delta-Hinweis.
+    private var detailText: String {
+        guard let newWeight = outcome.newSuggestedWeight else {
+            // Defensive: ohne new-weight kann hoechstens "Schritt +X kg"
+            // raus.
+            return deltaString
+        }
+        return "Neues Ziel: \(formatWeight(newWeight)) kg"
+    }
+
+    private var deltaPill: some View {
+        Text(deltaString)
+            .font(.subheadline.weight(.bold))
+            .foregroundStyle(outcome.action.weightDelta >= 0 ? Color.deltiqOrange : .secondary)
+            .monospacedDigit()
+    }
+
+    private var deltaString: String {
+        let delta = outcome.action.weightDelta
+        let sign = delta > 0 ? "+" : (delta < 0 ? "−" : "")
+        let absVal = abs(delta)
+        let valStr = absVal == absVal.rounded()
+            ? "\(Int(absVal))"
+            : absVal.truncated(to: 2).formattedTwoDecimals
+        return "\(sign)\(valStr) kg"
+    }
+
+    private func formatWeight(_ w: Double) -> String {
+        w == w.rounded() ? "\(Int(w))" : w.truncated(to: 2).formattedTwoDecimals
     }
 }
 

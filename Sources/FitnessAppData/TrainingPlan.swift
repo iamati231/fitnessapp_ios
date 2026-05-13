@@ -20,6 +20,14 @@ public final class TrainingPlan {
     /// Programm-Typ eintippt (DEL-013-Bug).
     public var isTemplate: Bool = false
 
+    /// DEL-053: Globaler User-Override der RIR-Schwelle fuer
+    /// Smart-Progression in DIESEM Plan. Nil = Default-Logik
+    /// (`ProgressionEvaluator.defaultRIRForCompound/Isolation`). Non-nil =
+    /// alle Uebungen progressen erst, wenn `lastSet.rir <= override`.
+    /// Beispiel: `override = 2` zwingt sowohl Compounds als auch Isolation
+    /// auf RIR<=2 — strenger Modus.
+    public var progressionTargetRIROverride: Float?
+
     @Relationship(deleteRule: .cascade, inverse: \TrainingDay.plan)
     public var days: [TrainingDay] = []
 

@@ -36,6 +36,28 @@ public final class Exercise {
     /// Restore des letzten bekannten Arbeitsgewichts via Original-Logs.
     public var swappedFromOriginal: Exercise?
 
+    // MARK: - DEL-052/053 Smart Auto-Progression
+
+    /// Toggle pro Uebung — schaltet die automatische Gewichts-Steigerung an.
+    /// Default `true`, sodass neue Uebungen sofort von der Logik profitieren.
+    /// User kann es per ExerciseEditor pro Uebung ausschalten (z.B. fuer
+    /// Cardio-Finisher, die manuell kalibriert werden).
+    public var smartProgressionEnabled: Bool = true
+
+    /// Inkrement-Stufe in kg fuer "Ziel erreicht → naechstes Mal hoeher".
+    /// Default 2.5 kg (klassischer Plate-Pair). User-UI bietet 1.25 / 2.5 /
+    /// 5.0 als Quick-Picker, das Feld erlaubt aber prinzipiell beliebige
+    /// Doubles (custom Fractional-Plate-Setups).
+    public var progressionStep: Double = 2.5
+
+    /// True fuer Compound-Lifts (Bankdruecken, Kniebeuge, Kreuzheben,
+    /// Schulterdruecken, Rudern). Steuert die RIR-Schwelle im
+    /// `ProgressionEvaluator` — Compounds duerfen mit groesserem Puffer
+    /// progressen (RIR 3), Isolation muss naeher ans Versagen (RIR 1).
+    /// Default `false`; wird beim Insert aus `ExerciseTemplate.isSystemCompound`
+    /// geseedet (siehe `DayEditorView.addExercise(from:)`).
+    public var isCompound: Bool = false
+
     public var day: TrainingDay?
 
     /// DEL-051: HEILIGE HISTORIE. Frueher `.cascade` — beim Loeschen einer
@@ -64,6 +86,9 @@ public final class Exercise {
         isTimeBased: Bool = false,
         isArchived: Bool = false,
         swappedFromOriginal: Exercise? = nil,
+        smartProgressionEnabled: Bool = true,
+        progressionStep: Double = 2.5,
+        isCompound: Bool = false,
         day: TrainingDay? = nil
     ) {
         self.name = name
@@ -80,6 +105,9 @@ public final class Exercise {
         self.isTimeBased = isTimeBased
         self.isArchived = isArchived
         self.swappedFromOriginal = swappedFromOriginal
+        self.smartProgressionEnabled = smartProgressionEnabled
+        self.progressionStep = progressionStep
+        self.isCompound = isCompound
         self.day = day
     }
 }

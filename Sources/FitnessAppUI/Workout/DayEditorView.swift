@@ -434,6 +434,11 @@ public struct DayEditorView: View {
             name: template.name,
             orderIndex: day.activeExercises.count,
             isTimeBased: template.isTimeBased,
+            // DEL-053: Compound-Flag aus dem Library-Template ziehen. Die
+            // 5 kanonischen Barbell-Lifts werden als Compound markiert,
+            // alles andere als Isolation. User kann's spaeter im
+            // ExerciseEditor manuell ueberschreiben.
+            isCompound: template.isSystemCompound,
             day: day
         )
         modelContext.insert(exercise)
