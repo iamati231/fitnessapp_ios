@@ -27,14 +27,31 @@ public struct WorkoutSummaryView: View {
     /// system back button so the user can return to the history list.
     public let isReadOnly: Bool
 
+    /// DEL-032: Aktiviert via "Bearbeiten"-Toolbar-Button im isReadOnly-Mode.
+    /// Im aktiven Edit-Mode werden Datum + Set-Werte (Gewicht/Reps/RIR) als
+    /// TextField/Stepper editierbar. Notes immer editierbar in beiden Edit-Modi.
+    @State private var isEditingHistory: Bool = false
+
     public init(session: WorkoutSession, isReadOnly: Bool = false) {
         self.session = session
         self.isReadOnly = isReadOnly
     }
 
+    /// Werden Set-Werte als Eingabefelder gerendert?
+    /// - New-Mode (post-finish): nein, totals werden vom finishWorkout-Flow
+    ///   gesetzt
+    /// - History-Detail: nein (default, Read-Only)
+    /// - History-Edit (DEL-032): ja
+    private var isEditingSets: Bool {
+        isReadOnly && isEditingHistory
+    }
+
     public var body: some View {
         List {
             heroSection
+            if isEditingSets {
+                editMetaSection
+            }
             if !personalRecords.isEmpty {
                 prSection
             }
@@ -48,11 +65,64 @@ public struct WorkoutSummaryView: View {
         #if os(iOS)
         .listStyle(.insetGrouped)
         #endif
-        .navigationTitle(isReadOnly ? "Workout-Detail" : "Zusammenfassung")
+        .navigationTitle(navigationTitleText)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .navigationBarBackButtonHidden(!isReadOnly)
+        .toolbar {
+            // DEL-032: History-Mode bekommt einen Edit-Toggle. Im New-Mode
+            // unsichtbar (Edit dort macht keinen Sinn — totals werden gerade
+            // erst geschrieben).
+            if isReadOnly {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(isEditingHistory ? "Fertig" : "Bearbeiten") {
+                        if isEditingHistory {
+                            // Beim Beenden vom Edit-Mode: totals neu berechnen
+                            // + persistieren, falls der User Set-Werte angefasst hat.
+                            recalculateSessionTotals()
+                            try? modelContext.save()
+                        }
+                        isEditingHistory.toggle()
+                    }
+                }
+            }
+        }
+    }
+
+    private var navigationTitleText: String {
+        if isReadOnly {
+            return isEditingHistory ? "Workout bearbeiten" : "Workout-Detail"
+        }
+        return "Zusammenfassung"
+    }
+
+    /// Im Edit-Mode bekommt der User Datum + Dauer als editierbare Felder.
+    /// Wird oben in der List eingeblendet, ueber statsSection.
+    private var editMetaSection: some View {
+        Section {
+            DatePicker("Datum",
+                       selection: $session.startTime,
+                       displayedComponents: [.date, .hourAndMinute])
+            Stepper(value: $session.durationMinutes, in: 0...600, step: 5) {
+                LabeledContent("Dauer", value: "\(session.durationMinutes) Min")
+            }
+        } header: {
+            Text("Eckdaten")
+        } footer: {
+            Text("Datum + Dauer werden hier ueberschrieben. Set-Werte unten editierst du direkt am Satz.")
+                .font(.footnote)
+        }
+    }
+
+    /// Setzt totalSets + totalVolumeKg aus den (eventuell vom User editierten)
+    /// ExerciseLogs neu. Wird beim Verlassen des Edit-Modes gerufen, damit
+    /// Dashboard/History-Stats korrekt bleiben.
+    private func recalculateSessionTotals() {
+        session.totalSets = session.logs.count
+        session.totalVolumeKg = session.logs.reduce(0.0) { acc, log in
+            acc + log.weight * Double(log.reps)
+        }
     }
 
     // MARK: Sections
@@ -153,7 +223,11 @@ public struct WorkoutSummaryView: View {
 
     @ViewBuilder
     private var notesSection: some View {
-        if isReadOnly {
+        // Notes-Edit erlaubt in: New-Mode (post-finish-Summary, .isReadOnly=false)
+        // + History-Edit-Mode (isReadOnly && isEditingHistory). Reine History-
+        // Detail-Ansicht: nur Anzeige, keine Editier-Felder.
+        let notesEditable = !isReadOnly || isEditingHistory
+        if !notesEditable {
             // Hide the section entirely when there's no note — empty state is uglier
             // than a missing section in a history-detail view.
             if let notes = session.notes, !notes.isEmpty {
@@ -203,18 +277,20 @@ public struct WorkoutSummaryView: View {
 
     private func exerciseSection(for exercise: Exercise, logs: [ExerciseLog]) -> some View {
         Section {
-            // .onDelete only registers when isReadOnly is false — in history mode,
-            // accidental swipes shouldn't be able to mutate completed records.
-            if isReadOnly {
+            // .onDelete only registers when the session is editable — entweder
+            // im New-Mode (Post-Finish-Cleanup) oder im History-Edit-Mode
+            // (DEL-032: Bearbeiten-Button getoggled).
+            let editable = !isReadOnly || isEditingHistory
+            if editable {
                 ForEach(logs) { log in
-                    SetSummaryRow(log: log, exercise: exercise)
-                }
-            } else {
-                ForEach(logs) { log in
-                    SetSummaryRow(log: log, exercise: exercise)
+                    SetSummaryRow(log: log, exercise: exercise, isEditable: isEditingSets)
                 }
                 .onDelete { offsets in
                     deleteSets(of: exercise, indices: offsets)
+                }
+            } else {
+                ForEach(logs) { log in
+                    SetSummaryRow(log: log, exercise: exercise, isEditable: false)
                 }
             }
         } header: {
@@ -480,10 +556,21 @@ private struct SummaryStat: View {
 
 @available(iOS 17.0, macOS 14.0, *)
 private struct SetSummaryRow: View {
-    let log: ExerciseLog
+    @Bindable var log: ExerciseLog
     let exercise: Exercise
+    /// DEL-032: im History-Edit-Mode wird die Row zu editierbaren TextFields.
+    let isEditable: Bool
 
     var body: some View {
+        if isEditable {
+            editRow
+        } else {
+            readOnlyRow
+        }
+    }
+
+    /// Anzeigemodus — gleicher Text wie vor DEL-032.
+    private var readOnlyRow: some View {
         HStack(spacing: 8) {
             Text("Satz \(log.setIndex + 1)")
                 .font(.subheadline.weight(.semibold))
@@ -494,6 +581,63 @@ private struct SetSummaryRow: View {
                 .monospacedDigit()
 
             Spacer()
+        }
+    }
+
+    /// DEL-032 Edit-Modus: Gewicht/Reps als TextField + RIR als Stepper.
+    /// Layout-Lite — nur das Wesentliche, Form-Layout uebernimmt das Sectioning.
+    @ViewBuilder
+    private var editRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Satz \(log.setIndex + 1)")
+                .font(.subheadline.weight(.semibold))
+            HStack(spacing: 12) {
+                if !exercise.isCardio && !exercise.isTimeBased {
+                    weightField
+                }
+                repsField
+                rirStepper
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var weightField: some View {
+        HStack(spacing: 4) {
+            TextField("kg", value: $log.weight, format: .number)
+                .frame(width: 60)
+                .multilineTextAlignment(.trailing)
+                #if os(iOS)
+                .keyboardType(.decimalPad)
+                #endif
+            Text("kg").font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private var repsField: some View {
+        HStack(spacing: 4) {
+            TextField(exercise.isTimeBased ? "Sek" : "Wdh", value: $log.reps, format: .number)
+                .frame(width: 50)
+                .multilineTextAlignment(.trailing)
+                #if os(iOS)
+                .keyboardType(.numberPad)
+                #endif
+            Text(exercise.isTimeBased ? "Sek" : "Wdh").font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private var rirStepper: some View {
+        Stepper(value: $log.rir, in: 0...10, step: 0.5) {
+            Text("RIR \(formatRIR(log.rir))")
+                .font(.caption)
+                .monospacedDigit()
+        }
+        .labelsHidden()
+        .overlay(alignment: .leading) {
+            Text("RIR \(formatRIR(log.rir))")
+                .font(.caption)
+                .monospacedDigit()
+                .offset(x: -40)
         }
     }
 

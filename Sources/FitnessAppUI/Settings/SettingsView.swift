@@ -194,10 +194,10 @@ public struct SettingsView: View {
             }
             if waterReminderEnabled {
                 Picker(selection: $waterReminderHours) {
+                    Text("Jede Stunde").tag(1)
                     Text("Alle 2 Stunden").tag(2)
                     Text("Alle 3 Stunden").tag(3)
                     Text("Alle 4 Stunden").tag(4)
-                    Text("Alle 5 Stunden").tag(5)
                 } label: {
                     Text("Häufigkeit")
                 }

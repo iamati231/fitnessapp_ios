@@ -58,6 +58,18 @@ public struct MeasurementView: View {
     @State private var lastHealthFilledWeight: Double?
     @State private var didPrefillFromExisting = false
 
+    /// DEL-034: Edit-Mode startet als reine Detail-Ansicht. Felder werden erst
+    /// editierbar, sobald der User oben rechts "Bearbeiten" tippt. Im New-Mode
+    /// (kein editingMeasurement) ist die View IMMER editierbar — User soll
+    /// direkt eintragen koennen.
+    @State private var isEditingEnabled: Bool = false
+
+    /// Sind die Eingabefelder aktuell editierbar? Im New-Mode immer ja,
+    /// im Edit-Mode nur wenn der User "Bearbeiten" getippt hat.
+    private var fieldsEnabled: Bool {
+        !isEditMode || isEditingEnabled
+    }
+
     public init() {
         self.editingMeasurement = nil
     }
@@ -95,11 +107,28 @@ public struct MeasurementView: View {
                 )
             }
         }
-        .navigationTitle(isEditMode ? "Messung bearbeiten" : "Neue Messung")
+        .navigationTitle(navTitle)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .keyboardDismissToolbar()
+        // DEL-036: Tastatur per Scroll-Down dismissen (iOS 16+) + Tap aufs
+        // disabled-Field-Field schliesst sie ebenfalls (siehe Form-onTapGesture
+        // unten ist nicht moeglich auf Form). Plus interactive scroll dismiss.
+        #if os(iOS)
+        .scrollDismissesKeyboard(.interactively)
+        #endif
+        .toolbar {
+            // DEL-034: Edit-Mode startet read-only. Toolbar-Button toggled
+            // den Edit-State. Im New-Mode unsichtbar (Felder eh editierbar).
+            if isEditMode {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(isEditingEnabled ? "Fertig" : "Bearbeiten") {
+                        isEditingEnabled.toggle()
+                    }
+                }
+            }
+        }
         .task {
             if isEditMode, !didPrefillFromExisting, let m = editingMeasurement {
                 applyExistingMeasurement(m)
@@ -110,6 +139,16 @@ public struct MeasurementView: View {
                 await tryAutoFillFromHealthKit()
             }
         }
+    }
+
+    /// Titel-Mapping: New-Mode immer "Neue Messung", Edit-Mode wechselt
+    /// zwischen "Messung (Detail)" und "Messung bearbeiten" je nach
+    /// Editing-Toggle.
+    private var navTitle: String {
+        if isEditMode {
+            return isEditingEnabled ? "Messung bearbeiten" : "Messung"
+        }
+        return "Neue Messung"
     }
 
     // MARK: - Profile-Section (Single-Source-of-Truth)
@@ -390,36 +429,42 @@ public struct MeasurementView: View {
         }
     }
 
+    /// DEL-034: Im Edit-Mode-Detail-View (fieldsEnabled=false) zeigen wir
+    /// keine Save/Delete-Buttons — User muss erst "Bearbeiten" oben rechts
+    /// tippen. Im New-Mode + im aktiven Edit-Mode beide Buttons sichtbar.
+    @ViewBuilder
     private func actionsSection(forProfile profile: UserBodyProfile) -> some View {
-        Section {
-            Button {
-                save(profile: profile)
-            } label: {
-                Label(isEditMode ? "Änderungen speichern" : "Messung speichern",
-                      systemImage: "tray.and.arrow.down")
-            }
-            .disabled(!canSave(profile: profile))
-
-            if isEditMode {
-                Button(role: .destructive) {
-                    deleteCurrentMeasurement()
+        if fieldsEnabled {
+            Section {
+                Button {
+                    save(profile: profile)
                 } label: {
-                    Label("Messung löschen", systemImage: "trash")
+                    Label(isEditMode ? "Änderungen speichern" : "Messung speichern",
+                          systemImage: "tray.and.arrow.down")
                 }
-            }
+                .disabled(!canSave(profile: profile))
 
-            if let lastSavedAt {
-                Text(isEditMode
-                     ? "Zuletzt geändert: \(lastSavedAt.formatted(date: .abbreviated, time: .shortened))"
-                     : "Zuletzt gespeichert: \(lastSavedAt.formatted(date: .abbreviated, time: .shortened))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        } footer: {
-            if !canSave(profile: profile) {
-                Text(missingFieldsHint(profile: profile))
-                    .font(.footnote)
-                    .foregroundStyle(.orange)
+                if isEditMode {
+                    Button(role: .destructive) {
+                        deleteCurrentMeasurement()
+                    } label: {
+                        Label("Messung löschen", systemImage: "trash")
+                    }
+                }
+
+                if let lastSavedAt {
+                    Text(isEditMode
+                         ? "Zuletzt geändert: \(lastSavedAt.formatted(date: .abbreviated, time: .shortened))"
+                         : "Zuletzt gespeichert: \(lastSavedAt.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } footer: {
+                if !canSave(profile: profile) {
+                    Text(missingFieldsHint(profile: profile))
+                        .font(.footnote)
+                        .foregroundStyle(.orange)
+                }
             }
         }
     }
@@ -478,10 +523,13 @@ public struct MeasurementView: View {
         }
     }
 
+    /// DEL-034: zentral durch fieldsEnabled gegated. Im Edit-Mode startet das
+    /// Feld disabled (Detail-Ansicht), wird per "Bearbeiten"-Button entsperrt.
     @ViewBuilder
     private func decimalField(_ label: String, value: Binding<Double?>) -> some View {
         TextField(label, value: value, format: .number, prompt: Text(label))
             .decimalKeyboard()
+            .disabled(!fieldsEnabled)
     }
 
     // MARK: - Edit-Mode pre-fill

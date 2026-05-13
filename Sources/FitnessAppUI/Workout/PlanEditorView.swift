@@ -26,25 +26,27 @@ public struct PlanEditorView: View {
 
     public var body: some View {
         Form {
-            if isReadOnly {
-                templateBanner
-            }
+            // DEL-030 + DEL-035: Templates sind jetzt voll editierbar wie
+            // Custom-Plaene — kein Lock-Banner, kein "Programm-Typ"/"Beschreibung"-
+            // Feld mehr in der UI. metaSection nur noch der Plan-Name.
+            // settingsSection (Wochen/Trainingsort/Active) wandert nach UNTEN
+            // unter daysSection, damit die Trainings-Liste oben bleibt.
             metaSection
-            settingsSection
             daysSection
+            settingsSection
         }
         .navigationTitle(plan.name.isEmpty ? "Plan" : plan.name)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        // DEL-022 — Trainingsort-Wechsel triggert Confirmation-Dialog mit
-        // Optionen "Übungen anpassen" / "Nur Trainingsort ändern" / "Abbrechen".
+        // DEL-022 + DEL-031 — Trainingsort-Wechsel triggert Confirmation-Dialog.
+        // Vorher per isReadOnly-Check blockiert; jetzt feuert er fuer alle
+        // (custom + Template-Origin) Plaene.
         .onChange(of: plan.targetEnvironment) { oldValue, newValue in
             guard oldValue != newValue,
                   // Nur wenn es ueberhaupt Uebungen gibt — leerer Plan braucht
                   // keinen Swap.
-                  plan.days.contains(where: { !$0.exercises.isEmpty }),
-                  !isReadOnly
+                  plan.days.contains(where: { !$0.exercises.isEmpty })
             else { return }
             pendingEnvironmentSwap = PendingEnvironmentSwap(
                 oldEnv: oldValue,
@@ -94,16 +96,20 @@ public struct PlanEditorView: View {
         let newEnv: EnvironmentType
     }
 
-    /// True wenn der Plan via `ProgramInstantiator` aus einem Template
-    /// generiert wurde (`isTemplate=true`). Custom-Plaene starten mit
-    /// `isTemplate=false` und bleiben editierbar — auch wenn der User
-    /// manuell einen Programm-Typ eintippt (DEL-013-Fix).
+    /// DEL-030: Plaene sind jetzt IMMER editierbar. `plan.isTemplate` bleibt
+    /// im Model fuer eventuelle zukuenftige Read-Only-Surface (z.B. App-Store-
+    /// Curated-Showcase-Plaene), aktuell aber durchgehend false nach
+    /// ProgramInstantiator. Diese Property ist daher legacy-stub, gibt
+    /// immer `false` zurueck. DayEditor + ExerciseEditor referenzieren sie
+    /// noch und werden in einer Aufraeumwelle entfernt.
     private var isReadOnly: Bool {
-        plan.isTemplate
+        false
     }
 
     // MARK: Sections
 
+    /// Legacy Template-Banner — wird nicht mehr aus body referenziert (DEL-030).
+    /// Bleibt fuer eventuell zukuenftige Showcase-Plaene als Stub erhalten.
     private var templateBanner: some View {
         Section {
             HStack(spacing: 12) {
@@ -125,15 +131,13 @@ public struct PlanEditorView: View {
         .listRowBackground(Color.indigo.opacity(0.08))
     }
 
+    /// DEL-035: nur noch der Plan-Name in der Meta-Section. `programType` ist
+    /// ein interner Identifier (z.B. "full_body", "ppl") fuer Recommendation-
+    /// Logik und gehoert nicht ins User-UI. `descriptionText` lebt nur im
+    /// Template-Picker, im PlanEditor unnoetig.
     private var metaSection: some View {
         Section("Plan-Info") {
             TextField("Name", text: $plan.name)
-                .disabled(isReadOnly)
-            TextField("Programm-Typ", text: $plan.programType)
-                .disabled(isReadOnly)
-            TextField("Beschreibung (optional)", text: $plan.descriptionText, axis: .vertical)
-                .lineLimit(2...5)
-                .disabled(isReadOnly)
         }
     }
 

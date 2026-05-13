@@ -40,9 +40,11 @@ public enum ProgramInstantiator {
                 .map { $0.name }
         )
 
-        // 3) Create new active plan. `isTemplate: true` triggert die Read-
-        // Only-Logik in den Editoren — User kann Trainings-Parameter (Pause,
-        // RIR, Gewicht) anpassen, aber Name/Tage/Uebungs-Struktur sind locked.
+        // 3) Create new active plan. `isTemplate: false` (DEL-030) — Templates
+        // dienen jetzt nur als Seed, der User-Plan ist eine voll editierbare
+        // Tiefkopie. programType + descriptionText bleiben fuer interne
+        // Recommendation-Logik gespeichert, sind aber nicht mehr im
+        // PlanEditor-UI sichtbar (DEL-035).
         let plan = TrainingPlan(
             name: template.name,
             programType: template.id,
@@ -50,7 +52,7 @@ public enum ProgramInstantiator {
             weeks: 12,
             isActive: true,
             targetEnvironment: template.targetEnvironment,
-            isTemplate: true
+            isTemplate: false
         )
         context.insert(plan)
 
