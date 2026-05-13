@@ -130,8 +130,22 @@ public struct PlanEditorView: View {
                 Text("Trainings-Tage")
                 Spacer()
                 if !isReadOnly {
-                    Button {
-                        createNewDay()
+                    // Menu statt Single-Button-Action: User entscheidet pro Klick,
+                    // ob Trainings- oder Ruhetag (DEL-021/023). Default-Behavior
+                    // vorher: implizit ein leerer Tag, der wegen
+                    // `day.exercises.isEmpty` faelschlich als Ruhetag erkannt
+                    // wurde — jetzt explizit.
+                    Menu {
+                        Button {
+                            createNewDay(type: .custom)
+                        } label: {
+                            Label("Trainingstag", systemImage: "figure.strengthtraining.traditional")
+                        }
+                        Button {
+                            createNewDay(type: .rest)
+                        } label: {
+                            Label("Ruhetag", systemImage: "bed.double.fill")
+                        }
                     } label: {
                         Label("Hinzufügen", systemImage: "plus")
                             .labelStyle(.iconOnly)
@@ -164,16 +178,30 @@ public struct PlanEditorView: View {
         plan.isActive = active
     }
 
-    private func createNewDay() {
+    /// Legt einen neuen Tag (Trainings- ODER Ruhetag) im Plan an. Bei
+    /// Trainingstagen navigieren wir direkt in den DayEditor, damit der User
+    /// gleich Uebungen hinzufuegen kann. Ruhetage werden nur in der Liste
+    /// gespeichert — kein Editor noetig.
+    private func createNewDay(type: DayType) {
         let nextWeekday = (plan.days.map(\.weekday).max() ?? 1) % 7 + 1
+        let defaultName: String
+        switch type {
+        case .rest: defaultName = "Ruhetag"
+        default:    defaultName = "Tag \(plan.days.count + 1)"
+        }
         let day = TrainingDay(
-            name: "Tag \(plan.days.count + 1)",
+            name: defaultName,
             weekday: nextWeekday,
-            type: .custom,
+            type: type,
             plan: plan
         )
         modelContext.insert(day)
-        navigation.workoutPath.append(day)
+        // Bei Ruhetagen lassen wir den User auf der Liste — er kann den Tag
+        // bei Bedarf umbenennen, aber muss nicht zwingend in den Editor.
+        // Bei Trainingstagen springen wir direkt rein um Uebungen hinzuzufuegen.
+        if type != .rest {
+            navigation.workoutPath.append(day)
+        }
     }
 
     private func deleteDays(at offsets: IndexSet) {

@@ -113,11 +113,12 @@ public struct DayEditorView: View {
         day.plan?.isTemplate ?? false
     }
 
-    /// True wenn der Tag entweder explizit als `.rest` markiert ist oder
-    /// einfach leer ist (Ruhetag im Custom-Plan). In dem Fall blenden wir
-    /// "Training starten" aus und zeigen stattdessen "Ruhetag abschließen".
+    /// True nur wenn der Tag explizit als `.rest` markiert ist. Frueher
+    /// haben wir `exercises.isEmpty` als Fallback genommen, was leere Tage
+    /// faelschlich als Ruhetag detektierte — User konnte gar keinen
+    /// Trainingstag mehr anlegen. Jetzt strikt nach Typ (DEL-021/023).
     private var isRestDay: Bool {
-        day.type == .rest || day.exercises.isEmpty
+        day.type == .rest
     }
 
     private var metaSection: some View {

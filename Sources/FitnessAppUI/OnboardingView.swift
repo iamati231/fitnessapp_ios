@@ -53,6 +53,13 @@ public struct OnboardingView: View {
     @State private var healthKitFetchInProgress: Bool = false
     @State private var healthKitDataLoaded: Bool = false
 
+    /// Flag fuer den HealthKit-DOB-Auto-Fill-Pfad. Frueher haben wir
+    /// `birthDate == Self.defaultBirthDate` als Gate benutzt, das aber durch
+    /// die Date()-Komponente in defaultBirthDate jedes Mal neue Millisekunden
+    /// produziert und damit nie wahr ist. Deswegen wurde HK's DOB nie ueber-
+    /// nommen, obwohl die snapshot.dateOfBirth-Daten korrekt waren (DEL-024).
+    @State private var birthDateWasEdited: Bool = false
+
     // Step 3 — Präferenzen + Plan
     @State private var enableWaterReminder: Bool = true
     @State private var enableMeasurementReminder: Bool = true
@@ -228,6 +235,11 @@ public struct OnboardingView: View {
                     displayedComponents: .date
                 ) {
                     Text("onboarding.field.birthdate", bundle: .module)
+                }
+                .onChange(of: birthDate) { _, _ in
+                    // Markiert das DOB als user-edited, damit ein spaeterer
+                    // HealthKit-Pull NICHT mehr ueberschreibt (DEL-024).
+                    birthDateWasEdited = true
                 }
             } header: {
                 Text("onboarding.section.profile", bundle: .module)
@@ -453,7 +465,13 @@ public struct OnboardingView: View {
         // We're still on step 1, fields haven't been visible yet, so they're
         // all empty defaults at this point. Defensive overwrite-only-if-empty
         // keeps the code safe if this is called multiple times.
-        if let dob = snapshot.dateOfBirth, birthDate == Self.defaultBirthDate {
+        //
+        // DEL-024: birthDate-Gate frueher per `== defaultBirthDate`-Equality
+        // gemacht. Das schlug fehl, weil defaultBirthDate jedes Mal mit
+        // frischem Date() berechnet wurde und um Millisekunden differiert.
+        // Stattdessen: explizites `birthDateWasEdited`-Flag, das nur per
+        // DatePicker-onChange auf true gesetzt wird.
+        if let dob = snapshot.dateOfBirth, !birthDateWasEdited {
             birthDate = dob
         }
         switch snapshot.sex {

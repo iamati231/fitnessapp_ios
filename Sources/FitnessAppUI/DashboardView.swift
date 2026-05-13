@@ -337,7 +337,11 @@ public struct DashboardView: View {
     private var planDayCard: some View {
         if let plan = activePlans.first, !plan.days.isEmpty {
             let day = nextScheduledDay(in: plan)
-            let isRestDay = day.type == .rest || day.exercises.isEmpty
+            // Nur explizit als .rest markierte Tage gelten als Ruhetag.
+            // Leere Trainingstage (User noch nicht fertig konfiguriert) sind
+            // KEINE Ruhetage — sie zeigen den disabled "Training starten"-
+            // Button mit Hint, dass Uebungen fehlen (DEL-021/023).
+            let isRestDay = day.type == .rest
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
                     Image(systemName: isRestDay ? "bed.double.fill" : "calendar.badge.clock")
