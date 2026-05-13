@@ -111,13 +111,7 @@ public struct MeasurementView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        .keyboardDismissToolbar()
-        // DEL-036: Tastatur per Scroll-Down dismissen (iOS 16+) + Tap aufs
-        // disabled-Field-Field schliesst sie ebenfalls (siehe Form-onTapGesture
-        // unten ist nicht moeglich auf Form). Plus interactive scroll dismiss.
-        #if os(iOS)
-        .scrollDismissesKeyboard(.interactively)
-        #endif
+        .keyboardDismissToolbar()  // DEL-036/043 — Toolbar + scrollDismissesKeyboard inkludiert
         .toolbar {
             // DEL-034: Edit-Mode startet read-only. Toolbar-Button toggled
             // den Edit-State. Im New-Mode unsichtbar (Felder eh editierbar).

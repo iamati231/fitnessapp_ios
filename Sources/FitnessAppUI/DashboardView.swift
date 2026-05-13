@@ -33,6 +33,22 @@ public struct DashboardView: View {
     @Query(sort: \PersonalRecordEntry.date, order: .reverse)
     private var personalRecords: [PersonalRecordEntry]
 
+    /// DEL-042: laufende, nicht-abgeschlossene Sessions. Wenn `.first` nicht
+    /// nil ist, gibt's eine offene Session, die der User entweder fortsetzen
+    /// oder verwerfen sollte. Die PlanDayCard adaptiert daraufhin den
+    /// Start-Button-Text + Farbe, und beim Klick auf eine andere-Plan-Session
+    /// erscheint ein Conflict-Dialog.
+    @Query(filter: #Predicate<WorkoutSession> {
+        $0.isCompleted == false && $0.isRestDay == false
+    }, sort: \WorkoutSession.startTime, order: .reverse)
+    private var openSessions: [WorkoutSession]
+
+    /// DEL-042: ConfirmationDialog-State fuer den Konflikt-Pfad.
+    /// pendingNewStart-Closure wird aufgerufen wenn der User "Altes verwerfen"
+    /// waehlt — sie liefert die Aktion fuer einen frischen Insert.
+    @State private var showingActiveSessionConflict = false
+    @State private var pendingNewStart: (() -> Void)?
+
     public init() {}
 
     public var body: some View {
@@ -58,6 +74,29 @@ public struct DashboardView: View {
                 NavigationLink(destination: MeasurementView()) {
                     Label("Neue Messung", systemImage: "plus.circle.fill")
                 }
+            }
+        }
+        // DEL-042: Conflict-Dialog wenn der User in Plan A starten will,
+        // waehrend in Plan B noch eine offene Session lebt.
+        .confirmationDialog(
+            "Aktives Training gefunden",
+            isPresented: $showingActiveSessionConflict,
+            titleVisibility: .visible
+        ) {
+            Button("Altes verwerfen & Neu starten", role: .destructive) {
+                discardOtherOpenSessionsAndStartNew()
+            }
+            Button("Altes fortsetzen") {
+                resumeAnyOpenFromConflict()
+            }
+            Button("Abbrechen", role: .cancel) {
+                pendingNewStart = nil
+            }
+        } message: {
+            if let open = openSessions.first {
+                Text("Es läuft noch eine Session vom \(open.startTime.formatted(.relative(presentation: .named))) (\(open.dayName ?? "Unbekannt")). Was möchtest du tun?")
+            } else {
+                Text("Es gibt bereits eine offene Trainings-Session.")
             }
         }
     }
@@ -388,21 +427,10 @@ public struct DashboardView: View {
                     }
                     .buttonStyle(.plain)
                 } else {
-                    Button {
-                        startWorkoutDeepLink(plan: plan, day: day)
-                    } label: {
-                        HStack {
-                            Spacer()
-                            Label("Direkt starten", systemImage: "play.fill")
-                                .font(.subheadline.weight(.semibold))
-                            Spacer()
-                        }
-                        .padding(.vertical, 10)
-                        .background(Color.blue.gradient)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                    }
-                    .buttonStyle(.plain)
+                    // DEL-042: Button-State adaptiv. Wenn offene Session
+                    // existiert: orange "Fortsetzen"-Button, navigiert in die
+                    // existing Session. Sonst: blauer "Direkt starten".
+                    activeWorkoutButton(plan: plan, day: day)
                 }
             }
             .padding()
@@ -461,10 +489,92 @@ public struct DashboardView: View {
         return "\(day.exercises.count) Übungen — \(names.joined(separator: ", "))\(suffix)"
     }
 
+    /// DEL-042: Adaptive Start-Button. Drei States:
+    ///   1. Keine offene Session       → "Direkt starten" (blau, neu)
+    ///   2. Offene Session AUF DEM-Tag → "Fortsetzen" (orange, navigiert in
+    ///      die existing Session — kein neuer Insert)
+    ///   3. Offene Session AUF ANDEREM Tag → "Direkt starten" (blau), aber
+    ///      Klick triggert Conflict-Dialog mit drei Optionen.
+    @ViewBuilder
+    private func activeWorkoutButton(plan: TrainingPlan, day: TrainingDay) -> some View {
+        let matchingOpen = openSessionForDay(day)
+        let hasOtherOpen = matchingOpen == nil && !openSessions.isEmpty
+
+        Button {
+            if let open = matchingOpen {
+                // Direkt fortsetzen — keine neue Session.
+                resumeSession(open, plan: plan)
+            } else if hasOtherOpen {
+                // Konflikt: andere-Plan-Session offen. Vorberbereitung der
+                // "Neu starten"-Action, dann Dialog zeigen.
+                pendingNewStart = {
+                    actuallyStartNewWorkout(plan: plan, day: day)
+                }
+                showingActiveSessionConflict = true
+            } else {
+                actuallyStartNewWorkout(plan: plan, day: day)
+            }
+        } label: {
+            HStack {
+                Spacer()
+                Label(
+                    matchingOpen != nil ? "Laufendes Training fortsetzen" : "Direkt starten",
+                    systemImage: matchingOpen != nil ? "play.circle.fill" : "play.fill"
+                )
+                .font(.subheadline.weight(.semibold))
+                Spacer()
+            }
+            .padding(.vertical, 10)
+            .background((matchingOpen != nil ? Color.orange : Color.blue).gradient)
+            .foregroundStyle(.white)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Liefert eine offene Session, deren `.day` mit dem uebergebenen Day
+    /// uebereinstimmt — fuer den "Fortsetzen"-Pfad.
+    private func openSessionForDay(_ day: TrainingDay) -> WorkoutSession? {
+        openSessions.first { $0.day?.persistentModelID == day.persistentModelID }
+    }
+
+    /// Navigiert in die existing offene Session, OHNE eine neue zu erstellen.
+    private func resumeSession(_ session: WorkoutSession, plan: TrainingPlan) {
+        navigation.workoutPath = NavigationPath()
+        navigation.workoutPath.append(plan)
+        if let day = session.day {
+            navigation.workoutPath.append(day)
+        }
+        navigation.workoutPath.append(ActiveSessionRoute(session: session))
+        navigation.selectedTab = .plan
+    }
+
+    /// Verwirft alle ANDEREN offenen Sessions + startet eine neue. Wird vom
+    /// ConfirmationDialog im Conflict-Path aufgerufen.
+    private func discardOtherOpenSessionsAndStartNew() {
+        for open in openSessions {
+            modelContext.delete(open)
+        }
+        try? modelContext.save()
+        pendingNewStart?()
+        pendingNewStart = nil
+    }
+
+    /// Resume-Pfad fuer den Conflict-Dialog: springt in die existing Session
+    /// (welche auch immer die juengste offene ist).
+    private func resumeAnyOpenFromConflict() {
+        guard let open = openSessions.first else { return }
+        let plan = open.day?.plan ?? activePlans.first
+        if let plan {
+            resumeSession(open, plan: plan)
+        }
+        pendingNewStart = nil
+    }
+
     /// Deep-link from Dashboard into ActiveWorkout: build a stack [plan, day, active]
     /// on the workout tab so the user can back out to DayEditor (after Discard) or
     /// PlanEditor without losing context.
-    private func startWorkoutDeepLink(plan: TrainingPlan, day: TrainingDay) {
+    private func actuallyStartNewWorkout(plan: TrainingPlan, day: TrainingDay) {
         guard !day.exercises.isEmpty else { return }
 
         let session = WorkoutSession(
