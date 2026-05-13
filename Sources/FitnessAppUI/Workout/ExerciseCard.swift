@@ -30,6 +30,9 @@ struct ExerciseCard: View {
                     previousLog: previousLog(forSetIndex: setIndex),
                     onLogged: { weight, reps, rir in
                         logSet(setIndex: setIndex, weight: weight, reps: reps, rir: rir)
+                    },
+                    onUnlog: {
+                        unlogSet(setIndex: setIndex)
                     }
                 )
                 if setIndex < exercise.sets - 1 {
@@ -136,6 +139,17 @@ struct ExerciseCard: View {
         )
         modelContext.insert(log)
         onSetLogged(setIndex)
+    }
+
+    /// DEL-045: Tap-on-completed-row revert. Loescht den `ExerciseLog` fuer
+    /// diesen Set-Index, sodass die Row wieder in den editable State zurueck-
+    /// faellt (TextFields aktiv, Checkmark hollow). Kein Notify nach oben —
+    /// der Rest-Timer wird *nicht* zurueckgesetzt, weil der User vermutlich
+    /// nur einen Tippfehler korrigieren will, nicht die ganze Pause-Logik
+    /// neu starten.
+    private func unlogSet(setIndex: Int) {
+        guard let log = existingLog(forSetIndex: setIndex) else { return }
+        modelContext.delete(log)
     }
 }
 #endif

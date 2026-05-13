@@ -11,13 +11,16 @@ import AudioToolbox
 
 /// Single row inside an `ExerciseCard` — represents one planned set of an exercise.
 ///
-/// Two visual modes:
-///  - **Editable** (no log yet): weight + reps text fields + RIR stepper + "Satz speichern" button.
-///    Initial values come from the most recent log of the same setIndex (Previous Hint),
-///    falling back to `exercise.suggestedWeight` and the midpoint of `repsMin/repsMax`.
-///  - **Completed** (a log exists for this session+setIndex): compact read-only summary
-///    with relative time. No editing once saved — that simplifies the data path; users
-///    who mis-typed can still delete the log via swipe in a future Summary view.
+/// **DEL-045 redesign:**
+///   - Strength + Cardio: kompaktes Single-Line-Layout
+///     `[Satz #] [kg-Input] [Wdh-Input] [Spacer] [Checkmark-Icon]`
+///     plus RIR-Slider in einem Container mit FESTER HOEHE darunter (verhindert
+///     Layout-Shifts beim Toggle in den completed-State).
+///   - Tap auf einen completed-Set → ExerciseLog wird geloescht, Row wechselt
+///     zurueck in den editierbaren Status (Tippfehler-Korrektur).
+///   - Time-based (Plank, Wall Sit, etc.): eigener Flow mit Countdown-Overlay
+///     + Live-Hold-Timer (DEL-040). Per-Sekunde-Beeps bei 3/2/1, GO-Sound
+///     bei Erreichung der Ziel-Zeit (DEL-045 Schritt 4).
 @available(iOS 17.0, macOS 14.0, *)
 struct SetRow: View {
     let setIndex: Int
@@ -25,8 +28,13 @@ struct SetRow: View {
     let session: WorkoutSession
     let existingLog: ExerciseLog?
     let previousLog: ExerciseLog?
-    /// Called with (weight, reps, rir) when the user taps "Satz speichern".
+    /// Called with (weight, reps, rir) when the user taps the checkmark on
+    /// an editable row.
     let onLogged: (Double, Int, Float) -> Void
+    /// Called when the user taps a completed row to revert it back to editable.
+    /// Parent (ExerciseCard) is responsible for deleting the corresponding
+    /// `ExerciseLog` from the model context.
+    let onUnlog: () -> Void
 
     @State private var weight: Double?
     @State private var reps: Int = 0
@@ -35,9 +43,6 @@ struct SetRow: View {
 
     /// DEL-040: Zustands-Maschine fuer den Halte-Timer bei isTimeBased-Uebungen.
     @State private var holdState: HoldState = .idle
-
-    /// Local-Timer fuer Countdown/Hold-Tick. Wird in den entsprechenden
-    /// State-Transitions aufgesetzt + invalidated.
     @State private var holdTimer: Timer?
 
     @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
@@ -49,97 +54,171 @@ struct SetRow: View {
         case holding(elapsedSeconds: Int)
     }
 
+    private var isCompleted: Bool { existingLog != nil }
+
     var body: some View {
-        if let existingLog {
-            completedView(log: existingLog)
-        } else {
-            editableView
+        if exercise.isTimeBased && !exercise.isCardio {
+            // Time-based: ganz anderer Flow (Hold-Timer-Card).
+            // DEL-040 + DEL-045 Schritt 4.
+            timeBasedSetView
                 .onAppear { initializeOnce() }
                 .onDisappear { invalidateHoldTimer() }
+        } else {
+            // Strength + Cardio: kompaktes Layout (DEL-045 Schritt 1+2).
+            compactSetRow
+                .onAppear { initializeOnce() }
         }
     }
 
-    // MARK: Editable
+    // MARK: - DEL-045 Compact Set Row (Strength + Cardio)
 
-    private var editableView: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Text("Satz \(setIndex + 1)")
+    /// Kompaktes Layout: Satz-Nummer, KG, Wdh, Spacer, Checkmark — alle in
+    /// einer HStack. RIR-Slider darunter in einem ZStack mit fester Hoehe,
+    /// damit das Toggle isCompleted↔editable keinen Layout-Shift triggert.
+    private var compactSetRow: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 10) {
+                Text("\(setIndex + 1)")
                     .font(.subheadline.weight(.semibold))
-                if let previousLog {
-                    Text(previousLogHint(previousLog))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-            }
+                    .frame(width: 24, alignment: .leading)
 
-            // DEL-040: bei isTimeBased komplett anderer UI-Flow — Start-Button
-            // statt Reps-Input, Countdown-Overlay, Live-Hold-Timer mit
-            // automatischem Set-Abschluss bei Ziel-Zeit.
-            if exercise.isTimeBased && !exercise.isCardio {
-                holdTimerControl
-            } else {
-                manualInputControl
-            }
-        }
-        .padding(.vertical, 6)
-    }
-
-    /// Klassischer Manual-Input fuer Strength + Cardio: Gewicht/Reps-TextFields,
-    /// RIR-Stepper, "Satz speichern"-Button.
-    private var manualInputControl: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
                 if !exercise.isCardio {
-                    weightField
+                    weightInput
                     Text("kg")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
-                repsField
-                Text("Wdh")
+                repsInput
+                Text(exercise.isCardio ? "Wdh" : "Wdh")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Spacer(minLength: 0)
+                Spacer(minLength: 6)
+
+                checkmarkButton
             }
 
-            if !exercise.isCardio {
-                Stepper(value: $rir, in: 0...5, step: 0.5) {
-                    HStack {
-                        Text("RIR")
-                            .font(.subheadline)
-                        Text(formatRIR(rir))
-                            .font(.subheadline.weight(.semibold))
-                            .monospacedDigit()
-                    }
+            // Status-Container mit FESTER HOEHE — verhindert Layout-Shift beim
+            // Toggle isCompleted↔editable.
+            statusZone
+                .frame(height: 28)
+                .padding(.leading, 34)
+        }
+        .padding(.vertical, 6)
+        .contentShape(Rectangle())
+        // DEL-045 Schritt 2: Tap auf completed-Row revert zurueck zu editable.
+        .onTapGesture {
+            if isCompleted {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    onUnlog()
                 }
             }
-
-            Button(action: log) {
-                HStack {
-                    Spacer()
-                    Image(systemName: "checkmark.circle.fill")
-                    Text("Satz speichern")
-                        .font(.subheadline.weight(.semibold))
-                    Spacer()
-                }
-                .padding(.vertical, 8)
-                .background(canLog ? Color.green.opacity(0.18) : Color.gray.opacity(0.10))
-                .foregroundStyle(canLog ? .green : .secondary)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-            .buttonStyle(.plain)
-            .disabled(!canLog)
         }
     }
 
-    // MARK: - DEL-040 Hold-Timer-Control
+    private var weightInput: some View {
+        TextField("-", value: $weight, format: .number, prompt: Text("-"))
+            .decimalKeyboard()
+            .frame(width: 56)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(Color.secondary.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .multilineTextAlignment(.center)
+            .disabled(isCompleted)
+            .opacity(isCompleted ? 0.6 : 1.0)
+    }
+
+    private var repsInput: some View {
+        TextField("-", value: $reps, format: .number, prompt: Text("-"))
+            .decimalKeyboard()
+            .frame(width: 48)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(Color.secondary.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .multilineTextAlignment(.center)
+            .disabled(isCompleted)
+            .opacity(isCompleted ? 0.6 : 1.0)
+    }
+
+    private var checkmarkButton: some View {
+        Button {
+            if !isCompleted {
+                logCurrentValues()
+            }
+            // Bei isCompleted handled der Row-onTapGesture das Revert.
+        } label: {
+            Image(systemName: isCompleted ? "checkmark.circle.fill" : "checkmark.circle")
+                .font(.system(size: 28))
+                .foregroundStyle(isCompleted ? Color.deltiqOrange : Color.secondary.opacity(0.5))
+        }
+        .buttonStyle(.plain)
+        .disabled(!canLog && !isCompleted)
+        .opacity((!canLog && !isCompleted) ? 0.4 : 1.0)
+    }
+
+    /// ZStack mit fester Hoehe (per `.frame(height: 28)` am Caller).
+    /// - editable: RIR-Slider mit Label
+    /// - completed: Status-Text "vor X Sek abgeschlossen" + Previous-Hint
+    @ViewBuilder
+    private var statusZone: some View {
+        if isCompleted, let log = existingLog {
+            // Status-Text — gleicher Container-Slot, kein Springen.
+            Text(completedSummary(log))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else if !exercise.isCardio {
+            HStack(spacing: 10) {
+                Text("RIR")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Slider(
+                    value: Binding(
+                        get: { Double(rir) },
+                        set: { rir = Float($0) }
+                    ),
+                    in: 0...5,
+                    step: 0.5
+                )
+                .tint(Color.deltiqOrange)
+                Text(formatRIR(rir))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28, alignment: .trailing)
+                if let prev = previousLog {
+                    Text("· letztes: \(previousLogHint(prev))")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+        } else {
+            // Cardio editable: kein RIR, nur evtl. Hint
+            if let prev = previousLog {
+                Text("letztes: \(previousLogHint(prev))")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Color.clear
+            }
+        }
+    }
+
+    private func completedSummary(_ log: ExerciseLog) -> String {
+        let rel = log.date.formatted(.relative(presentation: .named))
+        if exercise.isCardio {
+            return "\(log.reps) \(exercise.isTimeBased ? "Sek" : "Wdh") · \(rel)"
+        }
+        return "\(formatWeight(log.weight)) kg × \(log.reps) (RIR \(formatRIR(log.rir))) · \(rel)"
+    }
+
+    // MARK: - DEL-040 + DEL-045 Schritt 4: Hold-Timer (isTimeBased)
 
     @ViewBuilder
-    private var holdTimerControl: some View {
+    private var timeBasedSetView: some View {
         switch holdState {
         case .idle:
             holdIdleView
@@ -152,37 +231,59 @@ struct SetRow: View {
 
     private var holdIdleView: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Ziel: \(targetHoldSeconds) Sek halten")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
-            Button {
-                startCountdown()
-            } label: {
-                HStack {
-                    Spacer()
-                    Image(systemName: "play.fill")
-                    Text("Start")
-                        .font(.headline)
-                    Spacer()
+            HStack {
+                Text("Satz \(setIndex + 1)")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                if isCompleted, let log = existingLog {
+                    Text("\(log.reps) Sek · \(log.date.formatted(.relative(presentation: .named)))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                .padding(.vertical, 12)
-                .background(Color.cyan.gradient)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
             }
-            .buttonStyle(.plain)
+            if !isCompleted {
+                Text("Ziel: \(targetHoldSeconds) Sek halten")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+                Button {
+                    startCountdown()
+                } label: {
+                    HStack {
+                        Spacer()
+                        Image(systemName: "play.fill")
+                        Text("Start")
+                            .font(.headline)
+                        Spacer()
+                    }
+                    .padding(.vertical, 12)
+                    .background(Color.deltiqOrange.gradient)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+            } else {
+                Button {
+                    withAnimation { onUnlog() }
+                } label: {
+                    Label("Korrigieren", systemImage: "arrow.uturn.backward.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
         }
+        .padding(.vertical, 6)
     }
 
     private func holdCountdownView(secondsLeft: Int) -> some View {
         VStack(spacing: 6) {
             Text(secondsLeft == 0 ? "GO!" : "\(secondsLeft)")
-                .font(.system(size: 80, weight: .bold, design: .rounded))
-                .foregroundStyle(.cyan)
+                .font(.system(size: 80, weight: .black, design: .rounded))
+                .foregroundStyle(Color.deltiqOrange)
                 .frame(maxWidth: .infinity)
                 .contentTransition(.numericText())
                 .animation(.easeOut(duration: 0.2), value: secondsLeft)
-            Text("Mach dich bereit ...")
+            Text(secondsLeft == 0 ? "Los geht's!" : "Mach dich bereit ...")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -192,28 +293,29 @@ struct SetRow: View {
     private func holdRunningView(elapsedSeconds elapsed: Int) -> some View {
         let target = targetHoldSeconds
         let progress = min(1.0, Double(elapsed) / Double(max(target, 1)))
+        let reached = elapsed >= target
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
                 Text("\(elapsed)")
                     .font(.system(size: 48, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(reached ? Color.deltiqOrange : .primary)
                     .contentTransition(.numericText())
                 Text("/ \(target) Sek")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
-                if elapsed >= target {
+                if reached {
                     Image(systemName: "checkmark.seal.fill")
                         .font(.title2)
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.deltiqOrange)
                 }
             }
-            // Progress-Bar in Cyan, wechselt auf Grün bei Ziel-Erreichung.
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))
                     Rectangle()
-                        .fill(elapsed >= target ? Color.green : Color.cyan)
+                        .fill(reached ? Color.deltiqOrange : Color.deltiqOrange.opacity(0.6))
                         .frame(width: geo.size.width * progress)
                         .animation(.linear(duration: 0.5), value: progress)
                 }
@@ -227,28 +329,30 @@ struct SetRow: View {
                 HStack {
                     Spacer()
                     Image(systemName: "stop.fill")
-                    Text(elapsed >= target ? "Satz speichern" : "Stoppen & speichern")
+                    Text(reached ? "Satz speichern" : "Stoppen & speichern")
                         .font(.subheadline.weight(.semibold))
                     Spacer()
                 }
                 .padding(.vertical, 8)
-                .background(elapsed >= target ? Color.green.opacity(0.18) : Color.orange.opacity(0.18))
-                .foregroundStyle(elapsed >= target ? .green : .orange)
+                .background(Color.deltiqOrange.opacity(reached ? 0.30 : 0.18))
+                .foregroundStyle(Color.deltiqOrange)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             .buttonStyle(.plain)
         }
+        .padding(.vertical, 6)
     }
 
-    /// Ziel-Sekunden fuer die Halte-Uebung. Nehmen den repsMin-Wert
-    /// (= Minimum-Ziel) als primaere Zielzeit. Wenn nichts gesetzt, fallback 30s.
     private var targetHoldSeconds: Int {
         exercise.repsMin > 0 ? exercise.repsMin : 30
     }
 
+    /// 3-Sekunden-Countdown mit Per-Sekunde-Beeps. Bei 3/2/1 ertoent ein
+    /// kurzer System-Beep, bei 0 (= "GO!") ein laengerer, tieferer Ton.
+    /// Erfuellt DEL-045 Schritt 3-Audio.
     private func startCountdown() {
         holdState = .countingDown(secondsLeft: 3)
-        // 3 ticks im 1s-Intervall — 3 -> 2 -> 1 -> GO -> dann holding.
+        playCountdownBeep()   // initial Beep fuer "3"
         holdTimer?.invalidate()
         holdTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
             Task { @MainActor in
@@ -258,9 +362,10 @@ struct SetRow: View {
                 }
                 if left > 1 {
                     holdState = .countingDown(secondsLeft: left - 1)
+                    playCountdownBeep()
                 } else if left == 1 {
-                    // Zeige "GO!" kurz, dann starte holding.
                     holdState = .countingDown(secondsLeft: 0)
+                    playGoSound()
                 } else {
                     timer.invalidate()
                     startHolding()
@@ -293,7 +398,6 @@ struct SetRow: View {
     private func stopHoldAndLog() {
         invalidateHoldTimer()
         guard case .holding(let elapsed) = holdState else { return }
-        // Logge die tatsaechlich gehaltene Zeit als reps. Weight stays 0.
         onLogged(0, elapsed, 0)
         holdState = .idle
     }
@@ -303,6 +407,40 @@ struct SetRow: View {
         holdTimer = nil
     }
 
+    // MARK: - Audio + Haptic Helpers
+
+    /// Kurzer hoher Beep bei jedem Countdown-Tick (3, 2, 1). DEL-045.
+    private func playCountdownBeep() {
+        #if canImport(AudioToolbox)
+        if timerSoundEnabled {
+            // SystemSoundID 1057 = "Tink"-Sound, kurz + hoch — ideal als Counter-Pip.
+            AudioServicesPlaySystemSound(1057)
+        }
+        #endif
+        #if canImport(UIKit) && !os(watchOS)
+        if timerHapticsEnabled {
+            UISelectionFeedbackGenerator().selectionChanged()
+        }
+        #endif
+    }
+
+    /// Laengerer, deutlich anderer Ton fuer "GO" (Start-Signal). DEL-045.
+    private func playGoSound() {
+        #if canImport(AudioToolbox)
+        if timerSoundEnabled {
+            // 1320 = "Beep"-System-Sound, tiefer als 1057, signalisiert klar
+            // "jetzt gehts los".
+            AudioServicesPlaySystemSound(1320)
+        }
+        #endif
+        #if canImport(UIKit) && !os(watchOS)
+        if timerHapticsEnabled {
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
+        #endif
+    }
+
+    /// Sound + Haptic beim Erreichen der Ziel-Hold-Zeit.
     private func triggerHoldCompleteFeedback() {
         #if canImport(UIKit) && !os(watchOS)
         if timerHapticsEnabled {
@@ -316,78 +454,28 @@ struct SetRow: View {
         #endif
     }
 
-    private var weightField: some View {
-        TextField("Gewicht",
-                  value: $weight, format: .number,
-                  prompt: Text("0"))
-            .decimalKeyboard()
-            .textFieldStyle(.roundedBorder)
-            .frame(maxWidth: 80)
-            .multilineTextAlignment(.trailing)
-    }
-
-    private var repsField: some View {
-        TextField(exercise.isTimeBased ? "Sek" : "Reps",
-                  value: $reps, format: .number,
-                  prompt: Text("0"))
-            .decimalKeyboard()
-            .textFieldStyle(.roundedBorder)
-            .frame(maxWidth: 60)
-            .multilineTextAlignment(.trailing)
-    }
-
-    // MARK: Completed
-
-    private func completedView(log: ExerciseLog) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-                .font(.title3)
-
-            Text("Satz \(setIndex + 1)")
-                .font(.subheadline.weight(.semibold))
-
-            Text(loggedSummary(log))
-                .font(.callout)
-                .monospacedDigit()
-                .foregroundStyle(.primary)
-
-            Spacer()
-
-            Text(log.date.formatted(.relative(presentation: .named)))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.vertical, 6)
-        .opacity(0.85)
-    }
-
-    private func loggedSummary(_ log: ExerciseLog) -> String {
-        if exercise.isCardio {
-            return "\(log.reps) \(exercise.isTimeBased ? "Sek" : "Wdh")"
-        }
-        if exercise.isTimeBased {
-            return "\(log.reps) Sek (RIR \(formatRIR(log.rir)))"
-        }
-        return "\(formatWeight(log.weight)) kg × \(log.reps) (RIR \(formatRIR(log.rir)))"
-    }
+    // MARK: - State init / formatting / logging
 
     private func previousLogHint(_ log: ExerciseLog) -> String {
         if exercise.isTimeBased {
-            return "letztes: \(log.reps) Sek"
+            return "\(log.reps) Sek"
         }
-        return "letztes: \(formatWeight(log.weight)) kg × \(log.reps)"
+        return "\(formatWeight(log.weight)) kg × \(log.reps)"
     }
 
-    // MARK: State init
-
-    /// Initializes weight/reps/rir once when the view first appears. Subsequent appears
-    /// (e.g., after the parent re-renders) keep the user's in-progress edits.
     private func initializeOnce() {
         guard !didInit else { return }
         didInit = true
 
-        if let previousLog {
+        // Wenn die Row als bereits-geloggt erscheint (z.B. nach Re-Render),
+        // dann nehme die Werte aus dem existingLog statt vom previousLog.
+        // Damit zeigen die TextFields nach Tap auf "Unlog" die richtigen
+        // Werte des gerade entfernten Logs an.
+        if let log = existingLog {
+            weight = log.weight > 0 ? log.weight : exercise.suggestedWeight
+            reps = log.reps
+            rir = log.rir
+        } else if let previousLog {
             weight = previousLog.weight > 0 ? previousLog.weight : exercise.suggestedWeight
             reps = previousLog.reps
             rir = previousLog.rir
@@ -400,21 +488,17 @@ struct SetRow: View {
 
     private func midpoint(_ a: Int, _ b: Int) -> Int { (a + b) / 2 }
 
-    // MARK: Actions
-
     private var canLog: Bool {
         guard reps > 0 else { return false }
         if exercise.isCardio || exercise.isTimeBased { return true }
         return (weight ?? 0) > 0
     }
 
-    private func log() {
+    private func logCurrentValues() {
         guard canLog else { return }
         let w = (exercise.isCardio || exercise.isTimeBased) ? 0.0 : (weight ?? 0)
         onLogged(w, reps, rir)
     }
-
-    // MARK: Formatting
 
     private func formatWeight(_ w: Double) -> String {
         w == w.rounded() ? "\(Int(w))" : w.truncated(to: 2).formattedTwoDecimals
