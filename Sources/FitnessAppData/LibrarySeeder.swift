@@ -34,5 +34,37 @@ public enum LibrarySeeder {
         }
         return true
     }
+
+    /// DEL-051: One-Shot-Backfill der Snapshot-Felder auf vorhandenen
+    /// `ExerciseLog`-Eintraegen. Bestand aus den Pre-DEL-051-Versionen hat
+    /// `exerciseNameSnapshot == nil` — `resolvedExerciseName` fallback'ed
+    /// zwar auf `log.exercise?.name`, aber sobald eine Plan-Uebung jemals
+    /// geloescht/getauscht wird, sind die Logs ohne Live-Referenz orphan
+    /// UND ohne Snapshot. Dieser Pass schreibt die Snapshots EINMALIG auf
+    /// alle bestehenden Logs nach, solange die Exercise noch da ist.
+    ///
+    /// Idempotent: ueberspringt Logs, die bereits einen Snapshot tragen, und
+    /// orphan-Logs ohne erreichbare Exercise. Wird einmal pro App-Launch
+    /// aus `RootView.task` aufgerufen — cheap genug, der FetchDescriptor
+    /// erlaubt einen Filter auf nil-Snapshot, sodass der Bulk-Run nach dem
+    /// ersten erfolgreichen Backfill leer durchlaeuft.
+    ///
+    /// Returns: Anzahl der nachgezogenen Eintraege (fuer Logging/Telemetry).
+    @discardableResult
+    public static func backfillLogSnapshotsIfNeeded(in context: ModelContext) -> Int {
+        let pendingDescriptor = FetchDescriptor<ExerciseLog>(
+            predicate: #Predicate { $0.exerciseNameSnapshot == nil }
+        )
+        let pending = (try? context.fetch(pendingDescriptor)) ?? []
+        var updated = 0
+        for log in pending {
+            guard let exercise = log.exercise else { continue }
+            log.exerciseNameSnapshot       = exercise.name
+            log.exerciseIsCardioSnapshot   = exercise.isCardio
+            log.exerciseIsTimeBasedSnapshot = exercise.isTimeBased
+            updated += 1
+        }
+        return updated
+    }
 }
 #endif

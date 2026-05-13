@@ -38,7 +38,15 @@ public final class Exercise {
 
     public var day: TrainingDay?
 
-    @Relationship(deleteRule: .cascade, inverse: \ExerciseLog.exercise)
+    /// DEL-051: HEILIGE HISTORIE. Frueher `.cascade` — beim Loeschen einer
+    /// Plan-Uebung (manuell oder via Day/Plan-Cascade) gingen die ExerciseLog-
+    /// Eintraege gleich mit weg, was Bestleistungen vernichtet hat. Jetzt
+    /// `.nullify`: die Logs verlieren nur ihren `exercise`-Backref-Pointer,
+    /// behalten aber ihren Snapshot in `exerciseNameSnapshot` /
+    /// `exerciseIsCardioSnapshot` / `exerciseIsTimeBasedSnapshot` und bleiben
+    /// fuer PR-Detection, Trophy-Room, Compound-Trends und alle anderen
+    /// Statistik-Surfaces voll auswertbar.
+    @Relationship(deleteRule: .nullify, inverse: \ExerciseLog.exercise)
     public var logs: [ExerciseLog] = []
 
     public init(

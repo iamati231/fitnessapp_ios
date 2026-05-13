@@ -57,6 +57,10 @@ public struct RootView: View {
             // Seed the canonical exercise library on first launch (idempotent
             // — fetchCount short-circuits when rows already exist).
             LibrarySeeder.seedIfNeeded(in: modelContext)
+            // DEL-051: Snapshot-Backfill fuer Pre-DEL-051-Logs. Idempotent —
+            // FetchDescriptor filtert auf nil-Snapshot, also lauft das nach
+            // dem ersten Erfolg leer durch.
+            LibrarySeeder.backfillLogSnapshotsIfNeeded(in: modelContext)
         }
     }
 

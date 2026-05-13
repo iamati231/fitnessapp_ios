@@ -640,10 +640,14 @@ public struct DashboardView: View {
         let liftNames = Set(Self.compoundLiftNames)
 
         return Self.compoundLiftNames.compactMap { name in
-            // All logs across all completed sessions for this lift
+            // DEL-051: Snapshot-first — auch wenn die Plan-Uebung
+            // inzwischen aus dem Plan geloescht/getauscht wurde, identifizieren
+            // sich Logs ueber `resolvedExerciseName` selbst, sodass der
+            // Compound-Trend kontinuierlich bleibt.
             let liftLogs = completedSessions.flatMap { session in
                 session.logs.filter { log in
-                    log.exercise.map { liftNames.contains($0.name) && $0.name == name } ?? false
+                    guard let logName = log.resolvedExerciseName else { return false }
+                    return liftNames.contains(logName) && logName == name
                 }
             }
 

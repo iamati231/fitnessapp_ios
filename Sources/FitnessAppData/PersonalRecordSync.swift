@@ -98,24 +98,30 @@ public enum PersonalRecordSync {
 
     // MARK: - Internals
 
-    /// Maps `ExerciseLog` to `LiftAttempt`. Logs with no exercise (orphans
-    /// from a deleted Exercise) are dropped.
+    /// DEL-051: Maps `ExerciseLog` to `LiftAttempt`, snapshot-first. Logs
+    /// ohne Snapshot UND ohne Live-Exercise (sehr alte Orphans) werden
+    /// uebersprungen, sonst nutzen wir entweder den persistierten Snapshot
+    /// oder fallbacken auf die noch-lebende Exercise-Referenz.
     private static func liftAttempts(from logs: [ExerciseLog]) -> [LiftAttempt] {
         logs.compactMap { log -> LiftAttempt? in
-            guard let exercise = log.exercise else { return nil }
+            guard let name = log.resolvedExerciseName else { return nil }
             return LiftAttempt(
-                exerciseName: exercise.name,
+                exerciseName: name,
                 weightKg: log.weight,
                 reps: log.reps,
                 date: log.date,
-                isCardio: exercise.isCardio,
-                isTimeBased: exercise.isTimeBased
+                isCardio: log.resolvedIsCardio,
+                isTimeBased: log.resolvedIsTimeBased
             )
         }
     }
 
-    /// Pulls every log from completed sessions OTHER than `session`. Equivalent
-    /// to the WorkoutSummaryView's @Query+filter, but usable outside a view body.
+    /// DEL-051: Pulls every log from completed sessions OTHER than `session`.
+    /// Wichtig: vorher hatte ein `.cascade`-Delete der Plan-Uebung den
+    /// `log.exercise`-Pointer mit-genommen → Historie verschwand aus PR-
+    /// Detection. Jetzt nutzen wir die Snapshot-Felder, sodass auch
+    /// orphan-Logs (Plan-Uebung geloescht) als historische Lifts in die
+    /// PR-Berechnung eingehen.
     private static func fetchHistoricalLifts(
         excluding session: WorkoutSession,
         in context: ModelContext
@@ -126,18 +132,18 @@ public enum PersonalRecordSync {
         )
         let logs = (try? context.fetch(descriptor)) ?? []
         return logs.compactMap { log -> LiftAttempt? in
-            guard let exercise = log.exercise,
+            guard let name = log.resolvedExerciseName,
                   let logSession = log.session,
                   logSession.isCompleted,
                   logSession.persistentModelID != thisID
             else { return nil }
             return LiftAttempt(
-                exerciseName: exercise.name,
+                exerciseName: name,
                 weightKg: log.weight,
                 reps: log.reps,
                 date: log.date,
-                isCardio: exercise.isCardio,
-                isTimeBased: exercise.isTimeBased
+                isCardio: log.resolvedIsCardio,
+                isTimeBased: log.resolvedIsTimeBased
             )
         }
     }

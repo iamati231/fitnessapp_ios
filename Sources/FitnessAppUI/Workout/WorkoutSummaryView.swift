@@ -133,37 +133,40 @@ public struct WorkoutSummaryView: View {
         PRDetector.detectPRs(sessionLifts: sessionLifts, history: historicalLifts)
     }
 
+    /// DEL-051: snapshot-first. Logs ohne Snapshot UND ohne Live-Exercise
+    /// werden uebersprungen, sonst greifen wir auf die persistierten Snapshot-
+    /// Felder zu, sodass Plan-Side-Mutations die PR-Detection nicht stoeren.
     private var sessionLifts: [LiftAttempt] {
         session.logs.compactMap { log -> LiftAttempt? in
-            guard let exercise = log.exercise else { return nil }
+            guard let name = log.resolvedExerciseName else { return nil }
             return LiftAttempt(
-                exerciseName: exercise.name,
+                exerciseName: name,
                 weightKg: log.weight,
                 reps: log.reps,
                 date: log.date,
-                isCardio: exercise.isCardio,
-                isTimeBased: exercise.isTimeBased
+                isCardio: log.resolvedIsCardio,
+                isTimeBased: log.resolvedIsTimeBased
             )
         }
     }
 
     /// All logs from completed sessions OTHER than this one — the baseline against
-    /// which `PRDetector` measures.
+    /// which `PRDetector` measures. DEL-051: nutzt Snapshot-Felder.
     private var historicalLifts: [LiftAttempt] {
         let thisSessionID = session.persistentModelID
         return allLogs.compactMap { log -> LiftAttempt? in
-            guard let exercise = log.exercise,
+            guard let name = log.resolvedExerciseName,
                   let logSession = log.session,
                   logSession.isCompleted,
                   logSession.persistentModelID != thisSessionID
             else { return nil }
             return LiftAttempt(
-                exerciseName: exercise.name,
+                exerciseName: name,
                 weightKg: log.weight,
                 reps: log.reps,
                 date: log.date,
-                isCardio: exercise.isCardio,
-                isTimeBased: exercise.isTimeBased
+                isCardio: log.resolvedIsCardio,
+                isTimeBased: log.resolvedIsTimeBased
             )
         }
     }
