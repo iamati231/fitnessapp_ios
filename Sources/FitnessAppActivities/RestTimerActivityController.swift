@@ -47,8 +47,12 @@ public final class RestTimerActivityController {
         #endif
     }
 
-    /// Requests a new rest-timer activity. Cancels any existing one first so we
-    /// never have overlapping timers (matches the in-app bar's behavior).
+    /// Requests a new rest-timer activity. DEL-044: Singleton-Garantie —
+    /// vor dem neuen Activity-Request iterieren wir ueber ALLE laufenden
+    /// `Activity<RestTimerAttributes>.activities` und beenden sie mit
+    /// `.immediate`-Dismissal. Frueher haben wir nur die getrackte `current`-
+    /// Referenz beendet; nach App-Restart oder Crash konnten dort stale
+    /// Activities zurueckbleiben, die parallel zur neuen weiterlaufen.
     public func startRestTimer(
         exerciseName: String,
         setNumber: Int,
@@ -63,10 +67,12 @@ public final class RestTimerActivityController {
         }
         isAvailable = true
 
-        if let existing = current {
-            await existing.end(nil, dismissalPolicy: .immediate)
-            current = nil
+        // ── Singleton-Cleanup: ALLE existing Activities killen, nicht nur
+        // ── die getrackte `current`-Referenz (DEL-044).
+        for stale in Activity<RestTimerAttributes>.activities {
+            await stale.end(nil, dismissalPolicy: .immediate)
         }
+        current = nil
 
         let attributes = RestTimerAttributes(
             exerciseName: exerciseName,
@@ -98,15 +104,20 @@ public final class RestTimerActivityController {
     }
 
     /// Ends the current activity with a dismissal-policy that depends on the reason.
+    /// DEL-044: Defensiv auch fuer Skip — alle stale Activities aufraeumen,
+    /// damit kein Geister-Timer auf dem Lock-Screen weiterlaeuft.
     public func endRestTimer(reason: RestTimerEndReason = .skipped) async {
         #if os(iOS)
-        guard let current else { return }
-
         switch reason {
         case .skipped:
-            await current.end(nil, dismissalPolicy: .immediate)
+            // Skip cleant ALLE stale Activities — sonst koennte eine
+            // Geister-Activity vom App-Crash zurueckbleiben.
+            for stale in Activity<RestTimerAttributes>.activities {
+                await stale.end(nil, dismissalPolicy: .immediate)
+            }
         case .completed:
-            // Final-state update so the widget shows "Pause vorbei" before dismissal.
+            // .completed-Pfad: nur die aktuelle bekommt das "Pause vorbei"-
+            // Final-State, andere stale Activities werden hard-killt.
             let finalState = RestTimerAttributes.ContentState(
                 endDate: Date(),
                 originalSeconds: 0,
@@ -116,10 +127,16 @@ public final class RestTimerActivityController {
                 state: finalState,
                 staleDate: Date().addingTimeInterval(30)
             )
-            await current.end(
-                finalContent,
-                dismissalPolicy: .after(Date().addingTimeInterval(8))
-            )
+            for stale in Activity<RestTimerAttributes>.activities {
+                if stale.id == current?.id {
+                    await stale.end(
+                        finalContent,
+                        dismissalPolicy: .after(Date().addingTimeInterval(8))
+                    )
+                } else {
+                    await stale.end(nil, dismissalPolicy: .immediate)
+                }
+            }
         }
         self.current = nil
         #endif
@@ -133,10 +150,10 @@ public final class RestTimerActivityController {
     ///
     /// No-op when no activity is running — finishing a workout without a timer
     /// in flight just means the celebration only goes via local notification.
+    /// DEL-044: stale activities werden hard-killt, nur die getrackte
+    /// `current` bekommt den Celebration-Linger.
     public func endRestTimerWithPR(prMessage: String) async {
         #if os(iOS)
-        guard let current else { return }
-
         let celebrationState = RestTimerAttributes.ContentState(
             endDate: Date(),                // already "over"
             originalSeconds: 0,
@@ -147,10 +164,16 @@ public final class RestTimerActivityController {
             state: celebrationState,
             staleDate: Date().addingTimeInterval(30)
         )
-        await current.end(
-            celebrationContent,
-            dismissalPolicy: .after(Date().addingTimeInterval(8))
-        )
+        for stale in Activity<RestTimerAttributes>.activities {
+            if stale.id == current?.id {
+                await stale.end(
+                    celebrationContent,
+                    dismissalPolicy: .after(Date().addingTimeInterval(8))
+                )
+            } else {
+                await stale.end(nil, dismissalPolicy: .immediate)
+            }
+        }
         self.current = nil
         #endif
     }

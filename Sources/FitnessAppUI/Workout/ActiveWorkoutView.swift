@@ -298,14 +298,29 @@ public struct ActiveWorkoutView: View {
     /// guard against typo'd 9000-second rests. Also drives the Live Activity, so
     /// the timer keeps running on the lock-screen and Dynamic Island when the user
     /// backgrounds the app.
+    /// DEL-044: harter Reset zuerst. Wenn der User einen neuen Satz speichert,
+    /// waehrend die Pause des vorigen Satzes noch laeuft (z.B. nach Skip), wird
+    /// die alte Subscription invalidiert + die existing Activity beendet,
+    /// BEVOR der neue Timer gesetzt wird. Garantiert: immer maximal ein
+    /// laufender Timer pro Workout.
     private func startRestTimer(for exercise: Exercise, setIndex: Int) {
+        // ── 1) Harter Reset des aktuellen In-App-Timers ─────────────────
+        // Die `Timer.publish(every: 1, ...)` Subscription oben bleibt fix
+        // (sie liefert nur den `now`-Tick); das eigentliche "Timer-State"
+        // sitzt in restTimerEnd. Auf nil setzen blendet die RestTimerBar
+        // aus + verhindert dass die alte Bar fuer einen Frame mit-rendert.
+        restTimerEnd = nil
+        restTimerOriginalSeconds = 0
+
+        // ── 2) Harter Reset der Live-Activity ───────────────────────────
+        // Synchron via Task — die Activity-Cleanup-Logik im neuen
+        // startRestTimer beendet zusaetzlich alle stale activities,
+        // aber wir cleanen hier defensive vorab.
+        Task { await restTimerActivity.endRestTimer(reason: .skipped) }
+
+        // ── 3) Validate + neuen Timer setzen ────────────────────────────
         let raw = exercise.restSeconds
-        guard raw > 0 else {
-            restTimerEnd = nil
-            // If a previous Activity is somehow still up, clear it.
-            Task { await restTimerActivity.endRestTimer(reason: .skipped) }
-            return
-        }
+        guard raw > 0 else { return }
         let bounded = min(raw, 600)
         let endDate = Date().addingTimeInterval(TimeInterval(bounded))
 
