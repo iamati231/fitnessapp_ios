@@ -304,7 +304,12 @@ public struct PlanEditorView: View {
                         orderIndex: exercise.orderIndex,
                         targetRir: exercise.targetRir,
                         weightReducedNote: exercise.weightReducedNote,
-                        isCardio: altSpec.isCardio,
+                        // ExerciseTemplateSpec hat (noch) kein isCardio-Flag —
+                        // unsere Alternative-Mappings sind alle Strength-Lifts,
+                        // also hardcode false. Wenn das Mapping spaeter Cardio-
+                        // Substitutes bekommt, hier Detection via Name oder
+                        // dedicated Spec-Feld nachruesten.
+                        isCardio: false,
                         isTimeBased: altSpec.isTimeBased,
                         day: day
                     )
