@@ -76,6 +76,8 @@ public extension DayType {
         case .fullBody:  LocalizedStringResource("day_type.full_body", bundle: .fitnessAppUI)
         case .rest:      LocalizedStringResource("day_type.rest",      bundle: .fitnessAppUI)
         case .custom:    LocalizedStringResource("day_type.custom",    bundle: .fitnessAppUI)
+        // DEL-055: dedizierte Run-/Cardio-Tage fuer Hybrid-Plaene.
+        case .cardio:    LocalizedStringResource("day_type.cardio",    bundle: .fitnessAppUI)
         }
     }
 }

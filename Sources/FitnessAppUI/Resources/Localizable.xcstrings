@@ -320,6 +320,13 @@
         "de" : { "stringUnit" : { "state" : "translated", "value" : "Custom" } }
       }
     },
+    "day_type.cardio" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cardio / Run" } },
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Cardio / Run" } }
+      }
+    },
 
     "day_intensity.normal" : {
       "extractionState" : "manual",
