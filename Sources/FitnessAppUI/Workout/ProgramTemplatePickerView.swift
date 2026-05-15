@@ -194,7 +194,7 @@ public struct TemplatePreviewView: View {
     public var body: some View {
         List {
             heroSection
-            ForEach(orderedDays, id: \.weekday) { day in
+            ForEach(orderedDays, id: \.sequenceIndex) { day in
                 daySection(day)
             }
             adoptSection
@@ -236,6 +236,9 @@ public struct TemplatePreviewView: View {
     @ViewBuilder
     private func daySection(_ day: DaySpec) -> some View {
         Section {
+            // DEL-088: Templates enthalten nur noch Trainings-Tage — der
+            // Rest-Day-Branch ist obsolet, bleibt aber defensiv drin fuer
+            // den hypothetischen Fall einer Migration-Luecke.
             if day.exercises.isEmpty {
                 HStack(spacing: 10) {
                     Image(systemName: "bed.double.fill")
@@ -256,8 +259,11 @@ public struct TemplatePreviewView: View {
                 }
             }
         } header: {
+            // DEL-088: Header zeigt "Tag N · <Name>" (sequenceIndex statt
+            // Wochentag — Tag wird erst beim Instantiieren auf einen Weekday
+            // gemappt, siehe DayPickerSheet).
             HStack(spacing: 6) {
-                Text(weekdayLabel(day.weekday))
+                Text("Tag \(day.sequenceIndex)")
                     .textCase(nil)
                 Text("·").foregroundStyle(.tertiary)
                 Text(day.name)
@@ -290,25 +296,11 @@ public struct TemplatePreviewView: View {
 
     // MARK: Helpers
 
-    /// DaySpec hat einen weekday-Int (1=So, 2=Mo, ..., 7=Sa). Wir sortieren
-    /// Mon-first via PlanNavigator's existing Helper-Logik — DaySpec konformt
-    /// nicht zum Protocol, also lokale Sortier-Variante.
+    /// DEL-088: Template-Tage sind ueber `sequenceIndex` 1...N geordnet.
+    /// Vorher haben wir hier Mo-first nach Apple-Weekday sortiert — das ist
+    /// jetzt obsolet, weil Templates keinen Wochentag mehr enthalten.
     private var orderedDays: [DaySpec] {
-        template.days.sorted { lhs, rhs in
-            // Mo (2) zuerst, So (1) zuletzt — Mo-First-Convention.
-            europeanWeekday(lhs.weekday) < europeanWeekday(rhs.weekday)
-        }
-    }
-
-    private func europeanWeekday(_ apple: Int) -> Int {
-        // 2=Mo→0, 3=Di→1, ..., 1=So→6
-        apple == 1 ? 6 : apple - 2
-    }
-
-    private func weekdayLabel(_ weekday: Int) -> String {
-        let symbols = Calendar.current.standaloneWeekdaySymbols
-        guard (1...7).contains(weekday) else { return "?" }
-        return symbols[weekday - 1]
+        template.days.sorted { $0.sequenceIndex < $1.sequenceIndex }
     }
 }
 

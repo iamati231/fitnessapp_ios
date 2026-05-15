@@ -162,6 +162,39 @@ struct SetRow: View {
         }
     }
 
+    /// DEL-085: Quick-Access-Button fuer den Plate-Calculator. Wird neben
+    /// dem KG-Feld eingeblendet, wenn ein konkretes Gewicht > 0 eingetragen
+    /// ist UND die Uebung mit einer Hantelstange ausgefuehrt wird (also
+    /// keine Bodyweight-/Cardio-/TimeBased-Lifts). Tap oeffnet ein Popover
+    /// mit der Aufladungs-Visualisierung — der eigentliche Content lebt in
+    /// `PlatePopoverContent` weiter unten.
+    @ViewBuilder
+    private func plateCalculatorButton(weight: Double) -> some View {
+        Button {
+            showingPlatePopover = true
+        } label: {
+            Image(systemName: "scalemass.fill")
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(Color.deltiqOrange)
+                .font(.callout)
+                .frame(width: 28, height: 28)
+                .background(Color.deltiqOrange.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Hantel-Aufladung anzeigen")
+        .popover(isPresented: $showingPlatePopover, arrowEdge: .top) {
+            PlatePopoverContent(
+                targetWeight: weight,
+                barWeight: barWeightKgRaw,
+                unitRaw: weightUnitRaw
+            )
+            .padding(16)
+            .frame(minWidth: 260, idealWidth: 280)
+            .presentationCompactAdaptation(.popover)
+        }
+    }
+
     private var weightInput: some View {
         // DEL-045-Update: Bodyweight-Fix. Placeholder ist "BW" — wenn der User
         // das Feld leer laesst, wird der Satz als 0.0 kg geloggt (Liegestuetze,
@@ -875,23 +908,29 @@ private struct PlatePopoverContent: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            let result = PlateCalculator.calculate(target: targetWeight, bar: barWeight, unit: unit)
+            // DEL-085 / DEL-092-Fix: PlateCalculator.calculate liefert ein
+            // flaches `[PlateConfig]`, KEIN Wrapper-Struct mit `.plates` /
+            // `.actualWeight`. `actualWeight` rechnen wir manuell (Stange +
+            // 2× pro-Seite-Summe) — selbe Formel wie in PlateCalculatorView.
+            let plates = PlateCalculator.calculate(target: targetWeight, bar: barWeight, unit: unit)
+            let perSideLoaded = plates.reduce(0.0) { $0 + Double($1.count) * $1.weight }
+            let actualWeight = barWeight + 2 * perSideLoaded
 
-            if result.plates.isEmpty {
+            if plates.isEmpty {
                 Label("Keine Aufladung — bleib bei der leeren Stange.", systemImage: "minus")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
                 // Reuse der existing Visualization, kompakte Hoehe.
-                PlateBarVisualization(plates: result.plates, unit: unit)
+                PlateBarVisualization(plates: plates, unit: unit)
                     .frame(height: 84)
-                Text(perSideText(result.plates, unit: unit))
+                Text(perSideText(plates, unit: unit))
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
 
-            if result.actualWeight != targetWeight {
-                Text("Erreichbar: \(formatWeight(result.actualWeight)) \(unit.rawValue) (Δ \(formatWeight(result.actualWeight - targetWeight)) \(unit.rawValue))")
+            if abs(actualWeight - targetWeight) > 0.01 {
+                Text("Erreichbar: \(formatWeight(actualWeight)) \(unit.rawValue) (Δ \(formatWeight(actualWeight - targetWeight)) \(unit.rawValue))")
                     .font(.caption2)
                     .foregroundStyle(.orange)
             }

@@ -440,7 +440,24 @@ private struct PRHistoryRow: View {
             return "\(formatNumber(entry.value)) kg (vorher \(formatNumber(entry.previousValue)) kg)"
         case .bestSet:
             return "\(formatNumber(entry.weightKg)) kg × \(entry.reps) = \(formatNumber(entry.value)) kg-Vol"
+        // DEL-064 Cardio-PRs — Xcode-26-strict braucht alle Cases.
+        case .longestDistance:
+            return "\(formatKm(entry.value)) km (vorher \(formatKm(entry.previousValue)) km)"
+        case .fastestPace:
+            return "\(formatPace(entry.value)) (vorher \(formatPace(entry.previousValue)))"
         }
+    }
+
+    /// DEL-064: km-Formatter (Spiegelung von WorkoutSummaryView.formatKm).
+    private func formatKm(_ km: Double) -> String {
+        km == km.rounded() ? "\(Int(km))" : km.truncated(to: 2).formattedTwoDecimals
+    }
+
+    /// DEL-064: Pace-Formatter (min/km Double → "5:42 /km").
+    private func formatPace(_ minutesPerKm: Double) -> String {
+        guard minutesPerKm.isFinite, minutesPerKm > 0 else { return "—:——" }
+        let total = Int((minutesPerKm * 60.0).rounded())
+        return String(format: "%d:%02d /km", total / 60, total % 60)
     }
 
     private func formatNumber(_ value: Double) -> String {
@@ -513,6 +530,9 @@ enum PRKindStyle {
         case .bestSet:         "chart.bar.fill"
         case .maxReps:         "arrow.up.arrow.down"
         case .maxHoldSeconds:  "stopwatch.fill"
+        // DEL-064 Cardio-PRs (Spiegelung von WorkoutSummaryView's PRBadge).
+        case .longestDistance: "figure.run.circle.fill"
+        case .fastestPace:     "hare.fill"
         }
     }
 
@@ -523,6 +543,8 @@ enum PRKindStyle {
         case .bestSet:         .blue
         case .maxReps:         .purple
         case .maxHoldSeconds:  .yellow
+        case .longestDistance: Color.deltiqOrange
+        case .fastestPace:     .green
         }
     }
 
@@ -534,6 +556,8 @@ enum PRKindStyle {
         case .bestSet:         "Bestsatz"
         case .maxReps:         "Max Reps"
         case .maxHoldSeconds:  "Bestzeit"
+        case .longestDistance: "Distanz"
+        case .fastestPace:     "Pace"
         }
     }
 
@@ -544,6 +568,8 @@ enum PRKindStyle {
         case .bestSet:                       return "Volumen (kg)"
         case .maxReps:                       return "Wdh"
         case .maxHoldSeconds:                return "Sekunden"
+        case .longestDistance:               return "Distanz (km)"
+        case .fastestPace:                   return "Pace (min/km)"
         }
     }
 }

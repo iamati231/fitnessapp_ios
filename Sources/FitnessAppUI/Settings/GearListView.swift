@@ -155,7 +155,11 @@ private struct GearEditorView: View {
                 }
                 Toggle("Aktiv (im Picker anbieten)", isOn: $isActive)
             }
-            Section("Distanz") {
+            // Xcode-26-Fix: Section("Distanz") { … } footer: { … } prallt
+            // gegen den strikten Section-API-Match — string-init kollidiert
+            // mit der footer-Trailing-Closure-Overload. Explizit den
+            // `header:` Closure verwenden, dann ist es eindeutig.
+            Section {
                 Stepper(value: $maxDistance, in: 100...3000, step: 50) {
                     LabeledContent("Max. km", value: "\(Int(maxDistance))")
                 }
@@ -164,6 +168,8 @@ private struct GearEditorView: View {
                           format: .number,
                           prompt: Text("0"))
                     .decimalKeyboard()
+            } header: {
+                Text("Distanz")
             } footer: {
                 Text("Laufschuhe verlieren nach ~600–800 km ihre Dämpfung. Bei Erreichen des Maximums warnt die App.")
                     .font(.footnote)
