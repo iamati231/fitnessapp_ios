@@ -12,11 +12,21 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
     public let descriptionText: String
     public let focus: String
     public let daysPerWeek: Int
+    /// DEL-088: `days` enthaelt jetzt NUR Trainings-Tage, sortiert nach
+    /// `sequenceIndex` (1...daysPerWeek). Rest-Tage werden beim Instanziieren
+    /// vom `ProgramInstantiator` automatisch in die restlichen Wochentage
+    /// gefuellt — der User waehlt seine Wochentage erst beim Adopt.
     public let days: [DaySpec]
     public let targetEnvironment: EnvironmentType
     /// SF Symbol name displayed as the program tile icon. Picked per program;
     /// can be replaced with a real custom-asset on the iOS side later.
     public let iconSystemName: String
+
+    /// DEL-090: Quiz-Matchmaker-Tags. Mehrwertig, damit ein Plan auf mehrere
+    /// Antwortkombinationen passen kann (z.B. PPL ist sowohl Hypertrophie als
+    /// auch Kraft; Hybrid passt Beginner UND Intermediate).
+    public let targetExperience: [ExperienceLevel]
+    public let targetGoals: [GoalType]
 
     public init(
         id: String,
@@ -27,7 +37,9 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
         daysPerWeek: Int,
         days: [DaySpec],
         targetEnvironment: EnvironmentType = .gym,
-        iconSystemName: String = "figure.strengthtraining.traditional"
+        iconSystemName: String = "figure.strengthtraining.traditional",
+        targetExperience: [ExperienceLevel] = [.intermediate],
+        targetGoals: [GoalType] = [.hypertrophy]
     ) {
         self.id = id
         self.name = name
@@ -38,5 +50,7 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
         self.days = days
         self.targetEnvironment = targetEnvironment
         self.iconSystemName = iconSystemName
+        self.targetExperience = targetExperience
+        self.targetGoals = targetGoals
     }
 }

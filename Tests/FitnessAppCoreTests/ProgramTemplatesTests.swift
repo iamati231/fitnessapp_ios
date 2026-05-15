@@ -21,34 +21,42 @@ final class ProgramTemplatesTests: XCTestCase {
         XCTAssertEqual(names.count, Set(names).count, "duplicate program name detected")
     }
 
-    // MARK: Day-spec sanity
+    // MARK: Day-spec sanity (DEL-088 Rolling-Days)
 
     func testEveryProgramHasAtLeastOneTrainingDay() {
         for template in ProgramTemplates.all {
-            let trainingDays = template.days.filter { !$0.exercises.isEmpty }
-            XCTAssertFalse(trainingDays.isEmpty,
-                           "\(template.name) has zero training days — only rest days")
+            XCTAssertFalse(template.days.isEmpty,
+                           "\(template.name) hat keinen einzigen Trainingstag")
         }
     }
 
-    func testWeekdaysAreInCalendarRange() {
-        // Calendar convention: 1 = Sunday, 2 = Monday, ..., 7 = Saturday.
-        // Anything outside this range would silently break weekday-based UI sorting.
+    /// DEL-088: Statt weekday haben Tage jetzt sequenceIndex (1-basiert,
+    /// laufend 1...daysPerWeek). Keine Rest-Days mehr in Templates.
+    func testSequenceIndexIsContinuousFromOne() {
         for template in ProgramTemplates.all {
-            for day in template.days {
-                XCTAssertTrue((1...7).contains(day.weekday),
-                              "\(template.name) / \(day.name) has weekday \(day.weekday) outside Calendar range 1-7")
-            }
+            let indices = template.days.map(\.sequenceIndex).sorted()
+            let expected = Array(1...template.daysPerWeek)
+            XCTAssertEqual(indices, expected,
+                           "\(template.name): sequenceIndex muss kontinuierlich 1...\(template.daysPerWeek) sein, ist \(indices)")
         }
     }
 
-    func testNoTrainingDayHasOverlappingWeekdayWithAnother() {
-        // Each weekday slot can hold at most one day — if there are duplicates,
-        // the picker UI shows them in indeterminate order.
+    func testNoTrainingDayHasDuplicateSequenceIndex() {
         for template in ProgramTemplates.all {
-            let weekdays = template.days.map(\.weekday)
-            XCTAssertEqual(weekdays.count, Set(weekdays).count,
-                           "\(template.name) has two days on the same weekday")
+            let indices = template.days.map(\.sequenceIndex)
+            XCTAssertEqual(indices.count, Set(indices).count,
+                           "\(template.name) hat zwei Tage mit demselben sequenceIndex")
+        }
+    }
+
+    /// DEL-088: Es darf KEINE Rest-Days mehr in den Templates geben.
+    /// Der ProgramInstantiator fuellt die nicht-angekreuzten Wochentage
+    /// automatisch mit `.rest` auf.
+    func testNoRestDaysInTemplates() {
+        for template in ProgramTemplates.all {
+            let restDays = template.days.filter { $0.type == .rest }
+            XCTAssertTrue(restDays.isEmpty,
+                          "\(template.name) hat noch Rest-Day(s) in den Seed-Daten — Rolling-Days entfernt sie alle")
         }
     }
 
@@ -71,30 +79,20 @@ final class ProgramTemplatesTests: XCTestCase {
         }
     }
 
-    func testRestDaysHaveZeroExercises() {
-        for template in ProgramTemplates.all {
-            for day in template.days where day.type == .rest {
-                XCTAssertTrue(day.exercises.isEmpty,
-                              "\(template.name) / rest day '\(day.name)' has \(day.exercises.count) exercises — should be zero")
-            }
-        }
-    }
-
     func testDaysPerWeekFieldMatchesActualTrainingDays() {
         // The promised count in the picker UI must match what the user actually
-        // ends up with after instantiation. Drift here is a UX bug.
+        // ends up with after instantiation.
+        // DEL-088: Templates enthalten jetzt NUR Trainings-Tage — die Anzahl
+        // muss exakt `daysPerWeek` entsprechen.
         for template in ProgramTemplates.all {
-            let actualTrainingDays = template.days.filter { !$0.exercises.isEmpty }.count
-            XCTAssertEqual(actualTrainingDays, template.daysPerWeek,
-                           "\(template.name) advertises \(template.daysPerWeek) days/week but has \(actualTrainingDays) non-rest days")
+            XCTAssertEqual(template.days.count, template.daysPerWeek,
+                           "\(template.name) advertises \(template.daysPerWeek) days/week but has \(template.days.count) training days")
         }
     }
 
     // MARK: Environment targeting
 
     func testHomeGymProgramHasOnlyDumbbellExercises() {
-        // The 'Home Gym Hero' program is supposed to be runnable with just dumbbells.
-        // If a barbell or machine sneaks in, the targeting promise breaks.
         let homeGym = ProgramTemplates.all.first { $0.id == "home_gym_hero" }
         XCTAssertNotNil(homeGym, "home_gym_hero template not found")
 
@@ -137,11 +135,6 @@ final class ProgramTemplatesTests: XCTestCase {
     // MARK: Cardio + Time-based propagation
 
     func testCardioFlagOnlySetForKnownCardioFinishers() {
-        // Whitelist der Templates, die legitimerweise `isCardio: true`-Eintraege
-        // tragen duerfen. DEL-055 hat die Hybrid-Plaene als dedizierte
-        // Concurrent-Training-Templates hinzugefuegt — ihre Easy-/Long-/
-        // Intervall-Run-Eintraege MUESSEN cardio sein, damit der Smart-
-        // Progression-Algorithmus sie korrekt skippt.
         let allowedCardioCarriers: Set<String> = [
             "fat_loss_fullbody",
             "hybrid_beginner",
@@ -152,6 +145,19 @@ final class ProgramTemplatesTests: XCTestCase {
             let cardioExercises = template.days.flatMap { $0.exercises }.filter { $0.isCardio }
             XCTAssertTrue(cardioExercises.isEmpty,
                           "\(template.name) has unexpected cardio-flagged exercises: \(cardioExercises.map(\.name))")
+        }
+    }
+
+    // MARK: DEL-090 Quiz-Tags
+
+    /// Jeder Plan muss mindestens ein Experience-Level UND ein Goal als Tag
+    /// tragen — sonst kann der `PlanMatchmaker` ihn nicht ranken.
+    func testEveryTemplateHasOnboardingTags() {
+        for template in ProgramTemplates.all {
+            XCTAssertFalse(template.targetExperience.isEmpty,
+                           "\(template.name) hat keine targetExperience-Tags")
+            XCTAssertFalse(template.targetGoals.isEmpty,
+                           "\(template.name) hat keine targetGoals-Tags")
         }
     }
 }

@@ -70,6 +70,21 @@ public struct OnboardingView: View {
     /// die Auswahl (`selectedTemplate = ...` + Onboarding-Finish).
     @State private var previewingTemplate: ProgramTemplate?
 
+    // DEL-090: Smart Onboarding Quiz. Wenn aktiv, oeffnet sich der Quiz statt
+    // der manuellen Plan-Liste. Quiz-Result fuehrt zum DayPicker.
+    @State private var showingQuiz: Bool = false
+
+    // DEL-088: Tag-Auswahl-Sheet, das nach Plan-Adopt erscheint. Sobald
+    // `dayPickerTemplate != nil`, oeffnet sich das DayPickerSheet mit dem
+    // dort hinterlegten Template. `onConfirm` setzt `selectedWeekdays` und
+    // ruft finishOnboarding() auf.
+    @State private var dayPickerTemplate: ProgramTemplate?
+
+    /// DEL-088: Vom User gewaehlte Wochentage (Apple-Calendar-Index, Mo-first).
+    /// Leeres Array = Caller hat noch keine Auswahl getroffen — Instantiator
+    /// fallback'd auf seine Defaults (siehe `ProgramInstantiator.defaultWeekdays`).
+    @State private var selectedWeekdays: [Int] = []
+
     public init() {}
 
     public var body: some View {
@@ -112,9 +127,12 @@ public struct OnboardingView: View {
                         template: template,
                         adoptButtonTitle: "Diesen Plan wählen"
                     ) {
+                        // DEL-088: Adopt finalisiert die Plan-Wahl noch nicht
+                        // direkt — stattdessen oeffnet sich der DayPicker,
+                        // damit der User die Trainings-Wochentage festlegt.
                         selectedTemplate = template
                         previewingTemplate = nil
-                        finishOnboarding()
+                        dayPickerTemplate = template
                     }
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
@@ -124,6 +142,41 @@ public struct OnboardingView: View {
                         }
                     }
                 }
+            }
+            // DEL-090: Smart Onboarding Quiz. Vier kompakte Fragen +
+            // Result-Screen, der via `PlanMatchmaker` die 14 Templates ranked.
+            .sheet(isPresented: $showingQuiz) {
+                OnboardingQuizView(
+                    preselectedEnvironment: environment,
+                    onPlanSelected: { template in
+                        selectedTemplate = template
+                        showingQuiz = false
+                        // Quiz-Result direkt weiter in den DayPicker — das
+                        // ist der naechste Pflicht-Step im Wave-14-Flow.
+                        dayPickerTemplate = template
+                    },
+                    onCancel: {
+                        showingQuiz = false
+                    }
+                )
+            }
+            // DEL-088: DayPickerSheet — nach Plan-Wahl muss der User exakt
+            // `template.daysPerWeek` Wochentage ankreuzen. Submit ruft direkt
+            // `finishOnboarding()` mit den gewaehlten Weekdays auf.
+            .sheet(item: $dayPickerTemplate) { template in
+                DayPickerSheet(
+                    requiredDayCount: template.daysPerWeek,
+                    planName: template.name,
+                    initialSelection: ProgramInstantiator.defaultWeekdays(for: template.daysPerWeek),
+                    onConfirm: { weekdays in
+                        selectedWeekdays = weekdays
+                        dayPickerTemplate = nil
+                        finishOnboarding()
+                    },
+                    onCancel: {
+                        dayPickerTemplate = nil
+                    }
+                )
             }
         }
     }
@@ -336,6 +389,42 @@ public struct OnboardingView: View {
                     .font(.footnote)
             }
 
+            // DEL-090: Hero-Card "Plan finden lassen" — startet den
+            // Smart-Onboarding-Quiz, der die 14 Templates fuer den User
+            // ranked, statt ihn manuell aus einer 14er-Liste raten zu lassen.
+            Section {
+                Button {
+                    showingQuiz = true
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "sparkles")
+                            .font(.title2)
+                            .foregroundStyle(.white)
+                            .frame(width: 44, height: 44)
+                            .background(Color.deltiqOrange.gradient)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Plan finden lassen")
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(.primary)
+                            Text("4 kurze Fragen — wir matchen dich auf den passenden Plan.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+            } header: {
+                Text("Empfohlen")
+            } footer: {
+                Text("Empfohlen, wenn du nicht weißt, welcher Plan zu dir passt. Du kannst stattdessen auch direkt aus der Liste unten wählen.")
+                    .font(.footnote)
+            }
+
             Section {
                 if filteredTemplates.isEmpty {
                     Text("Keine Templates für '\(environmentLabel)'. Du kannst trotzdem ohne Plan starten und später einen eigenen anlegen.")
@@ -346,8 +435,8 @@ public struct OnboardingView: View {
                         Button {
                             // DEL-056: Tap oeffnet die Detail-Vorschau,
                             // KEIN stilles Selektieren mehr. Erst der Adopt-
-                            // Button im Detail wahlt den Plan und finished
-                            // das Onboarding.
+                            // Button im Detail wahlt den Plan und triggert
+                            // den DayPicker.
                             previewingTemplate = template
                         } label: {
                             templateRow(template)
@@ -553,8 +642,15 @@ public struct OnboardingView: View {
 
         // 3) Plan-Template (optional). ProgramInstantiator deaktiviert
         //    automatisch andere Pläne — bei einem frischen Profil eh leer.
+        // DEL-088: `selectedWeekdays` kommt aus dem DayPickerSheet. Wenn der
+        //    User direkt "Fertig" ohne Plan drueckt, ist die Liste leer und
+        //    der Instantiator nutzt seine Defaults (defaultWeekdays(for:)).
         if let template = selectedTemplate {
-            ProgramInstantiator.instantiate(template, in: modelContext)
+            ProgramInstantiator.instantiate(
+                template,
+                in: modelContext,
+                selectedWeekdays: selectedWeekdays.isEmpty ? nil : selectedWeekdays
+            )
         }
 
         // 4) Notification-Präferenzen persistieren. Permission wird angefordert,

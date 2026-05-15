@@ -1,0 +1,398 @@
+#if canImport(SwiftUI)
+import SwiftUI
+import FitnessAppCore
+
+/// DEL-090: Smart Onboarding Quiz. Vier kompakte Fragen (Goal, Experience,
+/// preferredDays, Environment) → `PlanMatchmaker` ranked die 14 Templates
+/// → Result-Screen praesentiert den Top-Match + Liste der Alternativen.
+///
+/// Der Caller (OnboardingView Step 3) gibt das vor-ausgewaehlte
+/// Environment (aus dem Profile-Setup) mit; der Quiz bietet es als
+/// Default an, der User kann es noch korrigieren.
+@available(iOS 17.0, macOS 14.0, *)
+public struct OnboardingQuizView: View {
+
+    /// Pre-Selection fuers Environment aus dem Profile-Step.
+    public let preselectedEnvironment: EnvironmentType
+    /// Callback wenn der User einen Plan ausgewaehlt hat. Liefert das
+    /// Template — Caller oeffnet danach den DayPicker fuer die Wochentage.
+    public let onPlanSelected: (ProgramTemplate) -> Void
+    public let onCancel: () -> Void
+
+    @State private var step: QuizStep = .goal
+    @State private var goal: GoalType = .hypertrophy
+    @State private var experience: ExperienceLevel = .intermediate
+    @State private var preferredDays: Int = 3
+    @State private var environment: EnvironmentType
+
+    public init(
+        preselectedEnvironment: EnvironmentType,
+        onPlanSelected: @escaping (ProgramTemplate) -> Void,
+        onCancel: @escaping () -> Void
+    ) {
+        self.preselectedEnvironment = preselectedEnvironment
+        self.onPlanSelected = onPlanSelected
+        self.onCancel = onCancel
+        self._environment = State(initialValue: preselectedEnvironment)
+    }
+
+    enum QuizStep: Int, CaseIterable {
+        case goal, experience, days, environment, result
+    }
+
+    public var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                progressIndicator
+                    .padding(.horizontal)
+                    .padding(.vertical, 12)
+                Divider()
+                Group {
+                    switch step {
+                    case .goal:        goalStep
+                    case .experience:  experienceStep
+                    case .days:        daysStep
+                    case .environment: environmentStep
+                    case .result:      resultStep
+                    }
+                }
+                .frame(maxHeight: .infinity)
+                .animation(.easeInOut(duration: 0.25), value: step)
+                Divider()
+                navigationBar
+                    .padding(.horizontal)
+                    .padding(.vertical, 12)
+            }
+            .navigationTitle("Plan finden")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Abbrechen", action: onCancel)
+                }
+            }
+        }
+    }
+
+    private var progressIndicator: some View {
+        HStack(spacing: 6) {
+            ForEach(QuizStep.allCases, id: \.self) { s in
+                Capsule()
+                    .fill(s.rawValue <= step.rawValue ? Color.deltiqOrange : Color.secondary.opacity(0.2))
+                    .frame(height: 4)
+            }
+        }
+    }
+
+    // MARK: - Step 1: Goal
+
+    private var goalStep: some View {
+        quizQuestion(
+            title: "Was ist dein primäres Ziel?",
+            subtitle: "Wähle das, was dich aktuell am meisten antreibt."
+        ) {
+            ForEach(GoalType.allCases, id: \.self) { g in
+                quizOption(
+                    label: g.label,
+                    icon: g.symbol,
+                    isSelected: goal == g
+                ) {
+                    goal = g
+                }
+            }
+        }
+    }
+
+    // MARK: - Step 2: Experience
+
+    private var experienceStep: some View {
+        quizQuestion(
+            title: "Wie viel Erfahrung hast du im Training?",
+            subtitle: "Wir wählen Programme, die dich nicht überfordern."
+        ) {
+            ForEach(ExperienceLevel.allCases, id: \.self) { e in
+                quizOption(
+                    label: e.label,
+                    icon: e.symbol,
+                    isSelected: experience == e
+                ) {
+                    experience = e
+                }
+            }
+        }
+    }
+
+    // MARK: - Step 3: Days
+
+    private var daysStep: some View {
+        quizQuestion(
+            title: "Wie oft möchtest du pro Woche trainieren?",
+            subtitle: "Sei realistisch — lieber 3 Tage konsistent als 6 geplant und nur 2 gemacht."
+        ) {
+            ForEach([2, 3, 4, 5, 6], id: \.self) { d in
+                quizOption(
+                    label: "\(d) Tage",
+                    icon: d <= 3 ? "calendar" : "calendar.badge.clock",
+                    isSelected: preferredDays == d
+                ) {
+                    preferredDays = d
+                }
+            }
+        }
+    }
+
+    // MARK: - Step 4: Environment
+
+    private var environmentStep: some View {
+        quizQuestion(
+            title: "Wo trainierst du meistens?",
+            subtitle: "Wir filtern Programme, die zu deinem Equipment passen."
+        ) {
+            ForEach(EnvironmentType.allCases, id: \.self) { env in
+                quizOption(
+                    label: envLabel(env),
+                    icon: envIcon(env),
+                    isSelected: environment == env
+                ) {
+                    environment = env
+                }
+            }
+        }
+    }
+
+    private func envLabel(_ env: EnvironmentType) -> String {
+        switch env {
+        case .gym:         return "Fitnessstudio"
+        case .homeGym:     return "Home-Gym (Kurzhanteln)"
+        case .noEquipment: return "Überall (ohne Geräte)"
+        }
+    }
+
+    private func envIcon(_ env: EnvironmentType) -> String {
+        switch env {
+        case .gym:         return "building.2.fill"
+        case .homeGym:     return "house.fill"
+        case .noEquipment: return "figure.run"
+        }
+    }
+
+    // MARK: - Step 5: Result
+
+    private var rankedPlans: [ProgramTemplate] {
+        let answers = QuizAnswers(
+            goal: goal,
+            experience: experience,
+            preferredDays: preferredDays,
+            environment: environment
+        )
+        return PlanMatchmaker.rankPlans(for: answers, templates: ProgramTemplates.all)
+    }
+
+    private var resultStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                let plans = rankedPlans
+                if let top = plans.first {
+                    topMatchCard(top)
+                }
+                if plans.count > 1 {
+                    Text("Alternativen")
+                        .font(.headline)
+                        .padding(.top, 8)
+                    ForEach(Array(plans.dropFirst())) { plan in
+                        alternativeRow(plan)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+        }
+    }
+
+    private func topMatchCard(_ plan: ProgramTemplate) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "star.fill")
+                    .foregroundStyle(Color.deltiqOrange)
+                Text("TOP EMPFEHLUNG FÜR DICH").deltiqLabel()
+            }
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: plan.iconSystemName)
+                    .font(.title)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.white)
+                    .frame(width: 56, height: 56)
+                    .background(Color.deltiqOrange.gradient)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(plan.name)
+                        .font(.title3.weight(.bold))
+                    Text(plan.tagline)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(plan.focus)
+                        .font(.caption2.weight(.bold))
+                        .tracking(0.8)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.deltiqOrange.opacity(0.18))
+                        .foregroundStyle(Color.deltiqOrange)
+                        .clipShape(Capsule())
+                }
+            }
+            Text(plan.descriptionText)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Button {
+                onPlanSelected(plan)
+            } label: {
+                HStack {
+                    Spacer()
+                    Image(systemName: "checkmark.seal.fill")
+                    Text("Diesen Plan wählen")
+                        .font(.headline)
+                    Spacer()
+                }
+                .padding(.vertical, 12)
+                .background(Color.deltiqOrange.gradient)
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(16)
+        .background(Color.secondary.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .innerLightStroke(cornerRadius: 16, opacity: 0.08)
+    }
+
+    private func alternativeRow(_ plan: ProgramTemplate) -> some View {
+        Button {
+            onPlanSelected(plan)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: plan.iconSystemName)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 32, height: 32)
+                    .background(Color.secondary.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(plan.name)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    Text(plan.tagline)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .background(Color.secondary.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Navigation
+
+    @ViewBuilder
+    private var navigationBar: some View {
+        HStack {
+            if step != .goal {
+                Button("Zurück") {
+                    goToPreviousStep()
+                }
+                .buttonStyle(.bordered)
+            }
+            Spacer()
+            if step != .result {
+                Button {
+                    goToNextStep()
+                } label: {
+                    Label(step == .environment ? "Plan finden" : "Weiter",
+                          systemImage: "arrow.right")
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+    }
+
+    private func goToNextStep() {
+        guard let next = QuizStep(rawValue: step.rawValue + 1) else { return }
+        step = next
+    }
+
+    private func goToPreviousStep() {
+        guard let prev = QuizStep(rawValue: step.rawValue - 1) else { return }
+        step = prev
+    }
+
+    // MARK: - Reusable Question UI
+
+    @ViewBuilder
+    private func quizQuestion<Content: View>(
+        title: String,
+        subtitle: String,
+        @ViewBuilder options: () -> Content
+    ) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(title)
+                        .font(.title2.weight(.bold))
+                    Text(subtitle)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                VStack(spacing: 8) {
+                    options()
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+        }
+    }
+
+    private func quizOption(
+        label: String,
+        icon: String,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(isSelected ? .white : Color.deltiqOrange)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        Circle()
+                            .fill(isSelected ? Color.deltiqOrange : Color.deltiqOrange.opacity(0.12))
+                    )
+                Text(label)
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(.primary)
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.deltiqOrange)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? Color.deltiqOrange : Color.secondary.opacity(0.25),
+                            lineWidth: isSelected ? 1.5 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+#endif
