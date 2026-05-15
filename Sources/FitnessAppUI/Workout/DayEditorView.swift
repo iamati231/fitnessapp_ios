@@ -62,6 +62,17 @@ public struct DayEditorView: View {
         .navigationTitle(day.name.isEmpty ? "Tag" : day.name)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        // DEL-095: EditButton macht den nativen Edit-Mode an, in dem die
+        // Drag-Handles fuer Reorder + Delete sichtbar werden. Bei
+        // readOnly-Templates blenden wir den Button aus — dort ist Editing
+        // ohnehin gesperrt.
+        .toolbar {
+            if !isReadOnly && !day.activeExercises.isEmpty {
+                ToolbarItem(placement: .topBarTrailing) {
+                    EditButton()
+                }
+            }
+        }
         #endif
         .sheet(isPresented: $showingPicker) {
             ExercisePickerView(
@@ -350,7 +361,7 @@ public struct DayEditorView: View {
                 Text("Template-Plan — Übungen sind festgelegt. Du kannst sie ansehen, aber nicht hinzufügen, entfernen oder umsortieren.")
                     .font(.footnote)
             } else if !day.activeExercises.isEmpty {
-                Text("Tippe eine Übung an um sie zu bearbeiten. Halten + ziehen ändert die Reihenfolge.")
+                Text("Tippe eine Übung an um sie zu bearbeiten. „Bearbeiten“ oben rechts aktiviert die Drag-Handles zum Umsortieren — Superset-Partner werden automatisch mit verschoben.")
                     .font(.footnote)
             }
         }
@@ -520,12 +531,34 @@ public struct DayEditorView: View {
         modelContext.insert(exercise)
     }
 
+    /// DEL-095: Reorder via Drag&Drop. Per `Array.move` umschichten, dann
+    /// alle `orderIndex` neu kontinuierlich 0..n-1 vergeben — sonst entstehen
+    /// Luecken, die nach dem naechsten Delete unstable sortieren.
+    /// **Superset-aware**: Wenn der User eine Uebung zieht, die zu einem
+    /// Superset gehoert (`supersetId != nil`), nehmen wir den Partner
+    /// automatisch mit. Sonst zerreisst ein versehentlicher Drag die
+    /// DEL-083-Kopplung lautlos.
     private func moveExercises(from source: IndexSet, to destination: Int) {
         var arr = orderedExercises
-        arr.move(fromOffsets: source, toOffset: destination)
+        let expandedSource = expandSupersetGroups(in: arr, base: source)
+        arr.move(fromOffsets: expandedSource, toOffset: destination)
         for (i, exercise) in arr.enumerated() {
             exercise.orderIndex = i
         }
+    }
+
+    /// Erweitert eine Drag-Source-IndexSet um alle Geschwister-Indices, die
+    /// denselben `supersetId` tragen — Superset-Bloecke bleiben so beim
+    /// Reorder zusammen.
+    private func expandSupersetGroups(in arr: [Exercise], base: IndexSet) -> IndexSet {
+        var expanded = base
+        for index in base {
+            guard index < arr.count, let supersetId = arr[index].supersetId else { continue }
+            for (i, ex) in arr.enumerated() where ex.supersetId == supersetId {
+                expanded.insert(i)
+            }
+        }
+        return expanded
     }
 
     /// DEL-049: Loescht eine aktive Uebung UND ihren archivierten Urlaubs-

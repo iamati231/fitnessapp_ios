@@ -18,17 +18,37 @@ public enum SessionCategory: Equatable, Sendable {
     /// Pure-Logic-Helper: kann sowohl in Core-Tests als auch in der
     /// SwiftData-WorkoutSession-Extension genutzt werden.
     ///
-    /// - Parameter logs: pro Log ein Tuple `(isCardio, distanceKm)`. Cardio-
-    ///   Logs ohne Distanz (z.B. nur Dauer-Eingabe) werden NICHT als
-    ///   "Cardio absolviert" gewertet — sonst wuerde ein abgebrochenes Run
-    ///   ein Plan-Mixed-State faelschlich melden.
-    public static func evaluate(logs: [(isCardio: Bool, distanceKm: Double?)]) -> SessionCategory {
+    /// - Parameter logs: pro Log ein Tuple `(isCardio, distanceKm, durationSeconds)`.
+    ///
+    /// **DEL-093: Ad-Hoc-Cardio-Fix.** Frueher haben wir Cardio-Logs ohne
+    /// Distanz als "nicht absolviert" gewertet — das fuehrte dazu, dass ein
+    /// reines Laufband-Workout mit nur Dauer-Eingabe als `.pureStrength`
+    /// gekippt ist und in History "0 Sätze · 0 kg" anzeigte. Die neue
+    /// Logik:
+    ///
+    ///   * **Reines Cardio-Workout** (keine Strength-Logs, mind. ein
+    ///     Cardio-Log) → `.pureCardio`, unabhaengig von Distanz/Dauer.
+    ///     Defensiver Fallback fuer freie Ad-Hoc-Trainings.
+    ///   * **Strength + Cardio mit Distanz/Dauer** → `.mixed`.
+    ///   * **Strength + Cardio-Log ohne Werte** (abgebrochen) → `.pureStrength`,
+    ///     damit ein geskippter Run keinen Mixed-Header faelscht.
+    ///   * **Empty / nur strength** → `.pureStrength`.
+    public static func evaluate(
+        logs: [(isCardio: Bool, distanceKm: Double?, durationSeconds: Int?)]
+    ) -> SessionCategory {
         let hasStrength = logs.contains { !$0.isCardio }
-        let hasCardio = logs.contains { $0.isCardio && ($0.distanceKm ?? 0) > 0 }
-        switch (hasStrength, hasCardio) {
-        case (true, true):   return .mixed
-        case (false, true):  return .pureCardio
-        default:             return .pureStrength
+        let hasMeaningfulCardio = logs.contains {
+            $0.isCardio && (($0.distanceKm ?? 0) > 0 || ($0.durationSeconds ?? 0) > 0)
         }
+        let hasAnyCardio = logs.contains { $0.isCardio }
+
+        // Reines Cardio: keine Strength-Logs + mind. ein Cardio-Log →
+        // pureCardio, unabhaengig vom Distanz-/Dauer-Fuell-Stand.
+        if !hasStrength && hasAnyCardio { return .pureCardio }
+
+        // Mixed nur, wenn der Cardio-Anteil substanziell ist.
+        if hasStrength && hasMeaningfulCardio { return .mixed }
+
+        return .pureStrength
     }
 }

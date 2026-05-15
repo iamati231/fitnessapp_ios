@@ -410,7 +410,12 @@ public struct DashboardView: View {
                 }
 
                 if isRestDay {
-                    Text("Regeneration ist Teil des Plans. Wenn du den Tag durch hast, hak ihn ab — dann zeigt dir das Dashboard morgen das nächste echte Training.")
+                    // DEL-094: Ruhetag bekommt KEINEN fetten Call-to-Action mehr.
+                    // Der frühere "Ruhetag abschließen"-Button hat User dazu
+                    // verleitet, leere isRestDay-Sessions in den Store zu
+                    // schreiben, in der Annahme es sei der Start-Button.
+                    // Jetzt: ruhiges Label, kein Aktions-Button.
+                    Text("Heute ist Ruhetag. Zeit zur Erholung!")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 } else if !day.activeExercises.isEmpty {
@@ -421,21 +426,22 @@ public struct DashboardView: View {
                 }
 
                 if isRestDay {
+                    // DEL-094: Sekundärer Skip-Link für User, die den
+                    // Plan-Pointer manuell vorwärts schubsen wollen
+                    // (z.B. an einem Tag, an dem sie sich doch ausruhen).
+                    // Bewusst klein + dezent — nicht der primäre Pfad.
                     Button {
                         markRestDaySkipped(plan: plan, day: day)
                     } label: {
-                        HStack {
-                            Spacer()
-                            Label("Ruhetag abschließen", systemImage: "checkmark.circle.fill")
-                                .font(.subheadline.weight(.semibold))
-                            Spacer()
+                        HStack(spacing: 4) {
+                            Image(systemName: "forward.fill")
+                            Text("Tag im Plan abhaken")
                         }
-                        .padding(.vertical, 10)
-                        .background(Color.purple.gradient)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.purple)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Ruhetag im Plan abhaken, um morgen den nächsten Trainingstag anzuzeigen")
                 } else {
                     // DEL-042: Button-State adaptiv. Wenn offene Session
                     // existiert: orange "Fortsetzen"-Button, navigiert in die

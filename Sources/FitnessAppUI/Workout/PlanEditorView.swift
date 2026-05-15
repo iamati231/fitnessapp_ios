@@ -57,6 +57,15 @@ public struct PlanEditorView: View {
         .navigationTitle(plan.name.isEmpty ? "Plan" : plan.name)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        // DEL-095: EditButton aktiviert den Drag-Mode fuer Tage-Reorder.
+        // Bei readOnly-Templates blenden wir den Button aus.
+        .toolbar {
+            if !isReadOnly && !plan.days.isEmpty {
+                ToolbarItem(placement: .topBarTrailing) {
+                    EditButton()
+                }
+            }
+        }
         #endif
         // DEL-022 + DEL-031 + DEL-049 + DEL-050 — Trainingsort-Wechsel feuert
         // einen mehrstufigen Flow:
@@ -364,6 +373,7 @@ public struct PlanEditorView: View {
                         DayRow(day: day)
                     }
                 }
+                .onMove(perform: moveDays)
                 .onDelete(perform: deleteDays)
             }
         } header: {
@@ -396,7 +406,7 @@ public struct PlanEditorView: View {
         } footer: {
             Text(isReadOnly
                  ? "Template — Tage sind festgelegt. Tippe einen Tag an, um die Übungen zu sehen."
-                 : "Sortiert nach Wochentag (Mo-So). Editiere den Wochentag im Tag selber.")
+                 : "Sortiert nach Wochentag (Mo-So). „Bearbeiten“ oben rechts aktiviert den Drag-Mode — die Wochentage rotieren entsprechend mit, du musst sie nicht einzeln umstellen.")
                 .font(.footnote)
         }
     }
@@ -449,6 +459,26 @@ public struct PlanEditorView: View {
         let toDelete = offsets.map { orderedDays[$0] }
         for day in toDelete {
             modelContext.delete(day)
+        }
+    }
+
+    /// DEL-095: Drag&Drop-Reorder fuer Trainingstage. `TrainingDay` hat
+    /// keinen `orderIndex`, sondern wird per `weekday`-Wert (1=So, 2=Mo, ...
+    /// 7=Sa) sortiert. Beim Reorder rotieren wir die EXISTING weekday-Werte
+    /// auf die neue Position-Reihenfolge — z.B. Mo/Mi/Fr-Plan (wd 2/4/6),
+    /// User zieht Fr-Day auf Position 0 → neue Zuordnung Fr→Mo (2),
+    /// Mo→Mi (4), Mi→Fr (6). User-Intent "ich will diesen Tag zuerst" wird
+    /// damit auf die existierenden Wochentage gemapped, ohne neue Slots zu
+    /// erfinden oder Slots zu kollidieren.
+    private func moveDays(from source: IndexSet, to destination: Int) {
+        var arr = orderedDays
+        // Snapshot der Wochentage in der aktuellen (Mo-first-)Reihenfolge —
+        // diese Liste bleibt fix; wir verteilen sie auf die neu sortierte
+        // Tag-Reihenfolge.
+        let originalWeekdays = arr.map(\.weekday)
+        arr.move(fromOffsets: source, toOffset: destination)
+        for (i, day) in arr.enumerated() {
+            day.weekday = originalWeekdays[i]
         }
     }
 

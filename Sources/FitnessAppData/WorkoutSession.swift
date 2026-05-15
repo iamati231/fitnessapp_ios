@@ -91,9 +91,13 @@ public final class WorkoutSession {
     /// DEL-081: Drei-State-Kategorisierung der Session aus den geloggten
     /// Saetzen. UI-Surfaces (HistorySessionRow, WorkoutSummary, ActiveWorkout-
     /// Header) lesen das hier und schalten ihre Stats-Zeile entsprechend.
+    /// DEL-093: Cardio-Detection beruecksichtigt auch `durationSeconds` —
+    /// ein Ad-Hoc-Laufband ohne km-Eingabe gilt jetzt korrekt als Cardio.
     public var sessionCategory: SessionCategory {
         SessionCategory.evaluate(logs: logs.map {
-            (isCardio: $0.resolvedIsCardio, distanceKm: $0.distanceKm)
+            (isCardio: $0.resolvedIsCardio,
+             distanceKm: $0.distanceKm,
+             durationSeconds: $0.durationSeconds)
         })
     }
 
