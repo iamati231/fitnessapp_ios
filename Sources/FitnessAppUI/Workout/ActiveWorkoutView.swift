@@ -27,6 +27,14 @@ public struct ActiveWorkoutView: View {
     /// PR-Detection selbst (Trophy-Room) bleibt unangetastet.
     @AppStorage("pref_pr_celebrations") private var prCelebrationsEnabled: Bool = true
 
+    /// DEL-092: Globaler Opt-out fuer Warmup-/Cooldown-Uebungen. Wenn `false`,
+    /// werden alle Uebungen mit `role == .warmup` oder `.cooldown` in der
+    /// Active-Workout-Ansicht versteckt — der Paginator springt direkt zur
+    /// ersten Working-Set-Uebung, die Stats-Karte zaehlt sie nicht mit, und
+    /// auch HealthKit-Categorization beruecksichtigt nur das, was der User
+    /// tatsaechlich macht.
+    @AppStorage("pref_show_warmups") private var showWarmups: Bool = true
+
     /// DEL-086: Interference-Banner-Dismiss-State. User kann das Warn-Banner
     /// per Tap auf "x" wegklicken; persistiert nur fuer diese Session-View-
     /// Instanz (State, kein AppStorage — bei der naechsten Session
@@ -194,7 +202,9 @@ public struct ActiveWorkoutView: View {
                  durationMin: sess.durationMinutes,
                  distanceKm: sess.totalDistanceKm)
             }
-        let plannedNames = session.day?.activeExercises.map(\.name) ?? []
+        // DEL-092: Interference-Detection schaut nur auf das, was der User
+        // tatsaechlich macht — gefilterte Warmup-Liste, falls Toggle off.
+        let plannedNames = session.day.map { orderedExercises(in: $0).map(\.name) } ?? []
         return InterferenceDetector.shouldWarn(
             recentCardioSessions: recentCardioTuples,
             plannedExerciseNames: plannedNames
@@ -247,8 +257,12 @@ public struct ActiveWorkoutView: View {
     /// switcht der Header von "pureStrength" zu "mixed" mitten in der
     /// Session, sobald der User das erste Cardio-Set abhakt.
     private var dayCategory: SessionCategory {
-        guard let exercises = session.day?.activeExercises, !exercises.isEmpty
-        else { return .pureStrength }
+        // DEL-092: respektiert Warmup-Filter — wenn der User Warmups off-toggled,
+        // wird ein Hybrid-Day mit Run-Warmup + Strength als pureStrength
+        // klassifiziert.
+        guard let day = session.day else { return .pureStrength }
+        let exercises = orderedExercises(in: day)
+        guard !exercises.isEmpty else { return .pureStrength }
         let hasCardio = exercises.contains { $0.isCardio }
         let hasStrength = exercises.contains { !$0.isCardio }
         switch (hasStrength, hasCardio) {
@@ -265,17 +279,19 @@ public struct ActiveWorkoutView: View {
     ///     (`currentPageIndex`). Auf der Bankdruecken-Page = Strength-
     ///     Header, auf der Run-Page = Cardio-Header.
     private var isCardioSession: Bool {
-        guard let exercises = session.day?.activeExercises, !exercises.isEmpty
-        else { return false }
+        // DEL-092: nutzt orderedExercises(in:) statt direkter activeExercises,
+        // damit Warmup-/Cooldown-Filter durchschlaegt.
+        guard let day = session.day else { return false }
+        let exercises = orderedExercises(in: day)
+        guard !exercises.isEmpty else { return false }
         let allCardio = exercises.allSatisfy { $0.isCardio }
         let allStrength = exercises.allSatisfy { !$0.isCardio }
         if allCardio   { return true }
         if allStrength { return false }
-        let ordered = orderedExercises(in: session.day!)
-        guard currentPageIndex >= 0, currentPageIndex < ordered.count else {
+        guard currentPageIndex >= 0, currentPageIndex < exercises.count else {
             return false
         }
-        return ordered[currentPageIndex].isCardio
+        return exercises[currentPageIndex].isCardio
     }
 
     /// DEL-071 + DEL-063: Session-Level-Detection fuer den HealthKit-Push.
@@ -283,8 +299,11 @@ public struct ActiveWorkoutView: View {
     /// ueberwiegend Cardio?" — und konservativ heisst das `allSatisfy`,
     /// damit ein Mix-Day NICHT als `.running` in Apple Health landet.
     private var isPureCardioSessionForHealthKit: Bool {
-        guard let exercises = session.day?.activeExercises, !exercises.isEmpty
-        else { return false }
+        // DEL-092: respektiert Warmup-Filter — HealthKit-Categorization soll
+        // das tracken, was der User tatsaechlich macht.
+        guard let day = session.day else { return false }
+        let exercises = orderedExercises(in: day)
+        guard !exercises.isEmpty else { return false }
         return exercises.allSatisfy { $0.isCardio }
     }
 
@@ -327,7 +346,10 @@ public struct ActiveWorkoutView: View {
     /// Zeit, den Rest-Timer-Start zu registrieren).
     @ViewBuilder
     private var paginatedBody: some View {
-        if let day = session.day, !day.activeExercises.isEmpty {
+        // DEL-092: empty-check faellt jetzt auf das gefilterte Set —
+        // wenn der User Warmups deaktiviert hat, aber ein Tag NUR Warmups
+        // enthaelt, zeigen wir die Empty-State-Karte.
+        if let day = session.day, !orderedExercises(in: day).isEmpty {
             let exercises = orderedExercises(in: day)
             #if os(iOS)
             TabView(selection: $currentPageIndex) {
@@ -413,6 +435,10 @@ public struct ActiveWorkoutView: View {
     }
 
     private var actionsCard: some View {
+        // DEL-092: Save-Button hat KEINE all-sets-completed-Gate — Warmups
+        // (und auch nicht-abgehakte Working-Sets) duerfen den Abschluss
+        // niemals blockieren. Es gibt valide Use-Cases ("ich bin warm,
+        // ueberspring den Mobility-Block"), die wir nicht bestrafen wollen.
         VStack(spacing: 8) {
             Button {
                 showingFinishConfirm = true
@@ -462,8 +488,16 @@ public struct ActiveWorkoutView: View {
     /// DEL-049: filtert archivierte Urlaubs-Modus-Snapshots aus dem Active-
     /// Workout-Flow — sonst sieht der User bei Plan-Switch Geist-Uebungen
     /// in der TabView.
+    /// DEL-092: zusaetzlich werden Warmup-/Cooldown-Uebungen unterdrueckt,
+    /// wenn der User den `pref_show_warmups`-Toggle abgeschaltet hat. Single
+    /// source of truth — alle Paginator-, Categorizer- und Auto-Advance-
+    /// Pfade laufen ueber diese Funktion, damit der Toggle global wirkt.
     private func orderedExercises(in day: TrainingDay) -> [Exercise] {
-        day.activeExercises.sorted { $0.orderIndex < $1.orderIndex }
+        let active = day.activeExercises
+        let visible = showWarmups
+            ? active
+            : active.filter { $0.role == .workingSet }
+        return visible.sorted { $0.orderIndex < $1.orderIndex }
     }
 
     private var formattedDuration: String {
@@ -567,7 +601,9 @@ public struct ActiveWorkoutView: View {
 
         session.endTime = endTime
         session.durationMinutes = max(0, Int(endTime.timeIntervalSince(session.startTime) / 60))
-        session.exerciseCount = session.day?.activeExercises.count ?? 0
+        // DEL-092: zaehlt das, was der User tatsaechlich gemacht hat —
+        // wenn Warmups versteckt waren, fliessen sie nicht in die History-Stat.
+        session.exerciseCount = session.day.map { orderedExercises(in: $0).count } ?? 0
         session.totalSets = logs.count
         session.totalVolumeKg = logs.reduce(0.0) { $0 + $1.weight * Double($1.reps) }
         session.isCompleted = true

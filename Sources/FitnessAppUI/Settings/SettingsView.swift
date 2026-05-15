@@ -38,6 +38,11 @@ public struct SettingsView: View {
     @AppStorage("pref_measurement_reminder_weekday") private var measurementWeekday: Int = 1  // 1=So, 2=Mo, ..., 7=Sa
     @AppStorage("pref_measurement_reminder_hour") private var measurementHour: Int = 8
 
+    /// DEL-092: Globaler Opt-out fuer Warmup-/Cooldown-Uebungen im
+    /// Active-Workout-Flow. Default `true` — wer schnell ohne Mobility
+    /// trainieren will, kann es einmalig abschalten.
+    @AppStorage("pref_show_warmups") private var showWarmups: Bool = true
+
     @State private var showingResetConfirm = false
     @State private var resetErrorMessage: String?
 
@@ -49,6 +54,7 @@ public struct SettingsView: View {
             preferencesSection
             appearanceSection
             timerFeedbackSection
+            workoutBehaviorSection
             remindersSection
             healthKitSection
             aboutSection
@@ -194,6 +200,23 @@ public struct SettingsView: View {
             Text("Pausen-Timer-Feedback")
         } footer: {
             Text("Wird beim Ablauf des Pausen-Timers ausgeloest. Vibrations-Toggle hat auf iPads keine Wirkung. 'PR-Feiern' steuert Save-Screen-Popups, Live-Activity-Headline und lokale Benachrichtigungen — die Bestleistungen werden trotzdem im Trophy-Room gespeichert.")
+                .font(.footnote)
+        }
+    }
+
+    // DEL-092: Workout-Verhalten — globaler Opt-out fuer Warmup-/Cooldown-
+    // Uebungen. Filterung geschieht in `ActiveWorkoutView.orderedExercises`,
+    // der gleiche Toggle wird dort via `@AppStorage("pref_show_warmups")`
+    // gelesen — keine Notification-Plumbing noetig.
+    private var workoutBehaviorSection: some View {
+        Section {
+            Toggle(isOn: $showWarmups) {
+                Label("Warmup & Cooldown anzeigen", systemImage: "flame.fill")
+            }
+        } header: {
+            Text("Workout-Verhalten")
+        } footer: {
+            Text("Wenn aus, werden Warmup- und Cooldown-Übungen während der Session ausgeblendet. Die Templates und deine Plan-Editierung bleiben unverändert — der Toggle wirkt nur auf den Live-Workout-Flow. Warmups sind ohnehin nie Pflicht: der „Workout speichern“-Button bleibt immer klickbar, auch wenn du sie nicht abhakst.")
                 .font(.footnote)
         }
     }
