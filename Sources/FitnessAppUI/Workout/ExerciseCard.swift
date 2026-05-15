@@ -50,6 +50,9 @@ struct ExerciseCard: View {
         .padding(14)
         .background(Color.secondary.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: 16))
+        // DEL-059: subtile Licht-Kante — gibt dem Card das premium-erhabene
+        // Gefuehl auf Dark-Mode, no-op auf Light-Mode.
+        .innerLightStroke(cornerRadius: 16, opacity: 0.08)
     }
 
     // MARK: Header
@@ -81,13 +84,19 @@ struct ExerciseCard: View {
 
     private var progressPill: some View {
         Text("\(completedSetCount) / \(exercise.sets)")
-            .font(.caption.weight(.semibold))
-            .monospacedDigit()
+            .font(.caption.weight(.bold).monospacedDigit())
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .background(progressFillColor)
             .foregroundStyle(completedSetCount >= exercise.sets ? .green : .primary)
             .clipShape(Capsule())
+            // DEL-059: feine Lichtkante auf der Pill
+            .overlay(
+                Capsule()
+                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                    .blendMode(.screen)
+                    .allowsHitTesting(false)
+            )
     }
 
     private var progressFillColor: Color {

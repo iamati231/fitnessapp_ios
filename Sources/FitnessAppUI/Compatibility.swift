@@ -15,6 +15,41 @@ public extension Color {
     static let deltiqOrange = Color(red: 1.0, green: 0.624, blue: 0.039)
 }
 
+// MARK: - DEL-059 Premium Polish Modifier
+
+public extension View {
+    /// Subtile Licht-Kante on top of a card/input. Erzeugt das "plastisch
+    /// erhabene"-Gefuehl aus teuren macOS/iOS-Apps:
+    /// 1 px weisser Stroke + `.blendMode(.screen)`. Im Dark-Mode entsteht
+    /// ein feiner Highlight-Saum auf dunklem Hintergrund; im Light-Mode
+    /// ist screen-blend mit Weiss praktisch unsichtbar → sicher fuer beide
+    /// ColorSchemes ohne if/else.
+    ///
+    /// Hitt-Testing wird abgeschaltet, damit Taps durch den Overlay auf
+    /// das darunterliegende TextField/Button durchgehen.
+    func innerLightStroke(cornerRadius: CGFloat = 8, opacity: Double = 0.10) -> some View {
+        self.overlay(
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .stroke(Color.white.opacity(opacity), lineWidth: 1)
+                .blendMode(.screen)
+                .allowsHitTesting(false)
+        )
+    }
+
+    /// Premium-Label-Styling: winziger, gesperrter, fetter Caption-Text.
+    /// "KG", "WDH", "PACE", "RIR" — alles sekundaere Labels, die durch
+    /// `.tracking(1.5)` + `.weight(.bold)` extrem viel Kontrast zu den
+    /// grossen Zahlenwerten daneben schaffen. Uppercase-Wandlung NICHT
+    /// hier — Caller uebergibt den String bereits in Grossbuchstaben,
+    /// damit unicode-spezifische Umlaute (ß) korrekt bleiben.
+    func deltiqLabel() -> some View {
+        self
+            .font(.caption2.weight(.bold))
+            .tracking(1.5)
+            .foregroundStyle(.secondary)
+    }
+}
+
 // MARK: - Cross-platform view shims
 
 /// Cross-platform shims for SwiftUI modifiers that don't exist on macOS.

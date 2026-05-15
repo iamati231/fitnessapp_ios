@@ -228,6 +228,7 @@ public struct WorkoutSummaryView: View {
             VStack(spacing: 10) {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 60))
+                    .symbolRenderingMode(.hierarchical)   // DEL-059
                     .foregroundStyle(.green)
                 Text("summary.hero.title", bundle: .module)
                     .font(.title2.weight(.bold))
@@ -476,10 +477,12 @@ private struct PRBadge: View {
         HStack(spacing: 12) {
             Image(systemName: kindIcon)
                 .font(.title3)
+                .symbolRenderingMode(.hierarchical)   // DEL-059
                 .foregroundStyle(.white)
                 .frame(width: 36, height: 36)
                 .background(kindColor.gradient)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                .innerLightStroke(cornerRadius: 8)    // DEL-059
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(record.exerciseName)
@@ -586,10 +589,12 @@ private struct ProgressionBadge: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.title3)
+                .symbolRenderingMode(.hierarchical)   // DEL-059
                 .foregroundStyle(.white)
                 .frame(width: 36, height: 36)
                 .background(tint.gradient)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                .innerLightStroke(cornerRadius: 8)    // DEL-059
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(outcome.exerciseName)
@@ -669,13 +674,11 @@ private struct SummaryStat: View {
     let value: String
 
     var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 4) {
+            // DEL-059: rounded-bold Zahl + winziges getrocknetes Label
             Text(value)
-                .font(.title3.weight(.semibold))
-                .monospacedDigit()
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+                .font(.system(size: 22, weight: .bold, design: .rounded).monospacedDigit())
+            Text(label.uppercased()).deltiqLabel()
         }
         .frame(maxWidth: .infinity)
     }

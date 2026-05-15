@@ -86,21 +86,20 @@ struct SetRow: View {
     private var compactSetRow: some View {
         VStack(spacing: 8) {
             HStack(spacing: 10) {
+                // DEL-059: Rounded-Design fuer Set-Nummer — wirkt mit
+                // monospaced Digits + bold-rounded wuchtiger.
                 Text("\(setIndex + 1)")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundStyle(isCompleted ? .secondary : .primary)
                     .frame(width: 24, alignment: .leading)
 
                 if !exercise.isCardio {
                     weightInput
-                    Text("kg")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text("KG").deltiqLabel()   // DEL-059: uppercase + tracking
                 }
 
                 repsInput
-                Text(exercise.isCardio ? "Wdh" : "Wdh")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text("WDH").deltiqLabel()      // DEL-059: uppercase + tracking
 
                 Spacer(minLength: 6)
 
@@ -129,13 +128,16 @@ struct SetRow: View {
         // DEL-045-Update: Bodyweight-Fix. Placeholder ist "BW" — wenn der User
         // das Feld leer laesst, wird der Satz als 0.0 kg geloggt (Liegestuetze,
         // Pull-ups, etc.). Kein Validierungs-Blocker mehr auf weight.
+        // DEL-059: Inner-Light-Stroke + monospaced fuer wuchtige Zahlen.
         TextField("BW", value: $weight, format: .number, prompt: Text("BW"))
             .decimalKeyboard()
+            .monospacedDigit()
             .frame(width: 56)
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background(Color.secondary.opacity(0.12))
             .clipShape(RoundedRectangle(cornerRadius: 8))
+            .innerLightStroke(cornerRadius: 8)
             .multilineTextAlignment(.center)
             .disabled(isCompleted)
             .opacity(isCompleted ? 0.6 : 1.0)
@@ -144,11 +146,13 @@ struct SetRow: View {
     private var repsInput: some View {
         TextField("-", value: $reps, format: .number, prompt: Text("-"))
             .decimalKeyboard()
+            .monospacedDigit()
             .frame(width: 48)
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background(Color.secondary.opacity(0.12))
             .clipShape(RoundedRectangle(cornerRadius: 8))
+            .innerLightStroke(cornerRadius: 8)
             .multilineTextAlignment(.center)
             .disabled(isCompleted)
             .opacity(isCompleted ? 0.6 : 1.0)
@@ -157,13 +161,24 @@ struct SetRow: View {
     private var checkmarkButton: some View {
         Button {
             if !isCompleted {
-                logCurrentValues()
+                // DEL-059: Snappy Spring statt linear/ease — der Save-Tap
+                // muss sich "wuchtig" anfuehlen. Logging selbst laeuft
+                // ausserhalb der Animation, sodass SwiftData-Mutationen
+                // nicht in der Animation-Transaktion landen.
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.5, blendDuration: 0)) {
+                    logCurrentValues()
+                }
             }
             // Bei isCompleted handled der Row-onTapGesture das Revert.
         } label: {
             Image(systemName: isCompleted ? "checkmark.circle.fill" : "checkmark.circle")
                 .font(.system(size: 28))
+                // DEL-059: hierarchical-rendering gibt dem Symbol Tiefe
+                // (innerer Ring leicht dunkler als Fuellung).
+                .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(isCompleted ? Color.deltiqOrange : Color.secondary.opacity(0.5))
+                // DEL-059: Bounce — kurz auf 1.06 wenn completed.
+                .scaleEffect(isCompleted ? 1.06 : 1.0)
         }
         .buttonStyle(.plain)
         .disabled(!canLog && !isCompleted)
@@ -183,9 +198,7 @@ struct SetRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else if !exercise.isCardio {
             HStack(spacing: 10) {
-                Text("RIR")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text("RIR").deltiqLabel()   // DEL-059
                 Slider(
                     value: Binding(
                         get: { Double(rir) },
@@ -196,8 +209,8 @@ struct SetRow: View {
                 )
                 .tint(Color.deltiqOrange)
                 Text(formatRIR(rir))
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                    .font(.caption.weight(.semibold).monospacedDigit())
+                    .foregroundStyle(.primary)
                     .frame(width: 28, alignment: .trailing)
                 if let prev = previousLog {
                     Text("· letztes: \(previousLogHint(prev))")
@@ -311,14 +324,14 @@ struct SetRow: View {
                     .font(.system(size: 48, weight: .bold, design: .rounded).monospacedDigit())
                     .foregroundStyle(reached ? Color.deltiqOrange : .primary)
                     .contentTransition(.numericText())
-                Text("/ \(target) Sek")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                Text("/ \(target) SEK").deltiqLabel()   // DEL-059
                 Spacer()
                 if reached {
                     Image(systemName: "checkmark.seal.fill")
                         .font(.title2)
+                        .symbolRenderingMode(.hierarchical)   // DEL-059
                         .foregroundStyle(Color.deltiqOrange)
+                        .scaleEffect(1.05)
                 }
             }
             GeometryReader { geo in
@@ -607,15 +620,17 @@ struct SetRow: View {
         HStack(spacing: 4) {
             TextField("km", text: $cardioDistanceText, prompt: Text(cardioDistancePlaceholder))
                 .decimalKeyboard()
+                .monospacedDigit()
                 .frame(width: 60)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 6)
                 .background(Color.secondary.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                .innerLightStroke(cornerRadius: 8)   // DEL-059
                 .multilineTextAlignment(.center)
                 .disabled(isCompleted)
                 .opacity(isCompleted ? 0.6 : 1.0)
-            Text("km").font(.caption).foregroundStyle(.secondary)
+            Text("KM").deltiqLabel()    // DEL-059
         }
     }
 
@@ -625,27 +640,28 @@ struct SetRow: View {
                 #if os(iOS)
                 .keyboardType(.numbersAndPunctuation)
                 #endif
+                .monospacedDigit()
                 .frame(width: 70)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 6)
                 .background(Color.secondary.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                .innerLightStroke(cornerRadius: 8)   // DEL-059
                 .multilineTextAlignment(.center)
                 .disabled(isCompleted)
                 .opacity(isCompleted ? 0.6 : 1.0)
-            Text("min").font(.caption).foregroundStyle(.secondary)
+            Text("ZEIT").deltiqLabel()  // DEL-059
         }
     }
 
     /// Live-Pace-Anzeige in Neon-Orange. Recomputed pro Tastenanschlag
     /// dank `@State`-Bindings auf den Text-Feldern.
+    /// DEL-059: Label "PACE" uppercase + tracking, Wert monospaced + bolder.
     private var cardioPaceLabel: some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text("Pace")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 2) {
+            Text("PACE").deltiqLabel()
             Text(currentPace)
-                .font(.callout.weight(.semibold).monospacedDigit())
+                .font(.callout.weight(.bold).monospacedDigit())
                 .foregroundStyle(Color.deltiqOrange)
         }
         .frame(width: 78, alignment: .leading)

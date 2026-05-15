@@ -51,18 +51,20 @@ struct RestTimerBar: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
+                // DEL-059: hierarchical-rendering + DeltiqOrange als Akzent
+                // (war vorher .blue — Brand-Konsistenz).
                 Image(systemName: isFinished ? "checkmark.circle.fill" : "timer")
-                    .foregroundStyle(isFinished ? .green : .blue)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(isFinished ? .green : Color.deltiqOrange)
                     .font(.title3)
 
-                Text(isFinished ? "Pause vorbei" : "Pause")
-                    .font(.subheadline.weight(.medium))
+                Text(isFinished ? "PAUSE VORBEI" : "PAUSE").deltiqLabel()
 
                 Spacer()
 
+                // DEL-059: rounded-bold Display fuer den verbleibenden Timer.
                 Text(formatTime(remaining))
-                    .font(.title3.weight(.bold))
-                    .monospacedDigit()
+                    .font(.system(size: 22, weight: .bold, design: .rounded).monospacedDigit())
                     .foregroundStyle(isFinished ? .green : .primary)
                     .contentTransition(.numericText())
 
@@ -73,10 +75,17 @@ struct RestTimerBar: View {
                 } label: {
                     Image(systemName: "forward.end.fill")
                         .font(.title3)
-                        .foregroundStyle(.blue)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 4)
-                        .background(Color.blue.opacity(0.10), in: Capsule())
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(Color.deltiqOrange)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(Color.deltiqOrange.opacity(0.14), in: Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                                .blendMode(.screen)
+                                .allowsHitTesting(false)
+                        )
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Pause überspringen")
@@ -89,12 +98,13 @@ struct RestTimerBar: View {
 
             // Progress bar fills FROM EMPTY (right) to FULL (left) as time elapses,
             // so the visual cue is "track shrinking" — analogous to a fuse burning down.
+            // DEL-059: Gradient-Fill statt flatcolor.
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Rectangle()
-                        .fill(Color.gray.opacity(0.2))
+                        .fill(Color.gray.opacity(0.18))
                     Rectangle()
-                        .fill(isFinished ? Color.green : Color.blue)
+                        .fill((isFinished ? Color.green : Color.deltiqOrange).gradient)
                         .frame(width: geo.size.width * progress)
                         .animation(.linear(duration: 0.4), value: progress)
                 }
