@@ -35,4 +35,21 @@ public enum AppTab: Hashable, Sendable {
     case calculators
     case settings
 }
+
+// MARK: - DEL-076 Deep-Link Notifications
+
+/// DEL-076: Notification-Bridge zwischen App-Layer-DeepLink-Handler und
+/// dem RootView, das die `AppNavigation` haelt. Statt AppNavigation in
+/// den App-Layer hochzuziehen, posten wir bei einem Live-Activity-Tap ein
+/// NotificationCenter-Event und reagieren in RootView darauf.
+///
+/// Schema-Mapping:
+///   * `fitnessapp://workout/active` → `.deltiqOpenActiveWorkout` — User
+///     soll direkt in die laufende Session navigiert werden.
+///   * `fitnessapp://dashboard` → `.deltiqOpenDashboard` — Tab-Swap auf
+///     Dashboard.
+public extension Notification.Name {
+    static let deltiqOpenActiveWorkout = Notification.Name("Deltiq.openActiveWorkout")
+    static let deltiqOpenDashboard     = Notification.Name("Deltiq.openDashboard")
+}
 #endif

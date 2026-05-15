@@ -47,6 +47,16 @@ public struct RootView: View {
         .environment(restTimerActivity)
         .environment(prNotifications)
         .preferredColorScheme(preferredColorScheme)
+        // DEL-076: Deep-Link-Bridge. App-Layer-Handler posted Notifications,
+        // wir routen hier auf AppNavigation. `.onReceive` mit
+        // `NotificationCenter.default.publisher(for:)` ist die kanonische
+        // SwiftUI-Form fuer Foundation-Notifications.
+        .onReceive(NotificationCenter.default.publisher(for: .deltiqOpenActiveWorkout)) { _ in
+            handleOpenActiveWorkout()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .deltiqOpenDashboard)) { _ in
+            navigation.returnToDashboard()
+        }
         .task {
             // Refresh per-launch availability for native integrations. Both checks
             // are cheap; both are no-ops when their frameworks aren't present.
@@ -61,6 +71,31 @@ public struct RootView: View {
             // FetchDescriptor filtert auf nil-Snapshot, also lauft das nach
             // dem ersten Erfolg leer durch.
             LibrarySeeder.backfillLogSnapshotsIfNeeded(in: modelContext)
+        }
+    }
+
+    /// DEL-076: User hat in der Live-Activity getappt → wir wollen ihn in
+    /// die laufende Session zurueck navigieren. Pfad:
+    ///   1. Swap zur Plan-Tab (`selectedTab = .plan`).
+    ///   2. Wenn eine offene Session existiert (`isCompleted == false`),
+    ///      `ActiveSessionRoute` auf den workoutPath pushen — die
+    ///      Navigation-Destination in WorkoutRootView nimmt von dort uebernommen.
+    ///   3. Wenn keine offene Session da ist (z.B. App-Cold-Start aus alter
+    ///      Live-Activity nach Crash), bleiben wir auf der Plan-Liste.
+    private func handleOpenActiveWorkout() {
+        navigation.selectedTab = .plan
+        // Aktive Session pullen. Defensive: FetchDescriptor auf nicht-
+        // completed, nicht-rest-day Sessions, neueste zuerst.
+        var descriptor = FetchDescriptor<WorkoutSession>(
+            predicate: #Predicate { $0.isCompleted == false && $0.isRestDay == false },
+            sortBy: [SortDescriptor(\.startTime, order: .reverse)]
+        )
+        descriptor.fetchLimit = 1
+        if let session = try? modelContext.fetch(descriptor).first {
+            // Pfad zuruecksetzen + Session pushen. Ohne Reset wuerde der
+            // User bei nested-Plan-Editor-Screens landen.
+            navigation.workoutPath = NavigationPath()
+            navigation.workoutPath.append(ActiveSessionRoute(session: session))
         }
     }
 

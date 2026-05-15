@@ -56,6 +56,10 @@ public struct DashboardView: View {
             VStack(alignment: .leading, spacing: 16) {
                 heroMetrics
                 planDayCard
+                // DEL-069: Wochen-Zusammenfassung mit Strength-Volumen UND
+                // Cardio-Distanz. Blendet sich aus wenn beide Werte == 0
+                // (frische Installs / Wochen ohne Training).
+                weeklySummaryCard
                 trophyRoomCard
                 historyCard
                 trendChart
@@ -742,6 +746,96 @@ public struct DashboardView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
+    }
+
+    // MARK: - DEL-069 Wochen-Zusammenfassung
+
+    /// "Diese Woche" Aggregat: Strength-Volumen + Cardio-Distanz.
+    /// `Calendar.current` mit firstWeekday respektiert das User-Locale —
+    /// in DE startet die Woche Mo, in US So. Wir filtern session.logs auf
+    /// `date >= startOfCurrentWeek`.
+    @ViewBuilder
+    private var weeklySummaryCard: some View {
+        let startOfWeek = currentWeekStart()
+        let weekLogs = completedSessions
+            .filter { ($0.startTime) >= startOfWeek }
+            .flatMap(\.logs)
+        let volumeKg = weekLogs.reduce(0.0) { $0 + $1.weight * Double($1.reps) }
+        let distanceKm = weekLogs.compactMap(\.distanceKm).reduce(0.0, +)
+
+        if volumeKg > 0 || distanceKm > 0 {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Diese Woche")
+                    .font(.headline)
+                HStack(spacing: 12) {
+                    if volumeKg > 0 {
+                        weeklyStatTile(
+                            label: "Volumen",
+                            value: formatVolumeKg(volumeKg),
+                            unit: "kg",
+                            icon: "scalemass.fill",
+                            tint: .blue
+                        )
+                    }
+                    if distanceKm > 0 {
+                        weeklyStatTile(
+                            label: "Distanz",
+                            value: formatDistance(distanceKm),
+                            unit: "km",
+                            icon: "figure.run",
+                            tint: Color.deltiqOrange
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private func weeklyStatTile(
+        label: String,
+        value: String,
+        unit: String,
+        icon: String,
+        tint: Color
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(tint)
+                Text(label.uppercased()).deltiqLabel()
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(value)
+                    .font(.system(size: 22, weight: .bold, design: .rounded).monospacedDigit())
+                Text(unit)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.secondary.opacity(0.10))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .innerLightStroke(cornerRadius: 12, opacity: 0.08)
+    }
+
+    /// User-Locale-respektierende "Anfang der aktuellen Kalenderwoche".
+    private func currentWeekStart() -> Date {
+        let cal = Calendar.current
+        let components = cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
+        return cal.date(from: components) ?? Date()
+    }
+
+    private func formatVolumeKg(_ kg: Double) -> String {
+        let rounded = kg.truncated(to: 0)
+        return rounded.formattedTwoDecimals
+    }
+
+    private func formatDistance(_ km: Double) -> String {
+        if km == km.rounded() { return "\(Int(km))" }
+        return km.truncated(to: 2).formattedTwoDecimals
     }
 
     // MARK: - DEL-065 Cardio-Trend-Chart

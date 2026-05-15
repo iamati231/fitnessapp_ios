@@ -27,6 +27,11 @@ public struct SettingsView: View {
     @AppStorage("pref_appearance") private var appearanceRaw: String = "system"   // system|light|dark
     @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
     @AppStorage("pref_timer_haptics") private var timerHapticsEnabled: Bool = true
+    /// DEL-078: Global-Toggle fuer PR-Celebrations. Wenn off, werden Save-
+    /// Screen-Popups, Live-Activity-Linger UND lokale PR-Notifications
+    /// unterdrueckt. PR-Detection selbst (Trophy-Room) laeuft weiter — der
+    /// User soll nur die "feierliche Stoerung" abschalten koennen.
+    @AppStorage("pref_pr_celebrations") private var prCelebrationsEnabled: Bool = true
     @AppStorage("pref_water_reminder") private var waterReminderEnabled: Bool = true
     @AppStorage("pref_water_reminder_hours") private var waterReminderHours: Int = 3
     @AppStorage("pref_measurement_reminder") private var measurementReminderEnabled: Bool = true
@@ -173,10 +178,16 @@ public struct SettingsView: View {
             Toggle(isOn: $timerHapticsEnabled) {
                 Label("Vibrieren", systemImage: "iphone.radiowaves.left.and.right")
             }
+            // DEL-078: PR-Celebrations on/off. Separat vom Timer-Feedback —
+            // PRs feiern ist ein anderer Use-Case als das Pausen-Ende
+            // signalisieren.
+            Toggle(isOn: $prCelebrationsEnabled) {
+                Label("PR-Feiern", systemImage: "trophy.fill")
+            }
         } header: {
             Text("Pausen-Timer-Feedback")
         } footer: {
-            Text("Wird beim Ablauf des Pausen-Timers ausgeloest. Vibrations-Toggle hat auf iPads keine Wirkung.")
+            Text("Wird beim Ablauf des Pausen-Timers ausgeloest. Vibrations-Toggle hat auf iPads keine Wirkung. 'PR-Feiern' steuert Save-Screen-Popups, Live-Activity-Headline und lokale Benachrichtigungen — die Bestleistungen werden trotzdem im Trophy-Room gespeichert.")
                 .font(.footnote)
         }
     }

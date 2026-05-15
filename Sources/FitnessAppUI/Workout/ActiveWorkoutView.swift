@@ -22,6 +22,11 @@ public struct ActiveWorkoutView: View {
     @Environment(PRNotificationCenter.self) private var prNotifications
     @Environment(HealthKitController.self) private var healthKit
 
+    /// DEL-078: globaler PR-Celebration-Toggle aus Settings. Wenn false,
+    /// skippen wir Save-Screen-Popups, Live-Activity-Linger und Notifications.
+    /// PR-Detection selbst (Trophy-Room) bleibt unangetastet.
+    @AppStorage("pref_pr_celebrations") private var prCelebrationsEnabled: Bool = true
+
     @State private var now: Date = Date()
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -141,10 +146,31 @@ public struct ActiveWorkoutView: View {
         .innerLightStroke(cornerRadius: 16, opacity: 0.08)
     }
 
-    /// True wenn alle aktiven Uebungen des Tages Cardio-Lifts sind. Bei
-    /// reinen Run-Sessions (Hybrid Easy Run / Long Run / Intervalle-Tage)
-    /// trifft das zu — Mix-Tage fallen auf Strength-Default zurueck.
+    /// DEL-071: Paging-aware Cardio-Detection FUER DEN HEADER.
+    ///   * Reiner Cardio-Day → immer Cardio-Header.
+    ///   * Reiner Strength-Day → immer Strength-Header.
+    ///   * Mixed-Day → Header reagiert auf die GERADE SICHTBARE Page
+    ///     (`currentPageIndex`). Auf der Bankdruecken-Page = Strength-
+    ///     Header, auf der Run-Page = Cardio-Header.
     private var isCardioSession: Bool {
+        guard let exercises = session.day?.activeExercises, !exercises.isEmpty
+        else { return false }
+        let allCardio = exercises.allSatisfy { $0.isCardio }
+        let allStrength = exercises.allSatisfy { !$0.isCardio }
+        if allCardio   { return true }
+        if allStrength { return false }
+        let ordered = orderedExercises(in: session.day!)
+        guard currentPageIndex >= 0, currentPageIndex < ordered.count else {
+            return false
+        }
+        return ordered[currentPageIndex].isCardio
+    }
+
+    /// DEL-071 + DEL-063: Session-Level-Detection fuer den HealthKit-Push.
+    /// Hier brauchen wir die kategorische Antwort "ist das Workout
+    /// ueberwiegend Cardio?" — und konservativ heisst das `allSatisfy`,
+    /// damit ein Mix-Day NICHT als `.running` in Apple Health landet.
+    private var isPureCardioSessionForHealthKit: Bool {
         guard let exercises = session.day?.activeExercises, !exercises.isEmpty
         else { return false }
         return exercises.allSatisfy { $0.isCardio }
@@ -430,7 +456,7 @@ public struct ActiveWorkoutView: View {
         let workoutEnd = endTime
         let workoutSets = session.totalSets
         let workoutVolume = session.totalVolumeKg
-        let pushAsCardio = isCardioSession
+        let pushAsCardio = isPureCardioSessionForHealthKit
         let cardioTotalKm = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
         let cardioTotalSec = session.logs.compactMap(\.durationSeconds).reduce(0, +)
         let cardioPace = PaceCalculator.minutesPerKm(
@@ -456,12 +482,16 @@ public struct ActiveWorkoutView: View {
         }
 
         // Clear any running rest timer (in-app + Live Activity). Branching:
-        //   - PRs detected → push a final celebration state with trophy headline,
-        //     fire a local notification (lock-screen banner), let the activity
-        //     linger ~8s so the Dynamic Island shows the brag.
+        //   - PRs detected + Celebrations on → push final state with trophy
+        //     headline, fire a local notification, let the activity linger ~8s.
+        //   - PRs detected + Celebrations off (DEL-078) → quiet skip-dismiss,
+        //     der Trophy-Room bleibt aber gefuellt fuer den User, der's
+        //     spaeter aktiv anschauen will.
         //   - No PRs → quiet skip-dismiss as before.
         restTimerEnd = nil
-        let celebration = PRCelebration.make(from: detectedPRs)
+        let celebration = prCelebrationsEnabled
+            ? PRCelebration.make(from: detectedPRs)
+            : nil
         Task { [celebration] in
             if let celebration {
                 await restTimerActivity.endRestTimerWithPR(prMessage: celebration.activityLine)

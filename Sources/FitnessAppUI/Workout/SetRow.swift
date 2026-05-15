@@ -52,6 +52,16 @@ struct SetRow: View {
     @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
     @AppStorage("pref_timer_haptics") private var timerHapticsEnabled: Bool = true
 
+    /// DEL-072: Accessibility — respektiere die System-Praeferenz "Reduce
+    /// Motion". Wenn true, ersetzen wir Spring-Animationen durch ruhige
+    /// `easeInOut`-Variante.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// DEL-072: Dynamic-Type-skalierter Checkmark-Icon-Size. Default 28pt
+    /// fuer system-default-Schriftgroesse; skaliert proportional bei
+    /// groesseren Stufen.
+    @ScaledMetric(relativeTo: .title2) private var checkmarkIconSize: CGFloat = 28
+
     enum HoldState: Equatable {
         case idle
         case countingDown(secondsLeft: Int)
@@ -174,28 +184,41 @@ struct SetRow: View {
     private var checkmarkButton: some View {
         Button {
             if !isCompleted {
-                // DEL-059: Snappy Spring statt linear/ease — der Save-Tap
-                // muss sich "wuchtig" anfuehlen. Logging selbst laeuft
-                // ausserhalb der Animation, sodass SwiftData-Mutationen
-                // nicht in der Animation-Transaktion landen.
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.5, blendDuration: 0)) {
+                // DEL-059 + DEL-072: Snappy Spring fuer wuchtigen Save-Tap.
+                // Reduce-Motion-Pfad ersetzt den Spring durch ein ruhiges
+                // easeInOut — Apple-HIG-Konform.
+                withAnimation(checkmarkAnimation) {
                     logCurrentValues()
                 }
             }
             // Bei isCompleted handled der Row-onTapGesture das Revert.
         } label: {
             Image(systemName: isCompleted ? "checkmark.circle.fill" : "checkmark.circle")
-                .font(.system(size: 28))
+                // DEL-072: ScaledMetric-Wert statt hard-coded 28pt —
+                // skaliert mit Dynamic-Type bei groesseren Schriftgroessen.
+                .font(.system(size: checkmarkIconSize))
                 // DEL-059: hierarchical-rendering gibt dem Symbol Tiefe
                 // (innerer Ring leicht dunkler als Fuellung).
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(isCompleted ? Color.deltiqOrange : Color.secondary.opacity(0.5))
                 // DEL-059: Bounce — kurz auf 1.06 wenn completed.
-                .scaleEffect(isCompleted ? 1.06 : 1.0)
+                // DEL-072: bei Reduce-Motion KEIN Bounce.
+                .scaleEffect((isCompleted && !reduceMotion) ? 1.06 : 1.0)
+                .accessibilityLabel(isCompleted ? "Satz fertig" : "Satz speichern")
+                .accessibilityHint(isCompleted
+                    ? "Doppeltippe, um den Satz zur Bearbeitung zurueckzuholen"
+                    : "Doppeltippe, um den Satz zu speichern")
         }
         .buttonStyle(.plain)
         .disabled(!canLog && !isCompleted)
         .opacity((!canLog && !isCompleted) ? 0.4 : 1.0)
+    }
+
+    /// DEL-072: Animation-Variante je nach Reduce-Motion-Praeferenz.
+    private var checkmarkAnimation: Animation {
+        reduceMotion
+            ? .easeInOut(duration: 0.2)
+            : .spring(response: 0.3, dampingFraction: 0.5, blendDuration: 0)
     }
 
     /// ZStack mit fester Hoehe (per `.frame(height: 28)` am Caller).

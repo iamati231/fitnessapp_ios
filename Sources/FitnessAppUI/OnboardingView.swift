@@ -303,8 +303,16 @@ public struct OnboardingView: View {
             } header: {
                 Text("onboarding.section.goals", bundle: .module)
             } footer: {
-                Text("Trainingsort filtert später Plan-Empfehlungen und die Equipment-Auswahl beim Übungs-Tausch.")
-                    .font(.footnote)
+                // DEL-075: Hinweis fuer reine Cardio-/Hybrid-Athleten. Der
+                // Trainingsort ist NICHT bindend — Hybrid-Plaene laufen
+                // auf jedem Setting, und der User kann ihn in den
+                // Einstellungen jederzeit aendern.
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Trainingsort filtert später Plan-Empfehlungen und die Equipment-Auswahl beim Übungs-Tausch.")
+                    Text("Hybrid- oder reine Lauf-Athleten wählen ihren Strength-Ort (z.B. Gym) — die Hybrid-Pläne enthalten ihre Run-Tage unabhängig davon.")
+                        .foregroundStyle(.secondary)
+                }
+                .font(.footnote)
             }
         }
     }

@@ -34,18 +34,33 @@ struct FitnessAppApp: App {
         .modelContainer(for: AppSchema.types)
     }
 
-    /// Custom-scheme handler. Currently a stub — full routing through
-    /// `AppNavigation.workoutPath` requires App-level ownership of the navigation
-    /// state, which is a follow-up refactor. For now, taps on the Live Activity
-    /// just open the app without routing.
+    /// DEL-076: Custom-scheme-Handler routet jetzt via NotificationCenter-
+    /// Bridge in den RootView (der `AppNavigation` haelt) — wir vermeiden
+    /// den invasiveren Refactor "AppNavigation ins App-Layer hochziehen".
+    ///
+    /// Zwei Routes:
+    ///   * `fitnessapp://workout/active` → `.deltiqOpenActiveWorkout`
+    ///     RootView swappt zum Plan-Tab UND pusht die noch laufende
+    ///     (`isCompleted == false`) Session auf den workoutPath.
+    ///   * `fitnessapp://dashboard` → `.deltiqOpenDashboard`
+    ///     RootView swappt zum Dashboard-Tab.
     private func handleDeepLink(_ url: URL) {
         guard url.scheme == FitnessAppDeepLink.scheme else { return }
-        // TODO: Route via AppNavigation. Two paths:
-        //  - fitnessapp://workout/active → navigation.selectedTab = .plan + push session
-        //  - fitnessapp://dashboard      → navigation.selectedTab = .dashboard
-        // Requires moving AppNavigation ownership from RootView to App.
         #if DEBUG
         print("FitnessApp deep-link received: \(url.absoluteString)")
         #endif
+
+        // Pfad-Komponenten extrahieren. `host` traegt "workout"/"dashboard",
+        // `path` ggf. "/active".
+        let host = url.host ?? ""
+        let path = url.path
+        switch (host, path) {
+        case ("workout", "/active"):
+            NotificationCenter.default.post(name: .deltiqOpenActiveWorkout, object: nil)
+        case ("dashboard", _):
+            NotificationCenter.default.post(name: .deltiqOpenDashboard, object: nil)
+        default:
+            break
+        }
     }
 }

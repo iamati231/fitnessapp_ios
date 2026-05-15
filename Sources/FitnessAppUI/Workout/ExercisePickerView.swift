@@ -112,6 +112,11 @@ public struct ExercisePickerView: View {
         }
     }
 
+    /// DEL-074: Picker-Liste jetzt in Sections aufgeteilt:
+    ///   1. "Eigene" — alle Custom-Templates oben (User-Anlagen, hoch
+    ///       relevant fuer Quick-Pick).
+    ///   2. Alphabetische A/B/C-…/Z-Sections wie iOS-Kontakte.
+    /// Leerer Filter-Treffer rendert den klassischen Empty-State.
     @ViewBuilder
     private var librarySection: some View {
         if filteredTemplates.isEmpty {
@@ -127,18 +132,72 @@ public struct ExercisePickerView: View {
                 }
             }
         } else {
-            Section("Bibliothek") {
-                ForEach(filteredTemplates) { template in
-                    Button {
-                        onSelect(template)
-                        dismiss()
-                    } label: {
-                        TemplateRow(template: template)
+            // Custom oben — markiert mit Stern-Symbol-Section.
+            let customs = filteredTemplates.filter(\.isCustom)
+            if !customs.isEmpty {
+                Section {
+                    ForEach(customs) { template in
+                        Button {
+                            onSelect(template)
+                            dismiss()
+                        } label: {
+                            TemplateRow(template: template)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                } header: {
+                    Label("Eigene", systemImage: "star.fill")
+                }
+            }
+            // Library alphabetisch in A/B/C-Sections.
+            ForEach(alphabeticalGroups, id: \.letter) { group in
+                Section(group.letter) {
+                    ForEach(group.templates) { template in
+                        Button {
+                            onSelect(template)
+                            dismiss()
+                        } label: {
+                            TemplateRow(template: template)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
         }
+    }
+
+    /// DEL-074: Library-Templates (non-custom) alphabetisch nach Anfangs-
+    /// buchstabe gruppiert. Umlaute werden zu ihrem Basis-Buchstaben
+    /// gemappt (Ä→A, Ö→O, Ü→U), damit "Übung X" sauber unter "U" landet
+    /// und nicht eine eigene Ä-Section bildet.
+    private var alphabeticalGroups: [AlphabetGroup] {
+        let nonCustoms = filteredTemplates.filter { !$0.isCustom }
+        let grouped = Dictionary(grouping: nonCustoms) { letterKey(of: $0.name) }
+        return grouped.keys.sorted().map { key in
+            AlphabetGroup(
+                letter: key,
+                templates: grouped[key]?.sorted { $0.name.localizedCompare($1.name) == .orderedAscending } ?? []
+            )
+        }
+    }
+
+    private struct AlphabetGroup {
+        let letter: String
+        let templates: [ExerciseTemplate]
+    }
+
+    private func letterKey(of name: String) -> String {
+        guard let first = name.first else { return "#" }
+        // Umlaut-Mapping fuer die Section-Grouping.
+        let mapped: Character
+        switch first {
+        case "Ä", "ä": mapped = "A"
+        case "Ö", "ö": mapped = "O"
+        case "Ü", "ü": mapped = "U"
+        case "ß":      mapped = "S"
+        default:       mapped = Character(first.uppercased())
+        }
+        return mapped.isLetter ? String(mapped) : "#"
     }
 
     // MARK: Derived

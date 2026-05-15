@@ -57,6 +57,18 @@ public struct PlansListView: View {
                         NavigationLink(value: plan) {
                             PlanRow(plan: plan)
                         }
+                        // DEL-070: Swipe-Action "Duplizieren" — User kann
+                        // eine Variation seines aktiven Plans bauen, ohne
+                        // das Original zu zerschiessen. Loescht keine
+                        // Daten, daher non-destructive Color (deltiqOrange).
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            Button {
+                                duplicatePlan(plan)
+                            } label: {
+                                Label("Duplizieren", systemImage: "plus.square.on.square")
+                            }
+                            .tint(Color.deltiqOrange)
+                        }
                     }
                     .onDelete(perform: deletePlans)
                 }
@@ -137,6 +149,68 @@ public struct PlansListView: View {
     private func deletePlans(at offsets: IndexSet) {
         for index in offsets {
             modelContext.delete(plans[index])
+        }
+    }
+
+    /// DEL-070: Tiefkopie des Plans inkl. Tagen, Uebungen und allen
+    /// Trainings-Parametern. Die Kopie startet als `isActive = false`
+    /// (User soll bewusst entscheiden, ob er auf die Variante umschaltet)
+    /// und bekommt einen "(Kopie)"-Suffix im Namen.
+    ///
+    /// `isTemplate` bleibt `false` — Templates sind Read-Only-Library-
+    /// Seeds, eine User-Duplikat wandert in den editierbaren Plan-Bestand.
+    /// Archivierte Snapshot-Uebungen (DEL-049 swappedFromOriginal) werden
+    /// NICHT mit-kopiert — die Kopie startet "frisch", ohne Urlaubs-Modus-
+    /// Geister.
+    private func duplicatePlan(_ source: TrainingPlan) {
+        let copy = TrainingPlan(
+            name: "\(source.name) (Kopie)",
+            programType: source.programType,
+            descriptionText: source.descriptionText,
+            weeks: source.weeks,
+            isActive: false,
+            targetEnvironment: source.targetEnvironment,
+            isTemplate: false
+        )
+        copy.progressionTargetRIROverride = source.progressionTargetRIROverride
+        modelContext.insert(copy)
+
+        for day in source.days {
+            let dayCopy = TrainingDay(
+                name: day.name,
+                weekday: day.weekday,
+                type: day.type,
+                nextIntensity: day.nextIntensity,
+                plan: copy
+            )
+            modelContext.insert(dayCopy)
+
+            // Nur AKTIVE Uebungen kopieren — archivierte Urlaubs-Modus-
+            // Snapshots gehoeren der Original-Plan-Instanz und sollen
+            // nicht in der Kopie geistern.
+            for ex in day.activeExercises.sorted(by: { $0.orderIndex < $1.orderIndex }) {
+                let exCopy = Exercise(
+                    name: ex.name,
+                    sets: ex.sets,
+                    repsMin: ex.repsMin,
+                    repsMax: ex.repsMax,
+                    restSeconds: ex.restSeconds,
+                    notes: ex.notes,
+                    suggestedWeight: ex.suggestedWeight,
+                    orderIndex: ex.orderIndex,
+                    targetRir: ex.targetRir,
+                    weightReducedNote: ex.weightReducedNote,
+                    isCardio: ex.isCardio,
+                    isTimeBased: ex.isTimeBased,
+                    smartProgressionEnabled: ex.smartProgressionEnabled,
+                    progressionStep: ex.progressionStep,
+                    isCompound: ex.isCompound,
+                    targetDistanceKm: ex.targetDistanceKm,
+                    targetDurationMinutes: ex.targetDurationMinutes,
+                    day: dayCopy
+                )
+                modelContext.insert(exCopy)
+            }
         }
     }
 }
