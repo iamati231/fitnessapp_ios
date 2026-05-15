@@ -336,4 +336,97 @@ final class PRDetectorTests: XCTestCase {
         XCTAssertTrue(prs.isEmpty,
                       "Weighted history + bodyweight session = no PR (weighted branch, no weighted attempt this session)")
     }
+
+    // MARK: - DEL-064 Cardio PRs
+
+    /// Helper fuer Cardio-Test-LiftAttempts.
+    private func run(_ km: Double, _ seconds: Int, _ date: Date? = nil) -> LiftAttempt {
+        LiftAttempt(
+            exerciseName: "Easy Run",
+            weightKg: 0,
+            reps: 0,
+            date: date ?? now,
+            isCardio: true,
+            distanceKm: km,
+            durationSeconds: seconds
+        )
+    }
+
+    /// Lauf mit neuer Maximaldistanz → `.longestDistance`-PR.
+    func testCardioLongestDistance_detectsNewBest() {
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [run(8.0, 50 * 60)],
+            history: [run(5.0, 30 * 60, weekAgo)]
+        )
+        let pr = prs.first { $0.kind == .longestDistance }
+        XCTAssertNotNil(pr)
+        XCTAssertEqual(pr?.exerciseName, "Easy Run")
+        XCTAssertEqual(pr?.previousValue, 5.0)
+        XCTAssertEqual(pr?.newValue, 8.0)
+    }
+
+    /// Lauf mit besserer Pace → `.fastestPace`-PR. 5 km in 25 Min (5:00 /km)
+    /// schlaegt history 5 km in 30 Min (6:00 /km).
+    func testCardioFastestPace_detectsNewBest() {
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [run(5.0, 25 * 60)],
+            history: [run(5.0, 30 * 60, weekAgo)]
+        )
+        let pr = prs.first { $0.kind == .fastestPace }
+        XCTAssertNotNil(pr)
+        // Pace: 5:00 vs 6:00 — lower is better.
+        XCTAssertEqual(pr?.newValue ?? 99, 5.0, accuracy: 0.001)
+        XCTAssertEqual(pr?.previousValue ?? 99, 6.0, accuracy: 0.001)
+    }
+
+    /// Sprint-Guard: Lauf unter 1 km darf KEINEN Pace-PR liefern (sonst
+    /// kann ein 100m-Sprint mit 3:00/km die 5K-Pace ueberlagern).
+    func testCardioFastestPace_respectsMinDistanceGuard() {
+        // 0,5 km in 1 Min = 2:00 /km (absurd-schnell)
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [run(0.5, 60)],
+            history: [run(5.0, 30 * 60, weekAgo)]
+        )
+        XCTAssertFalse(prs.contains { $0.kind == .fastestPace },
+                       "Sprint unter 1 km darf keinen Pace-PR triggern")
+    }
+
+    /// Distance-PR triggert auch unterhalb der Pace-Mindest-Distanz — bei
+    /// einem persoenlichen Maximum-Lauf ist die km-Zahl immer relevant.
+    func testCardioLongestDistance_worksEvenForShortRuns() {
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [run(0.7, 5 * 60)],
+            history: [run(0.5, 4 * 60, weekAgo)]
+        )
+        XCTAssertTrue(prs.contains { $0.kind == .longestDistance })
+    }
+
+    /// Erste Cardio-Session ohne History → keine PRs (Baseline-Regel).
+    func testCardioFirstSessionProducesNoPRs() {
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [run(5.0, 25 * 60)],
+            history: []
+        )
+        XCTAssertTrue(prs.isEmpty)
+    }
+
+    /// Gleiche Pace + gleiche Distanz → kein PR (strict-greater-than).
+    func testCardioTieIsNotAPR() {
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [run(5.0, 25 * 60)],
+            history: [run(5.0, 25 * 60, weekAgo)]
+        )
+        XCTAssertTrue(prs.isEmpty)
+    }
+
+    /// Mixed-Session: 1 Bench-PR + 1 Cardio-Distance-PR → beide werden
+    /// detektiert, in Kategorie-getrennten Branches.
+    func testMixedStrengthAndCardioBothProduceTheirOwnPRs() {
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [run(8.0, 45 * 60), bench(90, 5)],
+            history: [run(5.0, 30 * 60, weekAgo), bench(80, 5, weekAgo)]
+        )
+        XCTAssertTrue(prs.contains { $0.kind == .longestDistance })
+        XCTAssertTrue(prs.contains { $0.kind == .heaviestWeight })
+    }
 }

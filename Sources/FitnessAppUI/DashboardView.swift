@@ -60,6 +60,10 @@ public struct DashboardView: View {
                 historyCard
                 trendChart
                 compoundLiftChart
+                // DEL-065: Cardio-Trend-Chart fuer Hybrid-Athleten — Pace
+                // ueber Zeit. Wird nur eingeblendet, wenn ueberhaupt
+                // Cardio-Daten vorhanden sind (sonst Platz-Sparend versteckt).
+                cardioPaceChart
                 recentWorkoutsCard
             }
             .padding(.horizontal)
@@ -740,6 +744,105 @@ public struct DashboardView: View {
         }
     }
 
+    // MARK: - DEL-065 Cardio-Trend-Chart
+
+    /// DEL-065: Pace-Trend ueber Zeit fuer Hybrid-Athleten. Eine Linie pro
+    /// Cardio-Uebung (Easy Run / Long Run / Intervalle). Y-Achse als
+    /// "min/km" — niedriger = besser. Wir invertieren die Achse NICHT
+    /// (waere visuell verwirrend), sondern lassen die Linie nach unten gehen
+    /// und beschriften die Achse explizit "min/km · niedriger = besser".
+    private var cardioSeries: [CardioPaceSeries] {
+        // Alle Cardio-Logs aus completed Sessions, gruppiert per Uebung.
+        let allCardioLogs = completedSessions.flatMap { session in
+            session.logs.filter { $0.exerciseIsCardioSnapshot || ($0.exercise?.isCardio == true) }
+        }
+        let byName = Dictionary(grouping: allCardioLogs) { log in
+            log.resolvedExerciseName ?? "—"
+        }
+        return byName.compactMap { (name, logs) -> CardioPaceSeries? in
+            // Pro Session aggregieren (Datum = Session-Start, Pace = total/total).
+            let bySession = Dictionary(grouping: logs) { log in
+                log.session?.persistentModelID
+            }
+            let points: [CardioPacePoint] = bySession.compactMap { (_, sessionLogs) -> CardioPacePoint? in
+                let totalKm = sessionLogs.compactMap(\.distanceKm).reduce(0.0, +)
+                let totalSec = sessionLogs.compactMap(\.durationSeconds).reduce(0, +)
+                guard totalKm > 0, totalSec > 0,
+                      let pace = PaceCalculator.minutesPerKm(distanceKm: totalKm, durationSeconds: totalSec),
+                      let date = sessionLogs.map(\.date).min()
+                else { return nil }
+                return CardioPacePoint(date: date, paceMinPerKm: pace, distanceKm: totalKm)
+            }
+            .sorted { $0.date < $1.date }
+            guard points.count >= 2 else { return nil }
+            return CardioPaceSeries(exerciseName: name, points: points)
+        }
+        .sorted { $0.exerciseName < $1.exerciseName }
+    }
+
+    @ViewBuilder
+    private var cardioPaceChart: some View {
+        let series = cardioSeries
+        if !series.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Cardio-Pace-Trend")
+                        .font(.headline)
+                    Spacer()
+                    Text("min/km · niedriger = besser")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Chart {
+                    ForEach(series) { line in
+                        ForEach(line.points) { point in
+                            LineMark(
+                                x: .value("Datum", point.date),
+                                y: .value("Pace (min/km)", point.paceMinPerKm),
+                                series: .value("Lauf", line.exerciseName)
+                            )
+                            .interpolationMethod(.monotone)
+                            .foregroundStyle(by: .value("Lauf", line.exerciseName))
+                            .symbol(by: .value("Lauf", line.exerciseName))
+
+                            PointMark(
+                                x: .value("Datum", point.date),
+                                y: .value("Pace (min/km)", point.paceMinPerKm)
+                            )
+                            .foregroundStyle(by: .value("Lauf", line.exerciseName))
+                            .symbolSize(40)
+                        }
+                    }
+                }
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                        AxisGridLine()
+                        AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading) { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let pace = value.as(Double.self) {
+                                let total = Int((pace * 60.0).rounded())
+                                Text(String(format: "%d:%02d", total / 60, total % 60))
+                            }
+                        }
+                    }
+                }
+                .frame(height: 180)
+                .padding()
+                .background(Color.secondary.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .innerLightStroke(cornerRadius: 12, opacity: 0.08)
+            }
+        }
+        // Kein Empty-State — der Chart ist optional fuer reine Strength-User
+        // und blendet sich einfach aus, wenn keine Cardio-Daten existieren.
+    }
+
     // MARK: - Recent workouts
 
     private var recentWorkoutsCard: some View {
@@ -817,6 +920,25 @@ struct CompoundSeries: Identifiable {
     let id = UUID()
     let exerciseName: String
     let points: [CompoundPoint]
+}
+
+// MARK: - DEL-065 Cardio-Pace Chart data
+
+@available(iOS 17.0, macOS 14.0, *)
+struct CardioPacePoint: Identifiable, Hashable {
+    let id = UUID()
+    let date: Date
+    /// Pace in min/km (lower = better).
+    let paceMinPerKm: Double
+    /// Aggregierte Distanz dieser Session in km — fuer Tooltip-Reservierung.
+    let distanceKm: Double
+}
+
+@available(iOS 17.0, macOS 14.0, *)
+struct CardioPaceSeries: Identifiable {
+    let id = UUID()
+    let exerciseName: String
+    let points: [CardioPacePoint]
 }
 
 // MARK: - Recent-row subview

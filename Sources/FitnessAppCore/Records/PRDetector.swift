@@ -9,18 +9,20 @@ import Foundation
 ///      is the one credited (e.g., three new heaviest sets in a row → one PR).
 ///   3. **Per-exercise categorization** — each exercise is classified once based
 ///      on the union of session + history attempts:
-///        - `.timeBased` if ANY attempt has `isTimeBased == true` (a "weighted plank"
-///          still counts as time-based, weight is ignored)
+///        - `.timeBased` if ANY attempt has `isTimeBased == true`
+///        - `.cardio` (DEL-064) if ANY attempt has `isCardio == true`
 ///        - `.weighted` if ANY attempt has `weightKg > 0`
 ///        - `.bodyweight` if all attempts have `weightKg == 0` and reps > 0
-///      The detected PR kinds are limited to those valid for the category, so a
-///      weighted-pullup session falls back to weighted PRs (heaviestWeight/bestSet/
-///      1RM) rather than maxReps.
-///   4. Cardio (`isCardio == true`) is filtered out at the top — different
-///      metric domain (pace/distance/heart-rate) belongs in a separate detector.
-///   5. An exercise with no historical attempts in `history` produces no PRs
+///      Cardio takes precedence over weighted so a weighted-vest run still uses
+///      cardio PRs (distance/pace), not weight-based ones.
+///   4. An exercise with no historical attempts in `history` produces no PRs
 ///      (first session establishes a baseline; you can't beat nothing).
 public enum PRDetector {
+
+    /// DEL-064: Minimum-Distanz in km, ab der ein Pace-PR ueberhaupt
+    /// betrachtet wird. Verhindert, dass ein 100m-Sprint mit absurder Pace
+    /// die echte 5K-/10K-Pace eines Users uebersteuert.
+    public static let minDistanceForPacePRKm: Double = 1.0
 
     /// Returns the personal records achieved by `sessionLifts` against `history`.
     /// Sorted by exercise name, then by display priority within an exercise.
@@ -28,23 +30,27 @@ public enum PRDetector {
         sessionLifts: [LiftAttempt],
         history: [LiftAttempt]
     ) -> [PersonalRecord] {
-        // Cardio out of the picture entirely.
-        let validSession = sessionLifts.filter { !$0.isCardio }
-        let validHistory = history.filter { !$0.isCardio }
-
-        let bySessionExercise = Dictionary(grouping: validSession, by: \.exerciseName)
+        let bySessionExercise = Dictionary(grouping: sessionLifts, by: \.exerciseName)
         var records: [PersonalRecord] = []
 
         for (exerciseName, sessionAttempts) in bySessionExercise {
-            let exerciseHistory = validHistory.filter { $0.exerciseName == exerciseName }
+            let exerciseHistory = history.filter { $0.exerciseName == exerciseName }
             guard !exerciseHistory.isEmpty else { continue }    // Need a baseline.
 
             // Categorize the exercise using session AND history together — a single
-            // weighted attempt anywhere flips the category to weighted, so a user
-            // adding belt-weight to pullups for the first time gets weighted PRs.
+            // cardio attempt anywhere flips the category to cardio, so a user
+            // adding distance-tracking to an existing strength exercise still
+            // gets cardio PRs.
             let category = categorize(attempts: sessionAttempts + exerciseHistory)
 
             switch category {
+            case .cardio:
+                records.append(contentsOf: detectCardioPRs(
+                    sessionAttempts: sessionAttempts,
+                    exerciseHistory: exerciseHistory,
+                    exerciseName: exerciseName
+                ))
+
             case .weighted:
                 records.append(contentsOf: detectWeightedPRs(
                     sessionAttempts: sessionAttempts,
@@ -86,20 +92,107 @@ public enum PRDetector {
     // MARK: Categorization
 
     private enum ExerciseCategory {
+        case cardio
         case weighted
         case bodyweight
         case timeBased
         case invalid
     }
 
-    /// Order of priority: timeBased → weighted → bodyweight → invalid.
-    /// timeBased takes precedence so a "weighted plank" still uses hold-time PRs.
+    /// Order of priority: cardio → timeBased → weighted → bodyweight → invalid.
+    /// Cardio takes precedence (DEL-064): wenn IRGENDEIN Versuch als Cardio
+    /// markiert ist, behandeln wir die Uebung als Lauf-/Bike-PR-Kandidat.
     private static func categorize(attempts: [LiftAttempt]) -> ExerciseCategory {
         if attempts.isEmpty { return .invalid }
+        if attempts.contains(where: { $0.isCardio }) { return .cardio }
         if attempts.contains(where: { $0.isTimeBased }) { return .timeBased }
         if attempts.contains(where: { $0.weightKg > 0 }) { return .weighted }
         if attempts.contains(where: { $0.reps > 0 }) { return .bodyweight }
         return .invalid
+    }
+
+    // MARK: - DEL-064 Cardio PRs
+
+    /// Detektiert Cardio-PRs fuer eine Uebung. Zwei Kinds:
+    ///   * `.longestDistance` — neue Best-Distance (km) im Session-Aggregat.
+    ///   * `.fastestPace` — neue Best-Pace (min/km, lower = better). NUR
+    ///     valide wenn `distanceKm >= minDistanceForPacePRKm` (Sprint-Guard).
+    private static func detectCardioPRs(
+        sessionAttempts: [LiftAttempt],
+        exerciseHistory: [LiftAttempt],
+        exerciseName: String
+    ) -> [PersonalRecord] {
+        // Cardio-Logs gruppieren per (Date-Day) zu Session-Aggregaten, falls
+        // ein Lauf je theoretisch in mehrere Sets aufgeteilt waere. In der
+        // Praxis ist Cardio bei uns 1 Set pro Session — but Aggregat ist die
+        // mathematisch-saubere Variante.
+        let sessionAgg = aggregateCardio(sessionAttempts)
+        let historyAggs = Dictionary(grouping: exerciseHistory) {
+            Calendar.current.startOfDay(for: $0.date)
+        }.values.compactMap { aggregateCardio(Array($0)) }
+
+        var records: [PersonalRecord] = []
+        guard let now = sessionAgg, now.distanceKm > 0 else { return [] }
+
+        // Longest-Distance PR
+        let prevBestKm = historyAggs.map(\.distanceKm).max() ?? 0
+        if now.distanceKm > prevBestKm {
+            records.append(PersonalRecord(
+                kind: .longestDistance,
+                exerciseName: exerciseName,
+                weightKg: 0,
+                reps: 0,
+                previousValue: prevBestKm,
+                newValue: now.distanceKm,
+                achievedAt: now.date
+            ))
+        }
+
+        // Fastest-Pace PR — guarded gegen Sprint-Outlier.
+        if now.distanceKm >= minDistanceForPacePRKm, let nowPace = now.paceMinPerKm {
+            let qualifyingHistory = historyAggs.filter { $0.distanceKm >= minDistanceForPacePRKm }
+            // niedrigere Pace = besser. Best = min.
+            let prevBestPace = qualifyingHistory.compactMap(\.paceMinPerKm).min() ?? Double.infinity
+            if nowPace < prevBestPace, prevBestPace.isFinite {
+                records.append(PersonalRecord(
+                    kind: .fastestPace,
+                    exerciseName: exerciseName,
+                    weightKg: 0,
+                    reps: 0,
+                    previousValue: prevBestPace,
+                    newValue: nowPace,
+                    achievedAt: now.date
+                ))
+            }
+        }
+
+        return records
+    }
+
+    /// Aggregat-Struct fuer Cardio-Session: Summe km + Summe Sekunden +
+    /// daraus berechnete Pace.
+    private struct CardioAggregate {
+        let distanceKm: Double
+        let durationSeconds: Int
+        let date: Date
+        var paceMinPerKm: Double? {
+            guard distanceKm > 0, durationSeconds > 0 else { return nil }
+            return Double(durationSeconds) / 60.0 / distanceKm
+        }
+    }
+
+    private static func aggregateCardio(_ lifts: [LiftAttempt]) -> CardioAggregate? {
+        let cardio = lifts.filter { $0.isCardio }
+        guard !cardio.isEmpty else { return nil }
+        let totalKm = cardio.compactMap(\.distanceKm).reduce(0.0, +)
+        let totalSec = cardio.compactMap(\.durationSeconds).reduce(0, +)
+        guard totalKm > 0 || totalSec > 0 else { return nil }
+        let latest = cardio.map(\.date).max() ?? Date()
+        return CardioAggregate(
+            distanceKm: totalKm,
+            durationSeconds: totalSec,
+            date: latest
+        )
     }
 
     // MARK: Weighted (3 kinds)
@@ -262,6 +355,11 @@ public enum PRDetector {
         case .bestSet:         return 2
         case .maxReps:         return 3
         case .maxHoldSeconds:  return 4
+        // DEL-064: Cardio-PRs ans Ende der Display-Reihenfolge — sie sind
+        // konzeptionell eigene Kategorie und sollen visuell unter den
+        // Strength-PRs landen, wenn beide gleichzeitig auftreten.
+        case .longestDistance: return 5
+        case .fastestPace:     return 6
         }
     }
 }

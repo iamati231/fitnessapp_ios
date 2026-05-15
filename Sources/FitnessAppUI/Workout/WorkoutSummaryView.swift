@@ -151,7 +151,9 @@ public struct WorkoutSummaryView: View {
                 reps: log.reps,
                 date: log.date,
                 isCardio: log.resolvedIsCardio,
-                isTimeBased: log.resolvedIsTimeBased
+                isTimeBased: log.resolvedIsTimeBased,
+                distanceKm: log.distanceKm,
+                durationSeconds: log.durationSeconds
             )
         }
     }
@@ -172,7 +174,9 @@ public struct WorkoutSummaryView: View {
                 reps: log.reps,
                 date: log.date,
                 isCardio: log.resolvedIsCardio,
-                isTimeBased: log.resolvedIsTimeBased
+                isTimeBased: log.resolvedIsTimeBased,
+                distanceKm: log.distanceKm,
+                durationSeconds: log.durationSeconds
             )
         }
     }
@@ -495,7 +499,10 @@ private struct PRBadge: View {
                     .foregroundStyle(.primary)
             }
             Spacer()
-            Text("+\(formatDelta(record.deltaPercent))")
+            // DEL-064: fastestPace ist lower-is-better — die Verbesserung
+            // ist ein negativer Delta. Wir zeigen sie als positiv-formatiertes
+            // Improvement, sonst sieht der Trophy-Pill aus wie ein Rueckschritt.
+            Text(improvementPill)
                 .font(.subheadline.weight(.bold))
                 .foregroundStyle(.green)
                 .monospacedDigit()
@@ -503,33 +510,49 @@ private struct PRBadge: View {
         .padding(.vertical, 4)
     }
 
+    /// DEL-064: kind-aware Improvement-Prozent. Lower-is-better-Kinds
+    /// (`.fastestPace`) invertieren den Delta-Vorzug.
+    private var improvementPill: String {
+        let isLowerBetter: Bool = (record.kind == .fastestPace)
+        let raw = record.deltaPercent
+        let improvement = isLowerBetter ? -raw : raw
+        return "+\(formatDelta(improvement))"
+    }
+
     private var kindIcon: String {
         switch record.kind {
-        case .estimated1RM:    "bolt.fill"
-        case .heaviestWeight:  "scalemass.fill"
-        case .bestSet:         "chart.bar.fill"
-        case .maxReps:         "arrow.up.arrow.down"
-        case .maxHoldSeconds:  "stopwatch.fill"
+        case .estimated1RM:     "bolt.fill"
+        case .heaviestWeight:   "scalemass.fill"
+        case .bestSet:          "chart.bar.fill"
+        case .maxReps:          "arrow.up.arrow.down"
+        case .maxHoldSeconds:   "stopwatch.fill"
+        // DEL-064 Cardio-PRs
+        case .longestDistance:  "figure.run.circle.fill"
+        case .fastestPace:      "hare.fill"
         }
     }
 
     private var kindColor: Color {
         switch record.kind {
-        case .estimated1RM:    .orange
-        case .heaviestWeight:  .red
-        case .bestSet:         .blue
-        case .maxReps:         .purple
-        case .maxHoldSeconds:  .yellow
+        case .estimated1RM:     .orange
+        case .heaviestWeight:   .red
+        case .bestSet:          .blue
+        case .maxReps:          .purple
+        case .maxHoldSeconds:   .yellow
+        case .longestDistance:  Color.deltiqOrange
+        case .fastestPace:      .green
         }
     }
 
     private var kindLabel: String {
         switch record.kind {
-        case .estimated1RM:    "Neuer 1RM (geschätzt)"
-        case .heaviestWeight:  "Neues Maximalgewicht"
-        case .bestSet:         "Neuer Bestsatz (Volumen)"
-        case .maxReps:         "Neuer Reps-Rekord"
-        case .maxHoldSeconds:  "Neue Bestzeit"
+        case .estimated1RM:     "Neuer 1RM (geschätzt)"
+        case .heaviestWeight:   "Neues Maximalgewicht"
+        case .bestSet:          "Neuer Bestsatz (Volumen)"
+        case .maxReps:          "Neuer Reps-Rekord"
+        case .maxHoldSeconds:   "Neue Bestzeit"
+        case .longestDistance:  "Längste Distanz"
+        case .fastestPace:      "Neue Best-Pace"
         }
     }
 
@@ -562,7 +585,25 @@ private struct PRBadge: View {
                 }
             }()
             return "\(weightStr) kg × \(record.reps) → \(nowStr) (vorher \(prevStr))"
+
+        // DEL-064 Cardio-PRs
+        case .longestDistance:
+            return "\(formatKm(record.newValue)) km (vorher \(formatKm(record.previousValue)) km)"
+        case .fastestPace:
+            return "\(formatPace(record.newValue)) (vorher \(formatPace(record.previousValue)))"
         }
+    }
+
+    /// DEL-064: km-Formatter — Integer wenn ganzzahlig, sonst 2 Nachkommastellen.
+    private func formatKm(_ km: Double) -> String {
+        km == km.rounded() ? "\(Int(km))" : km.truncated(to: 2).formattedTwoDecimals
+    }
+
+    /// DEL-064: Pace-Formatter (min/km Double → "5:42 /km"-String).
+    private func formatPace(_ minutesPerKm: Double) -> String {
+        guard minutesPerKm.isFinite, minutesPerKm > 0 else { return "—:——" }
+        let total = Int((minutesPerKm * 60.0).rounded())
+        return String(format: "%d:%02d /km", total / 60, total % 60)
     }
 
     private func formatWeight(_ w: Double) -> String {

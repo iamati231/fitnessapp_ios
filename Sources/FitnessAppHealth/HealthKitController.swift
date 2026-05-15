@@ -201,4 +201,31 @@ public final class HealthKitController {
         }
         #endif
     }
+
+    /// DEL-063: Best-effort push einer Cardio-Session (Hybrid-Lauftag) als
+    /// `.running` mit angehaengtem Distanz-Sample. Wenn der User Apple
+    /// Health nicht autorisiert hat, ist das ein No-Op — Caller-Flow wird
+    /// nicht blockiert.
+    public func saveRunningWorkout(
+        startDate: Date,
+        endDate: Date,
+        totalDistanceKm: Double,
+        averagePaceMinPerKm: Double?
+    ) async {
+        #if canImport(HealthKit)
+        guard let service, authorizationStatus == .sharingAuthorized else { return }
+        do {
+            try await service.saveRunningWorkout(
+                startDate: startDate,
+                endDate: endDate,
+                totalDistanceKm: totalDistanceKm,
+                averagePaceMinPerKm: averagePaceMinPerKm
+            )
+            lastSyncDate = Date()
+            lastError = nil
+        } catch {
+            lastError = error
+        }
+        #endif
+    }
 }

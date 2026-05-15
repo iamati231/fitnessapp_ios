@@ -43,6 +43,11 @@ public enum PRCelebration {
                 return "🏆 \(formatNumber(headline.newValue)) kg \(exercise)"
             case .bestSet:
                 return "🏆 \(formatNumber(headline.weightKg))×\(headline.reps) \(exercise)"
+            // DEL-064 Cardio
+            case .longestDistance:
+                return "🏆 \(formatNumber(headline.newValue)) km \(exercise)"
+            case .fastestPace:
+                return "🏆 \(formatPace(headline.newValue)) \(exercise)"
             }
         }()
 
@@ -75,11 +80,13 @@ public enum PRCelebration {
 
     private static func title(for record: PersonalRecord) -> String {
         switch record.kind {
-        case .estimated1RM:    return "Neuer 1RM-Rekord! 🏆"
-        case .heaviestWeight:  return "Neues Maximalgewicht! 💪"
-        case .bestSet:         return "Neuer Bestsatz! 📈"
-        case .maxReps:         return "Neuer Reps-Rekord! 🔥"
-        case .maxHoldSeconds:  return "Neue Bestzeit! ⏱️"
+        case .estimated1RM:     return "Neuer 1RM-Rekord! 🏆"
+        case .heaviestWeight:   return "Neues Maximalgewicht! 💪"
+        case .bestSet:          return "Neuer Bestsatz! 📈"
+        case .maxReps:          return "Neuer Reps-Rekord! 🔥"
+        case .maxHoldSeconds:   return "Neue Bestzeit! ⏱️"
+        case .longestDistance:  return "Längste Distanz! 🎉"
+        case .fastestPace:      return "Neue Best-Pace! 🔥"
         }
     }
 
@@ -95,20 +102,38 @@ public enum PRCelebration {
             return "\(record.exerciseName) — \(record.reps) Wdh (vorher \(Int(record.previousValue.rounded())))"
         case .maxHoldSeconds:
             return "\(record.exerciseName) — \(record.reps) Sek (vorher \(Int(record.previousValue.rounded())) Sek)"
+        case .longestDistance:
+            return "\(record.exerciseName) — \(formatNumber(record.newValue)) km (vorher \(formatNumber(record.previousValue)) km)"
+        case .fastestPace:
+            return "\(record.exerciseName) — \(formatPace(record.newValue)) (vorher \(formatPace(record.previousValue)))"
         }
     }
 
     // MARK: - Helpers
 
     /// Same priority as PRDetector.kindOrder. Lower = more impressive.
+    /// DEL-064: Cardio-PRs ans Ende — bei Mixed-Sessions sollen Strength-
+    /// PRs zuerst gefeiert werden (Brand-Erinnerung: wir sind primaer eine
+    /// Strength-App; Cardio ist Add-On fuer Hybrid-Athleten).
     private static func priority(_ kind: PersonalRecord.Kind) -> Int {
         switch kind {
-        case .estimated1RM:    return 0
-        case .heaviestWeight:  return 1
-        case .bestSet:         return 2
-        case .maxReps:         return 3
-        case .maxHoldSeconds:  return 4
+        case .estimated1RM:     return 0
+        case .heaviestWeight:   return 1
+        case .bestSet:          return 2
+        case .maxReps:          return 3
+        case .maxHoldSeconds:   return 4
+        case .longestDistance:  return 5
+        case .fastestPace:      return 6
         }
+    }
+
+    /// Pace-Formatter analog zu `PaceCalculator.formatPace`, aber als
+    /// stand-alone-Hilfsfunktion damit dieser File keine zusaetzliche
+    /// Cross-Module-Dependency braucht.
+    private static func formatPace(_ minutesPerKm: Double) -> String {
+        guard minutesPerKm.isFinite, minutesPerKm > 0 else { return "—:——" }
+        let total = Int((minutesPerKm * 60.0).rounded())
+        return String(format: "%d:%02d /km", total / 60, total % 60)
     }
 
     /// Truncate exercise names so the Dynamic Island doesn't overflow. ~14 chars

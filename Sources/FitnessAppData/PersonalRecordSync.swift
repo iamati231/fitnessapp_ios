@@ -111,7 +111,11 @@ public enum PersonalRecordSync {
                 reps: log.reps,
                 date: log.date,
                 isCardio: log.resolvedIsCardio,
-                isTimeBased: log.resolvedIsTimeBased
+                isTimeBased: log.resolvedIsTimeBased,
+                // DEL-064: Cardio-Felder mit-mappen, sodass der PRDetector
+                // distance/pace-PRs detecten kann.
+                distanceKm: log.distanceKm,
+                durationSeconds: log.durationSeconds
             )
         }
     }
@@ -143,7 +147,9 @@ public enum PersonalRecordSync {
                 reps: log.reps,
                 date: log.date,
                 isCardio: log.resolvedIsCardio,
-                isTimeBased: log.resolvedIsTimeBased
+                isTimeBased: log.resolvedIsTimeBased,
+                distanceKm: log.distanceKm,
+                durationSeconds: log.durationSeconds
             )
         }
     }

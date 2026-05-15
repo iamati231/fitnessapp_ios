@@ -25,6 +25,16 @@ public struct ExerciseEditorView: View {
         exercise.day?.plan?.isTemplate ?? false
     }
 
+    /// DEL-066: Single-Source-of-Truth Section-Sichtbarkeit. Identische
+    /// Auswertung in den Tests (`ExerciseEditorSectionsTests`) — so kann
+    /// die Conditional-Logik nicht zwischen View und Test auseinanderdriften.
+    private var sectionVisibility: ExerciseEditorSections.Visibility {
+        ExerciseEditorSections.evaluate(
+            isCardio: exercise.isCardio,
+            isTimeBased: exercise.isTimeBased
+        )
+    }
+
     public var body: some View {
         Form {
             // DEL-062: Cardio + Zeit-basiert sind mutually-exclusive — der
@@ -58,11 +68,9 @@ public struct ExerciseEditorView: View {
                 }
             }
 
-            // DEL-062: bei Cardio brauchen wir keine Saetze/Wdh-Section — der
-            // CardioSetRow nimmt Distanz + Dauer direkt entgegen. Bei
-            // Zeit-basierten Uebungen zeigt die Section weiter "Sek. min/max"
-            // als Zielzeit-Range.
-            if !exercise.isCardio {
+            // DEL-062 + DEL-066: Section-Sichtbarkeit via zentraler Logik
+            // aus `ExerciseEditorSections.evaluate`.
+            if sectionVisibility.setsAndReps {
                 Section("Sätze & Wiederholungen") {
                     Stepper(value: $exercise.sets, in: 1...20) {
                         LabeledContent("Sätze", value: "\(exercise.sets)")
@@ -84,24 +92,16 @@ public struct ExerciseEditorView: View {
                 }
             }
 
-            // DEL-062: Cardio-Specific Section — Ziel-Distanz + Ziel-Dauer
-            // statt Pause/RIR/Gewicht. Sichtbar nur bei isCardio == true.
-            if exercise.isCardio {
+            if sectionVisibility.cardioTargets {
                 cardioTargetSection
             }
 
-            // DEL-062: "Pause & Intensität"-Section.
-            //   * Cardio → komplett ausgeblendet (laufen hat keine "Pause"
-            //     im Trainingssatz-Sinne und kein RIR)
-            //   * Zeit-basiert → nur Pause-Stepper (Pause zwischen den
-            //     Hold-Saetzen ist sinnvoll, RIR fuer Plank nicht)
-            //   * Strength → beide Stepper
-            if !exercise.isCardio {
+            if sectionVisibility.pauseAndIntensity {
                 Section("Pause & Intensität") {
                     Stepper(value: $exercise.restSeconds, in: 0...600, step: 15) {
                         LabeledContent("Pause", value: "\(exercise.restSeconds)s")
                     }
-                    if !exercise.isTimeBased {
+                    if sectionVisibility.targetRIR {
                         Stepper(value: $exercise.targetRir, in: 0...5, step: 0.5) {
                             LabeledContent("Ziel-RIR", value: rirString(exercise.targetRir))
                         }
@@ -109,9 +109,7 @@ public struct ExerciseEditorView: View {
                 }
             }
 
-            // DEL-062: Vorgeschlagenes Gewicht nur bei reiner Strength-Uebung.
-            // Cardio + TimeBased nutzen kein kg-Tracking.
-            if !exercise.isCardio, !exercise.isTimeBased {
+            if sectionVisibility.suggestedWeight {
                 Section("Vorgeschlagenes Gewicht (optional)") {
                     TextField("kg",
                               value: Binding(
@@ -124,11 +122,7 @@ public struct ExerciseEditorView: View {
                 }
             }
 
-            // DEL-052/053 — Smart-Progression-Settings pro Uebung. Nur
-            // sinnvoll fuer Strength-Lifts; bei Cardio/TimeBased blenden wir
-            // die Section komplett aus (das Gewichts-Tracking gibts dort
-            // gar nicht).
-            if !exercise.isCardio, !exercise.isTimeBased {
+            if sectionVisibility.smartProgression {
                 progressionSection
             }
 

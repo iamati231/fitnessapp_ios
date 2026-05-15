@@ -19,22 +19,23 @@ public extension Color {
 
 public extension View {
     /// Subtile Licht-Kante on top of a card/input. Erzeugt das "plastisch
-    /// erhabene"-Gefuehl aus teuren macOS/iOS-Apps:
-    /// 1 px weisser Stroke + `.blendMode(.screen)`. Im Dark-Mode entsteht
-    /// ein feiner Highlight-Saum auf dunklem Hintergrund; im Light-Mode
-    /// ist screen-blend mit Weiss praktisch unsichtbar → sicher fuer beide
-    /// ColorSchemes ohne if/else.
+    /// erhabene"-Gefuehl aus teuren macOS/iOS-Apps.
+    ///
+    /// DEL-066: ColorScheme-aware Fallback.
+    ///   * **Dark Mode**: 1 px weisser Stroke + `.blendMode(.screen)` →
+    ///     feiner Highlight-Saum auf dunklem Hintergrund.
+    ///   * **Light Mode**: 1 px schwarzer Stroke + `.blendMode(.multiply)` →
+    ///     leichter Schatten-Saum, der das Element vom weissen Hintergrund
+    ///     abhebt statt unsichtbar zu sein.
     ///
     /// Hitt-Testing wird abgeschaltet, damit Taps durch den Overlay auf
     /// das darunterliegende TextField/Button durchgehen.
     func innerLightStroke(cornerRadius: CGFloat = 8, opacity: Double = 0.10) -> some View {
-        self.overlay(
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .stroke(Color.white.opacity(opacity), lineWidth: 1)
-                .blendMode(.screen)
-                .allowsHitTesting(false)
-        )
+        modifier(InnerLightStrokeModifier(cornerRadius: cornerRadius, opacity: opacity))
     }
+
+    /// DEL-066 — internes ViewModifier-Backing fuer `innerLightStroke`, das
+    /// per `@Environment(\.colorScheme)` zwischen Dark/Light Variante wechselt.
 
     /// Premium-Label-Styling: winziger, gesperrter, fetter Caption-Text.
     /// "KG", "WDH", "PACE", "RIR" — alles sekundaere Labels, die durch
@@ -101,6 +102,41 @@ extension View {
         #else
         self
         #endif
+    }
+}
+
+// MARK: - DEL-066 InnerLightStrokeModifier
+
+/// ColorScheme-aware Inner-Stroke. Dark-Mode → weiss + screen-blend
+/// (Highlight). Light-Mode → schwarz + multiply-blend (subtiler Schatten).
+private struct InnerLightStrokeModifier: ViewModifier {
+    let cornerRadius: CGFloat
+    let opacity: Double
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        content.overlay(
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .stroke(strokeColor, lineWidth: 1)
+                .blendMode(blendMode)
+                .allowsHitTesting(false)
+        )
+    }
+
+    private var strokeColor: Color {
+        switch colorScheme {
+        case .dark:  return Color.white.opacity(opacity)
+        case .light: return Color.black.opacity(max(0.04, opacity * 0.5))
+        @unknown default: return Color.white.opacity(opacity)
+        }
+    }
+
+    private var blendMode: BlendMode {
+        switch colorScheme {
+        case .dark:  return .screen
+        case .light: return .multiply
+        @unknown default: return .screen
+        }
     }
 }
 #endif

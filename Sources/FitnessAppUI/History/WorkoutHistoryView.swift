@@ -86,6 +86,49 @@ struct HistorySessionRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // DEL-065: Icon + Hintergrundfarbe je nach Session-Typ.
+            //   * Cardio  → figure.run + orange
+            //   * Rest    → bed.double.fill + purple (eigentlich gefiltert,
+            //               aber Edge-Case-safe)
+            //   * Strength → Datums-Block in blau wie bisher
+            iconBadge
+            VStack(alignment: .leading, spacing: 2) {
+                Text(session.dayName ?? "Training")
+                    .font(.body.weight(.semibold))
+                statsLine
+            }
+            Spacer()
+        }
+        .padding(.vertical, 2)
+    }
+
+    @ViewBuilder
+    private var iconBadge: some View {
+        if isCardioSession {
+            // Cardio-Tag: figure.run-Symbol + Orange. Datum wandert als
+            // kleiner Untertitel in die statsLine? Nein — wir behalten den
+            // Datums-Stempel, aber mit Orange-Tint.
+            VStack {
+                Image(systemName: "figure.run")
+                    .font(.title2)
+                    .foregroundStyle(.white)
+                Text(dayMonthCompact)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.9))
+            }
+            .frame(width: 44, height: 44)
+            .background(Color.deltiqOrange.gradient)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        } else if session.day?.type == .rest {
+            VStack {
+                Image(systemName: "bed.double.fill")
+                    .font(.title2)
+                    .foregroundStyle(.white)
+            }
+            .frame(width: 44, height: 44)
+            .background(Color.purple.gradient)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        } else {
             VStack {
                 Text(dayNumber)
                     .font(.title3.weight(.bold))
@@ -97,31 +140,84 @@ struct HistorySessionRow: View {
             .frame(width: 44, height: 44)
             .background(Color.blue.gradient)
             .clipShape(RoundedRectangle(cornerRadius: 8))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(session.dayName ?? "Training")
-                    .font(.body.weight(.semibold))
-                statsLine
-            }
-            Spacer()
         }
-        .padding(.vertical, 2)
     }
 
+    /// Kompakte Datums-Zeile fuer den Cardio-Badge, der nur ein Icon zeigt
+    /// (Datum als Untertitel statt im Zentrum).
+    private var dayMonthCompact: String {
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.dateFormat = "d. MMM"
+        return formatter.string(from: session.startTime)
+    }
+
+    /// DEL-063: Cardio-aware Stats-Zeile. Bei Hybrid-Plaenen mit reinen
+    /// Lauf-Tagen war "1 Satz · 0,00 kg" sinnfrei. Jetzt Switch nach
+    /// `day?.type == .cardio` ODER allen Logs Cardio-Snapshot:
+    ///   * Cardio → Dauer · Gesamtdistanz · Ø-Pace
+    ///   * Strength → Dauer · Saetze · Volumen-kg
+    @ViewBuilder
     private var statsLine: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "clock")
-            Text("\(session.durationMinutes) Min")
-            Text("•")
-            Image(systemName: "list.number")
-            Text("\(session.totalSets)")
-            Text("•")
-            Image(systemName: "scalemass")
-            Text("\(session.totalVolumeKg.truncated(to: 0).formattedTwoDecimals) kg")
+        if isCardioSession {
+            HStack(spacing: 6) {
+                Image(systemName: "clock")
+                Text("\(session.durationMinutes) Min")
+                Text("•")
+                Image(systemName: "figure.run")
+                Text(totalDistanceText)
+                Text("•")
+                Image(systemName: "stopwatch")
+                Text(averagePaceText)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .monospacedDigit()
+        } else {
+            HStack(spacing: 6) {
+                Image(systemName: "clock")
+                Text("\(session.durationMinutes) Min")
+                Text("•")
+                Image(systemName: "list.number")
+                Text("\(session.totalSets)")
+                Text("•")
+                Image(systemName: "scalemass")
+                Text("\(session.totalVolumeKg.truncated(to: 0).formattedTwoDecimals) kg")
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .monospacedDigit()
         }
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .monospacedDigit()
+    }
+
+    /// True wenn der Day als Cardio markiert ist ODER alle Logs der Session
+    /// einen Cardio-Snapshot tragen. Das `day`-Backref kann nach DEL-049-
+    /// Cascade nullified sein — dann fallen wir auf den Log-Snapshot zurueck.
+    private var isCardioSession: Bool {
+        if let type = session.day?.type, type == .cardio {
+            return true
+        }
+        guard !session.logs.isEmpty else { return false }
+        return session.logs.allSatisfy { $0.exerciseIsCardioSnapshot }
+    }
+
+    private var totalDistanceText: String {
+        let total = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
+        guard total > 0 else { return "—" }
+        if total == total.rounded() {
+            return "\(Int(total)) km"
+        }
+        return "\(total.truncated(to: 2).formattedTwoDecimals) km"
+    }
+
+    private var averagePaceText: String {
+        let totalKm = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
+        let totalSec = session.logs.compactMap(\.durationSeconds).reduce(0, +)
+        guard totalKm > 0, totalSec > 0,
+              let pace = PaceCalculator.minutesPerKm(distanceKm: totalKm, durationSeconds: totalSec)
+        else { return "—:——" }
+        let total = Int((pace * 60.0).rounded())
+        return String(format: "%d:%02d /km", total / 60, total % 60)
     }
 
     private var dayNumber: String {

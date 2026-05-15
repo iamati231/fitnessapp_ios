@@ -420,22 +420,39 @@ public struct ActiveWorkoutView: View {
         // (read-only) berechnet, daher hier Discard.
         _ = ProgressionApplicator.apply(to: session, in: modelContext)
 
-        // Push the workout to Apple Health as a strength-training session.
-        // Best-effort: when HealthKit is unauthorised or unavailable, this is a
-        // no-op. Captures startTime/endTime/totalSets/totalVolumeKg so the
-        // Fitness app and Activity rings update without the user having to
-        // re-log anything. Snapshotted now because session.* may mutate later.
+        // DEL-063: Push to Apple Health with the correct activity type.
+        //   * Pure Cardio-Session (Hybrid Easy/Long/Intervall-Run) →
+        //     `.running` + distance-sample, sodass Fitness-Ringe + Lauf-
+        //     Statistiken stimmig sind.
+        //   * Strength / Mixed → `.traditionalStrengthTraining` wie bisher.
+        // Snapshot der relevanten Werte JETZT, weil session.* spaeter mutiert.
         let workoutStart = session.startTime
         let workoutEnd = endTime
         let workoutSets = session.totalSets
         let workoutVolume = session.totalVolumeKg
+        let pushAsCardio = isCardioSession
+        let cardioTotalKm = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
+        let cardioTotalSec = session.logs.compactMap(\.durationSeconds).reduce(0, +)
+        let cardioPace = PaceCalculator.minutesPerKm(
+            distanceKm: cardioTotalKm,
+            durationSeconds: cardioTotalSec
+        )
         Task {
-            await healthKit.saveWorkout(
-                startDate: workoutStart,
-                endDate: workoutEnd,
-                totalSets: workoutSets,
-                totalVolumeKg: workoutVolume
-            )
+            if pushAsCardio, cardioTotalKm > 0 {
+                await healthKit.saveRunningWorkout(
+                    startDate: workoutStart,
+                    endDate: workoutEnd,
+                    totalDistanceKm: cardioTotalKm,
+                    averagePaceMinPerKm: cardioPace
+                )
+            } else {
+                await healthKit.saveWorkout(
+                    startDate: workoutStart,
+                    endDate: workoutEnd,
+                    totalSets: workoutSets,
+                    totalVolumeKg: workoutVolume
+                )
+            }
         }
 
         // Clear any running rest timer (in-app + Live Activity). Branching:

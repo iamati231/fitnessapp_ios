@@ -203,6 +203,69 @@ public actor HealthKitService {
         }
     }
 
+    /// DEL-063: Cardio-Sessions (z.B. Hybrid-Lauftage) duerfen nicht als
+    /// `.traditionalStrengthTraining` in Apple Health landen — die Fitness-
+    /// App wertet sie sonst falsch fuer den Bewegungs-Ring aus.
+    ///
+    /// Diese Methode schreibt das Workout als `.running` und haengt
+    /// zusaetzlich ein `distanceWalkingRunning`-Quantity-Sample an, damit
+    /// die Gesamt-Kilometer in den Trainings-Statistiken erscheinen.
+    ///
+    /// **Custom metadata**: bundle-prefixed Keys (`TotalDistanceKm`,
+    /// `AveragePaceMinPerKm`) bleiben fuer eventuelle App-zu-App-Reads
+    /// erhalten.
+    public func saveRunningWorkout(
+        startDate: Date,
+        endDate: Date,
+        totalDistanceKm: Double,
+        averagePaceMinPerKm: Double?
+    ) async throws {
+        let configuration = HKWorkoutConfiguration()
+        configuration.activityType = .running
+        configuration.locationType = .outdoor
+
+        let builder = HKWorkoutBuilder(
+            healthStore: store,
+            configuration: configuration,
+            device: nil
+        )
+
+        var metadata: [String: Any] = [
+            "com.atamya.FitnessApp.TotalDistanceKm": totalDistanceKm
+        ]
+        if let pace = averagePaceMinPerKm, pace > 0 {
+            metadata["com.atamya.FitnessApp.AveragePaceMinPerKm"] = pace
+        }
+
+        do {
+            try await builder.beginCollection(at: startDate)
+            try await builder.addMetadata(metadata)
+
+            // Distanz-Sample anhaengen, damit die Apple-Health-UI die
+            // Kilometer sauber zaehlt und die Fitness-Bewegungs-Ringe
+            // korrekt aufgeladen werden.
+            if totalDistanceKm > 0 {
+                let distanceMeters = totalDistanceKm * 1000.0
+                let distanceQuantity = HKQuantity(
+                    unit: HKUnit.meter(),
+                    doubleValue: distanceMeters
+                )
+                let distanceSample = HKQuantitySample(
+                    type: HKQuantityType(.distanceWalkingRunning),
+                    quantity: distanceQuantity,
+                    start: startDate,
+                    end: endDate
+                )
+                try await builder.addSamples([distanceSample])
+            }
+
+            try await builder.endCollection(at: endDate)
+            _ = try await builder.finishWorkout()
+        } catch {
+            throw HealthKitError.saveFailed(reason: error.localizedDescription)
+        }
+    }
+
     // MARK: Internals
 
     /// Wraps the legacy completion-handler `HKSampleQuery` as async — iOS 17 doesn't

@@ -5,15 +5,14 @@ import Foundation
 /// strictly exceeds the lifter's prior best.
 public struct PersonalRecord: Sendable, Hashable, Identifiable {
 
-    /// Distinct PR categories. Five kinds spread across three exercise-types:
+    /// Distinct PR categories. Seven kinds across four exercise-types:
     ///   - **Weighted lifts** (any attempt has weight > 0): heaviestWeight, bestSet, estimated1RM.
     ///   - **Bodyweight** (all attempts weight == 0, not time-based): maxReps.
     ///   - **Time-based / isometric** (Plank, Wall Sit, Mountain Climbers): maxHoldSeconds.
-    /// Cardio (treadmill, bike) is intentionally excluded — different metric domain
-    /// (pace / distance / heart-rate) belongs in a separate detector.
+    ///   - **Cardio (DEL-064)** (Easy Run, Long Run, Intervalle): longestDistance, fastestPace.
     /// String-rawvalue so persistence layers (`PersonalRecordEntry` @Model) can
-     /// round-trip the kind without a custom codable shim. Stable identifiers —
-     /// renaming a case here is a database-migration event.
+    /// round-trip the kind without a custom codable shim. Stable identifiers —
+    /// renaming a case here is a database-migration event.
     public enum Kind: String, Sendable, Hashable, CaseIterable, Codable {
         /// Heaviest single weight ever lifted, regardless of reps.
         case heaviestWeight
@@ -25,6 +24,13 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
         case maxReps
         /// Longest hold for an isometric / time-based exercise (Plank, Wall Sit, Seitstütz).
         case maxHoldSeconds
+        /// DEL-064: Weiteste Distanz, die je in dieser Cardio-Uebung gelaufen
+        /// wurde (km). Aggregat ueber alle Saetze einer Session.
+        case longestDistance
+        /// DEL-064: Beste Average-Pace einer Cardio-Session (min/km, niedriger
+        /// = besser). Nur valide ueber Sessions mit `totalKm >=` Mindestdistanz —
+        /// PRDetector guarded gegen Sprint-Outlier.
+        case fastestPace
     }
 
     /// Stable identifier — allows `ForEach(prs) {}` without needing manual id-mapping.
