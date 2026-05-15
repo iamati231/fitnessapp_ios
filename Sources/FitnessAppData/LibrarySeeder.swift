@@ -28,7 +28,11 @@ public enum LibrarySeeder {
                 isCustom: false,
                 difficultyLevel: spec.difficultyLevel,
                 isSystemCompound: spec.isSystemCompound,
-                isTimeBased: spec.isTimeBased
+                isTimeBased: spec.isTimeBased,
+                // DEL-080: Cardio-Flag aus Spec propagieren, sodass Ad-Hoc-
+                // Cardio-Einheiten (Freier Lauf, Radfahren, ...) korrekt
+                // klassifiziert in den Picker landen.
+                isCardio: spec.isCardio
             )
             context.insert(template)
         }

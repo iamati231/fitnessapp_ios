@@ -152,14 +152,15 @@ struct HistorySessionRow: View {
         return formatter.string(from: session.startTime)
     }
 
-    /// DEL-063: Cardio-aware Stats-Zeile. Bei Hybrid-Plaenen mit reinen
-    /// Lauf-Tagen war "1 Satz · 0,00 kg" sinnfrei. Jetzt Switch nach
-    /// `day?.type == .cardio` ODER allen Logs Cardio-Snapshot:
-    ///   * Cardio → Dauer · Gesamtdistanz · Ø-Pace
-    ///   * Strength → Dauer · Saetze · Volumen-kg
+    /// DEL-063 + DEL-081: Drei-State-Stats-Zeile via `SessionCategory`.
+    ///   * pureStrength → Dauer · Saetze · Volumen-kg
+    ///   * pureCardio   → Dauer · Distanz · Ø-Pace
+    ///   * mixed        → Dauer · Volumen · Distanz (Pace + Saetze entfallen
+    ///     aus Platzgruenden; User sieht beide Hauptmetriken sofort)
     @ViewBuilder
     private var statsLine: some View {
-        if isCardioSession {
+        switch session.sessionCategory {
+        case .pureCardio:
             HStack(spacing: 6) {
                 Image(systemName: "clock")
                 Text("\(session.durationMinutes) Min")
@@ -173,7 +174,23 @@ struct HistorySessionRow: View {
             .font(.caption)
             .foregroundStyle(.secondary)
             .monospacedDigit()
-        } else {
+
+        case .mixed:
+            HStack(spacing: 6) {
+                Image(systemName: "clock")
+                Text("\(session.durationMinutes) Min")
+                Text("•")
+                Image(systemName: "scalemass")
+                Text("\(session.totalVolumeKg.truncated(to: 0).formattedTwoDecimals) kg")
+                Text("•")
+                Image(systemName: "figure.run")
+                Text(totalDistanceText)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .monospacedDigit()
+
+        case .pureStrength:
             HStack(spacing: 6) {
                 Image(systemName: "clock")
                 Text("\(session.durationMinutes) Min")
@@ -190,15 +207,11 @@ struct HistorySessionRow: View {
         }
     }
 
-    /// True wenn der Day als Cardio markiert ist ODER alle Logs der Session
-    /// einen Cardio-Snapshot tragen. Das `day`-Backref kann nach DEL-049-
-    /// Cascade nullified sein — dann fallen wir auf den Log-Snapshot zurueck.
+    /// DEL-081: True nur fuer reine Cardio-Sessions — Mixed-Sessions bekommen
+    /// jetzt das Strength-Style-Icon (Datums-Block) statt des Run-Badge, weil
+    /// Strength ueberwiegt visuell wenn beides drin ist.
     private var isCardioSession: Bool {
-        if let type = session.day?.type, type == .cardio {
-            return true
-        }
-        guard !session.logs.isEmpty else { return false }
-        return session.logs.allSatisfy { $0.exerciseIsCardioSnapshot }
+        session.sessionCategory == .pureCardio
     }
 
     private var totalDistanceText: String {

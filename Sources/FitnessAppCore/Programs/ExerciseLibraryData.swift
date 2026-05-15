@@ -164,7 +164,21 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Kettlebell Goblet Squat",          equipment: .kettlebell, primaryMuscle: .quads,     difficultyLevel: .beginner),
         ExerciseTemplateSpec(name: "Kettlebell Snatch",                equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced),
         ExerciseTemplateSpec(name: "Kettlebell Clean & Press",         equipment: .kettlebell, primaryMuscle: .shoulders),
-        ExerciseTemplateSpec(name: "Kettlebell Halo",                  equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .beginner)
+        ExerciseTemplateSpec(name: "Kettlebell Halo",                  equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .beginner),
+
+        // ── CARDIO (DEL-080 — Ad-Hoc-Optionen fuer Hybrid-/freie Trainings) ─
+        // Alle `isCardio: true` damit der DayEditor beim Picker-Pick die
+        // Uebung automatisch korrekt klassifiziert. `primaryMuscle: .core`
+        // ist ein Notbehelf — Cardio bedient den gesamten Koerper, aber
+        // das MuscleGroup-Enum hat keinen "Ganzkoerper"-Eintrag.
+        ExerciseTemplateSpec(name: "Freier Lauf",                      equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true),
+        ExerciseTemplateSpec(name: "Laufband",                         equipment: .machine,    primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true),
+        ExerciseTemplateSpec(name: "Radfahren (outdoor)",              equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true),
+        ExerciseTemplateSpec(name: "Fahrradergometer",                 equipment: .machine,    primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true),
+        ExerciseTemplateSpec(name: "Rudermaschine",                    equipment: .machine,    primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true),
+        ExerciseTemplateSpec(name: "Crosstrainer",                     equipment: .machine,    primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true),
+        ExerciseTemplateSpec(name: "Stepper",                          equipment: .machine,    primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true),
+        ExerciseTemplateSpec(name: "Schwimmen",                        equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true)
     ]
 
     /// Alternative-Mapping fuer den Environment-Swap (DEL-022). Bei einem

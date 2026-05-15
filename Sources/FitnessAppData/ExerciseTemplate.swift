@@ -18,6 +18,13 @@ public final class ExerciseTemplate {
     /// True for isometric/time-based exercises — reps records seconds held (F161).
     public var isTimeBased: Bool
 
+    /// DEL-080: True fuer Cardio-Lifts. Wird vom DayEditor beim Picker-Pick
+    /// auf `Exercise.isCardio` propagiert — sodass Ad-Hoc-Cardio-Einheiten
+    /// (z.B. "Freier Lauf" am Ende eines Strength-Tags) automatisch korrekt
+    /// klassifiziert sind. Default false → bestehende Library-Eintraege
+    /// (Strength) bleiben unangetastet.
+    public var isCardio: Bool = false
+
     public init(
         name: String,
         equipment: Equipment,
@@ -25,7 +32,8 @@ public final class ExerciseTemplate {
         isCustom: Bool = false,
         difficultyLevel: DifficultyLevel = .intermediate,
         isSystemCompound: Bool = false,
-        isTimeBased: Bool = false
+        isTimeBased: Bool = false,
+        isCardio: Bool = false
     ) {
         self.name = name
         self.equipment = equipment
@@ -34,6 +42,7 @@ public final class ExerciseTemplate {
         self.difficultyLevel = difficultyLevel
         self.isSystemCompound = isSystemCompound
         self.isTimeBased = isTimeBased
+        self.isCardio = isCardio
     }
 }
 #endif

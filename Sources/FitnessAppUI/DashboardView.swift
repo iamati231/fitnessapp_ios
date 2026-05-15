@@ -874,10 +874,33 @@ public struct DashboardView: View {
         .sorted { $0.exerciseName < $1.exerciseName }
     }
 
+    /// DEL-080: True wenn das Cardio-Chart ueberhaupt angezeigt werden darf.
+    /// Reine Bodybuilder sollen kein leeres Cardio-Surface sehen; Hybrid-
+    /// und Lauf-Athleten kriegen es bedingungslos.
+    ///
+    /// Sichtbar wenn EINS der zwei zutrifft:
+    ///   1. User hat in den letzten 30 Tagen mind. ein Workout mit
+    ///      `log.resolvedIsCardio && distanceKm > 0` absolviert.
+    ///   2. Aktiver Trainingsplan enthaelt mind. eine Uebung mit
+    ///      `isCardio == true`.
+    private var shouldShowCardioChart: Bool {
+        // Branch 1: letzte 30 Tage Cardio-Aktivitaet?
+        let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date.distantPast
+        let hasRecentCardio = completedSessions.contains { session in
+            session.startTime >= thirtyDaysAgo
+                && session.logs.contains { $0.resolvedIsCardio && ($0.distanceKm ?? 0) > 0 }
+        }
+        if hasRecentCardio { return true }
+        // Branch 2: aktiver Plan mit Cardio-Uebung?
+        return activePlans.first?.days.contains { day in
+            day.activeExercises.contains { $0.isCardio }
+        } ?? false
+    }
+
     @ViewBuilder
     private var cardioPaceChart: some View {
         let series = cardioSeries
-        if !series.isEmpty {
+        if shouldShowCardioChart, !series.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Cardio-Pace-Trend")

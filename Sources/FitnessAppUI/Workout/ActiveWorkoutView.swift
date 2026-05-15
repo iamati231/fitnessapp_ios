@@ -121,20 +121,28 @@ public struct ActiveWorkoutView: View {
 
     // MARK: Sections
 
-    /// DEL-061: dynamische Stats-Karte. Wenn ALLE aktiven Uebungen des Tages
-    /// Cardio sind (z.B. Hybrid-Lauftag), zeigen wir die Lauf-Metriken
-    /// statt der Kraft-Metriken. Mixed-Day-Edge-Case faellt auf den Strength-
-    /// Header zurueck — in der Praxis sind Hybrid-Plaene single-purpose-Days.
+    /// DEL-061 + DEL-081: Stats-Karte mit drei States.
+    ///   * pureCardio  → Dauer | Distanz | ⌀ Pace
+    ///   * mixed       → Dauer | Volumen kg | Distanz km
+    ///   * pureStrength → Dauer | Saetze | Volumen kg
+    /// Mixed-Header zeigt allgemeine Werte beider Welten, ohne page-aware
+    /// hin- und herzuspringen wenn der User durch die Day-Pages swipet —
+    /// das wirkte vorher unruhig.
     @ViewBuilder
     private var statsCard: some View {
         HStack(spacing: 0) {
             StatBlock(label: "Dauer", value: formattedDuration, monospacedDigit: true)
             divider
-            if isCardioSession {
+            switch dayCategory {
+            case .pureCardio:
                 StatBlock(label: "Distanz", value: formatTotalDistance(), monospacedDigit: true)
                 divider
                 StatBlock(label: "⌀ Pace", value: formatAveragePace(), monospacedDigit: true)
-            } else {
+            case .mixed:
+                StatBlock(label: "Volumen kg", value: formatVolume(), monospacedDigit: true)
+                divider
+                StatBlock(label: "Distanz km", value: formatTotalDistance(stripUnit: true), monospacedDigit: true)
+            case .pureStrength:
                 StatBlock(label: "Sätze", value: "\(loggedSetsCount)", monospacedDigit: true)
                 divider
                 StatBlock(label: "Volumen kg", value: formatVolume(), monospacedDigit: true)
@@ -144,6 +152,23 @@ public struct ActiveWorkoutView: View {
         .background(Color.secondary.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .innerLightStroke(cornerRadius: 16, opacity: 0.08)
+    }
+
+    /// DEL-081: Tages-Kategorie aus der Plan-Day-Komposition. Mixed-Day =
+    /// mind. eine Cardio- UND mind. eine Strength-Uebung. Wir lesen das aus
+    /// `day.activeExercises`, NICHT aus den geloggten Saetzen — sonst
+    /// switcht der Header von "pureStrength" zu "mixed" mitten in der
+    /// Session, sobald der User das erste Cardio-Set abhakt.
+    private var dayCategory: SessionCategory {
+        guard let exercises = session.day?.activeExercises, !exercises.isEmpty
+        else { return .pureStrength }
+        let hasCardio = exercises.contains { $0.isCardio }
+        let hasStrength = exercises.contains { !$0.isCardio }
+        switch (hasStrength, hasCardio) {
+        case (true, true):   return .mixed
+        case (false, true):  return .pureCardio
+        default:             return .pureStrength
+        }
     }
 
     /// DEL-071: Paging-aware Cardio-Detection FUER DEN HEADER.
@@ -177,13 +202,15 @@ public struct ActiveWorkoutView: View {
     }
 
     /// DEL-061: Summe aller `distanceKm` der Session-Logs. Format: "5,5 km".
-    private func formatTotalDistance() -> String {
+    /// DEL-081: optional ohne "km"-Suffix (wenn das Label bereits "Distanz km"
+    /// signalisiert — Mixed-Header).
+    private func formatTotalDistance(stripUnit: Bool = false) -> String {
         let total = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
         guard total > 0 else { return "—" }
-        if total == total.rounded() {
-            return "\(Int(total)) km"
-        }
-        return "\(total.truncated(to: 2).formattedTwoDecimals) km"
+        let valueStr: String = (total == total.rounded())
+            ? "\(Int(total))"
+            : total.truncated(to: 2).formattedTwoDecimals
+        return stripUnit ? valueStr : "\(valueStr) km"
     }
 
     /// DEL-061: gewichtete Average-Pace ueber alle Cardio-Logs der Session.

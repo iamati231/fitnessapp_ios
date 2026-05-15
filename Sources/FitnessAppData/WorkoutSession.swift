@@ -1,6 +1,7 @@
 #if canImport(SwiftData)
 import Foundation
 import SwiftData
+import FitnessAppCore
 
 /// One persisted workout session.
 ///
@@ -78,6 +79,29 @@ public final class WorkoutSession {
     /// `isCompleted` alone, otherwise rest-day-marker rows leak into UI.
     public var isRealWorkout: Bool {
         isCompleted && !isRestDay
+    }
+
+    /// DEL-081: Drei-State-Kategorisierung der Session aus den geloggten
+    /// Saetzen. UI-Surfaces (HistorySessionRow, WorkoutSummary, ActiveWorkout-
+    /// Header) lesen das hier und schalten ihre Stats-Zeile entsprechend.
+    public var sessionCategory: SessionCategory {
+        SessionCategory.evaluate(logs: logs.map {
+            (isCardio: $0.resolvedIsCardio, distanceKm: $0.distanceKm)
+        })
+    }
+
+    /// DEL-081 Convenience — Summe `log.distanceKm` ueber alle Logs der
+    /// Session. Strength-Logs tragen nil → 0 bei.
+    public var totalDistanceKm: Double {
+        logs.compactMap(\.distanceKm).reduce(0.0, +)
+    }
+
+    /// DEL-081 Convenience — Summe `log.durationSeconds` ueber alle Cardio-
+    /// Logs. Wird fuer Average-Pace genutzt.
+    public var totalCardioDurationSeconds: Int {
+        logs.filter { $0.resolvedIsCardio }
+            .compactMap(\.durationSeconds)
+            .reduce(0, +)
     }
 }
 #endif

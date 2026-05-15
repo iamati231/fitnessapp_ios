@@ -433,6 +433,11 @@ public struct DayEditorView: View {
         let exercise = Exercise(
             name: template.name,
             orderIndex: day.activeExercises.count,
+            // DEL-080: Cardio-Flag aus dem Library-Template propagieren.
+            // Picker-Pick einer Cardio-Uebung (z.B. "Freier Lauf") soll
+            // direkt mit `isCardio = true` im Plan landen — sonst kriegt
+            // der User die falsche SetRow-UI.
+            isCardio: template.isCardio,
             isTimeBased: template.isTimeBased,
             // DEL-053: Compound-Flag aus dem Library-Template ziehen. Die
             // 5 kanonischen Barbell-Lifts werden als Compound markiert,
