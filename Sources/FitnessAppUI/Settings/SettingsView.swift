@@ -142,6 +142,12 @@ public struct SettingsView: View {
             } label: {
                 Text("settings.preferences.units", bundle: .module)
             }
+            // DEL-084: Equipment-Tracker (Laufschuhe etc.) Submenu.
+            NavigationLink {
+                GearListView()
+            } label: {
+                Label("Ausrüstung & Schuhe", systemImage: "shoe")
+            }
         } header: {
             Text("settings.section.preferences", bundle: .module)
         } footer: {

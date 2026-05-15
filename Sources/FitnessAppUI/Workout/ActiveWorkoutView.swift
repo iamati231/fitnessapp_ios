@@ -27,6 +27,17 @@ public struct ActiveWorkoutView: View {
     /// PR-Detection selbst (Trophy-Room) bleibt unangetastet.
     @AppStorage("pref_pr_celebrations") private var prCelebrationsEnabled: Bool = true
 
+    /// DEL-086: Interference-Banner-Dismiss-State. User kann das Warn-Banner
+    /// per Tap auf "x" wegklicken; persistiert nur fuer diese Session-View-
+    /// Instanz (State, kein AppStorage — bei der naechsten Session
+    /// soll's wieder erscheinen, wenn die Bedingungen erfuellt sind).
+    @State private var interferenceWarningDismissed: Bool = false
+
+    /// DEL-086: Recent-Cardio-Sessions fuer die Interference-Detection.
+    /// FetchDescriptor mit Datums-Predikat auf die letzten 24 Stunden,
+    /// nur isCompleted-Sessions.
+    @Query private var recentSessions: [WorkoutSession]
+
     @State private var now: Date = Date()
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -50,10 +61,15 @@ public struct ActiveWorkoutView: View {
         // Stats oben fix, dann TabView mit einer Page pro Uebung + einer
         // finalen "Finish"-Page (Save/Discard). User swipt horizontal
         // zwischen Uebungen, page-indicator unten zeigt Position.
-        VStack(spacing: 0) {
-            statsCard
+        VStack(spacing: 8) {
+            // DEL-086: Interference-Warning ueber dem Header. Banner zieht
+            // sich aus, sobald der User es dismissed oder die Bedingungen
+            // nicht erfuellt sind.
+            interferenceBanner
                 .padding(.horizontal)
                 .padding(.top, 8)
+            statsCard
+                .padding(.horizontal)
 
             paginatedBody
         }
@@ -91,9 +107,16 @@ public struct ActiveWorkoutView: View {
                 durationText: formattedDuration,
                 setsCount: loggedSetsCount,
                 volumeText: formatVolume(),
-                onConfirm: { feeling in
+                showGearPicker: isPureCardioSessionForHealthKit,
+                onConfirm: { feeling, gear in
                     showingFinishConfirm = false
                     session.sessionFeeling = feeling.rawValue
+                    // DEL-084: Gear zuweisen + Distanz auf Gear buchen.
+                    if let gear, isPureCardioSessionForHealthKit {
+                        session.gear = gear
+                        let totalKm = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
+                        gear.currentDistanceKm += totalKm
+                    }
                     finishWorkout()
                 },
                 onCancel: { showingFinishConfirm = false }
@@ -152,6 +175,70 @@ public struct ActiveWorkoutView: View {
         .background(Color.secondary.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .innerLightStroke(cornerRadius: 16, opacity: 0.08)
+    }
+
+    // MARK: - DEL-086 Hybrid-Interference-Banner
+
+    /// True wenn der User in den letzten 24h eine harte Cardio-Einheit
+    /// absolviert hat UND heute schwere Lower-Body-Compounds geplant sind.
+    /// Logik in `InterferenceDetector` (Core, pure value-type).
+    private var shouldShowInterferenceWarning: Bool {
+        guard !interferenceWarningDismissed else { return false }
+        let cutoff = Calendar.current.date(byAdding: .hour, value: -24, to: Date()) ?? Date.distantPast
+        let recentCardioTuples = recentSessions
+            .filter { $0.isCompleted && !$0.isRestDay && $0.endTime >= cutoff }
+            .filter { $0.persistentModelID != session.persistentModelID } // nicht die JETZT laufende
+            .filter { $0.logs.contains { $0.resolvedIsCardio } }
+            .map { sess -> (feeling: Int?, durationMin: Int, distanceKm: Double) in
+                (feeling: sess.sessionFeeling,
+                 durationMin: sess.durationMinutes,
+                 distanceKm: sess.totalDistanceKm)
+            }
+        let plannedNames = session.day?.activeExercises.map(\.name) ?? []
+        return InterferenceDetector.shouldWarn(
+            recentCardioSessions: recentCardioTuples,
+            plannedExerciseNames: plannedNames
+        )
+    }
+
+    /// Banner-View — DeltiqOrange, dismissable. Wird oberhalb der
+    /// paginierten TabView angezeigt.
+    @ViewBuilder
+    private var interferenceBanner: some View {
+        if shouldShowInterferenceWarning {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Du hattest gestern eine harte Einheit")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Erwäge heute, dein Ziel-RIR bei Beinübungen um +1 zu erhöhen, um dein ZNS nicht zu überlasten.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 4)
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        interferenceWarningDismissed = true
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.secondary)
+                        .font(.title3)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Banner schließen")
+            }
+            .padding(12)
+            .background(Color.deltiqOrange.opacity(0.10))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .innerLightStroke(cornerRadius: 12, opacity: 0.08)
+            .transition(.move(edge: .top).combined(with: .opacity))
+        }
     }
 
     /// DEL-081: Tages-Kategorie aus der Plan-Day-Komposition. Mixed-Day =
@@ -412,6 +499,16 @@ public struct ActiveWorkoutView: View {
     /// BEVOR der neue Timer gesetzt wird. Garantiert: immer maximal ein
     /// laufender Timer pro Workout.
     private func startRestTimer(for exercise: Exercise, setIndex: Int) {
+        // DEL-083: Superset-Hook. Wenn diese Uebung Teil einer Superset-Gruppe
+        // ist, starten wir die Pause NUR wenn alle Partner-Uebungen den
+        // aktuellen Set-Index auch schon abgehakt haben (A1 → B1 → Pause;
+        // nicht: A1 → Pause → B1).
+        if let supersetId = exercise.supersetId,
+           !isSupersetRoundComplete(supersetId: supersetId, setIndex: setIndex) {
+            // Partner-Uebung steht noch aus → kein Timer-Start, kein Live-
+            // Activity-Push. User soll erstmal zur Partner-Page swipen.
+            return
+        }
         // ── 1) Harter Reset des aktuellen In-App-Timers ─────────────────
         // Die `Timer.publish(every: 1, ...)` Subscription oben bleibt fix
         // (sie liefert nur den `now`-Tick); das eigentliche "Timer-State"
@@ -443,6 +540,22 @@ public struct ActiveWorkoutView: View {
                 endDate: endDate,
                 originalSeconds: bounded
             )
+        }
+    }
+
+    /// DEL-083: True wenn fuer alle Uebungen des Supersets der aktuelle
+    /// Set-Index bereits geloggt ist. Vergleicht log-counts pro Plan-Uebung
+    /// in der Session.
+    private func isSupersetRoundComplete(supersetId: UUID, setIndex: Int) -> Bool {
+        guard let day = session.day else { return true }
+        let group = day.activeExercises.filter { $0.supersetId == supersetId }
+        guard !group.isEmpty else { return true }
+        let neededLoggedCount = setIndex + 1
+        return group.allSatisfy { partner in
+            let count = partner.logs.filter {
+                $0.session?.persistentModelID == session.persistentModelID
+            }.count
+            return count >= neededLoggedCount
         }
     }
 
@@ -583,13 +696,26 @@ private struct FinishWorkoutSheet: View {
     let durationText: String
     let setsCount: Int
     let volumeText: String
-    let onConfirm: (SessionFeeling) -> Void
+    /// DEL-084: Gear-Picker nur einblenden bei Cardio-Sessions — bei Strength
+    /// hat ein "Laufschuh-Picker" keinen Sinn.
+    var showGearPicker: Bool = false
+    /// DEL-084: onConfirm liefert jetzt zusaetzlich das gewaehlte Gear (nil
+    /// bei Strength-Sessions oder wenn User keine Schuhe pflegt).
+    let onConfirm: (SessionFeeling, Gear?) -> Void
     let onCancel: () -> Void
 
     /// Default-Selektion: Okay (3) — neutraler Mittelpunkt, der das
     /// Progression-Veto NICHT triggert. So crasht ein Default-Submit den
     /// Algorithmus nicht.
     @State private var selected: SessionFeeling = .okay
+    @State private var selectedGear: Gear?
+
+    /// DEL-084: Aktive Gears aus dem Store. Bei Default-Pick nehmen wir
+    /// das Gear mit `isActive == true`, sortiert nach Datum descending
+    /// (zuletzt-erstellte zuerst).
+    @Query(filter: #Predicate<Gear> { $0.isActive == true },
+           sort: \Gear.createdAt, order: .reverse)
+    private var activeGears: [Gear]
 
     var body: some View {
         NavigationStack {
@@ -597,6 +723,9 @@ private struct FinishWorkoutSheet: View {
                 VStack(alignment: .leading, spacing: 18) {
                     summarySection
                     feelingSection
+                    if showGearPicker, !activeGears.isEmpty {
+                        gearPickerSection
+                    }
                     actionButtons
                 }
                 .padding(.horizontal, 20)
@@ -611,7 +740,60 @@ private struct FinishWorkoutSheet: View {
                     Button("Abbrechen", action: onCancel)
                 }
             }
+            .onAppear {
+                // Default: zuletzt-genutzten aktiven Schuh vorauswaehlen.
+                if selectedGear == nil {
+                    selectedGear = activeGears.first
+                }
+            }
         }
+    }
+
+    /// DEL-084: Gear-Picker. Listet aktive Gears, Selected-Indicator via
+    /// Checkmark. User kann "Kein Gear" waehlen (selectedGear = nil).
+    private var gearPickerSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Verwendete Ausrüstung")
+                .font(.headline)
+            ForEach(activeGears) { gear in
+                Button {
+                    selectedGear = (selectedGear?.persistentModelID == gear.persistentModelID) ? nil : gear
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: gear.type == .shoe ? "shoe" : "bicycle")
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(Color.deltiqOrange)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(gear.name)
+                                .font(.body.weight(.medium))
+                                .foregroundStyle(.primary)
+                            Text("\(formatKm(gear.currentDistanceKm)) / \(formatKm(gear.maxDistanceKm)) km")
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(gear.needsReplacement ? .red : .secondary)
+                        }
+                        Spacer()
+                        if selectedGear?.persistentModelID == gear.persistentModelID {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(Color.deltiqOrange)
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(selectedGear?.persistentModelID == gear.persistentModelID
+                                    ? Color.deltiqOrange
+                                    : Color.secondary.opacity(0.25),
+                                    lineWidth: selectedGear?.persistentModelID == gear.persistentModelID ? 1.5 : 1)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func formatKm(_ km: Double) -> String {
+        km == km.rounded() ? "\(Int(km))" : km.truncated(to: 0).formattedTwoDecimals
     }
 
     private var summarySection: some View {
@@ -700,7 +882,7 @@ private struct FinishWorkoutSheet: View {
 
     private var actionButtons: some View {
         Button {
-            onConfirm(selected)
+            onConfirm(selected, selectedGear)
         } label: {
             HStack {
                 Spacer()

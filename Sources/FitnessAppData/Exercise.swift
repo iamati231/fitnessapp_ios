@@ -69,6 +69,12 @@ public final class Exercise {
     /// fixe Distanz ("30 Min Easy"). Nil bei Strength.
     public var targetDurationMinutes: Int?
 
+    /// DEL-083: Superset-Gruppe. Uebungen mit der gleichen UUID werden im
+    /// Workout abwechselnd ausgefuehrt (A1, B1, A2, B2 statt A1, A2, A3,
+    /// B1, B2, B3). Plan-Editor setzt die UUID via Swipe-Action "Link"; nil
+    /// = standalone-Uebung wie bisher.
+    public var supersetId: UUID?
+
     public var day: TrainingDay?
 
     /// DEL-051: HEILIGE HISTORIE. Frueher `.cascade` — beim Loeschen einer
@@ -102,6 +108,7 @@ public final class Exercise {
         isCompound: Bool = false,
         targetDistanceKm: Double? = nil,
         targetDurationMinutes: Int? = nil,
+        supersetId: UUID? = nil,
         day: TrainingDay? = nil
     ) {
         self.name = name
@@ -123,6 +130,7 @@ public final class Exercise {
         self.isCompound = isCompound
         self.targetDistanceKm = targetDistanceKm
         self.targetDurationMinutes = targetDurationMinutes
+        self.supersetId = supersetId
         self.day = day
     }
 }

@@ -302,13 +302,32 @@ public struct DayEditorView: View {
                     .buttonStyle(.plain)
                 }
             } else {
-                ForEach(orderedExercises) { exercise in
+                ForEach(Array(orderedExercises.enumerated()), id: \.element.persistentModelID) { idx, exercise in
                     Button {
                         exerciseToEdit = exercise
                     } label: {
-                        ExerciseRow(exercise: exercise)
+                        ExerciseRow(exercise: exercise, isInSuperset: exercise.supersetId != nil)
                     }
                     .buttonStyle(.plain)
+                    // DEL-083: Swipe-Action "Mit oberer verbinden" / "Trennen".
+                    // Nur sinnvoll ab Index 1 (es muss eine Uebung darueber
+                    // existieren). Toggle-Verhalten: angeklickt → verbinden,
+                    // erneut angeklickt → wieder aus Superset rausnehmen.
+                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        if idx > 0 {
+                            Button {
+                                toggleSupersetWithPrevious(at: idx)
+                            } label: {
+                                Label(
+                                    exercise.supersetId == nil ? "Verbinden" : "Trennen",
+                                    systemImage: exercise.supersetId == nil
+                                        ? "link"
+                                        : "link.badge.plus"
+                                )
+                            }
+                            .tint(Color.deltiqOrange)
+                        }
+                    }
                 }
                 .onMove(perform: moveExercises)
                 .onDelete(perform: deleteExercises)
@@ -426,6 +445,36 @@ public struct DayEditorView: View {
         case .gym:         return "Gym"
         case .homeGym:     return "Home-Gym"
         case .noEquipment: return "Bodyweight"
+        }
+    }
+
+    /// DEL-083: Verbindet die Uebung an `idx` mit der direkt darueber zum
+    /// Superset. Beide bekommen die selbe `supersetId`. Wenn die obere
+    /// bereits in einem Superset ist, schliessen wir uns dem an statt einen
+    /// neuen anzulegen. Erneuter Aufruf → loest die Verbindung.
+    private func toggleSupersetWithPrevious(at idx: Int) {
+        let arr = orderedExercises
+        guard idx > 0, idx < arr.count else { return }
+        let current = arr[idx]
+        let previous = arr[idx - 1]
+
+        if current.supersetId != nil {
+            // Trennen: Wenn current als einziger Teil ihrer Gruppe bleibt
+            // (gruppe-size <= 2 nach dem entfernen), nullen wir auch den
+            // verbleibenden Partner — denn ein "Superset of 1" macht
+            // semantisch keinen Sinn.
+            let id = current.supersetId!
+            current.supersetId = nil
+            let remaining = arr.filter { $0.supersetId == id }
+            if remaining.count <= 1 {
+                remaining.forEach { $0.supersetId = nil }
+            }
+        } else {
+            // Verbinden: gleicher supersetId wie previous (entweder dessen
+            // existierende ID oder eine neu erstellte).
+            let id = previous.supersetId ?? UUID()
+            previous.supersetId = id
+            current.supersetId = id
         }
     }
 
@@ -625,9 +674,18 @@ public struct DayEditorView: View {
 @available(iOS 17.0, macOS 14.0, *)
 private struct ExerciseRow: View {
     let exercise: Exercise
+    var isInSuperset: Bool = false
 
     var body: some View {
         HStack(spacing: 12) {
+            // DEL-083: Superset-Indikator — farbige Klammer/Linie am
+            // linken Rand. Nur sichtbar, wenn die Uebung Teil einer
+            // verknuepften Gruppe ist.
+            Rectangle()
+                .fill(isInSuperset ? Color.deltiqOrange : Color.clear)
+                .frame(width: 3)
+                .accessibilityHidden(true)
+
             Text("\(exercise.orderIndex + 1)")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
@@ -641,6 +699,12 @@ private struct ExerciseRow: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            if isInSuperset {
+                Image(systemName: "link")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .accessibilityLabel("Superset")
+            }
             if exercise.isCardio {
                 Image(systemName: "heart.fill").foregroundStyle(.pink)
             }

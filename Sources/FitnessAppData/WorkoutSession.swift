@@ -41,6 +41,13 @@ public final class WorkoutSession {
     /// kein Gefuehl tragen und auch nicht muessen.
     public var sessionFeeling: Int?
 
+    /// DEL-084: Auf welchem Gear (Schuh / Bike) wurde diese Session
+    /// gemacht? `.nullify` damit ein geloeschtes Gear die Session-Historie
+    /// nicht mit sich reisst. Nil bei reinen Strength-Sessions oder wenn
+    /// der User kein Gear gepflegt hat.
+    @Relationship(deleteRule: .nullify)
+    public var gear: Gear?
+
     @Relationship(deleteRule: .nullify)
     public var day: TrainingDay?
 

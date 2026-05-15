@@ -62,6 +62,13 @@ struct SetRow: View {
     /// groesseren Stufen.
     @ScaledMetric(relativeTo: .title2) private var checkmarkIconSize: CGFloat = 28
 
+    /// DEL-085: Popover-State fuer den Plate-Calculator. UI ist nur fuer
+    /// Strength-Lifts mit Gewicht > 0 sinnvoll — Bodyweight / Cardio /
+    /// TimeBased blenden den Button aus.
+    @State private var showingPlatePopover = false
+    @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
+    @AppStorage("pref_bar_weight_kg") private var barWeightKgRaw: Double = 20
+
     enum HoldState: Equatable {
         case idle
         case countingDown(secondsLeft: Int)
@@ -119,6 +126,14 @@ struct SetRow: View {
                 if !exercise.isCardio {
                     weightInput
                     Text("KG").deltiqLabel()   // DEL-059: uppercase + tracking
+                    // DEL-085: Plate-Calculator-Quick-Access. Nur sichtbar,
+                    // wenn ein konkretes Gewicht eingegeben ist UND die Uebung
+                    // ueberhaupt mit einer Hantelstange ausgefuehrt wird —
+                    // also nicht bei Bodyweight (weight nil/0) und nicht bei
+                    // TimeBased.
+                    if let w = weight, w > 0, !exercise.isTimeBased {
+                        plateCalculatorButton(weight: w)
+                    }
                 }
 
                 repsInput
@@ -797,6 +812,75 @@ struct SetRow: View {
             parts.append(PaceCalculator.formatPace(pace))
         }
         return parts.joined(separator: " · ")
+    }
+}
+
+// MARK: - DEL-085 PlatePopoverContent
+
+/// Kompakte Plate-Calculator-Ansicht fuer das Popover in SetRow. Reusable
+/// auch von anderen Quick-Access-Punkten.
+@available(iOS 17.0, macOS 14.0, *)
+private struct PlatePopoverContent: View {
+    let targetWeight: Double
+    let barWeight: Double
+    let unitRaw: String
+
+    private var unit: PlateCalculator.Unit {
+        PlateCalculator.Unit(rawValue: unitRaw) ?? .kg
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("Hantel-Aufladung", systemImage: "scalemass.fill")
+                    .font(.headline)
+                    .symbolRenderingMode(.hierarchical)
+                Spacer()
+                Text("\(formatWeight(targetWeight)) \(unit.rawValue)")
+                    .font(.title3.bold().monospacedDigit())
+                    .foregroundStyle(Color.deltiqOrange)
+            }
+            Text("Stange: \(formatWeight(barWeight)) \(unit.rawValue)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            let result = PlateCalculator.calculate(target: targetWeight, bar: barWeight, unit: unit)
+
+            if result.plates.isEmpty {
+                Label("Keine Aufladung — bleib bei der leeren Stange.", systemImage: "minus")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } else {
+                // Reuse der existing Visualization, kompakte Hoehe.
+                PlateBarVisualization(plates: result.plates, unit: unit)
+                    .frame(height: 84)
+                Text(perSideText(result.plates, unit: unit))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+
+            if result.actualWeight != targetWeight {
+                Text("Erreichbar: \(formatWeight(result.actualWeight)) \(unit.rawValue) (Δ \(formatWeight(result.actualWeight - targetWeight)) \(unit.rawValue))")
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+            }
+        }
+    }
+
+    /// "Pro Seite: 2× 20 · 1× 10 · 1× 2,5" — kompakter Text-Output der
+    /// Aufladungs-Liste, ergaenzt die visuelle Bar.
+    private func perSideText(_ plates: [PlateConfig], unit: PlateCalculator.Unit) -> String {
+        let grouped = Dictionary(grouping: plates) { $0.weight }
+        let sorted = grouped.keys.sorted(by: >)
+        let parts = sorted.map { w -> String in
+            let count = grouped[w]?.count ?? 0
+            return "\(count)× \(formatWeight(w))"
+        }
+        return "Pro Seite: " + parts.joined(separator: " · ") + " \(unit.rawValue)"
+    }
+
+    private func formatWeight(_ w: Double) -> String {
+        w == w.rounded() ? "\(Int(w))" : w.truncated(to: 2).formattedTwoDecimals
     }
 }
 

@@ -60,6 +60,8 @@ public struct DashboardView: View {
                 // Cardio-Distanz. Blendet sich aus wenn beide Werte == 0
                 // (frische Installs / Wochen ohne Training).
                 weeklySummaryCard
+                // DEL-082: Muskel-Heatmap (Wochen-Saetze pro Gruppe).
+                muscleHeatmapCard
                 trophyRoomCard
                 historyCard
                 trendChart
@@ -838,6 +840,77 @@ public struct DashboardView: View {
         return km.truncated(to: 2).formattedTwoDecimals
     }
 
+    // MARK: - DEL-082 Muscle-Heatmap
+
+    /// Vier-Spalten-Grid mit einem Tile pro Muskelgruppe. Farbe nach Wochen-
+    /// Volumen-Bucket; Tile zeigt Set-Anzahl + Status-Label.
+    ///
+    /// PRAGMATISCH-CUT statt Silhouette: Eine echte 2D-Koerper-Map waere
+    /// tagelanges Custom-Artwork. Grid-Tiles liefern 80% des Werts (User
+    /// sieht sofort welche Gruppe untertrainiert ist) ohne Asset-Pipeline.
+    @ViewBuilder
+    private var muscleHeatmapCard: some View {
+        let aggregate = weeklyMuscleVolume
+        let anyTraining = aggregate.contains { $0.setsCount > 0 }
+        if anyTraining {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Muskel-Heatmap (Woche)")
+                        .font(.headline)
+                    Spacer()
+                    Text("Sätze")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 84), spacing: 8)],
+                    alignment: .leading,
+                    spacing: 8
+                ) {
+                    ForEach(aggregate) { entry in
+                        MuscleHeatmapTile(entry: entry)
+                    }
+                }
+                .padding(12)
+                .background(Color.secondary.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .innerLightStroke(cornerRadius: 12, opacity: 0.08)
+            }
+        }
+    }
+
+    /// Wochen-Aggregat ueber alle abgeschlossenen Logs der aktuellen
+    /// Kalenderwoche. Muscle-Mapping via Exercise-Name-Lookup gegen die
+    /// `ExerciseLibraryData.all`-Liste.
+    private var weeklyMuscleVolume: [MuscleWeeklyVolume] {
+        let weekStart = Self.currentWeekStart()
+        let weekLogs = completedSessions
+            .filter { $0.startTime >= weekStart }
+            .flatMap(\.logs)
+            .compactMap { log -> (date: Date, exerciseName: String, isCardio: Bool)? in
+                guard let name = log.resolvedExerciseName else { return nil }
+                return (date: log.date, exerciseName: name, isCardio: log.resolvedIsCardio)
+            }
+        return MuscleVolumeAggregator.aggregate(
+            logs: weekLogs,
+            weekStart: weekStart,
+            nameToMuscle: Self.muscleForName
+        )
+    }
+
+    /// Statischer Lookup vom Library-Namen auf MuscleGroup. Custom-Uebungen
+    /// und Unbekannte returnen nil → zaehlen nicht ins Volume mit.
+    private static func muscleForName(_ name: String) -> MuscleGroup? {
+        ExerciseLibraryData.all.first { $0.name == name }?.primaryMuscle
+    }
+
+    private static func currentWeekStart() -> Date {
+        let cal = Calendar.current
+        let components = cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
+        return cal.date(from: components) ?? Date()
+    }
+
     // MARK: - DEL-065 Cardio-Trend-Chart
 
     /// DEL-065: Pace-Trend ueber Zeit fuer Hybrid-Athleten. Eine Linie pro
@@ -1037,6 +1110,75 @@ struct CompoundSeries: Identifiable {
     let id = UUID()
     let exerciseName: String
     let points: [CompoundPoint]
+}
+
+// MARK: - DEL-082 Muscle-Heatmap Tile
+
+@available(iOS 17.0, macOS 14.0, *)
+private struct MuscleHeatmapTile: View {
+    let entry: MuscleWeeklyVolume
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(localizedMuscleName)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(textColor)
+                .lineLimit(1)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text("\(entry.setsCount)")
+                    .font(.system(size: 22, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(textColor)
+                Text(entry.bucket.label.uppercased())
+                    .font(.system(size: 8, weight: .bold))
+                    .tracking(0.8)
+                    .foregroundStyle(textColor.opacity(0.85))
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(tileBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .innerLightStroke(cornerRadius: 10, opacity: 0.06)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(localizedMuscleName), \(entry.setsCount) Sätze, \(entry.bucket.label)")
+    }
+
+    private var tileBackground: Color {
+        switch entry.bucket {
+        case .untrained:     return Color.secondary.opacity(0.12)
+        case .maintenance:   return Color.deltiqOrange.opacity(0.22)
+        case .optimal:       return Color.deltiqOrange.opacity(0.55)
+        case .overreaching:  return Color.red.opacity(0.55)
+        }
+    }
+
+    private var textColor: Color {
+        switch entry.bucket {
+        case .untrained:     return .secondary
+        case .maintenance, .optimal, .overreaching:
+            return .primary
+        }
+    }
+
+    /// Deutsche User-Labels — Single-Source-of-Truth waere
+    /// `DomainEnums+Localization.localizedName`, aber das ist eine
+    /// LocalizedStringResource — fuer die kompakte Tile-Zeile reicht der
+    /// einfache String-Mapping.
+    private var localizedMuscleName: String {
+        switch entry.group {
+        case .chest:      return "Brust"
+        case .back:       return "Rücken"
+        case .shoulders:  return "Schultern"
+        case .biceps:     return "Bizeps"
+        case .triceps:    return "Trizeps"
+        case .quads:      return "Quads"
+        case .hamstrings: return "Hams"
+        case .glutes:     return "Gesäß"
+        case .calves:     return "Waden"
+        case .core:       return "Core"
+        }
+    }
 }
 
 // MARK: - DEL-065 Cardio-Pace Chart data
