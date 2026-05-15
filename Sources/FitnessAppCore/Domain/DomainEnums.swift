@@ -83,3 +83,25 @@ public enum DifficultyLevel: String, Codable, Sendable, CaseIterable {
     case intermediate
     case advanced
 }
+
+/// DEL-087: Welche Rolle hat dieser Satz im Workout-Flow?
+///   * `.warmup` — Aufwaerm-Satz vor den Working-Sets. UI rendert in grau,
+///     keine Progression, kein RIR, kein Volumen-Eintrag.
+///   * `.workingSet` — Standard-Arbeitssatz. Default-Wert.
+///   * `.cooldown` — Abwaerm-/Mobility-Satz nach dem Workout. Selbe
+///     UI-Behandlung wie Warmup, semantisch aber "Cool-Down".
+public enum ExerciseRole: String, Codable, Sendable, CaseIterable {
+    case warmup
+    case workingSet
+    case cooldown
+
+    /// True wenn dieser Lift vom Progressions-Algorithmus geskippt werden
+    /// soll — Warmup + Cooldown sind kein Hypertrophie-Reiz und sollten
+    /// keine `.increaseWeight`-Actions triggern.
+    public var skipsProgression: Bool {
+        switch self {
+        case .warmup, .cooldown: return true
+        case .workingSet:        return false
+        }
+    }
+}

@@ -72,6 +72,9 @@ public enum ProgressionApplicator {
             guard exercise.smartProgressionEnabled else { continue }
             // Cardio + TimeBased: kein Gewichts-Tracking. Skip.
             guard !exercise.isCardio, !exercise.isTimeBased else { continue }
+            // DEL-087: Warmup + Cooldown haben semantisch keinen Progressions-
+            // Reiz — sie sind Vorbereitung bzw. Recovery, nicht Hypertrophie.
+            guard !exercise.role.skipsProgression else { continue }
 
             // Saetze dieser Uebung aus der Session-Liste filtern. Snapshot-
             // first (DEL-051) damit auch nullify'd-Logs gefasst werden —

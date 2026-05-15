@@ -26,6 +26,10 @@ public struct ExerciseSpec: Sendable, Hashable {
     /// als Placeholder im Dauer-Feld.
     public let targetDurationMinutes: Int?
 
+    /// DEL-087: Rolle des Lifts im Workout. Default `.workingSet`. Warmup
+    /// und Cooldown werden vom Progressions-Algorithmus geskippt.
+    public let role: ExerciseRole
+
     public init(
         name: String,
         sets: Int,
@@ -35,7 +39,8 @@ public struct ExerciseSpec: Sendable, Hashable {
         targetRir: Float = 2.0,
         isCardio: Bool = false,
         targetDistanceKm: Double? = nil,
-        targetDurationMinutes: Int? = nil
+        targetDurationMinutes: Int? = nil,
+        role: ExerciseRole = .workingSet
     ) {
         self.name = name
         self.sets = sets
@@ -46,5 +51,6 @@ public struct ExerciseSpec: Sendable, Hashable {
         self.isCardio = isCardio
         self.targetDistanceKm = targetDistanceKm
         self.targetDurationMinutes = targetDurationMinutes
+        self.role = role
     }
 }

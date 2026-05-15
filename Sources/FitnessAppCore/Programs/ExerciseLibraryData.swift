@@ -357,9 +357,17 @@ public enum ExerciseLibraryData {
             .homeGym:     "Goblet Squat",
             .noEquipment: "Kniebeuge (BW)"
         ],
+        // DEL-091: Beinstrecker -> Sissy Squats war fuer Anfaenger im
+        // Urlaubs-Modus gefaehrlich (extreme Knie-Belastung). "Ausfallschritte
+        // (BW)" als sichere Verbund-Variante, trifft die Quads aehnlich
+        // einseitig ohne Knie-Trauma-Risiko.
         "Beinstrecker (Maschine)": [
             .homeGym:     "Goblet Squat",
-            .noEquipment: "Sissy Squats (BW)"
+            .noEquipment: "Ausfallschritte (BW)"
+        ],
+        "Beinstrecker": [
+            .homeGym:     "Goblet Squat",
+            .noEquipment: "Ausfallschritte (BW)"
         ],
         "Hackenschmidt-Kniebeuge (Maschine)": [
             .homeGym:     "KH-Ausfallschritte",
@@ -403,9 +411,107 @@ public enum ExerciseLibraryData {
             .homeGym:     "Crunches (BW)",
             .noEquipment: "Crunches (BW)"
         ],
+        // DEL-091: alternativer Name fuer denselben Lift (Templates nutzen
+        // unterschiedliche Schreibweisen — wir mappen beide).
+        "Kabel Crunch": [
+            .homeGym:     "Crunches (BW)",
+            .noEquipment: "Crunches (BW)"
+        ],
         "Beinheben (hängend)": [
             .homeGym:     "Beinheben (liegend)",
             .noEquipment: "Beinheben (liegend)"
+        ],
+
+        // ── DEL-091: Fehlende Cable-Exercises aus den Plan-Templates ───────
+        // Diese Lifts waren bisher `.keep` (Sackgasse) im Migrator — der
+        // User landete im Urlaubs-Modus mit unveraenderten Kabel-Uebungen.
+        "Kabelrudern sitzend": [
+            .homeGym:     "KH-Rudern einarmig",
+            .noEquipment: "Australian Pull-ups"
+        ],
+        "Face Pull": [
+            .homeGym:     "Reverse Flyes (KH)",
+            .noEquipment: "Back Widows"
+        ],
+        "Kabel Seitheben": [
+            .homeGym:     "Seitheben",
+            .noEquipment: "Pike Liegestütze"
+        ],
+        "Kabel Curl": [
+            .homeGym:     "Hammer Curl",
+            .noEquipment: "Klimmzüge (eng/Chin-up)"
+        ],
+        "Trizep Pushdown (Kabel)": [
+            .homeGym:     "Trizep Kickback (KH)",
+            .noEquipment: "Diamant-Liegestütze"
+        ],
+        "Overhead Trizep Extension (Kabel)": [
+            .homeGym:     "KH Overhead Trizep Extension",
+            .noEquipment: "Dips (Trizeps)"
+        ],
+        "Brust-Drückmaschine": [
+            .homeGym:     "KH-Bankdrücken",
+            .noEquipment: "Liegestütze"
+        ],
+        "Pec Deck (Butterfly)": [
+            .homeGym:     "KH-Flyes (flach)",
+            .noEquipment: "Breite Liegestütze"
+        ],
+        "Wadenpresse (sitzend)": [
+            .homeGym:     "Wadenheben (BW)",
+            .noEquipment: "Wadenheben (BW)"
+        ],
+        "Latzug (weit)": [
+            .homeGym:     "Klimmzüge (weit)",
+            .noEquipment: "Australian Pull-ups"
+        ],
+
+        // ── DEL-091: Symmetrische HomeGym → NoEquipment Pfade ──────────────
+        // KH-Uebungen muessen einen klaren BW-Pfad haben, wenn der User
+        // von HomeGym in den No-Equipment-Modus wechselt.
+        "Hammer Curl": [
+            .noEquipment: "Klimmzüge (eng/Chin-up)"
+        ],
+        "KH-Curl": [
+            .noEquipment: "Klimmzüge (eng/Chin-up)"
+        ],
+        "KH-Schrägbankdrücken (aufwärts)": [
+            .noEquipment: "Pike Liegestütze"
+        ],
+        "KH-Flyes (Schrägbank)": [
+            .noEquipment: "Breite Liegestütze"
+        ],
+        "Chest Supported Row (KH)": [
+            .noEquipment: "Australian Pull-ups"
+        ],
+        "KH-Pullover": [
+            .noEquipment: "Australian Pull-ups"
+        ],
+        "Reverse Flyes (KH)": [
+            .noEquipment: "Back Widows"
+        ],
+        "KH-Romanian Deadlift": [
+            .noEquipment: "Nordic Curls"
+        ],
+        // (DEL-091: "Bulgarische Kniebeuge (KH)" steht bereits in
+        // LEGS · QUADS oben — Dictionary-Duplikat vermieden.)
+        "KH-Hip Thrust": [
+            .noEquipment: "Hip Thrust (BW)"
+        ],
+        "KH-Wadenheben": [
+            .noEquipment: "Wadenheben (BW)"
+        ],
+        "Konzentrations Curl": [
+            .noEquipment: "Klimmzüge (eng/Chin-up)"
+        ],
+        "Schrägbank Curl": [
+            .noEquipment: "Klimmzüge (eng/Chin-up)"
+        ],
+        "KH Overhead Trizep Extension": [
+            .noEquipment: "Dips (Trizeps)"
+        ],
+        "Trizep Kickback (KH)": [
+            .noEquipment: "Diamant-Liegestütze"
         ]
     ]
 

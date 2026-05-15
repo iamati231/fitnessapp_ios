@@ -60,14 +60,36 @@ struct ExerciseCard: View {
     private var header: some View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(exercise.name)
-                    .font(.headline)
+                HStack(spacing: 6) {
+                    Text(exercise.name)
+                        .font(.headline)
+                    // DEL-087: Pill markiert Warmup/Cooldown-Uebungen optisch.
+                    if exercise.role != .workingSet {
+                        Text(rolePillText)
+                            .font(.caption2.weight(.bold))
+                            .tracking(0.8)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.secondary.opacity(0.18))
+                            .foregroundStyle(.secondary)
+                            .clipShape(Capsule())
+                    }
+                }
                 Text(targetText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer()
             progressPill
+        }
+    }
+
+    /// DEL-087: Label-Text fuer die Role-Pill im Header.
+    private var rolePillText: String {
+        switch exercise.role {
+        case .warmup:     return "WARM-UP"
+        case .cooldown:   return "COOL-DOWN"
+        case .workingSet: return ""
         }
     }
 

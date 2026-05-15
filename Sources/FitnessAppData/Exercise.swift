@@ -75,6 +75,20 @@ public final class Exercise {
     /// = standalone-Uebung wie bisher.
     public var supersetId: UUID?
 
+    /// DEL-087: Welche Rolle hat dieser Lift im Workout-Flow? Default
+    /// `.workingSet` (Standard-Arbeitssatz). Warmup + Cooldown werden vom
+    /// Progressions-Algorithmus (`ProgressionApplicator`) geskippt und im
+    /// UI grau-abgeschwaecht gerendert. Persistiert als String (Codable
+    /// rawValue), damit SwiftData-Lightweight-Migration funktioniert.
+    public var roleRaw: String = ExerciseRole.workingSet.rawValue
+
+    /// Computed Convenience — UI nutzt das, statt mit rawValue zu hantieren.
+    /// Setter mapped via rawValue zurueck.
+    public var role: ExerciseRole {
+        get { ExerciseRole(rawValue: roleRaw) ?? .workingSet }
+        set { roleRaw = newValue.rawValue }
+    }
+
     public var day: TrainingDay?
 
     /// DEL-051: HEILIGE HISTORIE. Frueher `.cascade` — beim Loeschen einer
@@ -109,6 +123,7 @@ public final class Exercise {
         targetDistanceKm: Double? = nil,
         targetDurationMinutes: Int? = nil,
         supersetId: UUID? = nil,
+        role: ExerciseRole = .workingSet,
         day: TrainingDay? = nil
     ) {
         self.name = name
@@ -131,6 +146,7 @@ public final class Exercise {
         self.targetDistanceKm = targetDistanceKm
         self.targetDurationMinutes = targetDurationMinutes
         self.supersetId = supersetId
+        self.roleRaw = role.rawValue
         self.day = day
     }
 }

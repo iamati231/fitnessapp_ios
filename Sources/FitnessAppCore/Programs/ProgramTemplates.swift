@@ -302,51 +302,54 @@ public enum ProgramTemplates {
         focus: "Hypertrophie",
         daysPerWeek: 6,
         days: [
+            // DEL-089 Arnold-Split RIR: Hypertrophie-Plan, daher Iso-Lifts
+            // (Curls, Seitheben, Flyes) auf 0–0.5 — Compounds bleiben mit
+            // moderaten 1.5–2 (Verletzungsschutz, hoher Wochen-Volumen).
             DaySpec(name: "Brust & Rücken A", type: .upper, weekday: 2, exercises: [
-                ExerciseSpec(name: "Bankdrücken",                 sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 150),
-                ExerciseSpec(name: "Rudern vorgebeugt",            sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 120),
-                ExerciseSpec(name: "KH-Flyes (flach)",             sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75),
-                ExerciseSpec(name: "Klimmzüge (weit)",            sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120),
-                ExerciseSpec(name: "Kabel Crossover",              sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Kabelrudern sitzend",          sets: 3, repsMin: 10, repsMax: 12, restSeconds: 75)
+                ExerciseSpec(name: "Bankdrücken",                 sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 1.5),
+                ExerciseSpec(name: "Rudern vorgebeugt",            sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 1.5),
+                ExerciseSpec(name: "KH-Flyes (flach)",             sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75,  targetRir: 0.5),
+                ExerciseSpec(name: "Klimmzüge (weit)",            sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 1.0),
+                ExerciseSpec(name: "Kabel Crossover",              sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0),
+                ExerciseSpec(name: "Kabelrudern sitzend",          sets: 3, repsMin: 10, repsMax: 12, restSeconds: 75,  targetRir: 0.5)
             ]),
             DaySpec(name: "Schultern & Arme A", type: .upper, weekday: 3, exercises: [
-                ExerciseSpec(name: "Schulterdrücken (stehend)",   sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 120),
-                ExerciseSpec(name: "Seitheben",                    sets: 4, repsMin: 10, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Langhantel Curl",              sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90),
-                ExerciseSpec(name: "Skull Crusher",                sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90),
-                ExerciseSpec(name: "Hammer Curl",                  sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Trizep Pushdown (Kabel)",      sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60)
+                ExerciseSpec(name: "Schulterdrücken (stehend)",   sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 1.5),
+                ExerciseSpec(name: "Seitheben",                    sets: 4, repsMin: 10, repsMax: 15, restSeconds: 60,  targetRir: 0),
+                ExerciseSpec(name: "Langhantel Curl",              sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 0.5),
+                ExerciseSpec(name: "Skull Crusher",                sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 0.5),
+                ExerciseSpec(name: "Hammer Curl",                  sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60,  targetRir: 0),
+                ExerciseSpec(name: "Trizep Pushdown (Kabel)",      sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60,  targetRir: 0)
             ]),
             DaySpec(name: "Beine A", type: .legs, weekday: 4, exercises: [
-                ExerciseSpec(name: "Kniebeuge",                    sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 180),
-                ExerciseSpec(name: "Rumänisches Kreuzheben",      sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120),
-                ExerciseSpec(name: "Beinpresse",                   sets: 3, repsMin: 10, repsMax: 15, restSeconds: 90),
-                ExerciseSpec(name: "Beinstrecker",                 sets: 3, repsMin: 12, repsMax: 15, restSeconds: 75),
-                ExerciseSpec(name: "Wadenheben (stehend, LH)",     sets: 4, repsMin: 12, repsMax: 20, restSeconds: 60)
+                ExerciseSpec(name: "Kniebeuge",                    sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 180, targetRir: 1.5),
+                ExerciseSpec(name: "Rumänisches Kreuzheben",      sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 1.5),
+                ExerciseSpec(name: "Beinpresse",                   sets: 3, repsMin: 10, repsMax: 15, restSeconds: 90,  targetRir: 1.0),
+                ExerciseSpec(name: "Beinstrecker",                 sets: 3, repsMin: 12, repsMax: 15, restSeconds: 75,  targetRir: 0),
+                ExerciseSpec(name: "Wadenheben (stehend, LH)",     sets: 4, repsMin: 12, repsMax: 20, restSeconds: 60,  targetRir: 0)
             ]),
             DaySpec(name: "Brust & Rücken B", type: .upper, weekday: 5, exercises: [
-                ExerciseSpec(name: "Schrägbankdrücken (aufwärts)", sets: 4, repsMin: 8, repsMax: 12, restSeconds: 120),
-                ExerciseSpec(name: "KH-Rudern einarmig",           sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90),
-                ExerciseSpec(name: "Pec Deck (Butterfly)",         sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Latzug (weit)",                sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
-                ExerciseSpec(name: "Brust-Drückmaschine",         sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75),
-                ExerciseSpec(name: "Face Pull",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60)
+                ExerciseSpec(name: "Schrägbankdrücken (aufwärts)", sets: 4, repsMin: 8, repsMax: 12, restSeconds: 120, targetRir: 1.5),
+                ExerciseSpec(name: "KH-Rudern einarmig",           sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 1.0),
+                ExerciseSpec(name: "Pec Deck (Butterfly)",         sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0.5),
+                ExerciseSpec(name: "Latzug (weit)",                sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 0.5),
+                ExerciseSpec(name: "Brust-Drückmaschine",         sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75,  targetRir: 0.5),
+                ExerciseSpec(name: "Face Pull",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0.5)
             ]),
             DaySpec(name: "Schultern & Arme B", type: .upper, weekday: 6, exercises: [
-                ExerciseSpec(name: "KH-Schulterdrücken",          sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90),
-                ExerciseSpec(name: "Kabel Seitheben",              sets: 4, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Kabel Curl",                   sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "KH Overhead Trizep Extension", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75),
-                ExerciseSpec(name: "Konzentrations Curl",          sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Overhead Trizep Extension (Kabel)", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60)
+                ExerciseSpec(name: "KH-Schulterdrücken",          sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 1.0),
+                ExerciseSpec(name: "Kabel Seitheben",              sets: 4, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0),
+                ExerciseSpec(name: "Kabel Curl",                   sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60,  targetRir: 0),
+                ExerciseSpec(name: "KH Overhead Trizep Extension", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75,  targetRir: 0),
+                ExerciseSpec(name: "Konzentrations Curl",          sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60,  targetRir: 0),
+                ExerciseSpec(name: "Overhead Trizep Extension (Kabel)", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60, targetRir: 0)
             ]),
             DaySpec(name: "Beine B", type: .legs, weekday: 7, exercises: [
-                ExerciseSpec(name: "Front Squat",                  sets: 4, repsMin: 6,  repsMax: 8,  restSeconds: 180),
-                ExerciseSpec(name: "Hip Thrust (LH)",              sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90),
-                ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",   sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90),
-                ExerciseSpec(name: "Beinbeuger liegend",           sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75),
-                ExerciseSpec(name: "Wadenpresse (sitzend)",        sets: 4, repsMin: 12, repsMax: 20, restSeconds: 60)
+                ExerciseSpec(name: "Front Squat",                  sets: 4, repsMin: 6,  repsMax: 8,  restSeconds: 180, targetRir: 1.5),
+                ExerciseSpec(name: "Hip Thrust (LH)",              sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 1.0),
+                ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",   sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90,  targetRir: 1.0),
+                ExerciseSpec(name: "Beinbeuger liegend",           sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75,  targetRir: 0.5),
+                ExerciseSpec(name: "Wadenpresse (sitzend)",        sets: 4, repsMin: 12, repsMax: 20, restSeconds: 60,  targetRir: 0)
             ]),
             DaySpec(name: "Ruhetag", type: .rest, weekday: 1, exercises: [])
         ],
@@ -364,43 +367,51 @@ public enum ProgramTemplates {
         focus: "Hypertrophie",
         daysPerWeek: 5,
         days: [
+            // DEL-089 RIR-Refinement: Bro-Split ist ein Hypertrophie-Plan.
+            // Compounds (Bench, Squat, Deadlift) bleiben bei moderaten RIR 1.5–2
+            // (Verletzungsschutz), Isolation (Curls, Seitheben, Flyes) gehen
+            // jetzt explizit auf 0–0.5 → Progression triggert sauber ohne
+            // dass kleine Muskeln in einer Hypertrophie-Sackgasse landen.
             DaySpec(name: "Brust", type: .chest, weekday: 2, exercises: [
-                ExerciseSpec(name: "Bankdrücken",                 sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 150),
-                ExerciseSpec(name: "Schrägbankdrücken (aufwärts)", sets: 4, repsMin: 8, repsMax: 12, restSeconds: 120),
-                ExerciseSpec(name: "KH-Flyes (Schrägbank)",       sets: 3, repsMin: 10, repsMax: 15, restSeconds: 90),
-                ExerciseSpec(name: "Kabel Crossover",              sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Dips (Brust)",                 sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90)
+                // DEL-087: Warmup — Rotatoren + leichte Aktivierung vor
+                // schwerem Bankdruecken.
+                ExerciseSpec(name: "Face Pull",                    sets: 2, repsMin: 12, repsMax: 15, restSeconds: 45, targetRir: 3, role: .warmup),
+                ExerciseSpec(name: "Bankdrücken",                 sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 1.5),
+                ExerciseSpec(name: "Schrägbankdrücken (aufwärts)", sets: 4, repsMin: 8, repsMax: 12, restSeconds: 120, targetRir: 1.5),
+                ExerciseSpec(name: "KH-Flyes (Schrägbank)",       sets: 3, repsMin: 10, repsMax: 15, restSeconds: 90,  targetRir: 0.5),
+                ExerciseSpec(name: "Kabel Crossover",              sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0.5),
+                ExerciseSpec(name: "Dips (Brust)",                 sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 1.0)
             ]),
             DaySpec(name: "Rücken", type: .back, weekday: 3, exercises: [
-                ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 4, repsMin: 4,  repsMax: 6,  restSeconds: 180),
-                ExerciseSpec(name: "Rudern vorgebeugt",            sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 120),
-                ExerciseSpec(name: "Klimmzüge (weit)",            sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120),
-                ExerciseSpec(name: "Kabelrudern sitzend",          sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90),
-                ExerciseSpec(name: "KH-Rudern einarmig",           sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90)
+                ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 4, repsMin: 4,  repsMax: 6,  restSeconds: 180, targetRir: 2.0),
+                ExerciseSpec(name: "Rudern vorgebeugt",            sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 1.5),
+                ExerciseSpec(name: "Klimmzüge (weit)",            sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 1.0),
+                ExerciseSpec(name: "Kabelrudern sitzend",          sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90,  targetRir: 0.5),
+                ExerciseSpec(name: "KH-Rudern einarmig",           sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90,  targetRir: 0.5)
             ]),
             DaySpec(name: "Ruhetag", type: .rest, weekday: 4, exercises: []),
             DaySpec(name: "Schultern", type: .shoulders, weekday: 5, exercises: [
-                ExerciseSpec(name: "Schulterdrücken (stehend)",   sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 120),
-                ExerciseSpec(name: "Seitheben",                    sets: 4, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Face Pull",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Frontheben",                   sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Reverse Flyes (KH)",           sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60)
+                ExerciseSpec(name: "Schulterdrücken (stehend)",   sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 1.5),
+                ExerciseSpec(name: "Seitheben",                    sets: 4, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0),
+                ExerciseSpec(name: "Face Pull",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0.5),
+                ExerciseSpec(name: "Frontheben",                   sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60,  targetRir: 0),
+                ExerciseSpec(name: "Reverse Flyes (KH)",           sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0)
             ]),
             DaySpec(name: "Arme", type: .arms, weekday: 6, exercises: [
-                ExerciseSpec(name: "Langhantel Curl",              sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90),
-                ExerciseSpec(name: "Hammer Curl",                  sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75),
-                ExerciseSpec(name: "Schrägbank Curl",             sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75),
-                ExerciseSpec(name: "Skull Crusher",                sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90),
-                ExerciseSpec(name: "Trizep Pushdown (Kabel)",      sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "KH Overhead Trizep Extension", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60)
+                ExerciseSpec(name: "Langhantel Curl",              sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 0.5),
+                ExerciseSpec(name: "Hammer Curl",                  sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75,  targetRir: 0),
+                ExerciseSpec(name: "Schrägbank Curl",             sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75,  targetRir: 0),
+                ExerciseSpec(name: "Skull Crusher",                sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 0.5),
+                ExerciseSpec(name: "Trizep Pushdown (Kabel)",      sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0),
+                ExerciseSpec(name: "KH Overhead Trizep Extension", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60,  targetRir: 0)
             ]),
             DaySpec(name: "Beine", type: .legs, weekday: 7, exercises: [
-                ExerciseSpec(name: "Kniebeuge",                    sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 180),
-                ExerciseSpec(name: "Rumänisches Kreuzheben",      sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120),
-                ExerciseSpec(name: "Beinpresse",                   sets: 3, repsMin: 10, repsMax: 15, restSeconds: 120),
-                ExerciseSpec(name: "Beinbeuger liegend",           sets: 3, repsMin: 10, repsMax: 15, restSeconds: 90),
-                ExerciseSpec(name: "Beinstrecker",                 sets: 3, repsMin: 12, repsMax: 15, restSeconds: 90),
-                ExerciseSpec(name: "Wadenheben (stehend, LH)",     sets: 4, repsMin: 12, repsMax: 20, restSeconds: 60)
+                ExerciseSpec(name: "Kniebeuge",                    sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 180, targetRir: 1.5),
+                ExerciseSpec(name: "Rumänisches Kreuzheben",      sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 1.5),
+                ExerciseSpec(name: "Beinpresse",                   sets: 3, repsMin: 10, repsMax: 15, restSeconds: 120, targetRir: 1.0),
+                ExerciseSpec(name: "Beinbeuger liegend",           sets: 3, repsMin: 10, repsMax: 15, restSeconds: 90,  targetRir: 0.5),
+                ExerciseSpec(name: "Beinstrecker",                 sets: 3, repsMin: 12, repsMax: 15, restSeconds: 90,  targetRir: 0),
+                ExerciseSpec(name: "Wadenheben (stehend, LH)",     sets: 4, repsMin: 12, repsMax: 20, restSeconds: 60,  targetRir: 0)
             ]),
             DaySpec(name: "Ruhetag", type: .rest, weekday: 1, exercises: [])
         ],
@@ -418,19 +429,27 @@ public enum ProgramTemplates {
         focus: "Kraft",
         daysPerWeek: 3,
         days: [
+            // DEL-087: Warmup-Saetze fuer die schweren 5x5 Working-Sets.
+            // Face Pulls bereiten die Schultern auf Bank vor (Rotatoren-
+            // Aktivierung); leichtere Squats / Bank-Saetze als Ramp-Up.
+            // Alle Warmup-Sätze tragen `role: .warmup` — sie werden vom
+            // Progressions-Algorithmus geskippt und im UI grau gerendert.
             DaySpec(name: "Workout A", type: .fullBody, weekday: 2, exercises: [
+                ExerciseSpec(name: "Face Pull",                    sets: 2, repsMin: 12, repsMax: 15, restSeconds: 45, targetRir: 3, role: .warmup),
                 ExerciseSpec(name: "Kniebeuge",                    sets: 5, repsMin: 5,  repsMax: 5,  restSeconds: 210),
                 ExerciseSpec(name: "Bankdrücken",                 sets: 5, repsMin: 5,  repsMax: 5,  restSeconds: 180),
                 ExerciseSpec(name: "Rudern vorgebeugt",            sets: 5, repsMin: 5,  repsMax: 5,  restSeconds: 150)
             ]),
             DaySpec(name: "Ruhetag", type: .rest, weekday: 3, exercises: []),
             DaySpec(name: "Workout B", type: .fullBody, weekday: 4, exercises: [
+                ExerciseSpec(name: "Face Pull",                    sets: 2, repsMin: 12, repsMax: 15, restSeconds: 45, targetRir: 3, role: .warmup),
                 ExerciseSpec(name: "Kniebeuge",                    sets: 5, repsMin: 5,  repsMax: 5,  restSeconds: 210),
                 ExerciseSpec(name: "Schulterdrücken (stehend)",   sets: 5, repsMin: 5,  repsMax: 5,  restSeconds: 180),
                 ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 1, repsMin: 5,  repsMax: 5,  restSeconds: 210)
             ]),
             DaySpec(name: "Ruhetag", type: .rest, weekday: 5, exercises: []),
             DaySpec(name: "Workout A", type: .fullBody, weekday: 6, exercises: [
+                ExerciseSpec(name: "Face Pull",                    sets: 2, repsMin: 12, repsMax: 15, restSeconds: 45, targetRir: 3, role: .warmup),
                 ExerciseSpec(name: "Kniebeuge",                    sets: 5, repsMin: 5,  repsMax: 5,  restSeconds: 210),
                 ExerciseSpec(name: "Bankdrücken",                 sets: 5, repsMin: 5,  repsMax: 5,  restSeconds: 180),
                 ExerciseSpec(name: "Rudern vorgebeugt",            sets: 5, repsMin: 5,  repsMax: 5,  restSeconds: 150)
@@ -617,6 +636,11 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Trizep Pushdown (Kabel)",      sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
             ]),
             DaySpec(name: "Easy Run", type: .cardio, weekday: 3, exercises: [
+                // DEL-087: 5 Min Einlaufen + Mobility als Warmup vor dem
+                // Hauptlauf. Cardio-Warmup wird vom Progressions-Algorithmus
+                // sowieso geskippt (kein kg-Tracking), aber die Markierung
+                // sorgt fuer korrektes UI-Rendering (graue Checkbox).
+                ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup),
                 ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45)
             ]),
             DaySpec(name: "Strength Pull", type: .pull, weekday: 4, exercises: [

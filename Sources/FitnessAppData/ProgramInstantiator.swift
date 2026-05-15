@@ -91,6 +91,8 @@ public enum ProgramInstantiator {
                     // korrekt zeigen kann.
                     targetDistanceKm: exerciseSpec.targetDistanceKm,
                     targetDurationMinutes: exerciseSpec.targetDurationMinutes,
+                    // DEL-087: Rolle (warmup/workingSet/cooldown) propagieren.
+                    role: exerciseSpec.role,
                     day: day
                 )
                 context.insert(exercise)

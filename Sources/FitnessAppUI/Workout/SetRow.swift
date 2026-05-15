@@ -166,8 +166,12 @@ struct SetRow: View {
         // DEL-045-Update: Bodyweight-Fix. Placeholder ist "BW" — wenn der User
         // das Feld leer laesst, wird der Satz als 0.0 kg geloggt (Liegestuetze,
         // Pull-ups, etc.). Kein Validierungs-Blocker mehr auf weight.
-        // DEL-059: Inner-Light-Stroke + monospaced fuer wuchtige Zahlen.
-        TextField("BW", value: $weight, format: .number, prompt: Text("BW"))
+        // DEL-091: Bei einer eben gewappten Uebung (`swappedFromOriginal != nil`)
+        // hat der Migrator `suggestedWeight = nil` gesetzt — die alte Last
+        // passt selten zum neuen Bewegungsablauf. Statt eines nackten "-"-
+        // oder "BW"-Placeholders zeigen wir einen klaren Hint, dass das
+        // Gewicht hier neu kalibriert werden muss.
+        TextField(weightPlaceholder, value: $weight, format: .number, prompt: Text(weightPlaceholder))
             .decimalKeyboard()
             .monospacedDigit()
             .frame(width: 56)
@@ -179,6 +183,18 @@ struct SetRow: View {
             .multilineTextAlignment(.center)
             .disabled(isCompleted)
             .opacity(isCompleted ? 0.6 : 1.0)
+    }
+
+    /// DEL-091: dynamisches Placeholder-Wording.
+    ///   * Fresh-swap (Original archived) → "→ kg" (Pfeil signalisiert
+    ///     "neuer Wert noetig")
+    ///   * Bodyweight (kein Suggested + nichts gemerkt) → "BW"
+    ///   * Standard → "—"
+    private var weightPlaceholder: String {
+        if exercise.swappedFromOriginal != nil, weight == nil {
+            return "→ kg"
+        }
+        return "BW"
     }
 
     private var repsInput: some View {
@@ -215,7 +231,10 @@ struct SetRow: View {
                 // DEL-059: hierarchical-rendering gibt dem Symbol Tiefe
                 // (innerer Ring leicht dunkler als Fuellung).
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(isCompleted ? Color.deltiqOrange : Color.secondary.opacity(0.5))
+                // DEL-087: Warmup/Cooldown-Saetze bekommen graue Checkmark
+                // statt der orange Brand-Color — visuell klar abgegrenzt
+                // von den Working-Sets.
+                .foregroundStyle(checkmarkColor)
                 // DEL-059: Bounce — kurz auf 1.06 wenn completed.
                 // DEL-072: bei Reduce-Motion KEIN Bounce.
                 .scaleEffect((isCompleted && !reduceMotion) ? 1.06 : 1.0)
@@ -234,6 +253,18 @@ struct SetRow: View {
         reduceMotion
             ? .easeInOut(duration: 0.2)
             : .spring(response: 0.3, dampingFraction: 0.5, blendDuration: 0)
+    }
+
+    /// DEL-087: Checkmark-Farbe je nach Exercise-Rolle und Completed-State.
+    /// Working-Sets bekommen die Brand-Color (DeltiqOrange); Warmup/Cooldown
+    /// gehen auf Grau — klar abgegrenzt vom "echten" Progressions-Lift.
+    private var checkmarkColor: Color {
+        if isCompleted {
+            return exercise.role.skipsProgression
+                ? Color.secondary
+                : Color.deltiqOrange
+        }
+        return Color.secondary.opacity(0.5)
     }
 
     /// ZStack mit fester Hoehe (per `.frame(height: 28)` am Caller).
