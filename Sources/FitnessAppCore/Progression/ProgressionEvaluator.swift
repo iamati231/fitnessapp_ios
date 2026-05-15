@@ -13,18 +13,23 @@ import Foundation
 /// SwiftData-Calls und ist daher 1:1 auf Windows-CI testbar.
 public enum ProgressionEvaluator {
 
-    /// Default-RIR-Schwellen pro Uebungs-Typ (DEL-053).
+    /// Default-RIR-Schwellen pro Uebungs-Typ (DEL-053 + DEL-057).
+    ///
+    /// **Semantik nach DEL-057-Fix:** `lastSet.rir >= safeRIRThreshold` =
+    /// User hatte mindestens N Reps in Reserve, Set war also nicht am
+    /// Versagen → Form war sicher → Gewicht im naechsten Workout
+    /// erhoehen. Hohes RIR (mehr Reserve) = mehr Sicherheits-Puffer →
+    /// Progression. Niedriges RIR (nah am Versagen) = User soll erst noch
+    /// dieselbe Last bewaeltigen, BEVOR mehr drauf kommt.
     ///
     /// **Compound** (Kniebeuge, Kreuzheben, Bankdruecken etc.): grosserer
-    /// Sicherheits-Puffer. Progression triggert bereits, wenn der User die
-    /// obere Rep-Grenze schafft und maximal 3 Reps in Reserve hatte
-    /// (`lastSet.rir <= 3`). Verletzungs-Risiko mit hohen Lasten ist real;
-    /// kein "bis-zum-Versagen-pruegeln" noetig.
+    /// Sicherheits-Puffer noetig → Threshold `>= 2`. Wer 12, 12, 12 Reps
+    /// mit RIR 2 schafft, kann safe um den Schritt erhoehen.
     ///
-    /// **Isolation** (Curls, Triceps-Extensions, Lateral-Raises): muss
-    /// naeher ans Versagen. Progression nur bei `lastSet.rir <= 1`. Auf
-    /// schweren Compounds wuerde der Muskel sonst nie genug Reiz kriegen.
-    public static let defaultRIRForCompound: Float = 3
+    /// **Isolation** (Curls, Triceps-Extensions, Lateral-Raises): kleinere
+    /// Last, weniger Verletzungs-Risiko → Threshold `>= 1`. Schon ein Rep
+    /// in Reserve reicht, um sicher zu erhoehen.
+    public static let defaultRIRForCompound: Float = 2
     public static let defaultRIRForIsolation: Float = 1
 
     /// Auswertung pro Uebung.
@@ -34,8 +39,13 @@ public enum ProgressionEvaluator {
     ///   sollten gar nicht erst hier landen — das Filtern uebernimmt der
     ///   `ProgressionApplicator`.
     /// - Parameter targetRepsRange: `repsMin...repsMax` der Plan-Uebung.
+    /// - Parameter targetSetCount: `Exercise.sets`. DEL-057: schuetzt vor
+    ///   einem False-Positive, wenn der User Saetze geloescht/uebersprungen
+    ///   hat. Nur wenn `loggedSets.count >= targetSetCount` darf Progression
+    ///   triggern.
     /// - Parameter isCompound: True wenn Compound-Lift (Bankdruecken,
-    ///   Kniebeuge, Kreuzheben, etc.). Default-RIR-Schwelle steigt → Puffer.
+    ///   Kniebeuge, Kreuzheben, etc.). Default-RIR-Schwelle steigt → mehr
+    ///   Reserve verlangt.
     /// - Parameter incrementStep: `progressionStep` der Plan-Uebung (kg).
     /// - Parameter targetRIROverride: Wenn vom User in den Plan-Settings
     ///   gesetzt, ueberschreibt sie den compound/isolation-Default. Nil =
@@ -43,6 +53,7 @@ public enum ProgressionEvaluator {
     public static func evaluate(
         loggedSets: [ProgressionInputSet],
         targetRepsRange: ClosedRange<Int>,
+        targetSetCount: Int,
         isCompound: Bool,
         incrementStep: Double,
         targetRIROverride: Float? = nil
@@ -57,27 +68,34 @@ public enum ProgressionEvaluator {
         let upper = targetRepsRange.upperBound
         let lower = targetRepsRange.lowerBound
 
-        // 1) Hat der User in JEDEM Satz die obere Rep-Grenze geknackt?
-        //    `>=` statt `==`, weil manche User auch +1/+2 schaffen wollen
-        //    (z.B. AMRAP-Last-Set-Style).
+        // DEL-057 Bug-Fix #1: User darf keinen Satz unterschlagen. Wenn
+        // weniger Saetze geloggt sind als der Plan vorsieht, koennen wir
+        // keine Progression triggern — sonst genuegte ein einziger
+        // Crash-Set bei Upper-Limit, um das Gewicht zu erhoehen.
+        let hasEnoughSets = ordered.count >= targetSetCount
+
+        // 1) Hat der User in JEDEM geloggten Satz die obere Rep-Grenze
+        //    geknackt? `>=` statt `==`, weil manche User auch +1/+2
+        //    schaffen wollen (z.B. AMRAP-Last-Set-Style).
         let allHitUpper = ordered.allSatisfy { $0.reps >= upper }
 
-        // 2) Hat der User in irgendeinem Satz die untere Grenze verfehlt UND
-        //    war dabei am Versagen (RIR == 0)? Dann Deload-Signal — das
-        //    Gewicht ist zu schwer, naechstes Mal eine Stufe runter.
+        // 2) DEL-057 Bug-Fix #2: Deload NUR wenn untere Grenze verfehlt
+        //    UND User wirklich am Versagen war (`rir <= 0`). Wer den Satz
+        //    freiwillig abbricht (rir > 0), bekommt nur `.hold` — wir
+        //    nehmen ihm nicht das Gewicht weg, nur weil er heute keinen
+        //    Bock hatte.
         let catastrophicFail = ordered.contains { $0.reps < lower && $0.rir <= 0 }
 
-        // 3) DEL-053: Dynamische RIR-Schwelle. Compounds duerfen mit RIR 2
-        //    aufsteigen (Sicherheits-Puffer), Isolation muss naeher ans
-        //    Versagen (RIR 1). User-Override schlaegt beide.
+        // 3) DEL-057 Bug-Fix #3 (Flipped Operator): Form-war-sicher-Check
+        //    ist jetzt `lastSet.rir >= requiredRIR`. Hohe Reserve =
+        //    sicher zu erhoehen. Niedriges RIR (User ging zum Versagen)
+        //    = naechstes Mal erstmal sauber durchziehen, BEVOR mehr drauf
+        //    kommt.
         let requiredRIR = targetRIROverride
             ?? (isCompound ? defaultRIRForCompound : defaultRIRForIsolation)
-        // `lastSet.rir <= requiredRIR` → User war intensiv genug. Bei RIR-
-        // Override durch User koennte er auch RIR 3 fordern, dann reicht
-        // RIR 3 vom geloggten Set.
-        let intensityClean = lastSet.rir <= requiredRIR
+        let formWasSafe = lastSet.rir >= requiredRIR
 
-        if allHitUpper && intensityClean {
+        if hasEnoughSets && allHitUpper && formWasSafe {
             return .increaseWeight(by: incrementStep)
         } else if catastrophicFail {
             return .deload(by: incrementStep)

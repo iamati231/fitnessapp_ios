@@ -32,11 +32,17 @@ public enum ProgramInstantiator {
             plan.isActive = false
         }
 
-        // 2) Build a name-set of time-based exercises from the seed library so
-        //    the flag propagates to plan exercises automatically.
+        // 2) Build name-sets aus der Library, damit isTimeBased + isCompound
+        //    (DEL-053) automatisch propagieren — der User kann sie spaeter im
+        //    ExerciseEditor manuell anpassen.
         let timeBasedNames: Set<String> = Set(
             ExerciseLibraryData.all
                 .filter { $0.isTimeBased }
+                .map { $0.name }
+        )
+        let compoundNames: Set<String> = Set(
+            ExerciseLibraryData.all
+                .filter { $0.isSystemCompound }
                 .map { $0.name }
         )
 
@@ -77,6 +83,9 @@ public enum ProgramInstantiator {
                     targetRir: exerciseSpec.targetRir,
                     isCardio: exerciseSpec.isCardio,
                     isTimeBased: timeBasedNames.contains(exerciseSpec.name),
+                    // DEL-053: Compound-Flag aus Library propagieren, damit
+                    // die Smart-Progression dynamische RIR-Schwellen anwendet.
+                    isCompound: compoundNames.contains(exerciseSpec.name),
                     day: day
                 )
                 context.insert(exercise)

@@ -610,6 +610,7 @@ public struct DayEditorView: View {
         case .fullBody:  return "Ganzkörper"
         case .rest:      return "Ruhetag"
         case .custom:    return "Custom"
+        case .cardio:    return "Cardio / Run"
         }
     }
 }

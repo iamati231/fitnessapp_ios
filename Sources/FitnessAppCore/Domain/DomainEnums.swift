@@ -65,6 +65,10 @@ public enum DayType: String, Codable, Sendable, CaseIterable {
     case fullBody
     case rest
     case custom
+    /// DEL-055: Dedizierte Run-/Cardio-Tage fuer Hybrid-Plaene. Trainingstag
+    /// (nicht rest), aber Inhalt ist eine zeitbasierte Cardio-Einheit —
+    /// kein Strength-Logging, vom Progressions-Algorithmus uebersprungen.
+    case cardio
 }
 
 public enum DayIntensity: String, Codable, Sendable, CaseIterable {

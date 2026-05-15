@@ -76,19 +76,25 @@ public struct ActiveWorkoutView: View {
                 )
             }
         }
-        .confirmationDialog(
-            Text("active.confirm.finish.title", bundle: .module),
-            isPresented: $showingFinishConfirm,
-            titleVisibility: .visible
-        ) {
-            Button { finishWorkout() } label: {
-                Text("active.action.save", bundle: .module)
-            }
-            Button(role: .cancel) {} label: {
-                Text("common.cancel", bundle: .module)
-            }
-        } message: {
-            Text("Dauer wird auf \(formattedDuration) gesetzt, \(loggedSetsCount) Sätze und \(formatVolume()) kg Volumen geloggt.")
+        // DEL-057: statt einem flachen Confirmation-Dialog jetzt ein
+        // Half-Sheet, das den User nach dem subjektiven Session-Gefuehl
+        // fragt. Das Feeling fliesst in den `ProgressionApplicator` ein:
+        // Bei "Sehr schwer" oder "Zerstoert" wird jede `.increaseWeight`-
+        // Action gevetoed.
+        .sheet(isPresented: $showingFinishConfirm) {
+            FinishWorkoutSheet(
+                durationText: formattedDuration,
+                setsCount: loggedSetsCount,
+                volumeText: formatVolume(),
+                onConfirm: { feeling in
+                    showingFinishConfirm = false
+                    session.sessionFeeling = feeling.rawValue
+                    finishWorkout()
+                },
+                onCancel: { showingFinishConfirm = false }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
         }
         .confirmationDialog(
             Text("active.confirm.discard.title", bundle: .module),
@@ -442,6 +448,153 @@ private extension View {
     @ViewBuilder
     func applyIf<T: View>(_ condition: Bool, _ transform: (Self) -> T) -> some View {
         if condition { transform(self) } else { self }
+    }
+}
+
+// MARK: - DEL-057 FinishWorkoutSheet
+
+/// Half-Sheet, die beim Tappen auf "Training beenden" hochkommt. Zeigt die
+/// Eckdaten (Dauer, Saetze, Volumen) und fragt das subjektive Session-
+/// Gefuehl ab. Erst nach Auswahl + Tippen auf "Speichern" wird der
+/// Workout-Finish-Pfad in `ActiveWorkoutView` durchgeschaltet — das Feeling
+/// fliesst dann in den `ProgressionApplicator`-Veto-Check.
+@available(iOS 17.0, macOS 14.0, *)
+private struct FinishWorkoutSheet: View {
+    let durationText: String
+    let setsCount: Int
+    let volumeText: String
+    let onConfirm: (SessionFeeling) -> Void
+    let onCancel: () -> Void
+
+    /// Default-Selektion: Okay (3) — neutraler Mittelpunkt, der das
+    /// Progression-Veto NICHT triggert. So crasht ein Default-Submit den
+    /// Algorithmus nicht.
+    @State private var selected: SessionFeeling = .okay
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    summarySection
+                    feelingSection
+                    actionButtons
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+            }
+            .navigationTitle("Workout beenden")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Abbrechen", action: onCancel)
+                }
+            }
+        }
+    }
+
+    private var summarySection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Dein Workout")
+                .font(.headline)
+            HStack(spacing: 0) {
+                summaryStat(label: "Dauer", value: durationText)
+                Divider().frame(height: 32)
+                summaryStat(label: "Sätze", value: "\(setsCount)")
+                Divider().frame(height: 32)
+                summaryStat(label: "Volumen", value: "\(volumeText) kg")
+            }
+            .padding(.vertical, 8)
+            .background(Color.secondary.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+    }
+
+    private func summaryStat(label: String, value: String) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.title3.weight(.semibold))
+                .monospacedDigit()
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var feelingSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Wie hat sich das Training angefühlt?")
+                .font(.headline)
+            Text("Die App nutzt das fuer die Progression: Wenn du am Limit warst, halten wir das Gewicht stabil — kein Zwangs-Plus.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            VStack(spacing: 8) {
+                ForEach(SessionFeeling.allCases, id: \.self) { feeling in
+                    feelingRow(feeling)
+                }
+            }
+        }
+    }
+
+    private func feelingRow(_ feeling: SessionFeeling) -> some View {
+        Button {
+            selected = feeling
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: feeling.symbol)
+                    .font(.title3)
+                    .foregroundStyle(selected == feeling ? .white : Color.deltiqOrange)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        Circle()
+                            .fill(selected == feeling ? Color.deltiqOrange : Color.deltiqOrange.opacity(0.12))
+                    )
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("\(feeling.rawValue). \(feeling.label)")
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                    if feeling.vetoesProgression {
+                        Text("Kein Gewichts-Plus im nächsten Workout")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                if selected == feeling {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.deltiqOrange)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(selected == feeling ? Color.deltiqOrange : Color.secondary.opacity(0.25),
+                            lineWidth: selected == feeling ? 1.5 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var actionButtons: some View {
+        Button {
+            onConfirm(selected)
+        } label: {
+            HStack {
+                Spacer()
+                Image(systemName: "checkmark.seal.fill")
+                Text("Workout speichern")
+                    .font(.headline)
+                Spacer()
+            }
+            .padding(.vertical, 14)
+            .background(Color.deltiqOrange.gradient)
+            .foregroundStyle(.white)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
     }
 }
 #endif

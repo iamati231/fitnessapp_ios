@@ -65,6 +65,11 @@ public struct OnboardingView: View {
     @State private var enableMeasurementReminder: Bool = true
     @State private var selectedTemplate: ProgramTemplate?
 
+    /// DEL-056: Tap auf einen Template-Row oeffnet eine Detail-Vorschau in
+    /// einem Sheet. Erst der "Diesen Plan waehlen"-Button im Detail finalisiert
+    /// die Auswahl (`selectedTemplate = ...` + Onboarding-Finish).
+    @State private var previewingTemplate: ProgramTemplate?
+
     public init() {}
 
     public var body: some View {
@@ -97,6 +102,29 @@ public struct OnboardingView: View {
             .navigationBarTitleDisplayMode(.large)
             #endif
             .keyboardDismissToolbar()
+            // DEL-056: Plan-Detail-Sheet. Wird auf Step 3 geoeffnet, wenn der
+            // User einen Template-Row antippt. Adopt-Button finalisiert die
+            // Auswahl und triggert direkt das Onboarding-Finish — sonst
+            // muesste der User noch ein zweites Mal auf "Fertig" tippen.
+            .sheet(item: $previewingTemplate) { template in
+                NavigationStack {
+                    TemplatePreviewView(
+                        template: template,
+                        adoptButtonTitle: "Diesen Plan wählen"
+                    ) {
+                        selectedTemplate = template
+                        previewingTemplate = nil
+                        finishOnboarding()
+                    }
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Schließen") {
+                                previewingTemplate = nil
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -308,8 +336,11 @@ public struct OnboardingView: View {
                 } else {
                     ForEach(filteredTemplates) { template in
                         Button {
-                            // Toggle-Verhalten: erneut tippen deselektiert.
-                            selectedTemplate = (selectedTemplate?.id == template.id) ? nil : template
+                            // DEL-056: Tap oeffnet die Detail-Vorschau,
+                            // KEIN stilles Selektieren mehr. Erst der Adopt-
+                            // Button im Detail wahlt den Plan und finished
+                            // das Onboarding.
+                            previewingTemplate = template
                         } label: {
                             templateRow(template)
                         }

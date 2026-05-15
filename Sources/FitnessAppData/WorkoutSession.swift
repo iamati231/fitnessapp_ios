@@ -32,6 +32,14 @@ public final class WorkoutSession {
     /// the source `TrainingDay` is renamed or deleted (F123 Bug #2).
     public var dayName: String?
 
+    /// DEL-057: Vom User auf der Finish-Half-Sheet gewaehltes Session-Gefuehl.
+    /// 1 = Grossartig, 2 = Gut, 3 = Okay, 4 = Sehr schwer, 5 = Zerstoert.
+    /// Wird vom `ProgressionApplicator` ausgewertet: bei 4/5 wird jede
+    /// `.increaseWeight`-Action zwingend auf `.hold` ueberschrieben
+    /// (Erschoepfungs-Veto). Optional, weil bestehende Sessions vor DEL-057
+    /// kein Gefuehl tragen und auch nicht muessen.
+    public var sessionFeeling: Int?
+
     @Relationship(deleteRule: .nullify)
     public var day: TrainingDay?
 

@@ -509,6 +509,137 @@ public enum ProgramTemplates {
         iconSystemName: "soccerball"
     )
 
+    // MARK: - 12. Hybrid Athlete — Beginner (DEL-055)
+
+    /// 4-Tage-Plan fuer Einsteiger ins Concurrent Training (Kraft + Laufen).
+    /// 2 Kraft-Tage mit Ganzkoerper-Compounds, 2 Lauf-Tage (1 Easy, 1 Long).
+    /// Strength-RIR bewusst bei 2.5–3 → Sicherheitsabstand zum Versagen,
+    /// damit am Folgetag das Laufen nicht abgekratzt wird.
+    private static let hybridBeginner = ProgramTemplate(
+        id: "hybrid_beginner",
+        name: "Hybrid Athlete — Beginner",
+        tagline: "4 Tage · Kraft + Laufen Einstieg",
+        descriptionText: "Concurrent-Training light: zwei Ganzkörper-Strength-Einheiten + zwei lockere Lauf-Tage pro Woche. RIR-Puffer schützt den Laufmotor, kein zerstörendes Versagens-Training.",
+        focus: "Hybrid & Athletik",
+        daysPerWeek: 4,
+        days: [
+            DaySpec(name: "Strength Ganzkörper A", type: .fullBody, weekday: 2, exercises: [
+                ExerciseSpec(name: "Kniebeuge",                    sets: 3, repsMin: 6,  repsMax: 8,  restSeconds: 150, targetRir: 2.5),
+                ExerciseSpec(name: "Bankdrücken",                 sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                ExerciseSpec(name: "Rudern vorgebeugt",            sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                ExerciseSpec(name: "Plank",                        sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60,  targetRir: 3.0)
+            ]),
+            DaySpec(name: "Easy Run", type: .cardio, weekday: 3, exercises: [
+                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 30, repsMax: 30, restSeconds: 0, targetRir: 3.0, isCardio: true)
+            ]),
+            DaySpec(name: "Ruhetag", type: .rest, weekday: 4, exercises: []),
+            DaySpec(name: "Strength Ganzkörper B", type: .fullBody, weekday: 5, exercises: [
+                ExerciseSpec(name: "Rumänisches Kreuzheben",      sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
+                ExerciseSpec(name: "KH-Schulterdrücken",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                ExerciseSpec(name: "Latzug (weit)",                sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                ExerciseSpec(name: "KH-Curl",                      sets: 2, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+            ]),
+            DaySpec(name: "Long Run", type: .cardio, weekday: 6, exercises: [
+                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 45, repsMax: 60, restSeconds: 0, targetRir: 3.0, isCardio: true)
+            ]),
+            DaySpec(name: "Ruhetag", type: .rest, weekday: 7, exercises: []),
+            DaySpec(name: "Ruhetag", type: .rest, weekday: 1, exercises: [])
+        ],
+        targetEnvironment: .gym,
+        iconSystemName: "figure.run"
+    )
+
+    // MARK: - 13. Hybrid Athlete — Balanced (DEL-055)
+
+    /// 5-Tage-Plan: 3 Strength + 2 Run. Klassische "Hybrid"-Balance fuer
+    /// Fortgeschrittene, die Kraft UND Ausdauer parallel halten/steigern wollen.
+    private static let hybridBalanced = ProgramTemplate(
+        id: "hybrid_balanced",
+        name: "Hybrid Athlete — Balanced",
+        tagline: "5 Tage · Kraft + Ausdauer in Balance",
+        descriptionText: "Drei fokussierte Strength-Einheiten (Push/Pull/Legs-Light) plus zwei strategisch platzierte Lauf-Tage. RIR-Puffer 2–3 verhindert systemische Erschöpfung — bleibt Trainings-vertrāglich.",
+        focus: "Hybrid & Athletik",
+        daysPerWeek: 5,
+        days: [
+            DaySpec(name: "Strength Push", type: .push, weekday: 2, exercises: [
+                ExerciseSpec(name: "Bankdrücken",                 sets: 4, repsMin: 6,  repsMax: 8,  restSeconds: 150, targetRir: 2.5),
+                ExerciseSpec(name: "Schulterdrücken (stehend)",   sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                ExerciseSpec(name: "Schrägbankdrücken (aufwärts)", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                ExerciseSpec(name: "Trizep Pushdown (Kabel)",      sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+            ]),
+            DaySpec(name: "Easy Run", type: .cardio, weekday: 3, exercises: [
+                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 30, repsMax: 40, restSeconds: 0, targetRir: 3.0, isCardio: true)
+            ]),
+            DaySpec(name: "Strength Pull", type: .pull, weekday: 4, exercises: [
+                ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 3, repsMin: 5,  repsMax: 6,  restSeconds: 180, targetRir: 3.0),
+                ExerciseSpec(name: "Klimmzüge (weit)",            sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                ExerciseSpec(name: "Rudern vorgebeugt",            sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                ExerciseSpec(name: "KH-Curl",                      sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+            ]),
+            DaySpec(name: "Long Run", type: .cardio, weekday: 5, exercises: [
+                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 60, repsMax: 75, restSeconds: 0, targetRir: 3.0, isCardio: true)
+            ]),
+            DaySpec(name: "Strength Legs (Light)", type: .legs, weekday: 6, exercises: [
+                ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",   sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                ExerciseSpec(name: "Rumänisches Kreuzheben",      sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                ExerciseSpec(name: "Wadenheben (stehend, LH)",     sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 2.0),
+                ExerciseSpec(name: "Plank",                        sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 3.0)
+            ]),
+            DaySpec(name: "Ruhetag", type: .rest, weekday: 7, exercises: []),
+            DaySpec(name: "Ruhetag", type: .rest, weekday: 1, exercises: [])
+        ],
+        targetEnvironment: .gym,
+        iconSystemName: "figure.mixed.cardio"
+    )
+
+    // MARK: - 14. Hybrid Athlete — Performance (DEL-055)
+
+    /// 6-Tage-Plan: 3 Strength + 3 Run (inkl. Intervall-Einheit). Ambitioniert,
+    /// fuer User, die wissen was sie tun (z.B. Hyrox-/Triathlon-Vorbereitung).
+    /// Strength-RIR konservativ 2.5 — der Volumen-Stress ueber 6 Tage ist hoch
+    /// genug, da darf man am Stahl nicht auch noch ans Limit gehen.
+    private static let hybridPerformance = ProgramTemplate(
+        id: "hybrid_performance",
+        name: "Hybrid Athlete — Performance",
+        tagline: "6 Tage · Wettkampf-Hybrid",
+        descriptionText: "Sechs Trainingstage: drei Strength-Einheiten (Push/Pull/Legs) + drei Läufe (Easy, Intervalle, Long Run). Strength-RIR konservativ 2.5, damit der Gesamt-Volumen-Stress trainings-vertraglich bleibt.",
+        focus: "Hybrid & Athletik",
+        daysPerWeek: 6,
+        days: [
+            DaySpec(name: "Strength Push", type: .push, weekday: 2, exercises: [
+                ExerciseSpec(name: "Bankdrücken",                 sets: 4, repsMin: 5,  repsMax: 8,  restSeconds: 180, targetRir: 2.5),
+                ExerciseSpec(name: "Schulterdrücken (stehend)",   sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
+                ExerciseSpec(name: "Schrägbankdrücken (aufwärts)", sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                ExerciseSpec(name: "Seitheben",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 1.5),
+                ExerciseSpec(name: "Trizep Pushdown (Kabel)",      sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+            ]),
+            DaySpec(name: "Easy Run", type: .cardio, weekday: 3, exercises: [
+                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 40, repsMax: 50, restSeconds: 0, targetRir: 3.0, isCardio: true)
+            ]),
+            DaySpec(name: "Strength Pull", type: .pull, weekday: 4, exercises: [
+                ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 3, repsMin: 4,  repsMax: 6,  restSeconds: 210, targetRir: 3.0),
+                ExerciseSpec(name: "Klimmzüge (weit)",            sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                ExerciseSpec(name: "Rudern vorgebeugt",            sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                ExerciseSpec(name: "KH-Curl",                      sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+            ]),
+            DaySpec(name: "Intervalle", type: .cardio, weekday: 5, exercises: [
+                ExerciseSpec(name: "Intervalle",                   sets: 1, repsMin: 25, repsMax: 35, restSeconds: 0, targetRir: 3.0, isCardio: true)
+            ]),
+            DaySpec(name: "Strength Legs", type: .legs, weekday: 6, exercises: [
+                ExerciseSpec(name: "Kniebeuge",                    sets: 4, repsMin: 5,  repsMax: 8,  restSeconds: 180, targetRir: 2.5),
+                ExerciseSpec(name: "Rumänisches Kreuzheben",      sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
+                ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",   sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                ExerciseSpec(name: "Wadenheben (stehend, LH)",     sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 2.0)
+            ]),
+            DaySpec(name: "Long Run", type: .cardio, weekday: 7, exercises: [
+                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 75, repsMax: 90, restSeconds: 0, targetRir: 3.0, isCardio: true)
+            ]),
+            DaySpec(name: "Ruhetag", type: .rest, weekday: 1, exercises: [])
+        ],
+        targetEnvironment: .gym,
+        iconSystemName: "figure.run.circle.fill"
+    )
+
     // MARK: - Display order
 
     /// Display order in the picker — beginner-friendly programs first, then specialised.
@@ -523,6 +654,11 @@ public enum ProgramTemplates {
         broSplit,
         powerlifting5x5,
         powerlifting3x5,
-        footballAthletic
+        footballAthletic,
+        // DEL-055 Hybrid-Familie. Gruppiert via `focus = "Hybrid & Athletik"`,
+        // sodass die Picker-UI sie als eigene Section rendern kann.
+        hybridBeginner,
+        hybridBalanced,
+        hybridPerformance
     ]
 }

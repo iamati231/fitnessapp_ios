@@ -5,8 +5,9 @@ final class ProgramTemplatesTests: XCTestCase {
 
     // MARK: Inventory + uniqueness
 
-    func testElevenProgramsAreShipped() {
-        XCTAssertEqual(ProgramTemplates.all.count, 11,
+    func testFourteenProgramsAreShipped() {
+        // DEL-055: 11 → 14 Programme (Hybrid Beginner/Balanced/Performance dazu).
+        XCTAssertEqual(ProgramTemplates.all.count, 14,
                        "Editing the catalog needs an explicit count update — fail-fast prevents silent template drops")
     }
 
@@ -136,9 +137,18 @@ final class ProgramTemplatesTests: XCTestCase {
     // MARK: Cardio + Time-based propagation
 
     func testCardioFlagOnlySetForKnownCardioFinishers() {
-        // The fat-loss program is the only one with explicit `isCardio: true` exercises.
-        // If any other program flips this flag, surface it loudly so we can review.
-        for template in ProgramTemplates.all where template.id != "fat_loss_fullbody" {
+        // Whitelist der Templates, die legitimerweise `isCardio: true`-Eintraege
+        // tragen duerfen. DEL-055 hat die Hybrid-Plaene als dedizierte
+        // Concurrent-Training-Templates hinzugefuegt — ihre Easy-/Long-/
+        // Intervall-Run-Eintraege MUESSEN cardio sein, damit der Smart-
+        // Progression-Algorithmus sie korrekt skippt.
+        let allowedCardioCarriers: Set<String> = [
+            "fat_loss_fullbody",
+            "hybrid_beginner",
+            "hybrid_balanced",
+            "hybrid_performance"
+        ]
+        for template in ProgramTemplates.all where !allowedCardioCarriers.contains(template.id) {
             let cardioExercises = template.days.flatMap { $0.exercises }.filter { $0.isCardio }
             XCTAssertTrue(cardioExercises.isEmpty,
                           "\(template.name) has unexpected cardio-flagged exercises: \(cardioExercises.map(\.name))")

@@ -25,19 +25,30 @@ public struct ProgramTemplatePickerView: View {
     public var body: some View {
         NavigationStack {
             List {
-                Section {
-                    ForEach(filteredTemplates) { template in
-                        // DEL-037: Tap oeffnet die Preview, kein direktes
-                        // instantiate mehr. Erst nach "Plan uebernehmen" in
-                        // der Preview wird die Tiefkopie erstellt.
-                        NavigationLink {
-                            TemplatePreviewView(template: template) {
-                                instantiate(template)
+                // DEL-055: gruppiert per `focus` — z.B. "Hybrid & Athletik"
+                // landet als eigene Section. Ordnung ueber die in
+                // `ProgramTemplates.all` etablierte Display-Reihenfolge.
+                ForEach(groupedTemplates, id: \.focus) { group in
+                    Section {
+                        ForEach(group.templates) { template in
+                            // DEL-037: Tap oeffnet die Preview, kein direktes
+                            // instantiate mehr. Erst nach "Plan uebernehmen"
+                            // in der Preview wird die Tiefkopie erstellt.
+                            NavigationLink {
+                                TemplatePreviewView(template: template) {
+                                    instantiate(template)
+                                }
+                            } label: {
+                                ProgramRow(template: template)
                             }
-                        } label: {
-                            ProgramRow(template: template)
                         }
+                    } header: {
+                        Text(group.focus)
                     }
+                }
+
+                Section {
+                    EmptyView()
                 } footer: {
                     Text("Gefiltert nach deinem Trainingsort (\(userEnvironmentLabel)). Im Profil anpassen, wenn du auch andere Plaene sehen willst.")
                         .font(.footnote)
@@ -53,6 +64,20 @@ public struct ProgramTemplatePickerView: View {
                 }
             }
         }
+    }
+
+    /// DEL-055: Templates nach `focus` (Hybrid & Athletik / Kraft / Anfänger ...)
+    /// gruppiert. Reihenfolge der Sections entspricht der ersten Position des
+    /// jeweiligen Focus-Strings in `ProgramTemplates.all` — so bleibt die
+    /// kuratierte Display-Reihenfolge aus dem Core erhalten.
+    private var groupedTemplates: [(focus: String, templates: [ProgramTemplate])] {
+        var ordered: [String] = []
+        var bucket: [String: [ProgramTemplate]] = [:]
+        for template in filteredTemplates {
+            if bucket[template.focus] == nil { ordered.append(template.focus) }
+            bucket[template.focus, default: []].append(template)
+        }
+        return ordered.map { ($0, bucket[$0] ?? []) }
     }
 
     /// Filtert nach `profile.environment`. Same Logik wie OnboardingView:
@@ -142,15 +167,31 @@ private struct ProgramRow: View {
 /// Read-Only-Vorschau eines `ProgramTemplate` vor dem Uebernehmen in den
 /// User-Bestand. Zeigt Tage + Uebungen, damit der User die Struktur
 /// inspizieren kann; erst der "Plan uebernehmen"-Button startet die Tiefkopie.
+///
+/// DEL-056: jetzt `public`, damit `OnboardingView` die Preview wiederverwenden
+/// kann. Button-Titel ist parametrisiert (`adoptButtonTitle`) — Onboarding
+/// sagt "Diesen Plan waehlen", Picker sagt "Diesen Plan uebernehmen".
 @available(iOS 17.0, macOS 14.0, *)
-private struct TemplatePreviewView: View {
-    let template: ProgramTemplate
+public struct TemplatePreviewView: View {
+    public let template: ProgramTemplate
     /// Action, die getriggert wird wenn der User die Tiefkopie tatsaechlich
-    /// erstellen will. Wird vom Parent (Picker-View) injected, damit dort
-    /// die Insert + Navigation + Sheet-Dismiss orchestriert wird.
-    let onAdopt: () -> Void
+    /// erstellen will. Wird vom Parent injected, damit dort Insert,
+    /// Navigation und Sheet-Dismiss orchestriert wird.
+    public let onAdopt: () -> Void
+    /// Anpassbarer Button-Titel.
+    public let adoptButtonTitle: String
 
-    var body: some View {
+    public init(
+        template: ProgramTemplate,
+        adoptButtonTitle: String = "Diesen Plan übernehmen",
+        onAdopt: @escaping () -> Void
+    ) {
+        self.template = template
+        self.adoptButtonTitle = adoptButtonTitle
+        self.onAdopt = onAdopt
+    }
+
+    public var body: some View {
         List {
             heroSection
             ForEach(orderedDays, id: \.weekday) { day in
@@ -233,14 +274,14 @@ private struct TemplatePreviewView: View {
             } label: {
                 HStack {
                     Spacer()
-                    Label("Diesen Plan übernehmen", systemImage: "checkmark.circle.fill")
+                    Label(adoptButtonTitle, systemImage: "checkmark.circle.fill")
                         .font(.headline)
                     Spacer()
                 }
                 .padding(.vertical, 6)
                 .foregroundStyle(.white)
             }
-            .listRowBackground(Color.blue)
+            .listRowBackground(Color.deltiqOrange)
         } footer: {
             Text("Beim Übernehmen wird eine Tiefkopie für deine eigene Bibliothek angelegt — Tage, Übungen, Sätze sind danach frei editierbar.")
                 .font(.footnote)

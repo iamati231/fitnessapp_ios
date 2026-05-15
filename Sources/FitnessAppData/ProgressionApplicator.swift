@@ -42,6 +42,10 @@ public enum ProgressionApplicator {
     /// an. Returns `[ProgressionOutcome]` fuer UI-Render, gefiltert auf
     /// `.increaseWeight` und `.deload` — `.hold` wird ueberschlagen (nichts
     /// zu feiern, kein Toast).
+    ///
+    /// DEL-057: liest `session.sessionFeeling` und veto'd jede
+    /// `.increaseWeight`-Action zu `.hold`, wenn der User das Workout als
+    /// "sehr schwer" oder "zerstoert" markiert hat (Erschoepfungs-Schutz).
     @discardableResult
     public static func apply(
         to session: WorkoutSession,
@@ -51,6 +55,15 @@ public enum ProgressionApplicator {
         // `activeExercises` filtert DEL-049-Archive aus. Cardio + TimeBased
         // werden im Inner-Loop noch mal explizit gechecked.
         let exercises = day.activeExercises
+
+        // DEL-057: Session-Feeling-Veto vorab abfragen, damit wir es im
+        // Loop nicht jedes Mal neu auswerten.
+        let feelingVetoActive: Bool = {
+            guard let raw = session.sessionFeeling,
+                  let feeling = SessionFeeling(rawValue: raw)
+            else { return false }
+            return feeling.vetoesProgression
+        }()
 
         var outcomes: [ProgressionOutcome] = []
 
@@ -85,13 +98,20 @@ public enum ProgressionApplicator {
             // User-Override vom Plan ziehen (kann nil sein → Default).
             let override = exercise.day?.plan?.progressionTargetRIROverride
 
-            let action = ProgressionEvaluator.evaluate(
+            var action = ProgressionEvaluator.evaluate(
                 loggedSets: inputSets,
                 targetRepsRange: exercise.repsMin...max(exercise.repsMin, exercise.repsMax),
+                targetSetCount: exercise.sets,
                 isCompound: exercise.isCompound,
                 incrementStep: exercise.progressionStep,
                 targetRIROverride: override
             )
+
+            // DEL-057 Erschoepfungs-Veto. Deload bleibt erlaubt (Sicherheits-
+            // Netz), nur `.increaseWeight` wird zu `.hold` umgebogen.
+            if feelingVetoActive, case .increaseWeight = action {
+                action = .hold
+            }
 
             // Auswirkungen auf das suggestedWeight schreiben.
             let baseWeight = exercise.suggestedWeight ?? lastLoggedWeight(in: exerciseLogs)
@@ -138,6 +158,12 @@ public enum ProgressionApplicator {
         for session: WorkoutSession
     ) -> [ProgressionOutcome] {
         guard let day = session.day else { return [] }
+        let feelingVetoActive: Bool = {
+            guard let raw = session.sessionFeeling,
+                  let feeling = SessionFeeling(rawValue: raw)
+            else { return false }
+            return feeling.vetoesProgression
+        }()
         var outcomes: [ProgressionOutcome] = []
         for exercise in day.activeExercises {
             guard exercise.smartProgressionEnabled,
@@ -154,13 +180,17 @@ public enum ProgressionApplicator {
                 ProgressionInputSet(setIndex: $0.setIndex, reps: $0.reps, rir: $0.rir)
             }
             let override = exercise.day?.plan?.progressionTargetRIROverride
-            let action = ProgressionEvaluator.evaluate(
+            var action = ProgressionEvaluator.evaluate(
                 loggedSets: inputSets,
                 targetRepsRange: exercise.repsMin...max(exercise.repsMin, exercise.repsMax),
+                targetSetCount: exercise.sets,
                 isCompound: exercise.isCompound,
                 incrementStep: exercise.progressionStep,
                 targetRIROverride: override
             )
+            if feelingVetoActive, case .increaseWeight = action {
+                action = .hold
+            }
             if case .hold = action { continue }
             outcomes.append(
                 ProgressionOutcome(
