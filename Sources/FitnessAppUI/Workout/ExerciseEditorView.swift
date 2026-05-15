@@ -27,13 +27,23 @@ public struct ExerciseEditorView: View {
 
     public var body: some View {
         Form {
+            // DEL-062: Cardio + Zeit-basiert sind mutually-exclusive — der
+            // onChange-Handler verhindert, dass beide gleichzeitig true
+            // werden koennen (sonst wuesste die SetRow-View nicht, welchen
+            // Branch sie nehmen soll).
             Section {
                 TextField("Name", text: $exercise.name)
                     .disabled(isReadOnly)
                 Toggle("Cardio", isOn: $exercise.isCardio)
                     .disabled(isReadOnly)
-                Toggle("Zeit-basiert (Plank, Wall Sit)", isOn: $exercise.isTimeBased)
+                    .onChange(of: exercise.isCardio) { _, isOn in
+                        if isOn { exercise.isTimeBased = false }
+                    }
+                Toggle("Zeit-basiert", isOn: $exercise.isTimeBased)
                     .disabled(isReadOnly)
+                    .onChange(of: exercise.isTimeBased) { _, isOn in
+                        if isOn { exercise.isCardio = false }
+                    }
             } header: {
                 Text("Allgemein")
             } footer: {
@@ -41,9 +51,17 @@ public struct ExerciseEditorView: View {
                     Text("Template-Uebung — Name und Cardio/Zeit-Flags sind festgelegt.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                } else {
+                    Text("Cardio = Run/Bike (Distanz + Dauer). Zeit-basiert = Plank/Wall-Sit (Hold-Timer). Nur eins gleichzeitig.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
             }
 
+            // DEL-062: bei Cardio brauchen wir keine Saetze/Wdh-Section — der
+            // CardioSetRow nimmt Distanz + Dauer direkt entgegen. Bei
+            // Zeit-basierten Uebungen zeigt die Section weiter "Sek. min/max"
+            // als Zielzeit-Range.
             if !exercise.isCardio {
                 Section("Sätze & Wiederholungen") {
                     Stepper(value: $exercise.sets, in: 1...20) {
@@ -66,28 +84,44 @@ public struct ExerciseEditorView: View {
                 }
             }
 
-            // Pause + Ziel-RIR bleiben editierbar — Trainings-Parameter, die
-            // sich legitim individuell anpassen lassen.
-            Section("Pause & Intensität") {
-                Stepper(value: $exercise.restSeconds, in: 0...600, step: 15) {
-                    LabeledContent("Pause", value: "\(exercise.restSeconds)s")
-                }
-                Stepper(value: $exercise.targetRir, in: 0...5, step: 0.5) {
-                    LabeledContent("Ziel-RIR", value: rirString(exercise.targetRir))
+            // DEL-062: Cardio-Specific Section — Ziel-Distanz + Ziel-Dauer
+            // statt Pause/RIR/Gewicht. Sichtbar nur bei isCardio == true.
+            if exercise.isCardio {
+                cardioTargetSection
+            }
+
+            // DEL-062: "Pause & Intensität"-Section.
+            //   * Cardio → komplett ausgeblendet (laufen hat keine "Pause"
+            //     im Trainingssatz-Sinne und kein RIR)
+            //   * Zeit-basiert → nur Pause-Stepper (Pause zwischen den
+            //     Hold-Saetzen ist sinnvoll, RIR fuer Plank nicht)
+            //   * Strength → beide Stepper
+            if !exercise.isCardio {
+                Section("Pause & Intensität") {
+                    Stepper(value: $exercise.restSeconds, in: 0...600, step: 15) {
+                        LabeledContent("Pause", value: "\(exercise.restSeconds)s")
+                    }
+                    if !exercise.isTimeBased {
+                        Stepper(value: $exercise.targetRir, in: 0...5, step: 0.5) {
+                            LabeledContent("Ziel-RIR", value: rirString(exercise.targetRir))
+                        }
+                    }
                 }
             }
 
-            // Suggested-Weight + Notizen bleiben offen — User-eigene Trainings-
-            // Daten, gehoeren nicht zur Template-Struktur.
-            Section("Vorgeschlagenes Gewicht (optional)") {
-                TextField("kg",
-                          value: Binding(
-                            get: { exercise.suggestedWeight },
-                            set: { exercise.suggestedWeight = $0 }
-                          ),
-                          format: .number,
-                          prompt: Text("z.B. 60"))
-                    .decimalKeyboard()
+            // DEL-062: Vorgeschlagenes Gewicht nur bei reiner Strength-Uebung.
+            // Cardio + TimeBased nutzen kein kg-Tracking.
+            if !exercise.isCardio, !exercise.isTimeBased {
+                Section("Vorgeschlagenes Gewicht (optional)") {
+                    TextField("kg",
+                              value: Binding(
+                                get: { exercise.suggestedWeight },
+                                set: { exercise.suggestedWeight = $0 }
+                              ),
+                              format: .number,
+                              prompt: Text("z.B. 60"))
+                        .decimalKeyboard()
+                }
             }
 
             // DEL-052/053 — Smart-Progression-Settings pro Uebung. Nur
@@ -116,6 +150,29 @@ public struct ExerciseEditorView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Fertig") { dismiss() }
+            }
+        }
+    }
+
+    /// DEL-062: dedizierte Section fuer Cardio-Ziele. Distanz + Dauer sind
+    /// optional — der User kann z.B. nur eine Ziel-Distanz setzen und die
+    /// Dauer offen lassen ("how fast can I run 5k").
+    private var cardioTargetSection: some View {
+        Section("Ziel (optional)") {
+            TextField("Distanz (km)",
+                      value: Binding(
+                        get: { exercise.targetDistanceKm },
+                        set: { exercise.targetDistanceKm = $0 }
+                      ),
+                      format: .number,
+                      prompt: Text("z.B. 5,0"))
+                .decimalKeyboard()
+            Stepper(value: Binding(
+                get: { exercise.targetDurationMinutes ?? 0 },
+                set: { exercise.targetDurationMinutes = $0 > 0 ? $0 : nil }
+            ), in: 0...240, step: 5) {
+                LabeledContent("Dauer (min)",
+                               value: exercise.targetDurationMinutes.map { "\($0)" } ?? "—")
             }
         }
     }

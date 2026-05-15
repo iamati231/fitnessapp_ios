@@ -68,7 +68,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Schulterdrücken (stehend)",   sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Langhantel Curl",              sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Skull Crusher",                sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Cardio / Laufband",            sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 3.0, isCardio: true)
+                ExerciseSpec(name: "Cardio / Laufband",            sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 0, isCardio: true)
             ]),
             DaySpec(name: "Ruhetag", type: .rest, weekday: 3, exercises: []),
             DaySpec(name: "Fatburn B", type: .fullBody, weekday: 4, exercises: [
@@ -78,7 +78,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "KH-Schulterdrücken",          sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Hammer Curl",                  sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Trizep Pushdown (Kabel)",      sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Cardio / Fahrradergometer",    sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 3.0, isCardio: true)
+                ExerciseSpec(name: "Cardio / Fahrradergometer",    sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 0, isCardio: true)
             ]),
             DaySpec(name: "Ruhetag", type: .rest, weekday: 5, exercises: []),
             DaySpec(name: "Fatburn C", type: .fullBody, weekday: 6, exercises: [
@@ -88,7 +88,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Seitheben",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Beinbeuger liegend",           sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Schrägbank Curl",             sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Cardio / Stepper",             sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 3.0, isCardio: true)
+                ExerciseSpec(name: "Cardio / Stepper",             sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 0, isCardio: true)
             ]),
             DaySpec(name: "Ruhetag", type: .rest, weekday: 7, exercises: []),
             DaySpec(name: "Ruhetag", type: .rest, weekday: 1, exercises: [])
@@ -533,7 +533,7 @@ public enum ProgramTemplates {
                 // DEL-058: Cardio mit targetDistanceKm + targetDurationMinutes.
                 // repsMin/repsMax bleiben 1/1 — sind im Cardio-Branch der UI
                 // unsichtbar, aber der Builder erwartet sie als Pflichtfelder.
-                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 3.0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30)
+                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30)
             ]),
             DaySpec(name: "Ruhetag", type: .rest, weekday: 4, exercises: []),
             DaySpec(name: "Strength Ganzkörper B", type: .fullBody, weekday: 5, exercises: [
@@ -543,7 +543,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "KH-Curl",                      sets: 2, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
             ]),
             DaySpec(name: "Long Run", type: .cardio, weekday: 6, exercises: [
-                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 3.0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50)
+                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50)
             ]),
             DaySpec(name: "Ruhetag", type: .rest, weekday: 7, exercises: []),
             DaySpec(name: "Ruhetag", type: .rest, weekday: 1, exercises: [])
@@ -571,7 +571,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Trizep Pushdown (Kabel)",      sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
             ]),
             DaySpec(name: "Easy Run", type: .cardio, weekday: 3, exercises: [
-                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 3.0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35)
+                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35)
             ]),
             DaySpec(name: "Strength Pull", type: .pull, weekday: 4, exercises: [
                 ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 3, repsMin: 5,  repsMax: 6,  restSeconds: 180, targetRir: 3.0),
@@ -580,7 +580,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "KH-Curl",                      sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
             ]),
             DaySpec(name: "Long Run", type: .cardio, weekday: 5, exercises: [
-                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 3.0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70)
+                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70)
             ]),
             DaySpec(name: "Strength Legs (Light)", type: .legs, weekday: 6, exercises: [
                 ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",   sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
@@ -617,7 +617,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Trizep Pushdown (Kabel)",      sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
             ]),
             DaySpec(name: "Easy Run", type: .cardio, weekday: 3, exercises: [
-                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 3.0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45)
+                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45)
             ]),
             DaySpec(name: "Strength Pull", type: .pull, weekday: 4, exercises: [
                 ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 3, repsMin: 4,  repsMax: 6,  restSeconds: 210, targetRir: 3.0),
@@ -629,7 +629,7 @@ public enum ProgramTemplates {
                 // Intervall-Einheit: kurze Distanz, hohe Intensitaet — wir
                 // setzen nur Dauer als Placeholder, Distanz traegt der User
                 // selbst ein (variiert je nach Splits).
-                ExerciseSpec(name: "Intervalle",                   sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 3.0, isCardio: true, targetDurationMinutes: 30)
+                ExerciseSpec(name: "Intervalle",                   sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 30)
             ]),
             DaySpec(name: "Strength Legs", type: .legs, weekday: 6, exercises: [
                 ExerciseSpec(name: "Kniebeuge",                    sets: 4, repsMin: 5,  repsMax: 8,  restSeconds: 180, targetRir: 2.5),
@@ -638,7 +638,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Wadenheben (stehend, LH)",     sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 2.0)
             ]),
             DaySpec(name: "Long Run", type: .cardio, weekday: 7, exercises: [
-                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 3.0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85)
+                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85)
             ]),
             DaySpec(name: "Ruhetag", type: .rest, weekday: 1, exercises: [])
         ],
