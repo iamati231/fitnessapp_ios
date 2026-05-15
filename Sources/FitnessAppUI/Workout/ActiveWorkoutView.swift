@@ -116,17 +116,63 @@ public struct ActiveWorkoutView: View {
 
     // MARK: Sections
 
+    /// DEL-061: dynamische Stats-Karte. Wenn ALLE aktiven Uebungen des Tages
+    /// Cardio sind (z.B. Hybrid-Lauftag), zeigen wir die Lauf-Metriken
+    /// statt der Kraft-Metriken. Mixed-Day-Edge-Case faellt auf den Strength-
+    /// Header zurueck — in der Praxis sind Hybrid-Plaene single-purpose-Days.
+    @ViewBuilder
     private var statsCard: some View {
         HStack(spacing: 0) {
             StatBlock(label: "Dauer", value: formattedDuration, monospacedDigit: true)
             divider
-            StatBlock(label: "Sätze", value: "\(loggedSetsCount)", monospacedDigit: true)
-            divider
-            StatBlock(label: "Volumen kg", value: formatVolume(), monospacedDigit: true)
+            if isCardioSession {
+                StatBlock(label: "Distanz", value: formatTotalDistance(), monospacedDigit: true)
+                divider
+                StatBlock(label: "⌀ Pace", value: formatAveragePace(), monospacedDigit: true)
+            } else {
+                StatBlock(label: "Sätze", value: "\(loggedSetsCount)", monospacedDigit: true)
+                divider
+                StatBlock(label: "Volumen kg", value: formatVolume(), monospacedDigit: true)
+            }
         }
         .padding(.vertical, 12)
         .background(Color.secondary.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: 16))
+        .innerLightStroke(cornerRadius: 16, opacity: 0.08)
+    }
+
+    /// True wenn alle aktiven Uebungen des Tages Cardio-Lifts sind. Bei
+    /// reinen Run-Sessions (Hybrid Easy Run / Long Run / Intervalle-Tage)
+    /// trifft das zu — Mix-Tage fallen auf Strength-Default zurueck.
+    private var isCardioSession: Bool {
+        guard let exercises = session.day?.activeExercises, !exercises.isEmpty
+        else { return false }
+        return exercises.allSatisfy { $0.isCardio }
+    }
+
+    /// DEL-061: Summe aller `distanceKm` der Session-Logs. Format: "5,5 km".
+    private func formatTotalDistance() -> String {
+        let total = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
+        guard total > 0 else { return "—" }
+        if total == total.rounded() {
+            return "\(Int(total)) km"
+        }
+        return "\(total.truncated(to: 2).formattedTwoDecimals) km"
+    }
+
+    /// DEL-061: gewichtete Average-Pace ueber alle Cardio-Logs der Session.
+    /// `total_seconds / total_km` → korrekt auch bei unterschiedlichen
+    /// Splits pro Set.
+    private func formatAveragePace() -> String {
+        let totalKm = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
+        let totalSec = session.logs.compactMap(\.durationSeconds).reduce(0, +)
+        guard totalKm > 0, totalSec > 0 else { return "—:——" }
+        let pace = PaceCalculator.minutesPerKm(distanceKm: totalKm, durationSeconds: totalSec)
+        // Wir wollen die "/km"-Suffix-Variante hier KOMPAKT — also Format
+        // selbst kuerzen.
+        guard let pace, pace > 0 else { return "—:——" }
+        let totalSeconds = Int((pace * 60.0).rounded())
+        return String(format: "%d:%02d", totalSeconds / 60, totalSeconds % 60)
     }
 
     private var divider: some View {

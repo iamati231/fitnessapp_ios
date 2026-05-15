@@ -60,19 +60,32 @@ struct SetRow: View {
 
     private var isCompleted: Bool { existingLog != nil }
 
+    /// DEL-060: explizite Drei-Wege-Verzweigung der UI nach Uebungs-
+    /// Kategorie. Cardio gewinnt VOR TimeBased — falls jemals jemand
+    /// versehentlich beide Flags setzt, soll lieber Cardio-Eingabe
+    /// erscheinen (sonst sucht der User vergeblich nach Distanz-Feld).
+    ///
+    /// Vier konzeptionelle Modi nach Ticket:
+    ///   1. Cardio (Run/Bike) → CardioSetRow (Distanz/Dauer/Pace)
+    ///   2. TimeBased (Plank/Wall-Sit) → Hold-Timer-Card mit Countdown
+    ///   3. Bodyweight → Strength-UI mit BW-Placeholder (DEL-045-Update,
+    ///      kein eigener Branch — der "kg"-Input ist optional und nimmt
+    ///      `nil` als "Bodyweight" entgegen)
+    ///   4. Strength (Standard) → compactSetRow mit kg + Wdh
     var body: some View {
-        if exercise.isTimeBased && !exercise.isCardio {
-            // Time-based: ganz anderer Flow (Hold-Timer-Card).
-            // DEL-040 + DEL-045 Schritt 4.
-            timeBasedSetView
-                .onAppear { initializeOnce() }
-                .onDisappear { invalidateHoldTimer() }
-        } else if exercise.isCardio {
+        if exercise.isCardio {
             // DEL-058: dedizierte CardioSetRow mit Distanz / Dauer / Pace.
             cardioSetRow
                 .onAppear { initializeOnce() }
+        } else if exercise.isTimeBased {
+            // Time-based: Hold-Timer-Card mit 3-2-1 Countdown +
+            // automatischem Speichern (DEL-040 + DEL-045 Schritt 4).
+            timeBasedSetView
+                .onAppear { initializeOnce() }
+                .onDisappear { invalidateHoldTimer() }
         } else {
-            // Strength: kompaktes Layout (DEL-045 Schritt 1+2).
+            // Strength (inkl. Bodyweight per BW-Placeholder): kompaktes
+            // Layout (DEL-045 Schritt 1+2).
             compactSetRow
                 .onAppear { initializeOnce() }
         }
@@ -422,9 +435,19 @@ struct SetRow: View {
     private func stopHoldAndLog() {
         invalidateHoldTimer()
         guard case .holding(let elapsed) = holdState else { return }
-        // DEL-040: TimeBased speichert die Hold-Sekunden in `reps`. RIR 0
-        // (Hold-Timer ist bis-zum-Limit gehalten worden), kein Gewicht.
-        onLogged(LoggedSetValues(weight: 0, reps: elapsed, rir: 0))
+        // DEL-040: TimeBased speichert die Hold-Sekunden in `reps` —
+        // historische Convention, bleibt fuer Backward-Compat erhalten.
+        // DEL-060: ZUSAETZLICH `durationSeconds` setzen, sodass spaetere
+        // Analytik einheitlich auf das Duration-Feld zugreifen kann (statt
+        // Sonderfall fuer TimeBased zu pflegen). `distanceKm` bleibt nil —
+        // Plank/Wall-Sit haben keine Distanz.
+        onLogged(LoggedSetValues(
+            weight: 0,
+            reps: elapsed,
+            rir: 0,
+            distanceKm: nil,
+            durationSeconds: elapsed
+        ))
         holdState = .idle
     }
 
@@ -581,20 +604,29 @@ struct SetRow: View {
     // MARK: - DEL-058 Cardio Set Row
 
     /// Cardio-Eingabe: Distanz (km) + Dauer (MM:SS) + Live-Pace + Checkmark.
-    /// Statusleiste ist hier ein abgeschlossener Set-Text mit dem Pace-Wert.
+    /// DEL-061: Tighter spacing + feste Label-Breiten, damit auf iPhone-SE
+    /// (375pt) nichts mehr abgeschnitten wird. KM-Label sitzt in eigener
+    /// 24pt-Box, ZEIT/min-Label entfaellt komplett zugunsten von Pace
+    /// rechtsbuendig.
     @ViewBuilder
     private var cardioSetRow: some View {
         VStack(spacing: 8) {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
+                // Set-Nummer kompakter — 20pt statt 24pt, spart Platz fuer
+                // das KM-Label gleich daneben.
                 Text("\(setIndex + 1)")
-                    .font(.subheadline.weight(.semibold))
-                    .frame(width: 24, alignment: .leading)
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundStyle(isCompleted ? .secondary : .primary)
+                    .frame(width: 20, alignment: .leading)
 
                 cardioDistanceInput
                 cardioDurationInput
-                cardioPaceLabel
 
                 Spacer(minLength: 4)
+
+                // DEL-061: Pace-Anzeige rechtsbuendig, eigene fixe Box,
+                // schrumpft notfalls mit minimumScaleFactor statt umzubrechen.
+                cardioPaceLabel
 
                 checkmarkButton
             }
@@ -603,7 +635,7 @@ struct SetRow: View {
             // Layout-Shift beim Toggle isCompleted↔editable.
             cardioStatusZone
                 .frame(height: 28)
-                .padding(.leading, 34)
+                .padding(.leading, 28)
         }
         .padding(.vertical, 6)
         .contentShape(Rectangle())
@@ -616,55 +648,63 @@ struct SetRow: View {
         }
     }
 
+    /// DEL-061: feste TextField-Breite + fest verankertes KM-Label, damit
+    /// auf iPhone-SE-Breite nichts ueberlappt oder abgeschnitten wird.
     private var cardioDistanceInput: some View {
         HStack(spacing: 4) {
-            TextField("km", text: $cardioDistanceText, prompt: Text(cardioDistancePlaceholder))
+            TextField("0.0", text: $cardioDistanceText, prompt: Text(cardioDistancePlaceholder))
                 .decimalKeyboard()
                 .monospacedDigit()
-                .frame(width: 60)
-                .padding(.horizontal, 8)
+                .frame(width: 55)
+                .padding(.horizontal, 6)
                 .padding(.vertical, 6)
                 .background(Color.secondary.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
-                .innerLightStroke(cornerRadius: 8)   // DEL-059
+                .innerLightStroke(cornerRadius: 8)
                 .multilineTextAlignment(.center)
                 .disabled(isCompleted)
                 .opacity(isCompleted ? 0.6 : 1.0)
-            Text("KM").deltiqLabel()    // DEL-059
+            Text("KM")
+                .deltiqLabel()
+                .frame(width: 22, alignment: .leading)   // fix → kein Cut
         }
     }
 
+    /// DEL-061: das frueher hinten dranhaengende "min"-Label entfaellt — die
+    /// MM:SS-Convention reicht visuell. Kein Label = mehr Platz fuer das
+    /// breitere Pace-Display rechts.
     private var cardioDurationInput: some View {
-        HStack(spacing: 4) {
-            TextField("MM:SS", text: $cardioDurationText, prompt: Text(cardioDurationPlaceholder))
-                #if os(iOS)
-                .keyboardType(.numbersAndPunctuation)
-                #endif
-                .monospacedDigit()
-                .frame(width: 70)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(Color.secondary.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .innerLightStroke(cornerRadius: 8)   // DEL-059
-                .multilineTextAlignment(.center)
-                .disabled(isCompleted)
-                .opacity(isCompleted ? 0.6 : 1.0)
-            Text("ZEIT").deltiqLabel()  // DEL-059
-        }
+        TextField("MM:SS", text: $cardioDurationText, prompt: Text(cardioDurationPlaceholder))
+            #if os(iOS)
+            .keyboardType(.numbersAndPunctuation)
+            #endif
+            .monospacedDigit()
+            .frame(width: 65)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 6)
+            .background(Color.secondary.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .innerLightStroke(cornerRadius: 8)
+            .multilineTextAlignment(.center)
+            .disabled(isCompleted)
+            .opacity(isCompleted ? 0.6 : 1.0)
     }
 
     /// Live-Pace-Anzeige in Neon-Orange. Recomputed pro Tastenanschlag
     /// dank `@State`-Bindings auf den Text-Feldern.
-    /// DEL-059: Label "PACE" uppercase + tracking, Wert monospaced + bolder.
+    /// DEL-061: rechtsbuendig, fixe Box, `.lineLimit(1)` +
+    /// `.minimumScaleFactor(0.8)` als Fallback bei langen Pace-Werten
+    /// (z.B. "12:45 /km" Walk-Pace).
     private var cardioPaceLabel: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .trailing, spacing: 2) {
             Text("PACE").deltiqLabel()
             Text(currentPace)
-                .font(.callout.weight(.bold).monospacedDigit())
+                .font(.system(size: 14, weight: .bold, design: .rounded).monospacedDigit())
                 .foregroundStyle(Color.deltiqOrange)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
-        .frame(width: 78, alignment: .leading)
+        .frame(width: 72, alignment: .trailing)
     }
 
     private var currentPace: String {
