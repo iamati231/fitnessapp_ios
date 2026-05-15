@@ -426,6 +426,11 @@ public struct DashboardView: View {
                 }
 
                 if isRestDay {
+                    // DEL-096: An Ruhetagen ist "Spontanes Workout" der
+                    // primäre Pfad — der User hat den Tag frei vom Plan,
+                    // will aber vielleicht trotzdem locker laufen gehen.
+                    adHocWorkoutButton(prominent: true)
+
                     // DEL-094: Sekundärer Skip-Link für User, die den
                     // Plan-Pointer manuell vorwärts schubsen wollen
                     // (z.B. an einem Tag, an dem sie sich doch ausruhen).
@@ -447,6 +452,11 @@ public struct DashboardView: View {
                     // existiert: orange "Fortsetzen"-Button, navigiert in die
                     // existing Session. Sonst: blauer "Direkt starten".
                     activeWorkoutButton(plan: plan, day: day)
+
+                    // DEL-096: Sekundärer Ad-Hoc-Link — User darf jederzeit
+                    // vom Plan abweichen (z.B. spontan eine Cardio-Einheit
+                    // einschieben). Bewusst dezent, kein zweiter Fett-CTA.
+                    adHocWorkoutButton(prominent: false)
                 }
             }
             .padding()
@@ -455,25 +465,31 @@ public struct DashboardView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16))
         } else {
             // No active plan or active plan has no days yet.
-            HStack(spacing: 12) {
-                Image(systemName: "list.bullet.rectangle.portrait")
-                    .font(.title2)
-                    .foregroundStyle(.secondary)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(activePlans.isEmpty ? "Kein aktiver Plan" : "Plan noch leer")
-                        .font(.body.weight(.semibold))
-                    Text(activePlans.isEmpty
-                         ? "Lege im Plan-Tab deinen ersten Trainings-Plan an."
-                         : "Füge deinem aktiven Plan im Plan-Tab Tage und Übungen hinzu.")
-                        .font(.caption)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    Image(systemName: "list.bullet.rectangle.portrait")
+                        .font(.title2)
                         .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(activePlans.isEmpty ? "Kein aktiver Plan" : "Plan noch leer")
+                            .font(.body.weight(.semibold))
+                        Text(activePlans.isEmpty
+                             ? "Lege im Plan-Tab deinen ersten Trainings-Plan an."
+                             : "Füge deinem aktiven Plan im Plan-Tab Tage und Übungen hinzu.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Plan-Tab") {
+                        navigation.selectedTab = .plan
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
-                Spacer()
-                Button("Plan-Tab") {
-                    navigation.selectedTab = .plan
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+
+                // DEL-096: Auch ohne Plan soll der User trainieren können —
+                // Ad-Hoc ist hier der einzige Trainings-CTA, also prominent.
+                adHocWorkoutButton(prominent: true)
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -552,6 +568,43 @@ public struct DashboardView: View {
         .buttonStyle(.plain)
     }
 
+    /// DEL-096: "Spontanes Workout"-Einstiegspunkt. Zwei Varianten:
+    ///   * `prominent == true` — fetter DeltiqOrange-Hero-Button. Wird an
+    ///     Ruhetagen + auf der Empty-Plan-Karte gerendert, wo es der einzige
+    ///     Trainings-CTA ist.
+    ///   * `prominent == false` — dezenter Text-Link unter dem regulaeren
+    ///     "Direkt starten". Sekundaerer Pfad fuer User, die vom Plan
+    ///     abweichen wollen, ohne dass ein zweiter Fett-CTA das visuelle
+    ///     Gewicht des primaeren Plan-Buttons schluckt.
+    @ViewBuilder
+    private func adHocWorkoutButton(prominent: Bool) -> some View {
+        Button {
+            startAdHocWorkout()
+        } label: {
+            if prominent {
+                HStack {
+                    Spacer()
+                    Label("Spontanes Workout starten", systemImage: "bolt.fill")
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                }
+                .padding(.vertical, 10)
+                .background(Color.deltiqOrange.gradient)
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            } else {
+                HStack(spacing: 4) {
+                    Image(systemName: "bolt.fill")
+                    Text("Vom Plan abweichen — Spontanes Workout")
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.deltiqOrange)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Spontanes Workout starten — leere Session ohne Plan-Anbindung")
+    }
+
     /// Liefert eine offene Session, deren `.day` mit dem uebergebenen Day
     /// uebereinstimmt — fuer den "Fortsetzen"-Pfad.
     private func openSessionForDay(_ day: TrainingDay) -> WorkoutSession? {
@@ -611,6 +664,42 @@ public struct DashboardView: View {
         navigation.workoutPath = NavigationPath()
         navigation.workoutPath.append(plan)
         navigation.workoutPath.append(day)
+        navigation.workoutPath.append(ActiveSessionRoute(session: session))
+        navigation.selectedTab = .plan
+    }
+
+    /// DEL-096: Spontanes Ad-Hoc-Workout starten. Erzeugt einen ephemeren
+    /// `TrainingDay` ohne Plan-Anbindung (damit der ActiveWorkoutView-
+    /// Paginator + Add-Exercise-Flow weiterhin durch die normale
+    /// `day.activeExercises`-Pipeline laufen koennen) und eine
+    /// `WorkoutSession` mit `isAdHoc = true`. Empty-State-Logik und
+    /// Discard-Sweep-Logik in der ActiveWorkoutView lesen diesen Flag.
+    private func startAdHocWorkout() {
+        // Ephemerer Tag — kein `plan`, taucht in keinem PlanEditor/PlansList
+        // auf, weil alle Plan-Queries `plan != nil`-implizit filtern (via
+        // `\TrainingPlan.days`-Inverse).
+        let todayWeekday = Calendar.current.component(.weekday, from: Date())
+        let adHocDay = TrainingDay(
+            name: "Spontanes Workout",
+            weekday: todayWeekday,
+            type: .custom,
+            plan: nil
+        )
+        modelContext.insert(adHocDay)
+
+        let session = WorkoutSession(
+            startTime: Date(),
+            endTime: Date(),
+            durationMinutes: 0,
+            exerciseCount: 0,
+            isCompleted: false,
+            isAdHoc: true,
+            dayName: "Spontanes Workout",
+            day: adHocDay
+        )
+        modelContext.insert(session)
+
+        navigation.workoutPath = NavigationPath()
         navigation.workoutPath.append(ActiveSessionRoute(session: session))
         navigation.selectedTab = .plan
     }

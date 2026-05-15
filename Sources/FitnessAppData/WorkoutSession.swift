@@ -29,6 +29,18 @@ public final class WorkoutSession {
     /// sessions.
     public var isRestDay: Bool = false
 
+    /// DEL-096: True wenn diese Session als "Spontanes Workout" gestartet
+    /// wurde — kein Plan, kein Tag-Template, der User picked seine Uebungen
+    /// in der ActiveWorkoutView selber. Steuert:
+    ///   * Empty-State-Branch in der ActiveWorkoutView ("Uebung hinzufuegen"-
+    ///     CTA statt "Diese Session hat keine Uebungen"-Hinweis)
+    ///   * In-Workout "+Uebung"-Toolbar-Button, damit der User wachsen kann
+    ///   * Discard-Sweep: leere Ad-Hoc-Sessions ohne Logs werden beim
+    ///     Beenden geloescht statt persistiert (kein Schrott in History)
+    /// Default `false` damit Lightweight-Migration die Bestandsdaten korrekt
+    /// als Plan-Sessions markiert.
+    public var isAdHoc: Bool = false
+
     /// Snapshotted day name at session start — keeps history readable even after
     /// the source `TrainingDay` is renamed or deleted (F123 Bug #2).
     public var dayName: String?
@@ -64,6 +76,7 @@ public final class WorkoutSession {
         notes: String? = nil,
         isCompleted: Bool = false,
         isRestDay: Bool = false,
+        isAdHoc: Bool = false,
         dayName: String? = nil,
         day: TrainingDay? = nil
     ) {
@@ -76,6 +89,7 @@ public final class WorkoutSession {
         self.notes = notes
         self.isCompleted = isCompleted
         self.isRestDay = isRestDay
+        self.isAdHoc = isAdHoc
         self.dayName = dayName
         self.day = day
     }

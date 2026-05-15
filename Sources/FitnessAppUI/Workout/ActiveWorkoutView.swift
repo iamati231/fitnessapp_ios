@@ -56,6 +56,12 @@ public struct ActiveWorkoutView: View {
     @State private var showingFinishConfirm = false
     @State private var showingDiscardConfirm = false
 
+    /// DEL-096: In-Workout Exercise-Picker fuer Ad-Hoc-Sessions. Strenger
+    /// gated als der DayEditor-Picker — kein Equipment-Konflikt-Dialog,
+    /// kein Custom-Eintippen (Ad-Hoc soll schnell sein, der User waehlt
+    /// aus der Library und legt los).
+    @State private var showingAdHocPicker = false
+
     /// Rest-timer state. nil = no timer running.
     @State private var restTimerEnd: Date?
     @State private var restTimerOriginalSeconds: Int = 0
@@ -88,6 +94,23 @@ public struct ActiveWorkoutView: View {
         #endif
         .navigationBarBackButtonHidden(true)
         .keyboardDismissToolbar()
+        // DEL-096: "+Übung"-Toolbar-Button waehrend einer non-empty
+        // Ad-Hoc-Session — User darf jederzeit weitere Uebungen einschieben,
+        // ohne den Workflow zu verlassen. Plan-Sessions kriegen den Button
+        // bewusst NICHT: dort kommt die Uebungs-Liste aus dem Plan, und
+        // mid-workout-Adds wuerden den Pagination-State (currentPageIndex)
+        // unter den Fuessen wegrotieren.
+        .toolbar {
+            if session.isAdHoc, let day = session.day, !day.activeExercises.isEmpty {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showingAdHocPicker = true
+                    } label: {
+                        Label("Übung", systemImage: "plus")
+                    }
+                }
+            }
+        }
         .onReceive(tick) { now = $0 }
         .safeAreaInset(edge: .bottom) {
             if let end = restTimerEnd {
@@ -147,6 +170,28 @@ public struct ActiveWorkoutView: View {
             }
         } message: {
             Text("Die Session und alle \(loggedSetsCount) bisher geloggten Sätze gehen verloren.")
+        }
+        // DEL-096: Ad-Hoc-Picker. Custom-Eintragen ist hier bewusst nicht
+        // erlaubt — Library-Pick reicht, alles weitere lebt im DayEditor.
+        .sheet(isPresented: $showingAdHocPicker) {
+            ExercisePickerView(
+                planEnvironment: nil,
+                onSelect: { template in
+                    addAdHocExercise(from: template)
+                    showingAdHocPicker = false
+                },
+                onCreateCustom: { name in
+                    addAdHocCustomExercise(named: name)
+                    showingAdHocPicker = false
+                }
+            )
+        }
+        // DEL-096: Discard-Sweep. Wenn der User die Session verlaesst und
+        // sie ad-hoc + leer + uncompleted ist, raeumen wir die emphemere
+        // Session + den ephemeren TrainingDay weg — kein Schrott in der
+        // History, kein verwaister Tag im Store.
+        .onDisappear {
+            sweepEmptyAdHocSession()
         }
     }
 
@@ -395,6 +440,12 @@ public struct ActiveWorkoutView: View {
                 .padding()
             }
             #endif
+        } else if session.isAdHoc {
+            // DEL-096: Empty-State fuer eine frisch gestartete Ad-Hoc-Session.
+            // KEIN "Diese Session hat keine Uebungen"-Warnton — das ist hier
+            // der erwartete Zustand. Stattdessen freundlicher Hero-CTA, der
+            // direkt in den ExercisePicker springt.
+            adHocEmptyState
         } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: 6) {
@@ -412,6 +463,61 @@ public struct ActiveWorkoutView: View {
                     .padding(.horizontal)
                     .padding(.top, 12)
             }
+        }
+    }
+
+    /// DEL-096: Hero-Empty-State fuer Ad-Hoc-Sessions ohne geloggte Uebungen.
+    /// Primaerer CTA "Übung hinzufuegen" oeffnet den ExercisePicker.
+    /// Sekundaerer Verwerfen-Link, falls der User es sich anders ueberlegt
+    /// und gar nicht erst loslegen will — die `.onDisappear`-Sweep-Logik
+    /// raeumt die Session dann automatisch weg.
+    @ViewBuilder
+    private var adHocEmptyState: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 64))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .padding(.top, 40)
+
+                VStack(spacing: 6) {
+                    Text("Dein Workout ist noch leer")
+                        .font(.title3.weight(.bold))
+                    Text("Such dir aus der Library eine Übung — alles weitere passiert wie im Plan-Workout.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
+
+                Button {
+                    showingAdHocPicker = true
+                } label: {
+                    HStack {
+                        Spacer()
+                        Label("Übung hinzufügen", systemImage: "plus.circle.fill")
+                            .font(.headline)
+                        Spacer()
+                    }
+                    .padding(.vertical, 14)
+                    .background(Color.deltiqOrange.gradient)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 24)
+                .padding(.top, 8)
+
+                Button(role: .destructive) {
+                    showingDiscardConfirm = true
+                } label: {
+                    Text("Workout abbrechen")
+                        .font(.subheadline)
+                }
+                .padding(.top, 8)
+            }
+            .padding(.bottom, 40)
         }
     }
 
@@ -687,8 +793,72 @@ public struct ActiveWorkoutView: View {
 
     private func discardWorkout() {
         Task { await restTimerActivity.endRestTimer(reason: .skipped) }
+        // DEL-096: Ad-Hoc-Sessions schleppen einen ephemeren TrainingDay
+        // mit sich — der muss bei Discard mit weg, sonst bleibt ein
+        // verwaister Tag mit `plan: nil` im Store zurueck.
+        let adHocDay = session.isAdHoc ? session.day : nil
         modelContext.delete(session)
+        if let adHocDay {
+            modelContext.delete(adHocDay)
+        }
         dismiss()
+    }
+
+    // MARK: - DEL-096 Ad-Hoc-Workflow
+
+    /// Fuegt eine Library-Uebung als neue `Exercise` zum ephemeren
+    /// Ad-Hoc-TrainingDay hinzu. ActiveWorkoutView re-rendert automatisch,
+    /// sobald der `day.activeExercises`-Array wieder non-empty ist —
+    /// SwiftData reactivity macht den Rest.
+    private func addAdHocExercise(from template: ExerciseTemplate) {
+        guard let day = session.day else { return }
+        let exercise = Exercise(
+            name: template.name,
+            orderIndex: day.activeExercises.count,
+            isCardio: template.isCardio,
+            isTimeBased: template.isTimeBased,
+            isCompound: template.isSystemCompound,
+            day: day
+        )
+        modelContext.insert(exercise)
+    }
+
+    /// Custom-Uebung im Ad-Hoc-Flow — analog zu `DayEditorView.addCustomExercise`.
+    /// Legt ein neues `ExerciseTemplate` (`isCustom: true`) in der Library
+    /// an, damit die Uebung beim naechsten Picker-Open auswaehlbar bleibt.
+    private func addAdHocCustomExercise(named name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let day = session.day else { return }
+
+        let template = ExerciseTemplate(
+            name: trimmed,
+            equipment: .barbell,
+            primaryMuscle: .chest,
+            isCustom: true
+        )
+        modelContext.insert(template)
+
+        let exercise = Exercise(
+            name: trimmed,
+            orderIndex: day.activeExercises.count,
+            day: day
+        )
+        modelContext.insert(exercise)
+    }
+
+    /// Discard-Sweep: wenn die Session ad-hoc ist, keine Logs hat und
+    /// nicht als abgeschlossen markiert wurde, raeumen wir sie auf —
+    /// inklusive ephemeres TrainingDay. Verhindert "0 Sätze · 0 kg"-Ghost-
+    /// Eintraege in der History, wenn der User nur kurz reingeschaut und
+    /// wieder rausnavigiert hat.
+    private func sweepEmptyAdHocSession() {
+        guard session.isAdHoc,
+              !session.isCompleted,
+              session.logs.isEmpty
+        else { return }
+        let day = session.day
+        modelContext.delete(session)
+        if let day { modelContext.delete(day) }
     }
 }
 
