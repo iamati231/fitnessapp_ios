@@ -773,7 +773,20 @@ private struct SetSummaryRow: View {
 
     private var rowText: String {
         if exercise.isCardio {
-            return "\(log.reps) \(exercise.isTimeBased ? "Sek" : "Wdh")"
+            // DEL-058: Cardio-Set zeigt Distance / Duration / Pace statt
+            // kg × reps. Auslassbar wenn keiner der Felder gefuellt.
+            var parts: [String] = []
+            if let d = log.distanceKm, d > 0 {
+                let dStr = d == d.rounded() ? "\(Int(d))" : d.truncated(to: 2).formattedTwoDecimals
+                parts.append("\(dStr) km")
+            }
+            if let s = log.durationSeconds, s > 0 {
+                parts.append(PaceCalculator.formatDuration(s))
+            }
+            if let d = log.distanceKm, let s = log.durationSeconds, d > 0, s > 0 {
+                parts.append(PaceCalculator.pace(distanceKm: d, durationSeconds: s))
+            }
+            return parts.isEmpty ? "—" : parts.joined(separator: " · ")
         }
         if exercise.isTimeBased {
             return "\(log.reps) Sek (RIR \(formatRIR(log.rir)))"

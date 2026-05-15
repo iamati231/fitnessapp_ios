@@ -45,6 +45,18 @@ public final class ExerciseLog {
     /// = Sekunden (Plank etc.) — separater PR-Pfad als Strength-Lifts.
     public var exerciseIsTimeBasedSnapshot: Bool = false
 
+    /// DEL-058: Distanz in km fuer Cardio-Lifts (Easy Run, Long Run, ...).
+    /// Nil fuer Strength + Time-Based. Wird im Workout direkt vom
+    /// CardioSetRow ueberschrieben.
+    public var distanceKm: Double?
+
+    /// DEL-058: Gesamtdauer in Sekunden fuer Cardio-Lifts. Nil fuer
+    /// Strength + Time-Based (TimeBased-Lifts speichern die Hold-Sekunden
+    /// in `reps`, weil die Reps-Spalte semantisch dort die Sekunden ist —
+    /// DEL-040). `durationSeconds` ist explizit fuer Cardio-Distanz-Pace-
+    /// Logging gedacht.
+    public var durationSeconds: Int?
+
     /// DEL-051: Backref auf die Plan-Uebung. `Exercise.logs` hat jetzt
     /// `.nullify` als Delete-Rule, sodass ein Plan-Side Delete die Historie
     /// NICHT mit-loescht (sie ueberlebt als orphan mit Snapshot).
@@ -61,7 +73,9 @@ public final class ExerciseLog {
         rir: Float,
         comment: String? = nil,
         exercise: Exercise? = nil,
-        session: WorkoutSession? = nil
+        session: WorkoutSession? = nil,
+        distanceKm: Double? = nil,
+        durationSeconds: Int? = nil
     ) {
         self.date = date
         self.setIndex = setIndex
@@ -72,6 +86,8 @@ public final class ExerciseLog {
         self.comment = comment
         self.exercise = exercise
         self.session = session
+        self.distanceKm = distanceKm
+        self.durationSeconds = durationSeconds
         // DEL-051: Snapshot-Felder direkt aus der uebergebenen Live-Uebung
         // ziehen. Wenn `exercise == nil` (z.B. ad-hoc-Logs ohne Plan-
         // Verknuepfung) bleiben die Snapshots leer.

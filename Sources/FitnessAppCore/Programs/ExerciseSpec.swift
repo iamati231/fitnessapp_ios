@@ -16,6 +16,16 @@ public struct ExerciseSpec: Sendable, Hashable {
     /// True for cardio finishers — UI shows duration/level fields instead of kg/reps.
     public let isCardio: Bool
 
+    /// DEL-058: Ziel-Distanz fuer Cardio-Lifts (z.B. 5.0 km Easy Run). Nil
+    /// fuer Strength + Time-Based. UI nutzt das als Placeholder im
+    /// CardioSetRow-Distanz-Feld.
+    public let targetDistanceKm: Double?
+
+    /// DEL-058: Ziel-Dauer in Minuten. Bei Cardio-Lifts ohne fixe Distanz
+    /// (z.B. "30 Min Easy Run") setzt der Plan diesen Wert; UI nutzt ihn
+    /// als Placeholder im Dauer-Feld.
+    public let targetDurationMinutes: Int?
+
     public init(
         name: String,
         sets: Int,
@@ -23,7 +33,9 @@ public struct ExerciseSpec: Sendable, Hashable {
         repsMax: Int,
         restSeconds: Int = 90,
         targetRir: Float = 2.0,
-        isCardio: Bool = false
+        isCardio: Bool = false,
+        targetDistanceKm: Double? = nil,
+        targetDurationMinutes: Int? = nil
     ) {
         self.name = name
         self.sets = sets
@@ -32,5 +44,7 @@ public struct ExerciseSpec: Sendable, Hashable {
         self.restSeconds = restSeconds
         self.targetRir = targetRir
         self.isCardio = isCardio
+        self.targetDistanceKm = targetDistanceKm
+        self.targetDurationMinutes = targetDurationMinutes
     }
 }

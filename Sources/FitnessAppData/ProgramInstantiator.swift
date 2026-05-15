@@ -86,6 +86,11 @@ public enum ProgramInstantiator {
                     // DEL-053: Compound-Flag aus Library propagieren, damit
                     // die Smart-Progression dynamische RIR-Schwellen anwendet.
                     isCompound: compoundNames.contains(exerciseSpec.name),
+                    // DEL-058: Cardio-Targets aus dem Spec mitnehmen, damit
+                    // der CardioSetRow im Active-Workout die Placeholders
+                    // korrekt zeigen kann.
+                    targetDistanceKm: exerciseSpec.targetDistanceKm,
+                    targetDurationMinutes: exerciseSpec.targetDurationMinutes,
                     day: day
                 )
                 context.insert(exercise)

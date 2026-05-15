@@ -28,8 +28,8 @@ struct ExerciseCard: View {
                     session: session,
                     existingLog: existingLog(forSetIndex: setIndex),
                     previousLog: previousLog(forSetIndex: setIndex),
-                    onLogged: { weight, reps, rir in
-                        logSet(setIndex: setIndex, weight: weight, reps: reps, rir: rir)
+                    onLogged: { values in
+                        logSet(setIndex: setIndex, values: values)
                     },
                     onUnlog: {
                         unlogSet(setIndex: setIndex)
@@ -125,17 +125,22 @@ struct ExerciseCard: View {
 
     // MARK: Actions
 
-    private func logSet(setIndex: Int, weight: Double, reps: Int, rir: Float) {
+    /// DEL-058: nimmt jetzt das `LoggedSetValues`-Bundle und uebernimmt
+    /// auch Cardio-Felder (distanceKm/durationSeconds) in den persistierten
+    /// `ExerciseLog`.
+    private func logSet(setIndex: Int, values: LoggedSetValues) {
         let log = ExerciseLog(
             date: Date(),
             setIndex: setIndex,
-            weight: weight,
-            reps: reps,
+            weight: values.weight,
+            reps: values.reps,
             rpe: 0,                          // unused in this UI; reserved for future
-            rir: rir,
+            rir: values.rir,
             comment: nil,
             exercise: exercise,
-            session: session
+            session: session,
+            distanceKm: values.distanceKm,
+            durationSeconds: values.durationSeconds
         )
         modelContext.insert(log)
         onSetLogged(setIndex)

@@ -58,6 +58,17 @@ public final class Exercise {
     /// geseedet (siehe `DayEditorView.addExercise(from:)`).
     public var isCompound: Bool = false
 
+    // MARK: - DEL-058 Cardio-Targets
+
+    /// DEL-058: Ziel-Distanz in km fuer Cardio-Uebungen (z.B. Easy Run 5 km).
+    /// Nil bei Strength + Time-Based. Wird als Placeholder im CardioSetRow
+    /// angezeigt; der User kann beliebig daneben loggen.
+    public var targetDistanceKm: Double?
+
+    /// DEL-058: Ziel-Dauer in Minuten — vor allem fuer Easy/Long-Runs ohne
+    /// fixe Distanz ("30 Min Easy"). Nil bei Strength.
+    public var targetDurationMinutes: Int?
+
     public var day: TrainingDay?
 
     /// DEL-051: HEILIGE HISTORIE. Frueher `.cascade` — beim Loeschen einer
@@ -89,6 +100,8 @@ public final class Exercise {
         smartProgressionEnabled: Bool = true,
         progressionStep: Double = 2.5,
         isCompound: Bool = false,
+        targetDistanceKm: Double? = nil,
+        targetDurationMinutes: Int? = nil,
         day: TrainingDay? = nil
     ) {
         self.name = name
@@ -108,6 +121,8 @@ public final class Exercise {
         self.smartProgressionEnabled = smartProgressionEnabled
         self.progressionStep = progressionStep
         self.isCompound = isCompound
+        self.targetDistanceKm = targetDistanceKm
+        self.targetDurationMinutes = targetDurationMinutes
         self.day = day
     }
 }

@@ -25,9 +25,11 @@ struct SetRow: View {
     let session: WorkoutSession
     let existingLog: ExerciseLog?
     let previousLog: ExerciseLog?
-    /// Called with (weight, reps, rir) when the user taps the checkmark on
-    /// an editable row.
-    let onLogged: (Double, Int, Float) -> Void
+    /// Called when the user taps the checkmark on an editable row.
+    /// DEL-058: `LoggedSetValues` bundle ersetzt das frueher dreistellige
+    /// (weight, reps, rir)-Tuple, damit Cardio-Felder (distance, duration)
+    /// mitwandern koennen ohne dass jede Callsite umgeschrieben wird.
+    let onLogged: (LoggedSetValues) -> Void
     /// Called when the user taps a completed row to revert it back to editable.
     /// Parent (ExerciseCard) is responsible for deleting the corresponding
     /// `ExerciseLog` from the model context.
@@ -37,6 +39,11 @@ struct SetRow: View {
     @State private var reps: Int = 0
     @State private var rir: Float = 2.0
     @State private var didInit = false
+
+    /// DEL-058 Cardio-State. Wird nur initialisiert + befuellt wenn die
+    /// Uebung `.isCardio == true` ist; ansonsten bleiben die Felder leer.
+    @State private var cardioDistanceText: String = ""
+    @State private var cardioDurationText: String = ""
 
     /// DEL-040: Zustands-Maschine fuer den Halte-Timer bei isTimeBased-Uebungen.
     @State private var holdState: HoldState = .idle
@@ -60,8 +67,12 @@ struct SetRow: View {
             timeBasedSetView
                 .onAppear { initializeOnce() }
                 .onDisappear { invalidateHoldTimer() }
+        } else if exercise.isCardio {
+            // DEL-058: dedizierte CardioSetRow mit Distanz / Dauer / Pace.
+            cardioSetRow
+                .onAppear { initializeOnce() }
         } else {
-            // Strength + Cardio: kompaktes Layout (DEL-045 Schritt 1+2).
+            // Strength: kompaktes Layout (DEL-045 Schritt 1+2).
             compactSetRow
                 .onAppear { initializeOnce() }
         }
@@ -398,7 +409,9 @@ struct SetRow: View {
     private func stopHoldAndLog() {
         invalidateHoldTimer()
         guard case .holding(let elapsed) = holdState else { return }
-        onLogged(0, elapsed, 0)
+        // DEL-040: TimeBased speichert die Hold-Sekunden in `reps`. RIR 0
+        // (Hold-Timer ist bis-zum-Limit gehalten worden), kein Gewicht.
+        onLogged(LoggedSetValues(weight: 0, reps: elapsed, rir: 0))
         holdState = .idle
     }
 
@@ -470,10 +483,22 @@ struct SetRow: View {
             weight = log.weight > 0 ? log.weight : exercise.suggestedWeight
             reps = log.reps
             rir = log.rir
+            // DEL-058 Cardio init aus existing log.
+            if let d = log.distanceKm, d > 0 {
+                cardioDistanceText = d == d.rounded()
+                    ? "\(Int(d))" : d.truncated(to: 2).formattedTwoDecimals
+            }
+            if let s = log.durationSeconds, s > 0 {
+                cardioDurationText = PaceCalculator.formatDuration(s)
+            }
         } else if let previousLog {
             weight = previousLog.weight > 0 ? previousLog.weight : exercise.suggestedWeight
             reps = previousLog.reps
             rir = previousLog.rir
+            // DEL-058 Cardio init aus previousLog — Felder bleiben leer, der
+            // Placeholder zeigt die letzten Werte als Hint. Kein Pre-Fill
+            // wuerde den User zwingen, das Feld zu loeschen, BEVOR er heute
+            // tippt — bei Lauf-Logs nicht erwuenscht.
         } else {
             weight = exercise.suggestedWeight
             reps = midpoint(exercise.repsMin, exercise.repsMax)
@@ -483,10 +508,18 @@ struct SetRow: View {
 
     private func midpoint(_ a: Int, _ b: Int) -> Int { (a + b) / 2 }
 
-    /// DEL-045-Update: Bodyweight-Fix. Ein Satz ist speicherbar, sobald reps > 0
-    /// gesetzt sind — Gewicht ist OPTIONAL. Leeres Feld = 0.0 kg (Bodyweight).
+    /// DEL-045-Update: Bodyweight-Fix. Strength: speicherbar sobald reps > 0
+    /// (Gewicht optional, leer = 0).
+    /// DEL-058: Cardio: speicherbar sobald Distanz ODER Dauer geparsed werden
+    /// kann — User soll z.B. nur eine Dauer eintragen koennen ohne Distanz
+    /// (Pace bleibt dann undefined, aber das Workout zaehlt).
     private var canLog: Bool {
-        reps > 0
+        if exercise.isCardio {
+            let hasDistance = PaceCalculator.parseDistanceToKm(cardioDistanceText) != nil
+            let hasDuration = PaceCalculator.parseDurationToSeconds(cardioDurationText) != nil
+            return hasDistance || hasDuration
+        }
+        return reps > 0
     }
 
     private func logCurrentValues() {
@@ -495,8 +528,22 @@ struct SetRow: View {
         // keinen "Fertig"-Button mehr, daher hier explizit resignen (DEL-045-
         // Update Punkt 3).
         dismissKeyboard()
-        let w = (exercise.isCardio || exercise.isTimeBased) ? 0.0 : (weight ?? 0)
-        onLogged(w, reps, rir)
+        let values: LoggedSetValues
+        if exercise.isCardio {
+            // DEL-058: Cardio → Distanz/Dauer parsen, reps/weight/rir bleiben 0.
+            values = LoggedSetValues(
+                weight: 0,
+                reps: 0,
+                rir: 0,
+                distanceKm: PaceCalculator.parseDistanceToKm(cardioDistanceText),
+                durationSeconds: PaceCalculator.parseDurationToSeconds(cardioDurationText)
+            )
+        } else {
+            // Strength (oder Time-Based hold, das ueber stopHoldAndLog laeuft).
+            let w = exercise.isTimeBased ? 0.0 : (weight ?? 0)
+            values = LoggedSetValues(weight: w, reps: reps, rir: rir)
+        }
+        onLogged(values)
     }
 
     /// Resigne der gerade-fokussierten responder-Kette. iOS-only; auf macOS
@@ -516,6 +563,189 @@ struct SetRow: View {
 
     private func formatRIR(_ rir: Float) -> String {
         rir == rir.rounded() ? String(format: "%.0f", rir) : String(format: "%.1f", rir)
+    }
+
+    // MARK: - DEL-058 Cardio Set Row
+
+    /// Cardio-Eingabe: Distanz (km) + Dauer (MM:SS) + Live-Pace + Checkmark.
+    /// Statusleiste ist hier ein abgeschlossener Set-Text mit dem Pace-Wert.
+    @ViewBuilder
+    private var cardioSetRow: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 10) {
+                Text("\(setIndex + 1)")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(width: 24, alignment: .leading)
+
+                cardioDistanceInput
+                cardioDurationInput
+                cardioPaceLabel
+
+                Spacer(minLength: 4)
+
+                checkmarkButton
+            }
+
+            // Fixed-Height-Statuszeile wie compactSetRow — verhindert
+            // Layout-Shift beim Toggle isCompleted↔editable.
+            cardioStatusZone
+                .frame(height: 28)
+                .padding(.leading, 34)
+        }
+        .padding(.vertical, 6)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if isCompleted {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    onUnlog()
+                }
+            }
+        }
+    }
+
+    private var cardioDistanceInput: some View {
+        HStack(spacing: 4) {
+            TextField("km", text: $cardioDistanceText, prompt: Text(cardioDistancePlaceholder))
+                .decimalKeyboard()
+                .frame(width: 60)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color.secondary.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .multilineTextAlignment(.center)
+                .disabled(isCompleted)
+                .opacity(isCompleted ? 0.6 : 1.0)
+            Text("km").font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private var cardioDurationInput: some View {
+        HStack(spacing: 4) {
+            TextField("MM:SS", text: $cardioDurationText, prompt: Text(cardioDurationPlaceholder))
+                #if os(iOS)
+                .keyboardType(.numbersAndPunctuation)
+                #endif
+                .frame(width: 70)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color.secondary.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .multilineTextAlignment(.center)
+                .disabled(isCompleted)
+                .opacity(isCompleted ? 0.6 : 1.0)
+            Text("min").font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    /// Live-Pace-Anzeige in Neon-Orange. Recomputed pro Tastenanschlag
+    /// dank `@State`-Bindings auf den Text-Feldern.
+    private var cardioPaceLabel: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("Pace")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Text(currentPace)
+                .font(.callout.weight(.semibold).monospacedDigit())
+                .foregroundStyle(Color.deltiqOrange)
+        }
+        .frame(width: 78, alignment: .leading)
+    }
+
+    private var currentPace: String {
+        let km = PaceCalculator.parseDistanceToKm(cardioDistanceText)
+        let secs = PaceCalculator.parseDurationToSeconds(cardioDurationText)
+        return PaceCalculator.pace(distanceKm: km, durationSeconds: secs)
+    }
+
+    /// Placeholder im Distanz-Feld: target aus dem Plan, sonst leer.
+    private var cardioDistancePlaceholder: String {
+        guard let target = exercise.targetDistanceKm else { return "km" }
+        return target == target.rounded()
+            ? "\(Int(target))"
+            : target.truncated(to: 2).formattedTwoDecimals
+    }
+
+    /// Placeholder im Dauer-Feld: target aus dem Plan in MM:SS, sonst leer.
+    private var cardioDurationPlaceholder: String {
+        guard let mins = exercise.targetDurationMinutes else { return "MM:SS" }
+        return "\(mins):00"
+    }
+
+    /// Statuszeile unter den Inputs — abgeschlossener Set zeigt geloggtes
+    /// Resultat, editable State zeigt previous-Run-Hint (falls vorhanden).
+    @ViewBuilder
+    private var cardioStatusZone: some View {
+        if isCompleted, let log = existingLog {
+            Text(cardioCompletedSummary(log))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else if let prev = previousLog,
+                  prev.distanceKm != nil || prev.durationSeconds != nil {
+            Text("letztes: \(cardioPreviousHint(prev))")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            Color.clear
+        }
+    }
+
+    private func cardioCompletedSummary(_ log: ExerciseLog) -> String {
+        let rel = log.date.formatted(.relative(presentation: .named))
+        let bits = cardioBitsString(distance: log.distanceKm, duration: log.durationSeconds)
+        return "\(bits) · \(rel)"
+    }
+
+    private func cardioPreviousHint(_ log: ExerciseLog) -> String {
+        cardioBitsString(distance: log.distanceKm, duration: log.durationSeconds)
+    }
+
+    /// Format: "5,20 km · 28:30 · 5:29 /km" — leere Felder werden ausgelassen.
+    private func cardioBitsString(distance: Double?, duration: Int?) -> String {
+        var parts: [String] = []
+        if let distance, distance > 0 {
+            let dStr = distance == distance.rounded()
+                ? "\(Int(distance))"
+                : distance.truncated(to: 2).formattedTwoDecimals
+            parts.append("\(dStr) km")
+        }
+        if let duration, duration > 0 {
+            parts.append(PaceCalculator.formatDuration(duration))
+        }
+        if let distance, let duration, distance > 0, duration > 0,
+           let pace = PaceCalculator.minutesPerKm(distanceKm: distance, durationSeconds: duration) {
+            parts.append(PaceCalculator.formatPace(pace))
+        }
+        return parts.joined(separator: " · ")
+    }
+}
+
+// MARK: - DEL-058 LoggedSetValues
+
+/// Bundle, das alle Felder eines geloggten Satzes durch den `onLogged`-
+/// Callback wandern laesst. Vorher war's ein dreistelliges Tuple — DEL-058
+/// hat Cardio-Felder (`distanceKm` / `durationSeconds`) dazugeholt; statt
+/// jede Callsite umzuschreiben, packen wir alles in eine Wertestruktur.
+public struct LoggedSetValues: Sendable, Hashable {
+    public let weight: Double
+    public let reps: Int
+    public let rir: Float
+    public let distanceKm: Double?
+    public let durationSeconds: Int?
+
+    public init(
+        weight: Double,
+        reps: Int,
+        rir: Float,
+        distanceKm: Double? = nil,
+        durationSeconds: Int? = nil
+    ) {
+        self.weight = weight
+        self.reps = reps
+        self.rir = rir
+        self.distanceKm = distanceKm
+        self.durationSeconds = durationSeconds
     }
 }
 #endif
