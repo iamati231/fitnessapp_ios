@@ -6,6 +6,38 @@ import FitnessAppData
 import FitnessAppActivities
 import FitnessAppHealth
 
+/// DEL-108: Set-Level-Identifier fuer den Time-Exercise-Lock. Loest die
+/// DEL-097-Regression: vorher hat der Lock nur die Exercise-Identitaet
+/// gespeichert, sodass mehrere Saetze derselben Uebung (z.B. Plank Satz 1
+/// + Satz 2) parallel starten konnten. Jetzt ist der Lock-Key kombiniert
+/// aus exerciseID UND setIndex — same-exercise different-set wird genauso
+/// blockiert wie cross-exercise.
+///
+/// `exerciseName` ist denormalisiert fuer den Blocked-Hint im UI; geht
+/// NICHT in Equality/Hashing ein, damit Renames der Live-Exercise nicht
+/// versehentlich den Lock zerschiessen.
+@available(iOS 17.0, macOS 14.0, *)
+public struct ActiveTimedSetID: Hashable, Sendable {
+    public let exerciseID: PersistentIdentifier
+    public let setIndex: Int
+    public let exerciseName: String
+
+    public init(exerciseID: PersistentIdentifier, setIndex: Int, exerciseName: String) {
+        self.exerciseID = exerciseID
+        self.setIndex = setIndex
+        self.exerciseName = exerciseName
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(exerciseID)
+        hasher.combine(setIndex)
+    }
+
+    public static func == (lhs: ActiveTimedSetID, rhs: ActiveTimedSetID) -> Bool {
+        lhs.exerciseID == rhs.exerciseID && lhs.setIndex == rhs.setIndex
+    }
+}
+
 /// Active workout screen — Phase-2: per-exercise cards, set logging, rest timer.
 ///
 /// Layout: scrolling list of `ExerciseCard`s, sticky rest-timer bar in the bottom
@@ -62,16 +94,16 @@ public struct ActiveWorkoutView: View {
     /// aus der Library und legt los).
     @State private var showingAdHocPicker = false
 
-    /// DEL-097: Session-weiter Single-Lock fuer time-based Halte-Timer.
-    /// Nur EINE Time-Exercise (Plank, Wall Sit, ...) darf gleichzeitig
-    /// laufen — sobald `startHolding()` in einer SetRow feuert, claimed
-    /// sie diese Slot via `activeTimedExercise = exercise`. Andere
-    /// SetRows blockieren ihren Start-Button so lange. Stoppen / Saetze
-    /// abspeichern released den Slot wieder.
+    /// DEL-097 + DEL-108: Session-weiter Single-Lock fuer time-based Halte-
+    /// Timer. Nur EIN Halte-Set (Exercise × setIndex) darf gleichzeitig
+    /// laufen. DEL-097 hat ursprünglich nur Exercise-Identitaet gespeichert
+    /// → mehrere Saetze derselben Uebung konnten parallel starten (Regression
+    /// auf dem Screenshot). DEL-108 schliesst die Luecke mit dem
+    /// `ActiveTimedSetID`-Tuple.
     /// Wichtig: Rein UI-State, NICHT persistiert — wenn die App killt
     /// werden Timer eh nicht resumed (sind `@State` in der Row), also
     /// muss der Lock auch nicht ueberleben.
-    @State private var activeTimedExercise: Exercise?
+    @State private var activeTimedSet: ActiveTimedSetID?
 
     /// Rest-timer state. nil = no timer running.
     @State private var restTimerEnd: Date?
@@ -105,6 +137,18 @@ public struct ActiveWorkoutView: View {
         #endif
         .navigationBarBackButtonHidden(true)
         .keyboardDismissToolbar()
+        // DEL-108: Wenn ein Halte-Timer-Set startet, killt das den Rest-
+        // Timer sofort. Rationale — ein laufender Pausen-Timer waehrend
+        // einer aktiven Plank ist semantisch widerspruechlich (User
+        // pausiert nicht, sondern haelt aktiv). Wir clearen die Bar, ohne
+        // Sound/Haptic-Feedback (ist kein Timer-Ende, nur Cleanup).
+        .onChange(of: activeTimedSet) { oldValue, newValue in
+            guard oldValue == nil, newValue != nil else { return }
+            if restTimerEnd != nil {
+                restTimerEnd = nil
+                Task { await restTimerActivity.endRestTimer(reason: .skipped) }
+            }
+        }
         // DEL-096: "+Übung"-Toolbar-Button waehrend einer non-empty
         // Ad-Hoc-Session — User darf jederzeit weitere Uebungen einschieben,
         // ohne den Workflow zu verlassen. Plan-Sessions kriegen den Button
@@ -414,7 +458,7 @@ public struct ActiveWorkoutView: View {
                         ExerciseCard(
                             exercise: exercise,
                             session: session,
-                            activeTimedExercise: $activeTimedExercise,
+                            activeTimedSet: $activeTimedSet,
                             onSetLogged: { setIndex in
                                 startRestTimer(for: exercise, setIndex: setIndex)
                                 maybeAutoAdvance(after: exercise, exercises: exercises, currentIndex: idx)
@@ -442,7 +486,7 @@ public struct ActiveWorkoutView: View {
                         ExerciseCard(
                             exercise: exercise,
                             session: session,
-                            activeTimedExercise: $activeTimedExercise,
+                            activeTimedSet: $activeTimedSet,
                             onSetLogged: { setIndex in
                                 startRestTimer(for: exercise, setIndex: setIndex)
                             }

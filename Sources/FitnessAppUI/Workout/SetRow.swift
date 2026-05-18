@@ -25,11 +25,12 @@ struct SetRow: View {
     let session: WorkoutSession
     let existingLog: ExerciseLog?
     let previousLog: ExerciseLog?
-    /// DEL-097: Session-Lock fuer time-based Halte-Timer. Nil = Slot frei.
-    /// Eine SetRow setzt diesen Slot in `startHolding()`, raeumt ihn in
-    /// `stopHoldAndLog()` wieder ab. Andere Rows lesen den Slot fuer ihren
-    /// Disabled-Hint.
-    @Binding var activeTimedExercise: Exercise?
+    /// DEL-097 + DEL-108: Session-Lock fuer time-based Halte-Timer auf
+    /// **Set-Ebene** (Exercise × setIndex). Nil = Slot frei. Die SetRow
+    /// setzt diesen Slot in `startCountdown()`, raeumt ihn in
+    /// `stopHoldAndLog()` wieder ab. Andere Rows (same exercise different
+    /// set, ODER cross-exercise) lesen den Slot fuer ihren Disabled-Hint.
+    @Binding var activeTimedSet: ActiveTimedSetID?
     /// Called when the user taps the checkmark on an editable row.
     /// DEL-058: `LoggedSetValues` bundle ersetzt das frueher dreistellige
     /// (weight, reps, rir)-Tuple, damit Cardio-Felder (distance, duration)
@@ -452,25 +453,36 @@ struct SetRow: View {
         .accessibilityLabel(blockingMessage + ". Beende die laufende Übung zuerst.")
     }
 
-    /// True, wenn der Session-weite Time-Exercise-Lock von einer ANDEREN
-    /// Uebung gehalten wird. Same-exercise = nicht blockiert (Resume-Pfad
-    /// fuer die laufende Uebung soll natuerlich erlaubt sein).
-    /// Delegiert an `TimedExerciseGuard.isBlockedByOther` (Core), damit die
-    /// Regel zentral testbar bleibt — die hier verwendete UI-Variante
-    /// passiert nur die PersistentIdentifier als generischen Hashable durch.
+    /// DEL-097 + DEL-108: True wenn der Session-weite Time-Set-Lock von
+    /// einem ANDEREN Satz gehalten wird (gleiche oder fremde Uebung —
+    /// egal, jeder andere Satz blockt). Delegiert an `TimedExerciseGuard.
+    /// isBlockedByOther` (Core) mit dem zusammengesetzten Set-Identifier.
     private var isBlockedByOtherTimedExercise: Bool {
         TimedExerciseGuard.isBlockedByOther(
-            candidateID: exercise.persistentModelID,
+            candidateID: myTimedSetID,
             candidateIsTimeBased: exercise.isTimeBased,
-            activeTimedExerciseID: activeTimedExercise?.persistentModelID
+            activeTimedExerciseID: activeTimedSet
         )
     }
 
-    /// Anzeige-String fuer den Blocked-Hint — bevorzugt den Namen der
-    /// laufenden Uebung; faellt auf einen generischen String zurueck, wenn
-    /// die Live-Referenz aus irgendeinem Grund nil ist (defensiv).
+    /// Compound-Key fuer den Lock. exerciseName wird denormalisiert
+    /// mitgespeichert, damit blockierte Rows den Namen ohne weiteren
+    /// Lookup ins UI bringen koennen.
+    private var myTimedSetID: ActiveTimedSetID {
+        ActiveTimedSetID(
+            exerciseID: exercise.persistentModelID,
+            setIndex: setIndex,
+            exerciseName: exercise.name
+        )
+    }
+
+    /// Anzeige-String fuer den Blocked-Hint. Same-exercise different-set
+    /// (z.B. "Plank Satz 1 läuft, du bist auf Satz 2") und cross-exercise
+    /// (z.B. "Plank läuft, du bist auf Wall Sit") werden mit der gleichen
+    /// Formulierung abgedeckt — der User sieht eh nur die Row, in der er
+    /// gerade ist, und weiss, was er als naechstes machen muss.
     private var blockingMessage: String {
-        if let name = activeTimedExercise?.name, !name.isEmpty {
+        if let name = activeTimedSet?.exerciseName, !name.isEmpty {
             return "„\(name)“ läuft bereits"
         }
         return "Eine andere zeitbasierte Übung läuft bereits"
@@ -551,15 +563,16 @@ struct SetRow: View {
     /// 3-Sekunden-Countdown mit Per-Sekunde-Beeps. Bei 3/2/1 ertoent ein
     /// kurzer System-Beep, bei 0 (= "GO!") ein laengerer, tieferer Ton.
     /// Erfuellt DEL-045 Schritt 3-Audio.
-    /// DEL-097: Lock-Claim direkt beim Countdown-Start — sobald der User
-    /// "Start" tippt, gehoert ihm der Slot. Sonst koennte ein paralleler
-    /// Tap auf einer zweiten Uebung waehrend des Countdowns durchschluepfen.
+    /// DEL-097 + DEL-108: Lock-Claim direkt beim Countdown-Start. Slot-
+    /// Identifier ist jetzt set-level (Exercise × setIndex), nicht mehr
+    /// exercise-only. Damit blockt der naechste Plank-Satz, solange der
+    /// vorige noch laeuft — Regression von DEL-097 geschlossen.
     private func startCountdown() {
         // Defensive — UI rendert den Button schon disabled, aber wenn
         // jemand die View aus einem anderen Pfad fired (Voice Control,
         // Tests), wollen wir den Lock-Check trotzdem haben.
         guard !isBlockedByOtherTimedExercise else { return }
-        activeTimedExercise = exercise
+        activeTimedSet = myTimedSetID
         holdState = .countingDown(secondsLeft: 3)
         playCountdownBeep()   // initial Beep fuer "3"
         holdTimer?.invalidate()
@@ -627,12 +640,14 @@ struct SetRow: View {
         releaseTimedExerciseLockIfHeld()
     }
 
-    /// DEL-097: Identity-checked Lock-Release. Wird auch vom Countdown-
-    /// Abbruch (Tap waehrend "GO!") und vom `unlog`-Pfad genutzt, damit
-    /// der Slot nicht verwaist haengen bleibt.
+    /// DEL-097 + DEL-108: Identity-checked Lock-Release. Wird auch vom
+    /// Countdown-Abbruch (Tap waehrend "GO!") und vom `unlog`-Pfad genutzt,
+    /// damit der Slot nicht verwaist haengen bleibt.
+    /// Equality auf `ActiveTimedSetID` ist `(exerciseID, setIndex)` —
+    /// exerciseName ist nur Display.
     private func releaseTimedExerciseLockIfHeld() {
-        if activeTimedExercise?.persistentModelID == exercise.persistentModelID {
-            activeTimedExercise = nil
+        if activeTimedSet == myTimedSetID {
+            activeTimedSet = nil
         }
     }
 

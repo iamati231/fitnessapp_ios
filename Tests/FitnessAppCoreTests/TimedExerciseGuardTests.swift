@@ -111,4 +111,55 @@ final class TimedExerciseGuardTests: XCTestCase {
             activeTimedExerciseID: plankID
         ))
     }
+
+    // MARK: - DEL-108 Compound-Set-Identifier
+
+    /// DEL-108: Same-exercise different-set wird jetzt geblockt — der
+    /// frueher exercise-only Lock liess Plank-Satz-1 + Plank-Satz-2 parallel
+    /// starten. Mit Compound-ID `(exerciseID, setIndex)` blockt der naechste
+    /// Satz solange der vorige laeuft.
+    func testSameExerciseDifferentSetIsBlocked() {
+        struct SetID: Hashable { let exerciseID: String; let setIndex: Int }
+        let plankSet1 = SetID(exerciseID: "plank", setIndex: 0)
+        let plankSet2 = SetID(exerciseID: "plank", setIndex: 1)
+
+        // Plank-Satz-1 haelt den Slot — Plank-Satz-2 muss blocked sein.
+        XCTAssertFalse(TimedExerciseGuard.canStart(
+            candidateID: plankSet2,
+            candidateIsTimeBased: true,
+            activeTimedExerciseID: plankSet1
+        ))
+        XCTAssertTrue(TimedExerciseGuard.isBlockedByOther(
+            candidateID: plankSet2,
+            candidateIsTimeBased: true,
+            activeTimedExerciseID: plankSet1
+        ))
+    }
+
+    /// Der laufende Satz selbst darf natuerlich seinen eigenen Slot
+    /// "starten" (Resume-Pfad, wenn die View aus irgendeinem Grund den
+    /// Tap nochmal feuert).
+    func testSameSetCanResumeItself() {
+        struct SetID: Hashable { let exerciseID: String; let setIndex: Int }
+        let plankSet1 = SetID(exerciseID: "plank", setIndex: 0)
+        XCTAssertTrue(TimedExerciseGuard.canStart(
+            candidateID: plankSet1,
+            candidateIsTimeBased: true,
+            activeTimedExerciseID: plankSet1
+        ))
+    }
+
+    /// Cross-exercise different-set bleibt natuerlich blockiert
+    /// (war schon in DEL-097 abgedeckt, jetzt nochmal mit Compound-Key).
+    func testDifferentExerciseDifferentSetIsBlocked() {
+        struct SetID: Hashable { let exerciseID: String; let setIndex: Int }
+        let plankSet1 = SetID(exerciseID: "plank", setIndex: 0)
+        let wallSitSet1 = SetID(exerciseID: "wall-sit", setIndex: 0)
+
+        XCTAssertFalse(TimedExerciseGuard.canStart(
+            candidateID: wallSitSet1,
+            candidateIsTimeBased: true,
+            activeTimedExerciseID: plankSet1
+        ))
+    }
 }

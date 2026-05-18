@@ -11,10 +11,11 @@ import FitnessAppData
 struct ExerciseCard: View {
     let exercise: Exercise
     let session: WorkoutSession
-    /// DEL-097: Session-weiter Time-Exercise-Lock. Reicht durch zur
-    /// SetRow, die den Lock claimt bzw. den eigenen Start-Button blockiert,
-    /// wenn eine andere Uebung den Slot bereits haelt.
-    @Binding var activeTimedExercise: Exercise?
+    /// DEL-097 + DEL-108: Session-weiter Time-Set-Lock (Exercise × setIndex).
+    /// Reicht durch zur SetRow, die den Lock claimt bzw. den eigenen
+    /// Start-Button blockiert, wenn ein anderer Satz (gleicher oder fremder
+    /// Uebung) den Slot bereits haelt.
+    @Binding var activeTimedSet: ActiveTimedSetID?
     /// Fired when ANY set is logged. Carries the 0-based set index so the parent
     /// can label the Live Activity ("Satz 2 von 4") accurately.
     let onSetLogged: (_ setIndex: Int) -> Void
@@ -32,7 +33,7 @@ struct ExerciseCard: View {
                     session: session,
                     existingLog: existingLog(forSetIndex: setIndex),
                     previousLog: previousLog(forSetIndex: setIndex),
-                    activeTimedExercise: $activeTimedExercise,
+                    activeTimedSet: $activeTimedSet,
                     onLogged: { values in
                         logSet(setIndex: setIndex, values: values)
                     },
