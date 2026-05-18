@@ -65,6 +65,14 @@ public enum ProgramInstantiator {
             ExerciseLibraryData.all.filter { $0.isSystemCompound }.map { $0.name }
         )
 
+        // DEL-098: Library-Spec-Lookup nach Namen, damit wir die statischen
+        // Belastungsfaktoren auf die neu instanziierten Plan-Uebungen ziehen
+        // koennen. Uebungen ohne Library-Match (z.B. ungewoehnliche Custom-
+        // Namen in Templates) bekommen die Default-Faktoren von `Exercise.init`.
+        let specByName: [String: ExerciseTemplateSpec] = Dictionary(
+            uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) }
+        )
+
         // 3) Create new active plan.
         let plan = TrainingPlan(
             name: template.name,
@@ -101,6 +109,10 @@ public enum ProgramInstantiator {
             context.insert(day)
 
             for (orderIndex, exerciseSpec) in daySpec.exercises.enumerated() {
+                // DEL-098: Wenn der Name in der Library bekannt ist, nehmen
+                // wir die handgepflegten Faktoren. Sonst greifen die
+                // Defaults aus `Exercise.init` ("moderate Isolation").
+                let librarySpec = specByName[exerciseSpec.name]
                 let exercise = Exercise(
                     name: exerciseSpec.name,
                     sets: exerciseSpec.sets,
@@ -115,6 +127,12 @@ public enum ProgramInstantiator {
                     targetDistanceKm: exerciseSpec.targetDistanceKm,
                     targetDurationMinutes: exerciseSpec.targetDurationMinutes,
                     role: exerciseSpec.role,
+                    systemicFatigueFactor: librarySpec?.systemicFatigueFactor ?? 0.35,
+                    localMuscleDamageFactor: librarySpec?.localMuscleDamageFactor ?? 0.35,
+                    cnsDemandFactor: librarySpec?.cnsDemandFactor ?? 0.25,
+                    axialLoadFactor: librarySpec?.axialLoadFactor ?? 0.20,
+                    technicalComplexityFactor: librarySpec?.technicalComplexityFactor ?? 0.30,
+                    recoveryClass: librarySpec?.recoveryClass ?? .medium,
                     day: day
                 )
                 context.insert(exercise)

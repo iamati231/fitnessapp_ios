@@ -128,5 +128,29 @@ public final class WorkoutSession {
             .compactMap(\.durationSeconds)
             .reduce(0, +)
     }
+
+    // MARK: - DEL-099 Session-weite Recovery-Aggregation
+
+    /// Summe der CNS-Belastung aller geloggten Saetze dieser Session.
+    /// Cardio-/Time-Based-Logs fliessen mit ihrem dauerbasierten Score ein,
+    /// Strength-Logs mit gewicht-/RIR-skaliertem Set-Load.
+    public var totalSessionCNSLoad: Double {
+        logs.reduce(0.0) { $0 + $1.cnsFatigueScore }
+    }
+
+    /// Summe der lokalen Muskel-Belastung aller geloggten Saetze.
+    public var totalSessionMuscleDamage: Double {
+        logs.reduce(0.0) { $0 + $1.localMuscleDamageScore }
+    }
+
+    /// Geschaetzte Erholungs-Stunden auf Basis der **groesseren** der
+    /// beiden Last-Pools — wenn ZNS gegrillt ist, hilft Bein-Recovery
+    /// nicht und umgekehrt. Caller (Dashboard, Live-Activity) zeigt das
+    /// 1:1 als "Recovery: 48h" o.ae.
+    public var estimatedRecoveryTimeHours: Int {
+        ExerciseScoring.estimatedRecoveryHours(
+            maxLoad: max(totalSessionCNSLoad, totalSessionMuscleDamage)
+        )
+    }
 }
 #endif

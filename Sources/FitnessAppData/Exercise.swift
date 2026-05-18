@@ -89,6 +89,27 @@ public final class Exercise {
         set { roleRaw = newValue.rawValue }
     }
 
+    // MARK: - DEL-098 Training-Intelligence-Metadaten
+    //
+    // Statische Belastungsfaktoren pro Uebung — siehe DEL-098 / DEL-099 fuer
+    // den Scoring-Algorithmus. Werden vom Picker-Pick aus dem
+    // `ExerciseTemplate` propagiert (DayEditor + ActiveWorkoutView Ad-Hoc).
+    // Defaults entsprechen "moderate Isolationsuebung", sodass Lightweight-
+    // Migration bestehender Plan-Uebungen nicht durchgaengig 0 liefert.
+    public var systemicFatigueFactor: Double = 0.35
+    public var localMuscleDamageFactor: Double = 0.35
+    public var cnsDemandFactor: Double = 0.25
+    public var axialLoadFactor: Double = 0.20
+    public var technicalComplexityFactor: Double = 0.30
+    /// Persistiert als String fuer Lightweight-Migration; Convenience via
+    /// `recoveryClass` Computed Property.
+    public var recoveryClassRaw: String = ExerciseRecoveryClass.medium.rawValue
+
+    public var recoveryClass: ExerciseRecoveryClass {
+        get { ExerciseRecoveryClass(rawValue: recoveryClassRaw) ?? .medium }
+        set { recoveryClassRaw = newValue.rawValue }
+    }
+
     public var day: TrainingDay?
 
     /// DEL-051: HEILIGE HISTORIE. Frueher `.cascade` — beim Loeschen einer
@@ -124,6 +145,13 @@ public final class Exercise {
         targetDurationMinutes: Int? = nil,
         supersetId: UUID? = nil,
         role: ExerciseRole = .workingSet,
+        // DEL-098: defensive Defaults — "moderate Isolation".
+        systemicFatigueFactor: Double = 0.35,
+        localMuscleDamageFactor: Double = 0.35,
+        cnsDemandFactor: Double = 0.25,
+        axialLoadFactor: Double = 0.20,
+        technicalComplexityFactor: Double = 0.30,
+        recoveryClass: ExerciseRecoveryClass = .medium,
         day: TrainingDay? = nil
     ) {
         self.name = name
@@ -147,6 +175,12 @@ public final class Exercise {
         self.targetDurationMinutes = targetDurationMinutes
         self.supersetId = supersetId
         self.roleRaw = role.rawValue
+        self.systemicFatigueFactor = systemicFatigueFactor
+        self.localMuscleDamageFactor = localMuscleDamageFactor
+        self.cnsDemandFactor = cnsDemandFactor
+        self.axialLoadFactor = axialLoadFactor
+        self.technicalComplexityFactor = technicalComplexityFactor
+        self.recoveryClassRaw = recoveryClass.rawValue
         self.day = day
     }
 }

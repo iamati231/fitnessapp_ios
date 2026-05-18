@@ -831,6 +831,15 @@ public struct ActiveWorkoutView: View {
             isCardio: template.isCardio,
             isTimeBased: template.isTimeBased,
             isCompound: template.isSystemCompound,
+            // DEL-098: Recovery-Faktoren mit propagieren — Ad-Hoc-Sessions
+            // sollen genauso korrekt in den Scoring-Algorithmus fliessen
+            // wie Plan-Workouts.
+            systemicFatigueFactor: template.systemicFatigueFactor,
+            localMuscleDamageFactor: template.localMuscleDamageFactor,
+            cnsDemandFactor: template.cnsDemandFactor,
+            axialLoadFactor: template.axialLoadFactor,
+            technicalComplexityFactor: template.technicalComplexityFactor,
+            recoveryClass: template.recoveryClass,
             day: day
         )
         modelContext.insert(exercise)

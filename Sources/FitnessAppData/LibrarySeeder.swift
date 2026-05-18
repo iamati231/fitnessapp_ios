@@ -32,7 +32,16 @@ public enum LibrarySeeder {
                 // DEL-080: Cardio-Flag aus Spec propagieren, sodass Ad-Hoc-
                 // Cardio-Einheiten (Freier Lauf, Radfahren, ...) korrekt
                 // klassifiziert in den Picker landen.
-                isCardio: spec.isCardio
+                isCardio: spec.isCardio,
+                // DEL-098: Belastungsfaktoren aus der Spec uebernehmen,
+                // sodass der spaetere Recovery-Score schon vom ersten
+                // Workout an mit sinnvollen Werten rechnen kann.
+                systemicFatigueFactor: spec.systemicFatigueFactor,
+                localMuscleDamageFactor: spec.localMuscleDamageFactor,
+                cnsDemandFactor: spec.cnsDemandFactor,
+                axialLoadFactor: spec.axialLoadFactor,
+                technicalComplexityFactor: spec.technicalComplexityFactor,
+                recoveryClass: spec.recoveryClass
             )
             context.insert(template)
         }

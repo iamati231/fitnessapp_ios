@@ -504,6 +504,15 @@ public struct DayEditorView: View {
             // alles andere als Isolation. User kann's spaeter im
             // ExerciseEditor manuell ueberschreiben.
             isCompound: template.isSystemCompound,
+            // DEL-098: Belastungsfaktoren aus dem Library-Template ziehen,
+            // damit Recovery-/Fatigue-Scoring schon ab dem ersten Workout
+            // mit den richtigen Werten rechnet.
+            systemicFatigueFactor: template.systemicFatigueFactor,
+            localMuscleDamageFactor: template.localMuscleDamageFactor,
+            cnsDemandFactor: template.cnsDemandFactor,
+            axialLoadFactor: template.axialLoadFactor,
+            technicalComplexityFactor: template.technicalComplexityFactor,
+            recoveryClass: template.recoveryClass,
             day: day
         )
         modelContext.insert(exercise)

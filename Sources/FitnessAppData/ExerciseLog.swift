@@ -1,6 +1,7 @@
 #if canImport(SwiftData)
 import Foundation
 import SwiftData
+import FitnessAppCore
 
 /// One executed set of an exercise, logged during a `WorkoutSession`. This is
 /// the SACRED HISTORY — it must survive *any* plan-side mutation:
@@ -120,6 +121,48 @@ public final class ExerciseLog {
     public var resolvedIsTimeBased: Bool {
         if exerciseNameSnapshot != nil { return exerciseIsTimeBasedSnapshot }
         return exercise?.isTimeBased ?? false
+    }
+
+    // MARK: - DEL-099 Scoring-Convenience
+    //
+    // Delegiert an `ExerciseScoring` (Core). Wenn die Live-Exercise-Referenz
+    // weg ist (gelöschter Plan, orphan-Log), faellt der Score auf 0 — historische
+    // Recovery-Stats brauchen die statischen Faktoren und die persistieren wir
+    // nicht auf dem Log selbst (waere doppelter State; falls das Bug-Surface
+    // wird, ist Snapshot der naechste Schritt).
+
+    /// CNS-Last dieses einzelnen Logs. Cardio + Time-based: Dauer * Faktor.
+    /// Strength: Set-Load-Formel mit Gewicht + RIR.
+    public var cnsFatigueScore: Double {
+        guard let exercise else { return 0.0 }
+        if exercise.isCardio || exercise.isTimeBased {
+            return ExerciseScoring.timeBasedScore(
+                durationSeconds: durationSeconds ?? (exercise.isTimeBased ? reps : 0),
+                factor: exercise.cnsDemandFactor
+            )
+        }
+        return ExerciseScoring.strengthCNSScore(
+            weightKg: weight,
+            rir: rir,
+            cnsDemandFactor: exercise.cnsDemandFactor
+        )
+    }
+
+    /// Lokale-Muskel-Belastung dieses einzelnen Logs. Reps + RIR fliessen
+    /// hier staerker rein als bei CNS.
+    public var localMuscleDamageScore: Double {
+        guard let exercise else { return 0.0 }
+        if exercise.isCardio || exercise.isTimeBased {
+            return ExerciseScoring.timeBasedScore(
+                durationSeconds: durationSeconds ?? (exercise.isTimeBased ? reps : 0),
+                factor: exercise.localMuscleDamageFactor
+            )
+        }
+        return ExerciseScoring.strengthMuscleDamageScore(
+            reps: reps,
+            rir: rir,
+            localMuscleDamageFactor: exercise.localMuscleDamageFactor
+        )
     }
 }
 #endif
