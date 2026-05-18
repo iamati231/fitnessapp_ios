@@ -789,6 +789,646 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Your coaching style" } },
         "tr" : { "stringUnit" : { "state" : "translated", "value" : "Koçluk tarzın" } }
       }
+    },
+    "measurement.title.new" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Neue Messung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New Measurement" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yeni Ölçüm" } }
+      }
+    },
+    "measurement.title.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Messung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Measurement" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ölçüm" } }
+      }
+    },
+    "measurement.title.edit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Messung bearbeiten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit Measurement" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ölçümü Düzenle" } }
+      }
+    },
+    "measurement.section.profile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Profil" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Profile" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Profil" } }
+      }
+    },
+    "measurement.section.core" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Pflichtwerte" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Required Values" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Zorunlu Değerler" } }
+      }
+    },
+    "measurement.section.core.footer.male" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gewicht, Hals und Taille werden für die Navy-KFA-Berechnung benötigt. Schulter optional für das Schulter-zu-Taillen-Verhältnis." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Weight, neck, and waist are required for the Navy body-fat calculation. Shoulder is optional for the shoulder-to-waist ratio." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Navy yağ oranı hesabı için ağırlık, boyun ve bel gereklidir. Omuz, omuz-bel oranı için isteğe bağlıdır." } }
+      }
+    },
+    "measurement.section.core.footer.female" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gewicht, Hals, Taille und Hüfte werden für die Navy-KFA-Berechnung benötigt." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Weight, neck, waist, and hip are required for the Navy body-fat calculation." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Navy yağ oranı hesabı için ağırlık, boyun, bel ve kalça gereklidir." } }
+      }
+    },
+    "measurement.section.derived" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Live-Auswertung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Live Analysis" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Canlı Analiz" } }
+      }
+    },
+    "measurement.section.ratios" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Körper-Proportion" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Body Proportion" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Vücut Oranı" } }
+      }
+    },
+    "measurement.section.additional" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Weitere Umfänge" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Additional Measurements" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ek Ölçümler" } }
+      }
+    },
+    "measurement.section.additional.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Diese Werte fließen NICHT in die KFA/Navy-Berechnung — sie dienen deinem persönlichen Progress-Tracking." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "These values do NOT feed into the body-fat / Navy calculation — they're for your personal progress tracking." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bu değerler yağ oranı / Navy hesabına dahil edilmez — sadece kişisel ilerlemeni takip etmen için." } }
+      }
+    },
+    "measurement.section.healthkit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Apple Health" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Apple Health" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Apple Health" } }
+      }
+    },
+    "measurement.section.history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verlauf" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "History" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Geçmiş" } }
+      }
+    },
+    "measurement.profile.height" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Größe" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Height" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Boy" } }
+      }
+    },
+    "measurement.profile.age" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Alter" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Age" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yaş" } }
+      }
+    },
+    "measurement.profile.age.unit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Jahre" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Years" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yıl" } }
+      }
+    },
+    "measurement.profile.sex" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Geschlecht" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sex" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Cinsiyet" } }
+      }
+    },
+    "measurement.profile.sex.male" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Männlich" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Male" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Erkek" } }
+      }
+    },
+    "measurement.profile.sex.female" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Weiblich" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Female" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kadın" } }
+      }
+    },
+    "measurement.profile.goalWeight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zielgewicht" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Goal Weight" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hedef Kilo" } }
+      }
+    },
+    "measurement.field.weight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gewicht (kg)" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Weight (kg)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ağırlık (kg)" } }
+      }
+    },
+    "measurement.field.neck" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Halsumfang (cm)" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Neck (cm)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Boyun (cm)" } }
+      }
+    },
+    "measurement.field.waist" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Taille (cm)" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Waist (cm)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bel (cm)" } }
+      }
+    },
+    "measurement.field.hip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Hüfte (cm)" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hip (cm)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kalça (cm)" } }
+      }
+    },
+    "measurement.field.shoulder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Schulter (cm)" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shoulder (cm)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Omuz (cm)" } }
+      }
+    },
+    "measurement.field.shoulder.full" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Schulterumfang (cm)" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shoulder Circumference (cm)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Omuz Çevresi (cm)" } }
+      }
+    },
+    "measurement.field.chest" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Brust (cm)" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Chest (cm)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Göğüs (cm)" } }
+      }
+    },
+    "measurement.field.biceps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bizeps (cm)" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Biceps (cm)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Pazı (cm)" } }
+      }
+    },
+    "measurement.field.thigh" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Oberschenkel (cm)" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Thigh (cm)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Uyluk (cm)" } }
+      }
+    },
+    "measurement.field.calf" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wade (cm)" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Calf (cm)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Baldır (cm)" } }
+      }
+    },
+    "measurement.hint.neck" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Messen Sie knapp unterhalb des Kehlkopfs, Band waagrecht und leicht anliegend." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Measure just below the larynx, tape horizontal and lightly snug." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gırtlağın hemen altından, mezura yatay ve hafifçe gergin olacak şekilde ölçün." } }
+      }
+    },
+    "measurement.hint.waist.male" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Im Bereich des Bauchnabels." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "At the level of the navel." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Göbek hizasından." } }
+      }
+    },
+    "measurement.hint.waist.female" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Es sollte an der schmalsten Stelle entnommen werden." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Measure at the narrowest point." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "En dar noktadan ölçülmelidir." } }
+      }
+    },
+    "measurement.hint.broadest" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Es sollte an der breitesten Stelle abgenommen werden." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Measure at the widest point." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "En geniş noktadan ölçülmelidir." } }
+      }
+    },
+    "measurement.derived.bmi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "BMI" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "BMI" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "BKİ" } }
+      }
+    },
+    "measurement.derived.navy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "KFA Navy" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Body Fat (Navy)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yağ Oranı (Navy)" } }
+      }
+    },
+    "measurement.derived.deurenberg" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "KFA Deurenberg" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Body Fat (Deurenberg)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yağ Oranı (Deurenberg)" } }
+      }
+    },
+    "measurement.derived.fatfree" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fettfreie Masse" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Fat-Free Mass" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yağsız Kütle" } }
+      }
+    },
+    "measurement.derived.ffmi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "FFMI" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "FFMI" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "FFMI" } }
+      }
+    },
+    "measurement.derived.ffmiNorm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Norm. FFMI" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Norm. FFMI" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Norm. FFMI" } }
+      }
+    },
+    "measurement.derived.bmr" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "BMR" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "BMR" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "BMR" } }
+      }
+    },
+    "measurement.derived.empty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Trage Gewicht ein, um die Auswertung zu sehen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter your weight to see the analysis." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Analizi görmek için ağırlığı gir." } }
+      }
+    },
+    "measurement.derived.navy.fallback.male" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Hals/Taille erforderlich" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Neck/Waist required" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Boyun/Bel gerekli" } }
+      }
+    },
+    "measurement.derived.navy.fallback.female" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Hals/Taille/Hüfte erforderlich" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Neck/Waist/Hip required" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Boyun/Bel/Kalça gerekli" } }
+      }
+    },
+    "measurement.ratio.whr.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "WHR — Taille/Hüfte" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "WHR — Waist/Hip" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "WHR — Bel/Kalça" } }
+      }
+    },
+    "measurement.ratio.swr.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "SWR — Schulter/Taille" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "SWR — Shoulder/Waist" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "SWR — Omuz/Bel" } }
+      }
+    },
+    "measurement.ratio.whr.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "WHR < 0,80 = gesundes Risikoprofil bei Frauen. > 0,85 = erhöhtes Risiko." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "WHR < 0.80 = healthy risk profile for women. > 0.85 = elevated risk." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "WHR < 0,80 = kadınlarda sağlıklı risk profili. > 0,85 = artmış risk." } }
+      }
+    },
+    "measurement.ratio.swr.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Goldener V-Schnitt ~ 1,618 (Schulter ≈ 1,6× Taille). SWR < 1,3 = wenig V-Form, > 1,5 = ausgeprägt." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Golden V-taper ≈ 1.618 (shoulder ≈ 1.6× waist). SWR < 1.3 = little V-shape, > 1.5 = pronounced." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Altın V-kesimi ≈ 1,618 (omuz ≈ 1,6× bel). SWR < 1,3 = az V-şekli, > 1,5 = belirgin." } }
+      }
+    },
+    "measurement.ratio.whr.healthy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gesund" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Healthy" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sağlıklı" } }
+      }
+    },
+    "measurement.ratio.whr.borderline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Grenzwert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Borderline" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sınırda" } }
+      }
+    },
+    "measurement.ratio.whr.elevated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erhöht" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Elevated" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yüksek" } }
+      }
+    },
+    "measurement.ratio.swr.narrow" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Schmal" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Narrow" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Dar" } }
+      }
+    },
+    "measurement.ratio.swr.medium" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mittel" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Medium" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Orta" } }
+      }
+    },
+    "measurement.ratio.swr.pronounced" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ausgeprägt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pronounced" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Belirgin" } }
+      }
+    },
+    "measurement.ratio.swr.vshape" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "V-Shape" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "V-Shape" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "V-Şekli" } }
+      }
+    },
+    "measurement.healthkit.unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Apple Health auf diesem Gerät nicht verfügbar." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Apple Health is not available on this device." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Apple Health bu cihazda mevcut değil." } }
+      }
+    },
+    "measurement.healthkit.connect" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Apple Health verbinden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connect Apple Health" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Apple Health'e Bağlan" } }
+      }
+    },
+    "measurement.healthkit.connected" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verbunden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connected" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bağlı" } }
+      }
+    },
+    "measurement.healthkit.pullWeight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aktuelles Gewicht aus Apple Health" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pull current weight from Apple Health" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Apple Health'ten güncel kiloyu al" } }
+      }
+    },
+    "measurement.healthkit.blocked" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Apple Health blockiert. Ändere die Berechtigung in den iOS-Einstellungen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Apple Health is blocked. Change the permission in iOS Settings." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Apple Health engellendi. İzni iOS Ayarları'ndan değiştir." } }
+      }
+    },
+    "measurement.healthkit.fromHealth" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aus Apple Health übernommen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Taken from Apple Health" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Apple Health'ten alındı" } }
+      }
+    },
+    "measurement.healthkit.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bei Verbindung wird das aktuellste Waagen-Gewicht beim Öffnen vorausgefüllt. Beim Speichern werden Gewicht, KFA und FFM zurück nach Apple Health geschrieben." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "When connected, the most recent scale weight is prefilled on open. On save, weight, body fat, and FFM are written back to Apple Health." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bağlıyken açılışta en güncel tartı kilosu otomatik doldurulur. Kaydederken ağırlık, yağ oranı ve FFM Apple Health'e geri yazılır." } }
+      }
+    },
+    "measurement.action.save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Messung speichern" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save Measurement" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ölçümü Kaydet" } }
+      }
+    },
+    "measurement.action.saveEdit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Änderungen speichern" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save Changes" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Değişiklikleri Kaydet" } }
+      }
+    },
+    "measurement.action.delete" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Messung löschen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete Measurement" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ölçümü Sil" } }
+      }
+    },
+    "measurement.action.edit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bearbeiten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Düzenle" } }
+      }
+    },
+    "measurement.action.done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fertig" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Done" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tamam" } }
+      }
+    },
+    "measurement.lastSaved.new" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zuletzt gespeichert: %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Last saved: %@" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Son kayıt: %@" } }
+      }
+    },
+    "measurement.lastSaved.edit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zuletzt geändert: %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Last changed: %@" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Son değişiklik: %@" } }
+      }
+    },
+    "measurement.validation.missing.one" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Pflichtfeld noch leer: %@." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Required field missing: %@." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Zorunlu alan eksik: %@." } }
+      }
+    },
+    "measurement.validation.missing.many" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Pflichtfelder noch leer: %@." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Required fields missing: %@." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Zorunlu alanlar eksik: %@." } }
+      }
+    },
+    "measurement.validation.field.weight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gewicht" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Weight" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ağırlık" } }
+      }
+    },
+    "measurement.validation.field.neck" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Hals" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Neck" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Boyun" } }
+      }
+    },
+    "measurement.validation.field.waist" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Taille" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Waist" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bel" } }
+      }
+    },
+    "measurement.validation.field.hip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Hüfte" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hip" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kalça" } }
+      }
+    },
+    "measurement.history.empty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch keine Messungen — speichere oben deinen ersten Wert." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No measurements yet — save your first one above." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Henüz ölçüm yok — yukarıdan ilk değerini kaydet." } }
+      }
+    },
+    "measurement.history.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Tippe einen Eintrag an, um die Werte zu bearbeiten." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap an entry to edit its values." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Değerleri düzenlemek için bir girişe dokun." } }
+      }
+    },
+    "measurement.history.older" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Älteste %lld Messungen ausgeblendet." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Older %lld measurements hidden." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "En eski %lld ölçüm gizlendi." } }
+      }
+    },
+    "measurement.empty.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kein Profil" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No Profile" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Profil Yok" } }
+      }
+    },
+    "measurement.empty.description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Lege erst dein Profil im Onboarding an, danach können wir Messwerte berechnen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set up your profile in onboarding first — then we can compute measurements." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Önce onboarding'de profilini oluştur — sonra ölçümleri hesaplayabiliriz." } }
+      }
     }
   }
 }
