@@ -545,15 +545,38 @@ public struct DashboardView: View {
     }
 
     /// Wahlt den passenden Coaching-Context aus dem Heute-Zustand des
-    /// Plans. Erweiterung-Punkt fuer kuenftige Wellen: CNS-Overload
-    /// (Schwellen-Lesen aus letzten 3 Sessions), Plateau-Detection
-    /// (kein PR seit X Wochen + flache Progression), newPR (Trophy-
-    /// Room hat einen Eintrag vom letzten Workout).
+    /// Plans und der juengsten Trainings-Last. Prioritaet:
+    ///   1. **`.cnsOverloaded`** — eine `isCNSOverloaded`-Session in den
+    ///      letzten 48h. Hat Vorrang vor Plan-Ruhetag, weil "ZNS gegrillt"
+    ///      ein wichtigerer Hinweis ist als "heute ist Mittwoch-Pause".
+    ///   2. **`.restDay`** — heutiger Plan-Tag ist `.rest`.
+    ///   3. Sonst nil (kein Coaching-Card auf dem Dashboard).
+    /// Plateau-Detection + newPR sind Folge-Wellen — brauchen weitere
+    /// Wochen-Aggregation (PR-Diff-Auswertung, Progressions-Slope).
     private var activeCoachingContext: CoachingContext? {
+        if isRecentSessionCNSOverloaded { return .cnsOverloaded }
         guard let plan = activePlans.first, !plan.days.isEmpty else { return nil }
         let day = nextScheduledDay(in: plan)
         if day.type == .rest { return .restDay }
         return nil
+    }
+
+    /// True wenn die JUENGSTE abgeschlossene reale Session (kein Rest-Day-
+    /// Marker, kein Adhoc-Empty) innerhalb der letzten 48h liegt UND
+    /// `isCNSOverloaded == true`. 48h Fenster, weil das dem 72h-Recovery-
+    /// Bucket aus `ExerciseScoring` entspricht — danach ist die ZNS-Last
+    /// bereits weitgehend abgebaut.
+    private var isRecentSessionCNSOverloaded: Bool {
+        let cutoff = Calendar.current.date(byAdding: .hour, value: -48, to: Date()) ?? .distantPast
+        // `completedSessions` ist die @Query oben (isCompleted == true). Wir
+        // filtern Ruhetag-Marker und Snapshot-Ad-Hoc-Empties zusaetzlich raus
+        // via `isRealWorkout`, sonst koennte ein "Tag im Plan abhaken"-Skip
+        // den CNS-Status verfaelschen.
+        let latest = completedSessions
+            .filter { $0.isRealWorkout && $0.endTime >= cutoff }
+            .sorted { $0.endTime > $1.endTime }
+            .first
+        return latest?.isCNSOverloaded ?? false
     }
 
     /// Sequential-rotation pick. Delegates to `PlanNavigator` (Core) so widgets

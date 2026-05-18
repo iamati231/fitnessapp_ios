@@ -143,6 +143,28 @@ public final class WorkoutSession {
         logs.reduce(0.0) { $0 + $1.localMuscleDamageScore }
     }
 
+    /// Kuerzer-Alias auf `totalSessionCNSLoad` — neuer Code-Sites
+    /// nutzen vorzugsweise diese Schreibweise (kompakter, matcht das
+    /// Ticket-Vokabular DEL-099/DEL-100). Beide bleiben verfuegbar,
+    /// damit Bestands-Aufrufer (DEL-099-Pre-Welle 16) nicht brechen.
+    public var totalCNSLoad: Double { totalSessionCNSLoad }
+
+    /// Kuerzer-Alias auf `totalSessionMuscleDamage`.
+    public var totalMuscleDamage: Double { totalSessionMuscleDamage }
+
+    /// DEL-099 + DEL-100 Bruecke: True wenn die Session den
+    /// CNS-Overload-Schwellwert (300 Punkte = oberster Recovery-Bucket,
+    /// 72h+) erreicht oder ueberschritten hat. Wird von der
+    /// `CoachingMessageProvider`-Pipeline gelesen, um die
+    /// `.cnsOverloaded`-Coaching-Message auf dem Dashboard zu zuenden.
+    ///
+    /// Schwelle entspricht dem default-bucket in
+    /// `ExerciseScoring.estimatedRecoveryHours`. Wenn jemand die Schwelle
+    /// tuned, BITTE beide Stellen aktualisieren.
+    public var isCNSOverloaded: Bool {
+        totalCNSLoad >= 300.0
+    }
+
     /// Geschaetzte Erholungs-Stunden auf Basis der **groesseren** der
     /// beiden Last-Pools — wenn ZNS gegrillt ist, hilft Bein-Recovery
     /// nicht und umgekehrt. Caller (Dashboard, Live-Activity) zeigt das

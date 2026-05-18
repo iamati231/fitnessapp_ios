@@ -174,4 +174,26 @@ final class ExerciseScoringTests: XCTestCase {
         let hours = ExerciseScoring.estimatedRecoveryHours(maxLoad: score)
         XCTAssertEqual(hours, 72, "60-Min Long Run sollte aktuell im Extreme-Bucket landen")
     }
+
+    // MARK: - DEL-099 + DEL-100 CNS-Overload-Schwelle
+
+    /// Die CNS-Overload-Schwelle (300 Punkte) und die hoechste Recovery-
+    /// Bracket-Grenze in `estimatedRecoveryHours` (>=300 → 72h) muessen
+    /// IDENTISCH bleiben. Wenn jemand die eine Stelle verschiebt ohne die
+    /// andere, kippt das die Coaching-Engine-Logik (`isCNSOverloaded` auf
+    /// `WorkoutSession`) — dieser Test faengt das.
+    func testCNSOverloadThresholdMatchesExtremeBucket() {
+        // Exakt an der Schwelle (300) → 72h.
+        XCTAssertEqual(
+            ExerciseScoring.estimatedRecoveryHours(maxLoad: 300),
+            72,
+            "300 Punkte muessen in den Extreme-Bucket fallen — sonst koppelt sich isCNSOverloaded von der Recovery-Anzeige ab"
+        )
+        // Knapp drunter (299.99) → 48h.
+        XCTAssertEqual(
+            ExerciseScoring.estimatedRecoveryHours(maxLoad: 299.99),
+            48,
+            "Recovery-Bucket-Grenze sitzt exakt bei 300, nicht 299.99"
+        )
+    }
 }
