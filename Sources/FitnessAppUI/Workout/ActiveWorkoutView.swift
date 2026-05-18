@@ -504,21 +504,16 @@ public struct ActiveWorkoutView: View {
                         .padding(.horizontal, 32)
                 }
 
+                // DEL-102: Hero-CTA migriert auf .deltiqButtonStyle() — der
+                // zentrale Modifier kapselt Gradient + Glow + Padding und
+                // ersetzt die fruehere manuelle HStack-/Padding-Kaskade.
                 Button {
                     showingAdHocPicker = true
                 } label: {
-                    HStack {
-                        Spacer()
-                        Label("Übung hinzufügen", systemImage: "plus.circle.fill")
-                            .font(.headline)
-                        Spacer()
-                    }
-                    .padding(.vertical, 14)
-                    .background(Color.deltiqOrange.gradient)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    Label("Übung hinzufügen", systemImage: "plus.circle.fill")
                 }
                 .buttonStyle(.plain)
+                .deltiqButtonStyle()
                 .padding(.horizontal, 24)
                 .padding(.top, 8)
 

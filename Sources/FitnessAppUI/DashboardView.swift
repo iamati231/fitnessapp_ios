@@ -79,6 +79,10 @@ public struct DashboardView: View {
             .padding(.horizontal)
             .padding(.vertical, 8)
         }
+        // DEL-102: Off-Weiss / Off-Schwarz-Background, gegen den die
+        // Bento-Cards (Surface) abheben. Im Light-Mode identisch zu
+        // systemGroupedBackground, im Dark-Mode warmer (#0A0A0A statt #000).
+        .background(Color.Deltiq.background.ignoresSafeArea())
         .navigationTitle("Dashboard")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
@@ -150,10 +154,8 @@ public struct DashboardView: View {
                     .font(.caption.weight(.bold))
                     .foregroundStyle(.tertiary)
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.secondary.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+            // DEL-102: Bento-Card statt manuelle Background+Clip-Kette.
+            .deltiqCardStyle()
         }
         .buttonStyle(.plain)
     }
@@ -463,10 +465,8 @@ public struct DashboardView: View {
                     adHocWorkoutButton(prominent: false)
                 }
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.secondary.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+            // DEL-102: Bento-Card.
+            .deltiqCardStyle()
         } else {
             // No active plan or active plan has no days yet.
             VStack(alignment: .leading, spacing: 12) {
@@ -495,10 +495,8 @@ public struct DashboardView: View {
                 // Ad-Hoc ist hier der einzige Trainings-CTA, also prominent.
                 adHocWorkoutButton(prominent: true)
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.secondary.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+            // DEL-102: Bento-Card.
+            .deltiqCardStyle()
         }
     }
 
@@ -519,6 +517,10 @@ public struct DashboardView: View {
                 goal: profile.trainingGoal
             )
             if !message.isEmpty {
+                // DEL-100 + DEL-102: Bento-Card mit warmem DeltiqOrange-Tint.
+                // Bewusst NICHT die generische .deltiqCardStyle() — die
+                // Coaching-Insight haben wir absichtlich orange-getoent fuer
+                // visuelle Differenzierung vom Plan-Card.
                 HStack(alignment: .top, spacing: 12) {
                     Image(systemName: "sparkles")
                         .symbolRenderingMode(.hierarchical)
@@ -533,8 +535,11 @@ public struct DashboardView: View {
                 .padding(14)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color.deltiqOrange.opacity(0.10))
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .innerLightStroke(cornerRadius: 14, opacity: 0.08)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.deltiqOrange.opacity(0.20), lineWidth: 1)
+                )
             }
         }
     }
@@ -1399,9 +1404,13 @@ private struct MetricCard: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             HStack(alignment: .firstTextBaseline, spacing: 2) {
+                // DEL-102: fitnessNumberStyle ersetzt das manuelle
+                // .monospacedDigit() + erzwingt zusaetzlich .fontDesign(.rounded),
+                // damit die Hero-Zahlen sportlicher und kohaerent mit Timer-
+                // Anzeigen sind.
                 Text(value)
                     .font(.title2.weight(.semibold))
-                    .monospacedDigit()
+                    .fitnessNumberStyle()
                 if let unit {
                     Text(unit)
                         .font(.caption)
@@ -1415,11 +1424,10 @@ private struct MetricCard: View {
                     .font(.caption2)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(Color.secondary.opacity(0.10))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        // DEL-102: Sub-Card-Format (kleiner Corner-Radius, kompakteres Padding)
+        // — die Metric-Cards sind enthalten in einer Reihe von drei und sollten
+        // schmaler wirken als die Top-Level-Bento-Cards.
+        .deltiqCardStyle(padding: 12, cornerRadius: 14)
     }
 
     private func deltaLabel(_ delta: Double) -> some View {
