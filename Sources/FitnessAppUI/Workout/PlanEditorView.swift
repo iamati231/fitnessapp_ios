@@ -536,14 +536,21 @@ private struct DayRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // DEL-105: Wochentag-Badge im Brand-Stil — gedimmter Orange-Tint
+            // plus voller Orange-Text. Subtiler als der frueher blaue Gradient,
+            // weniger Visual Noise wenn die ganze Woche untereinander steht.
             VStack {
                 Text(weekdayShort(day.weekday))
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.deltiqOrange)
             }
             .frame(width: 36, height: 36)
-            .background(Color.blue.gradient)
+            .background(Color.deltiqOrange.opacity(0.18))
             .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.deltiqOrange.opacity(0.35), lineWidth: 1)
+            )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(day.name)

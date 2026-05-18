@@ -129,6 +129,9 @@ struct HistorySessionRow: View {
             .background(Color.purple.gradient)
             .clipShape(RoundedRectangle(cornerRadius: 8))
         } else {
+            // DEL-105: Strength-Datums-Block uebernimmt den Brand-Akzent.
+            // Cardio + Strength teilen sich damit den Orange-Ton — Differenzierung
+            // laeuft jetzt nur noch ueber das Icon-Layout (figure.run vs Datum).
             VStack {
                 Text(dayNumber)
                     .font(.title3.weight(.bold))
@@ -138,7 +141,7 @@ struct HistorySessionRow: View {
                     .foregroundStyle(.white.opacity(0.85))
             }
             .frame(width: 44, height: 44)
-            .background(Color.blue.gradient)
+            .background(Color.deltiqOrange.gradient)
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
     }

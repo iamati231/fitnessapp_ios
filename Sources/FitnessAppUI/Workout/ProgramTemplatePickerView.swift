@@ -128,11 +128,12 @@ private struct ProgramRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // DEL-105: Brand-Akzent statt iOS-Standard-Blau.
             Image(systemName: template.iconSystemName)
                 .font(.title2)
                 .foregroundStyle(.white)
                 .frame(width: 48, height: 48)
-                .background(Color.blue.gradient)
+                .background(Color.deltiqOrange.gradient)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
 
             VStack(alignment: .leading, spacing: 4) {
@@ -211,16 +212,17 @@ public struct TemplatePreviewView: View {
         Section {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 12) {
+                    // DEL-105: Brand-Akzent statt iOS-Blau (Hero-Badge + Focus-Label).
                     Image(systemName: template.iconSystemName)
                         .font(.title2)
                         .foregroundStyle(.white)
                         .frame(width: 44, height: 44)
-                        .background(Color.blue.gradient)
+                        .background(Color.deltiqOrange.gradient)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(template.focus)
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.deltiqOrange)
                         Text(template.tagline)
                             .font(.body.weight(.semibold))
                     }

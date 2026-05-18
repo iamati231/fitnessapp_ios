@@ -186,11 +186,12 @@ public struct DashboardView: View {
             WorkoutHistoryView()
         } label: {
             HStack(spacing: 12) {
+                // DEL-105: Brand-Akzent statt iOS-Standard-Blau.
                 Image(systemName: "calendar.badge.clock")
                     .font(.title2)
                     .foregroundStyle(.white)
                     .frame(width: 38, height: 38)
-                    .background(Color.blue.gradient)
+                    .background(Color.deltiqOrange.gradient)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Trainingsverlauf")
@@ -399,11 +400,13 @@ public struct DashboardView: View {
             let isRestDay = day.type == .rest
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
+                    // DEL-105: Brand-Akzent fuer Trainings-Tage statt iOS-Blau.
+                    // Rest-Day-Branch bleibt Purple — semantische Farbe fuer Ruhe.
                     Image(systemName: isRestDay ? "bed.double.fill" : "calendar.badge.clock")
                         .font(.title2)
                         .foregroundStyle(.white)
                         .frame(width: 38, height: 38)
-                        .background((isRestDay ? Color.purple : Color.blue).gradient)
+                        .background((isRestDay ? Color.purple : Color.deltiqOrange).gradient)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(isRestDay ? "Heute: Ruhetag" : "Nächstes Training")
@@ -610,8 +613,12 @@ public struct DashboardView: View {
     ///   1. Keine offene Session       → "Direkt starten" (blau, neu)
     ///   2. Offene Session AUF DEM-Tag → "Fortsetzen" (orange, navigiert in
     ///      die existing Session — kein neuer Insert)
-    ///   3. Offene Session AUF ANDEREM Tag → "Direkt starten" (blau), aber
-    ///      Klick triggert Conflict-Dialog mit drei Optionen.
+    ///   3. Offene Session AUF ANDEREM Tag → "Direkt starten", Klick
+    ///      triggert Conflict-Dialog mit drei Optionen.
+    /// DEL-105: Beide Branches nutzen jetzt `.deltiqButtonStyle()` (Hero-CTA-
+    /// Modifier aus DEL-102). Mode-Unterscheidung "Fortsetzen" vs "Direkt
+    /// starten" laeuft nur noch ueber Label + Icon, nicht ueber Farbe — das
+    /// frueher blau-vs-orange Pattern stoerte das Markenbild.
     @ViewBuilder
     private func activeWorkoutButton(plan: TrainingPlan, day: TrainingDay) -> some View {
         let matchingOpen = openSessionForDay(day)
@@ -619,11 +626,8 @@ public struct DashboardView: View {
 
         Button {
             if let open = matchingOpen {
-                // Direkt fortsetzen — keine neue Session.
                 resumeSession(open, plan: plan)
             } else if hasOtherOpen {
-                // Konflikt: andere-Plan-Session offen. Vorberbereitung der
-                // "Neu starten"-Action, dann Dialog zeigen.
                 pendingNewStart = {
                     actuallyStartNewWorkout(plan: plan, day: day)
                 }
@@ -632,21 +636,13 @@ public struct DashboardView: View {
                 actuallyStartNewWorkout(plan: plan, day: day)
             }
         } label: {
-            HStack {
-                Spacer()
-                Label(
-                    matchingOpen != nil ? "Laufendes Training fortsetzen" : "Direkt starten",
-                    systemImage: matchingOpen != nil ? "play.circle.fill" : "play.fill"
-                )
-                .font(.subheadline.weight(.semibold))
-                Spacer()
-            }
-            .padding(.vertical, 10)
-            .background((matchingOpen != nil ? Color.orange : Color.blue).gradient)
-            .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            Label(
+                matchingOpen != nil ? "Laufendes Training fortsetzen" : "Direkt starten",
+                systemImage: matchingOpen != nil ? "play.circle.fill" : "play.fill"
+            )
         }
         .buttonStyle(.plain)
+        .deltiqButtonStyle()
     }
 
     /// DEL-096: "Spontanes Workout"-Einstiegspunkt. Zwei Varianten:
@@ -955,12 +951,15 @@ public struct DashboardView: View {
                     .font(.headline)
                 HStack(spacing: 12) {
                     if volumeKg > 0 {
+                        // DEL-105: Indigo statt iOS-Default-Blau fuer Strength —
+                        // erhaelt die semantische Differenzierung zum Cardio-
+                        // Orange-Tile, ohne wieder in den System-Akzent zu fallen.
                         weeklyStatTile(
                             label: "Volumen",
                             value: formatVolumeKg(volumeKg),
                             unit: "kg",
                             icon: "scalemass.fill",
-                            tint: .blue
+                            tint: .indigo
                         )
                     }
                     if distanceKm > 0 {
