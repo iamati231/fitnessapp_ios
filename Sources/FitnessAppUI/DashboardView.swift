@@ -87,38 +87,58 @@ public struct DashboardView: View {
         // Bento-Cards (Surface) abheben. Im Light-Mode identisch zu
         // systemGroupedBackground, im Dark-Mode warmer (#0A0A0A statt #000).
         .background(Color.Deltiq.background.ignoresSafeArea())
-        .navigationTitle("Dashboard")
+        // DEL-073: Navigation-Title aus xcstrings.
+        .navigationTitle(Text("dashboard.title", bundle: .module))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 NavigationLink(destination: MeasurementView()) {
-                    Label("Neue Messung", systemImage: "plus.circle.fill")
+                    Label {
+                        Text("dashboard.newMeasurement", bundle: .module)
+                    } icon: {
+                        Image(systemName: "plus.circle.fill")
+                    }
                 }
             }
         }
         // DEL-042: Conflict-Dialog wenn der User in Plan A starten will,
         // waehrend in Plan B noch eine offene Session lebt.
         .confirmationDialog(
-            "Aktives Training gefunden",
+            Text("dashboard.openSession.title", bundle: .module),
             isPresented: $showingActiveSessionConflict,
             titleVisibility: .visible
         ) {
-            Button("Altes verwerfen & Neu starten", role: .destructive) {
+            Button(role: .destructive) {
                 discardOtherOpenSessionsAndStartNew()
+            } label: {
+                Text("dashboard.openSession.discardAndStart", bundle: .module)
             }
-            Button("Altes fortsetzen") {
+            Button {
                 resumeAnyOpenFromConflict()
+            } label: {
+                Text("dashboard.openSession.resume", bundle: .module)
             }
-            Button("Abbrechen", role: .cancel) {
+            Button(role: .cancel) {
                 pendingNewStart = nil
+            } label: {
+                Text("dashboard.openSession.cancel", bundle: .module)
             }
         } message: {
             if let open = openSessions.first {
-                Text("Es läuft noch eine Session vom \(open.startTime.formatted(.relative(presentation: .named))) (\(open.dayName ?? "Unbekannt")). Was möchtest du tun?")
+                // DEL-073: %1$@/%2$@ positional placeholders fuer
+                // Datums-Stempel und Day-Name (Reihenfolge bleibt in
+                // EN/TR identisch — sicherheitshalber positional).
+                let stamp = open.startTime.formatted(.relative(presentation: .named))
+                let dayName = open.dayName
+                    ?? String(localized: "dashboard.openSession.dayName.unknown", bundle: .module)
+                let template = String(localized: "dashboard.openSession.message.withInfo", bundle: .module)
+                Text(template
+                        .replacingOccurrences(of: "%1$@", with: stamp)
+                        .replacingOccurrences(of: "%2$@", with: dayName))
             } else {
-                Text("Es gibt bereits eine offene Trainings-Session.")
+                Text("dashboard.openSession.message.fallback", bundle: .module)
             }
         }
     }
@@ -140,15 +160,22 @@ public struct DashboardView: View {
                     .background(Color.yellow.gradient)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Trophy Room")
+                    Text("dashboard.trophy.title", bundle: .module)
                         .font(.body.weight(.semibold))
                         .foregroundStyle(.primary)
                     if prCount == 0 {
-                        Text("Noch keine PRs — beende ein Workout, um den ersten zu setzen.")
+                        Text("dashboard.trophy.empty", bundle: .module)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     } else {
-                        Text("\(prCount) Rekorde\(latestPRSummary.map { " • \($0)" } ?? "")")
+                        // DEL-073: Apple's native Plural-Resolution via
+                        // String-Interpolation. Der Key in xcstrings ist
+                        // exakt der Format-Pattern "%lld Rekorde", die
+                        // `variations.plural`-Branch picked one/other
+                        // anhand des Args.
+                        let countText = String(localized: "\(prCount) Rekorde", bundle: .module)
+                        let suffix = latestPRSummary.map { " • \($0)" } ?? ""
+                        Text(countText + suffix)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -194,7 +221,7 @@ public struct DashboardView: View {
                     .background(Color.deltiqOrange.gradient)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Trainingsverlauf")
+                    Text("dashboard.history.title", bundle: .module)
                         .font(.body.weight(.semibold))
                         .foregroundStyle(.primary)
                     Text(historyTeaserText)
@@ -233,19 +260,19 @@ public struct DashboardView: View {
             if let latest = measurements.first {
                 HStack(spacing: 12) {
                     MetricCard(
-                        label: "Gewicht",
+                        label: String(localized: "metric.weight", bundle: .module),
                         value: latest.weightKg.truncated(to: 2).formattedTwoDecimals,
                         unit: "kg",
                         delta: weeklyWeightDelta()
                     )
                     MetricCard(
-                        label: "KFA Navy",
+                        label: String(localized: "metric.kfaNavy", bundle: .module),
                         value: latest.navyBodyFatPct?.truncated(to: 2).formattedTwoDecimals ?? "—",
                         unit: latest.navyBodyFatPct != nil ? "%" : nil,
                         delta: nil
                     )
                     MetricCard(
-                        label: "FFMI",
+                        label: String(localized: "metric.ffmi", bundle: .module),
                         value: latest.ffmi?.truncated(to: 2).formattedTwoDecimals ?? "—",
                         unit: nil,
                         delta: nil
@@ -269,11 +296,11 @@ public struct DashboardView: View {
     private var trendChart: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Gewichts-Trend")
+                Text("dashboard.trend.title", bundle: .module)
                     .font(.headline)
                 Spacer()
                 if !forecastPoints.isEmpty {
-                    Text("Prognose 4 / 8 W.")
+                    Text("dashboard.trend.forecast.legend", bundle: .module)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -323,7 +350,9 @@ public struct DashboardView: View {
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
                             .foregroundStyle(.green.opacity(0.7))
                             .annotation(position: .top, alignment: .leading) {
-                                Text("Ziel \(goal.truncated(to: 2).formattedTwoDecimals) kg")
+                                Text(String(localized: "dashboard.goal.line", bundle: .module)
+                                        .replacingOccurrences(of: "%@",
+                                                              with: goal.truncated(to: 2).formattedTwoDecimals))
                                     .font(.caption2)
                                     .foregroundStyle(.green)
                             }
@@ -339,15 +368,21 @@ public struct DashboardView: View {
                 .frame(height: 220)
 
                 if isTrendUnreliable {
-                    Label("Werte schwanken stark — Prognose ausgeblendet, bis sich der Trend stabilisiert.",
-                          systemImage: "exclamationmark.triangle")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                    Label {
+                        Text("dashboard.trend.unstable", bundle: .module)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.orange)
                 } else if forecastPoints.isEmpty && measurements.count >= 3 {
-                    Label("Mehr Werte über mind. 1 Woche für eine Prognose nötig.",
-                          systemImage: "info.circle")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Label {
+                        Text("dashboard.trend.needMore", bundle: .module)
+                    } icon: {
+                        Image(systemName: "info.circle")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
             }
         }
@@ -409,7 +444,10 @@ public struct DashboardView: View {
                         .background((isRestDay ? Color.purple : Color.deltiqOrange).gradient)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(isRestDay ? "Heute: Ruhetag" : "Nächstes Training")
+                        Text(isRestDay
+                             ? "dashboard.plan.todayRestDay"
+                             : "dashboard.plan.nextWorkout",
+                             bundle: .module)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Text(day.name)
@@ -424,7 +462,7 @@ public struct DashboardView: View {
                     // verleitet, leere isRestDay-Sessions in den Store zu
                     // schreiben, in der Annahme es sei der Start-Button.
                     // Jetzt: ruhiges Label, kein Aktions-Button.
-                    Text("Heute ist Ruhetag. Zeit zur Erholung!")
+                    Text("dashboard.plan.restDay", bundle: .module)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 } else if !day.activeExercises.isEmpty {
@@ -449,13 +487,13 @@ public struct DashboardView: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "forward.fill")
-                            Text("Tag im Plan abhaken")
+                            Text("dashboard.plan.checkoffRestDay", bundle: .module)
                         }
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.purple)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Ruhetag im Plan abhaken, um morgen den nächsten Trainingstag anzuzeigen")
+                    .accessibilityLabel(Text("dashboard.plan.checkoffRestDay.a11y", bundle: .module))
                 } else {
                     // DEL-042: Button-State adaptiv. Wenn offene Session
                     // existiert: orange "Fortsetzen"-Button, navigiert in die
@@ -478,17 +516,23 @@ public struct DashboardView: View {
                         .font(.title2)
                         .foregroundStyle(.secondary)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(activePlans.isEmpty ? "Kein aktiver Plan" : "Plan noch leer")
+                        Text(activePlans.isEmpty
+                             ? "dashboard.plan.noActivePlan"
+                             : "dashboard.plan.planEmpty",
+                             bundle: .module)
                             .font(.body.weight(.semibold))
                         Text(activePlans.isEmpty
-                             ? "Lege im Plan-Tab deinen ersten Trainings-Plan an."
-                             : "Füge deinem aktiven Plan im Plan-Tab Tage und Übungen hinzu.")
+                             ? "dashboard.plan.noActivePlan.hint"
+                             : "dashboard.plan.planEmpty.hint",
+                             bundle: .module)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button("Plan-Tab") {
+                    Button {
                         navigation.selectedTab = .plan
+                    } label: {
+                        Text("dashboard.plan.tabShortcut", bundle: .module)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
@@ -636,10 +680,15 @@ public struct DashboardView: View {
                 actuallyStartNewWorkout(plan: plan, day: day)
             }
         } label: {
-            Label(
-                matchingOpen != nil ? "Laufendes Training fortsetzen" : "Direkt starten",
-                systemImage: matchingOpen != nil ? "play.circle.fill" : "play.fill"
-            )
+            // DEL-073: Beide Branches via xcstrings.
+            Label {
+                Text(matchingOpen != nil
+                     ? "dashboard.action.resumeRunning"
+                     : "dashboard.action.startDirect",
+                     bundle: .module)
+            } icon: {
+                Image(systemName: matchingOpen != nil ? "play.circle.fill" : "play.fill")
+            }
         }
         .buttonStyle(.plain)
         .deltiqButtonStyle()
@@ -661,8 +710,12 @@ public struct DashboardView: View {
             if prominent {
                 HStack {
                     Spacer()
-                    Label("Spontanes Workout starten", systemImage: "bolt.fill")
-                        .font(.subheadline.weight(.semibold))
+                    Label {
+                        Text("dashboard.action.adHoc.primary", bundle: .module)
+                    } icon: {
+                        Image(systemName: "bolt.fill")
+                    }
+                    .font(.subheadline.weight(.semibold))
                     Spacer()
                 }
                 .padding(.vertical, 10)
@@ -672,14 +725,14 @@ public struct DashboardView: View {
             } else {
                 HStack(spacing: 4) {
                     Image(systemName: "bolt.fill")
-                    Text("Vom Plan abweichen — Spontanes Workout")
+                    Text("dashboard.action.adHoc.secondary", bundle: .module)
                 }
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.deltiqOrange)
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Spontanes Workout starten — leere Session ohne Plan-Anbindung")
+        .accessibilityLabel(Text("dashboard.action.adHoc.a11y", bundle: .module))
     }
 
     /// Liefert eine offene Session, deren `.day` mit dem uebergebenen Day
@@ -858,10 +911,10 @@ public struct DashboardView: View {
     private var compoundLiftChart: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Compound-Lift-Trend")
+                Text("dashboard.compoundChart.title", bundle: .module)
                     .font(.headline)
                 Spacer()
-                Text("Geschätztes 1RM")
+                Text("dashboard.compoundChart.legend", bundle: .module)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -875,9 +928,9 @@ public struct DashboardView: View {
                         .font(.title2)
                         .foregroundStyle(.secondary)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Noch zu wenig Daten")
+                        Text("dashboard.compoundChart.empty.title", bundle: .module)
                             .font(.subheadline)
-                        Text("Sobald du eine Compound-Übung in zwei Sessions geloggt hast, erscheint hier der Trend.")
+                        Text("dashboard.compoundChart.empty.hint", bundle: .module)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -947,7 +1000,7 @@ public struct DashboardView: View {
 
         if volumeKg > 0 || distanceKm > 0 {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Diese Woche")
+                Text("dashboard.weeklySummary.title", bundle: .module)
                     .font(.headline)
                 HStack(spacing: 12) {
                     if volumeKg > 0 {
@@ -955,7 +1008,7 @@ public struct DashboardView: View {
                         // erhaelt die semantische Differenzierung zum Cardio-
                         // Orange-Tile, ohne wieder in den System-Akzent zu fallen.
                         weeklyStatTile(
-                            label: "Volumen",
+                            label: String(localized: "dashboard.weeklySummary.volume", bundle: .module),
                             value: formatVolumeKg(volumeKg),
                             unit: "kg",
                             icon: "scalemass.fill",
@@ -964,7 +1017,7 @@ public struct DashboardView: View {
                     }
                     if distanceKm > 0 {
                         weeklyStatTile(
-                            label: "Distanz",
+                            label: String(localized: "dashboard.weeklySummary.distance", bundle: .module),
                             value: formatDistance(distanceKm),
                             unit: "km",
                             icon: "figure.run",
@@ -1044,10 +1097,10 @@ public struct DashboardView: View {
         if anyTraining {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("Muskel-Heatmap (Woche)")
+                    Text("dashboard.heatmap.title", bundle: .module)
                         .font(.headline)
                     Spacer()
-                    Text("Sätze")
+                    Text("dashboard.heatmap.legend", bundle: .module)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1165,10 +1218,10 @@ public struct DashboardView: View {
         if shouldShowCardioChart, !series.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("Cardio-Pace-Trend")
+                    Text("dashboard.cardioChart.title", bundle: .module)
                         .font(.headline)
                     Spacer()
-                    Text("min/km · niedriger = besser")
+                    Text("dashboard.cardioChart.legend", bundle: .module)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1228,14 +1281,14 @@ public struct DashboardView: View {
     private var recentWorkoutsCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Letzte Workouts")
+                Text("dashboard.recent.title", bundle: .module)
                     .font(.headline)
                 Spacer()
                 if completedSessions.contains(where: { !$0.isRestDay }) {
                     NavigationLink {
                         WorkoutHistoryView()
                     } label: {
-                        Text("Alle anzeigen")
+                        Text("dashboard.recent.viewAll", bundle: .module)
                             .font(.subheadline)
                     }
                 }
@@ -1250,9 +1303,9 @@ public struct DashboardView: View {
                         .font(.title2)
                         .foregroundStyle(.secondary)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Noch keine Trainingseinheiten")
+                        Text("dashboard.recent.empty.title", bundle: .module)
                             .font(.subheadline)
-                        Text("Starte oben dein erstes Training.")
+                        Text("dashboard.recent.empty.hint", bundle: .module)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -1474,7 +1527,7 @@ private struct MetricCard: View {
         return HStack(spacing: 2) {
             Image(systemName: arrow)
             Text("\(prefix)\(formatted) kg")
-            Text("/ Wo.")
+            Text("metric.weeklyDelta.suffix", bundle: .module)
                 .foregroundStyle(.secondary)
         }
         .font(.caption2)
@@ -1486,9 +1539,13 @@ private struct MetricCard: View {
 private struct EmptyMetricsCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label("Noch keine Messungen", systemImage: "scalemass")
-                .font(.headline)
-            Text("Tippe auf '+' oben rechts, um deinen ersten Wert einzutragen.")
+            Label {
+                Text("dashboard.trend.emptyTitle", bundle: .module)
+            } icon: {
+                Image(systemName: "scalemass")
+            }
+            .font(.headline)
+            Text("dashboard.trend.emptyDescription", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -1502,12 +1559,15 @@ private struct EmptyMetricsCard: View {
 @available(iOS 17.0, macOS 14.0, *)
 private struct EmptyTrendCard: View {
     var body: some View {
-        Label("Trag deine erste Messung ein, um den Trend zu sehen.",
-              systemImage: "chart.line.uptrend.xyaxis")
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 16)
+        Label {
+            Text("dashboard.trend.empty", bundle: .module)
+        } icon: {
+            Image(systemName: "chart.line.uptrend.xyaxis")
+        }
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 16)
     }
 }
 
@@ -1516,12 +1576,21 @@ private struct InsufficientDataCard: View {
     let currentCount: Int
 
     var body: some View {
-        Label("\(currentCount) von 3 nötigen Messungen — Linear-Regression startet ab 3 Werten über mind. 1 Woche.",
-              systemImage: "chart.line.uptrend.xyaxis")
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 16)
+        // DEL-073: Insufficient-Data-String laesst den Count direkt im
+        // String-Format. xcstrings-Key mit %lld erlaubt EN/TR-Uebersetzer
+        // den Zahlen-Slot zu positionieren.
+        Label {
+            Text(
+                String(localized: "dashboard.trend.insufficient", bundle: .module)
+                    .replacingOccurrences(of: "%lld", with: "\(currentCount)")
+            )
+        } icon: {
+            Image(systemName: "chart.line.uptrend.xyaxis")
+        }
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 16)
     }
 }
 

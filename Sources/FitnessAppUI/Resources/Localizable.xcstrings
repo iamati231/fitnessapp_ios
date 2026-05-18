@@ -1429,6 +1429,243 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Set up your profile in onboarding first — then we can compute measurements." } },
         "tr" : { "stringUnit" : { "state" : "translated", "value" : "Önce onboarding'de profilini oluştur — sonra ölçümleri hesaplayabiliriz." } }
       }
+    },
+    "dashboard.title" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Dashboard" } } }
+    },
+    "dashboard.newMeasurement" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Neue Messung" } } }
+    },
+    "dashboard.openSession.title" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Laufende Session" } } }
+    },
+    "dashboard.openSession.discardAndStart" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Altes verwerfen & Neu starten" } } }
+    },
+    "dashboard.openSession.resume" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Altes fortsetzen" } } }
+    },
+    "dashboard.openSession.cancel" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Abbrechen" } } }
+    },
+    "dashboard.openSession.message.withInfo" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Es läuft noch eine Session vom %1$@ (%2$@). Was möchtest du tun?" } } }
+    },
+    "dashboard.openSession.message.fallback" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Es gibt bereits eine offene Trainings-Session." } } }
+    },
+    "dashboard.openSession.dayName.unknown" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Unbekannt" } } }
+    },
+    "dashboard.trophy.title" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Trophy Room" } } }
+    },
+    "dashboard.trophy.empty" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch keine PRs — beende ein Workout, um den ersten zu setzen." } } }
+    },
+    "%lld Rekorde" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld Rekord" } },
+              "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld Rekorde" } }
+            }
+          }
+        }
+      }
+    },
+    "dashboard.history.title" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Trainingsverlauf" } } }
+    },
+    "dashboard.history.empty" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch keine Trainings — starte oben dein erstes." } } }
+    },
+    "dashboard.trend.title" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Gewichts-Trend" } } }
+    },
+    "dashboard.trend.forecast.legend" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Prognose 4 / 8 W." } } }
+    },
+    "dashboard.trend.unstable" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Werte schwanken stark — Prognose ausgeblendet, bis sich der Trend stabilisiert." } } }
+    },
+    "dashboard.trend.needMore" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Mehr Werte über mind. 1 Woche für eine Prognose nötig." } } }
+    },
+    "dashboard.trend.empty" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Trag deine erste Messung ein, um den Trend zu sehen." } } }
+    },
+    "dashboard.trend.insufficient" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "%lld von 3 nötigen Messungen — Linear-Regression startet ab 3 Werten über mind. 1 Woche." } } }
+    },
+    "dashboard.trend.emptyTitle" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch keine Messungen" } } }
+    },
+    "dashboard.trend.emptyDescription" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Tippe auf '+' oben rechts, um deinen ersten Wert einzutragen." } } }
+    },
+    "dashboard.goal.line" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Ziel %@ kg" } } }
+    },
+    "dashboard.plan.restDay" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Heute ist Ruhetag. Zeit zur Erholung!" } } }
+    },
+    "dashboard.plan.todayRestDay" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Heute: Ruhetag" } } }
+    },
+    "dashboard.plan.nextWorkout" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Nächstes Training" } } }
+    },
+    "dashboard.plan.checkoffRestDay" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Tag im Plan abhaken" } } }
+    },
+    "dashboard.plan.checkoffRestDay.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Ruhetag im Plan abhaken, um morgen den nächsten Trainingstag anzuzeigen" } } }
+    },
+    "dashboard.plan.noActivePlan" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Kein aktiver Plan" } } }
+    },
+    "dashboard.plan.planEmpty" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Plan noch leer" } } }
+    },
+    "dashboard.plan.noActivePlan.hint" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Lege im Plan-Tab deinen ersten Trainings-Plan an." } } }
+    },
+    "dashboard.plan.planEmpty.hint" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Füge deinem aktiven Plan im Plan-Tab Tage und Übungen hinzu." } } }
+    },
+    "dashboard.plan.tabShortcut" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Plan-Tab" } } }
+    },
+    "dashboard.action.startDirect" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Direkt starten" } } }
+    },
+    "dashboard.action.resumeRunning" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Laufendes Training fortsetzen" } } }
+    },
+    "dashboard.action.adHoc.primary" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Spontanes Workout starten" } } }
+    },
+    "dashboard.action.adHoc.secondary" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Vom Plan abweichen — Spontanes Workout" } } }
+    },
+    "dashboard.action.adHoc.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Spontanes Workout starten — leere Session ohne Plan-Anbindung" } } }
+    },
+    "dashboard.compoundChart.title" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Compound-Lift-Trend" } } }
+    },
+    "dashboard.compoundChart.legend" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Geschätztes 1RM" } } }
+    },
+    "dashboard.compoundChart.empty.title" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch zu wenig Daten" } } }
+    },
+    "dashboard.compoundChart.empty.hint" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Sobald du eine Compound-Übung in zwei Sessions geloggt hast, erscheint hier der Trend." } } }
+    },
+    "dashboard.weeklySummary.title" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Diese Woche" } } }
+    },
+    "dashboard.weeklySummary.volume" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Volumen" } } }
+    },
+    "dashboard.weeklySummary.distance" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Distanz" } } }
+    },
+    "dashboard.heatmap.title" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Muskel-Heatmap (Woche)" } } }
+    },
+    "dashboard.heatmap.legend" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Sätze" } } }
+    },
+    "dashboard.cardioChart.title" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Cardio-Pace-Trend" } } }
+    },
+    "dashboard.cardioChart.legend" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "min/km · niedriger = besser" } } }
+    },
+    "dashboard.recent.title" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Letzte Workouts" } } }
+    },
+    "dashboard.recent.viewAll" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Alle anzeigen" } } }
+    },
+    "dashboard.recent.empty.title" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch keine Trainingseinheiten" } } }
+    },
+    "dashboard.recent.empty.hint" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Starte oben dein erstes Training." } } }
+    },
+    "metric.weight" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Gewicht" } } }
+    },
+    "metric.kfaNavy" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "KFA Navy" } } }
+    },
+    "metric.ffmi" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "FFMI" } } }
+    },
+    "metric.weeklyDelta.suffix" : {
+      "extractionState" : "manual",
+      "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "/ Wo." } } }
     }
   }
 }
