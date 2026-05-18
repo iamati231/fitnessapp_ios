@@ -151,6 +151,40 @@ public struct SettingsView: View {
         .padding(.vertical, 2)
     }
 
+    /// DEL-109: Reusable Nav-Row für die Dashboard-Customization. Wird in
+    /// `preferencesSection` als zweite Row gerendert, damit's nicht eine
+    /// eigene Section mit dupliziertem Header bekommt.
+    @ViewBuilder
+    private var dashboardCustomizationRow: some View {
+        if let profile = profiles.first {
+            DeltiqFormFullRow {
+                NavigationLink {
+                    DashboardSettingsView(profile: profile)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "rectangle.3.group")
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(Color.deltiqOrange)
+                            .frame(width: 28)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("dashboardSettings.entry", bundle: .module)
+                                .font(.body)
+                                .foregroundStyle(.primary)
+                            Text("dashboardSettings.entry.subtitle", bundle: .module)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
     private var preferencesSection: some View {
         DeltiqFormSection(
             header: String(localized: "settings.section.preferences", bundle: .module)
@@ -179,6 +213,8 @@ public struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
             }
+            // DEL-109: Dashboard-Widget-Manager.
+            dashboardCustomizationRow
         } footer: {
             Text("Die DB speichert immer metrisch. Diese Einstellung steuert nur die Anzeige in Eingabe-Feldern, im Hantel-Rechner und auf den Karten.")
         }

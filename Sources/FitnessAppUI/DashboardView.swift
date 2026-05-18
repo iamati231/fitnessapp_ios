@@ -58,27 +58,32 @@ public struct DashboardView: View {
             // einzige geometrische Quelle der Wahrheit — nicht mehr pro-Card
             // .padding(.horizontal) etc.
             VStack(alignment: .leading, spacing: 16) {
+                // DEL-109: heroMetrics bleibt statisch ueber den
+                // konfigurierbaren Widgets — zu zentral fuer das Brand,
+                // nicht via Toggle abschaltbar.
                 heroMetrics
-                planDayCard
-                // DEL-100: Coaching-Insight unter dem Plan-Card. Nutzt
-                // CoachingMessageProvider + die User-Praeferenzen aus
-                // UserBodyProfile fuer eine tonfall-sensible Nachricht.
-                coachingInsightCard
-                // DEL-069: Wochen-Zusammenfassung mit Strength-Volumen UND
-                // Cardio-Distanz. Blendet sich aus wenn beide Werte == 0
-                // (frische Installs / Wochen ohne Training).
-                weeklySummaryCard
-                // DEL-082: Muskel-Heatmap (Wochen-Saetze pro Gruppe).
-                muscleHeatmapCard
-                trophyRoomCard
-                historyCard
-                trendChart
-                compoundLiftChart
-                // DEL-065: Cardio-Trend-Chart fuer Hybrid-Athleten — Pace
-                // ueber Zeit. Wird nur eingeblendet, wenn ueberhaupt
-                // Cardio-Daten vorhanden sind (sonst Platz-Sparend versteckt).
-                cardioPaceChart
-                recentWorkoutsCard
+
+                // DEL-109: Dynamisches Widget-Rendering. Reihenfolge +
+                // Sichtbarkeit kommen aus dem User-Profil; jeder Case
+                // mappt auf den entsprechenden Card-View. Neue Widget-
+                // Typen: hier den switch erweitern UND den enum-Case
+                // anhaengen. Conditional-Rendering (z.B. cardioPaceChart
+                // wird nur sichtbar wenn `shouldShowCardioChart`) bleibt
+                // in den Card-Views selber — der Switch ruft sie nur auf.
+                ForEach(activeDashboardWidgets, id: \.self) { widget in
+                    switch widget {
+                    case .nextWorkout:     planDayCard
+                    case .coachingInsight: coachingInsightCard
+                    case .trophyRoom:      trophyRoomCard
+                    case .workoutHistory:  historyCard
+                    case .weeklyVolume:    weeklySummaryCard
+                    case .muscleHeatmap:   muscleHeatmapCard
+                    case .weightTrend:     trendChart
+                    case .compoundLifts:   compoundLiftChart
+                    case .cardioPace:      cardioPaceChart
+                    case .recentWorkouts:  recentWorkoutsCard
+                    }
+                }
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
@@ -251,6 +256,16 @@ public struct DashboardView: View {
             return "\(real.count) Trainings • zuletzt \(relative)"
         }
         return "\(real.count) Trainings"
+    }
+
+    // MARK: - DEL-109 Widget-Konfiguration
+
+    /// Aktive Dashboard-Widgets aus dem User-Profil. Fallback auf den
+    /// Default, wenn kein Profil existiert (Erst-Launch vor Onboarding-
+    /// Finish — Edge-Case, weil RootView in dem Fall ohnehin OnboardingView
+    /// rendert, nicht Dashboard).
+    private var activeDashboardWidgets: [DashboardWidgetType] {
+        profiles.first?.activeDashboardWidgets ?? DashboardWidgetType.defaultOrder
     }
 
     // MARK: - Hero metrics

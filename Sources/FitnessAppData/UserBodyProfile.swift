@@ -24,6 +24,15 @@ public final class UserBodyProfile {
     /// `coachingTone` die Matrix-Lookup-Keys der Coaching-Engine.
     public var trainingGoalRaw: String = TrainingGoal.hybrid.rawValue
 
+    /// DEL-109: Dashboard-Widget-Konfiguration. Speichert die rawValues
+    /// aller AKTIVEN Widgets in der gewuenschten Render-Reihenfolge.
+    /// Nicht enthaltene `DashboardWidgetType`-Cases sind versteckt.
+    /// Default = `DashboardWidgetType.defaultOrder` (historische Layout-
+    /// Reihenfolge) — Lightweight-Migration der pre-DEL-109-Profile
+    /// erbt damit das volle Set, identisches Nutzer-Erlebnis ohne
+    /// "wo sind meine Cards"-Panik.
+    public var activeDashboardWidgetsRaw: [String] = DashboardWidgetType.defaultOrder.map { $0.rawValue }
+
     /// Convenience-Accessor mit Default-Fallback, falls jemand einen
     /// invaliden String reinschreibt.
     public var coachingTone: CoachingTone {
@@ -34,6 +43,16 @@ public final class UserBodyProfile {
     public var trainingGoal: TrainingGoal {
         get { TrainingGoal(rawValue: trainingGoalRaw) ?? .hybrid }
         set { trainingGoalRaw = newValue.rawValue }
+    }
+
+    /// DEL-109: Typed Convenience-Accessor auf die Widget-Liste. Filtered
+    /// stille raw-Strings raus, die keinem aktuellen Enum-Case mehr
+    /// entsprechen (z.B. nach einem Rename / Delete eines Widgets in einer
+    /// Zukunfts-Welle) — verhindert dass die UI auf einem "Ghost"-Widget
+    /// stehen bleibt.
+    public var activeDashboardWidgets: [DashboardWidgetType] {
+        get { activeDashboardWidgetsRaw.compactMap { DashboardWidgetType(rawValue: $0) } }
+        set { activeDashboardWidgetsRaw = newValue.map { $0.rawValue } }
     }
 
     public init(
