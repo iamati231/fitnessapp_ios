@@ -62,6 +62,17 @@ public struct ActiveWorkoutView: View {
     /// aus der Library und legt los).
     @State private var showingAdHocPicker = false
 
+    /// DEL-097: Session-weiter Single-Lock fuer time-based Halte-Timer.
+    /// Nur EINE Time-Exercise (Plank, Wall Sit, ...) darf gleichzeitig
+    /// laufen — sobald `startHolding()` in einer SetRow feuert, claimed
+    /// sie diese Slot via `activeTimedExercise = exercise`. Andere
+    /// SetRows blockieren ihren Start-Button so lange. Stoppen / Saetze
+    /// abspeichern released den Slot wieder.
+    /// Wichtig: Rein UI-State, NICHT persistiert — wenn die App killt
+    /// werden Timer eh nicht resumed (sind `@State` in der Row), also
+    /// muss der Lock auch nicht ueberleben.
+    @State private var activeTimedExercise: Exercise?
+
     /// Rest-timer state. nil = no timer running.
     @State private var restTimerEnd: Date?
     @State private var restTimerOriginalSeconds: Int = 0
@@ -403,6 +414,7 @@ public struct ActiveWorkoutView: View {
                         ExerciseCard(
                             exercise: exercise,
                             session: session,
+                            activeTimedExercise: $activeTimedExercise,
                             onSetLogged: { setIndex in
                                 startRestTimer(for: exercise, setIndex: setIndex)
                                 maybeAutoAdvance(after: exercise, exercises: exercises, currentIndex: idx)
@@ -430,6 +442,7 @@ public struct ActiveWorkoutView: View {
                         ExerciseCard(
                             exercise: exercise,
                             session: session,
+                            activeTimedExercise: $activeTimedExercise,
                             onSetLogged: { setIndex in
                                 startRestTimer(for: exercise, setIndex: setIndex)
                             }

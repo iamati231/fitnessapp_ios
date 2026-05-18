@@ -25,6 +25,11 @@ struct SetRow: View {
     let session: WorkoutSession
     let existingLog: ExerciseLog?
     let previousLog: ExerciseLog?
+    /// DEL-097: Session-Lock fuer time-based Halte-Timer. Nil = Slot frei.
+    /// Eine SetRow setzt diesen Slot in `startHolding()`, raeumt ihn in
+    /// `stopHoldAndLog()` wieder ab. Andere Rows lesen den Slot fuer ihren
+    /// Disabled-Hint.
+    @Binding var activeTimedExercise: Exercise?
     /// Called when the user taps the checkmark on an editable row.
     /// DEL-058: `LoggedSetValues` bundle ersetzt das frueher dreistellige
     /// (weight, reps, rir)-Tuple, damit Cardio-Felder (distance, duration)
@@ -384,22 +389,29 @@ struct SetRow: View {
                 Text("Ziel: \(targetHoldSeconds) Sek halten")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
-                Button {
-                    startCountdown()
-                } label: {
-                    HStack {
-                        Spacer()
-                        Image(systemName: "play.fill")
-                        Text("Start")
-                            .font(.headline)
-                        Spacer()
+                // DEL-097: Wenn eine ANDERE Time-Exercise schon laeuft,
+                // zeigen wir statt des Start-Buttons einen disabled-Hinweis
+                // mit Bezug auf die blockierende Uebung.
+                if isBlockedByOtherTimedExercise {
+                    blockedByOtherTimerHint
+                } else {
+                    Button {
+                        startCountdown()
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Image(systemName: "play.fill")
+                            Text("Start")
+                                .font(.headline)
+                            Spacer()
+                        }
+                        .padding(.vertical, 12)
+                        .background(Color.deltiqOrange.gradient)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
                     }
-                    .padding(.vertical, 12)
-                    .background(Color.deltiqOrange.gradient)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             } else {
                 Button {
                     withAnimation { onUnlog() }
@@ -412,6 +424,56 @@ struct SetRow: View {
             }
         }
         .padding(.vertical, 6)
+    }
+
+    /// DEL-097: Disabled-Pseudo-Button, der anstelle des "Start"-CTAs
+    /// erscheint, wenn eine andere zeitbasierte Uebung gerade laeuft.
+    /// Tippbar bleibt nichts — wir wollen den User explizit zwingen, zur
+    /// laufenden Uebung zurueckzunavigieren und sie abzuschliessen.
+    private var blockedByOtherTimerHint: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "lock.fill")
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(blockingMessage)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                Text("Beende oder stoppe die laufende Übung zuerst.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .background(Color.secondary.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .opacity(0.85)
+        .accessibilityLabel(blockingMessage + ". Beende die laufende Übung zuerst.")
+    }
+
+    /// True, wenn der Session-weite Time-Exercise-Lock von einer ANDEREN
+    /// Uebung gehalten wird. Same-exercise = nicht blockiert (Resume-Pfad
+    /// fuer die laufende Uebung soll natuerlich erlaubt sein).
+    /// Delegiert an `TimedExerciseGuard.isBlockedByOther` (Core), damit die
+    /// Regel zentral testbar bleibt — die hier verwendete UI-Variante
+    /// passiert nur die PersistentIdentifier als generischen Hashable durch.
+    private var isBlockedByOtherTimedExercise: Bool {
+        TimedExerciseGuard.isBlockedByOther(
+            candidateID: exercise.persistentModelID,
+            candidateIsTimeBased: exercise.isTimeBased,
+            activeTimedExerciseID: activeTimedExercise?.persistentModelID
+        )
+    }
+
+    /// Anzeige-String fuer den Blocked-Hint — bevorzugt den Namen der
+    /// laufenden Uebung; faellt auf einen generischen String zurueck, wenn
+    /// die Live-Referenz aus irgendeinem Grund nil ist (defensiv).
+    private var blockingMessage: String {
+        if let name = activeTimedExercise?.name, !name.isEmpty {
+            return "„\(name)“ läuft bereits"
+        }
+        return "Eine andere zeitbasierte Übung läuft bereits"
     }
 
     private func holdCountdownView(secondsLeft: Int) -> some View {
@@ -489,7 +551,15 @@ struct SetRow: View {
     /// 3-Sekunden-Countdown mit Per-Sekunde-Beeps. Bei 3/2/1 ertoent ein
     /// kurzer System-Beep, bei 0 (= "GO!") ein laengerer, tieferer Ton.
     /// Erfuellt DEL-045 Schritt 3-Audio.
+    /// DEL-097: Lock-Claim direkt beim Countdown-Start — sobald der User
+    /// "Start" tippt, gehoert ihm der Slot. Sonst koennte ein paralleler
+    /// Tap auf einer zweiten Uebung waehrend des Countdowns durchschluepfen.
     private func startCountdown() {
+        // Defensive — UI rendert den Button schon disabled, aber wenn
+        // jemand die View aus einem anderen Pfad fired (Voice Control,
+        // Tests), wollen wir den Lock-Check trotzdem haben.
+        guard !isBlockedByOtherTimedExercise else { return }
+        activeTimedExercise = exercise
         holdState = .countingDown(secondsLeft: 3)
         playCountdownBeep()   // initial Beep fuer "3"
         holdTimer?.invalidate()
@@ -551,6 +621,19 @@ struct SetRow: View {
             durationSeconds: elapsed
         ))
         holdState = .idle
+        // DEL-097: Lock freigeben — nur wenn WIR ihn gehalten haben.
+        // Defensive Identity-Check, falls zwei Threads parallel den Slot
+        // beruehren (sollte nicht passieren, schadet aber nichts).
+        releaseTimedExerciseLockIfHeld()
+    }
+
+    /// DEL-097: Identity-checked Lock-Release. Wird auch vom Countdown-
+    /// Abbruch (Tap waehrend "GO!") und vom `unlog`-Pfad genutzt, damit
+    /// der Slot nicht verwaist haengen bleibt.
+    private func releaseTimedExerciseLockIfHeld() {
+        if activeTimedExercise?.persistentModelID == exercise.persistentModelID {
+            activeTimedExercise = nil
+        }
     }
 
     private func invalidateHoldTimer() {
