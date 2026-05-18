@@ -53,6 +53,10 @@ public struct DashboardView: View {
 
     public var body: some View {
         ScrollView {
+            // DEL-103: Konsistentes 16pt-Spacing zwischen allen Bento-Cards.
+            // VStack-spacing + uniformes horizontales 16pt-Padding sind die
+            // einzige geometrische Quelle der Wahrheit — nicht mehr pro-Card
+            // .padding(.horizontal) etc.
             VStack(alignment: .leading, spacing: 16) {
                 heroMetrics
                 planDayCard
@@ -201,10 +205,8 @@ public struct DashboardView: View {
                     .font(.caption.weight(.bold))
                     .foregroundStyle(.tertiary)
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.secondary.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+            // DEL-103: Bento-Card.
+            .deltiqCardStyle()
         }
         .buttonStyle(.plain)
     }
@@ -348,10 +350,8 @@ public struct DashboardView: View {
                 }
             }
         }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.secondary.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        // DEL-103: Bento-Card.
+        .deltiqCardStyle()
     }
 
     /// Chronologically-ordered historical points (Charts wants left-to-right by date).
@@ -860,7 +860,7 @@ public struct DashboardView: View {
 
     @ViewBuilder
     private var compoundLiftChart: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Compound-Lift-Trend")
                     .font(.headline)
@@ -872,6 +872,8 @@ public struct DashboardView: View {
 
             let series = compoundSeries
             if series.isEmpty {
+                // DEL-103: Empty-State erbt die Bento-Surface vom outer
+                // .deltiqCardStyle() — kein eigenes Background mehr noetig.
                 HStack(spacing: 12) {
                     Image(systemName: "chart.xyaxis.line")
                         .font(.title2)
@@ -883,11 +885,8 @@ public struct DashboardView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                    Spacer(minLength: 0)
                 }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.secondary.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
                 Chart {
                     ForEach(series) { line in
@@ -914,16 +913,25 @@ public struct DashboardView: View {
                     AxisMarks(values: .automatic(desiredCount: 4)) { _ in
                         AxisGridLine()
                         AxisTick()
+                        // DEL-103: Achsen-Labels mit rounded/monospaced Design,
+                        // damit die Datums-Ticks zum sportlichen Numerik-Look passen.
                         AxisValueLabel(format: .dateTime.day().month(.abbreviated))
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks { _ in
+                        AxisGridLine()
+                        AxisTick()
+                        AxisValueLabel()
                     }
                 }
                 .chartLegend(position: .bottom, alignment: .leading)
                 .frame(height: 220)
-                .padding()
-                .background(Color.secondary.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .fitnessNumberStyle()
             }
         }
+        // DEL-103: Bento-Card als outer Container.
+        .deltiqCardStyle()
     }
 
     // MARK: - DEL-069 Wochen-Zusammenfassung
@@ -942,7 +950,7 @@ public struct DashboardView: View {
         let distanceKm = weekLogs.compactMap(\.distanceKm).reduce(0.0, +)
 
         if volumeKg > 0 || distanceKm > 0 {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text("Diese Woche")
                     .font(.headline)
                 HStack(spacing: 12) {
@@ -966,6 +974,8 @@ public struct DashboardView: View {
                     }
                 }
             }
+            // DEL-103: Bento-Card als outer Container fuer Header+Tiles.
+            .deltiqCardStyle()
         }
     }
 
@@ -984,8 +994,11 @@ public struct DashboardView: View {
                 Text(label.uppercased()).deltiqLabel()
             }
             HStack(alignment: .firstTextBaseline, spacing: 2) {
+                // DEL-103: fitnessNumberStyle vereinheitlicht den Stil ueber alle
+                // Stats-Surfaces (Hero-Metrics, Weekly-Tiles, Heatmap-Zahlen).
                 Text(value)
-                    .font(.system(size: 22, weight: .bold, design: .rounded).monospacedDigit())
+                    .font(.system(size: 22, weight: .bold))
+                    .fitnessNumberStyle()
                 Text(unit)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -994,9 +1007,10 @@ public struct DashboardView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(Color.secondary.opacity(0.10))
+        // DEL-103: Tiles sitzen IN einer Bento-Card (Surface-Background), also
+        // brauchen sie selbst nur einen ganz leichten Tint, um sich abzuheben.
+        .background(Color.secondary.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .innerLightStroke(cornerRadius: 12, opacity: 0.08)
     }
 
     /// User-Locale-respektierende "Anfang der aktuellen Kalenderwoche".
@@ -1029,7 +1043,7 @@ public struct DashboardView: View {
         let aggregate = weeklyMuscleVolume
         let anyTraining = aggregate.contains { $0.setsCount > 0 }
         if anyTraining {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text("Muskel-Heatmap (Woche)")
                         .font(.headline)
@@ -1039,6 +1053,8 @@ public struct DashboardView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                // DEL-103: Grid sitzt direkt auf der Bento-Surface — kein
+                // zusaetzlicher Container-Background, sonst wirkt es nested.
                 LazyVGrid(
                     columns: [GridItem(.adaptive(minimum: 84), spacing: 8)],
                     alignment: .leading,
@@ -1048,11 +1064,9 @@ public struct DashboardView: View {
                         MuscleHeatmapTile(entry: entry)
                     }
                 }
-                .padding(12)
-                .background(Color.secondary.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .innerLightStroke(cornerRadius: 12, opacity: 0.08)
             }
+            // DEL-103: Bento-Card als outer Container.
+            .deltiqCardStyle()
         }
     }
 
@@ -1150,7 +1164,7 @@ public struct DashboardView: View {
     private var cardioPaceChart: some View {
         let series = cardioSeries
         if shouldShowCardioChart, !series.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text("Cardio-Pace-Trend")
                         .font(.headline)
@@ -1199,11 +1213,12 @@ public struct DashboardView: View {
                     }
                 }
                 .frame(height: 180)
-                .padding()
-                .background(Color.secondary.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .innerLightStroke(cornerRadius: 12, opacity: 0.08)
+                // DEL-103: Achsen-Tick-Labels (sowohl Datum als auch Pace)
+                // bekommen den rounded/monospaced Numerik-Stil.
+                .fitnessNumberStyle()
             }
+            // DEL-103: Bento-Card.
+            .deltiqCardStyle()
         }
         // Kein Empty-State — der Chart ist optional fuer reine Strength-User
         // und blendet sich einfach aus, wenn keine Cardio-Daten existieren.
@@ -1212,7 +1227,7 @@ public struct DashboardView: View {
     // MARK: - Recent workouts
 
     private var recentWorkoutsCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Letzte Workouts")
                     .font(.headline)
@@ -1230,6 +1245,7 @@ public struct DashboardView: View {
             // Rest-day-marker sessions don't count as "Trainingseinheiten".
             let realRecentSessions = completedSessions.filter { !$0.isRestDay }
             if realRecentSessions.isEmpty {
+                // DEL-103: Empty-State sitzt direkt auf der Bento-Surface.
                 HStack(spacing: 12) {
                     Image(systemName: "dumbbell")
                         .font(.title2)
@@ -1243,12 +1259,11 @@ public struct DashboardView: View {
                     }
                     Spacer()
                 }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.secondary.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
                 let recent = Array(realRecentSessions.prefix(5))
+                // DEL-103: Rows sitzen direkt auf der Bento-Surface — keine
+                // doppelte Container-Schachtelung mehr. Divider trennen die
+                // Eintraege visuell.
                 VStack(spacing: 0) {
                     ForEach(Array(recent.enumerated()), id: \.element.persistentModelID) { idx, session in
                         NavigationLink {
@@ -1263,12 +1278,10 @@ public struct DashboardView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.secondary.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
+        // DEL-103: Bento-Card als outer Container.
+        .deltiqCardStyle()
     }
 }
 
@@ -1301,8 +1314,11 @@ private struct MuscleHeatmapTile: View {
                 .foregroundStyle(textColor)
                 .lineLimit(1)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
+                // DEL-103: fitnessNumberStyle vereinheitlicht den Numerik-Look
+                // ueber Hero-Stats, Weekly-Tiles und Heatmap.
                 Text("\(entry.setsCount)")
-                    .font(.system(size: 22, weight: .bold, design: .rounded).monospacedDigit())
+                    .font(.system(size: 22, weight: .bold))
+                    .fitnessNumberStyle()
                     .foregroundStyle(textColor)
                 Text(entry.bucket.label.uppercased())
                     .font(.system(size: 8, weight: .bold))
@@ -1315,7 +1331,6 @@ private struct MuscleHeatmapTile: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(tileBackground)
         .clipShape(RoundedRectangle(cornerRadius: 10))
-        .innerLightStroke(cornerRadius: 10, opacity: 0.06)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(localizedMuscleName), \(entry.setsCount) Sätze, \(entry.bucket.label)")
     }
