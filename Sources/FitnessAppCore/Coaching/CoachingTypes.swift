@@ -1,0 +1,90 @@
+import Foundation
+
+/// DEL-100: Persoenlicher Kommunikations-Stil. Steuert den Tonfall, in dem
+/// die App Insights, Recovery-Hinweise und Plateau-Warnungen kommuniziert.
+///
+///   * `.analytical` — Fakten, Zahlen, neutrales Reporting. Fuer Datenmenschen.
+///   * `.motivating` — Positiv-bestaerkend. Fokussiert auf Erfolge + Erholung.
+///   * `.strict` — Direkt, fordernd, unbequem. Klartext bei Plan-Abweichungen.
+///
+/// Persistiert als String (rawValue) auf `UserBodyProfile`, sodass Lightweight-
+/// Migration der pre-DEL-100-Daten ohne Schema-Bruch funktioniert.
+public enum CoachingTone: String, Codable, Sendable, CaseIterable {
+    case analytical
+    case motivating
+    case strict
+
+    public var label: String {
+        switch self {
+        case .analytical: return "Analytisch"
+        case .motivating: return "Motivierend"
+        case .strict:     return "Streng"
+        }
+    }
+
+    public var symbol: String {
+        switch self {
+        case .analytical: return "chart.bar.fill"
+        case .motivating: return "flame.fill"
+        case .strict:     return "bolt.fill"
+        }
+    }
+
+    public var blurb: String {
+        switch self {
+        case .analytical: return "Fakten & Daten. Neutrales Feedback zu Load und Progression."
+        case .motivating: return "Positiv & bestärkend. Fokus auf Erfolge und Erholung."
+        case .strict:     return "Direkt & fordernd. Klartext, wenn du vom Plan abweichst."
+        }
+    }
+}
+
+/// DEL-100: Trainings-Hauptziel fuer die Coaching-Engine. **Separat** vom
+/// `GoalType` aus DEL-090 (Onboarding-Quiz fuer Plan-Matching), weil das
+/// hier eine LANGFRISTIGE Praeferenz ist — der Quiz-Goal kann pro Cycle
+/// abweichen (z.B. Bodybuilder, der vor einem Meet auf Strength umstellt).
+public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
+    case hypertrophy
+    case strength
+    case hybrid
+
+    public var label: String {
+        switch self {
+        case .hypertrophy: return "Muskelaufbau"
+        case .strength:    return "Maximalkraft"
+        case .hybrid:      return "Funktionell / Hybrid"
+        }
+    }
+
+    public var symbol: String {
+        switch self {
+        case .hypertrophy: return "figure.strengthtraining.traditional"
+        case .strength:    return "scalemass.fill"
+        case .hybrid:      return "figure.mixed.cardio"
+        }
+    }
+
+    public var blurb: String {
+        switch self {
+        case .hypertrophy: return "Volumen, Pump, sichtbares Muskelwachstum."
+        case .strength:    return "Maximales 1RM, niedrige Reps, schwere Hauptlifts."
+        case .hybrid:      return "Kraft + Ausdauer + Mobilität — alles fließt zusammen."
+        }
+    }
+}
+
+/// DEL-100: Coaching-Kontext, in dem die App eine Insight-Message ausgeben
+/// will. Wird vom Caller anhand der Trainings-Analyse (DEL-099 Recovery-
+/// Scores etc.) gewaehlt. RawValue wird in den Localization-Key fuer die
+/// Matrix `coaching.{context}.{tone}.{goal}` eingesetzt.
+public enum CoachingContext: String, Sendable {
+    /// Heutiger Plan-Tag ist ein Ruhetag.
+    case restDay
+    /// CNS-Score ueber Schwelle — schwere Compounds sind heute keine
+    /// gute Idee.
+    case cnsOverloaded
+    /// Frische Bestleistung im letzten Workout.
+    case newPR
+    /// Stagnation ueber mehrere Wochen erkannt.
+    case plateauDetected
+}

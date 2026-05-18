@@ -36,6 +36,7 @@ public struct OnboardingView: View {
     enum Step: Int, CaseIterable {
         case healthConnect
         case personalInfo
+        case coachingStyle           // DEL-101: Goal + Tone in einem Schritt
         case preferencesAndPlan
     }
 
@@ -60,7 +61,11 @@ public struct OnboardingView: View {
     /// nommen, obwohl die snapshot.dateOfBirth-Daten korrekt waren (DEL-024).
     @State private var birthDateWasEdited: Bool = false
 
-    // Step 3 — Präferenzen + Plan
+    // DEL-101 — Coaching-Style Step
+    @State private var trainingGoal: TrainingGoal = .hybrid
+    @State private var coachingTone: CoachingTone = .analytical
+
+    // Step 4 — Präferenzen + Plan
     @State private var enableWaterReminder: Bool = true
     @State private var enableMeasurementReminder: Bool = true
     @State private var selectedTemplate: ProgramTemplate?
@@ -100,6 +105,7 @@ public struct OnboardingView: View {
                     switch step {
                     case .healthConnect:      healthConnectStep
                     case .personalInfo:       personalInfoStep
+                    case .coachingStyle:      coachingStyleStep
                     case .preferencesAndPlan: preferencesAndPlanStep
                     }
                 }
@@ -370,7 +376,117 @@ public struct OnboardingView: View {
         }
     }
 
-    // MARK: - Step 3: Präferenzen + Plan
+    // MARK: - Step 3: Coaching-Stil (DEL-101)
+
+    /// Kombinierter Coaching-Style-Step: TrainingGoal oben, CoachingTone
+    /// unten. Beide nutzen die selbe SelectableCard-Komponente (siehe
+    /// `coachingCard(...)`). DeltiqOrange-Akzent + Checkmark-Icon auf der
+    /// selektierten Karte. Bottom-CTA "Weiter" wird via stepNavigationBar
+    /// (Universal-Footer) gerendert — wir schieben hier nichts extra ein.
+    @ViewBuilder
+    private var coachingStyleStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 28) {
+                // ──────────── Goal ────────────
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Was ist dein primärer Fokus?")
+                            .font(.title2.weight(.bold))
+                        Text("Wir kalibrieren Insights, Recovery-Hinweise und Coaching-Botschaften entsprechend.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    VStack(spacing: 10) {
+                        ForEach(TrainingGoal.allCases, id: \.self) { goal in
+                            coachingCard(
+                                title: goal.label,
+                                description: goal.blurb,
+                                iconName: goal.symbol,
+                                isSelected: trainingGoal == goal
+                            ) {
+                                trainingGoal = goal
+                            }
+                        }
+                    }
+                }
+
+                // ──────────── Tone ────────────
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Wie soll dein Coach klingen?")
+                            .font(.title2.weight(.bold))
+                        Text("Wir passen Tonfall und Feedback an deinen Stil an. Lässt sich später jederzeit ändern.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    VStack(spacing: 10) {
+                        ForEach(CoachingTone.allCases, id: \.self) { tone in
+                            coachingCard(
+                                title: tone.label,
+                                description: tone.blurb,
+                                iconName: tone.symbol,
+                                isSelected: coachingTone == tone
+                            ) {
+                                coachingTone = tone
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+        }
+    }
+
+    /// DEL-101: Reusable SelectableCard im Deltiq-Stil — DeltiqOrange-
+    /// Stroke + Checkmark-Icon bei Selektion, sonst dezent gegraut.
+    @ViewBuilder
+    private func coachingCard(
+        title: String,
+        description: String,
+        iconName: String,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: iconName)
+                    .font(.title2)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(isSelected ? Color.deltiqOrange : .secondary)
+                    .frame(width: 32, height: 32)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Text(description)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: 0)
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.deltiqOrange)
+                        .font(.title3)
+                }
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.secondary.opacity(isSelected ? 0.10 : 0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(isSelected ? Color.deltiqOrange : Color.secondary.opacity(0.25),
+                            lineWidth: isSelected ? 1.5 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    // MARK: - Step 4: Präferenzen + Plan
 
     @ViewBuilder
     private var preferencesAndPlanStep: some View {
@@ -532,6 +648,7 @@ public struct OnboardingView: View {
         switch step {
         case .healthConnect:      return "Weiter"
         case .personalInfo:       return "Weiter"
+        case .coachingStyle:      return "Weiter"
         case .preferencesAndPlan: return "Fertig"
         }
     }
@@ -547,6 +664,10 @@ public struct OnboardingView: View {
             return true
         case .personalInfo:
             return validatePersonalInfo()
+        case .coachingStyle:
+            // Tone + Goal haben Defaults und Cards sind tap-stateful, also
+            // nie wirklich "ungeloest" — immer weiter.
+            return true
         case .preferencesAndPlan:
             // Plan + Reminder sind beide optional — immer fertig erlaubt.
             return true
@@ -555,7 +676,7 @@ public struct OnboardingView: View {
 
     private func handlePrimaryAction() {
         switch step {
-        case .healthConnect, .personalInfo:
+        case .healthConnect, .personalInfo, .coachingStyle:
             goToNextStep()
         case .preferencesAndPlan:
             finishOnboarding()
@@ -619,13 +740,17 @@ public struct OnboardingView: View {
         guard let heightCm, let currentWeightKg else { return }
         let age = Calendar.current.dateComponents([.year], from: birthDate, to: Date()).year ?? 0
 
-        // 1) UserBodyProfile.
+        // 1) UserBodyProfile. DEL-101: Coaching-Style + TrainingGoal werden
+        //    aus den Onboarding-State-Vars persistiert; sind in der
+        //    ProfileEditorView spaeter editierbar.
         let profile = UserBodyProfile(
             birthDate: birthDate,
             heightCm: heightCm,
             profile: profileSex,
             goalWeightKg: goalWeightKg,
-            environment: environment
+            environment: environment,
+            coachingTone: coachingTone,
+            trainingGoal: trainingGoal
         )
         modelContext.insert(profile)
 

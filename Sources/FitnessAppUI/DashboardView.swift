@@ -56,6 +56,10 @@ public struct DashboardView: View {
             VStack(alignment: .leading, spacing: 16) {
                 heroMetrics
                 planDayCard
+                // DEL-100: Coaching-Insight unter dem Plan-Card. Nutzt
+                // CoachingMessageProvider + die User-Praeferenzen aus
+                // UserBodyProfile fuer eine tonfall-sensible Nachricht.
+                coachingInsightCard
                 // DEL-069: Wochen-Zusammenfassung mit Strength-Volumen UND
                 // Cardio-Distanz. Blendet sich aus wenn beide Werte == 0
                 // (frische Installs / Wochen ohne Training).
@@ -496,6 +500,55 @@ public struct DashboardView: View {
             .background(Color.secondary.opacity(0.08))
             .clipShape(RoundedRectangle(cornerRadius: 16))
         }
+    }
+
+    // MARK: - DEL-100 Coaching Insight
+
+    /// DEL-100: Insight-Card mit personalisierter Coaching-Message. Aktuell
+    /// wird nur der `.restDay`-Context aktiv ausgespielt — Plateau-Detection
+    /// und CNS-Overload-Schwellen brauchen mehr Wochen-Aggregation (kommt
+    /// als naechste Welle, wenn Recovery-Scores im UI-Surface ankommen).
+    /// Wenn kein Context greift, rendert die View `EmptyView()` — kein
+    /// leerer Card-Slot auf dem Dashboard.
+    @ViewBuilder
+    private var coachingInsightCard: some View {
+        if let context = activeCoachingContext, let profile = profiles.first {
+            let message = CoachingMessageProvider.message(
+                for: context,
+                tone: profile.coachingTone,
+                goal: profile.trainingGoal
+            )
+            if !message.isEmpty {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "sparkles")
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(Color.deltiqOrange)
+                        .font(.title3)
+                    Text(message)
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.deltiqOrange.opacity(0.10))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .innerLightStroke(cornerRadius: 14, opacity: 0.08)
+            }
+        }
+    }
+
+    /// Wahlt den passenden Coaching-Context aus dem Heute-Zustand des
+    /// Plans. Erweiterung-Punkt fuer kuenftige Wellen: CNS-Overload
+    /// (Schwellen-Lesen aus letzten 3 Sessions), Plateau-Detection
+    /// (kein PR seit X Wochen + flache Progression), newPR (Trophy-
+    /// Room hat einen Eintrag vom letzten Workout).
+    private var activeCoachingContext: CoachingContext? {
+        guard let plan = activePlans.first, !plan.days.isEmpty else { return nil }
+        let day = nextScheduledDay(in: plan)
+        if day.type == .rest { return .restDay }
+        return nil
     }
 
     /// Sequential-rotation pick. Delegates to `PlanNavigator` (Core) so widgets

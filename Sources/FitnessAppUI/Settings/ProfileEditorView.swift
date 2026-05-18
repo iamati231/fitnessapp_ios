@@ -58,6 +58,7 @@ public struct ProfileEditorView: View {
             personSection
             bodySection
             goalSection
+            coachingSection
             healthKitSection
         }
         .navigationTitle("Profil bearbeiten")
@@ -359,6 +360,44 @@ public struct ProfileEditorView: View {
             Text("Ziel & Training")
         } footer: {
             Text("Das Zielgewicht erscheint als grüne Linie im Dashboard-Trend-Chart. Trainingsort filtert später Plan-Empfehlungen.")
+                .font(.footnote)
+        }
+    }
+
+    /// DEL-101: Nachträgliche Bearbeitung des Coaching-Stils. Bind direkt
+    /// auf die Computed-Properties von `UserBodyProfile` (die sich um das
+    /// rawValue-Mapping kuemmern). Picker-Style "menu" damit beide Werte
+    /// kompakt in eine Zeile passen.
+    @ViewBuilder
+    private var coachingSection: some View {
+        Section {
+            Picker(selection: Binding(
+                get: { profile.trainingGoal },
+                set: { profile.trainingGoal = $0 }
+            )) {
+                ForEach(TrainingGoal.allCases, id: \.self) { goal in
+                    Label(goal.label, systemImage: goal.symbol).tag(goal)
+                }
+            } label: {
+                Text("Trainingsziel")
+            }
+            .pickerStyle(.menu)
+
+            Picker(selection: Binding(
+                get: { profile.coachingTone },
+                set: { profile.coachingTone = $0 }
+            )) {
+                ForEach(CoachingTone.allCases, id: \.self) { tone in
+                    Label(tone.label, systemImage: tone.symbol).tag(tone)
+                }
+            } label: {
+                Text("Coaching-Stil")
+            }
+            .pickerStyle(.menu)
+        } header: {
+            Text("Coach")
+        } footer: {
+            Text("Steuert Tonfall und Inhalt der Coaching-Insights auf dem Dashboard. Lässt sich jederzeit ändern.")
                 .font(.footnote)
         }
     }
