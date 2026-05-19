@@ -47,7 +47,11 @@ struct ExerciseCard: View {
             }
 
             if completedSetCount >= exercise.sets {
-                Label("Alle Sätze erledigt", systemImage: "flag.checkered")
+                Label {
+                    Text("workout.allSetsDone", bundle: .module)
+                } icon: {
+                    Image(systemName: "flag.checkered")
+                }
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.green)
                     .padding(.top, 4)

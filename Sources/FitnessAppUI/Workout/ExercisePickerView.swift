@@ -52,13 +52,15 @@ public struct ExercisePickerView: View {
             // `.navigationBarDrawer(displayMode:)` is iOS-only; default placement
             // works on both iOS and macOS toolchains.
             .searchable(text: $search, prompt: "Suche")
-            .navigationTitle("Übung wählen")
+            .navigationTitle(Text("picker.exercise.title", bundle: .module))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") { dismiss() }
+                    Button { dismiss() } label: {
+                        Text("common.cancel", bundle: .module)
+                    }
                 }
             }
         }
@@ -73,11 +75,14 @@ public struct ExercisePickerView: View {
         if let env = planEnvironment {
             Section {
                 Toggle(isOn: $filterToPlanEnv) {
-                    Label("Nur Übungen für \(environmentLabel(env))",
-                          systemImage: "line.3.horizontal.decrease.circle")
+                    Label {
+                        Text(String(format: String(localized: "picker.exercise.filterFor", bundle: .module), environmentLabel(env)))
+                    } icon: {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                    }
                 }
             } footer: {
-                Text("Wenn aus, siehst du auch Übungen, die zu deinem Plan-Typ nicht passen. Die App fragt dann beim Hinzufügen nach, ob du den Plan umstellen willst.")
+                Text("picker.exercise.filterHint", bundle: .module)
                     .font(.footnote)
             }
         }
@@ -96,7 +101,7 @@ public struct ExercisePickerView: View {
     private var customSection: some View {
         Section("Eigene Übung") {
             HStack {
-                TextField("Name (z.B. Bankdrücken)", text: $customName)
+                TextField(String(localized: "picker.exercise.namePlaceholder", bundle: .module), text: $customName)
                 Button {
                     let trimmed = customName.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !trimmed.isEmpty else { return }
@@ -122,7 +127,7 @@ public struct ExercisePickerView: View {
         if filteredTemplates.isEmpty {
             Section("Bibliothek") {
                 if search.isEmpty {
-                    Text("Bibliothek ist leer — leg oben deine erste eigene Übung an.")
+                    Text("picker.exercise.libraryEmpty", bundle: .module)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 } else {

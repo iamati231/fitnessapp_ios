@@ -53,13 +53,15 @@ public struct DayPickerSheet: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
             }
-            .navigationTitle("Trainingstage wählen")
+            .navigationTitle(Text("dayPicker.title", bundle: .module))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen", action: onCancel)
+                    Button(action: onCancel) {
+                        Text("common.cancel", bundle: .module)
+                    }
                 }
             }
         }
@@ -69,7 +71,7 @@ public struct DayPickerSheet: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(planName)
                 .font(.title2.weight(.semibold))
-            Text("Wähle exakt \(requiredDayCount) Tage, an denen du trainieren möchtest.")
+            Text(String(format: String(localized: "dayPicker.prompt", bundle: .module), requiredDayCount))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Text("\(selected.count) von \(requiredDayCount) ausgewählt")
@@ -157,7 +159,7 @@ public struct DayPickerSheet: View {
             HStack {
                 Spacer()
                 Image(systemName: "checkmark.seal.fill")
-                Text("Plan starten")
+                Text("dayPicker.startPlan", bundle: .module)
                     .font(.headline)
                 Spacer()
             }

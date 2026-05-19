@@ -377,7 +377,7 @@ struct SetRow: View {
     private var holdIdleView: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Satz \(setIndex + 1)")
+                Text(String(format: String(localized: "set.numberLabel", bundle: .module), setIndex + 1))
                     .font(.subheadline.weight(.semibold))
                 Spacer()
                 if isCompleted, let log = existingLog {
@@ -439,7 +439,7 @@ struct SetRow: View {
                 Text(blockingMessage)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
-                Text("Beende oder stoppe die laufende Übung zuerst.")
+                Text("set.lockedHint", bundle: .module)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -994,7 +994,11 @@ private struct PlatePopoverContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label("Hantel-Aufladung", systemImage: "scalemass.fill")
+                Label {
+                    Text("barbell.loading.title", bundle: .module)
+                } icon: {
+                    Image(systemName: "scalemass.fill")
+                }
                     .font(.headline)
                     .symbolRenderingMode(.hierarchical)
                 Spacer()
@@ -1015,7 +1019,11 @@ private struct PlatePopoverContent: View {
             let actualWeight = barWeight + 2 * perSideLoaded
 
             if plates.isEmpty {
-                Label("Keine Aufladung — bleib bei der leeren Stange.", systemImage: "minus")
+                Label {
+                    Text("barbell.loading.empty", bundle: .module)
+                } icon: {
+                    Image(systemName: "minus")
+                }
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {

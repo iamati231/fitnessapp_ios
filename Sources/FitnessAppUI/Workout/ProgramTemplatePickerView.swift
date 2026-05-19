@@ -50,17 +50,19 @@ public struct ProgramTemplatePickerView: View {
                 Section {
                     EmptyView()
                 } footer: {
-                    Text("Gefiltert nach deinem Trainingsort (\(userEnvironmentLabel)). Im Profil anpassen, wenn du auch andere Plaene sehen willst.")
+                    Text(String(format: String(localized: "picker.plan.filterFootnote", bundle: .module), userEnvironmentLabel))
                         .font(.footnote)
                 }
             }
-            .navigationTitle("Programm wählen")
+            .navigationTitle(Text("picker.plan.title", bundle: .module))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") { dismiss() }
+                    Button { dismiss() } label: {
+                        Text("common.cancel", bundle: .module)
+                    }
                 }
             }
         }
@@ -269,7 +271,7 @@ public struct TemplatePreviewView: View {
             // Wochentag — Tag wird erst beim Instantiieren auf einen Weekday
             // gemappt, siehe DayPickerSheet).
             HStack(spacing: 6) {
-                Text("Tag \(day.sequenceIndex)")
+                Text(String(format: String(localized: "plan.dayNumberLabel", bundle: .module), day.sequenceIndex))
                     .textCase(nil)
                 Text("·").foregroundStyle(.tertiary)
                 Text(day.displayName)
@@ -295,7 +297,7 @@ public struct TemplatePreviewView: View {
             }
             .listRowBackground(Color.deltiqOrange)
         } footer: {
-            Text("Beim Übernehmen wird eine Tiefkopie für deine eigene Bibliothek angelegt — Tage, Übungen, Sätze sind danach frei editierbar.")
+            Text("picker.plan.adoptFootnote", bundle: .module)
                 .font(.footnote)
         }
     }

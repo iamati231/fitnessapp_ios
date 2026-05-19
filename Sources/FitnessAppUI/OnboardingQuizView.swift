@@ -63,13 +63,15 @@ public struct OnboardingQuizView: View {
                     .padding(.horizontal)
                     .padding(.vertical, 12)
             }
-            .navigationTitle("Plan finden")
+            .navigationTitle(Text("quiz.title", bundle: .module))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen", action: onCancel)
+                    Button(action: onCancel) {
+                        Text("common.cancel", bundle: .module)
+                    }
                 }
             }
         }
@@ -215,7 +217,7 @@ public struct OnboardingQuizView: View {
             HStack(spacing: 8) {
                 Image(systemName: "star.fill")
                     .foregroundStyle(Color.deltiqOrange)
-                Text("TOP EMPFEHLUNG FÜR DICH").deltiqLabel()
+                Text("quiz.result.topMatch", bundle: .module).deltiqLabel()
             }
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: plan.iconSystemName)
@@ -250,7 +252,7 @@ public struct OnboardingQuizView: View {
                 HStack {
                     Spacer()
                     Image(systemName: "checkmark.seal.fill")
-                    Text("Diesen Plan wählen")
+                    Text("quiz.result.choose", bundle: .module)
                         .font(.headline)
                     Spacer()
                 }
@@ -305,8 +307,10 @@ public struct OnboardingQuizView: View {
     private var navigationBar: some View {
         HStack {
             if step != .goal {
-                Button("Zurück") {
+                Button {
                     goToPreviousStep()
+                } label: {
+                    Text("common.back", bundle: .module)
                 }
                 .buttonStyle(.bordered)
             }

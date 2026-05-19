@@ -58,7 +58,7 @@ public struct ExerciseEditorView: View {
                 Text("Allgemein")
             } footer: {
                 if isReadOnly {
-                    Text("Template-Uebung — Name und Cardio/Zeit-Flags sind festgelegt.")
+                    Text("editor.exercise.templateLocked", bundle: .module)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 } else {
@@ -73,7 +73,11 @@ public struct ExerciseEditorView: View {
             if sectionVisibility.setsAndReps {
                 Section("Sätze & Wiederholungen") {
                     Stepper(value: $exercise.sets, in: 1...20) {
-                        LabeledContent("Sätze", value: "\(exercise.sets)")
+                        LabeledContent {
+                            Text("\(exercise.sets)")
+                        } label: {
+                            Text("editor.exercise.sets", bundle: .module)
+                        }
                     }
                     .disabled(isReadOnly)
                     Stepper(value: $exercise.repsMin, in: 1...100) {
@@ -99,7 +103,11 @@ public struct ExerciseEditorView: View {
             if sectionVisibility.pauseAndIntensity {
                 Section("Pause & Intensität") {
                     Stepper(value: $exercise.restSeconds, in: 0...600, step: 15) {
-                        LabeledContent("Pause", value: "\(exercise.restSeconds)s")
+                        LabeledContent {
+                            Text("\(exercise.restSeconds)s")
+                        } label: {
+                            Text("editor.exercise.rest", bundle: .module)
+                        }
                     }
                     if sectionVisibility.targetRIR {
                         Stepper(value: $exercise.targetRir, in: 0...5, step: 0.5) {
@@ -143,7 +151,9 @@ public struct ExerciseEditorView: View {
         .keyboardDismissToolbar()
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button("Fertig") { dismiss() }
+                Button { dismiss() } label: {
+                    Text("common.done", bundle: .module)
+                }
             }
         }
     }
@@ -153,7 +163,7 @@ public struct ExerciseEditorView: View {
     /// Dauer offen lassen ("how fast can I run 5k").
     private var cardioTargetSection: some View {
         Section("Ziel (optional)") {
-            TextField("Distanz (km)",
+            TextField(String(localized: "editor.exercise.distanceKm", bundle: .module),
                       value: Binding(
                         get: { exercise.targetDistanceKm },
                         set: { exercise.targetDistanceKm = $0 }
@@ -196,7 +206,7 @@ public struct ExerciseEditorView: View {
                 Text(progressionFooterText)
                     .font(.footnote)
             } else {
-                Text("Aus = das Gewicht wird nie automatisch geaendert. Du behaeltst die volle Kontrolle.")
+                Text("editor.exercise.smartOff", bundle: .module)
                     .font(.footnote)
             }
         }

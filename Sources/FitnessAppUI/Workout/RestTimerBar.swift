@@ -88,7 +88,7 @@ struct RestTimerBar: View {
                         )
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Pause überspringen")
+                .accessibilityLabel(Text("rest.skip", bundle: .module))
             }
             .padding(.horizontal)
             .padding(.vertical, 10)
