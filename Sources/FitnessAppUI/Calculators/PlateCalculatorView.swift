@@ -42,13 +42,15 @@ public struct PlateCalculatorView: View {
 
     private var unitSection: some View {
         Section {
-            Picker("Einheit", selection: $weightUnitRaw) {
+            Picker(selection: $weightUnitRaw) {
                 Text("kg").tag("kg")
                 Text("lbs").tag("lbs")
+            } label: {
+                Text("calc.plate.unit", bundle: .module)
             }
             .pickerStyle(.segmented)
         } footer: {
-            Text("App-weit umschaltbar. DB speichert immer metrisch — nur die Anzeige ändert sich.")
+            Text("calc.plate.unit.footer", bundle: .module)
                 .font(.footnote)
         }
     }
@@ -57,25 +59,31 @@ public struct PlateCalculatorView: View {
         Section {
             TextField(value: $targetWeight, format: .number,
                       prompt: Text("z.B. \(unit == .kg ? "100" : "225")")) {
-                Text("Zielgewicht (\(unit.rawValue))")
+                Text(String(format: String(localized: "calc.plate.target", bundle: .module), unit.rawValue))
             }
             .decimalKeyboard()
 
             TextField(value: $barWeight, format: .number,
                       prompt: Text("z.B. \(unit == .kg ? "20" : "45")")) {
-                Text("Stange (\(unit.rawValue))")
+                Text(String(format: String(localized: "calc.plate.bar", bundle: .module), unit.rawValue))
             }
             .decimalKeyboard()
         } header: {
-            Text("Zielgewicht & Stange")
+            Text("calc.plate.section.input", bundle: .module)
         } footer: {
             VStack(alignment: .leading, spacing: 2) {
                 if let targetWeight, targetWeight > unit.maxTarget {
-                    Text("Maximal \(formatPlate(unit.maxTarget)) \(unit.rawValue) Zielgewicht.")
+                    let template = String(localized: "calc.plate.maxTarget", bundle: .module)
+                    Text(template
+                        .replacingOccurrences(of: "%1$@", with: formatPlate(unit.maxTarget))
+                        .replacingOccurrences(of: "%2$@", with: unit.rawValue))
                         .foregroundStyle(.red)
                 }
                 if let barWeight, barWeight > unit.maxBar {
-                    Text("Maximal \(formatPlate(unit.maxBar)) \(unit.rawValue) Stange.")
+                    let template = String(localized: "calc.plate.maxBar", bundle: .module)
+                    Text(template
+                        .replacingOccurrences(of: "%1$@", with: formatPlate(unit.maxBar))
+                        .replacingOccurrences(of: "%2$@", with: unit.rawValue))
                         .foregroundStyle(.red)
                 }
             }
@@ -84,7 +92,7 @@ public struct PlateCalculatorView: View {
     }
 
     private var resultsSection: some View {
-        Section("Ergebnis") {
+        Section {
             if plates.isEmpty {
                 Text(emptyResultHint)
                     .foregroundStyle(.secondary)
@@ -94,19 +102,34 @@ public struct PlateCalculatorView: View {
                     .padding(.vertical, 4)
                     .listRowInsets(EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4))
 
-                LabeledContent("Pro Seite",
-                    value: "\(formatPlate(perSideLoaded)) \(unit.rawValue)")
-                LabeledContent("Geladen gesamt",
-                    value: "\(formatPlate(actualTotal)) \(unit.rawValue)")
+                LabeledContent {
+                    Text("\(formatPlate(perSideLoaded)) \(unit.rawValue)")
+                } label: {
+                    Text("calc.plate.perSide", bundle: .module)
+                }
+                LabeledContent {
+                    Text("\(formatPlate(actualTotal)) \(unit.rawValue)")
+                } label: {
+                    Text("calc.plate.loaded", bundle: .module)
+                }
                 if isShortOfTarget {
-                    Label("Mit deinem Inventar nur \(formatPlate(actualTotal)) \(unit.rawValue) erreichbar (\(formatDelta(targetDelta))).",
-                          systemImage: "exclamationmark.triangle")
+                    let template = String(localized: "calc.plate.shortOfTarget", bundle: .module)
+                    Label {
+                        Text(template
+                            .replacingOccurrences(of: "%1$@", with: formatPlate(actualTotal))
+                            .replacingOccurrences(of: "%2$@", with: unit.rawValue)
+                            .replacingOccurrences(of: "%3$@", with: formatDelta(targetDelta)))
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle")
+                    }
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }
                 Text(breakdownText)
                     .font(.callout.monospacedDigit())
             }
+        } header: {
+            Text("calc.plate.section.results", bundle: .module)
         }
     }
 
@@ -115,12 +138,14 @@ public struct PlateCalculatorView: View {
             ForEach(unit.availablePlates, id: \.self) { plate in
                 inventoryRow(for: plate)
             }
-            Button("Inventar zurücksetzen") {
+            Button {
                 inventory = unit.defaultInventory
+            } label: {
+                Text("calc.plate.resetInventory", bundle: .module)
             }
             .font(.callout)
         } header: {
-            Text("Inventar pro Seite")
+            Text("calc.plate.section.inventory", bundle: .module)
         } footer: {
             Text("Cap pro Plate: \(unit == .kg ? "25/20 kg → 10, alle anderen → 1" : "45/35 lbs → 10, alle anderen → 1"). Auf 0 setzen, wenn die Plate bei dir fehlt.")
                 .font(.footnote)

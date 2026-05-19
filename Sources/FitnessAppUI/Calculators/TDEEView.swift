@@ -30,13 +30,13 @@ public struct TDEEView: View {
                 resultsSection(profile)
             } else {
                 ContentUnavailableView(
-                    "Kein Profil",
+                    String(localized: "calc.tdee.noProfile.title", bundle: .module),
                     systemImage: "person.crop.circle.badge.exclamationmark",
-                    description: Text("Lege erst dein Profil im Onboarding an.")
+                    description: Text("calc.tdee.noProfile.message", bundle: .module)
                 )
             }
         }
-        .navigationTitle("Kalorien-Rechner")
+        .navigationTitle(Text("calc.tdee.title", bundle: .module))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -52,21 +52,32 @@ public struct TDEEView: View {
     // MARK: Sections
 
     private func profileSummarySection(_ profile: UserBodyProfile) -> some View {
-        Section("Aus deinem Profil") {
-            LabeledContent("Geschlecht",
-                value: profile.profile == .male ? "Männlich" : "Weiblich")
-            LabeledContent("Alter",
-                value: "\(ageYears(for: profile)) Jahre")
-            LabeledContent("Größe",
-                value: "\(profile.heightCm.truncated(to: 2).formattedTwoDecimals) cm")
+        Section {
+            LabeledContent {
+                Text(profile.profile == .male ? "sex.male" : "sex.female", bundle: .module)
+            } label: {
+                Text("onboarding.field.sex", bundle: .module)
+            }
+            LabeledContent {
+                Text(String(format: String(localized: "settings.profile.years", bundle: .module), ageYears(for: profile)))
+            } label: {
+                Text("calc.tdee.age", bundle: .module)
+            }
+            LabeledContent {
+                Text("\(profile.heightCm.truncated(to: 2).formattedTwoDecimals) cm")
+            } label: {
+                Text("calc.tdee.height", bundle: .module)
+            }
+        } header: {
+            Text("calc.tdee.section.profile", bundle: .module)
         }
     }
 
     private func inputsSection(_ profile: UserBodyProfile) -> some View {
         Section {
             TextField(value: $weightKg, format: .number,
-                      prompt: Text("z.B. \(profile.goalWeightKg.map { "\(Int($0))" } ?? "80")")) {
-                Text("Gewicht (kg)")
+                      prompt: Text(String(format: String(localized: "calc.tdee.weightPlaceholder", bundle: .module), profile.goalWeightKg.map { "\(Int($0))" } ?? "80"))) {
+                Text("calc.tdee.weightLabel", bundle: .module)
             }
             .decimalKeyboard()
 
@@ -75,10 +86,10 @@ public struct TDEEView: View {
                     Text(level.label).tag(level)
                 }
             } label: {
-                Text("Aktivität")
+                Text("calc.tdee.activity", bundle: .module)
             }
         } header: {
-            Text("Aktuelles Gewicht & Aktivität")
+            Text("calc.tdee.section.input", bundle: .module)
         } footer: {
             Text(activity.description)
                 .font(.footnote)
@@ -86,7 +97,7 @@ public struct TDEEView: View {
     }
 
     private func resultsSection(_ profile: UserBodyProfile) -> some View {
-        Section("Energiebedarf") {
+        Section {
             if let weightKg, weightKg > 0 {
                 let bmrMifflin = BodyCalculations.bmrMifflinStJeor(
                     weightKg: weightKg,
@@ -96,24 +107,26 @@ public struct TDEEView: View {
                 )
                 let tdee = BodyCalculations.tdee(bmr: bmrMifflin, activityFactor: activity.factor)
 
-                row("BMR (Mifflin-St-Jeor)", value: bmrMifflin)
+                row(String(localized: "calc.tdee.bmrMifflin", bundle: .module), value: bmrMifflin)
 
                 if let katch = katchBmr(weightKg: weightKg) {
-                    row("BMR (Katch-McArdle)", value: katch)
+                    row(String(localized: "calc.tdee.bmrKatch", bundle: .module), value: katch)
                 }
 
-                row("TDEE", value: tdee, highlight: true)
+                row(String(localized: "calc.tdee.tdee", bundle: .module), value: tdee, highlight: true)
 
                 Divider().padding(.vertical, 4)
 
-                row("Cut (-500)",     value: tdee - 500, secondary: true)
-                row("Erhaltung",       value: tdee,       secondary: true)
-                row("Bulk (+300)",     value: tdee + 300, secondary: true)
+                row(String(localized: "calc.tdee.cut", bundle: .module),         value: tdee - 500, secondary: true)
+                row(String(localized: "calc.tdee.maintenance", bundle: .module), value: tdee,       secondary: true)
+                row(String(localized: "calc.tdee.bulk", bundle: .module),        value: tdee + 300, secondary: true)
             } else {
-                Text("Trag dein aktuelles Gewicht ein.")
+                Text("calc.tdee.weightRequired", bundle: .module)
                     .foregroundStyle(.secondary)
                     .font(.callout)
             }
+        } header: {
+            Text("calc.tdee.section.results", bundle: .module)
         }
     }
 

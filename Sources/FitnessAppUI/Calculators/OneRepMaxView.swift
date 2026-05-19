@@ -36,24 +36,28 @@ public struct OneRepMaxView: View {
         // the macOS 14 type checker. Use the explicit `header:` / `footer:` form,
         // which only matches one overload.
         Section {
-            TextField(value: $weight, format: .number, prompt: Text("z.B. 100")) {
-                Text("Gewicht (\(unit))")
+            TextField(value: $weight, format: .number, prompt: Text("calc.1rm.weightPlaceholder", bundle: .module)) {
+                Text(String(format: String(localized: "calc.1rm.weightLabel", bundle: .module), unit))
             }
             .decimalKeyboard()
 
             Stepper(value: $reps, in: 1...36) {
-                LabeledContent("Wiederholungen", value: "\(reps)")
+                LabeledContent {
+                    Text("\(reps)")
+                } label: {
+                    Text("calc.1rm.reps", bundle: .module)
+                }
             }
         } header: {
-            Text("Eingabe")
+            Text("calc.1rm.section.input", bundle: .module)
         } footer: {
-            Text("Gültig für 1-36 Reps. Bei sehr hohen Reps wird die Schätzung unzuverlässig — die Formeln liefern nur für den Hypertrophie- bis Kraft-Bereich (~1-12 Reps) brauchbare Werte.")
+            Text("calc.1rm.input.footer", bundle: .module)
                 .font(.footnote)
         }
     }
 
     private var estimatesSection: some View {
-        Section("Geschätztes 1RM") {
+        Section {
             if let weight,
                let epley   = ExerciseCalculations.estimate1RM(weightKg: weight, reps: reps),
                let brzycki = ExerciseCalculations.estimate1RMBrzycki(weightKg: weight, reps: reps),
@@ -61,12 +65,14 @@ public struct OneRepMaxView: View {
             {
                 row("Epley",   value: epley)
                 row("Brzycki", value: brzycki)
-                row("Mittelwert", value: average, highlight: true)
+                row(String(localized: "calc.1rm.row.average", bundle: .module), value: average, highlight: true)
             } else {
-                Text("Trag Gewicht > 0 ein.")
+                Text("calc.1rm.weightRequired", bundle: .module)
                     .foregroundStyle(.secondary)
                     .font(.callout)
             }
+        } header: {
+            Text("calc.1rm.section.estimate", bundle: .module)
         }
     }
 
@@ -83,20 +89,20 @@ public struct OneRepMaxView: View {
                         Text("\((avg * entry.percent).truncated(to: 2).formattedTwoDecimals) \(unit)")
                             .monospacedDigit()
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        Text("~ \(entry.repsHint) Reps")
+                        Text(String(format: String(localized: "calc.1rm.repsHint", bundle: .module), entry.repsHint))
                             .foregroundStyle(.secondary)
                             .font(.callout)
                     }
                 }
             } else {
-                Text("Tabelle erscheint, sobald 1RM berechnet ist.")
+                Text("calc.1rm.tableEmpty", bundle: .module)
                     .foregroundStyle(.secondary)
                     .font(.callout)
             }
         } header: {
-            Text("Trainings-Last (vom Mittelwert-1RM)")
+            Text("calc.1rm.section.percentages", bundle: .module)
         } footer: {
-            Text("Rep-Hints sind Faustwerte. Effektive Reps hängen vom Trainings-Status und der Bewegung ab.")
+            Text("calc.1rm.percentages.footer", bundle: .module)
                 .font(.footnote)
         }
     }

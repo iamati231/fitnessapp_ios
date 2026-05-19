@@ -15,40 +15,40 @@ public struct CalculatorsView: View {
                     CalculatorRow(
                         icon: "scalemass.fill",
                         tint: .blue,
-                        title: "Hantel-Rechner",
-                        subtitle: "Welche Plates für dein Zielgewicht — mit Inventar-Cap und visualer Stange."
+                        title: String(localized: "calc.index.plate.title", bundle: .module),
+                        subtitle: String(localized: "calc.index.plate.subtitle", bundle: .module)
                     )
                 }
                 NavigationLink(destination: OneRepMaxView()) {
                     CalculatorRow(
                         icon: "figure.strengthtraining.traditional",
                         tint: .orange,
-                        title: "1RM-Rechner",
-                        subtitle: "Epley + Brzycki + Mittelwert, plus Trainings-%-Tabelle."
+                        title: String(localized: "calc.index.1rm.title", bundle: .module),
+                        subtitle: String(localized: "calc.index.1rm.subtitle", bundle: .module)
                     )
                 }
                 NavigationLink(destination: TDEEView()) {
                     CalculatorRow(
                         icon: "flame.fill",
                         tint: .red,
-                        title: "Kalorien-Rechner",
-                        subtitle: "BMR + TDEE aus deinem Profil und Aktivitäts-Level."
+                        title: String(localized: "calc.index.tdee.title", bundle: .module),
+                        subtitle: String(localized: "calc.index.tdee.subtitle", bundle: .module)
                     )
                 }
                 NavigationLink(destination: WaterTrackerView()) {
                     CalculatorRow(
                         icon: "drop.fill",
                         tint: .cyan,
-                        title: "Wasser-Tracker",
-                        subtitle: "Tagesziel = Gewicht × 35 ml. Mit Quick-Add."
+                        title: String(localized: "calc.index.water.title", bundle: .module),
+                        subtitle: String(localized: "calc.index.water.subtitle", bundle: .module)
                     )
                 }
             } footer: {
-                Text("Alle Rechner nutzen die gleiche Domain-Logik (FitnessAppCore) wie der Rest der App — Werte sind 1:1 mit Dashboard und MeasurementView.")
+                Text("calc.index.footer", bundle: .module)
                     .font(.footnote)
             }
         }
-        .navigationTitle("Rechner")
+        .navigationTitle(Text("calc.index.title", bundle: .module))
     }
 }
 
