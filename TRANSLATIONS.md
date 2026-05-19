@@ -197,10 +197,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.bandPullApart` | Band Pull-Aparts | Band Pull-Apart | Band Pull-Apart |
 | `exercise.name.bandedHipThrust` | Banded Hip Thrust | Banded Hip Thrust | Banded Hip Thrust |
 | `exercise.name.bandedSquat` | Banded Squats | Banded Squat | Banded Squat |
-| `exercise.name.barbellCurl` | Langhantel Curl | Barbell Curl | Barbell Curl |
+| `exercise.name.barbellCurl` | Bizeps-Curl (LH) | Barbell Curl | Barbell Curl |
 | `exercise.name.barbellHipThrust` | Hip Thrust (LH) | Barbell Hip Thrust | Barbell Hip Thrust |
 | `exercise.name.barbellLunge` | Ausfallschritte (LH) | Barbell Lunge | Barbell Lunge |
-| `exercise.name.barbellShrug` | Langhantel Shrug | Barbell Shrug | Barbell Shrug |
+| `exercise.name.barbellShrug` | Shrug (LH) | Barbell Shrug | Barbell Shrug |
 | `exercise.name.barbellStandingCalfRaise` | Wadenheben (stehend, LH) | Standing Calf Raise (Barbell) | Standing Calf Raise (Barbell) |
 | `exercise.name.barbellrow` | Langhantelrudern | Barbell Row | Barbell Row |
 | `exercise.name.behindNeckPress` | Nackendrücken | Behind-the-Neck Press | Behind-the-Neck Press |
@@ -217,31 +217,31 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.cableCrunch` | Kabel Crunch | Cable Crunch | Cable Crunch |
 | `exercise.name.cableCurl` | Kabel Curl | Cable Curl | Cable Curl |
 | `exercise.name.cableLateralRaise` | Kabel Seitheben | Cable Lateral Raise | Cable Lateral Raise |
-| `exercise.name.cableOverheadTricepExtension` | Overhead Trizep Extension (Kabel) | Cable Overhead Tricep Extension | Cable Overhead Tricep Extension |
+| `exercise.name.cableOverheadTricepExtension` | Trizepsstrecker über Kopf (Kabel) | Cable Overhead Tricep Extension | Cable Overhead Tricep Extension |
 | `exercise.name.chestDip` | Dips (Brust) | Chest Dip | Chest Dip |
-| `exercise.name.chestPressMachine` | Brust-Drückmaschine | Chest Press Machine | Chest Press Machine |
+| `exercise.name.chestPressMachine` | Brustdrücken (Maschine) | Chest Press Machine | Chest Press Machine |
 | `exercise.name.chestSupportedRowDB` | Chest Supported Row (KH) | Chest-Supported Row (DB) | Chest-Supported Row (DB) |
 | `exercise.name.closeGripBenchPress` | Enges Bankdrücken | Close-Grip Bench Press | Close-Grip Bench Press |
-| `exercise.name.concentrationCurl` | Konzentrations Curl | Concentration Curl | Concentration Curl |
+| `exercise.name.concentrationCurl` | Konzentrations-Curl (KH) | Concentration Curl | Concentration Curl |
 | `exercise.name.crunch` | Crunches (BW) | Crunches | Karın Mekik |
 | `exercise.name.cycling` | Radfahren (outdoor) | Cycling (Outdoor) | Bisiklet (Açık Hava) |
 | `exercise.name.deadlift` | Kreuzheben | Deadlift | Deadlift |
 | `exercise.name.declineBenchPress` | Schrägbankdrücken (abwärts) | Decline Bench Press | Decline Bench Press |
 | `exercise.name.diamondPushup` | Diamant-Liegestütze | Diamond Push-up | Elmas Şınav |
-| `exercise.name.dumbbellBenchPress` | KH-Bankdrücken | Dumbbell Bench Press | Dumbbell Bench Press |
-| `exercise.name.dumbbellCalfRaise` | KH-Wadenheben | Dumbbell Calf Raise | Dumbbell Calf Raise |
-| `exercise.name.dumbbellFlyFlat` | KH-Flyes (flach) | Dumbbell Fly (Flat) | Dumbbell Fly (Flat) |
-| `exercise.name.dumbbellFlyIncline` | KH-Flyes (Schrägbank) | Dumbbell Fly (Incline) | Dumbbell Fly (Incline) |
-| `exercise.name.dumbbellHipThrust` | KH-Hip Thrust | Dumbbell Hip Thrust | Dumbbell Hip Thrust |
-| `exercise.name.dumbbellInclineBenchPress` | KH-Schrägbankdrücken (aufwärts) | Dumbbell Incline Bench Press | Dumbbell Incline Bench Press |
-| `exercise.name.dumbbellLunge` | KH-Ausfallschritte | Dumbbell Lunge | Dumbbell Lunge |
-| `exercise.name.dumbbellOverheadTricepExtension` | KH Overhead Trizep Extension | Dumbbell Overhead Tricep Extension | Dumbbell Overhead Tricep Extension |
-| `exercise.name.dumbbellPullover` | KH-Pullover | Dumbbell Pullover | Dumbbell Pullover |
-| `exercise.name.dumbbellRDL` | KH-Romanian Deadlift | Dumbbell Romanian Deadlift | Dumbbell Romanian Deadlift |
-| `exercise.name.dumbbellRowOneArm` | KH-Rudern einarmig | One-Arm Dumbbell Row | One-Arm Dumbbell Row |
-| `exercise.name.dumbbellShoulderPress` | KH-Schulterdrücken | Dumbbell Shoulder Press | Dumbbell Shoulder Press |
-| `exercise.name.dumbbellShrug` | KH-Shrug | Dumbbell Shrug | Dumbbell Shrug |
-| `exercise.name.dumbbellTricepKickback` | Trizep Kickback (KH) | Dumbbell Tricep Kickback | Dumbbell Tricep Kickback |
+| `exercise.name.dumbbellBenchPress` | Bankdrücken (KH) | Dumbbell Bench Press | Dumbbell Bench Press |
+| `exercise.name.dumbbellCalfRaise` | Wadenheben (KH) | Dumbbell Calf Raise | Dumbbell Calf Raise |
+| `exercise.name.dumbbellFlyFlat` | Flyes flach (KH) | Dumbbell Fly (Flat) | Dumbbell Fly (Flat) |
+| `exercise.name.dumbbellFlyIncline` | Flyes Schrägbank (KH) | Dumbbell Fly (Incline) | Dumbbell Fly (Incline) |
+| `exercise.name.dumbbellHipThrust` | Hip Thrust (KH) | Dumbbell Hip Thrust | Dumbbell Hip Thrust |
+| `exercise.name.dumbbellInclineBenchPress` | Schrägbankdrücken aufwärts (KH) | Dumbbell Incline Bench Press | Dumbbell Incline Bench Press |
+| `exercise.name.dumbbellLunge` | Ausfallschritte (KH) | Dumbbell Lunge | Dumbbell Lunge |
+| `exercise.name.dumbbellOverheadTricepExtension` | Trizepsstrecker über Kopf (KH) | Dumbbell Overhead Tricep Extension | Dumbbell Overhead Tricep Extension |
+| `exercise.name.dumbbellPullover` | Pullover (KH) | Dumbbell Pullover | Dumbbell Pullover |
+| `exercise.name.dumbbellRDL` | Rumänisches Kreuzheben (KH) | Dumbbell Romanian Deadlift | Dumbbell Romanian Deadlift |
+| `exercise.name.dumbbellRowOneArm` | Rudern einarmig (KH) | One-Arm Dumbbell Row | One-Arm Dumbbell Row |
+| `exercise.name.dumbbellShoulderPress` | Schulterdrücken (KH) | Dumbbell Shoulder Press | Dumbbell Shoulder Press |
+| `exercise.name.dumbbellShrug` | Shrug (KH) | Dumbbell Shrug | Dumbbell Shrug |
+| `exercise.name.dumbbellTricepKickback` | Trizepskickback (KH) | Dumbbell Tricep Kickback | Dumbbell Tricep Kickback |
 | `exercise.name.elliptical` | Crosstrainer | Elliptical | Eliptik Bisiklet |
 | `exercise.name.facePull` | Face Pull | Face Pull | Face Pull |
 | `exercise.name.frontRaise` | Frontheben | Front Raise | Front Raise |
@@ -254,7 +254,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.handstandPushup` | Handstand-Liegestütze | Handstand Push-up | Amuda Kalkarak Şınav |
 | `exercise.name.hangingLegRaise` | Hanging Leg Raises | Hanging Leg Raises | Asılı Bacak Kaldırma |
 | `exercise.name.inclineBenchPress` | Schrägbankdrücken (aufwärts) | Incline Bench Press | Incline Bench Press |
-| `exercise.name.inclineDumbbellCurl` | Schrägbank Curl | Incline Dumbbell Curl | Incline Dumbbell Curl |
+| `exercise.name.inclineDumbbellCurl` | Schrägbank-Curl (KH) | Incline Dumbbell Curl | Incline Dumbbell Curl |
 | `exercise.name.jumpSquat` | Jump Squat | Jump Squat | Jump Squat |
 | `exercise.name.kettlebellCleanAndPress` | Kettlebell Clean & Press | Kettlebell Clean & Press | Kettlebell Clean & Press |
 | `exercise.name.kettlebellGobletSquat` | Kettlebell Goblet Squat | Kettlebell Goblet Squat | Kettlebell Goblet Squat |
@@ -289,7 +289,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.russianTwist` | Russian Twists | Russian Twists | Russian Twist |
 | `exercise.name.seatedCableRow` | Kabelrudern sitzend | Seated Cable Row | Seated Cable Row |
 | `exercise.name.seatedCalfRaise` | Wadenpresse (sitzend) | Seated Calf Raise | Seated Calf Raise |
-| `exercise.name.shoulderPressMachine` | Schulterdrück-Maschine | Shoulder Press Machine | Shoulder Press Machine |
+| `exercise.name.shoulderPressMachine` | Schulterdrücken (Maschine) | Shoulder Press Machine | Shoulder Press Machine |
 | `exercise.name.sidePlank` | Seitstütz | Side Plank | Yan Plank |
 | `exercise.name.sissySquat` | Sissy Squats (BW) | Sissy Squat | Sissy Squat |
 | `exercise.name.situp` | Sit-ups | Sit-ups | Mekik |

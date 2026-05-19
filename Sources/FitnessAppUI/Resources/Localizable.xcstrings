@@ -6692,7 +6692,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Langhantel Shrug"
+            "value": "Shrug (LH)"
           }
         },
         "en": {
@@ -6876,7 +6876,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Langhantel Curl"
+            "value": "Bizeps-Curl (LH)"
           }
         },
         "en": {
@@ -6945,7 +6945,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KH-Bankdrücken"
+            "value": "Bankdrücken (KH)"
           }
         },
         "en": {
@@ -6968,7 +6968,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KH-Schrägbankdrücken (aufwärts)"
+            "value": "Schrägbankdrücken aufwärts (KH)"
           }
         },
         "en": {
@@ -6991,7 +6991,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KH-Flyes (flach)"
+            "value": "Flyes flach (KH)"
           }
         },
         "en": {
@@ -7014,7 +7014,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KH-Flyes (Schrägbank)"
+            "value": "Flyes Schrägbank (KH)"
           }
         },
         "en": {
@@ -7037,7 +7037,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KH-Rudern einarmig"
+            "value": "Rudern einarmig (KH)"
           }
         },
         "en": {
@@ -7083,7 +7083,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KH-Pullover"
+            "value": "Pullover (KH)"
           }
         },
         "en": {
@@ -7106,7 +7106,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KH-Schulterdrücken"
+            "value": "Schulterdrücken (KH)"
           }
         },
         "en": {
@@ -7198,7 +7198,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KH-Shrug"
+            "value": "Shrug (KH)"
           }
         },
         "en": {
@@ -7244,7 +7244,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KH-Ausfallschritte"
+            "value": "Ausfallschritte (KH)"
           }
         },
         "en": {
@@ -7290,7 +7290,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KH-Romanian Deadlift"
+            "value": "Rumänisches Kreuzheben (KH)"
           }
         },
         "en": {
@@ -7336,7 +7336,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KH-Hip Thrust"
+            "value": "Hip Thrust (KH)"
           }
         },
         "en": {
@@ -7359,7 +7359,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KH-Wadenheben"
+            "value": "Wadenheben (KH)"
           }
         },
         "en": {
@@ -7405,7 +7405,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Schrägbank Curl"
+            "value": "Schrägbank-Curl (KH)"
           }
         },
         "en": {
@@ -7428,7 +7428,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Konzentrations Curl"
+            "value": "Konzentrations-Curl (KH)"
           }
         },
         "en": {
@@ -7451,7 +7451,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KH Overhead Trizep Extension"
+            "value": "Trizepsstrecker über Kopf (KH)"
           }
         },
         "en": {
@@ -7474,7 +7474,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trizep Kickback (KH)"
+            "value": "Trizepskickback (KH)"
           }
         },
         "en": {
@@ -8233,7 +8233,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Brust-Drückmaschine"
+            "value": "Brustdrücken (Maschine)"
           }
         },
         "en": {
@@ -8348,7 +8348,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Schulterdrück-Maschine"
+            "value": "Schulterdrücken (Maschine)"
           }
         },
         "en": {
@@ -8371,7 +8371,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Overhead Trizep Extension (Kabel)"
+            "value": "Trizepsstrecker über Kopf (Kabel)"
           }
         },
         "en": {

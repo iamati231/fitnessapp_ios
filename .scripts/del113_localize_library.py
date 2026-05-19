@@ -74,7 +74,7 @@ EXERCISES = {
     "Schulterdrücken (stehend)":          ("overheadpress",             "Overhead Press",         "Overhead Press"),
     "Push Press":                         ("pushPress",                 "Push Press",             "Push Press"),
     "Nackendrücken":                      ("behindNeckPress",           "Behind-the-Neck Press",  "Behind-the-Neck Press"),
-    "Langhantel Shrug":                   ("barbellShrug",              "Barbell Shrug",          "Barbell Shrug"),
+    "Shrug (LH)":                   ("barbellShrug",              "Barbell Shrug",          "Barbell Shrug"),
 
     # BARBELL · LEGS
     "Kniebeuge":                          ("squat",                     "Back Squat",             "Squat"),
@@ -87,44 +87,44 @@ EXERCISES = {
     "Wadenheben (stehend, LH)":           ("barbellStandingCalfRaise",  "Standing Calf Raise (Barbell)", "Standing Calf Raise (Barbell)"),
 
     # BARBELL · ARMS
-    "Langhantel Curl":                    ("barbellCurl",               "Barbell Curl",           "Barbell Curl"),
+    "Bizeps-Curl (LH)":                    ("barbellCurl",               "Barbell Curl",           "Barbell Curl"),
     "Reverse Curl":                       ("reverseCurl",               "Reverse Curl",           "Reverse Curl"),
     "Skull Crusher":                      ("skullCrusher",              "Skull Crusher",          "Skull Crusher"),
 
     # DUMBBELL · CHEST
-    "KH-Bankdrücken":                     ("dumbbellBenchPress",        "Dumbbell Bench Press",   "Dumbbell Bench Press"),
-    "KH-Schrägbankdrücken (aufwärts)":    ("dumbbellInclineBenchPress", "Dumbbell Incline Bench Press", "Dumbbell Incline Bench Press"),
-    "KH-Flyes (flach)":                   ("dumbbellFlyFlat",           "Dumbbell Fly (Flat)",    "Dumbbell Fly (Flat)"),
-    "KH-Flyes (Schrägbank)":              ("dumbbellFlyIncline",        "Dumbbell Fly (Incline)", "Dumbbell Fly (Incline)"),
+    "Bankdrücken (KH)":                     ("dumbbellBenchPress",        "Dumbbell Bench Press",   "Dumbbell Bench Press"),
+    "Schrägbankdrücken aufwärts (KH)":    ("dumbbellInclineBenchPress", "Dumbbell Incline Bench Press", "Dumbbell Incline Bench Press"),
+    "Flyes flach (KH)":                   ("dumbbellFlyFlat",           "Dumbbell Fly (Flat)",    "Dumbbell Fly (Flat)"),
+    "Flyes Schrägbank (KH)":              ("dumbbellFlyIncline",        "Dumbbell Fly (Incline)", "Dumbbell Fly (Incline)"),
 
     # DUMBBELL · BACK
-    "KH-Rudern einarmig":                 ("dumbbellRowOneArm",         "One-Arm Dumbbell Row",   "One-Arm Dumbbell Row"),
+    "Rudern einarmig (KH)":                 ("dumbbellRowOneArm",         "One-Arm Dumbbell Row",   "One-Arm Dumbbell Row"),
     "Chest Supported Row (KH)":           ("chestSupportedRowDB",       "Chest-Supported Row (DB)", "Chest-Supported Row (DB)"),
-    "KH-Pullover":                        ("dumbbellPullover",          "Dumbbell Pullover",      "Dumbbell Pullover"),
+    "Pullover (KH)":                        ("dumbbellPullover",          "Dumbbell Pullover",      "Dumbbell Pullover"),
 
     # DUMBBELL · SHOULDERS
-    "KH-Schulterdrücken":                 ("dumbbellShoulderPress",     "Dumbbell Shoulder Press", "Dumbbell Shoulder Press"),
+    "Schulterdrücken (KH)":                 ("dumbbellShoulderPress",     "Dumbbell Shoulder Press", "Dumbbell Shoulder Press"),
     "Seitheben":                          ("lateralRaise",              "Lateral Raise",          "Lateral Raise"),
     "Frontheben":                         ("frontRaise",                "Front Raise",            "Front Raise"),
     "Reverse Flyes (KH)":                 ("reverseFlyDB",              "Reverse Fly (DB)",       "Reverse Fly (DB)"),
-    "KH-Shrug":                           ("dumbbellShrug",             "Dumbbell Shrug",         "Dumbbell Shrug"),
+    "Shrug (KH)":                           ("dumbbellShrug",             "Dumbbell Shrug",         "Dumbbell Shrug"),
 
     # DUMBBELL · LEGS
     "Goblet Squat":                       ("gobletSquat",               "Goblet Squat",           "Goblet Squat"),
-    "KH-Ausfallschritte":                 ("dumbbellLunge",             "Dumbbell Lunge",         "Dumbbell Lunge"),
+    "Ausfallschritte (KH)":                 ("dumbbellLunge",             "Dumbbell Lunge",         "Dumbbell Lunge"),
     "Bulgarische Kniebeuge (KH)":         ("bulgarianSplitSquatDB",     "Bulgarian Split Squat (DB)", "Bulgarian Split Squat (DB)"),
-    "KH-Romanian Deadlift":               ("dumbbellRDL",               "Dumbbell Romanian Deadlift", "Dumbbell Romanian Deadlift"),
+    "Rumänisches Kreuzheben (KH)":               ("dumbbellRDL",               "Dumbbell Romanian Deadlift", "Dumbbell Romanian Deadlift"),
     "Step-Up (KH)":                       ("stepUpDB",                  "Step-Up (DB)",           "Step-Up (DB)"),
-    "KH-Hip Thrust":                      ("dumbbellHipThrust",         "Dumbbell Hip Thrust",    "Dumbbell Hip Thrust"),
-    "KH-Wadenheben":                      ("dumbbellCalfRaise",         "Dumbbell Calf Raise",    "Dumbbell Calf Raise"),
+    "Hip Thrust (KH)":                      ("dumbbellHipThrust",         "Dumbbell Hip Thrust",    "Dumbbell Hip Thrust"),
+    "Wadenheben (KH)":                      ("dumbbellCalfRaise",         "Dumbbell Calf Raise",    "Dumbbell Calf Raise"),
 
     # DUMBBELL · ARMS
-    "KH-Curl":                            ("bicepcurl",                 "Dumbbell Curl",          "Dumbbell Curl"),
+    "Bizeps-Curl (KH)":                            ("bicepcurl",                 "Dumbbell Curl",          "Dumbbell Curl"),
     "Hammer Curl":                        ("hammerCurl",                "Hammer Curl",            "Hammer Curl"),
-    "Schrägbank Curl":                    ("inclineDumbbellCurl",       "Incline Dumbbell Curl",  "Incline Dumbbell Curl"),
-    "Konzentrations Curl":                ("concentrationCurl",         "Concentration Curl",     "Concentration Curl"),
-    "KH Overhead Trizep Extension":       ("dumbbellOverheadTricepExtension", "Dumbbell Overhead Tricep Extension", "Dumbbell Overhead Tricep Extension"),
-    "Trizep Kickback (KH)":               ("dumbbellTricepKickback",    "Dumbbell Tricep Kickback", "Dumbbell Tricep Kickback"),
+    "Schrägbank-Curl (KH)":                    ("inclineDumbbellCurl",       "Incline Dumbbell Curl",  "Incline Dumbbell Curl"),
+    "Konzentrations-Curl (KH)":                ("concentrationCurl",         "Concentration Curl",     "Concentration Curl"),
+    "Trizepsstrecker über Kopf (KH)":       ("dumbbellOverheadTricepExtension", "Dumbbell Overhead Tricep Extension", "Dumbbell Overhead Tricep Extension"),
+    "Trizepskickback (KH)":               ("dumbbellTricepKickback",    "Dumbbell Tricep Kickback", "Dumbbell Tricep Kickback"),
 
     # BODYWEIGHT · UPPER
     "Klimmzüge (weit)":                   ("widePullup",                "Wide Pull-up",           "Wide Pull-up"),
@@ -167,7 +167,7 @@ EXERCISES = {
     # MACHINE / CABLE · CHEST
     "Kabel Crossover":                    ("cableCrossover",            "Cable Crossover",        "Cable Crossover"),
     "Pec Deck (Butterfly)":               ("pecDeck",                   "Pec Deck (Butterfly)",   "Pec Deck (Butterfly)"),
-    "Brust-Drückmaschine":                ("chestPressMachine",         "Chest Press Machine",    "Chest Press Machine"),
+    "Brustdrücken (Maschine)":                ("chestPressMachine",         "Chest Press Machine",    "Chest Press Machine"),
 
     # MACHINE / CABLE · BACK
     "Latzug (weit)":                      ("latpulldown",               "Lat Pulldown (Wide)",    "Lat Pulldown (Wide)"),
@@ -177,11 +177,11 @@ EXERCISES = {
     # MACHINE / CABLE · SHOULDERS
     "Kabel Seitheben":                    ("cableLateralRaise",         "Cable Lateral Raise",    "Cable Lateral Raise"),
     "Face Pull":                          ("facePull",                  "Face Pull",              "Face Pull"),
-    "Schulterdrück-Maschine":             ("shoulderPressMachine",      "Shoulder Press Machine", "Shoulder Press Machine"),
+    "Schulterdrücken (Maschine)":             ("shoulderPressMachine",      "Shoulder Press Machine", "Shoulder Press Machine"),
 
     # MACHINE / CABLE · ARMS
-    "Trizep Pushdown (Kabel)":            ("tricepPushdown",            "Tricep Pushdown",        "Tricep Pushdown"),
-    "Overhead Trizep Extension (Kabel)":  ("cableOverheadTricepExtension", "Cable Overhead Tricep Extension", "Cable Overhead Tricep Extension"),
+    "Trizepsdrücken (Kabel)":            ("tricepPushdown",            "Tricep Pushdown",        "Tricep Pushdown"),
+    "Trizepsstrecker über Kopf (Kabel)":  ("cableOverheadTricepExtension", "Cable Overhead Tricep Extension", "Cable Overhead Tricep Extension"),
     "Preacher Curl (Maschine)":           ("preacherCurl",              "Preacher Curl (Machine)", "Preacher Curl (Machine)"),
     "Kabel Curl":                         ("cableCurl",                 "Cable Curl",             "Cable Curl"),
 

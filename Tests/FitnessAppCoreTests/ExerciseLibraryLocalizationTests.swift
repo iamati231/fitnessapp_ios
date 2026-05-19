@@ -25,7 +25,7 @@ final class ExerciseLibraryLocalizationTests: XCTestCase {
             ("Rudern vorgebeugt",          "exercise.name.barbellrow"),
             ("Klimmzüge (eng/Chin-up)",    "exercise.name.pullup"),
             ("Latzug (weit)",              "exercise.name.latpulldown"),
-            ("KH-Curl",                    "exercise.name.bicepcurl"),
+            ("Bizeps-Curl (KH)",           "exercise.name.bicepcurl"),
             ("Beinpresse",                 "exercise.name.legpress"),
             ("Plank",                      "exercise.name.plank"),
             ("Freier Lauf",                "exercise.name.run"),

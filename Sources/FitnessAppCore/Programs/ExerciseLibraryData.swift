@@ -40,7 +40,7 @@ public enum ExerciseLibraryData {
                              localizationKey: "exercise.name.overheadpress"),
         ExerciseTemplateSpec(name: "Push Press",                       equipment: .barbell, primaryMuscle: .shoulders,  difficultyLevel: .advanced, localizationKey: "exercise.name.pushPress"),
         ExerciseTemplateSpec(name: "Nackendrücken",                   equipment: .barbell, primaryMuscle: .shoulders,  difficultyLevel: .advanced, localizationKey: "exercise.name.behindNeckPress"),
-        ExerciseTemplateSpec(name: "Langhantel Shrug",                 equipment: .barbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner, localizationKey: "exercise.name.barbellShrug"),
+        ExerciseTemplateSpec(name: "Shrug (LH)",                 equipment: .barbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner, localizationKey: "exercise.name.barbellShrug"),
 
         // ── BARBELL · LEGS ─────────────────────────────────────────────────
         // DEL-098: Back Squat = grosser Compound, fast so systemic wie Deadlift.
@@ -63,51 +63,51 @@ public enum ExerciseLibraryData {
         // DEL-098: Curls = klassische Isolation. Sehr niedrige systemic-/CNS-
         // Last, kein axialer Belastung. Lokale Belastung etwas hoeher (Bizeps-
         // DOMS), aber im Vergleich zu Compounds ist alles trivial.
-        ExerciseTemplateSpec(name: "Langhantel Curl",                  equipment: .barbell, primaryMuscle: .biceps,
+        ExerciseTemplateSpec(name: "Bizeps-Curl (LH)",                  equipment: .barbell, primaryMuscle: .biceps,
                              systemicFatigueFactor: 0.15, localMuscleDamageFactor: 0.35, cnsDemandFactor: 0.10, axialLoadFactor: 0.00, technicalComplexityFactor: 0.15, recoveryClass: .low,
                              localizationKey: "exercise.name.barbellCurl"),
         ExerciseTemplateSpec(name: "Reverse Curl",                     equipment: .barbell, primaryMuscle: .biceps, localizationKey: "exercise.name.reverseCurl"),
         ExerciseTemplateSpec(name: "Skull Crusher",                    equipment: .barbell, primaryMuscle: .triceps, localizationKey: "exercise.name.skullCrusher"),
 
         // ── DUMBBELL · CHEST ───────────────────────────────────────────────
-        ExerciseTemplateSpec(name: "KH-Bankdrücken",                  equipment: .dumbbell, primaryMuscle: .chest, localizationKey: "exercise.name.dumbbellBenchPress"),
-        ExerciseTemplateSpec(name: "KH-Schrägbankdrücken (aufwärts)", equipment: .dumbbell, primaryMuscle: .chest, localizationKey: "exercise.name.dumbbellInclineBenchPress"),
-        ExerciseTemplateSpec(name: "KH-Flyes (flach)",                 equipment: .dumbbell, primaryMuscle: .chest,      difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellFlyFlat"),
-        ExerciseTemplateSpec(name: "KH-Flyes (Schrägbank)",           equipment: .dumbbell, primaryMuscle: .chest,      difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellFlyIncline"),
+        ExerciseTemplateSpec(name: "Bankdrücken (KH)",                  equipment: .dumbbell, primaryMuscle: .chest, localizationKey: "exercise.name.dumbbellBenchPress"),
+        ExerciseTemplateSpec(name: "Schrägbankdrücken aufwärts (KH)", equipment: .dumbbell, primaryMuscle: .chest, localizationKey: "exercise.name.dumbbellInclineBenchPress"),
+        ExerciseTemplateSpec(name: "Flyes flach (KH)",                 equipment: .dumbbell, primaryMuscle: .chest,      difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellFlyFlat"),
+        ExerciseTemplateSpec(name: "Flyes Schrägbank (KH)",           equipment: .dumbbell, primaryMuscle: .chest,      difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellFlyIncline"),
 
         // ── DUMBBELL · BACK ────────────────────────────────────────────────
-        ExerciseTemplateSpec(name: "KH-Rudern einarmig",               equipment: .dumbbell, primaryMuscle: .back, localizationKey: "exercise.name.dumbbellRowOneArm"),
+        ExerciseTemplateSpec(name: "Rudern einarmig (KH)",               equipment: .dumbbell, primaryMuscle: .back, localizationKey: "exercise.name.dumbbellRowOneArm"),
         ExerciseTemplateSpec(name: "Chest Supported Row (KH)",         equipment: .dumbbell, primaryMuscle: .back, localizationKey: "exercise.name.chestSupportedRowDB"),
-        ExerciseTemplateSpec(name: "KH-Pullover",                      equipment: .dumbbell, primaryMuscle: .back, localizationKey: "exercise.name.dumbbellPullover"),
+        ExerciseTemplateSpec(name: "Pullover (KH)",                      equipment: .dumbbell, primaryMuscle: .back, localizationKey: "exercise.name.dumbbellPullover"),
 
         // ── DUMBBELL · SHOULDERS ───────────────────────────────────────────
-        ExerciseTemplateSpec(name: "KH-Schulterdrücken",              equipment: .dumbbell, primaryMuscle: .shoulders, localizationKey: "exercise.name.dumbbellShoulderPress"),
+        ExerciseTemplateSpec(name: "Schulterdrücken (KH)",              equipment: .dumbbell, primaryMuscle: .shoulders, localizationKey: "exercise.name.dumbbellShoulderPress"),
         ExerciseTemplateSpec(name: "Seitheben",                        equipment: .dumbbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner, localizationKey: "exercise.name.lateralRaise"),
         ExerciseTemplateSpec(name: "Frontheben",                       equipment: .dumbbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner, localizationKey: "exercise.name.frontRaise"),
         ExerciseTemplateSpec(name: "Reverse Flyes (KH)",               equipment: .dumbbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner, localizationKey: "exercise.name.reverseFlyDB"),
-        ExerciseTemplateSpec(name: "KH-Shrug",                         equipment: .dumbbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellShrug"),
+        ExerciseTemplateSpec(name: "Shrug (KH)",                         equipment: .dumbbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellShrug"),
 
         // ── DUMBBELL · LEGS ────────────────────────────────────────────────
         ExerciseTemplateSpec(name: "Goblet Squat",                     equipment: .dumbbell, primaryMuscle: .quads,      difficultyLevel: .beginner, localizationKey: "exercise.name.gobletSquat"),
-        ExerciseTemplateSpec(name: "KH-Ausfallschritte",               equipment: .dumbbell, primaryMuscle: .quads, localizationKey: "exercise.name.dumbbellLunge"),
+        ExerciseTemplateSpec(name: "Ausfallschritte (KH)",               equipment: .dumbbell, primaryMuscle: .quads, localizationKey: "exercise.name.dumbbellLunge"),
         ExerciseTemplateSpec(name: "Bulgarische Kniebeuge (KH)",       equipment: .dumbbell, primaryMuscle: .quads, localizationKey: "exercise.name.bulgarianSplitSquatDB"),
-        ExerciseTemplateSpec(name: "KH-Romanian Deadlift",             equipment: .dumbbell, primaryMuscle: .hamstrings, localizationKey: "exercise.name.dumbbellRDL"),
+        ExerciseTemplateSpec(name: "Rumänisches Kreuzheben (KH)",             equipment: .dumbbell, primaryMuscle: .hamstrings, localizationKey: "exercise.name.dumbbellRDL"),
         ExerciseTemplateSpec(name: "Step-Up (KH)",                     equipment: .dumbbell, primaryMuscle: .quads,      difficultyLevel: .beginner, localizationKey: "exercise.name.stepUpDB"),
-        ExerciseTemplateSpec(name: "KH-Hip Thrust",                    equipment: .dumbbell, primaryMuscle: .glutes,     difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellHipThrust"),
-        ExerciseTemplateSpec(name: "KH-Wadenheben",                    equipment: .dumbbell, primaryMuscle: .calves,     difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellCalfRaise"),
+        ExerciseTemplateSpec(name: "Hip Thrust (KH)",                    equipment: .dumbbell, primaryMuscle: .glutes,     difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellHipThrust"),
+        ExerciseTemplateSpec(name: "Wadenheben (KH)",                    equipment: .dumbbell, primaryMuscle: .calves,     difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellCalfRaise"),
 
         // ── DUMBBELL · ARMS ────────────────────────────────────────────────
         // DEL-098: Isolations-Curls = niedrige Recovery-Klasse.
-        ExerciseTemplateSpec(name: "KH-Curl",                          equipment: .dumbbell, primaryMuscle: .biceps,     difficultyLevel: .beginner,
+        ExerciseTemplateSpec(name: "Bizeps-Curl (KH)",                          equipment: .dumbbell, primaryMuscle: .biceps,     difficultyLevel: .beginner,
                              systemicFatigueFactor: 0.15, localMuscleDamageFactor: 0.35, cnsDemandFactor: 0.10, axialLoadFactor: 0.00, technicalComplexityFactor: 0.15, recoveryClass: .low,
                              localizationKey: "exercise.name.bicepcurl"),
         ExerciseTemplateSpec(name: "Hammer Curl",                      equipment: .dumbbell, primaryMuscle: .biceps,     difficultyLevel: .beginner,
                              systemicFatigueFactor: 0.15, localMuscleDamageFactor: 0.35, cnsDemandFactor: 0.10, axialLoadFactor: 0.00, technicalComplexityFactor: 0.15, recoveryClass: .low,
                              localizationKey: "exercise.name.hammerCurl"),
-        ExerciseTemplateSpec(name: "Schrägbank Curl",                 equipment: .dumbbell, primaryMuscle: .biceps, localizationKey: "exercise.name.inclineDumbbellCurl"),
-        ExerciseTemplateSpec(name: "Konzentrations Curl",              equipment: .dumbbell, primaryMuscle: .biceps,     difficultyLevel: .beginner, localizationKey: "exercise.name.concentrationCurl"),
-        ExerciseTemplateSpec(name: "KH Overhead Trizep Extension",     equipment: .dumbbell, primaryMuscle: .triceps, localizationKey: "exercise.name.dumbbellOverheadTricepExtension"),
-        ExerciseTemplateSpec(name: "Trizep Kickback (KH)",             equipment: .dumbbell, primaryMuscle: .triceps, localizationKey: "exercise.name.dumbbellTricepKickback"),
+        ExerciseTemplateSpec(name: "Schrägbank-Curl (KH)",                 equipment: .dumbbell, primaryMuscle: .biceps, localizationKey: "exercise.name.inclineDumbbellCurl"),
+        ExerciseTemplateSpec(name: "Konzentrations-Curl (KH)",              equipment: .dumbbell, primaryMuscle: .biceps,     difficultyLevel: .beginner, localizationKey: "exercise.name.concentrationCurl"),
+        ExerciseTemplateSpec(name: "Trizepsstrecker über Kopf (KH)",     equipment: .dumbbell, primaryMuscle: .triceps, localizationKey: "exercise.name.dumbbellOverheadTricepExtension"),
+        ExerciseTemplateSpec(name: "Trizepskickback (KH)",             equipment: .dumbbell, primaryMuscle: .triceps, localizationKey: "exercise.name.dumbbellTricepKickback"),
 
         // ── BODYWEIGHT · UPPER ─────────────────────────────────────────────
         // DEL-098: Pull-Ups = mittlerer Compound, kein axialer Loading-Stress
@@ -175,7 +175,7 @@ public enum ExerciseLibraryData {
         // ── MACHINE / CABLE · CHEST ────────────────────────────────────────
         ExerciseTemplateSpec(name: "Kabel Crossover",                  equipment: .cable,    primaryMuscle: .chest, localizationKey: "exercise.name.cableCrossover"),
         ExerciseTemplateSpec(name: "Pec Deck (Butterfly)",             equipment: .machine,  primaryMuscle: .chest,       difficultyLevel: .beginner, localizationKey: "exercise.name.pecDeck"),
-        ExerciseTemplateSpec(name: "Brust-Drückmaschine",             equipment: .machine,  primaryMuscle: .chest,       difficultyLevel: .beginner, localizationKey: "exercise.name.chestPressMachine"),
+        ExerciseTemplateSpec(name: "Brustdrücken (Maschine)",             equipment: .machine,  primaryMuscle: .chest,       difficultyLevel: .beginner, localizationKey: "exercise.name.chestPressMachine"),
 
         // ── MACHINE / CABLE · BACK ─────────────────────────────────────────
         ExerciseTemplateSpec(name: "Latzug (weit)",                    equipment: .machine,  primaryMuscle: .back,        difficultyLevel: .beginner,
@@ -186,11 +186,11 @@ public enum ExerciseLibraryData {
         // ── MACHINE / CABLE · SHOULDERS ────────────────────────────────────
         ExerciseTemplateSpec(name: "Kabel Seitheben",                  equipment: .cable,    primaryMuscle: .shoulders,   difficultyLevel: .beginner, localizationKey: "exercise.name.cableLateralRaise"),
         ExerciseTemplateSpec(name: "Face Pull",                        equipment: .cable,    primaryMuscle: .shoulders, localizationKey: "exercise.name.facePull"),
-        ExerciseTemplateSpec(name: "Schulterdrück-Maschine",          equipment: .machine,  primaryMuscle: .shoulders,   difficultyLevel: .beginner, localizationKey: "exercise.name.shoulderPressMachine"),
+        ExerciseTemplateSpec(name: "Schulterdrücken (Maschine)",          equipment: .machine,  primaryMuscle: .shoulders,   difficultyLevel: .beginner, localizationKey: "exercise.name.shoulderPressMachine"),
 
         // ── MACHINE / CABLE · ARMS ─────────────────────────────────────────
-        ExerciseTemplateSpec(name: "Trizep Pushdown (Kabel)",          equipment: .cable,    primaryMuscle: .triceps, localizationKey: "exercise.name.tricepPushdown"),
-        ExerciseTemplateSpec(name: "Overhead Trizep Extension (Kabel)", equipment: .cable,   primaryMuscle: .triceps, localizationKey: "exercise.name.cableOverheadTricepExtension"),
+        ExerciseTemplateSpec(name: "Trizepsdrücken (Kabel)",          equipment: .cable,    primaryMuscle: .triceps, localizationKey: "exercise.name.tricepPushdown"),
+        ExerciseTemplateSpec(name: "Trizepsstrecker über Kopf (Kabel)", equipment: .cable,   primaryMuscle: .triceps, localizationKey: "exercise.name.cableOverheadTricepExtension"),
         ExerciseTemplateSpec(name: "Preacher Curl (Maschine)",         equipment: .machine,  primaryMuscle: .biceps,      difficultyLevel: .beginner, localizationKey: "exercise.name.preacherCurl"),
         ExerciseTemplateSpec(name: "Kabel Curl",                       equipment: .cable,    primaryMuscle: .biceps,      difficultyLevel: .beginner, localizationKey: "exercise.name.cableCurl"),
 
@@ -270,59 +270,59 @@ public enum ExerciseLibraryData {
     public static let alternatives: [String: [EnvironmentType: String]] = [
         // ── CHEST ──────────────────────────────────────────────────────────
         "Bankdrücken": [
-            .homeGym:     "KH-Bankdrücken",
+            .homeGym:     "Bankdrücken (KH)",
             .noEquipment: "Liegestütze"
         ],
         "Schrägbankdrücken (aufwärts)": [
-            .homeGym:     "KH-Schrägbankdrücken (aufwärts)",
+            .homeGym:     "Schrägbankdrücken aufwärts (KH)",
             .noEquipment: "Pike Liegestütze"
         ],
         "Schrägbankdrücken (abwärts)": [
-            .homeGym:     "KH-Bankdrücken",
+            .homeGym:     "Bankdrücken (KH)",
             .noEquipment: "Dips (Brust)"
         ],
-        "KH-Bankdrücken": [
+        "Bankdrücken (KH)": [
             .noEquipment: "Liegestütze"
         ],
-        "KH-Flyes (flach)": [
+        "Flyes flach (KH)": [
             .noEquipment: "Breite Liegestütze"
         ],
 
         // ── BACK ───────────────────────────────────────────────────────────
         "Kreuzheben (konventionell)": [
-            .homeGym:     "KH-Romanian Deadlift",
+            .homeGym:     "Rumänisches Kreuzheben (KH)",
             .noEquipment: "Glute Bridge (BW)"
         ],
         "Rumänisches Kreuzheben": [
-            .homeGym:     "KH-Romanian Deadlift",
+            .homeGym:     "Rumänisches Kreuzheben (KH)",
             .noEquipment: "Nordic Curls"
         ],
         "Rudern vorgebeugt": [
-            .homeGym:     "KH-Rudern einarmig",
+            .homeGym:     "Rudern einarmig (KH)",
             .noEquipment: "Klimmzüge"
         ],
         "Pendlay Row": [
-            .homeGym:     "KH-Rudern einarmig",
+            .homeGym:     "Rudern einarmig (KH)",
             .noEquipment: "Australian Pull-ups"
         ],
-        "KH-Rudern einarmig": [
+        "Rudern einarmig (KH)": [
             .noEquipment: "Australian Pull-ups"
         ],
 
         // ── SHOULDERS ──────────────────────────────────────────────────────
         "Schulterdrücken (stehend)": [
-            .homeGym:     "KH-Schulterdrücken",
+            .homeGym:     "Schulterdrücken (KH)",
             .noEquipment: "Pike Liegestütze"
         ],
         "Push Press": [
-            .homeGym:     "KH-Schulterdrücken",
+            .homeGym:     "Schulterdrücken (KH)",
             .noEquipment: "Handstand-Liegestütze"
         ],
         "Nackendrücken": [
-            .homeGym:     "KH-Schulterdrücken",
+            .homeGym:     "Schulterdrücken (KH)",
             .noEquipment: "Pike Liegestütze"
         ],
-        "KH-Schulterdrücken": [
+        "Schulterdrücken (KH)": [
             .noEquipment: "Pike Liegestütze"
         ],
 
@@ -342,10 +342,10 @@ public enum ExerciseLibraryData {
             .noEquipment: "Ausfallschritte (BW)"
         ],
         "Ausfallschritte (LH)": [
-            .homeGym:     "KH-Ausfallschritte",
+            .homeGym:     "Ausfallschritte (KH)",
             .noEquipment: "Ausfallschritte (BW)"
         ],
-        "KH-Ausfallschritte": [
+        "Ausfallschritte (KH)": [
             .noEquipment: "Ausfallschritte (BW)"
         ],
 
@@ -355,7 +355,7 @@ public enum ExerciseLibraryData {
             .noEquipment: "Hip Thrust (BW)"
         ],
         "Good Morning": [
-            .homeGym:     "KH-Romanian Deadlift",
+            .homeGym:     "Rumänisches Kreuzheben (KH)",
             .noEquipment: "Nordic Curls"
         ],
 
@@ -366,7 +366,7 @@ public enum ExerciseLibraryData {
         ],
 
         // ── ARMS ───────────────────────────────────────────────────────────
-        "Langhantel Curl": [
+        "Bizeps-Curl (LH)": [
             .homeGym:     "Band Curls",
             .noEquipment: "Klimmzüge (eng/Chin-up)"
         ],
@@ -381,15 +381,15 @@ public enum ExerciseLibraryData {
 
         // ── MACHINES · CHEST ────────────────────────────────────────────────
         "Brustpresse (Maschine)": [
-            .homeGym:     "KH-Bankdrücken",
+            .homeGym:     "Bankdrücken (KH)",
             .noEquipment: "Liegestütze"
         ],
         "Cable Crossover": [
-            .homeGym:     "KH-Flyes (flach)",
+            .homeGym:     "Flyes flach (KH)",
             .noEquipment: "Breite Liegestütze"
         ],
         "Flys (Maschine / Butterfly)": [
-            .homeGym:     "KH-Flyes (flach)",
+            .homeGym:     "Flyes flach (KH)",
             .noEquipment: "Breite Liegestütze"
         ],
 
@@ -403,7 +403,7 @@ public enum ExerciseLibraryData {
             .noEquipment: "Australian Pull-ups"
         ],
         "Rudern (Maschine)": [
-            .homeGym:     "KH-Rudern einarmig",
+            .homeGym:     "Rudern einarmig (KH)",
             .noEquipment: "Australian Pull-ups"
         ],
 
@@ -421,7 +421,7 @@ public enum ExerciseLibraryData {
             .noEquipment: "Back Widows"
         ],
         "Schulterdrücken (Maschine)": [
-            .homeGym:     "KH-Schulterdrücken",
+            .homeGym:     "Schulterdrücken (KH)",
             .noEquipment: "Pike Liegestütze"
         ],
 
@@ -443,17 +443,17 @@ public enum ExerciseLibraryData {
             .noEquipment: "Ausfallschritte (BW)"
         ],
         "Hackenschmidt-Kniebeuge (Maschine)": [
-            .homeGym:     "KH-Ausfallschritte",
+            .homeGym:     "Ausfallschritte (KH)",
             .noEquipment: "Kniebeuge (BW)"
         ],
 
         // ── MACHINES · LEGS (HAMSTRINGS / GLUTES) ──────────────────────────
         "Beinbeuger (sitzend)": [
-            .homeGym:     "KH-Romanian Deadlift",
+            .homeGym:     "Rumänisches Kreuzheben (KH)",
             .noEquipment: "Nordic Curls"
         ],
         "Beinbeuger (liegend)": [
-            .homeGym:     "KH-Romanian Deadlift",
+            .homeGym:     "Rumänisches Kreuzheben (KH)",
             .noEquipment: "Nordic Curls"
         ],
         "Hip Thrust (Maschine)": [
@@ -463,11 +463,11 @@ public enum ExerciseLibraryData {
 
         // ── CABLES · ARMS ──────────────────────────────────────────────────
         "Trizeps-Drücken (Kabel)": [
-            .homeGym:     "Trizep Kickback (KH)",
+            .homeGym:     "Trizepskickback (KH)",
             .noEquipment: "Diamant-Liegestütze"
         ],
         "Trizeps-Drücken über Kopf (Kabel)": [
-            .homeGym:     "KH Overhead Trizep Extension",
+            .homeGym:     "Trizepsstrecker über Kopf (KH)",
             .noEquipment: "Dips (Trizeps)"
         ],
         "Bizepscurls (Kabel)": [
@@ -475,7 +475,7 @@ public enum ExerciseLibraryData {
             .noEquipment: "Klimmzüge (eng/Chin-up)"
         ],
         "Preacher Curls": [
-            .homeGym:     "Konzentrations Curl",
+            .homeGym:     "Konzentrations-Curl (KH)",
             .noEquipment: "Klimmzüge (eng/Chin-up)"
         ],
 
@@ -499,7 +499,7 @@ public enum ExerciseLibraryData {
         // Diese Lifts waren bisher `.keep` (Sackgasse) im Migrator — der
         // User landete im Urlaubs-Modus mit unveraenderten Kabel-Uebungen.
         "Kabelrudern sitzend": [
-            .homeGym:     "KH-Rudern einarmig",
+            .homeGym:     "Rudern einarmig (KH)",
             .noEquipment: "Australian Pull-ups"
         ],
         "Face Pull": [
@@ -514,20 +514,20 @@ public enum ExerciseLibraryData {
             .homeGym:     "Hammer Curl",
             .noEquipment: "Klimmzüge (eng/Chin-up)"
         ],
-        "Trizep Pushdown (Kabel)": [
-            .homeGym:     "Trizep Kickback (KH)",
+        "Trizepsdrücken (Kabel)": [
+            .homeGym:     "Trizepskickback (KH)",
             .noEquipment: "Diamant-Liegestütze"
         ],
-        "Overhead Trizep Extension (Kabel)": [
-            .homeGym:     "KH Overhead Trizep Extension",
+        "Trizepsstrecker über Kopf (Kabel)": [
+            .homeGym:     "Trizepsstrecker über Kopf (KH)",
             .noEquipment: "Dips (Trizeps)"
         ],
-        "Brust-Drückmaschine": [
-            .homeGym:     "KH-Bankdrücken",
+        "Brustdrücken (Maschine)": [
+            .homeGym:     "Bankdrücken (KH)",
             .noEquipment: "Liegestütze"
         ],
         "Pec Deck (Butterfly)": [
-            .homeGym:     "KH-Flyes (flach)",
+            .homeGym:     "Flyes flach (KH)",
             .noEquipment: "Breite Liegestütze"
         ],
         "Wadenpresse (sitzend)": [
@@ -545,45 +545,45 @@ public enum ExerciseLibraryData {
         "Hammer Curl": [
             .noEquipment: "Klimmzüge (eng/Chin-up)"
         ],
-        "KH-Curl": [
+        "Bizeps-Curl (KH)": [
             .noEquipment: "Klimmzüge (eng/Chin-up)"
         ],
-        "KH-Schrägbankdrücken (aufwärts)": [
+        "Schrägbankdrücken aufwärts (KH)": [
             .noEquipment: "Pike Liegestütze"
         ],
-        "KH-Flyes (Schrägbank)": [
+        "Flyes Schrägbank (KH)": [
             .noEquipment: "Breite Liegestütze"
         ],
         "Chest Supported Row (KH)": [
             .noEquipment: "Australian Pull-ups"
         ],
-        "KH-Pullover": [
+        "Pullover (KH)": [
             .noEquipment: "Australian Pull-ups"
         ],
         "Reverse Flyes (KH)": [
             .noEquipment: "Back Widows"
         ],
-        "KH-Romanian Deadlift": [
+        "Rumänisches Kreuzheben (KH)": [
             .noEquipment: "Nordic Curls"
         ],
         // (DEL-091: "Bulgarische Kniebeuge (KH)" steht bereits in
         // LEGS · QUADS oben — Dictionary-Duplikat vermieden.)
-        "KH-Hip Thrust": [
+        "Hip Thrust (KH)": [
             .noEquipment: "Hip Thrust (BW)"
         ],
-        "KH-Wadenheben": [
+        "Wadenheben (KH)": [
             .noEquipment: "Wadenheben (BW)"
         ],
-        "Konzentrations Curl": [
+        "Konzentrations-Curl (KH)": [
             .noEquipment: "Klimmzüge (eng/Chin-up)"
         ],
-        "Schrägbank Curl": [
+        "Schrägbank-Curl (KH)": [
             .noEquipment: "Klimmzüge (eng/Chin-up)"
         ],
-        "KH Overhead Trizep Extension": [
+        "Trizepsstrecker über Kopf (KH)": [
             .noEquipment: "Dips (Trizeps)"
         ],
-        "Trizep Kickback (KH)": [
+        "Trizepskickback (KH)": [
             .noEquipment: "Diamant-Liegestütze"
         ]
     ]
