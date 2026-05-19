@@ -631,12 +631,9 @@ public struct SettingsView: View {
         return "\(kg.truncated(to: 2).formattedTwoDecimals) kg"
     }
 
+    // DEL-118: route durch die zentrale .localizedName-Extension.
     private func environmentLabel(_ env: EnvironmentType) -> String {
-        switch env {
-        case .gym:         return "Gym"
-        case .homeGym:     return "Home-Gym"
-        case .noEquipment: return "Ohne Equipment"
-        }
+        String(localized: env.localizedName)
     }
 
     private var appVersion: String {

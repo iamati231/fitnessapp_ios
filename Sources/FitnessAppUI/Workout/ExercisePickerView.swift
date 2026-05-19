@@ -88,12 +88,9 @@ public struct ExercisePickerView: View {
         }
     }
 
+    // DEL-118: route durch die zentrale .localizedName-Extension.
     private func environmentLabel(_ env: EnvironmentType) -> String {
-        switch env {
-        case .gym:         return "Gym"
-        case .homeGym:     return "Home-Gym"
-        case .noEquipment: return "Bodyweight"
-        }
+        String(localized: env.localizedName)
     }
 
     // MARK: Sections
@@ -283,31 +280,15 @@ private struct TemplateRow: View {
         }
     }
 
+    // DEL-118: route durch die zentrale .localizedName-Extension statt
+    // hardcoded German hier inline. Der Catalog ist die einzige Quelle der
+    // Wahrheit fuer DE/EN/TR-Mappings.
     private func equipmentLabel(_ e: Equipment) -> String {
-        switch e {
-        case .barbell:     return "Langhantel"
-        case .dumbbell:    return "Kurzhantel"
-        case .bodyweight:  return "Körpergewicht"
-        case .machine:     return "Maschine"
-        case .cable:       return "Kabel"
-        case .kettlebell:  return "Kettlebell"
-        case .band:        return "Band"
-        }
+        String(localized: e.localizedName)
     }
 
     private func muscleLabel(_ m: MuscleGroup) -> String {
-        switch m {
-        case .chest:      return "Brust"
-        case .back:       return "Rücken"
-        case .shoulders:  return "Schultern"
-        case .biceps:     return "Bizeps"
-        case .triceps:    return "Trizeps"
-        case .quads:      return "Quadrizeps"
-        case .hamstrings: return "Hamstrings"
-        case .glutes:     return "Gesäß"
-        case .calves:     return "Waden"
-        case .core:       return "Core"
-        }
+        String(localized: m.localizedName)
     }
 }
 #endif

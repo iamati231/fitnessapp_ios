@@ -494,12 +494,9 @@ public struct DayEditorView: View {
         }
     }
 
+    // DEL-118: route durch die zentrale .localizedName-Extension.
     private func environmentLabel(_ env: EnvironmentType) -> String {
-        switch env {
-        case .gym:         return "Gym"
-        case .homeGym:     return "Home-Gym"
-        case .noEquipment: return "Bodyweight"
-        }
+        String(localized: env.localizedName)
     }
 
     /// DEL-083: Verbindet die Uebung an `idx` mit der direkt darueber zum
@@ -807,15 +804,26 @@ private struct ExerciseRow: View {
         .contentShape(Rectangle())
     }
 
+    // DEL-118: format-string via xcstrings statt hardcoded DE-Interpolation.
+    // Drei Varianten:
+    //   * Cardio → "workout.detail.cardio"
+    //   * Time-based (Plank, Wall Sit) → "workout.detail.seconds"
+    //   * Standard Strength → "workout.detail.reps"
     private var detailLine: String {
         if exercise.isCardio {
-            return "Cardio • \(exercise.restSeconds)s Pause"
+            return String(format: String(localized: "workout.detail.cardio", bundle: .module), exercise.restSeconds)
         }
         let repsText = exercise.repsMin == exercise.repsMax
             ? "\(exercise.repsMin)"
             : "\(exercise.repsMin)-\(exercise.repsMax)"
-        let unit = exercise.isTimeBased ? "Sek" : "Wdh"
-        return "\(exercise.sets) Sätze • \(repsText) \(unit) • \(exercise.restSeconds)s Pause"
+        let key: String.LocalizationValue = exercise.isTimeBased
+            ? "workout.detail.seconds"
+            : "workout.detail.reps"
+        let template = String(localized: key, bundle: .module)
+        return template
+            .replacingOccurrences(of: "%1$lld", with: "\(exercise.sets)")
+            .replacingOccurrences(of: "%2$@",   with: repsText)
+            .replacingOccurrences(of: "%3$lld", with: "\(exercise.restSeconds)")
     }
 }
 #endif

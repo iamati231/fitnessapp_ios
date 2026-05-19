@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 812 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 815 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **812 / 812** (100%) | 0 |
-| 🇬🇧 English (EN) | **812 / 812** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **812 / 812** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **815 / 815** (100%) | 0 |
+| 🇬🇧 English (EN) | **815 / 815** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **815 / 815** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1024,11 +1024,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `widget.weightTrend.name` | Gewichts-Trend | Weight Trend | Kilo Trendi |
 | `widget.workoutHistory.name` | Trainingsverlauf | Workout History | Antrenman Geçmişi |
 
-## `workout.*`  (1 Keys)
+## `workout.*`  (4 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `workout.allSetsDone` | Alle Sätze erledigt | All sets done | Tüm setler tamam |
+| `workout.detail.cardio` | Cardio • %llds Pause | Cardio • %llds rest | Kardiyo • %llds mola |
+| `workout.detail.reps` | %1$lld Sätze • %2$@ Wdh • %3$llds Pause | %1$lld sets • %2$@ reps • %3$llds rest | %1$lld set • %2$@ tekrar • %3$llds mola |
+| `workout.detail.seconds` | %1$lld Sätze • %2$@ Sek • %3$llds Pause | %1$lld sets • %2$@ sec • %3$llds rest | %1$lld set • %2$@ sn • %3$llds mola |
 
 
 ---

@@ -273,12 +273,9 @@ public struct PlanEditorView: View {
         }
     }
 
+    // DEL-118: route durch die zentrale .localizedName-Extension.
     private func environmentLabel(_ env: EnvironmentType) -> String {
-        switch env {
-        case .gym:         return "Gym"
-        case .homeGym:     return "Home-Gym"
-        case .noEquipment: return "Bodyweight"
-        }
+        String(localized: env.localizedName)
     }
 
     /// DEL-030: Plaene sind jetzt IMMER editierbar. `plan.isTemplate` bleibt

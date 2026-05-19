@@ -18737,6 +18737,75 @@
           }
         }
       }
+    },
+    "workout.detail.reps": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld Sätze • %2$@ Wdh • %3$llds Pause"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld sets • %2$@ reps • %3$llds rest"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld set • %2$@ tekrar • %3$llds mola"
+          }
+        }
+      }
+    },
+    "workout.detail.seconds": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld Sätze • %2$@ Sek • %3$llds Pause"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld sets • %2$@ sec • %3$llds rest"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld set • %2$@ sn • %3$llds mola"
+          }
+        }
+      }
+    },
+    "workout.detail.cardio": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio • %llds Pause"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio • %llds rest"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kardiyo • %llds mola"
+          }
+        }
+      }
     }
   }
 }

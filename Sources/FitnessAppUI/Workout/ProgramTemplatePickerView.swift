@@ -257,9 +257,15 @@ public struct TemplatePreviewView: View {
             } else {
                 ForEach(Array(day.exercises.enumerated()), id: \.offset) { _, exercise in
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(exercise.name)
+                        // DEL-118: lokalisierter Name via Library-Lookup
+                        // (ExerciseSpec.name ist der deutsche Raw-String aus
+                        // dem Template — wir resolven ihn ueber den Catalog-
+                        // Key des Library-Eintrags).
+                        Text(localizedExerciseName(exercise.name))
                             .font(.body.weight(.medium))
-                        Text("\(exercise.sets) × \(exercise.repsMin)-\(exercise.repsMax) Wdh · \(exercise.restSeconds)s Pause")
+                        // DEL-118: format-string via xcstrings statt
+                        // hardcoded DE-Interpolation.
+                        Text(detailLine(for: exercise))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -309,6 +315,37 @@ public struct TemplatePreviewView: View {
     /// jetzt obsolet, weil Templates keinen Wochentag mehr enthalten.
     private var orderedDays: [DaySpec] {
         template.days.sorted { $0.sequenceIndex < $1.sequenceIndex }
+    }
+
+    /// DEL-118: ExerciseSpec.name ist der deutsche Raw-String aus dem
+    /// Template-Source. Wenn er einen Library-Eintrag matched, holen wir
+    /// dessen `localizationKey` und resolven via Catalog. Sonst Fallback
+    /// auf den Raw-String (Custom-Plan-Strings ohne Library-Match).
+    private func localizedExerciseName(_ name: String) -> String {
+        if let entry = ExerciseLibraryData.all.first(where: { $0.name == name }),
+           let key = entry.localizationKey, !key.isEmpty {
+            return String(localized: String.LocalizationValue(key), bundle: .module)
+        }
+        return name
+    }
+
+    /// DEL-118: format-string fuer die Detail-Zeile (Saetze × Wdh × Pause)
+    /// via xcstrings.
+    private func detailLine(for exercise: ExerciseSpec) -> String {
+        if exercise.isCardio {
+            return String(format: String(localized: "workout.detail.cardio", bundle: .module), exercise.restSeconds)
+        }
+        let repsText = exercise.repsMin == exercise.repsMax
+            ? "\(exercise.repsMin)"
+            : "\(exercise.repsMin)-\(exercise.repsMax)"
+        // Templates haben keinen `isTimeBased`-Flag pro ExerciseSpec —
+        // wir nutzen einheitlich die reps-Variante. Time-based Lifts in
+        // Templates (z.B. Plank) tragen Sekunden im repsMin/Max-Feld.
+        let template = String(localized: "workout.detail.reps", bundle: .module)
+        return template
+            .replacingOccurrences(of: "%1$lld", with: "\(exercise.sets)")
+            .replacingOccurrences(of: "%2$@",   with: repsText)
+            .replacingOccurrences(of: "%3$lld", with: "\(exercise.restSeconds)")
     }
 }
 

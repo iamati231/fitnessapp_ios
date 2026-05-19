@@ -205,12 +205,9 @@ public struct ProfileEditorView: View {
         }
     }
 
+    // DEL-118: route durch die zentrale .localizedName-Extension.
     private func environmentLabel(_ env: EnvironmentType) -> String {
-        switch env {
-        case .gym:         return "Gym"
-        case .homeGym:     return "Home-Gym"
-        case .noEquipment: return "ohne Equipment"
-        }
+        String(localized: env.localizedName)
     }
 
     @ViewBuilder

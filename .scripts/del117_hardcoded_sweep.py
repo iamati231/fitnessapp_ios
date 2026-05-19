@@ -653,6 +653,21 @@ KEYS = {
     "history.empty.description":        ("Beende dein erstes Training, um deine Historie zu sehen.",
                                           "Finish your first workout to see your history.",
                                           "Geçmişini görmek için ilk antrenmanını bitir."),
+
+    # ──────────────────────────────────────────────────────────────────
+    # DEL-118 — Workout-Detail-Format-Strings (DayRow + Plan-Template-Vorschau)
+    # ──────────────────────────────────────────────────────────────────
+    # Unified format: "<sets> Sätze • <reps> <Wdh|Sek> • <restSeconds>s Pause"
+    # Cardio variant: "Cardio • <restSeconds>s Pause"
+    "workout.detail.reps":              ("%1$lld Sätze • %2$@ Wdh • %3$llds Pause",
+                                          "%1$lld sets • %2$@ reps • %3$llds rest",
+                                          "%1$lld set • %2$@ tekrar • %3$llds mola"),
+    "workout.detail.seconds":           ("%1$lld Sätze • %2$@ Sek • %3$llds Pause",
+                                          "%1$lld sets • %2$@ sec • %3$llds rest",
+                                          "%1$lld set • %2$@ sn • %3$llds mola"),
+    "workout.detail.cardio":            ("Cardio • %llds Pause",
+                                          "Cardio • %llds rest",
+                                          "Kardiyo • %llds mola"),
 }
 
 
