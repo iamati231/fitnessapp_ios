@@ -1,16 +1,21 @@
 import XCTest
 @testable import FitnessAppCore
 
-/// DEL-111: Smoke-Tests fuer die Localization-Key-Annotation der
-/// kanonischen Library-Lifts. Stellt sicher, dass die wichtigsten 5
-/// Compounds + Plank den `localizationKey` tragen, sonst rutscht die
-/// Library bei einem Refactor stillschweigend zurueck auf deutsche
-/// Hardcoded-Namen.
+/// DEL-111 / DEL-113: Smoke-Tests fuer die Localization-Key-Annotation der
+/// Library-Lifts.
+///
+/// Historie:
+///   - DEL-111 hat die i18n-Infrastruktur etabliert (`localizationKey` auf
+///     `ExerciseTemplateSpec`) und 13 kanonische Lifts annotiert. Der Rest
+///     der Library war absichtlich `nil` (Catalog-Drift-Guard).
+///   - DEL-113 erweitert das auf alle ~119 Library-Eintraege. Damit kippt
+///     der ehemalige "nil ist OK"-Test in sein Gegenteil: **kein** Library-
+///     Eintrag darf jetzt mehr `nil` haben.
 final class ExerciseLibraryLocalizationTests: XCTestCase {
 
-    /// Wenn jemand den deutschen `name` eines kanonischen Lifts
-    /// umbenennt, ohne den localizationKey mitzudenken, faengt dieser
-    /// Test das.
+    /// Smoke-Test fuer die kanonischen 5 Compounds + Klassiker. Wenn jemand
+    /// den deutschen `name` umbenennt, ohne den localizationKey mitzudenken,
+    /// faengt dieser Test das.
     func testCanonicalLiftsCarryLocalizationKey() {
         let expectations: [(germanName: String, expectedKey: String)] = [
             ("Kniebeuge",                  "exercise.name.squat"),
@@ -36,17 +41,52 @@ final class ExerciseLibraryLocalizationTests: XCTestCase {
         }
     }
 
-    /// Custom-style nicht-kanonische Library-Eintraege duerfen ruhig nil
-    /// als localizationKey haben. Stichprobe.
-    func testNonCanonicalLiftsHaveNilLocalizationKey() {
-        let nonCanonicalSamples = ["Schrägbankdrücken (aufwärts)", "Hammer Curl", "Bulgarische Kniebeuge (KH)"]
-        for name in nonCanonicalSamples {
-            guard let entry = ExerciseLibraryData.all.first(where: { $0.name == name }) else {
-                XCTFail("Library-Eintrag '\(name)' fehlt")
+    /// DEL-113: Stichprobe der neu annotierten Lifts. Falls hier was bricht,
+    /// hat jemand entweder den deutschen Namen umbenannt oder den Catalog-
+    /// Key umgeschmissen.
+    func testDEL113NewlyAnnotatedLiftsCarryLocalizationKey() {
+        let samples: [(germanName: String, expectedKey: String)] = [
+            ("Schrägbankdrücken (aufwärts)",        "exercise.name.inclineBenchPress"),
+            ("Hammer Curl",                         "exercise.name.hammerCurl"),
+            ("Bulgarische Kniebeuge (KH)",          "exercise.name.bulgarianSplitSquatDB"),
+            ("Goblet Squat",                        "exercise.name.gobletSquat"),
+            ("Liegestütze",                         "exercise.name.pushup"),
+            ("Burpees",                             "exercise.name.burpee"),
+            ("Face Pull",                           "exercise.name.facePull"),
+            ("Kettlebell Swing",                    "exercise.name.kettlebellSwing"),
+            ("Schwimmen",                           "exercise.name.swimming"),
+            ("Rumänisches Kreuzheben",              "exercise.name.romanianDeadlift"),
+        ]
+
+        for (germanName, expectedKey) in samples {
+            guard let entry = ExerciseLibraryData.all.first(where: { $0.name == germanName }) else {
+                XCTFail("Library-Eintrag '\(germanName)' fehlt")
                 continue
             }
-            XCTAssertNil(entry.localizationKey,
-                         "'\(name)' ist nicht in den 13 kanonischen Lifts — sollte localizationKey == nil haben (sonst Catalog-Drift)")
+            XCTAssertEqual(entry.localizationKey, expectedKey,
+                           "'\(germanName)' sollte localizationKey '\(expectedKey)' tragen, ist aber '\(entry.localizationKey ?? "nil")'")
+        }
+    }
+
+    /// DEL-113 Catalog-Drift-Guard: **jeder** Library-Eintrag traegt jetzt
+    /// einen Key. Wer einen neuen Lift hinzufuegt, ohne den Key zu setzen,
+    /// faellt hier auf die Nase — und wird gezwungen, die xcstrings
+    /// nachzuziehen.
+    func testEveryLibraryEntryHasLocalizationKey() {
+        let missing = ExerciseLibraryData.all
+            .filter { $0.localizationKey == nil || $0.localizationKey?.isEmpty == true }
+            .map(\.name)
+        XCTAssertTrue(missing.isEmpty,
+                      "DEL-113-Invariante verletzt — die folgenden Library-Eintraege haben keinen localizationKey: \(missing)")
+    }
+
+    /// DEL-113: Catalog-Keys folgen dem Namespace `exercise.name.*`. Wer aus
+    /// Versehen ein `exercises.name.*` (Plural) tippt, soll hier kassieren.
+    func testAllLocalizationKeysUseCanonicalNamespace() {
+        for entry in ExerciseLibraryData.all {
+            guard let key = entry.localizationKey else { continue }
+            XCTAssertTrue(key.hasPrefix("exercise.name."),
+                          "'\(entry.name)' hat einen Key ausserhalb des `exercise.name.*` Namespaces: '\(key)'")
         }
     }
 }

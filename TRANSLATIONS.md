@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 247 Keys im String Catalog + 195 noch hartkodierte Strings im Code.**
+**Gesamt: 401 Keys im String Catalog + 195 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **247 / 247** (100%) | 0 |
-| 🇬🇧 English (EN) | **247 / 247** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **247 / 247** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **401 / 401** (100%) | 0 |
+| 🇬🇧 English (EN) | **401 / 401** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **401 / 401** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -120,6 +120,19 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.weeklySummary.title` | Diese Woche | This Week | Bu Hafta |
 | `dashboard.weeklySummary.volume` | Volumen | Volume | Hacim |
 
+## `dashboardSettings.*`  (8 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `dashboardSettings.empty` | Alle Widgets deaktiviert. Tippe ein '+' weiter unten, um wieder welche einzublenden. | All widgets are off. Tap '+' below to bring some back. | Tüm widget'lar kapalı. Geri eklemek için aşağıdan '+' simgesine dokun. |
+| `dashboardSettings.entry` | Dashboard anpassen | Customize Dashboard | Panoyu Özelleştir |
+| `dashboardSettings.entry.subtitle` | Widgets ein-/ausblenden und umsortieren | Toggle widgets on/off and reorder | Widget'ları aç/kapat ve sırala |
+| `dashboardSettings.section.active` | Reihenfolge & Sichtbarkeit | Order & Visibility | Sıralama ve Görünürlük |
+| `dashboardSettings.section.active.footer` | Halten + ziehen zum Umsortieren. Toggle aus, um ein Widget zu deaktivieren. | Press and drag to reorder. Toggle off to deactivate a widget. | Sıralamak için basılı tutup sürükle. Devre dışı bırakmak için kapat. |
+| `dashboardSettings.section.inactive` | Inaktive Widgets | Inactive Widgets | Pasif Widget'lar |
+| `dashboardSettings.section.inactive.footer` | Tippe das '+' um ein Widget wieder ans Ende der Liste zu setzen. | Tap '+' to append a widget back to the active list. | Bir widget'ı tekrar aktif listenin sonuna eklemek için '+' simgesine dokun. |
+| `dashboardSettings.title` | Dashboard anpassen | Customize Dashboard | Panoyu Özelleştir |
+
 ## `day_intensity.*`  (3 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
@@ -173,6 +186,131 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `equipment.dumbbell` | Kurzhantel | Dumbbell | Dambıl |
 | `equipment.kettlebell` | Kettlebell | Kettlebell | Kettlebell |
 | `equipment.machine` | Maschine | Machine | Makine |
+
+## `exercise.*`  (120 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `exercise.name.australianPullup` | Australian Pull-ups | Australian Pull-up | Australian Pull-up |
+| `exercise.name.backWidows` | Back Widows | Back Widows | Back Widows |
+| `exercise.name.bandCurl` | Band Curls | Band Curl | Band Curl |
+| `exercise.name.bandPullApart` | Band Pull-Aparts | Band Pull-Apart | Band Pull-Apart |
+| `exercise.name.bandedHipThrust` | Banded Hip Thrust | Banded Hip Thrust | Banded Hip Thrust |
+| `exercise.name.bandedSquat` | Banded Squats | Banded Squat | Banded Squat |
+| `exercise.name.barbellCurl` | Langhantel Curl | Barbell Curl | Barbell Curl |
+| `exercise.name.barbellHipThrust` | Hip Thrust (LH) | Barbell Hip Thrust | Barbell Hip Thrust |
+| `exercise.name.barbellLunge` | Ausfallschritte (LH) | Barbell Lunge | Barbell Lunge |
+| `exercise.name.barbellShrug` | Langhantel Shrug | Barbell Shrug | Barbell Shrug |
+| `exercise.name.barbellStandingCalfRaise` | Wadenheben (stehend, LH) | Standing Calf Raise (Barbell) | Standing Calf Raise (Barbell) |
+| `exercise.name.barbellrow` | Langhantelrudern | Barbell Row | Barbell Row |
+| `exercise.name.behindNeckPress` | Nackendrücken | Behind-the-Neck Press | Behind-the-Neck Press |
+| `exercise.name.benchpress` | Bankdrücken | Bench Press | Bench Press |
+| `exercise.name.bicepcurl` | Bizeps-Curls | Bicep Curl | Bicep Curl |
+| `exercise.name.bodyweightCalfRaise` | Wadenheben (BW) | Bodyweight Calf Raise | Vücut Ağırlığı Calf Raise |
+| `exercise.name.bodyweightHipThrust` | Hip Thrust (BW) | Bodyweight Hip Thrust | Vücut Ağırlığı Hip Thrust |
+| `exercise.name.bodyweightLunge` | Ausfallschritte (BW) | Bodyweight Lunge | Vücut Ağırlığı Lunge |
+| `exercise.name.bodyweightSquat` | Kniebeuge (BW) | Bodyweight Squat | Vücut Ağırlığı Squat |
+| `exercise.name.boxJump` | Box Jump | Box Jump | Box Jump |
+| `exercise.name.bulgarianSplitSquatDB` | Bulgarische Kniebeuge (KH) | Bulgarian Split Squat (DB) | Bulgarian Split Squat (DB) |
+| `exercise.name.burpee` | Burpees | Burpees | Burpee |
+| `exercise.name.cableCrossover` | Kabel Crossover | Cable Crossover | Cable Crossover |
+| `exercise.name.cableCrunch` | Kabel Crunch | Cable Crunch | Cable Crunch |
+| `exercise.name.cableCurl` | Kabel Curl | Cable Curl | Cable Curl |
+| `exercise.name.cableLateralRaise` | Kabel Seitheben | Cable Lateral Raise | Cable Lateral Raise |
+| `exercise.name.cableOverheadTricepExtension` | Overhead Trizep Extension (Kabel) | Cable Overhead Tricep Extension | Cable Overhead Tricep Extension |
+| `exercise.name.chestDip` | Dips (Brust) | Chest Dip | Chest Dip |
+| `exercise.name.chestPressMachine` | Brust-Drückmaschine | Chest Press Machine | Chest Press Machine |
+| `exercise.name.chestSupportedRowDB` | Chest Supported Row (KH) | Chest-Supported Row (DB) | Chest-Supported Row (DB) |
+| `exercise.name.closeGripBenchPress` | Enges Bankdrücken | Close-Grip Bench Press | Close-Grip Bench Press |
+| `exercise.name.concentrationCurl` | Konzentrations Curl | Concentration Curl | Concentration Curl |
+| `exercise.name.crunch` | Crunches (BW) | Crunches | Karın Mekik |
+| `exercise.name.cycling` | Radfahren (outdoor) | Cycling (Outdoor) | Bisiklet (Açık Hava) |
+| `exercise.name.deadlift` | Kreuzheben | Deadlift | Deadlift |
+| `exercise.name.declineBenchPress` | Schrägbankdrücken (abwärts) | Decline Bench Press | Decline Bench Press |
+| `exercise.name.diamondPushup` | Diamant-Liegestütze | Diamond Push-up | Elmas Şınav |
+| `exercise.name.dumbbellBenchPress` | KH-Bankdrücken | Dumbbell Bench Press | Dumbbell Bench Press |
+| `exercise.name.dumbbellCalfRaise` | KH-Wadenheben | Dumbbell Calf Raise | Dumbbell Calf Raise |
+| `exercise.name.dumbbellFlyFlat` | KH-Flyes (flach) | Dumbbell Fly (Flat) | Dumbbell Fly (Flat) |
+| `exercise.name.dumbbellFlyIncline` | KH-Flyes (Schrägbank) | Dumbbell Fly (Incline) | Dumbbell Fly (Incline) |
+| `exercise.name.dumbbellHipThrust` | KH-Hip Thrust | Dumbbell Hip Thrust | Dumbbell Hip Thrust |
+| `exercise.name.dumbbellInclineBenchPress` | KH-Schrägbankdrücken (aufwärts) | Dumbbell Incline Bench Press | Dumbbell Incline Bench Press |
+| `exercise.name.dumbbellLunge` | KH-Ausfallschritte | Dumbbell Lunge | Dumbbell Lunge |
+| `exercise.name.dumbbellOverheadTricepExtension` | KH Overhead Trizep Extension | Dumbbell Overhead Tricep Extension | Dumbbell Overhead Tricep Extension |
+| `exercise.name.dumbbellPullover` | KH-Pullover | Dumbbell Pullover | Dumbbell Pullover |
+| `exercise.name.dumbbellRDL` | KH-Romanian Deadlift | Dumbbell Romanian Deadlift | Dumbbell Romanian Deadlift |
+| `exercise.name.dumbbellRowOneArm` | KH-Rudern einarmig | One-Arm Dumbbell Row | One-Arm Dumbbell Row |
+| `exercise.name.dumbbellShoulderPress` | KH-Schulterdrücken | Dumbbell Shoulder Press | Dumbbell Shoulder Press |
+| `exercise.name.dumbbellShrug` | KH-Shrug | Dumbbell Shrug | Dumbbell Shrug |
+| `exercise.name.dumbbellTricepKickback` | Trizep Kickback (KH) | Dumbbell Tricep Kickback | Dumbbell Tricep Kickback |
+| `exercise.name.elliptical` | Crosstrainer | Elliptical | Eliptik Bisiklet |
+| `exercise.name.facePull` | Face Pull | Face Pull | Face Pull |
+| `exercise.name.frontRaise` | Frontheben | Front Raise | Front Raise |
+| `exercise.name.frontSquat` | Front Squat | Front Squat | Front Squat |
+| `exercise.name.gluteBridge` | Glute Bridge (BW) | Glute Bridge | Glute Bridge |
+| `exercise.name.gobletSquat` | Goblet Squat | Goblet Squat | Goblet Squat |
+| `exercise.name.goodMorning` | Good Morning | Good Morning | Good Morning |
+| `exercise.name.hackSquat` | Hack Squat | Hack Squat | Hack Squat |
+| `exercise.name.hammerCurl` | Hammer Curl | Hammer Curl | Hammer Curl |
+| `exercise.name.handstandPushup` | Handstand-Liegestütze | Handstand Push-up | Amuda Kalkarak Şınav |
+| `exercise.name.hangingLegRaise` | Hanging Leg Raises | Hanging Leg Raises | Asılı Bacak Kaldırma |
+| `exercise.name.inclineBenchPress` | Schrägbankdrücken (aufwärts) | Incline Bench Press | Incline Bench Press |
+| `exercise.name.inclineDumbbellCurl` | Schrägbank Curl | Incline Dumbbell Curl | Incline Dumbbell Curl |
+| `exercise.name.jumpSquat` | Jump Squat | Jump Squat | Jump Squat |
+| `exercise.name.kettlebellCleanAndPress` | Kettlebell Clean & Press | Kettlebell Clean & Press | Kettlebell Clean & Press |
+| `exercise.name.kettlebellGobletSquat` | Kettlebell Goblet Squat | Kettlebell Goblet Squat | Kettlebell Goblet Squat |
+| `exercise.name.kettlebellHalo` | Kettlebell Halo | Kettlebell Halo | Kettlebell Halo |
+| `exercise.name.kettlebellSnatch` | Kettlebell Snatch | Kettlebell Snatch | Kettlebell Snatch |
+| `exercise.name.kettlebellSwing` | Kettlebell Swing | Kettlebell Swing | Kettlebell Swing |
+| `exercise.name.latPulldownClose` | Latzug (eng) | Lat Pulldown (Close) | Lat Pulldown (Close) |
+| `exercise.name.lateralRaise` | Seitheben | Lateral Raise | Lateral Raise |
+| `exercise.name.latpulldown` | Latzug | Lat Pulldown | Lat Pulldown |
+| `exercise.name.legExtension` | Beinstrecker | Leg Extension | Leg Extension |
+| `exercise.name.legpress` | Beinpresse | Leg Press | Leg Press |
+| `exercise.name.lyingLegCurl` | Beinbeuger liegend | Lying Leg Curl | Lying Leg Curl |
+| `exercise.name.lyingLegExtension` | Beinstrecker liegend | Lying Leg Extension | Yatarak Bacak Açma |
+| `exercise.name.lyingLegRaise` | Beinheben (liegend) | Lying Leg Raise | Yatarak Bacak Kaldırma |
+| `exercise.name.mountainClimber` | Mountain Climbers | Mountain Climbers | Mountain Climbers |
+| `exercise.name.nordicCurl` | Nordic Curls | Nordic Curl | Nordic Curl |
+| `exercise.name.overheadpress` | Schulterdrücken | Overhead Press | Overhead Press |
+| `exercise.name.pecDeck` | Pec Deck (Butterfly) | Pec Deck (Butterfly) | Pec Deck (Butterfly) |
+| `exercise.name.pendlayRow` | Pendlay Row | Pendlay Row | Pendlay Row |
+| `exercise.name.pikePushup` | Pike Liegestütze | Pike Push-up | Pike Şınav |
+| `exercise.name.plank` | Unterarmstütz (Plank) | Plank | Plank |
+| `exercise.name.preacherCurl` | Preacher Curl (Maschine) | Preacher Curl (Machine) | Preacher Curl (Machine) |
+| `exercise.name.pullup` | Klimmzüge | Pull-Up | Pull-Up |
+| `exercise.name.pushPress` | Push Press | Push Press | Push Press |
+| `exercise.name.pushup` | Liegestütze | Push-up | Şınav |
+| `exercise.name.rest` | Pause | Rest | Dinlenme |
+| `exercise.name.reverseCurl` | Reverse Curl | Reverse Curl | Reverse Curl |
+| `exercise.name.reverseFlyDB` | Reverse Flyes (KH) | Reverse Fly (DB) | Reverse Fly (DB) |
+| `exercise.name.romanianDeadlift` | Rumänisches Kreuzheben | Romanian Deadlift | Romanian Deadlift |
+| `exercise.name.rowingMachine` | Rudermaschine | Rowing Machine | Kürek Makinesi |
+| `exercise.name.run` | Lauf | Run | Koşu |
+| `exercise.name.russianTwist` | Russian Twists | Russian Twists | Russian Twist |
+| `exercise.name.seatedCableRow` | Kabelrudern sitzend | Seated Cable Row | Seated Cable Row |
+| `exercise.name.seatedCalfRaise` | Wadenpresse (sitzend) | Seated Calf Raise | Seated Calf Raise |
+| `exercise.name.shoulderPressMachine` | Schulterdrück-Maschine | Shoulder Press Machine | Shoulder Press Machine |
+| `exercise.name.sidePlank` | Seitstütz | Side Plank | Yan Plank |
+| `exercise.name.sissySquat` | Sissy Squats (BW) | Sissy Squat | Sissy Squat |
+| `exercise.name.situp` | Sit-ups | Sit-ups | Mekik |
+| `exercise.name.skullCrusher` | Skull Crusher | Skull Crusher | Skull Crusher |
+| `exercise.name.smithMachineSquat` | Smith Machine Squat | Smith Machine Squat | Smith Machine Squat |
+| `exercise.name.squat` | Kniebeuge | Back Squat | Back Squat |
+| `exercise.name.stairStepper` | Stepper | Stair Stepper | Stepper |
+| `exercise.name.stationaryBike` | Fahrradergometer | Stationary Bike | Kondisyon Bisikleti |
+| `exercise.name.stepUpDB` | Step-Up (KH) | Step-Up (DB) | Step-Up (DB) |
+| `exercise.name.sumoDeadlift` | Sumo-Kreuzheben | Sumo Deadlift | Sumo Deadlift |
+| `exercise.name.swimming` | Schwimmen | Swimming | Yüzme |
+| `exercise.name.tBarRow` | T-Bar Rudern | T-Bar Row | T-Bar Row |
+| `exercise.name.towelRowDoorframe` | Handtuch-Rudern (Türrahmen) | Towel Row (Doorframe) | Havlu Sırt Çekişi (Kapı Kasası) |
+| `exercise.name.treadmill` | Laufband | Treadmill | Koşu Bandı |
+| `exercise.name.tricepDip` | Dips (Trizeps) | Tricep Dip | Tricep Dip |
+| `exercise.name.tricepPushdown` | Trizeps-Drücken | Triceps Pushdown | Triceps Pushdown |
+| `exercise.name.turkishGetUp` | Turkish Get-Up | Turkish Get-Up | Türk Kalkışı |
+| `exercise.name.wallSit` | Wall Sit | Wall Sit | Wall Sit |
+| `exercise.name.widePullup` | Klimmzüge (weit) | Wide Pull-up | Wide Pull-up |
+| `exercise.name.widePushup` | Breite Liegestütze | Wide Push-up | Geniş Şınav |
+| `exercise.name.zercherSquat` | Zercher Squat | Zercher Squat | Zercher Squat |
 
 ## `measurement.*`  (80 Keys)
 
@@ -268,6 +406,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `metric.weeklyDelta.suffix` | / Wo. | / wk. | / hf. |
 | `metric.weight` | Gewicht | Weight | Ağırlık |
 
+## `misc.*`  (1 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `%lld von %lld nötigen Messungen` | %lld von %lld nötigen Messungen | %lld of %lld required measurements | %lld / %lld gerekli ölçüm |
+
 ## `muscle.*`  (10 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
@@ -300,6 +444,25 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.section.goals` | Ziel & Training | Goals & Training | Hedef & Antrenman |
 | `onboarding.section.profile` | Profil | Profile | Profil |
 | `onboarding.title` | Willkommen | Welcome | Hoş Geldin |
+
+## `plan.*`  (14 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `plan.template.arnoldSplit` | Arnold Split | Arnold Split | Arnold Split |
+| `plan.template.bodyweightMastery` | Bodyweight Mastery | Bodyweight Mastery | Vücut Ağırlığı Ustası |
+| `plan.template.broSplit` | Bro-Split | Bro Split | Bro Split |
+| `plan.template.fatBurnFullBody` | Fatburn Ganzkörper | Fat Burn Full Body | Yağ Yakım Tüm Vücut |
+| `plan.template.footballAthletic` | Fussball Athletik | Football Athletics | Futbol Atletik |
+| `plan.template.fullBody3x` | Ganzkörper 3x | Full Body 3x | Tüm Vücut 3x |
+| `plan.template.homeGymHero` | Home Gym Hero | Home Gym Hero | Ev Salonu Kahramanı |
+| `plan.template.hybridBalanced` | Hybrid Athlete — Balanced | Hybrid Athlete — Balanced | Hibrit Atlet — Dengeli |
+| `plan.template.hybridBeginner` | Hybrid Athlete — Beginner | Hybrid Athlete — Beginner | Hibrit Atlet — Başlangıç |
+| `plan.template.hybridPerformance` | Hybrid Athlete — Performance | Hybrid Athlete — Performance | Hibrit Atlet — Performans |
+| `plan.template.powerlifting3x5` | Powerlifting 3x5 | Powerlifting 3x5 | Powerlifting 3x5 |
+| `plan.template.powerlifting5x5` | Powerlifting 5x5 | Powerlifting 5x5 | Powerlifting 5x5 |
+| `plan.template.pushPullLegs` | Push-Pull-Legs | Push-Pull-Legs | Push-Pull-Legs |
+| `plan.template.upperLower` | Upper-Lower-Split | Upper-Lower Split | Üst-Alt Vücut Bölünmüş |
 
 ## `settings.*`  (12 Keys)
 
@@ -356,6 +519,21 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `trophy.kind.maxReps` | Max Wdh. | Max Reps | Maks. Tekrar |
 | `trophy.title` | Trophy Room | Trophy Room | Rekor Odası |
 
+## `widget.*`  (10 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `widget.cardioPace.name` | Cardio-Pace-Trend | Cardio Pace Trend | Kardiyo Tempo Trendi |
+| `widget.coachingInsight.name` | Coaching-Insight | Coaching Insight | Koçluk İçgörüsü |
+| `widget.compoundLifts.name` | Compound-Lift-Trend | Compound Lift Trend | Temel Hareket Trendi |
+| `widget.muscleHeatmap.name` | Muskel-Heatmap | Muscle Heatmap | Kas Isı Haritası |
+| `widget.nextWorkout.name` | Nächstes Training | Next Workout | Sıradaki Antrenman |
+| `widget.recentWorkouts.name` | Letzte Workouts | Recent Workouts | Son Antrenmanlar |
+| `widget.trophyRoom.name` | Trophy Room | Trophy Room | Kupa Odası |
+| `widget.weeklyVolume.name` | Diese Woche | This Week | Bu Hafta |
+| `widget.weightTrend.name` | Gewichts-Trend | Weight Trend | Kilo Trendi |
+| `widget.workoutHistory.name` | Trainingsverlauf | Workout History | Antrenman Geçmişi |
+
 
 ---
 
@@ -371,6 +549,14 @@ Diese Keys haben Plural-Varianten — beide Formen sind übersetzt.
 | Deutsch | %lld Rekord | %lld Rekorde |
 | English | %lld record | %lld records |
 | Türkçe | %lld rekor | %lld rekor |
+
+### `%lld Übungen — %@`
+
+| Sprache | one | other |
+|---|---|---|
+| Deutsch | %lld Übung — %@ | %lld Übungen — %@ |
+| English | %lld exercise — %@ | %lld exercises — %@ |
+| Türkçe |  |  |
 
 
 ---
@@ -430,14 +616,14 @@ Diese Strings müssen in einem späteren i18n-Sweep (DEL-073 Phase 2-4) nach `Lo
 | 557 | Übung hinzufügen |  |  |
 | 567 | Workout abbrechen |  |  |
 | 637 | Set-Logging mit Vorgaben & Rest-Timer • Live Activities folgen im Xcode-Target. |  |  |
-| 1001 | Workout beenden |  |  |
-| 1007 | Abbrechen |  |  |
-| 1023 | Verwendete Ausrüstung |  |  |
-| 1068 | Dein Workout |  |  |
-| 1097 | Wie hat sich das Training angefühlt? |  |  |
-| 1099 | Die App nutzt das fuer die Progression: Wenn du am Limit warst, halten wir das Gewicht stabil — kein Zwangs-Plus. |  |  |
-| 1128 | Kein Gewichts-Plus im nächsten Workout |  |  |
-| 1157 | Workout speichern |  |  |
+| 1003 | Workout beenden |  |  |
+| 1009 | Abbrechen |  |  |
+| 1025 | Verwendete Ausrüstung |  |  |
+| 1070 | Dein Workout |  |  |
+| 1099 | Wie hat sich das Training angefühlt? |  |  |
+| 1101 | Die App nutzt das fuer die Progression: Wenn du am Limit warst, halten wir das Gewicht stabil — kein Zwangs-Plus. |  |  |
+| 1130 | Kein Gewichts-Plus im nächsten Workout |  |  |
+| 1159 | Workout speichern |  |  |
 
 ## `DayEditorView.swift`  (18 Strings)
 
@@ -527,16 +713,16 @@ Diese Strings müssen in einem späteren i18n-Sweep (DEL-073 Phase 2-4) nach `Lo
 | Line | Deutsch (DE) | EN (übersetzen) | TR (übersetzen) |
 |---|---|---|---|
 | 123 | Kein Profil vorhanden — App neu starten oder zurücksetzen. |  |  |
-| 172 | Ausrüstung & Schuhe |  |  |
-| 183 | Die DB speichert immer metrisch. Diese Einstellung steuert nur die Anzeige in Eingabe-Feldern, im Hantel-Rechner und auf den Karten. |  |  |
-| 202 | Greift in alle Views der App. 'System' folgt der iOS-Einstellung. |  |  |
-| 232 | Wird beim Ablauf des Pausen-Timers ausgeloest. Vibrations-Toggle hat auf iPads keine Wirkung. 'PR-Feiern' steuert Save-Screen-Popups, Live-Activity-Headline und lokale Benachrichtigungen — die Bestleistungen werden trotzdem im Trophy-Room gespeichert. |  |  |
-| 248 | Wenn aus, werden Warmup- und Cooldown-Übungen während der Session ausgeblendet. Die Templates und deine Plan-Editierung bleiben unverändert — der Toggle wirkt nur auf den Live-Workout-Flow. Warmups sind ohnehin nie Pflicht: der „Workout speichern“-Button bleibt immer klickbar, auch wenn du sie nicht abhakst. |  |  |
-| 320 | Lokale Benachrichtigungen — keine Server-Verbindung. Tippen auf eine Erinnerung öffnet direkt den passenden Tab. |  |  |
-| 375 | Bei aktivierter Verbindung wird im Messwerte-Formular das letzte Waagen-Gewicht vorausgefüllt. Beim Speichern werden Gewicht, KFA und Magere Masse zurück nach Apple Health geschrieben. |  |  |
-| 405 | Nicht verfügbar |  |  |
-| 418 | In iOS-Einstellungen öffnen |  |  |
-| 456 | Löscht Profil, Messungen, Pläne, Trainings-Templates und Workout-Sessions vollständig. Die Apple-Health-Daten bleiben erhalten — die löscht du in der Health-App selber. |  |  |
+| 206 | Ausrüstung & Schuhe |  |  |
+| 219 | Die DB speichert immer metrisch. Diese Einstellung steuert nur die Anzeige in Eingabe-Feldern, im Hantel-Rechner und auf den Karten. |  |  |
+| 238 | Greift in alle Views der App. 'System' folgt der iOS-Einstellung. |  |  |
+| 268 | Wird beim Ablauf des Pausen-Timers ausgeloest. Vibrations-Toggle hat auf iPads keine Wirkung. 'PR-Feiern' steuert Save-Screen-Popups, Live-Activity-Headline und lokale Benachrichtigungen — die Bestleistungen werden trotzdem im Trophy-Room gespeichert. |  |  |
+| 284 | Wenn aus, werden Warmup- und Cooldown-Übungen während der Session ausgeblendet. Die Templates und deine Plan-Editierung bleiben unverändert — der Toggle wirkt nur auf den Live-Workout-Flow. Warmups sind ohnehin nie Pflicht: der „Workout speichern“-Button bleibt immer klickbar, auch wenn du sie nicht abhakst. |  |  |
+| 356 | Lokale Benachrichtigungen — keine Server-Verbindung. Tippen auf eine Erinnerung öffnet direkt den passenden Tab. |  |  |
+| 411 | Bei aktivierter Verbindung wird im Messwerte-Formular das letzte Waagen-Gewicht vorausgefüllt. Beim Speichern werden Gewicht, KFA und Magere Masse zurück nach Apple Health geschrieben. |  |  |
+| 441 | Nicht verfügbar |  |  |
+| 454 | In iOS-Einstellungen öffnen |  |  |
+| 492 | Löscht Profil, Messungen, Pläne, Trainings-Templates und Workout-Sessions vollständig. Die Apple-Health-Daten bleiben erhalten — die löscht du in der Health-App selber. |  |  |
 
 ## `PlansListView.swift`  (10 Strings)
 
