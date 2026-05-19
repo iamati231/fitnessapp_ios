@@ -108,7 +108,7 @@ public struct PlanEditorView: View {
         // mehrere aktive Plaene hat. Drei Buttons: alle + global syncen,
         // nur diesen Plan aendern, oder die Picker-Aenderung verwerfen.
         .confirmationDialog(
-            "Auch andere Pläne anpassen?",
+            Text("planEditor.globalSync.title", bundle: .module),
             isPresented: Binding(
                 get: { pendingGlobalSync != nil },
                 set: { if !$0 { pendingGlobalSync = nil } }
@@ -116,24 +116,30 @@ public struct PlanEditorView: View {
             titleVisibility: .visible,
             presenting: pendingGlobalSync
         ) { swap in
-            Button("Für alle anpassen") {
+            Button {
                 applyGlobalSync(newEnv: swap.newEnv)
                 continueWithAdaptOrRestorePrompt(swap)
                 pendingGlobalSync = nil
+            } label: {
+                Text("planEditor.globalSync.allPlans", bundle: .module)
             }
-            Button("Nur für diesen Plan") {
+            Button {
                 continueWithAdaptOrRestorePrompt(swap)
                 pendingGlobalSync = nil
+            } label: {
+                Text("planEditor.globalSync.thisOnly", bundle: .module)
             }
-            Button("Abbrechen", role: .cancel) {
+            Button(role: .cancel) {
                 plan.targetEnvironment = swap.oldEnv
                 pendingGlobalSync = nil
+            } label: {
+                Text("common.cancel", bundle: .module)
             }
         } message: { swap in
-            Text("Du hast mehrere aktive Pläne. Soll dein globaler Trainingsort und deine anderen aktiven Pläne ebenfalls auf \(environmentLabel(swap.newEnv)) geändert werden?")
+            Text(String(format: String(localized: "planEditor.globalSync.message", bundle: .module), environmentLabel(swap.newEnv)))
         }
         .confirmationDialog(
-            "Trainingsort geändert",
+            Text("profile.envSwap.title", bundle: .module),
             isPresented: Binding(
                 get: { pendingEnvironmentSwap != nil },
                 set: { if !$0 { pendingEnvironmentSwap = nil } }
@@ -141,24 +147,30 @@ public struct PlanEditorView: View {
             titleVisibility: .visible,
             presenting: pendingEnvironmentSwap
         ) { swap in
-            Button("Übungen anpassen") {
+            Button {
                 performEnvironmentSwap(to: swap.newEnv)
                 pendingEnvironmentSwap = nil
+            } label: {
+                Text("planEditor.envSwap.adapt", bundle: .module)
             }
-            Button("Nur Trainingsort ändern") {
+            Button {
                 pendingEnvironmentSwap = nil
+            } label: {
+                Text("planEditor.envSwap.justEnv", bundle: .module)
             }
-            Button("Abbrechen", role: .cancel) {
+            Button(role: .cancel) {
                 // Picker rueckgaengig machen
                 plan.targetEnvironment = swap.oldEnv
                 pendingEnvironmentSwap = nil
+            } label: {
+                Text("common.cancel", bundle: .module)
             }
         } message: { swap in
-            Text("Sollen die Übungen an deinen neuen Trainingsort angepasst werden? Übungen ohne passende Alternative bleiben im Plan und brauchen manuelle Anpassung.")
+            Text("planEditor.envSwap.message", bundle: .module)
         }
         // DEL-049 — Restore-Dialog ("Urlaubs-Modus zu Ende").
         .confirmationDialog(
-            "Ursprüngliche Übungen wiederherstellen?",
+            Text("profile.envRestore.title", bundle: .module),
             isPresented: Binding(
                 get: { pendingEnvironmentRestore != nil },
                 set: { if !$0 { pendingEnvironmentRestore = nil } }
@@ -166,20 +178,26 @@ public struct PlanEditorView: View {
             titleVisibility: .visible,
             presenting: pendingEnvironmentRestore
         ) { swap in
-            Button("Ja, wiederherstellen") {
+            Button {
                 performEnvironmentRestore(to: swap.newEnv)
                 pendingEnvironmentRestore = nil
+            } label: {
+                Text("profile.envRestore.confirm", bundle: .module)
             }
-            Button("Nein, neu anpassen") {
+            Button {
                 performEnvironmentSwap(to: swap.newEnv)
                 pendingEnvironmentRestore = nil
+            } label: {
+                Text("profile.envRestore.adjustNew", bundle: .module)
             }
-            Button("Abbrechen", role: .cancel) {
+            Button(role: .cancel) {
                 plan.targetEnvironment = swap.oldEnv
                 pendingEnvironmentRestore = nil
+            } label: {
+                Text("common.cancel", bundle: .module)
             }
         } message: { swap in
-            Text("Wir haben gespeicherte Original-Übungen aus einem früheren Equipment-Wechsel gefunden. Möchtest du diese wiederherstellen (inkl. der letzten Arbeitsgewichte aus der Historie), statt das aktuelle Setup neu anzupassen?")
+            Text("planEditor.envRestore.message", bundle: .module)
         }
         .overlay(alignment: .bottom) {
             if let msg = swapResultToast {
@@ -287,9 +305,9 @@ public struct PlanEditorView: View {
                     .background(Color.indigo.gradient)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Template-Plan")
+                    Text("planEditor.template.banner.title", bundle: .module)
                         .font(.body.weight(.semibold))
-                    Text("Struktur ist festgelegt. Du kannst Trainingsort und Wochen anpassen, aber Name/Tage/Übungen nicht ändern.")
+                    Text("planEditor.template.banner.subtitle", bundle: .module)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -303,8 +321,10 @@ public struct PlanEditorView: View {
     /// Logik und gehoert nicht ins User-UI. `descriptionText` lebt nur im
     /// Template-Picker, im PlanEditor unnoetig.
     private var metaSection: some View {
-        Section("Plan-Info") {
-            TextField("Name", text: $plan.name)
+        Section {
+            TextField(String(localized: "day.editor.field.name", bundle: .module), text: $plan.name)
+        } header: {
+            Text("planEditor.section.info", bundle: .module)
         }
     }
 
@@ -313,33 +333,45 @@ public struct PlanEditorView: View {
         // Template kuerzen oder die Equipment-Auswahl anpassen, ohne die
         // Uebungs-Struktur zu zerschiessen. Active-Toggle bleibt fuer Plan-
         // Wechsel offen.
-        Section("Einstellungen") {
+        Section {
             Stepper(value: $plan.weeks, in: 1...52) {
-                LabeledContent("Wochen", value: "\(plan.weeks)")
+                LabeledContent {
+                    Text("\(plan.weeks)")
+                } label: {
+                    Text("planEditor.field.weeks", bundle: .module)
+                }
             }
 
-            Picker("Trainingsort", selection: $plan.targetEnvironment) {
-                Text("Gym").tag(EnvironmentType.gym)
-                Text("Home-Gym").tag(EnvironmentType.homeGym)
-                Text("Ohne Equipment").tag(EnvironmentType.noEquipment)
+            Picker(selection: $plan.targetEnvironment) {
+                Text("environment.gym", bundle: .module).tag(EnvironmentType.gym)
+                Text("environment.home_gym", bundle: .module).tag(EnvironmentType.homeGym)
+                Text("environment.no_equipment", bundle: .module).tag(EnvironmentType.noEquipment)
+            } label: {
+                Text("onboarding.field.environment", bundle: .module)
             }
 
-            Toggle("Als aktiven Plan setzen", isOn: Binding(
+            Toggle(isOn: Binding(
                 get: { plan.isActive },
                 set: { setActive($0) }
-            ))
+            )) {
+                Text("planEditor.toggle.setActive", bundle: .module)
+            }
 
             // DEL-053 — globaler Plan-Override fuer die RIR-Schwelle der
             // Smart-Progression. Auto = pro-Uebung-Default (Compound: RIR<=3,
             // Isolation: RIR<=1). User kann den Override hier auf einen
             // strengeren Wert setzen, z.B. RIR<=2 fuer alle Uebungen.
-            Picker("Progressions-Ziel-RIR", selection: progressionRIRBinding) {
-                Text("Auto (pro Uebung)").tag(Optional<Float>.none)
-                Text("RIR ≤ 0 (zum Versagen)").tag(Optional<Float>.some(0))
-                Text("RIR ≤ 1").tag(Optional<Float>.some(1))
-                Text("RIR ≤ 2").tag(Optional<Float>.some(2))
-                Text("RIR ≤ 3").tag(Optional<Float>.some(3))
+            Picker(selection: progressionRIRBinding) {
+                Text("planEditor.progressRIR.auto", bundle: .module).tag(Optional<Float>.none)
+                Text("planEditor.progressRIR.0", bundle: .module).tag(Optional<Float>.some(0))
+                Text("planEditor.progressRIR.1", bundle: .module).tag(Optional<Float>.some(1))
+                Text("planEditor.progressRIR.2", bundle: .module).tag(Optional<Float>.some(2))
+                Text("planEditor.progressRIR.3", bundle: .module).tag(Optional<Float>.some(3))
+            } label: {
+                Text("planEditor.progressRIR.label", bundle: .module)
             }
+        } header: {
+            Text("planEditor.section.settings", bundle: .module)
         }
     }
 
@@ -356,8 +388,9 @@ public struct PlanEditorView: View {
         Section {
             if plan.days.isEmpty {
                 Text(isReadOnly
-                     ? "Template hat keine Trainings-Tage konfiguriert (sollte nicht passieren)."
-                     : "Noch keine Trainings-Tage. Tippe '+' oben rechts um deinen ersten Tag anzulegen.")
+                     ? "planEditor.days.empty.template"
+                     : "planEditor.days.empty.user",
+                     bundle: .module)
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else if isReadOnly {
@@ -378,35 +411,45 @@ public struct PlanEditorView: View {
             }
         } header: {
             HStack {
-                Text("Trainings-Tage")
+                Text("planEditor.section.trainingDays", bundle: .module)
                 Spacer()
                 if !isReadOnly {
                     // Menu statt Single-Button-Action: User entscheidet pro Klick,
-                    // ob Trainings- oder Ruhetag (DEL-021/023). Default-Behavior
-                    // vorher: implizit ein leerer Tag, der wegen
-                    // `day.exercises.isEmpty` faelschlich als Ruhetag erkannt
-                    // wurde — jetzt explizit.
+                    // ob Trainings- oder Ruhetag (DEL-021/023).
                     Menu {
                         Button {
                             createNewDay(type: .custom)
                         } label: {
-                            Label("Trainingstag", systemImage: "figure.strengthtraining.traditional")
+                            Label {
+                                Text("planEditor.days.add.training", bundle: .module)
+                            } icon: {
+                                Image(systemName: "figure.strengthtraining.traditional")
+                            }
                         }
                         Button {
                             createNewDay(type: .rest)
                         } label: {
-                            Label("Ruhetag", systemImage: "bed.double.fill")
+                            Label {
+                                Text("day.restDay.title", bundle: .module)
+                            } icon: {
+                                Image(systemName: "bed.double.fill")
+                            }
                         }
                     } label: {
-                        Label("Hinzufügen", systemImage: "plus")
+                        Label {
+                            Text("common.add", bundle: .module)
+                        } icon: {
+                            Image(systemName: "plus")
+                        }
                             .labelStyle(.iconOnly)
                     }
                 }
             }
         } footer: {
             Text(isReadOnly
-                 ? "Template — Tage sind festgelegt. Tippe einen Tag an, um die Übungen zu sehen."
-                 : "Sortiert nach Wochentag (Mo-So). „Bearbeiten“ oben rechts aktiviert den Drag-Mode — die Wochentage rotieren entsprechend mit, du musst sie nicht einzeln umstellen.")
+                 ? "planEditor.days.footer.template"
+                 : "planEditor.days.footer.user",
+                 bundle: .module)
                 .font(.footnote)
         }
     }
