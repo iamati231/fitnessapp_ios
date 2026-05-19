@@ -36,8 +36,8 @@ public struct OneRepMaxView: View {
         // the macOS 14 type checker. Use the explicit `header:` / `footer:` form,
         // which only matches one overload.
         Section {
-            TextField(value: $weight, format: .number, prompt: Text("calc.1rm.weightPlaceholder", bundle: .module)) {
-                Text(String(format: String(localized: "calc.1rm.weightLabel", bundle: .module), unit))
+            TextField(value: $weight, format: .number, prompt: Text("calc.oneRm.weightPlaceholder", bundle: .module)) {
+                Text(String(format: String(localized: "calc.oneRm.weightLabel", bundle: .module), unit))
             }
             .decimalKeyboard()
 
@@ -45,13 +45,13 @@ public struct OneRepMaxView: View {
                 LabeledContent {
                     Text("\(reps)")
                 } label: {
-                    Text("calc.1rm.reps", bundle: .module)
+                    Text("calc.oneRm.reps", bundle: .module)
                 }
             }
         } header: {
-            Text("calc.1rm.section.input", bundle: .module)
+            Text("calc.oneRm.section.input", bundle: .module)
         } footer: {
-            Text("calc.1rm.input.footer", bundle: .module)
+            Text("calc.oneRm.input.footer", bundle: .module)
                 .font(.footnote)
         }
     }
@@ -65,14 +65,14 @@ public struct OneRepMaxView: View {
             {
                 row("Epley",   value: epley)
                 row("Brzycki", value: brzycki)
-                row(String(localized: "calc.1rm.row.average", bundle: .module), value: average, highlight: true)
+                row(String(localized: "calc.oneRm.row.average", bundle: .module), value: average, highlight: true)
             } else {
-                Text("calc.1rm.weightRequired", bundle: .module)
+                Text("calc.oneRm.weightRequired", bundle: .module)
                     .foregroundStyle(.secondary)
                     .font(.callout)
             }
         } header: {
-            Text("calc.1rm.section.estimate", bundle: .module)
+            Text("calc.oneRm.section.estimate", bundle: .module)
         }
     }
 
@@ -89,20 +89,20 @@ public struct OneRepMaxView: View {
                         Text("\((avg * entry.percent).truncated(to: 2).formattedTwoDecimals) \(unit)")
                             .monospacedDigit()
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        Text(String(format: String(localized: "calc.1rm.repsHint", bundle: .module), entry.repsHint))
+                        Text(String(format: String(localized: "calc.oneRm.repsHint", bundle: .module), entry.repsHint))
                             .foregroundStyle(.secondary)
                             .font(.callout)
                     }
                 }
             } else {
-                Text("calc.1rm.tableEmpty", bundle: .module)
+                Text("calc.oneRm.tableEmpty", bundle: .module)
                     .foregroundStyle(.secondary)
                     .font(.callout)
             }
         } header: {
-            Text("calc.1rm.section.percentages", bundle: .module)
+            Text("calc.oneRm.section.percentages", bundle: .module)
         } footer: {
-            Text("calc.1rm.percentages.footer", bundle: .module)
+            Text("calc.oneRm.percentages.footer", bundle: .module)
                 .font(.footnote)
         }
     }

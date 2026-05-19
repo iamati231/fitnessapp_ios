@@ -23,8 +23,8 @@ public struct CalculatorsView: View {
                     CalculatorRow(
                         icon: "figure.strengthtraining.traditional",
                         tint: .orange,
-                        title: String(localized: "calc.index.1rm.title", bundle: .module),
-                        subtitle: String(localized: "calc.index.1rm.subtitle", bundle: .module)
+                        title: String(localized: "calc.index.oneRm.title", bundle: .module),
+                        subtitle: String(localized: "calc.index.oneRm.subtitle", bundle: .module)
                     )
                 }
                 NavigationLink(destination: TDEEView()) {

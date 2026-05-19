@@ -360,10 +360,10 @@ public struct PlanEditorView: View {
             // strengeren Wert setzen, z.B. RIR<=2 fuer alle Uebungen.
             Picker(selection: progressionRIRBinding) {
                 Text("planEditor.progressRIR.auto", bundle: .module).tag(Optional<Float>.none)
-                Text("planEditor.progressRIR.0", bundle: .module).tag(Optional<Float>.some(0))
-                Text("planEditor.progressRIR.1", bundle: .module).tag(Optional<Float>.some(1))
-                Text("planEditor.progressRIR.2", bundle: .module).tag(Optional<Float>.some(2))
-                Text("planEditor.progressRIR.3", bundle: .module).tag(Optional<Float>.some(3))
+                Text("planEditor.progressRIR.rir0", bundle: .module).tag(Optional<Float>.some(0))
+                Text("planEditor.progressRIR.rir1", bundle: .module).tag(Optional<Float>.some(1))
+                Text("planEditor.progressRIR.rir2", bundle: .module).tag(Optional<Float>.some(2))
+                Text("planEditor.progressRIR.rir3", bundle: .module).tag(Optional<Float>.some(3))
             } label: {
                 Text("planEditor.progressRIR.label", bundle: .module)
             }
