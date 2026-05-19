@@ -99,6 +99,54 @@ KEYS = {
                                     "Adopting creates a deep copy in your library — days, exercises, and sets are then freely editable.",
                                     "Plan alındığında kütüphanende derin kopya oluşturulur — günler, hareketler ve setler özgürce düzenlenebilir."),
     "plan.dayNumberLabel":      ("Tag %lld",                "Day %lld",                     "Gün %lld"),
+
+    # ──────────────────────────────────────────────────────────────────
+    # PR1 Batch 2 — PlansListView + WorkoutSummaryView
+    # ──────────────────────────────────────────────────────────────────
+
+    # PlansListView.swift
+    "plans.active.title":       ("Laufendes Training",      "Active Workout",               "Aktif Antrenman"),
+    "plans.active.hint":        ("Tippe auf das Banner, um mit der Session weiterzumachen oder sie zu beenden.",
+                                  "Tap the banner to resume or end the session.",
+                                  "Banner'a dokunarak oturuma devam et veya bitir."),
+    "plans.list.title":         ("Pläne",                   "Plans",                        "Planlar"),
+    "plans.duplicate":          ("Duplizieren",             "Duplicate",                    "Çoğalt"),
+    "plans.create.fromTemplate": ("Aus Template anlegen",   "From Template",                "Şablondan Oluştur"),
+    "plans.create.empty":       ("Leerer Plan",             "Empty Plan",                   "Boş Plan"),
+    "plans.create.fromTemplateShort": ("Aus Template",      "From Template",                "Şablondan"),
+    "plans.create.emptyShort":  ("Leer",                    "Empty",                        "Boş"),
+    "plans.new":                ("Neuer Plan",              "New Plan",                     "Yeni Plan"),
+    "plans.empty.title":        ("Noch kein Plan",          "No plans yet",                 "Henüz plan yok"),
+    "plans.empty.hint":         ("Lege deinen ersten Trainings-Plan an — Tage, Übungen, Sätze. Der Plan ist die Grundlage für jede Session.",
+                                  "Create your first training plan — days, exercises, sets. The plan is the foundation of every session.",
+                                  "İlk antrenman planını oluştur — günler, hareketler, setler. Plan, her oturumun temelidir."),
+    "plans.activeBadge":        ("Aktiv",                   "Active",                       "Aktif"),
+
+    # WorkoutSummaryView.swift
+    "summary.editTitle":        ("Workout bearbeiten",      "Edit Workout",                 "Antrenmanı Düzenle"),
+    "summary.detailTitle":      ("Workout-Detail",          "Workout Details",              "Antrenman Detayı"),
+    "summary.title":            ("Zusammenfassung",         "Summary",                      "Özet"),
+    "summary.date":             ("Datum",                   "Date",                         "Tarih"),
+    "summary.duration":         ("Dauer",                   "Duration",                     "Süre"),
+    "summary.durationMinutes":  ("%lld Min",                "%lld min",                     "%lld dk"),
+    "summary.prFooter":         ("Erkannt durch Vergleich mit allen vorherigen abgeschlossenen Sessions. Cardio bleibt aussen vor — andere Metrik-Domäne.",
+                                  "Detected by comparing all previous completed sessions. Cardio excluded — different metric domain.",
+                                  "Tüm önceki tamamlanan oturumlar ile karşılaştırarak tespit edildi. Kardiyo dahil değil — farklı metrik."),
+    "summary.progressionFooter": ("Ziel erreicht? Die App passt das Gewicht fürs nächste Workout automatisch an. Änderbar pro Übung im Editor.",
+                                   "Target hit? The app adjusts the weight for next workout automatically. Adjustable per exercise in the editor.",
+                                   "Hedefe ulaşıldı mı? Uygulama bir sonraki antrenman için ağırlığı otomatik ayarlar. Editörde hareket başına düzenlenebilir."),
+    "summary.note.placeholder": ("Wie war's? Schmerzen, Pump, Performance ...",
+                                  "How was it? Pain, pump, performance ...",
+                                  "Nasıldı? Ağrı, pump, performans ..."),
+    "summary.note.label":       ("Notiz",                   "Note",                         "Not"),
+    "summary.note.footer":      ("Tauchen später in der History pro Session auf — gut für Form-Cues und Verletzungs-Tracking.",
+                                  "Show up later in history per session — useful for form cues and injury tracking.",
+                                  "Geçmişte oturum başına görünür — form ipuçları ve sakatlık takibi için faydalı."),
+    "summary.setsHeader":       ("Sätze",                   "Sets",                         "Setler"),
+    "summary.setsEmpty":        ("Keine Sätze geloggt.",    "No sets logged.",              "Set kaydedilmedi."),
+    "summary.finishFooter":     ("Die Session ist bereits gespeichert. Der Button schließt die Zusammenfassung und bringt dich zurück aufs Dashboard.",
+                                   "Session is already saved. The button closes the summary and returns you to the dashboard.",
+                                   "Oturum zaten kaydedildi. Buton özeti kapatır ve seni panele döndürür."),
 }
 
 

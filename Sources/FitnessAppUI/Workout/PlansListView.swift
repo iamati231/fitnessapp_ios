@@ -42,14 +42,14 @@ public struct PlansListView: View {
                         ActiveSessionBanner(session: active)
                     }
                 } header: {
-                    Text("Laufendes Training")
+                    Text("plans.active.title", bundle: .module)
                 } footer: {
-                    Text("Tippe auf das Banner, um mit der Session weiterzumachen oder sie zu beenden.")
+                    Text("plans.active.hint", bundle: .module)
                         .font(.footnote)
                 }
             }
 
-            Section("Pläne") {
+            Section {
                 if plans.isEmpty {
                     emptyState
                 } else {
@@ -65,31 +65,49 @@ public struct PlansListView: View {
                             Button {
                                 duplicatePlan(plan)
                             } label: {
-                                Label("Duplizieren", systemImage: "plus.square.on.square")
+                                Label {
+                                    Text("plans.duplicate", bundle: .module)
+                                } icon: {
+                                    Image(systemName: "plus.square.on.square")
+                                }
                             }
                             .tint(Color.deltiqOrange)
                         }
                     }
                     .onDelete(perform: deletePlans)
                 }
+            } header: {
+                Text("plans.list.title", bundle: .module)
             }
         }
-        .navigationTitle("Plan")
+        .navigationTitle(Text("tab.plan", bundle: .module))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Button {
                         showingTemplatePicker = true
                     } label: {
-                        Label("Aus Template anlegen", systemImage: "rectangle.stack.fill.badge.plus")
+                        Label {
+                            Text("plans.create.fromTemplate", bundle: .module)
+                        } icon: {
+                            Image(systemName: "rectangle.stack.fill.badge.plus")
+                        }
                     }
                     Button {
                         createNewPlan()
                     } label: {
-                        Label("Leerer Plan", systemImage: "plus")
+                        Label {
+                            Text("plans.create.empty", bundle: .module)
+                        } icon: {
+                            Image(systemName: "plus")
+                        }
                     }
                 } label: {
-                    Label("Neuer Plan", systemImage: "plus.circle.fill")
+                    Label {
+                        Text("plans.new", bundle: .module)
+                    } icon: {
+                        Image(systemName: "plus.circle.fill")
+                    }
                 }
             }
         }
@@ -101,9 +119,13 @@ public struct PlansListView: View {
     @ViewBuilder
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Noch kein Plan", systemImage: "list.bullet.rectangle.portrait")
+            Label {
+                Text("plans.empty.title", bundle: .module)
+            } icon: {
+                Image(systemName: "list.bullet.rectangle.portrait")
+            }
                 .font(.headline)
-            Text("Lege deinen ersten Trainings-Plan an — Tage, Übungen, Sätze. Der Plan ist die Grundlage für jede Session.")
+            Text("plans.empty.hint", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)
             HStack(spacing: 8) {
@@ -115,7 +137,11 @@ public struct PlansListView: View {
                     // sichtbar (vermutlich wegen `.badge.plus`-Komposition
                     // + Tint-Override). `list.bullet.clipboard` rendert sauber
                     // und harmonisiert visuell mit dem `+` des Leer-Buttons.
-                    Label("Aus Template", systemImage: "list.bullet.clipboard")
+                    Label {
+                        Text("plans.create.fromTemplateShort", bundle: .module)
+                    } icon: {
+                        Image(systemName: "list.bullet.clipboard")
+                    }
                         .font(.callout.weight(.semibold))
                 }
                 .buttonStyle(.borderedProminent)
@@ -123,7 +149,11 @@ public struct PlansListView: View {
                 Button {
                     createNewPlan()
                 } label: {
-                    Label("Leer", systemImage: "plus")
+                    Label {
+                        Text("plans.create.emptyShort", bundle: .module)
+                    } icon: {
+                        Image(systemName: "plus")
+                    }
                         .font(.callout)
                 }
                 .buttonStyle(.bordered)
@@ -235,7 +265,7 @@ private struct PlanRow: View {
                     Text(plan.name)
                         .font(.body.weight(.semibold))
                     if plan.isActive {
-                        Text("Aktiv")
+                        Text("plans.activeBadge", bundle: .module)
                             .font(.caption2.weight(.bold))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)

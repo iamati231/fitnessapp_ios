@@ -98,20 +98,27 @@ public struct WorkoutSummaryView: View {
 
     private var navigationTitleText: String {
         if isReadOnly {
-            return isEditingHistory ? "Workout bearbeiten" : "Workout-Detail"
+            return isEditingHistory
+                ? String(localized: "summary.editTitle", bundle: .module)
+                : String(localized: "summary.detailTitle", bundle: .module)
         }
-        return "Zusammenfassung"
+        return String(localized: "summary.title", bundle: .module)
     }
 
     /// Im Edit-Mode bekommt der User Datum + Dauer als editierbare Felder.
     /// Wird oben in der List eingeblendet, ueber statsSection.
     private var editMetaSection: some View {
         Section {
-            DatePicker("Datum",
-                       selection: $session.startTime,
-                       displayedComponents: [.date, .hourAndMinute])
+            DatePicker(selection: $session.startTime,
+                       displayedComponents: [.date, .hourAndMinute]) {
+                Text("summary.date", bundle: .module)
+            }
             Stepper(value: $session.durationMinutes, in: 0...600, step: 5) {
-                LabeledContent("Dauer", value: "\(session.durationMinutes) Min")
+                LabeledContent {
+                    Text(String(format: String(localized: "summary.durationMinutes", bundle: .module), session.durationMinutes))
+                } label: {
+                    Text("summary.duration", bundle: .module)
+                }
             }
         } header: {
             Text("Eckdaten")
@@ -193,7 +200,7 @@ public struct WorkoutSummaryView: View {
                 Text("Personal Records")
             }
         } footer: {
-            Text("Erkannt durch Vergleich mit allen vorherigen abgeschlossenen Sessions. Cardio bleibt aussen vor — andere Metrik-Domäne.")
+            Text("summary.prFooter", bundle: .module)
                 .font(.footnote)
         }
     }
@@ -220,7 +227,7 @@ public struct WorkoutSummaryView: View {
                 Text("Smart-Progression")
             }
         } footer: {
-            Text("Ziel erreicht? Die App passt das Gewicht fürs nächste Workout automatisch an. Aenderbar pro Übung im Editor.")
+            Text("summary.progressionFooter", bundle: .module)
                 .font(.footnote)
         }
     }
@@ -286,16 +293,16 @@ public struct WorkoutSummaryView: View {
                         get: { session.notes ?? "" },
                         set: { session.notes = $0.isEmpty ? nil : $0 }
                     ),
-                    prompt: Text("Wie war's? Schmerzen, Pump, Performance ..."),
+                    prompt: Text("summary.note.placeholder", bundle: .module),
                     axis: .vertical
                 ) {
-                    Text("Notiz")
+                    Text("summary.note.label", bundle: .module)
                 }
                 .lineLimit(3...8)
             } header: {
-                Text("Notiz")
+                Text("summary.note.label", bundle: .module)
             } footer: {
-                Text("Tauchen später in der History pro Session auf — gut für Form-Cues und Verletzungs-Tracking.")
+                Text("summary.note.footer", bundle: .module)
                     .font(.footnote)
             }
         }
@@ -304,10 +311,12 @@ public struct WorkoutSummaryView: View {
     @ViewBuilder
     private var breakdownSections: some View {
         if exercisesWithLogs.isEmpty {
-            Section("Sätze") {
-                Text("Keine Sätze geloggt.")
+            Section {
+                Text("summary.setsEmpty", bundle: .module)
                     .foregroundStyle(.secondary)
                     .font(.callout)
+            } header: {
+                Text("summary.setsHeader", bundle: .module)
             }
         } else {
             ForEach(exercisesWithLogs, id: \.exercise.persistentModelID) { entry in
@@ -371,7 +380,7 @@ public struct WorkoutSummaryView: View {
             }
             .listRowBackground(Color.green)
         } footer: {
-            Text("Die Session ist bereits gespeichert. Der Button schliesst die Zusammenfassung und bringt dich zurück aufs Dashboard.")
+            Text("summary.finishFooter", bundle: .module)
                 .font(.footnote)
         }
     }
@@ -743,7 +752,7 @@ private struct SetSummaryRow: View {
     /// Anzeigemodus — gleicher Text wie vor DEL-032.
     private var readOnlyRow: some View {
         HStack(spacing: 8) {
-            Text("Satz \(log.setIndex + 1)")
+            Text(String(format: String(localized: "set.numberLabel", bundle: .module), log.setIndex + 1))
                 .font(.subheadline.weight(.semibold))
                 .frame(width: 64, alignment: .leading)
 
@@ -761,7 +770,7 @@ private struct SetSummaryRow: View {
     @ViewBuilder
     private var editRow: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Satz \(log.setIndex + 1)")
+            Text(String(format: String(localized: "set.numberLabel", bundle: .module), log.setIndex + 1))
                 .font(.subheadline.weight(.semibold))
             HStack(spacing: 8) {
                 if !exercise.isCardio && !exercise.isTimeBased {
