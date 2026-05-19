@@ -45,7 +45,7 @@ public struct PRHistoryView: View {
                 content
             }
         }
-        .navigationTitle("Trophy Room")
+        .navigationTitle(Text("dashboard.trophy.title", bundle: .module))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         #endif

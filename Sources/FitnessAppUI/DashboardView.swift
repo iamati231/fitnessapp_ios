@@ -244,18 +244,25 @@ public struct DashboardView: View {
         .buttonStyle(.plain)
     }
 
+    // DEL-120: drei Varianten via xcstrings:
+    //   * empty            -> "dashboard.history.empty"
+    //   * count + last     -> "dashboard.history.countWithLast" (2-Arg-Format)
+    //   * count nur        -> "dashboard.history.countOnly"
     private var historyTeaserText: String {
         let real = completedSessions.filter { !$0.isRestDay }
         if real.isEmpty {
-            return "Noch keine Trainings — starte oben dein erstes."
+            return String(localized: "dashboard.history.empty", bundle: .module)
         }
         if let latest = real.first {
             let formatter = RelativeDateTimeFormatter()
             formatter.unitsStyle = .short
             let relative = formatter.localizedString(for: latest.startTime, relativeTo: Date())
-            return "\(real.count) Trainings • zuletzt \(relative)"
+            let template = String(localized: "dashboard.history.countWithLast", bundle: .module)
+            return template
+                .replacingOccurrences(of: "%1$lld", with: "\(real.count)")
+                .replacingOccurrences(of: "%2$@",   with: relative)
         }
-        return "\(real.count) Trainings"
+        return String(format: String(localized: "dashboard.history.countOnly", bundle: .module), real.count)
     }
 
     // MARK: - DEL-109 Widget-Konfiguration

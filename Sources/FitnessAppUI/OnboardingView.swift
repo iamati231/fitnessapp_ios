@@ -419,8 +419,8 @@ public struct OnboardingView: View {
                     VStack(spacing: 10) {
                         ForEach(TrainingGoal.allCases, id: \.self) { goal in
                             coachingCard(
-                                title: goal.label,
-                                description: goal.blurb,
+                                title: String(localized: goal.localizedName),
+                                description: String(localized: goal.localizedBlurb),
                                 iconName: goal.symbol,
                                 isSelected: trainingGoal == goal
                             ) {
@@ -442,8 +442,8 @@ public struct OnboardingView: View {
                     VStack(spacing: 10) {
                         ForEach(CoachingTone.allCases, id: \.self) { tone in
                             coachingCard(
-                                title: tone.label,
-                                description: tone.blurb,
+                                title: String(localized: tone.localizedName),
+                                description: String(localized: tone.localizedBlurb),
                                 iconName: tone.symbol,
                                 isSelected: coachingTone == tone
                             ) {

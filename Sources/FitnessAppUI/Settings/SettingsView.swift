@@ -355,14 +355,12 @@ public struct SettingsView: View {
             }
             if measurementReminderEnabled {
                 DeltiqFormRow(label: String(localized: "day.editor.field.weekday", bundle: .module)) {
+                    // DEL-120: Locale-aware Weekday-Symbole via Calendar.
+                    let weekdaySymbols = Calendar.current.standaloneWeekdaySymbols
                     Picker(selection: $measurementWeekday) {
-                        Text("Sonntag").tag(1)
-                        Text("Montag").tag(2)
-                        Text("Dienstag").tag(3)
-                        Text("Mittwoch").tag(4)
-                        Text("Donnerstag").tag(5)
-                        Text("Freitag").tag(6)
-                        Text("Samstag").tag(7)
+                        ForEach(1...7, id: \.self) { weekday in
+                            Text(weekdaySymbols[weekday - 1]).tag(weekday)
+                        }
                     } label: { EmptyView() }
                     .pickerStyle(.menu)
                     .labelsHidden()

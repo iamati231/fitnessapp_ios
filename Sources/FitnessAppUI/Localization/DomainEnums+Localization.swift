@@ -101,4 +101,84 @@ public extension DifficultyLevel {
         }
     }
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// DEL-120: Enum-Localization fuer alle UI-rendered Model-Daten-Enums.
+//
+// Pattern: das Core-Enum behaelt sein `var label: String { ... }` mit
+// deutschen Strings als Legacy + Default-Fallback. Die UI-Layer ruft
+// `.localizedName` (LocalizedStringResource) auf und resolved via
+// Catalog. Wo das Core-Enum auch ein `blurb` / `description` exposed,
+// gibts hier eine zweite Property `localizedBlurb` / `localizedDescription`.
+// ──────────────────────────────────────────────────────────────────────
+
+public extension CoachingTone {
+    var localizedName: LocalizedStringResource {
+        switch self {
+        case .analytical: LocalizedStringResource("coaching.tone.analytical", bundle: .fitnessAppUI)
+        case .motivating: LocalizedStringResource("coaching.tone.motivating", bundle: .fitnessAppUI)
+        case .strict:     LocalizedStringResource("coaching.tone.strict",     bundle: .fitnessAppUI)
+        }
+    }
+
+    var localizedBlurb: LocalizedStringResource {
+        switch self {
+        case .analytical: LocalizedStringResource("coaching.tone.analytical.blurb", bundle: .fitnessAppUI)
+        case .motivating: LocalizedStringResource("coaching.tone.motivating.blurb", bundle: .fitnessAppUI)
+        case .strict:     LocalizedStringResource("coaching.tone.strict.blurb",     bundle: .fitnessAppUI)
+        }
+    }
+}
+
+public extension TrainingGoal {
+    var localizedName: LocalizedStringResource {
+        switch self {
+        case .hypertrophy: LocalizedStringResource("coaching.goal.hypertrophy", bundle: .fitnessAppUI)
+        case .strength:    LocalizedStringResource("coaching.goal.strength",    bundle: .fitnessAppUI)
+        case .hybrid:      LocalizedStringResource("coaching.goal.hybrid",      bundle: .fitnessAppUI)
+        }
+    }
+
+    var localizedBlurb: LocalizedStringResource {
+        switch self {
+        case .hypertrophy: LocalizedStringResource("coaching.goal.hypertrophy.blurb", bundle: .fitnessAppUI)
+        case .strength:    LocalizedStringResource("coaching.goal.strength.blurb",    bundle: .fitnessAppUI)
+        case .hybrid:      LocalizedStringResource("coaching.goal.hybrid.blurb",      bundle: .fitnessAppUI)
+        }
+    }
+}
+
+public extension ExperienceLevel {
+    var localizedName: LocalizedStringResource {
+        switch self {
+        case .beginner:     LocalizedStringResource("experience.beginner",     bundle: .fitnessAppUI)
+        case .intermediate: LocalizedStringResource("experience.intermediate", bundle: .fitnessAppUI)
+        case .advanced:     LocalizedStringResource("experience.advanced",     bundle: .fitnessAppUI)
+        }
+    }
+}
+
+public extension GoalType {
+    var localizedName: LocalizedStringResource {
+        switch self {
+        case .hypertrophy: LocalizedStringResource("goalType.hypertrophy", bundle: .fitnessAppUI)
+        case .strength:    LocalizedStringResource("goalType.strength",    bundle: .fitnessAppUI)
+        case .fatloss:     LocalizedStringResource("goalType.fatloss",     bundle: .fitnessAppUI)
+        case .hybrid:      LocalizedStringResource("goalType.hybrid",      bundle: .fitnessAppUI)
+        case .functional:  LocalizedStringResource("goalType.functional",  bundle: .fitnessAppUI)
+        }
+    }
+}
+
+public extension SessionFeeling {
+    var localizedName: LocalizedStringResource {
+        switch self {
+        case .great:     LocalizedStringResource("feeling.great",     bundle: .fitnessAppUI)
+        case .good:      LocalizedStringResource("feeling.good",      bundle: .fitnessAppUI)
+        case .okay:      LocalizedStringResource("feeling.okay",      bundle: .fitnessAppUI)
+        case .hard:      LocalizedStringResource("feeling.hard",      bundle: .fitnessAppUI)
+        case .destroyed: LocalizedStringResource("feeling.destroyed", bundle: .fitnessAppUI)
+        }
+    }
+}
 #endif

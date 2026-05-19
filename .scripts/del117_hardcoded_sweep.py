@@ -668,6 +668,129 @@ KEYS = {
     "workout.detail.cardio":            ("Cardio • %llds Pause",
                                           "Cardio • %llds rest",
                                           "Kardiyo • %llds mola"),
+
+    # ──────────────────────────────────────────────────────────────────
+    # DEL-120 — Enum-Localization (Coaching/Training/Activity/Feeling)
+    # ──────────────────────────────────────────────────────────────────
+
+    # CoachingTone (DEL-100 — ProfileEditor + Onboarding)
+    "coaching.tone.analytical":         ("Analytisch",              "Analytical",           "Analitik"),
+    "coaching.tone.motivating":         ("Motivierend",             "Motivating",           "Motive Edici"),
+    "coaching.tone.strict":             ("Streng",                  "Strict",               "Sıkı"),
+    "coaching.tone.analytical.blurb":   ("Fakten & Daten. Neutrales Feedback zu Load und Progression.",
+                                          "Facts & data. Neutral feedback on load and progression.",
+                                          "Veriler ve gerçekler. Yük ve ilerleme hakkında nötr geri bildirim."),
+    "coaching.tone.motivating.blurb":   ("Positiv & bestärkend. Fokus auf Erfolge und Erholung.",
+                                          "Positive & encouraging. Focus on wins and recovery.",
+                                          "Olumlu ve destekleyici. Başarılara ve iyileşmeye odaklı."),
+    "coaching.tone.strict.blurb":       ("Direkt & fordernd. Klartext, wenn du vom Plan abweichst.",
+                                          "Direct & demanding. Plain talk when you deviate from the plan.",
+                                          "Doğrudan ve talepkar. Plandan sapınca net konuşur."),
+
+    # TrainingGoal (DEL-100)
+    "coaching.goal.hypertrophy":        ("Muskelaufbau",            "Muscle Building",      "Kas Gelişimi"),
+    "coaching.goal.strength":           ("Maximalkraft",            "Maximum Strength",     "Maksimal Güç"),
+    "coaching.goal.hybrid":             ("Funktionell / Hybrid",    "Functional / Hybrid",  "Fonksiyonel / Hibrit"),
+    "coaching.goal.hypertrophy.blurb":  ("Volumen, Pump, sichtbares Muskelwachstum.",
+                                          "Volume, pump, visible muscle growth.",
+                                          "Hacim, pump, görünür kas gelişimi."),
+    "coaching.goal.strength.blurb":     ("Maximales 1RM, niedrige Reps, schwere Hauptlifts.",
+                                          "Max 1RM, low reps, heavy main lifts.",
+                                          "Maksimum 1RM, düşük tekrar, ağır ana hareketler."),
+    "coaching.goal.hybrid.blurb":       ("Kraft + Ausdauer + Mobilität — alles fließt zusammen.",
+                                          "Strength + endurance + mobility — all flowing together.",
+                                          "Güç + dayanıklılık + mobilite — hepsi bir arada."),
+
+    # ExperienceLevel (DEL-090 Quiz)
+    "experience.beginner":              ("Anfänger",                "Beginner",             "Başlangıç"),
+    "experience.intermediate":          ("Fortgeschritten",         "Intermediate",         "Orta"),
+    "experience.advanced":              ("Experte",                 "Advanced",             "İleri"),
+
+    # GoalType (DEL-090 Quiz)
+    "goalType.hypertrophy":             ("Muskeln aufbauen",        "Build Muscle",         "Kas Yap"),
+    "goalType.strength":                ("Maximalkraft",            "Maximum Strength",     "Maksimal Güç"),
+    "goalType.fatloss":                 ("Fett verbrennen",         "Burn Fat",             "Yağ Yak"),
+    "goalType.hybrid":                  ("Athletisch werden",       "Become Athletic",      "Atletik Ol"),
+    "goalType.functional":              ("Funktionelle Fitness",    "Functional Fitness",   "Fonksiyonel Fitness"),
+
+    # SessionFeeling (DEL-057 Finish-Sheet)
+    "feeling.great":                    ("Großartig",               "Great",                "Harika"),
+    "feeling.good":                     ("Gut",                     "Good",                 "İyi"),
+    "feeling.okay":                     ("Okay",                    "Okay",                 "İdare Eder"),
+    "feeling.hard":                     ("Sehr schwer",             "Very Hard",            "Çok Zor"),
+    "feeling.destroyed":                ("Zerstört / Am Limit",     "Destroyed / At Limit", "Bitik / Limitte"),
+
+    # ActivityLevel (TDEE)
+    "activity.sedentary":               ("Bürojob (1.2)",           "Sedentary (1.2)",      "Hareketsiz (1.2)"),
+    "activity.light":                   ("Leicht aktiv (1.375)",    "Lightly Active (1.375)", "Az Hareketli (1.375)"),
+    "activity.moderate":                ("Moderat (1.55)",          "Moderate (1.55)",      "Orta (1.55)"),
+    "activity.active":                  ("Aktiv (1.725)",           "Active (1.725)",       "Aktif (1.725)"),
+    "activity.veryActive":              ("Sehr aktiv (1.9)",        "Very Active (1.9)",    "Çok Aktif (1.9)"),
+    "activity.sedentary.description":   ("Bürojob, kaum Bewegung neben dem Alltag.",
+                                          "Office job, little movement outside daily routine.",
+                                          "Ofis işi, günlük rutin dışında az hareket."),
+    "activity.light.description":       ("1-2 leichte Trainings pro Woche.",
+                                          "1-2 light workouts per week.",
+                                          "Haftada 1-2 hafif antrenman."),
+    "activity.moderate.description":    ("3-5 Trainings pro Woche (Default für Hobby-Lifter).",
+                                          "3-5 workouts per week (default for hobby lifters).",
+                                          "Haftada 3-5 antrenman (hobi sporcular için varsayılan)."),
+    "activity.active.description":      ("6-7 Trainings pro Woche oder körperlicher Beruf.",
+                                          "6-7 workouts per week or physical job.",
+                                          "Haftada 6-7 antrenman ya da fiziksel iş."),
+    "activity.veryActive.description":  ("Tag-täglich intensives Training oder schwere körperliche Arbeit.",
+                                          "Daily intense training or heavy physical labor.",
+                                          "Her gün yoğun antrenman ya da ağır fiziksel iş."),
+
+    # DayType (für DayEditorView typeLabel)
+    "dayType.chest":                    ("Brust",                   "Chest",                "Göğüs"),
+    "dayType.back":                     ("Rücken",                  "Back",                 "Sırt"),
+    "dayType.legs":                     ("Beine",                   "Legs",                 "Bacak"),
+    "dayType.shoulders":                ("Schultern",               "Shoulders",            "Omuz"),
+    "dayType.arms":                     ("Arme",                    "Arms",                 "Kol"),
+    "dayType.push":                     ("Push",                    "Push",                 "Push"),
+    "dayType.pull":                     ("Pull",                    "Pull",                 "Pull"),
+    "dayType.upper":                    ("Oberkörper",              "Upper Body",           "Üst Vücut"),
+    "dayType.lower":                    ("Unterkörper",             "Lower Body",           "Alt Vücut"),
+    "dayType.fullBody":                 ("Ganzkörper",              "Full Body",            "Tüm Vücut"),
+    "dayType.rest":                     ("Ruhetag",                 "Rest Day",             "Dinlenme Günü"),
+    "dayType.custom":                   ("Custom",                  "Custom",               "Özel"),
+    "dayType.cardio":                   ("Cardio / Run",            "Cardio / Run",         "Kardiyo / Koşu"),
+
+    # Dashboard history teaser (DEL-019)
+    "dashboard.history.empty":          ("Noch keine Trainings — starte oben dein erstes.",
+                                          "No workouts yet — start your first one above.",
+                                          "Henüz antrenman yok — yukarıdan ilkini başlat."),
+    "dashboard.history.countWithLast":  ("%1$lld Trainings • zuletzt %2$@",
+                                          "%1$lld workouts • last %2$@",
+                                          "%1$lld antrenman • son %2$@"),
+    "dashboard.history.countOnly":      ("%lld Trainings",          "%lld workouts",        "%lld antrenman"),
+
+    # DEL-120 — Onboarding-Quiz Schritte
+    "quiz.goal.title":                  ("Was ist dein primäres Ziel?",     "What's your primary goal?",        "Birincil hedefin ne?"),
+    "quiz.goal.subtitle":               ("Wähle das, was dich aktuell am meisten antreibt.",
+                                          "Pick what drives you most right now.",
+                                          "Şu an seni en çok motive edeni seç."),
+    "quiz.experience.title":            ("Wie viel Erfahrung hast du im Training?",
+                                          "How much training experience do you have?",
+                                          "Antrenmanda ne kadar deneyimin var?"),
+    "quiz.experience.subtitle":         ("Wir wählen Programme, die dich nicht überfordern.",
+                                          "We pick programs that won't overwhelm you.",
+                                          "Seni zorlamayacak programlar seçeriz."),
+    "quiz.days.title":                  ("Wie oft möchtest du pro Woche trainieren?",
+                                          "How often do you want to train per week?",
+                                          "Haftada ne sıklıkla antrenman yapmak istersin?"),
+    "quiz.days.subtitle":               ("Sei realistisch — lieber 3 Tage konsistent als 6 geplant und nur 2 gemacht.",
+                                          "Be realistic — 3 consistent days beat 6 planned and only 2 done.",
+                                          "Gerçekçi ol — tutarlı 3 gün, planlanmış 6 ama yalnızca 2 yapılandan iyidir."),
+    "quiz.days.option":                 ("%lld Tage",               "%lld days",            "%lld gün"),
+    "quiz.environment.title":           ("Wo trainierst du meistens?",   "Where do you usually train?",     "Genelde nerede antrenman yapıyorsun?"),
+    "quiz.environment.subtitle":        ("Wir filtern Programme, die zu deinem Equipment passen.",
+                                          "We filter programs to match your equipment.",
+                                          "Programları ekipmanına göre filtreleriz."),
+    "quiz.environment.gym":             ("Fitnessstudio",           "Gym",                  "Salon"),
+    "quiz.environment.homeGym":         ("Home-Gym (Kurzhanteln)",  "Home Gym (Dumbbells)", "Ev Salonu (Dambıllar)"),
+    "quiz.environment.noEquipment":     ("Überall (ohne Geräte)",   "Anywhere (no equipment)", "Her yer (ekipmansız)"),
 }
 
 

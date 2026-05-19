@@ -43,7 +43,7 @@ public struct WorkoutHistoryView: View {
                 }
             }
         }
-        .navigationTitle("Historie")
+        .navigationTitle(Text("dashboard.history.title", bundle: .module))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         #endif

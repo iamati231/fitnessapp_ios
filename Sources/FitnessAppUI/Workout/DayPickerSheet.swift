@@ -80,19 +80,17 @@ public struct DayPickerSheet: View {
         }
     }
 
-    /// Wochentage Mo–So in User-Locale-Reihenfolge.
-    /// Apple-Calendar-Index: 1=So, 2=Mo, ..., 7=Sa. Wir rendern Mo→So
-    /// (europaeische Konvention), unabhaengig vom System-Locale.
+    /// Wochentage Mo–So in europaeischer Konvention.
+    /// DEL-120: Locale-aware via `Calendar.current.standaloneWeekdaySymbols`
+    /// (gibt "Sonntag" in DE, "Sunday" in EN, "Pazar" in TR — folgt der
+    /// User-Locale-Konfiguration). Apple-Calendar-Index: 1=So, 2=Mo, ..., 7=Sa.
     private var dayGrid: some View {
-        let weekdayLabels: [(weekday: Int, label: String, short: String)] = [
-            (2, "Montag",     "Mo"),
-            (3, "Dienstag",   "Di"),
-            (4, "Mittwoch",   "Mi"),
-            (5, "Donnerstag", "Do"),
-            (6, "Freitag",    "Fr"),
-            (7, "Samstag",    "Sa"),
-            (1, "Sonntag",    "So")
-        ]
+        let calendar = Calendar.current
+        let fullSymbols = calendar.standaloneWeekdaySymbols           // Sonntag, Montag, ...
+        let shortSymbols = calendar.veryShortStandaloneWeekdaySymbols // S, M, ...
+        let weekdayLabels: [(weekday: Int, label: String, short: String)] = [2, 3, 4, 5, 6, 7, 1].map { wd in
+            (weekday: wd, label: fullSymbols[wd - 1], short: shortSymbols[wd - 1])
+        }
         return VStack(spacing: 8) {
             ForEach(weekdayLabels, id: \.weekday) { entry in
                 dayRow(weekday: entry.weekday, label: entry.label, short: entry.short)

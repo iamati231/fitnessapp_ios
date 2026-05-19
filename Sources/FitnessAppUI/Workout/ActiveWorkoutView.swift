@@ -1137,7 +1137,7 @@ private struct FinishWorkoutSheet: View {
                             .fill(selected == feeling ? Color.deltiqOrange : Color.deltiqOrange.opacity(0.12))
                     )
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("\(feeling.rawValue). \(feeling.label)")
+                    Text("\(feeling.rawValue). \(String(localized: feeling.localizedName))")
                         .font(.body.weight(.medium))
                         .foregroundStyle(.primary)
                     if feeling.vetoesProgression {

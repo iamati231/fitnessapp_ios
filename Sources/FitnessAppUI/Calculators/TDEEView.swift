@@ -83,7 +83,7 @@ public struct TDEEView: View {
 
             Picker(selection: $activity) {
                 ForEach(ActivityLevel.allCases, id: \.self) { level in
-                    Text(level.label).tag(level)
+                    Text(level.localizedName).tag(level)
                 }
             } label: {
                 Text("calc.tdee.activity", bundle: .module)
@@ -91,7 +91,7 @@ public struct TDEEView: View {
         } header: {
             Text("calc.tdee.section.input", bundle: .module)
         } footer: {
-            Text(activity.description)
+            Text(activity.localizedDescription)
                 .font(.footnote)
         }
     }
@@ -204,6 +204,27 @@ public enum ActivityLevel: String, CaseIterable, Sendable {
         case .moderate:   return "3-5 Trainings pro Woche (Default für Hobby-Lifter)."
         case .active:     return "6-7 Trainings pro Woche oder körperlicher Beruf."
         case .veryActive: return "Tag-täglich intensives Training oder schwere körperliche Arbeit."
+        }
+    }
+
+    // DEL-120: lokalisierte Varianten von label + description.
+    public var localizedName: LocalizedStringResource {
+        switch self {
+        case .sedentary:  LocalizedStringResource("activity.sedentary",  bundle: .module)
+        case .light:      LocalizedStringResource("activity.light",      bundle: .module)
+        case .moderate:   LocalizedStringResource("activity.moderate",   bundle: .module)
+        case .active:     LocalizedStringResource("activity.active",     bundle: .module)
+        case .veryActive: LocalizedStringResource("activity.veryActive", bundle: .module)
+        }
+    }
+
+    public var localizedDescription: LocalizedStringResource {
+        switch self {
+        case .sedentary:  LocalizedStringResource("activity.sedentary.description",  bundle: .module)
+        case .light:      LocalizedStringResource("activity.light.description",      bundle: .module)
+        case .moderate:   LocalizedStringResource("activity.moderate.description",   bundle: .module)
+        case .active:     LocalizedStringResource("activity.active.description",     bundle: .module)
+        case .veryActive: LocalizedStringResource("activity.veryActive.description", bundle: .module)
         }
     }
 }

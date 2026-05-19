@@ -402,7 +402,12 @@ public struct ProfileEditorView: View {
                 set: { profile.trainingGoal = $0 }
             )) {
                 ForEach(TrainingGoal.allCases, id: \.self) { goal in
-                    Label(goal.label, systemImage: goal.symbol).tag(goal)
+                    Label {
+                        Text(goal.localizedName)
+                    } icon: {
+                        Image(systemName: goal.symbol)
+                    }
+                    .tag(goal)
                 }
             } label: {
                 Text("profile.coaching.goal", bundle: .module)
@@ -414,7 +419,12 @@ public struct ProfileEditorView: View {
                 set: { profile.coachingTone = $0 }
             )) {
                 ForEach(CoachingTone.allCases, id: \.self) { tone in
-                    Label(tone.label, systemImage: tone.symbol).tag(tone)
+                    Label {
+                        Text(tone.localizedName)
+                    } icon: {
+                        Image(systemName: tone.symbol)
+                    }
+                    .tag(tone)
                 }
             } label: {
                 Text("profile.coaching.tone", bundle: .module)

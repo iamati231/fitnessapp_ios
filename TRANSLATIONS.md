@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 815 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 877 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **815 / 815** (100%) | 0 |
-| 🇬🇧 English (EN) | **815 / 815** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **815 / 815** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **877 / 877** (100%) | 0 |
+| 🇬🇧 English (EN) | **877 / 877** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **877 / 877** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -50,6 +50,21 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `active.summary.duration` | Dauer | Duration | Süre |
 | `active.summary.sets` | Sätze | Sets | Set |
 | `active.summary.volume` | Volumen | Volume | Hacim |
+
+## `activity.*`  (10 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `activity.active` | Aktiv (1.725) | Active (1.725) | Aktif (1.725) |
+| `activity.active.description` | 6-7 Trainings pro Woche oder körperlicher Beruf. | 6-7 workouts per week or physical job. | Haftada 6-7 antrenman ya da fiziksel iş. |
+| `activity.light` | Leicht aktiv (1.375) | Lightly Active (1.375) | Az Hareketli (1.375) |
+| `activity.light.description` | 1-2 leichte Trainings pro Woche. | 1-2 light workouts per week. | Haftada 1-2 hafif antrenman. |
+| `activity.moderate` | Moderat (1.55) | Moderate (1.55) | Orta (1.55) |
+| `activity.moderate.description` | 3-5 Trainings pro Woche (Default für Hobby-Lifter). | 3-5 workouts per week (default for hobby lifters). | Haftada 3-5 antrenman (hobi sporcular için varsayılan). |
+| `activity.sedentary` | Bürojob (1.2) | Sedentary (1.2) | Hareketsiz (1.2) |
+| `activity.sedentary.description` | Bürojob, kaum Bewegung neben dem Alltag. | Office job, little movement outside daily routine. | Ofis işi, günlük rutin dışında az hareket. |
+| `activity.veryActive` | Sehr aktiv (1.9) | Very Active (1.9) | Çok Aktif (1.9) |
+| `activity.veryActive.description` | Tag-täglich intensives Training oder schwere körperliche Arbeit. | Daily intense training or heavy physical labor. | Her gün yoğun antrenman ya da ağır fiziksel iş. |
 
 ## `barbell.*`  (2 Keys)
 
@@ -116,7 +131,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `calc.tdee.weightPlaceholder` | z.B. %@ | e.g. %@ | örn. %@ |
 | `calc.tdee.weightRequired` | Trag dein aktuelles Gewicht ein. | Enter your current weight. | Mevcut kilonu gir. |
 
-## `coaching.*`  (20 Keys)
+## `coaching.*`  (32 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -125,6 +140,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.cnsOverloaded.analytical.strength` | ZNS-Belastung >90%. Schwere 1RM-Versuche sind heute statistisch ineffizient. Reduziere die Intensität. | CNS load >90%. Heavy 1RM attempts are statistically inefficient today. Reduce intensity. | MSS yükü %90 üzerinde. Bugün ağır 1RM denemeleri istatistiksel olarak verimsiz. Yoğunluğu azalt. |
 | `coaching.cnsOverloaded.motivating.hypertrophy` | Du hast extrem hart gearbeitet! Gönn deinem Nervensystem etwas Ruhe und fokussiere dich heute auf leichte Isolationsübungen. | You've worked incredibly hard! Give your nervous system some rest and focus on light isolation exercises today. | Çok sıkı çalıştın! Bugün sinir sistemine biraz dinlenme ver ve hafif izolasyon hareketlerine odaklan. |
 | `coaching.cnsOverloaded.strict.hybrid` | Rote Zone. Dein Nervensystem ist durch. Keine schweren Kettlebell-Swings heute. Mach Mobility oder mach Pause. | Red zone. Your nervous system is fried. No heavy kettlebell swings today. Mobility work — or rest. | Kırmızı bölge. Sinir sistemin bitik. Bugün ağır kettlebell swing yok. Mobilite ya da dinlen. |
+| `coaching.goal.hybrid` | Funktionell / Hybrid | Functional / Hybrid | Fonksiyonel / Hibrit |
+| `coaching.goal.hybrid.blurb` | Kraft + Ausdauer + Mobilität — alles fließt zusammen. | Strength + endurance + mobility — all flowing together. | Güç + dayanıklılık + mobilite — hepsi bir arada. |
+| `coaching.goal.hypertrophy` | Muskelaufbau | Muscle Building | Kas Gelişimi |
+| `coaching.goal.hypertrophy.blurb` | Volumen, Pump, sichtbares Muskelwachstum. | Volume, pump, visible muscle growth. | Hacim, pump, görünür kas gelişimi. |
+| `coaching.goal.strength` | Maximalkraft | Maximum Strength | Maksimal Güç |
+| `coaching.goal.strength.blurb` | Maximales 1RM, niedrige Reps, schwere Hauptlifts. | Max 1RM, low reps, heavy main lifts. | Maksimum 1RM, düşük tekrar, ağır ana hareketler. |
 | `coaching.newPR.analytical.hybrid` | Leistungssteigerung erkannt. Neues Volumen-PR im Functional-Zirkel erreicht. Progression verläuft nach Plan. | Performance increase detected. New volume PR achieved in the functional circuit. Progression is on track. | Performans artışı tespit edildi. Fonksiyonel devrede yeni hacim PR'ı. İlerleme plan dahilinde. |
 | `coaching.newPR.analytical.hypertrophy` | Neuer Volumen-PR registriert. Progressiver Overload greift — beim nächsten Mikro-Zyklus +1 Set oder +2 Wdh planen. | New volume PR logged. Progressive overload is working — plan +1 set or +2 reps for the next micro-cycle. | Yeni hacim PR'ı kaydedildi. Aşamalı yüklenme işliyor — bir sonraki mikro döngüde +1 set veya +2 tekrar planla. |
 | `coaching.newPR.analytical.strength` | Neuer Top-Set-PR. Estimated 1RM aktualisiert. Trainingsmaxima werden im Hintergrund neu kalibriert. | New top-set PR. Estimated 1RM updated. Training maxes are being recalibrated in the background. | Yeni en üst set PR'ı. Tahmini 1RM güncellendi. Antrenman maksimumları arka planda yeniden hesaplanıyor. |
@@ -140,6 +161,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.restDay.analytical.strength` | Recovery-Tag. Dein ZNS arbeitet jetzt — das nächste 1RM wird heute, nicht im Gym, vorbereitet. | Recovery day. Your CNS is working now — your next 1RM is prepared today, not in the gym. | İyileşme günü. MSS şu an çalışıyor — sonraki 1RM bugün hazırlanır, salonda değil. |
 | `coaching.restDay.motivating.hybrid` | Du hast dir eine Pause verdient! Ein leichter Mobility-Flow oder Spaziergang ist heute perfekt für deine aktive Erholung. | You've earned a break! A light mobility flow or a walk is perfect for active recovery today. | Bir mola hak ettin! Bugün hafif bir mobilite akışı veya yürüyüş aktif iyileşme için ideal. |
 | `coaching.restDay.strict.strength` | Heute wird nicht trainiert. Du wirst in der Pause stärker, nicht unter der Hantel. Bleib aus dem Gym. | No training today. You get stronger on rest days, not under the barbell. Stay out of the gym. | Bugün antrenman yok. Halterin altında değil, dinlenme günlerinde güçlenirsin. Salona girme. |
+| `coaching.tone.analytical` | Analytisch | Analytical | Analitik |
+| `coaching.tone.analytical.blurb` | Fakten & Daten. Neutrales Feedback zu Load und Progression. | Facts & data. Neutral feedback on load and progression. | Veriler ve gerçekler. Yük ve ilerleme hakkında nötr geri bildirim. |
+| `coaching.tone.motivating` | Motivierend | Motivating | Motive Edici |
+| `coaching.tone.motivating.blurb` | Positiv & bestärkend. Fokus auf Erfolge und Erholung. | Positive & encouraging. Focus on wins and recovery. | Olumlu ve destekleyici. Başarılara ve iyileşmeye odaklı. |
+| `coaching.tone.strict` | Streng | Strict | Sıkı |
+| `coaching.tone.strict.blurb` | Direkt & fordernd. Klartext, wenn du vom Plan abweichst. | Direct & demanding. Plain talk when you deviate from the plan. | Doğrudan ve talepkar. Plandan sapınca net konuşur. |
 
 ## `common.*`  (9 Keys)
 
@@ -155,7 +182,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `common.edit` | Bearbeiten | Edit | Düzenle |
 | `common.save` | Speichern | Save | Kaydet |
 
-## `dashboard.*`  (52 Keys)
+## `dashboard.*`  (54 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -173,6 +200,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.goal.line` | Ziel %@ kg | Goal %@ kg | Hedef %@ kg |
 | `dashboard.heatmap.legend` | Sätze | Sets | Set |
 | `dashboard.heatmap.title` | Muskel-Heatmap (Woche) | Muscle Heatmap (week) | Kas Isı Haritası (hafta) |
+| `dashboard.history.countOnly` | %lld Trainings | %lld workouts | %lld antrenman |
+| `dashboard.history.countWithLast` | %1$lld Trainings • zuletzt %2$@ | %1$lld workouts • last %2$@ | %1$lld antrenman • son %2$@ |
 | `dashboard.history.empty` | Noch keine Trainings — starte oben dein erstes. | No workouts yet — start your first one above. | Henüz antrenman yok — yukarıdan ilkini başlat. |
 | `dashboard.history.title` | Trainingsverlauf | Workout History | Antrenman Geçmişi |
 | `dashboard.newMeasurement` | Neue Messung | New Measurement | Yeni Ölçüm |
@@ -261,6 +290,24 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dayPicker.prompt` | Wähle exakt %lld Tage, an denen du trainieren möchtest. | Choose exactly %lld days you want to train. | Antrenman yapmak istediğin tam olarak %lld gün seç. |
 | `dayPicker.startPlan` | Plan starten | Start Plan | Planı Başlat |
 | `dayPicker.title` | Trainingstage wählen | Choose Training Days | Antrenman Günleri |
+
+## `dayType.*`  (13 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `dayType.arms` | Arme | Arms | Kol |
+| `dayType.back` | Rücken | Back | Sırt |
+| `dayType.cardio` | Cardio / Run | Cardio / Run | Kardiyo / Koşu |
+| `dayType.chest` | Brust | Chest | Göğüs |
+| `dayType.custom` | Custom | Custom | Özel |
+| `dayType.fullBody` | Ganzkörper | Full Body | Tüm Vücut |
+| `dayType.legs` | Beine | Legs | Bacak |
+| `dayType.lower` | Unterkörper | Lower Body | Alt Vücut |
+| `dayType.pull` | Pull | Pull | Pull |
+| `dayType.push` | Push | Push | Push |
+| `dayType.rest` | Ruhetag | Rest Day | Dinlenme Günü |
+| `dayType.shoulders` | Schultern | Shoulders | Omuz |
+| `dayType.upper` | Oberkörper | Upper Body | Üst Vücut |
 
 ## `day_intensity.*`  (3 Keys)
 
@@ -455,6 +502,24 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.widePushup` | Breite Liegestütze | Wide Push-Up | Wide Push-Up |
 | `exercise.name.zercherSquat` | Zercher Squat | Zercher Squat | Zercher Squat |
 
+## `experience.*`  (3 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `experience.advanced` | Experte | Advanced | İleri |
+| `experience.beginner` | Anfänger | Beginner | Başlangıç |
+| `experience.intermediate` | Fortgeschritten | Intermediate | Orta |
+
+## `feeling.*`  (5 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `feeling.destroyed` | Zerstört / Am Limit | Destroyed / At Limit | Bitik / Limitte |
+| `feeling.good` | Gut | Good | İyi |
+| `feeling.great` | Großartig | Great | Harika |
+| `feeling.hard` | Sehr schwer | Very Hard | Çok Zor |
+| `feeling.okay` | Okay | Okay | İdare Eder |
+
 ## `gear.*`  (19 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
@@ -478,6 +543,16 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `gear.list.footer` | Cardio-Workouts buchen ihre Distanz automatisch auf den im Finish-Sheet ausgewählten Schuh. | Cardio workouts log distance to the shoe selected in the finish sheet. | Kardiyo antrenmanları, bitiş sayfasında seçilen ayakkabıya mesafe ekler. |
 | `gear.list.title` | Ausrüstung | Gear | Ekipman |
 | `gear.needsReplacement` | Schuh erneuern — Dämpfung erschöpft. | Replace shoe — cushioning depleted. | Ayakkabıyı değiştir — yastıklama tükendi. |
+
+## `goalType.*`  (5 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `goalType.fatloss` | Fett verbrennen | Burn Fat | Yağ Yak |
+| `goalType.functional` | Funktionelle Fitness | Functional Fitness | Fonksiyonel Fitness |
+| `goalType.hybrid` | Athletisch werden | Become Athletic | Atletik Ol |
+| `goalType.hypertrophy` | Muskeln aufbauen | Build Muscle | Kas Yap |
+| `goalType.strength` | Maximalkraft | Maximum Strength | Maksimal Güç |
 
 ## `history.*`  (2 Keys)
 
@@ -847,10 +922,22 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.section.health` | Apple Health | Apple Health | Apple Health |
 | `profile.section.person` | Person | Person | Kişi |
 
-## `quiz.*`  (3 Keys)
+## `quiz.*`  (15 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `quiz.days.option` | %lld Tage | %lld days | %lld gün |
+| `quiz.days.subtitle` | Sei realistisch — lieber 3 Tage konsistent als 6 geplant und nur 2 gemacht. | Be realistic — 3 consistent days beat 6 planned and only 2 done. | Gerçekçi ol — tutarlı 3 gün, planlanmış 6 ama yalnızca 2 yapılandan iyidir. |
+| `quiz.days.title` | Wie oft möchtest du pro Woche trainieren? | How often do you want to train per week? | Haftada ne sıklıkla antrenman yapmak istersin? |
+| `quiz.environment.gym` | Fitnessstudio | Gym | Salon |
+| `quiz.environment.homeGym` | Home-Gym (Kurzhanteln) | Home Gym (Dumbbells) | Ev Salonu (Dambıllar) |
+| `quiz.environment.noEquipment` | Überall (ohne Geräte) | Anywhere (no equipment) | Her yer (ekipmansız) |
+| `quiz.environment.subtitle` | Wir filtern Programme, die zu deinem Equipment passen. | We filter programs to match your equipment. | Programları ekipmanına göre filtreleriz. |
+| `quiz.environment.title` | Wo trainierst du meistens? | Where do you usually train? | Genelde nerede antrenman yapıyorsun? |
+| `quiz.experience.subtitle` | Wir wählen Programme, die dich nicht überfordern. | We pick programs that won't overwhelm you. | Seni zorlamayacak programlar seçeriz. |
+| `quiz.experience.title` | Wie viel Erfahrung hast du im Training? | How much training experience do you have? | Antrenmanda ne kadar deneyimin var? |
+| `quiz.goal.subtitle` | Wähle das, was dich aktuell am meisten antreibt. | Pick what drives you most right now. | Şu an seni en çok motive edeni seç. |
+| `quiz.goal.title` | Was ist dein primäres Ziel? | What's your primary goal? | Birincil hedefin ne? |
 | `quiz.result.choose` | Diesen Plan wählen | Choose This Plan | Bu Planı Seç |
 | `quiz.result.topMatch` | TOP EMPFEHLUNG FÜR DICH | TOP MATCH FOR YOU | SENİN İÇİN EN İYİ EŞLEŞME |
 | `quiz.title` | Plan finden | Find a Plan | Plan Bul |
@@ -904,8 +991,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.health.unavailable` | Nicht verfügbar | Not available | Kullanılamıyor |
 | `settings.preferences.gear` | Ausrüstung & Schuhe | Gear & Shoes | Ekipman & Ayakkabı |
 | `settings.preferences.units` | Einheiten | Units | Birimler |
-| `settings.preferences.units.imperial` | Imperial (lbs / in) | Imperial (lbs / in) | İmperial (lbs / in) |
-| `settings.preferences.units.metric` | Metrisch (kg / cm) | Metric (kg / cm) | Metrik (kg / cm) |
+| `settings.preferences.units.imperial` | Imperial (lbs/in) | Imperial (lbs/in) | İmperyal (lbs/in) |
+| `settings.preferences.units.metric` | Metrisch (kg/cm) | Metric (kg/cm) | Metrik (kg/cm) |
 | `settings.profile.goal` | Ziel %@ | Goal %@ | Hedef %@ |
 | `settings.profile.missing` | Kein Profil vorhanden — App neu starten oder zurücksetzen. | No profile — restart or reset the app. | Profil yok — uygulamayı yeniden başlat ya da sıfırla. |
 | `settings.profile.years` | %lld Jahre | %lld years | %lld yaş |

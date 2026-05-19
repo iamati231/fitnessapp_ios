@@ -735,21 +735,26 @@ public struct DayEditorView: View {
         return symbols[weekday - 1]
     }
 
+    // DEL-120: lokalisiert via dayType.* Catalog-Keys statt der hier inline-
+    // hardcoded DE-Strings. DayType hat zwar bereits ein `.localizedName`
+    // mit den day_type.*-Keys aus DEL-117 — die sind aber kuerzer
+    // ("Brust" / "Chest" / "Göğüs") als die hier benoetigten Label-Strings
+    // (die Lower/Upper/Cardio-Variants). Separater Namespace dayType.*.
     private func typeLabel(_ type: DayType) -> String {
         switch type {
-        case .chest:     return "Brust"
-        case .back:      return "Rücken"
-        case .legs:      return "Beine"
-        case .shoulders: return "Schultern"
-        case .arms:      return "Arme"
-        case .push:      return "Push"
-        case .pull:      return "Pull"
-        case .upper:     return "Oberkörper"
-        case .lower:     return "Unterkörper"
-        case .fullBody:  return "Ganzkörper"
-        case .rest:      return "Ruhetag"
-        case .custom:    return "Custom"
-        case .cardio:    return "Cardio / Run"
+        case .chest:     return String(localized: "dayType.chest",     bundle: .module)
+        case .back:      return String(localized: "dayType.back",      bundle: .module)
+        case .legs:      return String(localized: "dayType.legs",      bundle: .module)
+        case .shoulders: return String(localized: "dayType.shoulders", bundle: .module)
+        case .arms:      return String(localized: "dayType.arms",      bundle: .module)
+        case .push:      return String(localized: "dayType.push",      bundle: .module)
+        case .pull:      return String(localized: "dayType.pull",      bundle: .module)
+        case .upper:     return String(localized: "dayType.upper",     bundle: .module)
+        case .lower:     return String(localized: "dayType.lower",     bundle: .module)
+        case .fullBody:  return String(localized: "dayType.fullBody",  bundle: .module)
+        case .rest:      return String(localized: "dayType.rest",      bundle: .module)
+        case .custom:    return String(localized: "dayType.custom",    bundle: .module)
+        case .cardio:    return String(localized: "dayType.cardio",    bundle: .module)
         }
     }
 }

@@ -91,12 +91,12 @@ public struct OnboardingQuizView: View {
 
     private var goalStep: some View {
         quizQuestion(
-            title: "Was ist dein primäres Ziel?",
-            subtitle: "Wähle das, was dich aktuell am meisten antreibt."
+            title: String(localized: "quiz.goal.title", bundle: .module),
+            subtitle: String(localized: "quiz.goal.subtitle", bundle: .module)
         ) {
             ForEach(GoalType.allCases, id: \.self) { g in
                 quizOption(
-                    label: g.label,
+                    label: String(localized: g.localizedName),
                     icon: g.symbol,
                     isSelected: goal == g
                 ) {
@@ -110,12 +110,12 @@ public struct OnboardingQuizView: View {
 
     private var experienceStep: some View {
         quizQuestion(
-            title: "Wie viel Erfahrung hast du im Training?",
-            subtitle: "Wir wählen Programme, die dich nicht überfordern."
+            title: String(localized: "quiz.experience.title", bundle: .module),
+            subtitle: String(localized: "quiz.experience.subtitle", bundle: .module)
         ) {
             ForEach(ExperienceLevel.allCases, id: \.self) { e in
                 quizOption(
-                    label: e.label,
+                    label: String(localized: e.localizedName),
                     icon: e.symbol,
                     isSelected: experience == e
                 ) {
@@ -129,12 +129,12 @@ public struct OnboardingQuizView: View {
 
     private var daysStep: some View {
         quizQuestion(
-            title: "Wie oft möchtest du pro Woche trainieren?",
-            subtitle: "Sei realistisch — lieber 3 Tage konsistent als 6 geplant und nur 2 gemacht."
+            title: String(localized: "quiz.days.title", bundle: .module),
+            subtitle: String(localized: "quiz.days.subtitle", bundle: .module)
         ) {
             ForEach([2, 3, 4, 5, 6], id: \.self) { d in
                 quizOption(
-                    label: "\(d) Tage",
+                    label: String(format: String(localized: "quiz.days.option", bundle: .module), d),
                     icon: d <= 3 ? "calendar" : "calendar.badge.clock",
                     isSelected: preferredDays == d
                 ) {
@@ -148,8 +148,8 @@ public struct OnboardingQuizView: View {
 
     private var environmentStep: some View {
         quizQuestion(
-            title: "Wo trainierst du meistens?",
-            subtitle: "Wir filtern Programme, die zu deinem Equipment passen."
+            title: String(localized: "quiz.environment.title", bundle: .module),
+            subtitle: String(localized: "quiz.environment.subtitle", bundle: .module)
         ) {
             ForEach(EnvironmentType.allCases, id: \.self) { env in
                 quizOption(
@@ -163,11 +163,14 @@ public struct OnboardingQuizView: View {
         }
     }
 
+    // DEL-120: Quiz-spezifische Env-Labels (laenger + descriptive als die
+    // generischen environment.*-Keys, weil im Quiz-Kontext der Subtext
+    // wichtig ist — "Home-Gym (Kurzhanteln)" statt nur "Home-Gym").
     private func envLabel(_ env: EnvironmentType) -> String {
         switch env {
-        case .gym:         return "Fitnessstudio"
-        case .homeGym:     return "Home-Gym (Kurzhanteln)"
-        case .noEquipment: return "Überall (ohne Geräte)"
+        case .gym:         return String(localized: "quiz.environment.gym",         bundle: .module)
+        case .homeGym:     return String(localized: "quiz.environment.homeGym",     bundle: .module)
+        case .noEquipment: return String(localized: "quiz.environment.noEquipment", bundle: .module)
         }
     }
 
