@@ -607,7 +607,7 @@ public struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(template.displayName)
                     .font(.body.weight(.semibold))
-                Text(template.tagline)
+                Text(template.displayTagline)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

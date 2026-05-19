@@ -15,8 +15,11 @@ public enum ProgramTemplates {
         name: "Ganzkörper 3x",
         localizationKey: "plan.template.fullBody3x",
         tagline: "3 Tage · Anfänger & Re-Einstieg",
+        taglineKey: "plan.template.fullBody3x.tagline",
         descriptionText: "Höchste Trainingsfrequenz pro Muskelgruppe. Laut Forschung optimal für Anfänger und Wiedereinstieg — maximales Signal für Muskelwachstum.",
+        descriptionKey: "plan.template.fullBody3x.description",
         focus: "Anfänger / Allgemein",
+        focusKey: "plan.template.fullBody3x.focus",
         daysPerWeek: 3,
         days: [
             DaySpec(name: "Ganzkörper A", localizationKey: "plan.day.fullBodyA", type: .fullBody, sequenceIndex: 1, exercises: [
@@ -57,8 +60,11 @@ public enum ProgramTemplates {
         name: "Fatburn Ganzkörper",
         localizationKey: "plan.template.fatBurnFullBody",
         tagline: "3 Tage · Fatburn & Kondition",
+        taglineKey: "plan.template.fatBurnFullBody.tagline",
         descriptionText: "Effektiver Ganzkörperplan für maximalen Kalorienverbrauch. Kurze Pausen (60s) halten die Herzfrequenz oben — kombiniert mit einem Cardio-Finisher am Ende jeder Einheit.",
+        descriptionKey: "plan.template.fatBurnFullBody.description",
         focus: "Fatburn",
+        focusKey: "plan.template.fatBurnFullBody.focus",
         daysPerWeek: 3,
         days: [
             DaySpec(name: "Fatburn A", localizationKey: "plan.day.fatBurnA", type: .fullBody, sequenceIndex: 1, exercises: [
@@ -68,7 +74,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Schulterdrücken (stehend)",   sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Bizeps-Curl (LH)",              sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Skull Crusher",                sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Cardio / Laufband",            sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 0, isCardio: true)
+                ExerciseSpec(name: "Laufband",            sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 0, isCardio: true)
             ]),
             DaySpec(name: "Fatburn B", localizationKey: "plan.day.fatBurnB", type: .fullBody, sequenceIndex: 2, exercises: [
                 ExerciseSpec(name: "Rumänisches Kreuzheben",      sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
@@ -77,7 +83,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Schulterdrücken (KH)",          sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Hammer Curl",                  sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Trizepsdrücken (Kabel)",      sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Cardio / Fahrradergometer",    sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 0, isCardio: true)
+                ExerciseSpec(name: "Fahrradergometer",    sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 0, isCardio: true)
             ]),
             DaySpec(name: "Fatburn C", localizationKey: "plan.day.fatBurnC", type: .fullBody, sequenceIndex: 3, exercises: [
                 ExerciseSpec(name: "Hip Thrust (LH)",              sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
@@ -86,7 +92,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Seitheben",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Beinbeuger liegend",           sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Schrägbank-Curl (KH)",             sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Cardio / Stepper",             sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 0, isCardio: true)
+                ExerciseSpec(name: "Stepper",             sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 0, isCardio: true)
             ])
         ],
         targetEnvironment: .gym,
@@ -102,8 +108,11 @@ public enum ProgramTemplates {
         name: "Home Gym Hero",
         localizationKey: "plan.template.homeGymHero",
         tagline: "3 Tage · Muskelaufbau mit Kurzhanteln",
+        taglineKey: "plan.template.homeGymHero.tagline",
         descriptionText: "Effektiver Ganzkörperplan komplett mit Kurzhanteln. Ideal für das Training zuhause — kein Fitnessstudio nötig.",
+        descriptionKey: "plan.template.homeGymHero.description",
         focus: "Hypertrophie",
+        focusKey: "plan.template.homeGymHero.focus",
         daysPerWeek: 3,
         days: [
             DaySpec(name: "Ganzkörper A", localizationKey: "plan.day.fullBodyA", type: .fullBody, sequenceIndex: 1, exercises: [
@@ -143,8 +152,11 @@ public enum ProgramTemplates {
         name: "Bodyweight Mastery",
         localizationKey: "plan.template.bodyweightMastery",
         tagline: "3 Tage · Funktionelles Training ohne Geräte",
+        taglineKey: "plan.template.bodyweightMastery.tagline",
         descriptionText: "Komplettes Körpergewichtstraining ohne ein einziges Gerät. Kürzere Pausen und isometrische Übungen sorgen für maximalen Trainingsreiz.",
+        descriptionKey: "plan.template.bodyweightMastery.description",
         focus: "Funktionelle Fitness",
+        focusKey: "plan.template.bodyweightMastery.focus",
         daysPerWeek: 3,
         days: [
             DaySpec(name: "Push & Core", localizationKey: "plan.day.pushAndCore", type: .push, sequenceIndex: 1, exercises: [
@@ -182,8 +194,11 @@ public enum ProgramTemplates {
         name: "Push-Pull-Legs",
         localizationKey: "plan.template.pushPullLegs",
         tagline: "6 Tage · Hypertrophie + Kraft",
+        taglineKey: "plan.template.pushPullLegs.tagline",
         descriptionText: "Wissenschaftlich optimierter Split. Jede Muskelgruppe wird 2x pro Woche trainiert – ideal für intermediäre Sportler laut Meta-Analysen.",
+        descriptionKey: "plan.template.pushPullLegs.description",
         focus: "Hypertrophie",
+        focusKey: "plan.template.pushPullLegs.focus",
         daysPerWeek: 6,
         days: [
             DaySpec(name: "Push A", localizationKey: "plan.day.pushA", type: .push, sequenceIndex: 1, exercises: [
@@ -247,8 +262,11 @@ public enum ProgramTemplates {
         name: "Upper-Lower-Split",
         localizationKey: "plan.template.upperLower",
         tagline: "4 Tage · Kraft & Hypertrophie",
+        taglineKey: "plan.template.upperLower.tagline",
         descriptionText: "Optimale Balance zwischen Frequenz und Volumen. Laut Studienlage der effektivste Split für Kraft- und Muskelaufbau bei Intermediären.",
+        descriptionKey: "plan.template.upperLower.description",
         focus: "Kraft + Hypertrophie",
+        focusKey: "plan.template.upperLower.focus",
         daysPerWeek: 4,
         days: [
             DaySpec(name: "Oberkörper A (Kraft)", localizationKey: "plan.day.upperAStrength", type: .upper, sequenceIndex: 1, exercises: [
@@ -297,8 +315,11 @@ public enum ProgramTemplates {
         name: "Arnold Split",
         localizationKey: "plan.template.arnoldSplit",
         tagline: "6 Tage · Bodybuilding",
+        taglineKey: "plan.template.arnoldSplit.tagline",
         descriptionText: "Arnold Schwarzeneggers Trainingsansatz: Antagonisten (Brust+Rücken) werden gemeinsam trainiert für maximalen Pump und Dichte.",
+        descriptionKey: "plan.template.arnoldSplit.description",
         focus: "Hypertrophie",
+        focusKey: "plan.template.arnoldSplit.focus",
         daysPerWeek: 6,
         days: [
             // DEL-089 Arnold-Split RIR: Hypertrophie-Plan, daher Iso-Lifts
@@ -364,8 +385,11 @@ public enum ProgramTemplates {
         name: "Bro-Split",
         localizationKey: "plan.template.broSplit",
         tagline: "5 Tage · Hypertrophie",
+        taglineKey: "plan.template.broSplit.tagline",
         descriptionText: "Klassischer Bodybuilding-Split mit hohem Volumen pro Muskelgruppe. Jede Muskelgruppe wird einmal pro Woche mit maximaler Erschöpfung trainiert.",
+        descriptionKey: "plan.template.broSplit.description",
         focus: "Hypertrophie",
+        focusKey: "plan.template.broSplit.focus",
         daysPerWeek: 5,
         days: [
             // DEL-089 RIR-Refinement: Bro-Split ist ein Hypertrophie-Plan.
@@ -427,8 +451,11 @@ public enum ProgramTemplates {
         name: "Powerlifting 5x5",
         localizationKey: "plan.template.powerlifting5x5",
         tagline: "3 Tage · Kraft & Masse",
+        taglineKey: "plan.template.powerlifting5x5.tagline",
         descriptionText: "Das bewährteste Kraft-Programm für Anfänger & Fortgeschrittene. Progressive Überlastung mit den Grundübungen — wissenschaftlich und praktisch belegt.",
+        descriptionKey: "plan.template.powerlifting5x5.description",
         focus: "Kraft",
+        focusKey: "plan.template.powerlifting5x5.focus",
         daysPerWeek: 3,
         days: [
             // DEL-087: Warmup-Saetze fuer die schweren 5x5 Working-Sets.
@@ -468,8 +495,11 @@ public enum ProgramTemplates {
         name: "Powerlifting 3x5",
         localizationKey: "plan.template.powerlifting3x5",
         tagline: "3 Tage · Maximalkraft",
+        taglineKey: "plan.template.powerlifting3x5.tagline",
         descriptionText: "Dreier-Frequenz auf die Grundübungen Kniebeuge, Bankdrücken und Kreuzheben. Jede Session dreht sich um eine primäre Wettkampfübung mit schweren 3x5-Sätzen.",
+        descriptionKey: "plan.template.powerlifting3x5.description",
         focus: "Kraft",
+        focusKey: "plan.template.powerlifting3x5.focus",
         daysPerWeek: 3,
         days: [
             DaySpec(name: "Tag 1 – Kniebeuge-Tag", localizationKey: "plan.day.squatDay", type: .fullBody, sequenceIndex: 1, exercises: [
@@ -501,8 +531,11 @@ public enum ProgramTemplates {
         name: "Fussball Athletik",
         localizationKey: "plan.template.footballAthletic",
         tagline: "2 Tage · Kraft & Explosivität",
+        taglineKey: "plan.template.footballAthletic.tagline",
         descriptionText: "Athletik-Programm für Mannschaftssportler: Maximalkraft und Schnellkraft in zwei kompakten Einheiten pro Woche — ideal als Ergänzung zum Vereinstraining.",
+        descriptionKey: "plan.template.footballAthletic.description",
         focus: "Athletik",
+        focusKey: "plan.template.footballAthletic.focus",
         daysPerWeek: 2,
         days: [
             DaySpec(name: "Unterkörper & Core", localizationKey: "plan.day.lowerAndCore", type: .legs, sequenceIndex: 1, exercises: [
@@ -536,8 +569,11 @@ public enum ProgramTemplates {
         name: "Hybrid Athlete — Beginner",
         localizationKey: "plan.template.hybridBeginner",
         tagline: "4 Tage · Kraft + Laufen Einstieg",
+        taglineKey: "plan.template.hybridBeginner.tagline",
         descriptionText: "Concurrent-Training light: zwei Ganzkörper-Strength-Einheiten + zwei lockere Lauf-Tage pro Woche. RIR-Puffer schützt den Laufmotor, kein zerstörendes Versagens-Training.",
+        descriptionKey: "plan.template.hybridBeginner.description",
         focus: "Hybrid & Athletik",
+        focusKey: "plan.template.hybridBeginner.focus",
         daysPerWeek: 4,
         days: [
             DaySpec(name: "Strength Ganzkörper A", localizationKey: "plan.day.strengthFullBodyA", type: .fullBody, sequenceIndex: 1, exercises: [
@@ -574,8 +610,11 @@ public enum ProgramTemplates {
         name: "Hybrid Athlete — Balanced",
         localizationKey: "plan.template.hybridBalanced",
         tagline: "5 Tage · Kraft + Ausdauer in Balance",
+        taglineKey: "plan.template.hybridBalanced.tagline",
         descriptionText: "Drei fokussierte Strength-Einheiten (Push/Pull/Legs-Light) plus zwei strategisch platzierte Lauf-Tage. RIR-Puffer 2–3 verhindert systemische Erschöpfung — bleibt Trainings-vertrāglich.",
+        descriptionKey: "plan.template.hybridBalanced.description",
         focus: "Hybrid & Athletik",
+        focusKey: "plan.template.hybridBalanced.focus",
         daysPerWeek: 5,
         days: [
             DaySpec(name: "Strength Push", localizationKey: "plan.day.strengthPush", type: .push, sequenceIndex: 1, exercises: [
@@ -620,8 +659,11 @@ public enum ProgramTemplates {
         name: "Hybrid Athlete — Performance",
         localizationKey: "plan.template.hybridPerformance",
         tagline: "6 Tage · Wettkampf-Hybrid",
+        taglineKey: "plan.template.hybridPerformance.tagline",
         descriptionText: "Sechs Trainingstage: drei Strength-Einheiten (Push/Pull/Legs) + drei Läufe (Easy, Intervalle, Long Run). Strength-RIR konservativ 2.5, damit der Gesamt-Volumen-Stress trainings-vertraglich bleibt.",
+        descriptionKey: "plan.template.hybridPerformance.description",
         focus: "Hybrid & Athletik",
+        focusKey: "plan.template.hybridPerformance.focus",
         daysPerWeek: 6,
         days: [
             DaySpec(name: "Strength Push", localizationKey: "plan.day.strengthPush", type: .push, sequenceIndex: 1, exercises: [

@@ -73,9 +73,13 @@ public struct ProgramTemplatePickerView: View {
     private var groupedTemplates: [(focus: String, templates: [ProgramTemplate])] {
         var ordered: [String] = []
         var bucket: [String: [ProgramTemplate]] = [:]
+        // DEL-116: Section-Key auf `displayFocus` umgestellt, damit die
+        // Gruppierung auch in EN/TR die gleichen logischen Buckets bildet
+        // (gleicher rohes `focus` → gleicher displayFocus → eine Section).
         for template in filteredTemplates {
-            if bucket[template.focus] == nil { ordered.append(template.focus) }
-            bucket[template.focus, default: []].append(template)
+            let focusKey = template.displayFocus
+            if bucket[focusKey] == nil { ordered.append(focusKey) }
+            bucket[focusKey, default: []].append(template)
         }
         return ordered.map { ($0, bucket[$0] ?? []) }
     }
@@ -141,14 +145,14 @@ private struct ProgramRow: View {
                     Text(template.displayName)
                         .font(.body.weight(.semibold))
                     Text("·")
-                    Text(template.focus)
+                    Text(template.displayFocus)
                         .font(.caption.weight(.medium))
                         .foregroundStyle(.secondary)
                 }
-                Text(template.tagline)
+                Text(template.displayTagline)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text(template.descriptionText)
+                Text(template.displayDescription)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .lineLimit(2)
@@ -220,14 +224,14 @@ public struct TemplatePreviewView: View {
                         .background(Color.deltiqOrange.gradient)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(template.focus)
+                        Text(template.displayFocus)
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(Color.deltiqOrange)
-                        Text(template.tagline)
+                        Text(template.displayTagline)
                             .font(.body.weight(.semibold))
                     }
                 }
-                Text(template.descriptionText)
+                Text(template.displayDescription)
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }

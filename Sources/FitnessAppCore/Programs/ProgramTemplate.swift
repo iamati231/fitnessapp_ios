@@ -37,13 +37,25 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
     /// auf den deutschen Strings beruht.
     public let localizationKey: String?
 
+    /// DEL-116: i18n-Lookup-Keys fuer die drei Plan-Metadaten-Felder.
+    /// Namespace: `plan.template.<id>.tagline / .focus / .description`.
+    /// Wenn nil/leer, faellt der DisplayName-Helper auf das jeweilige rohe
+    /// DE-Feld (`tagline` / `focus` / `descriptionText`) zurueck — User-
+    /// erstellte Custom-Templates sehen also ihren handgetippten Text.
+    public let taglineKey: String?
+    public let focusKey: String?
+    public let descriptionKey: String?
+
     public init(
         id: String,
         name: String,
         localizationKey: String? = nil,
         tagline: String,
+        taglineKey: String? = nil,
         descriptionText: String,
+        descriptionKey: String? = nil,
         focus: String,
+        focusKey: String? = nil,
         daysPerWeek: Int,
         days: [DaySpec],
         targetEnvironment: EnvironmentType = .gym,
@@ -63,5 +75,8 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
         self.targetExperience = targetExperience
         self.targetGoals = targetGoals
         self.localizationKey = localizationKey
+        self.taglineKey = taglineKey
+        self.focusKey = focusKey
+        self.descriptionKey = descriptionKey
     }
 }

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 445 Keys im String Catalog + 195 noch hartkodierte Strings im Code.**
+**Gesamt: 491 Keys im String Catalog + 195 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **445 / 445** (100%) | 0 |
-| 🇬🇧 English (EN) | **445 / 445** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **445 / 445** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **491 / 491** (100%) | 0 |
+| 🇬🇧 English (EN) | **491 / 491** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **491 / 491** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -187,62 +187,63 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `equipment.kettlebell` | Kettlebell | Kettlebell | Kettlebell |
 | `equipment.machine` | Maschine | Machine | Makine |
 
-## `exercise.*`  (120 Keys)
+## `exercise.*`  (124 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
-| `exercise.name.australianPullup` | Australian Pull-ups | Australian Pull-up | Australian Pull-up |
-| `exercise.name.backWidows` | Back Widows | Back Widows | Back Widows |
-| `exercise.name.bandCurl` | Band Curls | Band Curl | Band Curl |
-| `exercise.name.bandPullApart` | Band Pull-Aparts | Band Pull-Apart | Band Pull-Apart |
+| `exercise.name.australianPullup` | Australian Pull-ups | Australian Pull-Up | Australian Pull-Up |
+| `exercise.name.backWidows` | Back Widows | Back Widow | Back Widow |
+| `exercise.name.bandCurl` | Band Curls | Band Curls | Band Curls |
+| `exercise.name.bandPullApart` | Band Pull-Aparts | Band Pull-Aparts | Band Pull-Aparts |
 | `exercise.name.bandedHipThrust` | Banded Hip Thrust | Banded Hip Thrust | Banded Hip Thrust |
-| `exercise.name.bandedSquat` | Banded Squats | Banded Squat | Banded Squat |
+| `exercise.name.bandedSquat` | Banded Squats | Banded Squats | Banded Squats |
 | `exercise.name.barbellCurl` | Bizeps-Curl (LH) | Barbell Curl | Barbell Curl |
 | `exercise.name.barbellHipThrust` | Hip Thrust (LH) | Barbell Hip Thrust | Barbell Hip Thrust |
-| `exercise.name.barbellLunge` | Ausfallschritte (LH) | Barbell Lunge | Barbell Lunge |
+| `exercise.name.barbellLunge` | Ausfallschritte (LH) | Barbell Lunges | Barbell Lunges |
 | `exercise.name.barbellShrug` | Shrug (LH) | Barbell Shrug | Barbell Shrug |
-| `exercise.name.barbellStandingCalfRaise` | Wadenheben (stehend, LH) | Standing Calf Raise (Barbell) | Standing Calf Raise (Barbell) |
-| `exercise.name.barbellrow` | Langhantelrudern | Barbell Row | Barbell Row |
+| `exercise.name.barbellStandingCalfRaise` | Wadenheben (stehend, LH) | Standing Calf Raise (Barbell) | Standing Calf Raise |
+| `exercise.name.barbellrow` | Rudern vorgebeugt | Bent-Over Row | Bent-Over Row |
 | `exercise.name.behindNeckPress` | Nackendrücken | Behind-the-Neck Press | Behind-the-Neck Press |
 | `exercise.name.benchpress` | Bankdrücken | Bench Press | Bench Press |
-| `exercise.name.bicepcurl` | Bizeps-Curls | Bicep Curl | Bicep Curl |
-| `exercise.name.bodyweightCalfRaise` | Wadenheben (BW) | Bodyweight Calf Raise | Vücut Ağırlığı Calf Raise |
-| `exercise.name.bodyweightHipThrust` | Hip Thrust (BW) | Bodyweight Hip Thrust | Vücut Ağırlığı Hip Thrust |
-| `exercise.name.bodyweightLunge` | Ausfallschritte (BW) | Bodyweight Lunge | Vücut Ağırlığı Lunge |
-| `exercise.name.bodyweightSquat` | Kniebeuge (BW) | Bodyweight Squat | Vücut Ağırlığı Squat |
+| `exercise.name.bicepcurl` | Bizeps-Curl (KH) | Dumbbell Curl | Dumbbell Curl |
+| `exercise.name.bodyweightCalfRaise` | Wadenheben (BW) | Bodyweight Calf Raise | Bodyweight Calf Raise |
+| `exercise.name.bodyweightHipThrust` | Hip Thrust (BW) | Bodyweight Hip Thrust | Bodyweight Hip Thrust |
+| `exercise.name.bodyweightLunge` | Ausfallschritte (BW) | Bodyweight Lunges | Bodyweight Lunges |
+| `exercise.name.bodyweightSquat` | Kniebeuge (BW) | Bodyweight Squat | Bodyweight Squat |
 | `exercise.name.boxJump` | Box Jump | Box Jump | Box Jump |
-| `exercise.name.bulgarianSplitSquatDB` | Bulgarische Kniebeuge (KH) | Bulgarian Split Squat (DB) | Bulgarian Split Squat (DB) |
-| `exercise.name.burpee` | Burpees | Burpees | Burpee |
+| `exercise.name.bulgarianSplitSquatDB` | Bulgarische Kniebeuge (KH) | Dumbbell Bulgarian Split Squat | Dumbbell Bulgarian Split Squat |
+| `exercise.name.burpee` | Burpees | Burpees | Burpees |
 | `exercise.name.cableCrossover` | Kabel Crossover | Cable Crossover | Cable Crossover |
 | `exercise.name.cableCrunch` | Kabel Crunch | Cable Crunch | Cable Crunch |
 | `exercise.name.cableCurl` | Kabel Curl | Cable Curl | Cable Curl |
 | `exercise.name.cableLateralRaise` | Kabel Seitheben | Cable Lateral Raise | Cable Lateral Raise |
-| `exercise.name.cableOverheadTricepExtension` | Trizepsstrecker über Kopf (Kabel) | Cable Overhead Tricep Extension | Cable Overhead Tricep Extension |
-| `exercise.name.chestDip` | Dips (Brust) | Chest Dip | Chest Dip |
-| `exercise.name.chestPressMachine` | Brustdrücken (Maschine) | Chest Press Machine | Chest Press Machine |
-| `exercise.name.chestSupportedRowDB` | Chest Supported Row (KH) | Chest-Supported Row (DB) | Chest-Supported Row (DB) |
+| `exercise.name.cableOverheadTricepExtension` | Trizepsstrecker über Kopf (Kabel) | Cable Overhead Triceps Extension | Cable Overhead Triceps Extension |
+| `exercise.name.chestDip` | Dips (Brust) | Chest Dips | Chest Dips |
+| `exercise.name.chestPressMachine` | Brustdrücken (Maschine) | Machine Chest Press | Machine Chest Press |
+| `exercise.name.chestSupportedRowDB` | Chest Supported Row (KH) | Chest-Supported Dumbbell Row | Chest-Supported Dumbbell Row |
 | `exercise.name.closeGripBenchPress` | Enges Bankdrücken | Close-Grip Bench Press | Close-Grip Bench Press |
 | `exercise.name.concentrationCurl` | Konzentrations-Curl (KH) | Concentration Curl | Concentration Curl |
-| `exercise.name.crunch` | Crunches (BW) | Crunches | Karın Mekik |
-| `exercise.name.cycling` | Radfahren (outdoor) | Cycling (Outdoor) | Bisiklet (Açık Hava) |
-| `exercise.name.deadlift` | Kreuzheben | Deadlift | Deadlift |
+| `exercise.name.crunch` | Crunches (BW) | Crunches | Mekik |
+| `exercise.name.cycling` | Radfahren (outdoor) | Outdoor Cycling | Bisiklet |
+| `exercise.name.deadlift` | Kreuzheben (konventionell) | Conventional Deadlift | Conventional Deadlift |
 | `exercise.name.declineBenchPress` | Schrägbankdrücken (abwärts) | Decline Bench Press | Decline Bench Press |
-| `exercise.name.diamondPushup` | Diamant-Liegestütze | Diamond Push-up | Elmas Şınav |
+| `exercise.name.diamondPushup` | Diamant-Liegestütze | Diamond Push-Up | Diamond Push-Up |
 | `exercise.name.dumbbellBenchPress` | Bankdrücken (KH) | Dumbbell Bench Press | Dumbbell Bench Press |
 | `exercise.name.dumbbellCalfRaise` | Wadenheben (KH) | Dumbbell Calf Raise | Dumbbell Calf Raise |
-| `exercise.name.dumbbellFlyFlat` | Flyes flach (KH) | Dumbbell Fly (Flat) | Dumbbell Fly (Flat) |
-| `exercise.name.dumbbellFlyIncline` | Flyes Schrägbank (KH) | Dumbbell Fly (Incline) | Dumbbell Fly (Incline) |
+| `exercise.name.dumbbellFlyFlat` | Flyes flach (KH) | Flat Dumbbell Fly | Flat Dumbbell Fly |
+| `exercise.name.dumbbellFlyIncline` | Flyes Schrägbank (KH) | Incline Dumbbell Fly | Incline Dumbbell Fly |
 | `exercise.name.dumbbellHipThrust` | Hip Thrust (KH) | Dumbbell Hip Thrust | Dumbbell Hip Thrust |
-| `exercise.name.dumbbellInclineBenchPress` | Schrägbankdrücken aufwärts (KH) | Dumbbell Incline Bench Press | Dumbbell Incline Bench Press |
-| `exercise.name.dumbbellLunge` | Ausfallschritte (KH) | Dumbbell Lunge | Dumbbell Lunge |
-| `exercise.name.dumbbellOverheadTricepExtension` | Trizepsstrecker über Kopf (KH) | Dumbbell Overhead Tricep Extension | Dumbbell Overhead Tricep Extension |
+| `exercise.name.dumbbellInclineBenchPress` | Schrägbankdrücken aufwärts (KH) | Incline Dumbbell Bench Press | Incline Dumbbell Bench Press |
+| `exercise.name.dumbbellLunge` | Ausfallschritte (KH) | Dumbbell Lunges | Dumbbell Lunges |
+| `exercise.name.dumbbellOverheadTricepExtension` | Trizepsstrecker über Kopf (KH) | Overhead Dumbbell Triceps Extension | Overhead Dumbbell Triceps Extension |
 | `exercise.name.dumbbellPullover` | Pullover (KH) | Dumbbell Pullover | Dumbbell Pullover |
 | `exercise.name.dumbbellRDL` | Rumänisches Kreuzheben (KH) | Dumbbell Romanian Deadlift | Dumbbell Romanian Deadlift |
 | `exercise.name.dumbbellRowOneArm` | Rudern einarmig (KH) | One-Arm Dumbbell Row | One-Arm Dumbbell Row |
 | `exercise.name.dumbbellShoulderPress` | Schulterdrücken (KH) | Dumbbell Shoulder Press | Dumbbell Shoulder Press |
 | `exercise.name.dumbbellShrug` | Shrug (KH) | Dumbbell Shrug | Dumbbell Shrug |
-| `exercise.name.dumbbellTricepKickback` | Trizepskickback (KH) | Dumbbell Tricep Kickback | Dumbbell Tricep Kickback |
-| `exercise.name.elliptical` | Crosstrainer | Elliptical | Eliptik Bisiklet |
+| `exercise.name.dumbbellTricepKickback` | Trizepskickback (KH) | Dumbbell Triceps Kickback | Dumbbell Triceps Kickback |
+| `exercise.name.easyRun` | Easy Run | Easy Run | Kolay Koşu |
+| `exercise.name.elliptical` | Crosstrainer | Elliptical | Eliptik |
 | `exercise.name.facePull` | Face Pull | Face Pull | Face Pull |
 | `exercise.name.frontRaise` | Frontheben | Front Raise | Front Raise |
 | `exercise.name.frontSquat` | Front Squat | Front Squat | Front Squat |
@@ -251,65 +252,68 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.goodMorning` | Good Morning | Good Morning | Good Morning |
 | `exercise.name.hackSquat` | Hack Squat | Hack Squat | Hack Squat |
 | `exercise.name.hammerCurl` | Hammer Curl | Hammer Curl | Hammer Curl |
-| `exercise.name.handstandPushup` | Handstand-Liegestütze | Handstand Push-up | Amuda Kalkarak Şınav |
-| `exercise.name.hangingLegRaise` | Hanging Leg Raises | Hanging Leg Raises | Asılı Bacak Kaldırma |
+| `exercise.name.handstandPushup` | Handstand-Liegestütze | Handstand Push-Up | Handstand Push-Up |
+| `exercise.name.hangingLegRaise` | Hanging Leg Raises | Hanging Leg Raise | Hanging Leg Raise |
 | `exercise.name.inclineBenchPress` | Schrägbankdrücken (aufwärts) | Incline Bench Press | Incline Bench Press |
 | `exercise.name.inclineDumbbellCurl` | Schrägbank-Curl (KH) | Incline Dumbbell Curl | Incline Dumbbell Curl |
+| `exercise.name.intervals` | Intervalle | Intervals | İnterval |
 | `exercise.name.jumpSquat` | Jump Squat | Jump Squat | Jump Squat |
 | `exercise.name.kettlebellCleanAndPress` | Kettlebell Clean & Press | Kettlebell Clean & Press | Kettlebell Clean & Press |
 | `exercise.name.kettlebellGobletSquat` | Kettlebell Goblet Squat | Kettlebell Goblet Squat | Kettlebell Goblet Squat |
 | `exercise.name.kettlebellHalo` | Kettlebell Halo | Kettlebell Halo | Kettlebell Halo |
 | `exercise.name.kettlebellSnatch` | Kettlebell Snatch | Kettlebell Snatch | Kettlebell Snatch |
 | `exercise.name.kettlebellSwing` | Kettlebell Swing | Kettlebell Swing | Kettlebell Swing |
-| `exercise.name.latPulldownClose` | Latzug (eng) | Lat Pulldown (Close) | Lat Pulldown (Close) |
+| `exercise.name.latPulldownClose` | Latzug (eng) | Close-Grip Lat Pulldown | Close-Grip Lat Pulldown |
 | `exercise.name.lateralRaise` | Seitheben | Lateral Raise | Lateral Raise |
-| `exercise.name.latpulldown` | Latzug | Lat Pulldown | Lat Pulldown |
+| `exercise.name.latpulldown` | Latzug (weit) | Wide-Grip Lat Pulldown | Wide-Grip Lat Pulldown |
 | `exercise.name.legExtension` | Beinstrecker | Leg Extension | Leg Extension |
 | `exercise.name.legpress` | Beinpresse | Leg Press | Leg Press |
+| `exercise.name.longRun` | Long Run | Long Run | Uzun Koşu |
 | `exercise.name.lyingLegCurl` | Beinbeuger liegend | Lying Leg Curl | Lying Leg Curl |
-| `exercise.name.lyingLegExtension` | Beinstrecker liegend | Lying Leg Extension | Yatarak Bacak Açma |
-| `exercise.name.lyingLegRaise` | Beinheben (liegend) | Lying Leg Raise | Yatarak Bacak Kaldırma |
+| `exercise.name.lyingLegExtension` | Beinstrecker liegend | Lying Leg Extension | Lying Leg Extension |
+| `exercise.name.lyingLegRaise` | Beinheben (liegend) | Lying Leg Raise | Lying Leg Raise |
 | `exercise.name.mountainClimber` | Mountain Climbers | Mountain Climbers | Mountain Climbers |
 | `exercise.name.nordicCurl` | Nordic Curls | Nordic Curl | Nordic Curl |
-| `exercise.name.overheadpress` | Schulterdrücken | Overhead Press | Overhead Press |
-| `exercise.name.pecDeck` | Pec Deck (Butterfly) | Pec Deck (Butterfly) | Pec Deck (Butterfly) |
+| `exercise.name.overheadpress` | Schulterdrücken (stehend) | Standing Overhead Press | Standing Overhead Press |
+| `exercise.name.pecDeck` | Pec Deck (Butterfly) | Pec Deck | Pec Deck |
 | `exercise.name.pendlayRow` | Pendlay Row | Pendlay Row | Pendlay Row |
-| `exercise.name.pikePushup` | Pike Liegestütze | Pike Push-up | Pike Şınav |
-| `exercise.name.plank` | Unterarmstütz (Plank) | Plank | Plank |
-| `exercise.name.preacherCurl` | Preacher Curl (Maschine) | Preacher Curl (Machine) | Preacher Curl (Machine) |
-| `exercise.name.pullup` | Klimmzüge | Pull-Up | Pull-Up |
+| `exercise.name.pikePushup` | Pike Liegestütze | Pike Push-Up | Pike Push-Up |
+| `exercise.name.plank` | Plank | Plank | Plank |
+| `exercise.name.preacherCurl` | Preacher Curl (Maschine) | Machine Preacher Curl | Machine Preacher Curl |
+| `exercise.name.pullup` | Klimmzüge (eng/Chin-up) | Chin-Up | Barfiks (Chin-Up) |
 | `exercise.name.pushPress` | Push Press | Push Press | Push Press |
-| `exercise.name.pushup` | Liegestütze | Push-up | Şınav |
+| `exercise.name.pushup` | Liegestütze | Push-Up | Şınav |
 | `exercise.name.rest` | Pause | Rest | Dinlenme |
 | `exercise.name.reverseCurl` | Reverse Curl | Reverse Curl | Reverse Curl |
-| `exercise.name.reverseFlyDB` | Reverse Flyes (KH) | Reverse Fly (DB) | Reverse Fly (DB) |
+| `exercise.name.reverseFlyDB` | Reverse Flyes (KH) | Dumbbell Reverse Fly | Dumbbell Reverse Fly |
 | `exercise.name.romanianDeadlift` | Rumänisches Kreuzheben | Romanian Deadlift | Romanian Deadlift |
-| `exercise.name.rowingMachine` | Rudermaschine | Rowing Machine | Kürek Makinesi |
-| `exercise.name.run` | Lauf | Run | Koşu |
-| `exercise.name.russianTwist` | Russian Twists | Russian Twists | Russian Twist |
+| `exercise.name.rowingMachine` | Rudermaschine | Rowing Machine | Kürek Ergometresi |
+| `exercise.name.run` | Freier Lauf | Outdoor Run | Koşu |
+| `exercise.name.russianTwist` | Russian Twists | Russian Twist | Russian Twist |
 | `exercise.name.seatedCableRow` | Kabelrudern sitzend | Seated Cable Row | Seated Cable Row |
-| `exercise.name.seatedCalfRaise` | Wadenpresse (sitzend) | Seated Calf Raise | Seated Calf Raise |
-| `exercise.name.shoulderPressMachine` | Schulterdrücken (Maschine) | Shoulder Press Machine | Shoulder Press Machine |
-| `exercise.name.sidePlank` | Seitstütz | Side Plank | Yan Plank |
+| `exercise.name.seatedCalfRaise` | Wadenpresse (sitzend) | Seated Calf Press | Seated Calf Press |
+| `exercise.name.shoulderPressMachine` | Schulterdrücken (Maschine) | Machine Shoulder Press | Machine Shoulder Press |
+| `exercise.name.sidePlank` | Seitstütz | Side Plank | Side Plank |
 | `exercise.name.sissySquat` | Sissy Squats (BW) | Sissy Squat | Sissy Squat |
-| `exercise.name.situp` | Sit-ups | Sit-ups | Mekik |
+| `exercise.name.situp` | Sit-ups | Sit-Up | Sit-Up |
 | `exercise.name.skullCrusher` | Skull Crusher | Skull Crusher | Skull Crusher |
 | `exercise.name.smithMachineSquat` | Smith Machine Squat | Smith Machine Squat | Smith Machine Squat |
 | `exercise.name.squat` | Kniebeuge | Back Squat | Back Squat |
 | `exercise.name.stairStepper` | Stepper | Stair Stepper | Stepper |
-| `exercise.name.stationaryBike` | Fahrradergometer | Stationary Bike | Kondisyon Bisikleti |
-| `exercise.name.stepUpDB` | Step-Up (KH) | Step-Up (DB) | Step-Up (DB) |
+| `exercise.name.stationaryBike` | Fahrradergometer | Exercise Bike | Egzersiz Bisikleti |
+| `exercise.name.stepUpDB` | Step-Up (KH) | Dumbbell Step-Up | Dumbbell Step-Up |
 | `exercise.name.sumoDeadlift` | Sumo-Kreuzheben | Sumo Deadlift | Sumo Deadlift |
 | `exercise.name.swimming` | Schwimmen | Swimming | Yüzme |
 | `exercise.name.tBarRow` | T-Bar Rudern | T-Bar Row | T-Bar Row |
-| `exercise.name.towelRowDoorframe` | Handtuch-Rudern (Türrahmen) | Towel Row (Doorframe) | Havlu Sırt Çekişi (Kapı Kasası) |
+| `exercise.name.towelRowDoorframe` | Handtuch-Rudern (Türrahmen) | Towel Row (Doorframe) | Towel Row |
 | `exercise.name.treadmill` | Laufband | Treadmill | Koşu Bandı |
-| `exercise.name.tricepDip` | Dips (Trizeps) | Tricep Dip | Tricep Dip |
-| `exercise.name.tricepPushdown` | Trizeps-Drücken | Triceps Pushdown | Triceps Pushdown |
+| `exercise.name.tricepDip` | Dips (Trizeps) | Triceps Dips | Triceps Dips |
+| `exercise.name.tricepPushdown` | Trizepsdrücken (Kabel) | Cable Triceps Pushdown | Cable Triceps Pushdown |
 | `exercise.name.turkishGetUp` | Turkish Get-Up | Turkish Get-Up | Türk Kalkışı |
 | `exercise.name.wallSit` | Wall Sit | Wall Sit | Wall Sit |
-| `exercise.name.widePullup` | Klimmzüge (weit) | Wide Pull-up | Wide Pull-up |
-| `exercise.name.widePushup` | Breite Liegestütze | Wide Push-up | Geniş Şınav |
+| `exercise.name.warmupWalk` | Gehen / Einlaufen | Warm-Up Walk | Isınma Yürüyüşü |
+| `exercise.name.widePullup` | Klimmzüge (weit) | Wide-Grip Pull-Up | Wide-Grip Pull-Up |
+| `exercise.name.widePushup` | Breite Liegestütze | Wide Push-Up | Wide Push-Up |
 | `exercise.name.zercherSquat` | Zercher Squat | Zercher Squat | Zercher Squat |
 
 ## `measurement.*`  (80 Keys)
@@ -445,7 +449,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.section.profile` | Profil | Profile | Profil |
 | `onboarding.title` | Willkommen | Welcome | Hoş Geldin |
 
-## `plan.*`  (58 Keys)
+## `plan.*`  (100 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -494,19 +498,61 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.day.workoutA` | Workout A | Workout A | Antrenman A |
 | `plan.day.workoutB` | Workout B | Workout B | Antrenman B |
 | `plan.template.arnoldSplit` | Arnold Split | Arnold Split | Arnold Split |
-| `plan.template.bodyweightMastery` | Bodyweight Mastery | Bodyweight Mastery | Vücut Ağırlığı Ustası |
-| `plan.template.broSplit` | Bro-Split | Bro Split | Bro Split |
-| `plan.template.fatBurnFullBody` | Fatburn Ganzkörper | Fat Burn Full Body | Yağ Yakım Tüm Vücut |
-| `plan.template.footballAthletic` | Fussball Athletik | Football Athletics | Futbol Atletik |
+| `plan.template.arnoldSplit.description` | Arnold Schwarzeneggers Trainingsansatz: Antagonisten (Brust+Rücken) werden gemeinsam trainiert für maximalen Pump und Dichte. | Arnold Schwarzenegger's training approach: antagonist muscles (chest + back) are trained together for maximum pump and density. | Arnold Schwarzenegger'in antrenman yaklaşımı: antagonist kaslar (göğüs + sırt) maksimum pump ve yoğunluk için birlikte çalıştırılır. |
+| `plan.template.arnoldSplit.focus` | Hypertrophie | Hypertrophy | Hipertrofi |
+| `plan.template.arnoldSplit.tagline` | 6 Tage · Bodybuilding | 6 Days · Bodybuilding | 6 Gün · Vücut Geliştirme |
+| `plan.template.bodyweightMastery` | Bodyweight Mastery | Bodyweight Mastery | Bodyweight Mastery |
+| `plan.template.bodyweightMastery.description` | Komplettes Körpergewichtstraining ohne ein einziges Gerät. Kürzere Pausen und isometrische Übungen sorgen für maximalen Trainingsreiz. | Complete bodyweight training without a single piece of equipment. Shorter rest periods and isometric exercises maximize training stimulus. | Tek bir ekipman olmadan komple vücut ağırlığı antrenmanı. Kısa molalar ve izometrik hareketler maksimum antrenman uyarısı sağlar. |
+| `plan.template.bodyweightMastery.focus` | Funktionelle Fitness | Functional Fitness | Fonksiyonel Fitness |
+| `plan.template.bodyweightMastery.tagline` | 3 Tage · Funktionelles Training ohne Geräte | 3 Days · Functional Training, No Equipment | 3 Gün · Ekipmansız Fonksiyonel Antrenman |
+| `plan.template.broSplit` | Bro-Split | Bro-Split | Bro-Split |
+| `plan.template.broSplit.description` | Klassischer Bodybuilding-Split mit hohem Volumen pro Muskelgruppe. Jede Muskelgruppe wird einmal pro Woche mit maximaler Erschöpfung trainiert. | Classic bodybuilding split with high volume per muscle group. Each muscle group is trained once per week to maximum exhaustion. | Kas grubu başına yüksek hacimli klasik vücut geliştirme bölünmesi. Her kas grubu haftada bir kez maksimum yorgunluğa kadar çalıştırılır. |
+| `plan.template.broSplit.focus` | Hypertrophie | Hypertrophy | Hipertrofi |
+| `plan.template.broSplit.tagline` | 5 Tage · Hypertrophie | 5 Days · Hypertrophy | 5 Gün · Hipertrofi |
+| `plan.template.fatBurnFullBody` | Fatburn Ganzkörper | Fat Loss Full Body | Yağ Yakımı Tüm Vücut |
+| `plan.template.fatBurnFullBody.description` | Effektiver Ganzkörperplan für maximalen Kalorienverbrauch. Kurze Pausen (60s) halten die Herzfrequenz oben — kombiniert mit einem Cardio-Finisher am Ende jeder Einheit. | Effective full-body plan for maximum calorie burn. Short rest periods (60s) keep heart rate elevated — combined with a cardio finisher at the end of each session. | Maksimum kalori yakımı için etkili tüm vücut planı. Kısa molalar (60s) kalp atış hızını yüksek tutar — her seansın sonunda kardiyo finisher ile birleştirilir. |
+| `plan.template.fatBurnFullBody.focus` | Fatburn | Fat Loss | Yağ Yakımı |
+| `plan.template.fatBurnFullBody.tagline` | 3 Tage · Fatburn & Kondition | 3 Days · Fat Burn & Conditioning | 3 Gün · Yağ Yakımı & Kondisyon |
+| `plan.template.footballAthletic` | Fussball Athletik | Football Athletic | Futbol Atletik |
+| `plan.template.footballAthletic.description` | Athletik-Programm für Mannschaftssportler: Maximalkraft und Schnellkraft in zwei kompakten Einheiten pro Woche — ideal als Ergänzung zum Vereinstraining. | Athletics program for team-sport athletes: maximum strength and power in two compact sessions per week — ideal as a complement to club training. | Takım sporcuları için atletik program: haftada iki kompakt seansta maksimum güç ve patlayıcı kuvvet — kulüp antrenmanına ideal tamamlayıcı. |
+| `plan.template.footballAthletic.focus` | Athletik | Athletics | Atletik |
+| `plan.template.footballAthletic.tagline` | 2 Tage · Kraft & Explosivität | 2 Days · Strength & Explosiveness | 2 Gün · Güç & Patlayıcılık |
 | `plan.template.fullBody3x` | Ganzkörper 3x | Full Body 3x | Tüm Vücut 3x |
-| `plan.template.homeGymHero` | Home Gym Hero | Home Gym Hero | Ev Salonu Kahramanı |
-| `plan.template.hybridBalanced` | Hybrid Athlete — Balanced | Hybrid Athlete — Balanced | Hibrit Atlet — Dengeli |
-| `plan.template.hybridBeginner` | Hybrid Athlete — Beginner | Hybrid Athlete — Beginner | Hibrit Atlet — Başlangıç |
-| `plan.template.hybridPerformance` | Hybrid Athlete — Performance | Hybrid Athlete — Performance | Hibrit Atlet — Performans |
+| `plan.template.fullBody3x.description` | Höchste Trainingsfrequenz pro Muskelgruppe. Laut Forschung optimal für Anfänger und Wiedereinstieg — maximales Signal für Muskelwachstum. | Highest training frequency per muscle group. Research-backed as optimal for beginners and re-entry — maximum signal for muscle growth. | Kas grubu başına en yüksek antrenman frekansı. Araştırmalar başlangıç ve yeniden başlama için ideal olduğunu gösteriyor — kas gelişimi için maksimum sinyal. |
+| `plan.template.fullBody3x.focus` | Anfänger / Allgemein | Beginner / General | Başlangıç / Genel |
+| `plan.template.fullBody3x.tagline` | 3 Tage · Anfänger & Re-Einstieg | 3 Days · Beginner & Re-Entry | 3 Gün · Başlangıç & Yeniden Başlama |
+| `plan.template.homeGymHero` | Home Gym Hero | Home Gym Hero | Home Gym Hero |
+| `plan.template.homeGymHero.description` | Effektiver Ganzkörperplan komplett mit Kurzhanteln. Ideal für das Training zuhause — kein Fitnessstudio nötig. | Effective full-body plan using only dumbbells. Ideal for training at home — no gym required. | Sadece dambıllarla etkili tüm vücut planı. Evde antrenman için ideal — salon gerekmez. |
+| `plan.template.homeGymHero.focus` | Hypertrophie | Hypertrophy | Hipertrofi |
+| `plan.template.homeGymHero.tagline` | 3 Tage · Muskelaufbau mit Kurzhanteln | 3 Days · Muscle Building with Dumbbells | 3 Gün · Dambıl ile Kas Gelişimi |
+| `plan.template.hybridBalanced` | Hybrid Athlete — Balanced | Hybrid Athlete — Balanced | Hybrid Athlete — Balanced |
+| `plan.template.hybridBalanced.description` | Drei fokussierte Strength-Einheiten (Push/Pull/Legs-Light) plus zwei strategisch platzierte Lauf-Tage. RIR-Puffer 2–3 verhindert systemische Erschöpfung — bleibt Trainings-vertrāglich. | Three focused strength sessions (Push/Pull/Legs-Light) plus two strategically placed run days. RIR buffer of 2–3 prevents systemic fatigue — stays training-compatible. | Üç odaklı güç seansı (Push/Pull/Hafif Bacak) artı iki stratejik konumlandırılmış koşu günü. RIR tamponu 2–3 sistemik yorgunluğu önler — antrenmana uyumlu kalır. |
+| `plan.template.hybridBalanced.focus` | Hybrid & Athletik | Hybrid & Athletics | Hibrit & Atletik |
+| `plan.template.hybridBalanced.tagline` | 5 Tage · Kraft + Ausdauer in Balance | 5 Days · Strength + Endurance Balanced | 5 Gün · Güç + Dayanıklılık Dengesi |
+| `plan.template.hybridBeginner` | Hybrid Athlete — Beginner | Hybrid Athlete — Beginner | Hybrid Athlete — Beginner |
+| `plan.template.hybridBeginner.description` | Concurrent-Training light: zwei Ganzkörper-Strength-Einheiten + zwei lockere Lauf-Tage pro Woche. RIR-Puffer schützt den Laufmotor, kein zerstörendes Versagens-Training. | Concurrent training light: two full-body strength sessions + two easy run days per week. RIR buffer protects the running engine — no destructive failure training. | Hafif eşzamanlı antrenman: haftada iki tüm vücut güç seansı + iki kolay koşu günü. RIR tamponu koşu motorunu korur — yıkıcı başarısızlık antrenmanı yok. |
+| `plan.template.hybridBeginner.focus` | Hybrid & Athletik | Hybrid & Athletics | Hibrit & Atletik |
+| `plan.template.hybridBeginner.tagline` | 4 Tage · Kraft + Laufen Einstieg | 4 Days · Strength + Running Intro | 4 Gün · Güç + Koşuya Giriş |
+| `plan.template.hybridPerformance` | Hybrid Athlete — Performance | Hybrid Athlete — Performance | Hybrid Athlete — Performance |
+| `plan.template.hybridPerformance.description` | Sechs Trainingstage: drei Strength-Einheiten (Push/Pull/Legs) + drei Läufe (Easy, Intervalle, Long Run). Strength-RIR konservativ 2.5, damit der Gesamt-Volumen-Stress trainings-vertraglich bleibt. | Six training days: three strength sessions (Push/Pull/Legs) + three runs (Easy, Intervals, Long Run). Conservative RIR of 2.5 on strength to keep total volume stress training-compatible. | Altı antrenman günü: üç güç seansı (Push/Pull/Bacak) + üç koşu (Kolay, İnterval, Uzun Koşu). Toplam hacim stresinin antrenmana uyumlu kalması için güçte ihtiyatlı RIR 2.5. |
+| `plan.template.hybridPerformance.focus` | Hybrid & Athletik | Hybrid & Athletics | Hibrit & Atletik |
+| `plan.template.hybridPerformance.tagline` | 6 Tage · Wettkampf-Hybrid | 6 Days · Competitive Hybrid | 6 Gün · Rekabetçi Hibrit |
 | `plan.template.powerlifting3x5` | Powerlifting 3x5 | Powerlifting 3x5 | Powerlifting 3x5 |
+| `plan.template.powerlifting3x5.description` | Dreier-Frequenz auf die Grundübungen Kniebeuge, Bankdrücken und Kreuzheben. Jede Session dreht sich um eine primäre Wettkampfübung mit schweren 3x5-Sätzen. | Triple frequency on the core lifts: squat, bench press, and deadlift. Each session focuses on one primary competition lift with heavy 3x5 sets. | Temel hareketler (squat, bench press, deadlift) için üçlü frekans. Her seans ağır 3x5 setleriyle bir ana yarışma hareketine odaklanır. |
+| `plan.template.powerlifting3x5.focus` | Kraft | Strength | Güç |
+| `plan.template.powerlifting3x5.tagline` | 3 Tage · Maximalkraft | 3 Days · Maximum Strength | 3 Gün · Maksimal Güç |
 | `plan.template.powerlifting5x5` | Powerlifting 5x5 | Powerlifting 5x5 | Powerlifting 5x5 |
+| `plan.template.powerlifting5x5.description` | Das bewährteste Kraft-Programm für Anfänger & Fortgeschrittene. Progressive Überlastung mit den Grundübungen — wissenschaftlich und praktisch belegt. | The most proven strength program for beginners and intermediates. Progressive overload with the main lifts — scientifically and practically validated. | Başlangıç ve orta seviye için en kanıtlanmış güç programı. Temel hareketlerle aşamalı yüklenme — bilimsel ve pratik olarak doğrulanmış. |
+| `plan.template.powerlifting5x5.focus` | Kraft | Strength | Güç |
+| `plan.template.powerlifting5x5.tagline` | 3 Tage · Kraft & Masse | 3 Days · Strength & Mass | 3 Gün · Güç & Kütle |
 | `plan.template.pushPullLegs` | Push-Pull-Legs | Push-Pull-Legs | Push-Pull-Legs |
-| `plan.template.upperLower` | Upper-Lower-Split | Upper-Lower Split | Üst-Alt Vücut Bölünmüş |
+| `plan.template.pushPullLegs.description` | Wissenschaftlich optimierter Split. Jede Muskelgruppe wird 2x pro Woche trainiert – ideal für intermediäre Sportler laut Meta-Analysen. | Scientifically optimized split. Each muscle group trained 2x per week — ideal for intermediate lifters per meta-analyses. | Bilimsel olarak optimize edilmiş split. Her kas grubu haftada 2 kez çalıştırılır — meta-analizlere göre orta seviye sporcular için ideal. |
+| `plan.template.pushPullLegs.focus` | Hypertrophie | Hypertrophy | Hipertrofi |
+| `plan.template.pushPullLegs.tagline` | 6 Tage · Hypertrophie + Kraft | 6 Days · Hypertrophy + Strength | 6 Gün · Hipertrofi + Güç |
+| `plan.template.upperLower` | Upper-Lower-Split | Upper-Lower Split | Upper-Lower Split |
+| `plan.template.upperLower.description` | Optimale Balance zwischen Frequenz und Volumen. Laut Studienlage der effektivste Split für Kraft- und Muskelaufbau bei Intermediären. | Optimal balance between frequency and volume. Studies show this is the most effective split for strength and muscle building at the intermediate level. | Frekans ve hacim arasında optimal denge. Çalışmalar bunun orta seviyede güç ve kas gelişimi için en etkili split olduğunu gösteriyor. |
+| `plan.template.upperLower.focus` | Kraft + Hypertrophie | Strength + Hypertrophy | Güç + Hipertrofi |
+| `plan.template.upperLower.tagline` | 4 Tage · Kraft & Hypertrophie | 4 Days · Strength & Hypertrophy | 4 Gün · Güç & Hipertrofi |
 
 ## `settings.*`  (12 Keys)
 
@@ -869,8 +915,8 @@ Diese Strings müssen in einem späteren i18n-Sweep (DEL-073 Phase 2-4) nach `Lo
 | 53 | Gefiltert nach deinem Trainingsort (\(userEnvironmentLabel)). Im Profil anpassen, wenn du auch andere Plaene sehen willst. |  |  |
 | 57 | Programm wählen |  |  |
 | 63 | Abbrechen |  |  |
-| 268 | Tag \(day.sequenceIndex) |  |  |
-| 294 | Beim Übernehmen wird eine Tiefkopie für deine eigene Bibliothek angelegt — Tage, Übungen, Sätze sind danach frei editierbar. |  |  |
+| 272 | Tag \(day.sequenceIndex) |  |  |
+| 298 | Beim Übernehmen wird eine Tiefkopie für deine eigene Bibliothek angelegt — Tage, Übungen, Sätze sind danach frei editierbar. |  |  |
 
 ## `PlateCalculatorView.swift`  (4 Strings)
 

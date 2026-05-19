@@ -26,5 +26,31 @@ extension ProgramTemplate {
         }
         return name
     }
+
+    /// DEL-116: Lokalisierter Tagline-Helper.
+    /// Vertrag analog zu `displayName` — Catalog-Lookup wenn Key gesetzt,
+    /// sonst Fallback auf das rohe `tagline`-Feld.
+    public var displayTagline: String {
+        if let key = taglineKey, !key.isEmpty {
+            return String(localized: String.LocalizationValue(key), bundle: .module)
+        }
+        return tagline
+    }
+
+    /// DEL-116: Lokalisierter Focus-Label-Helper.
+    public var displayFocus: String {
+        if let key = focusKey, !key.isEmpty {
+            return String(localized: String.LocalizationValue(key), bundle: .module)
+        }
+        return focus
+    }
+
+    /// DEL-116: Lokalisierter Description-Helper.
+    public var displayDescription: String {
+        if let key = descriptionKey, !key.isEmpty {
+            return String(localized: String.LocalizationValue(key), bundle: .module)
+        }
+        return descriptionText
+    }
 }
 #endif

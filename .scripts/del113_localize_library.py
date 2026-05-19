@@ -1,5 +1,10 @@
 """DEL-113 — Full Library Translation.
 
+# NOTE: After DEL-116, the canonical EXERCISES + PROGRAMS dicts
+# moved to .scripts/del116_authoritative_translations.py. This
+# script's dicts may carry pre-DEL-116 values for new annotations
+# only; the xcstrings catalog values are owned by del116.
+
 Master automation for the i18n sweep over ExerciseLibraryData.swift +
 ProgramTemplates.swift. Self-contained, deterministic, idempotent.
 

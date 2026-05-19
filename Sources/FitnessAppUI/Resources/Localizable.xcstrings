@@ -6255,19 +6255,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kreuzheben"
+            "value": "Kreuzheben (konventionell)"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Deadlift"
+            "value": "Conventional Deadlift"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Deadlift"
+            "value": "Conventional Deadlift"
           }
         }
       }
@@ -6278,19 +6278,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Schulterdrücken"
+            "value": "Schulterdrücken (stehend)"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Overhead Press"
+            "value": "Standing Overhead Press"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Overhead Press"
+            "value": "Standing Overhead Press"
           }
         }
       }
@@ -6301,19 +6301,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Langhantelrudern"
+            "value": "Rudern vorgebeugt"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Barbell Row"
+            "value": "Bent-Over Row"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Barbell Row"
+            "value": "Bent-Over Row"
           }
         }
       }
@@ -6324,19 +6324,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Klimmzüge"
+            "value": "Klimmzüge (eng/Chin-up)"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pull-Up"
+            "value": "Chin-Up"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pull-Up"
+            "value": "Barfiks (Chin-Up)"
           }
         }
       }
@@ -6347,19 +6347,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Latzug"
+            "value": "Latzug (weit)"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lat Pulldown"
+            "value": "Wide-Grip Lat Pulldown"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lat Pulldown"
+            "value": "Wide-Grip Lat Pulldown"
           }
         }
       }
@@ -6370,19 +6370,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bizeps-Curls"
+            "value": "Bizeps-Curl (KH)"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bicep Curl"
+            "value": "Dumbbell Curl"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bicep Curl"
+            "value": "Dumbbell Curl"
           }
         }
       }
@@ -6393,19 +6393,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trizeps-Drücken"
+            "value": "Trizepsdrücken (Kabel)"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Triceps Pushdown"
+            "value": "Cable Triceps Pushdown"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Triceps Pushdown"
+            "value": "Cable Triceps Pushdown"
           }
         }
       }
@@ -6439,7 +6439,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Unterarmstütz (Plank)"
+            "value": "Plank"
           }
         },
         "en": {
@@ -6462,13 +6462,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lauf"
+            "value": "Freier Lauf"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Run"
+            "value": "Outdoor Run"
           }
         },
         "tr": {
@@ -6813,13 +6813,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Barbell Lunge"
+            "value": "Barbell Lunges"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Barbell Lunge"
+            "value": "Barbell Lunges"
           }
         }
       }
@@ -6865,7 +6865,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Standing Calf Raise (Barbell)"
+            "value": "Standing Calf Raise"
           }
         }
       }
@@ -6974,13 +6974,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dumbbell Incline Bench Press"
+            "value": "Incline Dumbbell Bench Press"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dumbbell Incline Bench Press"
+            "value": "Incline Dumbbell Bench Press"
           }
         }
       }
@@ -6997,13 +6997,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dumbbell Fly (Flat)"
+            "value": "Flat Dumbbell Fly"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dumbbell Fly (Flat)"
+            "value": "Flat Dumbbell Fly"
           }
         }
       }
@@ -7020,13 +7020,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dumbbell Fly (Incline)"
+            "value": "Incline Dumbbell Fly"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dumbbell Fly (Incline)"
+            "value": "Incline Dumbbell Fly"
           }
         }
       }
@@ -7066,13 +7066,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chest-Supported Row (DB)"
+            "value": "Chest-Supported Dumbbell Row"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chest-Supported Row (DB)"
+            "value": "Chest-Supported Dumbbell Row"
           }
         }
       }
@@ -7181,13 +7181,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reverse Fly (DB)"
+            "value": "Dumbbell Reverse Fly"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reverse Fly (DB)"
+            "value": "Dumbbell Reverse Fly"
           }
         }
       }
@@ -7250,13 +7250,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dumbbell Lunge"
+            "value": "Dumbbell Lunges"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dumbbell Lunge"
+            "value": "Dumbbell Lunges"
           }
         }
       }
@@ -7273,13 +7273,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bulgarian Split Squat (DB)"
+            "value": "Dumbbell Bulgarian Split Squat"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bulgarian Split Squat (DB)"
+            "value": "Dumbbell Bulgarian Split Squat"
           }
         }
       }
@@ -7319,13 +7319,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Step-Up (DB)"
+            "value": "Dumbbell Step-Up"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Step-Up (DB)"
+            "value": "Dumbbell Step-Up"
           }
         }
       }
@@ -7457,13 +7457,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dumbbell Overhead Tricep Extension"
+            "value": "Overhead Dumbbell Triceps Extension"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dumbbell Overhead Tricep Extension"
+            "value": "Overhead Dumbbell Triceps Extension"
           }
         }
       }
@@ -7480,13 +7480,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dumbbell Tricep Kickback"
+            "value": "Dumbbell Triceps Kickback"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dumbbell Tricep Kickback"
+            "value": "Dumbbell Triceps Kickback"
           }
         }
       }
@@ -7503,13 +7503,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wide Pull-up"
+            "value": "Wide-Grip Pull-Up"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wide Pull-up"
+            "value": "Wide-Grip Pull-Up"
           }
         }
       }
@@ -7526,13 +7526,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Australian Pull-up"
+            "value": "Australian Pull-Up"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Australian Pull-up"
+            "value": "Australian Pull-Up"
           }
         }
       }
@@ -7555,7 +7555,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Havlu Sırt Çekişi (Kapı Kasası)"
+            "value": "Towel Row"
           }
         }
       }
@@ -7572,7 +7572,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Push-up"
+            "value": "Push-Up"
           }
         },
         "tr": {
@@ -7595,13 +7595,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diamond Push-up"
+            "value": "Diamond Push-Up"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Elmas Şınav"
+            "value": "Diamond Push-Up"
           }
         }
       }
@@ -7618,13 +7618,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wide Push-up"
+            "value": "Wide Push-Up"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Geniş Şınav"
+            "value": "Wide Push-Up"
           }
         }
       }
@@ -7641,13 +7641,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chest Dip"
+            "value": "Chest Dips"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chest Dip"
+            "value": "Chest Dips"
           }
         }
       }
@@ -7664,13 +7664,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tricep Dip"
+            "value": "Triceps Dips"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tricep Dip"
+            "value": "Triceps Dips"
           }
         }
       }
@@ -7687,13 +7687,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pike Push-up"
+            "value": "Pike Push-Up"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pike Şınav"
+            "value": "Pike Push-Up"
           }
         }
       }
@@ -7710,13 +7710,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Handstand Push-up"
+            "value": "Handstand Push-Up"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Amuda Kalkarak Şınav"
+            "value": "Handstand Push-Up"
           }
         }
       }
@@ -7733,13 +7733,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Back Widows"
+            "value": "Back Widow"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Back Widows"
+            "value": "Back Widow"
           }
         }
       }
@@ -7762,7 +7762,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vücut Ağırlığı Squat"
+            "value": "Bodyweight Squat"
           }
         }
       }
@@ -7802,13 +7802,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bodyweight Lunge"
+            "value": "Bodyweight Lunges"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vücut Ağırlığı Lunge"
+            "value": "Bodyweight Lunges"
           }
         }
       }
@@ -7946,7 +7946,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vücut Ağırlığı Hip Thrust"
+            "value": "Bodyweight Hip Thrust"
           }
         }
       }
@@ -7969,7 +7969,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vücut Ağırlığı Calf Raise"
+            "value": "Bodyweight Calf Raise"
           }
         }
       }
@@ -7992,7 +7992,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yan Plank"
+            "value": "Side Plank"
           }
         }
       }
@@ -8038,7 +8038,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Burpee"
+            "value": "Burpees"
           }
         }
       }
@@ -8061,7 +8061,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Karın Mekik"
+            "value": "Mekik"
           }
         }
       }
@@ -8084,7 +8084,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yatarak Bacak Kaldırma"
+            "value": "Lying Leg Raise"
           }
         }
       }
@@ -8101,13 +8101,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sit-ups"
+            "value": "Sit-Up"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mekik"
+            "value": "Sit-Up"
           }
         }
       }
@@ -8130,7 +8130,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yatarak Bacak Açma"
+            "value": "Lying Leg Extension"
           }
         }
       }
@@ -8147,7 +8147,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Russian Twists"
+            "value": "Russian Twist"
           }
         },
         "tr": {
@@ -8170,13 +8170,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hanging Leg Raises"
+            "value": "Hanging Leg Raise"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Asılı Bacak Kaldırma"
+            "value": "Hanging Leg Raise"
           }
         }
       }
@@ -8216,13 +8216,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pec Deck (Butterfly)"
+            "value": "Pec Deck"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pec Deck (Butterfly)"
+            "value": "Pec Deck"
           }
         }
       }
@@ -8239,13 +8239,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chest Press Machine"
+            "value": "Machine Chest Press"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chest Press Machine"
+            "value": "Machine Chest Press"
           }
         }
       }
@@ -8262,13 +8262,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lat Pulldown (Close)"
+            "value": "Close-Grip Lat Pulldown"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lat Pulldown (Close)"
+            "value": "Close-Grip Lat Pulldown"
           }
         }
       }
@@ -8354,13 +8354,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Shoulder Press Machine"
+            "value": "Machine Shoulder Press"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Shoulder Press Machine"
+            "value": "Machine Shoulder Press"
           }
         }
       }
@@ -8377,13 +8377,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cable Overhead Tricep Extension"
+            "value": "Cable Overhead Triceps Extension"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cable Overhead Tricep Extension"
+            "value": "Cable Overhead Triceps Extension"
           }
         }
       }
@@ -8400,13 +8400,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preacher Curl (Machine)"
+            "value": "Machine Preacher Curl"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preacher Curl (Machine)"
+            "value": "Machine Preacher Curl"
           }
         }
       }
@@ -8538,13 +8538,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seated Calf Raise"
+            "value": "Seated Calf Press"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seated Calf Raise"
+            "value": "Seated Calf Press"
           }
         }
       }
@@ -8584,13 +8584,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Band Pull-Apart"
+            "value": "Band Pull-Aparts"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Band Pull-Apart"
+            "value": "Band Pull-Aparts"
           }
         }
       }
@@ -8607,13 +8607,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Banded Squat"
+            "value": "Banded Squats"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Banded Squat"
+            "value": "Banded Squats"
           }
         }
       }
@@ -8630,13 +8630,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Band Curl"
+            "value": "Band Curls"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Band Curl"
+            "value": "Band Curls"
           }
         }
       }
@@ -8837,13 +8837,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cycling (Outdoor)"
+            "value": "Outdoor Cycling"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bisiklet (Açık Hava)"
+            "value": "Bisiklet"
           }
         }
       }
@@ -8860,13 +8860,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stationary Bike"
+            "value": "Exercise Bike"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kondisyon Bisikleti"
+            "value": "Egzersiz Bisikleti"
           }
         }
       }
@@ -8889,7 +8889,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kürek Makinesi"
+            "value": "Kürek Ergometresi"
           }
         }
       }
@@ -8912,7 +8912,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eliptik Bisiklet"
+            "value": "Eliptik"
           }
         }
       }
@@ -8998,13 +8998,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fat Burn Full Body"
+            "value": "Fat Loss Full Body"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yağ Yakım Tüm Vücut"
+            "value": "Yağ Yakımı Tüm Vücut"
           }
         }
       }
@@ -9027,7 +9027,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ev Salonu Kahramanı"
+            "value": "Home Gym Hero"
           }
         }
       }
@@ -9050,7 +9050,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vücut Ağırlığı Ustası"
+            "value": "Bodyweight Mastery"
           }
         }
       }
@@ -9096,7 +9096,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Üst-Alt Vücut Bölünmüş"
+            "value": "Upper-Lower Split"
           }
         }
       }
@@ -9136,13 +9136,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bro Split"
+            "value": "Bro-Split"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bro Split"
+            "value": "Bro-Split"
           }
         }
       }
@@ -9205,7 +9205,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Football Athletics"
+            "value": "Football Athletic"
           }
         },
         "tr": {
@@ -9234,7 +9234,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hibrit Atlet — Başlangıç"
+            "value": "Hybrid Athlete — Beginner"
           }
         }
       }
@@ -9257,7 +9257,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hibrit Atlet — Dengeli"
+            "value": "Hybrid Athlete — Balanced"
           }
         }
       }
@@ -9280,7 +9280,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hibrit Atlet — Performans"
+            "value": "Hybrid Athlete — Performance"
           }
         }
       }
@@ -10293,6 +10293,1064 @@
           "stringUnit": {
             "state": "translated",
             "value": "İnterval"
+          }
+        }
+      }
+    },
+    "exercise.name.easyRun": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Easy Run"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Easy Run"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kolay Koşu"
+          }
+        }
+      }
+    },
+    "exercise.name.longRun": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Long Run"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Long Run"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uzun Koşu"
+          }
+        }
+      }
+    },
+    "exercise.name.intervals": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intervalle"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intervals"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İnterval"
+          }
+        }
+      }
+    },
+    "exercise.name.warmupWalk": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gehen / Einlaufen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warm-Up Walk"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Isınma Yürüyüşü"
+          }
+        }
+      }
+    },
+    "plan.template.fullBody3x.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Tage · Anfänger & Re-Einstieg"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Days · Beginner & Re-Entry"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Gün · Başlangıç & Yeniden Başlama"
+          }
+        }
+      }
+    },
+    "plan.template.fatBurnFullBody.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Tage · Fatburn & Kondition"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Days · Fat Burn & Conditioning"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Gün · Yağ Yakımı & Kondisyon"
+          }
+        }
+      }
+    },
+    "plan.template.homeGymHero.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Tage · Muskelaufbau mit Kurzhanteln"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Days · Muscle Building with Dumbbells"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Gün · Dambıl ile Kas Gelişimi"
+          }
+        }
+      }
+    },
+    "plan.template.bodyweightMastery.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Tage · Funktionelles Training ohne Geräte"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Days · Functional Training, No Equipment"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Gün · Ekipmansız Fonksiyonel Antrenman"
+          }
+        }
+      }
+    },
+    "plan.template.pushPullLegs.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 Tage · Hypertrophie + Kraft"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 Days · Hypertrophy + Strength"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 Gün · Hipertrofi + Güç"
+          }
+        }
+      }
+    },
+    "plan.template.upperLower.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 Tage · Kraft & Hypertrophie"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 Days · Strength & Hypertrophy"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 Gün · Güç & Hipertrofi"
+          }
+        }
+      }
+    },
+    "plan.template.arnoldSplit.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 Tage · Bodybuilding"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 Days · Bodybuilding"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 Gün · Vücut Geliştirme"
+          }
+        }
+      }
+    },
+    "plan.template.broSplit.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 Tage · Hypertrophie"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 Days · Hypertrophy"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 Gün · Hipertrofi"
+          }
+        }
+      }
+    },
+    "plan.template.powerlifting5x5.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Tage · Kraft & Masse"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Days · Strength & Mass"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Gün · Güç & Kütle"
+          }
+        }
+      }
+    },
+    "plan.template.powerlifting3x5.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Tage · Maximalkraft"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Days · Maximum Strength"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Gün · Maksimal Güç"
+          }
+        }
+      }
+    },
+    "plan.template.footballAthletic.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 Tage · Kraft & Explosivität"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 Days · Strength & Explosiveness"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 Gün · Güç & Patlayıcılık"
+          }
+        }
+      }
+    },
+    "plan.template.hybridBeginner.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 Tage · Kraft + Laufen Einstieg"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 Days · Strength + Running Intro"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 Gün · Güç + Koşuya Giriş"
+          }
+        }
+      }
+    },
+    "plan.template.hybridBalanced.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 Tage · Kraft + Ausdauer in Balance"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 Days · Strength + Endurance Balanced"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 Gün · Güç + Dayanıklılık Dengesi"
+          }
+        }
+      }
+    },
+    "plan.template.hybridPerformance.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 Tage · Wettkampf-Hybrid"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 Days · Competitive Hybrid"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 Gün · Rekabetçi Hibrit"
+          }
+        }
+      }
+    },
+    "plan.template.fullBody3x.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anfänger / Allgemein"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beginner / General"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başlangıç / Genel"
+          }
+        }
+      }
+    },
+    "plan.template.fatBurnFullBody.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fatburn"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fat Loss"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yağ Yakımı"
+          }
+        }
+      }
+    },
+    "plan.template.homeGymHero.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hypertrophie"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hypertrophy"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hipertrofi"
+          }
+        }
+      }
+    },
+    "plan.template.bodyweightMastery.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Funktionelle Fitness"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Functional Fitness"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fonksiyonel Fitness"
+          }
+        }
+      }
+    },
+    "plan.template.pushPullLegs.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hypertrophie"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hypertrophy"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hipertrofi"
+          }
+        }
+      }
+    },
+    "plan.template.upperLower.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kraft + Hypertrophie"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength + Hypertrophy"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güç + Hipertrofi"
+          }
+        }
+      }
+    },
+    "plan.template.arnoldSplit.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hypertrophie"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hypertrophy"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hipertrofi"
+          }
+        }
+      }
+    },
+    "plan.template.broSplit.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hypertrophie"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hypertrophy"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hipertrofi"
+          }
+        }
+      }
+    },
+    "plan.template.powerlifting5x5.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kraft"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güç"
+          }
+        }
+      }
+    },
+    "plan.template.powerlifting3x5.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kraft"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güç"
+          }
+        }
+      }
+    },
+    "plan.template.footballAthletic.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Athletik"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Athletics"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atletik"
+          }
+        }
+      }
+    },
+    "plan.template.hybridBeginner.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hybrid & Athletik"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hybrid & Athletics"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hibrit & Atletik"
+          }
+        }
+      }
+    },
+    "plan.template.hybridBalanced.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hybrid & Athletik"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hybrid & Athletics"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hibrit & Atletik"
+          }
+        }
+      }
+    },
+    "plan.template.hybridPerformance.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hybrid & Athletik"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hybrid & Athletics"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hibrit & Atletik"
+          }
+        }
+      }
+    },
+    "plan.template.fullBody3x.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höchste Trainingsfrequenz pro Muskelgruppe. Laut Forschung optimal für Anfänger und Wiedereinstieg — maximales Signal für Muskelwachstum."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Highest training frequency per muscle group. Research-backed as optimal for beginners and re-entry — maximum signal for muscle growth."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kas grubu başına en yüksek antrenman frekansı. Araştırmalar başlangıç ve yeniden başlama için ideal olduğunu gösteriyor — kas gelişimi için maksimum sinyal."
+          }
+        }
+      }
+    },
+    "plan.template.fatBurnFullBody.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effektiver Ganzkörperplan für maximalen Kalorienverbrauch. Kurze Pausen (60s) halten die Herzfrequenz oben — kombiniert mit einem Cardio-Finisher am Ende jeder Einheit."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effective full-body plan for maximum calorie burn. Short rest periods (60s) keep heart rate elevated — combined with a cardio finisher at the end of each session."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maksimum kalori yakımı için etkili tüm vücut planı. Kısa molalar (60s) kalp atış hızını yüksek tutar — her seansın sonunda kardiyo finisher ile birleştirilir."
+          }
+        }
+      }
+    },
+    "plan.template.homeGymHero.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effektiver Ganzkörperplan komplett mit Kurzhanteln. Ideal für das Training zuhause — kein Fitnessstudio nötig."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effective full-body plan using only dumbbells. Ideal for training at home — no gym required."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sadece dambıllarla etkili tüm vücut planı. Evde antrenman için ideal — salon gerekmez."
+          }
+        }
+      }
+    },
+    "plan.template.bodyweightMastery.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komplettes Körpergewichtstraining ohne ein einziges Gerät. Kürzere Pausen und isometrische Übungen sorgen für maximalen Trainingsreiz."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete bodyweight training without a single piece of equipment. Shorter rest periods and isometric exercises maximize training stimulus."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tek bir ekipman olmadan komple vücut ağırlığı antrenmanı. Kısa molalar ve izometrik hareketler maksimum antrenman uyarısı sağlar."
+          }
+        }
+      }
+    },
+    "plan.template.pushPullLegs.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wissenschaftlich optimierter Split. Jede Muskelgruppe wird 2x pro Woche trainiert – ideal für intermediäre Sportler laut Meta-Analysen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scientifically optimized split. Each muscle group trained 2x per week — ideal for intermediate lifters per meta-analyses."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilimsel olarak optimize edilmiş split. Her kas grubu haftada 2 kez çalıştırılır — meta-analizlere göre orta seviye sporcular için ideal."
+          }
+        }
+      }
+    },
+    "plan.template.upperLower.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimale Balance zwischen Frequenz und Volumen. Laut Studienlage der effektivste Split für Kraft- und Muskelaufbau bei Intermediären."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimal balance between frequency and volume. Studies show this is the most effective split for strength and muscle building at the intermediate level."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frekans ve hacim arasında optimal denge. Çalışmalar bunun orta seviyede güç ve kas gelişimi için en etkili split olduğunu gösteriyor."
+          }
+        }
+      }
+    },
+    "plan.template.arnoldSplit.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arnold Schwarzeneggers Trainingsansatz: Antagonisten (Brust+Rücken) werden gemeinsam trainiert für maximalen Pump und Dichte."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arnold Schwarzenegger's training approach: antagonist muscles (chest + back) are trained together for maximum pump and density."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arnold Schwarzenegger'in antrenman yaklaşımı: antagonist kaslar (göğüs + sırt) maksimum pump ve yoğunluk için birlikte çalıştırılır."
+          }
+        }
+      }
+    },
+    "plan.template.broSplit.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klassischer Bodybuilding-Split mit hohem Volumen pro Muskelgruppe. Jede Muskelgruppe wird einmal pro Woche mit maximaler Erschöpfung trainiert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Classic bodybuilding split with high volume per muscle group. Each muscle group is trained once per week to maximum exhaustion."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kas grubu başına yüksek hacimli klasik vücut geliştirme bölünmesi. Her kas grubu haftada bir kez maksimum yorgunluğa kadar çalıştırılır."
+          }
+        }
+      }
+    },
+    "plan.template.powerlifting5x5.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das bewährteste Kraft-Programm für Anfänger & Fortgeschrittene. Progressive Überlastung mit den Grundübungen — wissenschaftlich und praktisch belegt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The most proven strength program for beginners and intermediates. Progressive overload with the main lifts — scientifically and practically validated."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başlangıç ve orta seviye için en kanıtlanmış güç programı. Temel hareketlerle aşamalı yüklenme — bilimsel ve pratik olarak doğrulanmış."
+          }
+        }
+      }
+    },
+    "plan.template.powerlifting3x5.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dreier-Frequenz auf die Grundübungen Kniebeuge, Bankdrücken und Kreuzheben. Jede Session dreht sich um eine primäre Wettkampfübung mit schweren 3x5-Sätzen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Triple frequency on the core lifts: squat, bench press, and deadlift. Each session focuses on one primary competition lift with heavy 3x5 sets."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temel hareketler (squat, bench press, deadlift) için üçlü frekans. Her seans ağır 3x5 setleriyle bir ana yarışma hareketine odaklanır."
+          }
+        }
+      }
+    },
+    "plan.template.footballAthletic.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Athletik-Programm für Mannschaftssportler: Maximalkraft und Schnellkraft in zwei kompakten Einheiten pro Woche — ideal als Ergänzung zum Vereinstraining."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Athletics program for team-sport athletes: maximum strength and power in two compact sessions per week — ideal as a complement to club training."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Takım sporcuları için atletik program: haftada iki kompakt seansta maksimum güç ve patlayıcı kuvvet — kulüp antrenmanına ideal tamamlayıcı."
+          }
+        }
+      }
+    },
+    "plan.template.hybridBeginner.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Concurrent-Training light: zwei Ganzkörper-Strength-Einheiten + zwei lockere Lauf-Tage pro Woche. RIR-Puffer schützt den Laufmotor, kein zerstörendes Versagens-Training."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Concurrent training light: two full-body strength sessions + two easy run days per week. RIR buffer protects the running engine — no destructive failure training."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hafif eşzamanlı antrenman: haftada iki tüm vücut güç seansı + iki kolay koşu günü. RIR tamponu koşu motorunu korur — yıkıcı başarısızlık antrenmanı yok."
+          }
+        }
+      }
+    },
+    "plan.template.hybridBalanced.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drei fokussierte Strength-Einheiten (Push/Pull/Legs-Light) plus zwei strategisch platzierte Lauf-Tage. RIR-Puffer 2–3 verhindert systemische Erschöpfung — bleibt Trainings-vertrāglich."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Three focused strength sessions (Push/Pull/Legs-Light) plus two strategically placed run days. RIR buffer of 2–3 prevents systemic fatigue — stays training-compatible."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üç odaklı güç seansı (Push/Pull/Hafif Bacak) artı iki stratejik konumlandırılmış koşu günü. RIR tamponu 2–3 sistemik yorgunluğu önler — antrenmana uyumlu kalır."
+          }
+        }
+      }
+    },
+    "plan.template.hybridPerformance.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sechs Trainingstage: drei Strength-Einheiten (Push/Pull/Legs) + drei Läufe (Easy, Intervalle, Long Run). Strength-RIR konservativ 2.5, damit der Gesamt-Volumen-Stress trainings-vertraglich bleibt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Six training days: three strength sessions (Push/Pull/Legs) + three runs (Easy, Intervals, Long Run). Conservative RIR of 2.5 on strength to keep total volume stress training-compatible."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Altı antrenman günü: üç güç seansı (Push/Pull/Bacak) + üç koşu (Kolay, İnterval, Uzun Koşu). Toplam hacim stresinin antrenmana uyumlu kalması için güçte ihtiyatlı RIR 2.5."
           }
         }
       }

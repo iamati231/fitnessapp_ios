@@ -251,7 +251,25 @@ public enum ExerciseLibraryData {
                              localizationKey: "exercise.name.stairStepper"),
         ExerciseTemplateSpec(name: "Schwimmen",                        equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true,
                              systemicFatigueFactor: 0.55, localMuscleDamageFactor: 0.35, cnsDemandFactor: 0.25, axialLoadFactor: 0.05, technicalComplexityFactor: 0.30, recoveryClass: .medium,
-                             localizationKey: "exercise.name.swimming")
+                             localizationKey: "exercise.name.swimming"),
+        // ── CARDIO · HYBRID-PLAN-LIFTS (DEL-116) ───────────────────────────
+        // DEL-116: Promoted aus den ProgramTemplates-Orphans. Vorher waren
+        // "Easy Run", "Long Run", "Intervalle", "Gehen / Einlaufen" inline
+        // ExerciseSpec(name:) Strings in Hybrid-Plan-Templates ohne Library-
+        // Match — landeten als rohes DE in Exercise.name. Jetzt offiziell
+        // im Catalog mit Multi-Locale-Display.
+        ExerciseTemplateSpec(name: "Easy Run",                         equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true,
+                             systemicFatigueFactor: 0.50, localMuscleDamageFactor: 0.40, cnsDemandFactor: 0.25, axialLoadFactor: 0.20, technicalComplexityFactor: 0.10, recoveryClass: .medium,
+                             localizationKey: "exercise.name.easyRun"),
+        ExerciseTemplateSpec(name: "Long Run",                         equipment: .bodyweight, primaryMuscle: .core,      isCardio: true,
+                             systemicFatigueFactor: 0.70, localMuscleDamageFactor: 0.55, cnsDemandFactor: 0.35, axialLoadFactor: 0.25, technicalComplexityFactor: 0.10, recoveryClass: .high,
+                             localizationKey: "exercise.name.longRun"),
+        ExerciseTemplateSpec(name: "Intervalle",                       equipment: .bodyweight, primaryMuscle: .core,      isCardio: true,
+                             systemicFatigueFactor: 0.75, localMuscleDamageFactor: 0.50, cnsDemandFactor: 0.55, axialLoadFactor: 0.20, technicalComplexityFactor: 0.20, recoveryClass: .high,
+                             localizationKey: "exercise.name.intervals"),
+        ExerciseTemplateSpec(name: "Gehen / Einlaufen",                equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true,
+                             systemicFatigueFactor: 0.15, localMuscleDamageFactor: 0.10, cnsDemandFactor: 0.05, axialLoadFactor: 0.05, technicalComplexityFactor: 0.05, recoveryClass: .low,
+                             localizationKey: "exercise.name.warmupWalk"),
     ]
 
     /// Alternative-Mapping fuer den Environment-Swap (DEL-022). Bei einem
