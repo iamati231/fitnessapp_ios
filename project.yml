@@ -29,6 +29,18 @@ settings:
     # archive build path lights up.
     DEVELOPMENT_TEAM: ''
     CODE_SIGN_STYLE: Automatic
+    # DEL-121: Xcode 26.4.1 erweiterte den Default-Build-Pfad um einen
+    # GenerateStringSymbols-Schritt, der aus Localizable.xcstrings automatisch
+    # eine Swift-Compile-Time-Symbol-Datei generiert (typsichere String-API
+    # à la `String.LocalizationValue.foo`). Der Schritt scheitert auf unserem
+    # Catalog, wahrscheinlich wegen Apple-Format-Pattern-Keys wie
+    # "%lld Rekorde" (Pre-DEL-117-Plural-Konvention) oder anderer Edge-Cases,
+    # die der Symbol-Generator nicht sauber zu Swift-Identifiern konvertieren
+    # kann. Wir nutzen die generierten Symbole nirgends — alle Catalog-Keys
+    # werden per String-Literal referenziert (`Text("foo.bar", bundle: .module)`)
+    # — daher kann der Schritt komplett deaktiviert werden, ohne dass
+    # Functionality verloren geht. Bricht uns den Codemagic-Build raus.
+    STRING_CATALOG_GENERATE_SYMBOLS: NO
 
 # Local Swift Package at the repo root — same package the rest of the conversation
 # already lives in. Each target below references products from this package.
