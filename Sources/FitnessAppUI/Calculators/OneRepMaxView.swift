@@ -22,7 +22,7 @@ public struct OneRepMaxView: View {
             estimatesSection
             percentageTableSection
         }
-        .navigationTitle("1RM-Rechner")
+        .navigationTitle(Text("calc.index.oneRm.title", bundle: .module))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif

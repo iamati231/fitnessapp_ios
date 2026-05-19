@@ -202,7 +202,7 @@ public struct OnboardingQuizView: View {
                     topMatchCard(top)
                 }
                 if plans.count > 1 {
-                    Text("Alternativen")
+                    Text("quiz.result.alternatives", bundle: .module)
                         .font(.headline)
                         .padding(.top, 8)
                     ForEach(Array(plans.dropFirst())) { plan in
@@ -231,12 +231,14 @@ public struct OnboardingQuizView: View {
                     .background(Color.deltiqOrange.gradient)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(plan.name)
+                    // DEL-122: lokalisiert via ProgramTemplate+DisplayName
+                    // Extensions statt rohem deutschen Raw-Field.
+                    Text(plan.displayName)
                         .font(.title3.weight(.bold))
-                    Text(plan.tagline)
+                    Text(plan.displayTagline)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text(plan.focus)
+                    Text(plan.displayFocus)
                         .font(.caption2.weight(.bold))
                         .tracking(0.8)
                         .padding(.horizontal, 8)
@@ -246,7 +248,7 @@ public struct OnboardingQuizView: View {
                         .clipShape(Capsule())
                 }
             }
-            Text(plan.descriptionText)
+            Text(plan.displayDescription)
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Button {
@@ -284,10 +286,10 @@ public struct OnboardingQuizView: View {
                     .background(Color.secondary.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(plan.name)
+                    Text(plan.displayName)
                         .font(.body.weight(.semibold))
                         .foregroundStyle(.primary)
-                    Text(plan.tagline)
+                    Text(plan.displayTagline)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -322,8 +324,12 @@ public struct OnboardingQuizView: View {
                 Button {
                     goToNextStep()
                 } label: {
-                    Label(step == .environment ? "Plan finden" : "Weiter",
-                          systemImage: "arrow.right")
+                    Label {
+                        Text(step == .environment ? "quiz.title" : "quiz.nav.next",
+                             bundle: .module)
+                    } icon: {
+                        Image(systemName: "arrow.right")
+                    }
                 }
                 .buttonStyle(.borderedProminent)
             }

@@ -29,7 +29,7 @@ public struct PlateCalculatorView: View {
             resultsSection
             inventorySection
         }
-        .navigationTitle("Hantel-Rechner")
+        .navigationTitle(Text("calc.index.plate.title", bundle: .module))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -58,13 +58,15 @@ public struct PlateCalculatorView: View {
     private var inputsSection: some View {
         Section {
             TextField(value: $targetWeight, format: .number,
-                      prompt: Text("z.B. \(unit == .kg ? "100" : "225")")) {
+                      prompt: Text(String(format: String(localized: "calc.placeholderExample", bundle: .module),
+                                          unit == .kg ? "100" : "225"))) {
                 Text(String(format: String(localized: "calc.plate.target", bundle: .module), unit.rawValue))
             }
             .decimalKeyboard()
 
             TextField(value: $barWeight, format: .number,
-                      prompt: Text("z.B. \(unit == .kg ? "20" : "45")")) {
+                      prompt: Text(String(format: String(localized: "calc.placeholderExample", bundle: .module),
+                                          unit == .kg ? "20" : "45"))) {
                 Text(String(format: String(localized: "calc.plate.bar", bundle: .module), unit.rawValue))
             }
             .decimalKeyboard()
@@ -147,7 +149,13 @@ public struct PlateCalculatorView: View {
         } header: {
             Text("calc.plate.section.inventory", bundle: .module)
         } footer: {
-            Text("Cap pro Plate: \(unit == .kg ? "25/20 kg → 10, alle anderen → 1" : "45/35 lbs → 10, alle anderen → 1"). Auf 0 setzen, wenn die Plate bei dir fehlt.")
+            // DEL-122: Unit-spezifischer Footer-Text — pro Einheit ein eigener
+            // Catalog-Key, damit die Plate-Limits-Beschreibung in jeder Sprache
+            // sauber unit-aware bleibt (kg → 25/20, lbs → 45/35).
+            Text(unit == .kg
+                 ? "calc.plate.inventoryFooter.kg"
+                 : "calc.plate.inventoryFooter.lbs",
+                 bundle: .module)
                 .font(.footnote)
         }
     }
@@ -161,7 +169,7 @@ public struct PlateCalculatorView: View {
                 .frame(width: 12, height: 12)
             Text("\(formatPlate(plate)) \(unit.rawValue)")
             Spacer()
-            Text("\(count) Stk")
+            Text(String(format: String(localized: "calc.plate.inventoryRow.count", bundle: .module), count))
                 .monospacedDigit()
                 .foregroundStyle(count == 0 ? .secondary : .primary)
             Stepper("",
@@ -213,12 +221,12 @@ public struct PlateCalculatorView: View {
     }
 
     private var emptyResultHint: String {
-        if targetWeight == nil { return "Trag dein Zielgewicht ein." }
-        if barWeight    == nil { return "Trag das Stangen-Gewicht ein." }
+        if targetWeight == nil { return String(localized: "calc.plate.emptyHint.noTarget", bundle: .module) }
+        if barWeight    == nil { return String(localized: "calc.plate.emptyHint.noBar",    bundle: .module) }
         if let t = targetWeight, let b = barWeight, t <= b {
-            return "Zielgewicht muss schwerer sein als die Stange."
+            return String(localized: "calc.plate.emptyHint.targetTooLow", bundle: .module)
         }
-        return "Mit dem aktuellen Inventar bleibt nichts über der Stange."
+        return String(localized: "calc.plate.emptyHint.noInventory", bundle: .module)
     }
 
     // MARK: Lifecycle helpers
