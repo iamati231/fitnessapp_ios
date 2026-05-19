@@ -735,27 +735,13 @@ public struct DayEditorView: View {
         return symbols[weekday - 1]
     }
 
-    // DEL-120: lokalisiert via dayType.* Catalog-Keys statt der hier inline-
-    // hardcoded DE-Strings. DayType hat zwar bereits ein `.localizedName`
-    // mit den day_type.*-Keys aus DEL-117 — die sind aber kuerzer
-    // ("Brust" / "Chest" / "Göğüs") als die hier benoetigten Label-Strings
-    // (die Lower/Upper/Cardio-Variants). Separater Namespace dayType.*.
+    // DEL-121 Final: delegieren an DayType.localizedName statt eigene
+    // dayType.*-Keys. Die collidierten via snake_case/camelCase-Normalization
+    // mit den legacy day_type.*-Keys (selbes Swift-Symbol). Die EN-Strings
+    // wurden ins day_type.* Catalog-Namespace gemerged (Upper Body / Lower
+    // Body / Rest Day statt Upper / Lower / Rest), dayType.* Keys deleted.
     private func typeLabel(_ type: DayType) -> String {
-        switch type {
-        case .chest:     return String(localized: "dayType.chest",     bundle: .module)
-        case .back:      return String(localized: "dayType.back",      bundle: .module)
-        case .legs:      return String(localized: "dayType.legs",      bundle: .module)
-        case .shoulders: return String(localized: "dayType.shoulders", bundle: .module)
-        case .arms:      return String(localized: "dayType.arms",      bundle: .module)
-        case .push:      return String(localized: "dayType.push",      bundle: .module)
-        case .pull:      return String(localized: "dayType.pull",      bundle: .module)
-        case .upper:     return String(localized: "dayType.upper",     bundle: .module)
-        case .lower:     return String(localized: "dayType.lower",     bundle: .module)
-        case .fullBody:  return String(localized: "dayType.fullBody",  bundle: .module)
-        case .rest:      return String(localized: "dayType.rest",      bundle: .module)
-        case .custom:    return String(localized: "dayType.custom",    bundle: .module)
-        case .cardio:    return String(localized: "dayType.cardio",    bundle: .module)
-        }
+        String(localized: type.localizedName)
     }
 }
 
