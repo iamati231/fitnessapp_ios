@@ -13,6 +13,7 @@ public enum ProgramTemplates {
     private static let fullBody = ProgramTemplate(
         id: "full_body",
         name: "Ganzkörper 3x",
+        localizationKey: "plan.template.fullBody3x",
         tagline: "3 Tage · Anfänger & Re-Einstieg",
         descriptionText: "Höchste Trainingsfrequenz pro Muskelgruppe. Laut Forschung optimal für Anfänger und Wiedereinstieg — maximales Signal für Muskelwachstum.",
         focus: "Anfänger / Allgemein",
@@ -54,6 +55,7 @@ public enum ProgramTemplates {
     private static let fatLossFullBody = ProgramTemplate(
         id: "fat_loss_fullbody",
         name: "Fatburn Ganzkörper",
+        localizationKey: "plan.template.fatBurnFullBody",
         tagline: "3 Tage · Fatburn & Kondition",
         descriptionText: "Effektiver Ganzkörperplan für maximalen Kalorienverbrauch. Kurze Pausen (60s) halten die Herzfrequenz oben — kombiniert mit einem Cardio-Finisher am Ende jeder Einheit.",
         focus: "Fatburn",
@@ -98,6 +100,7 @@ public enum ProgramTemplates {
     private static let homeGymHero = ProgramTemplate(
         id: "home_gym_hero",
         name: "Home Gym Hero",
+        localizationKey: "plan.template.homeGymHero",
         tagline: "3 Tage · Muskelaufbau mit Kurzhanteln",
         descriptionText: "Effektiver Ganzkörperplan komplett mit Kurzhanteln. Ideal für das Training zuhause — kein Fitnessstudio nötig.",
         focus: "Hypertrophie",
@@ -138,6 +141,7 @@ public enum ProgramTemplates {
     private static let bodyweightMastery = ProgramTemplate(
         id: "bodyweight_mastery",
         name: "Bodyweight Mastery",
+        localizationKey: "plan.template.bodyweightMastery",
         tagline: "3 Tage · Funktionelles Training ohne Geräte",
         descriptionText: "Komplettes Körpergewichtstraining ohne ein einziges Gerät. Kürzere Pausen und isometrische Übungen sorgen für maximalen Trainingsreiz.",
         focus: "Funktionelle Fitness",
@@ -176,6 +180,7 @@ public enum ProgramTemplates {
     private static let pushPullLegs = ProgramTemplate(
         id: "push_pull_legs",
         name: "Push-Pull-Legs",
+        localizationKey: "plan.template.pushPullLegs",
         tagline: "6 Tage · Hypertrophie + Kraft",
         descriptionText: "Wissenschaftlich optimierter Split. Jede Muskelgruppe wird 2x pro Woche trainiert – ideal für intermediäre Sportler laut Meta-Analysen.",
         focus: "Hypertrophie",
@@ -240,6 +245,7 @@ public enum ProgramTemplates {
     private static let upperLower = ProgramTemplate(
         id: "upper_lower",
         name: "Upper-Lower-Split",
+        localizationKey: "plan.template.upperLower",
         tagline: "4 Tage · Kraft & Hypertrophie",
         descriptionText: "Optimale Balance zwischen Frequenz und Volumen. Laut Studienlage der effektivste Split für Kraft- und Muskelaufbau bei Intermediären.",
         focus: "Kraft + Hypertrophie",
@@ -289,6 +295,7 @@ public enum ProgramTemplates {
     private static let arnoldSplit = ProgramTemplate(
         id: "arnold_split",
         name: "Arnold Split",
+        localizationKey: "plan.template.arnoldSplit",
         tagline: "6 Tage · Bodybuilding",
         descriptionText: "Arnold Schwarzeneggers Trainingsansatz: Antagonisten (Brust+Rücken) werden gemeinsam trainiert für maximalen Pump und Dichte.",
         focus: "Hypertrophie",
@@ -355,6 +362,7 @@ public enum ProgramTemplates {
     private static let broSplit = ProgramTemplate(
         id: "bro_split",
         name: "Bro-Split",
+        localizationKey: "plan.template.broSplit",
         tagline: "5 Tage · Hypertrophie",
         descriptionText: "Klassischer Bodybuilding-Split mit hohem Volumen pro Muskelgruppe. Jede Muskelgruppe wird einmal pro Woche mit maximaler Erschöpfung trainiert.",
         focus: "Hypertrophie",
@@ -417,6 +425,7 @@ public enum ProgramTemplates {
     private static let powerlifting5x5 = ProgramTemplate(
         id: "powerlifting_5x5",
         name: "Powerlifting 5x5",
+        localizationKey: "plan.template.powerlifting5x5",
         tagline: "3 Tage · Kraft & Masse",
         descriptionText: "Das bewährteste Kraft-Programm für Anfänger & Fortgeschrittene. Progressive Überlastung mit den Grundübungen — wissenschaftlich und praktisch belegt.",
         focus: "Kraft",
@@ -457,6 +466,7 @@ public enum ProgramTemplates {
     private static let powerlifting3x5 = ProgramTemplate(
         id: "powerlifting_3x5",
         name: "Powerlifting 3x5",
+        localizationKey: "plan.template.powerlifting3x5",
         tagline: "3 Tage · Maximalkraft",
         descriptionText: "Dreier-Frequenz auf die Grundübungen Kniebeuge, Bankdrücken und Kreuzheben. Jede Session dreht sich um eine primäre Wettkampfübung mit schweren 3x5-Sätzen.",
         focus: "Kraft",
@@ -489,6 +499,7 @@ public enum ProgramTemplates {
     private static let footballAthletic = ProgramTemplate(
         id: "football_athletic",
         name: "Fussball Athletik",
+        localizationKey: "plan.template.footballAthletic",
         tagline: "2 Tage · Kraft & Explosivität",
         descriptionText: "Athletik-Programm für Mannschaftssportler: Maximalkraft und Schnellkraft in zwei kompakten Einheiten pro Woche — ideal als Ergänzung zum Vereinstraining.",
         focus: "Athletik",
@@ -523,6 +534,7 @@ public enum ProgramTemplates {
     private static let hybridBeginner = ProgramTemplate(
         id: "hybrid_beginner",
         name: "Hybrid Athlete — Beginner",
+        localizationKey: "plan.template.hybridBeginner",
         tagline: "4 Tage · Kraft + Laufen Einstieg",
         descriptionText: "Concurrent-Training light: zwei Ganzkörper-Strength-Einheiten + zwei lockere Lauf-Tage pro Woche. RIR-Puffer schützt den Laufmotor, kein zerstörendes Versagens-Training.",
         focus: "Hybrid & Athletik",
@@ -560,6 +572,7 @@ public enum ProgramTemplates {
     private static let hybridBalanced = ProgramTemplate(
         id: "hybrid_balanced",
         name: "Hybrid Athlete — Balanced",
+        localizationKey: "plan.template.hybridBalanced",
         tagline: "5 Tage · Kraft + Ausdauer in Balance",
         descriptionText: "Drei fokussierte Strength-Einheiten (Push/Pull/Legs-Light) plus zwei strategisch platzierte Lauf-Tage. RIR-Puffer 2–3 verhindert systemische Erschöpfung — bleibt Trainings-vertrāglich.",
         focus: "Hybrid & Athletik",
@@ -605,6 +618,7 @@ public enum ProgramTemplates {
     private static let hybridPerformance = ProgramTemplate(
         id: "hybrid_performance",
         name: "Hybrid Athlete — Performance",
+        localizationKey: "plan.template.hybridPerformance",
         tagline: "6 Tage · Wettkampf-Hybrid",
         descriptionText: "Sechs Trainingstage: drei Strength-Einheiten (Push/Pull/Legs) + drei Läufe (Easy, Intervalle, Long Run). Strength-RIR konservativ 2.5, damit der Gesamt-Volumen-Stress trainings-vertraglich bleibt.",
         focus: "Hybrid & Athletik",

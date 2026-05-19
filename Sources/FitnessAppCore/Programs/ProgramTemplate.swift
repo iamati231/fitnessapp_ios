@@ -28,9 +28,19 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
     public let targetExperience: [ExperienceLevel]
     public let targetGoals: [GoalType]
 
+    /// DEL-113: i18n-Lookup-Key fuer den Plan-Namen (Format
+    /// `plan.template.<id>`). Optional — wenn gesetzt, rendert die UI den
+    /// Plan-Namen aus dem Localizable.xcstrings statt aus dem hardcoded
+    /// deutschen `name`. Der `ProgramInstantiator` propagiert weiterhin den
+    /// deutschen `name` auf `TrainingPlan.name`, weil die Name-basierte
+    /// Lookup-Logik (ExerciseLibraryData.alternatives, PlanEnvironmentMigrator)
+    /// auf den deutschen Strings beruht.
+    public let localizationKey: String?
+
     public init(
         id: String,
         name: String,
+        localizationKey: String? = nil,
         tagline: String,
         descriptionText: String,
         focus: String,
@@ -52,5 +62,6 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
         self.iconSystemName = iconSystemName
         self.targetExperience = targetExperience
         self.targetGoals = targetGoals
+        self.localizationKey = localizationKey
     }
 }
