@@ -31,7 +31,9 @@ struct RestTimerLiveActivity: Widget {
                         .lineLimit(1)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text("Satz \(context.attributes.setNumber) / \(context.attributes.totalSets)")
+                    // DEL-112: setNumber/totalSets aus dem ContentState
+                    // lesen — wandern via .update() ohne Activity-Respawn.
+                    Text("Satz \(context.state.setNumber) / \(context.state.totalSets)")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -147,7 +149,8 @@ private struct LockScreenTimerView: View {
                     .font(.headline)
                     .lineLimit(1)
                 Spacer()
-                Text("Satz \(context.attributes.setNumber)")
+                // DEL-112: setNumber sitzt jetzt im ContentState.
+                Text("Satz \(context.state.setNumber)")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

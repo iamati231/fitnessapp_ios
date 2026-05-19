@@ -2,50 +2,70 @@
 import Foundation
 import ActivityKit
 
-/// Live Activity attributes for the rest timer. Static fields are set when the
-/// Activity is requested and never change for that lifetime; `ContentState` is the
-/// dynamic part that gets `.update`-d as time elapses or the user skips ahead.
+/// Live Activity attributes for the rest timer.
 ///
-/// The widget extension target (added in Xcode, separate bundle) imports this
-/// type from `FitnessAppActivities` and renders it via `ActivityConfiguration(for:)`.
+/// **DEL-112 Schema-Migration:** Frueher waren `setNumber` + `totalSets` in
+/// den (statischen) `Attributes`. Folge: jedes Set einer Uebung brauchte
+/// eine neue Activity — End-mit-Linger der alten + Request der neuen
+/// loeste den Endless-Spinner-Bug aus, weil iOS in der Uebergangs-Phase
+/// die Activity-Identitaet verliert.
+///
+/// Jetzt: nur `exerciseName` bleibt statisch (selten geaendert mid-Activity).
+/// `setNumber` + `totalSets` wandern in `ContentState` → koennen via
+/// `activity.update(content:)` ohne Activity-Wechsel aktualisiert werden,
+/// solange der User in derselben Uebung bleibt.
+///
+/// Das Widget-Extension-Target importiert diesen Typ aus
+/// `FitnessAppActivities` und rendert ihn via `ActivityConfiguration(for:)`.
 public struct RestTimerAttributes: ActivityAttributes {
 
-    /// Dynamic part — the only thing that changes during the activity's life.
-    /// `endDate` lets the widget render a self-updating timer via `Text(timerInterval:)`
-    /// without us pushing every second from the app side.
+    /// Dynamic part — wird via `activity.update(content:)` aktualisiert,
+    /// ohne dass die Activity selber gestoppt + neu requestet werden muss.
+    /// `endDate` laesst das Widget den Timer per `Text(timerInterval:)`
+    /// selbststaendig herunterzaehlen — die App muss nicht jede Sekunde
+    /// pushen.
     ///
-    /// **`prMessage`** is the post-finish celebration: when the user ends a workout
-    /// with at least one PR, we push a final state with this set, replacing the
-    /// timer surface with a trophy headline like "🏆 100 kg Bankdrücken". The
-    /// activity dismisses itself ~8s later via `.after(...)` policy.
+    /// **`prMessage`** ist die Post-Finish-Celebration: wenn der User ein
+    /// Workout mit mindestens einem PR beendet, pushen wir einen finalen
+    /// State mit diesem Feld gesetzt — die Trophy-Headline ersetzt die
+    /// Timer-Surface in Lock-Screen + Dynamic Island. Die Activity dismisst
+    /// sich ~8s spaeter via `.after(...)`-Policy.
     public struct ContentState: Codable, Hashable {
         public let endDate: Date
         public let originalSeconds: Int
+        /// DEL-112: Set-Counter wandert von Attributes hierher — erlaubt
+        /// `.update()` statt End+Request beim Wechsel auf den naechsten Satz.
+        public let setNumber: Int
+        public let totalSets: Int
         public let isFinished: Bool
         public let prMessage: String?
 
         public init(
             endDate: Date,
             originalSeconds: Int,
+            setNumber: Int = 1,
+            totalSets: Int = 1,
             isFinished: Bool = false,
             prMessage: String? = nil
         ) {
             self.endDate = endDate
             self.originalSeconds = originalSeconds
+            self.setNumber = setNumber
+            self.totalSets = totalSets
             self.isFinished = isFinished
             self.prMessage = prMessage
         }
     }
 
-    /// Static metadata — frozen at activity-start.
+    /// Static metadata — frozen at activity-start. Mid-Activity-Wechsel der
+    /// Uebung (z.B. User springt von Bankdruecken zu Klimmzuegen waehrend
+    /// der Pause noch laeuft) loest weiterhin einen sauberen End+Respawn
+    /// aus — Uebungswechsel mid-Pause ist ein seltener Edge-Case, hier
+    /// ist der Spinner-Bug akzeptable Restrisiko.
     public let exerciseName: String
-    public let setNumber: Int
-    public let totalSets: Int
 
-    public init(exerciseName: String, setNumber: Int, totalSets: Int) {
+    public init(exerciseName: String) {
         self.exerciseName = exerciseName
-        self.setNumber = setNumber
-        self.totalSets = totalSets
     }
 }
 #endif
