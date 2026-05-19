@@ -56,7 +56,7 @@ public struct DashboardSettingsView: View {
                 .onMove(perform: moveActive)
             }
         } header: {
-            Text("dashboardSettings.section.active", bundle: .module)
+            Text("dashboardSettings.section.active.title", bundle: .module)
         } footer: {
             Text("dashboardSettings.section.active.footer", bundle: .module)
                 .font(.footnote)
@@ -119,7 +119,7 @@ public struct DashboardSettingsView: View {
                     }
                 }
             } header: {
-                Text("dashboardSettings.section.inactive", bundle: .module)
+                Text("dashboardSettings.section.inactive.title", bundle: .module)
             } footer: {
                 Text("dashboardSettings.section.inactive.footer", bundle: .module)
                     .font(.footnote)

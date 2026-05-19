@@ -46,7 +46,7 @@ public struct PlateCalculatorView: View {
                 Text("kg").tag("kg")
                 Text("lbs").tag("lbs")
             } label: {
-                Text("calc.plate.unit", bundle: .module)
+                Text("calc.plate.unit.label", bundle: .module)
             }
             .pickerStyle(.segmented)
         } footer: {

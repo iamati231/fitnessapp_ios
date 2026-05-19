@@ -210,11 +210,11 @@ public enum ActivityLevel: String, CaseIterable, Sendable {
     // DEL-120: lokalisierte Varianten von label + description.
     public var localizedName: LocalizedStringResource {
         switch self {
-        case .sedentary:  LocalizedStringResource("activity.sedentary",  bundle: .module)
-        case .light:      LocalizedStringResource("activity.light",      bundle: .module)
-        case .moderate:   LocalizedStringResource("activity.moderate",   bundle: .module)
-        case .active:     LocalizedStringResource("activity.active",     bundle: .module)
-        case .veryActive: LocalizedStringResource("activity.veryActive", bundle: .module)
+        case .sedentary:  LocalizedStringResource("activity.sedentary.label",  bundle: .module)
+        case .light:      LocalizedStringResource("activity.light.label",      bundle: .module)
+        case .moderate:   LocalizedStringResource("activity.moderate.label",   bundle: .module)
+        case .active:     LocalizedStringResource("activity.active.label",     bundle: .module)
+        case .veryActive: LocalizedStringResource("activity.veryActive.label", bundle: .module)
         }
     }
 

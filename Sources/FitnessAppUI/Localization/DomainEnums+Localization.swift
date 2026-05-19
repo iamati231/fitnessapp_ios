@@ -115,9 +115,9 @@ public extension DifficultyLevel {
 public extension CoachingTone {
     var localizedName: LocalizedStringResource {
         switch self {
-        case .analytical: LocalizedStringResource("coaching.tone.analytical", bundle: .fitnessAppUI)
-        case .motivating: LocalizedStringResource("coaching.tone.motivating", bundle: .fitnessAppUI)
-        case .strict:     LocalizedStringResource("coaching.tone.strict",     bundle: .fitnessAppUI)
+        case .analytical: LocalizedStringResource("coaching.tone.analytical.label", bundle: .fitnessAppUI)
+        case .motivating: LocalizedStringResource("coaching.tone.motivating.label", bundle: .fitnessAppUI)
+        case .strict:     LocalizedStringResource("coaching.tone.strict.label",     bundle: .fitnessAppUI)
         }
     }
 
@@ -133,9 +133,9 @@ public extension CoachingTone {
 public extension TrainingGoal {
     var localizedName: LocalizedStringResource {
         switch self {
-        case .hypertrophy: LocalizedStringResource("coaching.goal.hypertrophy", bundle: .fitnessAppUI)
-        case .strength:    LocalizedStringResource("coaching.goal.strength",    bundle: .fitnessAppUI)
-        case .hybrid:      LocalizedStringResource("coaching.goal.hybrid",      bundle: .fitnessAppUI)
+        case .hypertrophy: LocalizedStringResource("coaching.goal.hypertrophy.label", bundle: .fitnessAppUI)
+        case .strength:    LocalizedStringResource("coaching.goal.strength.label",    bundle: .fitnessAppUI)
+        case .hybrid:      LocalizedStringResource("coaching.goal.hybrid.label",      bundle: .fitnessAppUI)
         }
     }
 

@@ -167,7 +167,7 @@ public struct SettingsView: View {
                             .foregroundStyle(Color.deltiqOrange)
                             .frame(width: 28)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("dashboardSettings.entry", bundle: .module)
+                            Text("dashboardSettings.entry.title", bundle: .module)
                                 .font(.body)
                                 .foregroundStyle(.primary)
                             Text("dashboardSettings.entry.subtitle", bundle: .module)
@@ -189,7 +189,7 @@ public struct SettingsView: View {
         DeltiqFormSection(
             header: String(localized: "settings.section.preferences", bundle: .module)
         ) {
-            DeltiqFormRow(label: String(localized: "settings.preferences.units", bundle: .module)) {
+            DeltiqFormRow(label: String(localized: "settings.preferences.units.label", bundle: .module)) {
                 Picker(selection: $weightUnitRaw) {
                     Text("settings.preferences.units.metric", bundle: .module).tag("kg")
                     Text("settings.preferences.units.imperial", bundle: .module).tag("lbs")

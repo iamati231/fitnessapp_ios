@@ -174,7 +174,7 @@ KEYS = {
     "day.restDay.heroMessage":          ("Regeneration ist Teil des Plans. Hak den Tag ab, wenn du durch bist — dein Plan-Pointer springt automatisch zum nächsten echten Training.",
                                           "Recovery is part of the plan. Check off the day when you're done — your plan pointer jumps to the next real training day automatically.",
                                           "Toparlanma planın bir parçasıdır. Bitince günü işaretle — plan işaretçisi otomatik olarak bir sonraki gerçek antrenman gününe atlar."),
-    "day.restDay.complete":             ("Ruhetag abschließen",     "Complete Rest Day",    "Dinlenme Gününü Tamamla"),
+    "day.restDay.complete.button":             ("Ruhetag abschließen",     "Complete Rest Day",    "Dinlenme Gününü Tamamla"),
     "day.restDay.complete.footer":      ("Markiert den Ruhetag als erledigt — kein leerer Eintrag in der History, aber der Plan-Pointer rückt zum nächsten echten Training.",
                                            "Marks the rest day as done — no empty history entry, but the plan pointer advances to the next real training day.",
                                            "Dinlenme gününü tamamlandı olarak işaretler — geçmişte boş kayıt olmaz ama plan işaretçisi bir sonraki gerçek antrenmana ilerler."),
@@ -190,7 +190,7 @@ KEYS = {
     "day.editor.templateLocked.exercises": ("Template-Plan — Übungen sind festgelegt. Du kannst sie ansehen, aber nicht hinzufügen, entfernen oder umsortieren.",
                                               "Template plan — exercises are fixed. You can view them but not add, remove, or reorder.",
                                               "Şablon plan — hareketler sabit. Görüntüleyebilirsin ama ekleyemez, kaldıramaz veya sıralayamazsın."),
-    "day.editor.start":                 ("Training starten",        "Start Workout",        "Antrenmanı Başlat"),
+    "day.editor.start.button":                 ("Training starten",        "Start Workout",        "Antrenmanı Başlat"),
     "day.editor.start.hintEmpty":       ("Füge erst mindestens eine Übung hinzu, dann kannst du das Training starten.",
                                           "Add at least one exercise first to start the workout.",
                                           "Antrenmanı başlatmak için önce en az bir hareket ekle."),
@@ -588,7 +588,7 @@ KEYS = {
                                           "Mevcut kilonu gir."),
 
     # PlateCalculatorView
-    "calc.plate.unit":                  ("Einheit",                 "Unit",                 "Birim"),
+    "calc.plate.unit.label":                  ("Einheit",                 "Unit",                 "Birim"),
     "calc.plate.unit.footer":           ("App-weit umschaltbar. DB speichert immer metrisch — nur die Anzeige ändert sich.",
                                           "Switchable app-wide. DB always stores metric — only the display changes.",
                                           "Uygulama genelinde değiştirilebilir. Veritabanı her zaman metrik kaydeder — sadece görünüm değişir."),
@@ -674,9 +674,9 @@ KEYS = {
     # ──────────────────────────────────────────────────────────────────
 
     # CoachingTone (DEL-100 — ProfileEditor + Onboarding)
-    "coaching.tone.analytical":         ("Analytisch",              "Analytical",           "Analitik"),
-    "coaching.tone.motivating":         ("Motivierend",             "Motivating",           "Motive Edici"),
-    "coaching.tone.strict":             ("Streng",                  "Strict",               "Sıkı"),
+    "coaching.tone.analytical.label":         ("Analytisch",              "Analytical",           "Analitik"),
+    "coaching.tone.motivating.label":         ("Motivierend",             "Motivating",           "Motive Edici"),
+    "coaching.tone.strict.label":             ("Streng",                  "Strict",               "Sıkı"),
     "coaching.tone.analytical.blurb":   ("Fakten & Daten. Neutrales Feedback zu Load und Progression.",
                                           "Facts & data. Neutral feedback on load and progression.",
                                           "Veriler ve gerçekler. Yük ve ilerleme hakkında nötr geri bildirim."),
@@ -688,9 +688,9 @@ KEYS = {
                                           "Doğrudan ve talepkar. Plandan sapınca net konuşur."),
 
     # TrainingGoal (DEL-100)
-    "coaching.goal.hypertrophy":        ("Muskelaufbau",            "Muscle Building",      "Kas Gelişimi"),
-    "coaching.goal.strength":           ("Maximalkraft",            "Maximum Strength",     "Maksimal Güç"),
-    "coaching.goal.hybrid":             ("Funktionell / Hybrid",    "Functional / Hybrid",  "Fonksiyonel / Hibrit"),
+    "coaching.goal.hypertrophy.label":        ("Muskelaufbau",            "Muscle Building",      "Kas Gelişimi"),
+    "coaching.goal.strength.label":           ("Maximalkraft",            "Maximum Strength",     "Maksimal Güç"),
+    "coaching.goal.hybrid.label":             ("Funktionell / Hybrid",    "Functional / Hybrid",  "Fonksiyonel / Hibrit"),
     "coaching.goal.hypertrophy.blurb":  ("Volumen, Pump, sichtbares Muskelwachstum.",
                                           "Volume, pump, visible muscle growth.",
                                           "Hacim, pump, görünür kas gelişimi."),
@@ -721,11 +721,11 @@ KEYS = {
     "feeling.destroyed":                ("Zerstört / Am Limit",     "Destroyed / At Limit", "Bitik / Limitte"),
 
     # ActivityLevel (TDEE)
-    "activity.sedentary":               ("Bürojob (1.2)",           "Sedentary (1.2)",      "Hareketsiz (1.2)"),
-    "activity.light":                   ("Leicht aktiv (1.375)",    "Lightly Active (1.375)", "Az Hareketli (1.375)"),
-    "activity.moderate":                ("Moderat (1.55)",          "Moderate (1.55)",      "Orta (1.55)"),
-    "activity.active":                  ("Aktiv (1.725)",           "Active (1.725)",       "Aktif (1.725)"),
-    "activity.veryActive":              ("Sehr aktiv (1.9)",        "Very Active (1.9)",    "Çok Aktif (1.9)"),
+    "activity.sedentary.label":               ("Bürojob (1.2)",           "Sedentary (1.2)",      "Hareketsiz (1.2)"),
+    "activity.light.label":                   ("Leicht aktiv (1.375)",    "Lightly Active (1.375)", "Az Hareketli (1.375)"),
+    "activity.moderate.label":                ("Moderat (1.55)",          "Moderate (1.55)",      "Orta (1.55)"),
+    "activity.active.label":                  ("Aktiv (1.725)",           "Active (1.725)",       "Aktif (1.725)"),
+    "activity.veryActive.label":              ("Sehr aktiv (1.9)",        "Very Active (1.9)",    "Çok Aktif (1.9)"),
     "activity.sedentary.description":   ("Bürojob, kaum Bewegung neben dem Alltag.",
                                           "Office job, little movement outside daily routine.",
                                           "Ofis işi, günlük rutin dışında az hareket."),

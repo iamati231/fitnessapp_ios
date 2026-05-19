@@ -513,7 +513,7 @@ public struct DashboardView: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "forward.fill")
-                            Text("dashboard.plan.checkoffRestDay", bundle: .module)
+                            Text("dashboard.plan.checkoffRestDay.button", bundle: .module)
                         }
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.purple)
@@ -543,8 +543,8 @@ public struct DashboardView: View {
                         .foregroundStyle(.secondary)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(activePlans.isEmpty
-                             ? "dashboard.plan.noActivePlan"
-                             : "dashboard.plan.planEmpty",
+                             ? "dashboard.plan.noActivePlan.title"
+                             : "dashboard.plan.planEmpty.title",
                              bundle: .module)
                             .font(.body.weight(.semibold))
                         Text(activePlans.isEmpty

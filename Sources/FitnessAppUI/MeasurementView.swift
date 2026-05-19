@@ -241,12 +241,12 @@ public struct MeasurementView: View {
                     .foregroundStyle(.secondary)
                     .fitnessNumberStyle()
             }
-            DeltiqFormRow(label: loc("measurement.profile.age")) {
+            DeltiqFormRow(label: loc("measurement.profile.age.label")) {
                 Text("\(ageYears(for: profile)) \(loc("measurement.profile.age.unit"))")
                     .foregroundStyle(.secondary)
                     .fitnessNumberStyle()
             }
-            DeltiqFormRow(label: loc("measurement.profile.sex")) {
+            DeltiqFormRow(label: loc("measurement.profile.sex.label")) {
                 Text(profile.profile == .male
                      ? loc("measurement.profile.sex.male")
                      : loc("measurement.profile.sex.female"))
@@ -273,7 +273,7 @@ public struct MeasurementView: View {
     /// Wert per Auto-Fill aus dem HK-Profil kam.
     @ViewBuilder
     private func requiredFieldsSection(forProfile profile: UserBodyProfile) -> some View {
-        DeltiqFormSection(header: loc("measurement.section.core")) {
+        DeltiqFormSection(header: loc("measurement.section.core.title")) {
             // Gewicht (immer Pflicht)
             measurementRow(label: loc("measurement.field.weight"), value: $weightKg, field: .weight)
                 .onChange(of: weightKg) { _, newValue in
@@ -328,7 +328,7 @@ public struct MeasurementView: View {
 
     @ViewBuilder
     private func additionalMeasurementsSection(forProfile profile: UserBodyProfile) -> some View {
-        DeltiqFormSection(header: loc("measurement.section.additional")) {
+        DeltiqFormSection(header: loc("measurement.section.additional.title")) {
             if profile.profile == .male {
                 // Maenner: Brust, Bizeps, Hüfte, Oberschenkel, Wade
                 // (Schulter ist schon oben als Pflicht-optional)
@@ -340,7 +340,7 @@ public struct MeasurementView: View {
             } else {
                 // Frauen: Schulter, Brust, Bizeps, Oberschenkel, Wade
                 // (Hüfte ist schon oben als Pflicht)
-                measurementRow(label: loc("measurement.field.shoulder"), value: $shoulderCm, field: .shoulder)
+                measurementRow(label: loc("measurement.field.shoulder.label"), value: $shoulderCm, field: .shoulder)
                 if shoulderCm != nil {
                     fieldHint(loc("measurement.hint.broadest"))
                 }
@@ -660,7 +660,7 @@ public struct MeasurementView: View {
 
     @ViewBuilder
     private func navyRow(_ navy: Double?, profileSex: BodyFormulaProfile) -> some View {
-        DeltiqFormRow(label: loc("measurement.derived.navy")) {
+        DeltiqFormRow(label: loc("measurement.derived.navy.label")) {
             if let navy {
                 Text(navy.truncated(to: 2).formattedTwoDecimals + " %")
                     .foregroundStyle(.primary)

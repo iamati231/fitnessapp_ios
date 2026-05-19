@@ -198,7 +198,7 @@ public struct DayEditorView: View {
                 HStack {
                     Spacer()
                     Label {
-                        Text("day.restDay.complete", bundle: .module)
+                        Text("day.restDay.complete.button", bundle: .module)
                     } icon: {
                         Image(systemName: "checkmark.circle.fill")
                     }
@@ -287,7 +287,7 @@ public struct DayEditorView: View {
                     HStack {
                         Spacer()
                         Label {
-                            Text("day.restDay.complete", bundle: .module)
+                            Text("day.restDay.complete.button", bundle: .module)
                         } icon: {
                             Image(systemName: "checkmark.circle.fill")
                         }
@@ -307,7 +307,7 @@ public struct DayEditorView: View {
                     HStack {
                         Spacer()
                         Label {
-                            Text("day.editor.start", bundle: .module)
+                            Text("day.editor.start.button", bundle: .module)
                         } icon: {
                             Image(systemName: "play.fill")
                         }
