@@ -352,12 +352,27 @@ workflows:
             -scheme "$XCODE_SCHEME"
 
       - name: Build .ipa for App Store distribution
+        # DEL-121: --archive-flags injiziert Build-Settings auf der xcodebuild-
+        # Command-Line statt im Project-File. Wichtig fuer SwiftPM-Subtargets,
+        # die nicht von XcodeGen's project.yml-Settings erfasst werden.
+        #
+        # STRING_CATALOG_GENERATE_SYMBOLS=NO:
+        # Xcode 26.4.1 fuehrt einen neuen Build-Schritt ein, der aus
+        # Localizable.xcstrings automatisch typsichere Swift-Compile-Time-
+        # Symbole generiert. Der Generator scheitert auf unserem Catalog —
+        # vermutlich an den Apple-Format-Pattern-Plural-Keys
+        # ("%lld Rekorde", "%lld Übungen — %@" etc.), die valide Apple-
+        # Plural-Konvention sind aber sich nicht in Swift-Identifier
+        # konvertieren lassen. Wir nutzen die generierten Symbole nirgends
+        # (alle Catalog-Lookups laufen ueber String-Literale), daher
+        # gefahrlos deaktivierbar.
         script: |
           set -e
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME" \
-            --config Release
+            --config Release \
+            --archive-flags 'STRING_CATALOG_GENERATE_SYMBOLS=NO'
 
     artifacts:
       - build/ios/ipa/*.ipa
