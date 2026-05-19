@@ -101,7 +101,7 @@ public struct ProfileEditorView: View {
             }
         }
         .confirmationDialog(
-            "Trainingsort geändert",
+            Text("profile.envSwap.title", bundle: .module),
             isPresented: Binding(
                 get: { pendingProfileEnvSwap != nil },
                 set: { if !$0 { pendingProfileEnvSwap = nil } }
@@ -109,20 +109,24 @@ public struct ProfileEditorView: View {
             titleVisibility: .visible,
             presenting: pendingProfileEnvSwap
         ) { swap in
-            Button("Ja, Pläne anpassen") {
+            Button {
                 applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
                 pendingProfileEnvSwap = nil
+            } label: {
+                Text("profile.envSwap.confirm", bundle: .module)
             }
-            Button("Nein, so lassen") {
+            Button {
                 pendingProfileEnvSwap = nil
+            } label: {
+                Text("profile.envSwap.keep", bundle: .module)
             }
         } message: { swap in
-            Text("Du hast deinen Trainingsort auf \(environmentLabel(swap.newEnv)) geändert. Sollen deine bestehenden Trainingspläne automatisch an das dort verfügbare Equipment angepasst werden?")
+            Text(String(format: String(localized: "profile.envSwap.message", bundle: .module), environmentLabel(swap.newEnv)))
         }
         // DEL-049 "Urlaub zu Ende": ein anderer Dialog, weil der User
         // gespeicherte Gym-Originale aus dem Urlaubs-Modus zurueckholen will.
         .confirmationDialog(
-            "Ursprüngliche Übungen wiederherstellen?",
+            Text("profile.envRestore.title", bundle: .module),
             isPresented: Binding(
                 get: { pendingProfileEnvRestore != nil },
                 set: { if !$0 { pendingProfileEnvRestore = nil } }
@@ -130,16 +134,20 @@ public struct ProfileEditorView: View {
             titleVisibility: .visible,
             presenting: pendingProfileEnvRestore
         ) { swap in
-            Button("Ja, wiederherstellen") {
+            Button {
                 applyEnvironmentRestoreToAllPlans(newEnv: swap.newEnv)
                 pendingProfileEnvRestore = nil
+            } label: {
+                Text("profile.envRestore.confirm", bundle: .module)
             }
-            Button("Nein, neu anpassen") {
+            Button {
                 applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
                 pendingProfileEnvRestore = nil
+            } label: {
+                Text("profile.envRestore.adjustNew", bundle: .module)
             }
         } message: { swap in
-            Text("Wir haben Original-Übungen aus einem früheren Equipment-Wechsel gespeichert. Möchtest du diese in deinen Plänen wiederherstellen (inkl. der letzten Arbeitsgewichte)?")
+            Text("profile.envRestore.message", bundle: .module)
         }
         .overlay(alignment: .bottom) {
             if let msg = profileSwapToast {
@@ -209,7 +217,11 @@ public struct ProfileEditorView: View {
     private var healthKitSection: some View {
         Section {
             if !healthKit.isAvailable {
-                Label("Apple Health nicht verfügbar.", systemImage: "heart.slash")
+                Label {
+                    Text("onboarding.health.unavailable", bundle: .module)
+                } icon: {
+                    Image(systemName: "heart.slash")
+                }
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
@@ -219,15 +231,22 @@ public struct ProfileEditorView: View {
                         Task { await pullProfileFromHealthKit() }
                     } label: {
                         if healthKitFetchInProgress {
-                            HStack { ProgressView(); Text("Lade …") }
+                            HStack { ProgressView(); Text("onboarding.health.loading", bundle: .module) }
                         } else {
-                            Label("Aus Apple Health übernehmen", systemImage: "arrow.down.circle")
+                            Label {
+                                Text("profile.health.pull", bundle: .module)
+                            } icon: {
+                                Image(systemName: "arrow.down.circle")
+                            }
                         }
                     }
                     .disabled(healthKitFetchInProgress)
                     if !healthKitFilledFields.isEmpty {
-                        Label("Aus Apple Health übernommen: \(healthKitFilledFields.sorted().joined(separator: ", "))",
-                              systemImage: "heart.fill")
+                        Label {
+                            Text(String(format: String(localized: "profile.health.pulled", bundle: .module), healthKitFilledFields.sorted().joined(separator: ", ")))
+                        } icon: {
+                            Image(systemName: "heart.fill")
+                        }
                             .font(.caption)
                             .foregroundStyle(.pink)
                     }
@@ -240,11 +259,18 @@ public struct ProfileEditorView: View {
                             }
                         }
                     } label: {
-                        Label("Apple Health verbinden", systemImage: "heart.fill")
+                        Label {
+                            Text("onboarding.health.title", bundle: .module)
+                        } icon: {
+                            Image(systemName: "heart.fill")
+                        }
                     }
                 case .sharingDenied:
-                    Label("Berechtigung verweigert. Aktiviere sie in iOS-Einstellungen → Datenschutz → Apple Health → Deltiq.",
-                          systemImage: "heart.slash")
+                    Label {
+                        Text("profile.health.denied", bundle: .module)
+                    } icon: {
+                        Image(systemName: "heart.slash")
+                    }
                         .font(.caption)
                         .foregroundStyle(.orange)
                 case .unavailable:
@@ -252,9 +278,9 @@ public struct ProfileEditorView: View {
                 }
             }
         } header: {
-            Text("Apple Health")
+            Text("profile.section.health", bundle: .module)
         } footer: {
-            Text("Pre-fill von Geburtsdatum, Geschlecht und Größe aus dem Apple-Health-Profil. Manuelle Eingaben werden NICHT überschrieben, wenn sie schon plausible Werte haben.")
+            Text("profile.health.footer", bundle: .module)
                 .font(.footnote)
         }
     }
@@ -298,10 +324,10 @@ public struct ProfileEditorView: View {
         // toolchains when nested inside Section + footer + multiple statements.
         Section {
             Picker(selection: $profile.profile) {
-                Text("Männlich").tag(BodyFormulaProfile.male)
-                Text("Weiblich").tag(BodyFormulaProfile.female)
+                Text("sex.male", bundle: .module).tag(BodyFormulaProfile.male)
+                Text("sex.female", bundle: .module).tag(BodyFormulaProfile.female)
             } label: {
-                Text("Geschlecht")
+                Text("onboarding.field.sex", bundle: .module)
             }
             .pickerStyle(.segmented)
 
@@ -310,12 +336,12 @@ public struct ProfileEditorView: View {
                 in: Self.minBirthDate ... Date(),
                 displayedComponents: .date
             ) {
-                Text("Geburtsdatum")
+                Text("onboarding.field.birthdate", bundle: .module)
             }
         } header: {
-            Text("Person")
+            Text("profile.section.person", bundle: .module)
         } footer: {
-            Text("Sex steuert die Navy/Deurenberg-Formeln; das Alter geht in Mifflin-St-Jeor-BMR und Deurenberg ein.")
+            Text("profile.person.footer", bundle: .module)
                 .font(.footnote)
         }
     }
@@ -323,19 +349,22 @@ public struct ProfileEditorView: View {
     private var bodySection: some View {
         Section {
             TextField(value: $profile.heightCm, format: .number,
-                      prompt: Text("z.B. 180")) {
-                Text("Größe (cm)")
+                      prompt: Text("profile.body.heightPlaceholder", bundle: .module)) {
+                Text("onboarding.field.heightCm", bundle: .module)
             }
             .decimalKeyboard()
         } header: {
-            Text("Körpermasse")
+            Text("profile.section.body", bundle: .module)
         } footer: {
             if !Self.heightRange.contains(profile.heightCm) {
-                Text("Plausibel: \(Int(Self.heightRange.lowerBound))–\(Int(Self.heightRange.upperBound)) cm.")
+                let template = String(localized: "profile.body.plausible", bundle: .module)
+                Text(template
+                    .replacingOccurrences(of: "%1$lld", with: "\(Int(Self.heightRange.lowerBound))")
+                    .replacingOccurrences(of: "%2$lld", with: "\(Int(Self.heightRange.upperBound))"))
                     .font(.footnote)
                     .foregroundStyle(.red)
             } else {
-                Text("Alle Berechnungen lesen Höhe metrisch aus dieser Quelle.")
+                Text("profile.body.footerOk", bundle: .module)
                     .font(.footnote)
             }
         }
@@ -344,22 +373,22 @@ public struct ProfileEditorView: View {
     private var goalSection: some View {
         Section {
             TextField(value: $profile.goalWeightKg, format: .number,
-                      prompt: Text("z.B. 75")) {
-                Text("Zielgewicht (kg, optional)")
+                      prompt: Text("profile.goal.weightPlaceholder", bundle: .module)) {
+                Text("onboarding.field.goalWeightKg", bundle: .module)
             }
             .decimalKeyboard()
 
             Picker(selection: $profile.environment) {
-                Text("Gym").tag(EnvironmentType.gym)
-                Text("Home-Gym").tag(EnvironmentType.homeGym)
-                Text("Ohne Equipment").tag(EnvironmentType.noEquipment)
+                Text("environment.gym", bundle: .module).tag(EnvironmentType.gym)
+                Text("environment.home_gym", bundle: .module).tag(EnvironmentType.homeGym)
+                Text("environment.no_equipment", bundle: .module).tag(EnvironmentType.noEquipment)
             } label: {
-                Text("Trainingsort")
+                Text("onboarding.field.environment", bundle: .module)
             }
         } header: {
-            Text("Ziel & Training")
+            Text("onboarding.section.goals", bundle: .module)
         } footer: {
-            Text("Das Zielgewicht erscheint als grüne Linie im Dashboard-Trend-Chart. Trainingsort filtert später Plan-Empfehlungen.")
+            Text("profile.goal.footer", bundle: .module)
                 .font(.footnote)
         }
     }
@@ -379,7 +408,7 @@ public struct ProfileEditorView: View {
                     Label(goal.label, systemImage: goal.symbol).tag(goal)
                 }
             } label: {
-                Text("Trainingsziel")
+                Text("profile.coaching.goal", bundle: .module)
             }
             .pickerStyle(.menu)
 
@@ -391,13 +420,13 @@ public struct ProfileEditorView: View {
                     Label(tone.label, systemImage: tone.symbol).tag(tone)
                 }
             } label: {
-                Text("Coaching-Stil")
+                Text("profile.coaching.tone", bundle: .module)
             }
             .pickerStyle(.menu)
         } header: {
-            Text("Coach")
+            Text("profile.section.coach", bundle: .module)
         } footer: {
-            Text("Steuert Tonfall und Inhalt der Coaching-Insights auf dem Dashboard. Lässt sich jederzeit ändern.")
+            Text("profile.coaching.footer", bundle: .module)
                 .font(.footnote)
         }
     }
