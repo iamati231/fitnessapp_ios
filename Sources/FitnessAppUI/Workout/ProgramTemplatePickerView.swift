@@ -138,7 +138,7 @@ private struct ProgramRow: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    Text(template.name)
+                    Text(template.displayName)
                         .font(.body.weight(.semibold))
                     Text("·")
                     Text(template.focus)
@@ -200,7 +200,7 @@ public struct TemplatePreviewView: View {
             }
             adoptSection
         }
-        .navigationTitle(template.name)
+        .navigationTitle(template.displayName)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -268,7 +268,7 @@ public struct TemplatePreviewView: View {
                 Text("Tag \(day.sequenceIndex)")
                     .textCase(nil)
                 Text("·").foregroundStyle(.tertiary)
-                Text(day.name)
+                Text(day.displayName)
                     .textCase(nil)
                     .foregroundStyle(.primary)
             }

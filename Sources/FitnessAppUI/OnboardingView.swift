@@ -172,7 +172,7 @@ public struct OnboardingView: View {
             .sheet(item: $dayPickerTemplate) { template in
                 DayPickerSheet(
                     requiredDayCount: template.daysPerWeek,
-                    planName: template.name,
+                    planName: template.displayName,
                     initialSelection: ProgramInstantiator.defaultWeekdays(for: template.daysPerWeek),
                     onConfirm: { weekdays in
                         selectedWeekdays = weekdays
@@ -605,7 +605,7 @@ public struct OnboardingView: View {
                 .background(Color.accentColor.gradient)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 2) {
-                Text(template.name)
+                Text(template.displayName)
                     .font(.body.weight(.semibold))
                 Text(template.tagline)
                     .font(.caption)

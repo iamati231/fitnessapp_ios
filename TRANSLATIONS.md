@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 401 Keys im String Catalog + 195 noch hartkodierte Strings im Code.**
+**Gesamt: 445 Keys im String Catalog + 195 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **401 / 401** (100%) | 0 |
-| 🇬🇧 English (EN) | **401 / 401** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **401 / 401** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **445 / 445** (100%) | 0 |
+| 🇬🇧 English (EN) | **445 / 445** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **445 / 445** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -445,10 +445,54 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.section.profile` | Profil | Profile | Profil |
 | `onboarding.title` | Willkommen | Welcome | Hoş Geldin |
 
-## `plan.*`  (14 Keys)
+## `plan.*`  (58 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `plan.day.arms` | Arme | Arms | Kol |
+| `plan.day.back` | Rücken | Back | Sırt |
+| `plan.day.benchDay` | Tag 2 – Bankdrück-Tag | Day 2 - Bench Day | Gün 2 - Bench Günü |
+| `plan.day.chest` | Brust | Chest | Göğüs |
+| `plan.day.chestBackA` | Brust & Rücken A | Chest & Back A | Göğüs & Sırt A |
+| `plan.day.chestBackB` | Brust & Rücken B | Chest & Back B | Göğüs & Sırt B |
+| `plan.day.deadliftDay` | Tag 3 – Kreuzhebe-Tag | Day 3 - Deadlift Day | Gün 3 - Deadlift Günü |
+| `plan.day.easyRun` | Easy Run | Easy Run | Kolay Koşu |
+| `plan.day.fatBurnA` | Fatburn A | Fat Burn A | Yağ Yakım A |
+| `plan.day.fatBurnB` | Fatburn B | Fat Burn B | Yağ Yakım B |
+| `plan.day.fatBurnC` | Fatburn C | Fat Burn C | Yağ Yakım C |
+| `plan.day.fullBodyA` | Ganzkörper A | Full Body A | Tüm Vücut A |
+| `plan.day.fullBodyB` | Ganzkörper B | Full Body B | Tüm Vücut B |
+| `plan.day.fullBodyC` | Ganzkörper C | Full Body C | Tüm Vücut C |
+| `plan.day.fullBodyHIIT` | Ganzkörper HIIT | Full Body HIIT | Tüm Vücut HIIT |
+| `plan.day.intervals` | Intervalle | Intervals | İnterval |
+| `plan.day.legs` | Beine | Legs | Bacak |
+| `plan.day.legsA` | Beine A | Legs A | Bacak A |
+| `plan.day.legsB` | Beine B | Legs B | Bacak B |
+| `plan.day.longRun` | Long Run | Long Run | Uzun Koşu |
+| `plan.day.lowerAStrength` | Unterkörper A (Kraft) | Lower A (Strength) | Alt Vücut A (Güç) |
+| `plan.day.lowerAndCore` | Unterkörper & Core | Lower & Core | Alt Vücut & Merkez |
+| `plan.day.lowerBVolume` | Unterkörper B (Volumen) | Lower B (Volume) | Alt Vücut B (Hacim) |
+| `plan.day.pullA` | Pull A | Pull A | Pull A |
+| `plan.day.pullAndLegs` | Pull & Beine | Pull & Legs | Pull & Bacak |
+| `plan.day.pullB` | Pull B | Pull B | Pull B |
+| `plan.day.pushA` | Push A | Push A | Push A |
+| `plan.day.pushAndCore` | Push & Core | Push & Core | Push & Merkez |
+| `plan.day.pushB` | Push B | Push B | Push B |
+| `plan.day.shoulders` | Schultern | Shoulders | Omuz |
+| `plan.day.shouldersArmsA` | Schultern & Arme A | Shoulders & Arms A | Omuz & Kol A |
+| `plan.day.shouldersArmsB` | Schultern & Arme B | Shoulders & Arms B | Omuz & Kol B |
+| `plan.day.squatDay` | Tag 1 – Kniebeuge-Tag | Day 1 - Squat Day | Gün 1 - Squat Günü |
+| `plan.day.strengthFullBodyA` | Strength Ganzkörper A | Strength Full Body A | Güç Tüm Vücut A |
+| `plan.day.strengthFullBodyB` | Strength Ganzkörper B | Strength Full Body B | Güç Tüm Vücut B |
+| `plan.day.strengthLegs` | Strength Legs | Strength Legs | Güç Bacak |
+| `plan.day.strengthLegsLight` | Strength Legs (Light) | Strength Legs (Light) | Güç Bacak (Hafif) |
+| `plan.day.strengthPull` | Strength Pull | Strength Pull | Güç Pull |
+| `plan.day.strengthPush` | Strength Push | Strength Push | Güç Push |
+| `plan.day.upperAStrength` | Oberkörper A (Kraft) | Upper A (Strength) | Üst Vücut A (Güç) |
+| `plan.day.upperAndPower` | Oberkörper & Explosivität | Upper & Power | Üst Vücut & Patlayıcı Güç |
+| `plan.day.upperBVolume` | Oberkörper B (Volumen) | Upper B (Volume) | Üst Vücut B (Hacim) |
+| `plan.day.workoutA` | Workout A | Workout A | Antrenman A |
+| `plan.day.workoutB` | Workout B | Workout B | Antrenman B |
 | `plan.template.arnoldSplit` | Arnold Split | Arnold Split | Arnold Split |
 | `plan.template.bodyweightMastery` | Bodyweight Mastery | Bodyweight Mastery | Vücut Ağırlığı Ustası |
 | `plan.template.broSplit` | Bro-Split | Bro Split | Bro Split |
