@@ -1572,19 +1572,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Metric (kg / cm)"
+            "value": "Metric (kg/cm)"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Metrisch (kg / cm)"
+            "value": "Metrisch (kg/cm)"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Metrik (kg / cm)"
+            "value": "Metrik (kg/cm)"
           }
         }
       }
@@ -1595,19 +1595,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Imperial (lbs / in)"
+            "value": "Imperial (lbs/in)"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Imperial (lbs / in)"
+            "value": "Imperial (lbs/in)"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "İmperial (lbs / in)"
+            "value": "İmperyal (lbs/in)"
           }
         }
       }

@@ -196,6 +196,15 @@ public struct SettingsView: View {
                 } label: { EmptyView() }
                 .pickerStyle(.menu)
                 .labelsHidden()
+                // DEL-119: i18n-bedingter Layout-Bug. "Metrisch (kg/cm)"
+                // sprengte auf iPhone-SE / kompakten Width-Class das
+                // DeltiqFormRow-Limit und brach um — sieht in Settings
+                // unschoen aus. lineLimit(1) verhindert den Bruch,
+                // minimumScaleFactor(0.8) verkleinert die Schrift dezent
+                // bei Bedarf, statt zu truncaten. Pragmatisches i18n-
+                // Sicherheitsnetz (gilt auch fuer kuenftige Sprachen).
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
             }
             // DEL-084: Equipment-Tracker (Laufschuhe etc.) Submenu.
             DeltiqFormFullRow {
