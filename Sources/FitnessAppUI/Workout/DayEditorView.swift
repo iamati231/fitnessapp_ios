@@ -59,7 +59,7 @@ public struct DayEditorView: View {
                 }
             }
         }
-        .navigationTitle(day.name.isEmpty ? "Tag" : day.name)
+        .navigationTitle(day.name.isEmpty ? String(localized: "day.editor.untitled", bundle: .module) : day.name)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         // DEL-095: EditButton macht den nativen Edit-Mode an, in dem die
@@ -84,7 +84,7 @@ public struct DayEditorView: View {
         // DEL-048: Equipment-Konflikt-Confirmation. Wenn der User mit Filter
         // OFF eine inkompatible Uebung gewaehlt hat, fragen wir hier nach.
         .confirmationDialog(
-            "Equipment-Konflikt",
+            Text("day.editor.equipmentConflict.title", bundle: .module),
             isPresented: Binding(
                 get: { pendingEquipmentConflict != nil },
                 set: { if !$0 { pendingEquipmentConflict = nil } }
@@ -93,22 +93,29 @@ public struct DayEditorView: View {
             presenting: pendingEquipmentConflict
         ) { conflict in
             // Option A: Plan-Env auf Gym/Home umstellen UND Uebung adden.
-            Button("Plan auf \(environmentLabel(conflict.requiredEnv)) umstellen") {
+            Button(String(format: String(localized: "day.editor.equipmentConflict.switchPlan", bundle: .module), environmentLabel(conflict.requiredEnv))) {
                 switchPlanEnvAndAdd(conflict: conflict)
                 pendingEquipmentConflict = nil
             }
             // Option B: Trotzdem adden, Plan-Env unveraendert lassen. Die
             // Uebung wird vermutlich beim ersten Workout-Start als "kein
             // Equipment vorhanden" stossen, aber der User hat die freie Wahl.
-            Button("Nur Übung hinzufügen") {
+            Button {
                 addExercise(from: conflict.template)
                 pendingEquipmentConflict = nil
+            } label: {
+                Text("day.editor.equipmentConflict.justAdd", bundle: .module)
             }
-            Button("Abbrechen", role: .cancel) {
+            Button(role: .cancel) {
                 pendingEquipmentConflict = nil
+            } label: {
+                Text("common.cancel", bundle: .module)
             }
         } message: { conflict in
-            Text("„\(conflict.template.name)\" erfordert Equipment, das in \(environmentLabel(conflict.planEnv))-Plänen normalerweise nicht verfügbar ist. Möchtest du den Plan-Typ entsprechend anpassen?")
+            let template = String(localized: "day.editor.equipmentConflict.message", bundle: .module)
+            Text(template
+                .replacingOccurrences(of: "%1$@", with: conflict.template.name)
+                .replacingOccurrences(of: "%2$@", with: environmentLabel(conflict.planEnv)))
         }
         .overlay(alignment: .bottom) {
             if let msg = swapResultToast {
@@ -128,25 +135,32 @@ public struct DayEditorView: View {
         // DEL-042: Open-Session-Recovery-Dialog. Triggered von startSession()
         // wenn eine ungespeicherte Session existiert. Drei Optionen plus Cancel.
         .confirmationDialog(
-            "Laufendes Training",
+            Text("plans.active.title", bundle: .module),
             isPresented: $showingOpenSessionDialog,
             titleVisibility: .visible
         ) {
-            Button("Fortsetzen") {
-                resumeOpenSession()
+            Button { resumeOpenSession() } label: {
+                Text("session.recovery.resume", bundle: .module)
             }
-            Button("Speichern & neu starten") {
-                completeOpenSessionAndStartNew()
+            Button { completeOpenSessionAndStartNew() } label: {
+                Text("session.recovery.saveAndRestart", bundle: .module)
             }
-            Button("Verwerfen & neu starten", role: .destructive) {
-                discardOpenSessionAndStartNew()
+            Button(role: .destructive) { discardOpenSessionAndStartNew() } label: {
+                Text("session.recovery.discardAndRestart", bundle: .module)
             }
-            Button("Abbrechen", role: .cancel) { }
+            Button(role: .cancel) { } label: {
+                Text("common.cancel", bundle: .module)
+            }
         } message: {
             if let open = openSessions.first {
-                Text("Es gibt bereits ein angefangenes Training (\(open.dayName ?? "Unbekannt"), gestartet \(open.startTime.formatted(.relative(presentation: .named)))). Was möchtest du tun?")
+                let dayName = open.dayName ?? String(localized: "session.recovery.dayName.unknown", bundle: .module)
+                let stamp = open.startTime.formatted(.relative(presentation: .named))
+                let template = String(localized: "session.recovery.message.withInfo", bundle: .module)
+                Text(template
+                    .replacingOccurrences(of: "%1$@", with: dayName)
+                    .replacingOccurrences(of: "%2$@", with: stamp))
             } else {
-                Text("Es gibt bereits ein angefangenes Training.")
+                Text("session.recovery.message.fallback", bundle: .module)
             }
         }
     }
@@ -167,9 +181,9 @@ public struct DayEditorView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 28))
 
             VStack(spacing: 8) {
-                Text(day.name.isEmpty ? "Ruhetag" : day.name)
+                Text(day.name.isEmpty ? String(localized: "day.restDay.title", bundle: .module) : day.name)
                     .font(.title.weight(.bold))
-                Text("Regeneration ist Teil des Plans. Hak den Tag ab, wenn du durch bist — dein Plan-Pointer springt automatisch zum naechsten echten Training.")
+                Text("day.restDay.heroMessage", bundle: .module)
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -183,7 +197,11 @@ public struct DayEditorView: View {
             } label: {
                 HStack {
                     Spacer()
-                    Label("Ruhetag abschließen", systemImage: "checkmark.circle.fill")
+                    Label {
+                        Text("day.restDay.complete", bundle: .module)
+                    } icon: {
+                        Image(systemName: "checkmark.circle.fill")
+                    }
                         .font(.headline)
                     Spacer()
                 }
@@ -220,33 +238,39 @@ public struct DayEditorView: View {
 
     private var metaSection: some View {
         Section {
-            TextField("Name", text: $day.name)
+            TextField(String(localized: "day.editor.field.name", bundle: .module), text: $day.name)
                 .disabled(isReadOnly)
 
-            Picker("Wochentag", selection: $day.weekday) {
+            Picker(selection: $day.weekday) {
                 ForEach(weekdayOptions, id: \.self) { weekday in
                     Text(weekdayName(weekday)).tag(weekday)
                 }
+            } label: {
+                Text("day.editor.field.weekday", bundle: .module)
             }
             .disabled(isReadOnly)
 
-            Picker("Typ", selection: $day.type) {
+            Picker(selection: $day.type) {
                 ForEach(DayType.allCases, id: \.self) { type in
                     Text(typeLabel(type)).tag(type)
                 }
+            } label: {
+                Text("day.editor.field.type", bundle: .module)
             }
             .disabled(isReadOnly)
 
-            Picker("Nächste Intensität", selection: $day.nextIntensity) {
-                Text("Leicht").tag(DayIntensity.light)
-                Text("Normal").tag(DayIntensity.normal)
-                Text("Schwer").tag(DayIntensity.heavy)
+            Picker(selection: $day.nextIntensity) {
+                Text("day_intensity.light", bundle: .module).tag(DayIntensity.light)
+                Text("day_intensity.normal", bundle: .module).tag(DayIntensity.normal)
+                Text("day_intensity.heavy", bundle: .module).tag(DayIntensity.heavy)
+            } label: {
+                Text("day.editor.field.nextIntensity", bundle: .module)
             }
         } header: {
-            Text("Tag-Info")
+            Text("day.editor.section.info", bundle: .module)
         } footer: {
             if isReadOnly {
-                Text("Dieser Tag gehört zu einem vorgefertigten Plan-Template und kann strukturell nicht bearbeitet werden. Du kannst aber die Trainings-Intensität anpassen.")
+                Text("day.editor.templateLocked.footer", bundle: .module)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -268,7 +292,7 @@ public struct DayEditorView: View {
                     }
                 }
             } footer: {
-                Text("Markiert den Ruhetag als erledigt — kein leerer Eintrag in der History, aber der Plan-Pointer rückt zum nächsten echten Training.")
+                Text("day.restDay.complete.footer", bundle: .module)
                     .font(.footnote)
             }
         } else {
@@ -278,7 +302,11 @@ public struct DayEditorView: View {
                 } label: {
                     HStack {
                         Spacer()
-                        Label("Training starten", systemImage: "play.fill")
+                        Label {
+                            Text("day.editor.start", bundle: .module)
+                        } icon: {
+                            Image(systemName: "play.fill")
+                        }
                             .font(.headline)
                         Spacer()
                     }
@@ -286,7 +314,7 @@ public struct DayEditorView: View {
                 .disabled(day.activeExercises.isEmpty)
             } footer: {
                 if day.activeExercises.isEmpty {
-                    Text("Füge erst mindestens eine Übung hinzu, dann kannst du das Training starten.")
+                    Text("day.editor.start.hintEmpty", bundle: .module)
                         .font(.footnote)
                 }
             }
@@ -297,7 +325,10 @@ public struct DayEditorView: View {
     private var exercisesSection: some View {
         Section {
             if day.activeExercises.isEmpty {
-                Text(isRestDay ? "Ruhetag — keine Übungen." : "Noch keine Übungen.")
+                Text(isRestDay
+                     ? "day.editor.exercises.restDayEmpty"
+                     : "day.editor.exercises.empty",
+                     bundle: .module)
                     .foregroundStyle(.secondary)
                     .font(.callout)
             } else if isReadOnly {
@@ -329,12 +360,16 @@ public struct DayEditorView: View {
                             Button {
                                 toggleSupersetWithPrevious(at: idx)
                             } label: {
-                                Label(
-                                    exercise.supersetId == nil ? "Verbinden" : "Trennen",
-                                    systemImage: exercise.supersetId == nil
+                                Label {
+                                    Text(exercise.supersetId == nil
+                                         ? "day.editor.superset.link"
+                                         : "day.editor.superset.unlink",
+                                         bundle: .module)
+                                } icon: {
+                                    Image(systemName: exercise.supersetId == nil
                                         ? "link"
-                                        : "link.badge.plus"
-                                )
+                                        : "link.badge.plus")
+                                }
                             }
                             .tint(Color.deltiqOrange)
                         }
@@ -345,23 +380,27 @@ public struct DayEditorView: View {
             }
         } header: {
             HStack {
-                Text("Übungen")
+                Text("day.editor.section.exercises", bundle: .module)
                 Spacer()
                 if !isReadOnly {
                     Button {
                         showingPicker = true
                     } label: {
-                        Label("Hinzufügen", systemImage: "plus")
+                        Label {
+                            Text("common.add", bundle: .module)
+                        } icon: {
+                            Image(systemName: "plus")
+                        }
                             .labelStyle(.iconOnly)
                     }
                 }
             }
         } footer: {
             if isReadOnly {
-                Text("Template-Plan — Übungen sind festgelegt. Du kannst sie ansehen, aber nicht hinzufügen, entfernen oder umsortieren.")
+                Text("day.editor.templateLocked.exercises", bundle: .module)
                     .font(.footnote)
             } else if !day.activeExercises.isEmpty {
-                Text("Tippe eine Übung an um sie zu bearbeiten. „Bearbeiten“ oben rechts aktiviert die Drag-Handles zum Umsortieren — Superset-Partner werden automatisch mit verschoben.")
+                Text("day.editor.exercises.editHint", bundle: .module)
                     .font(.footnote)
             }
         }
