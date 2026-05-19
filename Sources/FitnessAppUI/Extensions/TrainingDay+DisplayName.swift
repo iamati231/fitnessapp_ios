@@ -11,6 +11,18 @@ import FitnessAppData
 /// (vermutlich deutschen) Namen.
 extension TrainingDay {
     public var displayName: String {
+        // DEL-125: User-Custom-Override gewinnt.
+        if let custom = customName, !custom.isEmpty {
+            return custom
+        }
+        if let key = localizationKey, !key.isEmpty {
+            return String(localized: String.LocalizationValue(key), bundle: .module)
+        }
+        return name
+    }
+
+    /// DEL-125: nur der lokalisierte System-Name (TextField-Placeholder).
+    public var localizedSystemName: String {
         if let key = localizationKey, !key.isEmpty {
             return String(localized: String.LocalizationValue(key), bundle: .module)
         }

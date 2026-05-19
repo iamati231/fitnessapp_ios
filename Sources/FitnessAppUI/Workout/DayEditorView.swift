@@ -238,7 +238,16 @@ public struct DayEditorView: View {
 
     private var metaSection: some View {
         Section {
-            TextField(String(localized: "day.editor.field.name", bundle: .module), text: $day.name)
+            // DEL-125: customName + localizedSystemName-Placeholder.
+            TextField(
+                text: Binding(
+                    get: { day.customName ?? "" },
+                    set: { day.customName = $0.isEmpty ? nil : $0 }
+                ),
+                prompt: Text(day.localizedSystemName)
+            ) {
+                Text("day.editor.field.name", bundle: .module)
+            }
                 .disabled(isReadOnly)
 
             Picker(selection: $day.weekday) {

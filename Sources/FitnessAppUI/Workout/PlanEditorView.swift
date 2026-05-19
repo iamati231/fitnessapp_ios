@@ -319,7 +319,16 @@ public struct PlanEditorView: View {
     /// Template-Picker, im PlanEditor unnoetig.
     private var metaSection: some View {
         Section {
-            TextField(String(localized: "day.editor.field.name", bundle: .module), text: $plan.name)
+            // DEL-125: customName + localizedSystemName-Placeholder.
+            TextField(
+                text: Binding(
+                    get: { plan.customName ?? "" },
+                    set: { plan.customName = $0.isEmpty ? nil : $0 }
+                ),
+                prompt: Text(plan.localizedSystemName)
+            ) {
+                Text("day.editor.field.name", bundle: .module)
+            }
         } header: {
             Text("planEditor.section.info", bundle: .module)
         }

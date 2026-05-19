@@ -75,6 +75,10 @@ public struct RootView: View {
             // Idempotent — Predicate filtert auf nil-Key. User mit
             // Custom-renamen Plaenen bleibt unangetastet (Match-Check).
             LibrarySeeder.backfillPlanLocalizationKeysIfNeeded(in: modelContext)
+            // DEL-125: customName-Backfill — User-renamte Eintraege werden
+            // aus `name` nach `customName` migriert, damit die System-Name/
+            // User-Name Trennung sauber wird. Idempotent.
+            LibrarySeeder.backfillCustomNamesIfNeeded(in: modelContext)
         }
     }
 

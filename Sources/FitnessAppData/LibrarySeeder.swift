@@ -146,5 +146,89 @@ public enum LibrarySeeder {
         }
         return updated
     }
+
+    /// DEL-125: One-Shot-Backfill der `customName`-Felder auf SwiftData-Modellen.
+    ///
+    /// Pre-DEL-125 wurde der USER-Override direkt ins `name`-Feld geschrieben.
+    /// Dadurch haben User-renamte Eintraege ihren custom Wert in `name` —
+    /// gleichzeitig stoert das die Library/Template-Lookup-Logik, die ueber
+    /// den deutschen System-Namen matcht.
+    ///
+    /// Strategie: konservativer Sweep. Pro Modell wird gecheckt, ob `name`
+    /// dem System-Default entspricht. Wenn ja → nichts tun (User hat nicht
+    /// umbenannt). Wenn nein → User hat umbenannt → `customName = name`
+    /// setzen. `name` bleibt wie es ist (kein Restore moeglich ohne den
+    /// urspruenglichen Template-Wert zu kennen, aber das ist OK — der
+    /// Library-Lookup fuer Custom-Names schlaegt sowieso fehl und faellt
+    /// zurueck auf raw name; mit customName-Override wird das nie sichtbar).
+    ///
+    /// Idempotent: filtert auf `customName == nil`. Nach erstem Erfolg leer.
+    ///
+    /// Returns: Anzahl der Eintraege mit gesetztem customName (Exercise +
+    /// Plan + Day insgesamt).
+    @discardableResult
+    public static func backfillCustomNamesIfNeeded(in context: ModelContext) -> Int {
+        var updated = 0
+
+        // ─── Exercises ───────────────────────────────────────────────
+        let libraryNames = Set(ExerciseLibraryData.all.map { $0.name })
+        let exDescriptor = FetchDescriptor<Exercise>(
+            predicate: #Predicate { $0.customName == nil }
+        )
+        let pendingExercises = (try? context.fetch(exDescriptor)) ?? []
+        for exercise in pendingExercises {
+            // System-Default = jeder Name, der im Library-Katalog steht.
+            // Wenn der Name NICHT in der Library ist, hat der User entweder
+            // umbenannt ODER eine Custom-Uebung selbst angelegt — beide Faelle
+            // sollen ihren Namen in customName festhalten.
+            if !libraryNames.contains(exercise.name) {
+                exercise.customName = exercise.name
+                updated += 1
+            }
+        }
+
+        // ─── Plans ───────────────────────────────────────────────────
+        let templatesByID = Dictionary(
+            uniqueKeysWithValues: ProgramTemplates.all.map { ($0.id, $0) }
+        )
+        let planDescriptor = FetchDescriptor<TrainingPlan>(
+            predicate: #Predicate { $0.customName == nil }
+        )
+        let pendingPlans = (try? context.fetch(planDescriptor)) ?? []
+        for plan in pendingPlans {
+            let isSystemDefault: Bool = {
+                guard let template = templatesByID[plan.programType] else {
+                    return false   // Custom-Plan ohne Template-Origin
+                }
+                return plan.name == template.name
+            }()
+            if !isSystemDefault {
+                plan.customName = plan.name
+                updated += 1
+            }
+        }
+
+        // ─── Days ────────────────────────────────────────────────────
+        let dayDescriptor = FetchDescriptor<TrainingDay>(
+            predicate: #Predicate { $0.customName == nil }
+        )
+        let pendingDays = (try? context.fetch(dayDescriptor)) ?? []
+        for day in pendingDays {
+            // System-Defaults sind die DaySpec-Namen aus dem Template +
+            // unser Auto-Rest-Day "Ruhetag". Alles andere ist Custom.
+            let isSystemDefault: Bool = {
+                if day.type == .rest && day.name == "Ruhetag" { return true }
+                guard let plan = day.plan,
+                      let template = templatesByID[plan.programType] else { return false }
+                return template.days.contains { $0.name == day.name }
+            }()
+            if !isSystemDefault {
+                day.customName = day.name
+                updated += 1
+            }
+        }
+
+        return updated
+    }
 }
 #endif

@@ -49,6 +49,22 @@ extension ExerciseTemplate {
 /// later via `static let nameToKeyMap: [String: String]` cachen.
 extension Exercise {
     public var displayName: String {
+        // DEL-125: User-Custom-Override gewinnt vor lokalisiertem System-Namen.
+        if let custom = customName, !custom.isEmpty {
+            return custom
+        }
+        // Sonst Library-Lookup ueber den (deutschen) System-Namen.
+        if let entry = ExerciseLibraryData.all.first(where: { $0.name == name }),
+           let key = entry.localizationKey, !key.isEmpty {
+            return String(localized: String.LocalizationValue(key), bundle: .module)
+        }
+        return name
+    }
+
+    /// DEL-125: nur der lokalisierte System-Name (ohne customName-Fallback).
+    /// Wird vom TextField im ExerciseEditor als Placeholder verwendet, damit
+    /// der User sieht, was der System-Default in seiner Sprache wäre.
+    public var localizedSystemName: String {
         if let entry = ExerciseLibraryData.all.first(where: { $0.name == name }),
            let key = entry.localizationKey, !key.isEmpty {
             return String(localized: String.LocalizationValue(key), bundle: .module)

@@ -5,7 +5,18 @@ import FitnessAppCore
 
 @Model
 public final class TrainingPlan {
+    /// System-Name (deutsche Template-Default). Wird intern als Template-
+    /// Anker fuer Library/Migrator-Lookups verwendet. NICHT direkt anzeigen
+    /// — der Display-Pfad geht ueber `TrainingPlan.displayName`-Extension,
+    /// die `customName` zuerst checkt und sonst auf den catalog-Wert via
+    /// `localizationKey` faellt.
     public var name: String
+
+    /// DEL-125: User-Custom-Override des Anzeigenamens. Nil = User hat nicht
+    /// umbenannt → Display zeigt den lokalisierten Template-Namen.
+    /// Non-nil = User-Override gewinnt vor System+Locale.
+    public var customName: String?
+
     public var programType: String
     public var descriptionText: String
     public var weeks: Int
@@ -41,6 +52,7 @@ public final class TrainingPlan {
 
     public init(
         name: String = "",
+        customName: String? = nil,
         programType: String = "",
         descriptionText: String = "",
         weeks: Int = 12,
@@ -50,6 +62,7 @@ public final class TrainingPlan {
         localizationKey: String? = nil
     ) {
         self.name = name
+        self.customName = customName
         self.programType = programType
         self.descriptionText = descriptionText
         self.weeks = weeks

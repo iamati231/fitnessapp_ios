@@ -5,7 +5,23 @@ import FitnessAppCore
 
 @Model
 public final class Exercise {
+    /// **System-Name** — der deutsche Library-Eintrag-Name beim Adopt
+    /// (z.B. "Bankdrücken"). Wird intern fuer Library-Lookups verwendet
+    /// (ExerciseLibraryData.first(where: $0.name == name) liefert die
+    /// Belastungsfaktoren + localizationKey). Der User soll diesen Wert
+    /// NIE direkt sehen — Display-Pfad geht ueber `displayName`-Extension,
+    /// die `customName` zuerst checkt und sonst auf den lokalisierten
+    /// Catalog-Eintrag faellt.
     public var name: String
+
+    /// DEL-125: User-Custom-Override des Anzeigenamens.
+    /// Nil = User hat den Namen NICHT geaendert, Display zeigt den lokalisierten
+    /// System-Namen (via `name` -> Library-Lookup -> Catalog-Key).
+    /// Non-nil = User hat im Editor einen eigenen Namen getippt (z.B. "Mein
+    /// Bankdruecken-Variant") — gewinnt vor dem System-Namen in jedem
+    /// Display-Pfad.
+    public var customName: String?
+
     public var sets: Int
     public var repsMin: Int
     public var repsMax: Int
@@ -125,6 +141,7 @@ public final class Exercise {
 
     public init(
         name: String,
+        customName: String? = nil,
         sets: Int = 3,
         repsMin: Int = 8,
         repsMax: Int = 12,
@@ -155,6 +172,7 @@ public final class Exercise {
         day: TrainingDay? = nil
     ) {
         self.name = name
+        self.customName = customName
         self.sets = sets
         self.repsMin = repsMin
         self.repsMax = repsMax

@@ -5,7 +5,14 @@ import FitnessAppCore
 
 @Model
 public final class TrainingDay {
+    /// System-Name (Template-Default, z.B. "Brust" / "Push A"). Intern fuer
+    /// Template-Identifikation verwendet. Display geht ueber `displayName`.
     public var name: String
+
+    /// DEL-125: User-Custom-Override. Nil = Display nutzt lokalisierten
+    /// Template-Namen. Non-nil = User-getippter Name gewinnt.
+    public var customName: String?
+
     public var weekday: Int
     public var type: DayType
     public var nextIntensity: DayIntensity
@@ -43,6 +50,7 @@ public final class TrainingDay {
 
     public init(
         name: String,
+        customName: String? = nil,
         weekday: Int,
         type: DayType = .custom,
         nextIntensity: DayIntensity = .normal,
@@ -50,6 +58,7 @@ public final class TrainingDay {
         localizationKey: String? = nil
     ) {
         self.name = name
+        self.customName = customName
         self.weekday = weekday
         self.type = type
         self.nextIntensity = nextIntensity

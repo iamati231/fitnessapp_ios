@@ -42,8 +42,18 @@ public struct ExerciseEditorView: View {
             // werden koennen (sonst wuesste die SetRow-View nicht, welchen
             // Branch sie nehmen soll).
             Section {
-                TextField(String(localized: "editor.exercise.field.name", bundle: .module),
-                          text: $exercise.name)
+                // DEL-125: TextField bindet auf customName (User-Override),
+                // Placeholder zeigt den lokalisierten System-Namen. Leeres
+                // Feld + Placeholder = "User hat nicht umbenannt".
+                TextField(
+                    text: Binding(
+                        get: { exercise.customName ?? "" },
+                        set: { exercise.customName = $0.isEmpty ? nil : $0 }
+                    ),
+                    prompt: Text(exercise.localizedSystemName)
+                ) {
+                    Text("editor.exercise.field.name", bundle: .module)
+                }
                     .disabled(isReadOnly)
                 Toggle(isOn: $exercise.isCardio) {
                     Text("editor.exercise.toggle.cardio", bundle: .module)
