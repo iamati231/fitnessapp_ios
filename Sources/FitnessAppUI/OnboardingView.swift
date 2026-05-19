@@ -142,8 +142,10 @@ public struct OnboardingView: View {
                     }
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("Schließen") {
+                            Button {
                                 previewingTemplate = nil
+                            } label: {
+                                Text("common.close", bundle: .module)
                             }
                         }
                     }
@@ -212,16 +214,19 @@ public struct OnboardingView: View {
                     .padding(.top, 24)
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Apple Health verbinden")
+                    Text("onboarding.health.title", bundle: .module)
                         .font(.title2.weight(.bold))
-                    Text("Wenn du Apple Health verbindest, ziehe ich Alter, Geschlecht, Größe und aktuelles Gewicht aus deinem Profil — du musst es nicht doppelt tippen. Du kannst diesen Schritt auch überspringen und alles manuell eingeben.")
+                    Text("onboarding.health.intro", bundle: .module)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
 
                 if !healthKit.isAvailable {
-                    Label("Apple Health ist auf diesem Gerät nicht verfügbar.",
-                          systemImage: "heart.slash")
+                    Label {
+                        Text("onboarding.health.unavailable", bundle: .module)
+                    } icon: {
+                        Image(systemName: "heart.slash")
+                    }
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .padding()
@@ -243,12 +248,16 @@ public struct OnboardingView: View {
         switch healthKit.authorizationStatus {
         case .sharingAuthorized:
             VStack(alignment: .leading, spacing: 12) {
-                Label("Verbunden", systemImage: "heart.fill")
+                Label {
+                    Text("onboarding.health.connected", bundle: .module)
+                } icon: {
+                    Image(systemName: "heart.fill")
+                }
                     .font(.headline)
                     .foregroundStyle(.pink)
 
                 if healthKitDataLoaded {
-                    Text("Daten übernommen — du kannst sie im nächsten Schritt prüfen und anpassen.")
+                    Text("onboarding.health.pulled", bundle: .module)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 } else {
@@ -256,9 +265,13 @@ public struct OnboardingView: View {
                         Task { await pullHealthKitSnapshot() }
                     } label: {
                         if healthKitFetchInProgress {
-                            HStack { ProgressView(); Text("Lade …") }
+                            HStack { ProgressView(); Text("onboarding.health.loading", bundle: .module) }
                         } else {
-                            Label("Daten aus Apple Health übernehmen", systemImage: "arrow.down.circle")
+                            Label {
+                                Text("onboarding.health.pull", bundle: .module)
+                            } icon: {
+                                Image(systemName: "arrow.down.circle")
+                            }
                         }
                     }
                     .buttonStyle(.borderedProminent)
@@ -280,15 +293,22 @@ public struct OnboardingView: View {
                     }
                 }
             } label: {
-                Label("Apple Health verbinden", systemImage: "heart.fill")
+                Label {
+                    Text("onboarding.health.title", bundle: .module)
+                } icon: {
+                    Image(systemName: "heart.fill")
+                }
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
 
         case .sharingDenied:
-            Label("Apple Health-Berechtigung verweigert. Du kannst sie später in iOS-Einstellungen → Datenschutz → Apple Health → Deltiq aktivieren.",
-                  systemImage: "heart.slash")
+            Label {
+                Text("onboarding.health.denied", bundle: .module)
+            } icon: {
+                Image(systemName: "heart.slash")
+            }
                 .font(.callout)
                 .foregroundStyle(.orange)
                 .padding()
@@ -333,25 +353,25 @@ public struct OnboardingView: View {
             }
 
             Section {
-                decimalField("Größe (cm)", value: $heightCm)
-                decimalField("Aktuelles Gewicht (kg)", value: $currentWeightKg)
+                decimalField(String(localized: "onboarding.field.heightCm", bundle: .module), value: $heightCm)
+                decimalField(String(localized: "onboarding.field.weightCurrentKg", bundle: .module), value: $currentWeightKg)
             } header: {
-                Text("Körperdaten")
+                Text("onboarding.section.body", bundle: .module)
             } footer: {
                 if let weight = currentWeightKg, weight <= 0 {
-                    Text("Gewicht muss > 0 sein.")
+                    Text("onboarding.body.weightZero", bundle: .module)
                         .foregroundStyle(.red)
                 } else if currentWeightKg == nil {
-                    Text("Pflichtfeld — wird als erste Messung gespeichert.")
+                    Text("onboarding.body.weightRequired", bundle: .module)
                         .font(.footnote)
                 } else {
-                    Text("Wird im Hintergrund als initiale Messung gespeichert.")
+                    Text("onboarding.body.weightInitial", bundle: .module)
                         .font(.footnote)
                 }
             }
 
             Section {
-                decimalField("Zielgewicht (kg, optional)", value: $goalWeightKg)
+                decimalField(String(localized: "onboarding.field.goalWeightKg", bundle: .module), value: $goalWeightKg)
                 Picker(selection: $environment) {
                     ForEach(EnvironmentType.allCases, id: \.self) { env in
                         Text(env.localizedName).tag(env)
@@ -367,8 +387,8 @@ public struct OnboardingView: View {
                 // auf jedem Setting, und der User kann ihn in den
                 // Einstellungen jederzeit aendern.
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Trainingsort filtert später Plan-Empfehlungen und die Equipment-Auswahl beim Übungs-Tausch.")
-                    Text("Hybrid- oder reine Lauf-Athleten wählen ihren Strength-Ort (z.B. Gym) — die Hybrid-Pläne enthalten ihre Run-Tage unabhängig davon.")
+                    Text("onboarding.environment.footnote1", bundle: .module)
+                    Text("onboarding.environment.footnote2", bundle: .module)
                         .foregroundStyle(.secondary)
                 }
                 .font(.footnote)
@@ -390,9 +410,9 @@ public struct OnboardingView: View {
                 // ──────────── Goal ────────────
                 VStack(alignment: .leading, spacing: 12) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Was ist dein primärer Fokus?")
+                        Text("onboarding.goal.title", bundle: .module)
                             .font(.title2.weight(.bold))
-                        Text("Wir kalibrieren Insights, Recovery-Hinweise und Coaching-Botschaften entsprechend.")
+                        Text("onboarding.goal.subtitle", bundle: .module)
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
@@ -413,9 +433,9 @@ public struct OnboardingView: View {
                 // ──────────── Tone ────────────
                 VStack(alignment: .leading, spacing: 12) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Wie soll dein Coach klingen?")
+                        Text("onboarding.tone.title", bundle: .module)
                             .font(.title2.weight(.bold))
-                        Text("Wir passen Tonfall und Feedback an deinen Stil an. Lässt sich später jederzeit ändern.")
+                        Text("onboarding.tone.subtitle", bundle: .module)
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
@@ -493,15 +513,23 @@ public struct OnboardingView: View {
         Form {
             Section {
                 Toggle(isOn: $enableWaterReminder) {
-                    Label("Wasser-Erinnerung", systemImage: "drop.fill")
+                    Label {
+                        Text("onboarding.notif.water", bundle: .module)
+                    } icon: {
+                        Image(systemName: "drop.fill")
+                    }
                 }
                 Toggle(isOn: $enableMeasurementReminder) {
-                    Label("Mess-Erinnerung", systemImage: "scalemass.fill")
+                    Label {
+                        Text("onboarding.notif.measurement", bundle: .module)
+                    } icon: {
+                        Image(systemName: "scalemass.fill")
+                    }
                 }
             } header: {
-                Text("Benachrichtigungen")
+                Text("onboarding.notif.section", bundle: .module)
             } footer: {
-                Text("Beide nutzen lokale Notifications. Wenn du sie aktivierst, fragt iOS einmalig nach der Notification-Berechtigung.")
+                Text("onboarding.notif.footnote", bundle: .module)
                     .font(.footnote)
             }
 
@@ -520,10 +548,10 @@ public struct OnboardingView: View {
                             .background(Color.deltiqOrange.gradient)
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Plan finden lassen")
+                            Text("onboarding.plan.quizCard.title", bundle: .module)
                                 .font(.body.weight(.semibold))
                                 .foregroundStyle(.primary)
-                            Text("4 kurze Fragen — wir matchen dich auf den passenden Plan.")
+                            Text("onboarding.plan.quizCard.subtitle", bundle: .module)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -535,15 +563,15 @@ public struct OnboardingView: View {
                 }
                 .buttonStyle(.plain)
             } header: {
-                Text("Empfohlen")
+                Text("onboarding.plan.recommended", bundle: .module)
             } footer: {
-                Text("Empfohlen, wenn du nicht weißt, welcher Plan zu dir passt. Du kannst stattdessen auch direkt aus der Liste unten wählen.")
+                Text("onboarding.plan.quizCard.footnote", bundle: .module)
                     .font(.footnote)
             }
 
             Section {
                 if filteredTemplates.isEmpty {
-                    Text("Keine Templates für '\(environmentLabel)'. Du kannst trotzdem ohne Plan starten und später einen eigenen anlegen.")
+                    Text(String(format: String(localized: "onboarding.plan.noTemplates", bundle: .module), environmentLabel))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 } else {
@@ -561,9 +589,9 @@ public struct OnboardingView: View {
                     }
                 }
             } header: {
-                Text("Trainingsplan für \(environmentLabel)")
+                Text(String(format: String(localized: "onboarding.plan.section", bundle: .module), environmentLabel))
             } footer: {
-                Text("Templates sind nach deinem Trainingsort gefiltert (\(environmentLabel)) — passende Bodyweight-Pläne für 'Ohne Equipment', Hantel-/Maschinen-Pläne für 'Gym'. Optional — auch ohne Plan starten ist okay.")
+                Text(String(format: String(localized: "onboarding.plan.footnote", bundle: .module), environmentLabel))
                     .font(.footnote)
             }
         }
@@ -626,8 +654,10 @@ public struct OnboardingView: View {
     private var stepNavigationBar: some View {
         HStack {
             if step != .healthConnect {
-                Button("Zurück") {
+                Button {
                     goToPreviousStep()
+                } label: {
+                    Text("common.back", bundle: .module)
                 }
                 .buttonStyle(.bordered)
             }
