@@ -173,12 +173,16 @@ public struct DashboardView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     } else {
-                        // DEL-073: Apple's native Plural-Resolution via
-                        // String-Interpolation. Der Key in xcstrings ist
-                        // exakt der Format-Pattern "%lld Rekorde", die
-                        // `variations.plural`-Branch picked one/other
-                        // anhand des Args.
-                        let countText = String(localized: "\(prCount) Rekorde", bundle: .module)
+                        // DEL-121: Apple's format-as-key Plural-Convention
+                        // (`"%lld Rekorde"`) bricht Xcode 26.4.1's neuen
+                        // GenerateStringSymbols-Schritt. Statt darauf zu
+                        // verlassen, switchen wir explizit auf one/other
+                        // namespace-Keys. Marginal verbosere Swift-Logik,
+                        // dafuer kompatibel mit dem Symbol-Generator.
+                        let key: String.LocalizationValue = prCount == 1
+                            ? "dashboard.trophy.recordCount.one"
+                            : "dashboard.trophy.recordCount.other"
+                        let countText = String(format: String(localized: key, bundle: .module), prCount)
                         let suffix = latestPRSummary.map { " • \($0)" } ?? ""
                         Text(countText + suffix)
                             .font(.caption)
@@ -672,11 +676,18 @@ public struct DashboardView: View {
             .prefix(3)
             .map { $0.displayName }   // DEL-111: lokalisierter Name fuer Library-Übungen
         let joined = names.joined(separator: ", ")
-        // DEL-110: Native String-Catalog-Plural-Resolution. Format-Pattern
-        // ist der Lookup-Key: "%lld Übungen — %@" mit variations.plural.
-        // Apple picked one/other anhand des count-Args, EN/TR analog.
-        // Ellipsis-Suffix bleibt lokalisierungs-agnostisch in Swift.
-        let template = String(localized: "\(active.count) Übungen — \(joined)", bundle: .module)
+        // DEL-121: Apple's format-as-key Plural-Convention war
+        // "%lld Übungen — %@" mit variations.plural. Xcode 26.4.1's
+        // GenerateStringSymbols-Step chokes auf den format-pattern-keys,
+        // daher umgestellt auf explizite one/other namespace-Keys mit
+        // manueller %lld/%@-Substitution.
+        let key: String.LocalizationValue = active.count == 1
+            ? "dashboard.exercisesPreview.one"
+            : "dashboard.exercisesPreview.other"
+        let raw = String(localized: key, bundle: .module)
+        let template = raw
+            .replacingOccurrences(of: "%1$lld", with: "\(active.count)")
+            .replacingOccurrences(of: "%2$@",   with: joined)
         return active.count > 3 ? template + " …" : template
     }
 
