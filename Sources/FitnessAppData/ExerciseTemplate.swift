@@ -25,6 +25,22 @@ public final class ExerciseTemplate {
     /// (Strength) bleiben unangetastet.
     public var isCardio: Bool = false
 
+    /// DEL-111: i18n-Lookup-Key fuer den Anzeige-Namen. Optional. Wenn
+    /// non-nil, soll `displayName` den Catalog-Eintrag dieses Keys
+    /// rendern; sonst faellt es auf das rohe `name`-Feld zurueck. Custom-
+    /// User-Uebungen tragen nil — wir lokalisieren keine Eigennamen.
+    /// Format-Konvention: `exercise.name.{canonical}` (siehe xcstrings).
+    public var localizationKey: String?
+
+    /// DEL-111: True fuer Library-Seed-Eintraege; false fuer alle
+    /// vom User selbst erstellten Custom-Uebungen. Erlaubt eine spaetere
+    /// Locale-Switch-Migration, die nur die Library-Eintraege nachzieht.
+    /// Default true ist defensiv: pre-DEL-111-Bestand vom LibrarySeeder
+    /// wird damit korrekt als System-provided gekennzeichnet (Custom-
+    /// User-Eintraege werden bei der LibrarySeeder-Erweiterung explizit
+    /// mit `isSystemProvided: false` erzeugt).
+    public var isSystemProvided: Bool = true
+
     // MARK: - DEL-098 Training-Intelligence-Metadaten
     //
     // Statische Belastungsfaktoren, die vom `LibrarySeeder` aus dem
@@ -61,7 +77,9 @@ public final class ExerciseTemplate {
         cnsDemandFactor: Double = 0.25,
         axialLoadFactor: Double = 0.20,
         technicalComplexityFactor: Double = 0.30,
-        recoveryClass: ExerciseRecoveryClass = .medium
+        recoveryClass: ExerciseRecoveryClass = .medium,
+        localizationKey: String? = nil,
+        isSystemProvided: Bool = true
     ) {
         self.name = name
         self.equipment = equipment
@@ -77,6 +95,8 @@ public final class ExerciseTemplate {
         self.axialLoadFactor = axialLoadFactor
         self.technicalComplexityFactor = technicalComplexityFactor
         self.recoveryClassRaw = recoveryClass.rawValue
+        self.localizationKey = localizationKey
+        self.isSystemProvided = isSystemProvided
     }
 }
 #endif

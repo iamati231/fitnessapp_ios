@@ -238,7 +238,11 @@ private struct TemplateRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(template.name)
+                    // DEL-111: lokalisierter Display-Name — kanonische
+                    // Lifts werden in DE/EN/TR-EN gerendert; custom +
+                    // unannotierte Library-Eintraege fallen auf das
+                    // gespeicherte `name`-Feld zurueck.
+                    Text(template.displayName)
                         .font(.body)
                     if template.isCustom {
                         Text("Custom")

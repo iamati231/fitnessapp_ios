@@ -663,9 +663,14 @@ public struct DashboardView: View {
         let names = active
             .sorted { $0.orderIndex < $1.orderIndex }
             .prefix(3)
-            .map(\.name)
-        let suffix = active.count > 3 ? " …" : ""
-        return "\(active.count) Übungen — \(names.joined(separator: ", "))\(suffix)"
+            .map { $0.displayName }   // DEL-111: lokalisierter Name fuer Library-Übungen
+        let joined = names.joined(separator: ", ")
+        // DEL-110: Native String-Catalog-Plural-Resolution. Format-Pattern
+        // ist der Lookup-Key: "%lld Übungen — %@" mit variations.plural.
+        // Apple picked one/other anhand des count-Args, EN/TR analog.
+        // Ellipsis-Suffix bleibt lokalisierungs-agnostisch in Swift.
+        let template = String(localized: "\(active.count) Übungen — \(joined)", bundle: .module)
+        return active.count > 3 ? template + " …" : template
     }
 
     /// DEL-042: Adaptive Start-Button. Drei States:

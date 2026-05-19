@@ -41,7 +41,13 @@ public enum LibrarySeeder {
                 cnsDemandFactor: spec.cnsDemandFactor,
                 axialLoadFactor: spec.axialLoadFactor,
                 technicalComplexityFactor: spec.technicalComplexityFactor,
-                recoveryClass: spec.recoveryClass
+                recoveryClass: spec.recoveryClass,
+                // DEL-111: i18n-Lookup-Key + isSystemProvided-Flag.
+                // Beide propagieren aus der Spec — Library-Eintraege
+                // mit annotiertem Key bekommen multilinguale Anzeige,
+                // alle anderen fallen auf das deutsche `name` zurueck.
+                localizationKey: spec.localizationKey,
+                isSystemProvided: true
             )
             context.insert(template)
         }

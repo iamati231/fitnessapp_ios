@@ -57,6 +57,13 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
     /// Grobe Einordnung fuer Quick-Decisions im UI. Default `.medium`.
     public let recoveryClass: ExerciseRecoveryClass
 
+    /// DEL-111: i18n-Lookup-Key fuer den Display-Namen. Optional —
+    /// nur fuer kanonische Lifts gesetzt, fuer die wir Multi-Locale-
+    /// Uebersetzungen pflegen (siehe `exercise.name.*` im Catalog).
+    /// Wird vom `LibrarySeeder` 1:1 auf das `ExerciseTemplate`
+    /// propagiert.
+    public let localizationKey: String?
+
     public init(
         name: String,
         equipment: Equipment,
@@ -72,7 +79,8 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
         cnsDemandFactor: Double = 0.25,
         axialLoadFactor: Double = 0.20,
         technicalComplexityFactor: Double = 0.30,
-        recoveryClass: ExerciseRecoveryClass = .medium
+        recoveryClass: ExerciseRecoveryClass = .medium,
+        localizationKey: String? = nil
     ) {
         self.name = name
         self.equipment = equipment
@@ -87,5 +95,6 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
         self.axialLoadFactor = axialLoadFactor
         self.technicalComplexityFactor = technicalComplexityFactor
         self.recoveryClass = recoveryClass
+        self.localizationKey = localizationKey
     }
 }

@@ -864,8 +864,10 @@ public struct ActiveWorkoutView: View {
     /// SwiftData reactivity macht den Rest.
     private func addAdHocExercise(from template: ExerciseTemplate) {
         guard let day = session.day else { return }
+        // DEL-111: Ad-Hoc-Pick uebernimmt den lokalisierten Display-Namen
+        // analog zum DayEditor-Pfad.
         let exercise = Exercise(
-            name: template.name,
+            name: template.displayName,
             orderIndex: day.activeExercises.count,
             isCardio: template.isCardio,
             isTimeBased: template.isTimeBased,

@@ -490,8 +490,11 @@ public struct DayEditorView: View {
     }
 
     private func addExercise(from template: ExerciseTemplate) {
+        // DEL-111: Snapshotted lokalisierter Name. Aktuelle Locale wird
+        // beim Picker-Pick eingefroren — Custom-Renames bleiben damit
+        // selbst nach Locale-Wechsel intakt (siehe Tech-Note im Ticket).
         let exercise = Exercise(
-            name: template.name,
+            name: template.displayName,
             orderIndex: day.activeExercises.count,
             // DEL-080: Cardio-Flag aus dem Library-Template propagieren.
             // Picker-Pick einer Cardio-Uebung (z.B. "Freier Lauf") soll
