@@ -768,7 +768,10 @@ private struct ExerciseRow: View {
                 .frame(width: 22, alignment: .trailing)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(exercise.name)
+                // DEL-124: displayName resolved via Exercise+DisplayName-
+                // Library-Lookup (DEL-118). Plan-Detail-Row zeigt jetzt
+                // multilinguale Namen statt das deutsche `name`-Snapshot.
+                Text(exercise.displayName)
                     .font(.body)
                 Text(detailLine)
                     .font(.caption)

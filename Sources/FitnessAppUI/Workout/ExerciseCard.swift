@@ -71,7 +71,8 @@ struct ExerciseCard: View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(exercise.name)
+                    // DEL-124: Active-Workout Card-Header via displayName.
+                    Text(exercise.displayName)
                         .font(.headline)
                     // DEL-087: Pill markiert Warmup/Cooldown-Uebungen optisch.
                     if exercise.role != .workingSet {

@@ -266,21 +266,28 @@ public struct ActiveWorkoutView: View {
     @ViewBuilder
     private var statsCard: some View {
         HStack(spacing: 0) {
-            StatBlock(label: "Dauer", value: formattedDuration, monospacedDigit: true)
+            StatBlock(label: String(localized: "active.stats.duration", bundle: .module),
+                      value: formattedDuration, monospacedDigit: true)
             divider
             switch dayCategory {
             case .pureCardio:
-                StatBlock(label: "Distanz", value: formatTotalDistance(), monospacedDigit: true)
+                StatBlock(label: String(localized: "active.stats.distance", bundle: .module),
+                          value: formatTotalDistance(), monospacedDigit: true)
                 divider
-                StatBlock(label: "⌀ Pace", value: formatAveragePace(), monospacedDigit: true)
+                StatBlock(label: String(localized: "active.stats.avgPace", bundle: .module),
+                          value: formatAveragePace(), monospacedDigit: true)
             case .mixed:
-                StatBlock(label: "Volumen kg", value: formatVolume(), monospacedDigit: true)
+                StatBlock(label: String(localized: "active.stats.volumeKg", bundle: .module),
+                          value: formatVolume(), monospacedDigit: true)
                 divider
-                StatBlock(label: "Distanz km", value: formatTotalDistance(stripUnit: true), monospacedDigit: true)
+                StatBlock(label: String(localized: "active.stats.distanceKm", bundle: .module),
+                          value: formatTotalDistance(stripUnit: true), monospacedDigit: true)
             case .pureStrength:
-                StatBlock(label: "Sätze", value: "\(loggedSetsCount)", monospacedDigit: true)
+                StatBlock(label: String(localized: "active.stats.sets", bundle: .module),
+                          value: "\(loggedSetsCount)", monospacedDigit: true)
                 divider
-                StatBlock(label: "Volumen kg", value: formatVolume(), monospacedDigit: true)
+                StatBlock(label: String(localized: "active.stats.volumeKg", bundle: .module),
+                          value: formatVolume(), monospacedDigit: true)
             }
         }
         .padding(.vertical, 12)

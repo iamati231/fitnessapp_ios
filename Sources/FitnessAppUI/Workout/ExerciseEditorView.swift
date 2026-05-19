@@ -42,27 +42,32 @@ public struct ExerciseEditorView: View {
             // werden koennen (sonst wuesste die SetRow-View nicht, welchen
             // Branch sie nehmen soll).
             Section {
-                TextField("Name", text: $exercise.name)
+                TextField(String(localized: "editor.exercise.field.name", bundle: .module),
+                          text: $exercise.name)
                     .disabled(isReadOnly)
-                Toggle("Cardio", isOn: $exercise.isCardio)
+                Toggle(isOn: $exercise.isCardio) {
+                    Text("editor.exercise.toggle.cardio", bundle: .module)
+                }
                     .disabled(isReadOnly)
                     .onChange(of: exercise.isCardio) { _, isOn in
                         if isOn { exercise.isTimeBased = false }
                     }
-                Toggle("Zeit-basiert", isOn: $exercise.isTimeBased)
+                Toggle(isOn: $exercise.isTimeBased) {
+                    Text("editor.exercise.toggle.timeBased", bundle: .module)
+                }
                     .disabled(isReadOnly)
                     .onChange(of: exercise.isTimeBased) { _, isOn in
                         if isOn { exercise.isCardio = false }
                     }
             } header: {
-                Text("Allgemein")
+                Text("editor.exercise.section.general", bundle: .module)
             } footer: {
                 if isReadOnly {
                     Text("editor.exercise.templateLocked", bundle: .module)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 } else {
-                    Text("Cardio = Run/Bike (Distanz + Dauer). Zeit-basiert = Plank/Wall-Sit (Hold-Timer). Nur eins gleichzeitig.")
+                    Text("editor.exercise.general.footer", bundle: .module)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -71,7 +76,7 @@ public struct ExerciseEditorView: View {
             // DEL-062 + DEL-066: Section-Sichtbarkeit via zentraler Logik
             // aus `ExerciseEditorSections.evaluate`.
             if sectionVisibility.setsAndReps {
-                Section("Sätze & Wiederholungen") {
+                Section {
                     Stepper(value: $exercise.sets, in: 1...20) {
                         LabeledContent {
                             Text("\(exercise.sets)")
@@ -81,18 +86,32 @@ public struct ExerciseEditorView: View {
                     }
                     .disabled(isReadOnly)
                     Stepper(value: $exercise.repsMin, in: 1...100) {
-                        LabeledContent(exercise.isTimeBased ? "Sek. min" : "Wdh. min",
-                                       value: "\(exercise.repsMin)")
+                        LabeledContent {
+                            Text("\(exercise.repsMin)")
+                        } label: {
+                            Text(exercise.isTimeBased
+                                 ? "editor.exercise.field.secondsMin"
+                                 : "editor.exercise.field.repsMin",
+                                 bundle: .module)
+                        }
                     }
                     .disabled(isReadOnly)
                     Stepper(value: $exercise.repsMax, in: max(exercise.repsMin, 1)...200) {
-                        LabeledContent(exercise.isTimeBased ? "Sek. max" : "Wdh. max",
-                                       value: "\(exercise.repsMax)")
+                        LabeledContent {
+                            Text("\(exercise.repsMax)")
+                        } label: {
+                            Text(exercise.isTimeBased
+                                 ? "editor.exercise.field.secondsMax"
+                                 : "editor.exercise.field.repsMax",
+                                 bundle: .module)
+                        }
                     }
                     .disabled(isReadOnly)
                     .onChange(of: exercise.repsMin) { _, newMin in
                         if exercise.repsMax < newMin { exercise.repsMax = newMin }
                     }
+                } header: {
+                    Text("editor.exercise.section.setsReps", bundle: .module)
                 }
             }
 
@@ -101,7 +120,7 @@ public struct ExerciseEditorView: View {
             }
 
             if sectionVisibility.pauseAndIntensity {
-                Section("Pause & Intensität") {
+                Section {
                     Stepper(value: $exercise.restSeconds, in: 0...600, step: 15) {
                         LabeledContent {
                             Text("\(exercise.restSeconds)s")
@@ -111,22 +130,30 @@ public struct ExerciseEditorView: View {
                     }
                     if sectionVisibility.targetRIR {
                         Stepper(value: $exercise.targetRir, in: 0...5, step: 0.5) {
-                            LabeledContent("Ziel-RIR", value: rirString(exercise.targetRir))
+                            LabeledContent {
+                                Text(rirString(exercise.targetRir))
+                            } label: {
+                                Text("editor.exercise.field.targetRIR", bundle: .module)
+                            }
                         }
                     }
+                } header: {
+                    Text("editor.exercise.section.pauseRIR", bundle: .module)
                 }
             }
 
             if sectionVisibility.suggestedWeight {
-                Section("Vorgeschlagenes Gewicht (optional)") {
+                Section {
                     TextField("kg",
                               value: Binding(
                                 get: { exercise.suggestedWeight },
                                 set: { exercise.suggestedWeight = $0 }
                               ),
                               format: .number,
-                              prompt: Text("z.B. 60"))
+                              prompt: Text("editor.exercise.field.weightExample", bundle: .module))
                         .decimalKeyboard()
+                } header: {
+                    Text("editor.exercise.section.suggestedWeight", bundle: .module)
                 }
             }
 
@@ -134,17 +161,23 @@ public struct ExerciseEditorView: View {
                 progressionSection
             }
 
-            Section("Notizen") {
-                TextField("Notiz (optional)",
+            Section {
+                TextField(String(localized: "editor.exercise.field.notePlaceholder", bundle: .module),
                           text: Binding(
                             get: { exercise.notes ?? "" },
                             set: { exercise.notes = $0.isEmpty ? nil : $0 }
                           ),
                           axis: .vertical)
                     .lineLimit(2...6)
+            } header: {
+                Text("editor.exercise.section.notes", bundle: .module)
             }
         }
-        .navigationTitle(exercise.name.isEmpty ? "Übung" : exercise.name)
+        // DEL-124: navigationTitle via displayName, damit Library-Uebungen
+        // im EN/TR-Mode auch hier korrekt rendern.
+        .navigationTitle(exercise.name.isEmpty
+                         ? String(localized: "active.addExercise", bundle: .module)
+                         : exercise.displayName)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -162,22 +195,27 @@ public struct ExerciseEditorView: View {
     /// optional — der User kann z.B. nur eine Ziel-Distanz setzen und die
     /// Dauer offen lassen ("how fast can I run 5k").
     private var cardioTargetSection: some View {
-        Section("Ziel (optional)") {
+        Section {
             TextField(String(localized: "editor.exercise.distanceKm", bundle: .module),
                       value: Binding(
                         get: { exercise.targetDistanceKm },
                         set: { exercise.targetDistanceKm = $0 }
                       ),
                       format: .number,
-                      prompt: Text("z.B. 5,0"))
+                      prompt: Text("editor.exercise.field.distanceExample", bundle: .module))
                 .decimalKeyboard()
             Stepper(value: Binding(
                 get: { exercise.targetDurationMinutes ?? 0 },
                 set: { exercise.targetDurationMinutes = $0 > 0 ? $0 : nil }
             ), in: 0...240, step: 5) {
-                LabeledContent("Dauer (min)",
-                               value: exercise.targetDurationMinutes.map { "\($0)" } ?? "—")
+                LabeledContent {
+                    Text(exercise.targetDurationMinutes.map { "\($0)" } ?? "—")
+                } label: {
+                    Text("editor.exercise.field.durationMin", bundle: .module)
+                }
             }
+        } header: {
+            Text("editor.exercise.section.cardioTarget", bundle: .module)
         }
     }
 
@@ -190,9 +228,13 @@ public struct ExerciseEditorView: View {
     @ViewBuilder
     private var progressionSection: some View {
         Section {
-            Toggle("Smart Overload aktivieren", isOn: $exercise.smartProgressionEnabled)
+            Toggle(isOn: $exercise.smartProgressionEnabled) {
+                Text("editor.exercise.toggle.smartOverload", bundle: .module)
+            }
             if exercise.smartProgressionEnabled {
-                Toggle("Compound-Lift", isOn: $exercise.isCompound)
+                Toggle(isOn: $exercise.isCompound) {
+                    Text("editor.exercise.toggle.compoundLift", bundle: .module)
+                }
                 Picker("Inkrement", selection: stepBinding) {
                     ForEach(ProgressionStep.allCases, id: \.self) { step in
                         Text(step.label).tag(step)
