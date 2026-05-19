@@ -161,7 +161,11 @@ public struct ActiveWorkoutView: View {
                     Button {
                         showingAdHocPicker = true
                     } label: {
-                        Label("Übung", systemImage: "plus")
+                        Label {
+                            Text("active.addExercise", bundle: .module)
+                        } icon: {
+                            Image(systemName: "plus")
+                        }
                     }
                 }
             }
@@ -224,7 +228,7 @@ public struct ActiveWorkoutView: View {
                 Text("common.cancel", bundle: .module)
             }
         } message: {
-            Text("Die Session und alle \(loggedSetsCount) bisher geloggten Sätze gehen verloren.")
+            Text(String(format: String(localized: "active.discard.message", bundle: .module), loggedSetsCount))
         }
         // DEL-096: Ad-Hoc-Picker. Custom-Eintragen ist hier bewusst nicht
         // erlaubt — Library-Pick reicht, alles weitere lebt im DayEditor.
@@ -322,9 +326,9 @@ public struct ActiveWorkoutView: View {
                     .foregroundStyle(Color.deltiqOrange)
                     .font(.title3)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Du hattest gestern eine harte Einheit")
+                    Text("active.interference.title", bundle: .module)
                         .font(.subheadline.weight(.semibold))
-                    Text("Erwäge heute, dein Ziel-RIR bei Beinübungen um +1 zu erhöhen, um dein ZNS nicht zu überlasten.")
+                    Text("active.interference.message", bundle: .module)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -341,7 +345,7 @@ public struct ActiveWorkoutView: View {
                         .font(.title3)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Banner schließen")
+                .accessibilityLabel(Text("active.interference.dismiss", bundle: .module))
             }
             .padding(12)
             .background(Color.deltiqOrange.opacity(0.10))
@@ -506,9 +510,13 @@ public struct ActiveWorkoutView: View {
         } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: 6) {
-                    Label("Diese Session hat keine Übungen.", systemImage: "exclamationmark.triangle")
+                    Label {
+                        Text("active.empty.session.title", bundle: .module)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle")
+                    }
                         .font(.headline)
-                    Text("Vermutlich wurde der Plan-Tag nach dem Start geleert. Du kannst die Session verwerfen oder ohne Sätze beenden.")
+                    Text("active.empty.session.message", bundle: .module)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -539,9 +547,9 @@ public struct ActiveWorkoutView: View {
                     .padding(.top, 40)
 
                 VStack(spacing: 6) {
-                    Text("Dein Workout ist noch leer")
+                    Text("active.empty.adhoc.title", bundle: .module)
                         .font(.title3.weight(.bold))
-                    Text("Such dir aus der Library eine Übung — alles weitere passiert wie im Plan-Workout.")
+                    Text("active.empty.adhoc.message", bundle: .module)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -554,7 +562,11 @@ public struct ActiveWorkoutView: View {
                 Button {
                     showingAdHocPicker = true
                 } label: {
-                    Label("Übung hinzufügen", systemImage: "plus.circle.fill")
+                    Label {
+                        Text("active.addExerciseCTA", bundle: .module)
+                    } icon: {
+                        Image(systemName: "plus.circle.fill")
+                    }
                 }
                 .buttonStyle(.plain)
                 .deltiqButtonStyle()
@@ -564,7 +576,7 @@ public struct ActiveWorkoutView: View {
                 Button(role: .destructive) {
                     showingDiscardConfirm = true
                 } label: {
-                    Text("Workout abbrechen")
+                    Text("active.discard.cta", bundle: .module)
                         .font(.subheadline)
                 }
                 .padding(.top, 8)
@@ -634,7 +646,7 @@ public struct ActiveWorkoutView: View {
                 .padding(.vertical, 8)
             }
 
-            Text("Set-Logging mit Vorgaben & Rest-Timer • Live Activities folgen im Xcode-Target.")
+            Text("active.placeholder.subtext", bundle: .module)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .padding(.top, 4)
@@ -1000,13 +1012,15 @@ private struct FinishWorkoutSheet: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
             }
-            .navigationTitle("Workout beenden")
+            .navigationTitle(Text("active.finish.title", bundle: .module))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen", action: onCancel)
+                    Button(action: onCancel) {
+                        Text("common.cancel", bundle: .module)
+                    }
                 }
             }
             .onAppear {
@@ -1022,7 +1036,7 @@ private struct FinishWorkoutSheet: View {
     /// Checkmark. User kann "Kein Gear" waehlen (selectedGear = nil).
     private var gearPickerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Verwendete Ausrüstung")
+            Text("active.finish.gear", bundle: .module)
                 .font(.headline)
             ForEach(activeGears) { gear in
                 Button {
@@ -1067,14 +1081,14 @@ private struct FinishWorkoutSheet: View {
 
     private var summarySection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Dein Workout")
+            Text("active.finish.summary", bundle: .module)
                 .font(.headline)
             HStack(spacing: 0) {
-                summaryStat(label: "Dauer", value: durationText)
+                summaryStat(label: String(localized: "active.summary.duration", bundle: .module), value: durationText)
                 Divider().frame(height: 32)
-                summaryStat(label: "Sätze", value: "\(setsCount)")
+                summaryStat(label: String(localized: "active.summary.sets", bundle: .module), value: "\(setsCount)")
                 Divider().frame(height: 32)
-                summaryStat(label: "Volumen", value: "\(volumeText) kg")
+                summaryStat(label: String(localized: "active.summary.volume", bundle: .module), value: "\(volumeText) kg")
             }
             .padding(.vertical, 8)
             .background(Color.secondary.opacity(0.08))
@@ -1096,9 +1110,9 @@ private struct FinishWorkoutSheet: View {
 
     private var feelingSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Wie hat sich das Training angefühlt?")
+            Text("active.finish.feeling.title", bundle: .module)
                 .font(.headline)
-            Text("Die App nutzt das fuer die Progression: Wenn du am Limit warst, halten wir das Gewicht stabil — kein Zwangs-Plus.")
+            Text("active.finish.feeling.message", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)
             VStack(spacing: 8) {
@@ -1127,7 +1141,7 @@ private struct FinishWorkoutSheet: View {
                         .font(.body.weight(.medium))
                         .foregroundStyle(.primary)
                     if feeling.vetoesProgression {
-                        Text("Kein Gewichts-Plus im nächsten Workout")
+                        Text("active.finish.feeling.noProgression", bundle: .module)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -1156,7 +1170,7 @@ private struct FinishWorkoutSheet: View {
             HStack {
                 Spacer()
                 Image(systemName: "checkmark.seal.fill")
-                Text("Workout speichern")
+                Text("active.finish.save", bundle: .module)
                     .font(.headline)
                 Spacer()
             }
