@@ -22,14 +22,22 @@ public struct GearListView: View {
         List {
             if allGears.isEmpty {
                 ContentUnavailableView {
-                    Label("Noch keine Ausrüstung", systemImage: "shoe")
+                    Label {
+                        Text("gear.list.empty.title", bundle: .module)
+                    } icon: {
+                        Image(systemName: "shoe")
+                    }
                 } description: {
-                    Text("Lege deine Laufschuhe an, damit die App deine Kilometer automatisch trackt.")
+                    Text("gear.list.empty.description", bundle: .module)
                 } actions: {
                     Button {
                         showingNewGearSheet = true
                     } label: {
-                        Label("Schuh anlegen", systemImage: "plus")
+                        Label {
+                            Text("gear.list.empty.cta", bundle: .module)
+                        } icon: {
+                            Image(systemName: "plus")
+                        }
                     }
                     .buttonStyle(.borderedProminent)
                 }
@@ -45,12 +53,12 @@ public struct GearListView: View {
                     }
                     .onDelete(perform: deleteGears)
                 } footer: {
-                    Text("Cardio-Workouts buchen ihre Distanz automatisch auf den im Finish-Sheet ausgewaehlten Schuh.")
+                    Text("gear.list.footer", bundle: .module)
                         .font(.footnote)
                 }
             }
         }
-        .navigationTitle("Ausrüstung")
+        .navigationTitle(Text("gear.list.title", bundle: .module))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -59,7 +67,11 @@ public struct GearListView: View {
                 Button {
                     showingNewGearSheet = true
                 } label: {
-                    Label("Hinzufügen", systemImage: "plus")
+                    Label {
+                        Text("common.add", bundle: .module)
+                    } icon: {
+                        Image(systemName: "plus")
+                    }
                 }
             }
         }
@@ -105,13 +117,17 @@ private struct GearRow: View {
                 }
                 Spacer()
                 if !gear.isActive {
-                    Text("INAKTIV").deltiqLabel()
+                    Text("gear.inactive", bundle: .module).deltiqLabel()
                 }
             }
             ProgressView(value: min(gear.progress, 1.0))
                 .tint(gear.needsReplacement ? .red : Color.deltiqOrange)
             if gear.needsReplacement {
-                Label("Schuh erneuern — Dämpfung erschöpft.", systemImage: "exclamationmark.triangle.fill")
+                Label {
+                    Text("gear.needsReplacement", bundle: .module)
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                }
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.red)
             }
@@ -147,13 +163,19 @@ private struct GearEditorView: View {
 
     var body: some View {
         Form {
-            Section("Allgemein") {
-                TextField("Name (z.B. Nike Pegasus 40)", text: $name)
-                Picker("Typ", selection: $type) {
-                    Text("Laufschuh").tag(GearType.shoe)
-                    Text("Fahrrad").tag(GearType.bike)
+            Section {
+                TextField(String(localized: "gear.editor.field.name", bundle: .module), text: $name)
+                Picker(selection: $type) {
+                    Text("gear.editor.type.shoe", bundle: .module).tag(GearType.shoe)
+                    Text("gear.editor.type.bike", bundle: .module).tag(GearType.bike)
+                } label: {
+                    Text("gear.editor.field.type", bundle: .module)
                 }
-                Toggle("Aktiv (im Picker anbieten)", isOn: $isActive)
+                Toggle(isOn: $isActive) {
+                    Text("gear.editor.toggle.active", bundle: .module)
+                }
+            } header: {
+                Text("gear.editor.section.general", bundle: .module)
             }
             // Xcode-26-Fix: Section("Distanz") { … } footer: { … } prallt
             // gegen den strikten Section-API-Match — string-init kollidiert
@@ -161,17 +183,22 @@ private struct GearEditorView: View {
             // `header:` Closure verwenden, dann ist es eindeutig.
             Section {
                 Stepper(value: $maxDistance, in: 100...3000, step: 50) {
-                    LabeledContent("Max. km", value: "\(Int(maxDistance))")
+                    LabeledContent {
+                        Text("\(Int(maxDistance))")
+                    } label: {
+                        Text("gear.editor.field.maxKm", bundle: .module)
+                    }
                 }
-                TextField("Bisherige km",
-                          value: $currentDistance,
+                TextField(value: $currentDistance,
                           format: .number,
-                          prompt: Text("0"))
+                          prompt: Text("0")) {
+                    Text("gear.editor.field.currentKm", bundle: .module)
+                }
                     .decimalKeyboard()
             } header: {
-                Text("Distanz")
+                Text("gear.editor.section.distance", bundle: .module)
             } footer: {
-                Text("Laufschuhe verlieren nach ~600–800 km ihre Dämpfung. Bei Erreichen des Maximums warnt die App.")
+                Text("gear.editor.distance.footer", bundle: .module)
                     .font(.footnote)
             }
         }
@@ -181,10 +208,14 @@ private struct GearEditorView: View {
         #endif
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("Abbrechen") { dismiss() }
+                Button { dismiss() } label: {
+                    Text("common.cancel", bundle: .module)
+                }
             }
             ToolbarItem(placement: .confirmationAction) {
-                Button("Speichern") { save() }
+                Button { save() } label: {
+                    Text("common.save", bundle: .module)
+                }
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
@@ -202,8 +233,8 @@ private struct GearEditorView: View {
     }
 
     private var navigationTitle: String {
-        if case .new = mode { return "Neue Ausrüstung" }
-        return "Bearbeiten"
+        if case .new = mode { return String(localized: "gear.editor.title.new", bundle: .module) }
+        return String(localized: "gear.editor.title.edit", bundle: .module)
     }
 
     private func save() {

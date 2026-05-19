@@ -120,7 +120,7 @@ public struct SettingsView: View {
                 profileSummary(profile)
             }
         } else {
-            Text("Kein Profil vorhanden — App neu starten oder zurücksetzen.")
+            Text("settings.profile.missing", bundle: .module)
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -129,10 +129,10 @@ public struct SettingsView: View {
     private func profileSummary(_ profile: UserBodyProfile) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
-                Text(profile.profile == .male ? "Männlich" : "Weiblich")
+                Text(profile.profile == .male ? "sex.male" : "sex.female", bundle: .module)
                     .font(.body.weight(.semibold))
                 Text("•")
-                Text("\(ageYears(for: profile)) Jahre")
+                Text(String(format: String(localized: "settings.profile.years", bundle: .module), ageYears(for: profile)))
                     .font(.body)
                 Spacer()
             }
@@ -140,7 +140,7 @@ public struct SettingsView: View {
                 Text(formattedHeight(profile.heightCm))
                 if let goal = profile.goalWeightKg {
                     Text("•")
-                    Text("Ziel \(formattedWeight(goal))")
+                    Text(String(format: String(localized: "settings.profile.goal", bundle: .module), formattedWeight(goal)))
                 }
                 Text("•")
                 Text(environmentLabel(profile.environment))
@@ -203,7 +203,11 @@ public struct SettingsView: View {
                     GearListView()
                 } label: {
                     HStack {
-                        Label("Ausrüstung & Schuhe", systemImage: "shoe")
+                        Label {
+                            Text("settings.preferences.gear", bundle: .module)
+                        } icon: {
+                            Image(systemName: "shoe")
+                        }
                             .foregroundStyle(.primary)
                         Spacer()
                         Image(systemName: "chevron.right")
@@ -216,56 +220,62 @@ public struct SettingsView: View {
             // DEL-109: Dashboard-Widget-Manager.
             dashboardCustomizationRow
         } footer: {
-            Text("Die DB speichert immer metrisch. Diese Einstellung steuert nur die Anzeige in Eingabe-Feldern, im Hantel-Rechner und auf den Karten.")
+            Text("settings.units.footer", bundle: .module)
         }
     }
 
     // DEL-018: Theme-Picker
     private var appearanceSection: some View {
-        DeltiqFormSection(header: "Erscheinungsbild") {
+        DeltiqFormSection(header: String(localized: "settings.appearance.section", bundle: .module)) {
             // DEL-104: Segmented Picker spannt die ganze Row — keine
             // Label-on-left/Control-on-right Trennung, also FullRow.
             DeltiqFormFullRow {
                 Picker(selection: $appearanceRaw) {
-                    Text("System").tag("system")
-                    Text("Hell").tag("light")
-                    Text("Dunkel").tag("dark")
+                    Text("settings.appearance.system", bundle: .module).tag("system")
+                    Text("settings.appearance.light", bundle: .module).tag("light")
+                    Text("settings.appearance.dark", bundle: .module).tag("dark")
                 } label: { EmptyView() }
                 .pickerStyle(.segmented)
                 .labelsHidden()
             }
         } footer: {
-            Text("Greift in alle Views der App. 'System' folgt der iOS-Einstellung.")
+            Text("settings.appearance.footer", bundle: .module)
         }
     }
 
     // DEL-018: Timer-Feedback (Ton + Vibration beim Pause-Ende)
     private var timerFeedbackSection: some View {
-        DeltiqFormSection(header: "Pausen-Timer-Feedback") {
-            // DEL-104: Toggles brauchen das volle Label inkl. Icon links —
-            // FullRow weil das Label selbst eine Inline-Komposition aus
-            // Image + Text ist; die DeltiqFormRow-Variante wuerde das in
-            // einen `Text(label)`-String zerquetschen.
+        DeltiqFormSection(header: String(localized: "settings.timer.section", bundle: .module)) {
             DeltiqFormFullRow {
                 Toggle(isOn: $timerSoundEnabled) {
-                    Label("Ton abspielen", systemImage: "speaker.wave.2.fill")
+                    Label {
+                        Text("settings.timer.sound", bundle: .module)
+                    } icon: {
+                        Image(systemName: "speaker.wave.2.fill")
+                    }
                 }
             }
             DeltiqFormFullRow {
                 Toggle(isOn: $timerHapticsEnabled) {
-                    Label("Vibrieren", systemImage: "iphone.radiowaves.left.and.right")
+                    Label {
+                        Text("settings.timer.haptics", bundle: .module)
+                    } icon: {
+                        Image(systemName: "iphone.radiowaves.left.and.right")
+                    }
                 }
             }
-            // DEL-078: PR-Celebrations on/off. Separat vom Timer-Feedback —
-            // PRs feiern ist ein anderer Use-Case als das Pausen-Ende
-            // signalisieren.
+            // DEL-078: PR-Celebrations on/off. Separat vom Timer-Feedback.
             DeltiqFormFullRow {
                 Toggle(isOn: $prCelebrationsEnabled) {
-                    Label("PR-Feiern", systemImage: "trophy.fill")
+                    Label {
+                        Text("settings.timer.prCelebrations", bundle: .module)
+                    } icon: {
+                        Image(systemName: "trophy.fill")
+                    }
                 }
             }
         } footer: {
-            Text("Wird beim Ablauf des Pausen-Timers ausgeloest. Vibrations-Toggle hat auf iPads keine Wirkung. 'PR-Feiern' steuert Save-Screen-Popups, Live-Activity-Headline und lokale Benachrichtigungen — die Bestleistungen werden trotzdem im Trophy-Room gespeichert.")
+            Text("settings.timer.footer", bundle: .module)
         }
     }
 
@@ -274,14 +284,18 @@ public struct SettingsView: View {
     // der gleiche Toggle wird dort via `@AppStorage("pref_show_warmups")`
     // gelesen — keine Notification-Plumbing noetig.
     private var workoutBehaviorSection: some View {
-        DeltiqFormSection(header: "Workout-Verhalten") {
+        DeltiqFormSection(header: String(localized: "settings.workout.section", bundle: .module)) {
             DeltiqFormFullRow {
                 Toggle(isOn: $showWarmups) {
-                    Label("Warmup & Cooldown anzeigen", systemImage: "flame.fill")
+                    Label {
+                        Text("settings.workout.showWarmups", bundle: .module)
+                    } icon: {
+                        Image(systemName: "flame.fill")
+                    }
                 }
             }
         } footer: {
-            Text("Wenn aus, werden Warmup- und Cooldown-Übungen während der Session ausgeblendet. Die Templates und deine Plan-Editierung bleiben unverändert — der Toggle wirkt nur auf den Live-Workout-Flow. Warmups sind ohnehin nie Pflicht: der „Workout speichern“-Button bleibt immer klickbar, auch wenn du sie nicht abhakst.")
+            Text("settings.workout.footer", bundle: .module)
         }
     }
 
@@ -289,22 +303,26 @@ public struct SettingsView: View {
     // Jede Aenderung triggert `rescheduleReminders()`, das ueber ReminderScheduler
     // re-schedulet — inkl. automatischem Cancel-Plus-Re-Add fuer Spam-Schutz.
     private var remindersSection: some View {
-        DeltiqFormSection(header: "Erinnerungen") {
+        DeltiqFormSection(header: String(localized: "settings.reminders.section", bundle: .module)) {
             DeltiqFormFullRow {
                 Toggle(isOn: $waterReminderEnabled) {
-                    Label("Wasser erinnern", systemImage: "drop.fill")
+                    Label {
+                        Text("settings.reminders.water", bundle: .module)
+                    } icon: {
+                        Image(systemName: "drop.fill")
+                    }
                 }
                 .onChange(of: waterReminderEnabled) { _, _ in
                     Task { await rescheduleReminders() }
                 }
             }
             if waterReminderEnabled {
-                DeltiqFormRow(label: "Häufigkeit") {
+                DeltiqFormRow(label: String(localized: "settings.reminders.frequency", bundle: .module)) {
                     Picker(selection: $waterReminderHours) {
-                        Text("Jede Stunde").tag(1)
-                        Text("Alle 2 Stunden").tag(2)
-                        Text("Alle 3 Stunden").tag(3)
-                        Text("Alle 4 Stunden").tag(4)
+                        Text("settings.reminders.every1h", bundle: .module).tag(1)
+                        Text("settings.reminders.every2h", bundle: .module).tag(2)
+                        Text("settings.reminders.every3h", bundle: .module).tag(3)
+                        Text("settings.reminders.every4h", bundle: .module).tag(4)
                     } label: { EmptyView() }
                     .pickerStyle(.menu)
                     .labelsHidden()
@@ -316,14 +334,18 @@ public struct SettingsView: View {
 
             DeltiqFormFullRow {
                 Toggle(isOn: $measurementReminderEnabled) {
-                    Label("Messung erinnern", systemImage: "scalemass.fill")
+                    Label {
+                        Text("settings.reminders.measurement", bundle: .module)
+                    } icon: {
+                        Image(systemName: "scalemass.fill")
+                    }
                 }
                 .onChange(of: measurementReminderEnabled) { _, _ in
                     Task { await rescheduleReminders() }
                 }
             }
             if measurementReminderEnabled {
-                DeltiqFormRow(label: "Wochentag") {
+                DeltiqFormRow(label: String(localized: "day.editor.field.weekday", bundle: .module)) {
                     Picker(selection: $measurementWeekday) {
                         Text("Sonntag").tag(1)
                         Text("Montag").tag(2)
@@ -339,10 +361,10 @@ public struct SettingsView: View {
                         Task { await rescheduleReminders() }
                     }
                 }
-                DeltiqFormRow(label: "Uhrzeit") {
+                DeltiqFormRow(label: String(localized: "settings.reminders.time", bundle: .module)) {
                     Picker(selection: $measurementHour) {
                         ForEach(6..<23, id: \.self) { hour in
-                            Text("\(hour):00 Uhr").tag(hour)
+                            Text(String(format: String(localized: "settings.reminders.hour", bundle: .module), hour)).tag(hour)
                         }
                     } label: { EmptyView() }
                     .pickerStyle(.menu)
@@ -353,7 +375,7 @@ public struct SettingsView: View {
                 }
             }
         } footer: {
-            Text("Lokale Benachrichtigungen — keine Server-Verbindung. Tippen auf eine Erinnerung öffnet direkt den passenden Tab.")
+            Text("settings.reminders.footer", bundle: .module)
         }
     }
 
@@ -391,7 +413,7 @@ public struct SettingsView: View {
     }
 
     private var healthKitSection: some View {
-        DeltiqFormSection(header: "Apple Health") {
+        DeltiqFormSection(header: String(localized: "profile.section.health", bundle: .module)) {
             DeltiqFormFullRow {
                 healthKitStatusRow
             }
@@ -401,14 +423,14 @@ public struct SettingsView: View {
                 }
             }
             if let lastSync = healthKit.lastSyncDate {
-                DeltiqFormRow(label: "Letzter Sync") {
+                DeltiqFormRow(label: String(localized: "settings.health.lastSync", bundle: .module)) {
                     Text(lastSync.formatted(date: .abbreviated, time: .shortened))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
         } footer: {
-            Text("Bei aktivierter Verbindung wird im Messwerte-Formular das letzte Waagen-Gewicht vorausgefüllt. Beim Speichern werden Gewicht, KFA und Magere Masse zurück nach Apple Health geschrieben.")
+            Text("settings.health.footer", bundle: .module)
         }
     }
 
@@ -417,7 +439,11 @@ public struct SettingsView: View {
         switch healthKit.authorizationStatus {
         case .sharingAuthorized:
             HStack {
-                Label("Verbunden", systemImage: "heart.fill")
+                Label {
+                    Text("onboarding.health.connected", bundle: .module)
+                } icon: {
+                    Image(systemName: "heart.fill")
+                }
                     .foregroundStyle(.pink)
                 Spacer()
                 Image(systemName: "checkmark")
@@ -425,20 +451,34 @@ public struct SettingsView: View {
             }
         case .notDetermined:
             HStack {
-                Label("Nicht eingerichtet", systemImage: "heart")
+                Label {
+                    Text("settings.health.notSetup", bundle: .module)
+                } icon: {
+                    Image(systemName: "heart")
+                }
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button("Verbinden") {
+                Button {
                     Task { await healthKit.requestAuthorization() }
+                } label: {
+                    Text("settings.health.connect", bundle: .module)
                 }
                 .font(.subheadline.weight(.semibold))
                 .disabled(!healthKit.isAvailable)
             }
         case .sharingDenied:
-            Label("Berechtigung verweigert", systemImage: "heart.slash")
+            Label {
+                Text("settings.health.denied", bundle: .module)
+            } icon: {
+                Image(systemName: "heart.slash")
+            }
                 .foregroundStyle(.orange)
         case .unavailable:
-            Label("Nicht verfügbar", systemImage: "heart.slash")
+            Label {
+                Text("settings.health.unavailable", bundle: .module)
+            } icon: {
+                Image(systemName: "heart.slash")
+            }
                 .foregroundStyle(.secondary)
         }
     }
@@ -451,7 +491,11 @@ public struct SettingsView: View {
                 UIApplication.shared.open(url)
             }
         } label: {
-            Label("In iOS-Einstellungen öffnen", systemImage: "gear")
+            Label {
+                Text("settings.health.openIOSSettings", bundle: .module)
+            } icon: {
+                Image(systemName: "gear")
+            }
         }
         #endif
     }
@@ -460,10 +504,10 @@ public struct SettingsView: View {
         DeltiqFormSection(
             header: String(localized: "settings.section.about", bundle: .module)
         ) {
-            DeltiqFormRow(label: "Version") {
+            DeltiqFormRow(label: String(localized: "settings.about.version", bundle: .module)) {
                 Text(appVersion).foregroundStyle(.secondary)
             }
-            DeltiqFormRow(label: "Bundle") {
+            DeltiqFormRow(label: String(localized: "settings.about.bundle", bundle: .module)) {
                 Text(bundleIdentifier).foregroundStyle(.secondary).font(.caption)
             }
         }
@@ -489,7 +533,7 @@ public struct SettingsView: View {
                 }
             }
         } footer: {
-            Text("Löscht Profil, Messungen, Pläne, Trainings-Templates und Workout-Sessions vollständig. Die Apple-Health-Daten bleiben erhalten — die löscht du in der Health-App selber.")
+            Text("settings.dangerZone.footer", bundle: .module)
         }
     }
 
