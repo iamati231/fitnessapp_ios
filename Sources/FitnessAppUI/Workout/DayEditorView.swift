@@ -286,7 +286,11 @@ public struct DayEditorView: View {
                 } label: {
                     HStack {
                         Spacer()
-                        Label("Ruhetag abschließen", systemImage: "checkmark.circle.fill")
+                        Label {
+                            Text("day.restDay.complete", bundle: .module)
+                        } icon: {
+                            Image(systemName: "checkmark.circle.fill")
+                        }
                             .font(.headline)
                         Spacer()
                     }

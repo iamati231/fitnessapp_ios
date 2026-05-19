@@ -609,6 +609,50 @@ KEYS = {
                                           "Envanterinle sadece %1$@ %2$@ ulaşılabilir (%3$@)."),
     "calc.plate.resetInventory":        ("Inventar zurücksetzen",   "Reset Inventory",      "Envanteri Sıfırla"),
     "calc.plate.section.inventory":     ("Inventar pro Seite",      "Inventory Per Side",   "Tarafa Envanter"),
+
+    # ──────────────────────────────────────────────────────────────────
+    # PR2 Batch C — PRHistory + WaterTracker + WorkoutHistory
+    # ──────────────────────────────────────────────────────────────────
+
+    # PRHistoryView
+    "trophy.rebuild.menu":              ("Aus History neu berechnen", "Recompute from history", "Geçmişten yeniden hesapla"),
+    "trophy.rebuild.confirm.title":     ("Trophy Room neu berechnen?", "Recompute Trophy Room?", "Kupa Odası yeniden hesaplansın mı?"),
+    "trophy.rebuild.confirm.cta":       ("Neu berechnen",           "Recompute",            "Yeniden hesapla"),
+    "trophy.rebuild.confirm.message":   ("Setzt alle gespeicherten Rekorde zurück und detektiert sie aus deiner kompletten History neu. Nützlich nach gelöschten Sessions.",
+                                          "Resets all saved records and re-detects them from your complete history. Useful after deleted sessions.",
+                                          "Tüm kayıtlı rekorları sıfırlar ve geçmişinden yeniden tespit eder. Silinen oturumlardan sonra faydalı."),
+    "trophy.empty.title":               ("Noch keine Rekorde",      "No records yet",       "Henüz rekor yok"),
+    "trophy.empty.description.firstWorkout": ("Beende dein erstes Training, um deinen ersten PR aufzustellen.",
+                                                "Finish your first workout to set your first PR.",
+                                                "İlk PR'ını koymak için ilk antrenmanını bitir."),
+    "trophy.empty.description.hasWorkouts":  ("Du hast bereits Workouts, aber noch keine Rekorde gespeichert. Klick unten, um sie aus deiner History zu detektieren.",
+                                                "You have workouts but no records saved yet. Tap below to detect them from your history.",
+                                                "Antrenmanların var ama henüz kayıtlı rekor yok. Geçmişinden tespit etmek için aşağıya dokun."),
+    "trophy.empty.cta.detect":          ("Aus History detektieren", "Detect from History",  "Geçmişten Tespit Et"),
+    "trophy.totalRecords":              ("%lld Rekorde gesamt",     "%lld records total",   "Toplam %lld rekor"),
+    "trophy.singleEntry":               ("Nur ein %@-Eintrag — Trend ab 2 Rekorden.",
+                                          "Only one %@ entry — trend starts at 2 records.",
+                                          "Sadece bir %@ kaydı — trend 2 rekordan başlar."),
+
+    # WaterTrackerView
+    "water.title":                      ("Wasser",                  "Water",                "Su"),
+    "water.resetToday":                 ("Heute zurücksetzen",      "Reset Today",          "Bugünü Sıfırla"),
+    "water.goalReached":                ("Tagesziel erreicht",      "Daily goal reached",   "Günlük hedef ulaşıldı"),
+    "water.remainingToGoal":            ("%lld ml bis zum Ziel",    "%lld ml to goal",      "Hedefe %lld ml"),
+    "water.heroFooter":                 ("Tagesziel = Gewicht × 35 ml. Quelle: %@.",
+                                          "Daily goal = weight × 35 ml. Source: %@.",
+                                          "Günlük hedef = kilo × 35 ml. Kaynak: %@."),
+    "water.ofTotal":                    ("ml von %lld",             "ml of %lld",           "ml / %lld"),
+    "water.quickAdd.section":           ("Schnell-Eintrag",         "Quick Add",            "Hızlı Ekle"),
+    "water.empty":                      ("Trag deinen ersten Schluck mit den Buttons oben ein.",
+                                          "Log your first sip with the buttons above.",
+                                          "İlk yudumu yukarıdaki butonlarla kaydet."),
+
+    # WorkoutHistoryView
+    "history.empty.title":              ("Noch keine Workouts",     "No workouts yet",      "Henüz antrenman yok"),
+    "history.empty.description":        ("Beende dein erstes Training, um deine Historie zu sehen.",
+                                          "Finish your first workout to see your history.",
+                                          "Geçmişini görmek için ilk antrenmanını bitir."),
 }
 
 

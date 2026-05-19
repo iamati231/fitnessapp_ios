@@ -55,7 +55,11 @@ public struct PRHistoryView: View {
                     Button {
                         showRebuildConfirm = true
                     } label: {
-                        Label("Aus History neu berechnen", systemImage: "arrow.clockwise")
+                        Label {
+                            Text("trophy.rebuild.menu", bundle: .module)
+                        } icon: {
+                            Image(systemName: "arrow.clockwise")
+                        }
                     }
                     .disabled(completedSessions.isEmpty)
                 } label: {
@@ -63,13 +67,17 @@ public struct PRHistoryView: View {
                 }
             }
         }
-        .alert("Trophy Room neu berechnen?", isPresented: $showRebuildConfirm) {
-            Button("Abbrechen", role: .cancel) { }
-            Button("Neu berechnen", role: .destructive) {
+        .alert(Text("trophy.rebuild.confirm.title", bundle: .module), isPresented: $showRebuildConfirm) {
+            Button(role: .cancel) { } label: {
+                Text("common.cancel", bundle: .module)
+            }
+            Button(role: .destructive) {
                 rebuild()
+            } label: {
+                Text("trophy.rebuild.confirm.cta", bundle: .module)
             }
         } message: {
-            Text("Setzt alle gespeicherten Rekorde zurück und detektiert sie aus deiner kompletten History neu. Nützlich nach gelöschten Sessions.")
+            Text("trophy.rebuild.confirm.message", bundle: .module)
         }
         .overlay(alignment: .bottom) {
             if let toast = rebuildToast {
@@ -88,17 +96,26 @@ public struct PRHistoryView: View {
     private var emptyState: some View {
         VStack(spacing: 16) {
             ContentUnavailableView {
-                Label("Noch keine Rekorde", systemImage: "trophy")
+                Label {
+                    Text("trophy.empty.title", bundle: .module)
+                } icon: {
+                    Image(systemName: "trophy")
+                }
             } description: {
                 Text(completedSessions.isEmpty
-                     ? "Beende dein erstes Training, um deinen ersten PR aufzustellen."
-                     : "Du hast bereits Workouts, aber noch keine Rekorde gespeichert. Klick unten, um sie aus deiner History zu detektieren.")
+                     ? "trophy.empty.description.firstWorkout"
+                     : "trophy.empty.description.hasWorkouts",
+                     bundle: .module)
             } actions: {
                 if !completedSessions.isEmpty {
                     Button {
                         showRebuildConfirm = true
                     } label: {
-                        Label("Aus History detektieren", systemImage: "sparkles")
+                        Label {
+                            Text("trophy.empty.cta.detect", bundle: .module)
+                        } icon: {
+                            Image(systemName: "sparkles")
+                        }
                     }
                     .buttonStyle(.borderedProminent)
                 }
@@ -143,7 +160,7 @@ public struct PRHistoryView: View {
             .listRowSeparator(.hidden)
         } header: {
             HStack {
-                Text("\(filteredCount) Rekorde gesamt")
+                Text(String(format: String(localized: "trophy.totalRecords", bundle: .module), filteredCount))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -321,7 +338,11 @@ private struct ExerciseTrophySection: View {
                 .frame(height: 160)
             }
         } else if series.count == 1 {
-            Label("Nur ein \(PRKindStyle.shortLabel(chartKind))-Eintrag — Trend ab 2 Rekorden.", systemImage: "info.circle")
+            Label {
+                Text(String(format: String(localized: "trophy.singleEntry", bundle: .module), PRKindStyle.shortLabel(chartKind)))
+            } icon: {
+                Image(systemName: "info.circle")
+            }
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

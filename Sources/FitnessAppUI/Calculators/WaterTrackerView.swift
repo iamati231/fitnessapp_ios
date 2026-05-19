@@ -32,15 +32,17 @@ public struct WaterTrackerView: View {
             quickAddSection
             todaySection
         }
-        .navigationTitle("Wasser")
+        .navigationTitle(Text("water.title", bundle: .module))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    Button("Heute zurücksetzen", role: .destructive) {
+                    Button(role: .destructive) {
                         deleteTodayEntries()
+                    } label: {
+                        Text("water.resetToday", bundle: .module)
                     }
                     .disabled(todayEntries.isEmpty)
                 } label: {
@@ -57,11 +59,15 @@ public struct WaterTrackerView: View {
             VStack(spacing: 12) {
                 progressRing
                 if progress >= 1.0 {
-                    Label("Tagesziel erreicht", systemImage: "checkmark.seal.fill")
+                    Label {
+                        Text("water.goalReached", bundle: .module)
+                    } icon: {
+                        Image(systemName: "checkmark.seal.fill")
+                    }
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.green)
                 } else {
-                    Text("\(targetMl - todayMl) ml bis zum Ziel")
+                    Text(String(format: String(localized: "water.remainingToGoal", bundle: .module), targetMl - todayMl))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
@@ -72,7 +78,7 @@ public struct WaterTrackerView: View {
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
         } footer: {
-            Text("Tagesziel = Gewicht × 35 ml. Quelle: \(targetSourceLabel).")
+            Text(String(format: String(localized: "water.heroFooter", bundle: .module), targetSourceLabel))
                 .font(.footnote)
         }
     }
@@ -92,7 +98,7 @@ public struct WaterTrackerView: View {
                 Text("\(todayMl)")
                     .font(.system(size: 44, weight: .bold).monospacedDigit())
                     .contentTransition(.numericText())
-                Text("ml von \(targetMl)")
+                Text(String(format: String(localized: "water.ofTotal", bundle: .module), targetMl))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
@@ -115,7 +121,7 @@ public struct WaterTrackerView: View {
             }
             .padding(.vertical, 4)
         } header: {
-            Text("Schnell-Eintrag")
+            Text("water.quickAdd.section", bundle: .module)
         }
     }
 
@@ -142,7 +148,7 @@ public struct WaterTrackerView: View {
     private var todaySection: some View {
         Section {
             if todayEntries.isEmpty {
-                Text("Trag deinen ersten Schluck mit den Buttons oben ein.")
+                Text("water.empty", bundle: .module)
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {

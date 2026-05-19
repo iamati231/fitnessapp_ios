@@ -23,9 +23,9 @@ public struct WorkoutHistoryView: View {
         Group {
             if sessions.isEmpty {
                 ContentUnavailableView(
-                    "Noch keine Workouts",
+                    String(localized: "history.empty.title", bundle: .module),
                     systemImage: "calendar.badge.exclamationmark",
-                    description: Text("Beende dein erstes Training, um deine Historie zu sehen.")
+                    description: Text("history.empty.description", bundle: .module)
                 )
             } else {
                 List {
