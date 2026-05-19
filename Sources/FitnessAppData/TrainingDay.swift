@@ -12,6 +12,13 @@ public final class TrainingDay {
 
     public var plan: TrainingPlan?
 
+    /// DEL-123: i18n-Lookup-Key fuer den Tag-Namen.
+    /// Wird beim Plan-Adopt aus `DaySpec.localizationKey` propagiert.
+    /// Optional — User-renamen-Tage + Legacy-Daten haben nil und fallen
+    /// via `TrainingDay.displayName`-Extension auf rohes `name`-Feld
+    /// zurueck. Lightweight-Migration kompatibel.
+    public var localizationKey: String?
+
     @Relationship(deleteRule: .cascade, inverse: \Exercise.day)
     public var exercises: [Exercise] = []
 
@@ -39,13 +46,15 @@ public final class TrainingDay {
         weekday: Int,
         type: DayType = .custom,
         nextIntensity: DayIntensity = .normal,
-        plan: TrainingPlan? = nil
+        plan: TrainingPlan? = nil,
+        localizationKey: String? = nil
     ) {
         self.name = name
         self.weekday = weekday
         self.type = type
         self.nextIntensity = nextIntensity
         self.plan = plan
+        self.localizationKey = localizationKey
     }
 }
 

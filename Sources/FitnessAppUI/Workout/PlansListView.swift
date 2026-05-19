@@ -193,8 +193,13 @@ public struct PlansListView: View {
     /// NICHT mit-kopiert — die Kopie startet "frisch", ohne Urlaubs-Modus-
     /// Geister.
     private func duplicatePlan(_ source: TrainingPlan) {
+        // DEL-123: localizationKey wird beim Kopier-Vorgang nicht uebernommen,
+        // damit der "(Kopie)"-Suffix sichtbar bleibt — sonst wuerde der
+        // duplizierte Plan den lokalisierten Original-Namen rendern und der
+        // User koennte beide Kopien nicht unterscheiden. Custom-Name "X (Kopie)"
+        // geht durch den name-Fallback in TrainingPlan.displayName.
         let copy = TrainingPlan(
-            name: "\(source.name) (Kopie)",
+            name: "\(source.displayName) (Kopie)",
             programType: source.programType,
             descriptionText: source.descriptionText,
             weeks: source.weeks,
@@ -206,12 +211,15 @@ public struct PlansListView: View {
         modelContext.insert(copy)
 
         for day in source.days {
+            // DEL-123: Tag-localizationKey schon — die Kopie ist strukturell
+            // identisch und behaelt das Template-Origin.
             let dayCopy = TrainingDay(
                 name: day.name,
                 weekday: day.weekday,
                 type: day.type,
                 nextIntensity: day.nextIntensity,
-                plan: copy
+                plan: copy,
+                localizationKey: day.localizationKey
             )
             modelContext.insert(dayCopy)
 
@@ -262,7 +270,7 @@ private struct PlanRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(plan.name)
+                    Text(plan.displayName)
                         .font(.body.weight(.semibold))
                     if plan.isActive {
                         Text("plans.activeBadge", bundle: .module)

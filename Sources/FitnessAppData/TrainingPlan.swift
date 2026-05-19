@@ -28,6 +28,14 @@ public final class TrainingPlan {
     /// auf RIR<=2 — strenger Modus.
     public var progressionTargetRIROverride: Float?
 
+    /// DEL-123: i18n-Lookup-Key fuer den Plan-Namen.
+    /// Wird beim Plan-Adopt aus `ProgramTemplate.localizationKey` propagiert.
+    /// Optional — Custom-Plaene und Legacy-Daten (vor DEL-123) tragen nil
+    /// und fallen via `TrainingPlan.displayName`-Extension auf das rohe
+    /// deutsche `name`-Feld zurueck. Lightweight-Migration: SwiftData
+    /// addiert das Feld als nil auf existierende Rows ohne Schema-Bruch.
+    public var localizationKey: String?
+
     @Relationship(deleteRule: .cascade, inverse: \TrainingDay.plan)
     public var days: [TrainingDay] = []
 
@@ -38,7 +46,8 @@ public final class TrainingPlan {
         weeks: Int = 12,
         isActive: Bool = false,
         targetEnvironment: EnvironmentType = .gym,
-        isTemplate: Bool = false
+        isTemplate: Bool = false,
+        localizationKey: String? = nil
     ) {
         self.name = name
         self.programType = programType
@@ -47,6 +56,7 @@ public final class TrainingPlan {
         self.isActive = isActive
         self.targetEnvironment = targetEnvironment
         self.isTemplate = isTemplate
+        self.localizationKey = localizationKey
     }
 }
 #endif

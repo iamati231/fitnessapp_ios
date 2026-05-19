@@ -59,7 +59,7 @@ public struct DayEditorView: View {
                 }
             }
         }
-        .navigationTitle(day.name.isEmpty ? String(localized: "day.editor.untitled", bundle: .module) : day.name)
+        .navigationTitle(day.name.isEmpty ? String(localized: "day.editor.untitled", bundle: .module) : day.displayName)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         // DEL-095: EditButton macht den nativen Edit-Mode an, in dem die
@@ -181,7 +181,7 @@ public struct DayEditorView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 28))
 
             VStack(spacing: 8) {
-                Text(day.name.isEmpty ? String(localized: "day.restDay.title", bundle: .module) : day.name)
+                Text(day.name.isEmpty ? String(localized: "day.restDay.title", bundle: .module) : day.displayName)
                     .font(.title.weight(.bold))
                 Text("day.restDay.heroMessage", bundle: .module)
                     .font(.callout)

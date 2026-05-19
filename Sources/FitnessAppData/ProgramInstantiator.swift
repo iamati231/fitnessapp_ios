@@ -74,6 +74,9 @@ public enum ProgramInstantiator {
         )
 
         // 3) Create new active plan.
+        // DEL-123: localizationKey aus dem Template-Spec propagieren, damit
+        // die SwiftData-Plan-Row beim Display via TrainingPlan.displayName
+        // multilingual rendert (statt das deutsche `name`-Feld zu zeigen).
         let plan = TrainingPlan(
             name: template.name,
             programType: template.id,
@@ -81,7 +84,8 @@ public enum ProgramInstantiator {
             weeks: 12,
             isActive: true,
             targetEnvironment: template.targetEnvironment,
-            isTemplate: false
+            isTemplate: false,
+            localizationKey: template.localizationKey
         )
         context.insert(plan)
 
@@ -100,11 +104,14 @@ public enum ProgramInstantiator {
             let targetWeekday = normalized[idx]
             workoutDayWeekdays.insert(targetWeekday)
 
+            // DEL-123: localizationKey aus dem DaySpec propagieren — gleiche
+            // Idee wie auf Plan-Ebene, nur fuer die Tag-Zelle.
             let day = TrainingDay(
                 name: daySpec.name,
                 weekday: targetWeekday,
                 type: daySpec.type,
-                plan: plan
+                plan: plan,
+                localizationKey: daySpec.localizationKey
             )
             context.insert(day)
 
@@ -143,11 +150,15 @@ public enum ProgramInstantiator {
         //    Plan eine vollstaendige Wochen-Ansicht hat (Plan-Editor, Dashboard-
         //    Day-Card, Calendar-Navigation alle auf 7 Tagen).
         for weekday in 1...7 where !workoutDayWeekdays.contains(weekday) {
+            // DEL-123: Auto-Rest-Days bekommen den day.restDay.title-Key,
+            // damit sie "Rest Day" / "Dinlenme Günü" rendern und nicht
+            // "Ruhetag" durch alle Sprachen schleppen.
             let restDay = TrainingDay(
                 name: "Ruhetag",
                 weekday: weekday,
                 type: .rest,
-                plan: plan
+                plan: plan,
+                localizationKey: "day.restDay.title"
             )
             context.insert(restDay)
         }

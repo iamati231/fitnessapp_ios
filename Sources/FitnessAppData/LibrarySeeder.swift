@@ -85,5 +85,66 @@ public enum LibrarySeeder {
         }
         return updated
     }
+
+    /// DEL-123: One-Shot-Backfill der `localizationKey`-Felder auf vorhandenen
+    /// `TrainingPlan` + `TrainingDay`-Eintraegen. Pre-DEL-123-Daten haben den
+    /// Key nicht — die Plan-Listen zeigen deutsche Strings im EN/TR-Modus.
+    ///
+    /// Strategie: konservatives Matching ueber `plan.programType` -> Template-
+    /// Lookup. Nur wenn `plan.name` noch exakt der Template-DE-Name ist
+    /// (also der User den Plan NICHT manuell umbenannt hat), schreiben wir
+    /// den `localizationKey` rein. User-Custom-Renamen bleiben unangetastet
+    /// und rendern weiter den User-getippten String.
+    ///
+    /// Day-Level: das gleiche Muster ueber `day.name == daySpec.name`. Rest-
+    /// Tage (type == .rest mit Auto-Erzeugung) bekommen pauschal
+    /// `day.restDay.title` falls sie noch den deutschen Default tragen.
+    ///
+    /// Idempotent: ueberspringt alle Plaene + Tage, die bereits einen Key
+    /// tragen. Bei einem Cold-Start nach der ersten erfolgreichen Migration
+    /// laeuft die Funktion praktisch leer durch.
+    ///
+    /// Returns: Anzahl der gesetzten Plan-Keys (Day-Updates implizit).
+    @discardableResult
+    public static func backfillPlanLocalizationKeysIfNeeded(in context: ModelContext) -> Int {
+        let descriptor = FetchDescriptor<TrainingPlan>(
+            predicate: #Predicate { $0.localizationKey == nil }
+        )
+        let pending = (try? context.fetch(descriptor)) ?? []
+        guard !pending.isEmpty else { return 0 }
+
+        // Templates per programType-ID indexieren — O(1)-Lookup fuer den
+        // typischen Fall (geadoptierte System-Templates).
+        let templatesByID = Dictionary(
+            uniqueKeysWithValues: ProgramTemplates.all.map { ($0.id, $0) }
+        )
+
+        var updated = 0
+        for plan in pending {
+            guard let template = templatesByID[plan.programType] else {
+                continue   // Custom-Plan ohne Template-Origin — Skip
+            }
+            // Konservatives Match: nur wenn der User den Plan-Namen NICHT
+            // veraendert hat, propagieren wir den localizationKey.
+            // Custom-Rename ist erkennbar daran, dass plan.name vom
+            // Template-Default abweicht.
+            guard plan.name == template.name else { continue }
+            plan.localizationKey = template.localizationKey
+            updated += 1
+
+            // DaySpec-Index aufbauen und Tag-Namen matchen
+            let daySpecsByName = Dictionary(
+                uniqueKeysWithValues: template.days.map { ($0.name, $0) }
+            )
+            for day in plan.days where day.localizationKey == nil {
+                if day.type == .rest && day.name == "Ruhetag" {
+                    day.localizationKey = "day.restDay.title"
+                } else if let spec = daySpecsByName[day.name] {
+                    day.localizationKey = spec.localizationKey
+                }
+            }
+        }
+        return updated
+    }
 }
 #endif

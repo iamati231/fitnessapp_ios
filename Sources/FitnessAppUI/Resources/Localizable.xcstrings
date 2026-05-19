@@ -1549,19 +1549,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Metric (kg/cm)"
+            "value": "Metric"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Metrisch (kg/cm)"
+            "value": "Metrisch"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Metrik (kg/cm)"
+            "value": "Metrik"
           }
         }
       }
@@ -1572,19 +1572,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Imperial (lbs/in)"
+            "value": "Imperial"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Imperial (lbs/in)"
+            "value": "Imperial"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "İmperyal (lbs/in)"
+            "value": "İmperyal"
           }
         }
       }
@@ -20123,6 +20123,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "İleri"
+          }
+        }
+      }
+    },
+    "plan.dayRow.exerciseCount": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld Übungen • %2$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld exercises • %2$@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld hareket • %2$@"
           }
         }
       }

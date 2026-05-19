@@ -71,6 +71,10 @@ public struct RootView: View {
             // FetchDescriptor filtert auf nil-Snapshot, also lauft das nach
             // dem ersten Erfolg leer durch.
             LibrarySeeder.backfillLogSnapshotsIfNeeded(in: modelContext)
+            // DEL-123: localizationKey-Backfill fuer Pre-DEL-123 Plans + Days.
+            // Idempotent — Predicate filtert auf nil-Key. User mit
+            // Custom-renamen Plaenen bleibt unangetastet (Match-Check).
+            LibrarySeeder.backfillPlanLocalizationKeysIfNeeded(in: modelContext)
         }
     }
 

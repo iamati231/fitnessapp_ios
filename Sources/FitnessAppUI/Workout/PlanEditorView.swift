@@ -54,7 +54,7 @@ public struct PlanEditorView: View {
             daysSection
             settingsSection
         }
-        .navigationTitle(plan.name.isEmpty ? "Plan" : plan.name)
+        .navigationTitle(plan.name.isEmpty ? String(localized: "tab.plan", bundle: .module) : plan.displayName)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         // DEL-095: EditButton aktiviert den Drag-Mode fuer Tage-Reorder.
@@ -593,9 +593,13 @@ private struct DayRow: View {
             )
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(day.name)
+                // DEL-123: day.displayName resolved via TrainingDay.localizationKey
+                Text(day.displayName)
                     .font(.body.weight(.medium))
-                Text("\(day.activeExercises.count) Übungen • \(intensityLabel(day.nextIntensity))")
+                // DEL-123: format-string via xcstrings statt hardcoded DE.
+                Text(String(format: String(localized: "plan.dayRow.exerciseCount", bundle: .module),
+                            day.activeExercises.count,
+                            intensityLabel(day.nextIntensity)))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
