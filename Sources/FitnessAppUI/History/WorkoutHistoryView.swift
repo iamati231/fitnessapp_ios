@@ -93,7 +93,7 @@ struct HistorySessionRow: View {
             //   * Strength → Datums-Block in blau wie bisher
             iconBadge
             VStack(alignment: .leading, spacing: 2) {
-                Text(session.dayName ?? "Training")
+                Text(session.dayName ?? String(localized: "history.session.fallback", bundle: .module))
                     .font(.body.weight(.semibold))
                 statsLine
             }
@@ -166,7 +166,7 @@ struct HistorySessionRow: View {
         case .pureCardio:
             HStack(spacing: 6) {
                 Image(systemName: "clock")
-                Text("\(session.durationMinutes) Min")
+                Text("\(session.durationMinutes) \(String(localized: "unit.minutes.short", bundle: .module))")
                 Text("•")
                 Image(systemName: "figure.run")
                 Text(totalDistanceText)
@@ -181,7 +181,7 @@ struct HistorySessionRow: View {
         case .mixed:
             HStack(spacing: 6) {
                 Image(systemName: "clock")
-                Text("\(session.durationMinutes) Min")
+                Text("\(session.durationMinutes) \(String(localized: "unit.minutes.short", bundle: .module))")
                 Text("•")
                 Image(systemName: "scalemass")
                 Text("\(session.totalVolumeKg.truncated(to: 0).formattedTwoDecimals) kg")
@@ -196,7 +196,7 @@ struct HistorySessionRow: View {
         case .pureStrength:
             HStack(spacing: 6) {
                 Image(systemName: "clock")
-                Text("\(session.durationMinutes) Min")
+                Text("\(session.durationMinutes) \(String(localized: "unit.minutes.short", bundle: .module))")
                 Text("•")
                 Image(systemName: "list.number")
                 Text("\(session.totalSets)")

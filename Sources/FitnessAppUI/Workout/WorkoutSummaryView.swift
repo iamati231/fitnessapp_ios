@@ -82,7 +82,7 @@ public struct WorkoutSummaryView: View {
             // erst geschrieben).
             if isReadOnly {
                 ToolbarItem(placement: .primaryAction) {
-                    Button(isEditingHistory ? "Fertig" : "Bearbeiten") {
+                    Button {
                         if isEditingHistory {
                             // Beim Beenden vom Edit-Mode: totals neu berechnen
                             // + persistieren, falls der User Set-Werte angefasst hat.
@@ -90,6 +90,11 @@ public struct WorkoutSummaryView: View {
                             try? modelContext.save()
                         }
                         isEditingHistory.toggle()
+                    } label: {
+                        Text(isEditingHistory
+                             ? "summary.toolbar.done"
+                             : "summary.toolbar.edit",
+                             bundle: .module)
                     }
                 }
             }
@@ -121,9 +126,9 @@ public struct WorkoutSummaryView: View {
                 }
             }
         } header: {
-            Text("Eckdaten")
+            Text("summary.editMeta.header", bundle: .module)
         } footer: {
-            Text("Datum + Dauer werden hier ueberschrieben. Set-Werte unten editierst du direkt am Satz.")
+            Text("summary.editMeta.footer", bundle: .module)
                 .font(.footnote)
         }
     }
@@ -197,7 +202,7 @@ public struct WorkoutSummaryView: View {
             HStack(spacing: 6) {
                 Image(systemName: "trophy.fill")
                     .foregroundStyle(.yellow)
-                Text("Personal Records")
+                Text("summary.section.personalRecords", bundle: .module)
             }
         } footer: {
             Text("summary.prFooter", bundle: .module)
@@ -224,7 +229,7 @@ public struct WorkoutSummaryView: View {
             HStack(spacing: 6) {
                 Image(systemName: "arrow.up.right.circle.fill")
                     .foregroundStyle(Color.deltiqOrange)
-                Text("Smart-Progression")
+                Text("summary.section.progression", bundle: .module)
             }
         } footer: {
             Text("summary.progressionFooter", bundle: .module)
@@ -257,15 +262,20 @@ public struct WorkoutSummaryView: View {
     }
 
     private var statsSection: some View {
-        Section("Zusammenfassung") {
+        Section {
             HStack(spacing: 0) {
-                SummaryStat(label: "Dauer", value: formattedDuration)
+                SummaryStat(label: String(localized: "active.stats.duration", bundle: .module),
+                            value: formattedDuration)
                 statDivider
-                SummaryStat(label: "Sätze", value: "\(session.totalSets)")
+                SummaryStat(label: String(localized: "active.stats.sets", bundle: .module),
+                            value: "\(session.totalSets)")
                 statDivider
-                SummaryStat(label: "Volumen kg", value: formattedVolume)
+                SummaryStat(label: String(localized: "active.stats.volumeKg", bundle: .module),
+                            value: formattedVolume)
             }
             .padding(.vertical, 4)
+        } header: {
+            Text("summary.section.stats", bundle: .module)
         }
     }
 
@@ -279,11 +289,13 @@ public struct WorkoutSummaryView: View {
             // Hide the section entirely when there's no note — empty state is uglier
             // than a missing section in a history-detail view.
             if let notes = session.notes, !notes.isEmpty {
-                Section("Notiz") {
+                Section {
                     Text(notes)
                         .font(.body)
                         .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                } header: {
+                    Text("summary.note.label", bundle: .module)
                 }
             }
         } else {
@@ -345,19 +357,33 @@ public struct WorkoutSummaryView: View {
             }
         } header: {
             HStack {
-                Text(exercise.name)
+                Text(exercise.displayName)
                 Spacer()
                 if let best = bestSet(in: logs) {
-                    Text("Best: \(formatSetSummary(best, exercise: exercise))")
+                    Text("\(String(localized: "summary.exercise.bestPrefix", bundle: .module)): \(formatSetSummary(best, exercise: exercise))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .textCase(nil)
                 }
             }
         } footer: {
-            Text("\(logs.count) Sätze • \(formatVolume(logs)) kg Volumen")
+            Text(formatBreakdownFooter(setsCount: logs.count, volume: formatVolume(logs)))
                 .font(.footnote)
         }
+    }
+
+    /// DEL-126: i18n-Footer "X Satz/Sätze • Y kg Volumen". Plural-Branch wird
+    /// via Namespace-Keys (`.one` / `.other`) statt Apple-Format-Pattern
+    /// abgebildet — Xcode 26.4.1's `GenerateStringSymbols`-Step verschluckt
+    /// sich an variations.plural in xcstrings (Build-Saga DEL-121).
+    private func formatBreakdownFooter(setsCount: Int, volume: String) -> String {
+        let key: String.LocalizationValue = setsCount == 1
+            ? "summary.exercise.footer.one"
+            : "summary.exercise.footer.other"
+        let raw = String(localized: key, bundle: .module)
+        return raw
+            .replacingOccurrences(of: "%1$lld", with: "\(setsCount)")
+            .replacingOccurrences(of: "%2$@",   with: volume)
     }
 
     private var finishSection: some View {
@@ -402,7 +428,8 @@ public struct WorkoutSummaryView: View {
         if mins >= 60 {
             return "\(mins / 60)h \(mins % 60)m"
         }
-        return "\(mins) Min"
+        let minUnit = String(localized: "unit.minutes.short", bundle: .module)
+        return "\(mins) \(minUnit)"
     }
 
     private var formattedVolume: String {
@@ -437,11 +464,13 @@ public struct WorkoutSummaryView: View {
     }
 
     private func formatSetSummary(_ log: ExerciseLog, exercise: Exercise) -> String {
+        let secUnit = String(localized: "unit.seconds.short", bundle: .module)
+        let repUnit = String(localized: "unit.reps.short", bundle: .module)
         if exercise.isCardio {
-            return "\(log.reps) \(exercise.isTimeBased ? "Sek" : "Wdh")"
+            return "\(log.reps) \(exercise.isTimeBased ? secUnit : repUnit)"
         }
         if exercise.isTimeBased {
-            return "\(log.reps) Sek"
+            return "\(log.reps) \(secUnit)"
         }
         return "\(formatWeight(log.weight)) kg × \(log.reps)"
     }
@@ -555,13 +584,13 @@ private struct PRBadge: View {
 
     private var kindLabel: String {
         switch record.kind {
-        case .estimated1RM:     "Neuer 1RM (geschätzt)"
-        case .heaviestWeight:   "Neues Maximalgewicht"
-        case .bestSet:          "Neuer Bestsatz (Volumen)"
-        case .maxReps:          "Neuer Reps-Rekord"
-        case .maxHoldSeconds:   "Neue Bestzeit"
-        case .longestDistance:  "Längste Distanz"
-        case .fastestPace:      "Neue Best-Pace"
+        case .estimated1RM:     String(localized: "pr.kind.estimated1RM",    bundle: .module)
+        case .heaviestWeight:   String(localized: "pr.kind.heaviestWeight",  bundle: .module)
+        case .bestSet:          String(localized: "pr.kind.bestSet",         bundle: .module)
+        case .maxReps:          String(localized: "pr.kind.maxReps",         bundle: .module)
+        case .maxHoldSeconds:   String(localized: "pr.kind.maxHoldSeconds",  bundle: .module)
+        case .longestDistance:  String(localized: "pr.kind.longestDistance", bundle: .module)
+        case .fastestPace:      String(localized: "pr.kind.fastestPace",     bundle: .module)
         }
     }
 
@@ -570,36 +599,42 @@ private struct PRBadge: View {
     ///   - maxReps:      "Y Wdh → Y Wdh (vorher V Wdh)"   (weight always 0 here)
     ///   - maxHoldSeconds: "Y Sek → Y Sek (vorher V Sek)"
     private var detailLine: String {
+        // DEL-126: alle Inline-Strings via xcstrings — Sek/Wdh/vorher/kg-Vol
+        // mappen DE/EN/TR korrekt.
+        let prev = String(localized: "pr.previousShort", bundle: .module)
+        let volSfx = String(localized: "pr.volumeSuffix", bundle: .module)
+        let secUnit = String(localized: "unit.seconds.short", bundle: .module)
+        let repUnit = String(localized: "unit.reps.short", bundle: .module)
         switch record.kind {
         case .maxReps:
-            let prev = Int(record.previousValue.rounded())
-            return "\(record.reps) Wdh (vorher \(prev) Wdh)"
+            let prevReps = Int(record.previousValue.rounded())
+            return "\(record.reps) \(repUnit) (\(prev) \(prevReps) \(repUnit))"
 
         case .maxHoldSeconds:
-            let prev = Int(record.previousValue.rounded())
-            return "\(record.reps) Sek (vorher \(prev) Sek)"
+            let prevSec = Int(record.previousValue.rounded())
+            return "\(record.reps) \(secUnit) (\(prev) \(prevSec) \(secUnit))"
 
         case .estimated1RM, .heaviestWeight, .bestSet:
             let weightStr = formatWeight(record.weightKg)
             let prevStr: String = {
                 switch record.kind {
-                case .bestSet:        return "\(formatWeight(record.previousValue)) kg-Vol"
+                case .bestSet:        return "\(formatWeight(record.previousValue)) \(volSfx)"
                 default:              return "\(formatWeight(record.previousValue)) kg"
                 }
             }()
             let nowStr: String = {
                 switch record.kind {
-                case .bestSet:        return "\(formatWeight(record.newValue)) kg-Vol"
+                case .bestSet:        return "\(formatWeight(record.newValue)) \(volSfx)"
                 default:              return "\(formatWeight(record.newValue)) kg"
                 }
             }()
-            return "\(weightStr) kg × \(record.reps) → \(nowStr) (vorher \(prevStr))"
+            return "\(weightStr) kg × \(record.reps) → \(nowStr) (\(prev) \(prevStr))"
 
         // DEL-064 Cardio-PRs
         case .longestDistance:
-            return "\(formatKm(record.newValue)) km (vorher \(formatKm(record.previousValue)) km)"
+            return "\(formatKm(record.newValue)) km (\(prev) \(formatKm(record.previousValue)) km)"
         case .fastestPace:
-            return "\(formatPace(record.newValue)) (vorher \(formatPace(record.previousValue)))"
+            return "\(formatPace(record.newValue)) (\(prev) \(formatPace(record.previousValue)))"
         }
     }
 
@@ -680,8 +715,8 @@ private struct ProgressionBadge: View {
 
     private var headlineText: String {
         switch outcome.action {
-        case .increaseWeight: return "🎯 Ziel erreicht — nächstes Mal mehr"
-        case .deload:         return "Lass uns kurz zurückrudern"
+        case .increaseWeight: return String(localized: "progression.headline.increase", bundle: .module)
+        case .deload:         return String(localized: "progression.headline.deload",   bundle: .module)
         case .hold:           return ""
         }
     }
@@ -693,7 +728,8 @@ private struct ProgressionBadge: View {
             // raus.
             return deltaString
         }
-        return "Neues Ziel: \(formatWeight(newWeight)) kg"
+        return String(format: String(localized: "progression.detail.newTargetFormat", bundle: .module),
+                      formatWeight(newWeight))
     }
 
     private var deltaPill: some View {
@@ -799,15 +835,19 @@ private struct SetSummaryRow: View {
     }
 
     private var repsField: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            TextField(exercise.isTimeBased ? "Sek" : "Wdh", value: $log.reps, format: .number)
+        // DEL-126: i18n-Sek/Wdh-Labels.
+        let secUnit = String(localized: "unit.seconds.short", bundle: .module)
+        let repUnit = String(localized: "unit.reps.short", bundle: .module)
+        let unit = exercise.isTimeBased ? secUnit : repUnit
+        return VStack(alignment: .leading, spacing: 2) {
+            TextField(unit, value: $log.reps, format: .number)
                 .frame(width: 48)
                 .multilineTextAlignment(.leading)
                 .font(.title3.monospacedDigit())
                 #if os(iOS)
                 .keyboardType(.numberPad)
                 #endif
-            Text(exercise.isTimeBased ? "Sek" : "Wdh").font(.caption2).foregroundStyle(.secondary)
+            Text(unit).font(.caption2).foregroundStyle(.secondary)
         }
     }
 
@@ -842,7 +882,8 @@ private struct SetSummaryRow: View {
             return parts.isEmpty ? "—" : parts.joined(separator: " · ")
         }
         if exercise.isTimeBased {
-            return "\(log.reps) Sek (RIR \(formatRIR(log.rir)))"
+            let secUnit = String(localized: "unit.seconds.short", bundle: .module)
+            return "\(log.reps) \(secUnit) (RIR \(formatRIR(log.rir)))"
         }
         return "\(formatWeight(log.weight)) kg × \(log.reps) (RIR \(formatRIR(log.rir)))"
     }

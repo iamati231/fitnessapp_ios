@@ -309,29 +309,65 @@ public struct DayEditorView: View {
                     .font(.footnote)
             }
         } else {
-            Section {
-                Button {
+            // DEL-127: Adaptive Start-CTA. Wenn fuer diesen Day bereits eine
+            // offene Session existiert (App-Crash, vergessenes Speichern,
+            // oder User hat das Workout abgebrochen ohne zu finishen), zeigen
+            // wir "Training fortsetzen" statt "Training starten" — analog zum
+            // DashboardView-PlanDayCard-Pattern. Klick fuehrt direkt in die
+            // bestehende Session, ohne Recovery-Dialog.
+            adaptiveStartSection
+        }
+    }
+
+    /// DEL-127: ausgelagerter Builder fuer den adaptiven Start-CTA. Wird in
+    /// eine eigene @ViewBuilder-Property gezogen, damit das `let openForThisDay`
+    /// nicht in einem if-else-Branch der parent-ViewBuilder steht (Swift-5.9-
+    /// ResultBuilder-Quirk — Bindings innerhalb verschachtelter Branches
+    /// koennen je nach Build-Konfiguration zicken).
+    @ViewBuilder
+    private var adaptiveStartSection: some View {
+        let openForThisDay = openSessionForCurrentDay
+        Section {
+            Button {
+                if let open = openForThisDay {
+                    resumeOpenSession(open)
+                } else {
                     startSession()
-                } label: {
-                    HStack {
-                        Spacer()
-                        Label {
-                            Text("day.editor.start.button", bundle: .module)
-                        } icon: {
-                            Image(systemName: "play.fill")
-                        }
-                            .font(.headline)
-                        Spacer()
-                    }
                 }
-                .disabled(day.activeExercises.isEmpty)
-            } footer: {
-                if day.activeExercises.isEmpty {
-                    Text("day.editor.start.hintEmpty", bundle: .module)
-                        .font(.footnote)
+            } label: {
+                HStack {
+                    Spacer()
+                    Label {
+                        Text(openForThisDay != nil
+                             ? "day.editor.start.resume"
+                             : "day.editor.start.button",
+                             bundle: .module)
+                    } icon: {
+                        Image(systemName: openForThisDay != nil
+                            ? "play.circle.fill"
+                            : "play.fill")
+                    }
+                        .font(.headline)
+                    Spacer()
                 }
             }
+            .disabled(day.activeExercises.isEmpty)
+        } footer: {
+            if day.activeExercises.isEmpty {
+                Text("day.editor.start.hintEmpty", bundle: .module)
+                    .font(.footnote)
+            } else if openForThisDay != nil {
+                Text("day.editor.start.resumeHint", bundle: .module)
+                    .font(.footnote)
+            }
         }
+    }
+
+    /// DEL-127: liefert die offene Session, deren `.day` mit dem aktuell
+    /// editierten Tag uebereinstimmt. Wenn nil → kein Resume-Pfad,
+    /// regulaerer Start-Button wird gerendert.
+    private var openSessionForCurrentDay: WorkoutSession? {
+        openSessions.first { $0.day?.persistentModelID == day.persistentModelID }
     }
 
     @ViewBuilder
@@ -673,8 +709,15 @@ public struct DayEditorView: View {
 
     /// DEL-042 "Fortsetzen": navigiere in die existing offene Session ohne
     /// eine neue zu erstellen.
-    private func resumeOpenSession() {
-        guard let open = openSessions.first else { return }
+    ///
+    /// DEL-127: optionaler `session`-Parameter — wenn vom Dialog-Pfad
+    /// (Recovery) ohne Argument aufgerufen, fallbacked es auf
+    /// `openSessions.first`. Aus dem adaptiven Plan-Detail-CTA wird die
+    /// konkrete `openSessionForCurrentDay` reingereicht, damit auch bei
+    /// mehreren offenen Sessions (selten, aber moeglich) die richtige
+    /// fortgesetzt wird.
+    private func resumeOpenSession(_ session: WorkoutSession? = nil) {
+        guard let open = session ?? openSessions.first else { return }
         navigation.workoutPath.append(ActiveSessionRoute(session: open))
     }
 
