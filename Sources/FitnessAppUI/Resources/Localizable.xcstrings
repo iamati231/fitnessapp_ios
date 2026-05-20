@@ -14889,19 +14889,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lege deine Laufschuhe an, damit die App deine Kilometer automatisch trackt."
+            "value": "Füge Laufschuhe oder Fahrräder hinzu, damit die App deine Kilometer automatisch trackt."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add your running shoes so the app tracks your kilometers automatically."
+            "value": "Add running shoes or bicycles so the app can track your distance automatically."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Koşu ayakkabılarını ekle, uygulama kilometreni otomatik takip etsin."
+            "value": "Koşu ayakkabıları veya bisikletler ekle, böylece uygulama mesafeni otomatik takip etsin."
           }
         }
       }
@@ -14912,19 +14912,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Schuh anlegen"
+            "value": "Ausrüstung anlegen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add Shoe"
+            "value": "Add Gear"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ayakkabı Ekle"
+            "value": "Ekipman Ekle"
           }
         }
       }

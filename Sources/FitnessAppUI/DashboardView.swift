@@ -513,7 +513,9 @@ public struct DashboardView: View {
                              bundle: .module)
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(day.name)
+                        // DEL-129: day.displayName statt .name — propagiert
+                        // den localizationKey-Lookup ins Banner-Title.
+                        Text(day.displayName)
                             .font(.title3.weight(.bold))
                     }
                     Spacer()
@@ -1520,7 +1522,11 @@ private struct DashboardSessionRow: View {
                 .font(.body)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(session.dayName ?? "Training")
+                // DEL-129: lokalisierter Display-Name via Extension. Vorher
+                // wurde der DE-Snapshot `session.dayName` direkt gerendert,
+                // sodass ein türkisches iPhone "Ganzkörper A" statt "Tüm
+                // Vücut A" sah.
+                Text(session.displayDayName)
                     .font(.subheadline.weight(.semibold))
                 HStack(spacing: 6) {
                     Text(session.startTime.formatted(date: .abbreviated, time: .omitted))

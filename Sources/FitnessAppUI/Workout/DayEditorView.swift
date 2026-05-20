@@ -153,7 +153,12 @@ public struct DayEditorView: View {
             }
         } message: {
             if let open = openSessions.first {
-                let dayName = open.dayName ?? String(localized: "session.recovery.dayName.unknown", bundle: .module)
+                // DEL-129: displayDayName liefert hier den lokalisierten
+                // Day-Title, sodass der Recovery-Dialog im EN/TR-Mode den
+                // richtigen Namen statt eines stale DE-Snapshots zeigt.
+                let dayName = (open.day != nil || open.dayName != nil)
+                    ? open.displayDayName
+                    : String(localized: "session.recovery.dayName.unknown", bundle: .module)
                 let stamp = open.startTime.formatted(.relative(presentation: .named))
                 let template = String(localized: "session.recovery.message.withInfo", bundle: .module)
                 Text(template

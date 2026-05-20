@@ -93,7 +93,10 @@ struct HistorySessionRow: View {
             //   * Strength → Datums-Block in blau wie bisher
             iconBadge
             VStack(alignment: .leading, spacing: 2) {
-                Text(session.dayName ?? String(localized: "history.session.fallback", bundle: .module))
+                // DEL-129: displayDayName loest day.displayName + Snapshot-
+                // Fallback in einer Extension auf, sodass History-Eintraege
+                // im EN/TR-Modus korrekt rendern.
+                Text(session.displayDayName)
                     .font(.body.weight(.semibold))
                 statsLine
             }

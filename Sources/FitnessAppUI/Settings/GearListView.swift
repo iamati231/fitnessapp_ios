@@ -25,7 +25,14 @@ public struct GearListView: View {
                     Label {
                         Text("gear.list.empty.title", bundle: .module)
                     } icon: {
-                        Image(systemName: "shoe")
+                        // DEL-130: Icon-Wechsel von `shoe` auf `backpack.fill`.
+                        // Vorher suggerierte der Schuh-Icon den Empty-State
+                        // als Lauf-only, obwohl wir hier auch Fahrräder (DEL-
+                        // 084) tracken — der User uebersah die Bike-Option.
+                        // `backpack.fill` ist ab iOS 17+ verfügbar und steht
+                        // generisch fuer "Trainings-Equipment", egal welche
+                        // Sportart.
+                        Image(systemName: "backpack.fill")
                     }
                 } description: {
                     Text("gear.list.empty.description", bundle: .module)

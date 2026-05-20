@@ -330,12 +330,17 @@ private struct ActiveSessionBanner: View {
                 .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 2) {
-                // DEL-128: dayName-Fallback + "Gestartet %@"-Banner via xcstrings.
-                // %@-Placeholder ist das relative-Datum ("vor 3 Std" / "3 hours
-                // ago" / "3 saat önce") — wird je nach Sprache vor- oder
-                // hinten ans Wort angehaengt (siehe TR-Variante).
-                Text(session.dayName
-                     ?? String(localized: "plans.active.fallbackName", bundle: .module))
+                // DEL-128: "Gestartet %@"-Banner via xcstrings.
+                // DEL-129: displayDayName-Extension loest day.displayName
+                // -> snapshot -> Fallback-String in einer Source. Im TR-Mode
+                // sieht der User jetzt "Tüm Vücut A" statt "Ganzkörper A".
+                // Wenn day == nil UND snapshot == nil (sehr selten), faellt
+                // die Extension auf history.session.fallback zurueck —
+                // hier ueberschreiben wir mit dem aktiveren Banner-Fallback
+                // "Training läuft" / "Workout in progress" via Branch.
+                Text(session.day != nil || session.dayName != nil
+                     ? session.displayDayName
+                     : String(localized: "plans.active.fallbackName", bundle: .module))
                     .font(.body.weight(.semibold))
                 Text(
                     String(format: String(localized: "plans.active.startedAt", bundle: .module),

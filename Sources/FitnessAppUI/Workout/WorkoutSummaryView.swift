@@ -317,8 +317,13 @@ public struct WorkoutSummaryView: View {
                 Text("summary.hero.title", bundle: .module)
                     .font(.title.weight(.bold))
                     .multilineTextAlignment(.center)
-                if let dayName = session.dayName {
-                    Text(dayName)
+                // DEL-129: Day-Subtitle via Extension. Hier nur rendern wenn
+                // session WIRKLICH einen Day-Bezug hat (entweder live-ref
+                // oder Snapshot) — sonst wuerde der generische "Training"-
+                // Fallback aus history.session.fallback erscheinen, was im
+                // Summary-Hero unschoen wirkt.
+                if session.day != nil || session.dayName != nil {
+                    Text(session.displayDayName)
                         .font(.body)
                         .foregroundStyle(.secondary)
                 }

@@ -131,7 +131,8 @@ public struct ActiveWorkoutView: View {
             paginatedBody
         }
         .background(Color(.gray).opacity(0.04).ignoresSafeArea())
-        .navigationTitle(session.dayName ?? "Training")
+        // DEL-129: lokalisierter Display-Name via Extension.
+        .navigationTitle(session.displayDayName)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
