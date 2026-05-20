@@ -32,6 +32,12 @@ public struct WorkoutSummaryView: View {
     /// TextField/Stepper editierbar. Notes immer editierbar in beiden Edit-Modi.
     @State private var isEditingHistory: Bool = false
 
+    /// UX-202: gating fuer die Hero-Spring-In-Animation. Wird via .onAppear
+    /// im Hero auf true gesetzt; im isReadOnly-Mode (History-Replay) sofort
+    /// auf true, sodass das Celebration-Spring nur beim frischen Finish
+    /// triggert.
+    @State private var hasAppeared: Bool = false
+
     public init(session: WorkoutSession, isReadOnly: Bool = false) {
         self.session = session
         self.isReadOnly = isReadOnly
@@ -49,6 +55,14 @@ public struct WorkoutSummaryView: View {
     public var body: some View {
         List {
             heroSection
+            // UX-202: Achievements ueber den Stats — der User soll erst den
+            // Reward sehen, dann die Zahlen analysieren. Read-Only-Replay
+            // ueberspringt die Sektion, weil die Achievements zum Frisch-
+            // Finish-Moment gehoeren (heaviestOfWeek waere im Replay stale
+            // sobald die naechste Session in derselben Woche kommt).
+            if !isReadOnly, !achievements.isEmpty {
+                achievementsSection
+            }
             if isEditingSets {
                 editMetaSection
             }
@@ -237,17 +251,72 @@ public struct WorkoutSummaryView: View {
         }
     }
 
+    // MARK: - UX-202 Achievements (Workout-of-Week, Volume-of-Week, Streak)
+
+    /// UX-202: nicht-PR Erfolge fuer den Reward-Moment. Read-only —
+    /// `WorkoutAchievementDetector` macht alle Vergleiche aus den
+    /// History-Sessions (`allLogs.compactMap(\.session)`) gegen die
+    /// aktuelle Session.
+    private var achievements: [WorkoutAchievementDetector.Achievement] {
+        // History via Session-Set aus allLogs ableiten. Set-Dedup laeuft
+        // ueber persistentModelID; minimaler Overhead, vermeidet einen
+        // zweiten @Query.
+        var seen: Set<PersistentIdentifier> = []
+        var history: [WorkoutSession] = []
+        for log in allLogs {
+            guard let s = log.session,
+                  !seen.contains(s.persistentModelID) else { continue }
+            seen.insert(s.persistentModelID)
+            history.append(s)
+        }
+        return WorkoutAchievementDetector.detect(
+            session: session,
+            history: history
+        )
+    }
+
+    @ViewBuilder
+    private var achievementsSection: some View {
+        Section {
+            ForEach(achievements) { ach in
+                AchievementBadge(achievement: ach)
+            }
+        } header: {
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .foregroundStyle(Color.deltiqOrange)
+                Text("summary.achievements.section", bundle: .module)
+            }
+        }
+    }
+
     // MARK: -
 
     private var heroSection: some View {
+        // UX-202: Reward-Moment-Hero. Vorher: 60pt-Checkmark, statisch. Jetzt:
+        //   * 88pt-Checkmark mit weicher Spring-In-Skalierung beim ersten
+        //     Render (0.4 -> 1.0 in einer dampedDamping=0.55 Feder).
+        //   * Subtle Glow via `.shadow` mit DeltiqOrange-Tint — gibt dem Icon
+        //     den "leuchtenden Trophaeen"-Look ohne in Confetti zu verfallen.
+        //   * Title-Typo eine Stufe groesser (.title.weight(.bold)) damit die
+        //     Hierarchie unten in den Stat-Hero-Numbers fortgesetzt wirkt.
+        // Read-Only-Replay (History-Detail) ueberspringt das Spring, weil
+        // die Anim nur zum frischen Finish gehoert — beim Replay wuerde es
+        // jedes Mal triggern und nervt.
         Section {
-            VStack(spacing: 10) {
+            VStack(spacing: 12) {
                 Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 60))
+                    .font(.system(size: 88))
                     .symbolRenderingMode(.hierarchical)   // DEL-059
                     .foregroundStyle(.green)
+                    .shadow(color: Color.deltiqOrange.opacity(0.35),
+                            radius: hasAppeared ? 18 : 0,
+                            x: 0, y: 0)
+                    .scaleEffect(hasAppeared ? 1.0 : 0.4)
+                    .opacity(hasAppeared ? 1.0 : 0.0)
                 Text("summary.hero.title", bundle: .module)
-                    .font(.title2.weight(.bold))
+                    .font(.title.weight(.bold))
+                    .multilineTextAlignment(.center)
                 if let dayName = session.dayName {
                     Text(dayName)
                         .font(.body)
@@ -255,27 +324,93 @@ public struct WorkoutSummaryView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .padding(.vertical, 16)
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
+            .onAppear {
+                if isReadOnly {
+                    // Replay: skip the celebration spring, render final state.
+                    hasAppeared = true
+                    return
+                }
+                // Tiny 50ms delay damit das List-Layout zuerst settled — sonst
+                // wirkt die Spring-Anim wie ein "schon-da-vor-dem-Render"-Pop.
+                withAnimation(.spring(response: 0.55, dampingFraction: 0.55).delay(0.05)) {
+                    hasAppeared = true
+                }
+            }
         }
     }
 
+    /// UX-202: dreistufige Stat-Hierarchy.
+    ///   * Hero-Stat: dominante Zahl (typisch Volumen-kg fuer Strength,
+    ///     Distanz-km fuer Cardio). 56pt, rounded, monospacedDigit,
+    ///     DeltiqOrange — der visuelle Anker der Karte.
+    ///   * Sekundaer-Stats: Dauer + Saetze als kleinere Geschwister-
+    ///     Stats. Bleiben drin damit die "Wie viel hab ich gemacht"-
+    ///     Frage komplett beantwortet ist, aber konkurrieren nicht mehr
+    ///     mit dem Hero um Aufmerksamkeit.
     private var statsSection: some View {
         Section {
-            HStack(spacing: 0) {
-                SummaryStat(label: String(localized: "active.stats.duration", bundle: .module),
-                            value: formattedDuration)
-                statDivider
-                SummaryStat(label: String(localized: "active.stats.sets", bundle: .module),
-                            value: "\(session.totalSets)")
-                statDivider
-                SummaryStat(label: String(localized: "active.stats.volumeKg", bundle: .module),
-                            value: formattedVolume)
+            VStack(spacing: 20) {
+                heroStatView
+                Divider().opacity(0.6)
+                HStack(spacing: 0) {
+                    SummaryStat(label: String(localized: "active.stats.duration", bundle: .module),
+                                value: formattedDuration)
+                    statDivider
+                    SummaryStat(label: String(localized: "active.stats.sets", bundle: .module),
+                                value: "\(session.totalSets)")
+                }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, 6)
         } header: {
             Text("summary.section.stats", bundle: .module)
+        }
+    }
+
+    /// UX-202: Hero-Stat-Auswahl je nach Session-Kategorie.
+    /// - Strength/Mixed → Volumen-kg (typischer Erfolgsindikator)
+    /// - Cardio mit Distanz → km
+    /// - Cardio ohne Distanz (Indoor-Bike, Time-only) → Minuten
+    @ViewBuilder
+    private var heroStatView: some View {
+        let hero = heroStat
+        VStack(spacing: 4) {
+            Text(hero.value)
+                .font(.system(size: 56, weight: .bold, design: .rounded).monospacedDigit())
+                .foregroundStyle(Color.deltiqOrange)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            Text(hero.unitKey, bundle: .module)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .tracking(1.2)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    /// Repräsentiert den Hero-Wert + sein Unit-Label (lokalisiert).
+    private struct HeroStat {
+        let value: String
+        let unitKey: LocalizedStringKey
+    }
+
+    private var heroStat: HeroStat {
+        switch session.sessionCategory {
+        case .pureCardio:
+            let km = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
+            if km > 0 {
+                let str = km == km.rounded()
+                    ? "\(Int(km))"
+                    : km.truncated(to: 2).formattedTwoDecimals
+                return HeroStat(value: str, unitKey: "summary.hero.unit.km")
+            }
+            return HeroStat(value: "\(session.durationMinutes)",
+                            unitKey: "summary.hero.unit.minutes")
+        case .mixed, .pureStrength:
+            return HeroStat(value: formattedVolume, unitKey: "summary.hero.unit.volumeKg")
         }
     }
 
@@ -657,6 +792,89 @@ private struct PRBadge: View {
     private func formatDelta(_ percent: Double) -> String {
         // Round to nearest %, integer display
         "\(Int((percent * 100).rounded())) %"
+    }
+}
+
+// MARK: - UX-202 Achievement Badge
+
+/// Eine Zeile in der UX-202-Achievements-Section. Visuell baut sie auf
+/// dem gleichen Frame wie PRBadge + ProgressionBadge auf (36×36 Icon-
+/// Square mit gradientem Tint + Title + Subtitle) — Konsistenz im
+/// Reward-Layout, sodass User die drei Zell-Typen sofort als Achievement-
+/// Familie wiedererkennt.
+@available(iOS 17.0, macOS 14.0, *)
+private struct AchievementBadge: View {
+    let achievement: WorkoutAchievementDetector.Achievement
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.title3)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.white)
+                .frame(width: 36, height: 36)
+                .background(tint.gradient)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .innerLightStroke(cornerRadius: 8)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body.weight(.semibold))
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var icon: String {
+        switch achievement.kind {
+        case .weeklyMilestone:           return "flame.fill"
+        case .heaviestOfWeek:            return "scalemass.fill"
+        case .longestOfWeek:             return "clock.badge.checkmark"
+        case .longestDistanceOfWeek:     return "figure.run"
+        }
+    }
+
+    private var tint: Color {
+        switch achievement.kind {
+        case .weeklyMilestone:           return .orange
+        case .heaviestOfWeek:            return Color.deltiqOrange
+        case .longestOfWeek:             return .blue
+        case .longestDistanceOfWeek:     return .green
+        }
+    }
+
+    private var title: String {
+        switch achievement.kind {
+        case .weeklyMilestone(let count):
+            let raw = String(localized: "summary.achievements.weeklyMilestone.titleFormat",
+                             bundle: .module)
+            // Direct %lld substitution — Apple-Plural-Pattern wuerde an
+            // Xcode-26.4.1's GenerateStringSymbols ersticken (DEL-121).
+            return raw.replacingOccurrences(of: "%lld", with: "\(count)")
+        case .heaviestOfWeek:
+            return String(localized: "summary.achievements.heaviestOfWeek.title", bundle: .module)
+        case .longestOfWeek:
+            return String(localized: "summary.achievements.longestOfWeek.title", bundle: .module)
+        case .longestDistanceOfWeek:
+            return String(localized: "summary.achievements.longestDistanceOfWeek.title", bundle: .module)
+        }
+    }
+
+    private var subtitle: String {
+        switch achievement.kind {
+        case .weeklyMilestone:
+            return String(localized: "summary.achievements.weeklyMilestone.subtitle", bundle: .module)
+        case .heaviestOfWeek:
+            return String(localized: "summary.achievements.heaviestOfWeek.subtitle", bundle: .module)
+        case .longestOfWeek:
+            return String(localized: "summary.achievements.longestOfWeek.subtitle", bundle: .module)
+        case .longestDistanceOfWeek:
+            return String(localized: "summary.achievements.longestDistanceOfWeek.subtitle", bundle: .module)
+        }
     }
 }
 
