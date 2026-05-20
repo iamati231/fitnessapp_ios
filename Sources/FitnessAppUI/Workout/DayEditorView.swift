@@ -329,6 +329,10 @@ public struct DayEditorView: View {
         let openForThisDay = openSessionForCurrentDay
         Section {
             Button {
+                // UX-204: Medium-Impact-Haptik — der "Training starten"-
+                // Klick ist ein bewusster Commitment-Schritt, das verdient
+                // ein satteres haptisches Feedback als ein Set-Tap.
+                DeltiqHaptics.impact(.medium)
                 if let open = openForThisDay {
                     resumeOpenSession(open)
                 } else {

@@ -310,6 +310,11 @@ struct SetRow: View {
     private var checkmarkButton: some View {
         Button {
             if !isCompleted {
+                // UX-204: Light-Impact-Haptik beim Satz-Check — der haptische
+                // "Klick" macht das Speichern spuerbar ohne aufdringlich zu
+                // werden. Wird VOR der State-Mutation getriggert, damit der
+                // Impuls und die Spring-Anim synchron starten.
+                DeltiqHaptics.impact(.light)
                 // DEL-059 + DEL-072: Snappy Spring fuer wuchtigen Save-Tap.
                 // Reduce-Motion-Pfad ersetzt den Spring durch ein ruhiges
                 // easeInOut — Apple-HIG-Konform.

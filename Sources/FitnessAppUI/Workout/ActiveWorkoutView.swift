@@ -773,6 +773,12 @@ public struct ActiveWorkoutView: View {
     // MARK: Lifecycle
 
     private func finishWorkout() {
+        // UX-204: Success-Notification-Haptik zum Workout-Ende. Drei kurze
+        // Impulse (das Standard-`.success` Pattern auf iOS) markieren den
+        // Reward-Moment haptisch — synchron zum Spring-In des grossen
+        // Checkmarks auf WorkoutSummaryView, der gleich erscheint.
+        DeltiqHaptics.notify(.success)
+
         let endTime = Date()
         let logs = session.logs
 

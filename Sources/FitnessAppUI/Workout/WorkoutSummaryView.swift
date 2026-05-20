@@ -338,6 +338,22 @@ public struct WorkoutSummaryView: View {
                 withAnimation(.spring(response: 0.55, dampingFraction: 0.55).delay(0.05)) {
                     hasAppeared = true
                 }
+                // UX-204: Extra PR-Celebration-Haptik VERSETZT zum
+                // finishWorkout()-`.success`. Wenn dieser Workout neue PRs
+                // gesetzt hat, schicken wir nach 0.4s einen zweiten
+                // Success-Impuls hinterher — der erste war fuers Beenden,
+                // der zweite markiert den Bonus-Moment "und du hast einen
+                // Rekord gebrochen". Wenn keine PRs aber Achievements
+                // vorhanden, fallback auf einen leiseren `.soft`-Impact.
+                if !personalRecords.isEmpty {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                        DeltiqHaptics.notify(.success)
+                    }
+                } else if !achievements.isEmpty {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                        DeltiqHaptics.impact(.soft)
+                    }
+                }
             }
         }
     }
@@ -644,6 +660,41 @@ public struct WorkoutSummaryView: View {
 
 // MARK: - Subviews
 
+// MARK: - UX-204 Badge-Appear-Effect
+
+/// Shared spring-in animation für PR-/Achievement-/Progression-Badges.
+/// Subtile Skalierung 0.94 → 1.0 + Fade 0 → 1, mit kleinem Delay damit
+/// die Badges leicht NACH dem Hero-Spring kommen — sequenzielles Reveal
+/// statt simultaner Pop. Reduce-Motion respektiert: kein Spring, direkt
+/// im Endzustand rendern.
+@available(iOS 17.0, macOS 14.0, *)
+private struct BadgeAppearEffect: ViewModifier {
+    @State private var didAppear = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(didAppear ? 1.0 : 0.94)
+            .opacity(didAppear ? 1.0 : 0.0)
+            .onAppear {
+                if reduceMotion {
+                    didAppear = true
+                } else {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.75).delay(0.15)) {
+                        didAppear = true
+                    }
+                }
+            }
+    }
+}
+
+@available(iOS 17.0, macOS 14.0, *)
+extension View {
+    fileprivate func badgeAppearEffect() -> some View {
+        modifier(BadgeAppearEffect())
+    }
+}
+
 // MARK: - PR Badge
 
 @available(iOS 17.0, macOS 14.0, *)
@@ -681,6 +732,7 @@ private struct PRBadge: View {
                 .monospacedDigit()
         }
         .padding(.vertical, 4)
+        .badgeAppearEffect()   // UX-204: subtiles Spring-In auf Badge-Erscheinen
     }
 
     /// DEL-064: kind-aware Improvement-Prozent. Lower-is-better-Kinds
@@ -827,6 +879,7 @@ private struct AchievementBadge: View {
             Spacer()
         }
         .padding(.vertical, 4)
+        .badgeAppearEffect()   // UX-204: subtiles Spring-In auf Badge-Erscheinen
     }
 
     private var icon: String {
@@ -913,6 +966,7 @@ private struct ProgressionBadge: View {
             deltaPill
         }
         .padding(.vertical, 4)
+        .badgeAppearEffect()   // UX-204: subtiles Spring-In auf Badge-Erscheinen
     }
 
     private var icon: String {
