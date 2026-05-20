@@ -58,7 +58,15 @@ struct RestTimerBar: View {
                     .foregroundStyle(isFinished ? .green : Color.deltiqOrange)
                     .font(.title3)
 
-                Text(isFinished ? "PAUSE VORBEI" : "PAUSE").deltiqLabel()
+                // DEL-128: PAUSE/PAUSE VORBEI via xcstrings — eigene Keys
+                // (kein .uppercased()-Workaround), weil die EN/TR-Varianten
+                // nicht nur Case-Konvertierung sondern ganze Worte sind
+                // ("REST"/"REST OVER" bzw. "MOLA"/"MOLA BİTTİ").
+                Text(isFinished
+                     ? "rest.timer.label.finished"
+                     : "rest.timer.label.active",
+                     bundle: .module)
+                    .deltiqLabel()
 
                 Spacer()
 

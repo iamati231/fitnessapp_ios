@@ -119,15 +119,32 @@ struct ExerciseCard: View {
         }
     }
 
+    /// DEL-128: vollstaendige i18n der Card-Subtitle-Zeile.
+    /// Vorher inline DE-Strings ("Cardio", "Wdh"/"Sek", "Pause") — im EN/TR-
+    /// Mode wurden die durchgereicht und produzierten halb-deutsche Sub-
+    /// titel. Jetzt:
+    ///   * Cardio-Branch:   "Cardio • 150s Pause" / "Cardio • 150s rest"
+    ///                      / "Kardiyo • 150s mola"
+    ///   * Strength-Branch: "3 × 6-8 Wdh • 150s Pause" / "3 × 6-8 reps •
+    ///                      150s rest" / "3 × 6-8 tkr • 150s mola"
+    /// Format-Strings sind im Catalog als `exercise.target.cardioFormat` /
+    /// `.strengthFormat` mit positionellen %1$/%2$/...-Placeholders
+    /// definiert; Swift macht die Substitution via `String(format:)`.
     private var targetText: String {
+        let pauseLabel = String(localized: "exercise.rest.label", bundle: .module)
         if exercise.isCardio {
-            return "Cardio • \(exercise.restSeconds)s Pause"
+            let cardioLabel = String(localized: "exercise.kind.cardio", bundle: .module)
+            let fmt = String(localized: "exercise.target.cardioFormat", bundle: .module)
+            return String(format: fmt, cardioLabel, exercise.restSeconds, pauseLabel)
         }
-        let unit = exercise.isTimeBased ? "Sek" : "Wdh"
+        let unit = exercise.isTimeBased
+            ? String(localized: "unit.seconds.short", bundle: .module)
+            : String(localized: "unit.reps.short", bundle: .module)
         let range = exercise.repsMin == exercise.repsMax
             ? "\(exercise.repsMin)"
             : "\(exercise.repsMin)-\(exercise.repsMax)"
-        return "\(exercise.sets) × \(range) \(unit) • \(exercise.restSeconds)s Pause"
+        let fmt = String(localized: "exercise.target.strengthFormat", bundle: .module)
+        return String(format: fmt, exercise.sets, range, unit, exercise.restSeconds, pauseLabel)
     }
 
     private var progressPill: some View {

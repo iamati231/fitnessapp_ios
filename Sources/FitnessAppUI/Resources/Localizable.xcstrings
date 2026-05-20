@@ -21874,6 +21874,397 @@
           }
         }
       }
+    },
+    "plan.metadata.days.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Tag"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld day"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld gün"
+          }
+        }
+      }
+    },
+    "plan.metadata.days.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Tage"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld gün"
+          }
+        }
+      }
+    },
+    "plan.metadata.weeks.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Woche"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld week"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld hafta"
+          }
+        }
+      }
+    },
+    "plan.metadata.weeks.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Wochen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld weeks"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld hafta"
+          }
+        }
+      }
+    },
+    "plans.active.startedAt": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestartet %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Started %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ başladı"
+          }
+        }
+      }
+    },
+    "plans.active.fallbackName": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training läuft"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workout in progress"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman devam ediyor"
+          }
+        }
+      }
+    },
+    "rest.timer.label.active": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PAUSE"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "REST"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MOLA"
+          }
+        }
+      }
+    },
+    "rest.timer.label.finished": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PAUSE VORBEI"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "REST OVER"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MOLA BİTTİ"
+          }
+        }
+      }
+    },
+    "unit.kg.upper": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KG"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KG"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KG"
+          }
+        }
+      }
+    },
+    "exercise.kind.cardio": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kardiyo"
+          }
+        }
+      }
+    },
+    "exercise.rest.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mola"
+          }
+        }
+      }
+    },
+    "exercise.target.strengthFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld × %2$@ %3$@ • %4$llds %5$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld × %2$@ %3$@ • %4$llds %5$@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld × %2$@ %3$@ • %4$llds %5$@"
+          }
+        }
+      }
+    },
+    "exercise.target.cardioFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ • %2$llds %3$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ • %2$llds %3$@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ • %2$llds %3$@"
+          }
+        }
+      }
+    },
+    "water.source.lastMeasurement": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "letzte Messung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "last measurement"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "son ölçüm"
+          }
+        }
+      }
+    },
+    "water.source.goalWeight": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil-Zielgewicht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "profile goal weight"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "profil hedef kilo"
+          }
+        }
+      }
+    },
+    "water.source.defaultFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard %lld kg"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "default %lld kg"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "varsayılan %lld kg"
+          }
+        }
+      }
+    },
+    "holdTimer.target.format": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ziel: %lld Sek halten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Target: hold %lld sec"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hedef: %lld sn boyunca tut"
+          }
+        }
+      }
     }
   }
 }

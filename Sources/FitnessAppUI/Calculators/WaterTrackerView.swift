@@ -196,9 +196,17 @@ public struct WaterTrackerView: View {
     }
 
     private var targetSourceLabel: String {
-        if measurements.first?.weightKg ?? 0 > 0 { return "letzte Messung" }
-        if profiles.first?.goalWeightKg ?? 0 > 0 { return "Profil-Zielgewicht" }
-        return "Default 70 kg"
+        // DEL-128: i18n der drei Quellen-Strings — vorher inline DE, was
+        // im EN/TR-Mode als "Kaynak: letzte Messung" mit gemischten Sprachen
+        // ausgegeben wurde (User-Smoke-Test-Befund).
+        if measurements.first?.weightKg ?? 0 > 0 {
+            return String(localized: "water.source.lastMeasurement", bundle: .module)
+        }
+        if profiles.first?.goalWeightKg ?? 0 > 0 {
+            return String(localized: "water.source.goalWeight", bundle: .module)
+        }
+        let template = String(localized: "water.source.defaultFormat", bundle: .module)
+        return template.replacingOccurrences(of: "%lld", with: "70")
     }
 
     private var progress: Double {

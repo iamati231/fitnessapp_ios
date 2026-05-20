@@ -283,9 +283,12 @@ private struct PlanRow: View {
                     }
                 }
                 HStack(spacing: 8) {
-                    Text("\(plan.days.count) Tage")
+                    // DEL-128: Plurals via .one/.other-Namespace + manuelle
+                    // %lld-Substitution (Apple-Plural-Pattern verschluckt sich
+                    // an GenerateStringSymbols seit Xcode 26.4.1 — DEL-121).
+                    Text(pluralized("plan.metadata.days", count: plan.days.count))
                     Text("•")
-                    Text("\(plan.weeks) Wochen")
+                    Text(pluralized("plan.metadata.weeks", count: plan.weeks))
                     Text("•")
                     Text(environmentLabel(plan.targetEnvironment))
                 }
@@ -299,6 +302,17 @@ private struct PlanRow: View {
     // DEL-118: route durch die zentrale .localizedName-Extension.
     private func environmentLabel(_ env: EnvironmentType) -> String {
         String(localized: env.localizedName)
+    }
+
+    /// DEL-128: Plural-Resolver fuer "plan.metadata.days" und ".weeks".
+    /// Switcht auf `.one`/`.other`-Sub-Keys und macht die `%lld`-
+    /// Substitution manuell (siehe DEL-121-Saga zu Apple-Plural-Patterns
+    /// + Xcode-26.4.1-`GenerateStringSymbols`-Konflikten).
+    private func pluralized(_ baseKey: String, count: Int) -> String {
+        let suffix = count == 1 ? "one" : "other"
+        let key = String.LocalizationValue(stringLiteral: "\(baseKey).\(suffix)")
+        let raw = String(localized: key, bundle: .module)
+        return raw.replacingOccurrences(of: "%lld", with: "\(count)")
     }
 }
 
@@ -316,9 +330,17 @@ private struct ActiveSessionBanner: View {
                 .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(session.dayName ?? "Training läuft")
+                // DEL-128: dayName-Fallback + "Gestartet %@"-Banner via xcstrings.
+                // %@-Placeholder ist das relative-Datum ("vor 3 Std" / "3 hours
+                // ago" / "3 saat önce") — wird je nach Sprache vor- oder
+                // hinten ans Wort angehaengt (siehe TR-Variante).
+                Text(session.dayName
+                     ?? String(localized: "plans.active.fallbackName", bundle: .module))
                     .font(.body.weight(.semibold))
-                Text("Gestartet \(session.startTime.formatted(.relative(presentation: .named)))")
+                Text(
+                    String(format: String(localized: "plans.active.startedAt", bundle: .module),
+                           session.startTime.formatted(.relative(presentation: .named)))
+                )
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

@@ -146,7 +146,10 @@ struct SetRow: View {
 
                 if !exercise.isCardio {
                     weightInput
-                    Text("KG").deltiqLabel()   // DEL-059: uppercase + tracking
+                    // DEL-128: KG-Label via xcstrings (selbst wenn "KG" in
+                    // DE/EN/TR identisch ist — der Catalog ist die kanonische
+                    // Quelle, falls jemand TR-mod auf "kg" lowercase wuenscht).
+                    Text("unit.kg.upper", bundle: .module).deltiqLabel()
                     // DEL-085: Plate-Calculator-Quick-Access. Nur sichtbar,
                     // wenn ein konkretes Gewicht eingegeben ist UND die Uebung
                     // ueberhaupt mit einer Hantelstange ausgefuehrt wird —
@@ -158,7 +161,11 @@ struct SetRow: View {
                 }
 
                 repsInput
-                Text("WDH").deltiqLabel()      // DEL-059: uppercase + tracking
+                // DEL-128: WDH/REPS/TKR — reuse `unit.reps.short` (lowercase
+                // "Wdh"/"reps"/"tkr") und uppercase im Caller. ASCII-Strings,
+                // kein Unicode-Drama mit `.uppercased()`.
+                Text(String(localized: "unit.reps.short", bundle: .module).uppercased())
+                    .deltiqLabel()
 
                 Spacer(minLength: 6)
 
@@ -421,9 +428,13 @@ struct SetRow: View {
     }
 
     private func completedSummary(_ log: ExerciseLog) -> String {
+        // DEL-128: Sek/Wdh-Unit-Label via xcstrings.
         let rel = log.date.formatted(.relative(presentation: .named))
         if exercise.isCardio {
-            return "\(log.reps) \(exercise.isTimeBased ? "Sek" : "Wdh") · \(rel)"
+            let unit = exercise.isTimeBased
+                ? String(localized: "unit.seconds.short", bundle: .module)
+                : String(localized: "unit.reps.short", bundle: .module)
+            return "\(log.reps) \(unit) · \(rel)"
         }
         return "\(formatWeight(log.weight)) kg × \(log.reps) (RIR \(formatRIR(log.rir))) · \(rel)"
     }
@@ -449,13 +460,17 @@ struct SetRow: View {
                     .font(.subheadline.weight(.semibold))
                 Spacer()
                 if isCompleted, let log = existingLog {
-                    Text("\(log.reps) Sek · \(log.date.formatted(.relative(presentation: .named)))")
+                    // DEL-128: Sek-Unit aus xcstrings.
+                    let secUnit = String(localized: "unit.seconds.short", bundle: .module)
+                    Text("\(log.reps) \(secUnit) · \(log.date.formatted(.relative(presentation: .named)))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
             if !isCompleted {
-                Text("Ziel: \(targetHoldSeconds) Sek halten")
+                // DEL-128: "Ziel: X Sek halten" via xcstrings-Format.
+                Text(String(format: String(localized: "holdTimer.target.format", bundle: .module),
+                            targetHoldSeconds))
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
                 // DEL-097: Wenn eine ANDERE Time-Exercise schon laeuft,
@@ -584,7 +599,9 @@ struct SetRow: View {
                     .font(.system(size: 48, weight: .bold, design: .rounded).monospacedDigit())
                     .foregroundStyle(reached ? Color.deltiqOrange : .primary)
                     .contentTransition(.numericText())
-                Text("/ \(target) SEK").deltiqLabel()   // DEL-059
+                // DEL-128: SEK/SEC/SN reuse `unit.seconds.short` + uppercase.
+                Text("/ \(target) \(String(localized: "unit.seconds.short", bundle: .module).uppercased())")
+                    .deltiqLabel()
                 Spacer()
                 if reached {
                     Image(systemName: "checkmark.seal.fill")
@@ -772,8 +789,10 @@ struct SetRow: View {
     // MARK: - State init / formatting / logging
 
     private func previousLogHint(_ log: ExerciseLog) -> String {
+        // DEL-128: Sek-Unit aus xcstrings.
         if exercise.isTimeBased {
-            return "\(log.reps) Sek"
+            let secUnit = String(localized: "unit.seconds.short", bundle: .module)
+            return "\(log.reps) \(secUnit)"
         }
         return "\(formatWeight(log.weight)) kg × \(log.reps)"
     }
