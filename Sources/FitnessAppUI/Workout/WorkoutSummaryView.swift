@@ -703,14 +703,12 @@ private struct PRBadge: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // UX-205: 36×36 Icon-Square via geteiltem `.deltiqIconBadge`-
+            // Modifier. PRBadge + AchievementBadge + ProgressionBadge
+            // teilen jetzt eine Single Source of Truth fuer das Icon-
+            // Layout — vorher war derselbe 6-Zeiler 3x dupliziert.
             Image(systemName: kindIcon)
-                .font(.title3)
-                .symbolRenderingMode(.hierarchical)   // DEL-059
-                .foregroundStyle(.white)
-                .frame(width: 36, height: 36)
-                .background(kindColor.gradient)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .innerLightStroke(cornerRadius: 8)    // DEL-059
+                .deltiqIconBadge(tint: kindColor)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(record.exerciseName)
@@ -728,7 +726,7 @@ private struct PRBadge: View {
             // Improvement, sonst sieht der Trophy-Pill aus wie ein Rueckschritt.
             Text(improvementPill)
                 .font(.subheadline.weight(.bold))
-                .foregroundStyle(.green)
+                .foregroundStyle(Color.Deltiq.success)
                 .monospacedDigit()
         }
         .padding(.vertical, 4)
@@ -860,14 +858,9 @@ private struct AchievementBadge: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // UX-205: 36×36 Icon via geteiltem Modifier.
             Image(systemName: icon)
-                .font(.title3)
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.white)
-                .frame(width: 36, height: 36)
-                .background(tint.gradient)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .innerLightStroke(cornerRadius: 8)
+                .deltiqIconBadge(tint: tint)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -891,12 +884,14 @@ private struct AchievementBadge: View {
         }
     }
 
+    /// UX-205: Tint-Mapping nutzt Semantic-Color-Tokens — wenn die Palette
+    /// jemals shifts, lesen Achievements das automatisch nach.
     private var tint: Color {
         switch achievement.kind {
         case .weeklyMilestone:           return .orange
-        case .heaviestOfWeek:            return Color.deltiqOrange
-        case .longestOfWeek:             return .blue
-        case .longestDistanceOfWeek:     return .green
+        case .heaviestOfWeek:            return Color.Deltiq.primary
+        case .longestOfWeek:             return Color.Deltiq.info
+        case .longestDistanceOfWeek:     return Color.Deltiq.success
         }
     }
 
@@ -943,14 +938,9 @@ private struct ProgressionBadge: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // UX-205: 36×36 Icon via geteiltem Modifier.
             Image(systemName: icon)
-                .font(.title3)
-                .symbolRenderingMode(.hierarchical)   // DEL-059
-                .foregroundStyle(.white)
-                .frame(width: 36, height: 36)
-                .background(tint.gradient)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .innerLightStroke(cornerRadius: 8)    // DEL-059
+                .deltiqIconBadge(tint: tint)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(outcome.exerciseName)

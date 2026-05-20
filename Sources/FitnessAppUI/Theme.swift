@@ -79,6 +79,76 @@ public extension Color {
         /// damit Caller nicht ueberlegen muessen, ob sie System-Defaults
         /// oder Brand-Tokens benutzen sollen.
         public static let textMuted: Color = .secondary
+
+        // MARK: - UX-205 Semantic Color Roles
+        //
+        // Diese Aliases existieren damit Aufrufer NICHT raw `.green` /
+        // `.red` / `.yellow` streuen — neue Code-Sites lesen ueber
+        // `Color.Deltiq.success` etc. und drueck-knopf-konsistent
+        // wechselt der Sweep das Token sobald sich die Palette weiter
+        // entwickelt. Bestandscode wird nicht refactored (high risk,
+        // low yield) — nur neue Surfaces nutzen die Tokens.
+
+        /// "Geschafft / OK / Fertig". Default = iOS-Green, kann zu
+        /// markenspezifischem Grun gemorpht werden ohne dass jeder
+        /// Aufrufer geupdatet werden muss.
+        public static let success: Color = .green
+
+        /// "Achtung / Stop kurz nach". Default = iOS-Orange (NICHT
+        /// Brand-Orange — das ist primary, semantically getrennt).
+        public static let warning: Color = .yellow
+
+        /// "Fehler / Destruktive Aktion". Default = iOS-Red.
+        public static let error: Color = .red
+
+        /// "Information / Neutral-Hinweis". Default = iOS-Blue.
+        public static let info: Color = .blue
+    }
+}
+
+// MARK: - UX-205 Design Tokens (Spacing + Radius)
+
+/// Spacing-Skala fuer Padding/Margin in 4pt-Schritten. Apple-HIG-konform,
+/// Halbschritte (z.B. 14 oder 18) bewusst NICHT enthalten — sie ruinieren
+/// die Rhythmus-Konsistenz, weil Augen unbewusst auf 4-/8-/16-Schritt-
+/// Vielfache eichen.
+///
+/// **Verwendung:** `.padding(Deltiq.Spacing.md)` statt `.padding(12)`.
+/// Bestandscode bleibt unangetastet; neue Code-Sites lesen ueber das
+/// Token.
+public enum Deltiq {
+
+    public enum Spacing {
+        /// 4pt — minimale Trennung (zwischen Icon + Inline-Label).
+        public static let xs: CGFloat = 4
+        /// 8pt — kompakte Trennung (zwischen Stat-Label + Wert).
+        public static let sm: CGFloat = 8
+        /// 12pt — Standard-Spacing innerhalb einer Card.
+        public static let md: CGFloat = 12
+        /// 16pt — Card-Padding + Section-Spacing.
+        public static let lg: CGFloat = 16
+        /// 20pt — grosse Section-Trennung.
+        public static let xl: CGFloat = 20
+        /// 24pt — Hero-Section vs. Stats-Section.
+        public static let xxl: CGFloat = 24
+    }
+
+    /// Corner-Radius-Skala. Definiert die Formensprache pro UI-Element.
+    /// Bestandscode mit explizitem `cornerRadius: 8` etc. bleibt erstmal —
+    /// neue Code-Sites lesen ueber `Deltiq.Radius.input` etc.
+    public enum Radius {
+        /// 6pt — Pills / kleine Inline-Badges.
+        public static let pill: CGFloat = 6
+        /// 8pt — Inputs (TextField), Icon-Squares (36x36) in Badges.
+        public static let input: CGFloat = 8
+        /// 10pt — kleine Cards / Tabs / Quick-Access-Buttons.
+        public static let small: CGFloat = 10
+        /// 12pt — mittlere Cards / Stat-Container.
+        public static let medium: CGFloat = 12
+        /// 16pt — Primary-Buttons + Active-Workout-Cards.
+        public static let button: CGFloat = 16
+        /// 20pt — Bento-Cards auf dem Dashboard (deltiqCardStyle-Default).
+        public static let card: CGFloat = 20
     }
 }
 
@@ -166,6 +236,44 @@ public extension View {
     /// Speichern). Wendet automatisch DeltiqOrange-Gradient + Glow an.
     func deltiqButtonStyle() -> some View {
         modifier(DeltiqPrimaryButtonModifier())
+    }
+}
+
+// MARK: - 5. UX-205 Icon-Badge Modifier
+
+/// UX-205: 36×36 Icon-Square mit gradientem Tint, hierarchical-rendering
+/// und innerer Lichtkante. Wird von allen Reward-Badges (PRBadge,
+/// AchievementBadge, ProgressionBadge) gleich aufgebaut — der Modifier
+/// zieht die drei identischen 6-Zeilen-Snippets in eine Single Source of
+/// Truth, sodass z.B. eine spaetere Frame-Size-Aenderung (36 → 40 für
+/// barrierefreiere Touch-Targets) an genau einer Stelle passiert.
+public struct DeltiqIconBadgeModifier: ViewModifier {
+    public var tint: Color
+    public var size: CGFloat = 36
+
+    public init(tint: Color, size: CGFloat = 36) {
+        self.tint = tint
+        self.size = size
+    }
+
+    public func body(content: Content) -> some View {
+        content
+            .font(.title3)
+            .symbolRenderingMode(.hierarchical)
+            .foregroundStyle(.white)
+            .frame(width: size, height: size)
+            .background(tint.gradient)
+            .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input))
+            .innerLightStroke(cornerRadius: Deltiq.Radius.input)
+    }
+}
+
+public extension View {
+    /// Wandelt ein `Image(systemName:)` in einen 36×36-Reward-Badge mit
+    /// gradientem Tint, hierarchical-rendering und feiner Innenkante um.
+    /// `tint` ist die Brand-/Status-Farbe (orange, green, yellow, ...).
+    func deltiqIconBadge(tint: Color, size: CGFloat = 36) -> some View {
+        modifier(DeltiqIconBadgeModifier(tint: tint, size: size))
     }
 }
 #endif
