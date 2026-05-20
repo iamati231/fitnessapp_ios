@@ -1,0 +1,52 @@
+# Verhindert dass `core.autocrlf=true` (Windows-Default) Binärdateien
+# zerstört, indem es vermeintliche LFs in CRLFs umwandelt. Ohne diese
+# Regel wurde z.B. das App-Icon-PNG beim ersten Commit korrumpiert
+# (nutzbar nicht-darstellbar in der App).
+#
+# Pattern: bekannte Binärformate explizit als `binary` markieren.
+
+# Bilder
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.heic binary
+*.pdf  binary
+
+# Audio
+*.mp3  binary
+*.wav  binary
+*.m4a  binary
+*.aac  binary
+*.caf  binary
+
+# Schriftarten
+*.ttf  binary
+*.otf  binary
+*.woff binary
+*.woff2 binary
+
+# Archive
+*.zip   binary
+*.tar   binary
+*.tar.gz binary
+*.gz    binary
+
+# Xcode-Asset-Catalog-Outputs / iOS-spezifisch
+*.car   binary
+*.xcarchive binary
+
+# Text-Dateien (alle anderen): LF-EOL erzwingen damit auf Windows-Maschinen
+# nicht jeder Edit als "alle Zeilen geaendert"-Diff erscheint.
+* text=auto eol=lf
+
+# Swift-Source explizit als Text mit LF-EOL.
+*.swift text eol=lf
+*.json  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.md    text eol=lf
+*.py    text eol=lf
+*.sh    text eol=lf
