@@ -153,26 +153,37 @@ public struct DashboardView: View {
     /// Compact entry-point to `PRHistoryView`. Counts personal-record entries
     /// across the store and shows the latest exercise that produced one — gives
     /// the user something to tap on even when the rest of the dashboard is dense.
+    @ViewBuilder
     private var trophyRoomCard: some View {
-        NavigationLink {
-            PRHistoryView()
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "trophy.fill")
-                    .font(.title2)
-                    .foregroundStyle(.white)
-                    .frame(width: 38, height: 38)
-                    .background(Color.yellow.gradient)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("dashboard.trophy.title", bundle: .module)
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(.primary)
-                    if prCount == 0 {
-                        Text("dashboard.trophy.empty", bundle: .module)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    } else {
+        // UX-201: Empty + Data-State haben unterschiedliche Affordances —
+        // empty rendert eine 4-teilige Premium-Karte mit CTA "Training
+        // starten" (statt einem leeren NavigationLink in eine leere
+        // PRHistoryView), data rendert die kompakte Teaser-Row mit
+        // Count + letztem PR.
+        if prCount == 0 {
+            DashboardEmptyState(
+                icon: "trophy.fill",
+                title: "dashboard.trophy.emptyTitle",
+                description: "dashboard.trophy.emptyDescription",
+                ctaTitle: "dashboard.empty.cta.startWorkout",
+                ctaAction: { navigation.selectedTab = .plan }
+            )
+            .deltiqCardStyle()
+        } else {
+            NavigationLink {
+                PRHistoryView()
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "trophy.fill")
+                        .font(.title2)
+                        .foregroundStyle(.white)
+                        .frame(width: 38, height: 38)
+                        .background(Color.yellow.gradient)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("dashboard.trophy.title", bundle: .module)
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.primary)
                         // DEL-121: Apple's format-as-key Plural-Convention
                         // (`"%lld Rekorde"`) bricht Xcode 26.4.1's neuen
                         // GenerateStringSymbols-Schritt. Statt darauf zu
@@ -188,16 +199,16 @@ public struct DashboardView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.tertiary)
                 }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.tertiary)
+                // DEL-102: Bento-Card statt manuelle Background+Clip-Kette.
+                .deltiqCardStyle()
             }
-            // DEL-102: Bento-Card statt manuelle Background+Clip-Kette.
-            .deltiqCardStyle()
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
     }
 
     private var prCount: Int { personalRecords.count }
@@ -217,46 +228,64 @@ public struct DashboardView: View {
     /// Room-Card: kompakt, klickbar, mit Count und letztem-Workout-Teaser.
     /// Vorher war die History nur ueber "Alle anzeigen" am Ende der Recent-
     /// Workouts-Sektion erreichbar — User-Feedback war "find ich nicht".
+    @ViewBuilder
     private var historyCard: some View {
-        NavigationLink {
-            WorkoutHistoryView()
-        } label: {
-            HStack(spacing: 12) {
-                // DEL-105: Brand-Akzent statt iOS-Standard-Blau.
-                Image(systemName: "calendar.badge.clock")
-                    .font(.title2)
-                    .foregroundStyle(.white)
-                    .frame(width: 38, height: 38)
-                    .background(Color.deltiqOrange.gradient)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("dashboard.history.title", bundle: .module)
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(.primary)
-                    Text(historyTeaserText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.tertiary)
-            }
-            // DEL-103: Bento-Card.
+        // UX-201: gleiche Doppel-Branch-Logik wie Trophy Room. Empty wird
+        // zur 4-teiligen Premium-Karte, die direkt ins Plan-Tab fuehrt
+        // (statt in eine leere History-Liste zu navigieren).
+        let hasRealHistory = completedSessions.contains(where: { !$0.isRestDay })
+        if !hasRealHistory {
+            DashboardEmptyState(
+                icon: "calendar.badge.clock",
+                title: "dashboard.history.emptyTitle",
+                description: "dashboard.history.emptyDescription",
+                ctaTitle: "dashboard.empty.cta.startWorkout",
+                ctaAction: { navigation.selectedTab = .plan }
+            )
             .deltiqCardStyle()
+        } else {
+            NavigationLink {
+                WorkoutHistoryView()
+            } label: {
+                HStack(spacing: 12) {
+                    // DEL-105: Brand-Akzent statt iOS-Standard-Blau.
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.title2)
+                        .foregroundStyle(.white)
+                        .frame(width: 38, height: 38)
+                        .background(Color.deltiqOrange.gradient)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("dashboard.history.title", bundle: .module)
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.primary)
+                        Text(historyTeaserText)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.tertiary)
+                }
+                // DEL-103: Bento-Card.
+                .deltiqCardStyle()
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
     }
 
-    // DEL-120: drei Varianten via xcstrings:
-    //   * empty            -> "dashboard.history.empty"
+    // DEL-120: zwei Varianten via xcstrings:
     //   * count + last     -> "dashboard.history.countWithLast" (2-Arg-Format)
     //   * count nur        -> "dashboard.history.countOnly"
+    //
+    // UX-201: der frühere Empty-Branch ("dashboard.history.empty"-Teaser)
+    // ist entfernt — historyCard switcht jetzt auf hasRealHistory-Niveau:
+    // bei empty rendert er die Premium-Empty-Card mit CTA, sonst kommt
+    // historyTeaserText ueberhaupt erst zum Zug. Defensive `real.isEmpty`-
+    // Branch ist damit unreachable und wurde gestrichen.
     private var historyTeaserText: String {
         let real = completedSessions.filter { !$0.isRestDay }
-        if real.isEmpty {
-            return String(localized: "dashboard.history.empty", bundle: .module)
-        }
         if let latest = real.first {
             let formatter = RelativeDateTimeFormatter()
             formatter.unitsStyle = .short
@@ -333,7 +362,15 @@ public struct DashboardView: View {
             }
 
             if measurements.isEmpty {
-                EmptyTrendCard()
+                // UX-201: 4-teiliger Premium-Empty-State mit CTA in die
+                // Measurement-Tab. Vorher: 2-teilige Label-Row ohne Aktion.
+                DashboardEmptyState(
+                    icon: "chart.line.uptrend.xyaxis",
+                    title: "dashboard.trend.emptyTitle",
+                    description: "dashboard.trend.emptyDescription",
+                    ctaTitle: "dashboard.empty.cta.addMeasurement",
+                    ctaAction: { navigation.selectedTab = .measurement }
+                )
             } else if measurements.count < 3 {
                 InsufficientDataCard(currentCount: measurements.count)
             } else {
@@ -959,21 +996,15 @@ public struct DashboardView: View {
 
             let series = compoundSeries
             if series.isEmpty {
-                // DEL-103: Empty-State erbt die Bento-Surface vom outer
-                // .deltiqCardStyle() — kein eigenes Background mehr noetig.
-                HStack(spacing: 12) {
-                    Image(systemName: "chart.xyaxis.line")
-                        .font(.title2)
-                        .foregroundStyle(.secondary)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("dashboard.compoundChart.empty.title", bundle: .module)
-                            .font(.subheadline)
-                        Text("dashboard.compoundChart.empty.hint", bundle: .module)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer(minLength: 0)
-                }
+                // UX-201: Premium-Empty-State (icon + headline + description
+                // + CTA). Vorher: kompakte HStack ohne Aktion.
+                DashboardEmptyState(
+                    icon: "chart.xyaxis.line",
+                    title: "dashboard.compoundChart.empty.title",
+                    description: "dashboard.compoundChart.empty.description",
+                    ctaTitle: "dashboard.empty.cta.startWorkout",
+                    ctaAction: { navigation.selectedTab = .plan }
+                )
             } else {
                 Chart {
                     ForEach(series) { line in
@@ -1335,20 +1366,15 @@ public struct DashboardView: View {
             // Rest-day-marker sessions don't count as "Trainingseinheiten".
             let realRecentSessions = completedSessions.filter { !$0.isRestDay }
             if realRecentSessions.isEmpty {
-                // DEL-103: Empty-State sitzt direkt auf der Bento-Surface.
-                HStack(spacing: 12) {
-                    Image(systemName: "dumbbell")
-                        .font(.title2)
-                        .foregroundStyle(.secondary)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("dashboard.recent.empty.title", bundle: .module)
-                            .font(.subheadline)
-                        Text("dashboard.recent.empty.hint", bundle: .module)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                }
+                // UX-201: Premium-Empty-State mit CTA (vorher: kompaktes
+                // Icon+2-Liner ohne Aktion).
+                DashboardEmptyState(
+                    icon: "dumbbell.fill",
+                    title: "dashboard.recent.empty.title",
+                    description: "dashboard.recent.empty.description",
+                    ctaTitle: "dashboard.empty.cta.startWorkout",
+                    ctaAction: { navigation.selectedTab = .plan }
+                )
             } else {
                 let recent = Array(realRecentSessions.prefix(5))
                 // DEL-103: Rows sitzen direkt auf der Bento-Surface — keine
@@ -1594,20 +1620,11 @@ private struct EmptyMetricsCard: View {
     }
 }
 
-@available(iOS 17.0, macOS 14.0, *)
-private struct EmptyTrendCard: View {
-    var body: some View {
-        Label {
-            Text("dashboard.trend.empty", bundle: .module)
-        } icon: {
-            Image(systemName: "chart.line.uptrend.xyaxis")
-        }
-        .font(.callout)
-        .foregroundStyle(.secondary)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 16)
-    }
-}
+// UX-201: `EmptyTrendCard` ist durch `DashboardEmptyState` (Trend-Variante
+// mit "Messung hinzufügen"-CTA) abgeloest worden. Der alte 2-teilige
+// Label-Renderer ist entfernt — der xcstrings-Key `dashboard.trend.empty`
+// bleibt im Catalog (für eventuelle Re-Use, kein Symbol-Conflict mit
+// `dashboard.trend.emptyTitle`/`emptyDescription`).
 
 @available(iOS 17.0, macOS 14.0, *)
 private struct InsufficientDataCard: View {
