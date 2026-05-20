@@ -31,6 +31,12 @@ struct SetRow: View {
     /// `stopHoldAndLog()` wieder ab. Andere Rows (same exercise different
     /// set, ODER cross-exercise) lesen den Slot fuer ihren Disabled-Hint.
     @Binding var activeTimedSet: ActiveTimedSetID?
+    /// UX-203: Markiert die "naechste anstehende" Set-Row in der Card.
+    /// Genau ein Set in jeder ExerciseCard ist aktiv (der erste mit
+    /// `existingLog == nil`). Wenn alle Sets completed sind oder dieser
+    /// Set später kommt, bleibt das false — die Row rendert dann im
+    /// neutralen "upcoming"-Style.
+    let isActiveSet: Bool
     /// Called when the user taps the checkmark on an editable row.
     /// DEL-058: `LoggedSetValues` bundle ersetzt das frueher dreistellige
     /// (weight, reps, rir)-Tuple, damit Cardio-Felder (distance, duration)
@@ -119,14 +125,23 @@ struct SetRow: View {
     /// Kompaktes Layout: Satz-Nummer, KG, Wdh, Spacer, Checkmark — alle in
     /// einer HStack. RIR-Slider darunter in einem ZStack mit fester Hoehe,
     /// damit das Toggle isCompleted↔editable keinen Layout-Shift triggert.
+    ///
+    /// UX-203 Layering der Visual-States:
+    ///   * completed → ganze Row Opacity 0.55, kein Background
+    ///   * active    → leichter DeltiqOrange-Tint (8% Fill) + 3pt Brand-
+    ///                 Akzent am linken Rand. Der User sieht sofort,
+    ///                 welche Row als naechstes dran ist.
+    ///   * upcoming  → neutral, kein Background, kein Akzent
     private var compactSetRow: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 10) {
-                // DEL-059: Rounded-Design fuer Set-Nummer — wirkt mit
-                // monospaced Digits + bold-rounded wuchtiger.
+        VStack(spacing: 10) {
+            HStack(spacing: 12) {
+                // DEL-059 + UX-203: Rounded-Design + monospacedDigit fuer
+                // konsistente Zahlen-Ausrichtung (sonst springt der Slot
+                // zwischen 1-stellig und 2-stellig). Active-Set bekommt
+                // Brand-Color, completed bleibt secondary, upcoming primary.
                 Text("\(setIndex + 1)")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
-                    .foregroundStyle(isCompleted ? .secondary : .primary)
+                    .font(.system(size: 16, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(setNumberColor)
                     .frame(width: 24, alignment: .leading)
 
                 if !exercise.isCardio {
@@ -151,12 +166,33 @@ struct SetRow: View {
             }
 
             // Status-Container mit FESTER HOEHE — verhindert Layout-Shift beim
-            // Toggle isCompleted↔editable.
+            // Toggle isCompleted↔editable. UX-203: 28 → 38 fuer den RIR-
+            // Slider, damit Slider + Wert + previous-Hint nicht mehr in
+            // einer 28pt-Klemme stecken.
             statusZone
-                .frame(height: 28)
-                .padding(.leading, 34)
+                .frame(height: 38)
+                .padding(.leading, 36)
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(rowStateBackground)
+        )
+        .overlay(alignment: .leading) {
+            // UX-203: 3pt-Brand-Akzent links bei der aktiven Row. Wirkt wie
+            // ein "du-bist-hier"-Marker und ist im Dark-Mode auch ohne
+            // Background-Tint sichtbar.
+            if isActiveSet {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.deltiqOrange)
+                    .frame(width: 3)
+                    .padding(.vertical, 6)
+            }
+        }
+        .opacity(isCompleted ? 0.55 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isCompleted)
+        .animation(.easeInOut(duration: 0.2), value: isActiveSet)
         .contentShape(Rectangle())
         // DEL-045 Schritt 2: Tap auf completed-Row revert zurueck zu editable.
         .onTapGesture {
@@ -166,6 +202,26 @@ struct SetRow: View {
                 }
             }
         }
+    }
+
+    /// UX-203: 3-State-Background.
+    /// - completed → clear (Opacity macht das Dimming)
+    /// - active    → 8% DeltiqOrange-Fill
+    /// - upcoming  → clear
+    private var rowStateBackground: Color {
+        if isCompleted { return .clear }
+        if isActiveSet { return Color.deltiqOrange.opacity(0.08) }
+        return .clear
+    }
+
+    /// UX-203: Set-Nummer-Farbe je nach State.
+    /// - completed → secondary (dim)
+    /// - active    → DeltiqOrange (Brand-Akzent matched left border)
+    /// - upcoming  → primary (neutral, voll sichtbar)
+    private var setNumberColor: Color {
+        if isCompleted { return .secondary }
+        if isActiveSet { return Color.deltiqOrange }
+        return .primary
     }
 
     /// DEL-085: Quick-Access-Button fuer den Plate-Calculator. Wird neben
@@ -318,7 +374,12 @@ struct SetRow: View {
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else if !exercise.isCardio {
-            HStack(spacing: 10) {
+            // UX-203: HStack-Spacing 10 → 14, plus dedizierte Slider-min-
+            // Höhe via .frame(height: 24), damit der Touch-Bereich nicht
+            // mehr aus dem 28pt-Container gedrückt wird. Previous-Hint
+            // bekommt explizite .caption2 + .tertiary → klar als ruhige
+            // Sekundär-Info abgesetzt vom RIR-Wert.
+            HStack(spacing: 14) {
                 Text("RIR").deltiqLabel()   // DEL-059
                 Slider(
                     value: Binding(
@@ -329,14 +390,16 @@ struct SetRow: View {
                     step: 0.5
                 )
                 .tint(Color.deltiqOrange)
+                .frame(minHeight: 24)
                 Text(formatRIR(rir))
                     .font(.caption.weight(.semibold).monospacedDigit())
                     .foregroundStyle(.primary)
-                    .frame(width: 28, alignment: .trailing)
+                    .frame(width: 32, alignment: .trailing)
                 if let prev = previousLog {
                     Text("· letztes: \(previousLogHint(prev))")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
+                        .lineLimit(1)
                 }
             }
         } else {
@@ -490,8 +553,11 @@ struct SetRow: View {
 
     private func holdCountdownView(secondsLeft: Int) -> some View {
         VStack(spacing: 6) {
+            // UX-203: Mono-Digits, damit der 3/2/1-Countdown visuell stabil
+            // bleibt (Proportional-Glyphen liessen die Zahl pro Sekunde
+            // leicht "wackeln", weil die Glyph-Breite je Ziffer variiert).
             Text(secondsLeft == 0 ? "GO!" : "\(secondsLeft)")
-                .font(.system(size: 80, weight: .black, design: .rounded))
+                .font(.system(size: 80, weight: .black, design: .rounded).monospacedDigit())
                 .foregroundStyle(Color.deltiqOrange)
                 .frame(maxWidth: .infinity)
                 .contentTransition(.numericText())
@@ -810,13 +876,12 @@ struct SetRow: View {
     /// rechtsbuendig.
     @ViewBuilder
     private var cardioSetRow: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
             HStack(spacing: 8) {
-                // Set-Nummer kompakter — 20pt statt 24pt, spart Platz fuer
-                // das KM-Label gleich daneben.
+                // UX-203: Mono-Digits + state-aware Color (siehe compactSetRow).
                 Text("\(setIndex + 1)")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
-                    .foregroundStyle(isCompleted ? .secondary : .primary)
+                    .font(.system(size: 16, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(setNumberColor)
                     .frame(width: 20, alignment: .leading)
 
                 cardioDistanceInput
@@ -831,13 +896,29 @@ struct SetRow: View {
                 checkmarkButton
             }
 
-            // Fixed-Height-Statuszeile wie compactSetRow — verhindert
-            // Layout-Shift beim Toggle isCompleted↔editable.
+            // UX-203: 28 → 36, gleicher Breathing-Room-Step wie statusZone
+            // im Strength-Pfad.
             cardioStatusZone
-                .frame(height: 28)
+                .frame(height: 36)
                 .padding(.leading, 28)
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(rowStateBackground)
+        )
+        .overlay(alignment: .leading) {
+            if isActiveSet {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.deltiqOrange)
+                    .frame(width: 3)
+                    .padding(.vertical, 6)
+            }
+        }
+        .opacity(isCompleted ? 0.55 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isCompleted)
+        .animation(.easeInOut(duration: 0.2), value: isActiveSet)
         .contentShape(Rectangle())
         .onTapGesture {
             if isCompleted {

@@ -23,6 +23,12 @@ struct ExerciseCard: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
+        // UX-203: berechne EINMAL pro Render den aktiven Satz — der erste
+        // mit `existingLog == nil`. Wenn alle completed sind, bleibt es nil
+        // und keine Row bekommt den active-Highlight. Wird pro SetRow
+        // weitergereicht, damit die Row nicht selber nach activeIndex
+        // suchen muss (vermeidet O(n²) in der For-Each).
+        let active = activeSetIndex
         VStack(alignment: .leading, spacing: 10) {
             header
             Divider()
@@ -34,6 +40,7 @@ struct ExerciseCard: View {
                     existingLog: existingLog(forSetIndex: setIndex),
                     previousLog: previousLog(forSetIndex: setIndex),
                     activeTimedSet: $activeTimedSet,
+                    isActiveSet: setIndex == active,
                     onLogged: { values in
                         logSet(setIndex: setIndex, values: values)
                     },
@@ -42,7 +49,10 @@ struct ExerciseCard: View {
                     }
                 )
                 if setIndex < exercise.sets - 1 {
-                    Divider().opacity(0.4)
+                    // UX-203: Divider noch ruhiger (0.4 → 0.2), weil die
+                    // Active-Set-Background-Tint jetzt die primaere
+                    // visuelle Trennung uebernimmt.
+                    Divider().opacity(0.2)
                 }
             }
 
@@ -86,9 +96,14 @@ struct ExerciseCard: View {
                             .clipShape(Capsule())
                     }
                 }
+                // UX-203: Set-Metadata ruhiger — .caption → .caption2,
+                // .secondary → .tertiary, plus monospacedDigit damit Zahlen
+                // beim Editieren (z.B. Pause-Stepper) nicht in der Breite
+                // springen. Bleibt lesbar, drueckt aber sich weiter in
+                // den Hintergrund gegenueber dem Exercise-Name.
                 Text(targetText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.tertiary)
             }
             Spacer()
             progressPill
@@ -150,6 +165,20 @@ struct ExerciseCard: View {
 
     private func existingLog(forSetIndex index: Int) -> ExerciseLog? {
         sessionLogs.first { $0.setIndex == index }
+    }
+
+    /// UX-203: liefert den Index des "naechsten anstehenden" Sets — also
+    /// den niedrigsten setIndex ohne existing log. Nil = alle Sets dieser
+    /// Uebung sind completed. Wird in `body` einmal evaluiert und an die
+    /// SetRow-Children durchgereicht, damit der visuelle Active-Highlight
+    /// in einer einzigen Quelle der Wahrheit lebt.
+    private var activeSetIndex: Int? {
+        // Set der Logs ueber setIndex bilden — O(n) Lookup statt n×n.
+        let completed = Set(sessionLogs.map(\.setIndex))
+        for i in 0..<exercise.sets where !completed.contains(i) {
+            return i
+        }
+        return nil
     }
 
     /// Most recent log of this exercise + setIndex from a prior COMPLETED session.
