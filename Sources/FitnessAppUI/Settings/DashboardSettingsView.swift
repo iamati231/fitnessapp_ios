@@ -127,15 +127,21 @@ public struct DashboardSettingsView: View {
             Text(LocalizedStringKey(slot.localizationKey), bundle: .module)
                 .font(.body)
             Spacer()
-            // DEL-132: gleiche Toggle-as-removal-Logic wie aktiver
-            // Widget-Section.
+            // DEL-132 (Phase 1): gleiche Toggle-as-removal-Logic wie
+            // aktiver Widget-Section.
+            // DEL-132 (Phase 4): Spring-Animation um die Mutation,
+            // sodass die Row beim Toggle-Off rauschmelzt statt
+            // schlagartig zu poppen — sieht weicher aus auf der
+            // Settings-List.
             Toggle("", isOn: Binding(
                 get: { true },
                 set: { isActive in
                     if !isActive {
-                        var copy = profile.heroMetricSlots
-                        copy.removeAll { $0 == slot }
-                        profile.heroMetricSlots = copy
+                        withAnimation(.spring(response: 0.45, dampingFraction: 0.78)) {
+                            var copy = profile.heroMetricSlots
+                            copy.removeAll { $0 == slot }
+                            profile.heroMetricSlots = copy
+                        }
                     }
                 }
             ))
@@ -144,9 +150,13 @@ public struct DashboardSettingsView: View {
     }
 
     private func moveHero(from source: IndexSet, to destination: Int) {
-        var arr = profile.heroMetricSlots
-        arr.move(fromOffsets: source, toOffset: destination)
-        profile.heroMetricSlots = arr
+        // DEL-132 (Phase 4): Spring auch beim Reorder — sieht smooth
+        // aus, die Cards animieren in ihre neuen Slots.
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.78)) {
+            var arr = profile.heroMetricSlots
+            arr.move(fromOffsets: source, toOffset: destination)
+            profile.heroMetricSlots = arr
+        }
     }
 
     /// Verfuegbare Hero-Slots (die NICHT in der aktiven Liste sind).
@@ -168,9 +178,15 @@ public struct DashboardSettingsView: View {
                             .foregroundStyle(.secondary)
                         Spacer()
                         Button {
-                            var arr = profile.heroMetricSlots
-                            arr.append(slot)
-                            profile.heroMetricSlots = arr
+                            // DEL-132 (Phase 4): Spring beim Add-Tap, damit
+                            // der neue Slot smooth in die aktive Liste
+                            // einsliden + auf dem Dashboard mit dem
+                            // entsprechenden Hero-Transition erscheinen.
+                            withAnimation(.spring(response: 0.45, dampingFraction: 0.78)) {
+                                var arr = profile.heroMetricSlots
+                                arr.append(slot)
+                                profile.heroMetricSlots = arr
+                            }
                         } label: {
                             Image(systemName: "plus.circle.fill")
                                 .foregroundStyle(atMax ? Color.secondary : Color.deltiqOrange)

@@ -22610,6 +22610,29 @@
           }
         }
       }
+    },
+    "heroMetric.hk.permissionNeeded.a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HealthKit-Zugriff benötigt — Doppeltippen um Verbindung zu öffnen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HealthKit access required — double-tap to open permission prompt."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HealthKit erişimi gerekli — izin penceresini açmak için çift dokun."
+          }
+        }
+      }
     }
   }
 }

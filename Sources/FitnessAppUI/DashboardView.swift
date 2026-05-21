@@ -371,9 +371,23 @@ public struct DashboardView: View {
             HStack(spacing: 12) {
                 ForEach(heroMetricSlots, id: \.self) { slot in
                     heroMetricCard(for: slot, measurement: latest)
+                        // DEL-132 (Phase 4): Slot-Add/Remove-Transition.
+                        // Wenn ein User in Settings einen Slot toggled, sliden
+                        // die Cards rein/raus statt schlagartig zu poppen.
+                        // .asymmetric: insertion mit scale+opacity (zoom-in),
+                        // removal mit opacity-only (fade-out, kein Pop-shrink).
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.85).combined(with: .opacity),
+                            removal: .opacity
+                        ))
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
+            // DEL-132 (Phase 4): Spring-Animation auf die ganze HStack,
+            // sodass auch das Reorder der Cards (Drag-and-Drop in
+            // Settings) sanft animiert — sonst springen Cards beim
+            // Index-Swap hart in ihre neue Position.
+            .animation(.spring(response: 0.45, dampingFraction: 0.78), value: heroMetricSlots)
         } else {
             EmptyMetricsCard()
         }
@@ -428,48 +442,47 @@ public struct DashboardView: View {
                 delta: nil
             )
         case .waterTodayMl:
-            // DEL-132 (Phase 2): Wasser-Hero. Visual-Consistency-Fix
-            // 2026-05-21: 2 Dezimalstellen wie alle anderen Hero-Cards,
-            // auch wenn der Underlying-Wert ein Int ist (`WaterEntry.
-            // amountMl: Int`). Double-Konvertierung damit
-            // `formattedTwoDecimals` ("%.2f") greift → "1250,00".
+            // DEL-132 (Phase 2): Wasser-Hero. Semantisch-korrekte-
+            // Rendering-Iteration 2026-05-21: ml ist eine diskrete
+            // Einheit — "1250,00 ml" macht keinen Sinn, weil keine
+            // halben ml getrunken werden. Plain Int-String.
             MetricCard(
                 label: label,
-                value: Double(todayWaterMl).formattedTwoDecimals,
+                value: "\(todayWaterMl)",
                 unit: "ml",
                 delta: nil
             )
         case .workoutsThisWeek:
-            // DEL-132 (Phase 2): Workouts-this-Week. Gleicher Visual-
-            // Consistency-Fix wie waterTodayMl — selbst wenn "3,00"
-            // semantisch leicht skurril aussieht (Workouts sind diskret),
-            // ist die typografische Uniformitaet mit Weight/FFMI/BMI im
-            // selben HStack das wichtigere Goal (User-Feedback 2026-05-21).
+            // DEL-132 (Phase 2): Workouts-this-Week — diskreter Counter,
+            // keine halben Workouts. Plain Int-String, kein 2-Dezimal-
+            // Padding (siehe waterTodayMl-Kommentar).
             MetricCard(
                 label: label,
-                value: Double(workoutsThisWeekCount).formattedTwoDecimals,
+                value: "\(workoutsThisWeekCount)",
                 unit: nil,
                 delta: nil
             )
         case .restingHR:
-            // DEL-132 (Phase 3): Ruhepuls aus HealthKit. nil → "—"
-            // (keine Permission, kein Sample auf der Watch, kein iOS-
-            // 17-Health-Setup). Apple Watch schreibt typisch alle 1-2
-            // Tage einen neuen Wert, ein Sample-Lebenszeitalter von
-            // wenigen Stunden ist normal.
-            MetricCard(
+            // DEL-132 (Phase 3): Ruhepuls in BPM — diskreter Counter
+            // pro Minute, keine "halben Pulse". Round-half-up + Int.
+            // DEL-132 (Phase 4): wenn HealthKit-Auth fehlt, rendert
+            // die Card tappable mit Lock-Hint und triggert
+            // requestAuthorization() — User landet sofort in der iOS-
+            // System-Permission-Sheet, statt vor einem stumm leeren
+            // "—" zu stehen.
+            healthKitGatedCard(
                 label: label,
-                value: restingHRValue?.truncated(to: 2).formattedTwoDecimals ?? "—",
-                unit: restingHRValue != nil ? "bpm" : nil,
-                delta: nil
+                value: restingHRValue.map { String(Int($0.rounded())) },
+                unit: "bpm"
             )
         case .stepsToday:
-            // DEL-132 (Phase 3): Schritte heute. nil → "—".
-            MetricCard(
+            // DEL-132 (Phase 3): Schritte — keine halben Schritte. Int.
+            // DEL-132 (Phase 4): gleiche Permission-CTA-Gating wie
+            // restingHR.
+            healthKitGatedCard(
                 label: label,
-                value: stepsTodayValue?.truncated(to: 2).formattedTwoDecimals ?? "—",
-                unit: nil,
-                delta: nil
+                value: stepsTodayValue.map { String(Int($0.rounded())) },
+                unit: nil
             )
         }
     }
@@ -507,6 +520,57 @@ public struct DashboardView: View {
         return completedSessions
             .filter { !$0.isRestDay && week.contains($0.startTime) }
             .count
+    }
+
+    /// DEL-132 (Phase 4): MetricCard mit HealthKit-Permission-Gating.
+    /// Drei Render-Branches:
+    ///   1. Authorized + Value vorhanden → normale MetricCard mit Wert.
+    ///   2. Authorized + nil Value (kein Sample) → MetricCard mit "—",
+    ///      KEIN Tap-Action (Daten kommen sobald Watch/iPhone schreibt).
+    ///   3. Nicht-authorized → tappable Card mit "—" + Lock-Hint,
+    ///      onTap triggert `healthKit.requestAuthorization()`. iOS
+    ///      zeigt seine native Permission-Sheet; bei Approval refreshed
+    ///      die `.task(id:)`-Anbindung automatisch.
+    @ViewBuilder
+    private func healthKitGatedCard(label: String, value: String?, unit: String?) -> some View {
+        let isAuthorized = healthKit.authorizationStatus == .sharingAuthorized
+
+        if isAuthorized {
+            // Branch 1+2: zugriff erlaubt, render normal (Value oder "—").
+            MetricCard(
+                label: label,
+                value: value ?? "—",
+                unit: value != nil ? unit : nil,
+                delta: nil
+            )
+        } else {
+            // Branch 3: Permission fehlt — tappable Card mit Lock-Hint.
+            Button {
+                Task {
+                    await healthKit.requestAuthorization()
+                    // Nach User-Entscheidung neu fetchen — falls die
+                    // Permission gerade gegeben wurde, lebt der Wert
+                    // sofort im naechsten Render-Cycle.
+                    await refreshHealthKitHeroValues()
+                }
+            } label: {
+                MetricCard(
+                    label: label,
+                    value: "—",
+                    unit: nil,
+                    delta: nil
+                )
+                .overlay(alignment: .topTrailing) {
+                    // Kleines Lock-Icon oben rechts → "tap to connect"-Hint.
+                    Image(systemName: "lock.fill")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(Color.deltiqOrange)
+                        .padding(8)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("heroMetric.hk.permissionNeeded.a11y", bundle: .module))
+        }
     }
 
     /// DEL-132 (Phase 3): Async refresh fuer HealthKit-gestuetzte Hero-
