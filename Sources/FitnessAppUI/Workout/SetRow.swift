@@ -161,14 +161,19 @@ struct SetRow: View {
                     Text("unit.kg.upper", bundle: .module)
                         .deltiqLabel()
                         .fixedSize()
-                    // DEL-085: Plate-Calculator-Quick-Access. Nur sichtbar,
-                    // wenn ein konkretes Gewicht eingegeben ist UND die Uebung
-                    // ueberhaupt mit einer Hantelstange ausgefuehrt wird —
-                    // also nicht bei Bodyweight (weight nil/0) und nicht bei
-                    // TimeBased.
-                    if let w = weight, w > 0, !exercise.isTimeBased {
-                        plateCalculatorButton(weight: w)
-                    }
+                    // DEL-085: Plate-Calculator-Quick-Access.
+                    // Layout-Fix 2026-05-21 (Iteration 2): vorher per
+                    // `if weight > 0` ein-/ausgeblendet — das hat beim
+                    // Tippen einer Zahl einen Layout-Shift gemacht (Button
+                    // erscheint dynamisch, Row wird neu vermessen, die
+                    // andere Inputs ruckeln). Jetzt PERMANENT im Layout,
+                    // nur Sichtbarkeit + Tap-Empfaenglichkeit per Opacity
+                    // + allowsHitTesting gegated. Platz bleibt reserviert,
+                    // kein Sprung mehr.
+                    let plateShown = (weight ?? 0) > 0 && !exercise.isTimeBased
+                    plateCalculatorButton(weight: weight ?? 0)
+                        .opacity(plateShown ? 1 : 0)
+                        .allowsHitTesting(plateShown)
                 }
 
                 repsInput
@@ -184,6 +189,13 @@ struct SetRow: View {
 
                 checkmarkButton
             }
+            // Layout-Fix 2026-05-21 (Iteration 2): minHeight 44 auf der
+            // Input-HStack. Verhindert dass die Row beim Tippen oder
+            // Plate-Button-Toggle senkrecht ruckelt — die intrinsische
+            // Hoehe der Children kann minimal schwanken (Font-Metrics
+            // zwischen Placeholder + Zahl), 44pt deckt beide Faelle ab
+            // und matched Apple's HIG-Minimum-Touch-Target-Size.
+            .frame(minHeight: 44)
 
             // Status-Container mit FESTER HOEHE — verhindert Layout-Shift beim
             // Toggle isCompleted↔editable. UX-203: 28 → 38 fuer den RIR-
@@ -298,6 +310,18 @@ struct SetRow: View {
             .multilineTextAlignment(.center)
             .disabled(isCompleted)
             .opacity(isCompleted ? 0.6 : 1.0)
+            // Cap 2026-05-21: hartes 500-kg-Maximum auf der Gewichts-
+            // Eingabe — verhindert utopische Werte (User-Vertipper,
+            // versehentlich angetippter Zahlenpad) die dann sinnlos in
+            // den Plate-Calculator + History fliessen.
+            // `PlateCalculator.maxTargetKg = 500.0` ist die kanonische
+            // Konstante; wenn die jemals erhoeht wird, propagiert der
+            // Cap automatisch.
+            .onChange(of: weight) { _, newValue in
+                if let w = newValue, w > PlateCalculator.maxTargetKg {
+                    weight = PlateCalculator.maxTargetKg
+                }
+            }
     }
 
     /// DEL-091: dynamisches Placeholder-Wording.
