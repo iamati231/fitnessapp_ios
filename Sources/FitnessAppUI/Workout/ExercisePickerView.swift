@@ -30,6 +30,13 @@ public struct ExercisePickerView: View {
     @State private var customName: String = ""
     @State private var filterToPlanEnv: Bool = true
 
+    /// DEL-136 Part D: Multi-Select-Filter fuer Library-Suche. Sets sind
+    /// leer = kein Filter aktiv, sonst werden nur Templates angezeigt deren
+    /// Equipment / primaryMuscle im jeweiligen Set sind.
+    @State private var selectedEquipment: Set<Equipment> = []
+    @State private var selectedMuscles: Set<MuscleGroup> = []
+    @State private var showingFilterSheet: Bool = false
+
     public init(
         planEnvironment: EnvironmentType? = nil,
         onSelect: @escaping (ExerciseTemplate) -> Void,
@@ -64,8 +71,34 @@ public struct ExercisePickerView: View {
                         Text("common.cancel", bundle: .module)
                     }
                 }
+                // DEL-136 Part D: Filter-Button mit Badge wenn Filter aktiv.
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showingFilterSheet = true
+                    } label: {
+                        Image(systemName: hasActiveFilters
+                              ? "line.3.horizontal.decrease.circle.fill"
+                              : "line.3.horizontal.decrease.circle")
+                            .foregroundStyle(hasActiveFilters
+                                             ? Color.deltiqOrange
+                                             : Color.primary)
+                    }
+                    .accessibilityLabel(Text("picker.exercise.filter.button.a11y", bundle: .module))
+                }
+            }
+            .sheet(isPresented: $showingFilterSheet) {
+                FilterSheet(
+                    selectedEquipment: $selectedEquipment,
+                    selectedMuscles: $selectedMuscles
+                )
             }
         }
+    }
+
+    /// DEL-136 Part D: True wenn mindestens ein Filter gesetzt ist (faerbt
+    /// das Filter-Icon orange + macht es zur fill-Variante mit Punkt).
+    private var hasActiveFilters: Bool {
+        !selectedEquipment.isEmpty || !selectedMuscles.isEmpty
     }
 
     /// DEL-048: Equipment-Filter-Toggle. Default an, sodass der User in einem
@@ -243,6 +276,18 @@ public struct ExercisePickerView: View {
                 $0.isCustom || ExerciseLibraryData.isEquipment($0.equipment, compatibleWith: env)
             }
         }
+        // DEL-136 Part D: User-Filter (Equipment + Muscle Group). Logic:
+        //   * Leerer Filter-Set → kein Filter aktiv fuer diese Dimension
+        //   * Non-leer → Template muss in der Menge sein
+        //   * Custom-Templates werden bewusst MIT gefiltert (anders als der
+        //     planEnv-Filter oben) — User-Filter sind explizite Wahl, da
+        //     soll der Custom-Status nicht zur Ausnahme werden.
+        if !selectedEquipment.isEmpty {
+            list = list.filter { selectedEquipment.contains($0.equipment) }
+        }
+        if !selectedMuscles.isEmpty {
+            list = list.filter { selectedMuscles.contains($0.primaryMuscle) }
+        }
         guard !trimmed.isEmpty else { return list }
         // DEL-135 i18n-Fix: Suche im lokalisierten Anzeige-Namen statt
         // im deutschen Base-Key. Vorher musste ein türkischer User
@@ -330,6 +375,115 @@ private struct TemplateRow: View {
 
     private func muscleLabel(_ m: MuscleGroup) -> String {
         String(localized: m.localizedName)
+    }
+}
+
+// MARK: - DEL-136 Part D: Library Filter Sheet
+
+/// Multi-Select-Filter für Equipment + Muscle Group. Zwei Sections,
+/// jeweils mit allen verfuegbaren Cases als Toggle-Rows. Per-row Tap
+/// macht das Toggle smooth + spring-animiert. Footer-Button raeumt alle
+/// Filter weg. Dismissal via Drag-down oder "Fertig"-Toolbar-Button.
+@available(iOS 17.0, macOS 14.0, *)
+private struct FilterSheet: View {
+    @Binding var selectedEquipment: Set<Equipment>
+    @Binding var selectedMuscles: Set<MuscleGroup>
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(Equipment.allCases, id: \.self) { equipment in
+                        FilterToggleRow(
+                            label: String(localized: equipment.localizedName),
+                            isOn: Binding(
+                                get: { selectedEquipment.contains(equipment) },
+                                set: { newValue in
+                                    if newValue { selectedEquipment.insert(equipment) }
+                                    else        { selectedEquipment.remove(equipment) }
+                                }
+                            )
+                        )
+                    }
+                } header: {
+                    Text("picker.exercise.filter.section.equipment", bundle: .module)
+                }
+
+                Section {
+                    ForEach(MuscleGroup.allCases, id: \.self) { muscle in
+                        FilterToggleRow(
+                            label: String(localized: muscle.localizedName),
+                            isOn: Binding(
+                                get: { selectedMuscles.contains(muscle) },
+                                set: { newValue in
+                                    if newValue { selectedMuscles.insert(muscle) }
+                                    else        { selectedMuscles.remove(muscle) }
+                                }
+                            )
+                        )
+                    }
+                } header: {
+                    Text("picker.exercise.filter.section.muscle", bundle: .module)
+                }
+
+                // Reset-Button am Ende. Disabled wenn schon nichts ausgewaehlt.
+                Section {
+                    Button(role: .destructive) {
+                        selectedEquipment.removeAll()
+                        selectedMuscles.removeAll()
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Text("picker.exercise.filter.reset", bundle: .module)
+                                .font(.body.weight(.semibold))
+                            Spacer()
+                        }
+                    }
+                    .disabled(selectedEquipment.isEmpty && selectedMuscles.isEmpty)
+                }
+            }
+            .navigationTitle(Text("picker.exercise.filter.title", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button { dismiss() } label: {
+                        Text("common.done", bundle: .module)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Kleine Helper-Row mit Checkmark-Indikator statt iOS-Toggle-Switch.
+/// Tap toggled den Bool und triggered die Animation; visuell aufgeraeumter
+/// als Switch fuer multi-select Listen.
+@available(iOS 17.0, macOS 14.0, *)
+private struct FilterToggleRow: View {
+    let label: String
+    @Binding var isOn: Bool
+
+    var body: some View {
+        Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                isOn.toggle()
+            }
+        } label: {
+            HStack {
+                Text(label)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+                Spacer()
+                Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(isOn ? Color.deltiqOrange : Color.secondary)
+            }
+        }
+        .buttonStyle(.plain)
     }
 }
 #endif

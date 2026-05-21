@@ -38,6 +38,19 @@ public struct WorkoutSummaryView: View {
     /// triggert.
     @State private var hasAppeared: Bool = false
 
+    /// DEL-136 Part A: Confirm-Dialog-Gate fuer destruktives Delete-Session.
+    @State private var showingDeleteSessionConfirm: Bool = false
+
+    /// DEL-136 Part C: Sheet-Gate fuer Add-Exercise-Picker in History-Edit-Mode.
+    @State private var showingAddExercisePicker: Bool = false
+
+    /// DEL-136 Part B: Confirm-Dialog-Gate fuer Remove-Exercise-from-Session.
+    /// Speichert den Exercise, der removed werden soll — wenn nil, dann ist
+    /// kein Dialog offen.
+    @State private var exerciseToRemove: Exercise?
+
+    @Environment(\.dismiss) private var dismiss
+
     public init(session: WorkoutSession, isReadOnly: Bool = false) {
         self.session = session
         self.isReadOnly = isReadOnly
@@ -111,7 +124,87 @@ public struct WorkoutSummaryView: View {
                              bundle: .module)
                     }
                 }
+                // DEL-136 Part A: "..." Menu mit destructive Delete-Workout-
+                // Action. Nur im History-Mode (isReadOnly) sichtbar — im
+                // New-Mode (post-finish) gibt's keine Notwendigkeit, eine
+                // gerade erst gespeicherte Session sofort wieder zu loeschen.
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button(role: .destructive) {
+                            showingDeleteSessionConfirm = true
+                        } label: {
+                            Label {
+                                Text("summary.menu.deleteSession", bundle: .module)
+                            } icon: {
+                                Image(systemName: "trash")
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
+                }
             }
+        }
+        // DEL-136 Part A: Confirmation-Dialog vor dem destruktiven Delete.
+        // Default-Branch ist Cancel — User kann nicht versehentlich Workout-
+        // Historie ausloeschen, sondern muss explizit "Loeschen" tappen.
+        .confirmationDialog(
+            Text("summary.deleteSession.confirmTitle", bundle: .module),
+            isPresented: $showingDeleteSessionConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(role: .destructive) {
+                deleteEntireSession()
+            } label: {
+                Text("summary.deleteSession.confirmDelete", bundle: .module)
+            }
+            Button(role: .cancel) { } label: {
+                Text("common.cancel", bundle: .module)
+            }
+        } message: {
+            Text("summary.deleteSession.confirmMessage", bundle: .module)
+        }
+        // DEL-136 Part B: Confirm-Dialog fuer Remove-Exercise-from-Session.
+        // exerciseToRemove == nil → kein Dialog, sonst zeigt's den
+        // Exercise-Namen im Message-Body.
+        .confirmationDialog(
+            Text("summary.removeExercise.confirmTitle", bundle: .module),
+            isPresented: Binding(
+                get: { exerciseToRemove != nil },
+                set: { if !$0 { exerciseToRemove = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: exerciseToRemove
+        ) { exercise in
+            Button(role: .destructive) {
+                removeExerciseFromSession(exercise)
+                exerciseToRemove = nil
+            } label: {
+                Text("summary.removeExercise.confirmRemove", bundle: .module)
+            }
+            Button(role: .cancel) {
+                exerciseToRemove = nil
+            } label: {
+                Text("common.cancel", bundle: .module)
+            }
+        } message: { exercise in
+            Text(String(format: String(localized: "summary.removeExercise.confirmMessageFormat",
+                                       bundle: .module),
+                        exercise.displayName))
+        }
+        // DEL-136 Part C: Add-Exercise-Picker Sheet.
+        .sheet(isPresented: $showingAddExercisePicker) {
+            ExercisePickerView(
+                planEnvironment: session.day?.plan?.targetEnvironment,
+                onSelect: { template in
+                    addExerciseToSession(from: template, isCustom: false)
+                    showingAddExercisePicker = false
+                },
+                onCreateCustom: { name in
+                    addCustomExerciseToSession(named: name)
+                    showingAddExercisePicker = false
+                }
+            )
         }
     }
 
@@ -145,6 +238,127 @@ public struct WorkoutSummaryView: View {
             Text("summary.editMeta.footer", bundle: .module)
                 .font(.footnote)
         }
+    }
+
+    /// DEL-136 Part B: Loescht ALLE Logs einer bestimmten Uebung aus dieser
+    /// Session — die Uebung selbst (Plan-Side `Exercise`) bleibt fuer
+    /// zukuenftige Sessions erhalten. Wenn die Uebung eine orphan-Uebung
+    /// war (DEL-136 Part C, day=nil), loeschen wir sie mit, weil sie sonst
+    /// nirgends mehr referenziert wird.
+    private func removeExerciseFromSession(_ exercise: Exercise) {
+        let exerciseID = exercise.persistentModelID
+        let logsToDelete = session.logs.filter {
+            $0.exercise?.persistentModelID == exerciseID
+        }
+        for log in logsToDelete {
+            modelContext.delete(log)
+        }
+        // Orphan-Cleanup: wenn die Exercise ueberhaupt keinen Plan-Day-
+        // Anker hat (war eine spontan-zugefuegte Session-Only-Uebung,
+        // DEL-136 Part C), loeschen wir sie gleich mit. Plan-Side-
+        // Uebungen (day != nil) bleiben erhalten.
+        if exercise.day == nil {
+            modelContext.delete(exercise)
+        }
+        // Totals neu berechnen, damit Dashboard/History stimmen.
+        recalculateSessionTotals()
+        try? modelContext.save()
+    }
+
+    /// DEL-136 Part C: Erstellt eine neue Exercise tied to session-only
+    /// (day=nil) basierend auf einem ExerciseTemplate aus der Library,
+    /// plus eine leere ExerciseLog-Zeile als Editier-Anker. orderIndex
+    /// wird auf einen hohen Wert gesetzt, sodass die neue Uebung am Ende
+    /// der Session erscheint.
+    ///
+    /// `template.name` (deutscher Base-Key) wird als Exercise.name
+    /// uebernommen — der displayName-Extension-Lookup macht die
+    /// lokalisierte Anzeige automatisch via `ExerciseLibraryData.first
+    /// where: name`. Equipment/primaryMuscle/isCustom sind Plan-Editor-
+    /// Felder die fuer Session-Only-Uebungen irrelevant sind.
+    private func addExerciseToSession(from template: ExerciseTemplate, isCustom: Bool) {
+        let nextOrder = (session.logs.compactMap { $0.exercise?.orderIndex }.max() ?? -1) + 1
+        let exercise = Exercise(
+            name: template.name,
+            sets: 3,
+            repsMin: template.isTimeBased ? 20 : 8,
+            repsMax: template.isTimeBased ? 30 : 10,
+            restSeconds: 90,
+            orderIndex: nextOrder,
+            isCardio: template.isCardio,
+            isTimeBased: template.isTimeBased,
+            day: nil   // orphan: kein Plan-Polluting fuer kuenftige Sessions
+        )
+        modelContext.insert(exercise)
+        // Eine leere Log-Zeile als Anker. ExerciseLog.init derived die
+        // Snapshot-Felder automatisch aus `exercise.name` etc.
+        let log = ExerciseLog(
+            setIndex: 0,
+            weight: 0,
+            reps: 0,
+            rir: 2,
+            exercise: exercise,
+            session: session
+        )
+        modelContext.insert(log)
+        try? modelContext.save()
+    }
+
+    /// DEL-136 Part C: Custom-Variante — User hat im Picker keinen Library-
+    /// Pick, sondern einen freien Namen eingegeben. Erstellt eine generische
+    /// Strength-Exercise mit dem User-Namen.
+    private func addCustomExerciseToSession(named name: String) {
+        let nextOrder = (session.logs.compactMap { $0.exercise?.orderIndex }.max() ?? -1) + 1
+        let exercise = Exercise(
+            name: name,
+            sets: 3,
+            repsMin: 8,
+            repsMax: 10,
+            restSeconds: 90,
+            orderIndex: nextOrder,
+            isCardio: false,
+            isTimeBased: false,
+            day: nil
+        )
+        modelContext.insert(exercise)
+        let log = ExerciseLog(
+            setIndex: 0,
+            weight: 0,
+            reps: 0,
+            rir: 2,
+            exercise: exercise,
+            session: session
+        )
+        modelContext.insert(log)
+        try? modelContext.save()
+    }
+
+    /// DEL-136 Part A: Loescht die komplette Session inkl. aller ExerciseLogs.
+    /// Nach dem Delete dismissed der View — der User landet zurueck auf der
+    /// History-Liste, in der die Session weg ist.
+    ///
+    /// PR-Eintraege werden bewusst NICHT mitgeloescht: das `PersonalRecord
+    /// Entry.session`-Relationship ist `.nullify` (Bestandsentscheidung,
+    /// siehe Model-Comment: "deleting a session doesn't lose the record's
+    /// history"). Trophy-Room behaelt also den Rekord-Eintrag, auch wenn
+    /// die definierende Session weg ist.
+    ///
+    /// HealthKit-Write der Session wird NICHT zurueckgenommen — Apple
+    /// Health ist eine separate Datenquelle, der User kann dort selbst
+    /// Workouts loeschen via Health-App.
+    private func deleteEntireSession() {
+        // 1. Logs erst — vermeidet `nullify`-Pass auf bereits-deleted Session.
+        //    Snapshot in Array kopieren, weil die Live-Relationship-Collection
+        //    waehrend des Deletes mutiert.
+        let logsCopy = Array(session.logs)
+        for log in logsCopy {
+            modelContext.delete(log)
+        }
+        // 2. Session selbst — PRs ueberleben via nullify.
+        modelContext.delete(session)
+        try? modelContext.save()
+        // 3. View aufloesen.
+        dismiss()
     }
 
     /// Setzt totalSets + totalVolumeKg aus den (eventuell vom User editierten)
@@ -491,6 +705,28 @@ public struct WorkoutSummaryView: View {
                 exerciseSection(for: entry.exercise, logs: entry.logs)
             }
         }
+        // DEL-136 Part C: "+ Übung hinzufügen" Section nur im History-Edit-
+        // Mode. Im New-Mode (post-finish) macht das keinen Sinn — User ist
+        // gerade fertig und soll nicht zurueck zu mehr Volumen geprompted
+        // werden. Tap → ExercisePicker Sheet → onSelect erstellt eine
+        // orphan Exercise (day=nil, kein Plan-Polluting) + N Default-Logs.
+        if isReadOnly && isEditingHistory {
+            Section {
+                Button {
+                    showingAddExercisePicker = true
+                } label: {
+                    Label {
+                        Text("summary.addExercise.button", bundle: .module)
+                    } icon: {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundStyle(Color.deltiqOrange)
+                    }
+                }
+            } footer: {
+                Text("summary.addExercise.hint", bundle: .module)
+                    .font(.footnote)
+            }
+        }
     }
 
     private func exerciseSection(for exercise: Exercise, logs: [ExerciseLog]) -> some View {
@@ -515,7 +751,27 @@ public struct WorkoutSummaryView: View {
             HStack {
                 Text(exercise.displayName)
                 Spacer()
-                if let best = bestSet(in: logs) {
+                // DEL-136 Part B: Im History-Edit-Mode bekommt jede Section
+                // einen kleinen "..." Menu-Button, ueber den die ganze
+                // Uebung aus der Session entfernt werden kann. Confirmation
+                // verhindert dass User per Versehen alle Sets verliert.
+                if isReadOnly && isEditingHistory {
+                    Menu {
+                        Button(role: .destructive) {
+                            exerciseToRemove = exercise
+                        } label: {
+                            Label {
+                                Text("summary.exercise.removeFromSession", bundle: .module)
+                            } icon: {
+                                Image(systemName: "trash")
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .foregroundStyle(.secondary)
+                    }
+                    .textCase(nil)
+                } else if let best = bestSet(in: logs) {
                     Text("\(String(localized: "summary.exercise.bestPrefix", bundle: .module)): \(formatSetSummary(best, exercise: exercise))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
