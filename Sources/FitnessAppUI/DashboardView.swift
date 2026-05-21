@@ -161,12 +161,13 @@ public struct DashboardView: View {
         // PRHistoryView), data rendert die kompakte Teaser-Row mit
         // Count + letztem PR.
         if prCount == 0 {
+            // UX-Refine 2026-05-21: kein CTA — vermeidet Button-Spam mit
+            // dem identischen "Training starten" in History/Compound/Recent.
+            // Recent-Workouts-Card uebernimmt den primaeren Train-Anker.
             DashboardEmptyState(
                 icon: "trophy.fill",
                 title: "dashboard.trophy.emptyTitle",
-                description: "dashboard.trophy.emptyDescription",
-                ctaTitle: "dashboard.empty.cta.startWorkout",
-                ctaAction: { navigation.selectedTab = .plan }
+                description: "dashboard.trophy.emptyDescription"
             )
             .deltiqCardStyle()
         } else {
@@ -235,12 +236,13 @@ public struct DashboardView: View {
         // (statt in eine leere History-Liste zu navigieren).
         let hasRealHistory = completedSessions.contains(where: { !$0.isRestDay })
         if !hasRealHistory {
+            // UX-Refine 2026-05-21: kein CTA — Recent-Workouts-Card am
+            // unteren Ende der Empty-State-Strecke ist der gemeinsame
+            // Train-Anker fuer den brand-neuen User.
             DashboardEmptyState(
                 icon: "calendar.badge.clock",
                 title: "dashboard.history.emptyTitle",
-                description: "dashboard.history.emptyDescription",
-                ctaTitle: "dashboard.empty.cta.startWorkout",
-                ctaAction: { navigation.selectedTab = .plan }
+                description: "dashboard.history.emptyDescription"
             )
             .deltiqCardStyle()
         } else {
@@ -1009,12 +1011,13 @@ public struct DashboardView: View {
             if series.isEmpty {
                 // UX-201: Premium-Empty-State (icon + headline + description
                 // + CTA). Vorher: kompakte HStack ohne Aktion.
+                // UX-Refine 2026-05-21: kein CTA — Compound-Chart-Empty
+                // braucht denselben "starte ein Workout"-Trigger wie History
+                // + Trophy, die alle vom Recent-Workouts-CTA bedient werden.
                 DashboardEmptyState(
                     icon: "chart.xyaxis.line",
                     title: "dashboard.compoundChart.empty.title",
-                    description: "dashboard.compoundChart.empty.description",
-                    ctaTitle: "dashboard.empty.cta.startWorkout",
-                    ctaAction: { navigation.selectedTab = .plan }
+                    description: "dashboard.compoundChart.empty.description"
                 )
             } else {
                 Chart {
