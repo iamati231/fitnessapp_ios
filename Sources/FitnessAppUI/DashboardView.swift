@@ -313,6 +313,14 @@ public struct DashboardView: View {
     private var heroMetrics: some View {
         Group {
             if let latest = measurements.first {
+                // UX-Fix 2026-05-21: Equal-Height-Cards. Vorher hatte die
+                // mittlere Karte ("Body Fat (Navy)" / "Yağ Oranı (Navy)")
+                // einen 2-Zeilen-Label, der nur diese eine Card wachsen
+                // liess → Layout asymmetrisch. Mit `.fixedSize(vertical:
+                // true)` auf der HStack nimmt sie die maximale intrinsische
+                // Hoehe ihrer Kinder; in Kombination mit `.frame(maxHeight:
+                // .infinity)` innerhalb jeder MetricCard ziehen die zwei
+                // kuerzeren Karten auf die gleiche Hoehe wie die mittlere.
                 HStack(spacing: 12) {
                     MetricCard(
                         label: String(localized: "metric.weight", bundle: .module),
@@ -333,6 +341,7 @@ public struct DashboardView: View {
                         delta: nil
                     )
                 }
+                .fixedSize(horizontal: false, vertical: true)
             } else {
                 EmptyMetricsCard()
             }
@@ -1560,9 +1569,20 @@ private struct MetricCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
+            // UX-Fix 2026-05-21: Label-Layout-Hardening.
+            //   * .lineLimit(2): max 2 Zeilen (wie "Body Fat (Navy)") —
+            //     verhindert dass extreme Sprachen unbegrenzt wachsen.
+            //   * .minimumScaleFactor(0.85): wenn ein 1-Zeilen-Label knapp
+            //     ist, lieber leicht runterskalieren statt umbrechen.
+            //   * .fixedSize(vertical: true): zwingt SwiftUI die intrinsische
+            //     Hoehe zu reporten (sonst kollabiert das Label bei Equal-
+            //     Height-Layouts unsichtbar zusammen).
             Text(label)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
+                .fixedSize(horizontal: false, vertical: true)
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 // DEL-102: fitnessNumberStyle ersetzt das manuelle
                 // .monospacedDigit() + erzwingt zusaetzlich .fontDesign(.rounded),
@@ -1583,7 +1603,17 @@ private struct MetricCard: View {
                 Text(" ")
                     .font(.caption2)
             }
+            // UX-Fix 2026-05-21: Spacer drueckt den Card-Inhalt nach oben,
+            // wenn der HStack-Container der MetricCard mehr Hoehe gibt als
+            // ihr intrinsischer Inhalt braucht. So bleiben Label oben +
+            // Wert oben, statt vertikal zentriert zu rendern.
+            Spacer(minLength: 0)
         }
+        // UX-Fix 2026-05-21: maxHeight: .infinity expandiert jede Card auf
+        // die Hoehe der hoechsten Geschwister-Karte im HStack (siehe
+        // `heroMetrics` Container-Modifier). topLeading alignment haelt
+        // den Inhalt oben-links statt zentriert.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         // DEL-102: Sub-Card-Format (kleiner Corner-Radius, kompakteres Padding)
         // — die Metric-Cards sind enthalten in einer Reihe von drei und sollten
         // schmaler wirken als die Top-Level-Bento-Cards.
