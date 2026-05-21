@@ -134,7 +134,13 @@ struct SetRow: View {
     ///   * upcoming  → neutral, kein Background, kein Akzent
     private var compactSetRow: some View {
         VStack(spacing: 10) {
-            HStack(spacing: 12) {
+            // Layout-Fix 2026-05-21: HStack-Spacing 12 → 8. Auf iPhone-SE
+            // (375pt Bildschirm) ist die HStack mit 7 Children (Set-Nummer,
+            // weightInput, "KG", plateCalcButton, repsInput, "WDH",
+            // Checkmark) plus Spacer knapp am Overflow — mit 12pt Spacing
+            // zwischen jeden zwei kommt zu viel Luft zusammen, mit 8pt
+            // bleibt's auch bei 3-stelligem Gewicht (125 kg) komfortabel.
+            HStack(spacing: 8) {
                 // DEL-059 + UX-203: Rounded-Design + monospacedDigit fuer
                 // konsistente Zahlen-Ausrichtung (sonst springt der Slot
                 // zwischen 1-stellig und 2-stellig). Active-Set bekommt
@@ -146,10 +152,15 @@ struct SetRow: View {
 
                 if !exercise.isCardio {
                     weightInput
-                    // DEL-128: KG-Label via xcstrings (selbst wenn "KG" in
-                    // DE/EN/TR identisch ist — der Catalog ist die kanonische
-                    // Quelle, falls jemand TR-mod auf "kg" lowercase wuenscht).
-                    Text("unit.kg.upper", bundle: .module).deltiqLabel()
+                    // DEL-128: KG-Label via xcstrings.
+                    // Layout-Fix 2026-05-21: `.fixedSize()` zwingt das Label
+                    // auf seine intrinsische Breite — sonst komprimiert
+                    // SwiftUI die Text-Labels weg, wenn der Row-Inhalt
+                    // (3-stelliges Gewicht + Plate-Button + 2 Inputs +
+                    // Labels) auf iPhone-SE-Breite knapp wird.
+                    Text("unit.kg.upper", bundle: .module)
+                        .deltiqLabel()
+                        .fixedSize()
                     // DEL-085: Plate-Calculator-Quick-Access. Nur sichtbar,
                     // wenn ein konkretes Gewicht eingegeben ist UND die Uebung
                     // ueberhaupt mit einer Hantelstange ausgefuehrt wird —
@@ -164,8 +175,10 @@ struct SetRow: View {
                 // DEL-128: WDH/REPS/TKR — reuse `unit.reps.short` (lowercase
                 // "Wdh"/"reps"/"tkr") und uppercase im Caller. ASCII-Strings,
                 // kein Unicode-Drama mit `.uppercased()`.
+                // Layout-Fix 2026-05-21: identischer `.fixedSize()`-Schutz.
                 Text(String(localized: "unit.reps.short", bundle: .module).uppercased())
                     .deltiqLabel()
+                    .fixedSize()
 
                 Spacer(minLength: 6)
 
@@ -392,7 +405,9 @@ struct SetRow: View {
             // bekommt explizite .caption2 + .tertiary → klar als ruhige
             // Sekundär-Info abgesetzt vom RIR-Wert.
             HStack(spacing: 14) {
-                Text("RIR").deltiqLabel()   // DEL-059
+                // Layout-Fix 2026-05-21: `.fixedSize()` damit der RIR-Label
+                // im engen Slider-Zone-Layout nicht komprimiert wird.
+                Text("RIR").deltiqLabel().fixedSize()
                 Slider(
                     value: Binding(
                         get: { Double(rir) },
@@ -1150,13 +1165,22 @@ private struct PlatePopoverContent: View {
 
     /// "Pro Seite: 2× 20 · 1× 10 · 1× 2,5" — kompakter Text-Output der
     /// Aufladungs-Liste, ergaenzt die visuelle Bar.
+    ///
+    /// Bug-Fix 2026-05-21: vorher las der Code `grouped[w]?.count` —
+    /// das ist aber die LAENGE des PlateConfig-Arrays (immer 1, weil
+    /// PlateCalculator pro Gewichtsklasse genau einen Eintrag emittiert),
+    /// NICHT die Anzahl der Scheiben pro Seite (`PlateConfig.count`).
+    /// Resultat: "1× 25 · 1× 2,5" statt korrektem "2× 25 · 1× 2,5"
+    /// fuer 125 kg @ 20 kg-Bar. Die visuelle Bar war richtig, der Text
+    /// nicht.
+    ///
+    /// Da PlateCalculator OHNEHIN pro weight nur einen Eintrag liefert
+    /// (siehe `calculate()`-Implementation), ist das Dictionary-Grouping
+    /// hier auch unnoetig — direkt iterieren ist klarer + bug-frei.
     private func perSideText(_ plates: [PlateConfig], unit: PlateCalculator.Unit) -> String {
-        let grouped = Dictionary(grouping: plates) { $0.weight }
-        let sorted = grouped.keys.sorted(by: >)
-        let parts = sorted.map { w -> String in
-            let count = grouped[w]?.count ?? 0
-            return "\(count)× \(formatWeight(w))"
-        }
+        let parts = plates
+            .sorted { $0.weight > $1.weight }
+            .map { p in "\(p.count)× \(formatWeight(p.weight))" }
         return "Pro Seite: " + parts.joined(separator: " · ") + " \(unit.rawValue)"
     }
 
