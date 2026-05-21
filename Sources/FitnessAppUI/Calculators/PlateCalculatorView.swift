@@ -63,6 +63,17 @@ public struct PlateCalculatorView: View {
                 Text(String(format: String(localized: "calc.plate.target", bundle: .module), unit.rawValue))
             }
             .decimalKeyboard()
+            // Cap 2026-05-21: hartes Maximum auf `unit.maxTarget` (500 kg
+            // / 1100 lbs). Selber Pattern wie in SetRow.weightInput —
+            // sofortiges Snap auf den Max-Wert verhindert utopische
+            // Eingaben (Vertipper, Pasten). Reagiert AUCH bei Unit-
+            // Wechsel: wenn der User von lbs auf kg switcht und die
+            // 1000 lbs jetzt > 500 kg sind, capped es genauso.
+            .onChange(of: targetWeight) { _, newValue in
+                if let w = newValue, w > unit.maxTarget {
+                    targetWeight = unit.maxTarget
+                }
+            }
 
             TextField(value: $barWeight, format: .number,
                       prompt: Text(String(format: String(localized: "calc.placeholderExample", bundle: .module),
@@ -70,27 +81,22 @@ public struct PlateCalculatorView: View {
                 Text(String(format: String(localized: "calc.plate.bar", bundle: .module), unit.rawValue))
             }
             .decimalKeyboard()
-        } header: {
-            Text("calc.plate.section.input", bundle: .module)
-        } footer: {
-            VStack(alignment: .leading, spacing: 2) {
-                if let targetWeight, targetWeight > unit.maxTarget {
-                    let template = String(localized: "calc.plate.maxTarget", bundle: .module)
-                    Text(template
-                        .replacingOccurrences(of: "%1$@", with: formatPlate(unit.maxTarget))
-                        .replacingOccurrences(of: "%2$@", with: unit.rawValue))
-                        .foregroundStyle(.red)
-                }
-                if let barWeight, barWeight > unit.maxBar {
-                    let template = String(localized: "calc.plate.maxBar", bundle: .module)
-                    Text(template
-                        .replacingOccurrences(of: "%1$@", with: formatPlate(unit.maxBar))
-                        .replacingOccurrences(of: "%2$@", with: unit.rawValue))
-                        .foregroundStyle(.red)
+            // Cap 2026-05-21: hartes Maximum auf `unit.maxBar` (30 kg /
+            // 65 lbs). 30 kg ist Trap-Bar-Limit — Standard-Olympic-Bar
+            // ist 20 kg.
+            .onChange(of: barWeight) { _, newValue in
+                if let w = newValue, w > unit.maxBar {
+                    barWeight = unit.maxBar
                 }
             }
-            .font(.footnote)
+        } header: {
+            Text("calc.plate.section.input", bundle: .module)
         }
+        // Footer-Warning-Branches entfernt: durch den .onChange-Cap kann
+        // weder targetWeight noch barWeight jemals ueber Max stehen.
+        // `calc.plate.maxTarget` + `calc.plate.maxBar` Catalog-Keys
+        // bleiben drin als Defensive-Backstop falls die Logik jemals
+        // umgebaut wird.
     }
 
     private var resultsSection: some View {
