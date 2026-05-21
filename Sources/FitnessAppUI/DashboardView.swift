@@ -43,6 +43,15 @@ public struct DashboardView: View {
     }, sort: \WorkoutSession.startTime, order: .reverse)
     private var openSessions: [WorkoutSession]
 
+    /// DEL-132 (Phase 2): WaterEntries fuer den `.waterTodayMl`-Hero-Slot.
+    /// Predicate auf `date >= startOfToday` waere theoretisch effizienter,
+    /// aber SwiftData's `#Predicate` macht bei `Calendar.current.startOfDay`
+    /// Aerger (siehe WaterTrackerView Line 22-23) — daher full-fetch +
+    /// in-memory-filter im `todayWaterMl`-Computed unten. Bei normalen
+    /// User-Volumen (paar hundert Entries pro Monat) vernachlaessigbar.
+    @Query(sort: \WaterEntry.date, order: .reverse)
+    private var waterEntries: [WaterEntry]
+
     /// DEL-042: ConfirmationDialog-State fuer den Konflikt-Pfad.
     /// pendingNewStart-Closure wird aufgerufen wenn der User "Altes verwerfen"
     /// waehlt — sie liefert die Aktion fuer einen frischen Insert.
@@ -351,13 +360,13 @@ public struct DashboardView: View {
 
     /// DEL-132 (Phase 1): Slot → MetricCard-Mapping. Pro `HeroMetricType`
     /// ein Switch-Case der die richtigen Label/Wert/Unit-Werte aus dem
-    /// `UserBodyMeasurement` + Profile zusammensetzt. Default-Label-
+    /// `BodyMeasurement` + Profile zusammensetzt. Default-Label-
     /// Source ist jetzt `heroMetric.*.label` (statt der alten
     /// `metric.*`-Keys), damit Card-Label und Settings-Picker-Label
     /// aus EINER Catalog-Quelle kommen.
     @ViewBuilder
     private func heroMetricCard(for slot: HeroMetricType,
-                                measurement latest: UserBodyMeasurement) -> some View {
+                                measurement latest: BodyMeasurement) -> some View {
         let label = String(localized: String.LocalizationValue(slot.localizationKey),
                            bundle: .module)
         switch slot {
@@ -397,6 +406,25 @@ public struct DashboardView: View {
                 unit: nil,
                 delta: nil
             )
+        case .waterTodayMl:
+            // DEL-132 (Phase 2): Wasser-Hero — Value als plain Int-String
+            // (ohne Decimal-Formatierung, weil ml ganzzahlig sind).
+            MetricCard(
+                label: label,
+                value: "\(todayWaterMl)",
+                unit: "ml",
+                delta: nil
+            )
+        case .workoutsThisWeek:
+            // DEL-132 (Phase 2): Workouts-this-Week — Plain Counter ohne
+            // Unit (Anzahl). Bei 0 zeigt die Card "0" statt "—", weil 0
+            // ein bewusster Wert ist ("noch nichts diese Woche").
+            MetricCard(
+                label: label,
+                value: "\(workoutsThisWeekCount)",
+                unit: nil,
+                delta: nil
+            )
         }
     }
 
@@ -404,10 +432,35 @@ public struct DashboardView: View {
     /// wenn entweder kein Measurement existiert oder die Profile-Hoehe
     /// 0 ist (theoretisch unmoeglich nach Onboarding, defensiv weil
     /// SwiftData ja keine Mind-Constraint hat).
-    private func computedBMI(measurement: UserBodyMeasurement) -> Double? {
+    private func computedBMI(measurement: BodyMeasurement) -> Double? {
         guard let profile = profiles.first, profile.heightCm > 0 else { return nil }
         let heightM = profile.heightCm / 100.0
         return measurement.weightKg / (heightM * heightM)
+    }
+
+    /// DEL-132 (Phase 2): Summe aller heutigen `WaterEntry.amountMl`.
+    /// In-memory-Filter weil SwiftData-`#Predicate` mit Calendar-startOfDay
+    /// nicht zuverlaessig laeuft (siehe WaterTrackerView). 0 ist valider
+    /// Returnwert ("noch nichts getrunken heute").
+    private var todayWaterMl: Int {
+        let startOfToday = Calendar.current.startOfDay(for: Date())
+        return waterEntries
+            .filter { $0.date >= startOfToday }
+            .reduce(0) { $0 + $1.amountMl }
+    }
+
+    /// DEL-132 (Phase 2): Anzahl completed-non-rest-day-Sessions in der
+    /// aktuellen Kalenderwoche. Calendar.current respektiert das Locale-
+    /// Setting (Mo-first in DE, So-first in US). Wenn die Woche im
+    /// Calendar-Lookup nil ist (sehr selten — zerstoertes Profil),
+    /// 0 zurueck.
+    private var workoutsThisWeekCount: Int {
+        guard let week = Calendar.current.dateInterval(of: .weekOfYear, for: Date()) else {
+            return 0
+        }
+        return completedSessions
+            .filter { !$0.isRestDay && week.contains($0.startTime) }
+            .count
     }
 
     /// Thin glue over `BodyCalculations.weeklyWeightDelta`. The Core algorithm

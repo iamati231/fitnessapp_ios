@@ -44,6 +44,18 @@ public enum HeroMetricType: String, Codable, Sendable, CaseIterable, Hashable {
     /// `profile.heightCm == 0`.
     case bmi
 
+    /// DEL-132 (Phase 2): Tagesaufnahme Wasser in ml. Summiert alle
+    /// `WaterEntry`s mit `date >= Calendar.current.startOfDay(today)`.
+    /// Im Card-Layout: "1.250" + "ml". 0 ist ein valider Wert (User
+    /// hat heute noch nichts getrunken) und wird so angezeigt — kein
+    /// Nil-Fallback noetig.
+    case waterTodayMl
+
+    /// DEL-132 (Phase 2): Anzahl completed, non-rest-day WorkoutSessions
+    /// in der aktuellen Kalenderwoche (Mo-So via Locale). Im Card-
+    /// Layout: "3" ohne Unit. 0 ist valide ("noch nichts diese Woche").
+    case workoutsThisWeek
+
     /// xcstrings-Lookup-Key: `heroMetric.{rawValue}.label`.
     public var localizationKey: String {
         "heroMetric.\(rawValue).label"
