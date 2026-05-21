@@ -24,6 +24,11 @@ public struct DashboardSettingsView: View {
 
     public var body: some View {
         List {
+            // DEL-132 (Phase 1): Hero-Section ZUERST — sie sitzt auch im
+            // gerenderten Dashboard oben, also matched die visuelle
+            // Vertikal-Reihenfolge das Settings-Layout.
+            heroActiveSection
+            heroInactiveSection
             activeSection
             inactiveSection
         }
@@ -89,6 +94,102 @@ public struct DashboardSettingsView: View {
         var arr = profile.activeDashboardWidgets
         arr.move(fromOffsets: source, toOffset: destination)
         profile.activeDashboardWidgets = arr
+    }
+
+    // MARK: - DEL-132 Hero-Sektion (Hero-Metric-Slots, max 3)
+
+    /// Aktive Hero-Slots: Drag-to-reorder + Toggle-to-remove. Identisches
+    /// Pattern wie `activeSection`, nur dass die Liste auf max 3 Slots
+    /// gecapped ist (siehe `HeroMetricType.maxSlots`).
+    @ViewBuilder
+    private var heroActiveSection: some View {
+        Section {
+            if profile.heroMetricSlots.isEmpty {
+                Text("dashboardSettings.section.hero.empty", bundle: .module)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(profile.heroMetricSlots, id: \.self) { slot in
+                    heroActiveRow(slot)
+                }
+                .onMove(perform: moveHero)
+            }
+        } header: {
+            Text("dashboardSettings.section.hero.title", bundle: .module)
+        } footer: {
+            Text("dashboardSettings.section.hero.footer", bundle: .module)
+                .font(.footnote)
+        }
+    }
+
+    private func heroActiveRow(_ slot: HeroMetricType) -> some View {
+        HStack(spacing: 12) {
+            Text(LocalizedStringKey(slot.localizationKey), bundle: .module)
+                .font(.body)
+            Spacer()
+            // DEL-132: gleiche Toggle-as-removal-Logic wie aktiver
+            // Widget-Section.
+            Toggle("", isOn: Binding(
+                get: { true },
+                set: { isActive in
+                    if !isActive {
+                        var copy = profile.heroMetricSlots
+                        copy.removeAll { $0 == slot }
+                        profile.heroMetricSlots = copy
+                    }
+                }
+            ))
+            .labelsHidden()
+        }
+    }
+
+    private func moveHero(from source: IndexSet, to destination: Int) {
+        var arr = profile.heroMetricSlots
+        arr.move(fromOffsets: source, toOffset: destination)
+        profile.heroMetricSlots = arr
+    }
+
+    /// Verfuegbare Hero-Slots (die NICHT in der aktiven Liste sind).
+    /// Add-Button ist disabled, sobald `maxSlots` erreicht — User
+    /// kriegt einen erklaerenden Footer-Hint statt einer scheinbar
+    /// kaputten Plus-Taste.
+    @ViewBuilder
+    private var heroInactiveSection: some View {
+        let inactive = HeroMetricType.allCases
+            .filter { !profile.heroMetricSlots.contains($0) }
+        let atMax = profile.heroMetricSlots.count >= HeroMetricType.maxSlots
+
+        if !inactive.isEmpty {
+            Section {
+                ForEach(inactive, id: \.self) { slot in
+                    HStack {
+                        Text(LocalizedStringKey(slot.localizationKey), bundle: .module)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button {
+                            var arr = profile.heroMetricSlots
+                            arr.append(slot)
+                            profile.heroMetricSlots = arr
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(atMax ? Color.secondary : Color.deltiqOrange)
+                                .font(.title3)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(atMax)
+                    }
+                }
+            } header: {
+                Text("dashboardSettings.section.heroInactive.title", bundle: .module)
+            } footer: {
+                Text(atMax
+                     ? "dashboardSettings.section.hero.maxReached"
+                     : "dashboardSettings.section.heroInactive.footer",
+                     bundle: .module)
+                    .font(.footnote)
+            }
+        }
     }
 
     // MARK: Inaktive Sektion (re-aktivieren via "+")

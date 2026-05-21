@@ -312,42 +312,102 @@ public struct DashboardView: View {
 
     // MARK: - Hero metrics
 
+    /// DEL-132 (Phase 1): Hero-Slot-Liste vom User-Profil. Fallback auf
+    /// `defaultOrder` falls (sehr selten) kein Profile existiert (Edge-
+    /// Case waehrend Onboarding-Race).
+    private var heroMetricSlots: [HeroMetricType] {
+        profiles.first?.heroMetricSlots ?? HeroMetricType.defaultOrder
+    }
+
+    /// DEL-132 (Phase 1): Hero-Reihe iteriert jetzt ueber die User-
+    /// gewaehlten Slots (vorher hartcodierte 3-Card-HStack). Length-0
+    /// versteckt die Reihe komplett — Power-User die "nur Training,
+    /// keine Body-Composition" wollen, koennen das Dashboard auf rein
+    /// trainings-zentriertes Layout reduzieren.
+    @ViewBuilder
     private var heroMetrics: some View {
-        Group {
-            if let latest = measurements.first {
-                // UX-Fix 2026-05-21: Equal-Height-Cards. Vorher hatte die
-                // mittlere Karte ("Body Fat (Navy)" / "Yağ Oranı (Navy)")
-                // einen 2-Zeilen-Label, der nur diese eine Card wachsen
-                // liess → Layout asymmetrisch. Mit `.fixedSize(vertical:
-                // true)` auf der HStack nimmt sie die maximale intrinsische
-                // Hoehe ihrer Kinder; in Kombination mit `.frame(maxHeight:
-                // .infinity)` innerhalb jeder MetricCard ziehen die zwei
-                // kuerzeren Karten auf die gleiche Hoehe wie die mittlere.
-                HStack(spacing: 12) {
-                    MetricCard(
-                        label: String(localized: "metric.weight", bundle: .module),
-                        value: latest.weightKg.truncated(to: 2).formattedTwoDecimals,
-                        unit: "kg",
-                        delta: weeklyWeightDelta()
-                    )
-                    MetricCard(
-                        label: String(localized: "metric.kfaNavy", bundle: .module),
-                        value: latest.navyBodyFatPct?.truncated(to: 2).formattedTwoDecimals ?? "—",
-                        unit: latest.navyBodyFatPct != nil ? "%" : nil,
-                        delta: nil
-                    )
-                    MetricCard(
-                        label: String(localized: "metric.ffmi", bundle: .module),
-                        value: latest.ffmi?.truncated(to: 2).formattedTwoDecimals ?? "—",
-                        unit: nil,
-                        delta: nil
-                    )
+        if heroMetricSlots.isEmpty {
+            // Length 0 — Hero komplett ausblenden. EmptyView() rendert
+            // wirklich nichts; die folgenden Widgets schliessen ohne
+            // sichtbare Luecke an die NavBar an.
+            EmptyView()
+        } else if let latest = measurements.first {
+            // UX-Fix 2026-05-21: Equal-Height-Cards. `.fixedSize(vertical:
+            // true)` auf der HStack nimmt die maximale intrinsische Hoehe
+            // ihrer Kinder; in Kombination mit `.frame(maxHeight:
+            // .infinity)` innerhalb jeder MetricCard ziehen alle Karten
+            // auf die gleiche Hoehe — bleibt fuer beliebige Slot-Counts
+            // (1, 2 oder 3) funktional.
+            HStack(spacing: 12) {
+                ForEach(heroMetricSlots, id: \.self) { slot in
+                    heroMetricCard(for: slot, measurement: latest)
                 }
-                .fixedSize(horizontal: false, vertical: true)
-            } else {
-                EmptyMetricsCard()
             }
+            .fixedSize(horizontal: false, vertical: true)
+        } else {
+            EmptyMetricsCard()
         }
+    }
+
+    /// DEL-132 (Phase 1): Slot → MetricCard-Mapping. Pro `HeroMetricType`
+    /// ein Switch-Case der die richtigen Label/Wert/Unit-Werte aus dem
+    /// `UserBodyMeasurement` + Profile zusammensetzt. Default-Label-
+    /// Source ist jetzt `heroMetric.*.label` (statt der alten
+    /// `metric.*`-Keys), damit Card-Label und Settings-Picker-Label
+    /// aus EINER Catalog-Quelle kommen.
+    @ViewBuilder
+    private func heroMetricCard(for slot: HeroMetricType,
+                                measurement latest: UserBodyMeasurement) -> some View {
+        let label = String(localized: String.LocalizationValue(slot.localizationKey),
+                           bundle: .module)
+        switch slot {
+        case .weight:
+            MetricCard(
+                label: label,
+                value: latest.weightKg.truncated(to: 2).formattedTwoDecimals,
+                unit: "kg",
+                delta: weeklyWeightDelta()
+            )
+        case .bodyFatNavy:
+            MetricCard(
+                label: label,
+                value: latest.navyBodyFatPct?.truncated(to: 2).formattedTwoDecimals ?? "—",
+                unit: latest.navyBodyFatPct != nil ? "%" : nil,
+                delta: nil
+            )
+        case .ffmi:
+            MetricCard(
+                label: label,
+                value: latest.ffmi?.truncated(to: 2).formattedTwoDecimals ?? "—",
+                unit: nil,
+                delta: nil
+            )
+        case .leanMass:
+            MetricCard(
+                label: label,
+                value: latest.fatFreeMassKg?.truncated(to: 2).formattedTwoDecimals ?? "—",
+                unit: latest.fatFreeMassKg != nil ? "kg" : nil,
+                delta: nil
+            )
+        case .bmi:
+            let bmi = computedBMI(measurement: latest)
+            MetricCard(
+                label: label,
+                value: bmi?.truncated(to: 2).formattedTwoDecimals ?? "—",
+                unit: nil,
+                delta: nil
+            )
+        }
+    }
+
+    /// DEL-132 (Phase 1): BMI = weight_kg / (height_m)². Nil-Fallback
+    /// wenn entweder kein Measurement existiert oder die Profile-Hoehe
+    /// 0 ist (theoretisch unmoeglich nach Onboarding, defensiv weil
+    /// SwiftData ja keine Mind-Constraint hat).
+    private func computedBMI(measurement: UserBodyMeasurement) -> Double? {
+        guard let profile = profiles.first, profile.heightCm > 0 else { return nil }
+        let heightM = profile.heightCm / 100.0
+        return measurement.weightKg / (heightM * heightM)
     }
 
     /// Thin glue over `BodyCalculations.weeklyWeightDelta`. The Core algorithm

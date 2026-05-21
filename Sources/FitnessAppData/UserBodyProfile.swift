@@ -33,6 +33,16 @@ public final class UserBodyProfile {
     /// "wo sind meine Cards"-Panik.
     public var activeDashboardWidgetsRaw: [String] = DashboardWidgetType.defaultOrder.map { $0.rawValue }
 
+    /// DEL-132 (Phase 1): Hero-Metric-Slots fuer die Top-Reihe des
+    /// Dashboards. Length 0-3. Identisches Pattern wie
+    /// `activeDashboardWidgetsRaw`: rawValues in Render-Reihenfolge,
+    /// nicht-enthaltene Cases sind versteckt, Length-0 versteckt die
+    /// ganze Hero-Reihe. Default = `HeroMetricType.defaultOrder`
+    /// (Weight + BodyFat + FFMI) — pre-Phase-1-Profile bekommen via
+    /// Lightweight-Migration das identische 3er-Set, kein visueller
+    /// Bruch fuer Bestand.
+    public var heroMetricSlotsRaw: [String] = HeroMetricType.defaultOrder.map { $0.rawValue }
+
     /// Convenience-Accessor mit Default-Fallback, falls jemand einen
     /// invaliden String reinschreibt.
     public var coachingTone: CoachingTone {
@@ -53,6 +63,19 @@ public final class UserBodyProfile {
     public var activeDashboardWidgets: [DashboardWidgetType] {
         get { activeDashboardWidgetsRaw.compactMap { DashboardWidgetType(rawValue: $0) } }
         set { activeDashboardWidgetsRaw = newValue.map { $0.rawValue } }
+    }
+
+    /// DEL-132 (Phase 1): Typed Accessor fuer Hero-Slots. Setter clampt
+    /// auf `HeroMetricType.maxSlots` (3) — wenn die UI versehentlich mehr
+    /// Slots schreiben wollte, ueberlebt das Layout. Stale rawStrings
+    /// werden beim Lesen rausgefiltert (gleicher Robustness-Pattern wie
+    /// activeDashboardWidgets).
+    public var heroMetricSlots: [HeroMetricType] {
+        get { heroMetricSlotsRaw.compactMap { HeroMetricType(rawValue: $0) } }
+        set {
+            let clamped = Array(newValue.prefix(HeroMetricType.maxSlots))
+            heroMetricSlotsRaw = clamped.map { $0.rawValue }
+        }
     }
 
     public init(
