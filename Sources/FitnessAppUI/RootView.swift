@@ -29,11 +29,23 @@ public struct RootView: View {
     /// ganze App angewandt. "system" → nil (folgt iOS-Einstellung).
     @AppStorage("pref_appearance") private var appearanceRaw: String = "system"
 
+    /// DEL-134: Globaler Reset-Gate-Flag. SettingsView.resetApp() setzt
+    /// das auf true VOR der SwiftData-Deletion. Solange true, rendern
+    /// wir eine sichere ProgressView statt MainTabView/OnboardingView —
+    /// kein Sub-View kann waehrend der Deletion-Async-Phase auf stale
+    /// @Query-Refs zugreifen + crashen. Wenn `resetApp()` fertig ist
+    /// (Success oder Error), wird der Flag wieder auf false gesetzt
+    /// und RootView swappt automatisch zur passenden View (Onboarding
+    /// wenn profiles leer, sonst Main).
+    @AppStorage("isResetting") private var isResetting: Bool = false
+
     public init() {}
 
     public var body: some View {
         Group {
-            if profiles.isEmpty {
+            if isResetting {
+                resettingPlaceholder
+            } else if profiles.isEmpty {
                 OnboardingView()
             } else {
                 MainTabView()
@@ -42,6 +54,7 @@ public struct RootView: View {
         // Crossfade when the @Query result flips from empty to non-empty (and vice
         // versa, e.g. after a Settings reset).
         .animation(.easeInOut(duration: 0.25), value: profiles.isEmpty)
+        .animation(.easeInOut(duration: 0.25), value: isResetting)
         .environment(navigation)
         .environment(healthKit)
         .environment(restTimerActivity)
@@ -58,6 +71,13 @@ public struct RootView: View {
             navigation.returnToDashboard()
         }
         .task {
+            // DEL-134-Recovery: wenn der vorige Reset-Versuch mid-flight
+            // crashed (sehr selten — z.B. iOS-Background-Termination kurz
+            // nach `modelContext.save`), bleibt `isResetting=true` in
+            // AppStorage stehen. Beim naechsten Launch wuerde RootView
+            // dann auf der ProgressView haengen. Defensive reset.
+            if isResetting { isResetting = false }
+
             // Refresh per-launch availability for native integrations. Both checks
             // are cheap; both are no-ops when their frameworks aren't present.
             await healthKit.refreshAuthorizationStatus()
@@ -105,6 +125,24 @@ public struct RootView: View {
             navigation.workoutPath = NavigationPath()
             navigation.workoutPath.append(ActiveSessionRoute(session: session))
         }
+    }
+
+    /// DEL-134: Safe-Mode-Placeholder waehrend der App-Reset-Sequenz.
+    /// Alle @Query-basierten Sub-Views sind hier komplett ausgeklinkt —
+    /// damit es keine dangling-pointer-crash mehr beim Reset gibt.
+    /// Sobald SettingsView.resetApp() den isResetting-Flag wieder auf
+    /// false setzt (nach erfolgreichem oder gescheiterten save), swappt
+    /// RootView automatisch auf OnboardingView oder MainTabView.
+    private var resettingPlaceholder: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .scaleEffect(1.4)
+            Text("root.resetting.label", bundle: .module)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.Deltiq.background.ignoresSafeArea())
     }
 
     /// Mappt den AppStorage-String auf SwiftUI's ColorScheme?. `nil` =

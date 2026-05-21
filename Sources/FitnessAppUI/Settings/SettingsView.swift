@@ -22,6 +22,13 @@ public struct SettingsView: View {
 
     @Query private var profiles: [UserBodyProfile]
 
+    /// DEL-134: Globaler Reset-Gate-Flag. Wird in `resetApp()` auf true
+    /// gesetzt vor der SwiftData-Deletion, RootView checkt ihn und
+    /// rendert eine sichere ProgressView statt MainTabView. Ohne den
+    /// Flag kann jede View, die @Query auf gleich-zu-loeschende Objekte
+    /// hat, mid-render crashen.
+    @AppStorage("isResetting") private var isResetting: Bool = false
+
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
     // DEL-018: Theme + Timer-Feedback + Reminder-Praeferenzen
     @AppStorage("pref_appearance") private var appearanceRaw: String = "system"   // system|light|dark
@@ -567,6 +574,16 @@ public struct SettingsView: View {
     /// Neue `@Model`-Typen MUESSEN in `deleteAll`-Sequenz unten — sonst
     /// "Geist"-Daten nach dem vermeintlichen Reset.
     private func resetApp() {
+        // DEL-134: isResetting-Gate. Vorher konnten Views, die zwischen
+        // dem Navigation-Reset und dem async-deferred Delete neu rendern,
+        // auf SwiftData-Objekte zugreifen, die im naechsten Frame
+        // verschwinden — Crash mit "Object was deleted from context"
+        // / Dangling-Pointer. Der AppStorage-Flag wird VOR der Deletion
+        // gesetzt; RootView checkt ihn und rendert eine ProgressView
+        // statt MainTabView, sodass keine Views mehr @Query-Resultate
+        // beruehren.
+        isResetting = true
+
         // 1) Navigation-State sofort zuruecksetzen — entfernt @Bindable-
         //    References auf gleich-zu-loeschende UserBodyProfile/Plan/Day.
         navigation.workoutPath = NavigationPath()
@@ -600,6 +617,11 @@ public struct SettingsView: View {
             } catch {
                 self.resetErrorMessage = error.localizedDescription
             }
+            // DEL-134: Release-Gate immer (Error-Pfad UND Success-Pfad).
+            // RootView swappt dann automatisch zur OnboardingView (weil
+            // profiles.isEmpty == true) oder zur ErrorView falls die
+            // Error-Message gesetzt wurde.
+            self.isResetting = false
         }
     }
 

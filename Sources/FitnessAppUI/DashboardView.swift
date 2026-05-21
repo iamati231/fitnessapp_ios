@@ -748,26 +748,56 @@ public struct DashboardView: View {
     @ViewBuilder
     private var planDayCard: some View {
         if let plan = activePlans.first, !plan.days.isEmpty {
-            let day = nextScheduledDay(in: plan)
+            // DEL-133: State-Priority-Fix. Wenn eine Session GERADE laeuft
+            // (auch wenn sie auf einem ANDEREN Tag als dem regulär-nächsten
+            // gestartet wurde), zeigen wir die Running-Session statt der
+            // Plan-Sequenz. Vorher rendete das Dashboard stur "Ganzkörper A
+            // — direkt starten", waehrend der User in Wirklichkeit
+            // "Ganzkörper B" im Plan-Tab gestartet hatte.
+            //
+            // Priorisierung:
+            //   1. Wenn openSession.day im aktuellen Plan existiert →
+            //      Zeige diesen Day (User sieht: "Ganzkörper B läuft").
+            //      activeWorkoutButton rendert dann den Resume-Button.
+            //   2. Sonst (kein Workout aktiv, oder aktiv auf einem anderen
+            //      Plan) → Zeige den planmaessig naechsten Tag wie bisher.
+            let runningDay: TrainingDay? = openSessions.first.flatMap { open in
+                guard let sessionDay = open.day,
+                      sessionDay.plan?.persistentModelID == plan.persistentModelID
+                else { return nil }
+                return sessionDay
+            }
+            let day = runningDay ?? nextScheduledDay(in: plan)
             // Nur explizit als .rest markierte Tage gelten als Ruhetag.
             // Leere Trainingstage (User noch nicht fertig konfiguriert) sind
             // KEINE Ruhetage — sie zeigen den disabled "Training starten"-
             // Button mit Hint, dass Uebungen fehlen (DEL-021/023).
             let isRestDay = day.type == .rest
+            let isCurrentlyRunning = runningDay != nil
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
                     // DEL-105: Brand-Akzent fuer Trainings-Tage statt iOS-Blau.
                     // Rest-Day-Branch bleibt Purple — semantische Farbe fuer Ruhe.
-                    Image(systemName: isRestDay ? "bed.double.fill" : "calendar.badge.clock")
+                    // DEL-133: Running-Branch bekommt play.circle.fill als
+                    // Icon — User sieht sofort, dass das Workout AKTIV ist.
+                    Image(systemName: isCurrentlyRunning
+                        ? "play.circle.fill"
+                        : (isRestDay ? "bed.double.fill" : "calendar.badge.clock"))
                         .font(.title2)
                         .foregroundStyle(.white)
                         .frame(width: 38, height: 38)
                         .background((isRestDay ? Color.purple : Color.deltiqOrange).gradient)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(isRestDay
-                             ? "dashboard.plan.todayRestDay"
-                             : "dashboard.plan.nextWorkout",
+                        // DEL-133: drei-Wege-Label.
+                        //   * running  → "Aktuell läuft" (war: "Nächstes Training")
+                        //   * rest-day → "Heute Ruhetag"
+                        //   * default  → "Nächstes Training"
+                        Text(isCurrentlyRunning
+                             ? "dashboard.plan.currentlyRunning"
+                             : (isRestDay
+                                ? "dashboard.plan.todayRestDay"
+                                : "dashboard.plan.nextWorkout"),
                              bundle: .module)
                             .font(.caption)
                             .foregroundStyle(.secondary)
