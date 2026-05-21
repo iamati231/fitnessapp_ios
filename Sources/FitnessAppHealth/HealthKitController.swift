@@ -95,6 +95,40 @@ public final class HealthKitController {
         #endif
     }
 
+    /// DEL-132 (Phase 3): Letzter Ruhepuls aus HealthKit, in BPM. Identische
+    /// nil-on-failure-Semantik wie die Body-Composition-Reader. Fehler
+    /// landen in `lastError`, der Caller kriegt nil — die UI rendert dann
+    /// "—" als Card-Wert.
+    public func latestRestingHeartRateBPM() async -> Double? {
+        #if canImport(HealthKit)
+        guard let service, authorizationStatus == .sharingAuthorized else { return nil }
+        do {
+            return try await service.latestRestingHeartRateBPM()
+        } catch {
+            lastError = error
+            return nil
+        }
+        #else
+        return nil
+        #endif
+    }
+
+    /// DEL-132 (Phase 3): Heutige Schritte aus HealthKit (cumulative sum
+    /// von startOfDay bis jetzt). nil-on-failure.
+    public func stepCountToday() async -> Double? {
+        #if canImport(HealthKit)
+        guard let service, authorizationStatus == .sharingAuthorized else { return nil }
+        do {
+            return try await service.stepCountToday()
+        } catch {
+            lastError = error
+            return nil
+        }
+        #else
+        return nil
+        #endif
+    }
+
     /// Aggregate pull used by the onboarding HealthKit-step. Fetches DOB, sex,
     /// height, and weight in parallel. Returns `OnboardingHealthSnapshot.empty`
     /// when HealthKit is unavailable / unauthorized — caller checks individual

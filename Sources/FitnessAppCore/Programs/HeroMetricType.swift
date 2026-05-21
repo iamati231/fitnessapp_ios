@@ -56,6 +56,17 @@ public enum HeroMetricType: String, Codable, Sendable, CaseIterable, Hashable {
     /// Layout: "3" ohne Unit. 0 ist valide ("noch nichts diese Woche").
     case workoutsThisWeek
 
+    /// DEL-132 (Phase 3): Letzter Ruhepuls aus HealthKit (BPM). Apple
+    /// Watch schreibt den Wert ca. einmal pro Tag. Bei keinem Sample
+    /// oder fehlender Permission → "—". Card-Layout: Wert + "bpm"-Unit.
+    case restingHR
+
+    /// DEL-132 (Phase 3): Heutige Schritte aus HealthKit (cumulative
+    /// sum). Aktualisiert sich kontinuierlich; Dashboard fetched on
+    /// `.task` + bei Slot-Aenderung. Bei fehlender Permission → "—".
+    /// Card-Layout: Wert ohne Unit (Anzahl).
+    case stepsToday
+
     /// xcstrings-Lookup-Key: `heroMetric.{rawValue}.label`.
     public var localizationKey: String {
         "heroMetric.\(rawValue).label"

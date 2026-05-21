@@ -22,6 +22,12 @@ public actor HealthKitService {
     private static let dobType      = HKCharacteristicType(.dateOfBirth)
     private static let sexType      = HKCharacteristicType(.biologicalSex)
 
+    /// DEL-132 (Phase 3): Hero-Metric-Sources fuer das Dashboard.
+    /// Read-only — wir schreiben weder Ruhepuls noch Schritte zurueck
+    /// (Apple Watch / iPhone Sensors generieren die ohnehin).
+    private static let restingHRType  = HKQuantityType(.restingHeartRate)
+    private static let stepCountType  = HKQuantityType(.stepCount)
+
     // MARK: Lifecycle
 
     public static var isHealthDataAvailable: Bool {
@@ -51,7 +57,11 @@ public actor HealthKitService {
         ]
         let toRead:  Set<HKObjectType> = [
             Self.weightType, Self.bodyFatType, Self.leanMassType,
-            Self.heightType, Self.dobType, Self.sexType
+            Self.heightType, Self.dobType, Self.sexType,
+            // DEL-132 (Phase 3): Hero-Metric Read-Permissions.
+            // restingHR + steps werden nicht zurueckgeschrieben, daher
+            // nur in `toRead`.
+            Self.restingHRType, Self.stepCountType,
         ]
         do {
             try await store.requestAuthorization(toShare: toShare, read: toRead)
@@ -93,6 +103,45 @@ public actor HealthKitService {
     public func latestLeanBodyMassKg() async throws -> Double? {
         guard let sample = try await latestSample(of: Self.leanMassType) else { return nil }
         return sample.quantity.doubleValue(for: .gramUnit(with: .kilo))
+    }
+
+    /// DEL-132 (Phase 3): Letzter Ruhepuls in BPM. Apple Watch schreibt
+    /// einen neuen Wert ca. einmal pro Tag (errechnet aus den niedrigsten
+    /// Stunden-Mittelwerten der vergangenen Tage). Wir nehmen einfach den
+    /// neuesten Sample — kein Aggregation noetig, der Wert IST schon der
+    /// "stabile Ruhepuls".
+    public func latestRestingHeartRateBPM() async throws -> Double? {
+        guard let sample = try await latestSample(of: Self.restingHRType) else { return nil }
+        return sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+    }
+
+    /// DEL-132 (Phase 3): Heutige Schritte. Anders als Ruhepuls (point
+    /// sample) sind Schritte cumulativ — jedes iPhone/Watch-Update
+    /// schreibt einen kleinen Delta-Sample. Wir aggregieren via
+    /// `HKStatisticsQuery` mit `.cumulativeSum` ueber das Date-Interval
+    /// `startOfDay ... now`. Locale-aware via Calendar.current.
+    public func stepCountToday() async throws -> Double? {
+        let cal = Calendar.current
+        let now = Date()
+        let start = cal.startOfDay(for: now)
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: now, options: .strictStartDate)
+
+        return try await withCheckedThrowingContinuation { continuation in
+            let query = HKStatisticsQuery(
+                quantityType: Self.stepCountType,
+                quantitySamplePredicate: predicate,
+                options: .cumulativeSum
+            ) { _, statistics, error in
+                if let error {
+                    continuation.resume(throwing: HealthKitError.queryFailed(
+                        reason: error.localizedDescription))
+                    return
+                }
+                let count = statistics?.sumQuantity()?.doubleValue(for: .count())
+                continuation.resume(returning: count)
+            }
+            store.execute(query)
+        }
     }
 
     /// Most recent height in centimetres. Comes from manual entries in Apple

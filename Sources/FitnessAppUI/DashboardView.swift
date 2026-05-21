@@ -4,6 +4,7 @@ import SwiftData
 import Charts
 import FitnessAppCore
 import FitnessAppData
+import FitnessAppHealth
 
 /// Home screen — landing surface answering three questions on app open:
 ///   1. Where am I (latest weight + body-fat + FFMI)?
@@ -14,6 +15,11 @@ public struct DashboardView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var navigation
+    /// DEL-132 (Phase 3): HealthKit-Controller fuer Hero-Metric-Slots
+    /// `.restingHR` + `.stepsToday`. Wird in RootView injected; falls
+    /// nicht vorhanden (extrem unwahrscheinlich), bleiben die HK-Cards
+    /// auf "—" stehen.
+    @Environment(HealthKitController.self) private var healthKit
 
     /// Reverse-chronological so `.first` is the latest measurement.
     @Query(sort: \BodyMeasurement.date, order: .reverse)
@@ -58,6 +64,13 @@ public struct DashboardView: View {
     @State private var showingActiveSessionConflict = false
     @State private var pendingNewStart: (() -> Void)?
 
+    /// DEL-132 (Phase 3): Async-fetched HealthKit-Werte fuer die
+    /// entsprechenden Hero-Slots. Werden in `.task(id:)` auf Slot-
+    /// Aenderung neu gezogen, sind nil solange noch nicht geholt /
+    /// keine Permission / keine Daten.
+    @State private var restingHRValue: Double?
+    @State private var stepsTodayValue: Double?
+
     public init() {}
 
     public var body: some View {
@@ -101,6 +114,14 @@ public struct DashboardView: View {
         // Bento-Cards (Surface) abheben. Im Light-Mode identisch zu
         // systemGroupedBackground, im Dark-Mode warmer (#0A0A0A statt #000).
         .background(Color.Deltiq.background.ignoresSafeArea())
+        // DEL-132 (Phase 3): HealthKit-Werte fuer aktive Hero-Slots
+        // ziehen. `.task(id:)` schiesst neu, sobald sich die Slot-Liste
+        // aendert (z.B. nach Settings-Toggle), zusaetzlich beim ersten
+        // Render. Bei fehlender HK-Permission bleiben die @State-
+        // Properties auf nil und die Cards zeigen "—".
+        .task(id: heroMetricSlots) {
+            await refreshHealthKitHeroValues()
+        }
         // DEL-073: Navigation-Title aus xcstrings.
         .navigationTitle(Text("dashboard.title", bundle: .module))
         #if os(iOS)
@@ -407,21 +428,46 @@ public struct DashboardView: View {
                 delta: nil
             )
         case .waterTodayMl:
-            // DEL-132 (Phase 2): Wasser-Hero — Value als plain Int-String
-            // (ohne Decimal-Formatierung, weil ml ganzzahlig sind).
+            // DEL-132 (Phase 2): Wasser-Hero. Visual-Consistency-Fix
+            // 2026-05-21: 2 Dezimalstellen wie alle anderen Hero-Cards,
+            // auch wenn der Underlying-Wert ein Int ist (`WaterEntry.
+            // amountMl: Int`). Double-Konvertierung damit
+            // `formattedTwoDecimals` ("%.2f") greift → "1250,00".
             MetricCard(
                 label: label,
-                value: "\(todayWaterMl)",
+                value: Double(todayWaterMl).formattedTwoDecimals,
                 unit: "ml",
                 delta: nil
             )
         case .workoutsThisWeek:
-            // DEL-132 (Phase 2): Workouts-this-Week — Plain Counter ohne
-            // Unit (Anzahl). Bei 0 zeigt die Card "0" statt "—", weil 0
-            // ein bewusster Wert ist ("noch nichts diese Woche").
+            // DEL-132 (Phase 2): Workouts-this-Week. Gleicher Visual-
+            // Consistency-Fix wie waterTodayMl — selbst wenn "3,00"
+            // semantisch leicht skurril aussieht (Workouts sind diskret),
+            // ist die typografische Uniformitaet mit Weight/FFMI/BMI im
+            // selben HStack das wichtigere Goal (User-Feedback 2026-05-21).
             MetricCard(
                 label: label,
-                value: "\(workoutsThisWeekCount)",
+                value: Double(workoutsThisWeekCount).formattedTwoDecimals,
+                unit: nil,
+                delta: nil
+            )
+        case .restingHR:
+            // DEL-132 (Phase 3): Ruhepuls aus HealthKit. nil → "—"
+            // (keine Permission, kein Sample auf der Watch, kein iOS-
+            // 17-Health-Setup). Apple Watch schreibt typisch alle 1-2
+            // Tage einen neuen Wert, ein Sample-Lebenszeitalter von
+            // wenigen Stunden ist normal.
+            MetricCard(
+                label: label,
+                value: restingHRValue?.truncated(to: 2).formattedTwoDecimals ?? "—",
+                unit: restingHRValue != nil ? "bpm" : nil,
+                delta: nil
+            )
+        case .stepsToday:
+            // DEL-132 (Phase 3): Schritte heute. nil → "—".
+            MetricCard(
+                label: label,
+                value: stepsTodayValue?.truncated(to: 2).formattedTwoDecimals ?? "—",
                 unit: nil,
                 delta: nil
             )
@@ -461,6 +507,30 @@ public struct DashboardView: View {
         return completedSessions
             .filter { !$0.isRestDay && week.contains($0.startTime) }
             .count
+    }
+
+    /// DEL-132 (Phase 3): Async refresh fuer HealthKit-gestuetzte Hero-
+    /// Slots. Nur die tatsaechlich aktiven Slots werden geholt — wenn
+    /// User keinen restingHR/stepsToday-Slot in den Hero-Settings hat,
+    /// triggert das gar keinen HK-Read. Parallel via `async let`, weil
+    /// die zwei Reads unabhaengig sind.
+    private func refreshHealthKitHeroValues() async {
+        let slots = heroMetricSlots
+        let needsRestingHR = slots.contains(.restingHR)
+        let needsSteps     = slots.contains(.stepsToday)
+        guard needsRestingHR || needsSteps else { return }
+
+        async let hr: Double?    = needsRestingHR ? await healthKit.latestRestingHeartRateBPM() : nil
+        async let steps: Double? = needsSteps     ? await healthKit.stepCountToday()            : nil
+
+        let resolvedHR    = await hr
+        let resolvedSteps = await steps
+
+        // Nur setzen wenn Slot aktiv ist — Stale-Reads von vorher-
+        // gepulled-jetzt-deaktiviert wuerden sonst auf der UI haengen
+        // bleiben. Beim Deaktivieren raeumen wir entsprechend auf nil.
+        restingHRValue  = needsRestingHR ? resolvedHR    : nil
+        stepsTodayValue = needsSteps     ? resolvedSteps : nil
     }
 
     /// Thin glue over `BodyCalculations.weeklyWeightDelta`. The Core algorithm
