@@ -267,15 +267,24 @@ public struct WorkoutSummaryView: View {
 
     /// DEL-136 Part C: Erstellt eine neue Exercise tied to session-only
     /// (day=nil) basierend auf einem ExerciseTemplate aus der Library,
-    /// plus eine leere ExerciseLog-Zeile als Editier-Anker. orderIndex
-    /// wird auf einen hohen Wert gesetzt, sodass die neue Uebung am Ende
-    /// der Session erscheint.
+    /// plus N leere ExerciseLog-Anker-Zeilen. orderIndex wird auf einen
+    /// hohen Wert gesetzt, sodass die neue Uebung am Ende der Session
+    /// erscheint.
+    ///
+    /// **UX-Iteration 2026-05-22**: vorher legte der Picker nur EINEN Log
+    /// an — User musste fuer 3 Saetze 4-mal den Picker oeffnen oder im
+    /// Workflow basteln. Jetzt:
+    ///   * Strength + TimeBased: 3 Sätze default (typisches Anfangs-Set-
+    ///     Count fuer eine planmaessige Uebung)
+    ///   * Cardio: 1 Satz default (Cardio-Einheiten sind in der Regel
+    ///     monolithisch — niemand laeuft "3 Sätze á 5 km")
+    /// Ergaenzend bekommt jede Section eine "+ Satz hinzufügen"-Row im
+    /// Edit-Mode (siehe `exerciseSection`), sodass mehr/weniger Sätze
+    /// flexibel pro Übung gehandhabt werden koennen.
     ///
     /// `template.name` (deutscher Base-Key) wird als Exercise.name
-    /// uebernommen — der displayName-Extension-Lookup macht die
-    /// lokalisierte Anzeige automatisch via `ExerciseLibraryData.first
-    /// where: name`. Equipment/primaryMuscle/isCustom sind Plan-Editor-
-    /// Felder die fuer Session-Only-Uebungen irrelevant sind.
+    /// uebernommen — displayName-Extension macht die lokalisierte
+    /// Anzeige automatisch via ExerciseLibraryData-Lookup.
     private func addExerciseToSession(from template: ExerciseTemplate, isCustom: Bool) {
         let nextOrder = (session.logs.compactMap { $0.exercise?.orderIndex }.max() ?? -1) + 1
         let exercise = Exercise(
@@ -290,23 +299,24 @@ public struct WorkoutSummaryView: View {
             day: nil   // orphan: kein Plan-Polluting fuer kuenftige Sessions
         )
         modelContext.insert(exercise)
-        // Eine leere Log-Zeile als Anker. ExerciseLog.init derived die
-        // Snapshot-Felder automatisch aus `exercise.name` etc.
-        let log = ExerciseLog(
-            setIndex: 0,
-            weight: 0,
-            reps: 0,
-            rir: 2,
-            exercise: exercise,
-            session: session
-        )
-        modelContext.insert(log)
+        let defaultSetCount = template.isCardio ? 1 : 3
+        for i in 0..<defaultSetCount {
+            let log = ExerciseLog(
+                setIndex: i,
+                weight: 0,
+                reps: 0,
+                rir: 2,
+                exercise: exercise,
+                session: session
+            )
+            modelContext.insert(log)
+        }
         try? modelContext.save()
     }
 
     /// DEL-136 Part C: Custom-Variante — User hat im Picker keinen Library-
     /// Pick, sondern einen freien Namen eingegeben. Erstellt eine generische
-    /// Strength-Exercise mit dem User-Namen.
+    /// Strength-Exercise mit dem User-Namen + 3 Default-Saetzen.
     private func addCustomExerciseToSession(named name: String) {
         let nextOrder = (session.logs.compactMap { $0.exercise?.orderIndex }.max() ?? -1) + 1
         let exercise = Exercise(
@@ -321,8 +331,33 @@ public struct WorkoutSummaryView: View {
             day: nil
         )
         modelContext.insert(exercise)
+        for i in 0..<3 {
+            let log = ExerciseLog(
+                setIndex: i,
+                weight: 0,
+                reps: 0,
+                rir: 2,
+                exercise: exercise,
+                session: session
+            )
+            modelContext.insert(log)
+        }
+        try? modelContext.save()
+    }
+
+    /// DEL-136 Part C-Iteration: Fuegt EINEN weiteren Satz zur Exercise
+    /// in der aktuellen Session hinzu. Wird vom "+ Satz hinzufügen"-Button
+    /// am Ende jeder exercise-Section im Edit-Mode getriggert. Defaults:
+    /// weight 0, reps 0, rir 2 — User editiert via existierender Edit-
+    /// Mode-Inputs. setIndex = max(existing)+1, sodass die neue Row am
+    /// Ende der Section erscheint.
+    private func addSet(to exercise: Exercise) {
+        let existingIndices = session.logs
+            .filter { $0.exercise?.persistentModelID == exercise.persistentModelID }
+            .map(\.setIndex)
+        let nextIndex = (existingIndices.max() ?? -1) + 1
         let log = ExerciseLog(
-            setIndex: 0,
+            setIndex: nextIndex,
             weight: 0,
             reps: 0,
             rir: 2,
@@ -330,6 +365,7 @@ public struct WorkoutSummaryView: View {
             session: session
         )
         modelContext.insert(log)
+        recalculateSessionTotals()
         try? modelContext.save()
     }
 
@@ -741,6 +777,27 @@ public struct WorkoutSummaryView: View {
                 }
                 .onDelete { offsets in
                     deleteSets(of: exercise, indices: offsets)
+                }
+                // DEL-136 Part C-Iteration: "+ Satz hinzufügen"-Row im
+                // History-Edit-Mode. Nur isEditingHistory, NICHT im
+                // New-Mode (post-finish) — dort gibt's keinen Use-Case
+                // fuer nachtraegliche Sätze, der finishWorkout-Flow hat
+                // gerade erst die totals geschrieben.
+                if isReadOnly && isEditingHistory {
+                    Button {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                            addSet(to: exercise)
+                        }
+                    } label: {
+                        Label {
+                            Text("summary.addSet.button", bundle: .module)
+                        } icon: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(Color.deltiqOrange)
+                        }
+                        .font(.callout)
+                    }
+                    .buttonStyle(.plain)
                 }
             } else {
                 ForEach(logs) { log in
