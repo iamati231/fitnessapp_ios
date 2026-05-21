@@ -51,7 +51,9 @@ public struct ExercisePickerView: View {
             }
             // `.navigationBarDrawer(displayMode:)` is iOS-only; default placement
             // works on both iOS and macOS toolchains.
-            .searchable(text: $search, prompt: "Suche")
+            // DEL-135: i18n des Search-Prompts.
+            .searchable(text: $search,
+                        prompt: Text("picker.exercise.searchPlaceholder", bundle: .module))
             .navigationTitle(Text("picker.exercise.title", bundle: .module))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -96,7 +98,8 @@ public struct ExercisePickerView: View {
     // MARK: Sections
 
     private var customSection: some View {
-        Section("Eigene Übung") {
+        // DEL-135: lokalisierter Section-Header via xcstrings.
+        Section {
             HStack {
                 TextField(String(localized: "picker.exercise.namePlaceholder", bundle: .module), text: $customName)
                 Button {
@@ -111,6 +114,8 @@ public struct ExercisePickerView: View {
                 }
                 .disabled(customName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
+        } header: {
+            Text("picker.exercise.section.customTitle", bundle: .module)
         }
     }
 
@@ -122,16 +127,22 @@ public struct ExercisePickerView: View {
     @ViewBuilder
     private var librarySection: some View {
         if filteredTemplates.isEmpty {
-            Section("Bibliothek") {
+            // DEL-135: lokalisierter Section-Header + No-Match-Text.
+            Section {
                 if search.isEmpty {
                     Text("picker.exercise.libraryEmpty", bundle: .module)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 } else {
-                    Text("Keine Treffer für „\(search)\".")
+                    // %@ wird zur eingegebenen Such-Phrase
+                    Text(String(format: String(localized: "picker.exercise.noMatchFormat",
+                                                bundle: .module),
+                                search))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
+            } header: {
+                Text("picker.exercise.section.library", bundle: .module)
             }
         } else {
             // Custom oben — markiert mit Stern-Symbol-Section.
@@ -148,7 +159,12 @@ public struct ExercisePickerView: View {
                         .buttonStyle(.plain)
                     }
                 } header: {
-                    Label("Eigene", systemImage: "star.fill")
+                    // DEL-135: lokalisierter Header.
+                    Label {
+                        Text("picker.exercise.section.customs", bundle: .module)
+                    } icon: {
+                        Image(systemName: "star.fill")
+                    }
                 }
             }
             // Library alphabetisch in A/B/C-Sections.
@@ -172,13 +188,22 @@ public struct ExercisePickerView: View {
     /// buchstabe gruppiert. Umlaute werden zu ihrem Basis-Buchstaben
     /// gemappt (Ä→A, Ö→O, Ü→U), damit "Übung X" sauber unter "U" landet
     /// und nicht eine eigene Ä-Section bildet.
+    ///
+    /// DEL-135 i18n-Fix: Gruppierung + Sortierung laufen jetzt auf
+    /// `template.displayName` (lokalisierter Anzeige-Name) statt
+    /// `template.name` (deutscher Base-Key). Vorher landete "Kolay Koşu"
+    /// (TR) unter "E" (weil base="Easy Run") — jetzt korrekt unter "K".
+    /// `localizedStandardCompare` macht die sprachspezifisch korrekte
+    /// Alphabetisierung (z.B. TR: i/İ Sortierung anders als EN).
     private var alphabeticalGroups: [AlphabetGroup] {
         let nonCustoms = filteredTemplates.filter { !$0.isCustom }
-        let grouped = Dictionary(grouping: nonCustoms) { letterKey(of: $0.name) }
+        let grouped = Dictionary(grouping: nonCustoms) { letterKey(of: $0.displayName) }
         return grouped.keys.sorted().map { key in
             AlphabetGroup(
                 letter: key,
-                templates: grouped[key]?.sorted { $0.name.localizedCompare($1.name) == .orderedAscending } ?? []
+                templates: grouped[key]?.sorted {
+                    $0.displayName.localizedStandardCompare($1.displayName) == .orderedAscending
+                } ?? []
             )
         }
     }
@@ -219,7 +244,14 @@ public struct ExercisePickerView: View {
             }
         }
         guard !trimmed.isEmpty else { return list }
-        return list.filter { $0.name.localizedCaseInsensitiveContains(trimmed) }
+        // DEL-135 i18n-Fix: Suche im lokalisierten Anzeige-Namen statt
+        // im deutschen Base-Key. Vorher musste ein türkischer User
+        // nach "Easy Run" suchen, um den Lauf-Eintrag zu finden, der
+        // im UI als "Kolay Koşu" angezeigt wird.
+        // `localizedCaseInsensitiveContains` ist sprach-aware: matched
+        // TR "İ" auf "i", DE "ß" auf "ss", etc. — korrekt fuer alle
+        // drei App-Sprachen.
+        return list.filter { $0.displayName.localizedCaseInsensitiveContains(trimmed) }
     }
 }
 
@@ -231,11 +263,19 @@ private struct TemplateRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // DEL-135 i18n-Fix Bug 3: vorher `Color.accentColor` (= das
+            // Asset-Catalog AccentColor, in unserem Setup blau). Beim
+            // Aktivieren der Search-Bar rendert iOS die Results-Liste in
+            // einem separaten View-Container, der den vom Parent gesetzten
+            // accent-Tint NICHT erbt → Icons sprangen plötzlich auf
+            // System-Blau statt Brand-Orange. Explizit `Color.deltiqOrange`
+            // hartgekoppelt → bleibt konsistent, egal in welchem
+            // searchable-Sub-Container die Row gerendert wird.
             Image(systemName: equipmentIcon(template.equipment))
                 .font(.body)
                 .foregroundStyle(.white)
                 .frame(width: 32, height: 32)
-                .background(Color.accentColor.gradient)
+                .background(Color.deltiqOrange.gradient)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
             VStack(alignment: .leading, spacing: 2) {
@@ -247,7 +287,8 @@ private struct TemplateRow: View {
                     Text(template.displayName)
                         .font(.body)
                     if template.isCustom {
-                        Text("Custom")
+                        // DEL-135: lokalisierter Custom-Badge.
+                        Text("picker.exercise.customBadge", bundle: .module)
                             .font(.caption2.weight(.bold))
                             .padding(.horizontal, 4)
                             .padding(.vertical, 1)
