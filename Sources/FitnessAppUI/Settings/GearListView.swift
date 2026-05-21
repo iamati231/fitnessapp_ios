@@ -19,50 +19,11 @@ public struct GearListView: View {
     public init() {}
 
     public var body: some View {
-        List {
+        Group {
             if allGears.isEmpty {
-                ContentUnavailableView {
-                    Label {
-                        Text("gear.list.empty.title", bundle: .module)
-                    } icon: {
-                        // DEL-130: Icon-Wechsel von `shoe` auf `backpack.fill`.
-                        // Vorher suggerierte der Schuh-Icon den Empty-State
-                        // als Lauf-only, obwohl wir hier auch Fahrräder (DEL-
-                        // 084) tracken — der User uebersah die Bike-Option.
-                        // `backpack.fill` ist ab iOS 17+ verfügbar und steht
-                        // generisch fuer "Trainings-Equipment", egal welche
-                        // Sportart.
-                        Image(systemName: "backpack.fill")
-                    }
-                } description: {
-                    Text("gear.list.empty.description", bundle: .module)
-                } actions: {
-                    Button {
-                        showingNewGearSheet = true
-                    } label: {
-                        Label {
-                            Text("gear.list.empty.cta", bundle: .module)
-                        } icon: {
-                            Image(systemName: "plus")
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
+                emptyState
             } else {
-                Section {
-                    ForEach(allGears) { gear in
-                        Button {
-                            editingGear = gear
-                        } label: {
-                            GearRow(gear: gear)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .onDelete(perform: deleteGears)
-                } footer: {
-                    Text("gear.list.footer", bundle: .module)
-                        .font(.footnote)
-                }
+                gearList
             }
         }
         .navigationTitle(Text("gear.list.title", bundle: .module))
@@ -90,6 +51,67 @@ public struct GearListView: View {
         .sheet(item: $editingGear) { gear in
             NavigationStack {
                 GearEditorView(mode: .edit(gear))
+            }
+        }
+    }
+
+    // MARK: - Empty State (DEL-131-Fix)
+    //
+    // Vorher war der `ContentUnavailableView` als Row INNERHALB `List { }`
+    // gerendert. SwiftUI gibt dem Block dann verzerrte vertikale Constraints,
+    // und der `.borderedProminent`-Button im `actions:`-Slot stretcht
+    // senkrecht zu einem riesigen, fast-leeren orangen Balken (User-
+    // Smoke-Test-Befund 2026-05-21).
+    //
+    // Fix: Empty-State raus aus der List, parallel zur gefuellten List
+    // rendern. ContentUnavailableView bekommt damit den vollen Screen-Space
+    // und seine eingebauten Constraints funktionieren. Plus: actions-Button
+    // simplifiziert — kein nested Label-Composite mehr, nur direkter
+    // Text → robust gegen SwiftUI-Layout-Quirks.
+
+    @ViewBuilder
+    private var emptyState: some View {
+        ContentUnavailableView {
+            Label {
+                Text("gear.list.empty.title", bundle: .module)
+            } icon: {
+                // DEL-130: `backpack.fill` als generisches Equipment-Symbol
+                // (Schuh + Bike-Cardio).
+                Image(systemName: "backpack.fill")
+            }
+        } description: {
+            Text("gear.list.empty.description", bundle: .module)
+        } actions: {
+            // DEL-131: vereinfachter Button. Nested Label im borderedProminent-
+            // Style hat einen senkrecht-stretchenden Balken produziert; jetzt
+            // direkter Text mit explicit controlSize → predictable Layout.
+            Button {
+                showingNewGearSheet = true
+            } label: {
+                Text("gear.list.empty.cta", bundle: .module)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.regular)
+            .tint(Color.deltiqOrange)
+        }
+    }
+
+    @ViewBuilder
+    private var gearList: some View {
+        List {
+            Section {
+                ForEach(allGears) { gear in
+                    Button {
+                        editingGear = gear
+                    } label: {
+                        GearRow(gear: gear)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .onDelete(perform: deleteGears)
+            } footer: {
+                Text("gear.list.footer", bundle: .module)
+                    .font(.footnote)
             }
         }
     }
