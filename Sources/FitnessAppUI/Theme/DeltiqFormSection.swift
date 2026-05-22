@@ -127,9 +127,25 @@ public struct DeltiqFormRow<Control: View>: View {
             Text(label)
                 .font(.body)
                 .foregroundStyle(.primary)
+                // DEL-138: Label-Layout-Hardening. Label nimmt seine
+                // intrinsische Breite, `.layoutPriority(1)` damit es im
+                // Squeeze NICHT shrinkt — stattdessen wird der Control-
+                // Slot rechts angepasst.
+                .layoutPriority(1)
             Spacer(minLength: 12)
             control
                 .multilineTextAlignment(.trailing)
+                // DEL-138: Layout-Fix fuer Picker-Werte wie "Alle 2 Stunden"
+                // / "Every 2 hours" / "Her 2 saatte bir". Vorher wrappte
+                // der Picker-Label-Text in 2 Zeilen, was die Cell-Hoehe
+                // sprang.
+                //   * `.lineLimit(1)` zwingt EINE Zeile — iOS's native
+                //     Truncation kicks in (z.B. "Alle 2 Stu...")
+                //   * `.minimumScaleFactor(0.85)` skaliert vor dem
+                //     Truncating leicht runter, sodass typische 2-Zeilen-
+                //     Werte bei 13.6pt statt 11pt-ellipsized rendern
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
