@@ -163,29 +163,6 @@
         }
       }
     },
-    "common.discard": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Discard"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Verwerfen"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sil"
-          }
-        }
-      }
-    },
     "common.done": {
       "extractionState": "manual",
       "localizations": {
@@ -1175,52 +1152,6 @@
         }
       }
     },
-    "onboarding.intro.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Let's get started"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lass uns starten"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hadi başlayalım"
-          }
-        }
-      }
-    },
-    "onboarding.intro.body": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "For accurate calculations (BMI, body-fat, FFMI, BMR) we need sex, age, and height. You can change everything later in your profile."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Für akkurate Berechnungen (BMI, KFA, FFMI, BMR) brauchen wir Sex, Alter und Größe. Alle Werte kannst du später unter Profil ändern."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Doğru hesaplamalar (BKİ, yağ oranı, FFMI, BMR) için cinsiyet, yaş ve boya ihtiyacımız var. Tüm değerleri sonradan Profil altında değiştirebilirsin."
-          }
-        }
-      }
-    },
     "onboarding.section.profile": {
       "extractionState": "manual",
       "localizations": {
@@ -1336,52 +1267,6 @@
         }
       }
     },
-    "onboarding.field.height": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Height (cm)"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Größe (cm)"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Boy (cm)"
-          }
-        }
-      }
-    },
-    "onboarding.field.goal_weight": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Goal weight (kg, optional)"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zielgewicht (kg, optional)"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hedef Kilo (kg, isteğe bağlı)"
-          }
-        }
-      }
-    },
     "onboarding.field.environment": {
       "extractionState": "manual",
       "localizations": {
@@ -1401,29 +1286,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Antrenman Yeri"
-          }
-        }
-      }
-    },
-    "onboarding.action.create": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Create profile"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Profil anlegen"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Profil Oluştur"
           }
         }
       }
@@ -1727,29 +1589,6 @@
         }
       }
     },
-    "active.confirm.finish.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Finish workout?"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Training abschließen?"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Antrenmanı bitirelim mi?"
-          }
-        }
-      }
-    },
     "active.confirm.discard.title": {
       "extractionState": "manual",
       "localizations": {
@@ -1819,29 +1658,6 @@
         }
       }
     },
-    "trophy.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trophy Room"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trophy Room"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rekor Odası"
-          }
-        }
-      }
-    },
     "trophy.empty.title": {
       "extractionState": "manual",
       "localizations": {
@@ -1861,167 +1677,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Henüz rekor yok"
-          }
-        }
-      }
-    },
-    "trophy.action.rebuild": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rebuild from history"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aus History neu berechnen"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Geçmişten yeniden hesapla"
-          }
-        }
-      }
-    },
-    "trophy.action.detect": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Detect from history"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aus History detektieren"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Geçmişten tespit et"
-          }
-        }
-      }
-    },
-    "trophy.kind.estimated1RM": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1RM"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1RM"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1RM"
-          }
-        }
-      }
-    },
-    "trophy.kind.heaviestWeight": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Top Weight"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Max-Gewicht"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Maks. Ağırlık"
-          }
-        }
-      }
-    },
-    "trophy.kind.bestSet": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Best Set"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bestsatz"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En İyi Set"
-          }
-        }
-      }
-    },
-    "trophy.kind.maxReps": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Max Reps"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Max Wdh."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Maks. Tekrar"
-          }
-        }
-      }
-    },
-    "trophy.kind.maxHoldSeconds": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Best Hold"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bestzeit"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En İyi Süre"
           }
         }
       }
@@ -2482,29 +2137,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sıkıştın. Ya yeterince yemiyorsun, ya uyumuyorsun, ya da planının sıfırlanması gerekiyor. Deload zamanı."
-          }
-        }
-      }
-    },
-    "onboarding.coaching.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dein Coaching-Stil"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your coaching style"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Koçluk tarzın"
           }
         }
       }
@@ -4441,29 +4073,6 @@
         }
       }
     },
-    "dashboard.trophy.empty": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch keine PRs — beende ein Workout, um den ersten zu setzen."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No PRs yet — finish a workout to set your first one."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Henüz PR yok — ilkini kaydetmek için bir antrenmanı tamamla."
-          }
-        }
-      }
-    },
     "dashboard.history.title": {
       "extractionState": "manual",
       "localizations": {
@@ -4598,29 +4207,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tahmin için en az 1 hafta boyunca daha fazla değer gerekli."
-          }
-        }
-      }
-    },
-    "dashboard.trend.empty": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trag deine erste Messung ein, um den Trend zu sehen."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Log your first measurement to see the trend."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trendi görmek için ilk ölçümünü kaydet."
           }
         }
       }
@@ -5062,29 +4648,6 @@
         }
       }
     },
-    "dashboard.compoundChart.empty.hint": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sobald du eine Compound-Übung in zwei Sessions geloggt hast, erscheint hier der Trend."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Once you log a compound lift across two sessions, the trend will appear here."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bir temel hareketi iki farklı oturumda kaydettiğinde, trend burada görünür."
-          }
-        }
-      }
-    },
     "dashboard.weeklySummary.title": {
       "extractionState": "manual",
       "localizations": {
@@ -5311,98 +4874,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Henüz antrenman yok"
-          }
-        }
-      }
-    },
-    "dashboard.recent.empty.hint": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Starte oben dein erstes Training."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Start your first workout above."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "İlk antrenmanını yukarıdan başlat."
-          }
-        }
-      }
-    },
-    "metric.weight": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gewicht"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Weight"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ağırlık"
-          }
-        }
-      }
-    },
-    "metric.kfaNavy": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "KFA Navy"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Body Fat (Navy)"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Yağ Oranı (Navy)"
-          }
-        }
-      }
-    },
-    "metric.ffmi": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "FFMI"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "FFMI"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "FFMI"
           }
         }
       }
@@ -6047,29 +5518,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Koşu"
-          }
-        }
-      }
-    },
-    "exercise.name.rest": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pause"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rest"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dinlenme"
           }
         }
       }
@@ -10670,52 +10118,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Geri"
-          }
-        }
-      }
-    },
-    "common.edit": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bearbeiten"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Edit"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Düzenle"
-          }
-        }
-      }
-    },
-    "common.delete": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Löschen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Delete"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sil"
           }
         }
       }
@@ -16880,52 +16282,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hedef & Bar"
-          }
-        }
-      }
-    },
-    "calc.plate.maxTarget": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Maximal %1$@ %2$@ Zielgewicht."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Max %1$@ %2$@ target weight."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Maks. %1$@ %2$@ hedef ağırlık."
-          }
-        }
-      }
-    },
-    "calc.plate.maxBar": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Maximal %1$@ %2$@ Stange."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Max %1$@ %2$@ bar."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Maks. %1$@ %2$@ bar."
           }
         }
       }
