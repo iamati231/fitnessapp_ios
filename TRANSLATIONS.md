@@ -29,19 +29,19 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `active.addExercise` | Übung | Exercise | Hareket |
 | `active.addExerciseCTA` | Übung hinzufügen | Add Exercise | Hareket Ekle |
 | `active.confirm.discard.title` | Training verwerfen? | Discard workout? | Antrenmanı silmek istiyor musun? |
-| `active.discard.cta` | Workout abbrechen | Discard Workout | Antrenmanı Sil |
+| `active.discard.cta` | Training abbrechen | Discard Workout | Antrenmanı Sil |
 | `active.discard.message` | Die Session und alle %lld bisher geloggten Sätze gehen verloren. | The session and all %lld logged sets will be lost. | Oturum ve şimdiye kadar kaydedilen %lld set kaybolacak. |
-| `active.empty.adhoc.message` | Such dir aus der Library eine Übung — alles weitere passiert wie im Plan-Workout. | Pick an exercise from the library — everything else works like a plan workout. | Kütüphaneden bir hareket seç — gerisi plan antrenmanı gibi çalışır. |
-| `active.empty.adhoc.title` | Dein Workout ist noch leer | Your workout is empty | Antrenmanın henüz boş |
+| `active.empty.adhoc.message` | Such dir aus der Library eine Übung — alles weitere passiert wie im Plan-Training. | Pick an exercise from the library — everything else works like a plan workout. | Kütüphaneden bir hareket seç — gerisi plan antrenmanı gibi çalışır. |
+| `active.empty.adhoc.title` | Dein Training ist noch leer | Your workout is empty | Antrenmanın henüz boş |
 | `active.empty.session.message` | Vermutlich wurde der Plan-Tag nach dem Start geleert. Du kannst die Session verwerfen oder ohne Sätze beenden. | The plan day was likely emptied after starting. Discard the session or finish without sets. | Plan günü başlatıldıktan sonra muhtemelen boşaltıldı. Oturumu silebilir veya setsiz bitirebilirsin. |
 | `active.empty.session.title` | Diese Session hat keine Übungen. | This session has no exercises. | Bu oturumda hareket yok. |
 | `active.finish.feeling.message` | Die App nutzt das für die Progression: Wenn du am Limit warst, halten wir das Gewicht stabil — kein Zwangs-Plus. | We use this for progression: when you were at the limit, we keep the weight stable — no forced increase. | Bunu ilerleme için kullanırız: limitteydiysen ağırlığı sabit tutarız — zorla artırma yok. |
-| `active.finish.feeling.noProgression` | Kein Gewichts-Plus im nächsten Workout | No weight increase next workout | Sonraki antrenmanda ağırlık artışı yok |
+| `active.finish.feeling.noProgression` | Kein Gewichts-Plus im nächsten Training | No weight increase next workout | Sonraki antrenmanda ağırlık artışı yok |
 | `active.finish.feeling.title` | Wie hat sich das Training angefühlt? | How did the workout feel? | Antrenman nasıl hissettirdi? |
 | `active.finish.gear` | Verwendete Ausrüstung | Gear Used | Kullanılan Ekipman |
-| `active.finish.save` | Workout speichern | Save Workout | Antrenmanı Kaydet |
-| `active.finish.summary` | Dein Workout | Your Workout | Antrenmanın |
-| `active.finish.title` | Workout beenden | Finish Workout | Antrenmanı Bitir |
+| `active.finish.save` | Training speichern | Save Workout | Antrenmanı Kaydet |
+| `active.finish.summary` | Dein Training | Your Workout | Antrenmanın |
+| `active.finish.title` | Training beenden | Finish Workout | Antrenmanı Bitir |
 | `active.interference.dismiss` | Banner schließen | Dismiss banner | Banner'ı kapat |
 | `active.interference.message` | Erwäge heute, dein Ziel-RIR bei Beinübungen um +1 zu erhöhen, um dein ZNS nicht zu überlasten. | Consider raising your target RIR on leg exercises by +1 today to avoid overloading your CNS. | MSS'ni aşırı yüklemekten kaçınmak için bugün bacak hareketlerinde hedef RIR'ı +1 artırmayı düşün. |
 | `active.interference.title` | Du hattest gestern eine harte Einheit | You had a hard session yesterday | Dün zorlu bir antrenmanın vardı |
@@ -194,9 +194,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
-| `dashboard.action.adHoc.a11y` | Spontanes Workout starten — leere Session ohne Plan-Anbindung | Start a spontaneous workout — empty session without plan attachment | Spontane antrenman başlat — plana bağlı olmayan boş oturum |
-| `dashboard.action.adHoc.primary` | Spontanes Workout starten | Start spontaneous workout | Spontane antrenman başlat |
-| `dashboard.action.adHoc.secondary` | Vom Plan abweichen — Spontanes Workout | Skip the plan — spontaneous workout | Plandan sap — spontane antrenman |
+| `dashboard.action.adHoc.a11y` | Spontanes Training starten — leere Session ohne Plan-Anbindung | Start a spontaneous workout — empty session without plan attachment | Spontane antrenman başlat — plana bağlı olmayan boş oturum |
+| `dashboard.action.adHoc.primary` | Spontanes Training starten | Start spontaneous workout | Spontane antrenman başlat |
+| `dashboard.action.adHoc.secondary` | Vom Plan abweichen — Spontanes Training | Skip the plan — spontaneous workout | Plandan sap — spontane antrenman |
 | `dashboard.action.resumeRunning` | Laufendes Training fortsetzen | Resume running workout | Devam eden antrenmanı sürdür |
 | `dashboard.action.startDirect` | Direkt starten | Start now | Hemen başlat |
 | `dashboard.cardioChart.legend` | min/km · niedriger = besser | min/km · lower = better | dk/km · daha düşük = daha iyi |
@@ -215,7 +215,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.history.countOnly` | %lld Trainings | %lld workouts | %lld antrenman |
 | `dashboard.history.countWithLast` | %1$lld Trainings • zuletzt %2$@ | %1$lld workouts • last %2$@ | %1$lld antrenman • son %2$@ |
 | `dashboard.history.empty` | Noch keine Trainings — starte oben dein erstes. | No workouts yet — start your first one above. | Henüz antrenman yok — yukarıdan ilkini başlat. |
-| `dashboard.history.emptyDescription` | Starte dein erstes Workout, um Verlauf und Fortschritt zu sehen. | Start your first workout to see history and progress. | Geçmiş ve ilerlemeyi görmek için ilk antrenmanına başla. |
+| `dashboard.history.emptyDescription` | Starte dein erstes Training, um Verlauf und Fortschritt zu sehen. | Start your first workout to see history and progress. | Geçmiş ve ilerlemeyi görmek için ilk antrenmanına başla. |
 | `dashboard.history.emptyTitle` | Noch kein Training gespeichert | No workout saved yet | Henüz kayıtlı antrenman yok |
 | `dashboard.history.title` | Trainingsverlauf | Workout History | Antrenman Geçmişi |
 | `dashboard.newMeasurement` | Neue Messung | New Measurement | Yeni Ölçüm |
@@ -239,7 +239,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.plan.todayRestDay` | Heute: Ruhetag | Today: rest day | Bugün: dinlenme günü |
 | `dashboard.recent.empty.description` | Beende dein erstes Training, dann erscheint es hier mit Dauer, Sätzen und Volumen. | Finish your first workout — it appears here with duration, sets, and volume. | İlk antrenmanını tamamla — burada süre, set ve hacimle birlikte görünür. |
 | `dashboard.recent.empty.title` | Noch keine Trainingseinheiten | No training sessions yet | Henüz antrenman yok |
-| `dashboard.recent.title` | Letzte Workouts | Recent Workouts | Son Antrenmanlar |
+| `dashboard.recent.title` | Letzte Trainings | Recent Workouts | Son Antrenmanlar |
 | `dashboard.recent.viewAll` | Alle anzeigen | Show all | Tümünü göster |
 | `dashboard.title` | Dashboard | Dashboard | Panel |
 | `dashboard.trend.emptyDescription` | Tippe auf '+' oben rechts, um deinen ersten Wert einzutragen. | Tap '+' at the top right to enter your first value. | İlk değeri girmek için sağ üstteki '+' simgesine dokun. |
@@ -571,7 +571,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `gear.list.empty.cta` | Ausrüstung anlegen | Add Gear | Ekipman Ekle |
 | `gear.list.empty.description` | Füge Laufschuhe oder Fahrräder hinzu, damit die App deine Kilometer automatisch trackt. | Add running shoes or bicycles so the app can track your distance automatically. | Koşu ayakkabıları veya bisikletler ekle, böylece uygulama mesafeni otomatik takip etsin. |
 | `gear.list.empty.title` | Noch keine Ausrüstung | No gear yet | Henüz ekipman yok |
-| `gear.list.footer` | Cardio-Workouts buchen ihre Distanz automatisch auf den im Finish-Sheet ausgewählten Schuh. | Cardio workouts log distance to the shoe selected in the finish sheet. | Kardiyo antrenmanları, bitiş sayfasında seçilen ayakkabıya mesafe ekler. |
+| `gear.list.footer` | Cardio-Trainings buchen ihre Distanz automatisch auf den im Finish-Sheet ausgewählten Schuh. | Cardio workouts log distance to the shoe selected in the finish sheet. | Kardiyo antrenmanları, bitiş sayfasında seçilen ayakkabıya mesafe ekler. |
 | `gear.list.title` | Ausrüstung | Gear | Ekipman |
 | `gear.needsReplacement` | Schuh erneuern — Dämpfung erschöpft. | Replace shoe — cushioning depleted. | Ayakkabıyı değiştir — yastıklama tükendi. |
 
@@ -598,14 +598,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `heroMetric.stepsToday.label` | Schritte heute | Steps today | Bugünkü adımlar |
 | `heroMetric.waterTodayMl.label` | Wasser heute | Water today | Bugün su |
 | `heroMetric.weight.label` | Gewicht | Weight | Ağırlık |
-| `heroMetric.workoutsThisWeek.label` | Workouts diese Woche | Workouts this week | Bu haftaki antrenmanlar |
+| `heroMetric.workoutsThisWeek.label` | Trainings diese Woche | Workouts this week | Bu haftaki antrenmanlar |
 
 ## `history.*`  (3 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `history.empty.description` | Beende dein erstes Training, um deine Historie zu sehen. | Finish your first workout to see your history. | Geçmişini görmek için ilk antrenmanını bitir. |
-| `history.empty.title` | Noch keine Workouts | No workouts yet | Henüz antrenman yok |
+| `history.empty.title` | Noch keine Trainings | No workouts yet | Henüz antrenman yok |
 | `history.session.fallback` | Training | Workout | Antrenman |
 
 ## `holdTimer.*`  (1 Keys)
@@ -833,8 +833,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.day.upperAStrength` | Oberkörper A (Kraft) | Upper A (Strength) | Üst Vücut A (Güç) |
 | `plan.day.upperAndPower` | Oberkörper & Explosivität | Upper & Power | Üst Vücut & Patlayıcı Güç |
 | `plan.day.upperBVolume` | Oberkörper B (Volumen) | Upper B (Volume) | Üst Vücut B (Hacim) |
-| `plan.day.workoutA` | Workout A | Workout A | Antrenman A |
-| `plan.day.workoutB` | Workout B | Workout B | Antrenman B |
+| `plan.day.workoutA` | Training A | Workout A | Antrenman A |
+| `plan.day.workoutB` | Training B | Workout B | Antrenman B |
 | `plan.dayNumberLabel` | Tag %lld | Day %lld | Gün %lld |
 | `plan.dayRow.exerciseCount` | %1$lld Übungen • %2$@ | %1$lld exercises • %2$@ | %1$lld hareket • %2$@ |
 | `plan.metadata.days.one` | %lld Tag | %lld day | %lld gün |
@@ -1067,9 +1067,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.appearance.section` | Erscheinungsbild | Appearance | Görünüm |
 | `settings.appearance.system` | System | System | Sistem |
 | `settings.confirm.reset.action` | Alles löschen | Delete everything | Her şeyi sil |
-| `settings.confirm.reset.message` | Profil, alle Messungen, Pläne und Workout-Sessions gehen UNWIDERRUFLICH verloren. Die App startet danach im Onboarding. | Profile, all measurements, plans, and workouts will be IRRECOVERABLY lost. The app will start in onboarding. | Profil, tüm ölçümler, planlar ve antrenman oturumları GERİ ALINAMAZ şekilde silinecek. Uygulama ardından tekrar onboarding'den başlayacak. |
+| `settings.confirm.reset.message` | Profil, alle Messungen, Pläne und Trainings-Sessions gehen UNWIDERRUFLICH verloren. Die App startet danach im Onboarding. | Profile, all measurements, plans, and workouts will be IRRECOVERABLY lost. The app will start in onboarding. | Profil, tüm ölçümler, planlar ve antrenman oturumları GERİ ALINAMAZ şekilde silinecek. Uygulama ardından tekrar onboarding'den başlayacak. |
 | `settings.confirm.reset.title` | App wirklich zurücksetzen? | Really reset the app? | Uygulamayı gerçekten sıfırlamak istiyor musun? |
-| `settings.dangerZone.footer` | Löscht Profil, Messungen, Pläne, Trainings-Templates und Workout-Sessions vollständig. Die Apple-Health-Daten bleiben erhalten — die löscht du in der Health-App selber. | Deletes profile, measurements, plans, training templates, and workout sessions completely. Apple Health data is preserved — delete that from the Health app. | Profil, ölçümler, planlar, antrenman şablonları ve antrenman oturumlarını tamamen siler. Apple Health verileri korunur — onları Health uygulamasından silersin. |
+| `settings.dangerZone.footer` | Löscht Profil, Messungen, Pläne, Trainings-Templates und Trainings-Sessions vollständig. Die Apple-Health-Daten bleiben erhalten — die löscht du in der Health-App selber. | Deletes profile, measurements, plans, training templates, and workout sessions completely. Apple Health data is preserved — delete that from the Health app. | Profil, ölçümler, planlar, antrenman şablonları ve antrenman oturumlarını tamamen siler. Apple Health verileri korunur — onları Health uygulamasından silersin. |
 | `settings.health.connect` | Verbinden | Connect | Bağla |
 | `settings.health.denied` | Berechtigung verweigert | Permission denied | İzin reddedildi |
 | `settings.health.footer` | Bei aktivierter Verbindung wird im Messwerte-Formular das letzte Waagen-Gewicht vorausgefüllt. Beim Speichern werden Gewicht, KFA und Magere Masse zurück nach Apple Health geschrieben. | When connected, the measurement form prefills your last scale weight. Saving writes weight, body fat %, and lean mass back to Apple Health. | Bağlıyken ölçüm formu son tartı kilonu önceden doldurur. Kaydetme; kilo, yağ oranı ve yağsız kütleyi Apple Health'e yazar. |
@@ -1106,8 +1106,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.timer.sound` | Ton abspielen | Play sound | Ses çal |
 | `settings.title` | Einstellungen | Settings | Ayarlar |
 | `settings.units.footer` | Die DB speichert immer metrisch. Diese Einstellung steuert nur die Anzeige in Eingabe-Feldern, im Hantel-Rechner und auf den Karten. | DB always stores metric. This setting only changes display in inputs, the plate calculator, and cards. | Veritabanı her zaman metrik kaydeder. Bu ayar sadece giriş alanlarında, plaka hesabında ve kartlarda görünümü değiştirir. |
-| `settings.workout.footer` | Wenn aus, werden Warmup- und Cooldown-Übungen während der Session ausgeblendet. Die Templates und deine Plan-Editierung bleiben unverändert — der Toggle wirkt nur auf den Live-Workout-Flow. Warmups sind ohnehin nie Pflicht: der „Workout speichern"-Button bleibt immer klickbar, auch wenn du sie nicht abhakst. | When off, warmup and cooldown exercises are hidden during the session. Templates and plan editing remain unchanged — only the live workout flow is affected. Warmups are never mandatory: 'Save Workout' stays tappable even if you skip them. | Kapalıyken oturum sırasında ısınma ve soğuma hareketleri gizlenir. Şablonlar ve plan düzenleme değişmez — yalnızca canlı antrenman akışı etkilenir. Isınmalar zorunlu değildir: 'Antrenmanı Kaydet' onları atlasan bile aktif kalır. |
-| `settings.workout.section` | Workout-Verhalten | Workout Behavior | Antrenman Davranışı |
+| `settings.workout.footer` | Wenn aus, werden Warmup- und Cooldown-Übungen während der Session ausgeblendet. Die Templates und deine Plan-Editierung bleiben unverändert — der Toggle wirkt nur auf den Live-Trainings-Flow. Warmups sind ohnehin nie Pflicht: der „Training speichern"-Button bleibt immer klickbar, auch wenn du sie nicht abhakst. | When off, warmup and cooldown exercises are hidden during the session. Templates and plan editing remain unchanged — only the live workout flow is affected. Warmups are never mandatory: 'Save Workout' stays tappable even if you skip them. | Kapalıyken oturum sırasında ısınma ve soğuma hareketleri gizlenir. Şablonlar ve plan düzenleme değişmez — yalnızca canlı antrenman akışı etkilenir. Isınmalar zorunlu değildir: 'Antrenmanı Kaydet' onları atlasan bile aktif kalır. |
+| `settings.workout.section` | Trainings-Verhalten | Workout Behavior | Antrenman Davranışı |
 | `settings.workout.showWarmups` | Warmup & Cooldown anzeigen | Show warmup & cooldown | Isınma & Soğuma Göster |
 
 ## `sex.*`  (2 Keys)
@@ -1122,44 +1122,44 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `summary.achievements.heaviestOfWeek.subtitle` | Höchstes Volumen aller bisherigen Trainings dieser Woche. | Highest volume of all your workouts this week so far. | Bu hafta yaptığın tüm antrenmanların en yüksek hacmi. |
-| `summary.achievements.heaviestOfWeek.title` | Stärkstes Workout der Woche | Heaviest workout of the week | Haftanın en ağır antrenmanı |
+| `summary.achievements.heaviestOfWeek.title` | Stärkstes Training der Woche | Heaviest workout of the week | Haftanın en ağır antrenmanı |
 | `summary.achievements.longestDistanceOfWeek.subtitle` | Mehr Strecke als jedes Cardio diese Woche. | More distance than any cardio this week. | Bu haftaki tüm kardiyolardan daha uzun. |
 | `summary.achievements.longestDistanceOfWeek.title` | Längste Distanz der Woche | Longest distance of the week | Haftanın en uzun mesafesi |
 | `summary.achievements.longestOfWeek.subtitle` | Du warst diese Woche noch nie so lange dabei. | You haven't trained this long all week. | Bu hafta hiç bu kadar uzun antrenman yapmamıştın. |
-| `summary.achievements.longestOfWeek.title` | Längstes Workout der Woche | Longest workout of the week | Haftanın en uzun antrenmanı |
+| `summary.achievements.longestOfWeek.title` | Längstes Training der Woche | Longest workout of the week | Haftanın en uzun antrenmanı |
 | `summary.achievements.section` | Erfolge | Achievements | Başarılar |
 | `summary.achievements.weeklyMilestone.subtitle` | Solides Pensum — bleib dran. | Solid pace — keep going. | Sağlam tempo — devam et. |
-| `summary.achievements.weeklyMilestone.titleFormat` | Dein %lld. Workout diese Woche | Workout #%lld this week | Bu haftaki %lld. antrenmanın |
+| `summary.achievements.weeklyMilestone.titleFormat` | Dein %lld. Training diese Woche | Workout #%lld this week | Bu haftaki %lld. antrenmanın |
 | `summary.action.finish` | Speichern & zum Dashboard | Save & to dashboard | Kaydet ve Panele Dön |
 | `summary.addExercise.button` | Übung hinzufügen | Add exercise | Egzersiz ekle |
-| `summary.addExercise.hint` | Vergessen, eine Übung im Workout zu loggen? Hinzufügen, Sätze eintragen, fertig. | Forgot to log an exercise during the workout? Add it here, fill in the sets, done. | Antrenman sırasında bir egzersizi kaydetmeyi unuttun mu? Buradan ekle, setleri doldur, hazır. |
+| `summary.addExercise.hint` | Vergessen, eine Übung im Training zu loggen? Hinzufügen, Sätze eintragen, fertig. | Forgot to log an exercise during the workout? Add it here, fill in the sets, done. | Antrenman sırasında bir egzersizi kaydetmeyi unuttun mu? Buradan ekle, setleri doldur, hazır. |
 | `summary.addSet.button` | Satz hinzufügen | Add set | Set ekle |
 | `summary.date` | Datum | Date | Tarih |
 | `summary.deleteSession.confirmDelete` | Löschen | Delete | Sil |
 | `summary.deleteSession.confirmMessage` | Alle Sätze und das Volumen dieses Trainings werden entfernt. Diese Aktion kann nicht rückgängig gemacht werden. | All sets and the volume of this workout will be removed. This cannot be undone. | Bu antrenmanın tüm setleri ve hacmi kaldırılacak. Bu işlem geri alınamaz. |
-| `summary.deleteSession.confirmTitle` | Workout endgültig löschen? | Delete workout permanently? | Antrenman kalıcı olarak silinsin mi? |
-| `summary.detailTitle` | Workout-Detail | Workout Details | Antrenman Detayı |
+| `summary.deleteSession.confirmTitle` | Training endgültig löschen? | Delete workout permanently? | Antrenman kalıcı olarak silinsin mi? |
+| `summary.detailTitle` | Trainings-Detail | Workout Details | Antrenman Detayı |
 | `summary.duration` | Dauer | Duration | Süre |
 | `summary.durationMinutes` | %lld Min | %lld min | %lld dk |
 | `summary.editMeta.footer` | Datum + Dauer werden hier überschrieben. Set-Werte unten editierst du direkt am Satz. | Date + duration are overridden here. Edit set values directly on each set below. | Tarih + süre burada üzerine yazılır. Set değerlerini aşağıda doğrudan her sette düzenle. |
 | `summary.editMeta.header` | Eckdaten | Key Data | Temel Veriler |
-| `summary.editTitle` | Workout bearbeiten | Edit Workout | Antrenmanı Düzenle |
+| `summary.editTitle` | Training bearbeiten | Edit Workout | Antrenmanı Düzenle |
 | `summary.exercise.bestPrefix` | Beste | Best | En İyi |
 | `summary.exercise.footer.one` | %1$lld Satz • %2$@ kg Volumen | %1$lld set • %2$@ kg volume | %1$lld set • %2$@ kg hacim |
 | `summary.exercise.footer.other` | %1$lld Sätze • %2$@ kg Volumen | %1$lld sets • %2$@ kg volume | %1$lld set • %2$@ kg hacim |
 | `summary.exercise.removeFromSession` | Aus Session entfernen | Remove from session | Oturumdan kaldır |
 | `summary.finishFooter` | Die Session ist bereits gespeichert. Der Button schließt die Zusammenfassung und bringt dich zurück aufs Dashboard. | Session is already saved. The button closes the summary and returns you to the dashboard. | Oturum zaten kaydedildi. Buton özeti kapatır ve seni panele döndürür. |
-| `summary.hero.title` | Workout abgeschlossen | Workout completed | Antrenman Tamamlandı |
+| `summary.hero.title` | Training abgeschlossen | Workout completed | Antrenman Tamamlandı |
 | `summary.hero.unit.km` | km Cardio | km cardio | km kardiyo |
 | `summary.hero.unit.minutes` | Minuten Training | minutes training | dakika antrenman |
 | `summary.hero.unit.volumeKg` | kg Volumen | kg volume | kg hacim |
-| `summary.menu.deleteSession` | Workout löschen | Delete Workout | Antrenmanı sil |
+| `summary.menu.deleteSession` | Training löschen | Delete Workout | Antrenmanı sil |
 | `summary.note.footer` | Tauchen später in der History pro Session auf — gut für Form-Cues und Verletzungs-Tracking. | Show up later in history per session — useful for form cues and injury tracking. | Geçmişte oturum başına görünür — form ipuçları ve sakatlık takibi için faydalı. |
 | `summary.note.label` | Notiz | Note | Not |
 | `summary.note.placeholder` | Wie war's? Schmerzen, Pump, Performance ... | How was it? Pain, pump, performance ... | Nasıldı? Ağrı, pump, performans ... |
 | `summary.prFooter` | Erkannt durch Vergleich mit allen vorherigen abgeschlossenen Sessions. Cardio bleibt aussen vor — andere Metrik-Domäne. | Detected by comparing all previous completed sessions. Cardio excluded — different metric domain. | Tüm önceki tamamlanan oturumlar ile karşılaştırarak tespit edildi. Kardiyo dahil değil — farklı metrik. |
-| `summary.progressionFooter` | Ziel erreicht? Die App passt das Gewicht fürs nächste Workout automatisch an. Änderbar pro Übung im Editor. | Target hit? The app adjusts the weight for next workout automatically. Adjustable per exercise in the editor. | Hedefe ulaşıldı mı? Uygulama bir sonraki antrenman için ağırlığı otomatik ayarlar. Editörde hareket başına düzenlenebilir. |
-| `summary.removeExercise.confirmMessageFormat` | Alle Sätze von „%@" werden aus diesem Workout entfernt. Die Übung selbst bleibt für zukünftige Trainings erhalten. | All sets of "%@" will be removed from this workout. The exercise itself stays available for future workouts. | „%@" egzersizinin tüm setleri bu antrenmandan kaldırılacak. Egzersiz gelecekteki antrenmanlar için kalır. |
+| `summary.progressionFooter` | Ziel erreicht? Die App passt das Gewicht fürs nächste Training automatisch an. Änderbar pro Übung im Editor. | Target hit? The app adjusts the weight for next workout automatically. Adjustable per exercise in the editor. | Hedefe ulaşıldı mı? Uygulama bir sonraki antrenman için ağırlığı otomatik ayarlar. Editörde hareket başına düzenlenebilir. |
+| `summary.removeExercise.confirmMessageFormat` | Alle Sätze von „%@" werden aus diesem Training entfernt. Die Übung selbst bleibt für zukünftige Trainings erhalten. | All sets of "%@" will be removed from this workout. The exercise itself stays available for future workouts. | „%@" egzersizinin tüm setleri bu antrenmandan kaldırılacak. Egzersiz gelecekteki antrenmanlar için kalır. |
 | `summary.removeExercise.confirmRemove` | Entfernen | Remove | Kaldır |
 | `summary.removeExercise.confirmTitle` | Übung aus Session entfernen? | Remove exercise from session? | Egzersiz oturumdan kaldırılsın mı? |
 | `summary.section.personalRecords` | Persönliche Rekorde | Personal Records | Kişisel Rekorlar |
@@ -1187,7 +1187,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 |---|---|---|---|
 | `trophy.empty.cta.detect` | Aus History detektieren | Detect from History | Geçmişten Tespit Et |
 | `trophy.empty.description.firstWorkout` | Beende dein erstes Training, um deinen ersten PR aufzustellen. | Finish your first workout to set your first PR. | İlk PR'ını koymak için ilk antrenmanını bitir. |
-| `trophy.empty.description.hasWorkouts` | Du hast bereits Workouts, aber noch keine Rekorde gespeichert. Klick unten, um sie aus deiner History zu detektieren. | You have workouts but no records saved yet. Tap below to detect them from your history. | Antrenmanların var ama henüz kayıtlı rekor yok. Geçmişinden tespit etmek için aşağıya dokun. |
+| `trophy.empty.description.hasWorkouts` | Du hast bereits Trainings, aber noch keine Rekorde gespeichert. Klick unten, um sie aus deiner History zu detektieren. | You have workouts but no records saved yet. Tap below to detect them from your history. | Antrenmanların var ama henüz kayıtlı rekor yok. Geçmişinden tespit etmek için aşağıya dokun. |
 | `trophy.empty.title` | Noch keine Rekorde | No records yet | Henüz rekor yok |
 | `trophy.rebuild.confirm.cta` | Neu berechnen | Recompute | Yeniden hesapla |
 | `trophy.rebuild.confirm.message` | Setzt alle gespeicherten Rekorde zurück und detektiert sie aus deiner kompletten History neu. Nützlich nach gelöschten Sessions. | Resets all saved records and re-detects them from your complete history. Useful after deleted sessions. | Tüm kayıtlı rekorları sıfırlar ve geçmişinden yeniden tespit eder. Silinen oturumlardan sonra faydalı. |
@@ -1230,7 +1230,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `widget.compoundLifts.name` | Compound-Lift-Trend | Compound Lift Trend | Temel Hareket Trendi |
 | `widget.muscleHeatmap.name` | Muskel-Heatmap | Muscle Heatmap | Kas Isı Haritası |
 | `widget.nextWorkout.name` | Nächstes Training | Next Workout | Sıradaki Antrenman |
-| `widget.recentWorkouts.name` | Letzte Workouts | Recent Workouts | Son Antrenmanlar |
+| `widget.recentWorkouts.name` | Letzte Trainings | Recent Workouts | Son Antrenmanlar |
 | `widget.trophyRoom.name` | Trophy Room | Trophy Room | Kupa Odası |
 | `widget.weeklyVolume.name` | Diese Woche | This Week | Bu Hafta |
 | `widget.weightTrend.name` | Gewichts-Trend | Weight Trend | Kilo Trendi |

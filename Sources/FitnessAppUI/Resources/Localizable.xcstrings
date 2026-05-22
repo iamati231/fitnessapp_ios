@@ -1509,7 +1509,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Profil, alle Messungen, Pläne und Workout-Sessions gehen UNWIDERRUFLICH verloren. Die App startet danach im Onboarding."
+            "value": "Profil, alle Messungen, Pläne und Trainings-Sessions gehen UNWIDERRUFLICH verloren. Die App startet danach im Onboarding."
           }
         },
         "tr": {
@@ -1624,7 +1624,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workout abgeschlossen"
+            "value": "Training abgeschlossen"
           }
         },
         "tr": {
@@ -4516,7 +4516,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Spontanes Workout starten"
+            "value": "Spontanes Training starten"
           }
         },
         "en": {
@@ -4539,7 +4539,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vom Plan abweichen — Spontanes Workout"
+            "value": "Vom Plan abweichen — Spontanes Training"
           }
         },
         "en": {
@@ -4562,7 +4562,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Spontanes Workout starten — leere Session ohne Plan-Anbindung"
+            "value": "Spontanes Training starten — leere Session ohne Plan-Anbindung"
           }
         },
         "en": {
@@ -4815,7 +4815,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Letzte Workouts"
+            "value": "Letzte Trainings"
           }
         },
         "en": {
@@ -5114,7 +5114,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Letzte Workouts"
+            "value": "Letzte Trainings"
           }
         },
         "en": {
@@ -8633,7 +8633,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workout A"
+            "value": "Training A"
           }
         },
         "en": {
@@ -8656,7 +8656,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workout B"
+            "value": "Training B"
           }
         },
         "en": {
@@ -11002,7 +11002,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workout bearbeiten"
+            "value": "Training bearbeiten"
           }
         },
         "en": {
@@ -11025,7 +11025,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workout-Detail"
+            "value": "Trainings-Detail"
           }
         },
         "en": {
@@ -11163,7 +11163,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ziel erreicht? Die App passt das Gewicht fürs nächste Workout automatisch an. Änderbar pro Übung im Editor."
+            "value": "Ziel erreicht? Die App passt das Gewicht fürs nächste Training automatisch an. Änderbar pro Übung im Editor."
           }
         },
         "en": {
@@ -13923,7 +13923,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein Workout ist noch leer"
+            "value": "Dein Training ist noch leer"
           }
         },
         "en": {
@@ -13946,7 +13946,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Such dir aus der Library eine Übung — alles weitere passiert wie im Plan-Workout."
+            "value": "Such dir aus der Library eine Übung — alles weitere passiert wie im Plan-Training."
           }
         },
         "en": {
@@ -13992,7 +13992,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workout abbrechen"
+            "value": "Training abbrechen"
           }
         },
         "en": {
@@ -14038,7 +14038,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workout beenden"
+            "value": "Training beenden"
           }
         },
         "en": {
@@ -14084,7 +14084,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein Workout"
+            "value": "Dein Training"
           }
         },
         "en": {
@@ -14222,7 +14222,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kein Gewichts-Plus im nächsten Workout"
+            "value": "Kein Gewichts-Plus im nächsten Training"
           }
         },
         "en": {
@@ -14245,7 +14245,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workout speichern"
+            "value": "Training speichern"
           }
         },
         "en": {
@@ -14337,7 +14337,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cardio-Workouts buchen ihre Distanz automatisch auf den im Finish-Sheet ausgewählten Schuh."
+            "value": "Cardio-Trainings buchen ihre Distanz automatisch auf den im Finish-Sheet ausgewählten Schuh."
           }
         },
         "en": {
@@ -15050,7 +15050,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workout-Verhalten"
+            "value": "Trainings-Verhalten"
           }
         },
         "en": {
@@ -15096,7 +15096,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wenn aus, werden Warmup- und Cooldown-Übungen während der Session ausgeblendet. Die Templates und deine Plan-Editierung bleiben unverändert — der Toggle wirkt nur auf den Live-Workout-Flow. Warmups sind ohnehin nie Pflicht: der „Workout speichern\"-Button bleibt immer klickbar, auch wenn du sie nicht abhakst."
+            "value": "Wenn aus, werden Warmup- und Cooldown-Übungen während der Session ausgeblendet. Die Templates und deine Plan-Editierung bleiben unverändert — der Toggle wirkt nur auf den Live-Trainings-Flow. Warmups sind ohnehin nie Pflicht: der „Training speichern\"-Button bleibt immer klickbar, auch wenn du sie nicht abhakst."
           }
         },
         "en": {
@@ -15579,7 +15579,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Löscht Profil, Messungen, Pläne, Trainings-Templates und Workout-Sessions vollständig. Die Apple-Health-Daten bleiben erhalten — die löscht du in der Health-App selber."
+            "value": "Löscht Profil, Messungen, Pläne, Trainings-Templates und Trainings-Sessions vollständig. Die Apple-Health-Daten bleiben erhalten — die löscht du in der Health-App selber."
           }
         },
         "en": {
@@ -16545,7 +16545,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Du hast bereits Workouts, aber noch keine Rekorde gespeichert. Klick unten, um sie aus deiner History zu detektieren."
+            "value": "Du hast bereits Trainings, aber noch keine Rekorde gespeichert. Klick unten, um sie aus deiner History zu detektieren."
           }
         },
         "en": {
@@ -16821,7 +16821,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Noch keine Workouts"
+            "value": "Noch keine Trainings"
           }
         },
         "en": {
@@ -20938,7 +20938,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Starte dein erstes Workout, um Verlauf und Fortschritt zu sehen."
+            "value": "Starte dein erstes Training, um Verlauf und Fortschritt zu sehen."
           }
         },
         "en": {
@@ -20984,7 +20984,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein %lld. Workout diese Woche"
+            "value": "Dein %lld. Training diese Woche"
           }
         },
         "en": {
@@ -21030,7 +21030,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stärkstes Workout der Woche"
+            "value": "Stärkstes Training der Woche"
           }
         },
         "en": {
@@ -21076,7 +21076,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Längstes Workout der Woche"
+            "value": "Längstes Training der Woche"
           }
         },
         "en": {
@@ -21904,7 +21904,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workouts diese Woche"
+            "value": "Trainings diese Woche"
           }
         },
         "en": {
@@ -22180,7 +22180,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workout löschen"
+            "value": "Training löschen"
           }
         },
         "en": {
@@ -22203,7 +22203,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workout endgültig löschen?"
+            "value": "Training endgültig löschen?"
           }
         },
         "en": {
@@ -22318,7 +22318,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alle Sätze von „%@\" werden aus diesem Workout entfernt. Die Übung selbst bleibt für zukünftige Trainings erhalten."
+            "value": "Alle Sätze von „%@\" werden aus diesem Training entfernt. Die Übung selbst bleibt für zukünftige Trainings erhalten."
           }
         },
         "en": {
@@ -22387,7 +22387,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vergessen, eine Übung im Workout zu loggen? Hinzufügen, Sätze eintragen, fertig."
+            "value": "Vergessen, eine Übung im Training zu loggen? Hinzufügen, Sätze eintragen, fertig."
           }
         },
         "en": {
