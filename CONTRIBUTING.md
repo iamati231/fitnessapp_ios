@@ -36,6 +36,22 @@ meldet:
 3. **Migrationskritisches NIE einfach löschen** (SwiftData `@Model`-
    Felder, persisted AppStorage-Defaults) — User-Decision einholen.
 
+## TRANSLATIONS.md Re-Generation
+
+Bei jedem i18n-Refactor ZUSÄTZLICH die Translations-Doc regenerieren:
+
+```bash
+python .scripts/generate_translations_md.py
+```
+
+Output:
+* Aktuelle Key-Count + DE/EN/TR-Coverage-Statistik
+* Alle Keys nach Namespace gruppiert mit ihren Werten (Translator-
+  friendly Tabellen-Format)
+* Hardcoded-String-Scan (Akzeptanzkriterium: 0)
+
+Im selben Commit wie die Code-Änderung — sonst driftet die Doku weg.
+
 ## xcstrings-Patterns
 
 ### Camel-Case-Suffix gegen Parent-Leaf-Collisions
