@@ -617,10 +617,13 @@ public struct WorkoutSummaryView: View {
     ///   * Hero-Stat: dominante Zahl (typisch Volumen-kg fuer Strength,
     ///     Distanz-km fuer Cardio). 56pt, rounded, monospacedDigit,
     ///     DeltiqOrange — der visuelle Anker der Karte.
-    ///   * Sekundaer-Stats: Dauer + Saetze als kleinere Geschwister-
-    ///     Stats. Bleiben drin damit die "Wie viel hab ich gemacht"-
-    ///     Frage komplett beantwortet ist, aber konkurrieren nicht mehr
-    ///     mit dem Hero um Aufmerksamkeit.
+    ///   * Sekundaer-Stats: Dauer + zweite Metrik als kleinere Geschwister-
+    ///     Stats. Adaptive an `session.sessionCategory` (DEL-137):
+    ///       - pureStrength → Dauer + Saetze
+    ///       - mixed        → Dauer + Distanz
+    ///       - pureCardio   → Dauer + Ø Pace
+    ///     Vorher zeigte die Section IMMER "Dauer + Saetze", was bei reinen
+    ///     Cardio-Sessions unsinnig wirkt ("1 Satz" fuer 5 km Lauf).
     private var statsSection: some View {
         Section {
             VStack(spacing: 20) {
@@ -630,14 +633,54 @@ public struct WorkoutSummaryView: View {
                     SummaryStat(label: String(localized: "active.stats.duration", bundle: .module),
                                 value: formattedDuration)
                     statDivider
-                    SummaryStat(label: String(localized: "active.stats.sets", bundle: .module),
-                                value: "\(session.totalSets)")
+                    secondarySummaryStat
                 }
             }
             .padding(.vertical, 6)
         } header: {
             Text("summary.section.stats", bundle: .module)
         }
+    }
+
+    /// DEL-137: zweite Sekundaer-Stat-Spalte. Drei-Wege-Branch identisch
+    /// zum aktiven `statsCard` in ActiveWorkoutView — selbe UI-Sprache
+    /// fuer Live + Replay.
+    @ViewBuilder
+    private var secondarySummaryStat: some View {
+        switch session.sessionCategory {
+        case .pureCardio:
+            SummaryStat(label: String(localized: "active.stats.avgPace", bundle: .module),
+                        value: formattedAvgPace)
+        case .mixed:
+            SummaryStat(label: String(localized: "active.stats.distance", bundle: .module),
+                        value: formattedTotalDistance)
+        case .pureStrength:
+            SummaryStat(label: String(localized: "active.stats.sets", bundle: .module),
+                        value: "\(session.totalSets)")
+        }
+    }
+
+    /// DEL-137: Gesamtdistanz aller Cardio-Sets in dieser Session. Format:
+    /// "5 km" / "5,42 km" (Integer wenn ganzzahlig, sonst 2-Dezimal).
+    private var formattedTotalDistance: String {
+        let total = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
+        guard total > 0 else { return "—" }
+        if total == total.rounded() {
+            return "\(Int(total)) km"
+        }
+        return "\(total.truncated(to: 2).formattedTwoDecimals) km"
+    }
+
+    /// DEL-137: Durchschnitts-Pace ueber alle Cardio-Sets. "M:SS /km"
+    /// via `PaceCalculator.minutesPerKm` — same Algo wie ActiveWorkoutView.
+    private var formattedAvgPace: String {
+        let totalKm = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
+        let totalSec = session.logs.compactMap(\.durationSeconds).reduce(0, +)
+        guard totalKm > 0, totalSec > 0,
+              let pace = PaceCalculator.minutesPerKm(distanceKm: totalKm, durationSeconds: totalSec)
+        else { return "—:——" }
+        let total = Int((pace * 60.0).rounded())
+        return String(format: "%d:%02d /km", total / 60, total % 60)
     }
 
     /// UX-202: Hero-Stat-Auswahl je nach Session-Kategorie.
@@ -1383,22 +1426,111 @@ private struct SetSummaryRow: View {
     /// DEL-032 Edit-Modus: Gewicht/Reps als TextField + RIR als Stepper.
     /// DEL-038 Layout-Fix: drei klar getrennte Spalten mit festen Frames,
     /// Spacer dazwischen statt der Overlay-Hack-Loesung von Welle 5.
+    ///
+    /// DEL-137 Cardio-Fix: drei-Wege-Branch je nach Exercise-Type. Vorher
+    /// blieb fuer Cardio "Wdh + RIR" stehen, was bei einem Easy Run keinen
+    /// Sinn macht (kein Reps-Konzept, kein RIR-Concept).
+    ///   * Cardio    → Distanz-km + MM:SS-Dauer, kein Reps/RIR
+    ///   * TimeBased → Sek-Dauer + RIR (Plank: "wie hart hat's sich an-
+    ///                 gefuehlt" ist legitim)
+    ///   * Strength  → Gewicht + Reps + RIR (Bestandsverhalten)
     @ViewBuilder
     private var editRow: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(String(format: String(localized: "set.numberLabel", bundle: .module), log.setIndex + 1))
                 .font(.subheadline.weight(.semibold))
             HStack(spacing: 8) {
-                if !exercise.isCardio && !exercise.isTimeBased {
+                if exercise.isCardio {
+                    cardioDistanceField
+                    Divider().frame(height: 24)
+                    cardioDurationFields
+                    Spacer(minLength: 4)
+                } else if exercise.isTimeBased {
+                    repsField   // labeled "Sek" via unit.seconds.short
+                    Spacer(minLength: 12)
+                    rirBlock
+                } else {
                     weightField
                     Divider().frame(height: 24)
+                    repsField
+                    Spacer(minLength: 12)
+                    rirBlock
                 }
-                repsField
-                Spacer(minLength: 12)
-                rirBlock
             }
         }
         .padding(.vertical, 6)
+    }
+
+    /// DEL-137: Distanz-Eingabe in km, optional Double-Bound.
+    private var cardioDistanceField: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            TextField("km",
+                      value: Binding(
+                        get: { log.distanceKm },
+                        set: { log.distanceKm = $0 }
+                      ),
+                      format: .number)
+                .frame(width: 60)
+                .multilineTextAlignment(.leading)
+                .font(.title3.monospacedDigit())
+                #if os(iOS)
+                .keyboardType(.decimalPad)
+                #endif
+            Text("km").font(.caption2).foregroundStyle(.secondary)
+        }
+    }
+
+    /// DEL-137: Dauer als Zwei-Feld-Layout (Minuten + Sekunden). User-
+    /// Erwartung "5 km in 40:30" laesst sich so direkt eintippen — eine
+    /// kombinierte MM:SS-Parser-Logik (wie Active-Workout) waere im
+    /// Edit-Mode overkill, weil der Eingangsstrom hier Korrektur statt
+    /// Live-Logging ist. Computed-Bindings rechnen zwischen Sekunden-
+    /// Storage und der zwei-Feld-UI.
+    private var cardioDurationFields: some View {
+        HStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: 2) {
+                TextField("min",
+                          value: Binding(
+                            get: { (log.durationSeconds ?? 0) / 60 },
+                            set: { newMin in
+                                let curSec = (log.durationSeconds ?? 0) % 60
+                                log.durationSeconds = newMin * 60 + curSec
+                            }
+                          ),
+                          format: .number)
+                    .frame(width: 40)
+                    .multilineTextAlignment(.leading)
+                    .font(.title3.monospacedDigit())
+                    #if os(iOS)
+                    .keyboardType(.numberPad)
+                    #endif
+                Text("min").font(.caption2).foregroundStyle(.secondary)
+            }
+            Text(":")
+                .font(.title3.weight(.medium))
+                .foregroundStyle(.secondary)
+                .offset(y: -8)   // optisch zur Minuten-Zahl ausgerichtet, nicht zur Caption
+            VStack(alignment: .leading, spacing: 2) {
+                TextField("sec",
+                          value: Binding(
+                            get: { (log.durationSeconds ?? 0) % 60 },
+                            set: { newSec in
+                                let curMin = (log.durationSeconds ?? 0) / 60
+                                // Clamp 0...59 — Eingabe ueber 59 rollt nicht in Minuten
+                                let clamped = max(0, min(59, newSec))
+                                log.durationSeconds = curMin * 60 + clamped
+                            }
+                          ),
+                          format: .number)
+                    .frame(width: 36)
+                    .multilineTextAlignment(.leading)
+                    .font(.title3.monospacedDigit())
+                    #if os(iOS)
+                    .keyboardType(.numberPad)
+                    #endif
+                Text("sec").font(.caption2).foregroundStyle(.secondary)
+            }
+        }
     }
 
     private var weightField: some View {

@@ -198,6 +198,12 @@ public struct ActiveWorkoutView: View {
                 durationText: formattedDuration,
                 setsCount: loggedSetsCount,
                 volumeText: formatVolume(),
+                // DEL-137: Session-Category + adaptive Distanz/Pace-Texte
+                // damit die Finish-Sheet bei Cardio-Sessions die richtigen
+                // Eckdaten zeigt (siehe statsCard oben).
+                sessionCategory: dayCategory,
+                distanceText: formatTotalDistance(),
+                avgPaceText: formatAveragePace(),
                 showGearPicker: isPureCardioSessionForHealthKit,
                 onConfirm: { feeling, gear in
                     showingFinishConfirm = false
@@ -991,6 +997,16 @@ private struct FinishWorkoutSheet: View {
     let durationText: String
     let setsCount: Int
     let volumeText: String
+    /// DEL-137: Session-Category-Branch fuer die summarySection — vorher
+    /// zeigte die Sheet IMMER "Dauer + Saetze + Volumen-kg", was bei
+    /// reinen Cardio-Sessions unsinnig wirkt (siehe statsCard im
+    /// ActiveWorkoutView, der bereits adaptiv ist).
+    let sessionCategory: SessionCategory
+    /// DEL-137: Distanz-Text (z.B. "5 km"), nur bei pureCardio + mixed
+    /// gerendert.
+    let distanceText: String
+    /// DEL-137: Ø Pace ("8:00 /km"), nur bei pureCardio gerendert.
+    let avgPaceText: String
     /// DEL-084: Gear-Picker nur einblenden bei Cardio-Sessions — bei Strength
     /// hat ein "Laufschuh-Picker" keinen Sinn.
     var showGearPicker: Bool = false
@@ -1097,12 +1113,34 @@ private struct FinishWorkoutSheet: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("active.finish.summary", bundle: .module)
                 .font(.headline)
+            // DEL-137: drei-Wege-Branch identisch zum statsCard oben in der
+            // Active-Workout-View. Hier in der Finish-Sheet, da kommt die
+            // Sheet hochgepoppt direkt VOR dem finishWorkout-Pass, sollte
+            // die Eckdaten in derselben Sprache zeigen — kein abrupter
+            // Wechsel von "Distanz/Pace" (live) zu "Saetze/Volumen" (finish).
             HStack(spacing: 0) {
                 summaryStat(label: String(localized: "active.summary.duration", bundle: .module), value: durationText)
                 Divider().frame(height: 32)
-                summaryStat(label: String(localized: "active.summary.sets", bundle: .module), value: "\(setsCount)")
-                Divider().frame(height: 32)
-                summaryStat(label: String(localized: "active.summary.volume", bundle: .module), value: "\(volumeText) kg")
+                switch sessionCategory {
+                case .pureCardio:
+                    summaryStat(label: String(localized: "active.stats.distance", bundle: .module),
+                                value: distanceText)
+                    Divider().frame(height: 32)
+                    summaryStat(label: String(localized: "active.stats.avgPace", bundle: .module),
+                                value: avgPaceText)
+                case .mixed:
+                    summaryStat(label: String(localized: "active.summary.volume", bundle: .module),
+                                value: "\(volumeText) kg")
+                    Divider().frame(height: 32)
+                    summaryStat(label: String(localized: "active.stats.distance", bundle: .module),
+                                value: distanceText)
+                case .pureStrength:
+                    summaryStat(label: String(localized: "active.summary.sets", bundle: .module),
+                                value: "\(setsCount)")
+                    Divider().frame(height: 32)
+                    summaryStat(label: String(localized: "active.summary.volume", bundle: .module),
+                                value: "\(volumeText) kg")
+                }
             }
             .padding(.vertical, 8)
             .background(Color.secondary.opacity(0.08))
