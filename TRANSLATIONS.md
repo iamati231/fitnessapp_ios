@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 980 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 989 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **980 / 980** (100%) | 0 |
-| 🇬🇧 English (EN) | **980 / 980** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **980 / 980** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **989 / 989** (100%) | 0 |
+| 🇬🇧 English (EN) | **989 / 989** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **989 / 989** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -190,7 +190,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `common.done` | Fertig | Done | Bitti |
 | `common.save` | Speichern | Save | Kaydet |
 
-## `dashboard.*`  (63 Keys)
+## `dashboard.*`  (68 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -210,6 +210,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.exercisesPreview.one` | %1$lld Übung — %2$@ | %1$lld exercise — %2$@ | %1$lld egzersiz — %2$@ |
 | `dashboard.exercisesPreview.other` | %1$lld Übungen — %2$@ | %1$lld exercises — %2$@ | %1$lld egzersiz — %2$@ |
 | `dashboard.goal.line` | Ziel %@ kg | Goal %@ kg | Hedef %@ kg |
+| `dashboard.greeting.afternoon.generic` | Guten Tag | Good afternoon | İyi günler |
+| `dashboard.greeting.afternoon.named` | Guten Tag, %@ | Good afternoon, %@ | İyi günler, %@ |
+| `dashboard.greeting.evening.generic` | Guten Abend | Good evening | İyi akşamlar |
+| `dashboard.greeting.evening.named` | Guten Abend, %@ | Good evening, %@ | İyi akşamlar, %@ |
+| `dashboard.greeting.morning.generic` | Guten Morgen | Good morning | Günaydın |
+| `dashboard.greeting.morning.named` | Guten Morgen, %@ | Good morning, %@ | Günaydın, %@ |
 | `dashboard.heatmap.legend` | Sätze | Sets | Set |
 | `dashboard.heatmap.title` | Muskel-Heatmap (Woche) | Muscle Heatmap (week) | Kas Isı Haritası (hafta) |
 | `dashboard.history.countOnly` | %lld Trainings | %lld workouts | %lld antrenman |
@@ -241,7 +247,6 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.recent.empty.title` | Noch keine Trainingseinheiten | No training sessions yet | Henüz antrenman yok |
 | `dashboard.recent.title` | Letzte Trainings | Recent Workouts | Son Antrenmanlar |
 | `dashboard.recent.viewAll` | Alle anzeigen | Show all | Tümünü göster |
-| `dashboard.title` | Dashboard | Dashboard | Panel |
 | `dashboard.trend.emptyDescription` | Tippe auf '+' oben rechts, um deinen ersten Wert einzutragen. | Tap '+' at the top right to enter your first value. | İlk değeri girmek için sağ üstteki '+' simgesine dokun. |
 | `dashboard.trend.emptyTitle` | Noch keine Messungen | No measurements yet | Henüz ölçüm yok |
 | `dashboard.trend.forecast.legend` | Prognose 4 / 8 W. | Forecast 4 / 8 w. | Tahmin 4 / 8 hf. |
@@ -720,7 +725,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `muscle.shoulders` | Schultern | Shoulders | Omuz |
 | `muscle.triceps` | Trizeps | Triceps | Triseps |
 
-## `onboarding.*`  (38 Keys)
+## `onboarding.*`  (42 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -731,6 +736,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.environment.footnote2` | Hybrid- oder reine Lauf-Athleten wählen ihren Strength-Ort — die Hybrid-Pläne enthalten ihre Run-Tage unabhängig davon. | Hybrid or pure running athletes pick their strength location — Hybrid plans include run days regardless. | Hibrit veya saf koşu sporcuları güç antrenman yerini seçer — Hibrit planlar koşu günlerini her durumda içerir. |
 | `onboarding.field.birthdate` | Geburtsdatum | Birth date | Doğum Tarihi |
 | `onboarding.field.environment` | Trainingsort | Training Location | Antrenman Yeri |
+| `onboarding.field.firstName` | Vorname | First Name | Ad |
+| `onboarding.field.firstNameFooter` | Optional — du kannst das Feld auch leer lassen. | Optional — you can leave this empty. | İsteğe bağlı — boş bırakabilirsin. |
+| `onboarding.field.firstNamePlaceholder` | Wie dürfen wir dich nennen? | What should we call you? | Sana nasıl hitap edelim? |
 | `onboarding.field.goalWeightKg` | Zielgewicht (kg, optional) | Goal Weight (kg, optional) | Hedef Kilo (kg, opsiyonel) |
 | `onboarding.field.heightCm` | Größe (cm) | Height (cm) | Boy (cm) |
 | `onboarding.field.sex` | Geschlecht | Sex | Cinsiyet |
@@ -758,6 +766,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.plan.section` | Trainingsplan für %@ | Plans for %@ | %@ için Plan |
 | `onboarding.section.body` | Körpermaße | Body Measurements | Vücut Ölçüleri |
 | `onboarding.section.goals` | Ziel & Training | Goals & Training | Hedef & Antrenman |
+| `onboarding.section.name` | Dein Name | Your Name | Adın |
 | `onboarding.section.profile` | Profil | Profile | Profil |
 | `onboarding.title` | Willkommen | Welcome | Hoş Geldin |
 | `onboarding.tone.subtitle` | Wir passen Tonfall und Feedback an deinen Stil an. Lässt sich später ändern. | We adapt tone and feedback to your style. Changeable later. | Ton ve geri bildirimi tarzına uyarlarız. Sonradan değiştirilebilir. |

@@ -16,6 +16,13 @@ public final class UserBodyProfile {
     /// Training location chosen in onboarding — drives plan recommendations (F154).
     public var environment: EnvironmentType
 
+    /// DEL-141: Optionaler Vorname für Personalisierung. Wird im Onboarding
+    /// als "Wie dürfen wir dich nennen?"-Feld erfasst (User kann skippen).
+    /// Dashboard-Greeting nutzt ihn falls vorhanden ("Guten Morgen, Atakan"),
+    /// sonst Fallback auf generische Tageszeit-Begrüßung. Nie required —
+    /// nil-Lightweight-Migration für pre-DEL-141-Profile.
+    public var firstName: String?
+
     /// DEL-100: Persoenlicher Coaching-Stil. Persistiert als String, sodass
     /// pre-DEL-100-Bestand via Default-Wert lightweight migriert wird.
     public var coachingToneRaw: String = CoachingTone.analytical.rawValue
@@ -82,6 +89,7 @@ public final class UserBodyProfile {
         birthDate: Date,
         heightCm: Double,
         profile: BodyFormulaProfile,
+        firstName: String? = nil,
         goalWeightKg: Double? = nil,
         environment: EnvironmentType = .gym,
         coachingTone: CoachingTone = .analytical,
@@ -90,6 +98,7 @@ public final class UserBodyProfile {
         self.birthDate = birthDate
         self.heightCm = heightCm
         self.profile = profile
+        self.firstName = firstName
         self.goalWeightKg = goalWeightKg
         self.environment = environment
         self.coachingToneRaw = coachingTone.rawValue

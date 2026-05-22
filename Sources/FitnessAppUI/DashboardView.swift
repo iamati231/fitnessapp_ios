@@ -122,8 +122,13 @@ public struct DashboardView: View {
         .task(id: heroMetricSlots) {
             await refreshHealthKitHeroValues()
         }
-        // DEL-073: Navigation-Title aus xcstrings.
-        .navigationTitle(Text("dashboard.title", bundle: .module))
+        // DEL-141: Dynamische Begrüßung statt statischem "Dashboard"-Title.
+        // Tageszeit-aware (Morgen/Tag/Abend) + Vorname-aware. Wenn der
+        // User im Onboarding einen Vornamen angegeben hat, erscheint
+        // "Guten Morgen, Atakan" / "Günaydın, Atakan" / etc. Sonst
+        // Fallback auf die generische Tageszeit-Begrüßung — immer noch
+        // persoenlicher als das alte "Dashboard".
+        .navigationTitle(Text(dashboardGreeting))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         #endif
@@ -347,6 +352,39 @@ public struct DashboardView: View {
     /// Case waehrend Onboarding-Race).
     private var heroMetricSlots: [HeroMetricType] {
         profiles.first?.heroMetricSlots ?? HeroMetricType.defaultOrder
+    }
+
+    /// DEL-141: Dynamische Begrüßung für den NavigationTitle. Drei Tages-
+    /// zeit-Buckets (Morgen 5-12, Tag 12-18, Abend 18-5) × zwei Namen-
+    /// Branches (mit/ohne Vornamen) = 6 explicit case-literals statt
+    /// String-Interpolation. Grund: das Dead-Catalog-Audit-Tool
+    /// (`dead_catalog_v3.py`) catched literale Key-Strings sauber, aber
+    /// `"\(timeKey).named"`-Interpolation nur heuristisch. Explizite
+    /// Literale halten den Audit auf "UNUSED: 0" ohne komplexere Phase-B-
+    /// Patterns im Tool.
+    private var dashboardGreeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        let trimmedName = profiles.first?.firstName?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let hasName = !(trimmedName?.isEmpty ?? true)
+
+        switch (hour, hasName) {
+        case (5..<12, true):
+            return String(format: String(localized: "dashboard.greeting.morning.named", bundle: .module),
+                          trimmedName!)
+        case (5..<12, false):
+            return String(localized: "dashboard.greeting.morning.generic", bundle: .module)
+        case (12..<18, true):
+            return String(format: String(localized: "dashboard.greeting.afternoon.named", bundle: .module),
+                          trimmedName!)
+        case (12..<18, false):
+            return String(localized: "dashboard.greeting.afternoon.generic", bundle: .module)
+        case (_, true):
+            return String(format: String(localized: "dashboard.greeting.evening.named", bundle: .module),
+                          trimmedName!)
+        case (_, false):
+            return String(localized: "dashboard.greeting.evening.generic", bundle: .module)
+        }
     }
 
     /// DEL-132 (Phase 1): Hero-Reihe iteriert jetzt ueber die User-

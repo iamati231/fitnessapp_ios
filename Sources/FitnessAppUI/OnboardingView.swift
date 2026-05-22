@@ -46,6 +46,11 @@ public struct OnboardingView: View {
     @State private var profileSex: BodyFormulaProfile = .male
     @State private var birthDate: Date = Self.defaultBirthDate
     @State private var heightCm: Double?
+
+    /// DEL-141: Optionaler Vorname. Default leer; bleibt leer wenn der
+    /// User das Feld skippt — `finishOnboarding` normalisiert dann auf nil
+    /// damit das Modell keine empty-string-Sentinels mit sich rumschleppt.
+    @State private var firstName: String = ""
     @State private var currentWeightKg: Double?
     @State private var goalWeightKg: Double?
     @State private var environment: EnvironmentType = .gym
@@ -326,6 +331,30 @@ public struct OnboardingView: View {
     @ViewBuilder
     private var personalInfoStep: some View {
         Form {
+            // DEL-141: Vorname-Section ZUERST. Bewusst eigene Section + ganz
+            // oben — der Name macht das Onboarding persoenlicher, signal-
+            // isiert dem User "wir sehen dich als Person, nicht als Datenset".
+            // Optional: User kann das Feld leer lassen, Dashboard faellt
+            // dann auf generische Tageszeit-Begruessung zurueck.
+            Section {
+                TextField(
+                    text: $firstName,
+                    prompt: Text("onboarding.field.firstNamePlaceholder", bundle: .module)
+                ) {
+                    Text("onboarding.field.firstName", bundle: .module)
+                }
+                .textContentType(.givenName)
+                #if os(iOS)
+                .autocorrectionDisabled(true)
+                .textInputAutocapitalization(.words)
+                #endif
+            } header: {
+                Text("onboarding.section.name", bundle: .module)
+            } footer: {
+                Text("onboarding.field.firstNameFooter", bundle: .module)
+                    .font(.footnote)
+            }
+
             Section {
                 Picker(selection: $profileSex) {
                     ForEach([BodyFormulaProfile.male, .female], id: \.self) { sex in
@@ -773,10 +802,17 @@ public struct OnboardingView: View {
         // 1) UserBodyProfile. DEL-101: Coaching-Style + TrainingGoal werden
         //    aus den Onboarding-State-Vars persistiert; sind in der
         //    ProfileEditorView spaeter editierbar.
+        // DEL-141: Vorname trimmen + auf nil normalisieren wenn leer.
+        // Verhindert dass " " oder "" als sentinel im Model landet —
+        // Dashboard-Greeting unterscheidet sauber nil vs. non-nil.
+        let trimmedName = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let nameForProfile: String? = trimmedName.isEmpty ? nil : trimmedName
+
         let profile = UserBodyProfile(
             birthDate: birthDate,
             heightCm: heightCm,
             profile: profileSex,
+            firstName: nameForProfile,
             goalWeightKg: goalWeightKg,
             environment: environment,
             coachingTone: coachingTone,
