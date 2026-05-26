@@ -12,6 +12,15 @@ public struct ExerciseEditorView: View {
     @Bindable public var exercise: Exercise
     @Environment(\.dismiss) private var dismiss
 
+    /// DEL-143: User-Toggle für RIR-Tooltips, gleicher AppStorage-Key
+    /// wie SetRow. Default true.
+    @AppStorage("showRirTooltips") private var showRirTooltips: Bool = true
+
+    /// DEL-143: Tooltip-Controller für den Target-RIR-Slider in der
+    /// Pause-RIR-Section. Wird beim Drag-Start gezeigt, Drag-Release
+    /// + 1.8s → fade-out.
+    @State private var rirTooltip = RIRTooltipController()
+
     public init(exercise: Exercise) {
         self.exercise = exercise
     }
@@ -139,13 +148,7 @@ public struct ExerciseEditorView: View {
                         }
                     }
                     if sectionVisibility.targetRIR {
-                        Stepper(value: $exercise.targetRir, in: 0...5, step: 0.5) {
-                            LabeledContent {
-                                Text(rirString(exercise.targetRir))
-                            } label: {
-                                Text("editor.exercise.field.targetRIR", bundle: .module)
-                            }
-                        }
+                        targetRIRSliderRow
                     }
                 } header: {
                     Text("editor.exercise.section.pauseRIR", bundle: .module)
@@ -231,6 +234,46 @@ public struct ExerciseEditorView: View {
 
     private func rirString(_ rir: Float) -> String {
         rir == rir.rounded() ? String(format: "%.0f", rir) : String(format: "%.1f", rir)
+    }
+
+    // MARK: - DEL-143 Target-RIR-Slider mit Tooltip-Bloop
+
+    /// Slider-basierter Target-RIR-Picker. Ersetzt den frueheren
+    /// Stepper, damit das Tooltip-Bloop-Pattern (onDragStart/End)
+    /// dasselbe ist wie auf der Active-Workout-SetRow.
+    ///
+    /// Layout: Label + aktueller Wert oben, Slider darunter — der
+    /// Tooltip-Overlay wird oben rechts/center über dem Slider
+    /// platziert (offset y: -38) und ist non-hit-testing, damit der
+    /// Slider darunter normal interagierbar bleibt.
+    @ViewBuilder
+    private var targetRIRSliderRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("editor.exercise.field.targetRIR", bundle: .module)
+                Spacer()
+                Text(rirString(exercise.targetRir))
+                    .font(.callout.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(Color.deltiqOrange)
+                    .frame(minWidth: 28, alignment: .trailing)
+            }
+            Slider(
+                value: $exercise.targetRir,
+                in: 0...5,
+                step: 0.5,
+                onEditingChanged: { editing in
+                    guard showRirTooltips else { return }
+                    rirTooltip.setVisible(editing)
+                }
+            )
+            .tint(Color.deltiqOrange)
+            .disabled(isReadOnly)
+            .overlay(alignment: .top) {
+                RIRTooltipBloop(rir: exercise.targetRir,
+                                isVisible: rirTooltip.isVisible)
+                    .offset(y: -38)
+            }
+        }
     }
 
     // MARK: - DEL-052/053 Smart-Progression

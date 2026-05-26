@@ -64,6 +64,16 @@ struct SetRow: View {
     @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
     @AppStorage("pref_timer_haptics") private var timerHapticsEnabled: Bool = true
 
+    /// DEL-143: Globaler User-Toggle für RIR-Tooltips. Default true.
+    /// Wenn off → kein Bloop beim Slider-Drag, der Power-User wird
+    /// nicht gestoert.
+    @AppStorage("showRirTooltips") private var showRirTooltips: Bool = true
+
+    /// DEL-143: Tooltip-Controller für den RIR-Slider. Steuert
+    /// show-immediately/hide-delayed über das `onEditingChanged`-
+    /// Callback des Sliders.
+    @State private var rirTooltip = RIRTooltipController()
+
     /// DEL-072: Accessibility — respektiere die System-Praeferenz "Reduce
     /// Motion". Wenn true, ersetzen wir Spring-Animationen durch ruhige
     /// `easeInOut`-Variante.
@@ -438,10 +448,27 @@ struct SetRow: View {
                         set: { rir = Float($0) }
                     ),
                     in: 0...5,
-                    step: 0.5
+                    step: 0.5,
+                    // DEL-143: onEditingChanged steuert das RIR-Tooltip.
+                    // Drag-Start → editing=true → Bloop fade-in. Release →
+                    // editing=false → Bloop fade-out 1.8s spaeter.
+                    // Gated durch User-Toggle (Power-User schalten's aus).
+                    onEditingChanged: { editing in
+                        guard showRirTooltips else { return }
+                        rirTooltip.setVisible(editing)
+                    }
                 )
                 .tint(Color.deltiqOrange)
                 .frame(minHeight: 24)
+                // DEL-143: Tooltip-Overlay über dem Slider. zIndex 1000 +
+                // allowsHitTesting(false) damit weder die unteren Card-
+                // Inhalte verdeckt werden (Touch geht durch), noch der
+                // Slider selber blockiert wird. Offset -38 sitzt den
+                // Bloop über dem Slider-Thumb-Bereich, finger-frei.
+                .overlay(alignment: .top) {
+                    RIRTooltipBloop(rir: rir, isVisible: rirTooltip.isVisible)
+                        .offset(y: -38)
+                }
                 Text(formatRIR(rir))
                     .font(.caption.weight(.semibold).monospacedDigit())
                     .foregroundStyle(.primary)

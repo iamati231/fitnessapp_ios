@@ -50,6 +50,11 @@ public struct SettingsView: View {
     /// trainieren will, kann es einmalig abschalten.
     @AppStorage("pref_show_warmups") private var showWarmups: Bool = true
 
+    /// DEL-143: User-Toggle für RIR-Bloop-Tooltips. Gleicher AppStorage-
+    /// Key wie in SetRow/ExerciseEditor — Single Source of Truth, ändert
+    /// das Verhalten überall sofort.
+    @AppStorage("showRirTooltips") private var showRirTooltips: Bool = true
+
     @State private var showingResetConfirm = false
     @State private var resetErrorMessage: String?
 
@@ -310,8 +315,23 @@ public struct SettingsView: View {
                     }
                 }
             }
+            // DEL-143: RIR-Tooltip-Toggle. Default true (per Ticket-Spec).
+            // Power-User können den Bloop ausschalten, dann werden RIR-
+            // Slider stumm bedient wie vorher.
+            DeltiqFormFullRow {
+                Toggle(isOn: $showRirTooltips) {
+                    Label {
+                        Text("settings.training.rirTooltip.title", bundle: .module)
+                    } icon: {
+                        Image(systemName: "info.circle.fill")
+                    }
+                }
+            }
         } footer: {
-            Text("settings.workout.footer", bundle: .module)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("settings.workout.footer", bundle: .module)
+                Text("settings.training.rirTooltip.description", bundle: .module)
+            }
         }
     }
 

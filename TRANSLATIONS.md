@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1011 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1018 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1011 / 1011** (100%) | 0 |
-| 🇬🇧 English (EN) | **1011 / 1011** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1011 / 1011** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1018 / 1018** (100%) | 0 |
+| 🇬🇧 English (EN) | **1018 / 1018** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1018 / 1018** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1061,6 +1061,16 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `rest.timer.label.active` | PAUSE | REST | MOLA |
 | `rest.timer.label.finished` | PAUSE VORBEI | REST OVER | MOLA BİTTİ |
 
+## `rir.*`  (5 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `rir.tooltip.0` | Absolutes Muskelversagen — keine weitere Wiederholung möglich. | Absolute failure — no more clean reps possible. | Tam yetersizlik — başka temiz tekrar mümkün değil. |
+| `rir.tooltip.1` | Sehr hart — maximal noch 1 saubere Wiederholung im Tank. | Very hard — only 1 clean rep left in the tank. | Çok zor — tankta sadece 1 temiz tekrar kaldı. |
+| `rir.tooltip.2` | Optimaler Reiz — noch 2 Wiederholungen möglich. | Optimal stimulus — 2 more reps possible. | Optimal uyaran — 2 tekrar daha mümkün. |
+| `rir.tooltip.3` | Moderater Reiz — noch 3 saubere Wiederholungen machbar. | Moderate stimulus — 3 clean reps still doable. | Orta uyaran — 3 temiz tekrar daha yapılabilir. |
+| `rir.tooltip.4plus` | Leichtes Training — ideal für Warm-up oder Deload. | Light training — ideal for warm-up or deload. | Hafif antrenman — ısınma veya deload için ideal. |
+
 ## `root.*`  (1 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
@@ -1085,7 +1095,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (51 Keys)
+## `settings.*`  (53 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1136,6 +1146,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.timer.section` | Pausen-Timer-Feedback | Rest Timer Feedback | Mola Zamanlayıcı Geri Bildirimi |
 | `settings.timer.sound` | Ton abspielen | Play sound | Ses çal |
 | `settings.title` | Einstellungen | Settings | Ayarlar |
+| `settings.training.rirTooltip.description` | Zeigt kurze Erklärungen beim Einstellen der Intensität (Reps in Reserve). | Shows short explanations when setting intensity (Reps in Reserve). | Yoğunluk ayarlanırken kısa açıklamalar gösterir (Reps in Reserve). |
+| `settings.training.rirTooltip.title` | RIR-Hilfstexte anzeigen | Show RIR helper texts | RIR yardım metinlerini göster |
 | `settings.units.footer` | Die DB speichert immer metrisch. Diese Einstellung steuert nur die Anzeige in Eingabe-Feldern, im Hantel-Rechner und auf den Karten. | DB always stores metric. This setting only changes display in inputs, the plate calculator, and cards. | Veritabanı her zaman metrik kaydeder. Bu ayar sadece giriş alanlarında, plaka hesabında ve kartlarda görünümü değiştirir. |
 | `settings.workout.footer` | Wenn aus, werden Warmup- und Cooldown-Übungen während der Session ausgeblendet. Die Templates und deine Plan-Editierung bleiben unverändert — der Toggle wirkt nur auf den Live-Trainings-Flow. Warmups sind ohnehin nie Pflicht: der „Training speichern"-Button bleibt immer klickbar, auch wenn du sie nicht abhakst. | When off, warmup and cooldown exercises are hidden during the session. Templates and plan editing remain unchanged — only the live workout flow is affected. Warmups are never mandatory: 'Save Workout' stays tappable even if you skip them. | Kapalıyken oturum sırasında ısınma ve soğuma hareketleri gizlenir. Şablonlar ve plan düzenleme değişmez — yalnızca canlı antrenman akışı etkilenir. Isınmalar zorunlu değildir: 'Antrenmanı Kaydet' onları atlasan bile aktif kalır. |
 | `settings.workout.section` | Trainings-Verhalten | Workout Behavior | Antrenman Davranışı |

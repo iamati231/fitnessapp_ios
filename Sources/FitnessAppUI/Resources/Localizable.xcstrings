@@ -23254,6 +23254,167 @@
           }
         }
       }
+    },
+    "rir.tooltip.0": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Absolutes Muskelversagen — keine weitere Wiederholung möglich."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Absolute failure — no more clean reps possible."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tam yetersizlik — başka temiz tekrar mümkün değil."
+          }
+        }
+      }
+    },
+    "rir.tooltip.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sehr hart — maximal noch 1 saubere Wiederholung im Tank."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very hard — only 1 clean rep left in the tank."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çok zor — tankta sadece 1 temiz tekrar kaldı."
+          }
+        }
+      }
+    },
+    "rir.tooltip.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimaler Reiz — noch 2 Wiederholungen möglich."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimal stimulus — 2 more reps possible."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimal uyaran — 2 tekrar daha mümkün."
+          }
+        }
+      }
+    },
+    "rir.tooltip.3": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderater Reiz — noch 3 saubere Wiederholungen machbar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderate stimulus — 3 clean reps still doable."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orta uyaran — 3 temiz tekrar daha yapılabilir."
+          }
+        }
+      }
+    },
+    "rir.tooltip.4plus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leichtes Training — ideal für Warm-up oder Deload."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light training — ideal for warm-up or deload."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hafif antrenman — ısınma veya deload için ideal."
+          }
+        }
+      }
+    },
+    "settings.training.rirTooltip.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RIR-Hilfstexte anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show RIR helper texts"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RIR yardım metinlerini göster"
+          }
+        }
+      }
+    },
+    "settings.training.rirTooltip.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeigt kurze Erklärungen beim Einstellen der Intensität (Reps in Reserve)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows short explanations when setting intensity (Reps in Reserve)."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yoğunluk ayarlanırken kısa açıklamalar gösterir (Reps in Reserve)."
+          }
+        }
+      }
     }
   }
 }
