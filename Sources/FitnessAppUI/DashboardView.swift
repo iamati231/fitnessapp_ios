@@ -1414,8 +1414,10 @@ public struct DashboardView: View {
                 }
                 .chartXDomainIfSet(domain)
                 .chartXAxis {
-                    if let strideDays = compoundChartRange.axisStrideDays {
-                        AxisMarks(values: .stride(by: .day, count: strideDays)) { _ in
+                    // DEL-153: feste Kalender-Anker statt daten-getriebener
+                    // Stride — Labels springen nicht mehr je nach Datenlage.
+                    if let dates = compoundChartRange.axisDates() {
+                        AxisMarks(values: dates) { _ in
                             AxisGridLine()
                             AxisTick()
                             AxisValueLabel(format: .dateTime.day().month(.abbreviated))
@@ -1741,8 +1743,9 @@ public struct DashboardView: View {
                 }
                 .chartXDomainIfSet(domain)
                 .chartXAxis {
-                    if let strideDays = cardioChartRange.axisStrideDays {
-                        AxisMarks(values: .stride(by: .day, count: strideDays)) { _ in
+                    // DEL-153: feste Kalender-Anker (siehe Compound-Chart).
+                    if let dates = cardioChartRange.axisDates() {
+                        AxisMarks(values: dates) { _ in
                             AxisGridLine()
                             AxisValueLabel(format: .dateTime.month(.abbreviated).day())
                         }

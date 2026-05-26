@@ -36,34 +36,88 @@ enum ChartTimeRange: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// Harte X-Achsen-Domain, die HEUTE endet. `nil` fuer `.max` (Auto-Scale
-    /// gegen die echten Datenpunkte).
+    /// Visueller Buffer (in Tagen) an JEDER Domain-Kante. Verhindert, dass der
+    /// aktuellste Punkt rechts und der aelteste links an der Grid-Kante kleben.
+    private static let edgePaddingDays = 2
+
+    /// Cutoff fuer die Punkt-Filterung — die "echte" Monats-Grenze (heute
+    /// minus N Monate), OHNE Padding. `nil` = kein Filter (`.max`).
     ///
-    /// Wichtig: die Domain endet bewusst bei `now` (nicht beim letzten
-    /// Trainings-Punkt), damit der User auch dann ein Gefuehl fuer die
-    /// Zeitabstaende bekommt, wenn das letzte Training ein paar Tage her ist.
-    func domain(now: Date = Date(), calendar: Calendar = .current) -> ClosedRange<Date>? {
-        guard let monthsBack,
-              let start = calendar.date(byAdding: .month, value: -monthsBack, to: now)
-        else { return nil }
-        return start...now
-    }
-
-    /// Untere Grenze der Domain = Cutoff fuer die Punkt-Filterung. `nil` =
-    /// kein Filter (`.max` zeigt alle Punkte).
+    /// Wichtig: das Filtern laeuft gegen die echte Grenze, das Padding ist
+    /// rein visuell (siehe `domain`). So liegen Punkte mit etwas Luft zur
+    /// linken Kante, ohne dass zusaetzliche Punkte sichtbar werden.
     func cutoff(now: Date = Date(), calendar: Calendar = .current) -> Date? {
-        domain(now: now, calendar: calendar)?.lowerBound
+        guard let monthsBack else { return nil }
+        return calendar.date(byAdding: .month, value: -monthsBack, to: now)
     }
 
-    /// Tick-Abstand (in Tagen) fuer die X-Achsen-Labels. `nil` → automatische
-    /// Verteilung (`.automatic(desiredCount:)`). Werte so gewaehlt, dass sich
-    /// die Datums-Texte bei der jeweiligen Domain-Breite nicht ueberschneiden.
-    var axisStrideDays: Int? {
+    /// Gepolsterte X-Achsen-Domain. Endet bei `now + edgePadding` und beginnt
+    /// bei `cutoff - edgePadding`, sodass:
+    ///   * der heutige Tag NIE an der rechten Kante klebt (rechtes Ende ist
+    ///     immer "heute + 2 Tage"),
+    ///   * der aelteste Punkt etwas Luft zur linken Kante hat.
+    /// `nil` fuer `.max` → Swift-Charts-Auto-Scaling gegen die echten Punkte.
+    func domain(now: Date = Date(), calendar: Calendar = .current) -> ClosedRange<Date>? {
+        guard let cutoff = cutoff(now: now, calendar: calendar) else { return nil }
+        let pad = Self.edgePaddingDays
+        let lower = calendar.date(byAdding: .day, value: -pad, to: cutoff) ?? cutoff
+        let upper = calendar.date(byAdding: .day, value: pad, to: now) ?? now
+        return lower...upper
+    }
+
+    /// Feste, kalender-verankerte Tick-Daten fuer die X-Achsen-Labels —
+    /// UNABHAENGIG von den vorliegenden Trainings-Datenpunkten, damit die
+    /// Labels nicht je nach Datenlage hin- und herspringen.
+    ///
+    ///   * `.oneMonth`   → 1. + 15. jedes Monats im sichtbaren Fenster.
+    ///   * `.threeMonths`→ 1. jedes Monats (3-4 Labels).
+    ///   * `.max`        → `nil` → `.automatic(desiredCount:)` (Spannweite
+    ///     unbekannt, fixe Kalender-Anker waeren ggf. zu dicht/zu spaerlich).
+    func axisDates(now: Date = Date(), calendar: Calendar = .current) -> [Date]? {
+        guard let domain = domain(now: now, calendar: calendar) else { return nil }
+        let daysOfMonth: [Int]
         switch self {
-        case .oneMonth:    return 14   // ~3 Ticks ueber 1 Monat (Anfang/Mitte/Ende)
-        case .threeMonths: return 30   // ~3-4 Ticks ueber 3 Monate
-        case .max:         return nil  // Auto — Spannweite unbekannt
+        case .oneMonth:    daysOfMonth = [1, 15]
+        case .threeMonths: daysOfMonth = [1]
+        case .max:         return nil
         }
+        return Self.calendarTicks(
+            daysOfMonth: daysOfMonth,
+            within: domain,
+            calendar: calendar
+        )
+    }
+
+    /// Erzeugt Kalender-Anker (bestimmte Tage im Monat) innerhalb eines
+    /// Datums-Fensters. Iteriert Monat fuer Monat ueber das Fenster und baut
+    /// die Tage via `DateComponents` (robuster als `date(bySetting:)`).
+    private static func calendarTicks(
+        daysOfMonth: [Int],
+        within window: ClosedRange<Date>,
+        calendar: Calendar
+    ) -> [Date] {
+        var result: [Date] = []
+        // Beim 1. des Monats der unteren Fenster-Grenze starten.
+        guard var cursor = calendar.date(
+            from: calendar.dateComponents([.year, .month], from: window.lowerBound)
+        ) else { return [] }
+
+        while cursor <= window.upperBound {
+            let comps = calendar.dateComponents([.year, .month], from: cursor)
+            for day in daysOfMonth {
+                var dc = DateComponents()
+                dc.year = comps.year
+                dc.month = comps.month
+                dc.day = day
+                if let tick = calendar.date(from: dc),
+                   window.contains(tick) {
+                    result.append(tick)
+                }
+            }
+            guard let next = calendar.date(byAdding: .month, value: 1, to: cursor) else { break }
+            cursor = next
+        }
+        return result
     }
 }
 
