@@ -474,7 +474,13 @@ struct SetRow: View {
                     .foregroundStyle(.primary)
                     .frame(width: 32, alignment: .trailing)
                 if let prev = previousLog {
-                    Text("· letztes: \(previousLogHint(prev))")
+                    // Bug-Fix 2026-05-22: "letztes:" war hardcoded DE.
+                    // Jetzt via `active.set.previousFormat`-Catalog-Key
+                    // mit %@-Placeholder → DE/EN/TR sauber.
+                    let hint = String(format:
+                        String(localized: "active.set.previousFormat", bundle: .module),
+                        previousLogHint(prev))
+                    Text("· \(hint)")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                         .lineLimit(1)
@@ -483,7 +489,9 @@ struct SetRow: View {
         } else {
             // Cardio editable: kein RIR, nur evtl. Hint
             if let prev = previousLog {
-                Text("letztes: \(previousLogHint(prev))")
+                Text(String(format:
+                    String(localized: "active.set.previousFormat", bundle: .module),
+                    previousLogHint(prev)))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -1109,7 +1117,10 @@ struct SetRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else if let prev = previousLog,
                   prev.distanceKm != nil || prev.durationSeconds != nil {
-            Text("letztes: \(cardioPreviousHint(prev))")
+            // Bug-Fix 2026-05-22: lokalisiert via active.set.previousFormat.
+            Text(String(format:
+                String(localized: "active.set.previousFormat", bundle: .module),
+                cardioPreviousHint(prev)))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)

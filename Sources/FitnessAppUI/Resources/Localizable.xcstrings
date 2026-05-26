@@ -23415,6 +23415,29 @@
           }
         }
       }
+    },
+    "active.set.previousFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "letztes: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "last: %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "son: %@"
+          }
+        }
+      }
     }
   }
 }

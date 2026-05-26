@@ -37,12 +37,25 @@ public struct RIRTooltipBloop: View {
                 Text(LocalizedStringKey(Self.tooltipKey(for: rir)), bundle: .module)
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.primary)
-                    .lineLimit(2)
+                    // Smoke-Test-Fix 2026-05-22: lineLimit 2 → 3 fuer
+                    // laengere Sprachen (TR "Orta uyaran — 3 temiz tekrar
+                    // daha yapılabilir." passt mit 2 Zeilen knapp nicht).
+                    // Plus minimumScaleFactor 0.8 als Fallback wenn der
+                    // Slider-Container die Breite stark begrenzt — Text
+                    // schrumpft leicht statt "..." anzuzeigen.
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.8)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
+            // Smoke-Test-Fix 2026-05-22: maxWidth 240 verhindert dass
+            // der Bloop von der Slider-HStack horizontal eingequetscht
+            // wird (vorher nahm er die intrinsische Slider-Breite, was
+            // bei den engen SetRow-Layouts auf iPhone-SE zu Truncation
+            // fuehrte).
+            .frame(maxWidth: 240)
             .background(.regularMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
