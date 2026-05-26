@@ -37,25 +37,33 @@ public struct RIRTooltipBloop: View {
                 Text(LocalizedStringKey(Self.tooltipKey(for: rir)), bundle: .module)
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.primary)
-                    // Smoke-Test-Fix 2026-05-22: lineLimit 2 → 3 fuer
-                    // laengere Sprachen (TR "Orta uyaran — 3 temiz tekrar
-                    // daha yapılabilir." passt mit 2 Zeilen knapp nicht).
-                    // Plus minimumScaleFactor 0.8 als Fallback wenn der
-                    // Slider-Container die Breite stark begrenzt — Text
-                    // schrumpft leicht statt "..." anzuzeigen.
-                    .lineLimit(3)
-                    .minimumScaleFactor(0.8)
+                    // Smoke-Test-Fix 2026-05-22 (Iteration 2): lineLimit
+                    // ganz weg → Text bricht so oft um wie noetig.
+                    // minimumScaleFactor weiter als Schrumpf-Fallback.
+                    // Die Breiten-Constraint kommt JETZT vom umgebenden
+                    // .frame() (siehe unten), nicht mehr vom Parent —
+                    // SwiftUI weiss damit deterministisch wieviel
+                    // Raum dem Text zur Verfuegung steht.
+                    .lineLimit(nil)
+                    .minimumScaleFactor(0.85)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            // Smoke-Test-Fix 2026-05-22: maxWidth 240 verhindert dass
-            // der Bloop von der Slider-HStack horizontal eingequetscht
-            // wird (vorher nahm er die intrinsische Slider-Breite, was
-            // bei den engen SetRow-Layouts auf iPhone-SE zu Truncation
-            // fuehrte).
-            .frame(maxWidth: 240)
+            // Smoke-Test-Fix 2026-05-22 (Iteration 2): explizite Breiten-
+            // Range statt nur maxWidth. Vorher gab `maxWidth: 240` nur
+            // eine Obergrenze; bei engem parent-offered-width
+            // (Slider-Container in SetRow auf iPhone-SE) komprimierte
+            // SwiftUI den Bloop trotzdem auf ~120pt und truncated den
+            // Text. Mit `minWidth: 200` zwingen wir SwiftUI mindestens
+            // 200pt zu allozieren — das reicht fuer alle drei Sprachen
+            // mit 2-3 Zeilen Umbruch. `idealWidth: 220` bestimmt den
+            // bevorzugten Wert wenn das Parent flexibel ist; `maxWidth:
+            // 240` verhindert Off-Screen-Sliding auf iPhone-SE
+            // (375pt - Card-Padding ~76 = 299pt verfuegbar, 240 sitzt
+            // bequem drin).
+            .frame(minWidth: 200, idealWidth: 220, maxWidth: 240)
             .background(.regularMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
