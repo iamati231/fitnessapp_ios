@@ -214,25 +214,38 @@ public enum DayAnalyzer {
         }
     }
 
-    /// Bucketing-Schwellen: low < 12, moderate < 24, high < 40, sonst
-    /// veryHigh. Werte sind aus Probe-Berechnungen abgeleitet (z.B.
-    /// schwerer Leg-Day mit 4 Compounds × 4 Sätzen × RIR 2 ≈ 32-40).
+    /// Bucketing-Schwellen. Kalibriert nach User-Smoke-Test (DEL-146,
+    /// 2026-05-22): die ursprünglichen Werte (12/24/40 total, 8/16/28
+    /// systemic) liessen 9-Satz-Workouts mit 3 Übungen schon auf
+    /// "Sehr hoch" hochpoppen, was die Skala entwertet. Neue Kalibrierung:
+    ///
+    ///   * **total:** 25 / 50 / 85
+    ///     - low < 25: kurze/leichte Tage (z.B. 9 Sätze Iso bei RIR 3)
+    ///     - moderate < 50: typischer Hypertrophie-Tag
+    ///     - high < 85: harter Compound-Tag mit hohem Volumen
+    ///     - veryHigh: nur echte Heavy-Days (20+ Sätze nah am Versagen)
+    ///
+    ///   * **systemic:** 15 / 30 / 55
+    ///     - Iso/Arm-Tage erreichen max moderate
+    ///     - schwere Compounds-Days koennen high/veryHigh erreichen
+    ///
     /// `scale: .systemic` verwendet engere Schwellen weil System-Score
-    /// kleiner ausfaellt als Gesamt-Score.
+    /// per Definition niedriger ausfaellt als Total-Score (cardio + iso
+    /// werden gedaempft, siehe `computeSystemicScore`).
     private static func categorize(loadScore: Double, scale: CategorizeScale = .total) -> LoadCategory {
         switch scale {
         case .total:
             switch loadScore {
-            case ..<12:  return .low
-            case ..<24:  return .moderate
-            case ..<40:  return .high
+            case ..<25:  return .low
+            case ..<50:  return .moderate
+            case ..<85:  return .high
             default:     return .veryHigh
             }
         case .systemic:
             switch loadScore {
-            case ..<8:   return .low
-            case ..<16:  return .moderate
-            case ..<28:  return .high
+            case ..<15:  return .low
+            case ..<30:  return .moderate
+            case ..<55:  return .high
             default:     return .veryHigh
             }
         }
