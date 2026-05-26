@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 989 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1011 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **989 / 989** (100%) | 0 |
-| 🇬🇧 English (EN) | **989 / 989** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **989 / 989** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1011 / 1011** (100%) | 0 |
+| 🇬🇧 English (EN) | **1011 / 1011** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1011 / 1011** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -282,10 +282,32 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboardSettings.section.inactive.title` | Inaktive Widgets | Inactive Widgets | Pasif Widget'lar |
 | `dashboardSettings.title` | Dashboard anpassen | Customize Dashboard | Panoyu Özelleştir |
 
-## `day.*`  (26 Keys)
+## `day.*`  (48 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `day.analysis.coachNote.balanced` | Ausgewogener Tag mit solidem Reiz und moderater Ermüdung. Gut planbar. | Balanced session with solid stimulus and moderate fatigue. Easy to plan around. | Dengeli bir gün — sağlam uyaran, orta düzey yorgunluk. Planlamak kolay. |
+| `day.analysis.coachNote.cardioFocused` | Reiner Cardio-Tag. Halte den Reiz konstant und beobachte die Erholung der Beine bis zum nächsten Krafttag. | Pure cardio day. Keep the stimulus steady and watch leg recovery before the next strength session. | Tamamen kardiyo gün. Uyaranı sabit tut ve bir sonraki güç gününe kadar bacak toparlanmasını gözle. |
+| `day.analysis.coachNote.compoundHeavy` | Systemisch fordernder Compound-Tag. Plane danach eher Erholung oder einen leichten Oberkörper-Tag. | Systemically demanding compound day. Plan for recovery or a light upper-body day afterwards. | Sistemik olarak zorlayıcı bir compound günü. Sonrasında toparlanma veya hafif üst vücut günü planla. |
+| `day.analysis.coachNote.highLocal` | Hoher lokaler Reiz bei moderater Systemlast — klassischer Hypertrophie-Tag. | High local stimulus with moderate systemic load — classic hypertrophy day. | Yüksek yerel uyaran, orta düzey sistemik yük — klasik hipertrofi günü. |
+| `day.analysis.coachNote.lightDeload` | Geringer Reiz — passend für Deload, Technik oder Erhaltung. | Low stimulus — ideal for deload, technique, or maintenance. | Düşük uyaran — deload, teknik veya koruma için ideal. |
+| `day.analysis.coachNote.veryHighStress` | Sehr hohe Belastung. Achte danach besonders auf Schlaf und Nahrung — und plane keinen zweiten harten Tag direkt im Anschluss. | Very high load. Pay extra attention to sleep and food afterwards — and don't stack another hard day right after. | Çok yüksek yük. Sonrasında uykuya ve beslenmeye özellikle dikkat et — ve hemen ardına başka bir zor gün koyma. |
+| `day.analysis.duration` | Geschätzte Dauer | Estimated Duration | Tahmini Süre |
+| `day.analysis.empty` | Füge Übungen hinzu, um die Tagesanalyse zu sehen. | Add exercises to see the day analysis. | Gün analizini görmek için egzersiz ekle. |
+| `day.analysis.estimated` | Schätzung | Estimate | Tahmin |
+| `day.analysis.load.high` | Hoch | High | Yüksek |
+| `day.analysis.load.low` | Leicht | Light | Hafif |
+| `day.analysis.load.moderate` | Moderat | Moderate | Orta |
+| `day.analysis.load.veryHigh` | Sehr hoch | Very High | Çok Yüksek |
+| `day.analysis.loadLabel` | Belastung | Load | Yük |
+| `day.analysis.muscleFocus.tier.primary` | Primär | Primary | Birincil |
+| `day.analysis.muscleFocus.tier.secondary` | Sekundär | Secondary | İkincil |
+| `day.analysis.muscleFocus.tier.tertiary` | Gering | Minor | Az |
+| `day.analysis.muscleFocusLabel` | Muskel-Fokus | Muscle Focus | Kas Odağı |
+| `day.analysis.recovery` | Regeneration | Recovery | Toparlanma |
+| `day.analysis.restDay` | Heute ist Ruhetag. Keine relevante Trainingsbelastung geplant. | Today is a rest day. No relevant training load planned. | Bugün dinlenme günü. Önemli bir antrenman yükü planlanmadı. |
+| `day.analysis.systemic` | Systemische Last | Systemic Load | Sistemik Yük |
+| `day.analysis.title` | Tagesanalyse | Day Analysis | Gün Analizi |
 | `day.editor.equipmentConflict.justAdd` | Nur Übung hinzufügen | Add exercise only | Sadece hareketi ekle |
 | `day.editor.equipmentConflict.message` | „%1$@" erfordert Equipment, das in %2$@-Plänen normalerweise nicht verfügbar ist. Möchtest du den Plan-Typ entsprechend anpassen? | "%1$@" requires equipment that's not normally available in %2$@ plans. Want to adjust the plan type? | "%1$@" %2$@ planlarında genellikle bulunmayan ekipman gerektirir. Plan tipini değiştirmek ister misin? |
 | `day.editor.equipmentConflict.switchPlan` | Plan auf %@ umstellen | Switch plan to %@ | Planı %@ olarak değiştir |

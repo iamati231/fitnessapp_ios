@@ -56,6 +56,14 @@ public struct DayEditorView: View {
                     metaSection
                     startSection
                     exercisesSection
+                    // DEL-142: Tagesanalyse-Card UNTER der Übungs-Liste.
+                    // Empty-State wenn keine Übungen, sonst die berechnete
+                    // Analyse aus dem `DayAnalyzer`. SwiftUI re-evaluiert
+                    // `dayAnalysisSection` bei jeder Re-Render-Pass des
+                    // Forms — sobald der User Übungen mutate (add/remove,
+                    // sets/reps-changes via Editor), kommt die nächste
+                    // Pass mit aktualisierten Werten.
+                    dayAnalysisSection
                 }
             }
         }
@@ -462,6 +470,33 @@ public struct DayEditorView: View {
                     .font(.footnote)
             }
         }
+    }
+
+    // MARK: - DEL-142 Tagesanalyse
+
+    /// Form-Section um die `DayAnalysisCard`. Drei Branches:
+    ///   * Übungs-Liste leer → `.empty`-Card mit Hint
+    ///   * `DayAnalyzer.analyze(...)` liefert nil (Edge-Case, wenn alle
+    ///     Übungen archived oder Warmup/Cooldown) → ebenfalls `.empty`
+    ///   * Sonst → `.analysis(...)`-Card mit den berechneten Werten
+    ///
+    /// Section-Header bleibt leer — die Card hat ihren eigenen Header
+    /// mit Icon + Titel. listRowInsets removed so the Bento-Card-Look
+    /// dasselbe Padding-System hat wie auf dem Dashboard.
+    @ViewBuilder
+    private var dayAnalysisSection: some View {
+        Section {
+            let exercises = day.activeExercises
+            let analysis = DayAnalyzer.analyze(exercises: exercises)
+
+            if let analysis {
+                DayAnalysisCard(mode: .analysis(analysis))
+            } else {
+                DayAnalysisCard(mode: .empty)
+            }
+        }
+        .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+        .listRowBackground(Color.clear)
     }
 
     // MARK: Derived
