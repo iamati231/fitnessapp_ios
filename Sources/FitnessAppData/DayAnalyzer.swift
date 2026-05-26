@@ -166,14 +166,36 @@ public enum DayAnalyzer {
 
     /// Separate System-Achse: berücksichtigt nur CNS- + systemicFatigue-
     /// Faktoren + axialLoad. Wird zur Recovery-Empfehlung herangezogen.
+    ///
+    /// **Iteration 2026-05-22**: Der naive ungedaempfte Score liess Tage
+    /// mit vielen Isolationen (Curls, Face Pulls, Calf Raises) auf
+    /// "Sehr hoch" hochpoppen, obwohl ZNS-Belastung dort minimal ist.
+    /// Drei-Wege-Branch:
+    ///   * Cardio: pauschaler Mini-Beitrag (0.5 pro Satz). Cardio
+    ///     belastet das ZNS anders als schwere Compounds — Ausnahme
+    ///     waeren HIIT-Intervalle, die hier aber nicht separat
+    ///     klassifiziert sind.
+    ///   * Compound-Lift: voller perSet × intensity-Score.
+    ///   * Isolation: gleicher perSet, aber durch `0.15`-Dampener stark
+    ///     gedrosselt. Curls + Maschinen belasten das ZNS kaum.
+    ///
+    /// Resultat: ein Tag mit 4 Compound-Saetzen liefert deutlich
+    /// hoeheren systemicScore als ein Tag mit 12 Iso-Saetzen — was die
+    /// Realitaet matched.
     private static func computeSystemicScore(working: [Exercise]) -> Double {
         var score: Double = 0
         for ex in working {
+            if ex.isCardio {
+                score += Double(ex.sets) * 0.5
+                continue
+            }
+            let isolationDampener: Double = ex.isCompound ? 1.0 : 0.15
             let perSet =
                 ex.systemicFatigueFactor * 0.45 +
                 ex.cnsDemandFactor       * 0.35 +
                 ex.axialLoadFactor       * 0.20
-            score += Double(ex.sets) * perSet * 10.0
+            let intensity = intensityMultiplier(targetRir: ex.targetRir)
+            score += Double(ex.sets) * perSet * isolationDampener * intensity * 10.0
         }
         return score
     }

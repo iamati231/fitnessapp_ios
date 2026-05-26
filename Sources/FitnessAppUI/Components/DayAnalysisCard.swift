@@ -195,8 +195,19 @@ public struct DayAnalysisCard: View {
                 let muscles = focus.filter { $0.tier == tier }
                 if !muscles.isEmpty {
                     HStack(alignment: .top, spacing: 6) {
-                        Text(LocalizedStringKey("day.analysis.muscleFocus.tier.\(tier.rawValue)"),
-                             bundle: .module)
+                        // Bug-Fix 2026-05-22: vorher `LocalizedStringKey(
+                        // "day.analysis.muscleFocus.tier.\(tier.rawValue)")` —
+                        // SwiftUI band das an den StringInterpolation-Init
+                        // statt String-Init und konstruierte einen Format-
+                        // Key statt eines konkreten Lookup-Keys. Resultat:
+                        // raw "day.analysis.muscleFocus.tier.primary"
+                        // wurde gerendert statt "Primär/Primary/Birincil".
+                        // Fix: computed Property `tier.localizationKey` →
+                        // String wird VOR der LocalizedStringKey-Init
+                        // gebaut, dann durch `init(_ value: String)`
+                        // verarbeitet — gleicher Pattern wie LoadCategory
+                        // und CoachNoteKind.
+                        Text(LocalizedStringKey(tier.localizationKey), bundle: .module)
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.secondary)
                             .frame(width: 80, alignment: .leading)

@@ -91,6 +91,16 @@ public struct MuscleStimulus: Equatable, Sendable, Identifiable {
 
     public enum Tier: String, Sendable {
         case primary, secondary, tertiary
+
+        /// xcstrings-Key. Symmetrisch zu `LoadCategory.localizationKey`
+        /// und `CoachNoteKind.localizationKey` — die UI nutzt das
+        /// computed-property-Pattern, damit `LocalizedStringKey(_:)` den
+        /// String-Init und NICHT den Interpolation-Init bekommt
+        /// (siehe DEL-143-Bugfix-Notes / CONTRIBUTING.md zu
+        /// LocalizedStringKey-Patterns).
+        public var localizationKey: String {
+            "day.analysis.muscleFocus.tier.\(rawValue)"
+        }
     }
 
     public init(muscle: MuscleGroup, points: Double, tier: Tier) {
