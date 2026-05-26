@@ -71,6 +71,13 @@ public struct DashboardView: View {
     @State private var restingHRValue: Double?
     @State private var stepsTodayValue: Double?
 
+    /// DEL-152: Persistierte Zeitfilter pro Trend-Chart. Default `.oneMonth`,
+    /// damit lang-genutzte Accounts nicht mit einer ueberladenen X-Achse
+    /// starten. Separate Keys pro Chart — Compound- und Cardio-Daten koennen
+    /// unterschiedliche Spannweiten haben, der User stellt sie unabhaengig ein.
+    @AppStorage("dashboard.compoundChartRange") private var compoundChartRange: ChartTimeRange = .oneMonth
+    @AppStorage("dashboard.cardioChartRange") private var cardioChartRange: ChartTimeRange = .oneMonth
+
     public init() {}
 
     public var body: some View {
@@ -1341,6 +1348,19 @@ public struct DashboardView: View {
         }
     }
 
+    /// DEL-152: Filtert Compound-Serien auf den gewaehlten Zeitbereich.
+    /// `cutoff == nil` (`.max`) → unveraendert. Serien behalten ihre Linie
+    /// solange >=1 Punkt im Bereich liegt — ein einzelner Punkt rendert als
+    /// Dot, sodass kuerzlich begonnene Lifts im 1M-View nicht verschwinden.
+    private func filteredCompound(_ series: [CompoundSeries], cutoff: Date?) -> [CompoundSeries] {
+        guard let cutoff else { return series }
+        return series.compactMap { line in
+            let pts = line.points.filter { $0.date >= cutoff }
+            guard !pts.isEmpty else { return nil }
+            return CompoundSeries(exerciseName: line.exerciseName, points: pts)
+        }
+    }
+
     @ViewBuilder
     private var compoundLiftChart: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -1353,8 +1373,12 @@ public struct DashboardView: View {
                     .foregroundStyle(.secondary)
             }
 
-            let series = compoundSeries
-            if series.isEmpty {
+            // DEL-152: Zeitfilter — auf alle (>=2-Punkt-)Serien angewandt, dann
+            // auf den Bereich geklemmt. Empty-State greift, wenn nach dem
+            // Filter keine Punkte mehr im Bereich liegen.
+            let domain = compoundChartRange.domain()
+            let series = filteredCompound(compoundSeries, cutoff: compoundChartRange.cutoff())
+            if compoundSeries.isEmpty {
                 // UX-201: Premium-Empty-State (icon + headline + description
                 // + CTA). Vorher: kompakte HStack ohne Aktion.
                 // UX-Refine 2026-05-21: kein CTA — Compound-Chart-Empty
@@ -1366,6 +1390,7 @@ public struct DashboardView: View {
                     description: "dashboard.compoundChart.empty.description"
                 )
             } else {
+                ChartTimeRangePicker(selection: $compoundChartRange)
                 Chart {
                     ForEach(series) { line in
                         ForEach(line.points) { point in
@@ -1387,13 +1412,22 @@ public struct DashboardView: View {
                         }
                     }
                 }
+                .chartXDomainIfSet(domain)
                 .chartXAxis {
-                    AxisMarks(values: .automatic(desiredCount: 4)) { _ in
-                        AxisGridLine()
-                        AxisTick()
-                        // DEL-103: Achsen-Labels mit rounded/monospaced Design,
-                        // damit die Datums-Ticks zum sportlichen Numerik-Look passen.
-                        AxisValueLabel(format: .dateTime.day().month(.abbreviated))
+                    if let strideDays = compoundChartRange.axisStrideDays {
+                        AxisMarks(values: .stride(by: .day, count: strideDays)) { _ in
+                            AxisGridLine()
+                            AxisTick()
+                            AxisValueLabel(format: .dateTime.day().month(.abbreviated))
+                        }
+                    } else {
+                        AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                            AxisGridLine()
+                            AxisTick()
+                            // DEL-103: Achsen-Labels mit rounded/monospaced Design,
+                            // damit die Datums-Ticks zum sportlichen Numerik-Look passen.
+                            AxisValueLabel(format: .dateTime.day().month(.abbreviated))
+                        }
                     }
                 }
                 .chartYAxis {
@@ -1653,9 +1687,26 @@ public struct DashboardView: View {
     }
 
     @ViewBuilder
+    /// DEL-152: Filtert Cardio-Serien auf den gewaehlten Zeitbereich.
+    /// Analog zu `filteredCompound` — Serien mit >=1 Punkt im Bereich bleiben.
+    private func filteredCardio(_ series: [CardioPaceSeries], cutoff: Date?) -> [CardioPaceSeries] {
+        guard let cutoff else { return series }
+        return series.compactMap { line in
+            let pts = line.points.filter { $0.date >= cutoff }
+            guard !pts.isEmpty else { return nil }
+            return CardioPaceSeries(exerciseName: line.exerciseName, points: pts)
+        }
+    }
+
+    @ViewBuilder
     private var cardioPaceChart: some View {
-        let series = cardioSeries
-        if shouldShowCardioChart, !series.isEmpty {
+        let domain = cardioChartRange.domain()
+        let series = filteredCardio(cardioSeries, cutoff: cardioChartRange.cutoff())
+        // Sichtbarkeit haengt an der Gesamt-Datenlage (shouldShowCardioChart +
+        // ungefilterte Serien), nicht am gewaehlten Zeitfilter — sonst wuerde
+        // ein leerer 1M-Bereich den ganzen Chart verschwinden lassen statt
+        // eine leere Achse zu zeigen.
+        if shouldShowCardioChart, !cardioSeries.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text("dashboard.cardioChart.title", bundle: .module)
@@ -1666,6 +1717,7 @@ public struct DashboardView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                ChartTimeRangePicker(selection: $cardioChartRange)
                 Chart {
                     ForEach(series) { line in
                         ForEach(line.points) { point in
@@ -1687,10 +1739,18 @@ public struct DashboardView: View {
                         }
                     }
                 }
+                .chartXDomainIfSet(domain)
                 .chartXAxis {
-                    AxisMarks(values: .automatic(desiredCount: 4)) { _ in
-                        AxisGridLine()
-                        AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                    if let strideDays = cardioChartRange.axisStrideDays {
+                        AxisMarks(values: .stride(by: .day, count: strideDays)) { _ in
+                            AxisGridLine()
+                            AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                        }
+                    } else {
+                        AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                            AxisGridLine()
+                            AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                        }
                     }
                 }
                 .chartYAxis {

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1022 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1025 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1022 / 1022** (100%) | 0 |
-| 🇬🇧 English (EN) | **1022 / 1022** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1022 / 1022** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1025 / 1025** (100%) | 0 |
+| 🇬🇧 English (EN) | **1025 / 1025** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1025 / 1025** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -142,6 +142,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `calc.tdee.weightLabel` | Gewicht (kg) | Weight (kg) | Ağırlık (kg) |
 | `calc.tdee.weightPlaceholder` | z.B. %@ | e.g. %@ | örn. %@ |
 | `calc.tdee.weightRequired` | Trag dein aktuelles Gewicht ein. | Enter your current weight. | Mevcut kilonu gir. |
+
+## `chart.*`  (3 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `chart.timeRange.max` | Max | Max | Tümü |
+| `chart.timeRange.oneMonth` | 1M | 1M | 1A |
+| `chart.timeRange.threeMonths` | 3M | 3M | 3A |
 
 ## `coaching.*`  (32 Keys)
 
