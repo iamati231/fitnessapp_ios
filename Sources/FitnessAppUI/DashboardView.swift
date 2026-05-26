@@ -1298,9 +1298,22 @@ public struct DashboardView: View {
                 let estimates = logs.compactMap { log -> Double? in
                     ExerciseCalculations.estimate1RMAverage(weightKg: log.weight, reps: log.reps)
                 }
+                // DEL-147: session.startTime statt log.date als X-Achsen-
+                // Wert. log.date ist der Speicher-Timestamp eines Sets —
+                // ueberlebt User-Edits am Session-Datum NICHT (Editing-
+                // Mode in WorkoutSummaryView updated nur session.startTime,
+                // nicht die Child-Logs). Resultat war: User datiert ein
+                // Workout zurueck, der Chart-Point bleibt auf dem
+                // urspruenglichen Save-Datum hängen. Logs in einer
+                // bySession-Gruppe teilen sich denselben Session-Backref,
+                // also reicht `logs.first?.session?.startTime`. Orphan-
+                // Logs (session-Backref nullified) fallen auf log.date
+                // zurück — kein perfekter Wert, aber besser als nil.
+                let representativeDate = logs.first?.session?.startTime
+                                       ?? logs.map(\.date).min()
                 guard let best = estimates.max(),
-                      let firstDate = logs.map(\.date).min() else { return nil }
-                return CompoundPoint(date: firstDate, oneRM: best)
+                      let pointDate = representativeDate else { return nil }
+                return CompoundPoint(date: pointDate, oneRM: best)
             }
             .sorted { $0.date < $1.date }
 
@@ -1574,9 +1587,14 @@ public struct DashboardView: View {
             let points: [CardioPacePoint] = bySession.compactMap { (_, sessionLogs) -> CardioPacePoint? in
                 let totalKm = sessionLogs.compactMap(\.distanceKm).reduce(0.0, +)
                 let totalSec = sessionLogs.compactMap(\.durationSeconds).reduce(0, +)
+                // DEL-147: session.startTime statt log.date — selber
+                // Bugfix-Pattern wie im Compound-Chart oben (siehe
+                // ausführlicher Kommentar dort).
+                let representativeDate = sessionLogs.first?.session?.startTime
+                                       ?? sessionLogs.map(\.date).min()
                 guard totalKm > 0, totalSec > 0,
                       let pace = PaceCalculator.minutesPerKm(distanceKm: totalKm, durationSeconds: totalSec),
-                      let date = sessionLogs.map(\.date).min()
+                      let date = representativeDate
                 else { return nil }
                 return CardioPacePoint(date: date, paceMinPerKm: pace, distanceKm: totalKm)
             }
