@@ -230,5 +230,47 @@ public enum LibrarySeeder {
 
         return updated
     }
+
+    /// DEL-150: One-Shot-Backfill fuer spontane (ad-hoc) Workouts.
+    ///
+    /// Vor DEL-150 wurde der ephemere `TrainingDay` einer spontanen Session
+    /// mit hartcodiertem DE-`name` ("Spontanes Workout") und OHNE
+    /// `localizationKey` angelegt. Folge: im Trainingsverlauf erschien der
+    /// Titel auf TR/EN-iPhones weiterhin deutsch (z.B. "Spontanes Workout"
+    /// statt "Anlık Antrenman").
+    ///
+    /// Strategie: fuer jede ad-hoc-Session mit lebender Day-Reference ohne
+    /// `localizationKey` wird `session.adHoc.dayName` gesetzt, sodass
+    /// `TrainingDay.displayName` den Key in die aktuelle Locale resolved.
+    /// Zusaetzlich wird der stale `dayName`-Snapshot genullt — die
+    /// Day-Reference ist die Source-of-Truth fuer den Titel, und wenn der Day
+    /// jemals nullified wird, soll der generische i18n-Fallback greifen statt
+    /// des eingefrorenen deutschen Strings.
+    ///
+    /// Der Name-Guard ("Spontanes Workout"/"Spontanes Training") schuetzt
+    /// gegen versehentliches Ueberschreiben — ad-hoc-Tage tragen immer einen
+    /// dieser Auto-Defaults.
+    ///
+    /// Idempotent: filtert auf `day.localizationKey == nil`. Nach dem ersten
+    /// erfolgreichen Pass laeuft die Funktion leer durch.
+    ///
+    /// Returns: Anzahl der reparierten Sessions.
+    @discardableResult
+    public static func backfillAdHocDayLocalizationIfNeeded(in context: ModelContext) -> Int {
+        let descriptor = FetchDescriptor<WorkoutSession>(
+            predicate: #Predicate { $0.isAdHoc == true }
+        )
+        let sessions = (try? context.fetch(descriptor)) ?? []
+        var updated = 0
+        for session in sessions {
+            guard let day = session.day, day.localizationKey == nil else { continue }
+            if day.name == "Spontanes Workout" || day.name == "Spontanes Training" {
+                day.localizationKey = "session.adHoc.dayName"
+                session.dayName = nil
+                updated += 1
+            }
+        }
+        return updated
+    }
 }
 #endif

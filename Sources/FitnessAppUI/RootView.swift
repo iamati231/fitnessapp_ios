@@ -106,6 +106,11 @@ public struct RootView: View {
             // laufen, damit der dort potenziell faelschlich gesetzte
             // `customName` hier wieder bereinigt werden kann. Idempotent.
             ExerciseNameBackfill.runIfNeeded(in: modelContext)
+            // DEL-150: Ad-Hoc-Workout-Titel-Repair. Spontane Sessions, deren
+            // ephemerer TrainingDay noch ohne localizationKey gespeichert
+            // wurde, bekommen `session.adHoc.dayName` nachgezogen — damit
+            // rendert der Verlauf sprachfest. Idempotent.
+            LibrarySeeder.backfillAdHocDayLocalizationIfNeeded(in: modelContext)
         }
     }
 

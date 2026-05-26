@@ -10421,6 +10421,52 @@
         }
       }
     },
+    "editor.exercise.smartProgressionFooterCompound": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compound: Wenn du in allen Sätzen die obere Rep-Grenze schaffst UND der letzte Satz bei RIR ≤ 3 war, steigt das Gewicht beim nächsten Mal automatisch um den eingestellten Inkrement."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compound: When you hit the upper rep limit in every set AND the last set was at RIR ≤ 3, the weight automatically increases by your set increment next time."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bileşik: Tüm setlerde üst tekrar sınırına ulaşırsan VE son set RIR ≤ 3 ise, ağırlık bir sonraki sefer ayarladığın artış kadar otomatik yükselir."
+          }
+        }
+      }
+    },
+    "editor.exercise.smartProgressionFooterIsolation": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Isolation: Wenn du in allen Sätzen die obere Rep-Grenze schaffst UND der letzte Satz bei RIR ≤ 1 war (also nah am Versagen), steigt das Gewicht beim nächsten Mal um den eingestellten Inkrement."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Isolation: When you hit the upper rep limit in every set AND the last set was at RIR ≤ 1 (close to failure), the weight increases by your set increment next time."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İzolasyon: Tüm setlerde üst tekrar sınırına ulaşırsan VE son set RIR ≤ 1 ise (yani yetmezliğe yakın), ağırlık bir sonraki sefer ayarladığın artış kadar yükselir."
+          }
+        }
+      }
+    },
     "picker.exercise.title": {
       "extractionState": "manual",
       "localizations": {
@@ -11475,6 +11521,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sil ve Yeniden Başlat"
+          }
+        }
+      }
+    },
+    "session.adHoc.dayName": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spontanes Training"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spontaneous Workout"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anlık Antrenman"
           }
         }
       }

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1019 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1022 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1019 / 1019** (100%) | 0 |
-| 🇬🇧 English (EN) | **1019 / 1019** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1019 / 1019** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1022 / 1022** (100%) | 0 |
+| 🇬🇧 English (EN) | **1022 / 1022** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1022 / 1022** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -378,7 +378,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `difficulty.beginner` | Anfänger | Beginner | Başlangıç |
 | `difficulty.intermediate` | Fortgeschritten | Intermediate | Orta |
 
-## `editor.*`  (26 Keys)
+## `editor.*`  (28 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -403,6 +403,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `editor.exercise.section.suggestedWeight` | Vorgeschlagenes Gewicht (optional) | Suggested Weight (optional) | Önerilen Ağırlık (opsiyonel) |
 | `editor.exercise.sets` | Sätze | Sets | Set |
 | `editor.exercise.smartOff` | Aus = das Gewicht wird nie automatisch geändert. Du behältst die volle Kontrolle. | Off = weight never auto-adjusts. You stay in full control. | Kapalı = ağırlık asla otomatik değişmez. Kontrol sende. |
+| `editor.exercise.smartProgressionFooterCompound` | Compound: Wenn du in allen Sätzen die obere Rep-Grenze schaffst UND der letzte Satz bei RIR ≤ 3 war, steigt das Gewicht beim nächsten Mal automatisch um den eingestellten Inkrement. | Compound: When you hit the upper rep limit in every set AND the last set was at RIR ≤ 3, the weight automatically increases by your set increment next time. | Bileşik: Tüm setlerde üst tekrar sınırına ulaşırsan VE son set RIR ≤ 3 ise, ağırlık bir sonraki sefer ayarladığın artış kadar otomatik yükselir. |
+| `editor.exercise.smartProgressionFooterIsolation` | Isolation: Wenn du in allen Sätzen die obere Rep-Grenze schaffst UND der letzte Satz bei RIR ≤ 1 war (also nah am Versagen), steigt das Gewicht beim nächsten Mal um den eingestellten Inkrement. | Isolation: When you hit the upper rep limit in every set AND the last set was at RIR ≤ 1 (close to failure), the weight increases by your set increment next time. | İzolasyon: Tüm setlerde üst tekrar sınırına ulaşırsan VE son set RIR ≤ 1 ise (yani yetmezliğe yakın), ağırlık bir sonraki sefer ayarladığın artış kadar yükselir. |
 | `editor.exercise.templateLocked` | Template-Übung — Name und Cardio/Zeit-Flags sind festgelegt. | Template exercise — name and cardio/time flags are fixed. | Şablon hareket — ad ve kardiyo/süre bayrakları sabit. |
 | `editor.exercise.toggle.cardio` | Cardio | Cardio | Kardiyo |
 | `editor.exercise.toggle.compoundLift` | Compound-Lift | Compound Lift | Bileşik Hareket |
@@ -1078,10 +1080,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 |---|---|---|---|
 | `root.resetting.label` | Daten werden zurückgesetzt … | Resetting data … | Veriler sıfırlanıyor … |
 
-## `session.*`  (6 Keys)
+## `session.*`  (7 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `session.adHoc.dayName` | Spontanes Training | Spontaneous Workout | Anlık Antrenman |
 | `session.recovery.dayName.unknown` | Unbekannt | Unknown | Bilinmiyor |
 | `session.recovery.discardAndRestart` | Verwerfen & neu starten | Discard & Restart | Sil ve Yeniden Başlat |
 | `session.recovery.message.fallback` | Es gibt bereits ein angefangenes Training. | There's already an active session. | Zaten devam eden bir oturum var. |

@@ -1215,11 +1215,17 @@ public struct DashboardView: View {
         // auf, weil alle Plan-Queries `plan != nil`-implizit filtern (via
         // `\TrainingPlan.days`-Inverse).
         let todayWeekday = Calendar.current.component(.weekday, from: Date())
+        // DEL-150: localizationKey statt nur DE-`name`. Der Display-Pfad
+        // (`WorkoutSession.displayDayName` → `TrainingDay.displayName`)
+        // resolved den Key in die aktuelle Locale, sodass spontane Workouts
+        // im Verlauf nicht als eingefrorenes "Spontanes Workout" haengen
+        // bleiben. `name` bleibt als sprachneutraler DE-Anchor erhalten.
         let adHocDay = TrainingDay(
-            name: "Spontanes Workout",
+            name: "Spontanes Training",
             weekday: todayWeekday,
             type: .custom,
-            plan: nil
+            plan: nil,
+            localizationKey: "session.adHoc.dayName"
         )
         modelContext.insert(adHocDay)
 
@@ -1230,7 +1236,9 @@ public struct DashboardView: View {
             exerciseCount: 0,
             isCompleted: false,
             isAdHoc: true,
-            dayName: "Spontanes Workout",
+            // DEL-150: kein DE-Snapshot mehr — die lebende Day-Reference
+            // (mit localizationKey) ist die Source-of-Truth fuer den Titel.
+            dayName: nil,
             day: adHocDay
         )
         modelContext.insert(session)

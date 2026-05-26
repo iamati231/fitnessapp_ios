@@ -311,10 +311,12 @@ public struct ExerciseEditorView: View {
     /// dynamisch angepasst, damit der User direkt sieht, wann die App
     /// progressed.
     private var progressionFooterText: String {
+        // DEL-151: lokalisiert via String-Catalog — vorher hartcodierte
+        // deutsche Literale, die auf TR/EN-iPhones deutsch stehen blieben.
         if exercise.isCompound {
-            return "Compound: Wenn alle Saetze die obere Rep-Grenze schaffst UND der letzte Satz RIR <= 3 hatte, steigt das Gewicht beim naechsten Mal automatisch um den eingestellten Inkrement."
+            return String(localized: "editor.exercise.smartProgressionFooterCompound", bundle: .module)
         } else {
-            return "Isolation: Wenn alle Saetze die obere Rep-Grenze schaffst UND der letzte Satz RIR <= 1 hatte (also nah am Versagen), steigt das Gewicht beim naechsten Mal um den eingestellten Inkrement."
+            return String(localized: "editor.exercise.smartProgressionFooterIsolation", bundle: .module)
         }
     }
 
