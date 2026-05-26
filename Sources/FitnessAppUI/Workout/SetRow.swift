@@ -626,10 +626,14 @@ struct SetRow: View {
     /// mitgespeichert, damit blockierte Rows den Namen ohne weiteren
     /// Lookup ins UI bringen koennen.
     private var myTimedSetID: ActiveTimedSetID {
+        // DEL-149: `exercise.displayName` statt rohem `exercise.name`. Der
+        // gespeicherte DE-Base wird hier in den User-sichtbaren Hint-String
+        // weitergereicht — wir lokalisieren am Source, sodass der gesamte
+        // blocking-Pfad (auch cross-row) sprachfest bleibt.
         ActiveTimedSetID(
             exerciseID: exercise.persistentModelID,
             setIndex: setIndex,
-            exerciseName: exercise.name
+            exerciseName: exercise.displayName
         )
     }
 

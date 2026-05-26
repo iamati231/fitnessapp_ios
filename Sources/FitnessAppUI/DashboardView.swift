@@ -255,7 +255,10 @@ public struct DashboardView: View {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .short
         let relative = formatter.localizedString(for: latest.date, relativeTo: Date())
-        return "\(latest.exerciseName) \(relative)"
+        // DEL-149: snapshot-resolver — lokalisierter Name aus dem DE-Base
+        // (oder Reverse-Lookup-Hit fuer vor-DEL-149-Snapshots).
+        let displayName = Exercise.resolvedDisplayName(forStoredName: latest.exerciseName)
+        return "\(displayName) \(relative)"
     }
 
     // MARK: - History teaser (DEL-019)
@@ -1319,7 +1322,14 @@ public struct DashboardView: View {
 
             // Need ≥2 points for a meaningful line
             guard points.count >= 2 else { return nil }
-            return CompoundSeries(exerciseName: name, points: points)
+            // DEL-149: Chart-Legend rendert ueber `line.exerciseName` —
+            // wir wandeln den DE-Base hier einmalig in die aktuelle Locale,
+            // damit die Legende mit dem User-Sprachsetting matched. Stable
+            // innerhalb eines Frames, also Series-Grouping bleibt korrekt.
+            return CompoundSeries(
+                exerciseName: Exercise.resolvedDisplayName(forStoredName: name),
+                points: points
+            )
         }
     }
 
@@ -1600,7 +1610,13 @@ public struct DashboardView: View {
             }
             .sorted { $0.date < $1.date }
             guard points.count >= 2 else { return nil }
-            return CardioPaceSeries(exerciseName: name, points: points)
+            // DEL-149: dieselbe Lokalisierung wie im Compound-Chart oben —
+            // Legende soll in der aktuellen Sprache erscheinen, nicht
+            // hardcoded auf den DE-Base-Namen.
+            return CardioPaceSeries(
+                exerciseName: Exercise.resolvedDisplayName(forStoredName: name),
+                points: points
+            )
         }
         .sorted { $0.exerciseName < $1.exerciseName }
     }

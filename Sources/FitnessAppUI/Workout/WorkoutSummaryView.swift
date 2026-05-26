@@ -1072,7 +1072,11 @@ private struct PRBadge: View {
                 .deltiqIconBadge(tint: kindColor)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(record.exerciseName)
+                // DEL-149: Snapshot-resolver — rendert den DE-Base ODER
+                // einen vor-DEL-149 unter fremder Locale gespeicherten Namen
+                // (z.B. "Koşu Bandı") via Reverse-Lookup in der aktuellen
+                // Sprache.
+                Text(Exercise.resolvedDisplayName(forStoredName: record.exerciseName))
                     .font(.body.weight(.semibold))
                 Text(kindLabel)
                     .font(.caption)
@@ -1304,7 +1308,10 @@ private struct ProgressionBadge: View {
                 .deltiqIconBadge(tint: tint)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(outcome.exerciseName)
+                // DEL-149: lokalisierter Display-Name via Snapshot-Resolver —
+                // outcome.exerciseName ist ein DE-Base-Snapshot aus dem
+                // ProgressionApplicator.
+                Text(Exercise.resolvedDisplayName(forStoredName: outcome.exerciseName))
                     .font(.body.weight(.semibold))
                 Text(headlineText)
                     .font(.caption)

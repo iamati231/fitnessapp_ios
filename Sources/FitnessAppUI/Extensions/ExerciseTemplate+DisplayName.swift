@@ -71,5 +71,29 @@ extension Exercise {
         }
         return name
     }
+
+    /// DEL-149: Sprachsichere Aufloesung eines persistierten Snapshot-Namens
+    /// (PR-Entry, ExerciseLog.exerciseNameSnapshot, History-Row-Group-Key).
+    ///
+    /// Wird ueberall dort verwendet, wo eine roh persistierte String-Snapshot
+    /// gerendert werden muss — die `Exercise.displayName`-Instance-Variante
+    /// ist nur fuer Live-References geeignet, hat aber dieselbe Library-
+    /// Lookup-Logik intern.
+    ///
+    /// Strategie:
+    ///   1. `localizationKey(forStoredName:)` versucht direkten DE-Base-Match
+    ///      ODER Reverse-Lookup ueber alle DE/EN/TR-Translations.
+    ///   2. Wenn ein Key gefunden wurde → lokalisiere in der aktuellen Locale.
+    ///   3. Sonst (Custom-Uebung ohne Library-Hit) → roher Snapshot-String.
+    ///
+    /// Damit rendern PR-Karte / Trophy-Room / History sprachfest, selbst auf
+    /// vor-DEL-149 persistierten Datenbestaenden — der Backfill ist nice-to-
+    /// have, aber dieser Helper sichert die UI auch ohne ihn.
+    public static func resolvedDisplayName(forStoredName storedName: String) -> String {
+        if let key = ExerciseNameLookup.localizationKey(forStoredName: storedName) {
+            return String(localized: String.LocalizationValue(key), bundle: .module)
+        }
+        return storedName
+    }
 }
 #endif

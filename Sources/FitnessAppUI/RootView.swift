@@ -99,6 +99,13 @@ public struct RootView: View {
             // aus `name` nach `customName` migriert, damit die System-Name/
             // User-Name Trennung sauber wird. Idempotent.
             LibrarySeeder.backfillCustomNamesIfNeeded(in: modelContext)
+            // DEL-149: Foreign-Locale-Exercise-Name-Repair. Eintraege die
+            // unter einer anderen Locale gespeichert wurden (z.B. "Koşu
+            // Bandı" statt "Laufband"), werden via Reverse-Lookup auf den
+            // DE-Base umgeschrieben. MUSS NACH backfillCustomNamesIfNeeded
+            // laufen, damit der dort potenziell faelschlich gesetzte
+            // `customName` hier wieder bereinigt werden kann. Idempotent.
+            ExerciseNameBackfill.runIfNeeded(in: modelContext)
         }
     }
 

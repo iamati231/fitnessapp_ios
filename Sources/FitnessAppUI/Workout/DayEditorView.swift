@@ -619,11 +619,15 @@ public struct DayEditorView: View {
     }
 
     private func addExercise(from template: ExerciseTemplate) {
-        // DEL-111: Snapshotted lokalisierter Name. Aktuelle Locale wird
-        // beim Picker-Pick eingefroren — Custom-Renames bleiben damit
-        // selbst nach Locale-Wechsel intakt (siehe Tech-Note im Ticket).
+        // DEL-149: NUR der deutsche Library-Base-Name landet in
+        // `Exercise.name`. Frueher (DEL-111) wurde hier `template.displayName`
+        // genommen — das fror die aktuelle Locale ein und produzierte
+        // Eintraege wie "Koşu Bandı"/"Treadmill" in der DB, die nach einem
+        // Sprachwechsel falsch gerendert wurden. Der DE-Base ist der stabile
+        // Library-Anchor; die UI-Sicht macht den Lookup ueber
+        // `displayName` (Extension) wieder lokalisiert.
         let exercise = Exercise(
-            name: template.displayName,
+            name: template.name,
             orderIndex: day.activeExercises.count,
             // DEL-080: Cardio-Flag aus dem Library-Template propagieren.
             // Picker-Pick einer Cardio-Uebung (z.B. "Freier Lauf") soll

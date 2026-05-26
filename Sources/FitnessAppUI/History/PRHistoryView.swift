@@ -256,7 +256,11 @@ private struct ExerciseTrophySection: View {
     private var headerLabel: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(group.exerciseName)
+                // DEL-149: Snapshot-resolver — der Group-Key bleibt der
+                // stabile DE-Base-Name (gruppe Sortierung/Identitaet); die
+                // sichtbare Anzeige laeuft via Library-Lookup in die aktuelle
+                // Sprache.
+                Text(Exercise.resolvedDisplayName(forStoredName: group.exerciseName))
                     .font(.body.weight(.semibold))
                 Text("\(group.entries.count) PR\(group.entries.count == 1 ? "" : "s") • zuletzt \(group.latestDate.formatted(date: .abbreviated, time: .omitted))")
                     .font(.caption)
