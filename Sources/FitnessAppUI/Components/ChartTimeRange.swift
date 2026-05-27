@@ -27,7 +27,8 @@ enum ChartTimeRange: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// Anzahl Monate zurueck ab `now`. `nil` fuer `.max` (keine Domain-Klemme).
+    /// Anzahl Monate zurueck ab `now`. `nil` fuer `.max` (linke Kante kommt
+    /// dort vom aeltesten Datenpunkt).
     private var monthsBack: Int? {
         switch self {
         case .oneMonth:    return 1
@@ -36,45 +37,52 @@ enum ChartTimeRange: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// Visueller Buffer (in Tagen) an JEDER Domain-Kante. Verhindert, dass der
-    /// aktuellste Punkt rechts und der aelteste links an der Grid-Kante kleben.
-    private static let edgePaddingDays = 2
-
-    /// Cutoff fuer die Punkt-Filterung — die "echte" Monats-Grenze (heute
-    /// minus N Monate), OHNE Padding. `nil` = kein Filter (`.max`).
-    ///
-    /// Wichtig: das Filtern laeuft gegen die echte Grenze, das Padding ist
-    /// rein visuell (siehe `domain`). So liegen Punkte mit etwas Luft zur
-    /// linken Kante, ohne dass zusaetzliche Punkte sichtbar werden.
+    /// Cutoff fuer die Punkt-Filterung — die Monats-Grenze (heute minus N
+    /// Monate). `nil` = kein Filter (`.max` zeigt alle Punkte).
     func cutoff(now: Date = Date(), calendar: Calendar = .current) -> Date? {
         guard let monthsBack else { return nil }
         return calendar.date(byAdding: .month, value: -monthsBack, to: now)
     }
 
-    /// Gepolsterte X-Achsen-Domain. Endet bei `now + edgePadding` und beginnt
-    /// bei `cutoff - edgePadding`, sodass:
-    ///   * der heutige Tag NIE an der rechten Kante klebt (rechtes Ende ist
-    ///     immer "heute + 2 Tage"),
-    ///   * der aelteste Punkt etwas Luft zur linken Kante hat.
-    /// `nil` fuer `.max` → Swift-Charts-Auto-Scaling gegen die echten Punkte.
-    func domain(now: Date = Date(), calendar: Calendar = .current) -> ClosedRange<Date>? {
-        guard let cutoff = cutoff(now: now, calendar: calendar) else { return nil }
-        let pad = Self.edgePaddingDays
-        let lower = calendar.date(byAdding: .day, value: -pad, to: cutoff) ?? cutoff
-        let upper = calendar.date(byAdding: .day, value: pad, to: now) ?? now
-        return lower...upper
+    /// DEL-165: Harte X-Achsen-Domain — IMMER gesetzt (auch fuer `.max`),
+    /// rechtes Ende IMMER `now` (heute), damit das Fortschritts-Chart nicht
+    /// am letzten Datenpunkt endet, sondern am aktuellen Datum. Kein Padding
+    /// mehr — die linke Kante ist exakt:
+    ///   * `.oneMonth`    → heute − 1 Monat
+    ///   * `.threeMonths` → heute − 3 Monate
+    ///   * `.max`         → aeltester Datenpunkt (oder 6-Monats-Fallback,
+    ///     wenn keine Daten). Bei degeneriertem Bereich (lower >= upper)
+    ///     faellt es auf heute − 1 Monat zurueck, damit der Chart Breite hat.
+    func domain(now: Date = Date(),
+                oldestDataDate: Date? = nil,
+                calendar: Calendar = .current) -> ClosedRange<Date> {
+        let upper = now
+        let rawLower: Date
+        switch self {
+        case .oneMonth, .threeMonths:
+            rawLower = cutoff(now: now, calendar: calendar) ?? now
+        case .max:
+            let fallback = calendar.date(byAdding: .month, value: -6, to: now) ?? now
+            rawLower = oldestDataDate ?? fallback
+        }
+        // Degeneriert (z.B. einziger Datenpunkt heute) → Mindestbreite 1 Monat.
+        guard rawLower < upper else {
+            let safe = calendar.date(byAdding: .month, value: -1, to: upper) ?? upper.addingTimeInterval(-86_400)
+            return safe...upper
+        }
+        return rawLower...upper
     }
 
     /// Feste, kalender-verankerte Tick-Daten fuer die X-Achsen-Labels —
     /// UNABHAENGIG von den vorliegenden Trainings-Datenpunkten, damit die
     /// Labels nicht je nach Datenlage hin- und herspringen.
     ///
-    ///   * `.oneMonth`   → 1. + 15. jedes Monats im sichtbaren Fenster.
+    ///   * `.oneMonth`   → 1. + 15. jedes Monats im Fenster (heute−1M … heute).
     ///   * `.threeMonths`→ 1. jedes Monats (3-4 Labels).
     ///   * `.max`        → `nil` → `.automatic(desiredCount:)` (Spannweite
-    ///     unbekannt, fixe Kalender-Anker waeren ggf. zu dicht/zu spaerlich).
+    ///     variabel, fixe Kalender-Anker waeren ggf. zu dicht/zu spaerlich).
     func axisDates(now: Date = Date(), calendar: Calendar = .current) -> [Date]? {
-        guard let domain = domain(now: now, calendar: calendar) else { return nil }
+        guard let cutoff = cutoff(now: now, calendar: calendar) else { return nil }
         let daysOfMonth: [Int]
         switch self {
         case .oneMonth:    daysOfMonth = [1, 15]
@@ -83,7 +91,7 @@ enum ChartTimeRange: String, CaseIterable, Identifiable, Sendable {
         }
         return Self.calendarTicks(
             daysOfMonth: daysOfMonth,
-            within: domain,
+            within: cutoff...now,
             calendar: calendar
         )
     }
@@ -143,20 +151,4 @@ struct ChartTimeRangePicker: View {
     }
 }
 
-// MARK: - View-Helper
-
-@available(iOS 17.0, macOS 14.0, *)
-extension View {
-    /// DEL-152: Wendet `chartXScale(domain:)` nur an, wenn eine Domain gesetzt
-    /// ist. Fuer `.max` (Domain == nil) bleibt das Auto-Scaling von Swift
-    /// Charts aktiv.
-    @ViewBuilder
-    func chartXDomainIfSet(_ domain: ClosedRange<Date>?) -> some View {
-        if let domain {
-            self.chartXScale(domain: domain)
-        } else {
-            self
-        }
-    }
-}
 #endif

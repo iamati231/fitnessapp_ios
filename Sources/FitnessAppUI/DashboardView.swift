@@ -1376,9 +1376,13 @@ public struct DashboardView: View {
             // DEL-152: Zeitfilter — auf alle (>=2-Punkt-)Serien angewandt, dann
             // auf den Bereich geklemmt. Empty-State greift, wenn nach dem
             // Filter keine Punkte mehr im Bereich liegen.
-            let domain = compoundChartRange.domain()
-            let series = filteredCompound(compoundSeries, cutoff: compoundChartRange.cutoff())
-            if compoundSeries.isEmpty {
+            // DEL-165: harte Domain mit `now` als rechtem Ende; fuer `.max`
+            // liefert der aelteste Datenpunkt die linke Kante.
+            let allCompound = compoundSeries
+            let oldestCompound = allCompound.flatMap(\.points).map(\.date).min()
+            let domain = compoundChartRange.domain(oldestDataDate: oldestCompound)
+            let series = filteredCompound(allCompound, cutoff: compoundChartRange.cutoff())
+            if allCompound.isEmpty {
                 // UX-201: Premium-Empty-State (icon + headline + description
                 // + CTA). Vorher: kompakte HStack ohne Aktion.
                 // UX-Refine 2026-05-21: kein CTA — Compound-Chart-Empty
@@ -1412,7 +1416,7 @@ public struct DashboardView: View {
                         }
                     }
                 }
-                .chartXDomainIfSet(domain)
+                .chartXScale(domain: domain)
                 .chartXAxis {
                     // DEL-153: feste Kalender-Anker statt daten-getriebener
                     // Stride — Labels springen nicht mehr je nach Datenlage.
@@ -1713,13 +1717,17 @@ public struct DashboardView: View {
 
     @ViewBuilder
     private var cardioPaceChart: some View {
-        let domain = cardioChartRange.domain()
-        let series = filteredCardio(cardioSeries, cutoff: cardioChartRange.cutoff())
+        // DEL-165: harte Domain mit `now` als rechtem Ende; `.max` nutzt den
+        // aeltesten Cardio-Datenpunkt als linke Kante.
+        let allCardio = cardioSeries
+        let oldestCardio = allCardio.flatMap(\.points).map(\.date).min()
+        let domain = cardioChartRange.domain(oldestDataDate: oldestCardio)
+        let series = filteredCardio(allCardio, cutoff: cardioChartRange.cutoff())
         // Sichtbarkeit haengt an der Gesamt-Datenlage (shouldShowCardioChart +
         // ungefilterte Serien), nicht am gewaehlten Zeitfilter — sonst wuerde
         // ein leerer 1M-Bereich den ganzen Chart verschwinden lassen statt
         // eine leere Achse zu zeigen.
-        if shouldShowCardioChart, !cardioSeries.isEmpty {
+        if shouldShowCardioChart, !allCardio.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text("dashboard.cardioChart.title", bundle: .module)
@@ -1752,7 +1760,7 @@ public struct DashboardView: View {
                         }
                     }
                 }
-                .chartXDomainIfSet(domain)
+                .chartXScale(domain: domain)
                 .chartXAxis {
                     // DEL-153: feste Kalender-Anker (siehe Compound-Chart).
                     if let dates = cardioChartRange.axisDates() {
