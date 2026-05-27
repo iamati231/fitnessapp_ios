@@ -204,6 +204,54 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Bileşik hareket" } }
       }
     },
+    "common.yes": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ja" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Yes" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Evet" } }
+      }
+    },
+    "common.no": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nein" } },
+        "en": { "stringUnit": { "state": "translated", "value": "No" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hayır" } }
+      }
+    },
+    "library.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Übungsbibliothek" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Exercise Library" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hareket Kütüphanesi" } }
+      }
+    },
+    "library.searchPlaceholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Übung suchen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Search exercise" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hareket ara" } }
+      }
+    },
+    "library.newExercise": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Neue Übung" } },
+        "en": { "stringUnit": { "state": "translated", "value": "New exercise" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yeni hareket" } }
+      }
+    },
+    "library.readOnlyFooter": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "System-Übung — die Basis-Vorlagen der App sind nicht bearbeitbar." } },
+        "en": { "stringUnit": { "state": "translated", "value": "System exercise — the app's base templates can't be edited." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sistem hareketi — uygulamanın temel şablonları düzenlenemez." } }
+      }
+    },
     "common.cancel": {
       "extractionState": "manual",
       "localizations": {
@@ -15179,6 +15227,14 @@
             "value": "Hedef %@"
           }
         }
+      }
+    },
+    "settings.preferences.exerciseLibrary": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Übungen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Exercises" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hareketler" } }
       }
     },
     "settings.preferences.gear": {

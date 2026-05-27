@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1053 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1060 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1053 / 1053** (100%) | 0 |
-| 🇬🇧 English (EN) | **1053 / 1053** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1053 / 1053** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1060 / 1060** (100%) | 0 |
+| 🇬🇧 English (EN) | **1060 / 1060** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1060 / 1060** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -207,7 +207,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.tone.strict.blurb` | Direkt & fordernd. Klartext, wenn du vom Plan abweichst. | Direct & demanding. Plain talk when you deviate from the plan. | Doğrudan ve talepkar. Plandan sapınca net konuşur. |
 | `coaching.tone.strict.label` | Streng | Strict | Sıkı |
 
-## `common.*`  (6 Keys)
+## `common.*`  (8 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -216,7 +216,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `common.cancel` | Abbrechen | Cancel | İptal |
 | `common.close` | Schließen | Close | Kapat |
 | `common.done` | Fertig | Done | Bitti |
+| `common.no` | Nein | No | Hayır |
 | `common.save` | Speichern | Save | Kaydet |
+| `common.yes` | Ja | Yes | Evet |
 
 ## `customExercise.*`  (8 Keys)
 
@@ -688,6 +690,15 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 |---|---|---|---|
 | `holdTimer.target.format` | Ziel: %lld Sek halten | Target: hold %lld sec | Hedef: %lld sn boyunca tut |
 
+## `library.*`  (4 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `library.newExercise` | Neue Übung | New exercise | Yeni hareket |
+| `library.readOnlyFooter` | System-Übung — die Basis-Vorlagen der App sind nicht bearbeitbar. | System exercise — the app's base templates can't be edited. | Sistem hareketi — uygulamanın temel şablonları düzenlenemez. |
+| `library.searchPlaceholder` | Übung suchen | Search exercise | Hareket ara |
+| `library.title` | Übungsbibliothek | Exercise Library | Hareket Kütüphanesi |
+
 ## `measurement.*`  (80 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
@@ -1143,7 +1154,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (53 Keys)
+## `settings.*`  (54 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1166,6 +1177,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.health.notSetup` | Nicht eingerichtet | Not set up | Kurulmadı |
 | `settings.health.openIOSSettings` | In iOS-Einstellungen öffnen | Open iOS Settings | iOS Ayarlarını Aç |
 | `settings.health.unavailable` | Nicht verfügbar | Not available | Kullanılamıyor |
+| `settings.preferences.exerciseLibrary` | Übungen | Exercises | Hareketler |
 | `settings.preferences.gear` | Ausrüstung & Schuhe | Gear & Shoes | Ekipman & Ayakkabı |
 | `settings.preferences.units.imperial` | Imperial | Imperial | İmperyal |
 | `settings.preferences.units.label` | Einheiten | Units | Birimler |

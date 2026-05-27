@@ -218,6 +218,26 @@ public struct SettingsView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
             }
+            // DEL-161: Globale Uebungsbibliothek.
+            DeltiqFormFullRow {
+                NavigationLink {
+                    ExerciseLibraryView()
+                } label: {
+                    HStack {
+                        Label {
+                            Text("settings.preferences.exerciseLibrary", bundle: .module)
+                        } icon: {
+                            Image(systemName: "figure.strengthtraining.traditional")
+                        }
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
             // DEL-084: Equipment-Tracker (Laufschuhe etc.) Submenu.
             DeltiqFormFullRow {
                 NavigationLink {
