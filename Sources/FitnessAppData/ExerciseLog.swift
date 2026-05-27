@@ -46,6 +46,13 @@ public final class ExerciseLog {
     /// = Sekunden (Plank etc.) — separater PR-Pfad als Strength-Lifts.
     public var exerciseIsTimeBasedSnapshot: Bool = false
 
+    /// DEL-155: Snapshot des Cardio-Equipments (rawValue) zum Log-Zeitpunkt.
+    /// Wird fuer die PR-/Trend-Trennung pro Equipment genutzt und ueberlebt
+    /// einen Exercise-Delete (orphan-Resilienz wie die anderen Snapshots).
+    /// `nil` = pre-DEL-155-Bestand ODER Strength-Log → `resolvedCardioEquipment`
+    /// faellt auf die Live-Exercise bzw. `.none` zurueck.
+    public var exerciseCardioEquipmentSnapshot: String? = nil
+
     /// DEL-058: Distanz in km fuer Cardio-Lifts (Easy Run, Long Run, ...).
     /// Nil fuer Strength + Time-Based. Wird im Workout direkt vom
     /// CardioSetRow ueberschrieben.
@@ -95,6 +102,11 @@ public final class ExerciseLog {
         self.exerciseNameSnapshot       = exercise?.name
         self.exerciseIsCardioSnapshot   = exercise?.isCardio ?? false
         self.exerciseIsTimeBasedSnapshot = exercise?.isTimeBased ?? false
+        // DEL-155: Cardio-Equipment-Snapshot. Nur fuer Cardio-Logs relevant;
+        // bei Strength bleibt es nil.
+        self.exerciseCardioEquipmentSnapshot = (exercise?.isCardio == true)
+            ? exercise?.cardioEquipmentRaw
+            : nil
     }
 
     // MARK: - DEL-051 Snapshot Accessors
@@ -121,6 +133,18 @@ public final class ExerciseLog {
     public var resolvedIsTimeBased: Bool {
         if exerciseNameSnapshot != nil { return exerciseIsTimeBasedSnapshot }
         return exercise?.isTimeBased ?? false
+    }
+
+    /// DEL-155: Cardio-Equipment, LIVE-first. Anders als die anderen
+    /// Snapshots wird hier die lebende Exercise-Referenz bevorzugt — der User
+    /// editiert das Equipment nachtraeglich im Verlauf auf der Exercise, und
+    /// diese Aenderung soll sich sofort in PR-/Trend-Gruppierung
+    /// niederschlagen. Nur wenn die Live-Referenz weg ist (orphan-Log),
+    /// faellt es auf den Snapshot zurueck. Default `.none`.
+    public var resolvedCardioEquipment: CardioEquipment {
+        if let exercise { return exercise.cardioEquipment }
+        return exerciseCardioEquipmentSnapshot
+            .flatMap(CardioEquipment.init(rawValue:)) ?? .none
     }
 
     // MARK: - DEL-099 Scoring-Convenience

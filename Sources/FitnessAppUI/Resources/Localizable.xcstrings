@@ -347,6 +347,54 @@
         }
       }
     },
+    "cardioEquipment.fieldLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Equipment" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Equipment" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ekipman" } }
+      }
+    },
+    "cardioEquipment.none": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kein Gerät" } },
+        "en": { "stringUnit": { "state": "translated", "value": "No equipment" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Cihaz yok" } }
+      }
+    },
+    "cardioEquipment.treadmill": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Laufband" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Treadmill" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Koşu Bandı" } }
+      }
+    },
+    "cardioEquipment.bikeOutdoor": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Fahrrad (draußen)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Bike (outdoor)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bisiklet (dışarıda)" } }
+      }
+    },
+    "cardioEquipment.ergometer": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ergometer (Heimtrainer)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Ergometer" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kondisyon bisikleti" } }
+      }
+    },
+    "cardioEquipment.rowingMachine": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rudergerät" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Rowing machine" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kürek makinesi" } }
+      }
+    },
     "equipment.bodyweight": {
       "extractionState": "manual",
       "localizations": {

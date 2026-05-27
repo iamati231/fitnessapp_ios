@@ -847,6 +847,22 @@ public struct WorkoutSummaryView: View {
                     SetSummaryRow(log: log, exercise: exercise, isEditable: false)
                 }
             }
+
+            // DEL-155: Cardio-Equipment pro Cardio-Uebung — unabhaengig davon,
+            // ob die Session pure-Cardio oder mixed ist (Sichtbarkeit haengt
+            // an exercise.isCardio, NICHT am Session-Typ). Editierbar im
+            // New-Mode (post-finish) + History-Edit-Mode; sonst Read-Only-
+            // Anzeige (nur wenn ein Equipment gesetzt ist).
+            if exercise.isCardio {
+                if editable {
+                    CardioEquipmentPicker(selection: Binding(
+                        get: { exercise.cardioEquipment },
+                        set: { exercise.cardioEquipment = $0 }
+                    ))
+                } else if exercise.cardioEquipment != .none {
+                    CardioEquipmentDisplayRow(equipment: exercise.cardioEquipment)
+                }
+            }
         } header: {
             HStack {
                 Text(exercise.displayName)

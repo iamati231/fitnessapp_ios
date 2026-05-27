@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1031 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1037 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1031 / 1031** (100%) | 0 |
-| 🇬🇧 English (EN) | **1031 / 1031** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1031 / 1031** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1037 / 1037** (100%) | 0 |
+| 🇬🇧 English (EN) | **1037 / 1037** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1037 / 1037** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -148,6 +148,17 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `calc.tdee.weightLabel` | Gewicht (kg) | Weight (kg) | Ağırlık (kg) |
 | `calc.tdee.weightPlaceholder` | z.B. %@ | e.g. %@ | örn. %@ |
 | `calc.tdee.weightRequired` | Trag dein aktuelles Gewicht ein. | Enter your current weight. | Mevcut kilonu gir. |
+
+## `cardioEquipment.*`  (6 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `cardioEquipment.bikeOutdoor` | Fahrrad (draußen) | Bike (outdoor) | Bisiklet (dışarıda) |
+| `cardioEquipment.ergometer` | Ergometer (Heimtrainer) | Ergometer | Kondisyon bisikleti |
+| `cardioEquipment.fieldLabel` | Equipment | Equipment | Ekipman |
+| `cardioEquipment.none` | Kein Gerät | No equipment | Cihaz yok |
+| `cardioEquipment.rowingMachine` | Rudergerät | Rowing machine | Kürek makinesi |
+| `cardioEquipment.treadmill` | Laufband | Treadmill | Koşu Bandı |
 
 ## `chart.*`  (3 Keys)
 

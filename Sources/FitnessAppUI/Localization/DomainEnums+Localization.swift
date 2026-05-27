@@ -44,6 +44,31 @@ public extension Equipment {
     }
 }
 
+public extension CardioEquipment {
+    /// DEL-155: lokalisierter Anzeigename fuer den Cardio-Equipment-Picker
+    /// im Verlauf + ExerciseEditor.
+    var localizedName: LocalizedStringResource {
+        switch self {
+        case .none:          LocalizedStringResource("cardioEquipment.none",          bundle: .fitnessAppUI)
+        case .treadmill:     LocalizedStringResource("cardioEquipment.treadmill",     bundle: .fitnessAppUI)
+        case .bikeOutdoor:   LocalizedStringResource("cardioEquipment.bikeOutdoor",   bundle: .fitnessAppUI)
+        case .ergometer:     LocalizedStringResource("cardioEquipment.ergometer",     bundle: .fitnessAppUI)
+        case .rowingMachine: LocalizedStringResource("cardioEquipment.rowingMachine", bundle: .fitnessAppUI)
+        }
+    }
+
+    /// DEL-155: SF-Symbol fuer die Picker-Zeile / das Verlaufs-Badge.
+    var iconName: String {
+        switch self {
+        case .none:          return "figure.run"
+        case .treadmill:     return "figure.run.treadmill"
+        case .bikeOutdoor:   return "bicycle"
+        case .ergometer:     return "figure.indoor.cycle"
+        case .rowingMachine: return "figure.rower"
+        }
+    }
+}
+
 public extension MuscleGroup {
     var localizedName: LocalizedStringResource {
         switch self {

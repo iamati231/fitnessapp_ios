@@ -85,6 +85,22 @@ public final class Exercise {
     /// fixe Distanz ("30 Min Easy"). Nil bei Strength.
     public var targetDurationMinutes: Int?
 
+    /// DEL-155: Gewaehltes Cardio-Equipment (Laufband / Fahrrad / Ergometer /
+    /// Rudergeraet / kein Geraet). Persistiert als String-RawValue fuer
+    /// Lightweight-Migration; `nil` = noch nicht gesetzt (Bestandsdaten +
+    /// frisch angelegte Uebungen) → Computed Property liefert `.none`.
+    /// Nur fuer `isCardio`-Uebungen sinnvoll; Strength-Uebungen ignorieren es.
+    public var cardioEquipmentRaw: String? = nil
+
+    /// Computed Convenience — UI + PR-/Trend-Logik nutzen das typisierte Enum.
+    /// Setter schreibt den rawValue; `.none` wird explizit persistiert (nicht
+    /// nil), damit "User hat bewusst 'kein Equipment' gewaehlt" von "nie
+    /// gesetzt" unterscheidbar bleibt — beide rendern aber gleich (`.none`).
+    public var cardioEquipment: CardioEquipment {
+        get { cardioEquipmentRaw.flatMap(CardioEquipment.init(rawValue:)) ?? .none }
+        set { cardioEquipmentRaw = newValue.rawValue }
+    }
+
     /// DEL-083: Superset-Gruppe. Uebungen mit der gleichen UUID werden im
     /// Workout abwechselnd ausgefuehrt (A1, B1, A2, B2 statt A1, A2, A3,
     /// B1, B2, B3). Plan-Editor setzt die UUID via Swipe-Action "Link"; nil

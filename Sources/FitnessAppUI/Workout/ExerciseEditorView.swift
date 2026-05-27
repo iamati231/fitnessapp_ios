@@ -227,6 +227,10 @@ public struct ExerciseEditorView: View {
                     Text("editor.exercise.field.durationMin", bundle: .module)
                 }
             }
+            // DEL-155: Cardio-Equipment-Picker. `@Bindable` exercise →
+            // direkter Binding auf die Computed-Property.
+            CardioEquipmentPicker(selection: $exercise.cardioEquipment)
+                .disabled(isReadOnly)
         } header: {
             Text("editor.exercise.section.cardioTarget", bundle: .module)
         }

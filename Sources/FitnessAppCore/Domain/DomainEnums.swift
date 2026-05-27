@@ -12,6 +12,23 @@ public enum Equipment: String, Codable, Sendable, CaseIterable {
     case band
 }
 
+/// DEL-155: Equipment-Auswahl speziell fuer Cardio-Uebungen. Beschreibt das
+/// GERAET, mit dem eine Cardio-Einheit ausgefuehrt wurde — orthogonal zum
+/// Strength-`Equipment`. Relevant fuer die PR-/Trend-Trennung (ein
+/// Laufband-Lauf ist eine andere Modalitaet als eine Fahrradfahrt) und im
+/// Verlauf pro Cardio-Uebung editierbar.
+///
+/// `.none` = kein/ohne Geraet (z.B. Lauf draussen ohne weitere Zuordnung).
+/// Wird als String-RawValue persistiert (SwiftData-Lightweight-Migration +
+/// stabile Identitaet fuer Gruppierungs-Keys).
+public enum CardioEquipment: String, Codable, Sendable, CaseIterable {
+    case none
+    case treadmill
+    case bikeOutdoor
+    case ergometer
+    case rowingMachine
+}
+
 /// Where the user trains. Drives plan recommendations and the equipment filter
 /// for the "swap exercise" feature. Hierarchy: gym ⊇ homeGym ⊇ noEquipment.
 public enum EnvironmentType: String, Codable, Sendable, CaseIterable {
