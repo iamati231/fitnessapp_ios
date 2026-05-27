@@ -10556,6 +10556,38 @@
         }
       }
     },
+    "editor.exercise.delete": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Übung löschen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Delete exercise" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hareketi sil" } }
+      }
+    },
+    "editor.exercise.deleteConfirmTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Übung löschen?" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Delete exercise?" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hareket silinsin mi?" } }
+      }
+    },
+    "editor.exercise.deleteConfirmMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Bist du sicher? Diese Custom-Übung verschwindet dauerhaft. Bereits geloggte Trainings bleiben erhalten." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Are you sure? This custom exercise is removed permanently. Already logged workouts stay intact." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Emin misin? Bu özel hareket kalıcı olarak silinir. Kaydedilmiş antrenmanlar korunur." } }
+      }
+    },
+    "editor.exercise.deleteConfirmCta": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Löschen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Delete" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sil" } }
+      }
+    },
     "editor.exercise.distanceKm": {
       "extractionState": "manual",
       "localizations": {

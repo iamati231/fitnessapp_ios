@@ -11,6 +11,10 @@ public struct ExerciseEditorView: View {
 
     @Bindable public var exercise: Exercise
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+
+    /// DEL-160: Confirm-Gate fuer das Loeschen einer Custom-Uebung.
+    @State private var showingDeleteConfirm = false
 
     /// DEL-143: User-Toggle für RIR-Tooltips, gleicher AppStorage-Key
     /// wie SetRow. Default true.
@@ -193,6 +197,23 @@ public struct ExerciseEditorView: View {
             } header: {
                 Text("editor.exercise.section.notes", bundle: .module)
             }
+
+            // DEL-160: Loeschen nur fuer Custom-Uebungen. System-Library-
+            // Eintraege duerfen nicht entfernt werden.
+            if isCustomExercise {
+                Section {
+                    Button(role: .destructive) {
+                        showingDeleteConfirm = true
+                    } label: {
+                        Label {
+                            Text("editor.exercise.delete", bundle: .module)
+                        } icon: {
+                            Image(systemName: "trash")
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+            }
         }
         // DEL-124: navigationTitle via displayName, damit Library-Uebungen
         // im EN/TR-Mode auch hier korrekt rendern.
@@ -210,6 +231,48 @@ public struct ExerciseEditorView: View {
                 }
             }
         }
+        // DEL-160: Confirm-Dialog vor dem dauerhaften Loeschen.
+        .confirmationDialog(
+            Text("editor.exercise.deleteConfirmTitle", bundle: .module),
+            isPresented: $showingDeleteConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(role: .destructive) {
+                deleteCustomExercise()
+            } label: {
+                Text("editor.exercise.deleteConfirmCta", bundle: .module)
+            }
+            Button(role: .cancel) { } label: {
+                Text("common.cancel", bundle: .module)
+            }
+        } message: {
+            Text("editor.exercise.deleteConfirmMessage", bundle: .module)
+        }
+    }
+
+    /// DEL-160: Loescht die Custom-Uebung dauerhaft — die bearbeitete
+    /// `Exercise`-Instanz UND alle passenden Custom-`ExerciseTemplate`s
+    /// (Match ueber Name + isCustom). Historische `ExerciseLog`s ueberleben:
+    /// `Exercise.logs` ist `.nullify`, die Logs behalten ihren Namens-Snapshot
+    /// (DEL-051) und bleiben fuer PR/History auswertbar. Danach dismiss.
+    private func deleteCustomExercise() {
+        guard isCustomExercise else { return }
+        let name = exercise.name
+
+        // 1) Passende Custom-Templates aus der Bibliothek entfernen.
+        let descriptor = FetchDescriptor<ExerciseTemplate>(
+            predicate: #Predicate { $0.isCustom == true && $0.name == name }
+        )
+        let templates = (try? modelContext.fetch(descriptor)) ?? []
+        for template in templates {
+            modelContext.delete(template)
+        }
+
+        // 2) Die bearbeitete Exercise-Instanz loeschen (Logs nullify-ueberleben).
+        modelContext.delete(exercise)
+        try? modelContext.save()
+
+        dismiss()
     }
 
     /// DEL-159: True wenn die Uebung KEINEN Library-Eintrag matcht — also
