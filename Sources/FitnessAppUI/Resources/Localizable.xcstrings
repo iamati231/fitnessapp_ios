@@ -5475,6 +5475,318 @@
         }
       }
     },
+    "exercise.name.deficitDeadlift": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Deficit-Kreuzheben" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Deficit Deadlift" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Deficit Deadlift" } }
+      }
+    },
+    "exercise.name.trapBarDeadlift": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Trap-Bar-Kreuzheben" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Trap Bar Deadlift" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Trap Bar Deadlift" } }
+      }
+    },
+    "exercise.name.boxSquat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Box Squat" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Box Squat" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Box Squat" } }
+      }
+    },
+    "exercise.name.snatch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Reißen (Snatch)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Snatch" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Snatch (Koparma)" } }
+      }
+    },
+    "exercise.name.cleanAndJerk": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Umsetzen & Stoßen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Clean & Jerk" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Clean & Jerk (Silkme)" } }
+      }
+    },
+    "exercise.name.floorPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Floor Press" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Floor Press" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Floor Press" } }
+      }
+    },
+    "exercise.name.zPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Z-Press" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Z-Press" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Z-Press" } }
+      }
+    },
+    "exercise.name.tatePress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Tate Press" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Tate Press" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tate Press" } }
+      }
+    },
+    "exercise.name.hexPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Hex Press (Squeeze Press)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Hex Press (Squeeze Press)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hex Press (Squeeze Press)" } }
+      }
+    },
+    "exercise.name.meadowsRow": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Meadows Row" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Meadows Row" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Meadows Row" } }
+      }
+    },
+    "exercise.name.renegadeRow": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Renegade Row" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Renegade Row" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Renegade Row" } }
+      }
+    },
+    "exercise.name.invertedRow": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Inverted Row" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Inverted Row" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Inverted Row" } }
+      }
+    },
+    "exercise.name.cablePullThrough": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Cable Pull-Through" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cable Pull-Through" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Cable Pull-Through" } }
+      }
+    },
+    "exercise.name.cableWoodchopper": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Cable Woodchopper" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cable Woodchopper" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Cable Woodchopper (Odun Kesme)" } }
+      }
+    },
+    "exercise.name.bayesianCurl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Bayesian Curl" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Bayesian Curl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bayesian Curl" } }
+      }
+    },
+    "exercise.name.reverseCableFly": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Reverse Cable Fly" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Reverse Cable Fly" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ters Cable Fly" } }
+      }
+    },
+    "exercise.name.neutralGripLatPulldown": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Latzug (neutraler Griff)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Neutral-Grip Lat Pulldown" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Nötr Tutuş Lat Çekiş" } }
+      }
+    },
+    "exercise.name.seatedLegCurl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Beincurl sitzend" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Seated Leg Curl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Oturarak Bacak Curl" } }
+      }
+    },
+    "exercise.name.standingLegCurl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Beincurl stehend" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Standing Leg Curl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ayakta Bacak Curl" } }
+      }
+    },
+    "exercise.name.calfPressLegPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Wadenpresse (Beinpresse)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Calf Press (Leg Press)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Baldır Press (Leg Press)" } }
+      }
+    },
+    "exercise.name.assistedPullUp": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Klimmzug (assistiert)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Assisted Pull-Up" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Destekli Barfiks" } }
+      }
+    },
+    "exercise.name.assistedDip": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Dip (assistiert)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Assisted Dip" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Destekli Dip" } }
+      }
+    },
+    "exercise.name.pistolSquat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Pistol Squat" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Pistol Squat" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Pistol Squat" } }
+      }
+    },
+    "exercise.name.muscleUp": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Muscle-Up" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Muscle-Up" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Muscle-Up" } }
+      }
+    },
+    "exercise.name.reverseNordicCurl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Reverse Nordic Curl" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Reverse Nordic Curl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ters Nordic Curl" } }
+      }
+    },
+    "exercise.name.medicineBallSlam": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Medizinball-Slam" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Medicine Ball Slam" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sağlık Topu Slam" } }
+      }
+    },
+    "exercise.name.tibialisRaise": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Tibialis Raise" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Tibialis Raise" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tibialis Raise" } }
+      }
+    },
+    "exercise.name.wristCurl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Handgelenk-Curl" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Wrist Curl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bilek Curl" } }
+      }
+    },
+    "exercise.name.reverseWristCurl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Handgelenk-Curl (umgekehrt)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Reverse Wrist Curl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ters Bilek Curl" } }
+      }
+    },
+    "exercise.name.neckCurl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nacken-Curl" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Neck Curl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Boyun Curl" } }
+      }
+    },
+    "exercise.name.neckExtension": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nacken-Extension" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Neck Extension" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Boyun Ekstansiyonu" } }
+      }
+    },
+    "exercise.name.dragonFlag": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Dragon Flag" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Dragon Flag" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dragon Flag" } }
+      }
+    },
+    "exercise.name.lSit": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "L-Sit" } },
+        "en": { "stringUnit": { "state": "translated", "value": "L-Sit" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "L-Sit" } }
+      }
+    },
+    "exercise.name.copenhagenPlank": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Copenhagen Plank" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Copenhagen Plank" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Copenhagen Plank" } }
+      }
+    },
+    "exercise.name.farmersWalk": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Farmer's Walk" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Farmer's Walk" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Farmer's Walk" } }
+      }
+    },
+    "exercise.name.sandbagCarry": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Sandbag Carry" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Sandbag Carry" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kum Torbası Taşıma" } }
+      }
+    },
+    "exercise.name.sledPush": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Sled Push" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Sled Push" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kızak İtme" } }
+      }
+    },
+    "exercise.name.sledPull": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Sled Pull" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Sled Pull" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kızak Çekme" } }
+      }
+    },
+    "exercise.name.battleRopes": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Battle Ropes" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Battle Ropes" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Battle Ropes (Halat)" } }
+      }
+    },
     "exercise.name.benchpress": {
       "extractionState": "manual",
       "localizations": {

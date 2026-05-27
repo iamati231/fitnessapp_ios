@@ -270,6 +270,79 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Gehen / Einlaufen",                equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true,
                              systemicFatigueFactor: 0.15, localMuscleDamageFactor: 0.10, cnsDemandFactor: 0.05, axialLoadFactor: 0.05, technicalComplexityFactor: 0.05, recoveryClass: .low,
                              localizationKey: "exercise.name.warmupWalk"),
+
+        // ── DEL-162: Bibliotheks-Erweiterung (verbreitete Standardübungen) ──
+        // Heavy-Compounds (DL-/Squat-Varianten + Olympic-Lifts) tragen explizite
+        // DEL-098-Faktoren + isSystemCompound, damit DayAnalysis sie korrekt als
+        // systemisch schwer einstuft. Accessory-/Iso-/Hold-Übungen nutzen die
+        // moderaten Defaults (kein nil → keine PR-/Day-Analysis-Regression).
+
+        // Barbell Compounds
+        ExerciseTemplateSpec(name: "Deficit-Kreuzheben", equipment: .barbell, primaryMuscle: .back, difficultyLevel: .advanced, isSystemCompound: true,
+                             systemicFatigueFactor: 0.95, localMuscleDamageFactor: 0.78, cnsDemandFactor: 0.95, axialLoadFactor: 1.00, technicalComplexityFactor: 0.85, recoveryClass: .extreme,
+                             localizationKey: "exercise.name.deficitDeadlift"),
+        ExerciseTemplateSpec(name: "Trap-Bar-Kreuzheben", equipment: .barbell, primaryMuscle: .back, difficultyLevel: .intermediate, isSystemCompound: true,
+                             systemicFatigueFactor: 0.88, localMuscleDamageFactor: 0.72, cnsDemandFactor: 0.85, axialLoadFactor: 0.90, technicalComplexityFactor: 0.55, recoveryClass: .extreme,
+                             localizationKey: "exercise.name.trapBarDeadlift"),
+        ExerciseTemplateSpec(name: "Box Squat", equipment: .barbell, primaryMuscle: .quads, difficultyLevel: .intermediate, isSystemCompound: true,
+                             systemicFatigueFactor: 0.85, localMuscleDamageFactor: 0.75, cnsDemandFactor: 0.80, axialLoadFactor: 0.90, technicalComplexityFactor: 0.60, recoveryClass: .high,
+                             localizationKey: "exercise.name.boxSquat"),
+        ExerciseTemplateSpec(name: "Reißen (Snatch)", equipment: .barbell, primaryMuscle: .shoulders, difficultyLevel: .advanced, isSystemCompound: true,
+                             systemicFatigueFactor: 0.90, localMuscleDamageFactor: 0.65, cnsDemandFactor: 0.98, axialLoadFactor: 0.85, technicalComplexityFactor: 0.98, recoveryClass: .extreme,
+                             localizationKey: "exercise.name.snatch"),
+        ExerciseTemplateSpec(name: "Umsetzen & Stoßen", equipment: .barbell, primaryMuscle: .shoulders, difficultyLevel: .advanced, isSystemCompound: true,
+                             systemicFatigueFactor: 0.92, localMuscleDamageFactor: 0.68, cnsDemandFactor: 0.98, axialLoadFactor: 0.90, technicalComplexityFactor: 0.98, recoveryClass: .extreme,
+                             localizationKey: "exercise.name.cleanAndJerk"),
+
+        // Barbell / Dumbbell Press-Varianten
+        ExerciseTemplateSpec(name: "Floor Press", equipment: .barbell, primaryMuscle: .chest, difficultyLevel: .intermediate, localizationKey: "exercise.name.floorPress"),
+        ExerciseTemplateSpec(name: "Z-Press", equipment: .barbell, primaryMuscle: .shoulders, difficultyLevel: .advanced, localizationKey: "exercise.name.zPress"),
+        ExerciseTemplateSpec(name: "Tate Press", equipment: .dumbbell, primaryMuscle: .triceps, difficultyLevel: .intermediate, localizationKey: "exercise.name.tatePress"),
+        ExerciseTemplateSpec(name: "Hex Press (Squeeze Press)", equipment: .dumbbell, primaryMuscle: .chest, difficultyLevel: .intermediate, localizationKey: "exercise.name.hexPress"),
+
+        // Rows
+        ExerciseTemplateSpec(name: "Meadows Row", equipment: .barbell, primaryMuscle: .back, difficultyLevel: .intermediate, localizationKey: "exercise.name.meadowsRow"),
+        ExerciseTemplateSpec(name: "Renegade Row", equipment: .dumbbell, primaryMuscle: .back, difficultyLevel: .advanced, localizationKey: "exercise.name.renegadeRow"),
+        ExerciseTemplateSpec(name: "Inverted Row", equipment: .bodyweight, primaryMuscle: .back, difficultyLevel: .beginner, localizationKey: "exercise.name.invertedRow"),
+
+        // Cable
+        ExerciseTemplateSpec(name: "Cable Pull-Through", equipment: .cable, primaryMuscle: .glutes, difficultyLevel: .beginner, localizationKey: "exercise.name.cablePullThrough"),
+        ExerciseTemplateSpec(name: "Cable Woodchopper", equipment: .cable, primaryMuscle: .core, difficultyLevel: .intermediate, localizationKey: "exercise.name.cableWoodchopper"),
+        ExerciseTemplateSpec(name: "Bayesian Curl", equipment: .cable, primaryMuscle: .biceps, difficultyLevel: .intermediate, localizationKey: "exercise.name.bayesianCurl"),
+        ExerciseTemplateSpec(name: "Reverse Cable Fly", equipment: .cable, primaryMuscle: .shoulders, difficultyLevel: .beginner, localizationKey: "exercise.name.reverseCableFly"),
+        ExerciseTemplateSpec(name: "Latzug (neutraler Griff)", equipment: .cable, primaryMuscle: .back, difficultyLevel: .beginner, localizationKey: "exercise.name.neutralGripLatPulldown"),
+
+        // Machine
+        ExerciseTemplateSpec(name: "Beincurl sitzend", equipment: .machine, primaryMuscle: .hamstrings, difficultyLevel: .beginner, localizationKey: "exercise.name.seatedLegCurl"),
+        ExerciseTemplateSpec(name: "Beincurl stehend", equipment: .machine, primaryMuscle: .hamstrings, difficultyLevel: .beginner, localizationKey: "exercise.name.standingLegCurl"),
+        ExerciseTemplateSpec(name: "Wadenpresse (Beinpresse)", equipment: .machine, primaryMuscle: .calves, difficultyLevel: .beginner, localizationKey: "exercise.name.calfPressLegPress"),
+        ExerciseTemplateSpec(name: "Klimmzug (assistiert)", equipment: .machine, primaryMuscle: .back, difficultyLevel: .beginner, localizationKey: "exercise.name.assistedPullUp"),
+        ExerciseTemplateSpec(name: "Dip (assistiert)", equipment: .machine, primaryMuscle: .triceps, difficultyLevel: .beginner, localizationKey: "exercise.name.assistedDip"),
+
+        // Bodyweight / Calisthenics
+        ExerciseTemplateSpec(name: "Pistol Squat", equipment: .bodyweight, primaryMuscle: .quads, difficultyLevel: .advanced, localizationKey: "exercise.name.pistolSquat"),
+        ExerciseTemplateSpec(name: "Muscle-Up", equipment: .bodyweight, primaryMuscle: .back, difficultyLevel: .advanced, localizationKey: "exercise.name.muscleUp"),
+        ExerciseTemplateSpec(name: "Reverse Nordic Curl", equipment: .bodyweight, primaryMuscle: .quads, difficultyLevel: .intermediate, localizationKey: "exercise.name.reverseNordicCurl"),
+        ExerciseTemplateSpec(name: "Medizinball-Slam", equipment: .bodyweight, primaryMuscle: .core, difficultyLevel: .intermediate, localizationKey: "exercise.name.medicineBallSlam"),
+        ExerciseTemplateSpec(name: "Tibialis Raise", equipment: .bodyweight, primaryMuscle: .calves, difficultyLevel: .beginner, localizationKey: "exercise.name.tibialisRaise"),
+
+        // Forearm / Neck Isolation
+        ExerciseTemplateSpec(name: "Handgelenk-Curl", equipment: .dumbbell, primaryMuscle: .biceps, difficultyLevel: .beginner, localizationKey: "exercise.name.wristCurl"),
+        ExerciseTemplateSpec(name: "Handgelenk-Curl (umgekehrt)", equipment: .dumbbell, primaryMuscle: .biceps, difficultyLevel: .beginner, localizationKey: "exercise.name.reverseWristCurl"),
+        ExerciseTemplateSpec(name: "Nacken-Curl", equipment: .bodyweight, primaryMuscle: .shoulders, difficultyLevel: .beginner, localizationKey: "exercise.name.neckCurl"),
+        ExerciseTemplateSpec(name: "Nacken-Extension", equipment: .bodyweight, primaryMuscle: .shoulders, difficultyLevel: .beginner, localizationKey: "exercise.name.neckExtension"),
+
+        // Time-Based Holds
+        ExerciseTemplateSpec(name: "Dragon Flag", equipment: .bodyweight, primaryMuscle: .core, difficultyLevel: .advanced, isTimeBased: true, localizationKey: "exercise.name.dragonFlag"),
+        ExerciseTemplateSpec(name: "L-Sit", equipment: .bodyweight, primaryMuscle: .core, difficultyLevel: .advanced, isTimeBased: true, localizationKey: "exercise.name.lSit"),
+        ExerciseTemplateSpec(name: "Copenhagen Plank", equipment: .bodyweight, primaryMuscle: .core, difficultyLevel: .intermediate, isTimeBased: true, localizationKey: "exercise.name.copenhagenPlank"),
+
+        // Loaded Carries / Conditioning (zeitbasiert)
+        ExerciseTemplateSpec(name: "Farmer's Walk", equipment: .dumbbell, primaryMuscle: .back, difficultyLevel: .intermediate, isTimeBased: true, localizationKey: "exercise.name.farmersWalk"),
+        ExerciseTemplateSpec(name: "Sandbag Carry", equipment: .bodyweight, primaryMuscle: .core, difficultyLevel: .intermediate, isTimeBased: true, localizationKey: "exercise.name.sandbagCarry"),
+        ExerciseTemplateSpec(name: "Sled Push", equipment: .machine, primaryMuscle: .quads, difficultyLevel: .intermediate, isTimeBased: true, localizationKey: "exercise.name.sledPush"),
+        ExerciseTemplateSpec(name: "Sled Pull", equipment: .machine, primaryMuscle: .back, difficultyLevel: .intermediate, isTimeBased: true, localizationKey: "exercise.name.sledPull"),
+        ExerciseTemplateSpec(name: "Battle Ropes", equipment: .bodyweight, primaryMuscle: .shoulders, difficultyLevel: .intermediate, isTimeBased: true, localizationKey: "exercise.name.battleRopes"),
     ]
 
     /// Alternative-Mapping fuer den Environment-Swap (DEL-022). Bei einem
