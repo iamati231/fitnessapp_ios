@@ -16,7 +16,9 @@ import FitnessAppData
 public struct ExercisePickerView: View {
 
     public var onSelect: (ExerciseTemplate) -> Void
-    public var onCreateCustom: (String) -> Void
+    /// DEL-159: liefert jetzt einen vollstaendigen `CustomExerciseDraft`
+    /// (Name + Muskel + Equipment + Compound) statt nur des Namens.
+    public var onCreateCustom: (CustomExerciseDraft) -> Void
 
     /// DEL-048: aktueller Plan-Env-Kontext. Nil = kein Filter (zB Open-from-
     /// Settings o.ae.). Non-nil aktiviert die Equipment-Filter-Toggle.
@@ -29,6 +31,8 @@ public struct ExercisePickerView: View {
     @State private var search: String = ""
     @State private var customName: String = ""
     @State private var filterToPlanEnv: Bool = true
+    /// DEL-159: steuert das Custom-Erstell-Sheet (Name/Muskel/Equipment/Compound).
+    @State private var showingCustomSheet: Bool = false
 
     /// DEL-136 Part D: Multi-Select-Filter fuer Library-Suche. Sets sind
     /// leer = kein Filter aktiv, sonst werden nur Templates angezeigt deren
@@ -40,7 +44,7 @@ public struct ExercisePickerView: View {
     public init(
         planEnvironment: EnvironmentType? = nil,
         onSelect: @escaping (ExerciseTemplate) -> Void,
-        onCreateCustom: @escaping (String) -> Void
+        onCreateCustom: @escaping (CustomExerciseDraft) -> Void
     ) {
         self.planEnvironment = planEnvironment
         self.onSelect = onSelect
@@ -92,6 +96,16 @@ public struct ExercisePickerView: View {
                     selectedMuscles: $selectedMuscles
                 )
             }
+            // DEL-159: Custom-Erstell-Sheet. onCommit reicht den Draft an den
+            // Caller weiter (der Template + Exercise baut) und schliesst den
+            // Picker.
+            .sheet(isPresented: $showingCustomSheet) {
+                NewCustomExerciseSheet(initialName: customName) { draft in
+                    onCreateCustom(draft)
+                    customName = ""
+                    dismiss()
+                }
+            }
         }
     }
 
@@ -136,11 +150,10 @@ public struct ExercisePickerView: View {
             HStack {
                 TextField(String(localized: "picker.exercise.namePlaceholder", bundle: .module), text: $customName)
                 Button {
-                    let trimmed = customName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !trimmed.isEmpty else { return }
-                    onCreateCustom(trimmed)
-                    customName = ""
-                    dismiss()
+                    // DEL-159: "+" oeffnet jetzt das Erstell-Sheet (Name +
+                    // Muskel + Equipment + Compound) statt direkt mit Defaults
+                    // anzulegen.
+                    showingCustomSheet = true
                 } label: {
                     Image(systemName: "plus.circle.fill")
                         .font(.title3)
@@ -342,16 +355,13 @@ private struct TemplateRow: View {
                             .clipShape(Capsule())
                     }
                 }
-                // DEL-154: Muscle·Equipment-Zeile nur fuer System-Templates.
-                // Custom-Uebungen tragen neutrale Platzhalter-Defaults
-                // (.bodyweight/.core) — die als "Körpergewicht·Core" zu
-                // rendern waere irrefuehrend. Der Custom-Badge oben markiert
-                // die Uebung bereits ausreichend.
-                if !template.isCustom {
-                    Text("\(muscleLabel(template.primaryMuscle)) • \(equipmentLabel(template.equipment))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                // DEL-159: Muscle·Equipment-Zeile auch fuer Custom-Templates
+                // wieder anzeigen. Seit dem Erstell-Sheet tragen Custom-
+                // Uebungen echte, vom User gewaehlte Metadaten statt der
+                // frueheren irrefuehrenden Defaults (DEL-154-Hiding aufgehoben).
+                Text("\(muscleLabel(template.primaryMuscle)) • \(equipmentLabel(template.equipment))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Spacer()
             Image(systemName: "plus.circle")

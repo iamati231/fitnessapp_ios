@@ -86,7 +86,7 @@ public struct DayEditorView: View {
             ExercisePickerView(
                 planEnvironment: day.plan?.targetEnvironment,
                 onSelect: { template in handleExerciseSelection(template) },
-                onCreateCustom: { name in addCustomExercise(named: name) }
+                onCreateCustom: { draft in addCustomExercise(draft) }
             )
         }
         // DEL-048: Equipment-Konflikt-Confirmation. Wenn der User mit Filter
@@ -658,25 +658,30 @@ public struct DayEditorView: View {
         modelContext.insert(exercise)
     }
 
-    private func addCustomExercise(named name: String) {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    private func addCustomExercise(_ draft: CustomExerciseDraft) {
+        let trimmed = draft.name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
         // Persist as a custom template too — the exercise reappears in the picker
         // next time so the user doesn't have to retype it.
-        // DEL-154: neutrale Defaults (.bodyweight/.core) statt .barbell/.chest —
-        // siehe ausfuehrliche Begruendung in ActiveWorkoutView.addAdHocCustomExercise.
+        // DEL-159: Metadaten aus dem Erstell-Sheet (Muskel/Equipment/Compound)
+        // statt neutraler Defaults — Picker zeigt sie korrekt an, DayAnalyzer
+        // kann den Muscle-Focus berechnen.
         let template = ExerciseTemplate(
             name: trimmed,
-            equipment: .bodyweight,
-            primaryMuscle: .core,
-            isCustom: true
+            equipment: draft.equipment,
+            primaryMuscle: draft.primaryMuscle,
+            isCustom: true,
+            isSystemCompound: draft.isCompound
         )
         modelContext.insert(template)
 
         let exercise = Exercise(
             name: trimmed,
             orderIndex: day.activeExercises.count,
+            isCompound: draft.isCompound,
+            primaryMuscle: draft.primaryMuscle,
+            equipment: draft.equipment,
             day: day
         )
         modelContext.insert(exercise)

@@ -140,6 +140,70 @@
         }
       }
     },
+    "customExercise.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Neue Übung" } },
+        "en": { "stringUnit": { "state": "translated", "value": "New exercise" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yeni hareket" } }
+      }
+    },
+    "customExercise.add": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Hinzufügen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Add" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ekle" } }
+      }
+    },
+    "customExercise.section.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Name" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Name" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ad" } }
+      }
+    },
+    "customExercise.section.metadata": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Eigenschaften" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Attributes" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Özellikler" } }
+      }
+    },
+    "customExercise.section.metadataFooter": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Diese Angaben steuern die Tagesanalyse (Muskel-Fokus, Belastung) und die Progression." } },
+        "en": { "stringUnit": { "state": "translated", "value": "These attributes drive the day analysis (muscle focus, load) and progression." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bu bilgiler günlük analizi (kas odağı, yük) ve ilerlemeyi belirler." } }
+      }
+    },
+    "customExercise.field.muscle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Zielmuskel" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Target muscle" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hedef kas" } }
+      }
+    },
+    "customExercise.field.equipment": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Equipment" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Equipment" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ekipman" } }
+      }
+    },
+    "customExercise.field.compound": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Grundübung (Compound)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Compound exercise" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bileşik hareket" } }
+      }
+    },
     "common.cancel": {
       "extractionState": "manual",
       "localizations": {

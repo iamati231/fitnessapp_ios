@@ -101,6 +101,33 @@ public final class Exercise {
         set { cardioEquipmentRaw = newValue.rawValue }
     }
 
+    // MARK: - DEL-159 Custom-Exercise-Metadaten
+
+    /// DEL-159: Primaer-Muskel-Override pro Uebung. Vorher lag der Muskel NUR
+    /// auf `ExerciseTemplate` — Custom-Uebungen hatten keinen, sodass der
+    /// DayAnalyzer (Muscle-Focus via Library-Namens-Lookup) sie nicht
+    /// einordnen konnte. Wird beim Custom-Anlegen aus dem Erstell-Sheet
+    /// gesetzt. `nil` = nicht gesetzt → Analyzer faellt auf den Library-Lookup
+    /// zurueck (System-Uebungen). Persistiert als String-RawValue.
+    public var primaryMuscleRaw: String? = nil
+
+    /// Typisierter Accessor. `nil` wenn kein Override gesetzt ist.
+    public var primaryMuscle: MuscleGroup? {
+        get { primaryMuscleRaw.flatMap(MuscleGroup.init(rawValue:)) }
+        set { primaryMuscleRaw = newValue?.rawValue }
+    }
+
+    /// DEL-159: Equipment-Override pro Uebung (analog `primaryMuscle`). Vorher
+    /// nur auf dem Template. Treibt die Picker-Anzeige + spaetere Filter.
+    /// `nil` = nicht gesetzt.
+    public var equipmentRaw: String? = nil
+
+    /// Typisierter Accessor. `nil` wenn kein Override gesetzt ist.
+    public var equipment: Equipment? {
+        get { equipmentRaw.flatMap(Equipment.init(rawValue:)) }
+        set { equipmentRaw = newValue?.rawValue }
+    }
+
     /// DEL-083: Superset-Gruppe. Uebungen mit der gleichen UUID werden im
     /// Workout abwechselnd ausgefuehrt (A1, B1, A2, B2 statt A1, A2, A3,
     /// B1, B2, B3). Plan-Editor setzt die UUID via Swipe-Action "Link"; nil
@@ -185,6 +212,9 @@ public final class Exercise {
         axialLoadFactor: Double = 0.20,
         technicalComplexityFactor: Double = 0.30,
         recoveryClass: ExerciseRecoveryClass = .medium,
+        // DEL-159: optionale Custom-Metadaten-Overrides.
+        primaryMuscle: MuscleGroup? = nil,
+        equipment: Equipment? = nil,
         day: TrainingDay? = nil
     ) {
         self.name = name
@@ -215,6 +245,8 @@ public final class Exercise {
         self.axialLoadFactor = axialLoadFactor
         self.technicalComplexityFactor = technicalComplexityFactor
         self.recoveryClassRaw = recoveryClass.rawValue
+        self.primaryMuscleRaw = primaryMuscle?.rawValue
+        self.equipmentRaw = equipment?.rawValue
         self.day = day
     }
 }

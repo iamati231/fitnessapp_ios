@@ -137,6 +137,10 @@ public enum DayAnalyzer {
     /// Muskel, die Card hat einen Cardio-Fokus-Hint statt Heatmap).
     private static func primaryMuscle(for exercise: Exercise) -> MuscleGroup? {
         if exercise.isCardio { return nil }
+        // DEL-159: Custom-Override gewinnt vor dem Library-Lookup. Damit
+        // tragen frei angelegte Uebungen (kein Library-Match) ihren beim
+        // Erstellen gewaehlten Zielmuskel in den Muscle-Focus.
+        if let override = exercise.primaryMuscle { return override }
         return ExerciseLibraryData.all
             .first(where: { $0.name == exercise.name })?
             .primaryMuscle

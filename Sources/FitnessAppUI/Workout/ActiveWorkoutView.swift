@@ -257,8 +257,8 @@ public struct ActiveWorkoutView: View {
                     addAdHocExercise(from: template)
                     showingAdHocPicker = false
                 },
-                onCreateCustom: { name in
-                    addAdHocCustomExercise(named: name)
+                onCreateCustom: { draft in
+                    addAdHocCustomExercise(draft)
                     showingAdHocPicker = false
                 }
             )
@@ -992,28 +992,27 @@ public struct ActiveWorkoutView: View {
     /// Custom-Uebung im Ad-Hoc-Flow — analog zu `DayEditorView.addCustomExercise`.
     /// Legt ein neues `ExerciseTemplate` (`isCustom: true`) in der Library
     /// an, damit die Uebung beim naechsten Picker-Open auswaehlbar bleibt.
-    private func addAdHocCustomExercise(named name: String) {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    private func addAdHocCustomExercise(_ draft: CustomExerciseDraft) {
+        let trimmed = draft.name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, let day = session.day else { return }
 
-        // DEL-154: Neutrale Defaults statt .barbell/.chest. Eine frei
-        // getippte Custom-Uebung hat kein bekanntes Equipment/Muskel — ein
-        // konkreter Default (Langhantel/Brust) war schlicht falsch (z.B.
-        // "Reverse Fly" erschien als Halter·Göğüs). `.bodyweight` ist der
-        // neutralste Equipment-Default (kein Implement), `.core` der
-        // unspezifischste Muskel. Der Picker blendet die Muscle·Equipment-
-        // Zeile fuer Custom-Templates ohnehin aus (siehe ExercisePickerView).
+        // DEL-159: Metadaten aus dem Erstell-Sheet (Muskel/Equipment/Compound)
+        // — siehe DayEditorView.addCustomExercise.
         let template = ExerciseTemplate(
             name: trimmed,
-            equipment: .bodyweight,
-            primaryMuscle: .core,
-            isCustom: true
+            equipment: draft.equipment,
+            primaryMuscle: draft.primaryMuscle,
+            isCustom: true,
+            isSystemCompound: draft.isCompound
         )
         modelContext.insert(template)
 
         let exercise = Exercise(
             name: trimmed,
             orderIndex: day.activeExercises.count,
+            isCompound: draft.isCompound,
+            primaryMuscle: draft.primaryMuscle,
+            equipment: draft.equipment,
             day: day
         )
         modelContext.insert(exercise)

@@ -207,8 +207,8 @@ public struct WorkoutSummaryView: View {
                     addExerciseToSession(from: template, isCustom: false)
                     showingAddExercisePicker = false
                 },
-                onCreateCustom: { name in
-                    addCustomExerciseToSession(named: name)
+                onCreateCustom: { draft in
+                    addCustomExerciseToSession(draft)
                     showingAddExercisePicker = false
                 }
             )
@@ -328,10 +328,11 @@ public struct WorkoutSummaryView: View {
     /// DEL-136 Part C: Custom-Variante — User hat im Picker keinen Library-
     /// Pick, sondern einen freien Namen eingegeben. Erstellt eine generische
     /// Strength-Exercise mit dem User-Namen + 3 Default-Saetzen.
-    private func addCustomExerciseToSession(named name: String) {
+    private func addCustomExerciseToSession(_ draft: CustomExerciseDraft) {
         let nextOrder = (session.logs.compactMap { $0.exercise?.orderIndex }.max() ?? -1) + 1
+        // DEL-159: Metadaten aus dem Erstell-Sheet übernehmen.
         let exercise = Exercise(
-            name: name,
+            name: draft.name,
             sets: 3,
             repsMin: 8,
             repsMax: 10,
@@ -339,6 +340,9 @@ public struct WorkoutSummaryView: View {
             orderIndex: nextOrder,
             isCardio: false,
             isTimeBased: false,
+            isCompound: draft.isCompound,
+            primaryMuscle: draft.primaryMuscle,
+            equipment: draft.equipment,
             day: nil
         )
         modelContext.insert(exercise)

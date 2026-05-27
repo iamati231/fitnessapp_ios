@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1041 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1049 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1041 / 1041** (100%) | 0 |
-| 🇬🇧 English (EN) | **1041 / 1041** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1041 / 1041** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1049 / 1049** (100%) | 0 |
+| 🇬🇧 English (EN) | **1049 / 1049** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1049 / 1049** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -217,6 +217,19 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `common.close` | Schließen | Close | Kapat |
 | `common.done` | Fertig | Done | Bitti |
 | `common.save` | Speichern | Save | Kaydet |
+
+## `customExercise.*`  (8 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `customExercise.add` | Hinzufügen | Add | Ekle |
+| `customExercise.field.compound` | Grundübung (Compound) | Compound exercise | Bileşik hareket |
+| `customExercise.field.equipment` | Equipment | Equipment | Ekipman |
+| `customExercise.field.muscle` | Zielmuskel | Target muscle | Hedef kas |
+| `customExercise.section.metadata` | Eigenschaften | Attributes | Özellikler |
+| `customExercise.section.metadataFooter` | Diese Angaben steuern die Tagesanalyse (Muskel-Fokus, Belastung) und die Progression. | These attributes drive the day analysis (muscle focus, load) and progression. | Bu bilgiler günlük analizi (kas odağı, yük) ve ilerlemeyi belirler. |
+| `customExercise.section.name` | Name | Name | Ad |
+| `customExercise.title` | Neue Übung | New exercise | Yeni hareket |
 
 ## `dashboard.*`  (68 Keys)
 

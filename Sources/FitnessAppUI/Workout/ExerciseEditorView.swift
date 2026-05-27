@@ -92,6 +92,14 @@ public struct ExerciseEditorView: View {
                 }
             }
 
+            // DEL-159: Metadaten-Section fuer Custom-Uebungen (Zielmuskel +
+            // Equipment + Compound). Nur fuer frei angelegte Uebungen (kein
+            // Library-Match) und nicht-Cardio — Cardio nutzt cardioEquipment
+            // (DEL-155) und hat keinen klassischen Hypertrophie-Muskel.
+            if isCustomExercise, !exercise.isCardio {
+                customMetadataSection
+            }
+
             // DEL-062 + DEL-066: Section-Sichtbarkeit via zentraler Logik
             // aus `ExerciseEditorSections.evaluate`.
             if sectionVisibility.setsAndReps {
@@ -201,6 +209,50 @@ public struct ExerciseEditorView: View {
                     Text("common.done", bundle: .module)
                 }
             }
+        }
+    }
+
+    /// DEL-159: True wenn die Uebung KEINEN Library-Eintrag matcht — also
+    /// vom User frei angelegt wurde. Nur dann sind Muskel/Equipment/Compound
+    /// sinnvoll editierbar (System-Uebungen beziehen diese aus der Library).
+    private var isCustomExercise: Bool {
+        !ExerciseLibraryData.all.contains { $0.name == exercise.name }
+    }
+
+    /// DEL-159: Metadaten-Editor fuer Custom-Uebungen. Schreibt die Override-
+    /// Felder `primaryMuscle` / `equipment` / `isCompound` auf die Exercise.
+    private var customMetadataSection: some View {
+        Section {
+            Picker(selection: Binding(
+                get: { exercise.primaryMuscle ?? .chest },
+                set: { exercise.primaryMuscle = $0 }
+            )) {
+                ForEach(MuscleGroup.allCases, id: \.self) { muscle in
+                    Text(muscle.localizedName).tag(muscle)
+                }
+            } label: {
+                Text("customExercise.field.muscle", bundle: .module)
+            }
+            .disabled(isReadOnly)
+
+            Picker(selection: Binding(
+                get: { exercise.equipment ?? .bodyweight },
+                set: { exercise.equipment = $0 }
+            )) {
+                ForEach(Equipment.allCases, id: \.self) { equip in
+                    Text(equip.localizedName).tag(equip)
+                }
+            } label: {
+                Text("customExercise.field.equipment", bundle: .module)
+            }
+            .disabled(isReadOnly)
+
+            Toggle(isOn: $exercise.isCompound) {
+                Text("customExercise.field.compound", bundle: .module)
+            }
+            .disabled(isReadOnly)
+        } header: {
+            Text("customExercise.section.metadata", bundle: .module)
         }
     }
 
