@@ -191,12 +191,18 @@ public struct PRHistoryView: View {
             entries.filter { $0.kind == kind }
         } ?? entries
 
-        let byExercise = Dictionary(grouping: filtered, by: \.exerciseName)
-        return byExercise.compactMap { (name, rows) -> ExerciseTrophyGroup? in
+        // DEL-156: Gruppierung nach (Name, Cardio-Equipment). Non-Cardio-PRs
+        // tragen .none → effektiv "nur nach Name". Cardio-PRs splitten nach
+        // Modalitaet (Laufband ≠ Fahrrad) in eigene Trophy-Reihen.
+        let byExercise = Dictionary(grouping: filtered) { entry in
+            TrophyGroupKey(name: entry.exerciseName, equipment: entry.cardioEquipment)
+        }
+        return byExercise.compactMap { (key, rows) -> ExerciseTrophyGroup? in
             guard !rows.isEmpty else { return nil }
             let sorted = rows.sorted { $0.date > $1.date }
             return ExerciseTrophyGroup(
-                exerciseName: name,
+                exerciseName: key.name,
+                cardioEquipment: key.equipment,
                 entries: sorted,
                 latestDate: sorted.first?.date ?? .distantPast
             )
@@ -222,10 +228,20 @@ public struct PRHistoryView: View {
 
 // MARK: - Exercise group container
 
+/// DEL-156: Composite-Gruppierungs-Schluessel fuer den Trophy-Room.
+@available(iOS 17.0, macOS 14.0, *)
+struct TrophyGroupKey: Hashable {
+    let name: String
+    let equipment: CardioEquipment
+}
+
 @available(iOS 17.0, macOS 14.0, *)
 struct ExerciseTrophyGroup: Identifiable {
-    var id: String { exerciseName }
+    /// DEL-156: Composite-ID, damit Laufband- und Fahrrad-Reihen derselben
+    /// Uebung als getrennte DisclosureGroups erscheinen.
+    var id: String { "\(exerciseName)|\(cardioEquipment.rawValue)" }
     let exerciseName: String
+    let cardioEquipment: CardioEquipment
     let entries: [PersonalRecordEntry]
     let latestDate: Date
 }
@@ -260,8 +276,26 @@ private struct ExerciseTrophySection: View {
                 // stabile DE-Base-Name (gruppe Sortierung/Identitaet); die
                 // sichtbare Anzeige laeuft via Library-Lookup in die aktuelle
                 // Sprache.
-                Text(Exercise.resolvedDisplayName(forStoredName: group.exerciseName))
-                    .font(.body.weight(.semibold))
+                // DEL-156: Bei Cardio-Gruppen mit konkretem Equipment haengen
+                // wir das Equipment-Label an, damit Laufband-/Fahrrad-Reihen
+                // unterscheidbar sind.
+                HStack(spacing: 6) {
+                    Text(Exercise.resolvedDisplayName(forStoredName: group.exerciseName))
+                        .font(.body.weight(.semibold))
+                    if group.cardioEquipment != .none {
+                        Label {
+                            Text(group.cardioEquipment.localizedName)
+                        } icon: {
+                            Image(systemName: group.cardioEquipment.iconName)
+                        }
+                        .font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.deltiqOrange.opacity(0.15))
+                        .foregroundStyle(Color.deltiqOrange)
+                        .clipShape(Capsule())
+                    }
+                }
                 Text("\(group.entries.count) PR\(group.entries.count == 1 ? "" : "s") • zuletzt \(group.latestDate.formatted(date: .abbreviated, time: .omitted))")
                     .font(.caption)
                     .foregroundStyle(.secondary)

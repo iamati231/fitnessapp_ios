@@ -1630,10 +1630,15 @@ public struct DashboardView: View {
         let allCardioLogs = completedSessions.flatMap { session in
             session.logs.filter { $0.exerciseIsCardioSnapshot || ($0.exercise?.isCardio == true) }
         }
+        // DEL-156: Gruppierung nach (Name, Equipment) — eine Linie pro
+        // Modalitaet. Laufband-Laeufe und Fahrradfahrten derselben Uebung
+        // bilden getrennte Trend-Linien.
         let byName = Dictionary(grouping: allCardioLogs) { log in
-            log.resolvedExerciseName ?? "—"
+            CardioGroupKey(name: log.resolvedExerciseName ?? "—",
+                           equipment: log.resolvedCardioEquipment)
         }
-        return byName.compactMap { (name, logs) -> CardioPaceSeries? in
+        return byName.compactMap { (key, logs) -> CardioPaceSeries? in
+            let name = key.name
             // Pro Session aggregieren (Datum = Session-Start, Pace = total/total).
             let bySession = Dictionary(grouping: logs) { log in
                 log.session?.persistentModelID
@@ -1657,8 +1662,14 @@ public struct DashboardView: View {
             // DEL-149: dieselbe Lokalisierung wie im Compound-Chart oben —
             // Legende soll in der aktuellen Sprache erscheinen, nicht
             // hardcoded auf den DE-Base-Namen.
+            // DEL-156: Equipment-Suffix in der Legende, damit getrennte
+            // Modalitaets-Linien unterscheidbar sind ("Laufen · Laufband").
+            let baseName = Exercise.resolvedDisplayName(forStoredName: name)
+            let label = key.equipment == .none
+                ? baseName
+                : "\(baseName) · \(String(localized: key.equipment.localizedName))"
             return CardioPaceSeries(
-                exerciseName: Exercise.resolvedDisplayName(forStoredName: name),
+                exerciseName: label,
                 points: points
             )
         }
@@ -1939,6 +1950,14 @@ struct CardioPaceSeries: Identifiable {
     let id = UUID()
     let exerciseName: String
     let points: [CardioPacePoint]
+}
+
+/// DEL-156: Composite-Gruppierungs-Schluessel fuer den Cardio-Pace-Chart —
+/// eine Trend-Linie pro (Uebung, Equipment).
+@available(iOS 17.0, macOS 14.0, *)
+private struct CardioGroupKey: Hashable {
+    let name: String
+    let equipment: CardioEquipment
 }
 
 // MARK: - Recent-row subview

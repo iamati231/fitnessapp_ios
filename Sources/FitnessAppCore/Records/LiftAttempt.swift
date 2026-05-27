@@ -18,6 +18,12 @@ public struct LiftAttempt: Sendable, Hashable {
     /// optional (kann gesetzt sein als Spiegel von `reps`).
     public let durationSeconds: Int?
 
+    /// DEL-156: Cardio-Equipment des Versuchs. Bei Strength/Bodyweight/
+    /// TimeBased immer `.none`. Fliesst in den PR-Gruppierungs-Key, sodass
+    /// z.B. ein Laufband-Lauf und eine Fahrradfahrt getrennte PR-Reihen
+    /// bilden.
+    public let cardioEquipment: CardioEquipment
+
     public init(
         exerciseName: String,
         weightKg: Double,
@@ -26,7 +32,8 @@ public struct LiftAttempt: Sendable, Hashable {
         isCardio: Bool = false,
         isTimeBased: Bool = false,
         distanceKm: Double? = nil,
-        durationSeconds: Int? = nil
+        durationSeconds: Int? = nil,
+        cardioEquipment: CardioEquipment = .none
     ) {
         self.exerciseName = exerciseName
         self.weightKg = weightKg
@@ -36,6 +43,7 @@ public struct LiftAttempt: Sendable, Hashable {
         self.isTimeBased = isTimeBased
         self.distanceKm = distanceKm
         self.durationSeconds = durationSeconds
+        self.cardioEquipment = cardioEquipment
     }
 
     /// Weight × reps. The standard "set volume" metric used by `WorkoutAnalytics.bestSet`,

@@ -45,6 +45,17 @@ public final class PersonalRecordEntry {
     /// of the hold (matches the source `LiftAttempt` convention).
     public var reps: Int
 
+    /// DEL-156: Cardio-Equipment-RawValue dieses PRs. `nil` = pre-DEL-156-
+    /// Bestand oder Non-Cardio-PR → Computed `cardioEquipment` liefert `.none`.
+    /// Trennt Cardio-PRs nach Modalitaet im Trophy-Room (Laufband ≠ Fahrrad).
+    public var cardioEquipmentRaw: String? = nil
+
+    /// Typed accessor. `.none` als Default fuer Strength/Bodyweight/TimeBased
+    /// und Bestandsdaten ohne Snapshot.
+    public var cardioEquipment: CardioEquipment {
+        cardioEquipmentRaw.flatMap(CardioEquipment.init(rawValue:)) ?? .none
+    }
+
     /// Back-link to the session in which the PR was set. Nullify (not cascade)
     /// so deleting a session doesn't lose the record's history.
     public var session: WorkoutSession?
@@ -57,6 +68,7 @@ public final class PersonalRecordEntry {
         previousValue: Double,
         weightKg: Double,
         reps: Int,
+        cardioEquipmentRaw: String? = nil,
         session: WorkoutSession? = nil
     ) {
         self.date = date
@@ -66,6 +78,7 @@ public final class PersonalRecordEntry {
         self.previousValue = previousValue
         self.weightKg = weightKg
         self.reps = reps
+        self.cardioEquipmentRaw = cardioEquipmentRaw
         self.session = session
     }
 
@@ -88,6 +101,8 @@ public final class PersonalRecordEntry {
             previousValue: record.previousValue,
             weightKg: record.weightKg,
             reps: record.reps,
+            // DEL-156: Equipment aus dem detektierten Record uebernehmen.
+            cardioEquipmentRaw: record.cardioEquipment == .none ? nil : record.cardioEquipment.rawValue,
             session: session
         )
     }

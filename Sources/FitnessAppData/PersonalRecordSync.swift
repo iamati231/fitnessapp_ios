@@ -115,7 +115,9 @@ public enum PersonalRecordSync {
                 // DEL-064: Cardio-Felder mit-mappen, sodass der PRDetector
                 // distance/pace-PRs detecten kann.
                 distanceKm: log.distanceKm,
-                durationSeconds: log.durationSeconds
+                durationSeconds: log.durationSeconds,
+                // DEL-156: Equipment fuer die PR-Gruppierung pro Modalitaet.
+                cardioEquipment: log.resolvedCardioEquipment
             )
         }
     }
@@ -149,7 +151,9 @@ public enum PersonalRecordSync {
                 isCardio: log.resolvedIsCardio,
                 isTimeBased: log.resolvedIsTimeBased,
                 distanceKm: log.distanceKm,
-                durationSeconds: log.durationSeconds
+                durationSeconds: log.durationSeconds,
+                // DEL-156: Equipment fuer die PR-Gruppierung pro Modalitaet.
+                cardioEquipment: log.resolvedCardioEquipment
             )
         }
     }

@@ -30,11 +30,21 @@ public enum PRDetector {
         sessionLifts: [LiftAttempt],
         history: [LiftAttempt]
     ) -> [PersonalRecord] {
-        let bySessionExercise = Dictionary(grouping: sessionLifts, by: \.exerciseName)
+        // DEL-156: Composite-Gruppierung nach (Name, Cardio-Equipment). Bei
+        // Strength/Bodyweight/TimeBased ist `cardioEquipment` immer `.none`,
+        // sodass deren Gruppierung unveraendert "nur nach Name" bleibt. Bei
+        // Cardio splittet der Key Laufband- vs. Fahrrad- vs. Rudergeraet-
+        // Versuche in eigene PR-Reihen.
+        let bySessionExercise = Dictionary(grouping: sessionLifts) {
+            GroupKey(name: $0.exerciseName, equipment: $0.cardioEquipment)
+        }
         var records: [PersonalRecord] = []
 
-        for (exerciseName, sessionAttempts) in bySessionExercise {
-            let exerciseHistory = history.filter { $0.exerciseName == exerciseName }
+        for (key, sessionAttempts) in bySessionExercise {
+            let exerciseName = key.name
+            let exerciseHistory = history.filter {
+                $0.exerciseName == key.name && $0.cardioEquipment == key.equipment
+            }
             guard !exerciseHistory.isEmpty else { continue }    // Need a baseline.
 
             // Categorize the exercise using session AND history together — a single
@@ -48,7 +58,8 @@ public enum PRDetector {
                 records.append(contentsOf: detectCardioPRs(
                     sessionAttempts: sessionAttempts,
                     exerciseHistory: exerciseHistory,
-                    exerciseName: exerciseName
+                    exerciseName: exerciseName,
+                    equipment: key.equipment
                 ))
 
             case .weighted:
@@ -89,6 +100,15 @@ public enum PRDetector {
         }
     }
 
+    // MARK: Grouping
+
+    /// DEL-156: Gruppierungs-Schluessel. Trennt Cardio-PRs nach Equipment;
+    /// fuer Non-Cardio ist `equipment` stets `.none` → effektiv "nur Name".
+    private struct GroupKey: Hashable {
+        let name: String
+        let equipment: CardioEquipment
+    }
+
     // MARK: Categorization
 
     private enum ExerciseCategory {
@@ -120,7 +140,8 @@ public enum PRDetector {
     private static func detectCardioPRs(
         sessionAttempts: [LiftAttempt],
         exerciseHistory: [LiftAttempt],
-        exerciseName: String
+        exerciseName: String,
+        equipment: CardioEquipment
     ) -> [PersonalRecord] {
         // Cardio-Logs gruppieren per (Date-Day) zu Session-Aggregaten, falls
         // ein Lauf je theoretisch in mehrere Sets aufgeteilt waere. In der
@@ -144,7 +165,8 @@ public enum PRDetector {
                 reps: 0,
                 previousValue: prevBestKm,
                 newValue: now.distanceKm,
-                achievedAt: now.date
+                achievedAt: now.date,
+                cardioEquipment: equipment
             ))
         }
 
@@ -161,7 +183,8 @@ public enum PRDetector {
                     reps: 0,
                     previousValue: prevBestPace,
                     newValue: nowPace,
-                    achievedAt: now.date
+                    achievedAt: now.date,
+                    cardioEquipment: equipment
                 ))
             }
         }

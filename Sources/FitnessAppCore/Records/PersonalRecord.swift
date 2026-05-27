@@ -37,6 +37,9 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
     public let id: UUID
     public let kind: Kind
     public let exerciseName: String
+    /// DEL-156: Cardio-Equipment des PRs. `.none` fuer Strength/Bodyweight/
+    /// TimeBased. Trennt Cardio-PRs nach Modalitaet (Laufband ≠ Fahrrad).
+    public let cardioEquipment: CardioEquipment
     /// Weight on the bar for the PR-achieving set (kg).
     public let weightKg: Double
     /// Reps on the PR-achieving set.
@@ -56,7 +59,8 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
         reps: Int,
         previousValue: Double,
         newValue: Double,
-        achievedAt: Date
+        achievedAt: Date,
+        cardioEquipment: CardioEquipment = .none
     ) {
         self.id = id
         self.kind = kind
@@ -66,6 +70,7 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
         self.previousValue = previousValue
         self.newValue = newValue
         self.achievedAt = achievedAt
+        self.cardioEquipment = cardioEquipment
     }
 
     /// Absolute increase over the previous best.
