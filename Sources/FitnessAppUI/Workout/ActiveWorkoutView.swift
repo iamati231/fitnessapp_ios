@@ -109,6 +109,13 @@ public struct ActiveWorkoutView: View {
     @State private var restTimerEnd: Date?
     @State private var restTimerOriginalSeconds: Int = 0
 
+    /// DEL-154: Ad-Hoc-Edit/Delete-State.
+    ///   * `exerciseToEdit` triggert das ExerciseEditorView-Sheet.
+    ///   * `exercisePendingDelete` triggert den Confirm-Dialog, wenn die zu
+    ///     entfernende Uebung bereits geloggte Saetze in DIESER Session hat.
+    @State private var exerciseToEdit: Exercise?
+    @State private var exercisePendingDelete: Exercise?
+
     public init(session: WorkoutSession) {
         self.session = session
     }
@@ -251,6 +258,42 @@ public struct ActiveWorkoutView: View {
                     showingAdHocPicker = false
                 }
             )
+        }
+        // DEL-154: Edit-Sheet fuer Ad-Hoc-Uebungen. ExerciseEditorView ist
+        // fuer day.plan == nil voll editierbar (isReadOnly greift nur bei
+        // Template-Plaenen) — Sets/Reps/Pause/RIR/Equipment-Flags/Notes
+        // koennen also mitten im Workout angepasst werden.
+        .sheet(item: $exerciseToEdit) { exercise in
+            NavigationStack {
+                ExerciseEditorView(exercise: exercise)
+            }
+        }
+        // DEL-154: Delete-Confirm — nur wenn die Uebung bereits geloggte
+        // Saetze in dieser Session hat (sonst entfernen wir direkt, weniger
+        // Reibung bei versehentlich hinzugefuegten Uebungen).
+        .confirmationDialog(
+            Text("active.exercise.removeConfirmTitle", bundle: .module),
+            isPresented: Binding(
+                get: { exercisePendingDelete != nil },
+                set: { if !$0 { exercisePendingDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(role: .destructive) {
+                if let exercise = exercisePendingDelete {
+                    deleteAdHocExercise(exercise)
+                }
+                exercisePendingDelete = nil
+            } label: {
+                Text("active.exercise.removeConfirmCta", bundle: .module)
+            }
+            Button(role: .cancel) {
+                exercisePendingDelete = nil
+            } label: {
+                Text("common.cancel", bundle: .module)
+            }
+        } message: {
+            Text("active.exercise.removeConfirmMessage", bundle: .module)
         }
         // DEL-096: Discard-Sweep. Wenn der User die Session verlaesst und
         // sie ad-hoc + leer + uncompleted ist, raeumen wir die emphemere
@@ -480,7 +523,10 @@ public struct ActiveWorkoutView: View {
                             onSetLogged: { setIndex in
                                 startRestTimer(for: exercise, setIndex: setIndex)
                                 maybeAutoAdvance(after: exercise, exercises: exercises, currentIndex: idx)
-                            }
+                            },
+                            // DEL-154: Edit/Delete nur im Ad-Hoc-Workout.
+                            onEdit: session.isAdHoc ? { exerciseToEdit = exercise } : nil,
+                            onDelete: session.isAdHoc ? { requestDeleteExercise(exercise) } : nil
                         )
                         .padding()
                     }
@@ -507,7 +553,9 @@ public struct ActiveWorkoutView: View {
                             activeTimedSet: $activeTimedSet,
                             onSetLogged: { setIndex in
                                 startRestTimer(for: exercise, setIndex: setIndex)
-                            }
+                            },
+                            onEdit: session.isAdHoc ? { exerciseToEdit = exercise } : nil,
+                            onDelete: session.isAdHoc ? { requestDeleteExercise(exercise) } : nil
                         )
                     }
                     actionsCard
@@ -927,10 +975,17 @@ public struct ActiveWorkoutView: View {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, let day = session.day else { return }
 
+        // DEL-154: Neutrale Defaults statt .barbell/.chest. Eine frei
+        // getippte Custom-Uebung hat kein bekanntes Equipment/Muskel — ein
+        // konkreter Default (Langhantel/Brust) war schlicht falsch (z.B.
+        // "Reverse Fly" erschien als Halter·Göğüs). `.bodyweight` ist der
+        // neutralste Equipment-Default (kein Implement), `.core` der
+        // unspezifischste Muskel. Der Picker blendet die Muscle·Equipment-
+        // Zeile fuer Custom-Templates ohnehin aus (siehe ExercisePickerView).
         let template = ExerciseTemplate(
             name: trimmed,
-            equipment: .barbell,
-            primaryMuscle: .chest,
+            equipment: .bodyweight,
+            primaryMuscle: .core,
             isCustom: true
         )
         modelContext.insert(template)
@@ -941,6 +996,47 @@ public struct ActiveWorkoutView: View {
             day: day
         )
         modelContext.insert(exercise)
+    }
+
+    /// DEL-154: Entry-Point fuer das Entfernen einer Ad-Hoc-Uebung. Hat die
+    /// Uebung in DIESER Session schon geloggte Saetze, fragen wir per
+    /// Confirm-Dialog nach (Saetze gehen mit verloren). Sonst entfernen wir
+    /// direkt — eine eben erst hinzugefuegte, noch unbenutzte Uebung soll
+    /// ohne Reibung wieder verschwinden.
+    private func requestDeleteExercise(_ exercise: Exercise) {
+        let hasLogs = session.logs.contains { $0.exercise == exercise }
+        if hasLogs {
+            exercisePendingDelete = exercise
+        } else {
+            deleteAdHocExercise(exercise)
+        }
+    }
+
+    /// DEL-154: Entfernt eine Ad-Hoc-Uebung samt ihrer in dieser Session
+    /// geloggten Saetze. `ExerciseLog.exercise` ist `.nullify`, also muessen
+    /// die Logs explizit geloescht werden (sonst blieben verwaiste Logs mit
+    /// Snapshot in der Session-Statistik haengen). Danach den Paginator-Index
+    /// clampen, damit die TabView nicht auf eine entfernte Seite zeigt.
+    private func deleteAdHocExercise(_ exercise: Exercise) {
+        guard let day = session.day else { return }
+
+        // 1) Logs dieser Uebung in DIESER Session loeschen.
+        let logs = session.logs.filter { $0.exercise == exercise }
+        for log in logs {
+            modelContext.delete(log)
+        }
+
+        // 2) Uebung selbst entfernen.
+        modelContext.delete(exercise)
+
+        // 3) Paginator-Index clampen + Exercise-Count auffrischen. Nach dem
+        // Delete kann currentPageIndex auf eine nicht mehr existente Seite
+        // zeigen → auf die letzte gueltige Seite (oder die Finish-Page) ziehen.
+        let remaining = orderedExercises(in: day).count
+        if currentPageIndex > remaining {
+            currentPageIndex = remaining
+        }
+        session.exerciseCount = remaining
     }
 
     /// Discard-Sweep: wenn die Session ad-hoc ist, keine Logs hat und

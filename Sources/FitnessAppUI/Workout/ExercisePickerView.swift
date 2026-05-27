@@ -342,9 +342,16 @@ private struct TemplateRow: View {
                             .clipShape(Capsule())
                     }
                 }
-                Text("\(muscleLabel(template.primaryMuscle)) • \(equipmentLabel(template.equipment))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                // DEL-154: Muscle·Equipment-Zeile nur fuer System-Templates.
+                // Custom-Uebungen tragen neutrale Platzhalter-Defaults
+                // (.bodyweight/.core) — die als "Körpergewicht·Core" zu
+                // rendern waere irrefuehrend. Der Custom-Badge oben markiert
+                // die Uebung bereits ausreichend.
+                if !template.isCustom {
+                    Text("\(muscleLabel(template.primaryMuscle)) • \(equipmentLabel(template.equipment))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
             Image(systemName: "plus.circle")

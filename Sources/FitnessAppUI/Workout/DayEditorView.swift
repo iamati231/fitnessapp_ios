@@ -660,10 +660,12 @@ public struct DayEditorView: View {
 
         // Persist as a custom template too — the exercise reappears in the picker
         // next time so the user doesn't have to retype it.
+        // DEL-154: neutrale Defaults (.bodyweight/.core) statt .barbell/.chest —
+        // siehe ausfuehrliche Begruendung in ActiveWorkoutView.addAdHocCustomExercise.
         let template = ExerciseTemplate(
             name: trimmed,
-            equipment: .barbell,
-            primaryMuscle: .chest,
+            equipment: .bodyweight,
+            primaryMuscle: .core,
             isCustom: true
         )
         modelContext.insert(template)

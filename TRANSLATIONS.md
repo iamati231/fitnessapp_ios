@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1025 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1031 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1025 / 1025** (100%) | 0 |
-| 🇬🇧 English (EN) | **1025 / 1025** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1025 / 1025** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1031 / 1031** (100%) | 0 |
+| 🇬🇧 English (EN) | **1031 / 1031** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1031 / 1031** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -20,7 +20,7 @@ Quelle: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
 Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind separat aufgelistet — die haben one/other-Varianten.
 
 
-## `active.*`  (32 Keys)
+## `active.*`  (38 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -35,6 +35,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `active.empty.adhoc.title` | Dein Training ist noch leer | Your workout is empty | Antrenmanın henüz boş |
 | `active.empty.session.message` | Vermutlich wurde der Plan-Tag nach dem Start geleert. Du kannst die Session verwerfen oder ohne Sätze beenden. | The plan day was likely emptied after starting. Discard the session or finish without sets. | Plan günü başlatıldıktan sonra muhtemelen boşaltıldı. Oturumu silebilir veya setsiz bitirebilirsin. |
 | `active.empty.session.title` | Diese Session hat keine Übungen. | This session has no exercises. | Bu oturumda hareket yok. |
+| `active.exercise.edit` | Übung bearbeiten | Edit exercise | Hareketi düzenle |
+| `active.exercise.menuAccessibility` | Übungs-Optionen | Exercise options | Hareket seçenekleri |
+| `active.exercise.remove` | Übung entfernen | Remove exercise | Hareketi kaldır |
+| `active.exercise.removeConfirmCta` | Entfernen | Remove | Kaldır |
+| `active.exercise.removeConfirmMessage` | Die bereits geloggten Sätze dieser Übung werden mit entfernt. | The sets already logged for this exercise will be removed too. | Bu hareket için kaydedilmiş setler de kaldırılacak. |
+| `active.exercise.removeConfirmTitle` | Übung entfernen? | Remove exercise? | Hareket kaldırılsın mı? |
 | `active.finish.feeling.message` | Die App nutzt das für die Progression: Wenn du am Limit warst, halten wir das Gewicht stabil — kein Zwangs-Plus. | We use this for progression: when you were at the limit, we keep the weight stable — no forced increase. | Bunu ilerleme için kullanırız: limitteydiysen ağırlığı sabit tutarız — zorla artırma yok. |
 | `active.finish.feeling.noProgression` | Kein Gewichts-Plus im nächsten Training | No weight increase next workout | Sonraki antrenmanda ağırlık artışı yok |
 | `active.finish.feeling.title` | Wie hat sich das Training angefühlt? | How did the workout feel? | Antrenman nasıl hissettirdi? |

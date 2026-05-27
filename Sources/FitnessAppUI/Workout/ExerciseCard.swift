@@ -20,6 +20,14 @@ struct ExerciseCard: View {
     /// can label the Live Activity ("Satz 2 von 4") accurately.
     let onSetLogged: (_ setIndex: Int) -> Void
 
+    /// DEL-154: Optionale Edit-/Delete-Hooks. Werden NUR im Ad-Hoc-Workout
+    /// gesetzt (`session.isAdHoc`) — dort hat der User die Uebungen selbst
+    /// hinzugefuegt und darf sie strukturell aendern bzw. wieder entfernen.
+    /// Bei Plan-Workouts bleiben beide `nil` → kein Menu, Plan bleibt
+    /// unangetastet.
+    var onEdit: (() -> Void)? = nil
+    var onDelete: (() -> Void)? = nil
+
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
@@ -107,6 +115,42 @@ struct ExerciseCard: View {
             }
             Spacer()
             progressPill
+            // DEL-154: Edit/Delete-Menu — nur wenn der Parent Hooks liefert
+            // (Ad-Hoc-Workout). In der paginierten TabView gibt es keine
+            // List-Swipe-Actions, daher ein Ellipsis-Menu im Header.
+            if onEdit != nil || onDelete != nil {
+                Menu {
+                    if let onEdit {
+                        Button {
+                            onEdit()
+                        } label: {
+                            Label {
+                                Text("active.exercise.edit", bundle: .module)
+                            } icon: {
+                                Image(systemName: "slider.horizontal.3")
+                            }
+                        }
+                    }
+                    if let onDelete {
+                        Button(role: .destructive) {
+                            onDelete()
+                        } label: {
+                            Label {
+                                Text("active.exercise.remove", bundle: .module)
+                            } icon: {
+                                Image(systemName: "trash")
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel(Text("active.exercise.menuAccessibility", bundle: .module))
+            }
         }
     }
 
