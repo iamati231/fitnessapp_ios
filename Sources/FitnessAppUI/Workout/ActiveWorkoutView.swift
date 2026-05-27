@@ -211,12 +211,16 @@ public struct ActiveWorkoutView: View {
                 sessionCategory: dayCategory,
                 distanceText: formatTotalDistance(),
                 avgPaceText: formatAveragePace(),
-                showGearPicker: isPureCardioSessionForHealthKit,
+                // DEL-158: Gear-Picker erscheint sobald Cardio dabei war —
+                // auch bei Mixed Workouts, nicht nur bei reinem Cardio.
+                showGearPicker: sessionHasLoggedCardio,
                 onConfirm: { feeling, gear in
                     showingFinishConfirm = false
                     session.sessionFeeling = feeling.rawValue
-                    // DEL-084: Gear zuweisen + Distanz auf Gear buchen.
-                    if let gear, isPureCardioSessionForHealthKit {
+                    // DEL-084 + DEL-158: Gear zuweisen + Cardio-Distanz auf
+                    // Gear buchen (auch bei Mixed Workouts). `distanceKm` ist
+                    // bei Strength-Logs nil → totalKm zaehlt nur die Cardio-km.
+                    if let gear, sessionHasLoggedCardio {
                         session.gear = gear
                         let totalKm = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
                         gear.currentDistanceKm += totalKm
@@ -466,6 +470,20 @@ public struct ActiveWorkoutView: View {
         let exercises = orderedExercises(in: day)
         guard !exercises.isEmpty else { return false }
         return exercises.allSatisfy { $0.isCardio }
+    }
+
+    /// DEL-158: True wenn die Session MINDESTENS eine Cardio-Uebung mit
+    /// geloggter Distanz oder Dauer enthaelt — unabhaengig davon, ob das
+    /// Workout rein Cardio oder gemischt (Kraft + Cardio) war. Steuert die
+    /// Sichtbarkeit des Gear-Pickers + die Distanz-Buchung. Bewusst getrennt
+    /// von `isPureCardioSessionForHealthKit`: ein Mix-Day soll NICHT als
+    /// `.running` in Apple Health landen, aber sehr wohl Laufschuhe zuordnen
+    /// koennen.
+    private var sessionHasLoggedCardio: Bool {
+        session.logs.contains { log in
+            log.resolvedIsCardio
+            && (((log.distanceKm ?? 0) > 0) || ((log.durationSeconds ?? 0) > 0))
+        }
     }
 
     /// DEL-061: Summe aller `distanceKm` der Session-Logs. Format: "5,5 km".

@@ -22,6 +22,12 @@ public struct WorkoutSummaryView: View {
     @Query(sort: \ExerciseLog.date)
     private var allLogs: [ExerciseLog]
 
+    /// DEL-158: Aktive Gears fuer den History-Gear-Picker (Schuhe/Fahrrad).
+    /// Gespiegelt von `FinishWorkoutSheet`.
+    @Query(filter: #Predicate<Gear> { $0.isActive == true },
+           sort: \Gear.createdAt, order: .reverse)
+    private var activeGears: [Gear]
+
     /// True when invoked from history (`WorkoutHistoryView`) — hides the finish-CTA,
     /// disables swipe-to-delete on sets, makes notes read-only, and re-enables the
     /// system back button so the user can return to the history list.
@@ -89,6 +95,7 @@ public struct WorkoutSummaryView: View {
                 progressionSection
             }
             statsSection
+            gearSection
             notesSection
             breakdownSections
             if !isReadOnly {
@@ -355,6 +362,117 @@ public struct WorkoutSummaryView: View {
     /// weight 0, reps 0, rir 2 — User editiert via existierender Edit-
     /// Mode-Inputs. setIndex = max(existing)+1, sodass die neue Row am
     /// Ende der Section erscheint.
+    // MARK: - DEL-158 Gear-Section (History)
+
+    /// True wenn die Session mindestens eine Cardio-Uebung mit geloggter
+    /// Distanz/Dauer enthaelt — unabhaengig von Mixed vs. pure Cardio.
+    private var sessionHasCardio: Bool {
+        session.logs.contains { log in
+            log.resolvedIsCardio
+            && (((log.distanceKm ?? 0) > 0) || ((log.durationSeconds ?? 0) > 0))
+        }
+    }
+
+    /// Summe der Cardio-Distanz dieser Session (km). Basis fuer die Gear-
+    /// Kilometer-Buchung. Strength-Logs tragen `distanceKm == nil` → 0 bei.
+    private var sessionCardioDistanceKm: Double {
+        session.logs.compactMap(\.distanceKm).reduce(0.0, +)
+    }
+
+    /// Picker-Optionen: aktive Gears + das aktuell zugewiesene Gear, falls
+    /// es inzwischen inaktiv ist (damit die Auswahl korrekt angezeigt wird).
+    private var gearOptions: [Gear] {
+        var list = activeGears
+        if let g = session.gear,
+           !list.contains(where: { $0.persistentModelID == g.persistentModelID }) {
+            list.append(g)
+        }
+        return list
+    }
+
+    @ViewBuilder
+    private var gearSection: some View {
+        // Nur sinnvoll wenn Cardio dabei war. Im Read-Mode nur anzeigen, wenn
+        // ein Gear zugewiesen ist; im Edit-Mode immer das Auswahl-Menu.
+        if sessionHasCardio, !gearOptions.isEmpty || session.gear != nil {
+            Section {
+                if isEditingSets {
+                    Menu {
+                        Button {
+                            assignGear(nil)
+                        } label: {
+                            if session.gear == nil {
+                                Label { Text("summary.gear.none", bundle: .module) } icon: { Image(systemName: "checkmark") }
+                            } else {
+                                Text("summary.gear.none", bundle: .module)
+                            }
+                        }
+                        ForEach(gearOptions) { gear in
+                            Button {
+                                assignGear(gear)
+                            } label: {
+                                if session.gear?.persistentModelID == gear.persistentModelID {
+                                    Label { Text(gear.name) } icon: { Image(systemName: "checkmark") }
+                                } else {
+                                    Text(gear.name)
+                                }
+                            }
+                        }
+                    } label: {
+                        LabeledContent {
+                            Text(session.gear?.name ?? String(localized: "summary.gear.none", bundle: .module))
+                                .foregroundStyle(.primary)
+                        } label: {
+                            Label {
+                                Text("summary.gear.header", bundle: .module)
+                            } icon: {
+                                Image(systemName: gearIcon(session.gear))
+                                    .foregroundStyle(Color.deltiqOrange)
+                            }
+                        }
+                    }
+                } else if let gear = session.gear {
+                    LabeledContent {
+                        Text(gear.name)
+                    } label: {
+                        Label {
+                            Text("summary.gear.header", bundle: .module)
+                        } icon: {
+                            Image(systemName: gearIcon(gear))
+                                .foregroundStyle(Color.deltiqOrange)
+                        }
+                    }
+                }
+            } header: {
+                Text("summary.gear.header", bundle: .module)
+            }
+        }
+    }
+
+    private func gearIcon(_ gear: Gear?) -> String {
+        switch gear?.type {
+        case .bike: return "bicycle"
+        case .shoe, .none: return "shoe"
+        }
+    }
+
+    /// DEL-158: Weist `newGear` zu und bucht die Session-Cardio-Distanz um.
+    /// Mutation-basierte Kilometer-Buchung (wie beim Finish): altes Gear
+    /// bekommt die Distanz abgezogen, neues addiert. No-op wenn unveraendert.
+    private func assignGear(_ newGear: Gear?) {
+        let old = session.gear
+        guard old?.persistentModelID != newGear?.persistentModelID else { return }
+        let distance = sessionCardioDistanceKm
+        if let old {
+            old.currentDistanceKm = max(0, old.currentDistanceKm - distance)
+        }
+        if let newGear {
+            newGear.currentDistanceKm += distance
+        }
+        session.gear = newGear
+        try? modelContext.save()
+    }
+
     private func addSet(to exercise: Exercise) {
         let existingIndices = session.logs
             .filter { $0.exercise?.persistentModelID == exercise.persistentModelID }

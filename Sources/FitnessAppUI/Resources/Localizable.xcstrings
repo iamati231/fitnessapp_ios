@@ -11389,6 +11389,22 @@
         }
       }
     },
+    "summary.gear.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ausrüstung" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Gear" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ekipman" } }
+      }
+    },
+    "summary.gear.none": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kein Gear" } },
+        "en": { "stringUnit": { "state": "translated", "value": "No gear" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ekipman yok" } }
+      }
+    },
     "summary.setsHeader": {
       "extractionState": "manual",
       "localizations": {

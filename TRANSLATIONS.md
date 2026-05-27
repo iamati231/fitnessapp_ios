@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1039 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1041 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1039 / 1039** (100%) | 0 |
-| 🇬🇧 English (EN) | **1039 / 1039** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1039 / 1039** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1041 / 1041** (100%) | 0 |
+| 🇬🇧 English (EN) | **1041 / 1041** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1041 / 1041** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1191,7 +1191,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `sex.female` | Weiblich | Female | Kadın |
 | `sex.male` | Männlich | Male | Erkek |
 
-## `summary.*`  (49 Keys)
+## `summary.*`  (51 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1223,6 +1223,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.exercise.footer.other` | %1$lld Sätze • %2$@ kg Volumen | %1$lld sets • %2$@ kg volume | %1$lld set • %2$@ kg hacim |
 | `summary.exercise.removeFromSession` | Aus Session entfernen | Remove from session | Oturumdan kaldır |
 | `summary.finishFooter` | Die Session ist bereits gespeichert. Der Button schließt die Zusammenfassung und bringt dich zurück aufs Dashboard. | Session is already saved. The button closes the summary and returns you to the dashboard. | Oturum zaten kaydedildi. Buton özeti kapatır ve seni panele döndürür. |
+| `summary.gear.header` | Ausrüstung | Gear | Ekipman |
+| `summary.gear.none` | Kein Gear | No gear | Ekipman yok |
 | `summary.hero.title` | Training abgeschlossen | Workout completed | Antrenman Tamamlandı |
 | `summary.hero.unit.km` | km Cardio | km cardio | km kardiyo |
 | `summary.hero.unit.minutes` | Minuten Training | minutes training | dakika antrenman |
