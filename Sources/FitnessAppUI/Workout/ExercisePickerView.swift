@@ -401,8 +401,10 @@ private struct TemplateRow: View {
 /// jeweils mit allen verfuegbaren Cases als Toggle-Rows. Per-row Tap
 /// macht das Toggle smooth + spring-animiert. Footer-Button raeumt alle
 /// Filter weg. Dismissal via Drag-down oder "Fertig"-Toolbar-Button.
+/// DEL-162: aus `private` → internal, damit auch die `ExerciseLibraryView`
+/// dieselbe Equipment-/Muskel-Filter-Sheet wiederverwenden kann.
 @available(iOS 17.0, macOS 14.0, *)
-private struct FilterSheet: View {
+struct FilterSheet: View {
     @Binding var selectedEquipment: Set<Equipment>
     @Binding var selectedMuscles: Set<MuscleGroup>
 
@@ -480,7 +482,7 @@ private struct FilterSheet: View {
 /// Tap toggled den Bool und triggered die Animation; visuell aufgeraeumter
 /// als Switch fuer multi-select Listen.
 @available(iOS 17.0, macOS 14.0, *)
-private struct FilterToggleRow: View {
+struct FilterToggleRow: View {
     let label: String
     @Binding var isOn: Bool
 

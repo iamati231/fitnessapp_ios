@@ -26,6 +26,16 @@ public struct ExerciseLibraryView: View {
     /// Swipe-Delete → Confirm-Gate.
     @State private var pendingDelete: ExerciseTemplate?
 
+    // DEL-162: Equipment-/Muskel-Filter — gespiegelt vom ExercisePicker, damit
+    // die Bibliothek dieselben Filter-Affordances bietet.
+    @State private var selectedEquipment: Set<Equipment> = []
+    @State private var selectedMuscles: Set<MuscleGroup> = []
+    @State private var showingFilterSheet: Bool = false
+
+    private var hasActiveFilters: Bool {
+        !selectedEquipment.isEmpty || !selectedMuscles.isEmpty
+    }
+
     public init() {}
 
     public var body: some View {
@@ -45,6 +55,19 @@ public struct ExerciseLibraryView: View {
         .navigationBarTitleDisplayMode(.large)
         #endif
         .toolbar {
+            // DEL-162: Filter-Button (Equipment/Muskel) — wie im Picker, mit
+            // Badge-Variante wenn ein Filter aktiv ist.
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showingFilterSheet = true
+                } label: {
+                    Image(systemName: hasActiveFilters
+                          ? "line.3.horizontal.decrease.circle.fill"
+                          : "line.3.horizontal.decrease.circle")
+                        .foregroundStyle(hasActiveFilters ? Color.deltiqOrange : Color.primary)
+                }
+                .accessibilityLabel(Text("picker.exercise.filter.button.a11y", bundle: .module))
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     showingCreate = true
@@ -59,6 +82,12 @@ public struct ExerciseLibraryView: View {
         }
         .sheet(isPresented: $showingCreate) {
             ExerciseLibraryEditorSheet(template: nil)
+        }
+        .sheet(isPresented: $showingFilterSheet) {
+            FilterSheet(
+                selectedEquipment: $selectedEquipment,
+                selectedMuscles: $selectedMuscles
+            )
         }
         .confirmationDialog(
             Text("editor.exercise.deleteConfirmTitle", bundle: .module),
@@ -171,13 +200,23 @@ public struct ExerciseLibraryView: View {
 
     // MARK: Derived + actions
 
-    /// Such-gefilterte Templates (Match ueber Display-Name + roher DE-Name).
+    /// Such- + Filter-gefilterte Templates: Volltext (Display-Name + roher
+    /// DE-Name) UND die Equipment-/Muskel-Multi-Select-Filter (DEL-162).
     private var filtered: [ExerciseTemplate] {
+        var list = templates
         let q = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !q.isEmpty else { return templates }
-        return templates.filter {
-            $0.displayName.lowercased().contains(q) || $0.name.lowercased().contains(q)
+        if !q.isEmpty {
+            list = list.filter {
+                $0.displayName.lowercased().contains(q) || $0.name.lowercased().contains(q)
+            }
         }
+        if !selectedEquipment.isEmpty {
+            list = list.filter { selectedEquipment.contains($0.equipment) }
+        }
+        if !selectedMuscles.isEmpty {
+            list = list.filter { selectedMuscles.contains($0.primaryMuscle) }
+        }
+        return list
     }
 
     /// Loescht ein Custom-Template (System-Eintraege erreichen den Swipe nicht).
