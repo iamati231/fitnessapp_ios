@@ -26,6 +26,17 @@ extension WorkoutSession {
     /// Kanonischer Display-Name für UI-Rendering. Ersetzt direkte
     /// `session.dayName ?? "Training"` Patterns in allen Call-Sites.
     public var displayDayName: String {
+        // DEL-164: Spontane (ad-hoc) Sessions IMMER über den lokalisierten
+        // Key rendern — unabhängig vom (ggf. deutsch eingefrorenen) Day-Namen
+        // bzw. Snapshot. Der frühere Weg über `day.localizationKey` (DEL-150)
+        // griff nicht zuverlässig (Day nil, Key nicht gesetzt, Pre-DEL-150-
+        // Bestand) → im Verlauf blieb "Spontanes Training/Workout" deutsch
+        // stehen, obwohl die TR-Übersetzung existiert. `isAdHoc` ist der
+        // stabile Marker (einziger Erzeugungspfad: startAdHocWorkout), plus
+        // ein Name-Guard für ganz alten Bestand, dem das Flag evtl. fehlt.
+        if isAdHoc || isLegacyAdHocName {
+            return String(localized: "session.adHoc.dayName", bundle: .module)
+        }
         if let day {
             return day.displayName
         }
@@ -33,6 +44,15 @@ extension WorkoutSession {
             return snapshot
         }
         return String(localized: "history.session.fallback", bundle: .module)
+    }
+
+    /// DEL-164: Fängt ganz alten Bestand ab, dessen `isAdHoc`-Flag evtl. nicht
+    /// gesetzt ist, der aber den hartcodierten DE-Ad-hoc-Namen trägt.
+    private var isLegacyAdHocName: Bool {
+        let legacy: Set<String> = ["Spontanes Workout", "Spontanes Training"]
+        if let n = day?.name, legacy.contains(n) { return true }
+        if let n = dayName, legacy.contains(n) { return true }
+        return false
     }
 }
 #endif
