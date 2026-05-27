@@ -25,6 +25,15 @@ struct SetRow: View {
     let session: WorkoutSession
     let existingLog: ExerciseLog?
     let previousLog: ExerciseLog?
+    /// DEL-157: Log des Satzes DIREKT DARUEBER in DIESER Session. Dient als
+    /// Seed-Quelle fuer dynamisch hinzugefuegte Saetze ("+ Satz") — der neue
+    /// Satz erbt Gewicht/Reps/RIR vom darueberliegenden. `nil` fuer den
+    /// ersten Satz oder wenn der Satz darueber noch nicht geloggt ist.
+    var seedLog: ExerciseLog? = nil
+    /// DEL-157: Optionaler Delete-Hook. Non-nil → Long-Press-ContextMenu mit
+    /// "Satz entfernen". Der Parent (ExerciseCard) loescht den Log, reindext
+    /// die verbleibenden Saetze und dekrementiert `exercise.sets`.
+    var onRequestDelete: (() -> Void)? = nil
     /// DEL-097 + DEL-108: Session-Lock fuer time-based Halte-Timer auf
     /// **Set-Ebene** (Exercise × setIndex). Nil = Slot frei. Die SetRow
     /// setzt diesen Slot in `startCountdown()`, raeumt ihn in
@@ -112,6 +121,25 @@ struct SetRow: View {
     ///      `nil` als "Bodyweight" entgegen)
     ///   4. Strength (Standard) → compactSetRow mit kg + Wdh
     var body: some View {
+        // DEL-157: Long-Press-ContextMenu zum Entfernen des Satzes, wenn der
+        // Parent einen Delete-Hook liefert (Active-Workout mit >1 Satz).
+        if let onRequestDelete {
+            rowBody.contextMenu {
+                Button(role: .destructive, action: onRequestDelete) {
+                    Label {
+                        Text("active.set.remove", bundle: .module)
+                    } icon: {
+                        Image(systemName: "trash")
+                    }
+                }
+            }
+        } else {
+            rowBody
+        }
+    }
+
+    @ViewBuilder
+    private var rowBody: some View {
         if exercise.isCardio {
             // DEL-058: dedizierte CardioSetRow mit Distanz / Dauer / Pace.
             cardioSetRow
@@ -903,6 +931,13 @@ struct SetRow: View {
             // Placeholder zeigt die letzten Werte als Hint. Kein Pre-Fill
             // wuerde den User zwingen, das Feld zu loeschen, BEVOR er heute
             // tippt — bei Lauf-Logs nicht erwuenscht.
+        } else if let seedLog {
+            // DEL-157: dynamisch hinzugefuegter Satz ohne eigene Historie —
+            // erbt Gewicht/Reps/RIR vom Satz direkt darueber in DIESER
+            // Session, sodass der User nicht von 0 anfangen muss.
+            weight = seedLog.weight > 0 ? seedLog.weight : exercise.suggestedWeight
+            reps = seedLog.reps
+            rir = seedLog.rir
         } else {
             weight = exercise.suggestedWeight
             reps = midpoint(exercise.repsMin, exercise.repsMax)

@@ -287,9 +287,13 @@ public struct WorkoutSummaryView: View {
     /// Anzeige automatisch via ExerciseLibraryData-Lookup.
     private func addExerciseToSession(from template: ExerciseTemplate, isCustom: Bool) {
         let nextOrder = (session.logs.compactMap { $0.exercise?.orderIndex }.max() ?? -1) + 1
+        // DEL-157: Cardio + Time-Based → 1 Satz (vorher nur isCardio
+        // beruecksichtigt). Plank/Wall-Sit als Verlaufs-Nachtrag bekommen
+        // damit ebenfalls genau eine Zeile.
+        let isSingleSetKind = template.isCardio || template.isTimeBased
         let exercise = Exercise(
             name: template.name,
-            sets: 3,
+            sets: isSingleSetKind ? 1 : 3,
             repsMin: template.isTimeBased ? 20 : 8,
             repsMax: template.isTimeBased ? 30 : 10,
             restSeconds: 90,
@@ -299,7 +303,7 @@ public struct WorkoutSummaryView: View {
             day: nil   // orphan: kein Plan-Polluting fuer kuenftige Sessions
         )
         modelContext.insert(exercise)
-        let defaultSetCount = template.isCardio ? 1 : 3
+        let defaultSetCount = isSingleSetKind ? 1 : 3
         for i in 0..<defaultSetCount {
             let log = ExerciseLog(
                 setIndex: i,

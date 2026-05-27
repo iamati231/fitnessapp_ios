@@ -628,6 +628,10 @@ public struct DayEditorView: View {
         // `displayName` (Extension) wieder lokalisiert.
         let exercise = Exercise(
             name: template.name,
+            // DEL-157: Cardio- + Time-Based-Uebungen starten mit genau 1 Satz
+            // (eine Distanz-/Dauer- bzw. Halte-Zeile). Die Standard-3-Saetze
+            // ergeben fuer einen Lauf/Plank keinen Sinn. Strength bleibt 3.
+            sets: (template.isCardio || template.isTimeBased) ? 1 : 3,
             orderIndex: day.activeExercises.count,
             // DEL-080: Cardio-Flag aus dem Library-Template propagieren.
             // Picker-Pick einer Cardio-Uebung (z.B. "Freier Lauf") soll

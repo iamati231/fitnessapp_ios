@@ -30,6 +30,13 @@ struct ExerciseCard: View {
 
     @Environment(\.modelContext) private var modelContext
 
+    /// DEL-157: Wird bei einem Satz-DELETE neu gewuerfelt. Fliesst in die
+    /// `.id()` jeder SetRow ein, sodass nach dem Reindexen alle Rows frisch
+    /// aus ihren (neu zugeordneten) Logs seeden — verhindert stale `@State`
+    /// nach einem Mittel-Delete. Beim ADD bleibt das Token gleich (Append ist
+    /// index-stabil), sodass laufende Eingaben nicht zuruckgesetzt werden.
+    @State private var structureToken = UUID()
+
     var body: some View {
         // UX-203: berechne EINMAL pro Render den aktiven Satz — der erste
         // mit `existingLog == nil`. Wenn alle completed sind, bleibt es nil
@@ -47,6 +54,8 @@ struct ExerciseCard: View {
                     session: session,
                     existingLog: existingLog(forSetIndex: setIndex),
                     previousLog: previousLog(forSetIndex: setIndex),
+                    seedLog: seedLog(forSetIndex: setIndex),
+                    onRequestDelete: exercise.sets > 1 ? { removeSet(at: setIndex) } : nil,
                     activeTimedSet: $activeTimedSet,
                     isActiveSet: setIndex == active,
                     onLogged: { values in
@@ -56,6 +65,8 @@ struct ExerciseCard: View {
                         unlogSet(setIndex: setIndex)
                     }
                 )
+                // DEL-157: id mit structureToken → frisches Re-Seed nach Delete.
+                .id("set-\(setIndex)-\(structureToken)")
                 if setIndex < exercise.sets - 1 {
                     // UX-203: Divider noch ruhiger (0.4 → 0.2), weil die
                     // Active-Set-Background-Tint jetzt die primaere
@@ -74,6 +85,25 @@ struct ExerciseCard: View {
                     .foregroundStyle(.green)
                     .padding(.top, 4)
             }
+
+            // DEL-157: "+ Satz hinzufügen" — haengt einen weiteren Satz-Slot
+            // an. Der neue Satz erbt seine Defaults via seedLog vom
+            // darueberliegenden Satz (siehe SetRow.initializeOnce).
+            Button {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.78)) {
+                    addSet()
+                }
+            } label: {
+                Label {
+                    Text("active.set.add", bundle: .module)
+                } icon: {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundStyle(Color.deltiqOrange)
+                }
+                .font(.callout.weight(.medium))
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 4)
         }
         .padding(14)
         .background(Color.secondary.opacity(0.08))
@@ -287,6 +317,45 @@ struct ExerciseCard: View {
     private func unlogSet(setIndex: Int) {
         guard let log = existingLog(forSetIndex: setIndex) else { return }
         modelContext.delete(log)
+    }
+
+    // MARK: - DEL-157 Dynamisches Set-Management
+
+    /// Seed-Quelle fuer einen frisch hinzugefuegten Satz: der Log des Satzes
+    /// DIREKT DARUEBER in dieser Session. `nil` fuer den ersten Satz oder
+    /// wenn der Satz darueber noch nicht geloggt ist.
+    private func seedLog(forSetIndex index: Int) -> ExerciseLog? {
+        guard index > 0 else { return nil }
+        return existingLog(forSetIndex: index - 1)
+    }
+
+    /// Haengt einen weiteren Satz-Slot an. `exercise.sets` ist die Struktur-
+    /// Quelle der Wahrheit (der ForEach rendert `0..<sets`) — ein Increment
+    /// genuegt, der neue SetRow erscheint leer + seedet sich vom Vorgaenger.
+    /// Mutation auf der Plan-/Ad-Hoc-Exercise ist gewollt: identisch zu dem,
+    /// was der ExerciseEditor taete, nur ohne den Umweg.
+    private func addSet() {
+        exercise.sets += 1
+    }
+
+    /// Entfernt den Satz an `index`: loescht dessen Log (falls vorhanden),
+    /// schiebt die `setIndex` aller dahinterliegenden Logs um 1 nach unten
+    /// (luckenlose Nummerierung) und dekrementiert `exercise.sets`. Der
+    /// `structureToken` wird neu gewuerfelt, damit alle Rows frisch aus ihren
+    /// neu zugeordneten Logs seeden. Der letzte verbleibende Satz ist nicht
+    /// loeschbar (Caller gated via `exercise.sets > 1`).
+    private func removeSet(at index: Int) {
+        guard exercise.sets > 1 else { return }
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.78)) {
+            if let log = existingLog(forSetIndex: index) {
+                modelContext.delete(log)
+            }
+            for log in sessionLogs where log.setIndex > index {
+                log.setIndex -= 1
+            }
+            exercise.sets -= 1
+            structureToken = UUID()
+        }
     }
 }
 #endif

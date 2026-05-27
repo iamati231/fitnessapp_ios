@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1037 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1039 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1037 / 1037** (100%) | 0 |
-| 🇬🇧 English (EN) | **1037 / 1037** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1037 / 1037** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1039 / 1039** (100%) | 0 |
+| 🇬🇧 English (EN) | **1039 / 1039** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1039 / 1039** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -20,7 +20,7 @@ Quelle: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
 Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind separat aufgelistet — die haben one/other-Varianten.
 
 
-## `active.*`  (38 Keys)
+## `active.*`  (40 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -52,7 +52,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `active.interference.message` | Erwäge heute, dein Ziel-RIR bei Beinübungen um +1 zu erhöhen, um dein ZNS nicht zu überlasten. | Consider raising your target RIR on leg exercises by +1 today to avoid overloading your CNS. | MSS'ni aşırı yüklemekten kaçınmak için bugün bacak hareketlerinde hedef RIR'ı +1 artırmayı düşün. |
 | `active.interference.title` | Du hattest gestern eine harte Einheit | You had a hard session yesterday | Dün zorlu bir antrenmanın vardı |
 | `active.placeholder.subtext` | Set-Logging mit Vorgaben & Rest-Timer • Live Activities folgen im Xcode-Target. | Set logging with targets & rest timer • Live Activities arrive in the Xcode target. | Hedefli set kaydı ve dinlenme zamanlayıcısı • Live Activities Xcode hedefinde gelir. |
+| `active.set.add` | Satz hinzufügen | Add set | Set ekle |
 | `active.set.previousFormat` | letztes: %@ | last: %@ | son: %@ |
+| `active.set.remove` | Satz entfernen | Remove set | Seti kaldır |
 | `active.stats.avgPace` | ⌀ Pace | ⌀ Pace | ⌀ Tempo |
 | `active.stats.distance` | Distanz | Distance | Mesafe |
 | `active.stats.distanceKm` | Distanz km | Distance km | Mesafe km |

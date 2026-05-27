@@ -950,6 +950,9 @@ public struct ActiveWorkoutView: View {
         // `Exercise.displayName`-Extension.
         let exercise = Exercise(
             name: template.name,
+            // DEL-157: Cardio/Time-Based starten mit 1 Satz (siehe
+            // DayEditorView.addExercise).
+            sets: (template.isCardio || template.isTimeBased) ? 1 : 3,
             orderIndex: day.activeExercises.count,
             isCardio: template.isCardio,
             isTimeBased: template.isTimeBased,
