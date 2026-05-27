@@ -653,6 +653,12 @@ public struct DayEditorView: View {
             axialLoadFactor: template.axialLoadFactor,
             technicalComplexityFactor: template.technicalComplexityFactor,
             recoveryClass: template.recoveryClass,
+            // DEL-163: Muskel + Equipment vom Template uebernehmen. Vorher
+            // gingen diese beim Adopt verloren (Exercise fiel im Editor auf
+            // Brust/Koerpergewicht zurueck), weil nur isCompound + Faktoren
+            // kopiert wurden. Gilt fuer Custom- UND System-Templates.
+            primaryMuscle: template.primaryMuscle,
+            equipment: template.equipment,
             day: day
         )
         modelContext.insert(exercise)

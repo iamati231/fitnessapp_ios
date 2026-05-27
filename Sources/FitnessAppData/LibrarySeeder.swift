@@ -272,5 +272,46 @@ public enum LibrarySeeder {
         }
         return updated
     }
+
+    /// DEL-163: One-Shot-Backfill der Custom-Exercise-Metadaten. Vor DEL-163
+    /// kopierte der Adopt-Pfad (`addExercise(from:)`) Muskel + Equipment NICHT
+    /// vom Template auf die `Exercise` — bereits adoptierte Custom-Uebungen
+    /// haben daher `primaryMuscleRaw == nil` und fallen im Editor auf
+    /// Brust/Koerpergewicht zurueck.
+    ///
+    /// Strategie: jede Exercise ohne Muskel-Override mit einem passenden
+    /// CUSTOM-Template (Match ueber Name) bekommt Muskel + Equipment aus dem
+    /// Template nachgezogen. System-Uebungen (kein Custom-Template-Match)
+    /// bleiben unangetastet — sie loesen ihren Muskel ueber den Library-Lookup.
+    ///
+    /// Idempotent: filtert auf `primaryMuscleRaw == nil`. Nach erstem Erfolg
+    /// laeuft die Funktion leer durch.
+    @discardableResult
+    public static func backfillCustomExerciseMetadataIfNeeded(in context: ModelContext) -> Int {
+        let exDescriptor = FetchDescriptor<Exercise>(
+            predicate: #Predicate { $0.primaryMuscleRaw == nil }
+        )
+        let pending = (try? context.fetch(exDescriptor)) ?? []
+        guard !pending.isEmpty else { return 0 }
+
+        let tplDescriptor = FetchDescriptor<ExerciseTemplate>(
+            predicate: #Predicate { $0.isCustom == true }
+        )
+        let customTemplates = (try? context.fetch(tplDescriptor)) ?? []
+        guard !customTemplates.isEmpty else { return 0 }
+        let byName = Dictionary(
+            customTemplates.map { ($0.name, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        var updated = 0
+        for exercise in pending {
+            guard let template = byName[exercise.name] else { continue }
+            exercise.primaryMuscleRaw = template.primaryMuscle.rawValue
+            exercise.equipmentRaw = template.equipment.rawValue
+            updated += 1
+        }
+        return updated
+    }
 }
 #endif

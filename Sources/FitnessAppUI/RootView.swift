@@ -111,6 +111,10 @@ public struct RootView: View {
             // wurde, bekommen `session.adHoc.dayName` nachgezogen — damit
             // rendert der Verlauf sprachfest. Idempotent.
             LibrarySeeder.backfillAdHocDayLocalizationIfNeeded(in: modelContext)
+            // DEL-163: Custom-Exercise-Metadaten-Repair. Bereits adoptierte
+            // Custom-Uebungen ohne Muskel/Equipment-Override bekommen die
+            // Werte aus ihrem Custom-Template nachgezogen. Idempotent.
+            LibrarySeeder.backfillCustomExerciseMetadataIfNeeded(in: modelContext)
         }
     }
 

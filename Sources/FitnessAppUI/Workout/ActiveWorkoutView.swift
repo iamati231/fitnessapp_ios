@@ -984,6 +984,10 @@ public struct ActiveWorkoutView: View {
             axialLoadFactor: template.axialLoadFactor,
             technicalComplexityFactor: template.technicalComplexityFactor,
             recoveryClass: template.recoveryClass,
+            // DEL-163: Muskel + Equipment vom Template uebernehmen (siehe
+            // DayEditorView.addExercise) — sonst Defaults im Editor.
+            primaryMuscle: template.primaryMuscle,
+            equipment: template.equipment,
             day: day
         )
         modelContext.insert(exercise)

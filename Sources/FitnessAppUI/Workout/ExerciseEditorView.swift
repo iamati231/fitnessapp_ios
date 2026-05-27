@@ -288,7 +288,12 @@ public struct ExerciseEditorView: View {
         Section {
             Picker(selection: Binding(
                 get: { exercise.primaryMuscle ?? .chest },
-                set: { exercise.primaryMuscle = $0 }
+                set: { newValue in
+                    exercise.primaryMuscle = newValue
+                    // DEL-163: Aenderung auf das zugrundeliegende Custom-
+                    // Template zurueckspiegeln (AC2).
+                    syncCustomTemplate { $0.primaryMuscle = newValue }
+                }
             )) {
                 ForEach(MuscleGroup.allCases, id: \.self) { muscle in
                     Text(muscle.localizedName).tag(muscle)
@@ -300,7 +305,10 @@ public struct ExerciseEditorView: View {
 
             Picker(selection: Binding(
                 get: { exercise.equipment ?? .bodyweight },
-                set: { exercise.equipment = $0 }
+                set: { newValue in
+                    exercise.equipment = newValue
+                    syncCustomTemplate { $0.equipment = newValue }
+                }
             )) {
                 ForEach(Equipment.allCases, id: \.self) { equip in
                     Text(equip.localizedName).tag(equip)
@@ -310,13 +318,33 @@ public struct ExerciseEditorView: View {
             }
             .disabled(isReadOnly)
 
-            Toggle(isOn: $exercise.isCompound) {
+            Toggle(isOn: Binding(
+                get: { exercise.isCompound },
+                set: { newValue in
+                    exercise.isCompound = newValue
+                    syncCustomTemplate { $0.isSystemCompound = newValue }
+                }
+            )) {
                 Text("customExercise.field.compound", bundle: .module)
             }
             .disabled(isReadOnly)
         } header: {
             Text("customExercise.section.metadata", bundle: .module)
         }
+    }
+
+    /// DEL-163: schreibt eine Metadaten-Aenderung auf das/die passende(n)
+    /// Custom-`ExerciseTemplate`(s) zurueck (Match ueber Name + isCustom),
+    /// damit Bibliothek + Picker mit der editierten Plan-Instanz konsistent
+    /// bleiben (AC2). No-op fuer System-Uebungen.
+    private func syncCustomTemplate(_ apply: (ExerciseTemplate) -> Void) {
+        guard isCustomExercise else { return }
+        let name = exercise.name
+        let descriptor = FetchDescriptor<ExerciseTemplate>(
+            predicate: #Predicate { $0.isCustom == true && $0.name == name }
+        )
+        let templates = (try? modelContext.fetch(descriptor)) ?? []
+        templates.forEach(apply)
     }
 
     /// DEL-062: dedizierte Section fuer Cardio-Ziele. Distanz + Dauer sind
