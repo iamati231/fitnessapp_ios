@@ -1841,6 +1841,22 @@
         }
       }
     },
+    "coaching.empty.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Heute kein besonderer Hinweis" } },
+        "en": { "stringUnit": { "state": "translated", "value": "No special note today" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bugün özel bir not yok" } }
+      }
+    },
+    "coaching.empty.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Aktuell ist keine Warnung oder Aktion nötig — weiter so." } },
+        "en": { "stringUnit": { "state": "translated", "value": "No warning or action needed right now — keep it up." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Şu an uyarı veya işlem gerekmez — böyle devam et." } }
+      }
+    },
     "coaching.restDay.analytical.hypertrophy": {
       "extractionState": "manual",
       "localizations": {

@@ -958,38 +958,86 @@ public struct DashboardView: View {
     /// leerer Card-Slot auf dem Dashboard.
     @ViewBuilder
     private var coachingInsightCard: some View {
-        if let context = activeCoachingContext, let profile = profiles.first {
-            let message = CoachingMessageProvider.message(
-                for: context,
-                tone: profile.coachingTone,
-                goal: profile.trainingGoal
-            )
-            if !message.isEmpty {
-                // DEL-100 + DEL-102: Bento-Card mit warmem DeltiqOrange-Tint.
-                // Bewusst NICHT die generische .deltiqCardStyle() — die
-                // Coaching-Insight haben wir absichtlich orange-getoent fuer
-                // visuelle Differenzierung vom Plan-Card.
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "sparkles")
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(Color.deltiqOrange)
-                        .font(.title3)
-                    Text(message)
-                        .font(.subheadline)
-                        .foregroundStyle(.primary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 0)
-                }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.deltiqOrange.opacity(0.10))
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.deltiqOrange.opacity(0.20), lineWidth: 1)
-                )
-            }
+        // DEL-166: Wenn das Coaching-Widget aktiv geschaltet ist, MUSS die
+        // Karte sichtbar sein — egal ob aktuell ein Coaching-Trigger greift.
+        // Vorher returnte die View `EmptyView()` ohne Trigger; das wirkte wie
+        // ein kaputtes Feature (Widget an, aber unsichtbar). Jetzt zwei
+        // Zustaende: konkreter Insight ODER neutrale Empty-State-Karte.
+        if let message = currentCoachingMessage {
+            coachingInsightContent(message: message)
+        } else {
+            coachingInsightEmptyContent
         }
+    }
+
+    /// Liefert den aktuellen Coaching-Text — oder nil, wenn kein Trigger
+    /// greift bzw. kein Profil existiert. Caller (`coachingInsightCard`)
+    /// rendert dann den Empty-State.
+    private var currentCoachingMessage: String? {
+        guard let context = activeCoachingContext,
+              let profile = profiles.first else { return nil }
+        let msg = CoachingMessageProvider.message(
+            for: context,
+            tone: profile.coachingTone,
+            goal: profile.trainingGoal
+        )
+        return msg.isEmpty ? nil : msg
+    }
+
+    /// DEL-100 + DEL-102: Bento-Card mit warmem DeltiqOrange-Tint. Bewusst
+    /// NICHT die generische `.deltiqCardStyle()` — die Coaching-Insight haben
+    /// wir absichtlich orange-getoent fuer visuelle Differenzierung vom
+    /// Plan-Card.
+    private func coachingInsightContent(message: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "sparkles")
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(Color.deltiqOrange)
+                .font(.title3)
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.deltiqOrange.opacity(0.10))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.deltiqOrange.opacity(0.20), lineWidth: 1)
+        )
+    }
+
+    /// DEL-166: Neutraler Empty-State, wenn das Widget aktiv ist, aber gerade
+    /// kein Coaching-Trigger anliegt (kein CNS-Overload, kein Plan-Ruhetag).
+    /// Visuell gedaempfter (weniger Tint, anderes Icon) — kommuniziert "alles
+    /// gut, keine Aktion noetig" statt zu verschwinden.
+    private var coachingInsightEmptyContent: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "checkmark.seal.fill")
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(Color.deltiqOrange.opacity(0.7))
+                .font(.title3)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("coaching.empty.title", bundle: .module)
+                    .font(.subheadline.weight(.semibold))
+                Text("coaching.empty.message", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.deltiqOrange.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.deltiqOrange.opacity(0.12), lineWidth: 1)
+        )
     }
 
     /// Wahlt den passenden Coaching-Context aus dem Heute-Zustand des

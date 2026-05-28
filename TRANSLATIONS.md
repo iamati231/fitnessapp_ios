@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1099 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1101 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1099 / 1099** (100%) | 0 |
-| 🇬🇧 English (EN) | **1099 / 1099** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1099 / 1099** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1101 / 1101** (100%) | 0 |
+| 🇬🇧 English (EN) | **1101 / 1101** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1101 / 1101** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -170,7 +170,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `chart.timeRange.oneMonth` | 1M | 1M | 1A |
 | `chart.timeRange.threeMonths` | 3M | 3M | 3A |
 
-## `coaching.*`  (32 Keys)
+## `coaching.*`  (34 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -179,6 +179,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.cnsOverloaded.analytical.strength` | ZNS-Belastung >90%. Schwere 1RM-Versuche sind heute statistisch ineffizient. Reduziere die Intensität. | CNS load >90%. Heavy 1RM attempts are statistically inefficient today. Reduce intensity. | MSS yükü %90 üzerinde. Bugün ağır 1RM denemeleri istatistiksel olarak verimsiz. Yoğunluğu azalt. |
 | `coaching.cnsOverloaded.motivating.hypertrophy` | Du hast extrem hart gearbeitet! Gönn deinem Nervensystem etwas Ruhe und fokussiere dich heute auf leichte Isolationsübungen. | You've worked incredibly hard! Give your nervous system some rest and focus on light isolation exercises today. | Çok sıkı çalıştın! Bugün sinir sistemine biraz dinlenme ver ve hafif izolasyon hareketlerine odaklan. |
 | `coaching.cnsOverloaded.strict.hybrid` | Rote Zone. Dein Nervensystem ist durch. Keine schweren Kettlebell-Swings heute. Mach Mobility oder mach Pause. | Red zone. Your nervous system is fried. No heavy kettlebell swings today. Mobility work — or rest. | Kırmızı bölge. Sinir sistemin bitik. Bugün ağır kettlebell swing yok. Mobilite ya da dinlen. |
+| `coaching.empty.message` | Aktuell ist keine Warnung oder Aktion nötig — weiter so. | No warning or action needed right now — keep it up. | Şu an uyarı veya işlem gerekmez — böyle devam et. |
+| `coaching.empty.title` | Heute kein besonderer Hinweis | No special note today | Bugün özel bir not yok |
 | `coaching.goal.hybrid.blurb` | Kraft + Ausdauer + Mobilität — alles fließt zusammen. | Strength + endurance + mobility — all flowing together. | Güç + dayanıklılık + mobilite — hepsi bir arada. |
 | `coaching.goal.hybrid.label` | Funktionell / Hybrid | Functional / Hybrid | Fonksiyonel / Hibrit |
 | `coaching.goal.hypertrophy.blurb` | Volumen, Pump, sichtbares Muskelwachstum. | Volume, pump, visible muscle growth. | Hacim, pump, görünür kas gelişimi. |
