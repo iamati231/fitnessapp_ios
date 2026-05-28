@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1101 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1116 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1101 / 1101** (100%) | 0 |
-| 🇬🇧 English (EN) | **1101 / 1101** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1101 / 1101** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1116 / 1116** (100%) | 0 |
+| 🇬🇧 English (EN) | **1116 / 1116** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1116 / 1116** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -170,7 +170,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `chart.timeRange.oneMonth` | 1M | 1M | 1A |
 | `chart.timeRange.threeMonths` | 3M | 3M | 3A |
 
-## `coaching.*`  (34 Keys)
+## `coaching.*`  (49 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -202,6 +202,21 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.restDay.analytical.strength` | Recovery-Tag. Dein ZNS arbeitet jetzt — das nächste 1RM wird heute, nicht im Gym, vorbereitet. | Recovery day. Your CNS is working now — your next 1RM is prepared today, not in the gym. | İyileşme günü. MSS şu an çalışıyor — sonraki 1RM bugün hazırlanır, salonda değil. |
 | `coaching.restDay.motivating.hybrid` | Du hast dir eine Pause verdient! Ein leichter Mobility-Flow oder Spaziergang ist heute perfekt für deine aktive Erholung. | You've earned a break! A light mobility flow or a walk is perfect for active recovery today. | Bir mola hak ettin! Bugün hafif bir mobilite akışı veya yürüyüş aktif iyileşme için ideal. |
 | `coaching.restDay.strict.strength` | Heute wird nicht trainiert. Du wirst in der Pause stärker, nicht unter der Hantel. Bleib aus dem Gym. | No training today. You get stronger on rest days, not under the barbell. Stay out of the gym. | Bugün antrenman yok. Halterin altında değil, dinlenme günlerinde güçlenirsin. Salona girme. |
+| `coaching.soft.planPreview.analytical` | Plan-Eintrag für heute steht an. Optimaler Zeitpunkt für ein Mobility-Warmup vor den Compound-Lifts. | Today's plan entry is up. Optimal time for a mobility warmup before the compound lifts. | Bugün için plan girdisi mevcut. Bileşik hareketlerden önce mobilite ısınması için ideal zaman. |
+| `coaching.soft.planPreview.motivating` | Heute steht ein Training an. Mach dich gut warm und gib alles für die schweren Sätze! | A workout's on the schedule today. Warm up well and give it your all on the heavy sets! | Bugün bir antrenman var. İyi ısın ve ağır setlerde her şeyini ver! |
+| `coaching.soft.planPreview.strict` | Heute ist Trainingstag. Kein Aufschub. Punkt. | Today is a training day. No postponing. Period. | Bugün antrenman günü. Erteleme yok. Nokta. |
+| `coaching.soft.postCardio.analytical` | Erhöhtes Cardio-Volumen gestern registriert. Behalte die systemische Erholung im Auge und meide heute schwere Bein-Isolationsübungen. | Elevated cardio volume detected yesterday. Watch systemic recovery and avoid heavy leg isolation today. | Dün yüksek kardiyo hacmi kaydedildi. Sistemik toparlanmaya dikkat et ve bugün ağır bacak izolasyon hareketlerinden kaçın. |
+| `coaching.soft.postCardio.motivating` | Mega Lauf gestern! Wenn die Beine heute noch etwas schwer sind, ist ein leichter Oberkörper-Fokus oder Mobility völlig okay. Bleib dran! | Awesome run yesterday! If your legs feel heavy today, an upper-body or mobility focus is totally fine. Keep it up! | Dün harika bir koşu yaptın! Bacakların bugün ağırsa üst vücut veya mobiliteye odaklan, sorun değil. Devam et! |
+| `coaching.soft.postCardio.strict` | Die Kilometer von gestern sind abgehakt. Ruh dich nicht darauf aus — fokussiere dich auf die heutige Einheit. Keine halben Sachen. | Yesterday's kilometers are done. Don't coast on it — focus on today's session. No half-measures. | Dünkü kilometreler tamam. Üstüne yatma — bugünkü antrenmana odaklan. Yarım iş yok. |
+| `coaching.soft.postVolume.analytical` | Lokale und systemische Last vom gestrigen Training ist hoch. Muskelproteinsynthese ist aktiv. Heute moderates Training oder aktive Erholung empfohlen. | High local and systemic load from yesterday's session. Muscle protein synthesis is active. Moderate training or active recovery recommended today. | Dünkü antrenmandan lokal ve sistemik yük yüksek. Kas protein sentezi aktif. Bugün orta yoğunlukta antrenman veya aktif toparlanma öneriliyor. |
+| `coaching.soft.postVolume.motivating` | Wahnsinn, was du gestern bewegt hast! Gönn deinem Körper heute ausreichend Protein und guten Schlaf, damit die Muskeln wachsen können. | Insane volume yesterday! Give your body enough protein and good sleep today so the muscles can grow. | Dün muazzam bir hacim kaldırdın! Bugün vücuduna yeterli protein ve iyi uyku ver, kasların büyüsün. |
+| `coaching.soft.postVolume.strict` | Gutes Volumen gestern. Aber Muskeln wachsen nur, wenn du jetzt auch bei der Ernährung diszipliniert bleibst. Mach deine Hausaufgaben. | Good volume yesterday. But muscles only grow if you stay disciplined with nutrition too. Do your homework. | Dün iyi hacim. Ama kaslar ancak beslenmede de disiplinli kalırsan büyür. Ödevini yap. |
+| `coaching.soft.reEntry.analytical` | Mehrere Tage ohne Training. Detraining-Effekte sind noch minimal. Empfehlung: leichte Wiedereinstiegs-Einheit mit ~70 % der gewohnten Last. | Several days off training. Detraining effects still minimal. Recommendation: a light re-entry session at ~70% of your usual load. | Birkaç gündür antrenman yok. Detraining etkisi henüz minimal. Öneri: olağan yükün ~%70'i ile hafif bir geri dönüş seansı. |
+| `coaching.soft.reEntry.motivating` | Ein paar Tage Pause tun gut. Lust, heute mit einer leichten Einheit wieder reinzukommen? | A few rest days do you good. Up for easing back in with a light session today? | Birkaç gün ara iyi geldi. Bugün hafif bir antrenmanla geri dönmeye ne dersin? |
+| `coaching.soft.reEntry.strict` | Lange genug pausiert. Jetzt zurück in die Routine. Heute starten. | Long enough off. Back to the routine. Start today. | Yeterince ara verdin. Şimdi rutine geri dön. Bugün başla. |
+| `coaching.soft.streak.analytical` | Trainingsfrequenz hoch in den letzten 7 Tagen. Kumulierte Ermüdung steigt leicht an. Erwäge zeitnah einen Deload- oder Ruhetag. | High training frequency over the last 7 days. Cumulative fatigue is rising. Consider a deload or rest day soon. | Son 7 günde antrenman sıklığı yüksek. Birikmiş yorgunluk hafifçe artıyor. Yakında bir deload veya dinlenme günü düşün. |
+| `coaching.soft.streak.motivating` | Toller Rhythmus aktuell! Du bist in einer fantastischen Konsistenz-Phase. Vergiss aber nicht, deinem Körper auch mal einen Ruhetag zu gönnen. | Great rhythm right now! You're on a solid consistency streak. Don't forget to give your body a rest day, though. | Şu an harika bir ritimdesin! Müthiş bir tutarlılık serisindesin. Vücuduna ara sıra dinlenme günü vermeyi unutma. |
+| `coaching.soft.streak.strict` | Mehrere Tage durchgezogen. Gut. Aber Routine ist Pflicht, kein Bonus. Lass jetzt nicht nach. | Several days in a row. Good. But routine is duty, not bonus. Don't slack now. | Üst üste birkaç gün. İyi. Ama rutin bir görev, bonus değil. Şimdi gevşeme. |
 | `coaching.tone.analytical.blurb` | Fakten & Daten. Neutrales Feedback zu Load und Progression. | Facts & data. Neutral feedback on load and progression. | Veriler ve gerçekler. Yük ve ilerleme hakkında nötr geri bildirim. |
 | `coaching.tone.analytical.label` | Analytisch | Analytical | Analitik |
 | `coaching.tone.motivating.blurb` | Positiv & bestärkend. Fokus auf Erfolge und Erholung. | Positive & encouraging. Focus on wins and recovery. | Olumlu ve destekleyici. Başarılara ve iyileşmeye odaklı. |

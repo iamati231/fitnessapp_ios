@@ -974,14 +974,107 @@ public struct DashboardView: View {
     /// greift bzw. kein Profil existiert. Caller (`coachingInsightCard`)
     /// rendert dann den Empty-State.
     private var currentCoachingMessage: String? {
-        guard let context = activeCoachingContext,
-              let profile = profiles.first else { return nil }
-        let msg = CoachingMessageProvider.message(
-            for: context,
-            tone: profile.coachingTone,
-            goal: profile.trainingGoal
-        )
-        return msg.isEmpty ? nil : msg
+        guard let profile = profiles.first else { return nil }
+        // DEL-167: zweistufige Auswertung — P1 (echte Warnung) gewinnt vor
+        // P2 (Soft-Insight). Nur wenn beide leer sind, faellt die View auf
+        // den neutralen Empty-State zurueck.
+        if let context = activeCoachingContext {
+            let msg = CoachingMessageProvider.message(
+                for: context,
+                tone: profile.coachingTone,
+                goal: profile.trainingGoal
+            )
+            if !msg.isEmpty { return msg }
+        }
+        if let soft = activeSoftCoachingContext {
+            let msg = CoachingMessageProvider.softMessage(
+                for: soft,
+                tone: profile.coachingTone
+            )
+            if !msg.isEmpty { return msg }
+        }
+        return nil
+    }
+
+    // MARK: - DEL-167 Soft-Coaching-Trigger
+
+    /// Auswahl in Prioritaets-Reihenfolge — erster Treffer gewinnt. Wird nur
+    /// erreicht, wenn `activeCoachingContext` nil ist (keine P1-Warnung).
+    ///
+    ///   1. **reEntry**       — Lange nicht trainiert (≥5 Tage Pause). Hat
+    ///      Vorrang, weil "wieder einsteigen" der wichtigste Re-Engagement-
+    ///      Hinweis ist.
+    ///   2. **postVolume**    — Gestrige Session ueber 5.000 kg Volumen.
+    ///   3. **postCardio**    — Gestrige Cardio-Distanz ueber 5 km.
+    ///   4. **streak**        — ≥5 reale Sessions in den letzten 7 Tagen.
+    ///   5. **planPreview**   — Heutiger Plan-Tag ist ein Trainings-Tag
+    ///      (kein Rest, kein Skip-Marker).
+    /// Sonst nil → Dashboard zeigt den neutralen Empty-State (DEL-166).
+    private var activeSoftCoachingContext: CoachingContext? {
+        if daysSinceLastRealSession >= 5 { return .reEntry }
+        if let yKm = yesterdayCardioDistanceKm, let yVol = yesterdayVolumeKg {
+            if yVol >= 5_000 { return .postVolume }
+            if yKm >= 5      { return .postCardio }
+        } else if let yVol = yesterdayVolumeKg, yVol >= 5_000 {
+            return .postVolume
+        } else if let yKm = yesterdayCardioDistanceKm, yKm >= 5 {
+            return .postCardio
+        }
+        if last7DaysRealSessionCount >= 5 { return .streak }
+        if hasTrainingPlannedToday { return .planPreview }
+        return nil
+    }
+
+    /// Maximal-Volumen ueber alle gestern (Kalendertag = today-1) abgeschlossenen
+    /// realen Sessions. Nil = keine Session gestern.
+    private var yesterdayVolumeKg: Double? {
+        let sessions = realSessionsOn(daysBeforeToday: 1)
+        guard !sessions.isEmpty else { return nil }
+        return sessions.map(\.totalVolumeKg).max()
+    }
+
+    /// Maximal-Cardio-Distanz (km) ueber alle gestrigen Sessions.
+    /// `WorkoutSession.totalDistanceKm` (DEL-081) summiert Logs.
+    private var yesterdayCardioDistanceKm: Double? {
+        let sessions = realSessionsOn(daysBeforeToday: 1)
+        guard !sessions.isEmpty else { return nil }
+        return sessions.map(\.totalDistanceKm).max()
+    }
+
+    /// Anzahl realer Sessions in den letzten 7 Tagen (rolling, inkl. heute).
+    private var last7DaysRealSessionCount: Int {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? .distantPast
+        return completedSessions.filter { $0.isRealWorkout && $0.startTime >= cutoff }.count
+    }
+
+    /// Tage seit der juengsten realen Session. `Int.max` wenn nie trainiert
+    /// → triggert reEntry nicht (keine Daten = kein Hinweis).
+    private var daysSinceLastRealSession: Int {
+        let realSessions = completedSessions.filter(\.isRealWorkout)
+        guard let latest = realSessions.map(\.endTime).max() else { return Int.max }
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: latest)
+        let today = cal.startOfDay(for: Date())
+        return cal.dateComponents([.day], from: start, to: today).day ?? Int.max
+    }
+
+    /// True wenn der heutige Plan-Eintrag ein Trainings-Tag ist (kein Rest).
+    private var hasTrainingPlannedToday: Bool {
+        guard let plan = activePlans.first, !plan.days.isEmpty else { return false }
+        let day = nextScheduledDay(in: plan)
+        return day.type != .rest
+    }
+
+    /// Real-Workout-Sessions, deren `startTime` im Kalendertag `today − N`
+    /// liegt. Ohne reine Rest-Day-Marker / leere Ad-hoc-Sweeps.
+    private func realSessionsOn(daysBeforeToday n: Int) -> [WorkoutSession] {
+        let cal = Calendar.current
+        guard let dayStart = cal.date(byAdding: .day, value: -n, to: cal.startOfDay(for: Date())),
+              let dayEnd = cal.date(byAdding: .day, value: 1, to: dayStart)
+        else { return [] }
+        return completedSessions.filter {
+            $0.isRealWorkout && $0.startTime >= dayStart && $0.startTime < dayEnd
+        }
     }
 
     /// DEL-100 + DEL-102: Bento-Card mit warmem DeltiqOrange-Tint. Bewusst

@@ -1841,6 +1841,126 @@
         }
       }
     },
+    "coaching.soft.postCardio.motivating": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Mega Lauf gestern! Wenn die Beine heute noch etwas schwer sind, ist ein leichter Oberkörper-Fokus oder Mobility völlig okay. Bleib dran!" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Awesome run yesterday! If your legs feel heavy today, an upper-body or mobility focus is totally fine. Keep it up!" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dün harika bir koşu yaptın! Bacakların bugün ağırsa üst vücut veya mobiliteye odaklan, sorun değil. Devam et!" } }
+      }
+    },
+    "coaching.soft.postCardio.analytical": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Erhöhtes Cardio-Volumen gestern registriert. Behalte die systemische Erholung im Auge und meide heute schwere Bein-Isolationsübungen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Elevated cardio volume detected yesterday. Watch systemic recovery and avoid heavy leg isolation today." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dün yüksek kardiyo hacmi kaydedildi. Sistemik toparlanmaya dikkat et ve bugün ağır bacak izolasyon hareketlerinden kaçın." } }
+      }
+    },
+    "coaching.soft.postCardio.strict": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Die Kilometer von gestern sind abgehakt. Ruh dich nicht darauf aus — fokussiere dich auf die heutige Einheit. Keine halben Sachen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Yesterday's kilometers are done. Don't coast on it — focus on today's session. No half-measures." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dünkü kilometreler tamam. Üstüne yatma — bugünkü antrenmana odaklan. Yarım iş yok." } }
+      }
+    },
+    "coaching.soft.postVolume.motivating": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Wahnsinn, was du gestern bewegt hast! Gönn deinem Körper heute ausreichend Protein und guten Schlaf, damit die Muskeln wachsen können." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Insane volume yesterday! Give your body enough protein and good sleep today so the muscles can grow." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dün muazzam bir hacim kaldırdın! Bugün vücuduna yeterli protein ve iyi uyku ver, kasların büyüsün." } }
+      }
+    },
+    "coaching.soft.postVolume.analytical": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Lokale und systemische Last vom gestrigen Training ist hoch. Muskelproteinsynthese ist aktiv. Heute moderates Training oder aktive Erholung empfohlen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "High local and systemic load from yesterday's session. Muscle protein synthesis is active. Moderate training or active recovery recommended today." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dünkü antrenmandan lokal ve sistemik yük yüksek. Kas protein sentezi aktif. Bugün orta yoğunlukta antrenman veya aktif toparlanma öneriliyor." } }
+      }
+    },
+    "coaching.soft.postVolume.strict": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Gutes Volumen gestern. Aber Muskeln wachsen nur, wenn du jetzt auch bei der Ernährung diszipliniert bleibst. Mach deine Hausaufgaben." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Good volume yesterday. But muscles only grow if you stay disciplined with nutrition too. Do your homework." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dün iyi hacim. Ama kaslar ancak beslenmede de disiplinli kalırsan büyür. Ödevini yap." } }
+      }
+    },
+    "coaching.soft.streak.motivating": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Toller Rhythmus aktuell! Du bist in einer fantastischen Konsistenz-Phase. Vergiss aber nicht, deinem Körper auch mal einen Ruhetag zu gönnen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Great rhythm right now! You're on a solid consistency streak. Don't forget to give your body a rest day, though." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Şu an harika bir ritimdesin! Müthiş bir tutarlılık serisindesin. Vücuduna ara sıra dinlenme günü vermeyi unutma." } }
+      }
+    },
+    "coaching.soft.streak.analytical": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Trainingsfrequenz hoch in den letzten 7 Tagen. Kumulierte Ermüdung steigt leicht an. Erwäge zeitnah einen Deload- oder Ruhetag." } },
+        "en": { "stringUnit": { "state": "translated", "value": "High training frequency over the last 7 days. Cumulative fatigue is rising. Consider a deload or rest day soon." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Son 7 günde antrenman sıklığı yüksek. Birikmiş yorgunluk hafifçe artıyor. Yakında bir deload veya dinlenme günü düşün." } }
+      }
+    },
+    "coaching.soft.streak.strict": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Mehrere Tage durchgezogen. Gut. Aber Routine ist Pflicht, kein Bonus. Lass jetzt nicht nach." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Several days in a row. Good. But routine is duty, not bonus. Don't slack now." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Üst üste birkaç gün. İyi. Ama rutin bir görev, bonus değil. Şimdi gevşeme." } }
+      }
+    },
+    "coaching.soft.planPreview.motivating": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Heute steht ein Training an. Mach dich gut warm und gib alles für die schweren Sätze!" } },
+        "en": { "stringUnit": { "state": "translated", "value": "A workout's on the schedule today. Warm up well and give it your all on the heavy sets!" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bugün bir antrenman var. İyi ısın ve ağır setlerde her şeyini ver!" } }
+      }
+    },
+    "coaching.soft.planPreview.analytical": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Plan-Eintrag für heute steht an. Optimaler Zeitpunkt für ein Mobility-Warmup vor den Compound-Lifts." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Today's plan entry is up. Optimal time for a mobility warmup before the compound lifts." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bugün için plan girdisi mevcut. Bileşik hareketlerden önce mobilite ısınması için ideal zaman." } }
+      }
+    },
+    "coaching.soft.planPreview.strict": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Heute ist Trainingstag. Kein Aufschub. Punkt." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Today is a training day. No postponing. Period." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bugün antrenman günü. Erteleme yok. Nokta." } }
+      }
+    },
+    "coaching.soft.reEntry.motivating": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ein paar Tage Pause tun gut. Lust, heute mit einer leichten Einheit wieder reinzukommen?" } },
+        "en": { "stringUnit": { "state": "translated", "value": "A few rest days do you good. Up for easing back in with a light session today?" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Birkaç gün ara iyi geldi. Bugün hafif bir antrenmanla geri dönmeye ne dersin?" } }
+      }
+    },
+    "coaching.soft.reEntry.analytical": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Mehrere Tage ohne Training. Detraining-Effekte sind noch minimal. Empfehlung: leichte Wiedereinstiegs-Einheit mit ~70 % der gewohnten Last." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Several days off training. Detraining effects still minimal. Recommendation: a light re-entry session at ~70% of your usual load." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Birkaç gündür antrenman yok. Detraining etkisi henüz minimal. Öneri: olağan yükün ~%70'i ile hafif bir geri dönüş seansı." } }
+      }
+    },
+    "coaching.soft.reEntry.strict": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Lange genug pausiert. Jetzt zurück in die Routine. Heute starten." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Long enough off. Back to the routine. Start today." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yeterince ara verdin. Şimdi rutine geri dön. Bugün başla." } }
+      }
+    },
     "coaching.empty.title": {
       "extractionState": "manual",
       "localizations": {

@@ -87,4 +87,23 @@ public enum CoachingContext: String, Sendable {
     case newPR
     /// Stagnation ueber mehrere Wochen erkannt.
     case plateauDetected
+
+    // MARK: - DEL-167 Soft-Coaching (Plauder-Modus)
+    //
+    // Sekundäre Prioritätsstufe — werden nur ausgewertet, wenn KEINE der
+    // P1-Warnungen oben greift. Liefern wohlwollende, kontextuelle
+    // Kommentare zum jüngsten Training. Catalog-Keys folgen dem Schema
+    // `coaching.soft.{context}.{tone}` (ohne Goal-Achse, weil die Soft-
+    // Insights goal-agnostisch sind).
+
+    /// Gestrige Session hatte eine signifikante Cardio-Distanz.
+    case postCardio
+    /// Gestrige Session hatte ein hohes Strength-Volumen.
+    case postVolume
+    /// Hohe Trainings-Frequenz in den letzten 7 Tagen (Konsistenz-Streak).
+    case streak
+    /// Heute steht ein geplantes (kein Rest-)Training an.
+    case planPreview
+    /// Länger nicht trainiert — sanfter Wiedereinstiegs-Hinweis.
+    case reEntry
 }

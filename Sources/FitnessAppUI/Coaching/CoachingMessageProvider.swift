@@ -55,6 +55,30 @@ public enum CoachingMessageProvider {
         return ""
     }
 
+    /// DEL-167: Soft-Coaching-Variante. Resolved den Schlüssel
+    /// `coaching.soft.{context}.{tone}` (ohne Goal-Achse — Soft-Insights sind
+    /// goal-agnostisch). Fallback-Kette:
+    ///   1. Voll-spezifischer Key mit dem gewünschten Ton.
+    ///   2. Tone-Fallback auf `.analytical` (neutralster Ton).
+    ///   3. Leerer String → Caller (Dashboard) erkennt das und rendert
+    ///      stattdessen den Empty-State.
+    public static func softMessage(
+        for context: CoachingContext,
+        tone: CoachingTone
+    ) -> String {
+        let primaryKey = softKey(context: context, tone: tone)
+        if let resolved = resolve(key: primaryKey) {
+            return resolved
+        }
+        if tone != .analytical {
+            let toneFallback = softKey(context: context, tone: .analytical)
+            if let resolved = resolve(key: toneFallback) {
+                return resolved
+            }
+        }
+        return ""
+    }
+
     // MARK: - Internals
 
     /// Baut den dotted Localization-Key fuer eine Matrix-Position.
@@ -64,6 +88,11 @@ public enum CoachingMessageProvider {
         goal: TrainingGoal
     ) -> String {
         "coaching.\(context.rawValue).\(tone.rawValue).\(goal.rawValue)"
+    }
+
+    /// DEL-167: Schlüssel-Schema für Soft-Coaching (keine Goal-Achse).
+    private static func softKey(context: CoachingContext, tone: CoachingTone) -> String {
+        "coaching.soft.\(context.rawValue).\(tone.rawValue)"
     }
 
     /// Versucht, einen Key aufzuloesen. Liefert nil zurueck, wenn die
