@@ -86,60 +86,81 @@ public struct CSVReader {
     /// Splits the text into records (each record is an array of fields).
     /// Hand-rolled state machine — Foundation has no built-in CSV parser
     /// and pulling in another dep just for this is overkill.
+    ///
+    /// **WICHTIG — Unicode-Scalar-Iteration statt Character-Iteration:**
+    /// Swift behandelt `\r\n` als EINEN Grapheme-Cluster (ein `Character`,
+    /// nicht zwei). Wenn man `for c in text { ... }` iteriert, kommt
+    /// `\r\n` als ein einziges Element raus, das weder `"\r"` noch `"\n"`
+    /// matched — beide Switch-Cases fielen ins `default`, der `\r\n`-Block
+    /// wurde dem Feld-Content angehängt, Record-Trennung wurde nie erkannt.
+    /// Resultat: das gesamte File wurde als EIN langer Header geparst,
+    /// `rows = 0` für jede CSV — Bug aus DEL-186 Diagnose lokalisiert.
+    ///
+    /// Unicode-Scalar-Iteration (`text.unicodeScalars`) liefert jeden
+    /// Code-Point einzeln (CR = U+000D, LF = U+000A bleiben getrennt),
+    /// genau wie das CSV-Spec es vorsieht.
     static func parse(_ text: String) -> [[String]] {
         var records: [[String]] = []
         var currentRecord: [String] = []
         var currentField = ""
         var inQuotes = false
-        var i = text.startIndex
 
-        while i < text.endIndex {
-            let c = text[i]
+        // Scalars in ein Array, damit wir Lookahead via Index machen können.
+        let scalars = Array(text.unicodeScalars)
+        var i = 0
+
+        // Wieder-verwendbare Scalar-Konstanten (vermeidet wiederholte
+        // Unicode.Scalar-Initialization in der Hot-Loop).
+        let cr: Unicode.Scalar = "\r"
+        let lf: Unicode.Scalar = "\n"
+        let quote: Unicode.Scalar = "\""
+        let comma: Unicode.Scalar = ","
+
+        while i < scalars.count {
+            let s = scalars[i]
             if inQuotes {
-                if c == "\"" {
-                    // Lookahead for escaped quote
-                    let next = text.index(after: i)
-                    if next < text.endIndex && text[next] == "\"" {
-                        currentField.append("\"")
-                        i = text.index(after: next)
+                if s == quote {
+                    // Lookahead for escaped quote ("")
+                    if i + 1 < scalars.count && scalars[i + 1] == quote {
+                        currentField.unicodeScalars.append(quote)
+                        i += 2
                         continue
                     } else {
                         inQuotes = false
-                        i = text.index(after: i)
+                        i += 1
                         continue
                     }
                 } else {
-                    currentField.append(c)
-                    i = text.index(after: i)
+                    currentField.unicodeScalars.append(s)
+                    i += 1
                     continue
                 }
             }
             // Not in quotes
-            switch c {
-            case "\"":
+            switch s {
+            case quote:
                 inQuotes = true
-            case ",":
+            case comma:
                 currentRecord.append(currentField)
                 currentField = ""
-            case "\r":
-                // Eat CR; LF (if present) will terminate the record
-                let next = text.index(after: i)
-                if next < text.endIndex && text[next] == "\n" {
-                    i = next
+            case cr:
+                // CR allein ODER CR+LF — eat optional LF
+                if i + 1 < scalars.count && scalars[i + 1] == lf {
+                    i += 1
                 }
                 currentRecord.append(currentField)
                 currentField = ""
                 records.append(currentRecord)
                 currentRecord = []
-            case "\n":
+            case lf:
                 currentRecord.append(currentField)
                 currentField = ""
                 records.append(currentRecord)
                 currentRecord = []
             default:
-                currentField.append(c)
+                currentField.unicodeScalars.append(s)
             }
-            i = text.index(after: i)
+            i += 1
         }
         // Tail: dangling field/record without trailing newline
         if !currentField.isEmpty || !currentRecord.isEmpty {
