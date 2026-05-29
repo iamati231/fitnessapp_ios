@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1171 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1191 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1171 / 1171** (100%) | 0 |
-| 🇬🇧 English (EN) | **1171 / 1171** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1171 / 1171** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1191 / 1191** (100%) | 0 |
+| 🇬🇧 English (EN) | **1191 / 1191** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1191 / 1191** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1265,7 +1265,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (54 Keys)
+## `settings.*`  (74 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1281,6 +1281,23 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.confirm.reset.message` | Profil, alle Messungen, Pläne und Trainings-Sessions gehen UNWIDERRUFLICH verloren. Die App startet danach im Onboarding. | Profile, all measurements, plans, and workouts will be IRRECOVERABLY lost. The app will start in onboarding. | Profil, tüm ölçümler, planlar ve antrenman oturumları GERİ ALINAMAZ şekilde silinecek. Uygulama ardından tekrar onboarding'den başlayacak. |
 | `settings.confirm.reset.title` | App wirklich zurücksetzen? | Really reset the app? | Uygulamayı gerçekten sıfırlamak istiyor musun? |
 | `settings.dangerZone.footer` | Löscht Profil, Messungen, Pläne, Trainings-Templates und Trainings-Sessions vollständig. Die Apple-Health-Daten bleiben erhalten — die löscht du in der Health-App selber. | Deletes profile, measurements, plans, training templates, and workout sessions completely. Apple Health data is preserved — delete that from the Health app. | Profil, ölçümler, planlar, antrenman şablonları ve antrenman oturumlarını tamamen siler. Apple Health verileri korunur — onları Health uygulamasından silersin. |
+| `settings.dataExport.action.share` | Archiv teilen | Share archive | Arşivi paylaş |
+| `settings.dataExport.action.start` | Export starten | Start export | Dışa aktarmayı başlat |
+| `settings.dataExport.contents.custom` | Eigene Übungen, die du selbst angelegt hast | Custom exercises you created yourself | Kendin oluşturduğun özel egzersizler |
+| `settings.dataExport.contents.gear` | Ausrüstung (Schuhe, Bikes) und deren Kilometer | Gear (shoes, bikes) and their mileage | Ekipman (ayakkabı, bisiklet) ve kilometre bilgileri |
+| `settings.dataExport.contents.header` | Was enthalten ist | What's included | Neler dahil |
+| `settings.dataExport.contents.measurements` | Körpermessungen (Gewicht, KFA, Umfänge) | Body measurements (weight, body fat, circumferences) | Vücut ölçümleri (kilo, yağ oranı, çevreler) |
+| `settings.dataExport.contents.plans` | Trainingspläne, Tage und Übungen | Training plans, days and exercises | Antrenman planları, günler ve egzersizler |
+| `settings.dataExport.contents.profile` | Profil, Ziele, Trainings-Präferenzen | Profile, goals, training preferences | Profil, hedefler, antrenman tercihleri |
+| `settings.dataExport.contents.records` | Persönliche Rekorde und PR-Historie | Personal records and PR history | Kişisel rekorlar ve PR geçmişi |
+| `settings.dataExport.contents.workouts` | Alle Workouts mit Sätzen, Reps, Gewichten und RIR | All workouts with sets, reps, weights and RIR | Set, tekrar, ağırlık ve RIR ile tüm antrenmanlar |
+| `settings.dataExport.exporting` | Sammle deine Daten… | Collecting your data… | Verilerin toplanıyor… |
+| `settings.dataExport.finished.header` | Bereit zum Teilen | Ready to share | Paylaşmaya hazır |
+| `settings.dataExport.finished.summary` | %lld Einträge in mehrere CSV-Dateien exportiert. | %lld records exported across multiple CSV files. | %lld kayıt birden fazla CSV dosyasına aktarıldı. |
+| `settings.dataExport.intro.body` | Erstellt ein ZIP-Archiv mit allen Daten, die Deltiq über dich speichert — Workouts, Sätze, Körpermessungen, Pläne, persönliche Rekorde und Ausrüstung. Alles als CSV-Dateien, die Excel, Numbers oder jedes Tabellen-Tool öffnen kann. | Creates a ZIP archive containing every piece of data Deltiq stores about you — workouts, sets, measurements, plans, personal records and gear. All in plain CSV files that Excel, Numbers, or any spreadsheet tool can open. | Deltiq'in seninle ilgili sakladığı her veriyi içeren bir ZIP arşivi oluşturur — antrenmanlar, setler, ölçümler, planlar, kişisel rekorlar ve ekipman. Hepsi Excel, Numbers veya herhangi bir tablo aracının açabileceği basit CSV dosyaları olarak. |
+| `settings.dataExport.intro.footer` | Deine Daten verlassen dein Gerät erst, wenn du das Archiv selbst teilst. Der Export läuft vollständig auf diesem iPhone. | Your data never leaves your device unless you share the archive yourself. The export happens entirely on this iPhone. | Arşivi sen kendin paylaşmadıkça verilerin cihazından ayrılmaz. Dışa aktarma tamamen bu iPhone'da gerçekleşir. |
+| `settings.dataExport.intro.header` | Was das macht | What this does | Bu ne yapar |
+| `settings.dataExport.title` | Daten-Export | Data Export | Veri Dışa Aktarımı |
 | `settings.health.connect` | Verbinden | Connect | Bağla |
 | `settings.health.denied` | Berechtigung verweigert | Permission denied | İzin reddedildi |
 | `settings.health.footer` | Bei aktivierter Verbindung wird im Messwerte-Formular das letzte Waagen-Gewicht vorausgefüllt. Beim Speichern werden Gewicht, KFA und Magere Masse zurück nach Apple Health geschrieben. | When connected, the measurement form prefills your last scale weight. Saving writes weight, body fat %, and lean mass back to Apple Health. | Bağlıyken ölçüm formu son tartı kilonu önceden doldurur. Kaydetme; kilo, yağ oranı ve yağsız kütleyi Apple Health'e yazar. |
@@ -1293,6 +1310,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.preferences.units.imperial` | Imperial | Imperial | İmperyal |
 | `settings.preferences.units.label` | Einheiten | Units | Birimler |
 | `settings.preferences.units.metric` | Metrisch | Metric | Metrik |
+| `settings.privacy.dataExport` | Daten exportieren (CSV) | Export data (CSV) | Verileri dışa aktar (CSV) |
+| `settings.privacy.footer` | Exportiere alle deine Trainings- und Profildaten als ZIP-Archiv mit CSV-Dateien. Praktisch für Backups, Gerätewechsel oder einfach um deine Daten in der Hand zu haben. | Export all your training and profile data as a ZIP archive of CSV files. Useful for backups, switching devices, or simply having your data. | Tüm antrenman ve profil verilerini CSV dosyalarından oluşan bir ZIP arşivi olarak dışa aktar. Yedekleme, cihaz değişikliği veya verilerine sahip olmak için kullanışlıdır. |
 | `settings.profile.goal` | Ziel %@ | Goal %@ | Hedef %@ |
 | `settings.profile.missing` | Kein Profil vorhanden — App neu starten oder zurücksetzen. | No profile — restart or reset the app. | Profil yok — uygulamayı yeniden başlat ya da sıfırla. |
 | `settings.profile.years` | %lld Jahre | %lld years | %lld yaş |
@@ -1310,6 +1329,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.section.about` | Über | About | Hakkında |
 | `settings.section.danger_zone` | Daten-Management | Data Management | Veri Yönetimi |
 | `settings.section.preferences` | Präferenzen | Preferences | Tercihler |
+| `settings.section.privacy` | Datenschutz | Privacy | Gizlilik |
 | `settings.section.profile_goals` | Profil & Ziele | Profile & Goals | Profil & Hedefler |
 | `settings.timer.footer` | Wird beim Ablauf des Pausen-Timers ausgelöst. Vibrations-Toggle hat auf iPads keine Wirkung. 'PR-Feiern' steuert Save-Screen-Popups, Live-Activity-Headline und lokale Benachrichtigungen — die Bestleistungen werden trotzdem im Trophy-Room gespeichert. | Fires when the rest timer ends. Vibration has no effect on iPads. 'Celebrate PRs' drives save-screen popups, Live Activity headlines, and local notifications — PRs are saved to the Trophy Room either way. | Mola zamanlayıcısı bittiğinde tetiklenir. Titreşim iPad'lerde etkisizdir. 'PR'ı Kutla' kaydetme ekranı pencerelerini, Live Activity başlıklarını ve yerel bildirimleri yönlendirir — PR'lar her durumda Kupa Odası'na kaydedilir. |
 | `settings.timer.haptics` | Vibrieren | Vibrate | Titret |

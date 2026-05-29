@@ -73,6 +73,7 @@ public struct SettingsView: View {
                 workoutBehaviorSection
                 remindersSection
                 healthKitSection
+                privacySection
                 aboutSection
                 dangerZoneSection
             }
@@ -552,6 +553,38 @@ public struct SettingsView: View {
             }
         }
         #endif
+    }
+
+    // DEL-173: Privacy + Datenportabilität. Nutzer kann seine kompletten
+    // Trainings-/Profil-/Mess-Daten als CSV-in-ZIP exportieren — erfüllt
+    // DSGVO Art. 20 (Right to Data Portability). Re-Import folgt in einem
+    // Folge-Ticket (Phase 2).
+    private var privacySection: some View {
+        DeltiqFormSection(
+            header: String(localized: "settings.section.privacy", bundle: .module)
+        ) {
+            DeltiqFormFullRow {
+                NavigationLink {
+                    DataExportView()
+                } label: {
+                    HStack {
+                        Label {
+                            Text("settings.privacy.dataExport", bundle: .module)
+                        } icon: {
+                            Image(systemName: "square.and.arrow.up.on.square")
+                        }
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        } footer: {
+            Text("settings.privacy.footer", bundle: .module)
+        }
     }
 
     private var aboutSection: some View {

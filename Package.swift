@@ -15,6 +15,13 @@ let package = Package(
         .library(name: "FitnessAppActivities", targets: ["FitnessAppActivities"]),
         .library(name: "FitnessAppUI",         targets: ["FitnessAppUI"])
     ],
+    // DEL-173: ZIPFoundation für on-device ZIP-Erstellung beim CSV-Export.
+    // Pure-Swift, MIT-Lizenz, weit verbreitet — wird nur von FitnessAppData
+    // referenziert (kein UI-Layer-Bloat). Version-Range hält uns auf 0.9.x
+    // (aktuell stabile Linie), 1.0 kann später als bewusster Bump folgen.
+    dependencies: [
+        .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.19")
+    ],
     targets: [
         .target(
             name: "FitnessAppCore",
@@ -22,7 +29,10 @@ let package = Package(
         ),
         .target(
             name: "FitnessAppData",
-            dependencies: ["FitnessAppCore"],
+            dependencies: [
+                "FitnessAppCore",
+                .product(name: "ZIPFoundation", package: "ZIPFoundation")
+            ],
             path: "Sources/FitnessAppData"
         ),
         .target(

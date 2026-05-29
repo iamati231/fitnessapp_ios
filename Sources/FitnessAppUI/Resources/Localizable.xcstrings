@@ -143,113 +143,323 @@
     "customExercise.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Neue Übung" } },
-        "en": { "stringUnit": { "state": "translated", "value": "New exercise" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Yeni hareket" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Übung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New exercise"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeni hareket"
+          }
+        }
       }
     },
     "customExercise.add": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Hinzufügen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Add" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Ekle" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinzufügen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekle"
+          }
+        }
       }
     },
     "customExercise.section.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Name" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Name" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Ad" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ad"
+          }
+        }
       }
     },
     "customExercise.section.metadata": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Eigenschaften" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Attributes" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Özellikler" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eigenschaften"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attributes"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Özellikler"
+          }
+        }
       }
     },
     "customExercise.section.metadataFooter": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Diese Angaben steuern die Tagesanalyse (Muskel-Fokus, Belastung) und die Progression." } },
-        "en": { "stringUnit": { "state": "translated", "value": "These attributes drive the day analysis (muscle focus, load) and progression." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bu bilgiler günlük analizi (kas odağı, yük) ve ilerlemeyi belirler." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Angaben steuern die Tagesanalyse (Muskel-Fokus, Belastung) und die Progression."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These attributes drive the day analysis (muscle focus, load) and progression."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu bilgiler günlük analizi (kas odağı, yük) ve ilerlemeyi belirler."
+          }
+        }
       }
     },
     "customExercise.field.muscle": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Zielmuskel" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Target muscle" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Hedef kas" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zielmuskel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Target muscle"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hedef kas"
+          }
+        }
       }
     },
     "customExercise.field.equipment": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Equipment" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Equipment" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Ekipman" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipman"
+          }
+        }
       }
     },
     "customExercise.field.compound": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Grundübung (Compound)" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Compound exercise" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bileşik hareket" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grundübung (Compound)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compound exercise"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bileşik hareket"
+          }
+        }
       }
     },
     "common.yes": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Ja" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Yes" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Evet" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ja"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yes"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Evet"
+          }
+        }
       }
     },
     "common.no": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Nein" } },
-        "en": { "stringUnit": { "state": "translated", "value": "No" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Hayır" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nein"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hayır"
+          }
+        }
       }
     },
     "library.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Übungsbibliothek" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Exercise Library" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Hareket Kütüphanesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übungsbibliothek"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exercise Library"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hareket Kütüphanesi"
+          }
+        }
       }
     },
     "library.searchPlaceholder": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Übung suchen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Search exercise" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Hareket ara" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übung suchen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search exercise"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hareket ara"
+          }
+        }
       }
     },
     "library.newExercise": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Neue Übung" } },
-        "en": { "stringUnit": { "state": "translated", "value": "New exercise" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Yeni hareket" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Übung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New exercise"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeni hareket"
+          }
+        }
       }
     },
     "library.readOnlyFooter": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "System-Übung — die Basis-Vorlagen der App sind nicht bearbeitbar." } },
-        "en": { "stringUnit": { "state": "translated", "value": "System exercise — the app's base templates can't be edited." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Sistem hareketi — uygulamanın temel şablonları düzenlenemez." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System-Übung — die Basis-Vorlagen der App sind nicht bearbeitbar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System exercise — the app's base templates can't be edited."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sistem hareketi — uygulamanın temel şablonları düzenlenemez."
+          }
+        }
       }
     },
     "common.cancel": {
@@ -462,49 +672,139 @@
     "cardioEquipment.fieldLabel": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Equipment" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Equipment" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Ekipman" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipman"
+          }
+        }
       }
     },
     "cardioEquipment.none": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Kein Gerät" } },
-        "en": { "stringUnit": { "state": "translated", "value": "No equipment" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Cihaz yok" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Gerät"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No equipment"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cihaz yok"
+          }
+        }
       }
     },
     "cardioEquipment.treadmill": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Laufband" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Treadmill" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Koşu Bandı" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laufband"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Treadmill"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu Bandı"
+          }
+        }
       }
     },
     "cardioEquipment.bikeOutdoor": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Fahrrad (draußen)" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Bike (outdoor)" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bisiklet (dışarıda)" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fahrrad (draußen)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bike (outdoor)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bisiklet (dışarıda)"
+          }
+        }
       }
     },
     "cardioEquipment.ergometer": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Ergometer (Heimtrainer)" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Ergometer" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kondisyon bisikleti" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ergometer (Heimtrainer)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ergometer"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kondisyon bisikleti"
+          }
+        }
       }
     },
     "cardioEquipment.rowingMachine": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Rudergerät" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Rowing machine" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kürek makinesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rudergerät"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rowing machine"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kürek makinesi"
+          }
+        }
       }
     },
     "equipment.bodyweight": {
@@ -1844,497 +2144,1427 @@
     "coaching.soft.postCardio.motivating": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Mega Lauf gestern! Wenn die Beine heute noch etwas schwer sind, ist ein leichter Oberkörper-Fokus oder Mobility völlig okay. Bleib dran!" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Awesome run yesterday! If your legs feel heavy today, an upper-body or mobility focus is totally fine. Keep it up!" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Dün harika bir koşu yaptın! Bacakların bugün ağırsa üst vücut veya mobiliteye odaklan, sorun değil. Devam et!" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mega Lauf gestern! Wenn die Beine heute noch etwas schwer sind, ist ein leichter Oberkörper-Fokus oder Mobility völlig okay. Bleib dran!"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Awesome run yesterday! If your legs feel heavy today, an upper-body or mobility focus is totally fine. Keep it up!"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün harika bir koşu yaptın! Bacakların bugün ağırsa üst vücut veya mobiliteye odaklan, sorun değil. Devam et!"
+          }
+        }
       }
     },
     "coaching.soft.postCardio.analytical": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Erhöhtes Cardio-Volumen gestern registriert. Behalte die systemische Erholung im Auge und meide heute schwere Bein-Isolationsübungen." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Elevated cardio volume detected yesterday. Watch systemic recovery and avoid heavy leg isolation today." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Dün yüksek kardiyo hacmi kaydedildi. Sistemik toparlanmaya dikkat et ve bugün ağır bacak izolasyon hareketlerinden kaçın." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erhöhtes Cardio-Volumen gestern registriert. Behalte die systemische Erholung im Auge und meide heute schwere Bein-Isolationsübungen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elevated cardio volume detected yesterday. Watch systemic recovery and avoid heavy leg isolation today."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün yüksek kardiyo hacmi kaydedildi. Sistemik toparlanmaya dikkat et ve bugün ağır bacak izolasyon hareketlerinden kaçın."
+          }
+        }
       }
     },
     "coaching.soft.postCardio.strict": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Die Kilometer von gestern sind abgehakt. Ruh dich nicht darauf aus — fokussiere dich auf die heutige Einheit. Keine halben Sachen." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Yesterday's kilometers are done. Don't coast on it — focus on today's session. No half-measures." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Dünkü kilometreler tamam. Üstüne yatma — bugünkü antrenmana odaklan. Yarım iş yok." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Kilometer von gestern sind abgehakt. Ruh dich nicht darauf aus — fokussiere dich auf die heutige Einheit. Keine halben Sachen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday's kilometers are done. Don't coast on it — focus on today's session. No half-measures."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dünkü kilometreler tamam. Üstüne yatma — bugünkü antrenmana odaklan. Yarım iş yok."
+          }
+        }
       }
     },
     "coaching.soft.postVolume.motivating": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Wahnsinn, was du gestern bewegt hast! Gönn deinem Körper heute ausreichend Protein und guten Schlaf, damit die Muskeln wachsen können." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Insane volume yesterday! Give your body enough protein and good sleep today so the muscles can grow." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Dün muazzam bir hacim kaldırdın! Bugün vücuduna yeterli protein ve iyi uyku ver, kasların büyüsün." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wahnsinn, was du gestern bewegt hast! Gönn deinem Körper heute ausreichend Protein und guten Schlaf, damit die Muskeln wachsen können."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insane volume yesterday! Give your body enough protein and good sleep today so the muscles can grow."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün muazzam bir hacim kaldırdın! Bugün vücuduna yeterli protein ve iyi uyku ver, kasların büyüsün."
+          }
+        }
       }
     },
     "coaching.soft.postVolume.analytical": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Lokale und systemische Last vom gestrigen Training ist hoch. Muskelproteinsynthese ist aktiv. Heute moderates Training oder aktive Erholung empfohlen." } },
-        "en": { "stringUnit": { "state": "translated", "value": "High local and systemic load from yesterday's session. Muscle protein synthesis is active. Moderate training or active recovery recommended today." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Dünkü antrenmandan lokal ve sistemik yük yüksek. Kas protein sentezi aktif. Bugün orta yoğunlukta antrenman veya aktif toparlanma öneriliyor." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lokale und systemische Last vom gestrigen Training ist hoch. Muskelproteinsynthese ist aktiv. Heute moderates Training oder aktive Erholung empfohlen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High local and systemic load from yesterday's session. Muscle protein synthesis is active. Moderate training or active recovery recommended today."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dünkü antrenmandan lokal ve sistemik yük yüksek. Kas protein sentezi aktif. Bugün orta yoğunlukta antrenman veya aktif toparlanma öneriliyor."
+          }
+        }
       }
     },
     "coaching.soft.postVolume.strict": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Gutes Volumen gestern. Aber Muskeln wachsen nur, wenn du jetzt auch bei der Ernährung diszipliniert bleibst. Mach deine Hausaufgaben." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Good volume yesterday. But muscles only grow if you stay disciplined with nutrition too. Do your homework." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Dün iyi hacim. Ama kaslar ancak beslenmede de disiplinli kalırsan büyür. Ödevini yap." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gutes Volumen gestern. Aber Muskeln wachsen nur, wenn du jetzt auch bei der Ernährung diszipliniert bleibst. Mach deine Hausaufgaben."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Good volume yesterday. But muscles only grow if you stay disciplined with nutrition too. Do your homework."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün iyi hacim. Ama kaslar ancak beslenmede de disiplinli kalırsan büyür. Ödevini yap."
+          }
+        }
       }
     },
     "coaching.soft.streak.motivating": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Toller Rhythmus aktuell! Du bist in einer fantastischen Konsistenz-Phase. Vergiss aber nicht, deinem Körper auch mal einen Ruhetag zu gönnen." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Great rhythm right now! You're on a solid consistency streak. Don't forget to give your body a rest day, though." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Şu an harika bir ritimdesin! Müthiş bir tutarlılık serisindesin. Vücuduna ara sıra dinlenme günü vermeyi unutma." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toller Rhythmus aktuell! Du bist in einer fantastischen Konsistenz-Phase. Vergiss aber nicht, deinem Körper auch mal einen Ruhetag zu gönnen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Great rhythm right now! You're on a solid consistency streak. Don't forget to give your body a rest day, though."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şu an harika bir ritimdesin! Müthiş bir tutarlılık serisindesin. Vücuduna ara sıra dinlenme günü vermeyi unutma."
+          }
+        }
       }
     },
     "coaching.soft.streak.analytical": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Trainingsfrequenz hoch in den letzten 7 Tagen. Kumulierte Ermüdung steigt leicht an. Erwäge zeitnah einen Deload- oder Ruhetag." } },
-        "en": { "stringUnit": { "state": "translated", "value": "High training frequency over the last 7 days. Cumulative fatigue is rising. Consider a deload or rest day soon." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Son 7 günde antrenman sıklığı yüksek. Birikmiş yorgunluk hafifçe artıyor. Yakında bir deload veya dinlenme günü düşün." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsfrequenz hoch in den letzten 7 Tagen. Kumulierte Ermüdung steigt leicht an. Erwäge zeitnah einen Deload- oder Ruhetag."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High training frequency over the last 7 days. Cumulative fatigue is rising. Consider a deload or rest day soon."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son 7 günde antrenman sıklığı yüksek. Birikmiş yorgunluk hafifçe artıyor. Yakında bir deload veya dinlenme günü düşün."
+          }
+        }
       }
     },
     "coaching.soft.streak.strict": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Mehrere Tage durchgezogen. Gut. Aber Routine ist Pflicht, kein Bonus. Lass jetzt nicht nach." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Several days in a row. Good. But routine is duty, not bonus. Don't slack now." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Üst üste birkaç gün. İyi. Ama rutin bir görev, bonus değil. Şimdi gevşeme." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mehrere Tage durchgezogen. Gut. Aber Routine ist Pflicht, kein Bonus. Lass jetzt nicht nach."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Several days in a row. Good. But routine is duty, not bonus. Don't slack now."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üst üste birkaç gün. İyi. Ama rutin bir görev, bonus değil. Şimdi gevşeme."
+          }
+        }
       }
     },
     "coaching.soft.planPreview.motivating": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Heute steht ein Training an. Mach dich gut warm und gib alles für die schweren Sätze!" } },
-        "en": { "stringUnit": { "state": "translated", "value": "A workout's on the schedule today. Warm up well and give it your all on the heavy sets!" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bugün bir antrenman var. İyi ısın ve ağır setlerde her şeyini ver!" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute steht ein Training an. Mach dich gut warm und gib alles für die schweren Sätze!"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A workout's on the schedule today. Warm up well and give it your all on the heavy sets!"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün bir antrenman var. İyi ısın ve ağır setlerde her şeyini ver!"
+          }
+        }
       }
     },
     "coaching.soft.planPreview.analytical": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Plan-Eintrag für heute steht an. Optimaler Zeitpunkt für ein Mobility-Warmup vor den Compound-Lifts." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Today's plan entry is up. Optimal time for a mobility warmup before the compound lifts." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bugün için plan girdisi mevcut. Bileşik hareketlerden önce mobilite ısınması için ideal zaman." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan-Eintrag für heute steht an. Optimaler Zeitpunkt für ein Mobility-Warmup vor den Compound-Lifts."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's plan entry is up. Optimal time for a mobility warmup before the compound lifts."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün için plan girdisi mevcut. Bileşik hareketlerden önce mobilite ısınması için ideal zaman."
+          }
+        }
       }
     },
     "coaching.soft.planPreview.strict": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Heute ist Trainingstag. Kein Aufschub. Punkt." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Today is a training day. No postponing. Period." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bugün antrenman günü. Erteleme yok. Nokta." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute ist Trainingstag. Kein Aufschub. Punkt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today is a training day. No postponing. Period."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün antrenman günü. Erteleme yok. Nokta."
+          }
+        }
       }
     },
     "coaching.soft.reEntry.motivating": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Ein paar Tage Pause tun gut. Lust, heute mit einer leichten Einheit wieder reinzukommen?" } },
-        "en": { "stringUnit": { "state": "translated", "value": "A few rest days do you good. Up for easing back in with a light session today?" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Birkaç gün ara iyi geldi. Bugün hafif bir antrenmanla geri dönmeye ne dersin?" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein paar Tage Pause tun gut. Lust, heute mit einer leichten Einheit wieder reinzukommen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A few rest days do you good. Up for easing back in with a light session today?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Birkaç gün ara iyi geldi. Bugün hafif bir antrenmanla geri dönmeye ne dersin?"
+          }
+        }
       }
     },
     "coaching.soft.reEntry.analytical": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Mehrere Tage ohne Training. Detraining-Effekte sind noch minimal. Empfehlung: leichte Wiedereinstiegs-Einheit mit ~70 % der gewohnten Last." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Several days off training. Detraining effects still minimal. Recommendation: a light re-entry session at ~70% of your usual load." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Birkaç gündür antrenman yok. Detraining etkisi henüz minimal. Öneri: olağan yükün ~%70'i ile hafif bir geri dönüş seansı." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mehrere Tage ohne Training. Detraining-Effekte sind noch minimal. Empfehlung: leichte Wiedereinstiegs-Einheit mit ~70 % der gewohnten Last."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Several days off training. Detraining effects still minimal. Recommendation: a light re-entry session at ~70% of your usual load."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Birkaç gündür antrenman yok. Detraining etkisi henüz minimal. Öneri: olağan yükün ~%70'i ile hafif bir geri dönüş seansı."
+          }
+        }
       }
     },
     "coaching.soft.reEntry.strict": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Lange genug pausiert. Jetzt zurück in die Routine. Heute starten." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Long enough off. Back to the routine. Start today." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Yeterince ara verdin. Şimdi rutine geri dön. Bugün başla." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lange genug pausiert. Jetzt zurück in die Routine. Heute starten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Long enough off. Back to the routine. Start today."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeterince ara verdin. Şimdi rutine geri dön. Bugün başla."
+          }
+        }
       }
     },
     "coaching.edu.analytical.1": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Hypertrophie braucht 10–20 Sätze pro Muskelgruppe pro Woche — mehr Sätze ≠ mehr Wachstum jenseits dieser Schwelle." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Hypertrophy needs 10–20 sets per muscle group per week. More sets ≠ more growth beyond that threshold." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Hipertrofi haftada kas grubu başına 10–20 set gerektirir. Eşik aşıldıktan sonra daha fazla set ≠ daha fazla büyüme." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hypertrophie braucht 10–20 Sätze pro Muskelgruppe pro Woche — mehr Sätze ≠ mehr Wachstum jenseits dieser Schwelle."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hypertrophy needs 10–20 sets per muscle group per week. More sets ≠ more growth beyond that threshold."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hipertrofi haftada kas grubu başına 10–20 set gerektirir. Eşik aşıldıktan sonra daha fazla set ≠ daha fazla büyüme."
+          }
+        }
       }
     },
     "coaching.edu.analytical.2": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Protein-Sweet-Spot: 1,6–2,2 g pro kg Körpergewicht pro Tag. Mehr bringt im Studienschnitt keinen zusätzlichen Effekt." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Protein sweet spot: 1.6–2.2 g per kg of bodyweight per day. More yields no extra effect on average." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Protein optimum aralığı: günde 1,6–2,2 g/kg vücut ağırlığı. Fazlası ortalamada ekstra etki yapmaz." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protein-Sweet-Spot: 1,6–2,2 g pro kg Körpergewicht pro Tag. Mehr bringt im Studienschnitt keinen zusätzlichen Effekt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protein sweet spot: 1.6–2.2 g per kg of bodyweight per day. More yields no extra effect on average."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protein optimum aralığı: günde 1,6–2,2 g/kg vücut ağırlığı. Fazlası ortalamada ekstra etki yapmaz."
+          }
+        }
       }
     },
     "coaching.edu.analytical.3": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Schlaf ist Trainingsfaktor #1. Unter 6 h sinken Kraft und Hypertrophie messbar — vor Volumen-Erhöhung optimieren." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Sleep is training factor #1. Under 6 hours, strength and hypertrophy measurably decline — fix it before raising volume." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Uyku, antrenman faktörü #1. 6 saatin altında kuvvet ve hipertrofi ölçülebilir şekilde düşer — hacmi artırmadan önce uykuyu düzelt." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schlaf ist Trainingsfaktor #1. Unter 6 h sinken Kraft und Hypertrophie messbar — vor Volumen-Erhöhung optimieren."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep is training factor #1. Under 6 hours, strength and hypertrophy measurably decline — fix it before raising volume."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uyku, antrenman faktörü #1. 6 saatin altında kuvvet ve hipertrofi ölçülebilir şekilde düşer — hacmi artırmadan önce uykuyu düzelt."
+          }
+        }
       }
     },
     "coaching.edu.analytical.4": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Vollständige ROM (Bewegungsumfang) baut mehr Muskelmasse auf als Teil-Wiederholungen — auch bei gleichem Volumen." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Full range of motion builds more muscle than partials — even at matched volume." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Tam hareket açıklığı (ROM), eşit hacimde bile kısmi tekrarlardan daha fazla kas inşa eder." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vollständige ROM (Bewegungsumfang) baut mehr Muskelmasse auf als Teil-Wiederholungen — auch bei gleichem Volumen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full range of motion builds more muscle than partials — even at matched volume."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tam hareket açıklığı (ROM), eşit hacimde bile kısmi tekrarlardan daha fazla kas inşa eder."
+          }
+        }
       }
     },
     "coaching.edu.analytical.5": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Progressive Overload heißt: pro Woche eine Variable steigern — Gewicht, Reps, Sätze ODER ROM. Nicht alles gleichzeitig." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Progressive overload means raising one variable per week: weight, reps, sets, OR ROM — not all at once." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Progresif aşırı yükleme: haftada bir değişkeni artır — ağırlık, tekrar, set ya da ROM. Hepsini birden değil." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progressive Overload heißt: pro Woche eine Variable steigern — Gewicht, Reps, Sätze ODER ROM. Nicht alles gleichzeitig."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progressive overload means raising one variable per week: weight, reps, sets, OR ROM — not all at once."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progresif aşırı yükleme: haftada bir değişkeni artır — ağırlık, tekrar, set ya da ROM. Hepsini birden değil."
+          }
+        }
       }
     },
     "coaching.edu.analytical.6": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Cardio direkt nach Krafttraining beeinträchtigt Hypertrophie weniger als davor — wenn beides am selben Tag muss." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Cardio after lifting impairs hypertrophy less than cardio before — when both fall on the same day." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kuvvet sonrası kardiyo, kuvvet öncesi kardiyodan hipertrofiyi daha az bozar — ikisi aynı günse." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio direkt nach Krafttraining beeinträchtigt Hypertrophie weniger als davor — wenn beides am selben Tag muss."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio after lifting impairs hypertrophy less than cardio before — when both fall on the same day."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuvvet sonrası kardiyo, kuvvet öncesi kardiyodan hipertrofiyi daha az bozar — ikisi aynı günse."
+          }
+        }
       }
     },
     "coaching.edu.analytical.7": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Kreatin-Monohydrat: 3–5 g/Tag, kein Loading nötig. Stärkster Einzelnachweis aller Supplements." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Creatine monohydrate: 3–5 g/day, no loading needed. The strongest single-study evidence in all supplements." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kreatin monohidrat: günde 3–5 g, yüklemeye gerek yok. Tüm takviyeler içinde en güçlü tek-çalışma kanıtı." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kreatin-Monohydrat: 3–5 g/Tag, kein Loading nötig. Stärkster Einzelnachweis aller Supplements."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creatine monohydrate: 3–5 g/day, no loading needed. The strongest single-study evidence in all supplements."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kreatin monohidrat: günde 3–5 g, yüklemeye gerek yok. Tüm takviyeler içinde en güçlü tek-çalışma kanıtı."
+          }
+        }
       }
     },
     "coaching.edu.analytical.8": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "RIR-Skala: 0 = Versagen, 3+ = noch viele Reps drin. Hypertrophie passiert vor allem an den letzten 5 Reps vor dem Versagen." } },
-        "en": { "stringUnit": { "state": "translated", "value": "RIR scale: 0 = failure, 3+ = many reps left. Hypertrophy happens mostly in the last 5 reps before failure." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "RIR ölçeği: 0 = yetmezlik, 3+ = hâlâ tekrar var. Hipertrofi çoğunlukla yetmezlikten önceki son 5 tekrarda olur." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RIR-Skala: 0 = Versagen, 3+ = noch viele Reps drin. Hypertrophie passiert vor allem an den letzten 5 Reps vor dem Versagen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RIR scale: 0 = failure, 3+ = many reps left. Hypertrophy happens mostly in the last 5 reps before failure."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RIR ölçeği: 0 = yetmezlik, 3+ = hâlâ tekrar var. Hipertrofi çoğunlukla yetmezlikten önceki son 5 tekrarda olur."
+          }
+        }
       }
     },
     "coaching.edu.analytical.9": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Deload-Wochen alle 4–8 Wochen reduzieren ZNS-Müdigkeit. Volumen halbieren, Intensität halten." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Deload weeks every 4–8 weeks reduce CNS fatigue. Halve volume, keep intensity." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Her 4–8 haftada bir deload haftası ZNS yorgunluğunu azaltır. Hacmi yarıya indir, yoğunluğu koru." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload-Wochen alle 4–8 Wochen reduzieren ZNS-Müdigkeit. Volumen halbieren, Intensität halten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload weeks every 4–8 weeks reduce CNS fatigue. Halve volume, keep intensity."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Her 4–8 haftada bir deload haftası ZNS yorgunluğunu azaltır. Hacmi yarıya indir, yoğunluğu koru."
+          }
+        }
       }
     },
     "coaching.edu.analytical.10": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Eccentric-Phase (Ablassen) baut mehr Muskel auf als Concentric. Ziel: 2–3 Sekunden kontrolliert ablassen." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Eccentrics (lowering) build more muscle than concentrics. Aim for 2–3 controlled seconds down." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Eksentrik (indirme) konsentrikten daha fazla kas inşa eder. Hedef: 2–3 saniye kontrollü iniş." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eccentric-Phase (Ablassen) baut mehr Muskel auf als Concentric. Ziel: 2–3 Sekunden kontrolliert ablassen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eccentrics (lowering) build more muscle than concentrics. Aim for 2–3 controlled seconds down."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eksentrik (indirme) konsentrikten daha fazla kas inşa eder. Hedef: 2–3 saniye kontrollü iniş."
+          }
+        }
       }
     },
     "coaching.edu.analytical.11": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Compound-Lifts liefern hohen ROI: Squat, Bench, Deadlift, OHP, Row decken ~80 % der Hauptmuskeln ab." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Compound lifts deliver high ROI: squat, bench, deadlift, OHP, row cover ~80% of the main muscles." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bileşik hareketler yüksek ROI: squat, bench, deadlift, OHP, row ana kasların ~%80'ini kapsar." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compound-Lifts liefern hohen ROI: Squat, Bench, Deadlift, OHP, Row decken ~80 % der Hauptmuskeln ab."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compound lifts deliver high ROI: squat, bench, deadlift, OHP, row cover ~80% of the main muscles."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bileşik hareketler yüksek ROI: squat, bench, deadlift, OHP, row ana kasların ~%80'ini kapsar."
+          }
+        }
       }
     },
     "coaching.edu.analytical.12": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Trainingsintensität > 65 % 1RM ist nötig für Kraftadaption. Darunter trainierst du primär Ausdauer." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Training intensity > 65% 1RM is needed for strength adaptation. Below that, you mostly train endurance." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kuvvet adaptasyonu için yoğunluk > %65 1RM gerekir. Altında çoğunlukla dayanıklılık çalışırsın." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsintensität > 65 % 1RM ist nötig für Kraftadaption. Darunter trainierst du primär Ausdauer."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training intensity > 65% 1RM is needed for strength adaptation. Below that, you mostly train endurance."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuvvet adaptasyonu için yoğunluk > %65 1RM gerekir. Altında çoğunlukla dayanıklılık çalışırsın."
+          }
+        }
       }
     },
     "coaching.edu.analytical.13": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Pause zwischen Sätzen: 2–3 min für Compound-Lifts, 60–90 s für Isolation. Kürzere Pausen ≠ besseres Ergebnis." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Rest between sets: 2–3 min for compounds, 60–90 s for isolation. Shorter rest ≠ better results." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Setler arası dinlenme: bileşik için 2–3 dk, izolasyon için 60–90 sn. Kısa dinlenme ≠ daha iyi sonuç." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause zwischen Sätzen: 2–3 min für Compound-Lifts, 60–90 s für Isolation. Kürzere Pausen ≠ besseres Ergebnis."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest between sets: 2–3 min for compounds, 60–90 s for isolation. Shorter rest ≠ better results."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setler arası dinlenme: bileşik için 2–3 dk, izolasyon için 60–90 sn. Kısa dinlenme ≠ daha iyi sonuç."
+          }
+        }
       }
     },
     "coaching.edu.analytical.14": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Aktive Erholung (leichtes Cardio, Mobility) beschleunigt DOMS-Abbau messbar gegenüber kompletter Ruhe." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Active recovery (light cardio, mobility) measurably accelerates DOMS clearance versus complete rest." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Aktif toparlanma (hafif kardiyo, mobilite) DOMS'u tam dinlenmeye göre ölçülebilir şekilde hızlandırır." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktive Erholung (leichtes Cardio, Mobility) beschleunigt DOMS-Abbau messbar gegenüber kompletter Ruhe."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active recovery (light cardio, mobility) measurably accelerates DOMS clearance versus complete rest."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktif toparlanma (hafif kardiyo, mobilite) DOMS'u tam dinlenmeye göre ölçülebilir şekilde hızlandırır."
+          }
+        }
       }
     },
     "coaching.edu.analytical.15": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Trainingsalter zählt: Anfänger gewinnen 1–2 kg Muskel/Monat, Fortgeschrittene 0,2–0,5 kg/Monat. Realistisch bleiben." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Training age matters: beginners gain 1–2 kg muscle/month, advanced 0.2–0.5 kg/month. Stay realistic." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Antrenman yaşı önemli: yeni başlayanlar 1–2 kg kas/ay, ileri seviye 0,2–0,5 kg/ay kazanır. Gerçekçi ol." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsalter zählt: Anfänger gewinnen 1–2 kg Muskel/Monat, Fortgeschrittene 0,2–0,5 kg/Monat. Realistisch bleiben."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training age matters: beginners gain 1–2 kg muscle/month, advanced 0.2–0.5 kg/month. Stay realistic."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman yaşı önemli: yeni başlayanlar 1–2 kg kas/ay, ileri seviye 0,2–0,5 kg/ay kazanır. Gerçekçi ol."
+          }
+        }
       }
     },
     "coaching.edu.motivating.1": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Du musst nicht motiviert sein — du musst nur anfangen. Motivation kommt während der ersten 5 Minuten." } },
-        "en": { "stringUnit": { "state": "translated", "value": "You don't need motivation — you need to start. Motivation kicks in during the first 5 minutes." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Motive olmana gerek yok — sadece başlamana gerek var. Motivasyon ilk 5 dakikada gelir." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du musst nicht motiviert sein — du musst nur anfangen. Motivation kommt während der ersten 5 Minuten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You don't need motivation — you need to start. Motivation kicks in during the first 5 minutes."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motive olmana gerek yok — sadece başlamana gerek var. Motivasyon ilk 5 dakikada gelir."
+          }
+        }
       }
     },
     "coaching.edu.motivating.2": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Konsistenz schlägt Intensität. Drei mittelmäßige Wochen sind mehr wert als eine perfekte und zwei verlorene." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Consistency beats intensity. Three average weeks beat one perfect plus two lost ones." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Tutarlılık yoğunluğu yener. Üç ortalama hafta, bir mükemmel ve iki kayıp haftadan değerlidir." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konsistenz schlägt Intensität. Drei mittelmäßige Wochen sind mehr wert als eine perfekte und zwei verlorene."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consistency beats intensity. Three average weeks beat one perfect plus two lost ones."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tutarlılık yoğunluğu yener. Üç ortalama hafta, bir mükemmel ve iki kayıp haftadan değerlidir."
+          }
+        }
       }
     },
     "coaching.edu.motivating.3": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Jede absolvierte Einheit ist eine Stimme für deine Identität als jemand, der trainiert. Stimmen summieren sich." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Every completed session is a vote for your identity as someone who trains. Votes add up." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Her antrenman, 'ben antrenman yapan biriyim' kimliğine atılmış bir oydur. Oylar birikir." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jede absolvierte Einheit ist eine Stimme für deine Identität als jemand, der trainiert. Stimmen summieren sich."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every completed session is a vote for your identity as someone who trains. Votes add up."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Her antrenman, 'ben antrenman yapan biriyim' kimliğine atılmış bir oydur. Oylar birikir."
+          }
+        }
       }
     },
     "coaching.edu.motivating.4": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Heute mies trainiert ist immer noch besser als heute nicht trainiert. Auftauchen ist die halbe Miete." } },
-        "en": { "stringUnit": { "state": "translated", "value": "A bad workout today still beats no workout today. Showing up is half the win." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bugün kötü antrenman, bugün hiç antrenman yapmamaktan iyidir. Gelmek savaşın yarısıdır." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute mies trainiert ist immer noch besser als heute nicht trainiert. Auftauchen ist die halbe Miete."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A bad workout today still beats no workout today. Showing up is half the win."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün kötü antrenman, bugün hiç antrenman yapmamaktan iyidir. Gelmek savaşın yarısıdır."
+          }
+        }
       }
     },
     "coaching.edu.motivating.5": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Vergleich tötet Freude. Du-von-gestern ist dein einziger fairer Maßstab." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Comparison kills joy. Yesterday-you is your only fair benchmark." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Karşılaştırma sevinci öldürür. Dünkü sen, tek adil ölçüt." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vergleich tötet Freude. Du-von-gestern ist dein einziger fairer Maßstab."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comparison kills joy. Yesterday-you is your only fair benchmark."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karşılaştırma sevinci öldürür. Dünkü sen, tek adil ölçüt."
+          }
+        }
       }
     },
     "coaching.edu.motivating.6": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Kleine Siege heute sind die Bausteine großer Veränderungen in 6 Monaten. Geduld ist Disziplin in Zeitlupe." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Small wins today are the building blocks of big change in 6 months. Patience is discipline in slow motion." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bugünkü küçük zaferler, 6 ay sonraki büyük değişimin yapı taşı. Sabır, ağır çekim disiplindir." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kleine Siege heute sind die Bausteine großer Veränderungen in 6 Monaten. Geduld ist Disziplin in Zeitlupe."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Small wins today are the building blocks of big change in 6 months. Patience is discipline in slow motion."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugünkü küçük zaferler, 6 ay sonraki büyük değişimin yapı taşı. Sabır, ağır çekim disiplindir."
+          }
+        }
       }
     },
     "coaching.edu.motivating.7": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Dein Körper kann mehr, als dein Kopf am Anfang glaubt. Vertrau dem Prozess." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Your body can do more than your head believes early on. Trust the process." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Vücudun, başlangıçta zihnin inandığından fazlasını yapabilir. Sürece güven." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Körper kann mehr, als dein Kopf am Anfang glaubt. Vertrau dem Prozess."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your body can do more than your head believes early on. Trust the process."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücudun, başlangıçta zihnin inandığından fazlasını yapabilir. Sürece güven."
+          }
+        }
       }
     },
     "coaching.edu.motivating.8": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Plateaus sind keine Niederlagen, sondern Pausen, in denen sich Anpassungen festigen." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Plateaus aren't defeats — they're pauses where adaptations consolidate." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Plato yenilgi değil — adaptasyonların oturduğu duraklamadır." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plateaus sind keine Niederlagen, sondern Pausen, in denen sich Anpassungen festigen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plateaus aren't defeats — they're pauses where adaptations consolidate."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plato yenilgi değil — adaptasyonların oturduğu duraklamadır."
+          }
+        }
       }
     },
     "coaching.edu.motivating.9": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Ein Workout dauert eine Stunde. Der Stolz danach hält 24." } },
-        "en": { "stringUnit": { "state": "translated", "value": "A workout lasts an hour. The pride afterwards lasts 24." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Antrenman bir saat sürer. Sonrasındaki gurur 24 saat." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Workout dauert eine Stunde. Der Stolz danach hält 24."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A workout lasts an hour. The pride afterwards lasts 24."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman bir saat sürer. Sonrasındaki gurur 24 saat."
+          }
+        }
       }
     },
     "coaching.edu.motivating.10": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Verwandle 'Ich muss' in 'Ich darf'. Trainieren ist ein Privileg, keine Pflicht." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Trade 'I have to' for 'I get to'. Training is a privilege, not a chore." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "'Yapmam lazım'ı 'Yapma fırsatım var'a dönüştür. Antrenman bir ayrıcalık." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verwandle 'Ich muss' in 'Ich darf'. Trainieren ist ein Privileg, keine Pflicht."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trade 'I have to' for 'I get to'. Training is a privilege, not a chore."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "'Yapmam lazım'ı 'Yapma fırsatım var'a dönüştür. Antrenman bir ayrıcalık."
+          }
+        }
       }
     },
     "coaching.edu.motivating.11": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Du baust nicht nur Muskeln — du baust mentale Resilienz für alles andere." } },
-        "en": { "stringUnit": { "state": "translated", "value": "You're not just building muscle — you're building mental resilience for everything else." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Sadece kas inşa etmiyorsun — diğer her şey için zihinsel dayanıklılık da inşa ediyorsun." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du baust nicht nur Muskeln — du baust mentale Resilienz für alles andere."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're not just building muscle — you're building mental resilience for everything else."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sadece kas inşa etmiyorsun — diğer her şey için zihinsel dayanıklılık da inşa ediyorsun."
+          }
+        }
       }
     },
     "coaching.edu.motivating.12": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Schlechte Tage gibt's. Schlechte Wochen auch. Schlechte Monate sind eine Entscheidung." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Bad days happen. Bad weeks too. Bad months are a decision." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kötü günler olur. Kötü haftalar da. Kötü aylar bir karardır." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schlechte Tage gibt's. Schlechte Wochen auch. Schlechte Monate sind eine Entscheidung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bad days happen. Bad weeks too. Bad months are a decision."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kötü günler olur. Kötü haftalar da. Kötü aylar bir karardır."
+          }
+        }
       }
     },
     "coaching.edu.motivating.13": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Belohnung > Bestrafung. Feier kleine Fortschritte — der Kopf will Wiederholungen, die sich gut anfühlen." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Reward > punishment. Celebrate small progress — the brain wants reps that feel good." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Ödül > ceza. Küçük ilerlemeyi kutla — beyin iyi hissettiren tekrarları ister." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belohnung > Bestrafung. Feier kleine Fortschritte — der Kopf will Wiederholungen, die sich gut anfühlen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reward > punishment. Celebrate small progress — the brain wants reps that feel good."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ödül > ceza. Küçük ilerlemeyi kutla — beyin iyi hissettiren tekrarları ister."
+          }
+        }
       }
     },
     "coaching.edu.motivating.14": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Niemand wurde stark, indem er wartete, bis er sich bereit fühlte. Bereit ist man am Ende, nicht am Anfang." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Nobody got strong by waiting until they felt ready. Ready arrives at the end, not the start." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kimse hazır hissedene kadar bekleyerek güçlü olmadı. Hazır olmak sonda gelir, başta değil." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niemand wurde stark, indem er wartete, bis er sich bereit fühlte. Bereit ist man am Ende, nicht am Anfang."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nobody got strong by waiting until they felt ready. Ready arrives at the end, not the start."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kimse hazır hissedene kadar bekleyerek güçlü olmadı. Hazır olmak sonda gelir, başta değil."
+          }
+        }
       }
     },
     "coaching.edu.motivating.15": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Du musst nicht alles richtig machen — du musst nur weitermachen. Perfektion ist der Feind von Progress." } },
-        "en": { "stringUnit": { "state": "translated", "value": "You don't have to do everything right — just keep going. Perfect is the enemy of progress." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Her şeyi doğru yapmak zorunda değilsin — sadece devam etmek zorundasın. Mükemmel, ilerlemenin düşmanı." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du musst nicht alles richtig machen — du musst nur weitermachen. Perfektion ist der Feind von Progress."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You don't have to do everything right — just keep going. Perfect is the enemy of progress."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Her şeyi doğru yapmak zorunda değilsin — sadece devam etmek zorundasın. Mükemmel, ilerlemenin düşmanı."
+          }
+        }
       }
     },
     "coaching.edu.strict.1": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Niemand kommt und rettet dich. Manchmal musst du dich selbst aus dem Bett ziehen." } },
-        "en": { "stringUnit": { "state": "translated", "value": "No one's coming to save you. Sometimes you have to drag yourself out of bed." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kimse seni kurtarmaya gelmiyor. Bazen kendini yataktan sürüklemen gerekir." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niemand kommt und rettet dich. Manchmal musst du dich selbst aus dem Bett ziehen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No one's coming to save you. Sometimes you have to drag yourself out of bed."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kimse seni kurtarmaya gelmiyor. Bazen kendini yataktan sürüklemen gerekir."
+          }
+        }
       }
     },
     "coaching.edu.strict.2": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Ausreden sind komfortabel und teuer. Wähle den unbequemen Weg." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Excuses are comfortable and expensive. Pick the uncomfortable path." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Mazeretler konforlu ve pahalı. Konforsuz yolu seç." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausreden sind komfortabel und teuer. Wähle den unbequemen Weg."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Excuses are comfortable and expensive. Pick the uncomfortable path."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mazeretler konforlu ve pahalı. Konforsuz yolu seç."
+          }
+        }
       }
     },
     "coaching.edu.strict.3": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Komfortzone ist der Ort, an dem Träume sterben. Verlasse sie jeden Tag bewusst." } },
-        "en": { "stringUnit": { "state": "translated", "value": "The comfort zone is where dreams die. Leave it on purpose every day." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Konfor alanı, hayallerin öldüğü yer. Her gün bilinçli olarak terk et." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komfortzone ist der Ort, an dem Träume sterben. Verlasse sie jeden Tag bewusst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The comfort zone is where dreams die. Leave it on purpose every day."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konfor alanı, hayallerin öldüğü yer. Her gün bilinçli olarak terk et."
+          }
+        }
       }
     },
     "coaching.edu.strict.4": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Hartes Training ist nicht das Problem. Inkonsistenz ist es." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Hard training isn't the problem. Inconsistency is." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Sert antrenman sorun değil. Tutarsızlık sorun." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hartes Training ist nicht das Problem. Inkonsistenz ist es."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hard training isn't the problem. Inconsistency is."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sert antrenman sorun değil. Tutarsızlık sorun."
+          }
+        }
       }
     },
     "coaching.edu.strict.5": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Wenn du keine Zeit hast, hast du die falschen Prioritäten. Punkt." } },
-        "en": { "stringUnit": { "state": "translated", "value": "No time means wrong priorities. Period." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Zamanın yoksa, önceliklerin yanlış. Nokta." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wenn du keine Zeit hast, hast du die falschen Prioritäten. Punkt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No time means wrong priorities. Period."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zamanın yoksa, önceliklerin yanlış. Nokta."
+          }
+        }
       }
     },
     "coaching.edu.strict.6": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Schmerz ist temporär. Bedauern ist permanent." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Pain is temporary. Regret is permanent." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Acı geçici. Pişmanlık kalıcı." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schmerz ist temporär. Bedauern ist permanent."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pain is temporary. Regret is permanent."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acı geçici. Pişmanlık kalıcı."
+          }
+        }
       }
     },
     "coaching.edu.strict.7": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Disziplin heißt: tun, was du gesagt hast, wenn die Stimmung weg ist." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Discipline means doing what you said when the mood is gone." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Disziplin: motivasyon gittiğinde söylediğini yapmaktır." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disziplin heißt: tun, was du gesagt hast, wenn die Stimmung weg ist."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discipline means doing what you said when the mood is gone."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disziplin: motivasyon gittiğinde söylediğini yapmaktır."
+          }
+        }
       }
     },
     "coaching.edu.strict.8": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Es gibt keine schlechten Tage, nur schwache Reaktionen darauf." } },
-        "en": { "stringUnit": { "state": "translated", "value": "There are no bad days — just weak reactions to them." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kötü gün yok — sadece zayıf tepkiler var." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es gibt keine schlechten Tage, nur schwache Reaktionen darauf."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There are no bad days — just weak reactions to them."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kötü gün yok — sadece zayıf tepkiler var."
+          }
+        }
       }
     },
     "coaching.edu.strict.9": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Niemand schuldet dir Ergebnisse. Du musst sie dir verdienen — Satz für Satz." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Nobody owes you results. You earn them — set by set." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kimse sana sonuç borçlu değil. Set set kazanırsın." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niemand schuldet dir Ergebnisse. Du musst sie dir verdienen — Satz für Satz."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nobody owes you results. You earn them — set by set."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kimse sana sonuç borçlu değil. Set set kazanırsın."
+          }
+        }
       }
     },
     "coaching.edu.strict.10": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Dein heutiges Ich ist die Summe deiner gestrigen Entscheidungen. Plane das morgige Ich heute." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Today's you is the sum of yesterday's choices. Plan tomorrow's you today." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bugünkü sen, dünkü kararlarının toplamı. Yarınkini bugün planla." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein heutiges Ich ist die Summe deiner gestrigen Entscheidungen. Plane das morgige Ich heute."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's you is the sum of yesterday's choices. Plan tomorrow's you today."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugünkü sen, dünkü kararlarının toplamı. Yarınkini bugün planla."
+          }
+        }
       }
     },
     "coaching.edu.strict.11": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Aufwärmen ist Pflicht, kein Bonus. Verletzungen kommen, wenn man Abkürzungen nimmt." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Warming up is mandatory, not a bonus. Injuries come from shortcuts." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Isınma zorunlu, bonus değil. Sakatlık kestirmelerden gelir." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufwärmen ist Pflicht, kein Bonus. Verletzungen kommen, wenn man Abkürzungen nimmt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warming up is mandatory, not a bonus. Injuries come from shortcuts."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Isınma zorunlu, bonus değil. Sakatlık kestirmelerden gelir."
+          }
+        }
       }
     },
     "coaching.edu.strict.12": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Wer nicht misst, lügt sich selbst an. Tracke jede Einheit." } },
-        "en": { "stringUnit": { "state": "translated", "value": "If you don't measure, you're lying to yourself. Track every session." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Ölçmüyorsan kendine yalan söylüyorsun. Her antrenmanı kaydet." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wer nicht misst, lügt sich selbst an. Tracke jede Einheit."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If you don't measure, you're lying to yourself. Track every session."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçmüyorsan kendine yalan söylüyorsun. Her antrenmanı kaydet."
+          }
+        }
       }
     },
     "coaching.edu.strict.13": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Schlaf, Ernährung, Training. Drei Dinge. Wenn eines fehlt, lügst du dich an, dass du es ernst meinst." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Sleep, nutrition, training. Three things. Miss one and you're not serious — you're pretending." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Uyku, beslenme, antrenman. Üç şey. Biri eksikse ciddi değilsin — sadece numara yapıyorsun." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schlaf, Ernährung, Training. Drei Dinge. Wenn eines fehlt, lügst du dich an, dass du es ernst meinst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep, nutrition, training. Three things. Miss one and you're not serious — you're pretending."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uyku, beslenme, antrenman. Üç şey. Biri eksikse ciddi değilsin — sadece numara yapıyorsun."
+          }
+        }
       }
     },
     "coaching.edu.strict.14": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Niemand will deine Ausreden hören — auch du selbst nicht. Mach einfach." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Nobody wants to hear your excuses — not even you. Just do it." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kimse mazeretini duymak istemiyor — sen bile. Sadece yap." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niemand will deine Ausreden hören — auch du selbst nicht. Mach einfach."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nobody wants to hear your excuses — not even you. Just do it."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kimse mazeretini duymak istemiyor — sen bile. Sadece yap."
+          }
+        }
       }
     },
     "coaching.edu.strict.15": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Du hast genau heute. Das ist die einzige Einheit, die zählt." } },
-        "en": { "stringUnit": { "state": "translated", "value": "You only have today. It's the only session that counts." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Sadece bugün var. Tek sayan antrenman bu." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du hast genau heute. Das ist die einzige Einheit, die zählt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You only have today. It's the only session that counts."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sadece bugün var. Tek sayan antrenman bu."
+          }
+        }
       }
     },
     "coaching.empty.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Heute kein besonderer Hinweis" } },
-        "en": { "stringUnit": { "state": "translated", "value": "No special note today" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bugün özel bir not yok" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute kein besonderer Hinweis"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No special note today"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün özel bir not yok"
+          }
+        }
       }
     },
     "coaching.empty.message": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Aktuell ist keine Warnung oder Aktion nötig — weiter so." } },
-        "en": { "stringUnit": { "state": "translated", "value": "No warning or action needed right now — keep it up." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Şu an uyarı veya işlem gerekmez — böyle devam et." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuell ist keine Warnung oder Aktion nötig — weiter so."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No warning or action needed right now — keep it up."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şu an uyarı veya işlem gerekmez — böyle devam et."
+          }
+        }
       }
     },
     "coaching.restDay.analytical.hypertrophy": {
@@ -5974,313 +7204,898 @@
     "exercise.name.deficitDeadlift": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Deficit-Kreuzheben" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Deficit Deadlift" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Deficit Deadlift" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deficit-Kreuzheben"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deficit Deadlift"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deficit Deadlift"
+          }
+        }
       }
     },
     "exercise.name.trapBarDeadlift": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Trap-Bar-Kreuzheben" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Trap Bar Deadlift" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Trap Bar Deadlift" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trap-Bar-Kreuzheben"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trap Bar Deadlift"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trap Bar Deadlift"
+          }
+        }
       }
     },
     "exercise.name.boxSquat": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Box Squat" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Box Squat" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Box Squat" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Box Squat"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Box Squat"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Box Squat"
+          }
+        }
       }
     },
     "exercise.name.snatch": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Reißen (Snatch)" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Snatch" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Snatch (Koparma)" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reißen (Snatch)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snatch"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snatch (Koparma)"
+          }
+        }
       }
     },
     "exercise.name.cleanAndJerk": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Umsetzen & Stoßen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Clean & Jerk" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Clean & Jerk (Silkme)" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Umsetzen & Stoßen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clean & Jerk"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clean & Jerk (Silkme)"
+          }
+        }
       }
     },
     "exercise.name.floorPress": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Floor Press" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Floor Press" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Floor Press" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Floor Press"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Floor Press"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Floor Press"
+          }
+        }
       }
     },
     "exercise.name.zPress": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Z-Press" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Z-Press" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Z-Press" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Z-Press"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Z-Press"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Z-Press"
+          }
+        }
       }
     },
     "exercise.name.tatePress": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Tate Press" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Tate Press" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Tate Press" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tate Press"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tate Press"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tate Press"
+          }
+        }
       }
     },
     "exercise.name.hexPress": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Hex Press (Squeeze Press)" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Hex Press (Squeeze Press)" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Hex Press (Squeeze Press)" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hex Press (Squeeze Press)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hex Press (Squeeze Press)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hex Press (Squeeze Press)"
+          }
+        }
       }
     },
     "exercise.name.meadowsRow": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Meadows Row" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Meadows Row" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Meadows Row" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meadows Row"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meadows Row"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meadows Row"
+          }
+        }
       }
     },
     "exercise.name.renegadeRow": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Renegade Row" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Renegade Row" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Renegade Row" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renegade Row"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renegade Row"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renegade Row"
+          }
+        }
       }
     },
     "exercise.name.invertedRow": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Inverted Row" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Inverted Row" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Inverted Row" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inverted Row"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inverted Row"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inverted Row"
+          }
+        }
       }
     },
     "exercise.name.cablePullThrough": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Cable Pull-Through" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Cable Pull-Through" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Cable Pull-Through" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Pull-Through"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Pull-Through"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Pull-Through"
+          }
+        }
       }
     },
     "exercise.name.cableWoodchopper": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Cable Woodchopper" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Cable Woodchopper" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Cable Woodchopper (Odun Kesme)" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Woodchopper"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Woodchopper"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Woodchopper (Odun Kesme)"
+          }
+        }
       }
     },
     "exercise.name.bayesianCurl": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Bayesian Curl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Bayesian Curl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bayesian Curl" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bayesian Curl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bayesian Curl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bayesian Curl"
+          }
+        }
       }
     },
     "exercise.name.reverseCableFly": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Reverse Cable Fly" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Reverse Cable Fly" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Ters Cable Fly" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reverse Cable Fly"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reverse Cable Fly"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ters Cable Fly"
+          }
+        }
       }
     },
     "exercise.name.neutralGripLatPulldown": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Latzug (neutraler Griff)" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Neutral-Grip Lat Pulldown" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Nötr Tutuş Lat Çekiş" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latzug (neutraler Griff)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neutral-Grip Lat Pulldown"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nötr Tutuş Lat Çekiş"
+          }
+        }
       }
     },
     "exercise.name.seatedLegCurl": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Beincurl sitzend" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Seated Leg Curl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Oturarak Bacak Curl" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beincurl sitzend"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seated Leg Curl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oturarak Bacak Curl"
+          }
+        }
       }
     },
     "exercise.name.standingLegCurl": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Beincurl stehend" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Standing Leg Curl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Ayakta Bacak Curl" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beincurl stehend"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standing Leg Curl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayakta Bacak Curl"
+          }
+        }
       }
     },
     "exercise.name.calfPressLegPress": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Wadenpresse (Beinpresse)" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Calf Press (Leg Press)" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Baldır Press (Leg Press)" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wadenpresse (Beinpresse)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calf Press (Leg Press)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baldır Press (Leg Press)"
+          }
+        }
       }
     },
     "exercise.name.assistedPullUp": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Klimmzug (assistiert)" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Assisted Pull-Up" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Destekli Barfiks" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klimmzug (assistiert)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assisted Pull-Up"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Destekli Barfiks"
+          }
+        }
       }
     },
     "exercise.name.assistedDip": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Dip (assistiert)" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Assisted Dip" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Destekli Dip" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dip (assistiert)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assisted Dip"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Destekli Dip"
+          }
+        }
       }
     },
     "exercise.name.pistolSquat": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Pistol Squat" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Pistol Squat" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Pistol Squat" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pistol Squat"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pistol Squat"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pistol Squat"
+          }
+        }
       }
     },
     "exercise.name.muscleUp": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Muscle-Up" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Muscle-Up" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Muscle-Up" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muscle-Up"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muscle-Up"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muscle-Up"
+          }
+        }
       }
     },
     "exercise.name.reverseNordicCurl": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Reverse Nordic Curl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Reverse Nordic Curl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Ters Nordic Curl" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reverse Nordic Curl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reverse Nordic Curl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ters Nordic Curl"
+          }
+        }
       }
     },
     "exercise.name.medicineBallSlam": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Medizinball-Slam" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Medicine Ball Slam" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Sağlık Topu Slam" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medizinball-Slam"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medicine Ball Slam"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sağlık Topu Slam"
+          }
+        }
       }
     },
     "exercise.name.tibialisRaise": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Tibialis Raise" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Tibialis Raise" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Tibialis Raise" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tibialis Raise"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tibialis Raise"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tibialis Raise"
+          }
+        }
       }
     },
     "exercise.name.wristCurl": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Handgelenk-Curl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Wrist Curl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bilek Curl" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Handgelenk-Curl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wrist Curl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilek Curl"
+          }
+        }
       }
     },
     "exercise.name.reverseWristCurl": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Handgelenk-Curl (umgekehrt)" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Reverse Wrist Curl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Ters Bilek Curl" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Handgelenk-Curl (umgekehrt)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reverse Wrist Curl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ters Bilek Curl"
+          }
+        }
       }
     },
     "exercise.name.neckCurl": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Nacken-Curl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Neck Curl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Boyun Curl" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nacken-Curl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neck Curl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boyun Curl"
+          }
+        }
       }
     },
     "exercise.name.neckExtension": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Nacken-Extension" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Neck Extension" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Boyun Ekstansiyonu" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nacken-Extension"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neck Extension"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boyun Ekstansiyonu"
+          }
+        }
       }
     },
     "exercise.name.dragonFlag": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Dragon Flag" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Dragon Flag" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Dragon Flag" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dragon Flag"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dragon Flag"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dragon Flag"
+          }
+        }
       }
     },
     "exercise.name.lSit": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "L-Sit" } },
-        "en": { "stringUnit": { "state": "translated", "value": "L-Sit" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "L-Sit" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L-Sit"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L-Sit"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L-Sit"
+          }
+        }
       }
     },
     "exercise.name.copenhagenPlank": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Copenhagen Plank" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Copenhagen Plank" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Copenhagen Plank" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copenhagen Plank"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copenhagen Plank"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copenhagen Plank"
+          }
+        }
       }
     },
     "exercise.name.farmersWalk": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Farmer's Walk" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Farmer's Walk" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Farmer's Walk" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farmer's Walk"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farmer's Walk"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farmer's Walk"
+          }
+        }
       }
     },
     "exercise.name.sandbagCarry": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Sandbag Carry" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Sandbag Carry" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kum Torbası Taşıma" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sandbag Carry"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sandbag Carry"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kum Torbası Taşıma"
+          }
+        }
       }
     },
     "exercise.name.sledPush": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Sled Push" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Sled Push" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kızak İtme" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sled Push"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sled Push"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kızak İtme"
+          }
+        }
       }
     },
     "exercise.name.sledPull": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Sled Pull" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Sled Pull" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kızak Çekme" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sled Pull"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sled Pull"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kızak Çekme"
+          }
+        }
       }
     },
     "exercise.name.battleRopes": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Battle Ropes" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Battle Ropes" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Battle Ropes (Halat)" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Battle Ropes"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Battle Ropes"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Battle Ropes (Halat)"
+          }
+        }
       }
     },
     "exercise.name.benchpress": {
@@ -8839,41 +10654,116 @@
     "exercise.name.kettlebellFloorPress": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Floor Press" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Floor Press" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Floor Press" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell Floor Press"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell Floor Press"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell Floor Press"
+          }
+        }
       }
     },
     "exercise.name.kettlebellRowSingleArm": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Row einarmig" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Single-Arm Row" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Tek Kol Row" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell Row einarmig"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell Single-Arm Row"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell Tek Kol Row"
+          }
+        }
       }
     },
     "exercise.name.kettlebellRDL": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell RDL" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell RDL" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell RDL" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell RDL"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell RDL"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell RDL"
+          }
+        }
       }
     },
     "exercise.name.kettlebellPushPress": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Push Press" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Push Press" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Push Press" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell Push Press"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell Push Press"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell Push Press"
+          }
+        }
       }
     },
     "exercise.name.kettlebellSuitcaseCarry": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Suitcase Carry" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Suitcase Carry" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Bavul Taşıma" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell Suitcase Carry"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell Suitcase Carry"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell Bavul Taşıma"
+          }
+        }
       }
     },
     "exercise.name.treadmill": {
@@ -11455,33 +13345,93 @@
     "editor.exercise.delete": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Übung löschen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Delete exercise" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Hareketi sil" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übung löschen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete exercise"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hareketi sil"
+          }
+        }
       }
     },
     "editor.exercise.deleteConfirmTitle": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Übung löschen?" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Delete exercise?" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Hareket silinsin mi?" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übung löschen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete exercise?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hareket silinsin mi?"
+          }
+        }
       }
     },
     "editor.exercise.deleteConfirmMessage": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Bist du sicher? Diese Custom-Übung verschwindet dauerhaft. Bereits geloggte Trainings bleiben erhalten." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Are you sure? This custom exercise is removed permanently. Already logged workouts stay intact." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Emin misin? Bu özel hareket kalıcı olarak silinir. Kaydedilmiş antrenmanlar korunur." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bist du sicher? Diese Custom-Übung verschwindet dauerhaft. Bereits geloggte Trainings bleiben erhalten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Are you sure? This custom exercise is removed permanently. Already logged workouts stay intact."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emin misin? Bu özel hareket kalıcı olarak silinir. Kaydedilmiş antrenmanlar korunur."
+          }
+        }
       }
     },
     "editor.exercise.deleteConfirmCta": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Löschen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Delete" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Sil" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Löschen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sil"
+          }
+        }
       }
     },
     "editor.exercise.distanceKm": {
@@ -12384,17 +14334,47 @@
     "summary.gear.header": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Ausrüstung" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Gear" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Ekipman" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausrüstung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gear"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipman"
+          }
+        }
       }
     },
     "summary.gear.none": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Kein Gear" } },
-        "en": { "stringUnit": { "state": "translated", "value": "No gear" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Ekipman yok" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Gear"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No gear"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipman yok"
+          }
+        }
       }
     },
     "summary.setsHeader": {
@@ -13550,25 +15530,70 @@
     "onboarding.equipment.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Womit trainierst du?" } },
-        "en": { "stringUnit": { "state": "translated", "value": "What do you train with?" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Hangi ekipmanla çalışıyorsun?" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Womit trainierst du?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What do you train with?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hangi ekipmanla çalışıyorsun?"
+          }
+        }
       }
     },
     "onboarding.equipment.subtitle": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Mehrfachauswahl — wir passen Pläne mit alternativen Übungen automatisch an dein verfügbares Equipment an." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Multi-select — we'll auto-adapt plans with alternative exercises to your available gear." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Çoklu seçim — planları senin ekipmanına alternatif hareketlerle otomatik uyarlarız." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mehrfachauswahl — wir passen Pläne mit alternativen Übungen automatisch an dein verfügbares Equipment an."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Multi-select — we'll auto-adapt plans with alternative exercises to your available gear."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çoklu seçim — planları senin ekipmanına alternatif hareketlerle otomatik uyarlarız."
+          }
+        }
       }
     },
     "onboarding.equipment.footer": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Du kannst diese Auswahl später jederzeit im Profil anpassen. Leer lassen = Standard-Variante (Langhantel) wird verwendet." } },
-        "en": { "stringUnit": { "state": "translated", "value": "You can change this anytime in your profile. Leave empty = default variant (barbell) is used." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bu seçimi profilden istediğin zaman değiştirebilirsin. Boş bırakırsan varsayılan (barbell) kullanılır." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du kannst diese Auswahl später jederzeit im Profil anpassen. Leer lassen = Standard-Variante (Langhantel) wird verwendet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can change this anytime in your profile. Leave empty = default variant (barbell) is used."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu seçimi profilden istediğin zaman değiştirebilirsin. Boş bırakırsan varsayılan (barbell) kullanılır."
+          }
+        }
       }
     },
     "onboarding.tone.title": {
@@ -14333,17 +16358,47 @@
     "profile.equipment.header": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Equipment-Präferenzen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Equipment preferences" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Ekipman tercihleri" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment-Präferenzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment preferences"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipman tercihleri"
+          }
+        }
       }
     },
     "profile.equipment.footer": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Wähle aus, was du zur Verfügung hast. Pläne mit mehreren Implement-Varianten (z.B. Hybrid) bekommen automatisch die passende Übungsauswahl. Leer = Standard-Variante (Langhantel)." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Pick what you have available. Plans with multiple implement variants (e.g. Hybrid) automatically get the matching exercise lineup. Empty = default variant (barbell)." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Sahip olduğun ekipmanı seç. Birden çok ekipman varyantı olan planlar (örn. Hybrid) otomatik olarak uygun hareket listesini alır. Boş = varsayılan (barbell)." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle aus, was du zur Verfügung hast. Pläne mit mehreren Implement-Varianten (z.B. Hybrid) bekommen automatisch die passende Übungsauswahl. Leer = Standard-Variante (Langhantel)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick what you have available. Plans with multiple implement variants (e.g. Hybrid) automatically get the matching exercise lineup. Empty = default variant (barbell)."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sahip olduğun ekipmanı seç. Birden çok ekipman varyantı olan planlar (örn. Hybrid) otomatik olarak uygun hareket listesini alır. Boş = varsayılan (barbell)."
+          }
+        }
       }
     },
     "profile.goal.footer": {
@@ -16120,9 +18175,24 @@
     "settings.preferences.exerciseLibrary": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Übungen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Exercises" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Hareketler" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exercises"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hareketler"
+          }
+        }
       }
     },
     "settings.preferences.gear": {
@@ -24799,17 +26869,47 @@
     "active.set.add": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Satz hinzufügen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Add set" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Set ekle" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Satz hinzufügen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add set"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set ekle"
+          }
+        }
       }
     },
     "active.set.remove": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Satz entfernen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Remove set" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Seti kaldır" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Satz entfernen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove set"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seti kaldır"
+          }
+        }
       }
     },
     "active.set.previousFormat": {
@@ -24831,6 +26931,466 @@
           "stringUnit": {
             "state": "translated",
             "value": "son: %@"
+          }
+        }
+      }
+    },
+    "settings.section.privacy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datenschutz"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gizlilik"
+          }
+        }
+      }
+    },
+    "settings.privacy.dataExport": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export data (CSV)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daten exportieren (CSV)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verileri dışa aktar (CSV)"
+          }
+        }
+      }
+    },
+    "settings.privacy.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export all your training and profile data as a ZIP archive of CSV files. Useful for backups, switching devices, or simply having your data."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportiere alle deine Trainings- und Profildaten als ZIP-Archiv mit CSV-Dateien. Praktisch für Backups, Gerätewechsel oder einfach um deine Daten in der Hand zu haben."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tüm antrenman ve profil verilerini CSV dosyalarından oluşan bir ZIP arşivi olarak dışa aktar. Yedekleme, cihaz değişikliği veya verilerine sahip olmak için kullanışlıdır."
+          }
+        }
+      }
+    },
+    "settings.dataExport.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data Export"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daten-Export"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veri Dışa Aktarımı"
+          }
+        }
+      }
+    },
+    "settings.dataExport.intro.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What this does"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was das macht"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu ne yapar"
+          }
+        }
+      }
+    },
+    "settings.dataExport.intro.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creates a ZIP archive containing every piece of data Deltiq stores about you — workouts, sets, measurements, plans, personal records and gear. All in plain CSV files that Excel, Numbers, or any spreadsheet tool can open."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erstellt ein ZIP-Archiv mit allen Daten, die Deltiq über dich speichert — Workouts, Sätze, Körpermessungen, Pläne, persönliche Rekorde und Ausrüstung. Alles als CSV-Dateien, die Excel, Numbers oder jedes Tabellen-Tool öffnen kann."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deltiq'in seninle ilgili sakladığı her veriyi içeren bir ZIP arşivi oluşturur — antrenmanlar, setler, ölçümler, planlar, kişisel rekorlar ve ekipman. Hepsi Excel, Numbers veya herhangi bir tablo aracının açabileceği basit CSV dosyaları olarak."
+          }
+        }
+      }
+    },
+    "settings.dataExport.intro.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data never leaves your device unless you share the archive yourself. The export happens entirely on this iPhone."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Daten verlassen dein Gerät erst, wenn du das Archiv selbst teilst. Der Export läuft vollständig auf diesem iPhone."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arşivi sen kendin paylaşmadıkça verilerin cihazından ayrılmaz. Dışa aktarma tamamen bu iPhone'da gerçekleşir."
+          }
+        }
+      }
+    },
+    "settings.dataExport.contents.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's included"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was enthalten ist"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neler dahil"
+          }
+        }
+      }
+    },
+    "settings.dataExport.contents.profile": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile, goals, training preferences"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil, Ziele, Trainings-Präferenzen"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil, hedefler, antrenman tercihleri"
+          }
+        }
+      }
+    },
+    "settings.dataExport.contents.measurements": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body measurements (weight, body fat, circumferences)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Körpermessungen (Gewicht, KFA, Umfänge)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut ölçümleri (kilo, yağ oranı, çevreler)"
+          }
+        }
+      }
+    },
+    "settings.dataExport.contents.workouts": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All workouts with sets, reps, weights and RIR"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Workouts mit Sätzen, Reps, Gewichten und RIR"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set, tekrar, ağırlık ve RIR ile tüm antrenmanlar"
+          }
+        }
+      }
+    },
+    "settings.dataExport.contents.plans": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training plans, days and exercises"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingspläne, Tage und Übungen"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman planları, günler ve egzersizler"
+          }
+        }
+      }
+    },
+    "settings.dataExport.contents.records": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal records and PR history"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Persönliche Rekorde und PR-Historie"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kişisel rekorlar ve PR geçmişi"
+          }
+        }
+      }
+    },
+    "settings.dataExport.contents.gear": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gear (shoes, bikes) and their mileage"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausrüstung (Schuhe, Bikes) und deren Kilometer"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipman (ayakkabı, bisiklet) ve kilometre bilgileri"
+          }
+        }
+      }
+    },
+    "settings.dataExport.contents.custom": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom exercises you created yourself"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eigene Übungen, die du selbst angelegt hast"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kendin oluşturduğun özel egzersizler"
+          }
+        }
+      }
+    },
+    "settings.dataExport.action.start": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start export"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export starten"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dışa aktarmayı başlat"
+          }
+        }
+      }
+    },
+    "settings.dataExport.action.share": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share archive"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archiv teilen"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arşivi paylaş"
+          }
+        }
+      }
+    },
+    "settings.dataExport.exporting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collecting your data…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sammle deine Daten…"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verilerin toplanıyor…"
+          }
+        }
+      }
+    },
+    "settings.dataExport.finished.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready to share"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bereit zum Teilen"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paylaşmaya hazır"
+          }
+        }
+      }
+    },
+    "settings.dataExport.finished.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld records exported across multiple CSV files."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Einträge in mehrere CSV-Dateien exportiert."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld kayıt birden fazla CSV dosyasına aktarıldı."
           }
         }
       }
