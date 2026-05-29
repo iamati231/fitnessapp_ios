@@ -77,6 +77,13 @@ public struct DataImportResult: Sendable {
     /// Nil wenn `errorRows == 0`.
     public let errorsCSV: Data?
 
+    /// DEL-185: Pro extrahiertem File die Byte-Größe direkt am Result.
+    /// IMMER gesetzt (auch wenn 0/0 importiert wurde), damit die UI eine
+    /// Extract-Übersicht rendern kann, ohne dass der User die errors.csv
+    /// raus exportieren muss. Schlüssel ist der Dateiname, Wert die
+    /// uncompressierte Byte-Anzahl nach dem Entpacken.
+    public let extractedSizes: [String: Int]
+
     public var totalImported: Int { imported.values.reduce(0, +) }
     public var totalSkipped:  Int { skipped.values.reduce(0, +) }
 }
@@ -341,13 +348,24 @@ public enum DataImportService {
         // das Extract-Log zu teilen — sonst keine Visibility ins ZIP-Innenleben.
         let errorsCSV: Data? = errorBuffer.hasContent ? errorBuffer.toCSV() : nil
 
+        // DEL-185: Extract-Sizes-Map fürs UI. Mappt jeden extrahierten
+        // File-Namen auf seine Byte-Größe nach dem Entpacken — so kann
+        // die Result-View "profile.csv: 404 b" zeigen, ohne dass der
+        // User das errors.csv-Log exportieren muss. Wenn alle Werte 0
+        // oder klein sind, ist der Extract der Übeltäter.
+        var extractedSizes: [String: Int] = [:]
+        for (filename, data) in files {
+            extractedSizes[filename] = data.count
+        }
+
         return DataImportResult(
             formatVersion: meta.formatVersion,
             exportedAt: meta.exportedAt,
             imported: imported,
             skipped:  skipped,
             errorRows: errorBuffer.totalCount,
-            errorsCSV: errorsCSV
+            errorsCSV: errorsCSV,
+            extractedSizes: extractedSizes
         )
     }
 

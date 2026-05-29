@@ -351,13 +351,23 @@ public struct DataImportView: View {
                 }
             }
             // Pro-File-Breakdown (klein, monospaced — debugging-freundlich,
-            // aber unaufdringlich)
+            // aber unaufdringlich). DEL-185: ergänzt um die extrahierte
+            // Byte-Größe, damit der User sofort sieht, ob die Files
+            // überhaupt mit Inhalt rauskommen oder leer sind.
             DeltiqFormFullRow {
                 VStack(alignment: .leading, spacing: 4) {
-                    ForEach(filesInResult(result), id: \.self) { file in
-                        HStack {
+                    ForEach(allReportedFiles(result), id: \.self) { file in
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
                             Text(file).font(.caption2.monospaced()).foregroundStyle(.secondary)
                             Spacer()
+                            // Byte-Größe vor dem Imports-Counter — falls
+                            // diese 0 oder verdächtig klein ist, ist der
+                            // Extract der Übeltäter.
+                            if let bytes = result.extractedSizes[file] {
+                                Text("\(bytes) b")
+                                    .font(.caption2.monospaced())
+                                    .foregroundStyle(bytes < 100 ? .red : .tertiary)
+                            }
                             Text(String(
                                 format: String(localized: "settings.dataImport.result.fileSummary", bundle: .module),
                                 result.imported[file] ?? 0,
@@ -423,6 +433,20 @@ public struct DataImportView: View {
 
     private func filesInResult(_ r: DataImportResult) -> [String] {
         let keys = Set(r.imported.keys).union(r.skipped.keys)
+        return keys.sorted()
+    }
+
+    /// DEL-185: Vereinigung ALLER bekannten Files — imported, skipped UND
+    /// extracted. So sieht der User auch die Files, bei denen der Import
+    /// gar nicht erst lief (z.B. weil sie 0 Bytes hatten und vom CSVReader
+    /// ohne Sichtbarkeit verworfen wurden).
+    private func allReportedFiles(_ r: DataImportResult) -> [String] {
+        var keys = Set(r.imported.keys).union(r.skipped.keys)
+        keys.formUnion(r.extractedSizes.keys)
+        // meta.json + import.zip sind technische Files, nicht für den
+        // User interessant — rausfiltern.
+        keys.remove("meta.json")
+        keys.remove("import.zip")
         return keys.sorted()
     }
 
