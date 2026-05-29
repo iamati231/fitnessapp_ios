@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1236 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1239 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1236 / 1236** (100%) | 0 |
-| 🇬🇧 English (EN) | **1236 / 1236** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1236 / 1236** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1239 / 1239** (100%) | 0 |
+| 🇬🇧 English (EN) | **1239 / 1239** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1239 / 1239** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -170,7 +170,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `chart.timeRange.oneMonth` | 1M | 1M | 1A |
 | `chart.timeRange.threeMonths` | 3M | 3M | 3A |
 
-## `coaching.*`  (94 Keys)
+## `coaching.*`  (97 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -247,6 +247,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.restDay.analytical.strength` | Recovery-Tag. Dein ZNS arbeitet jetzt — das nächste 1RM wird heute, nicht im Gym, vorbereitet. | Recovery day. Your CNS is working now — your next 1RM is prepared today, not in the gym. | İyileşme günü. MSS şu an çalışıyor — sonraki 1RM bugün hazırlanır, salonda değil. |
 | `coaching.restDay.motivating.hybrid` | Du hast dir eine Pause verdient! Ein leichter Mobility-Flow oder Spaziergang ist heute perfekt für deine aktive Erholung. | You've earned a break! A light mobility flow or a walk is perfect for active recovery today. | Bir mola hak ettin! Bugün hafif bir mobilite akışı veya yürüyüş aktif iyileşme için ideal. |
 | `coaching.restDay.strict.strength` | Heute wird nicht trainiert. Du wirst in der Pause stärker, nicht unter der Hantel. Bleib aus dem Gym. | No training today. You get stronger on rest days, not under the barbell. Stay out of the gym. | Bugün antrenman yok. Halterin altında değil, dinlenme günlerinde güçlenirsin. Salona girme. |
+| `coaching.soft.backupOverdue.analytical` | Dein letzter Daten-Export ist über 30 Tage her. Ein frisches Backup bewahrt deine Trainings-Historie. | Your last data export was over 30 days ago. A fresh backup keeps your training history safe. | Son veri dışa aktarımının üzerinden 30 günden fazla geçti. Yeni bir yedek antrenman geçmişini güvende tutar. |
+| `coaching.soft.backupOverdue.motivating` | All diese PRs verdienen ein Sicherheitsnetz — kurzer CSV-Export und du bist zukunftssicher. 🛡️ | All these PRs deserve a safety net — quick CSV export and you're future-proof. 🛡️ | Tüm bu PR'lar bir güvenlik ağını hak ediyor — hızlı bir CSV dışa aktarımı seni geleceğe hazırlar. 🛡️ |
+| `coaching.soft.backupOverdue.strict` | 30+ Tage ohne Backup. Mach's jetzt, bevor ein Handy-Wechsel dich deine Historie kostet. | 30+ days without a backup. Do it now before a phone swap costs you your history. | 30+ gündür yedek yok. Bir telefon değişikliği seni geçmişinden etmeden hemen yap. |
 | `coaching.soft.planPreview.analytical` | Plan-Eintrag für heute steht an. Optimaler Zeitpunkt für ein Mobility-Warmup vor den Compound-Lifts. | Today's plan entry is up. Optimal time for a mobility warmup before the compound lifts. | Bugün için plan girdisi mevcut. Bileşik hareketlerden önce mobilite ısınması için ideal zaman. |
 | `coaching.soft.planPreview.motivating` | Heute steht ein Training an. Mach dich gut warm und gib alles für die schweren Sätze! | A workout's on the schedule today. Warm up well and give it your all on the heavy sets! | Bugün bir antrenman var. İyi ısın ve ağır setlerde her şeyini ver! |
 | `coaching.soft.planPreview.strict` | Heute ist Trainingstag. Kein Aufschub. Punkt. | Today is a training day. No postponing. Period. | Bugün antrenman günü. Erteleme yok. Nokta. |

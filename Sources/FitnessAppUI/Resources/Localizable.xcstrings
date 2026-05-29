@@ -28429,6 +28429,75 @@
           }
         }
       }
+    },
+    "coaching.soft.backupOverdue.analytical": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your last data export was over 30 days ago. A fresh backup keeps your training history safe."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein letzter Daten-Export ist über 30 Tage her. Ein frisches Backup bewahrt deine Trainings-Historie."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son veri dışa aktarımının üzerinden 30 günden fazla geçti. Yeni bir yedek antrenman geçmişini güvende tutar."
+          }
+        }
+      }
+    },
+    "coaching.soft.backupOverdue.motivating": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All these PRs deserve a safety net — quick CSV export and you're future-proof. 🛡️"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All diese PRs verdienen ein Sicherheitsnetz — kurzer CSV-Export und du bist zukunftssicher. 🛡️"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tüm bu PR'lar bir güvenlik ağını hak ediyor — hızlı bir CSV dışa aktarımı seni geleceğe hazırlar. 🛡️"
+          }
+        }
+      }
+    },
+    "coaching.soft.backupOverdue.strict": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30+ days without a backup. Do it now before a phone swap costs you your history."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30+ Tage ohne Backup. Mach's jetzt, bevor ein Handy-Wechsel dich deine Historie kostet."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30+ gündür yedek yok. Bir telefon değişikliği seni geçmişinden etmeden hemen yap."
+          }
+        }
+      }
     }
   }
 }

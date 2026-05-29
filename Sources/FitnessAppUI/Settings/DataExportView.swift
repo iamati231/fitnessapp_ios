@@ -27,6 +27,14 @@ public struct DataExportView: View {
 
     @Environment(\.modelContext) private var modelContext
 
+    /// DEL-177: Letzter erfolgreicher Export als UTC-Timestamp
+    /// (`Date.timeIntervalSince1970`). 0 = nie. Wird vom Dashboard gelesen,
+    /// um nach 30 Tagen einen sanften Backup-Reminder einzublenden.
+    /// AppStorage statt Profil-Property, damit die Migration leichtgewichtig
+    /// bleibt und der Reminder auch dann funktioniert, wenn der User noch
+    /// kein Profil angelegt hat (Edge-Case nach App-Wipe).
+    @AppStorage("lastDataExportAt") private var lastDataExportAt: Double = 0
+
     @State private var phase: Phase = .ready
     @State private var temporaryFileURL: URL?
     @State private var showShareSheet = false
@@ -225,6 +233,10 @@ public struct DataExportView: View {
                 await MainActor.run {
                     self.temporaryFileURL = url
                     self.phase = .finished(bundle: bundle)
+                    // DEL-177: Backup-Reminder-Timestamp setzen. Dashboard
+                    // checkt diesen Wert; bei > 30 Tagen Distanz wird die
+                    // soft-coaching .backupOverdue-Message gezündet.
+                    self.lastDataExportAt = Date().timeIntervalSince1970
                 }
             } catch {
                 await MainActor.run {

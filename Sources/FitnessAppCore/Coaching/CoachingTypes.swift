@@ -106,4 +106,10 @@ public enum CoachingContext: String, Sendable {
     case planPreview
     /// Länger nicht trainiert — sanfter Wiedereinstiegs-Hinweis.
     case reEntry
+
+    /// DEL-177: Länger als 30 Tage kein CSV-Export erstellt (oder noch nie,
+    /// obwohl der User schon eine Weile trainiert). Niedrigste Priorität —
+    /// nur P2-Fallback, wenn keine der Trainings-Insights greift. Catalog
+    /// folgt dem gleichen Soft-Schema `coaching.soft.backupOverdue.{tone}`.
+    case backupOverdue
 }

@@ -78,6 +78,11 @@ public struct DashboardView: View {
     @AppStorage("dashboard.compoundChartRange") private var compoundChartRange: ChartTimeRange = .oneMonth
     @AppStorage("dashboard.cardioChartRange") private var cardioChartRange: ChartTimeRange = .oneMonth
 
+    /// DEL-177: Letzter erfolgreicher CSV-Export. 0 = noch nie. Wird vom
+    /// Soft-Coaching-Trigger gelesen — > 30 Tage her oder noch nie
+    /// (mit genug History dahinter) → `.backupOverdue`-Hinweis.
+    @AppStorage("lastDataExportAt") private var lastDataExportAt: Double = 0
+
     public init() {}
 
     public var body: some View {
@@ -1026,7 +1031,38 @@ public struct DashboardView: View {
         }
         if last7DaysRealSessionCount >= 5 { return .streak }
         if hasTrainingPlannedToday { return .planPreview }
+        // DEL-177: Backup-Reminder als letzte Soft-Stufe vor dem Empty-State.
+        // Niedrigste Prio — kein Trainings-Insight ist relevanter als eine
+        // Backup-Erinnerung. Trigger nur, wenn der User auch echt was zu
+        // sichern HAT (sonst nervt der Hinweis frische Installs).
+        if shouldShowBackupReminder { return .backupOverdue }
         return nil
+    }
+
+    /// DEL-177: Trigger-Logik für den 30-Tage-Backup-Reminder.
+    ///
+    ///   - Nie exportiert UND ≥ 10 reale Sessions (= User hat echt was zu
+    ///     sichern) → trigger.
+    ///   - Letzter Export > 30 Tage her UND ≥ 1 reale Session seither →
+    ///     trigger.
+    ///
+    /// Wir koppeln den Hinweis an Trainings-Aktivität, damit frische
+    /// Installs nicht sofort mit "Backup machen!" empfangen werden.
+    private var shouldShowBackupReminder: Bool {
+        let totalRealSessions = completedSessions.filter(\.isRealWorkout).count
+        if lastDataExportAt == 0 {
+            return totalRealSessions >= 10
+        }
+        let exportDate = Date(timeIntervalSince1970: lastDataExportAt)
+        let thirtyDays: TimeInterval = 30 * 24 * 60 * 60
+        guard Date().timeIntervalSince(exportDate) >= thirtyDays else {
+            return false
+        }
+        // Nur, wenn seit dem letzten Backup auch was Neues passiert ist.
+        let newSessionsSinceBackup = completedSessions.filter {
+            $0.isRealWorkout && $0.startTime > exportDate
+        }.count
+        return newSessionsSinceBackup >= 1
     }
 
     /// Maximal-Volumen ueber alle gestern (Kalendertag = today-1) abgeschlossenen
