@@ -863,11 +863,16 @@ public enum DataImportService {
         for row in reader.rows() {
             let exportID = row["id"]
             let planID = row["plan_id"]
-            guard let plan = idMap[planID] as? TrainingPlan else {
-                // Ohne Plan kein Day — diese Zeile bezieht sich auf einen
-                // Plan, den wir nicht importiert haben (System-Plan o.ä.).
-                errors.append(.init(line: row.lineNumber, reason: "unknown plan_id: \(planID)"))
-                continue
+            // DEL-189: Orphan-Toleranz. TrainingDay.plan ist optional, also
+            // erlauben wir Days mit nil plan (z.B. exportierter Bestand,
+            // dessen ursprünglicher Plan via .nullify-deleteRule entfernt
+            // wurde). Wenn planID leer ist → kein Lookup, day kommt rein
+            // ohne Plan-Backref. Wenn planID gesetzt aber unknown → wir
+            // loggen einen Hinweis, importieren aber trotzdem (besser ein
+            // orphan-Day mit Snapshot als verlorene Plan-Struktur).
+            let plan = idMap[planID] as? TrainingPlan
+            if !planID.isEmpty && plan == nil {
+                errors.append(.init(line: row.lineNumber, reason: "plan_id \(planID) not found — importing as orphan"))
             }
             let name = row.optionalString("name") ?? ""
             guard !name.isEmpty else {
@@ -979,9 +984,12 @@ public enum DataImportService {
         for row in reader.rows() {
             let exportID = row["id"]
             let dayID = row["day_id"]
-            guard let day = idMap[dayID] as? TrainingDay else {
-                errors.append(.init(line: row.lineNumber, reason: "unknown day_id: \(dayID)"))
-                continue
+            // DEL-189: Orphan-Toleranz analog zu PlanDays. Exercise.day ist
+            // Optional — wir importieren auch wenn day nicht in idMap, mit
+            // einer Info-Zeile in den errors.csv (nicht abbrechend).
+            let day = idMap[dayID] as? TrainingDay
+            if !dayID.isEmpty && day == nil {
+                errors.append(.init(line: row.lineNumber, reason: "day_id \(dayID) not found — importing as orphan"))
             }
             let name = row.optionalString("name") ?? ""
             guard !name.isEmpty else {
@@ -1068,9 +1076,14 @@ public enum DataImportService {
 
         for row in reader.rows() {
             let sessionID = row["session_id"]
-            guard let session = idMap[sessionID] as? WorkoutSession else {
-                errors.append(.init(line: row.lineNumber, reason: "unknown session_id: \(sessionID)"))
-                continue
+            // DEL-189: ExerciseLog.session ist optional (DEL-051 Snapshot-
+            // Pattern: PR-Detection liest exerciseNameSnapshot, nicht den
+            // session-Pointer). Orphan-Logs werden importiert, damit die
+            // History (32KB workout_sets!) zurückkommt, auch wenn der
+            // session-Backref leer ist.
+            let session = idMap[sessionID] as? WorkoutSession
+            if !sessionID.isEmpty && session == nil {
+                errors.append(.init(line: row.lineNumber, reason: "session_id \(sessionID) not found — importing as orphan"))
             }
             guard let date = row.date("date_utc") else {
                 errors.append(.init(line: row.lineNumber, reason: "missing date_utc"))
@@ -1079,7 +1092,10 @@ public enum DataImportService {
             let setIndex = row.int("set_index") ?? 0
             let nameSnap = row.optionalString("exercise_name_snapshot")
             let dupKey = Self.logKey(
-                sessionStart: session.startTime,
+                // Dedup über session.startTime falls vorhanden, sonst über
+                // den Log-eigenen `date` — orphan-Logs haben keinen Session-
+                // Pointer mehr.
+                sessionStart: session?.startTime ?? date,
                 setIndex: setIndex,
                 nameSnapshot: nameSnap
             )
