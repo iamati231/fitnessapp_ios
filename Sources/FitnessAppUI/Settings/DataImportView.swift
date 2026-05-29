@@ -364,9 +364,12 @@ public struct DataImportView: View {
                             // diese 0 oder verdächtig klein ist, ist der
                             // Extract der Übeltäter.
                             if let bytes = result.extractedSizes[file] {
+                                // `.tertiary` ist ein ShapeStyle, `.red` ist
+                                // Color — gemischt kracht es im Ternary.
+                                // Beide auf Color bringen.
                                 Text("\(bytes) b")
                                     .font(.caption2.monospaced())
-                                    .foregroundStyle(bytes < 100 ? .red : .tertiary)
+                                    .foregroundStyle(bytes < 100 ? Color.red : Color.secondary)
                             }
                             Text(String(
                                 format: String(localized: "settings.dataImport.result.fileSummary", bundle: .module),
