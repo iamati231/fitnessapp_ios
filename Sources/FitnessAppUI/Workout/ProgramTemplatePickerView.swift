@@ -114,7 +114,14 @@ public struct ProgramTemplatePickerView: View {
     }
 
     private func instantiate(_ template: ProgramTemplate) {
-        let plan = ProgramInstantiator.instantiate(template, in: modelContext)
+        // DEL-170: User-Equipment vom Profil ziehen, damit Templates mit
+        // `equipmentVariants` die passende Variante bekommen. Leer = Standard.
+        let userEquipment = profiles.first?.equipmentPreferences ?? []
+        let plan = ProgramInstantiator.instantiate(
+            template,
+            in: modelContext,
+            userEquipment: userEquipment
+        )
         dismiss()
         // Defer the navigation to the next runloop — gives the sheet's dismiss
         // animation time to start before the workout-stack mutation lands.

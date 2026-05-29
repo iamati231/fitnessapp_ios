@@ -58,6 +58,7 @@ public struct ProfileEditorView: View {
             personSection
             bodySection
             goalSection
+            equipmentSection
             coachingSection
             healthKitSection
         }
@@ -387,6 +388,58 @@ public struct ProfileEditorView: View {
         } footer: {
             Text("profile.goal.footer", bundle: .module)
                 .font(.footnote)
+        }
+    }
+
+    /// DEL-170: Equipment-Präferenzen (Multi-Select). Steuert die Auswahl
+    /// von `EquipmentVariant` bei Templates mit mehreren Implement-Varianten
+    /// (z.B. Hybrid-Pläne: Barbell-Gym vs. Dumbbell-Only). Default leer →
+    /// Plan-Matcher behandelt das wie "nicht gepflegt" und nimmt die
+    /// Standard-Variante; sobald der User mindestens eine Box ankreuzt,
+    /// wirken die Präferenzen sofort beim nächsten Plan-Adopt.
+    @ViewBuilder
+    private var equipmentSection: some View {
+        Section {
+            ForEach(Equipment.allCases, id: \.self) { equip in
+                Toggle(isOn: equipmentBinding(for: equip)) {
+                    Label {
+                        Text(equip.localizedName)
+                    } icon: {
+                        Image(systemName: equipmentIcon(equip))
+                            .foregroundStyle(Color.deltiqOrange)
+                    }
+                }
+            }
+        } header: {
+            Text("profile.equipment.header", bundle: .module)
+        } footer: {
+            Text("profile.equipment.footer", bundle: .module)
+                .font(.footnote)
+        }
+    }
+
+    private func equipmentBinding(for equipment: Equipment) -> Binding<Bool> {
+        Binding(
+            get: { profile.equipmentPreferences.contains(equipment) },
+            set: { isOn in
+                var current = profile.equipmentPreferences
+                if isOn { current.insert(equipment) } else { current.remove(equipment) }
+                profile.equipmentPreferences = current
+            }
+        )
+    }
+
+    /// Spiegelung von `ExercisePickerView.equipmentIcon` für visuelle
+    /// Konsistenz mit dem Picker (gleiche SF-Symbole).
+    private func equipmentIcon(_ e: Equipment) -> String {
+        switch e {
+        case .barbell:     return "scalemass"
+        case .dumbbell:    return "dumbbell"
+        case .bodyweight:  return "figure.walk"
+        case .machine:     return "gearshape"
+        case .cable:       return "cable.connector"
+        case .kettlebell:  return "circle.grid.cross"
+        case .band:        return "infinity"
         }
     }
 

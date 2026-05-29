@@ -651,7 +651,45 @@ public enum ProgramTemplates {
         targetEnvironment: .gym,
         iconSystemName: "figure.mixed.cardio",
         targetExperience: [.intermediate, .advanced],
-        targetGoals: [.hybrid]
+        targetGoals: [.hybrid],
+        // DEL-170: Equipment-Varianten. Cardio-Tage bleiben unverändert (gleiche
+        // Distanzen/Dauer). Strength-Tage werden auf die jeweilige Implement-
+        // Familie umgemappt. RIR-Puffer + Volumen bleiben strukturell identisch
+        // zur Barbell-Variante, damit die Concurrent-Logik nicht kippt.
+        equipmentVariants: [
+            // ── Dumbbell-Only (Home-Gym ohne Rack) ─────────────────────────
+            EquipmentVariant(profile: .dumbbellOnly, days: [
+                DaySpec(name: "Strength Push", localizationKey: "plan.day.strengthPush", type: .push, sequenceIndex: 1, exercises: [
+                    ExerciseSpec(name: "Bankdrücken (KH)",                sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Schulterdrücken (KH)",            sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Schrägbankdrücken aufwärts (KH)", sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Trizepsstrecker über Kopf (KH)",  sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+                ]),
+                DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35)
+                ]),
+                DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
+                    ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",     sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Rudern einarmig (KH)",            sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Chest Supported Row (KH)",        sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Bizeps-Curl (KH)",                sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+                ]),
+                DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70)
+                ]),
+                DaySpec(name: "Strength Legs (Light)", localizationKey: "plan.day.strengthLegsLight", type: .legs, sequenceIndex: 5, exercises: [
+                    ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",      sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",     sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Ausfallschritte (KH)",            sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 2.0),
+                    ExerciseSpec(name: "Plank",                           sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 3.0)
+                ])
+            ]),
+            // NOTE: kettlebellOnly-Variante folgt in einem Folge-Commit, sobald
+            // die Library um 4–5 KB-spezifische Übungen erweitert ist (Floor
+            // Press, Row, Deadlift/RDL, Push Press, Suitcase Carry). Vorhandene
+            // KB-Library: Swing, Goblet Squat, Turkish Get-Up, Snatch, Clean &
+            // Press, Halo — zu wenig für einen vollwertigen 5-Tage-Plan.
+        ]
     )
 
     // MARK: - 14. Hybrid Athlete — Performance (DEL-055)

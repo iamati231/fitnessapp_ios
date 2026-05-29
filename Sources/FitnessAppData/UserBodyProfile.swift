@@ -50,6 +50,14 @@ public final class UserBodyProfile {
     /// Bruch fuer Bestand.
     public var heroMetricSlotsRaw: [String] = HeroMetricType.defaultOrder.map { $0.rawValue }
 
+    /// DEL-170: Equipment-Präferenzen des Users (Multi-Select). Steuert die
+    /// Variant-Auswahl bei Templates mit `equipmentVariants` (z.B. Hybrid-
+    /// Pläne in Barbell-/Dumbbell-Version). RawValues von `Equipment`.
+    /// Default leer — Lightweight-Migration: pre-DEL-170-Profile kommen mit
+    /// `[]` an. Plan-Matcher behandelt leeres Set wie "User hat das nicht
+    /// gepflegt" und nutzt die Standard-Variante (template.days).
+    public var equipmentPreferencesRaw: [String] = []
+
     /// Convenience-Accessor mit Default-Fallback, falls jemand einen
     /// invaliden String reinschreibt.
     public var coachingTone: CoachingTone {
@@ -85,6 +93,14 @@ public final class UserBodyProfile {
         }
     }
 
+    /// DEL-170: Typed Accessor für Equipment-Präferenzen. Set-basiert
+    /// (Reihenfolge irrelevant). Stale rawStrings (Enum-Cases existieren
+    /// nicht mehr) werden beim Lesen rausgefiltert.
+    public var equipmentPreferences: Set<Equipment> {
+        get { Set(equipmentPreferencesRaw.compactMap { Equipment(rawValue: $0) }) }
+        set { equipmentPreferencesRaw = newValue.map(\.rawValue).sorted() }
+    }
+
     public init(
         birthDate: Date,
         heightCm: Double,
@@ -93,7 +109,10 @@ public final class UserBodyProfile {
         goalWeightKg: Double? = nil,
         environment: EnvironmentType = .gym,
         coachingTone: CoachingTone = .analytical,
-        trainingGoal: TrainingGoal = .hybrid
+        trainingGoal: TrainingGoal = .hybrid,
+        // DEL-170: optionale Equipment-Präferenzen. Default leer — der Matcher
+        // behandelt das wie "nicht gepflegt" und nimmt die Standard-Variante.
+        equipmentPreferences: Set<Equipment> = []
     ) {
         self.birthDate = birthDate
         self.heightCm = heightCm
@@ -103,6 +122,7 @@ public final class UserBodyProfile {
         self.environment = environment
         self.coachingToneRaw = coachingTone.rawValue
         self.trainingGoalRaw = trainingGoal.rawValue
+        self.equipmentPreferencesRaw = equipmentPreferences.map(\.rawValue).sorted()
     }
 }
 #endif

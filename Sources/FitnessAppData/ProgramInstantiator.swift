@@ -49,7 +49,11 @@ public enum ProgramInstantiator {
     public static func instantiate(
         _ template: ProgramTemplate,
         in context: ModelContext,
-        selectedWeekdays: [Int]? = nil
+        selectedWeekdays: [Int]? = nil,
+        // DEL-170: User-Equipment-Präferenzen. Steuert die Auswahl der
+        // `EquipmentVariant`. Leer = keine Variant-Auswahl, Caller bekommt
+        // die Standard-Variante (`template.days`).
+        userEquipment: Set<Equipment> = []
     ) -> TrainingPlan {
         // 1) Deactivate every existing plan.
         let allPlans = (try? context.fetch(FetchDescriptor<TrainingPlan>())) ?? []
@@ -97,7 +101,25 @@ public enum ProgramInstantiator {
         let normalized = normalize(weekdays: rawWeekdays, expectedCount: template.daysPerWeek)
 
         // 5) Workout-Tage mappen (sequenceIndex → realer Wochentag).
-        let sortedDays = template.days.sorted { $0.sequenceIndex < $1.sequenceIndex }
+        // DEL-170: Variant-Auswahl. Wenn das Template Equipment-Variants hat
+        // UND der User Equipment-Präferenzen gepflegt hat, wählen wir die
+        // beste passende Variante. Sonst: Standard `template.days` (das ist
+        // die implizite Barbell-Gym-Variante).
+        let resolvedDays: [DaySpec] = {
+            guard let variants = template.equipmentVariants, !userEquipment.isEmpty else {
+                return template.days
+            }
+            // Base-Variante (template.days = barbellGym-implizit) bevorzugen,
+            // wenn der User Barbell + Dumbbell hat.
+            let baseRequires = EquipmentProfile.barbellGym.requiredEquipment
+            if baseRequires.isSubset(of: userEquipment) {
+                return template.days
+            }
+            // Sonst die priorisierte beste Variante; Fallback auf base.
+            return EquipmentVariant.bestMatch(in: variants, userOwns: userEquipment)?.days
+                ?? template.days
+        }()
+        let sortedDays = resolvedDays.sorted { $0.sequenceIndex < $1.sequenceIndex }
         var workoutDayWeekdays = Set<Int>()
         for (idx, daySpec) in sortedDays.enumerated() {
             guard idx < normalized.count else { break }   // Defensive

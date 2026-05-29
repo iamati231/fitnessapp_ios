@@ -7,17 +7,23 @@ public struct QuizAnswers: Sendable, Equatable {
     public let experience: ExperienceLevel
     public let preferredDays: Int          // 2–6 typischerweise
     public let environment: EnvironmentType
+    /// DEL-170: Vom User gepflegte Equipment-Präferenzen. Leeres Set = nicht
+    /// gepflegt → der Matcher wendet keinen zusätzlichen Equipment-Filter an
+    /// (Backward-Compat-Pfad für pre-DEL-170-Profile).
+    public let equipmentPreferences: Set<Equipment>
 
     public init(
         goal: GoalType,
         experience: ExperienceLevel,
         preferredDays: Int,
-        environment: EnvironmentType
+        environment: EnvironmentType,
+        equipmentPreferences: Set<Equipment> = []
     ) {
         self.goal = goal
         self.experience = experience
         self.preferredDays = preferredDays
         self.environment = environment
+        self.equipmentPreferences = equipmentPreferences
     }
 }
 
@@ -39,6 +45,7 @@ public enum PlanMatchmaker {
         let eligible = templates.filter { template in
             envMatches(plan: template.targetEnvironment, user: answers.environment)
                 && template.daysPerWeek <= answers.preferredDays
+                && equipmentMatches(template: template, user: answers.equipmentPreferences)
         }
 
         // Wenn alles raus-gefiltert wurde, fallback auf BW-/Anfaenger-Pfad.
@@ -62,6 +69,21 @@ public enum PlanMatchmaker {
                 return lhs.origin < rhs.origin
             }
             .map { $0.plan }
+    }
+
+    /// DEL-170: Hard-Filter für Equipment. Templates ohne `equipmentVariants`
+    /// haben keine Equipment-spezifische Anforderung (Backward-Compat).
+    /// Templates MIT Variants müssen vom User abgedeckt sein — entweder über
+    /// die implizite Basis-Variante (`template.days`, Konvention: barbellGym)
+    /// ODER mindestens eine der gelisteten `equipmentVariants`. Leeres
+    /// User-Preference-Set wird als "nicht gepflegt" interpretiert und passiert
+    /// den Filter (Onboarding-Skip / pre-DEL-170-Bestand).
+    private static func equipmentMatches(template: ProgramTemplate, user: Set<Equipment>) -> Bool {
+        guard !user.isEmpty else { return true }
+        guard let variants = template.equipmentVariants else { return true }
+        let baseRequires = EquipmentProfile.barbellGym.requiredEquipment
+        if baseRequires.isSubset(of: user) { return true }
+        return variants.contains { $0.profile.requiredEquipment.isSubset(of: user) }
     }
 
     /// Hard-Filter-Logik fuer das Environment:

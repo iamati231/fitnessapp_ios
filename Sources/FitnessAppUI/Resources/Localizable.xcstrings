@@ -14266,6 +14266,22 @@
         }
       }
     },
+    "profile.equipment.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Equipment-Präferenzen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Equipment preferences" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ekipman tercihleri" } }
+      }
+    },
+    "profile.equipment.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Wähle aus, was du zur Verfügung hast. Pläne mit mehreren Implement-Varianten (z.B. Hybrid) bekommen automatisch die passende Übungsauswahl. Leer = Standard-Variante (Langhantel)." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Pick what you have available. Plans with multiple implement variants (e.g. Hybrid) automatically get the matching exercise lineup. Empty = default variant (barbell)." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sahip olduğun ekipmanı seç. Birden çok ekipman varyantı olan planlar (örn. Hybrid) otomatik olarak uygun hareket listesini alır. Boş = varsayılan (barbell)." } }
+      }
+    },
     "profile.goal.footer": {
       "extractionState": "manual",
       "localizations": {

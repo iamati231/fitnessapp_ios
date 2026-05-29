@@ -46,6 +46,13 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
     public let focusKey: String?
     public let descriptionKey: String?
 
+    /// DEL-170: Optionale Equipment-spezifische Varianten des Templates.
+    /// `nil` = einzige Variante ist `days` (Standard, Backward-Compat). Wenn
+    /// gesetzt, wählt der `ProgramInstantiator` anhand der
+    /// `UserBodyProfile.equipmentPreferences` die passende `EquipmentVariant`;
+    /// fällt auf `days` zurück, wenn keine kompatibel ist.
+    public let equipmentVariants: [EquipmentVariant]?
+
     public init(
         id: String,
         name: String,
@@ -61,7 +68,8 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
         targetEnvironment: EnvironmentType = .gym,
         iconSystemName: String = "figure.strengthtraining.traditional",
         targetExperience: [ExperienceLevel] = [.intermediate],
-        targetGoals: [GoalType] = [.hypertrophy]
+        targetGoals: [GoalType] = [.hypertrophy],
+        equipmentVariants: [EquipmentVariant]? = nil
     ) {
         self.id = id
         self.name = name
@@ -78,5 +86,6 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
         self.taglineKey = taglineKey
         self.focusKey = focusKey
         self.descriptionKey = descriptionKey
+        self.equipmentVariants = equipmentVariants
     }
 }
