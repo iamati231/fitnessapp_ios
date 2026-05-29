@@ -110,9 +110,20 @@ public enum DataImportService {
         // Daten. Die Dedup-Indizes im Three-Pass-Merge stehen danach leer,
         // also wird jede Zeile aus dem ZIP frisch eingefügt — kein
         // Spezial-Pfad im Insert-Code nötig.
+        //
+        // DEL-182: `context.save()` ZWINGEND direkt nach dem Wipe — sonst
+        // sehen die nachfolgenden `FetchDescriptor`-Calls in den Import-
+        // Phasen (Singleton-Check für UserBodyProfile, Dedup-Indizes für
+        // Gear/Workouts/Logs/PRs) die noch-nicht-persistierten Pre-Wipe-
+        // Objekte und behandeln neue Zeilen als Duplikate. Resultat
+        // ohne Save war 0/0 für alle Files — Replace verhielt sich wie
+        // ein No-Op. SwiftData honoriert pending-deletes in `fetch`
+        // nicht zuverlässig; ein Save zwingt den Store-Layer zur
+        // Konsistenz.
         if strategy == .replace {
             progressHandler?(ImportProgress(phase: "wipe", filesCompleted: 0, filesTotal: 0))
             try wipeAllUserData(context: context)
+            try context.save()
         }
 
         // 1) ZIP entpacken. ZIPFoundation kann direkt aus Data lesen, in-
@@ -126,7 +137,23 @@ public enum DataImportService {
             _ = try archive.extract(entry) { chunk in
                 buffer.append(chunk)
             }
-            files[entry.path] = buffer
+            // DEL-182: Path-Normalisierung. Manche ZIP-Tools (Finder-Export,
+            // iCloud-Drive-Re-Pack) wrappen die Files in einen Top-Level-
+            // Folder — `profile.csv` wird dann zu `export-2026-05-29/profile.csv`.
+            // Wir mappen IMMER auf den letzten Path-Component, damit die
+            // `files["profile.csv"]`-Lookups unten robust sind. Für unsere
+            // eigenen Exports (ohne Folder) ist `lastPathComponent ==
+            // entry.path`, also kein Effekt.
+            let key = (entry.path as NSString).lastPathComponent
+            files[key] = buffer
+        }
+
+        // DEL-182: Defensive Diagnose. Wenn keine einzige der erwarteten
+        // CSV-Dateien gefunden wurde, ist die ZIP-Struktur fundamental
+        // falsch — kein Sinn weiterzumachen.
+        let expectedAnchor = ["profile.csv", "workouts.csv", "plans.csv"]
+        if !expectedAnchor.contains(where: { files[$0] != nil }) {
+            throw ImportError.zipNotReadable
         }
 
         // 2) meta.json validieren.
