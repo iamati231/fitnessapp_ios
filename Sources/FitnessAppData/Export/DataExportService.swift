@@ -119,9 +119,8 @@ public enum DataExportService {
 
         // 4) ZIP-Erstellung via ZIPFoundation. In-memory Archive: kein
         //    temporäres Disk-File, weniger Cleanup-Pflicht, schneller.
-        guard let archive = Archive(accessMode: .create) else {
-            throw ExportError.zipCreationFailed
-        }
+        guard let archive = try? Archive(accessMode: .create) else { throw ExportError.zipCreationFailed }
+
         for entry in files {
             try archive.addEntry(
                 with: entry.name,
