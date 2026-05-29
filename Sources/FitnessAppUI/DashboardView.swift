@@ -77,6 +77,10 @@ public struct DashboardView: View {
     /// unterschiedliche Spannweiten haben, der User stellt sie unabhaengig ein.
     @AppStorage("dashboard.compoundChartRange") private var compoundChartRange: ChartTimeRange = .oneMonth
     @AppStorage("dashboard.cardioChartRange") private var cardioChartRange: ChartTimeRange = .oneMonth
+    /// DEL-178: Wochen-Volume-Trend-Chart. Eigener Range, damit der User
+    /// pro Chart unabhängig zoomen kann (Compound-Trend evtl. 1M, Volume
+    /// langfristig 3M etc.).
+    @AppStorage("dashboard.volumeChartRange") private var volumeChartRange: ChartTimeRange = .threeMonths
 
     /// DEL-177: Letzter erfolgreicher CSV-Export. 0 = noch nie. Wird vom
     /// Soft-Coaching-Trigger gelesen — > 30 Tage her oder noch nie
@@ -116,6 +120,7 @@ public struct DashboardView: View {
                     case .compoundLifts:   compoundLiftChart
                     case .cardioPace:      cardioPaceChart
                     case .recentWorkouts:  recentWorkoutsCard
+                    case .volumeOverTime:  volumeOverTimeChart
                     }
                 }
             }
@@ -1741,6 +1746,118 @@ public struct DashboardView: View {
     /// tagelanges Custom-Artwork. Grid-Tiles liefern 80% des Werts (User
     /// sieht sofort welche Gruppe untertrainiert ist) ohne Asset-Pipeline.
     @ViewBuilder
+    // MARK: - DEL-178 Volume-Over-Time Chart
+
+    /// Wochen-Strength-Volume als BarMark-Trend. Visualisiert
+    /// Volumen-Schwankungen über mehrere Wochen — wird im Hypertrophie-
+    /// Coaching gerne als "Bin ich progressively überloading?"-Indikator
+    /// genutzt. Cardio-Logs werden ausgeklammert (kein Volume-Begriff).
+    private var volumeOverTimeChart: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("dashboard.volumeChart.title", bundle: .module)
+                    .font(.headline)
+                Spacer()
+                Text("dashboard.volumeChart.legend", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            // Window-Berechnung analog zum Compound-Chart: harte Domain
+            // mit `now` rechts, Range-bedingte linke Kante.
+            let points = volumeByWeek
+            let hasData = points.contains { $0.volumeKg > 0 }
+            if !hasData {
+                DashboardEmptyState(
+                    icon: "chart.bar.fill",
+                    title: "dashboard.volumeChart.empty.title",
+                    description: "dashboard.volumeChart.empty.description"
+                )
+            } else {
+                ChartTimeRangePicker(selection: $volumeChartRange)
+                let domain = volumeChartRange.domain(
+                    oldestDataDate: points.first?.weekStart
+                )
+                Chart {
+                    ForEach(points) { point in
+                        BarMark(
+                            // Wochen-Anker: wir taggen den BarMark auf den
+                            // Mittwoch der Woche, damit die Bar visuell
+                            // in der Woche zentriert wirkt (BarMark wird
+                            // mit point-width gerendert; Mo wäre links-
+                            // bündig + sehe wackelig aus, wenn der erste
+                            // sichtbare Bucket teilweise außerhalb der
+                            // Domain liegt).
+                            x: .value("Woche", point.weekStart.addingTimeInterval(2.5 * 86_400)),
+                            y: .value("Volumen (kg)", point.volumeKg)
+                        )
+                        .foregroundStyle(point.volumeKg > 0
+                                         ? Color.deltiqOrange.gradient
+                                         : Color.secondary.opacity(0.12).gradient)
+                        .cornerRadius(4)
+                    }
+                }
+                .chartXScale(domain: domain)
+                .chartXAxis {
+                    if let dates = volumeChartRange.axisDates() {
+                        AxisMarks(values: dates) { _ in
+                            AxisGridLine()
+                            AxisTick()
+                            AxisValueLabel(format: .dateTime.day().month(.abbreviated))
+                        }
+                    } else {
+                        AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                            AxisGridLine()
+                            AxisTick()
+                            AxisValueLabel(format: .dateTime.day().month(.abbreviated))
+                        }
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks { _ in
+                        AxisGridLine()
+                        AxisTick()
+                        AxisValueLabel()
+                    }
+                }
+                .frame(height: 220)
+                .fitnessNumberStyle()
+            }
+        }
+        .deltiqCardStyle()
+    }
+
+    /// Wochen-Buckets von Strength-Volume innerhalb des aktuell gewählten
+    /// Range-Fensters. Pure-function-Aggregation in Core, View liefert nur
+    /// das Tuple-Array.
+    private var volumeByWeek: [VolumeWeekPoint] {
+        let calendar = Calendar.current
+        let now = Date()
+        // Linke Fenster-Kante. Bei .max: 26 Wochen zurück als pragmatischer
+        // Default — sonst tönen wir hunderte Bars in den Chart, was am
+        // iPhone-Screen unleserlich wird. User kann via Range zwischen 1M /
+        // 3M / Max wählen; Max ist hier "ein halbes Jahr".
+        let windowStart: Date = {
+            if let cutoff = volumeChartRange.cutoff(now: now, calendar: calendar) {
+                return cutoff
+            }
+            return calendar.date(byAdding: .weekOfYear, value: -26, to: now) ?? now
+        }()
+        let logs = completedSessions
+            .filter(\.isRealWorkout)
+            .flatMap(\.logs)
+            .map { log -> (date: Date, weightKg: Double, reps: Int, isCardio: Bool, isTimeBased: Bool) in
+                let when = log.session?.startTime ?? log.date
+                return (when, log.weight, log.reps, log.resolvedIsCardio, log.resolvedIsTimeBased)
+            }
+        return VolumeOverTimeAggregator.aggregate(
+            logs: logs,
+            windowStart: windowStart,
+            now: now,
+            calendar: calendar
+        )
+    }
+
     private var muscleHeatmapCard: some View {
         let aggregate = weeklyMuscleVolume
         let anyTraining = aggregate.contains { $0.setsCount > 0 }

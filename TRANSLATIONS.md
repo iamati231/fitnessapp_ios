@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1239 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1244 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1239 / 1239** (100%) | 0 |
-| 🇬🇧 English (EN) | **1239 / 1239** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1239 / 1239** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1244 / 1244** (100%) | 0 |
+| 🇬🇧 English (EN) | **1244 / 1244** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1244 / 1244** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -298,7 +298,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `customExercise.section.name` | Name | Name | Ad |
 | `customExercise.title` | Neue Übung | New exercise | Yeni hareket |
 
-## `dashboard.*`  (68 Keys)
+## `dashboard.*`  (72 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -367,6 +367,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.trophy.recordCount.one` | %lld Rekord | %lld record | %lld rekor |
 | `dashboard.trophy.recordCount.other` | %lld Rekorde | %lld records | %lld rekor |
 | `dashboard.trophy.title` | Trophy Room | Trophy Room | Kupa Odası |
+| `dashboard.volumeChart.empty.description` | Absolviere ein paar Kraft-Sessions und dein wöchentliches Volumen erscheint hier. | Complete some strength sessions and your weekly volume will show up here. | Birkaç kuvvet antrenmanı tamamla, haftalık hacmin burada görünecek. |
+| `dashboard.volumeChart.empty.title` | Noch kein Kraft-Volumen | No strength volume yet | Henüz kuvvet hacmi yok |
+| `dashboard.volumeChart.legend` | kg pro Woche | kg per week | haftada kg |
+| `dashboard.volumeChart.title` | Wochen-Volumen | Weekly volume | Haftalık hacim |
 | `dashboard.weeklySummary.distance` | Distanz | Distance | Mesafe |
 | `dashboard.weeklySummary.title` | Diese Woche | This Week | Bu Hafta |
 | `dashboard.weeklySummary.volume` | Volumen | Volume | Hacim |
@@ -1505,7 +1509,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `water.source.lastMeasurement` | letzte Messung | last measurement | son ölçüm |
 | `water.title` | Wasser | Water | Su |
 
-## `widget.*`  (10 Keys)
+## `widget.*`  (11 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1516,6 +1520,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `widget.nextWorkout.name` | Nächstes Training | Next Workout | Sıradaki Antrenman |
 | `widget.recentWorkouts.name` | Letzte Trainings | Recent Workouts | Son Antrenmanlar |
 | `widget.trophyRoom.name` | Trophy Room | Trophy Room | Kupa Odası |
+| `widget.volumeOverTime.name` | Volumen-Trend | Volume trend | Hacim trendi |
 | `widget.weeklyVolume.name` | Diese Woche | This Week | Bu Hafta |
 | `widget.weightTrend.name` | Gewichts-Trend | Weight Trend | Kilo Trendi |
 | `widget.workoutHistory.name` | Trainingsverlauf | Workout History | Antrenman Geçmişi |
