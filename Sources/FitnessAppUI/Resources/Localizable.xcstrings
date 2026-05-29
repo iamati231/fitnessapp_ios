@@ -8836,6 +8836,46 @@
         }
       }
     },
+    "exercise.name.kettlebellFloorPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Floor Press" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Floor Press" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Floor Press" } }
+      }
+    },
+    "exercise.name.kettlebellRowSingleArm": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Row einarmig" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Single-Arm Row" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Tek Kol Row" } }
+      }
+    },
+    "exercise.name.kettlebellRDL": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell RDL" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell RDL" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell RDL" } }
+      }
+    },
+    "exercise.name.kettlebellPushPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Push Press" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Push Press" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Push Press" } }
+      }
+    },
+    "exercise.name.kettlebellSuitcaseCarry": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Suitcase Carry" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Suitcase Carry" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Bavul Taşıma" } }
+      }
+    },
     "exercise.name.treadmill": {
       "extractionState": "manual",
       "localizations": {
