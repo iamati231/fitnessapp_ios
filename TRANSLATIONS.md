@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1191 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1213 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1191 / 1191** (100%) | 0 |
-| 🇬🇧 English (EN) | **1191 / 1191** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1191 / 1191** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1213 / 1213** (100%) | 0 |
+| 🇬🇧 English (EN) | **1213 / 1213** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1213 / 1213** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1265,7 +1265,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (74 Keys)
+## `settings.*`  (96 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1298,6 +1298,27 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.dataExport.intro.footer` | Deine Daten verlassen dein Gerät erst, wenn du das Archiv selbst teilst. Der Export läuft vollständig auf diesem iPhone. | Your data never leaves your device unless you share the archive yourself. The export happens entirely on this iPhone. | Arşivi sen kendin paylaşmadıkça verilerin cihazından ayrılmaz. Dışa aktarma tamamen bu iPhone'da gerçekleşir. |
 | `settings.dataExport.intro.header` | Was das macht | What this does | Bu ne yapar |
 | `settings.dataExport.title` | Daten-Export | Data Export | Veri Dışa Aktarımı |
+| `settings.dataImport.action.pick` | ZIP-Datei auswählen | Choose ZIP file | ZIP dosyası seç |
+| `settings.dataImport.action.shareErrors` | Fehlerprotokoll teilen | Share error log | Hata günlüğünü paylaş |
+| `settings.dataImport.action.start` | Import starten | Start import | İçe aktarmayı başlat |
+| `settings.dataImport.confirm.action` | Ja, jetzt importieren | Yes, import now | Evet, şimdi içe aktar |
+| `settings.dataImport.confirm.message` | Bestehende Daten bleiben unangetastet. Nur fehlende Zeilen aus dem Archiv werden ergänzt. Duplikate werden erkannt und übersprungen. | Existing data stays untouched. Only missing rows from the archive will be added. Duplicates are detected and skipped. | Mevcut veriler değişmez. Yalnızca arşivdeki eksik satırlar eklenir. Yinelenen kayıtlar algılanır ve atlanır. |
+| `settings.dataImport.confirm.title` | Daten importieren? | Import data? | Verileri içe aktar? |
+| `settings.dataImport.importing` | Lese Archiv und füge Daten ein… | Reading archive and merging data… | Arşiv okunuyor ve veriler birleştiriliyor… |
+| `settings.dataImport.intro.body` | Wähle ein Deltiq-Export-ZIP (auf diesem oder einem anderen Gerät erstellt) und wir spielen die Daten in deine Bibliothek ein. Der Import ist sicher: nichts, was bereits in der App ist, wird angefasst. | Pick a Deltiq export ZIP (created on this or another device) and we'll merge the data into your library. The import is safe: nothing already in your app gets touched. | Bir Deltiq dışa aktarma ZIP'i seç (bu veya başka bir cihazda oluşturulmuş) ve verileri kütüphanene birleştirelim. İçe aktarma güvenlidir: uygulamada zaten bulunan hiçbir şey değişmez. |
+| `settings.dataImport.intro.footer` | Es werden nur ZIP-Archive mit Format-Version 1.x unterstützt. Neuere oder ältere Formate werden abgelehnt. | Only ZIP archives with format version 1.x are supported. Newer or older formats will be refused. | Yalnızca format sürümü 1.x olan ZIP arşivleri desteklenir. Daha yeni veya eski formatlar reddedilir. |
+| `settings.dataImport.intro.header` | Von einem Export wiederherstellen | Restore from an export | Bir dışa aktarmadan geri yükle |
+| `settings.dataImport.picked.header` | Ausgewählte Datei | Selected file | Seçili dosya |
+| `settings.dataImport.result.errors` | Fehlerhafte Zeilen | Failed rows | Başarısız satırlar |
+| `settings.dataImport.result.fileSummary` | +%lld / skip %lld | +%lld / skip %lld | +%lld / atla %lld |
+| `settings.dataImport.result.header` | Import abgeschlossen | Import complete | İçe aktarma tamamlandı |
+| `settings.dataImport.result.imported` | Importiert | Imported | İçe aktarıldı |
+| `settings.dataImport.result.skipped` | Übersprungen (Duplikate) | Skipped (duplicates) | Atlandı (yinelenen) |
+| `settings.dataImport.strategy.appendOnly` | Append-only — deine bestehenden Workouts, Rekorde und Pläne bleiben unangetastet. | Append-only — your existing workouts, records and plans stay untouched. | Yalnızca ekleme — mevcut antrenmanların, rekorların ve planların değişmez. |
+| `settings.dataImport.strategy.duplicates` | Duplikate (gleiches Workout/Maß/PR) werden anhand des Zeitstempels erkannt und übersprungen. | Duplicates (same workout/measurement/PR) are detected by timestamp and skipped. | Yinelenen kayıtlar (aynı antrenman/ölçüm/PR) zaman damgasına göre algılanır ve atlanır. |
+| `settings.dataImport.strategy.errorsLog` | Fehlerhafte Zeilen werden in einem Fehlerprotokoll gesammelt, das du teilen kannst. | Broken rows are collected into an errors report you can share. | Bozuk satırlar, paylaşabileceğin bir hata raporunda toplanır. |
+| `settings.dataImport.strategy.header` | Wie der Import arbeitet | How the import works | İçe aktarma nasıl çalışır |
+| `settings.dataImport.title` | Daten-Import | Data Import | Veri İçe Aktarımı |
 | `settings.health.connect` | Verbinden | Connect | Bağla |
 | `settings.health.denied` | Berechtigung verweigert | Permission denied | İzin reddedildi |
 | `settings.health.footer` | Bei aktivierter Verbindung wird im Messwerte-Formular das letzte Waagen-Gewicht vorausgefüllt. Beim Speichern werden Gewicht, KFA und Magere Masse zurück nach Apple Health geschrieben. | When connected, the measurement form prefills your last scale weight. Saving writes weight, body fat %, and lean mass back to Apple Health. | Bağlıyken ölçüm formu son tartı kilonu önceden doldurur. Kaydetme; kilo, yağ oranı ve yağsız kütleyi Apple Health'e yazar. |
@@ -1311,6 +1332,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.preferences.units.label` | Einheiten | Units | Birimler |
 | `settings.preferences.units.metric` | Metrisch | Metric | Metrik |
 | `settings.privacy.dataExport` | Daten exportieren (CSV) | Export data (CSV) | Verileri dışa aktar (CSV) |
+| `settings.privacy.dataImport` | Daten importieren (CSV) | Import data (CSV) | Verileri içe aktar (CSV) |
 | `settings.privacy.footer` | Exportiere alle deine Trainings- und Profildaten als ZIP-Archiv mit CSV-Dateien. Praktisch für Backups, Gerätewechsel oder einfach um deine Daten in der Hand zu haben. | Export all your training and profile data as a ZIP archive of CSV files. Useful for backups, switching devices, or simply having your data. | Tüm antrenman ve profil verilerini CSV dosyalarından oluşan bir ZIP arşivi olarak dışa aktar. Yedekleme, cihaz değişikliği veya verilerine sahip olmak için kullanışlıdır. |
 | `settings.profile.goal` | Ziel %@ | Goal %@ | Hedef %@ |
 | `settings.profile.missing` | Kein Profil vorhanden — App neu starten oder zurücksetzen. | No profile — restart or reset the app. | Profil yok — uygulamayı yeniden başlat ya da sıfırla. |

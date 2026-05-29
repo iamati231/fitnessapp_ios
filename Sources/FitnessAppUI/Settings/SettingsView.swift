@@ -582,6 +582,27 @@ public struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
             }
+            // DEL-174: Daten-Import (Phase 2). Append-only mit Duplikat-
+            // Erkennung — bestehende Daten bleiben unangetastet.
+            DeltiqFormFullRow {
+                NavigationLink {
+                    DataImportView()
+                } label: {
+                    HStack {
+                        Label {
+                            Text("settings.privacy.dataImport", bundle: .module)
+                        } icon: {
+                            Image(systemName: "square.and.arrow.down.on.square")
+                        }
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
         } footer: {
             Text("settings.privacy.footer", bundle: .module)
         }
