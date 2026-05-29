@@ -111,7 +111,7 @@ public enum DataImportService {
 
         // 1) ZIP entpacken. URL-basierte Extract-API ist robuster als das
         //    closure-buffer-Pattern.
-        guard let archive = Archive( zipData, accessMode: .read) else {
+        guard let archive = try? Archive( zipData, accessMode: .read) else {
             throw ImportError.zipNotReadable
         }
         let tmpDir = FileManager.default.temporaryDirectory
@@ -130,7 +130,8 @@ public enum DataImportService {
             let key = (entry.path as NSString).lastPathComponent
             
             // Verzeichnis-Einträge überspringen
-            guard !key.isEmpty, entry.type == .file else { continue }
+            guard !key.isEmpty, entry.type == Entry.EntryType.file else { continue }
+
             
             // Versteckte macOS "dotfiles" (z.B. ._workouts.csv) ignorieren, 
             // die Finder oft mit anlegt.
