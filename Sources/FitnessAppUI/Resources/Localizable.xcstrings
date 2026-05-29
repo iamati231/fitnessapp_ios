@@ -9072,19 +9072,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fatburn A"
+            "value": "Cut A"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fat Burn A"
+            "value": "Cut A"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yağ Yakım A"
+            "value": "Cut A"
           }
         }
       }
@@ -9095,19 +9095,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fatburn B"
+            "value": "Cut B"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fat Burn B"
+            "value": "Cut B"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yağ Yakım B"
+            "value": "Cut B"
           }
         }
       }
@@ -9118,19 +9118,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fatburn C"
+            "value": "Cut C"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fat Burn C"
+            "value": "Cut C"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yağ Yakım C"
+            "value": "Cut C"
           }
         }
       }
@@ -10130,19 +10130,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "3 Tage · Fatburn & Kondition"
+            "value": "3 Tage · Muskelerhalt im Defizit"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "3 Days · Fat Burn & Conditioning"
+            "value": "3 Days · Muscle retention in a deficit"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "3 Gün · Yağ Yakımı & Kondisyon"
+            "value": "3 Gün · Açıkta kas koruma"
           }
         }
       }
@@ -10452,19 +10452,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fatburn"
+            "value": "Defizit-Phase"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fat Loss"
+            "value": "Cut Phase"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yağ Yakımı"
+            "value": "Cut Fazı"
           }
         }
       }
@@ -10774,19 +10774,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Effektiver Ganzkörperplan für maximalen Kalorienverbrauch. Kurze Pausen (60s) halten die Herzfrequenz oben — kombiniert mit einem Cardio-Finisher am Ende jeder Einheit."
+            "value": "Fettverlust kommt aus dem Kaloriendefizit — dieser Plan schützt Muskel und Kraft im Cut: solides Hypertrophie-Volumen bei moderaten Lasten plus ein Cardio-Finisher pro Einheit. Reps und Pausen folgen Standard-Hypertrophie (6–12 bzw. 8–15, 60–180 s Pause), kein 'hohe Wdh = Fett weg'-Mythos."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Effective full-body plan for maximum calorie burn. Short rest periods (60s) keep heart rate elevated — combined with a cardio finisher at the end of each session."
+            "value": "Fat loss comes from the calorie deficit — this plan preserves muscle and strength during the cut: solid hypertrophy volume at moderate loads plus a cardio finisher per session. Reps and rest follow standard hypertrophy (6–12 or 8–15, 60–180 s rest); no 'high reps melt fat' myth."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Maksimum kalori yakımı için etkili tüm vücut planı. Kısa molalar (60s) kalp atış hızını yüksek tutar — her seansın sonunda kardiyo finisher ile birleştirilir."
+            "value": "Yağ kaybı kalori açığından gelir — bu plan diyet sırasında kası ve kuvveti korur: orta yüklerde sağlam hipertrofi hacmi artı her seansta bir kardiyo finisher. Tekrar ve dinlenme standart hipertrofiye uyar (6–12 ya da 8–15, 60–180 sn dinlenme); 'yüksek tekrar = yağ erir' miti yok."
           }
         }
       }
@@ -19662,19 +19662,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fatburn Ganzkörper"
+            "value": "Cut-Phase Ganzkörper"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fat Loss Full Body"
+            "value": "Cut Phase Full Body"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yağ Yakımı Tüm Vücut"
+            "value": "Cut Fazı – Tüm Vücut"
           }
         }
       }

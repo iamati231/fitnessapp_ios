@@ -989,9 +989,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.day.chestBackB` | Brust & Rücken B | Chest & Back B | Göğüs & Sırt B |
 | `plan.day.deadliftDay` | Tag 3 – Kreuzhebe-Tag | Day 3 - Deadlift Day | Gün 3 - Deadlift Günü |
 | `plan.day.easyRun` | Easy Run | Easy Run | Kolay Koşu |
-| `plan.day.fatBurnA` | Fatburn A | Fat Burn A | Yağ Yakım A |
-| `plan.day.fatBurnB` | Fatburn B | Fat Burn B | Yağ Yakım B |
-| `plan.day.fatBurnC` | Fatburn C | Fat Burn C | Yağ Yakım C |
+| `plan.day.fatBurnA` | Cut A | Cut A | Cut A |
+| `plan.day.fatBurnB` | Cut B | Cut B | Cut B |
+| `plan.day.fatBurnC` | Cut C | Cut C | Cut C |
 | `plan.day.fullBodyA` | Ganzkörper A | Full Body A | Tüm Vücut A |
 | `plan.day.fullBodyB` | Ganzkörper B | Full Body B | Tüm Vücut B |
 | `plan.day.fullBodyC` | Ganzkörper C | Full Body C | Tüm Vücut C |
@@ -1043,10 +1043,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.broSplit.focus` | Hypertrophie | Hypertrophy | Hipertrofi |
 | `plan.template.broSplit.name` | Bro-Split | Bro-Split | Bro-Split |
 | `plan.template.broSplit.tagline` | 5 Tage · Hypertrophie | 5 Days · Hypertrophy | 5 Gün · Hipertrofi |
-| `plan.template.fatBurnFullBody.description` | Effektiver Ganzkörperplan für maximalen Kalorienverbrauch. Kurze Pausen (60s) halten die Herzfrequenz oben — kombiniert mit einem Cardio-Finisher am Ende jeder Einheit. | Effective full-body plan for maximum calorie burn. Short rest periods (60s) keep heart rate elevated — combined with a cardio finisher at the end of each session. | Maksimum kalori yakımı için etkili tüm vücut planı. Kısa molalar (60s) kalp atış hızını yüksek tutar — her seansın sonunda kardiyo finisher ile birleştirilir. |
-| `plan.template.fatBurnFullBody.focus` | Fatburn | Fat Loss | Yağ Yakımı |
-| `plan.template.fatBurnFullBody.name` | Fatburn Ganzkörper | Fat Loss Full Body | Yağ Yakımı Tüm Vücut |
-| `plan.template.fatBurnFullBody.tagline` | 3 Tage · Fatburn & Kondition | 3 Days · Fat Burn & Conditioning | 3 Gün · Yağ Yakımı & Kondisyon |
+| `plan.template.fatBurnFullBody.description` | Fettverlust kommt aus dem Kaloriendefizit — dieser Plan schützt Muskel und Kraft im Cut: solides Hypertrophie-Volumen bei moderaten Lasten plus ein Cardio-Finisher pro Einheit. Reps und Pausen folgen Standard-Hypertrophie (6–12 bzw. 8–15, 60–180 s Pause), kein 'hohe Wdh = Fett weg'-Mythos. | Fat loss comes from the calorie deficit — this plan preserves muscle and strength during the cut: solid hypertrophy volume at moderate loads plus a cardio finisher per session. Reps and rest follow standard hypertrophy (6–12 or 8–15, 60–180 s rest); no 'high reps melt fat' myth. | Yağ kaybı kalori açığından gelir — bu plan diyet sırasında kası ve kuvveti korur: orta yüklerde sağlam hipertrofi hacmi artı her seansta bir kardiyo finisher. Tekrar ve dinlenme standart hipertrofiye uyar (6–12 ya da 8–15, 60–180 sn dinlenme); 'yüksek tekrar = yağ erir' miti yok. |
+| `plan.template.fatBurnFullBody.focus` | Defizit-Phase | Cut Phase | Cut Fazı |
+| `plan.template.fatBurnFullBody.name` | Cut-Phase Ganzkörper | Cut Phase Full Body | Cut Fazı – Tüm Vücut |
+| `plan.template.fatBurnFullBody.tagline` | 3 Tage · Muskelerhalt im Defizit | 3 Days · Muscle retention in a deficit | 3 Gün · Açıkta kas koruma |
 | `plan.template.footballAthletic.description` | Athletik-Programm für Mannschaftssportler: Maximalkraft und Schnellkraft in zwei kompakten Einheiten pro Woche — ideal als Ergänzung zum Vereinstraining. | Athletics program for team-sport athletes: maximum strength and power in two compact sessions per week — ideal as a complement to club training. | Takım sporcuları için atletik program: haftada iki kompakt seansta maksimum güç ve patlayıcı kuvvet — kulüp antrenmanına ideal tamamlayıcı. |
 | `plan.template.footballAthletic.focus` | Athletik | Athletics | Atletik |
 | `plan.template.footballAthletic.name` | Fussball Athletik | Football Athletic | Futbol Atletik |

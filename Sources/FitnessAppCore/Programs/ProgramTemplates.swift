@@ -56,42 +56,48 @@ public enum ProgramTemplates {
     // MARK: - 2. Fatburn Ganzkörper
 
     private static let fatLossFullBody = ProgramTemplate(
+        // DEL-169: Evidence-Rework. Vorher als "Fatburn"-Plan mit kurzen
+        // 60-Sekunden-Pausen und 12–15-Reps-Mythik verpackt. Jetzt ehrlich
+        // gerahmt als Cut-Phase / Defizit-Plan — Fettverlust kommt aus der
+        // Kalorienbilanz, das Training erhaelt Muskel + Kraft im Defizit.
+        // Rep-Ranges + Pausen folgen Standard-Hypertrophie-Evidenz
+        // (Compounds 6–12 mit 120–180 s, Iso 8–15 mit 60–90 s).
         id: "fat_loss_fullbody",
         name: "Fatburn Ganzkörper",
         localizationKey: "plan.template.fatBurnFullBody.name",
-        tagline: "3 Tage · Fatburn & Kondition",
+        tagline: "3 Tage · Muskelerhalt im Defizit",
         taglineKey: "plan.template.fatBurnFullBody.tagline",
-        descriptionText: "Effektiver Ganzkörperplan für maximalen Kalorienverbrauch. Kurze Pausen (60s) halten die Herzfrequenz oben — kombiniert mit einem Cardio-Finisher am Ende jeder Einheit.",
+        descriptionText: "Fettverlust kommt aus dem Kaloriendefizit — dieser Plan schützt Muskel und Kraft im Cut: solides Hypertrophie-Volumen bei moderaten Lasten plus ein Cardio-Finisher pro Einheit. Reps und Pausen folgen Standard-Hypertrophie (6–12 bzw. 8–15, 60–180 s Pause), kein 'hohe Wdh = Fett weg'-Mythos.",
         descriptionKey: "plan.template.fatBurnFullBody.description",
-        focus: "Fatburn",
+        focus: "Defizit-Phase",
         focusKey: "plan.template.fatBurnFullBody.focus",
         daysPerWeek: 3,
         days: [
             DaySpec(name: "Fatburn A", localizationKey: "plan.day.fatBurnA", type: .fullBody, sequenceIndex: 1, exercises: [
-                ExerciseSpec(name: "Kniebeuge",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Bankdrücken",                 sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Rudern vorgebeugt",            sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Schulterdrücken (stehend)",   sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Bizeps-Curl (LH)",              sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Skull Crusher",                sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
+                ExerciseSpec(name: "Kniebeuge",                    sets: 3, repsMin: 6,  repsMax: 12, restSeconds: 150),
+                ExerciseSpec(name: "Bankdrücken",                 sets: 3, repsMin: 6,  repsMax: 12, restSeconds: 150),
+                ExerciseSpec(name: "Rudern vorgebeugt",            sets: 3, repsMin: 6,  repsMax: 12, restSeconds: 120),
+                ExerciseSpec(name: "Schulterdrücken (stehend)",   sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120),
+                ExerciseSpec(name: "Bizeps-Curl (LH)",              sets: 2, repsMin: 8,  repsMax: 15, restSeconds: 75),
+                ExerciseSpec(name: "Skull Crusher",                sets: 2, repsMin: 8,  repsMax: 15, restSeconds: 75),
                 ExerciseSpec(name: "Laufband",            sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 0, isCardio: true)
             ]),
             DaySpec(name: "Fatburn B", localizationKey: "plan.day.fatBurnB", type: .fullBody, sequenceIndex: 2, exercises: [
-                ExerciseSpec(name: "Rumänisches Kreuzheben",      sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Schrägbankdrücken aufwärts (KH)", sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Latzug (weit)",                sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Schulterdrücken (KH)",          sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Hammer Curl",                  sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Trizepsdrücken (Kabel)",      sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
+                ExerciseSpec(name: "Rumänisches Kreuzheben",      sets: 3, repsMin: 6,  repsMax: 12, restSeconds: 150),
+                ExerciseSpec(name: "Schrägbankdrücken aufwärts (KH)", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
+                ExerciseSpec(name: "Latzug (weit)",                sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
+                ExerciseSpec(name: "Schulterdrücken (KH)",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
+                ExerciseSpec(name: "Hammer Curl",                  sets: 2, repsMin: 8,  repsMax: 15, restSeconds: 75),
+                ExerciseSpec(name: "Trizepsdrücken (Kabel)",      sets: 2, repsMin: 8,  repsMax: 15, restSeconds: 75),
                 ExerciseSpec(name: "Fahrradergometer",    sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 0, isCardio: true)
             ]),
             DaySpec(name: "Fatburn C", localizationKey: "plan.day.fatBurnC", type: .fullBody, sequenceIndex: 3, exercises: [
-                ExerciseSpec(name: "Hip Thrust (LH)",              sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Kabelrudern sitzend",          sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Bankdrücken (KH)",              sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Seitheben",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Beinbeuger liegend",           sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Schrägbank-Curl (KH)",             sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
+                ExerciseSpec(name: "Hip Thrust (LH)",              sets: 3, repsMin: 6,  repsMax: 12, restSeconds: 120),
+                ExerciseSpec(name: "Kabelrudern sitzend",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
+                ExerciseSpec(name: "Bankdrücken (KH)",              sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120),
+                ExerciseSpec(name: "Seitheben",                    sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60),
+                ExerciseSpec(name: "Beinbeuger liegend",           sets: 2, repsMin: 8,  repsMax: 15, restSeconds: 75),
+                ExerciseSpec(name: "Schrägbank-Curl (KH)",             sets: 2, repsMin: 8,  repsMax: 15, restSeconds: 75),
                 ExerciseSpec(name: "Stepper",             sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 0, isCardio: true)
             ])
         ],
