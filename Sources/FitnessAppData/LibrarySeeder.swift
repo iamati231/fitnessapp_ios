@@ -14,9 +14,21 @@ public enum LibrarySeeder {
 
     /// Returns true if the library was actually seeded (was empty before),
     /// false if it was already populated.
+    ///
+    /// DEL-190: Idempotenz-Check zählt NUR System-Templates
+    /// (`isCustom == false`). Vorher wurde `FetchDescriptor<ExerciseTemplate>()`
+    /// ohne Predicate verwendet — also ALLE Templates inkl. Custom. Effekt:
+    /// sobald der User eine eigene Übung anlegt (oder via Daten-Import 3
+    /// Custom-Templates reinkommen), ist `existing > 0` und der Seeder
+    /// verweigert das Seeding der System-Library für immer. Resultat: leere
+    /// "Übungsbibliothek" bis auf die Custom-Einträge. Mit dem Predicate
+    /// re-seedet der Seeder die System-Library, sobald sie fehlt — Custom-
+    /// Templates blockieren das nicht mehr.
     @discardableResult
     public static func seedIfNeeded(in context: ModelContext) -> Bool {
-        let descriptor = FetchDescriptor<ExerciseTemplate>()
+        let descriptor = FetchDescriptor<ExerciseTemplate>(
+            predicate: #Predicate { $0.isCustom == false }
+        )
         let existing = (try? context.fetchCount(descriptor)) ?? 0
         guard existing == 0 else { return false }
 

@@ -528,14 +528,17 @@ public enum DataImportService {
         let reader: CSVReader
         do { reader = try CSVReader(text) } catch { return (0, 0, []) }
 
-        // Singleton: wenn es schon ein Profile gibt, importieren wir keines.
-        // Der User muss erst über "App zurücksetzen" sauber machen, sonst
-        // hätten wir zwei Profile in der DB (was die ganze App verwirrt).
+        // DEL-191: Profil ist ein Singleton — "append" macht keinen Sinn,
+        // ein Restore SOLL die Profil-Präferenzen (Dashboard-Layout, Ziele,
+        // Vorname, Coaching-Ton, Equipment) zurückbringen. Vorher wurde der
+        // Import komplett geskippt wenn schon ein Profil existierte (z.B.
+        // nach Neu-Onboarding) — Folge: Dashboard-Einordnung + Settings aus
+        // dem Backup gingen verloren. Jetzt: existierendes Profil wird
+        // IN-PLACE mit den Backup-Werten überschrieben (kein Duplikat, keine
+        // verwaisten Relationships). Gibt es noch kein Profil → frisch
+        // inserten wie bisher.
         let existing = try context.fetch(FetchDescriptor<UserBodyProfile>())
-        if !existing.isEmpty {
-            // Skip aller Profile-Zeilen — der CSV-Export enthielt nur eine.
-            return (0, reader.rows().count, [])
-        }
+        let target = existing.first
 
         var errors: [RowError] = []
         var imported = 0
@@ -549,13 +552,22 @@ public enum DataImportService {
             let profileEnum = BodyFormulaProfile(rawValue: row["profile"]) ?? .male
             let envEnum = EnvironmentType(rawValue: row["environment"]) ?? .gym
 
-            let p = UserBodyProfile(
+            let p = target ?? UserBodyProfile(
                 birthDate: birthDate,
                 heightCm: height,
                 profile: profileEnum,
                 goalWeightKg: row.double("goal_weight_kg"),
                 environment: envEnum
             )
+            // Bei einem existierenden Profil die Kern-Felder explizit
+            // überschreiben (der Init oben läuft dann nicht).
+            if target != nil {
+                p.birthDate = birthDate
+                p.heightCm = height
+                p.profile = profileEnum
+                p.goalWeightKg = row.double("goal_weight_kg")
+                p.environment = envEnum
+            }
             p.firstName = row.optionalString("first_name")
             p.coachingToneRaw = row.optionalString("coaching_tone") ?? CoachingTone.analytical.rawValue
             p.trainingGoalRaw = row.optionalString("training_goal") ?? TrainingGoal.hybrid.rawValue
@@ -565,8 +577,12 @@ public enum DataImportService {
             let heroRaw = splitMulti(row["hero_metric_slots"])
             if !heroRaw.isEmpty { p.heroMetricSlotsRaw = heroRaw }
 
-            context.insert(p)
+            if target == nil {
+                context.insert(p)
+            }
             imported += 1
+            // Nur die erste Profil-Zeile verarbeiten — Singleton.
+            break
         }
         return (imported, 0, errors)
     }
@@ -708,6 +724,17 @@ public enum DataImportService {
         var errors: [RowError] = []
         var imported = 0
 
+        // DEL-192: Wenn das Backup einen aktiven Plan enthält, deaktivieren
+        // wir zuerst alle bestehenden Pläne (z.B. den vom Neu-Onboarding),
+        // damit am Ende GENAU der Backup-Plan aktiv ist — nicht zwei.
+        let csvHasActivePlan = reader.rows().contains { ($0.bool("is_active") ?? false) }
+        if csvHasActivePlan {
+            let existingPlans = try context.fetch(FetchDescriptor<TrainingPlan>())
+            for p in existingPlans where p.isActive {
+                p.isActive = false
+            }
+        }
+
         for row in reader.rows() {
             let exportID = row["id"]
             let name = row.optionalString("name") ?? ""
@@ -723,11 +750,12 @@ public enum DataImportService {
                 programType: row["program_type"],
                 descriptionText: row["description"],
                 weeks: row.int("weeks") ?? 12,
-                // Wichtig: importierte Pläne kommen IMMER inaktiv rein. Der
-                // User soll bewusst entscheiden, welcher Plan jetzt sein
-                // aktiver ist — sonst überschreibt der Import ggf. den
-                // gerade laufenden Plan.
-                isActive: false,
+                // DEL-192: aktiven Zustand aus dem Backup honorieren. Vorher
+                // hardcoded false → nach Restore war kein Plan aktiv, der
+                // User musste manuell aktivieren. Da wir oben alle
+                // bestehenden Aktiven deaktiviert haben, gibt es keinen
+                // Doppel-Aktiv-Konflikt.
+                isActive: row.bool("is_active") ?? false,
                 targetEnvironment: env,
                 isTemplate: row.bool("is_template") ?? false,
                 localizationKey: row.optionalString("localization_key")
