@@ -111,7 +111,17 @@ public enum DataImportService {
 
         // 1) ZIP entpacken. URL-basierte Extract-API ist robuster als das
         //    closure-buffer-Pattern.
-        guard let archive = try? Archive( zipData, accessMode: .read) else {
+        //
+        // ZIPFoundation 0.9.x bietet zwei Init-Varianten:
+        //   - `init?(data:accessMode:preferredEncoding:)` failable, deprecated
+        //   - `init(data:accessMode:preferredEncoding:) throws` neu, empfohlen
+        // Wir nehmen die throwing-Variante und mappen den ZIP-Error auf
+        // unseren ImportError, damit die UI eine sprechende Meldung
+        // rendern kann statt eines ZIP-internen `EntryNotFound`-Texts.
+        let archive: Archive
+        do {
+            archive = try Archive(data: zipData, accessMode: .read)
+        } catch {
             throw ImportError.zipNotReadable
         }
         let tmpDir = FileManager.default.temporaryDirectory
