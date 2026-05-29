@@ -109,49 +109,68 @@ public enum DataImportService {
         progressHandler: (@Sendable (ImportProgress) -> Void)? = nil
     ) throws -> DataImportResult {
 
-        // 1) ZIP entpacken. URL-basierte Extract-API ist robuster als das
-        //    closure-buffer-Pattern.
+        // 1) ZIP entpacken.
         //
-        // ZIPFoundation 0.9.x bietet zwei Init-Varianten:
-        //   - `init?(data:accessMode:preferredEncoding:)` failable, deprecated
-        //   - `init(data:accessMode:preferredEncoding:) throws` neu, empfohlen
-        // Wir nehmen die throwing-Variante und mappen den ZIP-Error auf
-        // unseren ImportError, damit die UI eine sprechende Meldung
-        // rendern kann statt eines ZIP-internen `EntryNotFound`-Texts.
-        let archive: Archive
-        do {
-            archive = try Archive(data: zipData, accessMode: .read)
-        } catch {
-            throw ImportError.zipNotReadable
-        }
+        // Vorherige Approaches haben in Release-Builds nicht zuverlässig
+        // funktioniert:
+        //   - Closure-Consumer-Pattern (`archive.extract(entry) { chunk in
+        //     buffer.append(chunk) }`) lieferte teilweise leere Buffer mit
+        //     Whole-Module-Optimization.
+        //   - Per-Entry `archive.extract(entry, to: url)` lieferte bei
+        //     DEFLATE-komprimierten Files (compressedSize < uncompressedSize)
+        //     teilweise nur den Header-Teil — die CSV-Reader sahen dann nur
+        //     die erste Zeile (Spaltennamen), keine Daten. Resultat: 0/0
+        //     für alle Files trotz validem ZIP-Inhalt.
+        //
+        // Jetzt nutzen wir `FileManager.default.unzipItem(at:to:)` — die
+        // High-Level-Convenience-API aus ZIPFoundation. Das ist die
+        // battle-tested Variante, die intern die komplette Decompression-
+        // Pipeline fährt und die FileManager benutzt für Disk-IO. Trade-off:
+        // wir müssen die ZIP-Bytes erst auf Disk schreiben, weil
+        // unzipItem nur URL-zu-URL kann (keine Data-Variante). Bei einem
+        // Power-User-Backup mit ~50KB-ZIP ist die zusätzliche Disk-IO
+        // vernachlässigbar.
         let tmpDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("deltiq-import-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tmpDir) }
 
+        // ZIP-Bytes als File schreiben, dann unzippen.
+        let zipFileURL = tmpDir.appendingPathComponent("import.zip")
+        try zipData.write(to: zipFileURL)
+
+        let extractedDir = tmpDir.appendingPathComponent("extracted", isDirectory: true)
+        try FileManager.default.createDirectory(at: extractedDir, withIntermediateDirectories: true)
+        do {
+            try FileManager.default.unzipItem(at: zipFileURL, to: extractedDir)
+        } catch {
+            throw ImportError.zipNotReadable
+        }
+
+        // Files aus extractedDir lesen. Wir nutzen `enumerator` damit
+        // Wrapper-Folders (z.B. `export-2026-05-29/profile.csv` aus einem
+        // Finder-Repack) auch erreicht werden — der enumerator geht tiefer
+        // als nur die Top-Level.
         var files: [String: Data] = [:]
-        for entry in archive {
-            // macOS-Metadaten komplett ignorieren
-            if entry.path.contains("__MACOSX") || entry.path.hasSuffix(".DS_Store") {
-                continue
-            }
-            
-            // Path-Normalisierung: "export-2026-05/profile.csv" -> "profile.csv"
-            let key = (entry.path as NSString).lastPathComponent
-            
-            // Verzeichnis-Einträge überspringen
-            guard !key.isEmpty, entry.type == Entry.EntryType.file else { continue }
+        let enumerator = FileManager.default.enumerator(
+            at: extractedDir,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles]   // filter ._* and .DS_Store automatisch
+        )
+        while let fileURL = enumerator?.nextObject() as? URL {
+            let key = fileURL.lastPathComponent
+            // Doppelter Schutz gegen macOS-Metadaten — auch wenn
+            // .skipsHiddenFiles greift, fangen wir __MACOSX-Folders
+            // explizit ab (die werden in iOS' .skipsHiddenFiles nicht
+            // immer als hidden erkannt).
+            if fileURL.pathComponents.contains("__MACOSX") { continue }
+            if key.hasPrefix("._") || key == ".DS_Store" { continue }
 
-            
-            // Versteckte macOS "dotfiles" (z.B. ._workouts.csv) ignorieren, 
-            // die Finder oft mit anlegt.
-            if key.hasPrefix("._") {
-                continue
-            }
+            // Nur regular files lesen, keine Directories.
+            let resourceValues = try? fileURL.resourceValues(forKeys: [.isRegularFileKey])
+            guard resourceValues?.isRegularFile == true else { continue }
 
-            let dst = tmpDir.appendingPathComponent(key)
-            _ = try archive.extract(entry, to: dst)
-            let data = try Data(contentsOf: dst)
+            let data = try Data(contentsOf: fileURL)
             files[key] = data
         }
 
@@ -185,6 +204,19 @@ public enum DataImportService {
         var errorBuffer = ErrorBuffer()
         var imported: [String: Int] = [:]
         var skipped:  [String: Int] = [:]
+
+        // DEL-184: Extract-Diagnose als Info-Rows (NICHT als Errors gezählt,
+        // siehe ErrorBuffer.appendInfo). Wenn das Import wieder
+        // "erfolgreich" mit 0/0 endet, kann der User über "Share error log"
+        // die errors.csv exportieren — wir sehen dann schwarz auf weiß, was
+        // beim Extract rauskam. Ohne diese Diagnose war "0 imported, 0
+        // skipped, keine Fehler" eine Black-Box.
+        for (filename, data) in files.sorted(by: { $0.key < $1.key }) {
+            errorBuffer.appendInfo(
+                file: "_extract",
+                reason: "\(filename): \(data.count) bytes"
+            )
+        }
 
         // idMap: Export-UUID → frisches SwiftData-Objekt.
         var idMap: [String: AnyObject] = [:]
@@ -303,7 +335,11 @@ public enum DataImportService {
         // 7) Persist all changes atomically.
         try context.save()
 
-        let errorsCSV: Data? = errorBuffer.totalCount > 0 ? errorBuffer.toCSV() : nil
+        // DEL-184: errorsCSV jetzt schon bei reiner Diagnose generiert
+        // (totalCount zählt nur echte Errors, hasContent inkl. Info-Rows).
+        // So kriegt der User auch bei einem "alles 0/0"-Import die Möglichkeit,
+        // das Extract-Log zu teilen — sonst keine Visibility ins ZIP-Innenleben.
+        let errorsCSV: Data? = errorBuffer.hasContent ? errorBuffer.toCSV() : nil
 
         return DataImportResult(
             formatVersion: meta.formatVersion,
@@ -412,6 +448,17 @@ public enum DataImportService {
             }
             totalCount += errors.count
         }
+
+        /// DEL-184: Info-Row für Diagnose. Wird in die errors.csv geschrieben,
+        /// zählt aber NICHT als Fehler — sonst meldet die UI "12 failed rows"
+        /// für einen erfolgreichen Import nur weil 12 Files extrahiert wurden.
+        mutating func appendInfo(file: String, reason: String) {
+            rows.append((file, RowError(line: 0, reason: reason)))
+        }
+
+        /// True wenn irgendetwas (Errors oder Info-Rows) im Buffer steht.
+        /// Steuert, ob die UI den "Fehlerprotokoll teilen"-Button rendert.
+        var hasContent: Bool { !rows.isEmpty }
 
         func toCSV() -> Data {
             var w = CSVWriter(headers: ["file", "line", "reason"])
