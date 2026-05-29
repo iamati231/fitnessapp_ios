@@ -45,6 +45,25 @@ public enum DataImportStrategy: String, Sendable, CaseIterable {
     case replace
 }
 
+/// DEL-176: Live-Progress-Tick, den der ImportService an einen optionalen
+/// Handler weiterreicht. Pro CSV-Phase einmal — die UI rendert daraus eine
+/// Linear-ProgressView + aktuellen Dateinamen.
+///
+/// `phase` ist ein stabiler Identifier (z.B. `"workouts.csv"`), keine
+/// lokalisierte Anzeige — die UI mappt das auf einen Catalog-Key. So
+/// kann die Lokalisierung an einem Ort liegen und der Service bleibt
+/// sprachfest.
+public struct ImportProgress: Sendable, Equatable {
+    public let phase: String
+    public let filesCompleted: Int
+    public let filesTotal: Int
+
+    public var fraction: Double {
+        guard filesTotal > 0 else { return 0 }
+        return Double(filesCompleted) / Double(filesTotal)
+    }
+}
+
 /// Ergebnis eines erfolgreich gestarteten Imports. Auch wenn Errors aufgetreten
 /// sind: das ist KEIN throwing-error — die UI rendert den Result mit
 /// Imported/Skipped/Failed-Zähler und der User kann errors.csv teilen.
@@ -73,10 +92,18 @@ public enum DataImportService {
     /// Hauptentry. Wirft bei strukturellen Fehlern (kaputtes ZIP, fehlendes
     /// meta.json, falsche formatVersion). Reihen-lokale Fehler landen im
     /// Result.
+    ///
+    /// `progressHandler` wird vor jeder Phase einmal aufgerufen. Bei großen
+    /// Backups (Jahre History) braucht der Import sonst sichtbar mehrere
+    /// Sekunden — der User soll sehen, dass die App nicht hängt. Der
+    /// Handler MUSS thread-safe sein (er läuft auf dem ImportService-Actor,
+    /// nicht zwingend Main); UI-Code im Handler also via `Task { @MainActor }`
+    /// oder analog dispatchen.
     public static func performImport(
         zipData: Data,
         context: ModelContext,
-        strategy: DataImportStrategy = .appendOnly
+        strategy: DataImportStrategy = .appendOnly,
+        progressHandler: (@Sendable (ImportProgress) -> Void)? = nil
     ) throws -> DataImportResult {
 
         // Wenn Strategie == .replace, löschen wir VOR dem Merge alle User-
@@ -84,6 +111,7 @@ public enum DataImportService {
         // also wird jede Zeile aus dem ZIP frisch eingefügt — kein
         // Spezial-Pfad im Insert-Code nötig.
         if strategy == .replace {
+            progressHandler?(ImportProgress(phase: "wipe", filesCompleted: 0, filesTotal: 0))
             try wipeAllUserData(context: context)
         }
 
@@ -117,80 +145,139 @@ public enum DataImportService {
         // Insert in Pass 1/2, gelesen beim FK-Lookup in Pass 2/3.
         var idMap: [String: AnyObject] = [:]
 
+        // Filenames in Insert-Reihenfolge (Three-Pass) — wir präsentieren den
+        // Progress-Counter über alle 11 möglichen Files, auch wenn manche
+        // im konkreten ZIP fehlen (formatVersion-Schema-Drift). Das macht
+        // den Counter monoton steigend für den User.
+        let allFiles = [
+            "profile.csv",
+            "gear.csv",
+            "custom_exercises.csv",
+            "plans.csv",
+            "measurements.csv",
+            "water_log.csv",
+            "plan_days.csv",
+            "workouts.csv",
+            "plan_exercises.csv",
+            "workout_sets.csv",
+            "personal_records.csv",
+        ]
+        var completed = 0
+        let totalFiles = allFiles.count
+
+        // Helper: Progress-Tick vor jeder Phase, gefolgt vom Phasen-Body.
+        // Selbst wenn das File im ZIP fehlt, erhöhen wir den Counter — dann
+        // läuft die UI flüssig durch.
+        func tick(_ filename: String, _ body: () throws -> Void) throws {
+            progressHandler?(ImportProgress(
+                phase: filename,
+                filesCompleted: completed,
+                filesTotal: totalFiles
+            ))
+            try body()
+            completed += 1
+        }
+
         // 4) PASS 1 — Roots ohne FK-Abhängigkeiten.
 
-        if let csv = files["profile.csv"] {
-            let (ok, dup, errs) = try importProfile(csv: csv, context: context)
-            imported["profile.csv"] = ok
-            skipped["profile.csv"]  = dup
-            errorBuffer.append(file: "profile.csv", errors: errs)
+        try tick("profile.csv") {
+            if let csv = files["profile.csv"] {
+                let (ok, dup, errs) = try importProfile(csv: csv, context: context)
+                imported["profile.csv"] = ok
+                skipped["profile.csv"]  = dup
+                errorBuffer.append(file: "profile.csv", errors: errs)
+            }
         }
-        if let csv = files["gear.csv"] {
-            let (ok, dup, errs) = try importGear(csv: csv, context: context, idMap: &idMap)
-            imported["gear.csv"] = ok
-            skipped["gear.csv"]  = dup
-            errorBuffer.append(file: "gear.csv", errors: errs)
+        try tick("gear.csv") {
+            if let csv = files["gear.csv"] {
+                let (ok, dup, errs) = try importGear(csv: csv, context: context, idMap: &idMap)
+                imported["gear.csv"] = ok
+                skipped["gear.csv"]  = dup
+                errorBuffer.append(file: "gear.csv", errors: errs)
+            }
         }
-        if let csv = files["custom_exercises.csv"] {
-            let (ok, dup, errs) = try importCustomExercises(csv: csv, context: context, idMap: &idMap)
-            imported["custom_exercises.csv"] = ok
-            skipped["custom_exercises.csv"]  = dup
-            errorBuffer.append(file: "custom_exercises.csv", errors: errs)
+        try tick("custom_exercises.csv") {
+            if let csv = files["custom_exercises.csv"] {
+                let (ok, dup, errs) = try importCustomExercises(csv: csv, context: context, idMap: &idMap)
+                imported["custom_exercises.csv"] = ok
+                skipped["custom_exercises.csv"]  = dup
+                errorBuffer.append(file: "custom_exercises.csv", errors: errs)
+            }
         }
-        if let csv = files["plans.csv"] {
-            let (ok, dup, errs) = try importPlans(csv: csv, context: context, idMap: &idMap)
-            imported["plans.csv"] = ok
-            skipped["plans.csv"]  = dup
-            errorBuffer.append(file: "plans.csv", errors: errs)
+        try tick("plans.csv") {
+            if let csv = files["plans.csv"] {
+                let (ok, dup, errs) = try importPlans(csv: csv, context: context, idMap: &idMap)
+                imported["plans.csv"] = ok
+                skipped["plans.csv"]  = dup
+                errorBuffer.append(file: "plans.csv", errors: errs)
+            }
         }
-        if let csv = files["measurements.csv"] {
-            let (ok, dup, errs) = try importMeasurements(csv: csv, context: context)
-            imported["measurements.csv"] = ok
-            skipped["measurements.csv"]  = dup
-            errorBuffer.append(file: "measurements.csv", errors: errs)
+        try tick("measurements.csv") {
+            if let csv = files["measurements.csv"] {
+                let (ok, dup, errs) = try importMeasurements(csv: csv, context: context)
+                imported["measurements.csv"] = ok
+                skipped["measurements.csv"]  = dup
+                errorBuffer.append(file: "measurements.csv", errors: errs)
+            }
         }
-        if let csv = files["water_log.csv"] {
-            let (ok, dup, errs) = try importWaterLog(csv: csv, context: context)
-            imported["water_log.csv"] = ok
-            skipped["water_log.csv"]  = dup
-            errorBuffer.append(file: "water_log.csv", errors: errs)
+        try tick("water_log.csv") {
+            if let csv = files["water_log.csv"] {
+                let (ok, dup, errs) = try importWaterLog(csv: csv, context: context)
+                imported["water_log.csv"] = ok
+                skipped["water_log.csv"]  = dup
+                errorBuffer.append(file: "water_log.csv", errors: errs)
+            }
         }
 
         // 5) PASS 2 — Objekte mit FKs in Pass-1.
 
-        if let csv = files["plan_days.csv"] {
-            let (ok, dup, errs) = try importPlanDays(csv: csv, context: context, idMap: &idMap)
-            imported["plan_days.csv"] = ok
-            skipped["plan_days.csv"]  = dup
-            errorBuffer.append(file: "plan_days.csv", errors: errs)
+        try tick("plan_days.csv") {
+            if let csv = files["plan_days.csv"] {
+                let (ok, dup, errs) = try importPlanDays(csv: csv, context: context, idMap: &idMap)
+                imported["plan_days.csv"] = ok
+                skipped["plan_days.csv"]  = dup
+                errorBuffer.append(file: "plan_days.csv", errors: errs)
+            }
         }
-        if let csv = files["workouts.csv"] {
-            let (ok, dup, errs) = try importWorkouts(csv: csv, context: context, idMap: &idMap)
-            imported["workouts.csv"] = ok
-            skipped["workouts.csv"]  = dup
-            errorBuffer.append(file: "workouts.csv", errors: errs)
+        try tick("workouts.csv") {
+            if let csv = files["workouts.csv"] {
+                let (ok, dup, errs) = try importWorkouts(csv: csv, context: context, idMap: &idMap)
+                imported["workouts.csv"] = ok
+                skipped["workouts.csv"]  = dup
+                errorBuffer.append(file: "workouts.csv", errors: errs)
+            }
         }
 
         // 6) PASS 3 — Children mit FKs in Pass-2.
 
-        if let csv = files["plan_exercises.csv"] {
-            let (ok, dup, errs) = try importPlanExercises(csv: csv, context: context, idMap: &idMap)
-            imported["plan_exercises.csv"] = ok
-            skipped["plan_exercises.csv"]  = dup
-            errorBuffer.append(file: "plan_exercises.csv", errors: errs)
+        try tick("plan_exercises.csv") {
+            if let csv = files["plan_exercises.csv"] {
+                let (ok, dup, errs) = try importPlanExercises(csv: csv, context: context, idMap: &idMap)
+                imported["plan_exercises.csv"] = ok
+                skipped["plan_exercises.csv"]  = dup
+                errorBuffer.append(file: "plan_exercises.csv", errors: errs)
+            }
         }
-        if let csv = files["workout_sets.csv"] {
-            let (ok, dup, errs) = try importLogs(csv: csv, context: context, idMap: idMap)
-            imported["workout_sets.csv"] = ok
-            skipped["workout_sets.csv"]  = dup
-            errorBuffer.append(file: "workout_sets.csv", errors: errs)
+        try tick("workout_sets.csv") {
+            if let csv = files["workout_sets.csv"] {
+                let (ok, dup, errs) = try importLogs(csv: csv, context: context, idMap: idMap)
+                imported["workout_sets.csv"] = ok
+                skipped["workout_sets.csv"]  = dup
+                errorBuffer.append(file: "workout_sets.csv", errors: errs)
+            }
         }
-        if let csv = files["personal_records.csv"] {
-            let (ok, dup, errs) = try importPRs(csv: csv, context: context, idMap: idMap)
-            imported["personal_records.csv"] = ok
-            skipped["personal_records.csv"]  = dup
-            errorBuffer.append(file: "personal_records.csv", errors: errs)
+        try tick("personal_records.csv") {
+            if let csv = files["personal_records.csv"] {
+                let (ok, dup, errs) = try importPRs(csv: csv, context: context, idMap: idMap)
+                imported["personal_records.csv"] = ok
+                skipped["personal_records.csv"]  = dup
+                errorBuffer.append(file: "personal_records.csv", errors: errs)
+            }
         }
+
+        // Final-Tick: "save" — der ModelContext.save() unten ist non-trivial
+        // bei großen Inserts. UI kann das als letzte Phase anzeigen.
+        progressHandler?(ImportProgress(phase: "save", filesCompleted: totalFiles, filesTotal: totalFiles))
 
         // 7) Persist all changes atomically. Wenn der save throwt, bleibt
         //    die transaktional unsichere Zwischenmenge im Context — wir

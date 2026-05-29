@@ -43,6 +43,11 @@ public struct DataImportView: View {
     // löschen.
     @State private var strategy: DataImportStrategy = .appendOnly
 
+    // DEL-176: Live-Progress-Tick aus dem ImportService. Wird vor jeder
+    // Phase aktualisiert; UI bindet daran eine ProgressView + den
+    // lokalisierten Phasennamen.
+    @State private var importProgress: ImportProgress?
+
     enum Phase {
         case ready
         case picked(filename: String)
@@ -257,14 +262,35 @@ public struct DataImportView: View {
             }
 
         case .importing:
-            DeltiqFormSection(header: nil) {
+            // DEL-176: Live-Progress-Card statt nur Spinner. Bei großen
+            // Backups (Jahre History) braucht der Import sichtbar Sekunden
+            // — der User soll sehen, dass die App nicht hängt.
+            DeltiqFormSection(header: String(localized: "settings.dataImport.importing.header", bundle: .module)) {
                 DeltiqFormFullRow {
-                    HStack(spacing: 12) {
-                        ProgressView()
-                        Text("settings.dataImport.importing", bundle: .module)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                        Spacer()
+                    VStack(alignment: .leading, spacing: 10) {
+                        // Phase-Text (lokalisiert) + N / M Counter
+                        HStack {
+                            Text(progressPhaseLabel)
+                                .font(.callout)
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            if let p = importProgress, p.filesTotal > 0 {
+                                Text("\(p.filesCompleted) / \(p.filesTotal)")
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        // Linear-Progress: animiert sich smooth auf die
+                        // neue fraction. Bei unbekanntem Total (wipe-Phase)
+                        // zeigen wir indeterminate.
+                        if let p = importProgress, p.filesTotal > 0 {
+                            ProgressView(value: p.fraction)
+                                .tint(Color.deltiqOrange)
+                        } else {
+                            ProgressView()
+                                .progressViewStyle(.linear)
+                                .tint(Color.deltiqOrange)
+                        }
                     }
                 }
             }
@@ -400,6 +426,33 @@ public struct DataImportView: View {
         return keys.sorted()
     }
 
+    /// DEL-176: Mappt den Service-`phase`-Identifier auf einen lokalisierten
+    /// Anzeigetext. Service liefert stable identifiers ("workouts.csv",
+    /// "wipe", "save"); die Sprach-Verantwortung liegt in der UI.
+    private var progressPhaseLabel: String {
+        guard let p = importProgress else {
+            return String(localized: "settings.dataImport.importing", bundle: .module)
+        }
+        let key: String.LocalizationValue
+        switch p.phase {
+        case "wipe":                  key = "settings.dataImport.progress.wipe"
+        case "save":                  key = "settings.dataImport.progress.save"
+        case "profile.csv":           key = "settings.dataImport.progress.profile"
+        case "gear.csv":              key = "settings.dataImport.progress.gear"
+        case "custom_exercises.csv":  key = "settings.dataImport.progress.customExercises"
+        case "plans.csv":             key = "settings.dataImport.progress.plans"
+        case "measurements.csv":      key = "settings.dataImport.progress.measurements"
+        case "water_log.csv":         key = "settings.dataImport.progress.waterLog"
+        case "plan_days.csv":         key = "settings.dataImport.progress.planDays"
+        case "workouts.csv":          key = "settings.dataImport.progress.workouts"
+        case "plan_exercises.csv":    key = "settings.dataImport.progress.planExercises"
+        case "workout_sets.csv":      key = "settings.dataImport.progress.workoutSets"
+        case "personal_records.csv":  key = "settings.dataImport.progress.personalRecords"
+        default:                      key = "settings.dataImport.importing"
+        }
+        return String(localized: key, bundle: .module)
+    }
+
     private func handlePickerResult(_ result: Result<[URL], Error>) {
         switch result {
         case .success(let urls):
@@ -439,31 +492,39 @@ public struct DataImportView: View {
     private func runImport() {
         guard let url = pickedURL else { return }
         errorMessage = nil
+        importProgress = nil
         phase = .importing
 
         let ctx = modelContext
         Task {
             do {
                 let zipData = try Data(contentsOf: url)
-                // ModelContext ist nicht Sendable — also bleibt der Service
-                // auf dem aktuellen Actor (Main). Bei sehr großen Imports
-                // (z.B. mehrere Jahre History) wird die UI hier kurz hängen;
-                // das ist eine bewusst pragmatische Wahl, weil SwiftData
-                // sonst eigene Threads bräuchte. ProgressView spinnt
-                // während dieser Zeit.
+                // DEL-176: progressHandler ist @Sendable; wir reichen
+                // Updates über einen MainActor-Hop an unseren @State weiter.
+                // Der Service läuft synchron auf demselben Actor wie ctx
+                // (Main bei SwiftData iOS-17), aber wir nehmen den
+                // MainActor.run-Wrap als Defensive — falls Apple den Actor
+                // mal explizit macht.
                 let result = try DataImportService.performImport(
                     zipData: zipData,
                     context: ctx,
-                    strategy: strategy
+                    strategy: strategy,
+                    progressHandler: { tick in
+                        Task { @MainActor in
+                            self.importProgress = tick
+                        }
+                    }
                 )
                 await MainActor.run {
                     self.phase = .finished(result: result)
+                    self.importProgress = nil
                 }
             } catch {
                 await MainActor.run {
                     self.errorMessage = error.localizedDescription
                     self.phase = .ready
                     self.pickedURL = nil
+                    self.importProgress = nil
                 }
             }
         }

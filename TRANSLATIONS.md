@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1222 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1236 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1222 / 1222** (100%) | 0 |
-| 🇬🇧 English (EN) | **1222 / 1222** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1222 / 1222** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1236 / 1236** (100%) | 0 |
+| 🇬🇧 English (EN) | **1236 / 1236** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1236 / 1236** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1265,7 +1265,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (105 Keys)
+## `settings.*`  (119 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1306,10 +1306,24 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.dataImport.confirm.message` | Bestehende Daten bleiben unangetastet. Nur fehlende Zeilen aus dem Archiv werden ergänzt. Duplikate werden erkannt und übersprungen. | Existing data stays untouched. Only missing rows from the archive will be added. Duplicates are detected and skipped. | Mevcut veriler değişmez. Yalnızca arşivdeki eksik satırlar eklenir. Yinelenen kayıtlar algılanır ve atlanır. |
 | `settings.dataImport.confirm.title` | Daten importieren? | Import data? | Verileri içe aktar? |
 | `settings.dataImport.importing` | Lese Archiv und füge Daten ein… | Reading archive and merging data… | Arşiv okunuyor ve veriler birleştiriliyor… |
+| `settings.dataImport.importing.header` | Import läuft | Import in progress | İçe aktarma sürüyor |
 | `settings.dataImport.intro.body` | Wähle ein Deltiq-Export-ZIP (auf diesem oder einem anderen Gerät erstellt) und wir spielen die Daten in deine Bibliothek ein. Der Import ist sicher: nichts, was bereits in der App ist, wird angefasst. | Pick a Deltiq export ZIP (created on this or another device) and we'll merge the data into your library. The import is safe: nothing already in your app gets touched. | Bir Deltiq dışa aktarma ZIP'i seç (bu veya başka bir cihazda oluşturulmuş) ve verileri kütüphanene birleştirelim. İçe aktarma güvenlidir: uygulamada zaten bulunan hiçbir şey değişmez. |
 | `settings.dataImport.intro.footer` | Es werden nur ZIP-Archive mit Format-Version 1.x unterstützt. Neuere oder ältere Formate werden abgelehnt. | Only ZIP archives with format version 1.x are supported. Newer or older formats will be refused. | Yalnızca format sürümü 1.x olan ZIP arşivleri desteklenir. Daha yeni veya eski formatlar reddedilir. |
 | `settings.dataImport.intro.header` | Von einem Export wiederherstellen | Restore from an export | Bir dışa aktarmadan geri yükle |
 | `settings.dataImport.picked.header` | Ausgewählte Datei | Selected file | Seçili dosya |
+| `settings.dataImport.progress.customExercises` | Lese eigene Übungen… | Reading custom exercises… | Özel egzersizler okunuyor… |
+| `settings.dataImport.progress.gear` | Lese Ausrüstung… | Reading gear… | Ekipman okunuyor… |
+| `settings.dataImport.progress.measurements` | Lese Messungen… | Reading measurements… | Ölçümler okunuyor… |
+| `settings.dataImport.progress.personalRecords` | Lese persönliche Rekorde… | Reading personal records… | Kişisel rekorlar okunuyor… |
+| `settings.dataImport.progress.planDays` | Lese Plan-Tage… | Reading plan days… | Plan günleri okunuyor… |
+| `settings.dataImport.progress.planExercises` | Lese Plan-Übungen… | Reading plan exercises… | Plan egzersizleri okunuyor… |
+| `settings.dataImport.progress.plans` | Lese Pläne… | Reading plans… | Planlar okunuyor… |
+| `settings.dataImport.progress.profile` | Lese Profil… | Reading profile… | Profil okunuyor… |
+| `settings.dataImport.progress.save` | Speichere in der Datenbank… | Saving to database… | Veritabanına kaydediliyor… |
+| `settings.dataImport.progress.waterLog` | Lese Wasser-Protokoll… | Reading water log… | Su günlüğü okunuyor… |
+| `settings.dataImport.progress.wipe` | Lösche bestehende Daten… | Clearing existing data… | Mevcut veriler temizleniyor… |
+| `settings.dataImport.progress.workoutSets` | Lese Workout-Sätze… | Reading workout sets… | Antrenman setleri okunuyor… |
+| `settings.dataImport.progress.workouts` | Lese Workouts… | Reading workouts… | Antrenmanlar okunuyor… |
 | `settings.dataImport.replaceConfirm.action` | Löschen und einspielen | Delete and restore | Sil ve geri yükle |
 | `settings.dataImport.replaceConfirm.message` | Hierbei werden alle in der App gespeicherten Workouts, Pläne, Messungen, Ausrüstungs-Einträge und persönlichen Rekorde unwiderruflich gelöscht — anschließend wird alles aus dem Archiv eingespielt. Diese Aktion kann nicht rückgängig gemacht werden. | This will permanently delete every workout, plan, measurement, gear entry and personal record stored in the app — then restore everything from the archive. This action cannot be undone. | Bu işlem, uygulamada saklanan tüm antrenmanları, planları, ölçümleri, ekipman kayıtlarını ve kişisel rekorları kalıcı olarak siler — ardından her şeyi arşivden geri yükler. Bu işlem geri alınamaz. |
 | `settings.dataImport.replaceConfirm.title` | Alle Daten löschen? | Delete all data? | Tüm veriler silinsin mi? |
