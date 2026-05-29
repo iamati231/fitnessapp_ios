@@ -604,7 +604,31 @@ public enum ProgramTemplates {
         targetEnvironment: .gym,
         iconSystemName: "figure.run",
         targetExperience: [.beginner, .intermediate],
-        targetGoals: [.hybrid]
+        targetGoals: [.hybrid],
+        // DEL-172: Dumbbell-Only-Variante. Cardio-Tage unverändert; Strength-
+        // Compounds auf KH-Versionen umgemappt (Goblet/KH-Bench/KH-Row).
+        equipmentVariants: [
+            EquipmentVariant(profile: .dumbbellOnly, days: [
+                DaySpec(name: "Strength Ganzkörper A", localizationKey: "plan.day.strengthFullBodyA", type: .fullBody, sequenceIndex: 1, exercises: [
+                    ExerciseSpec(name: "Goblet Squat",                 sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Bankdrücken (KH)",              sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Rudern einarmig (KH)",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 2.5),
+                    ExerciseSpec(name: "Plank",                         sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60,  targetRir: 3.0)
+                ]),
+                DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30)
+                ]),
+                DaySpec(name: "Strength Ganzkörper B", localizationKey: "plan.day.strengthFullBodyB", type: .fullBody, sequenceIndex: 3, exercises: [
+                    ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",   sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Schulterdrücken (KH)",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Chest Supported Row (KH)",      sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Bizeps-Curl (KH)",              sets: 2, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+                ]),
+                DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50)
+                ])
+            ])
+        ]
     )
 
     // MARK: - 13. Hybrid Athlete — Balanced (DEL-055)
@@ -743,7 +767,44 @@ public enum ProgramTemplates {
         targetEnvironment: .gym,
         iconSystemName: "figure.run.circle.fill",
         targetExperience: [.advanced],
-        targetGoals: [.hybrid]
+        targetGoals: [.hybrid],
+        // DEL-172: Dumbbell-Only-Variante. Strength-Tage auf KH umgemappt.
+        // Wadenheben (LH) → Farmer's Walk (timeBased Carry) als KH-realistischer
+        // Posterior-Chain-Ersatz; alles andere via existierende KH-Versionen
+        // aus der Library.
+        equipmentVariants: [
+            EquipmentVariant(profile: .dumbbellOnly, days: [
+                DaySpec(name: "Strength Push", localizationKey: "plan.day.strengthPush", type: .push, sequenceIndex: 1, exercises: [
+                    ExerciseSpec(name: "Bankdrücken (KH)",              sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Schulterdrücken (KH)",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Schrägbankdrücken aufwärts (KH)", sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Seitheben",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 1.5),
+                    ExerciseSpec(name: "Trizepsstrecker über Kopf (KH)", sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+                ]),
+                DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
+                    ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup),
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45)
+                ]),
+                DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
+                    ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",   sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 180, targetRir: 2.5),
+                    ExerciseSpec(name: "Rudern einarmig (KH)",          sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Chest Supported Row (KH)",      sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Bizeps-Curl (KH)",              sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+                ]),
+                DaySpec(name: "Intervalle", localizationKey: "plan.day.intervals", type: .cardio, sequenceIndex: 4, exercises: [
+                    ExerciseSpec(name: "Intervalle", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 30)
+                ]),
+                DaySpec(name: "Strength Legs", localizationKey: "plan.day.strengthLegs", type: .legs, sequenceIndex: 5, exercises: [
+                    ExerciseSpec(name: "Goblet Squat",                 sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",   sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",   sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Farmer's Walk",                 sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 2.0)
+                ]),
+                DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 6, exercises: [
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85)
+                ])
+            ])
+        ]
     )
 
     // MARK: - Display order
