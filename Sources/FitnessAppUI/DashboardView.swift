@@ -1943,6 +1943,11 @@ public struct DashboardView: View {
         )
     }
 
+    // @ViewBuilder explizit nötig, weil der Body let-Bindings + ein
+    // `if`-Statement ohne else hat. Xcode 26.4 ist hier strenger als
+    // frühere Versionen — ohne den Marker erkennt der Compiler den
+    // implicit-return-Pfad nicht und meldet "no return statements".
+    @ViewBuilder
     private var muscleHeatmapCard: some View {
         let aggregate = weeklyMuscleVolume
         let anyTraining = aggregate.contains { $0.setsCount > 0 }
@@ -2086,9 +2091,11 @@ public struct DashboardView: View {
         } ?? false
     }
 
-    @ViewBuilder
     /// DEL-152: Filtert Cardio-Serien auf den gewaehlten Zeitbereich.
     /// Analog zu `filteredCompound` — Serien mit >=1 Punkt im Bereich bleiben.
+    /// (Erratum: vorher fälschlich @ViewBuilder annotiert — Funktion liefert
+    /// `[CardioPaceSeries]`, kein View, daher entfernt. Xcode 26.4 würgt
+    /// daran mit "ViewBuilder disabled by explicit return"-Warning.)
     private func filteredCardio(_ series: [CardioPaceSeries], cutoff: Date?) -> [CardioPaceSeries] {
         guard let cutoff else { return series }
         return series.compactMap { line in
