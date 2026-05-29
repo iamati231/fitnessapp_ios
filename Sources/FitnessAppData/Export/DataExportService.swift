@@ -57,8 +57,13 @@ public enum DataExportService {
         //    durch alle CSVs hindurch stabil bleibt. Cross-File-Referenzen
         //    nutzen diese UUIDs als FKs. ObjectIdentifier ist innerhalb
         //    eines App-Laufs stabil und Hashable — passt.
+        //
+        // Hinweis zur Closure-Signatur: kein `for:`-Label, weil die Funktion
+        // unten an die Builder als `(AnyObject) -> String`-Closure
+        // weitergereicht wird. Closures verlieren ihre Argument-Labels in
+        // Swift — der Build kracht sonst mit "extraneous argument label".
         var idMap: [ObjectIdentifier: String] = [:]
-        func id(for object: AnyObject) -> String {
+        func id(_ object: AnyObject) -> String {
             let oid = ObjectIdentifier(object)
             if let existing = idMap[oid] { return existing }
             let new = UUID().uuidString
@@ -197,7 +202,7 @@ public enum DataExportService {
         ])
         for p in profiles {
             w.appendRow([
-                id(for: p),
+                id(p),
                 CSVWriter.iso8601(p.birthDate),
                 CSVWriter.decimal(p.heightCm),
                 p.profile.rawValue,
@@ -230,7 +235,7 @@ public enum DataExportService {
         ])
         for m in items {
             w.appendRow([
-                id(for: m),
+                id(m),
                 CSVWriter.iso8601(m.date),
                 String(m.ageYearsAtMeasurement),
                 CSVWriter.decimal(m.weightKg),
@@ -266,7 +271,7 @@ public enum DataExportService {
         var w = CSVWriter(headers: ["id", "date_utc", "amount_ml"])
         for e in items {
             w.appendRow([
-                id(for: e),
+                id(e),
                 CSVWriter.iso8601(e.date),
                 String(e.amountMl)
             ])
@@ -285,7 +290,7 @@ public enum DataExportService {
         ])
         for p in items {
             w.appendRow([
-                id(for: p),
+                id(p),
                 p.name,
                 p.customName ?? "",
                 p.programType,
@@ -311,8 +316,8 @@ public enum DataExportService {
         ])
         for d in items {
             w.appendRow([
-                id(for: d),
-                d.plan.map { id(for: $0) } ?? "",
+                id(d),
+                d.plan.map { id($0) } ?? "",
                 d.name,
                 d.customName ?? "",
                 String(d.weekday),
@@ -343,40 +348,44 @@ public enum DataExportService {
             "technical_complexity_factor", "recovery_class"
         ])
         for e in items {
-            w.appendRow([
-                id(for: e),
-                e.day.map { id(for: $0) } ?? "",
-                e.name,
-                e.customName ?? "",
-                String(e.sets),
-                String(e.repsMin),
-                String(e.repsMax),
-                String(e.restSeconds),
-                e.notes ?? "",
-                CSVWriter.decimal(e.suggestedWeight),
-                String(e.orderIndex),
-                CSVWriter.decimal(Double(e.targetRir), fractionDigits: 1),
-                e.weightReducedNote ?? "",
-                CSVWriter.bool(e.isCardio),
-                CSVWriter.bool(e.isTimeBased),
-                CSVWriter.bool(e.isArchived),
-                CSVWriter.bool(e.smartProgressionEnabled),
-                CSVWriter.decimal(e.progressionStep),
-                CSVWriter.bool(e.isCompound),
-                CSVWriter.decimal(e.targetDistanceKm),
-                e.targetDurationMinutes.map(String.init) ?? "",
-                e.cardioEquipmentRaw ?? "",
-                e.primaryMuscleRaw ?? "",
-                e.equipmentRaw ?? "",
-                e.supersetId?.uuidString ?? "",
-                e.roleRaw,
-                CSVWriter.decimal(e.systemicFatigueFactor),
-                CSVWriter.decimal(e.localMuscleDamageFactor),
-                CSVWriter.decimal(e.cnsDemandFactor),
-                CSVWriter.decimal(e.axialLoadFactor),
-                CSVWriter.decimal(e.technicalComplexityFactor),
-                e.recoveryClassRaw
-            ])
+            // Imperatives Append statt großem Array-Literal — Swift's
+            // Type-Inference gibt bei 30+ Heterogen-Elementen mit Optionals
+            // und ?? auf ("unable to type-check this expression in
+            // reasonable time"). Step-by-step ist trivial inferierbar.
+            var row: [String] = []
+            row.append(id(e))
+            row.append(e.day.map { id($0) } ?? "")
+            row.append(e.name)
+            row.append(e.customName ?? "")
+            row.append(String(e.sets))
+            row.append(String(e.repsMin))
+            row.append(String(e.repsMax))
+            row.append(String(e.restSeconds))
+            row.append(e.notes ?? "")
+            row.append(CSVWriter.decimal(e.suggestedWeight))
+            row.append(String(e.orderIndex))
+            row.append(CSVWriter.decimal(Double(e.targetRir), fractionDigits: 1))
+            row.append(e.weightReducedNote ?? "")
+            row.append(CSVWriter.bool(e.isCardio))
+            row.append(CSVWriter.bool(e.isTimeBased))
+            row.append(CSVWriter.bool(e.isArchived))
+            row.append(CSVWriter.bool(e.smartProgressionEnabled))
+            row.append(CSVWriter.decimal(e.progressionStep))
+            row.append(CSVWriter.bool(e.isCompound))
+            row.append(CSVWriter.decimal(e.targetDistanceKm))
+            row.append(e.targetDurationMinutes.map(String.init) ?? "")
+            row.append(e.cardioEquipmentRaw ?? "")
+            row.append(e.primaryMuscleRaw ?? "")
+            row.append(e.equipmentRaw ?? "")
+            row.append(e.supersetId?.uuidString ?? "")
+            row.append(e.roleRaw)
+            row.append(CSVWriter.decimal(e.systemicFatigueFactor))
+            row.append(CSVWriter.decimal(e.localMuscleDamageFactor))
+            row.append(CSVWriter.decimal(e.cnsDemandFactor))
+            row.append(CSVWriter.decimal(e.axialLoadFactor))
+            row.append(CSVWriter.decimal(e.technicalComplexityFactor))
+            row.append(e.recoveryClassRaw)
+            w.appendRow(row)
         }
         return w.data()
     }
@@ -394,7 +403,7 @@ public enum DataExportService {
         ])
         for s in items {
             w.appendRow([
-                id(for: s),
+                id(s),
                 CSVWriter.iso8601(s.startTime),
                 CSVWriter.iso8601(s.endTime),
                 String(s.durationMinutes),
@@ -407,8 +416,8 @@ public enum DataExportService {
                 CSVWriter.bool(s.isAdHoc),
                 s.dayName ?? "",
                 s.sessionFeeling.map(String.init) ?? "",
-                s.gear.map { id(for: $0) } ?? "",
-                s.day.map { id(for: $0) } ?? ""
+                s.gear.map { id($0) } ?? "",
+                s.day.map { id($0) } ?? ""
             ])
         }
         return w.data()
@@ -428,24 +437,25 @@ public enum DataExportService {
             "distance_km", "duration_seconds"
         ])
         for l in items {
-            w.appendRow([
-                id(for: l),
-                l.session.map { id(for: $0) } ?? "",
-                l.exercise.map { id(for: $0) } ?? "",
-                CSVWriter.iso8601(l.date),
-                String(l.setIndex),
-                CSVWriter.decimal(l.weight),
-                String(l.reps),
-                CSVWriter.decimal(l.rpe, fractionDigits: 1),
-                CSVWriter.decimal(Double(l.rir), fractionDigits: 1),
-                l.comment ?? "",
-                l.exerciseNameSnapshot ?? "",
-                CSVWriter.bool(l.exerciseIsCardioSnapshot),
-                CSVWriter.bool(l.exerciseIsTimeBasedSnapshot),
-                l.exerciseCardioEquipmentSnapshot ?? "",
-                CSVWriter.decimal(l.distanceKm),
-                l.durationSeconds.map(String.init) ?? ""
-            ])
+            // Step-by-step append, gleiches Argument wie bei buildExercises.
+            var row: [String] = []
+            row.append(id(l))
+            row.append(l.session.map { id($0) } ?? "")
+            row.append(l.exercise.map { id($0) } ?? "")
+            row.append(CSVWriter.iso8601(l.date))
+            row.append(String(l.setIndex))
+            row.append(CSVWriter.decimal(l.weight))
+            row.append(String(l.reps))
+            row.append(CSVWriter.decimal(l.rpe, fractionDigits: 1))
+            row.append(CSVWriter.decimal(Double(l.rir), fractionDigits: 1))
+            row.append(l.comment ?? "")
+            row.append(l.exerciseNameSnapshot ?? "")
+            row.append(CSVWriter.bool(l.exerciseIsCardioSnapshot))
+            row.append(CSVWriter.bool(l.exerciseIsTimeBasedSnapshot))
+            row.append(l.exerciseCardioEquipmentSnapshot ?? "")
+            row.append(CSVWriter.decimal(l.distanceKm))
+            row.append(l.durationSeconds.map(String.init) ?? "")
+            w.appendRow(row)
         }
         return w.data()
     }
@@ -461,7 +471,7 @@ public enum DataExportService {
         ])
         for p in items {
             w.appendRow([
-                id(for: p),
+                id(p),
                 CSVWriter.iso8601(p.date),
                 p.exerciseName,
                 p.kindRaw,
@@ -470,7 +480,7 @@ public enum DataExportService {
                 CSVWriter.decimal(p.weightKg),
                 String(p.reps),
                 p.cardioEquipmentRaw ?? "",
-                p.session.map { id(for: $0) } ?? ""
+                p.session.map { id($0) } ?? ""
             ])
         }
         return w.data()
@@ -486,7 +496,7 @@ public enum DataExportService {
         ])
         for g in items {
             w.appendRow([
-                id(for: g),
+                id(g),
                 g.name,
                 g.type.rawValue,
                 CSVWriter.decimal(g.maxDistanceKm),
@@ -513,7 +523,7 @@ public enum DataExportService {
         ])
         for t in items {
             w.appendRow([
-                id(for: t),
+                id(t),
                 t.name,
                 t.equipment.rawValue,
                 t.primaryMuscle.rawValue,
