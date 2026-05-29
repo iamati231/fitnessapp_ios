@@ -27900,6 +27900,213 @@
           }
         }
       }
+    },
+    "settings.dataImport.strategyPicker.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import strategy"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import-Strategie"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İçe aktarma stratejisi"
+          }
+        }
+      }
+    },
+    "settings.dataImport.strategyPicker.appendOnly": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Append (safe)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anhängen (sicher)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekle (güvenli)"
+          }
+        }
+      }
+    },
+    "settings.dataImport.strategyPicker.replace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ersetzen"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Değiştir"
+          }
+        }
+      }
+    },
+    "settings.dataImport.strategyPicker.appendOnlyDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only missing entries are added. Your existing data is preserved."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur fehlende Einträge werden hinzugefügt. Deine bestehenden Daten bleiben erhalten."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yalnızca eksik kayıtlar eklenir. Mevcut verilerin korunur."
+          }
+        }
+      }
+    },
+    "settings.dataImport.strategyPicker.replaceWarning": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All existing workouts, plans, measurements, gear and PRs will be deleted before the archive is restored. This cannot be undone."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle bestehenden Workouts, Pläne, Messungen, Ausrüstung und PRs werden gelöscht, bevor das Archiv eingespielt wird. Das kann nicht rückgängig gemacht werden."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arşiv geri yüklenmeden önce mevcut tüm antrenmanlar, planlar, ölçümler, ekipman ve PR'lar silinir. Bu işlem geri alınamaz."
+          }
+        }
+      }
+    },
+    "settings.dataImport.action.startReplace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete data and restore"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daten löschen und einspielen"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verileri sil ve geri yükle"
+          }
+        }
+      }
+    },
+    "settings.dataImport.replaceConfirm.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all data?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Daten löschen?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tüm veriler silinsin mi?"
+          }
+        }
+      }
+    },
+    "settings.dataImport.replaceConfirm.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This will permanently delete every workout, plan, measurement, gear entry and personal record stored in the app — then restore everything from the archive. This action cannot be undone."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hierbei werden alle in der App gespeicherten Workouts, Pläne, Messungen, Ausrüstungs-Einträge und persönlichen Rekorde unwiderruflich gelöscht — anschließend wird alles aus dem Archiv eingespielt. Diese Aktion kann nicht rückgängig gemacht werden."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu işlem, uygulamada saklanan tüm antrenmanları, planları, ölçümleri, ekipman kayıtlarını ve kişisel rekorları kalıcı olarak siler — ardından her şeyi arşivden geri yükler. Bu işlem geri alınamaz."
+          }
+        }
+      }
+    },
+    "settings.dataImport.replaceConfirm.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete and restore"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Löschen und einspielen"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sil ve geri yükle"
+          }
+        }
+      }
     }
   }
 }

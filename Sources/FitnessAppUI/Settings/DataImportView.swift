@@ -33,9 +33,15 @@ public struct DataImportView: View {
     @State private var pickedURL: URL?
     @State private var showFilePicker = false
     @State private var showConfirmDialog = false
+    @State private var showReplaceConfirmDialog = false
     @State private var errorMessage: String?
     @State private var errorsCSVURL: URL?
     @State private var showShareSheet = false
+
+    // DEL-175: Append-only ist Default. Replace ist destruktiv — wir
+    // verlangen einen zusätzlichen "ja wirklich"-Confirm-Dialog bevor wir
+    // löschen.
+    @State private var strategy: DataImportStrategy = .appendOnly
 
     enum Phase {
         case ready
@@ -51,6 +57,9 @@ public struct DataImportView: View {
             VStack(alignment: .leading, spacing: 18) {
                 introCard
                 strategyCard
+                if case .picked = phase {
+                    strategyPickerCard
+                }
                 actionSection
                 if let errorMessage {
                     errorBanner(message: errorMessage)
@@ -69,6 +78,7 @@ public struct DataImportView: View {
         ) { result in
             handlePickerResult(result)
         }
+        // Default-Confirm — milder Ton, .appendOnly
         .confirmationDialog(
             Text("settings.dataImport.confirm.title", bundle: .module),
             isPresented: $showConfirmDialog,
@@ -80,13 +90,31 @@ public struct DataImportView: View {
                 Text("settings.dataImport.confirm.action", bundle: .module)
             }
             Button(role: .cancel) {
-                phase = .ready
-                pickedURL = nil
+                // phase bleibt .picked, User kann's nochmal versuchen
             } label: {
                 Text("common.cancel", bundle: .module)
             }
         } message: {
             Text("settings.dataImport.confirm.message", bundle: .module)
+        }
+        // DEL-175: destruktiver Confirm für .replace — eigener Dialog mit
+        // Warning-Ton, .destructive role auf dem Confirm-Button damit iOS
+        // ihn rot rendert.
+        .confirmationDialog(
+            Text("settings.dataImport.replaceConfirm.title", bundle: .module),
+            isPresented: $showReplaceConfirmDialog,
+            titleVisibility: .visible
+        ) {
+            Button(role: .destructive) {
+                runImport()
+            } label: {
+                Text("settings.dataImport.replaceConfirm.action", bundle: .module)
+            }
+            Button(role: .cancel) {} label: {
+                Text("common.cancel", bundle: .module)
+            }
+        } message: {
+            Text("settings.dataImport.replaceConfirm.message", bundle: .module)
         }
         #if os(iOS)
         .sheet(isPresented: $showShareSheet) {
@@ -119,6 +147,45 @@ public struct DataImportView: View {
                     bullet("settings.dataImport.strategy.appendOnly")
                     bullet("settings.dataImport.strategy.duplicates")
                     bullet("settings.dataImport.strategy.errorsLog")
+                }
+            }
+        }
+    }
+
+    /// DEL-175: Strategy-Picker erscheint erst NACHDEM eine Datei gewählt
+    /// wurde — vorher wäre der Picker bedeutungslos. Sortiert: Append-only
+    /// (Recommended) als erster Eintrag, Replace zweitens mit deutlichem
+    /// Warning-Look bei Auswahl.
+    @ViewBuilder
+    private var strategyPickerCard: some View {
+        DeltiqFormSection(header: String(localized: "settings.dataImport.strategyPicker.header", bundle: .module)) {
+            DeltiqFormFullRow {
+                Picker(selection: $strategy) {
+                    Text("settings.dataImport.strategyPicker.appendOnly", bundle: .module)
+                        .tag(DataImportStrategy.appendOnly)
+                    Text("settings.dataImport.strategyPicker.replace", bundle: .module)
+                        .tag(DataImportStrategy.replace)
+                } label: { EmptyView() }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+            DeltiqFormFullRow {
+                if strategy == .replace {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                        Text("settings.dataImport.strategyPicker.replaceWarning", bundle: .module)
+                            .font(.caption)
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(8)
+                    .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                } else {
+                    Text("settings.dataImport.strategyPicker.appendOnlyDescription", bundle: .module)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
@@ -159,21 +226,33 @@ public struct DataImportView: View {
                 }
                 DeltiqFormFullRow {
                     Button {
-                        showConfirmDialog = true
+                        // DEL-175: je nach Strategy einen anderen
+                        // Confirm-Dialog präsentieren. Replace bekommt den
+                        // destruktiven Warning-Dialog.
+                        if strategy == .replace {
+                            showReplaceConfirmDialog = true
+                        } else {
+                            showConfirmDialog = true
+                        }
                     } label: {
                         HStack {
                             Spacer()
                             Label {
-                                Text("settings.dataImport.action.start", bundle: .module)
+                                Text(strategy == .replace
+                                     ? "settings.dataImport.action.startReplace"
+                                     : "settings.dataImport.action.start",
+                                     bundle: .module)
                             } icon: {
-                                Image(systemName: "square.and.arrow.down")
+                                Image(systemName: strategy == .replace
+                                      ? "arrow.triangle.2.circlepath"
+                                      : "square.and.arrow.down")
                             }
                             .font(.body.weight(.semibold))
                             Spacer()
                         }
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(Color.deltiqOrange)
+                    .tint(strategy == .replace ? .red : Color.deltiqOrange)
                 }
             }
 
@@ -372,7 +451,11 @@ public struct DataImportView: View {
                 // das ist eine bewusst pragmatische Wahl, weil SwiftData
                 // sonst eigene Threads bräuchte. ProgressView spinnt
                 // während dieser Zeit.
-                let result = try DataImportService.performImport(zipData: zipData, context: ctx)
+                let result = try DataImportService.performImport(
+                    zipData: zipData,
+                    context: ctx,
+                    strategy: strategy
+                )
                 await MainActor.run {
                     self.phase = .finished(result: result)
                 }

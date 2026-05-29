@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1213 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1222 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1213 / 1213** (100%) | 0 |
-| 🇬🇧 English (EN) | **1213 / 1213** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1213 / 1213** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1222 / 1222** (100%) | 0 |
+| 🇬🇧 English (EN) | **1222 / 1222** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1222 / 1222** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1265,7 +1265,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (96 Keys)
+## `settings.*`  (105 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1301,6 +1301,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.dataImport.action.pick` | ZIP-Datei auswählen | Choose ZIP file | ZIP dosyası seç |
 | `settings.dataImport.action.shareErrors` | Fehlerprotokoll teilen | Share error log | Hata günlüğünü paylaş |
 | `settings.dataImport.action.start` | Import starten | Start import | İçe aktarmayı başlat |
+| `settings.dataImport.action.startReplace` | Daten löschen und einspielen | Delete data and restore | Verileri sil ve geri yükle |
 | `settings.dataImport.confirm.action` | Ja, jetzt importieren | Yes, import now | Evet, şimdi içe aktar |
 | `settings.dataImport.confirm.message` | Bestehende Daten bleiben unangetastet. Nur fehlende Zeilen aus dem Archiv werden ergänzt. Duplikate werden erkannt und übersprungen. | Existing data stays untouched. Only missing rows from the archive will be added. Duplicates are detected and skipped. | Mevcut veriler değişmez. Yalnızca arşivdeki eksik satırlar eklenir. Yinelenen kayıtlar algılanır ve atlanır. |
 | `settings.dataImport.confirm.title` | Daten importieren? | Import data? | Verileri içe aktar? |
@@ -1309,6 +1310,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.dataImport.intro.footer` | Es werden nur ZIP-Archive mit Format-Version 1.x unterstützt. Neuere oder ältere Formate werden abgelehnt. | Only ZIP archives with format version 1.x are supported. Newer or older formats will be refused. | Yalnızca format sürümü 1.x olan ZIP arşivleri desteklenir. Daha yeni veya eski formatlar reddedilir. |
 | `settings.dataImport.intro.header` | Von einem Export wiederherstellen | Restore from an export | Bir dışa aktarmadan geri yükle |
 | `settings.dataImport.picked.header` | Ausgewählte Datei | Selected file | Seçili dosya |
+| `settings.dataImport.replaceConfirm.action` | Löschen und einspielen | Delete and restore | Sil ve geri yükle |
+| `settings.dataImport.replaceConfirm.message` | Hierbei werden alle in der App gespeicherten Workouts, Pläne, Messungen, Ausrüstungs-Einträge und persönlichen Rekorde unwiderruflich gelöscht — anschließend wird alles aus dem Archiv eingespielt. Diese Aktion kann nicht rückgängig gemacht werden. | This will permanently delete every workout, plan, measurement, gear entry and personal record stored in the app — then restore everything from the archive. This action cannot be undone. | Bu işlem, uygulamada saklanan tüm antrenmanları, planları, ölçümleri, ekipman kayıtlarını ve kişisel rekorları kalıcı olarak siler — ardından her şeyi arşivden geri yükler. Bu işlem geri alınamaz. |
+| `settings.dataImport.replaceConfirm.title` | Alle Daten löschen? | Delete all data? | Tüm veriler silinsin mi? |
 | `settings.dataImport.result.errors` | Fehlerhafte Zeilen | Failed rows | Başarısız satırlar |
 | `settings.dataImport.result.fileSummary` | +%lld / skip %lld | +%lld / skip %lld | +%lld / atla %lld |
 | `settings.dataImport.result.header` | Import abgeschlossen | Import complete | İçe aktarma tamamlandı |
@@ -1318,6 +1322,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.dataImport.strategy.duplicates` | Duplikate (gleiches Workout/Maß/PR) werden anhand des Zeitstempels erkannt und übersprungen. | Duplicates (same workout/measurement/PR) are detected by timestamp and skipped. | Yinelenen kayıtlar (aynı antrenman/ölçüm/PR) zaman damgasına göre algılanır ve atlanır. |
 | `settings.dataImport.strategy.errorsLog` | Fehlerhafte Zeilen werden in einem Fehlerprotokoll gesammelt, das du teilen kannst. | Broken rows are collected into an errors report you can share. | Bozuk satırlar, paylaşabileceğin bir hata raporunda toplanır. |
 | `settings.dataImport.strategy.header` | Wie der Import arbeitet | How the import works | İçe aktarma nasıl çalışır |
+| `settings.dataImport.strategyPicker.appendOnly` | Anhängen (sicher) | Append (safe) | Ekle (güvenli) |
+| `settings.dataImport.strategyPicker.appendOnlyDescription` | Nur fehlende Einträge werden hinzugefügt. Deine bestehenden Daten bleiben erhalten. | Only missing entries are added. Your existing data is preserved. | Yalnızca eksik kayıtlar eklenir. Mevcut verilerin korunur. |
+| `settings.dataImport.strategyPicker.header` | Import-Strategie | Import strategy | İçe aktarma stratejisi |
+| `settings.dataImport.strategyPicker.replace` | Ersetzen | Replace | Değiştir |
+| `settings.dataImport.strategyPicker.replaceWarning` | Alle bestehenden Workouts, Pläne, Messungen, Ausrüstung und PRs werden gelöscht, bevor das Archiv eingespielt wird. Das kann nicht rückgängig gemacht werden. | All existing workouts, plans, measurements, gear and PRs will be deleted before the archive is restored. This cannot be undone. | Arşiv geri yüklenmeden önce mevcut tüm antrenmanlar, planlar, ölçümler, ekipman ve PR'lar silinir. Bu işlem geri alınamaz. |
 | `settings.dataImport.title` | Daten-Import | Data Import | Veri İçe Aktarımı |
 | `settings.health.connect` | Verbinden | Connect | Bağla |
 | `settings.health.denied` | Berechtigung verweigert | Permission denied | İzin reddedildi |

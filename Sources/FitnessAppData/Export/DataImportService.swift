@@ -31,6 +31,20 @@ import SwiftData
 import FitnessAppCore
 import ZIPFoundation
 
+/// Welche Strategie der ImportService beim Mergen anwendet.
+public enum DataImportStrategy: String, Sendable, CaseIterable {
+    /// Default. Fügt fehlende Zeilen hinzu, erkennt Duplikate über
+    /// natürliche Schlüssel (date+name etc.) und überspringt sie — nichts
+    /// Bestehendes wird je angetastet. Sicher für jedes Szenario.
+    case appendOnly
+
+    /// Destruktiv. Löscht ALLE User-Daten (Profile, Workouts, Logs, Maße,
+    /// Pläne, Custom-Templates, Gear, Water, PRs) und installiert dann
+    /// das Backup. Sinnvoll für "Neues Gerät / Account-Wechsel"-Flow.
+    /// **Anwendung erfordert UI-Warnung mit destruktivem Confirm.**
+    case replace
+}
+
 /// Ergebnis eines erfolgreich gestarteten Imports. Auch wenn Errors aufgetreten
 /// sind: das ist KEIN throwing-error — die UI rendert den Result mit
 /// Imported/Skipped/Failed-Zähler und der User kann errors.csv teilen.
@@ -61,8 +75,17 @@ public enum DataImportService {
     /// Result.
     public static func performImport(
         zipData: Data,
-        context: ModelContext
+        context: ModelContext,
+        strategy: DataImportStrategy = .appendOnly
     ) throws -> DataImportResult {
+
+        // Wenn Strategie == .replace, löschen wir VOR dem Merge alle User-
+        // Daten. Die Dedup-Indizes im Three-Pass-Merge stehen danach leer,
+        // also wird jede Zeile aus dem ZIP frisch eingefügt — kein
+        // Spezial-Pfad im Insert-Code nötig.
+        if strategy == .replace {
+            try wipeAllUserData(context: context)
+        }
 
         // 1) ZIP entpacken. ZIPFoundation kann direkt aus Data lesen, in-
         //    memory ohne Disk-Roundtrip.
@@ -186,6 +209,44 @@ public enum DataImportService {
             errorRows: errorBuffer.totalCount,
             errorsCSV: errorsCSV
         )
+    }
+
+    // MARK: - Replace-Strategie: kompletter Wipe vor dem Merge
+
+    /// Löscht ALLE User-Daten in deletion-rule-konformer Reihenfolge —
+    /// gleiches Pattern wie `SettingsView.resetApp`, aber explizit ohne
+    /// die System-Library-Templates (`isCustom == false`). Diese werden
+    /// vom `LibrarySeeder` beim nächsten App-Start ohnehin neu geseedet;
+    /// löschen würde nur die Custom-Eintragsdaten und User-Renames der
+    /// System-Lifts beeinflussen, was wir nicht wollen.
+    ///
+    /// **Cascade-Regel-konform**: per-instance delete statt
+    /// `delete(model:)`-Batch (NSBatchDeleteRequest umgeht
+    /// `@Relationship`-Cascades und löst "mandatory OTO nullify"-
+    /// Violations aus). Children-first ordering. Save passiert NICHT
+    /// hier — der eigentliche Import sammelt seine Inserts an und ruft
+    /// am Ende ein einziges `save()`, das den Wipe und den Merge atomisch
+    /// committet.
+    private static func wipeAllUserData(context: ModelContext) throws {
+        try deleteEach(of: PersonalRecordEntry.self, in: context)
+        try deleteEach(of: ExerciseLog.self,         in: context)
+        try deleteEach(of: WorkoutSession.self,      in: context)
+        try deleteEach(of: Exercise.self,            in: context)
+        try deleteEach(of: TrainingDay.self,         in: context)
+        try deleteEach(of: TrainingPlan.self,        in: context)
+        // Nur Custom-Templates wegräumen — System-Library kommt vom Seeder.
+        let customTemplates = try context.fetch(FetchDescriptor<ExerciseTemplate>())
+            .filter { $0.isCustom }
+        for t in customTemplates { context.delete(t) }
+        try deleteEach(of: WaterEntry.self,          in: context)
+        try deleteEach(of: BodyMeasurement.self,     in: context)
+        try deleteEach(of: Gear.self,                in: context)
+        try deleteEach(of: UserBodyProfile.self,     in: context)
+    }
+
+    private static func deleteEach<T: PersistentModel>(of type: T.Type, in context: ModelContext) throws {
+        let items = try context.fetch(FetchDescriptor<T>())
+        for item in items { context.delete(item) }
     }
 
     // MARK: - Format version check
