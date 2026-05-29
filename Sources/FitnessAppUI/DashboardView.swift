@@ -993,6 +993,10 @@ public struct DashboardView: View {
             )
             if !msg.isEmpty { return msg }
         }
+        // DEL-168: P3 — Edu-Coaching-Tipp als Fallback, wenn weder Warnung
+        // noch datengetriebener Soft-Insight greift. Tag-stabil rotierend.
+        let eduMsg = CoachingMessageProvider.eduMessage(for: profile.coachingTone)
+        if !eduMsg.isEmpty { return eduMsg }
         return nil
     }
 

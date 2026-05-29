@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1116 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1161 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1116 / 1116** (100%) | 0 |
-| 🇬🇧 English (EN) | **1116 / 1116** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1116 / 1116** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1161 / 1161** (100%) | 0 |
+| 🇬🇧 English (EN) | **1161 / 1161** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1161 / 1161** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -170,7 +170,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `chart.timeRange.oneMonth` | 1M | 1M | 1A |
 | `chart.timeRange.threeMonths` | 3M | 3M | 3A |
 
-## `coaching.*`  (49 Keys)
+## `coaching.*`  (94 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -179,6 +179,51 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.cnsOverloaded.analytical.strength` | ZNS-Belastung >90%. Schwere 1RM-Versuche sind heute statistisch ineffizient. Reduziere die Intensität. | CNS load >90%. Heavy 1RM attempts are statistically inefficient today. Reduce intensity. | MSS yükü %90 üzerinde. Bugün ağır 1RM denemeleri istatistiksel olarak verimsiz. Yoğunluğu azalt. |
 | `coaching.cnsOverloaded.motivating.hypertrophy` | Du hast extrem hart gearbeitet! Gönn deinem Nervensystem etwas Ruhe und fokussiere dich heute auf leichte Isolationsübungen. | You've worked incredibly hard! Give your nervous system some rest and focus on light isolation exercises today. | Çok sıkı çalıştın! Bugün sinir sistemine biraz dinlenme ver ve hafif izolasyon hareketlerine odaklan. |
 | `coaching.cnsOverloaded.strict.hybrid` | Rote Zone. Dein Nervensystem ist durch. Keine schweren Kettlebell-Swings heute. Mach Mobility oder mach Pause. | Red zone. Your nervous system is fried. No heavy kettlebell swings today. Mobility work — or rest. | Kırmızı bölge. Sinir sistemin bitik. Bugün ağır kettlebell swing yok. Mobilite ya da dinlen. |
+| `coaching.edu.analytical.1` | Hypertrophie braucht 10–20 Sätze pro Muskelgruppe pro Woche — mehr Sätze ≠ mehr Wachstum jenseits dieser Schwelle. | Hypertrophy needs 10–20 sets per muscle group per week. More sets ≠ more growth beyond that threshold. | Hipertrofi haftada kas grubu başına 10–20 set gerektirir. Eşik aşıldıktan sonra daha fazla set ≠ daha fazla büyüme. |
+| `coaching.edu.analytical.10` | Eccentric-Phase (Ablassen) baut mehr Muskel auf als Concentric. Ziel: 2–3 Sekunden kontrolliert ablassen. | Eccentrics (lowering) build more muscle than concentrics. Aim for 2–3 controlled seconds down. | Eksentrik (indirme) konsentrikten daha fazla kas inşa eder. Hedef: 2–3 saniye kontrollü iniş. |
+| `coaching.edu.analytical.11` | Compound-Lifts liefern hohen ROI: Squat, Bench, Deadlift, OHP, Row decken ~80 % der Hauptmuskeln ab. | Compound lifts deliver high ROI: squat, bench, deadlift, OHP, row cover ~80% of the main muscles. | Bileşik hareketler yüksek ROI: squat, bench, deadlift, OHP, row ana kasların ~%80'ini kapsar. |
+| `coaching.edu.analytical.12` | Trainingsintensität > 65 % 1RM ist nötig für Kraftadaption. Darunter trainierst du primär Ausdauer. | Training intensity > 65% 1RM is needed for strength adaptation. Below that, you mostly train endurance. | Kuvvet adaptasyonu için yoğunluk > %65 1RM gerekir. Altında çoğunlukla dayanıklılık çalışırsın. |
+| `coaching.edu.analytical.13` | Pause zwischen Sätzen: 2–3 min für Compound-Lifts, 60–90 s für Isolation. Kürzere Pausen ≠ besseres Ergebnis. | Rest between sets: 2–3 min for compounds, 60–90 s for isolation. Shorter rest ≠ better results. | Setler arası dinlenme: bileşik için 2–3 dk, izolasyon için 60–90 sn. Kısa dinlenme ≠ daha iyi sonuç. |
+| `coaching.edu.analytical.14` | Aktive Erholung (leichtes Cardio, Mobility) beschleunigt DOMS-Abbau messbar gegenüber kompletter Ruhe. | Active recovery (light cardio, mobility) measurably accelerates DOMS clearance versus complete rest. | Aktif toparlanma (hafif kardiyo, mobilite) DOMS'u tam dinlenmeye göre ölçülebilir şekilde hızlandırır. |
+| `coaching.edu.analytical.15` | Trainingsalter zählt: Anfänger gewinnen 1–2 kg Muskel/Monat, Fortgeschrittene 0,2–0,5 kg/Monat. Realistisch bleiben. | Training age matters: beginners gain 1–2 kg muscle/month, advanced 0.2–0.5 kg/month. Stay realistic. | Antrenman yaşı önemli: yeni başlayanlar 1–2 kg kas/ay, ileri seviye 0,2–0,5 kg/ay kazanır. Gerçekçi ol. |
+| `coaching.edu.analytical.2` | Protein-Sweet-Spot: 1,6–2,2 g pro kg Körpergewicht pro Tag. Mehr bringt im Studienschnitt keinen zusätzlichen Effekt. | Protein sweet spot: 1.6–2.2 g per kg of bodyweight per day. More yields no extra effect on average. | Protein optimum aralığı: günde 1,6–2,2 g/kg vücut ağırlığı. Fazlası ortalamada ekstra etki yapmaz. |
+| `coaching.edu.analytical.3` | Schlaf ist Trainingsfaktor #1. Unter 6 h sinken Kraft und Hypertrophie messbar — vor Volumen-Erhöhung optimieren. | Sleep is training factor #1. Under 6 hours, strength and hypertrophy measurably decline — fix it before raising volume. | Uyku, antrenman faktörü #1. 6 saatin altında kuvvet ve hipertrofi ölçülebilir şekilde düşer — hacmi artırmadan önce uykuyu düzelt. |
+| `coaching.edu.analytical.4` | Vollständige ROM (Bewegungsumfang) baut mehr Muskelmasse auf als Teil-Wiederholungen — auch bei gleichem Volumen. | Full range of motion builds more muscle than partials — even at matched volume. | Tam hareket açıklığı (ROM), eşit hacimde bile kısmi tekrarlardan daha fazla kas inşa eder. |
+| `coaching.edu.analytical.5` | Progressive Overload heißt: pro Woche eine Variable steigern — Gewicht, Reps, Sätze ODER ROM. Nicht alles gleichzeitig. | Progressive overload means raising one variable per week: weight, reps, sets, OR ROM — not all at once. | Progresif aşırı yükleme: haftada bir değişkeni artır — ağırlık, tekrar, set ya da ROM. Hepsini birden değil. |
+| `coaching.edu.analytical.6` | Cardio direkt nach Krafttraining beeinträchtigt Hypertrophie weniger als davor — wenn beides am selben Tag muss. | Cardio after lifting impairs hypertrophy less than cardio before — when both fall on the same day. | Kuvvet sonrası kardiyo, kuvvet öncesi kardiyodan hipertrofiyi daha az bozar — ikisi aynı günse. |
+| `coaching.edu.analytical.7` | Kreatin-Monohydrat: 3–5 g/Tag, kein Loading nötig. Stärkster Einzelnachweis aller Supplements. | Creatine monohydrate: 3–5 g/day, no loading needed. The strongest single-study evidence in all supplements. | Kreatin monohidrat: günde 3–5 g, yüklemeye gerek yok. Tüm takviyeler içinde en güçlü tek-çalışma kanıtı. |
+| `coaching.edu.analytical.8` | RIR-Skala: 0 = Versagen, 3+ = noch viele Reps drin. Hypertrophie passiert vor allem an den letzten 5 Reps vor dem Versagen. | RIR scale: 0 = failure, 3+ = many reps left. Hypertrophy happens mostly in the last 5 reps before failure. | RIR ölçeği: 0 = yetmezlik, 3+ = hâlâ tekrar var. Hipertrofi çoğunlukla yetmezlikten önceki son 5 tekrarda olur. |
+| `coaching.edu.analytical.9` | Deload-Wochen alle 4–8 Wochen reduzieren ZNS-Müdigkeit. Volumen halbieren, Intensität halten. | Deload weeks every 4–8 weeks reduce CNS fatigue. Halve volume, keep intensity. | Her 4–8 haftada bir deload haftası ZNS yorgunluğunu azaltır. Hacmi yarıya indir, yoğunluğu koru. |
+| `coaching.edu.motivating.1` | Du musst nicht motiviert sein — du musst nur anfangen. Motivation kommt während der ersten 5 Minuten. | You don't need motivation — you need to start. Motivation kicks in during the first 5 minutes. | Motive olmana gerek yok — sadece başlamana gerek var. Motivasyon ilk 5 dakikada gelir. |
+| `coaching.edu.motivating.10` | Verwandle 'Ich muss' in 'Ich darf'. Trainieren ist ein Privileg, keine Pflicht. | Trade 'I have to' for 'I get to'. Training is a privilege, not a chore. | 'Yapmam lazım'ı 'Yapma fırsatım var'a dönüştür. Antrenman bir ayrıcalık. |
+| `coaching.edu.motivating.11` | Du baust nicht nur Muskeln — du baust mentale Resilienz für alles andere. | You're not just building muscle — you're building mental resilience for everything else. | Sadece kas inşa etmiyorsun — diğer her şey için zihinsel dayanıklılık da inşa ediyorsun. |
+| `coaching.edu.motivating.12` | Schlechte Tage gibt's. Schlechte Wochen auch. Schlechte Monate sind eine Entscheidung. | Bad days happen. Bad weeks too. Bad months are a decision. | Kötü günler olur. Kötü haftalar da. Kötü aylar bir karardır. |
+| `coaching.edu.motivating.13` | Belohnung > Bestrafung. Feier kleine Fortschritte — der Kopf will Wiederholungen, die sich gut anfühlen. | Reward > punishment. Celebrate small progress — the brain wants reps that feel good. | Ödül > ceza. Küçük ilerlemeyi kutla — beyin iyi hissettiren tekrarları ister. |
+| `coaching.edu.motivating.14` | Niemand wurde stark, indem er wartete, bis er sich bereit fühlte. Bereit ist man am Ende, nicht am Anfang. | Nobody got strong by waiting until they felt ready. Ready arrives at the end, not the start. | Kimse hazır hissedene kadar bekleyerek güçlü olmadı. Hazır olmak sonda gelir, başta değil. |
+| `coaching.edu.motivating.15` | Du musst nicht alles richtig machen — du musst nur weitermachen. Perfektion ist der Feind von Progress. | You don't have to do everything right — just keep going. Perfect is the enemy of progress. | Her şeyi doğru yapmak zorunda değilsin — sadece devam etmek zorundasın. Mükemmel, ilerlemenin düşmanı. |
+| `coaching.edu.motivating.2` | Konsistenz schlägt Intensität. Drei mittelmäßige Wochen sind mehr wert als eine perfekte und zwei verlorene. | Consistency beats intensity. Three average weeks beat one perfect plus two lost ones. | Tutarlılık yoğunluğu yener. Üç ortalama hafta, bir mükemmel ve iki kayıp haftadan değerlidir. |
+| `coaching.edu.motivating.3` | Jede absolvierte Einheit ist eine Stimme für deine Identität als jemand, der trainiert. Stimmen summieren sich. | Every completed session is a vote for your identity as someone who trains. Votes add up. | Her antrenman, 'ben antrenman yapan biriyim' kimliğine atılmış bir oydur. Oylar birikir. |
+| `coaching.edu.motivating.4` | Heute mies trainiert ist immer noch besser als heute nicht trainiert. Auftauchen ist die halbe Miete. | A bad workout today still beats no workout today. Showing up is half the win. | Bugün kötü antrenman, bugün hiç antrenman yapmamaktan iyidir. Gelmek savaşın yarısıdır. |
+| `coaching.edu.motivating.5` | Vergleich tötet Freude. Du-von-gestern ist dein einziger fairer Maßstab. | Comparison kills joy. Yesterday-you is your only fair benchmark. | Karşılaştırma sevinci öldürür. Dünkü sen, tek adil ölçüt. |
+| `coaching.edu.motivating.6` | Kleine Siege heute sind die Bausteine großer Veränderungen in 6 Monaten. Geduld ist Disziplin in Zeitlupe. | Small wins today are the building blocks of big change in 6 months. Patience is discipline in slow motion. | Bugünkü küçük zaferler, 6 ay sonraki büyük değişimin yapı taşı. Sabır, ağır çekim disiplindir. |
+| `coaching.edu.motivating.7` | Dein Körper kann mehr, als dein Kopf am Anfang glaubt. Vertrau dem Prozess. | Your body can do more than your head believes early on. Trust the process. | Vücudun, başlangıçta zihnin inandığından fazlasını yapabilir. Sürece güven. |
+| `coaching.edu.motivating.8` | Plateaus sind keine Niederlagen, sondern Pausen, in denen sich Anpassungen festigen. | Plateaus aren't defeats — they're pauses where adaptations consolidate. | Plato yenilgi değil — adaptasyonların oturduğu duraklamadır. |
+| `coaching.edu.motivating.9` | Ein Workout dauert eine Stunde. Der Stolz danach hält 24. | A workout lasts an hour. The pride afterwards lasts 24. | Antrenman bir saat sürer. Sonrasındaki gurur 24 saat. |
+| `coaching.edu.strict.1` | Niemand kommt und rettet dich. Manchmal musst du dich selbst aus dem Bett ziehen. | No one's coming to save you. Sometimes you have to drag yourself out of bed. | Kimse seni kurtarmaya gelmiyor. Bazen kendini yataktan sürüklemen gerekir. |
+| `coaching.edu.strict.10` | Dein heutiges Ich ist die Summe deiner gestrigen Entscheidungen. Plane das morgige Ich heute. | Today's you is the sum of yesterday's choices. Plan tomorrow's you today. | Bugünkü sen, dünkü kararlarının toplamı. Yarınkini bugün planla. |
+| `coaching.edu.strict.11` | Aufwärmen ist Pflicht, kein Bonus. Verletzungen kommen, wenn man Abkürzungen nimmt. | Warming up is mandatory, not a bonus. Injuries come from shortcuts. | Isınma zorunlu, bonus değil. Sakatlık kestirmelerden gelir. |
+| `coaching.edu.strict.12` | Wer nicht misst, lügt sich selbst an. Tracke jede Einheit. | If you don't measure, you're lying to yourself. Track every session. | Ölçmüyorsan kendine yalan söylüyorsun. Her antrenmanı kaydet. |
+| `coaching.edu.strict.13` | Schlaf, Ernährung, Training. Drei Dinge. Wenn eines fehlt, lügst du dich an, dass du es ernst meinst. | Sleep, nutrition, training. Three things. Miss one and you're not serious — you're pretending. | Uyku, beslenme, antrenman. Üç şey. Biri eksikse ciddi değilsin — sadece numara yapıyorsun. |
+| `coaching.edu.strict.14` | Niemand will deine Ausreden hören — auch du selbst nicht. Mach einfach. | Nobody wants to hear your excuses — not even you. Just do it. | Kimse mazeretini duymak istemiyor — sen bile. Sadece yap. |
+| `coaching.edu.strict.15` | Du hast genau heute. Das ist die einzige Einheit, die zählt. | You only have today. It's the only session that counts. | Sadece bugün var. Tek sayan antrenman bu. |
+| `coaching.edu.strict.2` | Ausreden sind komfortabel und teuer. Wähle den unbequemen Weg. | Excuses are comfortable and expensive. Pick the uncomfortable path. | Mazeretler konforlu ve pahalı. Konforsuz yolu seç. |
+| `coaching.edu.strict.3` | Komfortzone ist der Ort, an dem Träume sterben. Verlasse sie jeden Tag bewusst. | The comfort zone is where dreams die. Leave it on purpose every day. | Konfor alanı, hayallerin öldüğü yer. Her gün bilinçli olarak terk et. |
+| `coaching.edu.strict.4` | Hartes Training ist nicht das Problem. Inkonsistenz ist es. | Hard training isn't the problem. Inconsistency is. | Sert antrenman sorun değil. Tutarsızlık sorun. |
+| `coaching.edu.strict.5` | Wenn du keine Zeit hast, hast du die falschen Prioritäten. Punkt. | No time means wrong priorities. Period. | Zamanın yoksa, önceliklerin yanlış. Nokta. |
+| `coaching.edu.strict.6` | Schmerz ist temporär. Bedauern ist permanent. | Pain is temporary. Regret is permanent. | Acı geçici. Pişmanlık kalıcı. |
+| `coaching.edu.strict.7` | Disziplin heißt: tun, was du gesagt hast, wenn die Stimmung weg ist. | Discipline means doing what you said when the mood is gone. | Disziplin: motivasyon gittiğinde söylediğini yapmaktır. |
+| `coaching.edu.strict.8` | Es gibt keine schlechten Tage, nur schwache Reaktionen darauf. | There are no bad days — just weak reactions to them. | Kötü gün yok — sadece zayıf tepkiler var. |
+| `coaching.edu.strict.9` | Niemand schuldet dir Ergebnisse. Du musst sie dir verdienen — Satz für Satz. | Nobody owes you results. You earn them — set by set. | Kimse sana sonuç borçlu değil. Set set kazanırsın. |
 | `coaching.empty.message` | Aktuell ist keine Warnung oder Aktion nötig — weiter so. | No warning or action needed right now — keep it up. | Şu an uyarı veya işlem gerekmez — böyle devam et. |
 | `coaching.empty.title` | Heute kein besonderer Hinweis | No special note today | Bugün özel bir not yok |
 | `coaching.goal.hybrid.blurb` | Kraft + Ausdauer + Mobilität — alles fließt zusammen. | Strength + endurance + mobility — all flowing together. | Güç + dayanıklılık + mobilite — hepsi bir arada. |

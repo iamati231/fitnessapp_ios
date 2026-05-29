@@ -1961,6 +1961,366 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Yeterince ara verdin. Şimdi rutine geri dön. Bugün başla." } }
       }
     },
+    "coaching.edu.analytical.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Hypertrophie braucht 10–20 Sätze pro Muskelgruppe pro Woche — mehr Sätze ≠ mehr Wachstum jenseits dieser Schwelle." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Hypertrophy needs 10–20 sets per muscle group per week. More sets ≠ more growth beyond that threshold." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hipertrofi haftada kas grubu başına 10–20 set gerektirir. Eşik aşıldıktan sonra daha fazla set ≠ daha fazla büyüme." } }
+      }
+    },
+    "coaching.edu.analytical.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Protein-Sweet-Spot: 1,6–2,2 g pro kg Körpergewicht pro Tag. Mehr bringt im Studienschnitt keinen zusätzlichen Effekt." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Protein sweet spot: 1.6–2.2 g per kg of bodyweight per day. More yields no extra effect on average." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Protein optimum aralığı: günde 1,6–2,2 g/kg vücut ağırlığı. Fazlası ortalamada ekstra etki yapmaz." } }
+      }
+    },
+    "coaching.edu.analytical.3": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schlaf ist Trainingsfaktor #1. Unter 6 h sinken Kraft und Hypertrophie messbar — vor Volumen-Erhöhung optimieren." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Sleep is training factor #1. Under 6 hours, strength and hypertrophy measurably decline — fix it before raising volume." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Uyku, antrenman faktörü #1. 6 saatin altında kuvvet ve hipertrofi ölçülebilir şekilde düşer — hacmi artırmadan önce uykuyu düzelt." } }
+      }
+    },
+    "coaching.edu.analytical.4": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Vollständige ROM (Bewegungsumfang) baut mehr Muskelmasse auf als Teil-Wiederholungen — auch bei gleichem Volumen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Full range of motion builds more muscle than partials — even at matched volume." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tam hareket açıklığı (ROM), eşit hacimde bile kısmi tekrarlardan daha fazla kas inşa eder." } }
+      }
+    },
+    "coaching.edu.analytical.5": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Progressive Overload heißt: pro Woche eine Variable steigern — Gewicht, Reps, Sätze ODER ROM. Nicht alles gleichzeitig." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Progressive overload means raising one variable per week: weight, reps, sets, OR ROM — not all at once." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Progresif aşırı yükleme: haftada bir değişkeni artır — ağırlık, tekrar, set ya da ROM. Hepsini birden değil." } }
+      }
+    },
+    "coaching.edu.analytical.6": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Cardio direkt nach Krafttraining beeinträchtigt Hypertrophie weniger als davor — wenn beides am selben Tag muss." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cardio after lifting impairs hypertrophy less than cardio before — when both fall on the same day." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kuvvet sonrası kardiyo, kuvvet öncesi kardiyodan hipertrofiyi daha az bozar — ikisi aynı günse." } }
+      }
+    },
+    "coaching.edu.analytical.7": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kreatin-Monohydrat: 3–5 g/Tag, kein Loading nötig. Stärkster Einzelnachweis aller Supplements." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Creatine monohydrate: 3–5 g/day, no loading needed. The strongest single-study evidence in all supplements." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kreatin monohidrat: günde 3–5 g, yüklemeye gerek yok. Tüm takviyeler içinde en güçlü tek-çalışma kanıtı." } }
+      }
+    },
+    "coaching.edu.analytical.8": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "RIR-Skala: 0 = Versagen, 3+ = noch viele Reps drin. Hypertrophie passiert vor allem an den letzten 5 Reps vor dem Versagen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "RIR scale: 0 = failure, 3+ = many reps left. Hypertrophy happens mostly in the last 5 reps before failure." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "RIR ölçeği: 0 = yetmezlik, 3+ = hâlâ tekrar var. Hipertrofi çoğunlukla yetmezlikten önceki son 5 tekrarda olur." } }
+      }
+    },
+    "coaching.edu.analytical.9": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Deload-Wochen alle 4–8 Wochen reduzieren ZNS-Müdigkeit. Volumen halbieren, Intensität halten." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Deload weeks every 4–8 weeks reduce CNS fatigue. Halve volume, keep intensity." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Her 4–8 haftada bir deload haftası ZNS yorgunluğunu azaltır. Hacmi yarıya indir, yoğunluğu koru." } }
+      }
+    },
+    "coaching.edu.analytical.10": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Eccentric-Phase (Ablassen) baut mehr Muskel auf als Concentric. Ziel: 2–3 Sekunden kontrolliert ablassen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Eccentrics (lowering) build more muscle than concentrics. Aim for 2–3 controlled seconds down." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Eksentrik (indirme) konsentrikten daha fazla kas inşa eder. Hedef: 2–3 saniye kontrollü iniş." } }
+      }
+    },
+    "coaching.edu.analytical.11": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Compound-Lifts liefern hohen ROI: Squat, Bench, Deadlift, OHP, Row decken ~80 % der Hauptmuskeln ab." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Compound lifts deliver high ROI: squat, bench, deadlift, OHP, row cover ~80% of the main muscles." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bileşik hareketler yüksek ROI: squat, bench, deadlift, OHP, row ana kasların ~%80'ini kapsar." } }
+      }
+    },
+    "coaching.edu.analytical.12": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Trainingsintensität > 65 % 1RM ist nötig für Kraftadaption. Darunter trainierst du primär Ausdauer." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Training intensity > 65% 1RM is needed for strength adaptation. Below that, you mostly train endurance." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kuvvet adaptasyonu için yoğunluk > %65 1RM gerekir. Altında çoğunlukla dayanıklılık çalışırsın." } }
+      }
+    },
+    "coaching.edu.analytical.13": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Pause zwischen Sätzen: 2–3 min für Compound-Lifts, 60–90 s für Isolation. Kürzere Pausen ≠ besseres Ergebnis." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Rest between sets: 2–3 min for compounds, 60–90 s for isolation. Shorter rest ≠ better results." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Setler arası dinlenme: bileşik için 2–3 dk, izolasyon için 60–90 sn. Kısa dinlenme ≠ daha iyi sonuç." } }
+      }
+    },
+    "coaching.edu.analytical.14": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Aktive Erholung (leichtes Cardio, Mobility) beschleunigt DOMS-Abbau messbar gegenüber kompletter Ruhe." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Active recovery (light cardio, mobility) measurably accelerates DOMS clearance versus complete rest." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Aktif toparlanma (hafif kardiyo, mobilite) DOMS'u tam dinlenmeye göre ölçülebilir şekilde hızlandırır." } }
+      }
+    },
+    "coaching.edu.analytical.15": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Trainingsalter zählt: Anfänger gewinnen 1–2 kg Muskel/Monat, Fortgeschrittene 0,2–0,5 kg/Monat. Realistisch bleiben." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Training age matters: beginners gain 1–2 kg muscle/month, advanced 0.2–0.5 kg/month. Stay realistic." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Antrenman yaşı önemli: yeni başlayanlar 1–2 kg kas/ay, ileri seviye 0,2–0,5 kg/ay kazanır. Gerçekçi ol." } }
+      }
+    },
+    "coaching.edu.motivating.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Du musst nicht motiviert sein — du musst nur anfangen. Motivation kommt während der ersten 5 Minuten." } },
+        "en": { "stringUnit": { "state": "translated", "value": "You don't need motivation — you need to start. Motivation kicks in during the first 5 minutes." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Motive olmana gerek yok — sadece başlamana gerek var. Motivasyon ilk 5 dakikada gelir." } }
+      }
+    },
+    "coaching.edu.motivating.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Konsistenz schlägt Intensität. Drei mittelmäßige Wochen sind mehr wert als eine perfekte und zwei verlorene." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Consistency beats intensity. Three average weeks beat one perfect plus two lost ones." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tutarlılık yoğunluğu yener. Üç ortalama hafta, bir mükemmel ve iki kayıp haftadan değerlidir." } }
+      }
+    },
+    "coaching.edu.motivating.3": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Jede absolvierte Einheit ist eine Stimme für deine Identität als jemand, der trainiert. Stimmen summieren sich." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Every completed session is a vote for your identity as someone who trains. Votes add up." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Her antrenman, 'ben antrenman yapan biriyim' kimliğine atılmış bir oydur. Oylar birikir." } }
+      }
+    },
+    "coaching.edu.motivating.4": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Heute mies trainiert ist immer noch besser als heute nicht trainiert. Auftauchen ist die halbe Miete." } },
+        "en": { "stringUnit": { "state": "translated", "value": "A bad workout today still beats no workout today. Showing up is half the win." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bugün kötü antrenman, bugün hiç antrenman yapmamaktan iyidir. Gelmek savaşın yarısıdır." } }
+      }
+    },
+    "coaching.edu.motivating.5": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Vergleich tötet Freude. Du-von-gestern ist dein einziger fairer Maßstab." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Comparison kills joy. Yesterday-you is your only fair benchmark." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Karşılaştırma sevinci öldürür. Dünkü sen, tek adil ölçüt." } }
+      }
+    },
+    "coaching.edu.motivating.6": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kleine Siege heute sind die Bausteine großer Veränderungen in 6 Monaten. Geduld ist Disziplin in Zeitlupe." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Small wins today are the building blocks of big change in 6 months. Patience is discipline in slow motion." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bugünkü küçük zaferler, 6 ay sonraki büyük değişimin yapı taşı. Sabır, ağır çekim disiplindir." } }
+      }
+    },
+    "coaching.edu.motivating.7": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Dein Körper kann mehr, als dein Kopf am Anfang glaubt. Vertrau dem Prozess." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Your body can do more than your head believes early on. Trust the process." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Vücudun, başlangıçta zihnin inandığından fazlasını yapabilir. Sürece güven." } }
+      }
+    },
+    "coaching.edu.motivating.8": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Plateaus sind keine Niederlagen, sondern Pausen, in denen sich Anpassungen festigen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Plateaus aren't defeats — they're pauses where adaptations consolidate." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Plato yenilgi değil — adaptasyonların oturduğu duraklamadır." } }
+      }
+    },
+    "coaching.edu.motivating.9": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ein Workout dauert eine Stunde. Der Stolz danach hält 24." } },
+        "en": { "stringUnit": { "state": "translated", "value": "A workout lasts an hour. The pride afterwards lasts 24." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Antrenman bir saat sürer. Sonrasındaki gurur 24 saat." } }
+      }
+    },
+    "coaching.edu.motivating.10": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Verwandle 'Ich muss' in 'Ich darf'. Trainieren ist ein Privileg, keine Pflicht." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Trade 'I have to' for 'I get to'. Training is a privilege, not a chore." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "'Yapmam lazım'ı 'Yapma fırsatım var'a dönüştür. Antrenman bir ayrıcalık." } }
+      }
+    },
+    "coaching.edu.motivating.11": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Du baust nicht nur Muskeln — du baust mentale Resilienz für alles andere." } },
+        "en": { "stringUnit": { "state": "translated", "value": "You're not just building muscle — you're building mental resilience for everything else." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sadece kas inşa etmiyorsun — diğer her şey için zihinsel dayanıklılık da inşa ediyorsun." } }
+      }
+    },
+    "coaching.edu.motivating.12": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schlechte Tage gibt's. Schlechte Wochen auch. Schlechte Monate sind eine Entscheidung." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Bad days happen. Bad weeks too. Bad months are a decision." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kötü günler olur. Kötü haftalar da. Kötü aylar bir karardır." } }
+      }
+    },
+    "coaching.edu.motivating.13": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Belohnung > Bestrafung. Feier kleine Fortschritte — der Kopf will Wiederholungen, die sich gut anfühlen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Reward > punishment. Celebrate small progress — the brain wants reps that feel good." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ödül > ceza. Küçük ilerlemeyi kutla — beyin iyi hissettiren tekrarları ister." } }
+      }
+    },
+    "coaching.edu.motivating.14": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Niemand wurde stark, indem er wartete, bis er sich bereit fühlte. Bereit ist man am Ende, nicht am Anfang." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Nobody got strong by waiting until they felt ready. Ready arrives at the end, not the start." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kimse hazır hissedene kadar bekleyerek güçlü olmadı. Hazır olmak sonda gelir, başta değil." } }
+      }
+    },
+    "coaching.edu.motivating.15": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Du musst nicht alles richtig machen — du musst nur weitermachen. Perfektion ist der Feind von Progress." } },
+        "en": { "stringUnit": { "state": "translated", "value": "You don't have to do everything right — just keep going. Perfect is the enemy of progress." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Her şeyi doğru yapmak zorunda değilsin — sadece devam etmek zorundasın. Mükemmel, ilerlemenin düşmanı." } }
+      }
+    },
+    "coaching.edu.strict.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Niemand kommt und rettet dich. Manchmal musst du dich selbst aus dem Bett ziehen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "No one's coming to save you. Sometimes you have to drag yourself out of bed." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kimse seni kurtarmaya gelmiyor. Bazen kendini yataktan sürüklemen gerekir." } }
+      }
+    },
+    "coaching.edu.strict.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ausreden sind komfortabel und teuer. Wähle den unbequemen Weg." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Excuses are comfortable and expensive. Pick the uncomfortable path." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Mazeretler konforlu ve pahalı. Konforsuz yolu seç." } }
+      }
+    },
+    "coaching.edu.strict.3": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Komfortzone ist der Ort, an dem Träume sterben. Verlasse sie jeden Tag bewusst." } },
+        "en": { "stringUnit": { "state": "translated", "value": "The comfort zone is where dreams die. Leave it on purpose every day." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Konfor alanı, hayallerin öldüğü yer. Her gün bilinçli olarak terk et." } }
+      }
+    },
+    "coaching.edu.strict.4": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Hartes Training ist nicht das Problem. Inkonsistenz ist es." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Hard training isn't the problem. Inconsistency is." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sert antrenman sorun değil. Tutarsızlık sorun." } }
+      }
+    },
+    "coaching.edu.strict.5": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Wenn du keine Zeit hast, hast du die falschen Prioritäten. Punkt." } },
+        "en": { "stringUnit": { "state": "translated", "value": "No time means wrong priorities. Period." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Zamanın yoksa, önceliklerin yanlış. Nokta." } }
+      }
+    },
+    "coaching.edu.strict.6": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schmerz ist temporär. Bedauern ist permanent." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Pain is temporary. Regret is permanent." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Acı geçici. Pişmanlık kalıcı." } }
+      }
+    },
+    "coaching.edu.strict.7": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Disziplin heißt: tun, was du gesagt hast, wenn die Stimmung weg ist." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Discipline means doing what you said when the mood is gone." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Disziplin: motivasyon gittiğinde söylediğini yapmaktır." } }
+      }
+    },
+    "coaching.edu.strict.8": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Es gibt keine schlechten Tage, nur schwache Reaktionen darauf." } },
+        "en": { "stringUnit": { "state": "translated", "value": "There are no bad days — just weak reactions to them." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kötü gün yok — sadece zayıf tepkiler var." } }
+      }
+    },
+    "coaching.edu.strict.9": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Niemand schuldet dir Ergebnisse. Du musst sie dir verdienen — Satz für Satz." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Nobody owes you results. You earn them — set by set." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kimse sana sonuç borçlu değil. Set set kazanırsın." } }
+      }
+    },
+    "coaching.edu.strict.10": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Dein heutiges Ich ist die Summe deiner gestrigen Entscheidungen. Plane das morgige Ich heute." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Today's you is the sum of yesterday's choices. Plan tomorrow's you today." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bugünkü sen, dünkü kararlarının toplamı. Yarınkini bugün planla." } }
+      }
+    },
+    "coaching.edu.strict.11": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Aufwärmen ist Pflicht, kein Bonus. Verletzungen kommen, wenn man Abkürzungen nimmt." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Warming up is mandatory, not a bonus. Injuries come from shortcuts." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Isınma zorunlu, bonus değil. Sakatlık kestirmelerden gelir." } }
+      }
+    },
+    "coaching.edu.strict.12": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Wer nicht misst, lügt sich selbst an. Tracke jede Einheit." } },
+        "en": { "stringUnit": { "state": "translated", "value": "If you don't measure, you're lying to yourself. Track every session." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ölçmüyorsan kendine yalan söylüyorsun. Her antrenmanı kaydet." } }
+      }
+    },
+    "coaching.edu.strict.13": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schlaf, Ernährung, Training. Drei Dinge. Wenn eines fehlt, lügst du dich an, dass du es ernst meinst." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Sleep, nutrition, training. Three things. Miss one and you're not serious — you're pretending." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Uyku, beslenme, antrenman. Üç şey. Biri eksikse ciddi değilsin — sadece numara yapıyorsun." } }
+      }
+    },
+    "coaching.edu.strict.14": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Niemand will deine Ausreden hören — auch du selbst nicht. Mach einfach." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Nobody wants to hear your excuses — not even you. Just do it." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kimse mazeretini duymak istemiyor — sen bile. Sadece yap." } }
+      }
+    },
+    "coaching.edu.strict.15": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Du hast genau heute. Das ist die einzige Einheit, die zählt." } },
+        "en": { "stringUnit": { "state": "translated", "value": "You only have today. It's the only session that counts." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sadece bugün var. Tek sayan antrenman bu." } }
+      }
+    },
     "coaching.empty.title": {
       "extractionState": "manual",
       "localizations": {

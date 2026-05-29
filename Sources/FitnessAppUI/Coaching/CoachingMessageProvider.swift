@@ -79,6 +79,45 @@ public enum CoachingMessageProvider {
         return ""
     }
 
+    /// DEL-168: Edu-Coaching-Tipp (P3-Fallback). Wird auf dem Dashboard
+    /// gerendert, wenn weder eine P1-Warnung noch ein datengetriebener
+    /// P2-Soft-Insight greift — die App ist nie stumm, sondern liefert
+    /// jeden Tag einen kleinen Wissens-/Mindset-Snack passend zum
+    /// Coach-Tonfall.
+    ///
+    /// **Tag-stabile Rotation:** Der Index leitet sich vom Tag-im-Jahr ab
+    /// (`dayOfYear % tipCount`), sodass derselbe Tipp ueber einen ganzen
+    /// Kalendertag stabil bleibt und Mitternachts wechselt.
+    ///
+    /// **Tone-Fallback:** Falls die Uebersetzung fuer den gewaehlten Ton
+    /// im jeweiligen Index fehlt, faellt es auf `analytical` (neutralster
+    /// Ton) zurueck. Leerer String, wenn auch das nicht aufloest — Caller
+    /// hat dann den endgueltigen Empty-State zu rendern.
+    public static func eduMessage(
+        for tone: CoachingTone,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> String {
+        let dayOfYear = calendar.ordinality(of: .day, in: .year, for: now) ?? 1
+        let index = ((dayOfYear - 1) % eduTipCount) + 1   // 1-indexed fuer Lesbarkeit
+        let primaryKey = "coaching.edu.\(tone.rawValue).\(index)"
+        if let resolved = resolve(key: primaryKey) {
+            return resolved
+        }
+        if tone != .analytical {
+            let toneFallback = "coaching.edu.analytical.\(index)"
+            if let resolved = resolve(key: toneFallback) {
+                return resolved
+            }
+        }
+        return ""
+    }
+
+    /// DEL-168: Anzahl der gepflegten Edu-Tipps pro Tonfall. Wenn du neue
+    /// Eintraege im Catalog ergaenzt (`coaching.edu.<tone>.<n>`), diesen
+    /// Wert mit dem hoechsten neuen Index updaten.
+    public static let eduTipCount: Int = 15
+
     // MARK: - Internals
 
     /// Baut den dotted Localization-Key fuer eine Matrix-Position.
