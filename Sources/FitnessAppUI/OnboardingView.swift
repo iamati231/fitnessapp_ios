@@ -5,6 +5,7 @@ import FitnessAppCore
 import FitnessAppData
 import FitnessAppHealth
 import FitnessAppActivities
+import UniformTypeIdentifiers
 
 /// First-launch profile setup as a three-step wizard:
 ///   1. **Apple Health verbinden** — optional Pre-Fill von Alter / Geschlecht /
@@ -101,6 +102,15 @@ public struct OnboardingView: View {
     /// Leeres Array = Caller hat noch keine Auswahl getroffen — Instantiator
     /// fallback'd auf seine Defaults (siehe `ProgramInstantiator.defaultWeekdays`).
     @State private var selectedWeekdays: [Int] = []
+
+    // DEL-194: Backup-Import direkt aus dem Onboarding. Bestehende Deltiq-
+    // Nutzer (neues Gerät / Neuinstallation) sollen ihr ZIP einspielen
+    // können, ohne das komplette Onboarding manuell durchzuklicken. Nach
+    // erfolgreichem Import (mit Profil) wechselt RootView automatisch zur
+    // MainTabView, weil die @Query<UserBodyProfile> dann nicht mehr leer ist.
+    @State private var showingBackupImporter = false
+    @State private var backupImportError: String?
+    @State private var backupImportRunning = false
 
     public init() {}
 
@@ -250,9 +260,115 @@ public struct OnboardingView: View {
                     healthKitActionRow
                 }
 
-                Spacer(minLength: 32)
+                Spacer(minLength: 24)
+
+                // DEL-194: Dezenter Backup-Import-Einstieg für bestehende
+                // Nutzer. Bewusst unaufdringlich am unteren Rand — Neu-User
+                // ignorieren es, Wiederkehrer finden ihren Shortcut.
+                backupImportEntry
+
+                Spacer(minLength: 16)
             }
             .padding(.horizontal)
+        }
+    }
+
+    /// DEL-194: Backup-Import-Einstieg. Trennlinie + Hinweistext + Button,
+    /// der den ZIP-Picker öffnet. Bei Erfolg wechselt RootView automatisch.
+    @ViewBuilder
+    private var backupImportEntry: some View {
+        VStack(spacing: 10) {
+            Divider()
+            Text("onboarding.import.prompt", bundle: .module)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+
+            if backupImportRunning {
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text("onboarding.import.running", bundle: .module)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                Button {
+                    showingBackupImporter = true
+                } label: {
+                    Label {
+                        Text("onboarding.import.button", bundle: .module)
+                    } icon: {
+                        Image(systemName: "square.and.arrow.down")
+                    }
+                    .font(.callout.weight(.medium))
+                }
+                .buttonStyle(.bordered)
+                .tint(Color.deltiqOrange)
+            }
+
+            if let backupImportError {
+                Text(backupImportError)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.top, 4)
+        #if os(iOS)
+        .fileImporter(
+            isPresented: $showingBackupImporter,
+            allowedContentTypes: [UTType.zip],
+            allowsMultipleSelection: false
+        ) { result in
+            handleBackupImport(result)
+        }
+        #endif
+    }
+
+    /// DEL-194: Liest das gewählte ZIP, kopiert es Security-Scope-sicher in
+    /// Caches und ruft den DataImportService im Append-Modus. Während des
+    /// Onboardings ist die DB leer → alle Datensätze kommen frisch rein,
+    /// kein Replace nötig. Nach erfolgreichem Profil-Import swappt RootView.
+    private func handleBackupImport(_ result: Result<[URL], Error>) {
+        switch result {
+        case .failure(let error):
+            backupImportError = error.localizedDescription
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            let didStart = url.startAccessingSecurityScopedResource()
+            defer { if didStart { url.stopAccessingSecurityScopedResource() } }
+            do {
+                let zipData = try Data(contentsOf: url)
+                backupImportError = nil
+                backupImportRunning = true
+                let ctx = modelContext
+                Task {
+                    do {
+                        // Library muss vor dem Import geseedet sein, damit
+                        // FK-/Snapshot-Lookups greifen — RootView seedet beim
+                        // Launch, hier defensiv nochmal anstoßen.
+                        LibrarySeeder.seedIfNeeded(in: ctx)
+                        _ = try DataImportService.performImport(
+                            zipData: zipData,
+                            context: ctx,
+                            strategy: .appendOnly
+                        )
+                        // Kein expliziter Navigations-Schritt nötig:
+                        // RootView.@Query<UserBodyProfile> ist nach dem
+                        // Profil-Insert nicht mehr leer → MainTabView.
+                        await MainActor.run { backupImportRunning = false }
+                    } catch {
+                        await MainActor.run {
+                            backupImportRunning = false
+                            backupImportError = error.localizedDescription
+                        }
+                    }
+                }
+            } catch {
+                backupImportError = error.localizedDescription
+            }
         }
     }
 

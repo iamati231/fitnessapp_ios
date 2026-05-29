@@ -28728,6 +28728,75 @@
           }
         }
       }
+    },
+    "onboarding.import.prompt": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already a Deltiq user? Restore your data from a backup file."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schon Deltiq-Nutzer? Stelle deine Daten aus einer Backup-Datei wieder her."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zaten Deltiq kullanıcısı mısın? Verilerini bir yedek dosyasından geri yükle."
+          }
+        }
+      }
+    },
+    "onboarding.import.button": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import backup (ZIP)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup importieren (ZIP)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yedeği içe aktar (ZIP)"
+          }
+        }
+      }
+    },
+    "onboarding.import.running": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restoring your data…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stelle deine Daten wieder her…"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verilerin geri yükleniyor…"
+          }
+        }
+      }
     }
   }
 }

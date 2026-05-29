@@ -979,7 +979,15 @@ public struct WorkoutSummaryView: View {
             // an exercise.isCardio, NICHT am Session-Typ). Editierbar im
             // New-Mode (post-finish) + History-Edit-Mode; sonst Read-Only-
             // Anzeige (nur wenn ein Equipment gesetzt ist).
-            if exercise.isCardio {
+            //
+            // DEL-193: Bei Outdoor-Cardio ausblenden. Wenn die Session ein
+            // Gear (Schuh/Bike) trägt, ist es eine Gear-basierte Outdoor-
+            // Einheit — der Cardio-Geräte-Picker ("Laufband/Fahrrad/Kein
+            // Gerät") ist dann redundantes Rauschen neben der "Ausrüstung"-
+            // Zeile oben. Der Picker erscheint nur, wenn KEIN Gear gesetzt
+            // ist (also Indoor/Maschine, wo Laufband vs Fahrrad relevant
+            // für die PR-/Trend-Trennung ist).
+            if exercise.isCardio && session.gear == nil {
                 if editable {
                     CardioEquipmentPicker(selection: Binding(
                         get: { exercise.cardioEquipment },

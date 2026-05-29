@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1249 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1252 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1249 / 1249** (100%) | 0 |
-| 🇬🇧 English (EN) | **1249 / 1249** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1249 / 1249** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1252 / 1252** (100%) | 0 |
+| 🇬🇧 English (EN) | **1252 / 1252** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1252 / 1252** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -928,7 +928,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `muscleVolume.bucket.overreaching` | Übervolumen | Overreach | Aşırı yük |
 | `muscleVolume.bucket.untrained` | Untrainiert | Untrained | Eğitilmemiş |
 
-## `onboarding.*`  (45 Keys)
+## `onboarding.*`  (48 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -959,6 +959,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.health.pulled` | Daten übernommen — du kannst sie im nächsten Schritt prüfen. | Data imported — review in the next step. | Veriler alındı — bir sonraki adımda kontrol edebilirsin. |
 | `onboarding.health.title` | Apple Health verbinden | Connect Apple Health | Apple Health'i Bağla |
 | `onboarding.health.unavailable` | Apple Health ist auf diesem Gerät nicht verfügbar. | Apple Health is not available on this device. | Apple Health bu cihazda kullanılamıyor. |
+| `onboarding.import.button` | Backup importieren (ZIP) | Import backup (ZIP) | Yedeği içe aktar (ZIP) |
+| `onboarding.import.prompt` | Schon Deltiq-Nutzer? Stelle deine Daten aus einer Backup-Datei wieder her. | Already a Deltiq user? Restore your data from a backup file. | Zaten Deltiq kullanıcısı mısın? Verilerini bir yedek dosyasından geri yükle. |
+| `onboarding.import.running` | Stelle deine Daten wieder her… | Restoring your data… | Verilerin geri yükleniyor… |
 | `onboarding.notif.footnote` | Beide nutzen lokale Notifications. Beim Aktivieren fragt iOS einmalig nach der Berechtigung. | Both use local notifications. iOS asks once for permission when enabled. | Her ikisi de yerel bildirimleri kullanır. Etkinleştirildiğinde iOS bir kez izin ister. |
 | `onboarding.notif.measurement` | Mess-Erinnerung | Measurement Reminder | Ölçüm Hatırlatıcısı |
 | `onboarding.notif.section` | Benachrichtigungen | Notifications | Bildirimler |
