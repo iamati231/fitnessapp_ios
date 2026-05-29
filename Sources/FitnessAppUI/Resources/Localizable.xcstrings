@@ -13507,6 +13507,30 @@
         }
       }
     },
+    "onboarding.equipment.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Womit trainierst du?" } },
+        "en": { "stringUnit": { "state": "translated", "value": "What do you train with?" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hangi ekipmanla çalışıyorsun?" } }
+      }
+    },
+    "onboarding.equipment.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Mehrfachauswahl — wir passen Pläne mit alternativen Übungen automatisch an dein verfügbares Equipment an." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Multi-select — we'll auto-adapt plans with alternative exercises to your available gear." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Çoklu seçim — planları senin ekipmanına alternatif hareketlerle otomatik uyarlarız." } }
+      }
+    },
+    "onboarding.equipment.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Du kannst diese Auswahl später jederzeit im Profil anpassen. Leer lassen = Standard-Variante (Langhantel) wird verwendet." } },
+        "en": { "stringUnit": { "state": "translated", "value": "You can change this anytime in your profile. Leave empty = default variant (barbell) is used." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bu seçimi profilden istediğin zaman değiştirebilirsin. Boş bırakırsan varsayılan (barbell) kullanılır." } }
+      }
+    },
     "onboarding.tone.title": {
       "extractionState": "manual",
       "localizations": {

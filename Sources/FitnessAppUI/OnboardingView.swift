@@ -37,6 +37,7 @@ public struct OnboardingView: View {
         case healthConnect
         case personalInfo
         case coachingStyle           // DEL-101: Goal + Tone in einem Schritt
+        case equipmentPreferences    // DEL-170b: Multi-Select Equipment
         case preferencesAndPlan
     }
 
@@ -69,6 +70,12 @@ public struct OnboardingView: View {
     // DEL-101 — Coaching-Style Step
     @State private var trainingGoal: TrainingGoal = .hybrid
     @State private var coachingTone: CoachingTone = .analytical
+
+    // DEL-170b — Equipment-Präferenzen (Multi-Select). Wird beim ersten
+    // Betreten des Steps mit sinnvollen Defaults aus `environment` befüllt,
+    // sodass der User direkt eine Vor-Auswahl sieht und nur korrigieren muss.
+    @State private var equipmentPreferences: Set<Equipment> = []
+    @State private var equipmentPrefilledForEnv: EnvironmentType? = nil
 
     // Step 4 — Präferenzen + Plan
     @State private var enableWaterReminder: Bool = true
@@ -108,10 +115,11 @@ public struct OnboardingView: View {
 
                 Group {
                     switch step {
-                    case .healthConnect:      healthConnectStep
-                    case .personalInfo:       personalInfoStep
-                    case .coachingStyle:      coachingStyleStep
-                    case .preferencesAndPlan: preferencesAndPlanStep
+                    case .healthConnect:        healthConnectStep
+                    case .personalInfo:         personalInfoStep
+                    case .coachingStyle:        coachingStyleStep
+                    case .equipmentPreferences: equipmentPreferencesStep
+                    case .preferencesAndPlan:   preferencesAndPlanStep
                     }
                 }
                 .frame(maxHeight: .infinity)
@@ -487,6 +495,119 @@ public struct OnboardingView: View {
         }
     }
 
+    // MARK: - Step 4: Equipment-Präferenzen (DEL-170b)
+
+    /// Multi-Select-Step für Equipment. Defaults werden anhand der aus Step 2
+    /// gewählten `environment` vor-befüllt — der User sieht eine sinnvolle
+    /// Auswahl und kann nur korrigieren. Pflegt sich gegenseitig mit dem
+    /// Profil-Editor (gleiches Datenmodell).
+    @ViewBuilder
+    private var equipmentPreferencesStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("onboarding.equipment.title", bundle: .module)
+                        .font(.title2.weight(.bold))
+                    Text("onboarding.equipment.subtitle", bundle: .module)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+
+                VStack(spacing: 10) {
+                    ForEach(Equipment.allCases, id: \.self) { equip in
+                        equipmentChoiceRow(equip)
+                    }
+                }
+
+                Text("onboarding.equipment.footer", bundle: .module)
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding()
+        }
+        // Beim ersten Betreten des Steps Defaults aus `environment` ziehen.
+        // Gate über `equipmentPrefilledForEnv`: wenn der User in Step 2
+        // nachträglich die Environment ändert, prefill'en wir erneut —
+        // bestehende User-Auswahl überschreiben wir aber nicht, sondern
+        // mergen die zusätzlichen Defaults (Union).
+        .onAppear { prefillEquipmentIfNeeded() }
+        .onChange(of: environment) { _, _ in
+            // Neue Environment → neue Defaults vorschlagen (mergen).
+            prefillEquipmentIfNeeded(force: true)
+        }
+    }
+
+    @ViewBuilder
+    private func equipmentChoiceRow(_ equip: Equipment) -> some View {
+        let isSelected = equipmentPreferences.contains(equip)
+        Button {
+            if isSelected { equipmentPreferences.remove(equip) }
+            else          { equipmentPreferences.insert(equip) }
+        } label: {
+            HStack(alignment: .center, spacing: 14) {
+                Image(systemName: equipmentIcon(equip))
+                    .font(.title3)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(isSelected ? Color.deltiqOrange : .secondary)
+                    .frame(width: 32, height: 32)
+                Text(equip.localizedName)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+                Spacer()
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(isSelected ? Color.deltiqOrange : .secondary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? Color.deltiqOrange.opacity(0.08) : Color.secondary.opacity(0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? Color.deltiqOrange : Color.secondary.opacity(0.25),
+                            lineWidth: isSelected ? 1.5 : 1)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Spiegelung der SF-Symbole aus dem Picker — visuelle Konsistenz.
+    private func equipmentIcon(_ e: Equipment) -> String {
+        switch e {
+        case .barbell:     return "scalemass"
+        case .dumbbell:    return "dumbbell"
+        case .bodyweight:  return "figure.walk"
+        case .machine:     return "gearshape"
+        case .cable:       return "cable.connector"
+        case .kettlebell:  return "circle.grid.cross"
+        case .band:        return "infinity"
+        }
+    }
+
+    /// Prefill-Logik: schlägt sinnvolle Defaults vor, basierend auf der
+    /// gewählten Trainings-Umgebung (`environment`). Defaults werden nur
+    /// einmal pro Environment-Wert vorgeschlagen (idempotent) und überschreiben
+    /// keine vom User explizit getroffene Auswahl — `Set.formUnion` merged.
+    private func prefillEquipmentIfNeeded(force: Bool = false) {
+        if !force, equipmentPrefilledForEnv == environment { return }
+        let suggestion = defaultEquipment(for: environment)
+        equipmentPreferences.formUnion(suggestion)
+        equipmentPrefilledForEnv = environment
+    }
+
+    /// Sinnvolle Equipment-Defaults pro Trainings-Umgebung. Gym = "hat alles";
+    /// Home-Gym = freie Gewichte ohne Maschinen; No-Equipment = Body + Band.
+    private func defaultEquipment(for env: EnvironmentType) -> Set<Equipment> {
+        switch env {
+        case .gym:         return [.barbell, .dumbbell, .machine, .cable, .kettlebell, .bodyweight]
+        case .homeGym:     return [.dumbbell, .kettlebell, .band, .bodyweight]
+        case .noEquipment: return [.bodyweight, .band]
+        }
+    }
+
     /// DEL-101: Reusable SelectableCard im Deltiq-Stil — DeltiqOrange-
     /// Stroke + Checkmark-Icon bei Selektion, sonst dezent gegraut.
     @ViewBuilder
@@ -705,10 +826,11 @@ public struct OnboardingView: View {
 
     private var primaryActionTitle: String {
         switch step {
-        case .healthConnect:      return "Weiter"
-        case .personalInfo:       return "Weiter"
-        case .coachingStyle:      return "Weiter"
-        case .preferencesAndPlan: return "Fertig"
+        case .healthConnect:        return "Weiter"
+        case .personalInfo:         return "Weiter"
+        case .coachingStyle:        return "Weiter"
+        case .equipmentPreferences: return "Weiter"
+        case .preferencesAndPlan:   return "Fertig"
         }
     }
 
@@ -727,6 +849,10 @@ public struct OnboardingView: View {
             // Tone + Goal haben Defaults und Cards sind tap-stateful, also
             // nie wirklich "ungeloest" — immer weiter.
             return true
+        case .equipmentPreferences:
+            // DEL-170b: leer ist erlaubt (= "Standard-Variante" beim Plan-
+            // Adopt). User darf bewusst skippen, deshalb keine Pflicht.
+            return true
         case .preferencesAndPlan:
             // Plan + Reminder sind beide optional — immer fertig erlaubt.
             return true
@@ -735,7 +861,7 @@ public struct OnboardingView: View {
 
     private func handlePrimaryAction() {
         switch step {
-        case .healthConnect, .personalInfo, .coachingStyle:
+        case .healthConnect, .personalInfo, .coachingStyle, .equipmentPreferences:
             goToNextStep()
         case .preferencesAndPlan:
             finishOnboarding()
@@ -816,7 +942,10 @@ public struct OnboardingView: View {
             goalWeightKg: goalWeightKg,
             environment: environment,
             coachingTone: coachingTone,
-            trainingGoal: trainingGoal
+            trainingGoal: trainingGoal,
+            // DEL-170b: User-Equipment aus dem Multi-Select-Step. Leer =
+            // Standard-Variante beim ersten Plan-Adopt (Backward-Compat-Pfad).
+            equipmentPreferences: equipmentPreferences
         )
         modelContext.insert(profile)
 
@@ -837,10 +966,13 @@ public struct OnboardingView: View {
         //    User direkt "Fertig" ohne Plan drueckt, ist die Liste leer und
         //    der Instantiator nutzt seine Defaults (defaultWeekdays(for:)).
         if let template = selectedTemplate {
+            // DEL-170b: User-Equipment direkt aus dem Onboarding-State —
+            // greift sofort beim ersten Plan-Adopt (Hybrid → DB-Variante etc.).
             ProgramInstantiator.instantiate(
                 template,
                 in: modelContext,
-                selectedWeekdays: selectedWeekdays.isEmpty ? nil : selectedWeekdays
+                selectedWeekdays: selectedWeekdays.isEmpty ? nil : selectedWeekdays,
+                userEquipment: equipmentPreferences
             )
         }
 
