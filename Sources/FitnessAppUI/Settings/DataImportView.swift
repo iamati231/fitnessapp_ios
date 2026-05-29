@@ -402,6 +402,35 @@ public struct DataImportView: View {
                     .tint(.red)
                 }
             }
+
+            // DEL-187: Diagnose-Log INLINE rendern. Share-Sheet hat sich
+            // als unzuverlässig erwiesen. Hier sieht der User die Rohinfo
+            // direkt — Screenshot reicht zur Debug-Übermittlung,
+            // .textSelection erlaubt auch Copy-to-Paste.
+            //
+            // Bewusste Textwrap-Strategie: KEIN .fixedSize, KEIN nested
+            // ScrollView. Lange Zeilen werden umgebrochen, der äußere
+            // ScrollView der DataImportView trägt das vertikale Scrollen.
+            if let csv = result.errorsCSV,
+               let text = String(data: csv, encoding: .utf8) {
+                DeltiqFormFullRow {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Diagnose-Log")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Text(text)
+                            .font(.system(size: 9, design: .monospaced))
+                            .foregroundStyle(.primary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .textSelection(.enabled)
+                            .padding(8)
+                            .background(
+                                Color.secondary.opacity(0.08),
+                                in: RoundedRectangle(cornerRadius: 6)
+                            )
+                    }
+                }
+            }
         }
     }
 
