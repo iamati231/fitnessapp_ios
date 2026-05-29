@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1244 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1249 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1244 / 1244** (100%) | 0 |
-| 🇬🇧 English (EN) | **1244 / 1244** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1244 / 1244** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1249 / 1249** (100%) | 0 |
+| 🇬🇧 English (EN) | **1249 / 1249** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1249 / 1249** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -298,7 +298,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `customExercise.section.name` | Name | Name | Ad |
 | `customExercise.title` | Neue Übung | New exercise | Yeni hareket |
 
-## `dashboard.*`  (72 Keys)
+## `dashboard.*`  (73 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -324,6 +324,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.greeting.evening.named` | Guten Abend, %@ | Good evening, %@ | İyi akşamlar, %@ |
 | `dashboard.greeting.morning.generic` | Guten Morgen | Good morning | Günaydın |
 | `dashboard.greeting.morning.named` | Guten Morgen, %@ | Good morning, %@ | Günaydın, %@ |
+| `dashboard.heatmap.a11y.tile` | %1$@, %2$lld Sätze, %3$@ | %1$@, %2$lld sets, %3$@ | %1$@, %2$lld set, %3$@ |
 | `dashboard.heatmap.legend` | Sätze | Sets | Set |
 | `dashboard.heatmap.title` | Muskel-Heatmap (Woche) | Muscle Heatmap (week) | Kas Isı Haritası (hafta) |
 | `dashboard.history.countOnly` | %lld Trainings | %lld workouts | %lld antrenman |
@@ -917,6 +918,15 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `muscle.quads` | Quadrizeps | Quadriceps | Quadriceps |
 | `muscle.shoulders` | Schultern | Shoulders | Omuz |
 | `muscle.triceps` | Trizeps | Triceps | Triseps |
+
+## `muscleVolume.*`  (4 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `muscleVolume.bucket.maintenance` | Erhalt | Maintenance | Koruma |
+| `muscleVolume.bucket.optimal` | Optimal | Optimal | Optimal |
+| `muscleVolume.bucket.overreaching` | Übervolumen | Overreach | Aşırı yük |
+| `muscleVolume.bucket.untrained` | Untrainiert | Untrained | Eğitilmemiş |
 
 ## `onboarding.*`  (45 Keys)
 

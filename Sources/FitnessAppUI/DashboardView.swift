@@ -2260,8 +2260,14 @@ private struct MuscleHeatmapTile: View {
     let entry: MuscleWeeklyVolume
 
     var body: some View {
+        // DEL-180: Lokalisierte Strings für Render UND Accessibility.
+        // Muscle-Name via existierende DomainEnums+Localization-Extension,
+        // Bucket-Label via lokaler Catalog-Lookup. Voher hartcodiert deutsch
+        // (Brust/Rücken/etc.) — übersetzte App rendert jetzt sauber TR/EN.
+        let muscleName = String(localized: entry.group.localizedName)
+        let bucketLabel = bucketLocalizedLabel(entry.bucket)
         VStack(alignment: .leading, spacing: 4) {
-            Text(localizedMuscleName)
+            Text(muscleName)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(textColor)
                 .lineLimit(1)
@@ -2272,7 +2278,7 @@ private struct MuscleHeatmapTile: View {
                     .font(.system(size: 22, weight: .bold))
                     .fitnessNumberStyle()
                     .foregroundStyle(textColor)
-                Text(entry.bucket.label.uppercased())
+                Text(bucketLabel.uppercased())
                     .font(.system(size: 8, weight: .bold))
                     .tracking(0.8)
                     .foregroundStyle(textColor.opacity(0.85))
@@ -2284,7 +2290,22 @@ private struct MuscleHeatmapTile: View {
         .background(tileBackground)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(localizedMuscleName), \(entry.setsCount) Sätze, \(entry.bucket.label)")
+        .accessibilityLabel(String(
+            format: String(localized: "dashboard.heatmap.a11y.tile", bundle: .module),
+            muscleName, entry.setsCount, bucketLabel
+        ))
+    }
+
+    /// DEL-180: Lokalisierte Bucket-Labels. Spiegelt das raw enum aus Core
+    /// (`MuscleVolumeBucket.label` ist hartcodiert deutsch und bleibt es —
+    /// View-Layer ist der richtige Ort für i18n, Core bleibt sprachfest).
+    private func bucketLocalizedLabel(_ bucket: MuscleVolumeBucket) -> String {
+        switch bucket {
+        case .untrained:    return String(localized: "muscleVolume.bucket.untrained", bundle: .module)
+        case .maintenance:  return String(localized: "muscleVolume.bucket.maintenance", bundle: .module)
+        case .optimal:      return String(localized: "muscleVolume.bucket.optimal", bundle: .module)
+        case .overreaching: return String(localized: "muscleVolume.bucket.overreaching", bundle: .module)
+        }
     }
 
     private var tileBackground: Color {
@@ -2304,24 +2325,6 @@ private struct MuscleHeatmapTile: View {
         }
     }
 
-    /// Deutsche User-Labels — Single-Source-of-Truth waere
-    /// `DomainEnums+Localization.localizedName`, aber das ist eine
-    /// LocalizedStringResource — fuer die kompakte Tile-Zeile reicht der
-    /// einfache String-Mapping.
-    private var localizedMuscleName: String {
-        switch entry.group {
-        case .chest:      return "Brust"
-        case .back:       return "Rücken"
-        case .shoulders:  return "Schultern"
-        case .biceps:     return "Bizeps"
-        case .triceps:    return "Trizeps"
-        case .quads:      return "Quads"
-        case .hamstrings: return "Hams"
-        case .glutes:     return "Gesäß"
-        case .calves:     return "Waden"
-        case .core:       return "Core"
-        }
-    }
 }
 
 // MARK: - DEL-065 Cardio-Pace Chart data
