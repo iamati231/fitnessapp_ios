@@ -1547,6 +1547,55 @@ public struct DashboardView: View {
         }
     }
 
+    // MARK: - DEL-179 Compound-Forecast
+
+    /// Wieviele Wochen voraus projizieren wir? 4 Wochen ist der Schoenfeld-
+    /// "messbar progress"-Bereich — kürzer ist Noise, länger linear-
+    /// extrapoliert utopisch. UI rendert genau diesen einen Endpunkt; die
+    /// gestrichelte Linie verbindet ihn mit dem letzten echten Datenpunkt.
+    private static let compoundForecastWeeksAhead = 4
+
+    /// Pro Compound-Series eine Forecast-Mini-Series mit genau ZWEI
+    /// Punkten: dem letzten echten + dem projizierten Endpunkt 4 Wochen
+    /// in die Zukunft. Lifts, deren Trend als unreliable markiert ist,
+    /// fliegen raus.
+    private func compoundForecastPoints(for series: [CompoundSeries]) -> [CompoundSeries] {
+        series.compactMap { line in
+            let samples = line.points.map { OneRMSample(date: $0.date, oneRM: $0.oneRM) }
+            // Brauchen einen letzten echten Punkt als Verbindungs-Anker.
+            guard let lastReal = line.points.last else { return nil }
+            // Forecast-Punkt 4 Wochen ab dem letzten REAL-Datum (nicht ab
+            // jetzt) — sonst wird ein Lift, der seit 6 Wochen pausiert ist,
+            // unter den Forecast-Daten wieder ausgegraben.
+            guard let forecast = OneRMForecaster.forecastPoint(
+                samples: samples,
+                weeksAhead: Self.compoundForecastWeeksAhead,
+                now: lastReal.date
+            ) else { return nil }
+            let connecting = CompoundPoint(date: lastReal.date, oneRM: lastReal.oneRM)
+            let projected = CompoundPoint(date: forecast.date, oneRM: forecast.oneRM)
+            return CompoundSeries(
+                exerciseName: line.exerciseName,
+                points: [connecting, projected]
+            )
+        }
+    }
+
+    /// Erweitert die Domain um die Forecast-Endpunkte, damit das Chart die
+    /// gestrichelte Linie nicht clipped. Linke Kante bleibt unverändert,
+    /// rechte Kante geht bis zum spätesten Forecast-Datum.
+    private func compoundDomain(
+        base: ClosedRange<Date>,
+        forecastPoints: [CompoundSeries]
+    ) -> ClosedRange<Date> {
+        let allForecastDates = forecastPoints.flatMap(\.points).map(\.date)
+        guard let latestForecast = allForecastDates.max(),
+              latestForecast > base.upperBound else {
+            return base
+        }
+        return base.lowerBound...latestForecast
+    }
+
     @ViewBuilder
     private var compoundLiftChart: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -1564,10 +1613,18 @@ public struct DashboardView: View {
             // Filter keine Punkte mehr im Bereich liegen.
             // DEL-165: harte Domain mit `now` als rechtem Ende; fuer `.max`
             // liefert der aelteste Datenpunkt die linke Kante.
+            // DEL-179: Forecast-Punkte (4w) erweitern den OLDEST-Lookup nicht,
+            // aber das RECHTE Ende der Domain. Wir bauen die Domain manuell,
+            // damit die gestrichelte Forecast-Linie sichtbar im Chart-Frame
+            // landet, statt rechts überzulaufen.
             let allCompound = compoundSeries
             let oldestCompound = allCompound.flatMap(\.points).map(\.date).min()
-            let domain = compoundChartRange.domain(oldestDataDate: oldestCompound)
             let series = filteredCompound(allCompound, cutoff: compoundChartRange.cutoff())
+            let forecastSamples = compoundForecastPoints(for: series)
+            let domain = compoundDomain(
+                base: compoundChartRange.domain(oldestDataDate: oldestCompound),
+                forecastPoints: forecastSamples
+            )
             if allCompound.isEmpty {
                 // UX-201: Premium-Empty-State (icon + headline + description
                 // + CTA). Vorher: kompakte HStack ohne Aktion.
@@ -1599,6 +1656,34 @@ public struct DashboardView: View {
                             )
                             .foregroundStyle(by: .value("Lift", line.exerciseName))
                             .symbolSize(40)
+                        }
+                    }
+                    // DEL-179: gestrichelte Forecast-Linie pro Lift —
+                    // verbindet den letzten echten Punkt mit dem
+                    // projizierten 4-Wochen-Wert. Nur für Lifts, deren
+                    // Trend nicht als "unreliable" markiert ist.
+                    ForEach(forecastSamples) { line in
+                        ForEach(line.points) { point in
+                            LineMark(
+                                x: .value("Datum", point.date),
+                                y: .value("1RM (kg)", point.oneRM),
+                                series: .value("Lift", line.exerciseName)
+                            )
+                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                            .foregroundStyle(by: .value("Lift", line.exerciseName))
+                            .opacity(0.6)
+                        }
+                        // Forecast-Endpunkt als hohler Ring — visuell als
+                        // "Projektion" erkennbar, kein voller PointMark.
+                        if let last = line.points.last {
+                            PointMark(
+                                x: .value("Datum", last.date),
+                                y: .value("1RM (kg)", last.oneRM)
+                            )
+                            .symbol(.circle.strokeBorder(lineWidth: 1.5))
+                            .symbolSize(50)
+                            .foregroundStyle(by: .value("Lift", line.exerciseName))
+                            .opacity(0.8)
                         }
                     }
                 }

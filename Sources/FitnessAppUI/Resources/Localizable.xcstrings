@@ -6540,19 +6540,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Geschätztes 1RM"
+            "value": "Geschätztes 1RM · gestrichelt = 4-Wochen-Prognose"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Estimated 1RM"
+            "value": "Estimated 1RM · dashed = 4-week forecast"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tahmini 1RM"
+            "value": "Tahmini 1RM · kesik çizgi = 4 haftalık tahmin"
           }
         }
       }
