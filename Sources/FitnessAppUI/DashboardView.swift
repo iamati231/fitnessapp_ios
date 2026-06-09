@@ -121,6 +121,7 @@ public struct DashboardView: View {
                     case .cardioPace:      cardioPaceChart
                     case .recentWorkouts:  recentWorkoutsCard
                     case .volumeOverTime:  volumeOverTimeChart
+                    case .trainingCalendar: trainingCalendarCard
                     }
                 }
             }
@@ -1977,6 +1978,22 @@ public struct DashboardView: View {
             windowStart: windowStart,
             now: now,
             calendar: calendar
+        )
+    }
+
+    // MARK: - DEL-197 Trainings-Kalender
+
+    /// Monats-Kalender mit Workout-Dots + Wochen-Streak. Aggregation lebt
+    /// testbar in Core (`TrainingCalendarAggregator`), die Card selbst ist
+    /// eine eigene Komponente (Components/TrainingCalendarCard.swift) —
+    /// bewusst KEINE weitere Inline-View in dieser ohnehin großen Datei.
+    private var trainingCalendarCard: some View {
+        let realDates = completedSessions
+            .filter(\.isRealWorkout)
+            .map(\.startTime)
+        return TrainingCalendarCard(
+            workoutDays: TrainingCalendarAggregator.workoutDays(of: realDates),
+            streak: TrainingCalendarAggregator.weekStreak(workoutDates: realDates)
         )
     }
 

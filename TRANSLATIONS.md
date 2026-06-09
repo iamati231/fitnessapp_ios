@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1257 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1261 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1257 / 1257** (100%) | 0 |
-| 🇬🇧 English (EN) | **1257 / 1257** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1257 / 1257** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1261 / 1261** (100%) | 0 |
+| 🇬🇧 English (EN) | **1261 / 1261** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1261 / 1261** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -301,7 +301,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `customExercise.section.name` | Name | Name | Ad |
 | `customExercise.title` | Neue Übung | New exercise | Yeni hareket |
 
-## `dashboard.*`  (73 Keys)
+## `dashboard.*`  (76 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -310,6 +310,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.action.adHoc.secondary` | Vom Plan abweichen — Spontanes Training | Skip the plan — spontaneous workout | Plandan sap — spontane antrenman |
 | `dashboard.action.resumeRunning` | Laufendes Training fortsetzen | Resume running workout | Devam eden antrenmanı sürdür |
 | `dashboard.action.startDirect` | Direkt starten | Start now | Hemen başlat |
+| `dashboard.calendar.a11y` | Trainings-Kalender, %1$lld Trainingstage in diesem Monat, %2$lld-Wochen-Streak | Training calendar, %1$lld workout days this month, %2$lld-week streak | Antrenman takvimi, bu ay %1$lld antrenman günü, %2$lld haftalık seri |
+| `dashboard.calendar.streakFormat` | %lld-Wochen-Streak | %lld-week streak | %lld haftalık seri |
+| `dashboard.calendar.title` | Trainings-Kalender | Training calendar | Antrenman takvimi |
 | `dashboard.cardioChart.legend` | min/km · niedriger = besser | min/km · lower = better | dk/km · daha düşük = daha iyi |
 | `dashboard.cardioChart.title` | Cardio-Pace-Trend | Cardio Pace Trend | Kardiyo Tempo Trendi |
 | `dashboard.compoundChart.empty.description` | Logge zwei oder mehr Sätze deiner großen Lifts, um die Kurve zu sehen. | Log two or more sets of your main lifts to see the trend. | Eğriyi görmek için ana liftlerinden iki veya daha fazla set kaydet. |
@@ -1532,7 +1535,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `water.source.lastMeasurement` | letzte Messung | last measurement | son ölçüm |
 | `water.title` | Wasser | Water | Su |
 
-## `widget.*`  (11 Keys)
+## `widget.*`  (12 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1542,6 +1545,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `widget.muscleHeatmap.name` | Muskel-Heatmap | Muscle Heatmap | Kas Isı Haritası |
 | `widget.nextWorkout.name` | Nächstes Training | Next Workout | Sıradaki Antrenman |
 | `widget.recentWorkouts.name` | Letzte Trainings | Recent Workouts | Son Antrenmanlar |
+| `widget.trainingCalendar.name` | Trainings-Kalender | Training calendar | Antrenman takvimi |
 | `widget.trophyRoom.name` | Trophy Room | Trophy Room | Kupa Odası |
 | `widget.volumeOverTime.name` | Volumen-Trend | Volume trend | Hacim trendi |
 | `widget.weeklyVolume.name` | Diese Woche | This Week | Bu Hafta |

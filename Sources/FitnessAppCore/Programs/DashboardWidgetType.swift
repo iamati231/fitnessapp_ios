@@ -29,6 +29,7 @@ public enum DashboardWidgetType: String, Codable, Sendable, CaseIterable {
     case cardioPace        // Cardio-Pace-Trend
     case recentWorkouts    // "Letzte Workouts"-Liste
     case volumeOverTime    // DEL-178: Wochen-Volume-Trend (BarMark)
+    case trainingCalendar  // DEL-197: Monats-Kalender + Wochen-Streak
 
     /// xcstrings-Lookup-Key: `widget.{rawValue}.name`.
     public var localizationKey: String {
@@ -44,6 +45,7 @@ public enum DashboardWidgetType: String, Codable, Sendable, CaseIterable {
             .coachingInsight,
             .weeklyVolume,
             .muscleHeatmap,
+            .trainingCalendar,
             .trophyRoom,
             .workoutHistory,
             .weightTrend,

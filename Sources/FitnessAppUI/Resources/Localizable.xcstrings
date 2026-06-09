@@ -28912,6 +28912,98 @@
           }
         }
       }
+    },
+    "widget.trainingCalendar.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training calendar"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainings-Kalender"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman takvimi"
+          }
+        }
+      }
+    },
+    "dashboard.calendar.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training calendar"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainings-Kalender"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman takvimi"
+          }
+        }
+      }
+    },
+    "dashboard.calendar.streakFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld-week streak"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld-Wochen-Streak"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld haftalık seri"
+          }
+        }
+      }
+    },
+    "dashboard.calendar.a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training calendar, %1$lld workout days this month, %2$lld-week streak"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainings-Kalender, %1$lld Trainingstage in diesem Monat, %2$lld-Wochen-Streak"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman takvimi, bu ay %1$lld antrenman günü, %2$lld haftalık seri"
+          }
+        }
+      }
     }
   }
 }
