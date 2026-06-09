@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1254 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1257 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1254 / 1254** (100%) | 0 |
-| 🇬🇧 English (EN) | **1254 / 1254** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1254 / 1254** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1257 / 1257** (100%) | 0 |
+| 🇬🇧 English (EN) | **1257 / 1257** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1257 / 1257** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -170,7 +170,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `chart.timeRange.oneMonth` | 1M | 1M | 1A |
 | `chart.timeRange.threeMonths` | 3M | 3M | 3A |
 
-## `coaching.*`  (97 Keys)
+## `coaching.*`  (100 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -250,6 +250,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.soft.backupOverdue.analytical` | Dein letzter Daten-Export ist über 30 Tage her. Ein frisches Backup bewahrt deine Trainings-Historie. | Your last data export was over 30 days ago. A fresh backup keeps your training history safe. | Son veri dışa aktarımının üzerinden 30 günden fazla geçti. Yeni bir yedek antrenman geçmişini güvende tutar. |
 | `coaching.soft.backupOverdue.motivating` | All diese PRs verdienen ein Sicherheitsnetz — kurzer CSV-Export und du bist zukunftssicher. 🛡️ | All these PRs deserve a safety net — quick CSV export and you're future-proof. 🛡️ | Tüm bu PR'lar bir güvenlik ağını hak ediyor — hızlı bir CSV dışa aktarımı seni geleceğe hazırlar. 🛡️ |
 | `coaching.soft.backupOverdue.strict` | 30+ Tage ohne Backup. Mach's jetzt, bevor ein Handy-Wechsel dich deine Historie kostet. | 30+ days without a backup. Do it now before a phone swap costs you your history. | 30+ gündür yedek yok. Bir telefon değişikliği seni geçmişinden etmeden hemen yap. |
+| `coaching.soft.deloadRecommended.analytical` | Deine Trainings-Last ist über drei Wochen um mehr als 20% gestiegen, und die letzten Einheiten fühlten sich schwer an. Die Daten sprechen für eine Deload-Woche: Gewichte um ~40-50% reduzieren, Bewegungen beibehalten. | Your training load has risen over 20% across three weeks, and your last sessions felt heavy. The data points to a deload week: cut weights by ~40-50% and keep the movements. | Antrenman yükün üç haftada %20'den fazla arttı ve son seanslar ağır hissettirdi. Veriler bir deload haftasını işaret ediyor: ağırlıkları ~%40-50 azalt, hareketleri koru. |
+| `coaching.soft.deloadRecommended.motivating` | Du hast drei Wochen am Stück Vollgas gegeben — genau so entsteht Fortschritt! Gönn deinem Körper jetzt eine leichte Woche, um die Gains einzusammeln. Deload, erholen, stärker zurückkommen. 💪 | You've been pushing hard for three weeks straight — that's how progress is built! Now give your body a light week to cash in those gains. Deload, recover, come back stronger. 💪 | Üç haftadır aralıksız yükleniyorsun — ilerleme tam böyle olur! Şimdi vücuduna kazanımları toplaması için hafif bir hafta ver. Deload yap, toparlan, daha güçlü dön. 💪 |
+| `coaching.soft.deloadRecommended.strict` | Drei Wochen steigende Last und du bewertest die Einheiten als brutal. Erholung ist Teil des Programms — plane jetzt eine Deload-Woche, sonst plant dein Körper sie für dich. | Three weeks of climbing load and you're rating sessions as brutal. Recovery is part of the program — schedule a deload week now, or your body will schedule one for you. | Üç haftadır artan yük ve seansları çok ağır olarak değerlendiriyorsun. Toparlanma programın parçası — şimdi bir deload haftası planla, yoksa vücudun senin yerine planlar. |
 | `coaching.soft.planPreview.analytical` | Plan-Eintrag für heute steht an. Optimaler Zeitpunkt für ein Mobility-Warmup vor den Compound-Lifts. | Today's plan entry is up. Optimal time for a mobility warmup before the compound lifts. | Bugün için plan girdisi mevcut. Bileşik hareketlerden önce mobilite ısınması için ideal zaman. |
 | `coaching.soft.planPreview.motivating` | Heute steht ein Training an. Mach dich gut warm und gib alles für die schweren Sätze! | A workout's on the schedule today. Warm up well and give it your all on the heavy sets! | Bugün bir antrenman var. İyi ısın ve ağır setlerde her şeyini ver! |
 | `coaching.soft.planPreview.strict` | Heute ist Trainingstag. Kein Aufschub. Punkt. | Today is a training day. No postponing. Period. | Bugün antrenman günü. Erteleme yok. Nokta. |

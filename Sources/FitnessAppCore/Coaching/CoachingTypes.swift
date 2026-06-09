@@ -112,4 +112,11 @@ public enum CoachingContext: String, Sendable {
     /// nur P2-Fallback, wenn keine der Trainings-Insights greift. Catalog
     /// folgt dem gleichen Soft-Schema `coaching.soft.backupOverdue.{tone}`.
     case backupOverdue
+
+    /// DEL-196: Overreaching-Muster erkannt — drei Wochen steigende
+    /// Trainings-Last (>= +20%) PLUS mindestens zwei subjektiv harte
+    /// Sessions (Feeling >= 4) in den letzten 14 Tagen. Höchste Soft-
+    /// Priorität: eine Deload-Empfehlung ist gesundheitsrelevanter als
+    /// jedes Post-Workout-Kompliment. Entscheidung via `DeloadAdvisor`.
+    case deloadRecommended
 }

@@ -1025,6 +1025,10 @@ public struct DashboardView: View {
     ///      (kein Rest, kein Skip-Marker).
     /// Sonst nil → Dashboard zeigt den neutralen Empty-State (DEL-166).
     private var activeSoftCoachingContext: CoachingContext? {
+        // DEL-196: Deload zuerst — gesundheitsrelevanter als jedes Post-
+        // Workout-Kompliment. Praktisch nie gleichzeitig mit reEntry
+        // (Deload braucht hohe RECENT-Aktivität, reEntry Inaktivität).
+        if shouldRecommendDeload { return .deloadRecommended }
         if daysSinceLastRealSession >= 5 { return .reEntry }
         if let yKm = yesterdayCardioDistanceKm, let yVol = yesterdayVolumeKg {
             if yVol >= 5_000 { return .postVolume }
@@ -1042,6 +1046,39 @@ public struct DashboardView: View {
         // sichern HAT (sonst nervt der Hinweis frische Installs).
         if shouldShowBackupReminder { return .backupOverdue }
         return nil
+    }
+
+    /// DEL-196: Deload-Trigger. Aggregiert die CNS-Last der letzten drei
+    /// vollen Kalenderwochen (älteste zuerst, OHNE die laufende Woche —
+    /// die ist unvollständig und würde den Trend fälschlich brechen) plus
+    /// die Zahl harter Sessions (Feeling >= 4) der letzten 14 Tage. Die
+    /// eigentliche Entscheidung lebt testbar in `DeloadAdvisor`.
+    private var shouldRecommendDeload: Bool {
+        let calendar = Calendar.current
+        let now = Date()
+        guard let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: now)?.start else {
+            return false
+        }
+        // Drei volle Wochen: [now-3w ... now-2w), [now-2w ... now-1w), [now-1w ... currentWeekStart)
+        var weeklyLoads: [Double] = []
+        for offset in stride(from: -3, through: -1, by: 1) {
+            guard let start = calendar.date(byAdding: .weekOfYear, value: offset, to: currentWeekStart),
+                  let end = calendar.date(byAdding: .weekOfYear, value: 1, to: start) else { return false }
+            let load = completedSessions
+                .filter { $0.isRealWorkout && $0.startTime >= start && $0.startTime < end }
+                .reduce(0.0) { $0 + $1.totalCNSLoad }
+            weeklyLoads.append(load)
+        }
+        let fourteenDaysAgo = calendar.date(byAdding: .day, value: -14, to: now) ?? .distantPast
+        let hardSessions = completedSessions.filter {
+            $0.isRealWorkout
+            && $0.startTime >= fourteenDaysAgo
+            && ($0.sessionFeeling ?? 0) >= DeloadAdvisor.hardFeelingThreshold
+        }.count
+        return DeloadAdvisor.shouldRecommendDeload(
+            weeklyLoads: weeklyLoads,
+            hardSessionCount: hardSessions
+        )
     }
 
     /// DEL-177: Trigger-Logik für den 30-Tage-Backup-Reminder.
