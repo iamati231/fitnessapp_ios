@@ -29004,6 +29004,1317 @@
           }
         }
       }
+    },
+    "coaching.soft.postCardio.analytical.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday's cardio distance is logged. If legs are on today's plan, schedule 1-2 fewer sets — glycogen stores are still refilling."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Cardio-Distanz von gestern ist verbucht. Wenn heute Beine anstehen, plane 1-2 Sätze weniger ein — die Glykogenspeicher füllen sich noch."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dünkü kardiyo mesafesi kaydedildi. Bugün bacak günüyse 1-2 set az planla — glikojen depoları hâlâ doluyor."
+          }
+        }
+      }
+    },
+    "coaching.soft.postCardio.analytical.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio session from yesterday registered. Focus on fluids and electrolytes today — recovery is still running."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio-Einheit von gestern registriert. Heute auf Flüssigkeit und Elektrolyte achten — die Regeneration läuft noch."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dünkü kardiyo seansı kaydedildi. Bugün sıvı ve elektrolitlere dikkat — toparlanma hâlâ sürüyor."
+          }
+        }
+      }
+    },
+    "coaching.soft.postCardio.motivating.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strong endurance work yesterday! Your heart thanks you. 🏃"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starke Ausdauer-Arbeit gestern! Dein Herz dankt es dir. 🏃"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün harika bir dayanıklılık çalışmasıydı! Kalbin sana teşekkür ediyor. 🏃"
+          }
+        }
+      }
+    },
+    "coaching.soft.postCardio.motivating.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday's kilometers pay straight into your aerobic base. Keep it rolling!"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Kilometer von gestern zahlen direkt auf deine Grundlagenausdauer ein. Weiter so!"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dünkü kilometreler doğrudan aerobik tabanına yazıldı. Böyle devam!"
+          }
+        }
+      }
+    },
+    "coaching.soft.postCardio.strict.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday's cardio was solid. But remember: kilometers don't replace squats."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio gestern war gut. Aber vergiss nicht: Kilometer ersetzen keine Kniebeugen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dünkü kardiyo iyiydi. Ama unutma: kilometreler squat'ın yerini tutmaz."
+          }
+        }
+      }
+    },
+    "coaching.soft.postCardio.strict.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You ran yesterday, fine. Today counts what you make of it in the weight room."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestern gelaufen, schön. Heute zählt, was du im Kraftraum daraus machst."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün koştun, güzel. Bugün önemli olan ağırlık salonunda bundan ne çıkaracağın."
+          }
+        }
+      }
+    },
+    "coaching.soft.postVolume.analytical.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over five tonnes moved yesterday. Protein timing in the next 24 hours is now the biggest lever for adaptation."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Über fünf Tonnen Volumen gestern. Protein-Timing in den nächsten 24 Stunden ist jetzt der größte Hebel für die Anpassung."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün beş tonun üzerinde hacim. Önümüzdeki 24 saatte protein zamanlaması adaptasyon için en büyük kaldıraç."
+          }
+        }
+      }
+    },
+    "coaching.soft.postVolume.analytical.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High-volume session logged yesterday. Muscle protein synthesis runs ~48 hours — prioritize sleep."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hohe Volumen-Session gestern verbucht. Die Muskelproteinsynthese läuft ~48 Stunden — Schlaf priorisieren."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün yüksek hacimli seans kaydedildi. Kas protein sentezi ~48 saat sürer — uykuya öncelik ver."
+          }
+        }
+      }
+    },
+    "coaching.soft.postVolume.motivating.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You moved tonnes yesterday — literally! Your body is rebuilding right now. 💪"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestern Tonnen bewegt — wortwörtlich! Dein Körper baut jetzt um. 💪"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün tonlarca ağırlık kaldırdın — kelimenin tam anlamıyla! Vücudun şu an yeniden inşa ediyor. 💪"
+          }
+        }
+      }
+    },
+    "coaching.soft.postVolume.motivating.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What a session yesterday! Today, recovery is your best training partner."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was für eine Session gestern! Heute ist Erholung dein bester Trainingspartner."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün ne seanstı ama! Bugün en iyi antrenman ortağın toparlanma."
+          }
+        }
+      }
+    },
+    "coaching.soft.postVolume.strict.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Big numbers yesterday. Today decides whether they become muscle: eat, sleep, no junk volume."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestern viel bewegt. Heute entscheidet sich, ob daraus Muskel wird: essen, schlafen, kein Junk-Volume."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün çok iş yaptın. Kas olup olmayacağına bugün karar verilir: ye, uyu, boş hacim yok."
+          }
+        }
+      }
+    },
+    "coaching.soft.postVolume.strict.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume is only half the job. The other half is recovery — take it just as seriously."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volumen ist nur die halbe Miete. Die andere Hälfte heißt Regeneration — nimm sie genauso ernst."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hacim işin sadece yarısı. Diğer yarısı toparlanma — onu da aynı ciddiyetle al."
+          }
+        }
+      }
+    },
+    "coaching.soft.streak.analytical.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Five-plus sessions in seven days. At this frequency, sleep quality becomes the limiting factor — aim for 7-9 hours."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fünf+ Einheiten in sieben Tagen. Bei dieser Frequenz wird Schlafqualität zum limitierenden Faktor — 7-9 Stunden anpeilen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yedi günde beş+ seans. Bu frekansta uyku kalitesi sınırlayıcı faktör olur — 7-9 saati hedefle."
+          }
+        }
+      }
+    },
+    "coaching.soft.streak.analytical.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your training frequency is in the top bracket. Consistency is the strongest predictor of long-term progress."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Trainingsfrequenz liegt im obersten Bereich. Konsistenz ist der stärkste Prädiktor für Langzeit-Fortschritt."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman frekansın en üst dilimde. Tutarlılık, uzun vadeli ilerlemenin en güçlü göstergesidir."
+          }
+        }
+      }
+    },
+    "coaching.soft.streak.motivating.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You've been a machine this week! This consistency separates dreamers from doers. 🔥"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du warst diese Woche eine Maschine! Diese Konsistenz unterscheidet Träumer von Machern. 🔥"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu hafta makine gibiydin! Bu tutarlılık hayalperestleri yapanlardan ayırır. 🔥"
+          }
+        }
+      }
+    },
+    "coaching.soft.streak.motivating.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Five workouts in one week — your future self is already applauding."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fünf Workouts in einer Woche — dein zukünftiges Ich applaudiert schon jetzt."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir haftada beş antrenman — gelecekteki sen şimdiden alkışlıyor."
+          }
+        }
+      }
+    },
+    "coaching.soft.streak.strict.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High frequency this week, respect. But frequency without progression is just being busy — check your weights."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hohe Frequenz diese Woche, Respekt. Aber Frequenz ohne Progression ist nur Beschäftigung — prüfe deine Gewichte."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu hafta yüksek frekans, saygı duyarım. Ama ilerleme olmadan frekans sadece meşguliyettir — ağırlıklarını kontrol et."
+          }
+        }
+      }
+    },
+    "coaching.soft.streak.strict.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You trained a lot. Good. Now keep it up for three months, then we'll talk results."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viel trainiert. Gut. Jetzt halte das drei Monate durch, dann reden wir über Ergebnisse."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çok antrenman yaptın. Güzel. Şimdi bunu üç ay sürdür, sonra sonuçları konuşuruz."
+          }
+        }
+      }
+    },
+    "coaching.soft.planPreview.analytical.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A session is on today's plan. A quick look at your last weights before starting saves time at the gym."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute steht eine Einheit im Plan. Ein kurzer Blick auf die letzten Gewichte vor dem Start spart Zeit im Gym."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün planında bir seans var. Başlamadan önce son ağırlıklara hızlıca bakmak salonda zaman kazandırır."
+          }
+        }
+      }
+    },
+    "coaching.soft.planPreview.analytical.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training day per plan. Peak performance comes ~2-3 hours after your last full meal."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingstag laut Plan. Die beste Leistung kommt ~2-3 Stunden nach der letzten vollen Mahlzeit."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plana göre antrenman günü. En iyi performans son tam öğünden ~2-3 saat sonra gelir."
+          }
+        }
+      }
+    },
+    "coaching.soft.planPreview.motivating.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It's training day! The best version of you is waiting at the gym. ⚡"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute ist Trainingstag! Die beste Version von dir wartet im Gym. ⚡"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün antrenman günü! Senin en iyi versiyonun salonda bekliyor. ⚡"
+          }
+        }
+      }
+    },
+    "coaching.soft.planPreview.motivating.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your plan is calling! Just getting to the gym is half the victory."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Plan ruft! Schon der Gang zum Gym ist der halbe Sieg."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planın seni çağırıyor! Salona gitmek bile zaferin yarısı."
+          }
+        }
+      }
+    },
+    "coaching.soft.planPreview.strict.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The plan says training today. Plans are not suggestions."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Im Plan steht heute Training. Pläne sind keine Vorschläge."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planda bugün antrenman yazıyor. Planlar öneri değildir."
+          }
+        }
+      }
+    },
+    "coaching.soft.planPreview.strict.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training day. The question isn't if — it's when."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute Trainingstag. Die Frage ist nicht ob, sondern wann."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün antrenman günü. Soru 'olup olmayacağı' değil, 'ne zaman'."
+          }
+        }
+      }
+    },
+    "coaching.soft.reEntry.analytical.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Several rest days logged. Strength loss only starts after ~2-3 weeks — an easy re-entry session is plenty."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mehrere Pausentage verbucht. Kraftverlust beginnt erst nach ~2-3 Wochen — ein lockerer Wiedereinstieg reicht völlig."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Birkaç dinlenme günü kaydedildi. Kuvvet kaybı ancak ~2-3 hafta sonra başlar — hafif bir dönüş seansı fazlasıyla yeter."
+          }
+        }
+      }
+    },
+    "coaching.soft.reEntry.analytical.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After a break, re-entering at ~80-90% of your last weights is the evidence-based play."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach einer Pause ist der Wiedereinstieg mit ~80-90% der letzten Gewichte der evidenzbasierte Weg."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aradan sonra son ağırlıkların ~%80-90'ı ile dönmek kanıta dayalı yoldur."
+          }
+        }
+      }
+    },
+    "coaching.soft.reEntry.motivating.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breaks are part of the journey — what counts is the comeback. Today would be a great day for it! 🌟"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausen gehören dazu — was zählt, ist das Comeback. Heute wäre ein guter Tag dafür! 🌟"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aralar yolculuğun parçası — önemli olan geri dönüş. Bugün bunun için harika bir gün! 🌟"
+          }
+        }
+      }
+    },
+    "coaching.soft.reEntry.motivating.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your training misses you! Even a short session gets you back in rhythm."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Training vermisst dich! Schon eine kurze Session bringt dich zurück in den Rhythmus."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenmanın seni özledi! Kısa bir seans bile seni ritme geri sokar."
+          }
+        }
+      }
+    },
+    "coaching.soft.reEntry.strict.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Five days without training. Motivation follows action, not the other way around — just go."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fünf Tage ohne Training. Motivation folgt der Handlung, nicht umgekehrt — geh einfach hin."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beş gündür antrenman yok. Motivasyon eylemi takip eder, tersi değil — sadece git."
+          }
+        }
+      }
+    },
+    "coaching.soft.reEntry.strict.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The break is long enough. The hardest set today is the first step through the door."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Pause ist lang genug. Der schwerste Satz heute ist der erste Schritt durch die Tür."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ara yeterince uzadı. Bugünün en zor seti kapıdan atılan ilk adım."
+          }
+        }
+      }
+    },
+    "coaching.soft.volumeRecord.analytical": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last week was your highest-volume week on record. Progressive overload is working — documented and measurable."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzte Woche war deine volumenstärkste Woche seit Aufzeichnungsbeginn. Progressive Overload funktioniert — dokumentiert und messbar."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geçen hafta kayıtlardaki en yüksek hacimli haftandı. Aşamalı yüklenme işliyor — belgelenmiş ve ölçülebilir."
+          }
+        }
+      }
+    },
+    "coaching.soft.volumeRecord.motivating": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NEW RECORD: your strongest training week of all time! That's what real work looks like. 🏆"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NEUER REKORD: deine stärkste Trainingswoche aller Zeiten! So sieht echte Arbeit aus. 🏆"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YENİ REKOR: tüm zamanların en güçlü antrenman haftası! Gerçek emek böyle görünür. 🏆"
+          }
+        }
+      }
+    },
+    "coaching.soft.volumeRecord.strict": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Best week in your history. Good. Records exist to be broken — the next one is waiting."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beste Woche deiner Historie. Gut. Rekorde sind dazu da, gebrochen zu werden — der nächste wartet."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarihinin en iyi haftası. Güzel. Rekorlar kırılmak içindir — sıradaki bekliyor."
+          }
+        }
+      }
+    },
+    "coaching.soft.measurementOverdue.analytical": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your last body measurement is over two weeks old. Trends need data points — 30 seconds on the scale will do."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine letzte Körpermessung ist über zwei Wochen her. Trends brauchen Datenpunkte — 30 Sekunden auf der Waage genügen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son vücut ölçümün iki haftadan eski. Trendler veri noktası ister — tartıda 30 saniye yeter."
+          }
+        }
+      }
+    },
+    "coaching.soft.measurementOverdue.motivating": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time for an update! A quick measurement shows you what your training has achieved. 📊"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeit für ein Update! Eine schnelle Messung zeigt dir, was dein Training bewirkt hat. 📊"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güncelleme zamanı! Hızlı bir ölçüm antrenmanının ne başardığını gösterir. 📊"
+          }
+        }
+      }
+    },
+    "coaching.soft.measurementOverdue.strict": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over two weeks without a measurement. What doesn't get measured doesn't get managed."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Über zwei Wochen ohne Messung. Was nicht gemessen wird, wird nicht gemanagt."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İki haftadan fazladır ölçüm yok. Ölçülmeyen şey yönetilemez."
+          }
+        }
+      }
+    },
+    "coaching.soft.hydrationLow.analytical": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Under 1.5 liters logged yesterday. Even 2% dehydration measurably costs strength — counter it today."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestern unter 1,5 Liter geloggt. Schon 2% Dehydration kosten messbar Kraft — heute gegensteuern."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün 1,5 litrenin altında kayıt. %2 dehidrasyon bile ölçülebilir kuvvet kaybettirir — bugün telafi et."
+          }
+        }
+      }
+    },
+    "coaching.soft.hydrationLow.motivating": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your body is ~60% water — top it up today! Every glass counts. 💧"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Körper ist zu ~60% Wasser — gib ihm heute Nachschub! Jedes Glas zählt. 💧"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücudun ~%60 su — bugün takviye et! Her bardak sayılır. 💧"
+          }
+        }
+      }
+    },
+    "coaching.soft.hydrationLow.strict": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too little water yesterday. Hydration is the cheapest supplement there is — use it."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestern zu wenig getrunken. Wasser ist das billigste Supplement, das es gibt — nutze es."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün çok az su içtin. Su, var olan en ucuz takviyedir — kullan."
+          }
+        }
+      }
+    },
+    "coaching.edu.analytical.16": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The interference effect between cardio and strength is largely negligible with 6+ hours between sessions."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Interferenz-Effekt zwischen Cardio und Kraft ist bei 6+ Stunden Abstand zwischen den Einheiten weitgehend vernachlässigbar."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kardiyo ile kuvvet arasındaki interferans etkisi, seanslar arasında 6+ saat varsa büyük ölçüde ihmal edilebilir."
+          }
+        }
+      }
+    },
+    "coaching.edu.analytical.17": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muscle protein synthesis stays elevated ~48 hours after a session — hitting each muscle twice a week exploits that."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Muskelproteinsynthese bleibt ~48 Stunden nach einer Einheit erhöht — jede Muskelgruppe 2× pro Woche zu treffen nutzt das aus."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kas protein sentezi seanstan sonra ~48 saat yüksek kalır — her kas grubunu haftada 2 kez çalıştırmak bundan yararlanır."
+          }
+        }
+      }
+    },
+    "coaching.edu.analytical.18": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caffeine peaks ~45-60 minutes after intake. Time it for your top set, not your warm-up."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koffein wirkt ~45-60 Minuten nach Einnahme am stärksten. Time es auf den Top-Satz, nicht aufs Aufwärmen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kafein alımdan ~45-60 dakika sonra zirve yapar. Zamanlamayı ısınmaya değil, en ağır setine göre yap."
+          }
+        }
+      }
+    },
+    "coaching.edu.analytical.19": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tracking reps in reserve (RIR) beats RPE for accuracy — estimation error shrinks with training experience."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wiederholungen im Tank (RIR) zu tracken ist genauer als RPE — der Schätzfehler sinkt mit Trainingserfahrung."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezervdeki tekrarları (RIR) takip etmek RPE'den daha isabetlidir — tahmin hatası deneyimle azalır."
+          }
+        }
+      }
+    },
+    "coaching.edu.analytical.20": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eccentric phases of 2-4 seconds increase mechanical tension — the primary driver of hypertrophy."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exzentrische Phasen von 2-4 Sekunden erhöhen die mechanische Spannung — den primären Hypertrophie-Treiber."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2-4 saniyelik eksantrik fazlar mekanik gerilimi artırır — hipertrofinin birincil itici gücü."
+          }
+        }
+      }
+    },
+    "coaching.edu.analytical.21": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength training cuts sports injury risk by up to two thirds — the best-documented prevention effect in the literature."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krafttraining senkt das Verletzungsrisiko im Sport um bis zu zwei Drittel — der am besten belegte Präventionseffekt der Literatur."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuvvet antrenmanı spor yaralanma riskini üçte ikiye kadar azaltır — literatürde en iyi belgelenmiş önleme etkisi."
+          }
+        }
+      }
+    },
+    "coaching.edu.motivating.16": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every rep is a vote for the person you want to become. 🗳️"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jede Wiederholung ist eine Stimme für die Person, die du werden willst. 🗳️"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Her tekrar, olmak istediğin kişi için bir oy. 🗳️"
+          }
+        }
+      }
+    },
+    "coaching.edu.motivating.17": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The difference between good and great? The last two reps nobody sees."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Unterschied zwischen gut und großartig? Die letzten zwei Wiederholungen, die keiner sieht."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İyi ile harika arasındaki fark? Kimsenin görmediği son iki tekrar."
+          }
+        }
+      }
+    },
+    "coaching.edu.motivating.18": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muscles don't grow at the gym — they grow while you sleep. Tonight is construction time! 😴"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muskeln wachsen nicht im Gym — sie wachsen im Schlaf. Heute Nacht ist Baustelle! 😴"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaslar salonda büyümez — uyurken büyür. Bu gece şantiye zamanı! 😴"
+          }
+        }
+      }
+    },
+    "coaching.edu.motivating.19": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You don't have to be perfect. You just have to show up more often than you give up."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du musst nicht perfekt sein. Du musst nur öfter auftauchen als aufgeben."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mükemmel olmak zorunda değilsin. Sadece pes ettiğinden daha sık ortaya çıkmalısın."
+          }
+        }
+      }
+    },
+    "coaching.edu.motivating.20": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A year has 52 weeks. Just 3 sessions a week means 156 appointments with your better self."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Jahr hat 52 Wochen. Schon 3 Einheiten pro Woche sind 156 Termine mit deinem besseren Ich."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir yılda 52 hafta var. Haftada sadece 3 seans, daha iyi benliğinle 156 randevu demek."
+          }
+        }
+      }
+    },
+    "coaching.edu.motivating.21": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Being strong isn't a talent. It's a habit — and you're building it right now. 💪"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stark sein ist kein Talent. Es ist eine Gewohnheit — und du baust sie gerade auf. 💪"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güçlü olmak yetenek değildir. Bir alışkanlıktır — ve sen onu şu an inşa ediyorsun. 💪"
+          }
+        }
+      }
+    },
+    "coaching.edu.strict.16": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Half reps, half results. Full range of motion or drop the weight."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Halbe Wiederholungen, halbe Ergebnisse. Volle Range of Motion oder das Gewicht runter."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yarım tekrar, yarım sonuç. Tam hareket açıklığı ya da ağırlığı düşür."
+          }
+        }
+      }
+    },
+    "coaching.edu.strict.17": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your phone has no business in your hand between sets. Rest means recovery, not scrolling."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Handy hat zwischen den Sätzen nichts in deiner Hand verloren. Pause heißt Erholung, nicht Scrollen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setler arasında telefonun elinde işi yok. Mola toparlanma demek, kaydırma değil."
+          }
+        }
+      }
+    },
+    "coaching.edu.strict.18": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If you don't log your training, you're training on a hunch. Hunches don't build muscle."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wer sein Training nicht loggt, trainiert auf Verdacht. Verdacht baut keinen Muskel."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenmanını kaydetmiyorsan tahminle çalışıyorsun. Tahmin kas yapmaz."
+          }
+        }
+      }
+    },
+    "coaching.edu.strict.19": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The warm-up is not a suggestion. Cold muscles tear, warm muscles grow."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Aufwärmen ist kein Vorschlag. Kalte Muskeln reißen, warme wachsen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Isınma bir öneri değildir. Soğuk kas yırtılır, sıcak kas büyür."
+          }
+        }
+      }
+    },
+    "coaching.edu.strict.20": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motivation is a guest, discipline lives here. Schedule training like a doctor's appointment."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motivation ist ein Gast, Disziplin wohnt hier. Plane Training wie einen Arzttermin."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motivasyon misafirdir, disiplin burada yaşar. Antrenmanı doktor randevusu gibi planla."
+          }
+        }
+      }
+    },
+    "coaching.edu.strict.21": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Don't complain about missing results if your sleep and your food aren't pulling their weight."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beschwer dich nicht über ausbleibende Ergebnisse, wenn Schlaf und Ernährung nicht mitziehen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uykun ve beslenmen üzerine düşeni yapmıyorsa, sonuç yok diye şikâyet etme."
+          }
+        }
+      }
     }
   }
 }

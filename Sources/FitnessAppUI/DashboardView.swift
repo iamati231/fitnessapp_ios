@@ -1031,6 +1031,9 @@ public struct DashboardView: View {
         // (Deload braucht hohe RECENT-Aktivität, reEntry Inaktivität).
         if shouldRecommendDeload { return .deloadRecommended }
         if daysSinceLastRealSession >= 5 { return .reEntry }
+        // DEL-198: Volumen-Rekord schlägt die generischen Post-Workout-
+        // Komplimente — "beste Woche ever" ist die stärkere Nachricht.
+        if hadVolumeRecordWeek { return .volumeRecord }
         if let yKm = yesterdayCardioDistanceKm, let yVol = yesterdayVolumeKg {
             if yVol >= 5_000 { return .postVolume }
             if yKm >= 5      { return .postCardio }
@@ -1041,12 +1044,69 @@ public struct DashboardView: View {
         }
         if last7DaysRealSessionCount >= 5 { return .streak }
         if hasTrainingPlannedToday { return .planPreview }
+        // DEL-198: Feature-Nudges — nur für User, die das Feature aktiv
+        // nutzen (sonst nerven die Hinweise Nicht-Nutzer).
+        if isMeasurementOverdue { return .measurementOverdue }
+        if isHydrationLow { return .hydrationLow }
         // DEL-177: Backup-Reminder als letzte Soft-Stufe vor dem Empty-State.
         // Niedrigste Prio — kein Trainings-Insight ist relevanter als eine
         // Backup-Erinnerung. Trigger nur, wenn der User auch echt was zu
         // sichern HAT (sonst nervt der Hinweis frische Installs).
         if shouldShowBackupReminder { return .backupOverdue }
         return nil
+    }
+
+    // MARK: - DEL-198 Coach-Trigger
+
+    /// True wenn die letzte VOLLE Kalenderwoche die volumenstärkste der
+    /// gesamten Historie war. Mindestens 4 volle Wochen Daten — sonst ist
+    /// "Rekord" trivial. Nutzt den getesteten VolumeOverTimeAggregator
+    /// (DEL-178) statt eigener Wochen-Bucketing-Logik.
+    private var hadVolumeRecordWeek: Bool {
+        let calendar = Calendar.current
+        let now = Date()
+        let logs = completedSessions
+            .filter(\.isRealWorkout)
+            .flatMap(\.logs)
+            .map { log -> (date: Date, weightKg: Double, reps: Int, isCardio: Bool, isTimeBased: Bool) in
+                let when = log.session?.startTime ?? log.date
+                return (when, log.weight, log.reps, log.resolvedIsCardio, log.resolvedIsTimeBased)
+            }
+        guard let oldest = logs.map(\.date).min() else { return false }
+        let weeks = VolumeOverTimeAggregator.aggregate(
+            logs: logs, windowStart: oldest, now: now, calendar: calendar
+        )
+        // Laufende (unvollständige) Woche abschneiden.
+        let fullWeeks = weeks.dropLast()
+        guard fullWeeks.count >= 4,
+              let lastFull = fullWeeks.last, lastFull.volumeKg > 0 else { return false }
+        // Strikt größer als ALLE vorherigen vollen Wochen.
+        return fullWeeks.dropLast().allSatisfy { $0.volumeKg < lastFull.volumeKg }
+    }
+
+    /// True wenn die letzte Körpermessung > 14 Tage her ist UND der User
+    /// das Feature nachweislich nutzt (>= 2 Messungen). `measurements` ist
+    /// reverse-sortiert — first = jüngste.
+    private var isMeasurementOverdue: Bool {
+        guard measurements.count >= 2, let latest = measurements.first else { return false }
+        let fourteenDays: TimeInterval = 14 * 24 * 3600
+        return Date().timeIntervalSince(latest.date) > fourteenDays
+    }
+
+    /// True wenn der User aktiv Wasser trackt (Eintrag in den letzten 7
+    /// Tagen), gestern aber unter 1,5 l geloggt hat. Heute bewerten wir
+    /// nicht — der Tag läuft ja noch.
+    private var isHydrationLow: Bool {
+        let calendar = Calendar.current
+        let now = Date()
+        guard let weekAgo = calendar.date(byAdding: .day, value: -7, to: now),
+              let yesterday = calendar.date(byAdding: .day, value: -1, to: now) else { return false }
+        let recentEntries = waterEntries.filter { $0.date >= weekAgo }
+        guard !recentEntries.isEmpty else { return false }   // Feature ungenutzt
+        let yesterdayMl = recentEntries
+            .filter { calendar.isDate($0.date, inSameDayAs: yesterday) }
+            .reduce(0) { $0 + $1.amountMl }
+        return yesterdayMl < 1_500
     }
 
     /// DEL-196: Deload-Trigger. Aggregiert die CNS-Last der letzten drei

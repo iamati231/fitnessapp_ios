@@ -58,25 +58,53 @@ public enum CoachingMessageProvider {
     /// DEL-167: Soft-Coaching-Variante. Resolved den Schlüssel
     /// `coaching.soft.{context}.{tone}` (ohne Goal-Achse — Soft-Insights sind
     /// goal-agnostisch). Fallback-Kette:
-    ///   1. Voll-spezifischer Key mit dem gewünschten Ton.
+    ///   1. Varianten-Pool des gewünschten Tons (Basis-Key + numerierte
+    ///      Varianten, siehe unten).
     ///   2. Tone-Fallback auf `.analytical` (neutralster Ton).
     ///   3. Leerer String → Caller (Dashboard) erkennt das und rendert
     ///      stattdessen den Empty-State.
+    ///
+    /// **DEL-198 Varianten-Rotation:** Pro (Context, Tone) können neben dem
+    /// Basis-Key `coaching.soft.{context}.{tone}` numerierte Varianten
+    /// `...{tone}.1`, `...{tone}.2`, … im Catalog liegen. Der Provider
+    /// sammelt den Pool und rotiert tag-stabil über den Tag-im-Jahr —
+    /// gleiche Mechanik wie die Edu-Tipps (DEL-168): derselbe Spruch bleibt
+    /// einen Kalendertag stehen, am nächsten Tag kommt der nächste. Ein
+    /// täglich triggernder Kontext (Streak, Plan-Preview) liest sich damit
+    /// nicht mehr wie ein eingefrorenes Template.
     public static func softMessage(
         for context: CoachingContext,
-        tone: CoachingTone
+        tone: CoachingTone,
+        now: Date = Date(),
+        calendar: Calendar = .current
     ) -> String {
-        let primaryKey = softKey(context: context, tone: tone)
-        if let resolved = resolve(key: primaryKey) {
-            return resolved
+        var pool = softVariantPool(context: context, tone: tone)
+        if pool.isEmpty && tone != .analytical {
+            pool = softVariantPool(context: context, tone: .analytical)
         }
-        if tone != .analytical {
-            let toneFallback = softKey(context: context, tone: .analytical)
-            if let resolved = resolve(key: toneFallback) {
-                return resolved
-            }
+        guard !pool.isEmpty else { return "" }
+        let dayOfYear = calendar.ordinality(of: .day, in: .year, for: now) ?? 1
+        return pool[(dayOfYear - 1) % pool.count]
+    }
+
+    /// Sammelt alle aufgelösten Varianten für (Context, Tone): erst den
+    /// Basis-Key, dann `.1`, `.2`, … bis zur ersten Lücke. Lückenlose
+    /// Nummerierung ist Pflicht — Variante `.3` ohne `.2` wird nie gefunden.
+    private static func softVariantPool(
+        context: CoachingContext,
+        tone: CoachingTone
+    ) -> [String] {
+        let base = softKey(context: context, tone: tone)
+        var pool: [String] = []
+        if let resolved = resolve(key: base) {
+            pool.append(resolved)
         }
-        return ""
+        var index = 1
+        while let resolved = resolve(key: "\(base).\(index)") {
+            pool.append(resolved)
+            index += 1
+        }
+        return pool
     }
 
     /// DEL-168: Edu-Coaching-Tipp (P3-Fallback). Wird auf dem Dashboard
@@ -116,7 +144,8 @@ public enum CoachingMessageProvider {
     /// DEL-168: Anzahl der gepflegten Edu-Tipps pro Tonfall. Wenn du neue
     /// Eintraege im Catalog ergaenzt (`coaching.edu.<tone>.<n>`), diesen
     /// Wert mit dem hoechsten neuen Index updaten.
-    public static let eduTipCount: Int = 15
+    /// DEL-198: 15 → 21 (6 neue Tipps pro Ton).
+    public static let eduTipCount: Int = 21
 
     // MARK: - Internals
 

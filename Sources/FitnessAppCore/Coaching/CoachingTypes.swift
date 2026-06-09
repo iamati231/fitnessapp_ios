@@ -119,4 +119,17 @@ public enum CoachingContext: String, Sendable {
     /// Priorität: eine Deload-Empfehlung ist gesundheitsrelevanter als
     /// jedes Post-Workout-Kompliment. Entscheidung via `DeloadAdvisor`.
     case deloadRecommended
+
+    // MARK: - DEL-198 Coach-Ausbau (mehr Dialog-Anlässe)
+
+    /// Die letzte VOLLE Trainingswoche war die volumenstärkste der
+    /// gesamten Historie (>= 4 Wochen Daten). Positiver Meilenstein —
+    /// rangiert vor den generischen Post-Workout-Komplimenten.
+    case volumeRecord
+    /// Letzte Körpermessung > 14 Tage her, obwohl der User das Feature
+    /// aktiv nutzt (>= 2 Messungen vorhanden). Sanfter Mess-Reminder.
+    case measurementOverdue
+    /// User trackt aktiv Wasser (Einträge in den letzten 7 Tagen), hat
+    /// gestern aber < 1,5 l geloggt. Sanfter Hydrations-Hinweis.
+    case hydrationLow
 }
