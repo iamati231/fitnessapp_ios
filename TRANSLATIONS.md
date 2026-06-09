@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1252 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1254 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1252 / 1252** (100%) | 0 |
-| 🇬🇧 English (EN) | **1252 / 1252** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1252 / 1252** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1254 / 1254** (100%) | 0 |
+| 🇬🇧 English (EN) | **1254 / 1254** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1254 / 1254** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1505,6 +1505,13 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `unit.minutes.short` | Min | min | dk |
 | `unit.reps.short` | Wdh | reps | tkr |
 | `unit.seconds.short` | Sek | sec | sn |
+
+## `warmup.*`  (2 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `warmup.ramp.emptyBar` | Leere Stange | Empty bar | Boş bar |
+| `warmup.ramp.title` | Aufwärm-Sätze | Warm-up sets | Isınma setleri |
 
 ## `water.*`  (11 Keys)
 

@@ -37,6 +37,12 @@ struct ExerciseCard: View {
     /// index-stabil), sodass laufende Eingaben nicht zuruckgesetzt werden.
     @State private var structureToken = UUID()
 
+    // DEL-195: Warmup-Ramp. Gleicher Toggle wie der Warmup-Übungs-Filter
+    // (DEL-092) — wer Warmups global abschaltet, will auch keine Ramp-Hints.
+    @AppStorage("pref_show_warmups") private var showWarmups: Bool = true
+    @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
+    @State private var rampExpanded = false
+
     var body: some View {
         // UX-203: berechne EINMAL pro Render den aktiven Satz — der erste
         // mit `existingLog == nil`. Wenn alle completed sind, bleibt es nil
@@ -47,6 +53,12 @@ struct ExerciseCard: View {
         VStack(alignment: .leading, spacing: 10) {
             header
             Divider()
+            // DEL-195: Aufwärm-Rampe (collapsed by default) — nur für
+            // Barbell-Working-Sets mit bekanntem Zielgewicht.
+            if let ramp = warmupRamp, !ramp.isEmpty {
+                warmupRampSection(ramp)
+                Divider().opacity(0.2)
+            }
             ForEach(0..<exercise.sets, id: \.self) { setIndex in
                 SetRow(
                     setIndex: setIndex,
@@ -283,6 +295,106 @@ struct ExerciseCard: View {
             }
             .sorted { $0.date > $1.date }
             .first
+    }
+
+    // MARK: - DEL-195 Warmup-Ramp
+
+    /// Die Rampe, falls für diese Übung sinnvoll — sonst nil. Bedingungen:
+    ///   * `pref_show_warmups` an (globaler Toggle, DEL-092)
+    ///   * Strength-Working-Set (kein Cardio, kein TimeBased, keine
+    ///     Warmup-/Cooldown-Übung — die IST schon das Aufwärmen)
+    ///   * Barbell-Übung (der Leere-Stange-Schritt setzt eine Stange voraus)
+    ///   * ein Referenzgewicht existiert (Plan-Vorschlag oder letzter Satz 1)
+    private var warmupRamp: [WarmupStep]? {
+        guard showWarmups,
+              !exercise.isCardio,
+              !exercise.isTimeBased,
+              exercise.role == .workingSet,
+              isBarbellExercise,
+              let workingKg = referenceWeightKg else { return nil }
+
+        if weightUnitRaw == "lbs" {
+            // lbs-Konventionen: 45-lbs-Bar, 5-lbs-Increment, Heavy ab 220 lbs.
+            let workingLbs = workingKg / 0.453592
+            return WarmupRampCalculator.ramp(
+                workingWeightKg: workingLbs,
+                barWeightKg: 45,
+                roundingIncrementKg: 5,
+                heavySingleThreshold: 220
+            )
+        }
+        return WarmupRampCalculator.ramp(workingWeightKg: workingKg)
+    }
+
+    /// Barbell-Detection: DEL-159-Override gewinnt, sonst Library-Lookup
+    /// über den System-Namen. Custom-Übungen ohne Equipment → kein Ramp.
+    private var isBarbellExercise: Bool {
+        if let equipment = exercise.equipment {
+            return equipment == .barbell
+        }
+        return ExerciseLibraryData.all.first { $0.name == exercise.name }?.equipment == .barbell
+    }
+
+    /// Zielgewicht für die Rampe: Plan-Vorschlag (Smart-Progression pflegt
+    /// `suggestedWeight`), sonst das Gewicht von Satz 1 der letzten Session.
+    private var referenceWeightKg: Double? {
+        if let suggested = exercise.suggestedWeight, suggested > 0 {
+            return suggested
+        }
+        if let previous = previousLog(forSetIndex: 0), previous.weight > 0 {
+            return previous.weight
+        }
+        return nil
+    }
+
+    private func warmupRampSection(_ ramp: [WarmupStep]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { rampExpanded.toggle() }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "flame")
+                        .font(.caption)
+                        .foregroundStyle(Color.deltiqOrange)
+                    Text("warmup.ramp.title", bundle: .module)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Image(systemName: rampExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.tertiary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if rampExpanded {
+                ForEach(Array(ramp.enumerated()), id: \.offset) { _, step in
+                    HStack(spacing: 8) {
+                        Text(stepWeightText(step))
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.primary)
+                        Text("× \(step.reps)")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                    .padding(.leading, 20)
+                }
+            }
+        }
+    }
+
+    /// "Leere Stange" für den Bar-Schritt, sonst kompakte Gewichtsanzeige
+    /// in der User-Einheit (32,5 kg / 75 lbs — ohne erzwungene Nullen,
+    /// Plate-Gewichte haben maximal eine Nachkommastelle).
+    private func stepWeightText(_ step: WarmupStep) -> String {
+        if step.isBarOnly {
+            return String(localized: "warmup.ramp.emptyBar", bundle: .module)
+        }
+        let unit = weightUnitRaw == "lbs" ? "lbs" : "kg"
+        let number = step.weightKg.formatted(.number.precision(.fractionLength(0...1)))
+        return "\(number) \(unit)"
     }
 
     // MARK: Actions
