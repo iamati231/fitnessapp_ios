@@ -41,7 +41,11 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         context.insert(plan)
         let day = TrainingDay(name: "Push", weekday: 2, type: .push, plan: plan)
         context.insert(day)
-        let exercise = Exercise(name: "Bankdrücken", sets: 3, suggestedWeight: 80, day: day)
+        // DEL-208: Übung MITTEN in einer Deload-Woche (DEL-200) — das
+        // suggestedWeight ist halbiert, das Original liegt im Snapshot.
+        // Der Import muss aufs Original normalisieren.
+        let exercise = Exercise(name: "Bankdrücken", sets: 3, suggestedWeight: 40, day: day)
+        exercise.deloadOriginalWeight = 80
         context.insert(exercise)
 
         let gear = Gear(name: "Testschuh", type: .shoe)
@@ -123,7 +127,14 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         // 4) Beziehungen + Werte stichprobenartig.
         let plan = try ctx.fetch(FetchDescriptor<TrainingPlan>()).first
         XCTAssertEqual(plan?.isActive, true, "DEL-192: aktiver Plan bleibt aktiv")
-        XCTAssertEqual(plan?.days.first?.exercises.first?.name, "Bankdrücken")
+        let importedExercise = plan?.days.first?.exercises.first
+        XCTAssertEqual(importedExercise?.name, "Bankdrücken")
+        // DEL-208: Mid-Deload-Export wird beim Import aufs Original
+        // normalisiert — NICHT die halbierten 40 kg übernehmen.
+        XCTAssertEqual(importedExercise?.suggestedWeight, 80,
+                       "Deload-Original muss restauriert werden, nicht das halbierte Gewicht")
+        XCTAssertNil(importedExercise?.deloadOriginalWeight,
+                     "Import landet im sauberen Nicht-Deload-Zustand")
         let profile = try ctx.fetch(FetchDescriptor<UserBodyProfile>()).first
         XCTAssertEqual(profile?.firstName, "Test")
         let session = try ctx.fetch(FetchDescriptor<WorkoutSession>()).first

@@ -360,7 +360,11 @@ public enum DataExportService {
             "superset_id", "role",
             "systemic_fatigue_factor", "local_muscle_damage_factor",
             "cns_demand_factor", "axial_load_factor",
-            "technical_complexity_factor", "recovery_class"
+            "technical_complexity_factor", "recovery_class",
+            // DEL-208: additive Spalte. Sichert das Original-Gewicht, falls
+            // der Export mitten in einer Deload-Woche (DEL-200) passiert —
+            // sonst wären nur die halbierten Gewichte im Backup.
+            "deload_original_weight"
         ])
         for e in items {
             // Imperatives Append statt großem Array-Literal — Swift's
@@ -400,6 +404,7 @@ public enum DataExportService {
             row.append(CSVWriter.decimal(e.axialLoadFactor))
             row.append(CSVWriter.decimal(e.technicalComplexityFactor))
             row.append(e.recoveryClassRaw)
+            row.append(CSVWriter.decimal(e.deloadOriginalWeight))
             w.appendRow(row)
         }
         return w.data()

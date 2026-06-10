@@ -990,6 +990,18 @@ public enum DataImportService {
             if let cardioEquipRaw = row.optionalString("cardio_equipment") {
                 e.cardioEquipmentRaw = cardioEquipRaw
             }
+            // DEL-208: Deload-Zustand normalisieren. Wurde das Backup mitten
+            // in einer Deload-Woche (DEL-200) erstellt, enthält
+            // suggested_weight_kg das HALBIERTE Gewicht und
+            // deload_original_weight das Original. Der Deload-Timer lebt in
+            // AppStorage und ist nicht portabel — ohne Normalisierung
+            // blieben die reduzierten Gewichte auf dem neuen Gerät dauerhaft
+            // hängen (kein Banner, kein Auto-Restore). Deshalb: Original
+            // zurückschreiben, Snapshot leer lassen — der Import landet im
+            // sauberen Nicht-Deload-Zustand.
+            if let original = row.double("deload_original_weight"), original > 0 {
+                e.suggestedWeight = original
+            }
             context.insert(e)
             if !exportID.isEmpty { idMap[exportID] = e }
             imported += 1
