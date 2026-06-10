@@ -58,6 +58,12 @@ public final class UserBodyProfile {
     /// gepflegt" und nutzt die Standard-Variante (template.days).
     public var equipmentPreferencesRaw: [String] = []
 
+    /// DEL-203: Wochenziel für den Trainings-Streak (1-7 Workouts/Woche).
+    /// Der Kalender-Streak (DEL-197) zählt nur Wochen, die dieses Ziel
+    /// erfüllen. Default 1 = altes "mindestens ein Workout"-Verhalten —
+    /// Lightweight-Migration für Bestand.
+    public var weeklyWorkoutGoal: Int = 1
+
     /// Convenience-Accessor mit Default-Fallback, falls jemand einen
     /// invaliden String reinschreibt.
     public var coachingTone: CoachingTone {

@@ -58,6 +58,7 @@ public struct ProfileEditorView: View {
             personSection
             bodySection
             goalSection
+            weeklyGoalSection
             equipmentSection
             coachingSection
             healthKitSection
@@ -414,6 +415,36 @@ public struct ProfileEditorView: View {
             Text("profile.equipment.header", bundle: .module)
         } footer: {
             Text("profile.equipment.footer", bundle: .module)
+                .font(.footnote)
+        }
+    }
+
+    /// DEL-203: Wochenziel für den Trainings-Streak. Stepper 1-7 —
+    /// der Kalender-Streak zählt nur Wochen, die das Ziel erfüllen.
+    @ViewBuilder
+    private var weeklyGoalSection: some View {
+        Section {
+            Stepper(value: Binding(
+                get: { profile.weeklyWorkoutGoal },
+                set: { profile.weeklyWorkoutGoal = min(7, max(1, $0)) }
+            ), in: 1...7) {
+                HStack {
+                    Label {
+                        Text("profile.weeklyGoal.label", bundle: .module)
+                    } icon: {
+                        Image(systemName: "flame")
+                            .foregroundStyle(Color.deltiqOrange)
+                    }
+                    Spacer()
+                    Text("\(profile.weeklyWorkoutGoal)×")
+                        .font(.body.weight(.semibold).monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } header: {
+            Text("profile.weeklyGoal.header", bundle: .module)
+        } footer: {
+            Text("profile.weeklyGoal.footer", bundle: .module)
                 .font(.footnote)
         }
     }

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1332 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1335 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1332 / 1332** (100%) | 0 |
-| 🇬🇧 English (EN) | **1332 / 1332** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1332 / 1332** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1335 / 1335** (100%) | 0 |
+| 🇬🇧 English (EN) | **1335 / 1335** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1335 / 1335** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1257,7 +1257,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (27 Keys)
+## `profile.*`  (30 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1288,6 +1288,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.section.coach` | Coach | Coach | Koç |
 | `profile.section.health` | Apple Health | Apple Health | Apple Health |
 | `profile.section.person` | Person | Person | Kişi |
+| `profile.weeklyGoal.footer` | Dein Kalender-Streak zählt nur Wochen, die dieses Ziel erfüllen. Wähle, was du wirklich durchhalten kannst — ein gehaltener Streak schlägt ein verfehltes Ziel. | Your calendar streak only counts weeks that meet this goal. Pick what you can actually sustain — a streak you keep beats a goal you don't. | Takvim serin yalnızca bu hedefi karşılayan haftaları sayar. Gerçekten sürdürebileceğini seç — tutulan bir seri, kaçırılan bir hedeften iyidir. |
+| `profile.weeklyGoal.header` | Wochenziel | Weekly goal | Haftalık hedef |
+| `profile.weeklyGoal.label` | Workouts pro Woche | Workouts per week | Haftalık antrenman |
 
 ## `progression.*`  (3 Keys)
 

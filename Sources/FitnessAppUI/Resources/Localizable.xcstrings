@@ -30637,6 +30637,75 @@
           }
         }
       }
+    },
+    "profile.weeklyGoal.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekly goal"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wochenziel"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haftalık hedef"
+          }
+        }
+      }
+    },
+    "profile.weeklyGoal.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workouts per week"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workouts pro Woche"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haftalık antrenman"
+          }
+        }
+      }
+    },
+    "profile.weeklyGoal.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your calendar streak only counts weeks that meet this goal. Pick what you can actually sustain — a streak you keep beats a goal you don't."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Kalender-Streak zählt nur Wochen, die dieses Ziel erfüllen. Wähle, was du wirklich durchhalten kannst — ein gehaltener Streak schlägt ein verfehltes Ziel."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Takvim serin yalnızca bu hedefi karşılayan haftaları sayar. Gerçekten sürdürebileceğini seç — tutulan bir seri, kaçırılan bir hedeften iyidir."
+          }
+        }
+      }
     }
   }
 }

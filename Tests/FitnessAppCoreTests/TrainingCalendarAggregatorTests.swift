@@ -98,4 +98,76 @@ final class TrainingCalendarAggregatorTests: XCTestCase {
         )
         XCTAssertEqual(streak, 0)
     }
+
+    // MARK: - DEL-203 Wochenziel
+
+    func testGoalOfThreeRequiresThreeWorkoutsPerWeek() {
+        // Vorwoche (01.-07.06.): 3 Workouts ✓, Woche davor: nur 2 ✗.
+        let dates = [
+            date(2026, 5, 26), date(2026, 5, 28),                      // KW 25.05.: 2
+            date(2026, 6, 1), date(2026, 6, 3), date(2026, 6, 5),      // KW 01.06.: 3
+        ]
+        let streak = TrainingCalendarAggregator.weekStreak(
+            workoutDates: dates,
+            now: date(2026, 6, 8),   // Mo der Folgewoche (leer → Grace)
+            calendar: calendar,
+            goalPerWeek: 3
+        )
+        XCTAssertEqual(streak, 1, "nur die 3er-Woche erfüllt das Ziel")
+    }
+
+    func testGoalDefaultMatchesOldBehaviour() {
+        // goalPerWeek default (1) == altes "mindestens 1 Workout"-Verhalten.
+        let dates = [date(2026, 5, 26), date(2026, 6, 2), date(2026, 6, 9)]
+        let explicit = TrainingCalendarAggregator.weekStreak(
+            workoutDates: dates, now: date(2026, 6, 10),
+            calendar: calendar, goalPerWeek: 1
+        )
+        let implicit = TrainingCalendarAggregator.weekStreak(
+            workoutDates: dates, now: date(2026, 6, 10), calendar: calendar
+        )
+        XCTAssertEqual(explicit, 3)
+        XCTAssertEqual(implicit, explicit)
+    }
+
+    func testCurrentWeekBelowGoalDoesNotBreakStreak() {
+        // Ziel 2: Vorwochen je 2 ✓✓, aktuelle Woche erst 1 → Grace, Streak 2.
+        let dates = [
+            date(2026, 5, 26), date(2026, 5, 28),   // KW 25.05.: 2 ✓
+            date(2026, 6, 2),  date(2026, 6, 4),    // KW 01.06.: 2 ✓
+            date(2026, 6, 8),                        // KW 08.06.: erst 1
+        ]
+        let streak = TrainingCalendarAggregator.weekStreak(
+            workoutDates: dates,
+            now: date(2026, 6, 10),
+            calendar: calendar,
+            goalPerWeek: 2
+        )
+        XCTAssertEqual(streak, 2)
+    }
+
+    func testCurrentWeekMeetingGoalCountsImmediately() {
+        // Ziel 2, aktuelle Woche hat schon 2 → zählt sofort mit.
+        let dates = [
+            date(2026, 6, 2), date(2026, 6, 4),     // KW 01.06.: 2 ✓
+            date(2026, 6, 8), date(2026, 6, 9),     // KW 08.06.: 2 ✓
+        ]
+        let streak = TrainingCalendarAggregator.weekStreak(
+            workoutDates: dates,
+            now: date(2026, 6, 10),
+            calendar: calendar,
+            goalPerWeek: 2
+        )
+        XCTAssertEqual(streak, 2)
+    }
+
+    func testGoalZeroIsClampedToOne() {
+        let streak = TrainingCalendarAggregator.weekStreak(
+            workoutDates: [date(2026, 6, 9)],
+            now: date(2026, 6, 10),
+            calendar: calendar,
+            goalPerWeek: 0
+        )
+        XCTAssertEqual(streak, 1, "goal < 1 wird auf 1 geklemmt, nicht endlos")
+    }
 }

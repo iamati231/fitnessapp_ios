@@ -30,28 +30,43 @@ public enum TrainingCalendarAggregator {
         Set(dates.map { calendar.startOfDay(for: $0) })
     }
 
-    /// Anzahl konsekutiver Kalenderwochen mit >= 1 Workout, rückwärts ab
-    /// `now`. Laufende Woche ohne Workout zählt nicht mit, bricht aber
-    /// auch nicht (Grace) — erst eine VOLL verstrichene leere Woche endet
-    /// den Streak.
+    /// Anzahl konsekutiver Kalenderwochen, die das Wochenziel erfüllen,
+    /// rückwärts ab `now`. Laufende Woche unter dem Ziel zählt nicht mit,
+    /// bricht aber auch nicht (Grace) — erst eine VOLL verstrichene Woche
+    /// unter dem Ziel endet den Streak.
+    ///
+    /// DEL-203: `goalPerWeek` macht den Streak ehrlich — wer sich 3×/Woche
+    /// vorgenommen hat, hält den Streak nur mit 3 Workouts. Default 1 =
+    /// das alte "mindestens ein Workout"-Verhalten.
     public static func weekStreak(
         workoutDates: [Date],
         now: Date = Date(),
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        goalPerWeek: Int = 1
     ) -> Int {
         guard !workoutDates.isEmpty else { return 0 }
-        let weekStarts = Set(workoutDates.compactMap { weekStart(of: $0, calendar: calendar) })
+        let goal = max(1, goalPerWeek)
+
+        // Workouts pro Kalenderwoche zählen — Mehrfach-Sessions am selben
+        // TAG zählen einzeln (zwei Einheiten an einem Tag sind zwei
+        // Workouts Richtung Ziel).
+        var countsByWeek: [Date: Int] = [:]
+        for date in workoutDates {
+            guard let week = weekStart(of: date, calendar: calendar) else { continue }
+            countsByWeek[week, default: 0] += 1
+        }
+
         guard var cursor = weekStart(of: now, calendar: calendar) else { return 0 }
 
-        // Grace: aktuelle Woche noch leer → eine Woche zurückspringen und
-        // dort mit dem Zählen beginnen.
-        if !weekStarts.contains(cursor) {
+        // Grace: aktuelle Woche noch unter dem Ziel → eine Woche zurück-
+        // springen und dort mit dem Zählen beginnen.
+        if countsByWeek[cursor, default: 0] < goal {
             guard let previous = calendar.date(byAdding: .weekOfYear, value: -1, to: cursor) else { return 0 }
             cursor = previous
         }
 
         var streak = 0
-        while weekStarts.contains(cursor) {
+        while countsByWeek[cursor, default: 0] >= goal {
             streak += 1
             guard let previous = calendar.date(byAdding: .weekOfYear, value: -1, to: cursor) else { break }
             cursor = previous

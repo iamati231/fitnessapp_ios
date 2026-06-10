@@ -204,10 +204,15 @@ public enum DataExportService {
         _ profiles: [UserBodyProfile],
         id: (AnyObject) -> String
     ) -> Data {
+        // DEL-203: weekly_workout_goal als additive Spalte — ältere Importer
+        // lesen Spalten per Name und ignorieren Unbekanntes, ältere ZIPs
+        // ohne die Spalte fallen beim Import auf Default 1. Kein
+        // formatVersion-Bump nötig (additiv-rückwärtskompatibel).
         var w = CSVWriter(headers: [
             "id", "birth_date", "height_cm", "profile", "goal_weight_kg",
             "environment", "first_name", "coaching_tone", "training_goal",
-            "equipment_preferences", "dashboard_widgets", "hero_metric_slots"
+            "equipment_preferences", "dashboard_widgets", "hero_metric_slots",
+            "weekly_workout_goal"
         ])
         for p in profiles {
             w.appendRow([
@@ -222,7 +227,8 @@ public enum DataExportService {
                 p.trainingGoalRaw,
                 p.equipmentPreferencesRaw.joined(separator: ";"),
                 p.activeDashboardWidgetsRaw.joined(separator: ";"),
-                p.heroMetricSlotsRaw.joined(separator: ";")
+                p.heroMetricSlotsRaw.joined(separator: ";"),
+                String(p.weeklyWorkoutGoal)
             ])
         }
         return w.data()

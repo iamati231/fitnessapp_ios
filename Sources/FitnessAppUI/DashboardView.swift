@@ -2176,7 +2176,12 @@ public struct DashboardView: View {
             .map(\.startTime)
         return TrainingCalendarCard(
             workoutDays: TrainingCalendarAggregator.workoutDays(of: realDates),
-            streak: TrainingCalendarAggregator.weekStreak(workoutDates: realDates),
+            // DEL-203: Streak respektiert das Wochenziel aus dem Profil
+            // (Default 1 = altes Verhalten).
+            streak: TrainingCalendarAggregator.weekStreak(
+                workoutDates: realDates,
+                goalPerWeek: profiles.first?.weeklyWorkoutGoal ?? 1
+            ),
             // DEL-202: Tap auf einen Workout-Dot → Tages-Detail-Sheet.
             onDaySelected: { day in
                 selectedCalendarDay = CalendarDaySelection(day: day)

@@ -499,6 +499,8 @@ public enum DataImportService {
             if !dashboardRaw.isEmpty { p.activeDashboardWidgetsRaw = dashboardRaw }
             let heroRaw = splitMulti(row["hero_metric_slots"])
             if !heroRaw.isEmpty { p.heroMetricSlotsRaw = heroRaw }
+            // DEL-203: additive Spalte — ältere ZIPs ohne sie → Default 1.
+            p.weeklyWorkoutGoal = row.int("weekly_workout_goal") ?? 1
 
             if target == nil {
                 context.insert(p)
