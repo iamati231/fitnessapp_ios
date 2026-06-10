@@ -2,5 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <!-- DEL-216: App Group — gleiche Group-ID wie die App, damit die
+         Widget-Extension den geteilten SwiftData-Store erreicht. -->
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>group.com.atamya.FitnessApp</string>
+    </array>
 </dict>
 </plist>

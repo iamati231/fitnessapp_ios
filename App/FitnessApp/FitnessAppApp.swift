@@ -19,6 +19,13 @@ struct FitnessAppApp: App {
     /// sein muss (siehe Kommentare in AppDelegate.swift).
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
+    /// DEL-216: App-Group-geteilter Store statt `.modelContainer(for:)` —
+    /// das interaktive Wasser-Widget liest + schreibt denselben Bestand.
+    /// `makeAppContainer()` migriert den alten Default-Store einmalig
+    /// (verlustfreie Kopie) und faellt ohne App-Group-Entitlement aufs
+    /// alte Verhalten zurueck. Static let = genau eine Instanz pro Prozess.
+    private static let sharedContainer: ModelContainer = SharedStore.makeAppContainer()
+
     var body: some Scene {
         WindowGroup {
             RootView()
@@ -31,7 +38,7 @@ struct FitnessAppApp: App {
                     handleDeepLink(url)
                 }
         }
-        .modelContainer(for: AppSchema.types)
+        .modelContainer(Self.sharedContainer)
     }
 
     /// DEL-076: Custom-scheme-Handler routet jetzt via NotificationCenter-

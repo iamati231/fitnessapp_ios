@@ -7,7 +7,9 @@ import SwiftUI
 struct FitnessAppWidgetsBundle: WidgetBundle {
     var body: some Widget {
         RestTimerLiveActivity()
-        // Future Home-Screen widgets ("Naechstes Training", "Heutiges Wasser",
-        // "Letzte Messung") slot in here.
+        // DEL-216: Interaktives Wasser-Widget (Home Screen, systemSmall/Medium).
+        WaterTrackerWidget()
+        // Future Home-Screen widgets ("Naechstes Training", "Letzte Messung")
+        // slot in here.
     }
 }

@@ -3,6 +3,9 @@ import SwiftUI
 import SwiftData
 import FitnessAppCore
 import FitnessAppData
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 /// Daily water-intake tracker. Target = `weight × 35 ml` from the most recent
 /// measurement (falls back to profile goal-weight, then to a 70-kg default).
@@ -218,6 +221,7 @@ public struct WaterTrackerView: View {
     private func addEntry(amount: Int) {
         let entry = WaterEntry(date: Date(), amountMl: amount)
         modelContext.insert(entry)
+        reloadWaterWidget()
     }
 
     private func deleteEntries(at offsets: IndexSet) {
@@ -225,12 +229,24 @@ public struct WaterTrackerView: View {
         for offset in offsets {
             modelContext.delete(entries[offset])
         }
+        reloadWaterWidget()
     }
 
     private func deleteTodayEntries() {
         for entry in todayEntries {
             modelContext.delete(entry)
         }
+        reloadWaterWidget()
+    }
+
+    /// DEL-216: Stoesst den Timeline-Refresh des Home-Screen-Wasser-Widgets
+    /// an, damit der Ring sofort den neuen Stand zeigt. Umgekehrt (Widget-
+    /// Intent → App) ist kein Refresh noetig: die @Query laedt beim
+    /// naechsten App-Foreground ohnehin frisch aus dem geteilten Store.
+    private func reloadWaterWidget() {
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: SharedStore.waterWidgetKind)
+        #endif
     }
 }
 

@@ -231,3 +231,46 @@ hatten.)
 - **Activity zeigt 00:00 statisch**: `endDate` liegt in der Vergangenheit. `Text(timerInterval:countsDown:)` zaehlt selbststaendig — wir muessen NICHT pro Sekunde updaten
 - **Compile-Fehler `Cannot find 'RestTimerAttributes'`**: Activities-Library nicht
   korrekt eingebunden, oder die App-Workspace zeigt das Package nicht
+
+---
+
+# DEL-216: Interaktives Wasser-Widget (App Group)
+
+Das Home-Screen-Widget (`WaterTrackerWidget.swift`) teilt den SwiftData-Store
+mit der App ueber eine **App Group**. Code + Entitlements + project.yml sind
+im Repo — es bleibt EIN manueller Schritt im Apple Developer Portal.
+
+## Einmalige Portal-Schritte
+
+1. **Developer Portal → Identifiers → App Groups → "+"**
+   - Description: `Deltiq Shared`
+   - Identifier: `group.com.atamya.FitnessApp`  ← muss EXAKT so heissen
+     (referenziert in beiden `.entitlements`-Dateien + `SharedStore.swift`)
+2. **Identifiers → "Delta iOS App" (com.atamya.FitnessApp)**
+   - Capability **App Groups** ankreuzen → Configure → die neue Group waehlen → Save
+3. **Identifiers → "Delta Widgets" (com.atamya.FitnessApp.widgets)**
+   - gleiches Spiel: App Groups → Configure → Group waehlen → Save
+
+**Provisioning-Profile müssen NICHT manuell angefasst werden** — der
+TestFlight-Workflow nutzt `app-store-connect fetch-signing-files --create`,
+der beim naechsten Tag-Build automatisch frische Profile mit der App-Group-
+Capability erzeugt. (Die alten Profile werden durch die Capability-Aenderung
+invalid; das ist erwartet.)
+
+## Store-Migration (automatisch, verlustfrei)
+
+`SharedStore.makeAppContainer()` kopiert beim ersten App-Start nach dem
+Update den bisherigen Default-Store (`Application Support/default.store`
++ `-shm`/`-wal`) in den App-Group-Container. **Die Originale bleiben als
+Rollback-Sicherung liegen.** Das Widget oeffnet den Group-Store nur, wenn
+er existiert — es legt nie selbst einen leeren Store an (sonst wuerde die
+Migration uebersprungen und die App saehe leere Daten).
+
+## Troubleshooting
+
+- **Widget zeigt "App einmal öffnen"**: Group-Store existiert noch nicht —
+  App nach dem Update einmal starten (Migration laeuft beim Launch).
+- **Signing-Fehler "doesn't include the com.apple.security.application-groups
+  entitlement"**: Portal-Schritte oben nicht (vollstaendig) erledigt.
+- **Widget-Buttons tun nichts**: iOS 17+ noetig (AppIntent-Buttons);
+  ausserdem braucht der Store eine erfolgreiche Migration (Punkt 1).

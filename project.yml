@@ -98,3 +98,9 @@ targets:
     dependencies:
       - package: FitnessApp
         product: FitnessAppActivities
+      # DEL-216: Wasser-Widget liest/schreibt den App-Group-SwiftData-Store
+      # (FitnessAppData) und rechnet das Tagesziel (FitnessAppCore).
+      - package: FitnessApp
+        product: FitnessAppCore
+      - package: FitnessApp
+        product: FitnessAppData

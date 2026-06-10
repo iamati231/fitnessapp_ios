@@ -24,6 +24,9 @@ import UniformTypeIdentifiers
 #if canImport(UIKit)
 import UIKit
 #endif
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 @available(iOS 17.0, macOS 14.0, *)
 public struct DataImportView: View {
@@ -532,6 +535,11 @@ public struct DataImportView: View {
                 await MainActor.run {
                     self.phase = .finished(result: result)
                     self.importProgress = nil
+                    // DEL-216: Import kann heutige Wasser-Einträge geändert
+                    // haben — Home-Screen-Widget sofort aktualisieren.
+                    #if canImport(WidgetKit)
+                    WidgetCenter.shared.reloadTimelines(ofKind: SharedStore.waterWidgetKind)
+                    #endif
                 }
             } catch {
                 await MainActor.run {
