@@ -105,7 +105,9 @@ public struct DashboardView: View {
     public init() {}
 
     public var body: some View {
-        ScrollView {
+        // DEL-214: Achse explizit vertikal — und der Content wird unten via
+        // containerRelativeFrame hart auf die Container-Breite geklemmt.
+        ScrollView(.vertical) {
             // DEL-103: Konsistentes 16pt-Spacing zwischen allen Bento-Cards.
             // VStack-spacing + uniformes horizontales 16pt-Padding sind die
             // einzige geometrische Quelle der Wahrheit — nicht mehr pro-Card
@@ -115,6 +117,15 @@ public struct DashboardView: View {
                 // konfigurierbaren Widgets — zu zentral fuer das Brand,
                 // nicht via Toggle abschaltbar.
                 heroMetrics
+
+                // DEL-215: Prominente Resume-Tile fuer offene Sessions, die
+                // die PlanDayCard NICHT abdeckt (Ad-hoc-Workouts, Sessions
+                // auf inaktiven Plaenen, oder nextWorkout-Widget vom User
+                // deaktiviert). Statisch ueber den konfigurierbaren Widgets —
+                // ein laufendes Training schlaegt jede Card-Reihenfolge.
+                if let open = unrepresentedOpenSession {
+                    resumeSessionTile(open)
+                }
 
                 // DEL-109: Dynamisches Widget-Rendering. Reihenfolge +
                 // Sichtbarkeit kommen aus dem User-Profil; jeder Case
@@ -142,6 +153,13 @@ public struct DashboardView: View {
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
+            // DEL-214: Bugfix "Dashboard laesst sich horizontal wischen" —
+            // ein zu breites Child (z.B. Chart-Label/monospaced Text) machte
+            // den ScrollView-Content breiter als den Viewport, wodurch die
+            // vertikale ScrollView horizontal pannte. containerRelativeFrame
+            // proposed dem Content exakt die Container-Breite; zu breite
+            // Children werden damit eingebremst statt den Canvas zu dehnen.
+            .containerRelativeFrame(.horizontal)
         }
         // DEL-102: Off-Weiss / Off-Schwarz-Background, gegen den die
         // Bento-Cards (Surface) abheben. Im Light-Mode identisch zu
@@ -1667,6 +1685,88 @@ public struct DashboardView: View {
         pendingNewStart = nil
     }
 
+    // MARK: - DEL-215 Resume-Tile (spontane / planfremde offene Sessions)
+
+    /// DEL-215: Offene Session, die im Dashboard sonst unsichtbar waere.
+    /// Die PlanDayCard zeigt den Running-State nur, wenn die Session zu
+    /// einem Tag des AKTIVEN Plans gehoert UND das nextWorkout-Widget
+    /// eingeschaltet ist. Alles andere (Ad-hoc-Session, Session auf einem
+    /// inaktiven Plan, Widget abgeschaltet) faellt durch — dafuer rendert
+    /// das Dashboard die Resume-Tile direkt unter den Hero-Metrics.
+    private var unrepresentedOpenSession: WorkoutSession? {
+        guard let open = openSessions.first else { return nil }
+        let planCardCoversIt = activeDashboardWidgets.contains(.nextWorkout)
+            && activePlans.first.map { plan in
+                open.day?.plan?.persistentModelID == plan.persistentModelID
+            } ?? false
+        return planCardCoversIt ? nil : open
+    }
+
+    /// DEL-215: "Aktuelles Training fortsetzen"-Tile. Orange-Gradient als
+    /// hoechste visuelle Prioritaet, pulsierender Live-Punkt + mitlaufender
+    /// Timer (TimelineView im Sekundentakt). Tap springt in die Session.
+    private func resumeSessionTile(_ session: WorkoutSession) -> some View {
+        Button {
+            resumeOpenSession(session)
+        } label: {
+            HStack(spacing: 12) {
+                PulsingLiveDot()
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("dashboard.resume.caption", bundle: .module)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .textCase(.uppercase)
+                    Text(session.displayDayName)
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    Text(elapsedTimeString(since: session.startTime, now: context.date))
+                        .font(.title3.weight(.semibold).monospacedDigit())
+                        .foregroundStyle(.white)
+                }
+                Image(systemName: "chevron.right")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                Color.deltiqOrange.gradient,
+                in: RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("dashboard.resume.caption", bundle: .module))
+    }
+
+    /// DEL-215: Resume fuer beliebige offene Sessions. Plan-gebundene
+    /// Sessions bauen den vollen Stack (Plan → Day → Active), Ad-hoc-
+    /// Sessions springen direkt in die ActiveWorkoutView — identisch zum
+    /// Start-Pfad in `startAdHocWorkout()`.
+    private func resumeOpenSession(_ session: WorkoutSession) {
+        if let plan = session.day?.plan {
+            resumeSession(session, plan: plan)
+        } else {
+            navigation.workoutPath = NavigationPath()
+            navigation.workoutPath.append(ActiveSessionRoute(session: session))
+            navigation.selectedTab = .plan
+        }
+    }
+
+    /// DEL-215: Laufzeit seit Session-Start als H:MM:SS bzw. MM:SS.
+    private func elapsedTimeString(since start: Date, now: Date) -> String {
+        let total = max(0, Int(now.timeIntervalSince(start)))
+        let h = total / 3600
+        let m = (total % 3600) / 60
+        let s = total % 60
+        return h > 0
+            ? String(format: "%d:%02d:%02d", h, m, s)
+            : String(format: "%02d:%02d", m, s)
+    }
+
     /// Deep-link from Dashboard into ActiveWorkout: build a stack [plan, day, active]
     /// on the workout tab so the user can back out to DayEditor (after Discard) or
     /// PlanEditor without losing context.
@@ -2881,6 +2981,29 @@ private struct InsufficientDataCard: View {
         .foregroundStyle(.secondary)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 16)
+    }
+}
+
+/// DEL-215: Pulsierender Live-Indikator fuer die Resume-Tile. Eigener
+/// View, damit der repeatForever-Animations-State nicht den Dashboard-
+/// Body invalidiert. Reduce-Motion-User bekommen einen statischen Punkt.
+@available(iOS 17.0, macOS 14.0, *)
+private struct PulsingLiveDot: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var pulsing = false
+
+    var body: some View {
+        Circle()
+            .fill(.white)
+            .frame(width: 10, height: 10)
+            .opacity(pulsing ? 0.35 : 1.0)
+            .scaleEffect(pulsing ? 0.8 : 1.0)
+            .onAppear {
+                guard !reduceMotion else { return }
+                withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+                    pulsing = true
+                }
+            }
     }
 }
 

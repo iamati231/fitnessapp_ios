@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1401 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1402 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1401 / 1401** (100%) | 0 |
-| 🇬🇧 English (EN) | **1401 / 1401** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1401 / 1401** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1402 / 1402** (100%) | 0 |
+| 🇬🇧 English (EN) | **1402 / 1402** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1402 / 1402** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -417,7 +417,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `customExercise.section.name` | Name | Name | Ad |
 | `customExercise.title` | Neue Übung | New exercise | Yeni hareket |
 
-## `dashboard.*`  (79 Keys)
+## `dashboard.*`  (80 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -481,6 +481,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.recent.empty.title` | Noch keine Trainingseinheiten | No training sessions yet | Henüz antrenman yok |
 | `dashboard.recent.title` | Letzte Trainings | Recent Workouts | Son Antrenmanlar |
 | `dashboard.recent.viewAll` | Alle anzeigen | Show all | Tümünü göster |
+| `dashboard.resume.caption` | Aktuelles Training fortsetzen | Resume current workout | Devam eden antrenmanı sürdür |
 | `dashboard.trend.emptyDescription` | Tippe auf '+' oben rechts, um deinen ersten Wert einzutragen. | Tap '+' at the top right to enter your first value. | İlk değeri girmek için sağ üstteki '+' simgesine dokun. |
 | `dashboard.trend.emptyTitle` | Noch keine Messungen | No measurements yet | Henüz ölçüm yok |
 | `dashboard.trend.forecast.legend` | Prognose 4 / 8 W. | Forecast 4 / 8 w. | Tahmin 4 / 8 hf. |

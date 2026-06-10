@@ -32224,6 +32224,29 @@
           }
         }
       }
+    },
+    "dashboard.resume.caption": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuelles Training fortsetzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume current workout"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Devam eden antrenmanı sürdür"
+          }
+        }
+      }
     }
   }
 }
