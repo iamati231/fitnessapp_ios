@@ -130,6 +130,12 @@ public enum CoachingContext: String, Sendable {
     /// Länger nicht trainiert — sanfter Wiedereinstiegs-Hinweis.
     case reEntry
 
+    /// DEL-211: Gestern trainiert (BELIEBIGE reale Session, auch spontane
+    /// Workouts unterhalb der postVolume-/postCardio-Schwellen). Schließt
+    /// die Lücke "User trainierte gestern moderat, Coach tut als wäre
+    /// nichts gewesen und ruft den Plan-Tag aus". Rangiert vor planPreview.
+    case trainedYesterday
+
     /// DEL-177: Länger als 30 Tage kein CSV-Export erstellt (oder noch nie,
     /// obwohl der User schon eine Weile trainiert). Niedrigste Priorität —
     /// nur P2-Fallback, wenn keine der Trainings-Insights greift. Catalog

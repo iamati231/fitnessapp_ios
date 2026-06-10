@@ -1207,7 +1207,18 @@ public struct DashboardView: View {
             return .postCardio
         }
         if last7DaysRealSessionCount >= 5 { return .streak }
-        if hasTrainingPlannedToday { return .planPreview }
+        // DEL-211: JEDE gestrige reale Session (auch spontane Workouts
+        // unter den postVolume-/postCardio-Schwellen) wird anerkannt,
+        // BEVOR der Coach den heutigen Plan-Tag ausruft. Vorher: User
+        // trainierte gestern moderat → fiel durch alle Gestern-Checks →
+        // "Heute ist Trainingstag!" wirkte geschichtsvergessen.
+        if !realSessionsOn(daysBeforeToday: 1).isEmpty { return .trainedYesterday }
+        // DEL-211: Plan-Vorschau nur, wenn heute noch NICHT trainiert
+        // wurde — sonst ruft der Coach abends den Trainingstag aus,
+        // den der User gerade hinter sich hat.
+        if hasTrainingPlannedToday && realSessionsOn(daysBeforeToday: 0).isEmpty {
+            return .planPreview
+        }
         // DEL-198: Feature-Nudges — nur für User, die das Feature aktiv
         // nutzen (sonst nerven die Hinweise Nicht-Nutzer).
         if isMeasurementOverdue { return .measurementOverdue }

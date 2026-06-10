@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1392 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1401 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1392 / 1392** (100%) | 0 |
-| 🇬🇧 English (EN) | **1392 / 1392** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1392 / 1392** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1401 / 1401** (100%) | 0 |
+| 🇬🇧 English (EN) | **1401 / 1401** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1401 / 1401** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -170,7 +170,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `chart.timeRange.oneMonth` | 1M | 1M | 1A |
 | `chart.timeRange.threeMonths` | 3M | 3M | 3A |
 
-## `coaching.*`  (207 Keys)
+## `coaching.*`  (216 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -372,6 +372,15 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.soft.streak.strict` | Mehrere Tage durchgezogen. Gut. Aber Routine ist Pflicht, kein Bonus. Lass jetzt nicht nach. | Several days in a row. Good. But routine is duty, not bonus. Don't slack now. | Üst üste birkaç gün. İyi. Ama rutin bir görev, bonus değil. Şimdi gevşeme. |
 | `coaching.soft.streak.strict.1` | Hohe Frequenz diese Woche, Respekt. Aber Frequenz ohne Progression ist nur Beschäftigung — prüfe deine Gewichte. | High frequency this week, respect. But frequency without progression is just being busy — check your weights. | Bu hafta yüksek frekans, saygı duyarım. Ama ilerleme olmadan frekans sadece meşguliyettir — ağırlıklarını kontrol et. |
 | `coaching.soft.streak.strict.2` | Viel trainiert. Gut. Jetzt halte das drei Monate durch, dann reden wir über Ergebnisse. | You trained a lot. Good. Now keep it up for three months, then we'll talk results. | Çok antrenman yaptın. Güzel. Şimdi bunu üç ay sürdür, sonra sonuçları konuşuruz. |
+| `coaching.soft.trainedYesterday.analytical` | Die Session von gestern ist verbucht. Das 24-48h-Fenster entscheidet jetzt über die Anpassung: Protein, Schlaf, leichte Bewegung. | Yesterday's session is logged. The 24-48h window now decides the adaptation: protein, sleep, light movement. | Dünkü seans kaydedildi. Adaptasyonu şimdi 24-48 saatlik pencere belirler: protein, uyku, hafif hareket. |
+| `coaching.soft.trainedYesterday.analytical.1` | Gestern trainiert. Wenn heute wieder eine Einheit ansteht: gleiche Muskelgruppen brauchen ~48h, frische dürfen ran. | You trained yesterday. If today brings another session: same muscle groups need ~48h, fresh ones are fair game. | Dün antrenman yaptın. Bugün yine seans varsa: aynı kas grupları ~48 saat ister, dinlenmiş olanlar hazır. |
+| `coaching.soft.trainedYesterday.analytical.2` | Das Workout von gestern zahlt aufs Wochen-Volumen ein. Konsistenz schlägt einzelne Großtage — der nächste Baustein zählt am meisten. | Yesterday's workout counts toward your weekly volume. Consistency beats single big days — the next building block matters most. | Dünkü antrenman haftalık hacmine yazıldı. Tutarlılık tek büyük günleri yener — en önemlisi sıradaki yapı taşı. |
+| `coaching.soft.trainedYesterday.motivating` | Gestern durchgezogen — stark! Dein Körper arbeitet gerade noch für dich weiter. 💪 | You showed up yesterday — strong! Your body is still working for you right now. 💪 | Dün işi bitirdin — harika! Vücudun şu an hâlâ senin için çalışıyor. 💪 |
+| `coaching.soft.trainedYesterday.motivating.1` | Das Training von gestern sitzt! Egal ob heute Pause oder nächste Einheit: du bist im Rhythmus. 🔄 | Yesterday's workout is in the books! Whether today is rest or the next session: you're in rhythm. 🔄 | Dünkü antrenman cepte! Bugün ister dinlenme ister yeni seans: ritmin tam yerinde. 🔄 |
+| `coaching.soft.trainedYesterday.motivating.2` | Schon wieder ein Workout im Log von gestern — genau diese Beständigkeit baut den Unterschied. ⭐ | Another workout logged yesterday — this steadiness is what builds the difference. ⭐ | Dünden bir antrenman daha kayıtta — farkı yaratan tam da bu istikrar. ⭐ |
+| `coaching.soft.trainedYesterday.strict` | Gestern trainiert, gut. Erholung gehört zum Programm — aber Erholung heißt Schlaf und Essen, nicht Ausreden für morgen. | Trained yesterday, good. Recovery is part of the program — but recovery means sleep and food, not excuses for tomorrow. | Dün antrenman yaptın, güzel. Toparlanma programın parçası — ama toparlanma uyku ve yemek demek, yarın için bahane değil. |
+| `coaching.soft.trainedYesterday.strict.1` | Ein Training gestern macht noch keinen Sommer. Heutigen Plan checken, dranbleiben. | One session yesterday doesn't make a summer. Check today's plan, stay on it. | Dünkü tek seans yaz getirmez. Bugünün planına bak, devam et. |
+| `coaching.soft.trainedYesterday.strict.2` | Gestern geliefert. Der Körper merkt sich Serien, nicht Einzelleistungen — morgen wieder. | Delivered yesterday. The body remembers streaks, not one-offs — back at it tomorrow. | Dün teslim ettin. Vücut serileri hatırlar, tek seferleri değil — yarın yine. |
 | `coaching.soft.volumeRecord.analytical` | Letzte Woche war deine volumenstärkste Woche seit Aufzeichnungsbeginn. Progressive Overload funktioniert — dokumentiert und messbar. | Last week was your highest-volume week on record. Progressive overload is working — documented and measurable. | Geçen hafta kayıtlardaki en yüksek hacimli haftandı. Aşamalı yüklenme işliyor — belgelenmiş ve ölçülebilir. |
 | `coaching.soft.volumeRecord.motivating` | NEUER REKORD: deine stärkste Trainingswoche aller Zeiten! So sieht echte Arbeit aus. 🏆 | NEW RECORD: your strongest training week of all time! That's what real work looks like. 🏆 | YENİ REKOR: tüm zamanların en güçlü antrenman haftası! Gerçek emek böyle görünür. 🏆 |
 | `coaching.soft.volumeRecord.strict` | Beste Woche deiner Historie. Gut. Rekorde sind dazu da, gebrochen zu werden — der nächste wartet. | Best week in your history. Good. Records exist to be broken — the next one is waiting. | Tarihinin en iyi haftası. Güzel. Rekorlar kırılmak içindir — sıradaki bekliyor. |

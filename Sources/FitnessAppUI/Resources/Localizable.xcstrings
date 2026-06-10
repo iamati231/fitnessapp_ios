@@ -32017,6 +32017,213 @@
           }
         }
       }
+    },
+    "coaching.soft.trainedYesterday.analytical": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday's session is logged. The 24-48h window now decides the adaptation: protein, sleep, light movement."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Session von gestern ist verbucht. Das 24-48h-Fenster entscheidet jetzt über die Anpassung: Protein, Schlaf, leichte Bewegung."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dünkü seans kaydedildi. Adaptasyonu şimdi 24-48 saatlik pencere belirler: protein, uyku, hafif hareket."
+          }
+        }
+      }
+    },
+    "coaching.soft.trainedYesterday.analytical.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You trained yesterday. If today brings another session: same muscle groups need ~48h, fresh ones are fair game."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestern trainiert. Wenn heute wieder eine Einheit ansteht: gleiche Muskelgruppen brauchen ~48h, frische dürfen ran."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün antrenman yaptın. Bugün yine seans varsa: aynı kas grupları ~48 saat ister, dinlenmiş olanlar hazır."
+          }
+        }
+      }
+    },
+    "coaching.soft.trainedYesterday.analytical.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday's workout counts toward your weekly volume. Consistency beats single big days — the next building block matters most."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Workout von gestern zahlt aufs Wochen-Volumen ein. Konsistenz schlägt einzelne Großtage — der nächste Baustein zählt am meisten."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dünkü antrenman haftalık hacmine yazıldı. Tutarlılık tek büyük günleri yener — en önemlisi sıradaki yapı taşı."
+          }
+        }
+      }
+    },
+    "coaching.soft.trainedYesterday.motivating": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You showed up yesterday — strong! Your body is still working for you right now. 💪"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestern durchgezogen — stark! Dein Körper arbeitet gerade noch für dich weiter. 💪"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün işi bitirdin — harika! Vücudun şu an hâlâ senin için çalışıyor. 💪"
+          }
+        }
+      }
+    },
+    "coaching.soft.trainedYesterday.motivating.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday's workout is in the books! Whether today is rest or the next session: you're in rhythm. 🔄"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Training von gestern sitzt! Egal ob heute Pause oder nächste Einheit: du bist im Rhythmus. 🔄"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dünkü antrenman cepte! Bugün ister dinlenme ister yeni seans: ritmin tam yerinde. 🔄"
+          }
+        }
+      }
+    },
+    "coaching.soft.trainedYesterday.motivating.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another workout logged yesterday — this steadiness is what builds the difference. ⭐"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schon wieder ein Workout im Log von gestern — genau diese Beständigkeit baut den Unterschied. ⭐"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dünden bir antrenman daha kayıtta — farkı yaratan tam da bu istikrar. ⭐"
+          }
+        }
+      }
+    },
+    "coaching.soft.trainedYesterday.strict": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trained yesterday, good. Recovery is part of the program — but recovery means sleep and food, not excuses for tomorrow."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestern trainiert, gut. Erholung gehört zum Programm — aber Erholung heißt Schlaf und Essen, nicht Ausreden für morgen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün antrenman yaptın, güzel. Toparlanma programın parçası — ama toparlanma uyku ve yemek demek, yarın için bahane değil."
+          }
+        }
+      }
+    },
+    "coaching.soft.trainedYesterday.strict.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One session yesterday doesn't make a summer. Check today's plan, stay on it."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Training gestern macht noch keinen Sommer. Heutigen Plan checken, dranbleiben."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dünkü tek seans yaz getirmez. Bugünün planına bak, devam et."
+          }
+        }
+      }
+    },
+    "coaching.soft.trainedYesterday.strict.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delivered yesterday. The body remembers streaks, not one-offs — back at it tomorrow."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestern geliefert. Der Körper merkt sich Serien, nicht Einzelleistungen — morgen wieder."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün teslim ettin. Vücut serileri hatırlar, tek seferleri değil — yarın yine."
+          }
+        }
+      }
     }
   }
 }
