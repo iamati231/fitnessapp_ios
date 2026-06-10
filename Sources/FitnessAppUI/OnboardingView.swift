@@ -72,6 +72,11 @@ public struct OnboardingView: View {
     @State private var trainingGoal: TrainingGoal = .hybrid
     @State private var coachingTone: CoachingTone = .analytical
 
+    /// DEL-207: Wochenziel (DEL-203) jetzt schon im Onboarding wählbar —
+    /// der Kalender-Streak zählt ab Tag 1 gegen dieses Ziel. Default 3 =
+    /// realistischer Median; der ProfileEditor kann es später ändern.
+    @State private var weeklyGoal: Int = 3
+
     // DEL-170b — Equipment-Präferenzen (Multi-Select). Wird beim ersten
     // Betreten des Steps mit sinnvollen Defaults aus `environment` befüllt,
     // sodass der User direkt eine Vor-Auswahl sieht und nur korrigieren muss.
@@ -179,6 +184,8 @@ public struct OnboardingView: View {
             .sheet(isPresented: $showingQuiz) {
                 OnboardingQuizView(
                     preselectedEnvironment: environment,
+                    // DEL-207: Ziel aus Step 3 in den Quiz reichen.
+                    preselectedGoal: mappedQuizGoal,
                     onPlanSelected: { template in
                         selectedTemplate = template
                         showingQuiz = false
@@ -216,12 +223,18 @@ public struct OnboardingView: View {
 
     private var progressIndicator: some View {
         HStack(spacing: 8) {
-            ForEach(Step.allCases, id: \.self) { s in
+            ForEach(visibleSteps, id: \.self) { s in
                 Capsule()
                     .fill(s.rawValue <= step.rawValue ? Color.accentColor : Color.secondary.opacity(0.2))
                     .frame(height: 4)
             }
         }
+    }
+
+    /// DEL-207: bei "Kein Equipment" wird der Equipment-Step übersprungen —
+    /// der Indikator zeigt dann ehrlich 4 statt 5 Kapseln.
+    private var visibleSteps: [Step] {
+        Step.allCases.filter { $0 != .equipmentPreferences || environment != .noEquipment }
     }
 
     // MARK: - Step 1: HealthKit-Connect
@@ -605,6 +618,34 @@ public struct OnboardingView: View {
                         }
                     }
                 }
+
+                // ──────────── DEL-207: Wochenziel ────────────
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("onboarding.weeklyGoal.title", bundle: .module)
+                            .font(.title2.weight(.bold))
+                        Text("onboarding.weeklyGoal.subtitle", bundle: .module)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    Stepper(value: $weeklyGoal, in: 1...7) {
+                        HStack {
+                            Label {
+                                Text("profile.weeklyGoal.label", bundle: .module)
+                            } icon: {
+                                Image(systemName: "flame")
+                                    .foregroundStyle(Color.deltiqOrange)
+                            }
+                            Spacer()
+                            Text("\(weeklyGoal)×")
+                                .font(.body.weight(.semibold).monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(12)
+                    .background(Color.secondary.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -876,8 +917,14 @@ public struct OnboardingView: View {
     ///   - `.homeGym`: homeGym + noEquipment (Bodyweight-Sachen gehen ueberall)
     ///   - `.noEquipment`: strikt nur noEquipment-Templates (sonst landet der
     ///     User in einem Plan, fuer den ihm das Equipment fehlt)
+    ///
+    /// DEL-207: zusätzlich goal-aware sortiert — Templates, deren
+    /// `targetGoals` das in Step 3 gewählte Trainingsziel enthalten, stehen
+    /// oben (stabile Partition, Reihenfolge innerhalb der Gruppen bleibt).
+    /// Vorher zeigte Step 5 alle 14 Templates unsortiert, obwohl der User
+    /// sein Ziel gerade erst angegeben hatte.
     private var filteredTemplates: [ProgramTemplate] {
-        ProgramTemplates.all.filter { template in
+        let byEnvironment = ProgramTemplates.all.filter { template in
             switch environment {
             case .gym:
                 return true
@@ -888,6 +935,24 @@ public struct OnboardingView: View {
                 return template.targetEnvironment == .noEquipment
             }
         }
+        let matching = byEnvironment.filter { templateMatchesGoal($0) }
+        let rest = byEnvironment.filter { !templateMatchesGoal($0) }
+        return matching + rest
+    }
+
+    /// DEL-207: Brücke zwischen der Coaching-Achse (TrainingGoal, Step 3)
+    /// und der Plan-Matching-Achse (GoalType, Templates/Quiz).
+    private var mappedQuizGoal: GoalType {
+        switch trainingGoal {
+        case .hypertrophy: return .hypertrophy
+        case .strength:    return .strength
+        case .hybrid:      return .hybrid
+        case .weightLoss:  return .fatloss
+        }
+    }
+
+    private func templateMatchesGoal(_ template: ProgramTemplate) -> Bool {
+        template.targetGoals.contains(mappedQuizGoal)
     }
 
     private func templateRow(_ template: ProgramTemplate) -> some View {
@@ -899,8 +964,21 @@ public struct OnboardingView: View {
                 .background(Color.accentColor.gradient)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 2) {
-                Text(template.displayName)
-                    .font(.body.weight(.semibold))
+                HStack(spacing: 6) {
+                    Text(template.displayName)
+                        .font(.body.weight(.semibold))
+                    // DEL-207: Badge für Templates, die zum in Step 3
+                    // gewählten Trainingsziel passen.
+                    if templateMatchesGoal(template) {
+                        Text("onboarding.plan.goalMatch", bundle: .module)
+                            .font(.caption2.weight(.bold))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Color.deltiqOrange.opacity(0.15))
+                            .foregroundStyle(Color.deltiqOrange)
+                            .clipShape(Capsule())
+                    }
+                }
                 Text(template.displayTagline)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -940,14 +1018,13 @@ public struct OnboardingView: View {
         }
     }
 
+    /// DEL-207: vorher hartcodiert deutsch ("Weiter"/"Fertig") — die
+    /// einzige i18n-Lücke der App. EN/TR-User sahen im gesamten
+    /// Onboarding deutsche Buttons.
     private var primaryActionTitle: String {
-        switch step {
-        case .healthConnect:        return "Weiter"
-        case .personalInfo:         return "Weiter"
-        case .coachingStyle:        return "Weiter"
-        case .equipmentPreferences: return "Weiter"
-        case .preferencesAndPlan:   return "Fertig"
-        }
+        step == .preferencesAndPlan
+            ? String(localized: "onboarding.nav.finish", bundle: .module)
+            : String(localized: "onboarding.nav.next", bundle: .module)
     }
 
     private var primaryActionIcon: String {
@@ -985,12 +1062,22 @@ public struct OnboardingView: View {
     }
 
     private func goToNextStep() {
-        guard let next = Step(rawValue: step.rawValue + 1) else { return }
+        guard var next = Step(rawValue: step.rawValue + 1) else { return }
+        // DEL-207: Equipment-Step bei "Kein Equipment" überspringen —
+        // wer ohne Geräte trainiert, hat dort nichts auszuwählen, und
+        // die Equipment-Varianten der Pläne sind für ihn irrelevant.
+        if next == .equipmentPreferences && environment == .noEquipment {
+            next = .preferencesAndPlan
+        }
         step = next
     }
 
     private func goToPreviousStep() {
-        guard let prev = Step(rawValue: step.rawValue - 1) else { return }
+        guard var prev = Step(rawValue: step.rawValue - 1) else { return }
+        // DEL-207: Skip auch rückwärts symmetrisch.
+        if prev == .equipmentPreferences && environment == .noEquipment {
+            prev = .coachingStyle
+        }
         step = prev
     }
 
@@ -1063,6 +1150,9 @@ public struct OnboardingView: View {
             // Standard-Variante beim ersten Plan-Adopt (Backward-Compat-Pfad).
             equipmentPreferences: equipmentPreferences
         )
+        // DEL-207: Wochenziel aus dem Coaching-Step — der Kalender-Streak
+        // (DEL-203) zählt ab Tag 1 gegen dieses Ziel.
+        profile.weeklyWorkoutGoal = weeklyGoal
         modelContext.insert(profile)
 
         // 2) Initial BodyMeasurement — keeps the "first weight" visible in the

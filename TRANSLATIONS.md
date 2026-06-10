@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1391 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1396 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1391 / 1391** (100%) | 0 |
-| 🇬🇧 English (EN) | **1391 / 1391** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1391 / 1391** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1396 / 1396** (100%) | 0 |
+| 🇬🇧 English (EN) | **1396 / 1396** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1396 / 1396** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1055,7 +1055,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `muscleVolume.bucket.overreaching` | Übervolumen | Overreach | Aşırı yük |
 | `muscleVolume.bucket.untrained` | Untrainiert | Untrained | Eğitilmemiş |
 
-## `onboarding.*`  (48 Keys)
+## `onboarding.*`  (53 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1065,7 +1065,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.environment.footnote1` | Trainingsort filtert Plan-Empfehlungen und die Equipment-Auswahl beim Übungs-Tausch. | Training location filters plan recommendations and equipment options when swapping exercises. | Antrenman yeri plan önerilerini ve hareket değiştirirken ekipman seçeneklerini filtreler. |
 | `onboarding.environment.footnote2` | Hybrid- oder reine Lauf-Athleten wählen ihren Strength-Ort — die Hybrid-Pläne enthalten ihre Run-Tage unabhängig davon. | Hybrid or pure running athletes pick their strength location — Hybrid plans include run days regardless. | Hibrit veya saf koşu sporcuları güç antrenman yerini seçer — Hibrit planlar koşu günlerini her durumda içerir. |
 | `onboarding.equipment.footer` | Du kannst diese Auswahl später jederzeit im Profil anpassen. Leer lassen = Standard-Variante (Langhantel) wird verwendet. | You can change this anytime in your profile. Leave empty = default variant (barbell) is used. | Bu seçimi profilden istediğin zaman değiştirebilirsin. Boş bırakırsan varsayılan (barbell) kullanılır. |
-| `onboarding.equipment.subtitle` | Mehrfachauswahl — wir passen Pläne mit alternativen Übungen automatisch an dein verfügbares Equipment an. | Multi-select — we'll auto-adapt plans with alternative exercises to your available gear. | Çoklu seçim — planları senin ekipmanına alternatif hareketlerle otomatik uyarlarız. |
+| `onboarding.equipment.subtitle` | Bestimmt, welche Geräte-Variante dein Trainingsplan nutzt — z. B. Kurzhantel- statt Langhantel-Übungen, wenn du kein Rack hast. | Determines which equipment variant your training plan uses — e.g. dumbbell instead of barbell exercises if you have no rack. | Antrenman planının hangi ekipman varyantını kullanacağını belirler — örneğin rack yoksa halter yerine dambıl egzersizleri. |
 | `onboarding.equipment.title` | Womit trainierst du? | What do you train with? | Hangi ekipmanla çalışıyorsun? |
 | `onboarding.field.birthdate` | Geburtsdatum | Birth date | Doğum Tarihi |
 | `onboarding.field.environment` | Trainingsort | Training Location | Antrenman Yeri |
@@ -1089,11 +1089,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.import.button` | Backup importieren (ZIP) | Import backup (ZIP) | Yedeği içe aktar (ZIP) |
 | `onboarding.import.prompt` | Schon Deltiq-Nutzer? Stelle deine Daten aus einer Backup-Datei wieder her. | Already a Deltiq user? Restore your data from a backup file. | Zaten Deltiq kullanıcısı mısın? Verilerini bir yedek dosyasından geri yükle. |
 | `onboarding.import.running` | Stelle deine Daten wieder her… | Restoring your data… | Verilerin geri yükleniyor… |
+| `onboarding.nav.finish` | Fertig | Finish | Bitir |
+| `onboarding.nav.next` | Weiter | Next | İleri |
 | `onboarding.notif.footnote` | Beide nutzen lokale Notifications. Beim Aktivieren fragt iOS einmalig nach der Berechtigung. | Both use local notifications. iOS asks once for permission when enabled. | Her ikisi de yerel bildirimleri kullanır. Etkinleştirildiğinde iOS bir kez izin ister. |
 | `onboarding.notif.measurement` | Mess-Erinnerung | Measurement Reminder | Ölçüm Hatırlatıcısı |
 | `onboarding.notif.section` | Benachrichtigungen | Notifications | Bildirimler |
 | `onboarding.notif.water` | Wasser-Erinnerung | Water Reminder | Su Hatırlatıcısı |
 | `onboarding.plan.footnote` | Templates sind nach deinem Trainingsort gefiltert (%@). Auch ohne Plan starten ist okay. | Templates are filtered by your training location (%@). Starting without a plan is fine too. | Şablonlar antrenman yerine göre filtrelendi (%@). Plansız başlamak da mümkün. |
+| `onboarding.plan.goalMatch` | Passt zu deinem Ziel | Matches your goal | Hedefine uygun |
 | `onboarding.plan.noTemplates` | Keine Templates für '%@'. Du kannst trotzdem ohne Plan starten und später einen eigenen anlegen. | No templates for '%@'. You can still start without a plan and create your own later. | '%@' için şablon yok. Plansız başlayıp sonradan kendi planını oluşturabilirsin. |
 | `onboarding.plan.quizCard.footnote` | Empfohlen, wenn du nicht weißt, welcher Plan zu dir passt. Du kannst stattdessen auch direkt aus der Liste unten wählen. | Recommended if you're not sure which plan fits. You can also pick directly from the list below. | Hangi planın sana uygun olduğundan emin değilsen önerilir. Aşağıdaki listeden de doğrudan seçebilirsin. |
 | `onboarding.plan.quizCard.subtitle` | 4 kurze Fragen — wir matchen dich auf den passenden Plan. | 4 quick questions — we match you to the right plan. | 4 kısa soru — sana uygun planı eşleştiririz. |
@@ -1107,6 +1110,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.title` | Willkommen | Welcome | Hoş Geldin |
 | `onboarding.tone.subtitle` | Wir passen Tonfall und Feedback an deinen Stil an. Lässt sich später ändern. | We adapt tone and feedback to your style. Changeable later. | Ton ve geri bildirimi tarzına uyarlarız. Sonradan değiştirilebilir. |
 | `onboarding.tone.title` | Wie soll dein Coach klingen? | How should your coach sound? | Koçun nasıl bir ses tonu olsun? |
+| `onboarding.weeklyGoal.subtitle` | Wie oft willst du pro Woche trainieren? Dein Kalender-Streak zählt gegen dieses Ziel — wähle, was du wirklich durchhalten kannst. | How often do you want to train per week? Your calendar streak counts against this — pick what you can actually sustain. | Haftada kaç kez antrenman yapmak istiyorsun? Takvim serin bu hedefe göre sayılır — gerçekten sürdürebileceğini seç. |
+| `onboarding.weeklyGoal.title` | Dein Wochenziel | Your weekly goal | Haftalık hedefin |
 
 ## `picker.*`  (19 Keys)
 

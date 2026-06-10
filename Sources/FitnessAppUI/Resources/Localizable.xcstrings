@@ -15556,19 +15556,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mehrfachauswahl — wir passen Pläne mit alternativen Übungen automatisch an dein verfügbares Equipment an."
+            "value": "Bestimmt, welche Geräte-Variante dein Trainingsplan nutzt — z. B. Kurzhantel- statt Langhantel-Übungen, wenn du kein Rack hast."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Multi-select — we'll auto-adapt plans with alternative exercises to your available gear."
+            "value": "Determines which equipment variant your training plan uses — e.g. dumbbell instead of barbell exercises if you have no rack."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Çoklu seçim — planları senin ekipmanına alternatif hareketlerle otomatik uyarlarız."
+            "value": "Antrenman planının hangi ekipman varyantını kullanacağını belirler — örneğin rack yoksa halter yerine dambıl egzersizleri."
           }
         }
       }
@@ -31991,6 +31991,121 @@
           "stringUnit": {
             "state": "translated",
             "value": "Plato. Şikâyetten önce: takip dürüst mü? Uyku tamam mı? Adımlar atıldı mı? Genelde bu üçünden biri."
+          }
+        }
+      }
+    },
+    "onboarding.nav.next": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weiter"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İleri"
+          }
+        }
+      }
+    },
+    "onboarding.nav.finish": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fertig"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitir"
+          }
+        }
+      }
+    },
+    "onboarding.weeklyGoal.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your weekly goal"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Wochenziel"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haftalık hedefin"
+          }
+        }
+      }
+    },
+    "onboarding.weeklyGoal.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How often do you want to train per week? Your calendar streak counts against this — pick what you can actually sustain."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie oft willst du pro Woche trainieren? Dein Kalender-Streak zählt gegen dieses Ziel — wähle, was du wirklich durchhalten kannst."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haftada kaç kez antrenman yapmak istiyorsun? Takvim serin bu hedefe göre sayılır — gerçekten sürdürebileceğini seç."
+          }
+        }
+      }
+    },
+    "onboarding.plan.goalMatch": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matches your goal"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passt zu deinem Ziel"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hedefine uygun"
           }
         }
       }

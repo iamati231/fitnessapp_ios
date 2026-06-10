@@ -27,6 +27,7 @@ public struct OnboardingQuizView: View {
 
     public init(
         preselectedEnvironment: EnvironmentType,
+        preselectedGoal: GoalType? = nil,
         onPlanSelected: @escaping (ProgramTemplate) -> Void,
         onCancel: @escaping () -> Void
     ) {
@@ -34,6 +35,14 @@ public struct OnboardingQuizView: View {
         self.onPlanSelected = onPlanSelected
         self.onCancel = onCancel
         self._environment = State(initialValue: preselectedEnvironment)
+        // DEL-207: Trainingsziel aus dem Coaching-Step vorbelegen — der
+        // User hat es gerade erst gewählt; der Quiz soll nicht wieder bei
+        // "Muskelaufbau" starten, wenn "Abnehmen" angegeben wurde. Die
+        // Frage bleibt sichtbar (Korrektur möglich), nur der Startwert
+        // ist informiert statt hardcoded.
+        if let preselectedGoal {
+            self._goal = State(initialValue: preselectedGoal)
+        }
     }
 
     enum QuizStep: Int, CaseIterable {
