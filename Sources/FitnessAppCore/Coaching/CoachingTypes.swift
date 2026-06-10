@@ -47,12 +47,19 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
     case hypertrophy
     case strength
     case hybrid
+    /// DEL-206: Abnehmen/Fettabbau als eigenständige Coaching-Achse. Die
+    /// Goal-Matrix gibt Weight-Loss-Usern andere Tages-Empfehlungen
+    /// (z.B. "häng noch Cardio dran") als Aufbau-Usern ("ruh dich aus").
+    /// RawValue-Stabilität: neue Cases NUR anhängen, nie umbenennen —
+    /// der String persistiert in UserBodyProfile.trainingGoalRaw.
+    case weightLoss
 
     public var label: String {
         switch self {
         case .hypertrophy: return "Muskelaufbau"
         case .strength:    return "Maximalkraft"
         case .hybrid:      return "Funktionell / Hybrid"
+        case .weightLoss:  return "Abnehmen / Fettabbau"
         }
     }
 
@@ -61,6 +68,7 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
         case .hypertrophy: return "figure.strengthtraining.traditional"
         case .strength:    return "scalemass.fill"
         case .hybrid:      return "figure.mixed.cardio"
+        case .weightLoss:  return "flame.fill"
         }
     }
 
@@ -69,6 +77,7 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
         case .hypertrophy: return "Volumen, Pump, sichtbares Muskelwachstum."
         case .strength:    return "Maximales 1RM, niedrige Reps, schwere Hauptlifts."
         case .hybrid:      return "Kraft + Ausdauer + Mobilität — alles fließt zusammen."
+        case .weightLoss:  return "Kaloriendefizit, Muskelerhalt, Alltagsbewegung."
         }
     }
 }
@@ -87,6 +96,20 @@ public enum CoachingContext: String, Sendable {
     case newPR
     /// Stagnation ueber mehrere Wochen erkannt.
     case plateauDetected
+
+    // MARK: - DEL-206 Goal-Based Daily Coaching (Matrix-Kontexte)
+    //
+    // Tagesaktuelle Empfehlungen, die den Workout-State (heute/gestern)
+    // mit dem TrainingGoal kreuzen. Goal-Matrix-Keys wie die P1-Warnungen:
+    // `coaching.{context}.{tone}.{goal}` — ein Kraft-Morgen löst bei
+    // Weight-Loss "häng Cardio dran" aus, bei Muscle-Gain "ruh dich aus".
+
+    /// Heute vor 13:00 bereits ein Kraft-Workout abgeschlossen.
+    case morningStrengthDone
+    /// Heute vor 13:00 bereits ein reines Cardio-Workout abgeschlossen.
+    case morningCardioDone
+    /// Gestern hohes Volumen (>= 20 Sätze oder > 90 Min) — Recovery-Tag.
+    case highFatigueYesterday
 
     // MARK: - DEL-167 Soft-Coaching (Plauder-Modus)
     //

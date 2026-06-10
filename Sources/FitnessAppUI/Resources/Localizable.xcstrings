@@ -30844,6 +30844,1156 @@
           }
         }
       }
+    },
+    "coaching.goal.weightLoss.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weight loss"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abnehmen"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kilo verme"
+          }
+        }
+      }
+    },
+    "coaching.goal.weightLoss.blurb": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calorie deficit, muscle retention, daily activity."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaloriendefizit, Muskelerhalt, Alltagsbewegung."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalori açığı, kas koruması, günlük hareket."
+          }
+        }
+      }
+    },
+    "coaching.morningStrengthDone.analytical.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength is done for today. For fat loss, easy afternoon activity — a walk or light ride — adds calorie burn without hurting recovery."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kraft ist für heute erledigt. Für den Fettabbau bringt lockere Nachmittags-Aktivität — Spaziergang oder leichte Radtour — extra Kalorienverbrauch, ohne die Erholung zu stören."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugünlük kuvvet tamam. Yağ kaybı için öğleden sonra hafif aktivite — yürüyüş veya hafif bisiklet — toparlanmayı bozmadan ekstra kalori yakar."
+          }
+        }
+      }
+    },
+    "coaching.morningStrengthDone.analytical.hypertrophy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength session logged this morning. Muscle protein synthesis runs ~48h from here — spread your protein and prioritize recovery."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kraft-Einheit heute Morgen verbucht. Die Muskelproteinsynthese läuft ab jetzt ~48h — Protein verteilen, Erholung priorisieren."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu sabah kuvvet seansı kaydedildi. Kas protein sentezi şu andan itibaren ~48 saat sürer — proteini yay, toparlanmaya öncelik ver."
+          }
+        }
+      }
+    },
+    "coaching.morningStrengthDone.analytical.strength": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength done this morning. For max strength, CNS recovery is what counts now — light movement is fine, nothing intense."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kraft heute Morgen abgehakt. Für Maximalkraft zählt jetzt ZNS-Erholung — leichte Bewegung okay, nichts Intensives mehr."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuvvet bu sabah tamamlandı. Maksimal kuvvet için artık MSS toparlanması önemli — hafif hareket olur, yoğun bir şey olmaz."
+          }
+        }
+      }
+    },
+    "coaching.morningStrengthDone.analytical.hybrid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength is in. With 6+ hours between sessions the interference effect is minimal — 20-30 minutes of zone-2 cardio tonight fits perfectly."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kraft ist drin. Mit 6+ Stunden Abstand ist der Interferenz-Effekt minimal — 20-30 Minuten Zone-2-Cardio heute Abend passen perfekt."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuvvet tamam. Seanslar arasında 6+ saat varsa interferans etkisi minimum — bu akşam 20-30 dakika zone-2 kardiyo tam oturur."
+          }
+        }
+      }
+    },
+    "coaching.morningStrengthDone.motivating.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength: done! For maximum fat burn, add a walk or an easy bike ride this afternoon. 🚶"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kraft ist erledigt! Für maximalen Fettabbau häng heute Nachmittag noch einen Spaziergang oder eine lockere Radtour dran. 🚶"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuvvet tamam! Maksimum yağ yakımı için bu öğleden sonra bir yürüyüş veya hafif bisiklet turu ekle. 🚶"
+          }
+        }
+      }
+    },
+    "coaching.morningStrengthDone.motivating.hypertrophy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Great pump this morning! Eat enough protein and rest up for the remainder of the day. 💪"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guter Pump heute Morgen! Iss genug Protein und ruh dich für den Rest des Tages aus. 💪"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu sabah harika bir pump! Yeterince protein ye ve günün geri kalanında dinlen. 💪"
+          }
+        }
+      }
+    },
+    "coaching.morningStrengthDone.motivating.strength": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heavy work done this morning! Now give your nervous system the rest it needs for the next PR. ⚡"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schwere Arbeit heute Morgen erledigt! Gönn deinem Nervensystem jetzt die Pause, die es für den nächsten PR braucht. ⚡"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ağır iş bu sabah bitti! Şimdi sinir sistemine bir sonraki PR için ihtiyacı olan molayı ver. ⚡"
+          }
+        }
+      }
+    },
+    "coaching.morningStrengthDone.motivating.hybrid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength is in! If you have time, add 20-30 minutes of easy zone-2 cardio today — your hybrid engine will thank you. 🚴"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kraft ist drin! Wenn du Zeit hast, mach heute noch 20-30 Minuten lockeres Zone-2-Cardio — dein Hybrid-Motor dankt es dir. 🚴"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuvvet tamam! Vaktin varsa bugün 20-30 dakika rahat zone-2 kardiyo ekle — hibrit motorun teşekkür eder. 🚴"
+          }
+        }
+      }
+    },
+    "coaching.morningStrengthDone.strict.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength was this morning. The deficit won't build itself — 30 minutes of walking this afternoon, no excuses."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kraft war heute Morgen. Das Defizit macht sich nicht von allein — 30 Minuten Spaziergang heute Nachmittag, keine Ausreden."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuvvet bu sabahtı. Açık kendiliğinden oluşmaz — öğleden sonra 30 dakika yürüyüş, bahane yok."
+          }
+        }
+      }
+    },
+    "coaching.morningStrengthDone.strict.hypertrophy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training was this morning. Don't sabotage the gains now: protein in, feet up, no junk cardio."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training war heute Morgen. Jetzt nicht den Aufbau sabotieren: Protein rein, Füße hoch, kein Junk-Cardio."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman bu sabahtı. Şimdi kazanımları sabote etme: protein al, ayakları uzat, gereksiz kardiyo yok."
+          }
+        }
+      }
+    },
+    "coaching.morningStrengthDone.strict.strength": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lifted heavy this morning — good. Sneak in 'a little extra' tonight and your next top set will collect the bill."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schwer gehoben heute Morgen — gut. Wer abends nochmal 'ein bisschen was' macht, zahlt es beim nächsten Top-Satz zurück."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu sabah ağır kaldırdın — güzel. Akşam 'biraz daha' yaparsan faturayı bir sonraki ağır set keser."
+          }
+        }
+      }
+    },
+    "coaching.morningStrengthDone.strict.hybrid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength done — that's half the job. Hybrid means both: 20 minutes of easy cardio today completes the day."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kraft erledigt — halbes Soll. Hybrid heißt beides: 20 Minuten lockeres Cardio heute noch, dann ist der Tag komplett."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuvvet bitti — işin yarısı. Hibrit ikisi de demek: bugün 20 dakika hafif kardiyo günü tamamlar."
+          }
+        }
+      }
+    },
+    "coaching.morningCardioDone.analytical.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio logged this morning. For weight loss, muscle retention is key — a light full-body strength session today protects lean mass in the deficit."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio heute Morgen verbucht. Für den Fettabbau ist Muskelerhalt entscheidend — ein leichtes Ganzkörper-Krafttraining heute schützt die Magermasse im Defizit."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kardiyo bu sabah kaydedildi. Yağ kaybında kas koruması kritik — bugün hafif bir tüm vücut kuvvet antrenmanı açıkta yağsız kütleyi korur."
+          }
+        }
+      }
+    },
+    "coaching.morningCardioDone.analytical.hypertrophy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio is done. For tonight's strength work: focus on the upper body — your legs are pre-fatigued and won't deliver clean sets."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio ist erledigt. Fürs Abend-Krafttraining: Oberkörper-Fokus — die Beine sind vorermüdet und liefern keine sauberen Sätze mehr."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kardiyo tamam. Akşamki kuvvet için: üst vücuda odaklan — bacaklar ön yorgun, temiz set veremez."
+          }
+        }
+      }
+    },
+    "coaching.morningCardioDone.analytical.strength": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio registered this morning. If heavy lifts are still planned today: favor upper body and take longer rests — the legs are pre-loaded."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio heute Morgen registriert. Wenn heute noch schwere Lifts anstehen: Oberkörper bevorzugen und längere Pausen — die Beine sind vorbelastet."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kardiyo bu sabah kaydedildi. Bugün ağır kaldırış varsa: üst vücudu tercih et, molaları uzat — bacaklar ön yüklü."
+          }
+        }
+      }
+    },
+    "coaching.morningCardioDone.analytical.hybrid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio component done. For hybrid balance, today still misses the strength stimulus — an evening session keeps both systems level."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio-Komponente erledigt. Fürs Hybrid-Gleichgewicht fehlt heute noch der Kraft-Reiz — eine Abend-Einheit hält beide Systeme in Balance."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kardiyo bileşeni tamam. Hibrit denge için bugün kuvvet uyaranı eksik — akşam seansı iki sistemi dengede tutar."
+          }
+        }
+      }
+    },
+    "coaching.morningCardioDone.motivating.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Great start to the day! If you have energy left, add a light full-body strength session — it keeps your muscle while you cut. 🌅"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Super Start in den Tag! Wenn du heute noch Energie hast, bau ein leichtes Ganzkörper-Krafttraining ein — so bleiben die Muskeln im Defizit erhalten. 🌅"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güne süper başlangıç! Enerjin kaldıysa hafif bir tüm vücut kuvvet antrenmanı ekle — açıkta kasını korur. 🌅"
+          }
+        }
+      }
+    },
+    "coaching.morningCardioDone.motivating.hypertrophy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio is in the bag! Tonight belongs to the upper body — your legs already did their part. 💪"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio ist im Kasten! Heute Abend gehört dem Oberkörper — die Beine haben ihren Teil schon geleistet. 💪"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kardiyo cepte! Bu akşam üst vücudun — bacaklar payına düşeni yaptı. 💪"
+          }
+        }
+      }
+    },
+    "coaching.morningCardioDone.motivating.strength": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio base is set! If you lift today: rock the upper body, spare the legs. ⚡"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio-Basis steht! Falls heute noch gehoben wird: Oberkörper rockt, Beine schonen. ⚡"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kardiyo tabanı hazır! Bugün kaldıracaksan: üst vücut coşsun, bacaklar dinlensin. ⚡"
+          }
+        }
+      }
+    },
+    "coaching.morningCardioDone.motivating.hybrid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio: check! ✅ Your hybrid goal needs strength too — lift some iron tonight."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio-Check! ✅ Dein Hybrid-Ziel braucht auch Kraft — heb heute Abend noch etwas Eisen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kardiyo: tamam! ✅ Hibrit hedefin kuvvet de ister — bu akşam biraz demir kaldır."
+          }
+        }
+      }
+    },
+    "coaching.morningCardioDone.strict.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio alone in a deficit burns muscle too. Touch some iron today — light is fine, but touch it."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio allein macht im Defizit auch Muskeln weg. Heute noch Eisen anfassen — leicht reicht, aber anfassen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Açıkta sadece kardiyo kası da eritir. Bugün demire dokun — hafif yeter ama dokun."
+          }
+        }
+      }
+    },
+    "coaching.morningCardioDone.strict.hypertrophy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio wasn't the whole job. Strength tonight — upper body, the legs are spent. Muscle is built at the iron."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio war noch nicht alles. Heute Abend Krafttraining — Oberkörper, die Beine sind durch. Aufbau passiert am Eisen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kardiyo işin tamamı değildi. Akşam kuvvet — üst vücut, bacaklar bitti. Kas demirde yapılır."
+          }
+        }
+      }
+    },
+    "coaching.morningCardioDone.strict.strength": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Morning cardio is fine — but max strength needs fresh legs. Heavy squats today? Move them."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Morgens Cardio ist okay — aber Maximalkraft braucht frische Beine. Heute schwere Squats? Verschieb sie."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sabah kardiyosu tamam — ama maksimal kuvvet taze bacak ister. Bugün ağır squat mı? Ertele."
+          }
+        }
+      }
+    },
+    "coaching.morningCardioDone.strict.hybrid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Halftime. Cardio was this morning, strength is still owed — hybrid doesn't come at half price."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Halbzeit. Cardio war heute Morgen, Kraft steht noch aus — Hybrid gibt's nicht zum halben Preis."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Devre arası. Kardiyo sabahtı, kuvvet hâlâ borç — hibrit yarı fiyata olmaz."
+          }
+        }
+      }
+    },
+    "coaching.highFatigueYesterday.analytical.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday was high volume. Active recovery — an easy walk — burns calories today without adding recovery debt."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestern war hochvolumig. Aktive Regeneration — ein lockerer Spaziergang — verbrennt heute Kalorien, ohne zusätzlichen Erholungsbedarf zu erzeugen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün yüksek hacimliydi. Aktif toparlanma — hafif bir yürüyüş — bugün toparlanma borcu eklemeden kalori yakar."
+          }
+        }
+      }
+    },
+    "coaching.highFatigueYesterday.analytical.hypertrophy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday's volume was massive. Muscle protein synthesis is still working — a full rest day today is the highest-yield decision."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Volumen gestern war massiv. Die Muskelproteinsynthese arbeitet noch — ein kompletter Rest-Day ist heute die ergiebigste Entscheidung."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dünkü hacim devasaydı. Kas protein sentezi hâlâ çalışıyor — bugün tam dinlenme günü en verimli karar."
+          }
+        }
+      }
+    },
+    "coaching.highFatigueYesterday.analytical.strength": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High load yesterday. The CNS needs 48-72h to fully recover — today at most bar-only technique work, or fully off."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestern hohe Last. Das ZNS braucht 48-72h für volle Erholung — heute maximal Technik mit leerer Stange oder komplett frei."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün yüksek yük. MSS tam toparlanma için 48-72 saat ister — bugün en fazla boş barla teknik ya da tamamen izin."
+          }
+        }
+      }
+    },
+    "coaching.highFatigueYesterday.analytical.hybrid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday was intense. Easy zone-1 cardio — recovery run or cycling — boosts circulation today and speeds up metabolic clearance."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestern war intensiv. Lockeres Zone-1-Cardio — Recovery-Run oder Radfahren — fördert heute die Durchblutung und beschleunigt den Abtransport von Stoffwechselprodukten."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün yoğundu. Hafif zone-1 kardiyo — toparlanma koşusu veya bisiklet — bugün dolaşımı artırır ve metabolik temizliği hızlandırır."
+          }
+        }
+      }
+    },
+    "coaching.highFatigueYesterday.motivating.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You trained hard yesterday! An easy walk today burns calories AND helps recovery — double win. 🚶"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du hast gestern hart trainiert! Ein leichter Spaziergang heute verbrennt Kalorien UND hilft der Regeneration — doppelter Gewinn. 🚶"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün sıkı çalıştın! Bugün hafif bir yürüyüş hem kalori yakar HEM toparlanmaya yardım eder — çifte kazanç. 🚶"
+          }
+        }
+      }
+    },
+    "coaching.highFatigueYesterday.motivating.hypertrophy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your volume yesterday was massive! Muscles grow during rest — treat yourself to a full rest day today. 😴"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Volumen gestern war massiv! Muskeln wachsen in der Ruhephase — gönn dir heute einen kompletten Rest-Day. 😴"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dünkü hacmin devasaydı! Kaslar dinlenirken büyür — bugün kendine tam bir dinlenme günü hediye et. 😴"
+          }
+        }
+      }
+    },
+    "coaching.highFatigueYesterday.motivating.strength": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You moved serious load yesterday! Your nervous system is recharging — you'll come back stronger tomorrow. ⚡"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestern ordentlich Last bewegt! Dein Nervensystem lädt gerade nach — morgen kommst du stärker zurück. ⚡"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün ciddi yük kaldırdın! Sinir sistemin şarj oluyor — yarın daha güçlü dönersin. ⚡"
+          }
+        }
+      }
+    },
+    "coaching.highFatigueYesterday.motivating.hybrid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday was intense! An easy recovery run or bike spin will flush those heavy legs today. 🚴"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestern war intensiv! Ein lockerer Recovery-Run oder eine Radrunde spült heute die schweren Beine frei. 🚴"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün yoğundu! Hafif bir toparlanma koşusu veya bisiklet turu bugün ağır bacakları açar. 🚴"
+          }
+        }
+      }
+    },
+    "coaching.highFatigueYesterday.strict.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Big volume yesterday doesn't mean couch today. Go walk — the deficit takes no rest days, your training does."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viel Volumen gestern heißt nicht Sofa heute. Geh spazieren — das Defizit kennt keine Ruhetage, dein Training schon."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dünkü yüksek hacim bugün koltuk demek değil. Yürü — açık tatil yapmaz, antrenmanın yapar."
+          }
+        }
+      }
+    },
+    "coaching.highFatigueYesterday.strict.hypertrophy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Massive session yesterday. Running back to the gym today would be ego, not programming — rest day, period."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestern massiv trainiert. Heute trotzdem ins Gym zu rennen wäre Ego, kein Plan — Rest-Day, Punkt."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün devasa bir seans. Bugün salona koşmak ego olur, program değil — dinlenme günü, nokta."
+          }
+        }
+      }
+    },
+    "coaching.highFatigueYesterday.strict.strength": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heavy load yesterday. Lifting heavy today would be foolish, not tough — your CNS knows the difference precisely."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hohe Last gestern. Heute schwer zu heben wäre dumm, nicht hart — das ZNS unterscheidet da sehr genau."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün ağır yük. Bugün ağır kaldırmak sertlik değil aptallık olur — MSS bu farkı çok iyi bilir."
+          }
+        }
+      }
+    },
+    "coaching.highFatigueYesterday.strict.hybrid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intense day yesterday. Recovery means active: 20 easy minutes rolling, not 'we'll see' on the couch."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intensiver Tag gestern. Recovery heißt aktiv: 20 Minuten lockeres Rollen, nicht 'mal schauen' auf der Couch."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dün yoğun bir gündü. Toparlanma aktif demek: 20 dakika hafif tempo, koltukta 'bakarız' değil."
+          }
+        }
+      }
+    },
+    "coaching.restDay.analytical.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today is a planned rest day. Especially important in a deficit — keep NEAT (daily movement) high, pause training."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute ist Ruhetag laut Plan. Im Defizit besonders wichtig — NEAT (Alltagsbewegung) hoch halten, Training pausieren."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün plana göre dinlenme günü. Açıkta özellikle önemli — NEAT'i (günlük hareket) yüksek tut, antrenmana ara ver."
+          }
+        }
+      }
+    },
+    "coaching.restDay.motivating.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest day! Even when cutting: recovery protects your muscle. A walk still counts though. 🌿"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ruhetag! Auch beim Abnehmen gilt: Erholung schützt deine Muskeln. Ein Spaziergang zählt trotzdem. 🌿"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dinlenme günü! Kilo verirken de geçerli: toparlanma kasını korur. Yine de yürüyüş sayılır. 🌿"
+          }
+        }
+      }
+    },
+    "coaching.restDay.strict.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest day means no training — not no moving. Still get your 8,000 steps; the deficit doesn't pause."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ruhetag heißt kein Training — nicht kein Bewegen. 8.000 Schritte gehen trotzdem, das Defizit macht keine Pause."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dinlenme günü antrenman yok demek — hareket yok demek değil. Yine de 8.000 adımı at; açık mola vermez."
+          }
+        }
+      }
+    },
+    "coaching.cnsOverloaded.analytical.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your load scores are in the red. In a calorie deficit, recovery capacity is reduced anyway — light movement only today."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Belastungswerte sind im roten Bereich. Im Kaloriendefizit ist die Erholungskapazität ohnehin reduziert — heute nur leichte Bewegung."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yük değerlerin kırmızı bölgede. Kalori açığında toparlanma kapasitesi zaten düşük — bugün sadece hafif hareket."
+          }
+        }
+      }
+    },
+    "coaching.cnsOverloaded.motivating.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your body is working double right now: deficit AND recovery. Keep it light today — you're still on track! 🌿"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Körper arbeitet gerade doppelt: Defizit UND Erholung. Gönn ihm heute Leichtes — du bist trotzdem auf Kurs! 🌿"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücudun şu an çift mesai yapıyor: açık VE toparlanma. Bugün hafif tut — yine de yoldasın! 🌿"
+          }
+        }
+      }
+    },
+    "coaching.cnsOverloaded.strict.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overloaded CNS + calorie deficit = injury risk. Training hard today costs more than it returns. Don't."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ZNS überlastet + Kaloriendefizit = Verletzungsrisiko. Heute hart zu trainieren kostet mehr, als es bringt. Lass es."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aşırı yüklü MSS + kalori açığı = sakatlık riski. Bugün sert antrenman getirdiğinden fazlasını götürür. Yapma."
+          }
+        }
+      }
+    },
+    "coaching.newPR.analytical.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New personal record — doubly remarkable in a deficit; that signals successful muscle retention."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Bestleistung — im Defizit doppelt bemerkenswert, das spricht für gelungenen Muskelerhalt."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeni kişisel rekor — açıkta iki kat dikkat çekici; bu başarılı kas koruması demek."
+          }
+        }
+      }
+    },
+    "coaching.newPR.motivating.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A PR while cutting?! Losing weight AND getting stronger — that's elite. 🏆"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PR im Defizit?! Du verlierst Gewicht UND wirst stärker — das ist die Königsklasse. 🏆"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Açıktayken PR mi?! Kilo verip güçleniyorsun — bu işin şahı. 🏆"
+          }
+        }
+      }
+    },
+    "coaching.newPR.strict.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A record in a deficit. Good. Proof that 'no energy' is mostly mental — keep going."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bestleistung im Defizit. Gut. Beweis erbracht, dass 'keine Energie' meist Kopfsache ist — weiter so."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Açıkta rekor. Güzel. 'Enerjim yok'un çoğunlukla kafada olduğunun kanıtı — devam."
+          }
+        }
+      }
+    },
+    "coaching.plateauDetected.analytical.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plateau detected. Normal in a deficit — check sleep and protein first before deepening the deficit."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stagnation erkannt. Im Defizit normal — prüfe zuerst Schlaf und Protein, bevor du das Defizit vergrößerst."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plato tespit edildi. Açıkta normal — açığı büyütmeden önce uyku ve proteini kontrol et."
+          }
+        }
+      }
+    },
+    "coaching.plateauDetected.motivating.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A small plateau — totally normal when cutting! Stay the course; the body usually catches up in waves. 💪"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kleines Plateau — völlig normal beim Abnehmen! Halte Kurs, der Körper zieht meist schubweise nach. 💪"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Küçük bir plato — kilo verirken gayet normal! Rotanı koru; vücut genelde dalga dalga yetişir. 💪"
+          }
+        }
+      }
+    },
+    "coaching.plateauDetected.strict.weightLoss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plateau. Before complaining: is your tracking honest? Sleep in place? Steps done? It's usually one of those three."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plateau. Bevor du jammerst: Tracking ehrlich? Schlaf da? Schritte drin? Meist liegt's an einem der drei."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plato. Şikâyetten önce: takip dürüst mü? Uyku tamam mı? Adımlar atıldı mı? Genelde bu üçünden biri."
+          }
+        }
+      }
     }
   }
 }

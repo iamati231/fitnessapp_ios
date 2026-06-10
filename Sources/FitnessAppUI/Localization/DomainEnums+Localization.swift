@@ -161,6 +161,7 @@ public extension TrainingGoal {
         case .hypertrophy: LocalizedStringResource("coaching.goal.hypertrophy.label", bundle: .fitnessAppUI)
         case .strength:    LocalizedStringResource("coaching.goal.strength.label",    bundle: .fitnessAppUI)
         case .hybrid:      LocalizedStringResource("coaching.goal.hybrid.label",      bundle: .fitnessAppUI)
+        case .weightLoss:  LocalizedStringResource("coaching.goal.weightLoss.label",  bundle: .fitnessAppUI)
         }
     }
 
@@ -169,6 +170,7 @@ public extension TrainingGoal {
         case .hypertrophy: LocalizedStringResource("coaching.goal.hypertrophy.blurb", bundle: .fitnessAppUI)
         case .strength:    LocalizedStringResource("coaching.goal.strength.blurb",    bundle: .fitnessAppUI)
         case .hybrid:      LocalizedStringResource("coaching.goal.hybrid.blurb",      bundle: .fitnessAppUI)
+        case .weightLoss:  LocalizedStringResource("coaching.goal.weightLoss.blurb",  bundle: .fitnessAppUI)
         }
     }
 }

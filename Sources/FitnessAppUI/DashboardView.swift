@@ -1099,6 +1099,19 @@ public struct DashboardView: View {
             )
             if !msg.isEmpty { return msg }
         }
+        // DEL-206: P1.5 — goal-basierte Tages-Empfehlung. Kreuzt den
+        // heutigen/gestrigen Workout-State mit dem TrainingGoal über die
+        // gleiche Matrix-Auflösung wie die P1-Warnungen. Rangiert UNTER
+        // den echten Warnungen (CNS-Overload schlägt "mach noch Cardio"),
+        // aber ÜBER den generischen Soft-Komplimenten.
+        if let daily = activeGoalCoachingContext {
+            let msg = CoachingMessageProvider.message(
+                for: daily,
+                tone: profile.coachingTone,
+                goal: profile.trainingGoal
+            )
+            if !msg.isEmpty { return msg }
+        }
         if let soft = activeSoftCoachingContext {
             let msg = CoachingMessageProvider.softMessage(
                 for: soft,
@@ -1110,6 +1123,55 @@ public struct DashboardView: View {
         // noch datengetriebener Soft-Insight greift. Tag-stabil rotierend.
         let eduMsg = CoachingMessageProvider.eduMessage(for: profile.coachingTone)
         if !eduMsg.isEmpty { return eduMsg }
+        return nil
+    }
+
+    // MARK: - DEL-206 Goal-Based Daily Coaching (StateAnalyzer)
+
+    /// Tagesaktueller Trigger für die Goal-Matrix. Priorität laut Ticket:
+    /// heutige Morgen-Session > gestrige High-Fatigue. Die zielbasierte
+    /// Ausformulierung übernimmt der Provider über
+    /// `coaching.{context}.{tone}.{goal}`.
+    ///
+    ///   * **morningStrengthDone** — heute vor 13:00 ein Workout mit
+    ///     Kraft-Anteil abgeschlossen (mixed zählt als Kraft).
+    ///   * **morningCardioDone**   — heute vor 13:00 NUR Cardio.
+    ///   * **highFatigueYesterday** — gestern >= 20 Sätze ODER eine
+    ///     Session > 90 Minuten.
+    ///
+    /// "Morgen" = startOfDay bis 13:00. Wer die App erst um 14:00 öffnet,
+    /// sieht die Empfehlung für den Rest des Tages — das Workout VON
+    /// heute Morgen bleibt ja relevant.
+    private var activeGoalCoachingContext: CoachingContext? {
+        let calendar = Calendar.current
+        let now = Date()
+        let startOfDay = calendar.startOfDay(for: now)
+        guard let onePM = calendar.date(bySettingHour: 13, minute: 0, second: 0, of: now) else {
+            return nil
+        }
+
+        let morningSessions = completedSessions.filter {
+            $0.isRealWorkout && $0.startTime >= startOfDay && $0.startTime < onePM
+        }
+        if !morningSessions.isEmpty {
+            // Reines Cardio nur, wenn ALLE Morgen-Sessions pure Cardio
+            // waren — eine Mixed-Session hat Kraft-Anteil und triggert
+            // die Strength-Variante (Ticket: "bzw. Strength-Profile").
+            let allCardio = morningSessions.allSatisfy { $0.sessionCategory == .pureCardio }
+            return allCardio ? .morningCardioDone : .morningStrengthDone
+        }
+
+        guard let yesterdayStart = calendar.date(byAdding: .day, value: -1, to: startOfDay) else {
+            return nil
+        }
+        let yesterdaySessions = completedSessions.filter {
+            $0.isRealWorkout && $0.startTime >= yesterdayStart && $0.startTime < startOfDay
+        }
+        let totalSets = yesterdaySessions.reduce(0) { $0 + $1.totalSets }
+        let hadLongSession = yesterdaySessions.contains { $0.durationMinutes > 90 }
+        if totalSets >= 20 || hadLongSession {
+            return .highFatigueYesterday
+        }
         return nil
     }
 
