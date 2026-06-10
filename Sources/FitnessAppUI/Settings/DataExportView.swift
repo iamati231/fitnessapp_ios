@@ -101,6 +101,7 @@ public struct DataExportView: View {
                     bullet("settings.dataExport.contents.records")
                     bullet("settings.dataExport.contents.gear")
                     bullet("settings.dataExport.contents.custom")
+                    bullet("settings.dataExport.contents.settings")
                 }
             }
         }

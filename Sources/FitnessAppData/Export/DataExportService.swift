@@ -105,6 +105,9 @@ public enum DataExportService {
         files.append(("personal_records.csv", buildPRs(prs, id: id)))
         files.append(("gear.csv",             buildGear(gears, id: id)))
         files.append(("custom_exercises.csv", buildCustomExercises(customExercises, id: id)))
+        // DEL-209: App-Einstellungen (Reminder, kg/lbs, Theme, Timer, ...) —
+        // Whitelist-basiert aus UserDefaults, siehe SettingsPortability.
+        files.append(("settings.csv",         buildSettings()))
 
         // meta.json bewusst NEBEN den CSVs (kein _meta in CSV — sauberere
         // Trennung Schema-Metadata vs. Daten).
@@ -524,6 +527,15 @@ public enum DataExportService {
                 CSVWriter.bool(g.isActive),
                 CSVWriter.iso8601(g.createdAt)
             ])
+        }
+        return w.data()
+    }
+
+    /// DEL-209: Whitelist-Settings als key/value-CSV.
+    private static func buildSettings() -> Data {
+        var w = CSVWriter(headers: ["key", "value"])
+        for (key, value) in SettingsPortability.collect() {
+            w.appendRow([key, value])
         }
         return w.data()
     }

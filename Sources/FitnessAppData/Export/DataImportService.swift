@@ -213,6 +213,7 @@ public enum DataImportService {
 
         let allFiles = [
             "profile.csv",
+            "settings.csv",
             "gear.csv",
             "custom_exercises.csv",
             "plans.csv",
@@ -243,6 +244,15 @@ public enum DataImportService {
                 let (ok, dup, errs) = try importProfile(csv: csv, context: context)
                 imported["profile.csv"] = ok; skipped["profile.csv"] = dup
                 errorBuffer.append(file: "profile.csv", errors: errs)
+            }
+        }
+        try tick("settings.csv") {
+            if let csv = files["settings.csv"] {
+                // DEL-209: App-Einstellungen (Reminder, kg/lbs, Theme, ...).
+                // Whitelist-gefiltert in SettingsPortability — unbekannte
+                // Keys landen im skipped-Counter, nie in UserDefaults.
+                let (ok, dup) = importSettings(csv: csv)
+                imported["settings.csv"] = ok; skipped["settings.csv"] = dup
             }
         }
         try tick("gear.csv") {
@@ -510,6 +520,22 @@ public enum DataImportService {
             break
         }
         return (imported, 0, errors)
+    }
+
+    // MARK: - Pass 1: Settings (DEL-209)
+
+    /// Wendet die Whitelist-Settings aus settings.csv an. Kein FK, kein
+    /// SwiftData — reine UserDefaults-Anwendung. (applied, skipped).
+    private static func importSettings(csv: Data) -> (Int, Int) {
+        let text = String(data: csv, encoding: .utf8) ?? ""
+        guard let reader = try? CSVReader(text) else { return (0, 0) }
+        let rows = reader.rows().compactMap { row -> (key: String, value: String)? in
+            let key = row["key"]
+            guard !key.isEmpty else { return nil }
+            return (key, row["value"])
+        }
+        let result = SettingsPortability.apply(rows)
+        return (result.applied, result.skipped)
     }
 
     // MARK: - Pass 1: Gear

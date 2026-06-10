@@ -19,6 +19,7 @@ import SwiftUI
 import SwiftData
 import FitnessAppCore
 import FitnessAppData
+import FitnessAppActivities
 import UniformTypeIdentifiers
 #if canImport(UIKit)
 import UIKit
@@ -444,6 +445,7 @@ public struct DataImportView: View {
         case "wipe":                  key = "settings.dataImport.progress.wipe"
         case "save":                  key = "settings.dataImport.progress.save"
         case "profile.csv":           key = "settings.dataImport.progress.profile"
+        case "settings.csv":          key = "settings.dataImport.progress.settings"
         case "gear.csv":              key = "settings.dataImport.progress.gear"
         case "custom_exercises.csv":  key = "settings.dataImport.progress.customExercises"
         case "plans.csv":             key = "settings.dataImport.progress.plans"
@@ -521,6 +523,12 @@ public struct DataImportView: View {
                         }
                     }
                 )
+                // DEL-209: Importierte Reminder-Präferenzen sofort beim
+                // System anmelden — sonst greifen sie erst, wenn der User
+                // zufällig die Settings öffnet (deren .task re-schedulet).
+                // Spiegelt SettingsView.rescheduleReminders; der Scheduler
+                // prüft die Notification-Permission selbst.
+                await rescheduleImportedReminders()
                 await MainActor.run {
                     self.phase = .finished(result: result)
                     self.importProgress = nil
@@ -533,6 +541,30 @@ public struct DataImportView: View {
                     self.importProgress = nil
                 }
             }
+        }
+    }
+
+    /// DEL-209: Wendet die frisch importierten Reminder-Präferenzen aufs
+    /// System an (Wasser + Messung). Liest direkt aus UserDefaults — die
+    /// settings.csv-Werte sind zu diesem Zeitpunkt bereits geschrieben.
+    private func rescheduleImportedReminders() async {
+        let defaults = UserDefaults.standard
+        if defaults.bool(forKey: "pref_water_reminder") {
+            let hours = max(1, defaults.integer(forKey: "pref_water_reminder_hours"))
+            await ReminderScheduler.scheduleWaterReminders(everyHours: hours)
+        } else {
+            await ReminderScheduler.cancelWaterReminders()
+        }
+        if defaults.bool(forKey: "pref_measurement_reminder") {
+            let weekday = defaults.integer(forKey: "pref_measurement_reminder_weekday")
+            let hour = defaults.integer(forKey: "pref_measurement_reminder_hour")
+            await ReminderScheduler.scheduleMeasurementReminder(
+                weekday: (1...7).contains(weekday) ? weekday : 1,
+                hour: (0...23).contains(hour) ? hour : 8,
+                minute: 0
+            )
+        } else {
+            await ReminderScheduler.cancelMeasurementReminder()
         }
     }
 

@@ -32109,6 +32109,52 @@
           }
         }
       }
+    },
+    "settings.dataExport.contents.settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App settings & reminders (units, theme, notification preferences)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App-Einstellungen & Erinnerungen (Einheiten, Theme, Benachrichtigungs-Präferenzen)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uygulama ayarları ve hatırlatıcılar (birimler, tema, bildirim tercihleri)"
+          }
+        }
+      }
+    },
+    "settings.dataImport.progress.settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading settings…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lese Einstellungen…"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayarlar okunuyor…"
+          }
+        }
+      }
     }
   }
 }

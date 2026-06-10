@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1396 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1398 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1396 / 1396** (100%) | 0 |
-| 🇬🇧 English (EN) | **1396 / 1396** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1396 / 1396** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1398 / 1398** (100%) | 0 |
+| 🇬🇧 English (EN) | **1398 / 1398** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1398 / 1398** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1426,7 +1426,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (119 Keys)
+## `settings.*`  (121 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1451,6 +1451,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.dataExport.contents.plans` | Trainingspläne, Tage und Übungen | Training plans, days and exercises | Antrenman planları, günler ve egzersizler |
 | `settings.dataExport.contents.profile` | Profil, Ziele, Trainings-Präferenzen | Profile, goals, training preferences | Profil, hedefler, antrenman tercihleri |
 | `settings.dataExport.contents.records` | Persönliche Rekorde und PR-Historie | Personal records and PR history | Kişisel rekorlar ve PR geçmişi |
+| `settings.dataExport.contents.settings` | App-Einstellungen & Erinnerungen (Einheiten, Theme, Benachrichtigungs-Präferenzen) | App settings & reminders (units, theme, notification preferences) | Uygulama ayarları ve hatırlatıcılar (birimler, tema, bildirim tercihleri) |
 | `settings.dataExport.contents.workouts` | Alle Workouts mit Sätzen, Reps, Gewichten und RIR | All workouts with sets, reps, weights and RIR | Set, tekrar, ağırlık ve RIR ile tüm antrenmanlar |
 | `settings.dataExport.exporting` | Sammle deine Daten… | Collecting your data… | Verilerin toplanıyor… |
 | `settings.dataExport.finished.header` | Bereit zum Teilen | Ready to share | Paylaşmaya hazır |
@@ -1481,6 +1482,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.dataImport.progress.plans` | Lese Pläne… | Reading plans… | Planlar okunuyor… |
 | `settings.dataImport.progress.profile` | Lese Profil… | Reading profile… | Profil okunuyor… |
 | `settings.dataImport.progress.save` | Speichere in der Datenbank… | Saving to database… | Veritabanına kaydediliyor… |
+| `settings.dataImport.progress.settings` | Lese Einstellungen… | Reading settings… | Ayarlar okunuyor… |
 | `settings.dataImport.progress.waterLog` | Lese Wasser-Protokoll… | Reading water log… | Su günlüğü okunuyor… |
 | `settings.dataImport.progress.wipe` | Lösche bestehende Daten… | Clearing existing data… | Mevcut veriler temizleniyor… |
 | `settings.dataImport.progress.workoutSets` | Lese Workout-Sätze… | Reading workout sets… | Antrenman setleri okunuyor… |
