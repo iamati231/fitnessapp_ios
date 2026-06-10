@@ -351,26 +351,14 @@ public struct DataImportView: View {
                 }
             }
             // Pro-File-Breakdown (klein, monospaced — debugging-freundlich,
-            // aber unaufdringlich). DEL-185: ergänzt um die extrahierte
-            // Byte-Größe, damit der User sofort sieht, ob die Files
-            // überhaupt mit Inhalt rauskommen oder leer sind.
+            // aber unaufdringlich). DEL-199: Byte-Größen-Anzeige aus der
+            // DEL-185-Debug-Phase wieder entfernt.
             DeltiqFormFullRow {
                 VStack(alignment: .leading, spacing: 4) {
-                    ForEach(allReportedFiles(result), id: \.self) { file in
+                    ForEach(filesInResult(result), id: \.self) { file in
                         HStack(alignment: .firstTextBaseline, spacing: 6) {
                             Text(file).font(.caption2.monospaced()).foregroundStyle(.secondary)
                             Spacer()
-                            // Byte-Größe vor dem Imports-Counter — falls
-                            // diese 0 oder verdächtig klein ist, ist der
-                            // Extract der Übeltäter.
-                            if let bytes = result.extractedSizes[file] {
-                                // `.tertiary` ist ein ShapeStyle, `.red` ist
-                                // Color — gemischt kracht es im Ternary.
-                                // Beide auf Color bringen.
-                                Text("\(bytes) b")
-                                    .font(.caption2.monospaced())
-                                    .foregroundStyle(bytes < 100 ? Color.red : Color.secondary)
-                            }
                             Text(String(
                                 format: String(localized: "settings.dataImport.result.fileSummary", bundle: .module),
                                 result.imported[file] ?? 0,
@@ -403,34 +391,9 @@ public struct DataImportView: View {
                 }
             }
 
-            // DEL-187: Diagnose-Log INLINE rendern. Share-Sheet hat sich
-            // als unzuverlässig erwiesen. Hier sieht der User die Rohinfo
-            // direkt — Screenshot reicht zur Debug-Übermittlung,
-            // .textSelection erlaubt auch Copy-to-Paste.
-            //
-            // Bewusste Textwrap-Strategie: KEIN .fixedSize, KEIN nested
-            // ScrollView. Lange Zeilen werden umgebrochen, der äußere
-            // ScrollView der DataImportView trägt das vertikale Scrollen.
-            if let csv = result.errorsCSV,
-               let text = String(data: csv, encoding: .utf8) {
-                DeltiqFormFullRow {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Diagnose-Log")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                        Text(text)
-                            .font(.system(size: 9, design: .monospaced))
-                            .foregroundStyle(.primary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .textSelection(.enabled)
-                            .padding(8)
-                            .background(
-                                Color.secondary.opacity(0.08),
-                                in: RoundedRectangle(cornerRadius: 6)
-                            )
-                    }
-                }
-            }
+            // DEL-199: Das DEL-187-Inline-Diagnose-Panel ist wieder ausgebaut
+            // — es war Notfall-Werkzeug während der DEL-188-Parser-Jagd.
+            // Echte Row-Errors bleiben über den Share-Button oben zugänglich.
         }
     }
 
@@ -468,19 +431,6 @@ public struct DataImportView: View {
         return keys.sorted()
     }
 
-    /// DEL-185: Vereinigung ALLER bekannten Files — imported, skipped UND
-    /// extracted. So sieht der User auch die Files, bei denen der Import
-    /// gar nicht erst lief (z.B. weil sie 0 Bytes hatten und vom CSVReader
-    /// ohne Sichtbarkeit verworfen wurden).
-    private func allReportedFiles(_ r: DataImportResult) -> [String] {
-        var keys = Set(r.imported.keys).union(r.skipped.keys)
-        keys.formUnion(r.extractedSizes.keys)
-        // meta.json + import.zip sind technische Files, nicht für den
-        // User interessant — rausfiltern.
-        keys.remove("meta.json")
-        keys.remove("import.zip")
-        return keys.sorted()
-    }
 
     /// DEL-176: Mappt den Service-`phase`-Identifier auf einen lokalisierten
     /// Anzeigetext. Service liefert stable identifiers ("workouts.csv",

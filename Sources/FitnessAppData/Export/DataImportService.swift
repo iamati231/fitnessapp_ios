@@ -77,13 +77,6 @@ public struct DataImportResult: Sendable {
     /// Nil wenn `errorRows == 0`.
     public let errorsCSV: Data?
 
-    /// DEL-185: Pro extrahiertem File die Byte-Größe direkt am Result.
-    /// IMMER gesetzt (auch wenn 0/0 importiert wurde), damit die UI eine
-    /// Extract-Übersicht rendern kann, ohne dass der User die errors.csv
-    /// raus exportieren muss. Schlüssel ist der Dateiname, Wert die
-    /// uncompressierte Byte-Anzahl nach dem Entpacken.
-    public let extractedSizes: [String: Int]
-
     public var totalImported: Int { imported.values.reduce(0, +) }
     public var totalSkipped:  Int { skipped.values.reduce(0, +) }
 }
@@ -208,56 +201,12 @@ public enum DataImportService {
         }
 
         // 3) Pro-Zeile-Fehler werden hier gesammelt.
+        // (DEL-199: Das DEL-184/186-Diagnose-Gerüst — _decode/_reader-Rows
+        // mit Byte-Dumps pro File — ist nach dem DEL-188-Parser-Fix wieder
+        // ausgebaut. errors.csv enthält jetzt nur noch echte Row-Errors.)
         var errorBuffer = ErrorBuffer()
         var imported: [String: Int] = [:]
         var skipped:  [String: Int] = [:]
-
-        // DEL-184 + DEL-186: Tiefe Pre-Import-Diagnose. Pro extrahiertem
-        // File loggen wir:
-        //   - bytes (raw Data-Größe)
-        //   - chars (String-Länge nach UTF-8-Decode)
-        //   - erste 60 Zeichen (escaped \r/\n) — sehen wir Header korrekt?
-        //   - letzte 30 Zeichen — sehen wir Body-Ende oder nur Header?
-        //   - CSVReader-Init-Ergebnis (OK + headers/rows count, oder
-        //     Throw-Reason)
-        //
-        // Das war nötig, weil Bytes-Größen alle korrekt extrahiert wurden
-        // (32KB workout_sets etc.), aber alle Imports trotzdem 0/0 lieferten.
-        // Bug muss im UTF-8-Decode oder CSV-Parser sitzen — diese Diagnose
-        // pinpoint't das exakt.
-        func escape(_ s: Substring) -> String {
-            s.map { c -> String in
-                switch c {
-                case "\n": return "\\n"
-                case "\r": return "\\r"
-                case "\t": return "\\t"
-                default:   return String(c)
-                }
-            }.joined()
-        }
-        for (filename, data) in files.sorted(by: { $0.key < $1.key }) {
-            let text = String(data: data, encoding: .utf8) ?? ""
-            let first = escape(text.prefix(60))
-            let last = escape(text.suffix(30))
-            errorBuffer.appendInfo(
-                file: "_decode",
-                reason: "\(filename): bytes=\(data.count) chars=\(text.count) first='\(first)' last='\(last)'"
-            )
-            guard filename.hasSuffix(".csv") else { continue }
-            do {
-                let reader = try CSVReader(text)
-                let headers = reader.headers.prefix(5).joined(separator: "|")
-                errorBuffer.appendInfo(
-                    file: "_reader",
-                    reason: "\(filename): OK headers=\(reader.headers.count) rows=\(reader.rows().count) sample='\(headers)'"
-                )
-            } catch {
-                errorBuffer.appendInfo(
-                    file: "_reader",
-                    reason: "\(filename): THREW \(String(describing: error))"
-                )
-            }
-        }
 
         // idMap: Export-UUID → frisches SwiftData-Objekt.
         var idMap: [String: AnyObject] = [:]
@@ -376,21 +325,7 @@ public enum DataImportService {
         // 7) Persist all changes atomically.
         try context.save()
 
-        // DEL-184: errorsCSV jetzt schon bei reiner Diagnose generiert
-        // (totalCount zählt nur echte Errors, hasContent inkl. Info-Rows).
-        // So kriegt der User auch bei einem "alles 0/0"-Import die Möglichkeit,
-        // das Extract-Log zu teilen — sonst keine Visibility ins ZIP-Innenleben.
-        let errorsCSV: Data? = errorBuffer.hasContent ? errorBuffer.toCSV() : nil
-
-        // DEL-185: Extract-Sizes-Map fürs UI. Mappt jeden extrahierten
-        // File-Namen auf seine Byte-Größe nach dem Entpacken — so kann
-        // die Result-View "profile.csv: 404 b" zeigen, ohne dass der
-        // User das errors.csv-Log exportieren muss. Wenn alle Werte 0
-        // oder klein sind, ist der Extract der Übeltäter.
-        var extractedSizes: [String: Int] = [:]
-        for (filename, data) in files {
-            extractedSizes[filename] = data.count
-        }
+        let errorsCSV: Data? = errorBuffer.totalCount > 0 ? errorBuffer.toCSV() : nil
 
         return DataImportResult(
             formatVersion: meta.formatVersion,
@@ -398,8 +333,7 @@ public enum DataImportService {
             imported: imported,
             skipped:  skipped,
             errorRows: errorBuffer.totalCount,
-            errorsCSV: errorsCSV,
-            extractedSizes: extractedSizes
+            errorsCSV: errorsCSV
         )
     }
 
@@ -500,17 +434,6 @@ public enum DataImportService {
             }
             totalCount += errors.count
         }
-
-        /// DEL-184: Info-Row für Diagnose. Wird in die errors.csv geschrieben,
-        /// zählt aber NICHT als Fehler — sonst meldet die UI "12 failed rows"
-        /// für einen erfolgreichen Import nur weil 12 Files extrahiert wurden.
-        mutating func appendInfo(file: String, reason: String) {
-            rows.append((file, RowError(line: 0, reason: reason)))
-        }
-
-        /// True wenn irgendetwas (Errors oder Info-Rows) im Buffer steht.
-        /// Steuert, ob die UI den "Fehlerprotokoll teilen"-Button rendert.
-        var hasContent: Bool { !rows.isEmpty }
 
         func toCSV() -> Data {
             var w = CSVWriter(headers: ["file", "line", "reason"])
