@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1398 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1392 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1398 / 1398** (100%) | 0 |
-| 🇬🇧 English (EN) | **1398 / 1398** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1398 / 1398** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1392 / 1392** (100%) | 0 |
+| 🇬🇧 English (EN) | **1392 / 1392** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1392 / 1392** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1113,7 +1113,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.weeklyGoal.subtitle` | Wie oft willst du pro Woche trainieren? Dein Kalender-Streak zählt gegen dieses Ziel — wähle, was du wirklich durchhalten kannst. | How often do you want to train per week? Your calendar streak counts against this — pick what you can actually sustain. | Haftada kaç kez antrenman yapmak istiyorsun? Takvim serin bu hedefe göre sayılır — gerçekten sürdürebileceğini seç. |
 | `onboarding.weeklyGoal.title` | Dein Wochenziel | Your weekly goal | Haftalık hedefin |
 
-## `picker.*`  (19 Keys)
+## `picker.*`  (13 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1125,14 +1125,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `picker.exercise.filter.title` | Filter | Filter | Filtre |
 | `picker.exercise.filterFor` | Nur Übungen für %@ | Only %@ exercises | Sadece %@ hareketleri |
 | `picker.exercise.filterHint` | Wenn aus, siehst du auch Übungen, die zu deinem Plan-Typ nicht passen. Die App fragt dann beim Hinzufügen nach, ob du den Plan umstellen willst. | When off, you also see exercises that don't fit your plan type. The app asks when adding whether to switch the plan. | Kapalıyken plan tipine uymayan hareketleri de görürsün. Eklerken plan değişimi sorulur. |
-| `picker.exercise.libraryEmpty` | Bibliothek ist leer — leg oben deine erste eigene Übung an. | Library is empty — create your first custom exercise above. | Kütüphane boş — yukarıdan ilk özel hareketini oluştur. |
 | `picker.exercise.namePlaceholder` | Name (z.B. Bankdrücken) | Name (e.g. Bench Press) | Ad (örn. Bench Press) |
-| `picker.exercise.noMatchFormat` | Keine Treffer für „%@". | No matches for "%@". | „%@" için sonuç yok. |
-| `picker.exercise.searchPlaceholder` | Suche | Search | Ara |
-| `picker.exercise.section.customTitle` | Eigene Übung | Custom Exercise | Özel Egzersiz |
 | `picker.exercise.section.customs` | Eigene | Custom | Özel |
-| `picker.exercise.section.library` | Bibliothek | Library | Kütüphane |
-| `picker.exercise.title` | Übung wählen | Choose Exercise | Hareket Seç |
 | `picker.plan.adoptFootnote` | Beim Übernehmen wird eine Tiefkopie für deine eigene Bibliothek angelegt — Tage, Übungen, Sätze sind danach frei editierbar. | Adopting creates a deep copy in your library — days, exercises, and sets are then freely editable. | Plan alındığında kütüphanende derin kopya oluşturulur — günler, hareketler ve setler özgürce düzenlenebilir. |
 | `picker.plan.filterFootnote` | Gefiltert nach deinem Trainingsort (%@). Im Profil anpassen, wenn du auch andere Pläne sehen willst. | Filtered by your training location (%@). Adjust in profile to see other plans. | Antrenman yerine göre filtrelendi (%@). Diğer planları görmek için profilden ayarla. |
 | `picker.plan.title` | Programm wählen | Choose Program | Program Seç |

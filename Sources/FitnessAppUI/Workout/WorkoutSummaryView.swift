@@ -201,7 +201,9 @@ public struct WorkoutSummaryView: View {
         }
         // DEL-136 Part C: Add-Exercise-Picker Sheet.
         .sheet(isPresented: $showingAddExercisePicker) {
-            ExercisePickerView(
+            // DEL-210: einheitliche Übungs-Auswahl (= Bibliothek im
+            // Picker-Modus).
+            ExerciseLibraryPickerSheet(
                 planEnvironment: session.day?.plan?.targetEnvironment,
                 onSelect: { template in
                     addExerciseToSession(from: template, isCustom: false)

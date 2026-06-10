@@ -83,7 +83,9 @@ public struct DayEditorView: View {
         }
         #endif
         .sheet(isPresented: $showingPicker) {
-            ExercisePickerView(
+            // DEL-210: einheitliche Übungs-Auswahl — dieselbe View wie die
+            // Bibliothek unter Einstellungen, im Picker-Modus.
+            ExerciseLibraryPickerSheet(
                 planEnvironment: day.plan?.targetEnvironment,
                 onSelect: { template in handleExerciseSelection(template) },
                 onCreateCustom: { draft in addCustomExercise(draft) }

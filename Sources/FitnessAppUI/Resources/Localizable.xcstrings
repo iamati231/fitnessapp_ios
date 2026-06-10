@@ -13526,29 +13526,6 @@
         }
       }
     },
-    "picker.exercise.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Übung wählen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Choose Exercise"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hareket Seç"
-          }
-        }
-      }
-    },
     "picker.exercise.filterFor": {
       "extractionState": "manual",
       "localizations": {
@@ -13614,29 +13591,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ad (örn. Bench Press)"
-          }
-        }
-      }
-    },
-    "picker.exercise.libraryEmpty": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bibliothek ist leer — leg oben deine erste eigene Übung an."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Library is empty — create your first custom exercise above."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kütüphane boş — yukarıdan ilk özel hareketini oluştur."
           }
         }
       }
@@ -25463,75 +25417,6 @@
         }
       }
     },
-    "picker.exercise.searchPlaceholder": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Suche"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ara"
-          }
-        }
-      }
-    },
-    "picker.exercise.section.customTitle": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eigene Übung"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Custom Exercise"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Özel Egzersiz"
-          }
-        }
-      }
-    },
-    "picker.exercise.section.library": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bibliothek"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Library"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kütüphane"
-          }
-        }
-      }
-    },
     "picker.exercise.section.customs": {
       "extractionState": "manual",
       "localizations": {
@@ -25574,29 +25459,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Özel"
-          }
-        }
-      }
-    },
-    "picker.exercise.noMatchFormat": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Keine Treffer für „%@\"."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No matches for \"%@\"."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "„%@\" için sonuç yok."
           }
         }
       }

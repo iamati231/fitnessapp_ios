@@ -262,7 +262,9 @@ public struct ActiveWorkoutView: View {
         // DEL-096: Ad-Hoc-Picker. Custom-Eintragen ist hier bewusst nicht
         // erlaubt — Library-Pick reicht, alles weitere lebt im DayEditor.
         .sheet(isPresented: $showingAdHocPicker) {
-            ExercisePickerView(
+            // DEL-210: einheitliche Übungs-Auswahl (= Bibliothek im
+            // Picker-Modus).
+            ExerciseLibraryPickerSheet(
                 planEnvironment: nil,
                 onSelect: { template in
                     addAdHocExercise(from: template)
