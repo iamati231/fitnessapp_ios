@@ -511,6 +511,14 @@ public struct WorkoutSummaryView: View {
     /// Health ist eine separate Datenquelle, der User kann dort selbst
     /// Workouts loeschen via Health-App.
     private func deleteEntireSession() {
+        // 0. DEL-213: Gear-Kilometer zurueckbuchen — Spiegel der Credit-
+        //    Buchung beim Finish (ActiveWorkoutView) bzw. in assignGear().
+        //    Ohne das akkumuliert geloeschte Cardio-Distanz dauerhaft auf
+        //    Schuh/Rad. Clamp auf 0, falls das Gear zwischenzeitlich
+        //    manuell heruntergesetzt wurde.
+        if let gear = session.gear {
+            gear.currentDistanceKm = max(0, gear.currentDistanceKm - sessionCardioDistanceKm)
+        }
         // 1. Logs erst — vermeidet `nullify`-Pass auf bereits-deleted Session.
         //    Snapshot in Array kopieren, weil die Live-Relationship-Collection
         //    waehrend des Deletes mutiert.
@@ -1153,6 +1161,15 @@ public struct WorkoutSummaryView: View {
             .filter { $0.session?.persistentModelID == session.persistentModelID }
             .sorted { $0.setIndex < $1.setIndex }
 
+        // DEL-213: Gear-km der geloeschten Cardio-Logs zurueckbuchen, bevor
+        // sie verschwinden — sonst bleibt die Distanz auf Schuh/Rad stehen.
+        if let gear = session.gear {
+            let removedKm = indices.compactMap { logs[$0].distanceKm }.reduce(0.0, +)
+            if removedKm > 0 {
+                gear.currentDistanceKm = max(0, gear.currentDistanceKm - removedKm)
+            }
+        }
+
         for index in indices {
             modelContext.delete(logs[index])
         }
@@ -1621,12 +1638,23 @@ private struct SetSummaryRow: View {
     }
 
     /// DEL-137: Distanz-Eingabe in km, optional Double-Bound.
+    /// DEL-213: Bucht Distanz-Korrekturen als Delta direkt auf das Session-
+    /// Gear um (Schuh/Rad-Kilometerstand). Delta-basiert, damit inkrementelle
+    /// Eingaben ("1" → "12") korrekt komponieren; Clamp auf 0 als Schutz.
     private var cardioDistanceField: some View {
         VStack(alignment: .leading, spacing: 2) {
             TextField("km",
                       value: Binding(
                         get: { log.distanceKm },
-                        set: { log.distanceKm = $0 }
+                        set: { newValue in
+                            if let gear = log.session?.gear {
+                                let delta = (newValue ?? 0) - (log.distanceKm ?? 0)
+                                if delta != 0 {
+                                    gear.currentDistanceKm = max(0, gear.currentDistanceKm + delta)
+                                }
+                            }
+                            log.distanceKm = newValue
+                        }
                       ),
                       format: .number)
                 .frame(width: 60)
