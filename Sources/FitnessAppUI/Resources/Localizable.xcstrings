@@ -30706,6 +30706,144 @@
           }
         }
       }
+    },
+    "rest.notification.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest is over! 💪"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause vorbei! 💪"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mola bitti! 💪"
+          }
+        }
+      }
+    },
+    "rest.notification.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to %1$@ — set %2$lld of %3$lld is waiting."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weiter mit %1$@ — Satz %2$lld von %3$lld wartet."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ile devam — %3$lld setten %2$lld. set bekliyor."
+          }
+        }
+      }
+    },
+    "rir.tooltip.0_5": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right at the edge — 1 shaky rep at most."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hart am Limit — höchstens noch 1 wackelige Wiederholung."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sınırın dibinde — en fazla 1 zorlu tekrar."
+          }
+        }
+      }
+    },
+    "rir.tooltip.1_5": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very intense — 1-2 clean reps left in the tank."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sehr intensiv — noch 1-2 saubere Wiederholungen im Tank."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çok yoğun — tankta 1-2 temiz tekrar kaldı."
+          }
+        }
+      }
+    },
+    "rir.tooltip.2_5": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strong stimulus — 2-3 more reps possible."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starker Reiz — noch 2-3 Wiederholungen möglich."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güçlü uyaran — 2-3 tekrar daha mümkün."
+          }
+        }
+      }
+    },
+    "rir.tooltip.3_5": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solid stimulus — 3-4 clean reps still doable."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solider Reiz — noch 3-4 saubere Wiederholungen machbar."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sağlam uyaran — 3-4 temiz tekrar daha yapılabilir."
+          }
+        }
+      }
     }
   }
 }

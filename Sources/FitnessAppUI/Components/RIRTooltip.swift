@@ -80,19 +80,25 @@ public struct RIRTooltipBloop: View {
         }
     }
 
-    /// Maps Float-RIR → Catalog-Key. RIR-Slider arbeiten in 0.5-Steps,
-    /// aber die Erklärungs-Texte sind in Integer-Buckets organisiert
-    /// (0/1/2/3/4+). `rounded(.down)` floored 1.5 → 1, 2.5 → 2 — das ist
-    /// die semantisch passendere Richtung (User-Wahrnehmung "fast 2" vs
-    /// "schon 3" → fast immer "noch 2 drin").
+    /// Maps Float-RIR → Catalog-Key im 0.5er-Raster des Sliders.
+    ///
+    /// DEL-205: Vorher floorte das Mapping auf Integer-Buckets — 2.5 zeigte
+    /// denselben Text wie 2 ("noch 2 Wiederholungen möglich"), was bei einem
+    /// bewusst gewählten Halbwert irreführend war. Jetzt hat jeder Halbschritt
+    /// einen eigenen Range-Text ("noch 2-3 Wiederholungen möglich").
+    /// Mapping über `rir * 2` gerundet, damit Float-Wackler (2.4999) nicht
+    /// in den falschen Bucket kippen.
     static func tooltipKey(for rir: Float) -> String {
-        let bucket = Int(rir.rounded(.down))
-        switch bucket {
-        case ..<0: return "rir.tooltip.0"   // Defensive (Slider-Range ist 0...5)
-        case 0:    return "rir.tooltip.0"
-        case 1:    return "rir.tooltip.1"
-        case 2:    return "rir.tooltip.2"
-        case 3:    return "rir.tooltip.3"
+        let halfSteps = Int((rir * 2).rounded())
+        switch halfSteps {
+        case ...0: return "rir.tooltip.0"      // Defensive (Slider-Range ist 0...5)
+        case 1:    return "rir.tooltip.0_5"
+        case 2:    return "rir.tooltip.1"
+        case 3:    return "rir.tooltip.1_5"
+        case 4:    return "rir.tooltip.2"
+        case 5:    return "rir.tooltip.2_5"
+        case 6:    return "rir.tooltip.3"
+        case 7:    return "rir.tooltip.3_5"
         default:   return "rir.tooltip.4plus"
         }
     }

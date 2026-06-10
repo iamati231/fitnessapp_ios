@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1335 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1341 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1335 / 1335** (100%) | 0 |
-| 🇬🇧 English (EN) | **1335 / 1335** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1335 / 1335** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1341 / 1341** (100%) | 0 |
+| 🇬🇧 English (EN) | **1341 / 1341** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1341 / 1341** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1322,22 +1322,28 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `quiz.result.topMatch` | TOP EMPFEHLUNG FÜR DICH | TOP MATCH FOR YOU | SENİN İÇİN EN İYİ EŞLEŞME |
 | `quiz.title` | Plan finden | Find a Plan | Plan Bul |
 
-## `rest.*`  (3 Keys)
+## `rest.*`  (5 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `rest.notification.body` | Weiter mit %1$@ — Satz %2$lld von %3$lld wartet. | Back to %1$@ — set %2$lld of %3$lld is waiting. | %1$@ ile devam — %3$lld setten %2$lld. set bekliyor. |
+| `rest.notification.title` | Pause vorbei! 💪 | Rest is over! 💪 | Mola bitti! 💪 |
 | `rest.skip` | Pause überspringen | Skip rest | Molayı atla |
 | `rest.timer.label.active` | PAUSE | REST | MOLA |
 | `rest.timer.label.finished` | PAUSE VORBEI | REST OVER | MOLA BİTTİ |
 
-## `rir.*`  (5 Keys)
+## `rir.*`  (9 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `rir.tooltip.0` | Absolutes Muskelversagen — keine weitere Wiederholung möglich. | Absolute failure — no more clean reps possible. | Tam yetersizlik — başka temiz tekrar mümkün değil. |
+| `rir.tooltip.0_5` | Hart am Limit — höchstens noch 1 wackelige Wiederholung. | Right at the edge — 1 shaky rep at most. | Sınırın dibinde — en fazla 1 zorlu tekrar. |
 | `rir.tooltip.1` | Sehr hart — maximal noch 1 saubere Wiederholung im Tank. | Very hard — only 1 clean rep left in the tank. | Çok zor — tankta sadece 1 temiz tekrar kaldı. |
+| `rir.tooltip.1_5` | Sehr intensiv — noch 1-2 saubere Wiederholungen im Tank. | Very intense — 1-2 clean reps left in the tank. | Çok yoğun — tankta 1-2 temiz tekrar kaldı. |
 | `rir.tooltip.2` | Optimaler Reiz — noch 2 Wiederholungen möglich. | Optimal stimulus — 2 more reps possible. | Optimal uyaran — 2 tekrar daha mümkün. |
+| `rir.tooltip.2_5` | Starker Reiz — noch 2-3 Wiederholungen möglich. | Strong stimulus — 2-3 more reps possible. | Güçlü uyaran — 2-3 tekrar daha mümkün. |
 | `rir.tooltip.3` | Moderater Reiz — noch 3 saubere Wiederholungen machbar. | Moderate stimulus — 3 clean reps still doable. | Orta uyaran — 3 temiz tekrar daha yapılabilir. |
+| `rir.tooltip.3_5` | Solider Reiz — noch 3-4 saubere Wiederholungen machbar. | Solid stimulus — 3-4 clean reps still doable. | Sağlam uyaran — 3-4 temiz tekrar daha yapılabilir. |
 | `rir.tooltip.4plus` | Leichtes Training — ideal für Warm-up oder Deload. | Light training — ideal for warm-up or deload. | Hafif antrenman — ısınma veya deload için ideal. |
 
 ## `root.*`  (1 Keys)

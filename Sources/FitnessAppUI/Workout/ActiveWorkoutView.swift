@@ -67,6 +67,11 @@ public struct ActiveWorkoutView: View {
     /// tatsaechlich macht.
     @AppStorage("pref_show_warmups") private var showWarmups: Bool = true
 
+    /// DEL-204: gleiche Keys wie RestTimerBar/Settings — gaten die
+    /// Background-Notification fürs Timer-Ende. Beide aus = kein Banner.
+    @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
+    @AppStorage("pref_timer_haptics") private var timerHapticsEnabled: Bool = true
+
     /// DEL-086: Interference-Banner-Dismiss-State. User kann das Warn-Banner
     /// per Tap auf "x" wegklicken; persistiert nur fuer diese Session-View-
     /// Instanz (State, kein AppStorage — bei der naechsten Session
@@ -154,6 +159,7 @@ public struct ActiveWorkoutView: View {
             guard oldValue == nil, newValue != nil else { return }
             if restTimerEnd != nil {
                 restTimerEnd = nil
+                cancelRestTimerNotification()
                 Task { await restTimerActivity.endRestTimer(reason: .skipped) }
             }
         }
@@ -186,6 +192,11 @@ public struct ActiveWorkoutView: View {
                     originalSeconds: restTimerOriginalSeconds,
                     onDismiss: { reason in
                         restTimerEnd = nil
+                        // DEL-204: bei .completed im Vordergrund hat die
+                        // Notification nie gefeuert (Foreground-Suppression)
+                        // — pending + delivered abräumen ist in beiden
+                        // Fällen das Richtige.
+                        cancelRestTimerNotification()
                         Task {
                             await restTimerActivity.endRestTimer(
                                 reason: reason == .completed ? .completed : .skipped
@@ -825,6 +836,32 @@ public struct ActiveWorkoutView: View {
                 originalSeconds: bounded
             )
         }
+        // DEL-204: Background-Feedback. Sound/Haptik der RestTimerBar
+        // feuern nur im Vordergrund — wenn der User das Handy weglegt
+        // oder die App wechselt, kam bisher NICHTS. Die Local Notification
+        // schließt die Lücke; im Vordergrund unterdrückt der AppDelegate
+        // sie (kein Doppel-Feedback). Gated über dieselben Prefs wie das
+        // In-App-Feedback: wer Sound UND Haptik aus hat, will auch keine
+        // Banner.
+        if timerSoundEnabled || timerHapticsEnabled {
+            let title = String(localized: "rest.notification.title", bundle: .module)
+            let body = String(
+                format: String(localized: "rest.notification.body", bundle: .module),
+                exercise.displayName, setIndex + 2, exercise.sets
+            )
+            Task {
+                await ReminderScheduler.scheduleRestTimerEnd(
+                    after: bounded, title: title, body: body
+                )
+            }
+        }
+    }
+
+    /// DEL-204: räumt die geplante "Pause vorbei"-Notification ab. Muss in
+    /// JEDEM Pfad laufen, der den Timer beendet/ersetzt — sonst ploppt das
+    /// Banner einer längst geskippten Pause auf.
+    private func cancelRestTimerNotification() {
+        Task { await ReminderScheduler.cancelRestTimerEnd() }
     }
 
     /// DEL-083: True wenn fuer alle Uebungen des Supersets der aktuelle
@@ -921,6 +958,8 @@ public struct ActiveWorkoutView: View {
         //     spaeter aktiv anschauen will.
         //   - No PRs → quiet skip-dismiss as before.
         restTimerEnd = nil
+        // DEL-204: Workout beendet → keine "Pause vorbei"-Notification mehr.
+        cancelRestTimerNotification()
         let celebration = prCelebrationsEnabled
             ? PRCelebration.make(from: detectedPRs)
             : nil

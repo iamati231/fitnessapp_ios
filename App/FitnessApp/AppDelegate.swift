@@ -26,11 +26,20 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 
     /// Foreground-Notification: zeigt Banner + Sound an, statt sie zu
     /// verschlucken (Default-iOS-Verhalten waere "silent in foreground").
+    ///
+    /// DEL-204-Ausnahme: die Rest-Timer-Notification ist NUR fürs
+    /// Background-Feedback gedacht — im Vordergrund übernimmt die
+    /// RestTimerBar Sound + Haptik. Ohne die Suppression gäbe es beim
+    /// Timer-Ende in der App Doppel-Feedback (Banner + In-App-Sound).
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        if ReminderScheduler.isRestTimerNotification(identifier: notification.request.identifier) {
+            completionHandler([])
+            return
+        }
         completionHandler([.banner, .sound, .list])
     }
 
