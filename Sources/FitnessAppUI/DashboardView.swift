@@ -87,6 +87,11 @@ public struct DashboardView: View {
     /// (mit genug History dahinter) → `.backupOverdue`-Hinweis.
     @AppStorage("lastDataExportAt") private var lastDataExportAt: Double = 0
 
+    /// DEL-200: Ende der laufenden Deload-Woche als Unix-Timestamp.
+    /// 0 = kein Deload aktiv. Gesetzt beim Apply-Tap auf der Coaching-
+    /// Card; `autoEndDeloadIfExpired()` räumt nach Ablauf auf.
+    @AppStorage("deload_until") private var deloadUntil: Double = 0
+
     public init() {}
 
     public var body: some View {
@@ -139,6 +144,12 @@ public struct DashboardView: View {
         // Properties auf nil und die Cards zeigen "—".
         .task(id: heroMetricSlots) {
             await refreshHealthKitHeroValues()
+        }
+        // DEL-200: abgelaufene Deload-Woche beim Dashboard-Erscheinen
+        // aufräumen — Original-Gewichte zurückschreiben. Der typische
+        // Pfad: App nach einer Woche wieder öffnen.
+        .task {
+            autoEndDeloadIfExpired()
         }
         // DEL-141: Dynamische Begrüßung statt statischem "Dashboard"-Title.
         // Tageszeit-aware (Morgen/Tag/Abend) + Vorname-aware. Wenn der
@@ -974,11 +985,92 @@ public struct DashboardView: View {
         // Vorher returnte die View `EmptyView()` ohne Trigger; das wirkte wie
         // ein kaputtes Feature (Widget an, aber unsichtbar). Jetzt zwei
         // Zustaende: konkreter Insight ODER neutrale Empty-State-Karte.
-        if let message = currentCoachingMessage {
+        // DEL-200: Während einer aktiven Deload-Woche ersetzt der Status-
+        // Banner die Coaching-Card komplett — der wichtigste Kontext IST
+        // dann der Deload, alles andere wäre Rauschen.
+        if isDeloadActive {
+            deloadActiveBanner
+        } else if let message = currentCoachingMessage {
             coachingInsightContent(message: message)
         } else {
             coachingInsightEmptyContent
         }
+    }
+
+    // MARK: - DEL-200 Deload-Apply
+
+    private var isDeloadActive: Bool {
+        deloadUntil > Date().timeIntervalSince1970
+    }
+
+    /// True wenn die aktuelle Coaching-Message der Deload-Vorschlag ist —
+    /// dann rendert die Card zusätzlich den Apply-Button. P1-Kontexte
+    /// gewinnen weiterhin (kein Button unter einer CNS-Warnung).
+    private var showsDeloadApplyAction: Bool {
+        activeCoachingContext == nil && activeSoftCoachingContext == .deloadRecommended
+    }
+
+    /// Startet die Deload-Woche: Gewichte via DeloadManager halbieren,
+    /// Ablaufdatum setzen. Bei 0 angepassten Übungen (kein aktiver Plan
+    /// mit Gewichten) passiert nichts — kein Phantom-Deload-Banner.
+    private func applyDeload() {
+        let adjusted = (try? DeloadManager.startDeload(in: modelContext)) ?? 0
+        guard adjusted > 0 else { return }
+        let until = Date().addingTimeInterval(
+            TimeInterval(DeloadManager.defaultDurationDays * 24 * 3600)
+        )
+        deloadUntil = until.timeIntervalSince1970
+    }
+
+    /// Beendet die Deload-Woche (manuell oder via Auto-Expiry):
+    /// Original-Gewichte zurück, Flag löschen.
+    private func endDeload() {
+        _ = try? DeloadManager.endDeload(in: modelContext)
+        deloadUntil = 0
+    }
+
+    /// Auto-Restore beim Dashboard-Erscheinen: Deload abgelaufen → Gewichte
+    /// zurückschreiben. Wird in `.task` der View aufgerufen — der typische
+    /// "App nach einer Woche wieder öffnen"-Pfad.
+    private func autoEndDeloadIfExpired() {
+        guard deloadUntil > 0, !isDeloadActive else { return }
+        endDeload()
+    }
+
+    private var deloadActiveBanner: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "arrow.down.heart.fill")
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.teal)
+                .font(.title3)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(String(
+                    format: String(localized: "dashboard.deload.activeBanner", bundle: .module),
+                    Date(timeIntervalSince1970: deloadUntil)
+                        .formatted(date: .abbreviated, time: .omitted)
+                ))
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    withAnimation { endDeload() }
+                } label: {
+                    Text("dashboard.deload.endButton", bundle: .module)
+                        .font(.caption.weight(.semibold))
+                }
+                .buttonStyle(.bordered)
+                .tint(.teal)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.teal.opacity(0.10))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.teal.opacity(0.20), lineWidth: 1)
+        )
     }
 
     /// Liefert den aktuellen Coaching-Text — oder nil, wenn kein Trigger
@@ -1115,6 +1207,9 @@ public struct DashboardView: View {
     /// die Zahl harter Sessions (Feeling >= 4) der letzten 14 Tage. Die
     /// eigentliche Entscheidung lebt testbar in `DeloadAdvisor`.
     private var shouldRecommendDeload: Bool {
+        // DEL-200: Während einer laufenden Deload-Woche keine erneute
+        // Empfehlung — die Gewichte sind ja schon reduziert.
+        guard !isDeloadActive else { return false }
         let calendar = Calendar.current
         let now = Date()
         guard let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: now)?.start else {
@@ -1230,10 +1325,28 @@ public struct DashboardView: View {
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.deltiqOrange)
                 .font(.title3)
-            Text(message)
-                .font(.subheadline)
-                .foregroundStyle(.primary)
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                // DEL-200: Apply-Button direkt unter der Deload-Empfehlung —
+                // aus dem Hinweis wird eine Ein-Tap-Handlung.
+                if showsDeloadApplyAction {
+                    Button {
+                        withAnimation { applyDeload() }
+                    } label: {
+                        Label {
+                            Text("dashboard.deload.applyButton", bundle: .module)
+                        } icon: {
+                            Image(systemName: "arrow.down.heart")
+                        }
+                        .font(.caption.weight(.semibold))
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color.deltiqOrange)
+                }
+            }
             Spacer(minLength: 0)
         }
         .padding(14)

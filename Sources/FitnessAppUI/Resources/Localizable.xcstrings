@@ -30315,6 +30315,75 @@
           }
         }
       }
+    },
+    "dashboard.deload.applyButton": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start deload week"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload-Woche starten"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload haftasını başlat"
+          }
+        }
+      }
+    },
+    "dashboard.deload.activeBanner": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload week active until %@ — working weights reduced by ~50%%. Train the movements, skip the grind."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload-Woche aktiv bis %@ — Arbeitsgewichte um ~50%% reduziert. Trainiere die Bewegungen, lass das Schleifen weg."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload haftası %@ tarihine kadar aktif — çalışma ağırlıkları ~%%50 azaltıldı. Hareketleri çalış, kendini ezme."
+          }
+        }
+      }
+    },
+    "dashboard.deload.endButton": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End deload & restore weights"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload beenden & Gewichte zurücksetzen"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload'u bitir ve ağırlıkları geri yükle"
+          }
+        }
+      }
     }
   }
 }

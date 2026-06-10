@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1318 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1321 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1318 / 1318** (100%) | 0 |
-| 🇬🇧 English (EN) | **1318 / 1318** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1318 / 1318** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1321 / 1321** (100%) | 0 |
+| 🇬🇧 English (EN) | **1321 / 1321** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1321 / 1321** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -358,7 +358,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `customExercise.section.name` | Name | Name | Ad |
 | `customExercise.title` | Neue Übung | New exercise | Yeni hareket |
 
-## `dashboard.*`  (76 Keys)
+## `dashboard.*`  (79 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -376,6 +376,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.compoundChart.empty.title` | Noch zu wenig Daten | Not enough data yet | Henüz yeterli veri yok |
 | `dashboard.compoundChart.legend` | Geschätztes 1RM · gestrichelt = 4-Wochen-Prognose | Estimated 1RM · dashed = 4-week forecast | Tahmini 1RM · kesik çizgi = 4 haftalık tahmin |
 | `dashboard.compoundChart.title` | Compound-Lift-Trend | Compound Lift Trend | Temel Hareket Trendi |
+| `dashboard.deload.activeBanner` | Deload-Woche aktiv bis %@ — Arbeitsgewichte um ~50%% reduziert. Trainiere die Bewegungen, lass das Schleifen weg. | Deload week active until %@ — working weights reduced by ~50%%. Train the movements, skip the grind. | Deload haftası %@ tarihine kadar aktif — çalışma ağırlıkları ~%%50 azaltıldı. Hareketleri çalış, kendini ezme. |
+| `dashboard.deload.applyButton` | Deload-Woche starten | Start deload week | Deload haftasını başlat |
+| `dashboard.deload.endButton` | Deload beenden & Gewichte zurücksetzen | End deload & restore weights | Deload'u bitir ve ağırlıkları geri yükle |
 | `dashboard.empty.cta.addMeasurement` | Messung hinzufügen | Add measurement | Ölçüm ekle |
 | `dashboard.empty.cta.startWorkout` | Training starten | Start workout | Antrenmana başla |
 | `dashboard.exercisesPreview.one` | %1$lld Übung — %2$@ | %1$lld exercise — %2$@ | %1$lld egzersiz — %2$@ |

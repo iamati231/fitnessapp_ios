@@ -128,6 +128,12 @@ public final class Exercise {
         set { equipmentRaw = newValue?.rawValue }
     }
 
+    /// DEL-200: Snapshot des Arbeitsgewichts VOR einer Deload-Woche.
+    /// Non-nil = Deload aktiv für diese Übung; `DeloadManager.endDeload`
+    /// schreibt den Wert zurück nach `suggestedWeight` und nullt das Feld.
+    /// Default nil → Lightweight-Migration für Bestand.
+    public var deloadOriginalWeight: Double? = nil
+
     /// DEL-083: Superset-Gruppe. Uebungen mit der gleichen UUID werden im
     /// Workout abwechselnd ausgefuehrt (A1, B1, A2, B2 statt A1, A2, A3,
     /// B1, B2, B3). Plan-Editor setzt die UUID via Swipe-Action "Link"; nil
