@@ -224,8 +224,16 @@ struct MainTabView: View {
             }
             .tag(AppTab.measurement)
 
-            NavigationStack {
+            // DEL-212: Path-Binding, damit Notification-Routen direkt in
+            // einzelne Calculator-Screens pushen koennen (Wasser-Reminder).
+            NavigationStack(path: $navigation.calculatorsPath) {
                 CalculatorsView()
+                    .navigationDestination(for: CalculatorsRoute.self) { route in
+                        switch route {
+                        case .waterTracker:
+                            WaterTrackerView()
+                        }
+                    }
             }
             .tabItem {
                 Label {
@@ -261,10 +269,11 @@ struct MainTabView: View {
         guard let route = notificationRouter.consumePendingRoute() else { return }
         switch route {
         case .waterTracker:
+            // DEL-212: Tab-Swap + Deep-Push direkt in den WaterTracker.
+            // Path wird ersetzt (nicht appended), damit wiederholte Taps
+            // keinen Stack aus mehreren Tracker-Screens aufbauen.
             navigation.selectedTab = .calculators
-            // TODO: Sub-Push WaterTracker — aktuell landet User auf Calculators-
-            // Tab, der WaterTracker als Tile zeigt. Deep-Push waere ein
-            // CalculatorsRoute, der's gezielt oeffnet — kommt mit DEL-014.
+            navigation.calculatorsPath = NavigationPath([CalculatorsRoute.waterTracker])
         case .measurement:
             navigation.selectedTab = .measurement
         }

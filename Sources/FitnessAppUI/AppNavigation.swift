@@ -17,6 +17,11 @@ public final class AppNavigation {
     public var selectedTab: AppTab = .dashboard
     public var workoutPath = NavigationPath()
 
+    /// DEL-212: NavigationPath des Calculators-Tabs. Erlaubt Deep-Pushes aus
+    /// Notification-Routen (Wasser-Erinnerung → direkt in den WaterTracker),
+    /// statt den User nur auf der Tab-Übersicht abzusetzen.
+    public var calculatorsPath = NavigationPath()
+
     public init() {}
 
     /// Pop the workout stack to its root and switch to the dashboard. Used by
@@ -25,6 +30,13 @@ public final class AppNavigation {
         workoutPath = NavigationPath()
         selectedTab = .dashboard
     }
+}
+
+/// DEL-212: Push-Routen innerhalb des Calculators-Tabs. Wird von der
+/// `navigationDestination(for:)`-Registrierung in RootView aufgelöst.
+@available(iOS 17.0, macOS 14.0, *)
+public enum CalculatorsRoute: Hashable, Sendable {
+    case waterTracker
 }
 
 @available(iOS 17.0, macOS 14.0, *)
