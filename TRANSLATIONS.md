@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1321 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1332 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1321 / 1321** (100%) | 0 |
-| 🇬🇧 English (EN) | **1321 / 1321** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1321 / 1321** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1332 / 1332** (100%) | 0 |
+| 🇬🇧 English (EN) | **1332 / 1332** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1332 / 1332** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -613,10 +613,20 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `equipment.kettlebell` | Kettlebell | Kettlebell | Kettlebell |
 | `equipment.machine` | Maschine | Machine | Makine |
 
-## `exercise.*`  (171 Keys)
+## `exercise.*`  (181 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `exercise.detail.chart.title` | e1RM-Verlauf | e1RM over time | Zaman içinde e1RM |
+| `exercise.detail.empty` | Noch keine Sätze für diese Übung geloggt. Sobald du sie trainierst, erscheint hier dein Verlauf. | No sets logged for this exercise yet. Once you train it, your history shows up here. | Bu egzersiz için henüz set kaydedilmedi. Çalıştığında geçmişin burada görünecek. |
+| `exercise.detail.prs.title` | Persönliche Rekorde | Personal records | Kişisel rekorlar |
+| `exercise.detail.recent.title` | Letzte Sätze | Recent sets | Son setler |
+| `exercise.detail.stats.bestE1RM` | Bestes e1RM | Best e1RM | En iyi e1RM |
+| `exercise.detail.stats.distance` | Distanz gesamt | Total distance | Toplam mesafe |
+| `exercise.detail.stats.duration` | Zeit gesamt | Total time | Toplam süre |
+| `exercise.detail.stats.maxWeight` | Schwerster Satz | Heaviest set | En ağır set |
+| `exercise.detail.stats.sets` | Sätze gesamt | Total sets | Toplam set |
+| `exercise.detail.stats.volume` | Volumen gesamt | Total volume | Toplam hacim |
 | `exercise.kind.cardio` | Cardio | Cardio | Kardiyo |
 | `exercise.name.assistedDip` | Dip (assistiert) | Assisted Dip | Destekli Dip |
 | `exercise.name.assistedPullUp` | Klimmzug (assistiert) | Assisted Pull-Up | Destekli Barfiks |
@@ -870,12 +880,13 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 |---|---|---|---|
 | `holdTimer.target.format` | Ziel: %lld Sek halten | Target: hold %lld sec | Hedef: %lld sn boyunca tut |
 
-## `library.*`  (4 Keys)
+## `library.*`  (5 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `library.newExercise` | Neue Übung | New exercise | Yeni hareket |
 | `library.readOnlyFooter` | System-Übung — die Basis-Vorlagen der App sind nicht bearbeitbar. | System exercise — the app's base templates can't be edited. | Sistem hareketi — uygulamanın temel şablonları düzenlenemez. |
+| `library.row.history` | Verlauf | History | Geçmiş |
 | `library.searchPlaceholder` | Übung suchen | Search exercise | Hareket ara |
 | `library.title` | Übungsbibliothek | Exercise Library | Hareket Kütüphanesi |
 

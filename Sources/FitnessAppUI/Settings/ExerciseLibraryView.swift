@@ -21,6 +21,8 @@ public struct ExerciseLibraryView: View {
     @State private var search: String = ""
     /// Tap auf eine Zeile → Editor-Sheet fuer dieses Template.
     @State private var selectedTemplate: ExerciseTemplate?
+    /// DEL-201: Leading-Swipe "Verlauf" → Push auf den Übungs-Detail-Screen.
+    @State private var historyTemplate: ExerciseTemplate?
     /// Toolbar-"+" → Create-Sheet.
     @State private var showingCreate: Bool = false
     /// Swipe-Delete → Confirm-Gate.
@@ -79,6 +81,16 @@ public struct ExerciseLibraryView: View {
         }
         .sheet(item: $selectedTemplate) { template in
             ExerciseLibraryEditorSheet(template: template)
+        }
+        // DEL-201: Übungs-Detail-Push. Leading-Swipe auf einer Zeile setzt
+        // historyTemplate; der Detail-Screen identifiziert die Historie
+        // über den System-Namen (Snapshot-Matching, DEL-051).
+        .navigationDestination(item: $historyTemplate) { template in
+            ExerciseDetailView(
+                systemName: template.name,
+                displayName: template.displayName,
+                isCardio: template.isCardio
+            )
         }
         .sheet(isPresented: $showingCreate) {
             ExerciseLibraryEditorSheet(template: nil)
@@ -159,6 +171,25 @@ public struct ExerciseLibraryView: View {
     // MARK: Row
 
     private func row(_ template: ExerciseTemplate) -> some View {
+        rowContent(template)
+            // DEL-201: Leading-Swipe öffnet den Verlaufs-Screen. Auf der
+            // Row selbst (nicht im Section-ForEach), damit System- UND
+            // Custom-Übungen den Swipe bekommen.
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                Button {
+                    historyTemplate = template
+                } label: {
+                    Label {
+                        Text("library.row.history", bundle: .module)
+                    } icon: {
+                        Image(systemName: "chart.xyaxis.line")
+                    }
+                }
+                .tint(Color.deltiqOrange)
+            }
+    }
+
+    private func rowContent(_ template: ExerciseTemplate) -> some View {
         Button {
             selectedTemplate = template
         } label: {
