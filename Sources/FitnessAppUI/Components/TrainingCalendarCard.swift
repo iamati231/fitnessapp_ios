@@ -19,6 +19,11 @@ struct TrainingCalendarCard: View {
     /// `TrainingCalendarAggregator.weekStreak`.
     let streak: Int
 
+    /// DEL-202: Tap auf einen Workout-Tag. Nil = Card ist read-only.
+    /// Nur Tage MIT Workout sind tappbar — ein leerer Dienstag hat kein
+    /// sinnvolles Detail.
+    var onDaySelected: ((Date) -> Void)? = nil
+
     /// Anker des angezeigten Monats (erster Tag des Monats). Default:
     /// aktueller Monat; Chevrons blättern zurück/vor, vor maximal bis
     /// zum aktuellen Monat (Zukunft hat keine Workouts).
@@ -34,8 +39,10 @@ struct TrainingCalendarCard: View {
             dayGrid
         }
         .deltiqCardStyle()
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(a11ySummary)
+        // DEL-202: .contain statt .combine — combine hätte die Monats-
+        // Chevrons und die tappbaren Workout-Tage für VoiceOver
+        // verschluckt. Die Zusammenfassung hängt am Header (s.u.).
+        .accessibilityElement(children: .contain)
     }
 
     // MARK: Header
@@ -44,6 +51,7 @@ struct TrainingCalendarCard: View {
         HStack {
             Text("dashboard.calendar.title", bundle: .module)
                 .font(.headline)
+                .accessibilityLabel(a11ySummary)
             Spacer()
             if streak > 0 {
                 HStack(spacing: 4) {
@@ -159,8 +167,26 @@ struct TrainingCalendarCard: View {
         }
     }
 
+    @ViewBuilder
     private func dayCell(_ day: Date) -> some View {
         let isWorkout = workoutDays.contains(calendar.startOfDay(for: day))
+        let label = dayCellLabel(day, isWorkout: isWorkout)
+        // DEL-202: Workout-Tage werden tappbar, wenn der Parent einen
+        // Callback liefert. Plain-Button, damit das Zellen-Layout
+        // unverändert bleibt.
+        if isWorkout, let onDaySelected {
+            Button {
+                onDaySelected(calendar.startOfDay(for: day))
+            } label: {
+                label
+            }
+            .buttonStyle(.plain)
+        } else {
+            label
+        }
+    }
+
+    private func dayCellLabel(_ day: Date, isWorkout: Bool) -> some View {
         let isToday = calendar.isDateInToday(day)
         let isFuture = day > Date()
         return Text("\(calendar.component(.day, from: day))")

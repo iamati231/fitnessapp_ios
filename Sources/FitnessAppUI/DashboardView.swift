@@ -92,6 +92,16 @@ public struct DashboardView: View {
     /// Card; `autoEndDeloadIfExpired()` räumt nach Ablauf auf.
     @AppStorage("deload_until") private var deloadUntil: Double = 0
 
+    /// DEL-202: getappter Kalender-Tag fürs Tages-Detail-Sheet. Identifiable-
+    /// Wrapper, weil `Date` selbst kein Identifiable ist und sheet(item:)
+    /// eins verlangt.
+    @State private var selectedCalendarDay: CalendarDaySelection?
+
+    private struct CalendarDaySelection: Identifiable {
+        let day: Date
+        var id: Date { day }
+    }
+
     public init() {}
 
     public var body: some View {
@@ -2166,8 +2176,49 @@ public struct DashboardView: View {
             .map(\.startTime)
         return TrainingCalendarCard(
             workoutDays: TrainingCalendarAggregator.workoutDays(of: realDates),
-            streak: TrainingCalendarAggregator.weekStreak(workoutDates: realDates)
+            streak: TrainingCalendarAggregator.weekStreak(workoutDates: realDates),
+            // DEL-202: Tap auf einen Workout-Dot → Tages-Detail-Sheet.
+            onDaySelected: { day in
+                selectedCalendarDay = CalendarDaySelection(day: day)
+            }
         )
+        .sheet(item: $selectedCalendarDay) { selection in
+            calendarDaySheet(for: selection.day)
+        }
+    }
+
+    /// DEL-202: Sessions eines getappten Kalendertags. Eigene
+    /// NavigationStack im Sheet, Rows verlinken in die Read-Only-Summary —
+    /// gleiche Ziel-View wie die Recent-Workouts-Liste.
+    private func calendarDaySheet(for day: Date) -> some View {
+        let sessions = completedSessions.filter {
+            $0.isRealWorkout && Calendar.current.isDate($0.startTime, inSameDayAs: day)
+        }
+        return NavigationStack {
+            List {
+                ForEach(sessions, id: \.persistentModelID) { session in
+                    NavigationLink {
+                        WorkoutSummaryView(session: session, isReadOnly: true)
+                    } label: {
+                        DashboardSessionRow(session: session)
+                    }
+                }
+            }
+            .navigationTitle(day.formatted(date: .abbreviated, time: .omitted))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        selectedCalendarDay = nil
+                    } label: {
+                        Text("common.close", bundle: .module)
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 
     // @ViewBuilder explizit nötig, weil der Body let-Bindings + ein
