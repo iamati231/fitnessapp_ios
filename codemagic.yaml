@@ -280,6 +280,16 @@ workflows:
         # by XcodeGen, agvtool's in-place .pbxproj rewrite is unreliable.
         # The sed-on-project.yml approach is dumb but bulletproof: bump
         # the single source of truth, let XcodeGen propagate.
+        #
+        # HAEUFIGER FEHLERFALL (2026-07-27): scheitert dieser Schritt mit
+        #   403: A required agreement is missing or has expired
+        # dann ist NICHTS am Code oder an den Keys kaputt. Apple hat seine
+        # Vertragsbedingungen aktualisiert (oder ein Vertrag ist abgelaufen)
+        # und blockiert saemtliche App-Store-Connect-API-Aufrufe, bis der
+        # ACCOUNT HOLDER sie in App Store Connect unter "Business" bestaetigt.
+        # Kein Retry, kein Workaround im Build — der Schritt MUSS hier laut
+        # scheitern, weil eine geratene Build-Nummer mit einem bestehenden
+        # TestFlight-Build kollidieren wuerde.
         script: |
           set -e
           NEXT=$(($(app-store-connect get-latest-build-number "$APP_STORE_APP_ID") + 1))
