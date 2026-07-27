@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1419 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1435 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1419 / 1419** (100%) | 0 |
-| 🇬🇧 English (EN) | **1419 / 1419** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1419 / 1419** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1435 / 1435** (100%) | 0 |
+| 🇬🇧 English (EN) | **1435 / 1435** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1435 / 1435** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -81,6 +81,26 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `activity.sedentary.label` | Bürojob (1.2) | Sedentary (1.2) | Hareketsiz (1.2) |
 | `activity.veryActive.description` | Tag-täglich intensives Training oder schwere körperliche Arbeit. | Daily intense training or heavy physical labor. | Her gün yoğun antrenman ya da ağır fiziksel iş. |
 | `activity.veryActive.label` | Sehr aktiv (1.9) | Very Active (1.9) | Çok Aktif (1.9) |
+
+## `backups.*`  (15 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `backups.createNow` | Jetzt sichern | Back up now | Şimdi yedekle |
+| `backups.delete.action` | Löschen | Delete | Sil |
+| `backups.empty.description` | Sobald du ein Training aufgezeichnet hast, legt Deltiq beim nächsten Verlassen der App die erste Sicherung an. | Once you've recorded a workout, Deltiq creates the first backup the next time you leave the app. | Bir antrenman kaydettiğinde, Deltiq uygulamadan bir sonraki çıkışında ilk yedeği oluşturur. |
+| `backups.empty.title` | Noch keine Backups | No backups yet | Henüz yedek yok |
+| `backups.footer` | Backups liegen im App-Ordner auf diesem Gerät. Für eine Sicherung außerhalb des Geräts nutze zusätzlich den Export und lege die Datei in iCloud Drive ab. | Backups are stored in the app folder on this device. For an off-device copy, also use Export and save the file to iCloud Drive. | Yedekler bu cihazdaki uygulama klasöründe saklanır. Cihaz dışı bir kopya için ayrıca Dışa Aktar'ı kullanıp dosyayı iCloud Drive'a kaydet. |
+| `backups.intro` | Deltiq sichert deine Daten automatisch, wenn du die App verlässt — höchstens einmal pro Tag. Die letzten fünf Sicherungen bleiben erhalten. | Deltiq backs up your data automatically when you leave the app — at most once a day. The five most recent backups are kept. | Deltiq, uygulamadan çıktığında verilerini otomatik olarak yedekler — günde en fazla bir kez. En son beş yedek saklanır. |
+| `backups.reason.automatic` | Automatisch | Automatic | Otomatik |
+| `backups.reason.manual` | Manuell | Manual | Manuel |
+| `backups.reason.preImport` | Vor einem Import | Before an import | İçe aktarmadan önce |
+| `backups.restore.action` | Wiederherstellen | Restore | Geri yükle |
+| `backups.restore.confirm.message` | Deine aktuellen Daten werden durch den Stand von %@ ersetzt. Vorher legt Deltiq automatisch eine Sicherung des JETZIGEN Stands an, damit du zurück kannst. | Your current data will be replaced with the backup from %@. Deltiq first saves a backup of your CURRENT data so you can go back. | Mevcut verilerin %@ tarihli yedekle değiştirilecek. Deltiq önce ŞU ANKİ verilerinin bir yedeğini alır, böylece geri dönebilirsin. |
+| `backups.restore.confirm.title` | Diesen Stand wiederherstellen? | Restore this backup? | Bu yedek geri yüklensin mi? |
+| `backups.restore.done` | %1$lld Datensätze wiederhergestellt, %2$lld übersprungen. | Restored %1$lld records, skipped %2$lld. | %1$lld kayıt geri yüklendi, %2$lld atlandı. |
+| `backups.restore.running` | Wird wiederhergestellt … | Restoring … | Geri yükleniyor … |
+| `backups.title` | Backups | Backups | Yedekler |
 
 ## `barbell.*`  (2 Keys)
 
@@ -1432,7 +1452,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (121 Keys)
+## `settings.*`  (122 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1523,6 +1543,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.preferences.units.imperial` | Imperial | Imperial | İmperyal |
 | `settings.preferences.units.label` | Einheiten | Units | Birimler |
 | `settings.preferences.units.metric` | Metrisch | Metric | Metrik |
+| `settings.privacy.backups` | Automatische Backups | Automatic backups | Otomatik yedekler |
 | `settings.privacy.dataExport` | Daten exportieren (CSV) | Export data (CSV) | Verileri dışa aktar (CSV) |
 | `settings.privacy.dataImport` | Daten importieren (CSV) | Import data (CSV) | Verileri içe aktar (CSV) |
 | `settings.privacy.footer` | Exportiere alle deine Trainings- und Profildaten als ZIP-Archiv mit CSV-Dateien. Praktisch für Backups, Gerätewechsel oder einfach um deine Daten in der Hand zu haben. | Export all your training and profile data as a ZIP archive of CSV files. Useful for backups, switching devices, or simply having your data. | Tüm antrenman ve profil verilerini CSV dosyalarından oluşan bir ZIP arşivi olarak dışa aktar. Yedekleme, cihaz değişikliği veya verilerine sahip olmak için kullanışlıdır. |

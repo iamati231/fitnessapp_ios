@@ -582,6 +582,29 @@ public struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
             }
+            // DEL-229: Automatische Backup-Generationen (DEL-227/228) sichtbar
+            // und wiederherstellbar machen. Steht bewusst VOR dem manuellen
+            // Import: im Ernstfall ist "letzten Stand zurueckholen" der Weg,
+            // den der User zuerst finden soll — nicht der Datei-Import.
+            DeltiqFormFullRow {
+                NavigationLink {
+                    BackupListView()
+                } label: {
+                    HStack {
+                        Label {
+                            Text("settings.privacy.backups", bundle: .module)
+                        } icon: {
+                            Image(systemName: "clock.arrow.circlepath")
+                        }
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
             // DEL-174: Daten-Import (Phase 2). Append-only mit Duplikat-
             // Erkennung — bestehende Daten bleiben unangetastet.
             DeltiqFormFullRow {
