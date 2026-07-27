@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1435 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1453 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1435 / 1435** (100%) | 0 |
-| 🇬🇧 English (EN) | **1435 / 1435** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1435 / 1435** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1453 / 1453** (100%) | 0 |
+| 🇬🇧 English (EN) | **1453 / 1453** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1453 / 1453** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -961,6 +961,29 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `holdTimer.target.format` | Ziel: %lld Sek halten | Target: hold %lld sec | Hedef: %lld sn boyunca tut |
+
+## `import.*`  (18 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `import.file.custom_exercises` | Übungsbibliothek | Exercise library | Egzersiz kütüphanesi |
+| `import.file.gear` | Ausrüstung | Gear | Ekipman |
+| `import.file.measurements` | Messungen | Measurements | Ölçümler |
+| `import.file.personal_records` | Rekorde | Records | Rekorlar |
+| `import.file.plan_days` | Trainingstage | Training days | Antrenman günleri |
+| `import.file.plan_exercises` | Übungen in Plänen | Exercises in plans | Planlardaki egzersizler |
+| `import.file.plans` | Trainingspläne | Training plans | Antrenman planları |
+| `import.file.profile` | Profil | Profile | Profil |
+| `import.file.settings` | Einstellungen | Settings | Ayarlar |
+| `import.file.water_log` | Wasser | Water | Su |
+| `import.file.workout_sets` | Sätze | Sets | Setler |
+| `import.file.workouts` | Trainings | Workouts | Antrenmanlar |
+| `import.preview.activePlanWarning` | Die Datei enthält einen aktiven Trainingsplan. | The file contains an active training plan. | Dosya etkin bir antrenman planı içeriyor. |
+| `import.preview.comparison` | %1$lld Datensätze in der Datei · aktuell in der App: %2$lld | %1$lld records in the file · currently in the app: %2$lld | Dosyada %1$lld kayıt · uygulamada şu anda: %2$lld |
+| `import.preview.exportedAt` | Erstellt am %@ | Created on %@ | Oluşturulma: %@ |
+| `import.preview.restorePointNote` | Vor dem Import sichert Deltiq deinen jetzigen Stand automatisch. Du findest ihn unter Automatische Backups. | Before importing, Deltiq automatically saves your current data. You'll find it under Automatic backups. | İçe aktarmadan önce Deltiq mevcut verilerini otomatik olarak yedekler. Otomatik yedekler altında bulabilirsin. |
+| `import.preview.title` | Inhalt der Datei | File contents | Dosya içeriği |
+| `import.preview.unreadable` | Diese Datei konnte nicht gelesen werden — sie ist kein gültiges Deltiq-Backup. | This file could not be read — it isn't a valid Deltiq backup. | Bu dosya okunamadı — geçerli bir Deltiq yedeği değil. |
 
 ## `library.*`  (5 Keys)
 

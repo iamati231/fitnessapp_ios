@@ -355,5 +355,48 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertNotNil(swapped?.swappedFromOriginal, "Swap-Referenz fehlt nach dem Import")
         XCTAssertEqual(swapped?.swappedFromOriginal?.name, "Bankdrücken")
     }
+
+    // MARK: - DEL-226 Trockenlauf
+
+    /// Die Vorschau muss den Inhalt korrekt melden und dabei NICHTS schreiben.
+    func testPreviewReportsContentWithoutTouchingData() throws {
+        let source = try makeContainer()
+        try seed(source.mainContext)
+        let bundle = try DataExportService.makeExport(context: source.mainContext)
+
+        // Ziel mit eigenem Bestand — der muss die Vorschau unveraendert
+        // ueberleben.
+        let target = try makeContainer()
+        try seed(target.mainContext)
+        let sessionsBefore = try target.mainContext.fetchCount(FetchDescriptor<WorkoutSession>())
+        let logsBefore = try target.mainContext.fetchCount(FetchDescriptor<ExerciseLog>())
+
+        let preview = try DataImportService.preview(zipData: bundle.data)
+
+        XCTAssertEqual(preview.formatVersion, DataExportService.formatVersion)
+        XCTAssertGreaterThan(preview.totalRows, 0)
+        XCTAssertTrue(preview.containsActivePlan, "der Seed enthaelt einen aktiven Plan")
+        XCTAssertEqual(preview.rowCountsByFile["workouts.csv"], 1)
+        // 2 Logs der Session + 1 Orphan-Log aus dem Seed.
+        XCTAssertEqual(preview.rowCountsByFile["workout_sets.csv"], 3)
+        XCTAssertFalse(preview.nonEmptyFiles.isEmpty)
+
+        XCTAssertEqual(
+            try target.mainContext.fetchCount(FetchDescriptor<WorkoutSession>()), sessionsBefore,
+            "die Vorschau darf keine Sessions anlegen oder loeschen"
+        )
+        XCTAssertEqual(
+            try target.mainContext.fetchCount(FetchDescriptor<ExerciseLog>()), logsBefore,
+            "die Vorschau darf keine Logs anlegen oder loeschen"
+        )
+    }
+
+    /// Ein kaputtes ZIP muss in der Vorschau scheitern — dort ist der Abbruch
+    /// harmlos, weil noch nichts angefasst wurde.
+    func testPreviewRejectsGarbage() throws {
+        XCTAssertThrowsError(
+            try DataImportService.preview(zipData: Data("kein zip".utf8))
+        )
+    }
 }
 #endif

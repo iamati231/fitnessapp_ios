@@ -81,6 +81,47 @@ public struct DataImportResult: Sendable {
     public var totalSkipped:  Int { skipped.values.reduce(0, +) }
 }
 
+/// DEL-226: Ergebnis des Trockenlaufs — was steckt in dieser Datei?
+///
+/// Existiert, weil der Import bis hierher ein Sprung ins Dunkle war: der User
+/// waehlte eine ZIP und erfuhr erst NACH dem Schreiben, was drin war. Bei der
+/// `replace`-Strategie ist das der Moment, in dem der eigene Bestand schon weg
+/// ist. Genau so ist der Datenverlust im Mai 2026 gelaufen.
+public struct DataImportPreview: Sendable {
+    public let formatVersion: String
+    public let exportedAt: String
+    public let appVersion: String
+    /// Zeilen pro CSV-Datei (ohne Header).
+    public let rowCountsByFile: [String: Int]
+    /// Enthaelt das Backup einen aktiven Trainingsplan? Der Punkt, an dem sich
+    /// ein Import am sichtbarsten auf den Alltag auswirkt.
+    public let containsActivePlan: Bool
+
+    public init(
+        formatVersion: String,
+        exportedAt: String,
+        appVersion: String,
+        rowCountsByFile: [String: Int],
+        containsActivePlan: Bool
+    ) {
+        self.formatVersion = formatVersion
+        self.exportedAt = exportedAt
+        self.appVersion = appVersion
+        self.rowCountsByFile = rowCountsByFile
+        self.containsActivePlan = containsActivePlan
+    }
+
+    public var totalRows: Int { rowCountsByFile.values.reduce(0, +) }
+
+    /// Dateien mit Inhalt, alphabetisch — fuer eine stabile Anzeige-Reihenfolge.
+    public var nonEmptyFiles: [(name: String, rows: Int)] {
+        rowCountsByFile
+            .filter { $0.value > 0 }
+            .sorted { $0.key < $1.key }
+            .map { (name: $0.key, rows: $0.value) }
+    }
+}
+
 /// Stateless service. Mirrors DataExportService.
 public enum DataImportService {
 
@@ -130,6 +171,65 @@ public enum DataImportService {
         // unzipItem nur URL-zu-URL kann (keine Data-Variante). Bei einem
         // Power-User-Backup mit ~50KB-ZIP ist die zusätzliche Disk-IO
         // vernachlässigbar.
+        // DEL-226: Entpacken + Validieren liegt in `extractAndValidate`, damit
+        // der Dry-Run (`preview`) EXAKT dieselben Pruefungen durchlaeuft. Eine
+        // zweite Kopie waere genau die Art Divergenz, bei der die Vorschau
+        // "sieht gut aus" sagt und der Import danach scheitert.
+        let (files, meta) = try extractAndValidate(zipData: zipData)
+        return try runImport(
+            files: files,
+            meta: meta,
+            context: context,
+            strategy: strategy,
+            progressHandler: progressHandler
+        )
+    }
+
+    /// DEL-226: Trockenlauf. Entpackt und validiert das ZIP genau wie ein
+    /// echter Import, schreibt aber NICHTS. Liefert, was in der Datei steckt,
+    /// damit der User vor dem Zugriff auf seinen Bestand sieht, ob es die
+    /// richtige Datei ist.
+    ///
+    /// Bewusst KEINE Simulation der Duplikat-Erkennung: die haenge an den
+    /// Importern und muesste hier nachgebaut werden — eine zweite Wahrheit,
+    /// die mit der ersten auseinanderlaeuft und dann falsche Zahlen
+    /// verspricht. Die Vorschau beantwortet stattdessen die Frage, die der
+    /// User wirklich hat: "ist das die richtige Datei, und wie viel steckt
+    /// drin — verglichen mit dem, was ich jetzt habe?"
+    public static func preview(zipData: Data) throws -> DataImportPreview {
+        let (files, meta) = try extractAndValidate(zipData: zipData)
+
+        var rowCounts: [String: Int] = [:]
+        for (name, data) in files where name.hasSuffix(".csv") {
+            guard let text = String(data: data, encoding: .utf8),
+                  let reader = try? CSVReader(text) else {
+                rowCounts[name] = 0
+                continue
+            }
+            rowCounts[name] = reader.rows().count
+        }
+
+        // Ein aktiver Plan im Backup ist der Punkt, an dem sich ein Import
+        // sichtbar auf den Alltag auswirkt — deshalb explizit ausweisen.
+        var containsActivePlan = false
+        if let plans = files["plans.csv"],
+           let text = String(data: plans, encoding: .utf8),
+           let reader = try? CSVReader(text) {
+            containsActivePlan = reader.rows().contains { ($0.bool("is_active") ?? false) }
+        }
+
+        return DataImportPreview(
+            formatVersion: meta.formatVersion,
+            exportedAt: meta.exportedAt,
+            appVersion: meta.appVersion,
+            rowCountsByFile: rowCounts,
+            containsActivePlan: containsActivePlan
+        )
+    }
+
+    /// Entpackt das ZIP und fuehrt alle Struktur-Pruefungen durch, ohne den
+    /// `ModelContext` anzufassen.
+    private static func extractAndValidate(zipData: Data) throws -> ([String: Data], MetaPayload) {
         let tmpDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("deltiq-import-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
@@ -191,6 +291,20 @@ public enum DataImportService {
         guard hasUsableData else {
             throw ImportError.zipNotReadable
         }
+
+        return (files, meta)
+    }
+
+    /// Fuehrt den eigentlichen Import auf bereits validierten Dateien aus.
+    /// Getrennt von `extractAndValidate`, damit der Dry-Run dieselbe
+    /// Validierung nutzen kann, ohne diesen schreibenden Teil zu beruehren.
+    private static func runImport(
+        files: [String: Data],
+        meta: MetaPayload,
+        context: ModelContext,
+        strategy: DataImportStrategy,
+        progressHandler: (@Sendable (ImportProgress) -> Void)?
+    ) throws -> DataImportResult {
 
         // 4) ERST JETZT — nach voll-validiertem ZIP — dürfen wir die
         //    bestehenden Daten anfassen.

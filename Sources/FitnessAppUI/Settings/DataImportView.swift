@@ -52,6 +52,16 @@ public struct DataImportView: View {
     // lokalisierten Phasennamen.
     @State private var importProgress: ImportProgress?
 
+    /// DEL-226: Ergebnis des Trockenlaufs zur ausgewaehlten Datei. `nil`
+    /// solange nichts gewaehlt ist; `previewFailed` wenn die Datei kein
+    /// gueltiges Backup ist — dann muss der Import-Button gesperrt bleiben,
+    /// statt den User in einen Fehlschlag laufen zu lassen.
+    @State private var preview: DataImportPreview?
+    @State private var previewFailed = false
+    /// Datensaetze, die aktuell in der App liegen — Vergleichsgroesse fuer die
+    /// Vorschau. Bewusst nur die drei Zahlen, die der User wiedererkennt.
+    @State private var currentRecordCount: Int = 0
+
     enum Phase {
         case ready
         case picked(filename: String)
@@ -67,6 +77,10 @@ public struct DataImportView: View {
                 introCard
                 strategyCard
                 if case .picked = phase {
+                    // DEL-226: Vorschau VOR dem Strategie-Picker — erst
+                    // wissen, was in der Datei steckt, dann entscheiden, wie
+                    // aggressiv importiert wird.
+                    previewCard
                     strategyPickerCard
                 }
                 actionSection
@@ -262,6 +276,11 @@ public struct DataImportView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(strategy == .replace ? .red : Color.deltiqOrange)
+                    // DEL-226: Nicht startbar, solange der Trockenlauf laeuft
+                    // oder die Datei als unlesbar erkannt wurde. Vorher fuehrte
+                    // ein kaputtes ZIP erst nach dem Tap in einen Fehler —
+                    // beim Replace-Pfad war das der Moment maximaler Nervosität.
+                    .disabled(previewFailed || preview == nil)
                 }
             }
 
@@ -464,6 +483,82 @@ public struct DataImportView: View {
         return String(localized: key, bundle: .module)
     }
 
+    /// DEL-226: Was steckt in der gewaehlten Datei?
+    @ViewBuilder
+    private var previewCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label {
+                Text("import.preview.title", bundle: .module)
+                    .font(.headline)
+            } icon: {
+                Image(systemName: "doc.text.magnifyingglass")
+            }
+
+            if previewFailed {
+                Text("import.preview.unreadable", bundle: .module)
+                    .font(.subheadline)
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if let preview {
+                Text(String(
+                    format: String(localized: "import.preview.exportedAt", bundle: .module),
+                    preview.exportedAt
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+                Text(String(
+                    format: String(localized: "import.preview.comparison", bundle: .module),
+                    preview.totalRows, currentRecordCount
+                ))
+                .font(.subheadline.weight(.semibold))
+                .fixedSize(horizontal: false, vertical: true)
+
+                // Aufschluesselung pro Datei — das ist der eigentliche "Diff":
+                // der User erkennt an den Zahlen, ob es das Backup ist, das er
+                // gemeint hat.
+                VStack(alignment: .leading, spacing: 3) {
+                    ForEach(preview.nonEmptyFiles, id: \.name) { entry in
+                        HStack {
+                            Text(fileLabel(entry.name))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text("\(entry.rows)")
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.primary)
+                        }
+                    }
+                }
+                .padding(.top, 2)
+
+                if preview.containsActivePlan {
+                    Label {
+                        Text("import.preview.activePlanWarning", bundle: .module)
+                    } icon: {
+                        Image(systemName: "info.circle")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Divider()
+                Label {
+                    Text("import.preview.restorePointNote", bundle: .module)
+                } icon: {
+                    Image(systemName: "clock.arrow.circlepath")
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            } else {
+                ProgressView()
+            }
+        }
+        .deltiqCardStyle()
+    }
+
     private func handlePickerResult(_ result: Result<[URL], Error>) {
         switch result {
         case .success(let urls):
@@ -482,11 +577,80 @@ public struct DataImportView: View {
                 pickedURL = cacheURL
                 phase = .picked(filename: url.lastPathComponent)
                 errorMessage = nil
+                // DEL-226: Trockenlauf direkt beim Auswaehlen. Der Import war
+                // bis hierher ein Sprung ins Dunkle — der User erfuhr erst
+                // NACH dem Schreiben, was in der Datei stand. Bei der
+                // replace-Strategie ist das der Moment, in dem der eigene
+                // Bestand schon weg ist. Schreibt nichts, prueft aber genau
+                // wie ein echter Import.
+                loadPreview(from: cacheURL)
             } catch {
                 errorMessage = error.localizedDescription
             }
         case .failure(let error):
             errorMessage = error.localizedDescription
+        }
+    }
+
+    /// DEL-226: Trockenlauf. Nutzt exakt dieselbe Entpack- und
+    /// Validierungs-Strecke wie der echte Import (`DataImportService.preview`
+    /// und `performImport` teilen `extractAndValidate`), schreibt aber nichts.
+    private func loadPreview(from url: URL) {
+        preview = nil
+        previewFailed = false
+        do {
+            let data = try Data(contentsOf: url)
+            preview = try DataImportService.preview(zipData: data)
+            currentRecordCount = countCurrentRecords()
+        } catch {
+            // Kein Fehler-Banner: die Vorschau-Karte sagt selbst, dass die
+            // Datei nicht lesbar ist, und der Import-Button bleibt gesperrt.
+            previewFailed = true
+        }
+    }
+
+    /// Vergleichsgroesse "was habe ich jetzt". Bewusst die Zeilen, die auch im
+    /// Backup als Datensaetze zaehlen, damit die beiden Zahlen in der Vorschau
+    /// vergleichbar sind.
+    private func countCurrentRecords() -> Int {
+        var total = 0
+        total += (try? modelContext.fetchCount(FetchDescriptor<WorkoutSession>())) ?? 0
+        total += (try? modelContext.fetchCount(FetchDescriptor<ExerciseLog>())) ?? 0
+        total += (try? modelContext.fetchCount(FetchDescriptor<BodyMeasurement>())) ?? 0
+        total += (try? modelContext.fetchCount(FetchDescriptor<WaterEntry>())) ?? 0
+        total += (try? modelContext.fetchCount(FetchDescriptor<PersonalRecordEntry>())) ?? 0
+        total += (try? modelContext.fetchCount(FetchDescriptor<TrainingPlan>())) ?? 0
+        total += (try? modelContext.fetchCount(FetchDescriptor<TrainingDay>())) ?? 0
+        total += (try? modelContext.fetchCount(FetchDescriptor<Exercise>())) ?? 0
+        total += (try? modelContext.fetchCount(FetchDescriptor<Gear>())) ?? 0
+        return total
+    }
+
+    /// Lesbarer Name einer CSV-Datei fuer die Vorschau. Fallback ist der
+    /// Dateiname selbst — eine kuenftige, hier noch unbekannte Datei
+    /// verschwindet dadurch nicht aus der Liste.
+    private func fileLabel(_ filename: String) -> String {
+        let stem = filename.replacingOccurrences(of: ".csv", with: "")
+        let known = [
+            "profile", "measurements", "water_log", "plans", "plan_days",
+            "plan_exercises", "workouts", "workout_sets", "personal_records",
+            "gear", "custom_exercises", "settings",
+        ]
+        guard known.contains(stem) else { return filename }
+        switch stem {
+        case "profile":           return String(localized: "import.file.profile", bundle: .module)
+        case "measurements":      return String(localized: "import.file.measurements", bundle: .module)
+        case "water_log":         return String(localized: "import.file.water_log", bundle: .module)
+        case "plans":             return String(localized: "import.file.plans", bundle: .module)
+        case "plan_days":         return String(localized: "import.file.plan_days", bundle: .module)
+        case "plan_exercises":    return String(localized: "import.file.plan_exercises", bundle: .module)
+        case "workouts":          return String(localized: "import.file.workouts", bundle: .module)
+        case "workout_sets":      return String(localized: "import.file.workout_sets", bundle: .module)
+        case "personal_records":  return String(localized: "import.file.personal_records", bundle: .module)
+        case "gear":              return String(localized: "import.file.gear", bundle: .module)
+        case "custom_exercises":  return String(localized: "import.file.custom_exercises", bundle: .module)
+        case "settings":          return String(localized: "import.file.settings", bundle: .module)
+        default:                  return filename
         }
     }
 
@@ -509,6 +673,17 @@ public struct DataImportView: View {
         let ctx = modelContext
         Task {
             do {
+                // DEL-226: Restore-Point VOR jedem Import — auch bei
+                // appendOnly. Der Rueckweg fehlte genau in dem Vorfall, der
+                // diesem Ticket zugrunde liegt: der Import loeschte den
+                // Bestand und es gab keinen Stand von gestern. `try?`, weil
+                // ein fehlgeschlagener Restore-Point den Import nicht
+                // blockieren soll — dann steht in der Vorschau-Notiz zwar ein
+                // Versprechen, das nicht eingehalten wurde, aber ein
+                // erzwungener Abbruch waere fuer den User schlimmer als ein
+                // Import ohne Netz.
+                try? BackupService.createBackup(context: ctx, reason: .preImport)
+
                 let zipData = try Data(contentsOf: url)
                 // DEL-176: progressHandler ist @Sendable; wir reichen
                 // Updates über einen MainActor-Hop an unseren @State weiter.
