@@ -512,6 +512,15 @@ struct SetRow: View {
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                         .lineLimit(1)
+                        // DEL-220: Der Hint traegt jetzt zusaetzlich den RIR,
+                        // ist also ~8 Zeichen laenger. In dieser Row sitzen
+                        // schon Gewicht, Reps, RIR-Slider und -Wert; auf
+                        // iPhone-SE-Breite wuerde als erstes der neue
+                        // RIR-Teil weggeschnitten und die Aenderung waere
+                        // wirkungslos. Lieber leicht runterskalieren als
+                        // truncaten — gleiche Strategie wie bei den
+                        // Hero-Metric-Labels.
+                        .minimumScaleFactor(0.8)
                 }
             }
         } else {
@@ -894,13 +903,62 @@ struct SetRow: View {
 
     // MARK: - State init / formatting / logging
 
+    /// Kompakte Zusammenfassung des letzten Satzes dieser Uebung + Satz-Nummer.
+    ///
+    /// DEL-220: drei Baustellen behoben.
+    ///   * **Cardio zeigte Unsinn.** Der Cardio-Zweig der Row rendert diesen
+    ///     Hint (siehe `editableTrailing`), die Funktion kannte aber nur
+    ///     TimeBased und Strength — ein Lauf-Log landete im Gewicht/Reps-Pfad
+    ///     und erschien als "letztes: 0 kg × 0", weil Cardio-Logs weight und
+    ///     reps auf 0 haben. Jetzt Distanz + Dauer aus `distanceKm`/
+    ///     `durationSeconds`.
+    ///   * **RIR fehlte.** Der wichtigste Teil der Progressions-Entscheidung
+    ///     ("8 Wdh bei RIR 0" vs. "8 Wdh bei RIR 3") war nicht sichtbar,
+    ///     obwohl er geloggt wird. Nur angehaengt, wenn die Uebung ueberhaupt
+    ///     RIR fuehrt (nicht bei Cardio).
+    ///   * **" kg" war hartkodiert** → `unit.kg.lower`.
+    ///
+    /// Bewusst NICHT geaendert: die Einheit bleibt kg. Die Werte sind
+    /// projektweit in kg persistiert und das Eingabefeld daneben ist mit "KG"
+    /// beschriftet — hier "lbs" anzuzeigen wuerde einen kg-Wert falsch
+    /// etikettieren. Eine echte lbs-Unterstuetzung ist ein eigenes,
+    /// querschnittliches Thema (Eingabe, Volumen, PRs, Charts, CSV).
     private func previousLogHint(_ log: ExerciseLog) -> String {
         // DEL-128: Sek-Unit aus xcstrings.
         if exercise.isTimeBased {
             let secUnit = String(localized: "unit.seconds.short", bundle: .module)
             return "\(log.reps) \(secUnit)"
         }
-        return "\(formatWeight(log.weight)) kg × \(log.reps)"
+
+        if exercise.isCardio {
+            let kmUnit = String(localized: "unit.km.lower", bundle: .module)
+            let distance = log.distanceKm ?? 0
+            let seconds = log.durationSeconds ?? 0
+            // Nur eine der beiden Groessen geloggt → die andere weglassen,
+            // statt "0 km" bzw. "in 00:00" zu behaupten.
+            switch (distance > 0, seconds > 0) {
+            case (true, true):
+                return String(
+                    format: String(localized: "active.set.previousCardio", bundle: .module),
+                    "\(formatWeight(distance)) \(kmUnit)",
+                    PaceCalculator.formatDuration(seconds)
+                )
+            case (true, false):
+                return "\(formatWeight(distance)) \(kmUnit)"
+            case (false, true):
+                return PaceCalculator.formatDuration(seconds)
+            case (false, false):
+                return "—"
+            }
+        }
+
+        let kgUnit = String(localized: "unit.kg.lower", bundle: .module)
+        let base = "\(formatWeight(log.weight)) \(kgUnit) × \(log.reps)"
+        let rirPart = String(
+            format: String(localized: "active.set.previousRIR", bundle: .module),
+            formatRIR(log.rir)
+        )
+        return "\(base) · \(rirPart)"
     }
 
     private func initializeOnce() {

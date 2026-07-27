@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1415 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1419 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1415 / 1415** (100%) | 0 |
-| 🇬🇧 English (EN) | **1415 / 1415** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1415 / 1415** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1419 / 1419** (100%) | 0 |
+| 🇬🇧 English (EN) | **1419 / 1419** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1419 / 1419** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -20,7 +20,7 @@ Quelle: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
 Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind separat aufgelistet — die haben one/other-Varianten.
 
 
-## `active.*`  (40 Keys)
+## `active.*`  (42 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -53,7 +53,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `active.interference.title` | Du hattest gestern eine harte Einheit | You had a hard session yesterday | Dün zorlu bir antrenmanın vardı |
 | `active.placeholder.subtext` | Set-Logging mit Vorgaben & Rest-Timer • Live Activities folgen im Xcode-Target. | Set logging with targets & rest timer • Live Activities arrive in the Xcode target. | Hedefli set kaydı ve dinlenme zamanlayıcısı • Live Activities Xcode hedefinde gelir. |
 | `active.set.add` | Satz hinzufügen | Add set | Set ekle |
+| `active.set.previousCardio` | %1$@ in %2$@ | %1$@ in %2$@ | %2$@ içinde %1$@ |
 | `active.set.previousFormat` | letztes: %@ | last: %@ | son: %@ |
+| `active.set.previousRIR` | RIR %@ | RIR %@ | RIR %@ |
 | `active.set.remove` | Satz entfernen | Remove set | Seti kaldır |
 | `active.stats.avgPace` | ⌀ Pace | ⌀ Pace | ⌀ Tempo |
 | `active.stats.distance` | Distanz | Distance | Mesafe |
@@ -1657,11 +1659,13 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `trophy.singleEntry` | Nur ein %@-Eintrag — Trend ab 2 Rekorden. | Only one %@ entry — trend starts at 2 records. | Sadece bir %@ kaydı — trend 2 rekordan başlar. |
 | `trophy.totalRecords` | %lld Rekorde gesamt | %lld records total | Toplam %lld rekor |
 
-## `unit.*`  (4 Keys)
+## `unit.*`  (6 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `unit.kg.lower` | kg | kg | kg |
 | `unit.kg.upper` | KG | KG | KG |
+| `unit.km.lower` | km | km | km |
 | `unit.minutes.short` | Min | min | dk |
 | `unit.reps.short` | Wdh | reps | tkr |
 | `unit.seconds.short` | Sek | sec | sn |
