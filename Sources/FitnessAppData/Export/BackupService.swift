@@ -73,13 +73,59 @@ public enum BackupService {
 
     // MARK: - Pfade
 
-    /// `Application Support/Backups`. Wird bei Bedarf angelegt.
+    /// `Documents/Backups`. Wird bei Bedarf angelegt.
+    ///
+    /// DEL-237: lag vorher in `Application Support`. Das ist der technisch
+    /// korrekte Ort fuer App-verwaltete Daten — aber fuer den Nutzer
+    /// unsichtbar und unerreichbar. Genau das war die Beschwerde: die
+    /// automatischen Backups existierten, man kam nur nicht an sie heran, und
+    /// ein Backup, an das man im Ernstfall nicht herankommt, ist keins.
+    ///
+    /// `Documents` erscheint zusammen mit `UIFileSharingEnabled` +
+    /// `LSSupportsOpeningDocumentsInPlace` (Info.plist) in der Dateien-App
+    /// unter "Auf meinem iPhone → Deltiq". Von dort kann der Nutzer eine
+    /// Generation per Drag nach iCloud Drive ziehen, in eine Mail haengen oder
+    /// auf den Rechner kopieren — ohne die App zu oeffnen und ohne Export-Flow.
+    ///
+    /// Zweiter Effekt, der hier mehr wiegt als die Sichtbarkeit: `Documents`
+    /// ist im iCloud-/Finder-Geraetebackup enthalten. Damit ueberleben die
+    /// Generationen erstmals einen Geraeteverlust — der Fall, gegen den
+    /// `Application Support` zwar half (Deinstallation ausgenommen), aber der
+    /// App-Group-Container ausdruecklich nicht.
+    ///
+    /// Migration ist nicht noetig: der BackupService ist nie ausgeliefert
+    /// worden (letzter Tag v0.1.73 = DEL-216, BackupService kam mit DEL-227).
+    /// Auf Entwickler-Geraeten liegengebliebene Generationen am alten Pfad
+    /// werden einmalig mitgenommen, damit dort nichts verwaist.
     public static func backupsDirectory() throws -> URL {
-        let base = URL.applicationSupportDirectory.appendingPathComponent("Backups", isDirectory: true)
+        let base = URL.documentsDirectory.appendingPathComponent("Backups", isDirectory: true)
         if !FileManager.default.fileExists(atPath: base.path) {
             try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
         }
+        adoptLegacyGenerationsIfAny(into: base)
         return base
+    }
+
+    /// DEL-237: Holt Generationen vom alten `Application Support`-Pfad ab.
+    ///
+    /// Nur fuer Entwickler- und TestFlight-Zwischenstaende relevant; in der
+    /// Breite hat nie jemand Backups am alten Ort gehabt. Bewusst `move` und
+    /// nicht `copy`: sonst haette der Nutzer zwei Saetze Generationen, von
+    /// denen die Rotation nur einen pflegt. Fehler werden geschluckt — ein
+    /// misslungener Umzug darf das Anlegen neuer Backups nicht blockieren.
+    private static func adoptLegacyGenerationsIfAny(into destination: URL) {
+        let fm = FileManager.default
+        let legacy = URL.applicationSupportDirectory.appendingPathComponent("Backups", isDirectory: true)
+        guard fm.fileExists(atPath: legacy.path) else { return }
+        let entries = (try? fm.contentsOfDirectory(at: legacy, includingPropertiesForKeys: nil)) ?? []
+        for entry in entries where BackupFilename.parse(entry.lastPathComponent) != nil {
+            let target = destination.appendingPathComponent(entry.lastPathComponent)
+            guard !fm.fileExists(atPath: target.path) else { continue }
+            try? fm.moveItem(at: entry, to: target)
+        }
+        // Leeres Alt-Verzeichnis aufraeumen; schlaegt fehl solange noch etwas
+        // drinliegt, was genau richtig ist.
+        try? fm.removeItem(at: legacy)
     }
 
     // MARK: - Erzeugen

@@ -42,6 +42,23 @@
     <key>NSSupportsLiveActivities</key>
     <true/>
 
+    <!-- DEL-237: Backups in der Dateien-App sichtbar machen.
+         Beide Keys zusammen lassen den Documents-Ordner der App unter
+         "Dateien → Auf meinem iPhone → Deltiq" erscheinen. Ohne sie liegen
+         die automatischen Backups zwar auf dem Geraet, sind fuer den Nutzer
+         aber unerreichbar — und ein Backup, an das man nicht herankommt, ist
+         im Ernstfall keins.
+         UIFileSharingEnabled allein reicht nicht: erst zusammen mit
+         LSSupportsOpeningDocumentsInPlace zeigt die Dateien-App den Ordner
+         mit seiner Struktur statt eines flachen iTunes-Sharing-Bereichs.
+         Konsequenz: ALLES in Documents wird sichtbar. Deshalb liegt dort
+         ausschliesslich der Backups-Ordner; Arbeitsdateien bleiben in
+         Application Support bzw. Caches. -->
+    <key>UIFileSharingEnabled</key>
+    <true/>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <true/>
+
     <!-- Export Compliance: false = we use ONLY Apple's built-in encryption
          (HTTPS, HealthKit, SwiftData internals). No custom crypto, no
          bundled libsodium/OpenSSL. Skipping this key forces the user to
