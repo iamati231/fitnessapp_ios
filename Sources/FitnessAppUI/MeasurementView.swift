@@ -80,6 +80,18 @@ public struct MeasurementView: View {
     @State private var lastHealthFilledWeight: Double?
     @State private var didPrefillFromExisting = false
 
+    /// DEL-219: Snapshot der beim Edit-Prefill eingesetzten Arm-/Bein-Werte.
+    /// Dieses Formular kennt nur EIN Feld pro Koerperteil, waehrend das Model
+    /// zusaetzlich Links/Rechts fuehren kann (DEL-016). Beim Prefill werden
+    /// L/R zu einem Mittelwert zusammengefasst; beim Speichern muss deshalb
+    /// unterschieden werden, ob der User den Wert tatsaechlich angefasst hat:
+    ///   * unveraendert → L/R bleiben erhalten (der Mittelwert war nur Anzeige)
+    ///   * veraendert   → L/R sind ueberholt und werden verworfen
+    /// Vorher wurden L/R bei JEDEM Edit geloescht — wer nur sein Gewicht
+    /// korrigierte, verlor die Seiten-Messungen unwiederbringlich.
+    @State private var prefilledBicepsCm: Double?
+    @State private var prefilledThighCm: Double?
+
     /// DEL-034: Edit-Mode startet als reine Detail-Ansicht. Felder werden erst
     /// editierbar, sobald der User oben rechts "Bearbeiten" tippt. Im New-Mode
     /// (kein editingMeasurement) ist die View IMMER editierbar — User soll
@@ -774,6 +786,10 @@ public struct MeasurementView: View {
         calfCm     = m.calfCm
         bicepsCm   = m.upperArmCm ?? averageOrNil(m.upperArmLeftCm, m.upperArmRightCm)
         thighCm    = m.thighCm    ?? averageOrNil(m.thighLeftCm, m.thighRightCm)
+        // DEL-219: Prefill-Stand merken, um beim Speichern "unveraendert" von
+        // "vom User neu gesetzt" unterscheiden zu koennen.
+        prefilledBicepsCm = bicepsCm
+        prefilledThighCm  = thighCm
     }
 
     private func averageOrNil(_ a: Double?, _ b: Double?) -> Double? {
@@ -866,13 +882,26 @@ public struct MeasurementView: View {
             existing.hipCm = recomputed.hipCm
             existing.shoulderCm = recomputed.shoulderCm
             existing.chestCm = recomputed.chestCm
-            existing.upperArmCm = recomputed.upperArmCm
-            existing.thighCm = recomputed.thighCm
             existing.calfCm = recomputed.calfCm
-            existing.upperArmLeftCm = nil
-            existing.upperArmRightCm = nil
-            existing.thighLeftCm = nil
-            existing.thighRightCm = nil
+            // DEL-219: Arm und Bein nur anfassen, wenn der User den
+            // zusammengefassten Wert wirklich geaendert hat — dann sind die
+            // Seiten-Werte ueberholt und werden verworfen. Bleibt das Feld
+            // unangetastet (typischer Fall: es sollte nur das Gewicht
+            // korrigiert werden), bleibt die Original-Aufteilung komplett
+            // stehen. Wichtig ist auch, den Einzelwert dann NICHT zu
+            // schreiben: sonst wuerde der beim Prefill gebildete Mittelwert
+            // persistiert und die Seiten-Werte in der Anzeige dauerhaft
+            // maskieren (`bicepsDisplay` bevorzugt den Einzelwert).
+            if bicepsCm != prefilledBicepsCm {
+                existing.upperArmCm = recomputed.upperArmCm
+                existing.upperArmLeftCm = nil
+                existing.upperArmRightCm = nil
+            }
+            if thighCm != prefilledThighCm {
+                existing.thighCm = recomputed.thighCm
+                existing.thighLeftCm = nil
+                existing.thighRightCm = nil
+            }
             existing.bmi = recomputed.bmi
             existing.navyBodyFatPct = recomputed.navyBodyFatPct
             existing.deurenbergBodyFatPct = recomputed.deurenbergBodyFatPct

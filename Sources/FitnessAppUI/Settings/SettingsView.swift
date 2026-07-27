@@ -684,7 +684,16 @@ public struct SettingsView: View {
         navigation.selectedTab = .dashboard
 
         // 2) AppStorage-Keys sofort wegwerfen (synchron OK, kein Model).
-        for key in ["weight_unit", "height_unit", "unit_system"] {
+        //    DEL-219: `deload_until` und `lastDataExportAt` kommen dazu. Beide
+        //    beschreiben DATEN-Zustand, nicht Praeferenzen — nach einem Wipe
+        //    behaupten sie etwas, das es nicht mehr gibt: eine laufende
+        //    Deload-Woche (Banner auf einem frischen Account) bzw. ein
+        //    Backup, das nie existierte (unterdrueckt den Backup-Hinweis des
+        //    Coaches). Echte Praeferenzen (Erscheinungsbild, Coaching-Ton,
+        //    Erinnerungen, Chart-Zeitraeume) bleiben absichtlich stehen — der
+        //    User loescht seine Daten, nicht seine Einstellungen.
+        for key in ["weight_unit", "height_unit", "unit_system",
+                    "deload_until", "lastDataExportAt"] {
             UserDefaults.standard.removeObject(forKey: key)
         }
 
@@ -706,6 +715,12 @@ public struct SettingsView: View {
                 try self.deleteAll(of: ExerciseTemplate.self)
                 try self.deleteAll(of: WaterEntry.self)
                 try self.deleteAll(of: BodyMeasurement.self)
+                // DEL-219: Gear fehlte in dieser Sequenz — Schuhe und Raeder
+                // (inkl. ihrer Kilometerstaende) haben jeden "Alle Daten
+                // loeschen" ueberlebt und tauchten im frischen Onboarding
+                // wieder auf. Nach ExerciseLog/WorkoutSession, damit die
+                // nullify-Relationship der Sessions schon aufgeloest ist.
+                try self.deleteAll(of: Gear.self)
                 try self.deleteAll(of: UserBodyProfile.self)
                 try self.modelContext.save()
             } catch {
