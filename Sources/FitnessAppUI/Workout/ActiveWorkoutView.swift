@@ -892,15 +892,16 @@ public struct ActiveWorkoutView: View {
         DeltiqHaptics.notify(.success)
 
         let endTime = Date()
-        let logs = session.logs
 
         session.endTime = endTime
         session.durationMinutes = max(0, Int(endTime.timeIntervalSince(session.startTime) / 60))
-        // DEL-092: zaehlt das, was der User tatsaechlich gemacht hat —
-        // wenn Warmups versteckt waren, fliessen sie nicht in die History-Stat.
-        session.exerciseCount = session.day.map { orderedExercises(in: $0).count } ?? 0
-        session.totalSets = logs.count
-        session.totalVolumeKg = logs.reduce(0.0) { $0 + $1.weight * Double($1.reps) }
+        // DEL-221: Aggregate ueber den einen Schreiber (recomputeTotals).
+        // DEL-092: exerciseCount zaehlt das, was der User tatsaechlich gemacht
+        // hat — wenn Warmups versteckt waren, fliessen sie nicht in die
+        // History-Stat. Deshalb explizit uebergeben statt abgeleitet.
+        session.recomputeTotals(
+            exerciseCount: session.day.map { orderedExercises(in: $0).count } ?? 0
+        )
         session.isCompleted = true
 
         // Persist any newly-set PRs to the Trophy Room (`PersonalRecordEntry`).
@@ -1101,7 +1102,13 @@ public struct ActiveWorkoutView: View {
         if currentPageIndex > remaining {
             currentPageIndex = remaining
         }
-        session.exerciseCount = remaining
+        // DEL-221: Dieser Pfad hat gerade Logs geloescht (Schritt 1), also
+        // muessen totalSets/totalVolumeKg mit. Vorher wurde nur
+        // exerciseCount aktualisiert und die Summen blieben auf dem Stand
+        // VOR dem Delete stehen — unkritisch solange die Session offen ist
+        // (der Finish rechnet neu), aber inkonsistent, sobald irgendetwas
+        // die offene Session liest.
+        session.recomputeTotals(exerciseCount: remaining)
     }
 
     /// Discard-Sweep: wenn die Session ad-hoc ist, keine Logs hat und

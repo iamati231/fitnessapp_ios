@@ -253,8 +253,6 @@ public enum PreviewSeed {
         )
         ctx.insert(session)
 
-        var totalSets = 0
-        var totalVol  = 0.0
         var setOffset = 0
 
         for exercise in day.exercises.sorted(by: { $0.orderIndex < $1.orderIndex }) {
@@ -271,13 +269,14 @@ public enum PreviewSeed {
                     session: session
                 )
                 ctx.insert(log)
-                totalSets += 1
-                totalVol  += weight * Double(reps)
                 setOffset += 1
             }
         }
-        session.totalSets = totalSets
-        session.totalVolumeKg = totalVol
+        // DEL-221: Aggregate ueber den einen Schreiber statt mitzuzaehlen.
+        // Der Preview-Seed rechnete die Summen frueher parallel zum Insert-
+        // Loop mit — eine sechste Kopie der Formel, die stillschweigend
+        // haette abweichen koennen.
+        session.recomputeTotals()
     }
 
     /// Rough realistic weights for the seeded PPL exercises — used only by the

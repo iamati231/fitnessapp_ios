@@ -799,8 +799,10 @@ public struct DayEditorView: View {
         let now = Date()
         open.endTime = now
         open.durationMinutes = max(0, Int(now.timeIntervalSince(open.startTime) / 60))
-        open.totalSets = open.logs.count
-        open.totalVolumeKg = open.logs.reduce(0.0) { $0 + $1.weight * Double($1.reps) }
+        // DEL-221: Aggregate ueber den einen Schreiber. `exerciseCount` bleibt
+        // hier absichtlich unangetastet — die Session traegt den Wert, den sie
+        // beim Start bekommen hat.
+        open.recomputeTotals()
         open.isCompleted = true
         try? modelContext.save()
         actuallyStartNewSession()

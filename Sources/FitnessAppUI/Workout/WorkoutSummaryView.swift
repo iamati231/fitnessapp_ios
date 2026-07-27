@@ -534,13 +534,13 @@ public struct WorkoutSummaryView: View {
     }
 
     /// Setzt totalSets + totalVolumeKg aus den (eventuell vom User editierten)
-    /// ExerciseLogs neu. Wird beim Verlassen des Edit-Modes gerufen, damit
-    /// Dashboard/History-Stats korrekt bleiben.
+    /// ExerciseLogs neu, damit Dashboard/History-Stats korrekt bleiben.
+    ///
+    /// DEL-221: delegiert an `recomputeTotals()` — den einen Schreiber der
+    /// Aggregate. Die lokale Handrechnung war eine von fuenf Kopien derselben
+    /// Formel.
     private func recalculateSessionTotals() {
-        session.totalSets = session.logs.count
-        session.totalVolumeKg = session.logs.reduce(0.0) { acc, log in
-            acc + log.weight * Double(log.reps)
-        }
+        session.recomputeTotals()
     }
 
     // MARK: Sections
@@ -1182,9 +1182,8 @@ public struct WorkoutSummaryView: View {
             log.setIndex = i
         }
 
-        // Update session-level aggregates.
-        session.totalSets = session.logs.count
-        session.totalVolumeKg = session.logs.reduce(0.0) { $0 + $1.weight * Double($1.reps) }
+        // Update session-level aggregates (DEL-221: ein Schreiber).
+        session.recomputeTotals()
     }
 }
 
