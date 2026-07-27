@@ -371,18 +371,11 @@ public enum PRDetector {
     /// Display-priority within an exercise. 1RM is the most "wow" weighted PR;
     /// time + reps PRs come last because they're typically standalone categories
     /// (a time-based exercise can't also produce 1RM).
+    ///
+    /// DEL-218: delegiert an `PersonalRecord.Kind.displayPriority` — die
+    /// Reihenfolge lag vorher in vier unabhaengigen Kopien, von denen zwei die
+    /// Cardio-Kinds vergessen hatten.
     private static func kindOrder(_ kind: PersonalRecord.Kind) -> Int {
-        switch kind {
-        case .estimated1RM:    return 0
-        case .heaviestWeight:  return 1
-        case .bestSet:         return 2
-        case .maxReps:         return 3
-        case .maxHoldSeconds:  return 4
-        // DEL-064: Cardio-PRs ans Ende der Display-Reihenfolge — sie sind
-        // konzeptionell eigene Kategorie und sollen visuell unter den
-        // Strength-PRs landen, wenn beide gleichzeitig auftreten.
-        case .longestDistance: return 5
-        case .fastestPace:     return 6
-        }
+        kind.displayPriority
     }
 }

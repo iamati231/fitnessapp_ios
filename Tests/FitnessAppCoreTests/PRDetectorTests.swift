@@ -429,4 +429,38 @@ final class PRDetectorTests: XCTestCase {
         XCTAssertTrue(prs.contains { $0.kind == .longestDistance })
         XCTAssertTrue(prs.contains { $0.kind == .heaviestWeight })
     }
+
+    // MARK: - DEL-218 displayOrder
+
+    /// Regression: `displayOrder` MUSS jeden Case enthalten. Vor DEL-218 lag
+    /// die Reihenfolge in vier Kopien, zwei davon ohne die Cardio-Kinds —
+    /// Cardio-PRs waren im Trophy-Room dadurch unsichtbar (leere Kind-Liste
+    /// ⇒ kein Picker, kein Chart). Faellt dieser Test, verschwindet ein Kind
+    /// still aus der gesamten Anzeige.
+    func testDisplayOrderCoversEveryKind() {
+        XCTAssertEqual(
+            Set(PersonalRecord.Kind.displayOrder),
+            Set(PersonalRecord.Kind.allCases),
+            "displayOrder muss alle Kind-Cases abdecken — fehlende Cases werden unsichtbar"
+        )
+        XCTAssertEqual(
+            PersonalRecord.Kind.displayOrder.count,
+            PersonalRecord.Kind.allCases.count,
+            "displayOrder darf keine Duplikate enthalten"
+        )
+    }
+
+    /// Strength-PRs rangieren vor Cardio-PRs (DEL-064-Entscheidung), und 1RM
+    /// bleibt der Spitzenplatz.
+    func testDisplayPriorityRanksStrengthBeforeCardio() {
+        XCTAssertEqual(PersonalRecord.Kind.estimated1RM.displayPriority, 0)
+        for strength in [PersonalRecord.Kind.estimated1RM, .heaviestWeight, .bestSet, .maxReps, .maxHoldSeconds] {
+            for cardio in [PersonalRecord.Kind.longestDistance, .fastestPace] {
+                XCTAssertLessThan(
+                    strength.displayPriority, cardio.displayPriority,
+                    "\(strength) sollte vor \(cardio) rangieren"
+                )
+            }
+        }
+    }
 }

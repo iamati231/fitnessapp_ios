@@ -171,9 +171,10 @@ public struct PRHistoryView: View {
 
     private var availableKinds: [PersonalRecord.Kind] {
         let raw = Set(entries.compactMap(\.kind))
-        // Stable display order — same priority as PRDetector.kindOrder.
-        return [.estimated1RM, .heaviestWeight, .bestSet, .maxReps, .maxHoldSeconds]
-            .filter { raw.contains($0) }
+        // DEL-218: `Kind.displayOrder` statt eines lokalen Literals. Das
+        // frühere Literal liess .longestDistance und .fastestPace weg —
+        // Cardio-PRs waren dadurch nicht filterbar.
+        return PersonalRecord.Kind.displayOrder.filter { raw.contains($0) }
     }
 
     private var filteredCount: Int {
@@ -324,7 +325,8 @@ private struct ExerciseTrophySection: View {
         }
         .padding(.vertical, 4)
         .onAppear {
-            // Default the chart to the most-impressive kind we have — 1RM > heaviest > bestSet > maxReps > maxHoldSeconds.
+            // Default the chart to the most-impressive kind we have.
+            // Reihenfolge: PersonalRecord.Kind.displayOrder (DEL-218).
             chartKind = uniqueKinds.first ?? chartKind
         }
     }
@@ -421,10 +423,10 @@ private struct ExerciseTrophySection: View {
     /// Filtered to the currently-selected chip if any.
     private var uniqueKinds: [PersonalRecord.Kind] {
         let raw = Set(group.entries.compactMap(\.kind))
-        let order: [PersonalRecord.Kind] = [
-            .estimated1RM, .heaviestWeight, .bestSet, .maxReps, .maxHoldSeconds
-        ]
-        let ordered = order.filter { raw.contains($0) }
+        // DEL-218: siehe `availableKinds` — das lokale Literal hier war der
+        // Grund, warum ein reiner Cardio-Nutzer weder Kind-Picker noch Chart
+        // sah: `uniqueKinds` blieb leer, obwohl Cardio-Einträge vorlagen.
+        let ordered = PersonalRecord.Kind.displayOrder.filter { raw.contains($0) }
         if let selected = selectedKind {
             return ordered.filter { $0 == selected }
         }
@@ -608,27 +610,38 @@ enum PRKindStyle {
     }
 
     /// Short label for chips + segmented picker — full label lives in PRBadge.
+    ///
+    /// DEL-218: lokalisiert. Vorher hartkodiertes Deutsch, was durch das
+    /// Sichtbarmachen der Cardio-Kinds erst aufgefallen ist — "Distanz" und
+    /// "Pace" waeren sonst neu an EN/TR-Nutzer gegangen. Explizite
+    /// Key-Literale (keine rawValue-Interpolation), damit das
+    /// dead_catalog-Audit sie ohne Sonderregel findet.
     static func shortLabel(_ kind: PersonalRecord.Kind) -> String {
         switch kind {
-        case .estimated1RM:    "1RM"
-        case .heaviestWeight:  "Max-Gewicht"
-        case .bestSet:         "Bestsatz"
-        case .maxReps:         "Max Reps"
-        case .maxHoldSeconds:  "Bestzeit"
-        case .longestDistance: "Distanz"
-        case .fastestPace:     "Pace"
+        case .estimated1RM:    String(localized: "trophy.kind.short.estimated1RM", bundle: .module)
+        case .heaviestWeight:  String(localized: "trophy.kind.short.heaviestWeight", bundle: .module)
+        case .bestSet:         String(localized: "trophy.kind.short.bestSet", bundle: .module)
+        case .maxReps:         String(localized: "trophy.kind.short.maxReps", bundle: .module)
+        case .maxHoldSeconds:  String(localized: "trophy.kind.short.maxHoldSeconds", bundle: .module)
+        case .longestDistance: String(localized: "trophy.kind.short.longestDistance", bundle: .module)
+        case .fastestPace:     String(localized: "trophy.kind.short.fastestPace", bundle: .module)
         }
     }
 
     /// Y-axis label for the per-kind chart.
+    ///
+    /// DEL-218: lokalisiert (siehe `shortLabel`). Die Gewichts-Einheit steht
+    /// weiterhin fest auf kg, weil PR-Werte in kg persistiert sind — die
+    /// lbs-Umrechnung ist ein eigenes, groesseres Thema und betrifft die
+    /// gesamte Anzeige-Schicht, nicht nur diesen Chart.
     static func yAxisLabel(_ kind: PersonalRecord.Kind) -> String {
         switch kind {
-        case .estimated1RM, .heaviestWeight: return "Gewicht (kg)"
-        case .bestSet:                       return "Volumen (kg)"
-        case .maxReps:                       return "Wdh"
-        case .maxHoldSeconds:                return "Sekunden"
-        case .longestDistance:               return "Distanz (km)"
-        case .fastestPace:                   return "Pace (min/km)"
+        case .estimated1RM, .heaviestWeight: return String(localized: "trophy.axis.weight", bundle: .module)
+        case .bestSet:                       return String(localized: "trophy.axis.volume", bundle: .module)
+        case .maxReps:                       return String(localized: "trophy.axis.reps", bundle: .module)
+        case .maxHoldSeconds:                return String(localized: "trophy.axis.seconds", bundle: .module)
+        case .longestDistance:               return String(localized: "trophy.axis.distance", bundle: .module)
+        case .fastestPace:                   return String(localized: "trophy.axis.pace", bundle: .module)
         }
     }
 }

@@ -31,6 +31,38 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
         /// = besser). Nur valide ueber Sessions mit `totalKm >=` Mindestdistanz —
         /// PRDetector guarded gegen Sprint-Outlier.
         case fastestPace
+
+        /// DEL-218: EINZIGE Quelle der Anzeige-Reihenfolge. Vorher existierte
+        /// diese Liste vierfach: `PRDetector.kindOrder` und
+        /// `PRCelebration.priority` (beide vollstaendig) sowie zweimal als
+        /// Literal in `PRHistoryView` (beide OHNE die Cardio-Kinds). Folge:
+        /// Cardio-PRs waren im Trophy-Room unsichtbar — bei einem reinen
+        /// Cardio-Nutzer blieb die Kind-Liste leer, also kein Picker und kein
+        /// Chart, obwohl Icon, Farbe und Achsen-Label schon existierten.
+        ///
+        /// Reihenfolge: 1RM ist der "wow"-Rekord, dann absteigend die anderen
+        /// Kraft-Kategorien; Cardio steht bewusst am Ende (DEL-064: Deltiq ist
+        /// primaer eine Strength-App, bei Mixed-Sessions sollen Kraft-PRs
+        /// zuerst gefeiert werden).
+        ///
+        /// `allCases`-Vollstaendigkeit ist per Test abgesichert — ein neuer
+        /// Case, der hier fehlt, verschwindet sonst still aus jeder Anzeige.
+        public static let displayOrder: [Kind] = [
+            .estimated1RM,
+            .heaviestWeight,
+            .bestSet,
+            .maxReps,
+            .maxHoldSeconds,
+            .longestDistance,
+            .fastestPace,
+        ]
+
+        /// Rang in `displayOrder` — niedriger = beeindruckender. Cases, die
+        /// (versehentlich) nicht in `displayOrder` stehen, landen hinten statt
+        /// zu verschwinden.
+        public var displayPriority: Int {
+            Kind.displayOrder.firstIndex(of: self) ?? Kind.allCases.count
+        }
     }
 
     /// Stable identifier — allows `ForEach(prs) {}` without needing manual id-mapping.

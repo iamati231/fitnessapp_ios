@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1402 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1415 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1402 / 1402** (100%) | 0 |
-| 🇬🇧 English (EN) | **1402 / 1402** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1402 / 1402** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1415 / 1415** (100%) | 0 |
+| 🇬🇧 English (EN) | **1415 / 1415** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1415 / 1415** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1629,14 +1629,27 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `tab.more` | Mehr | More | Daha Fazla |
 | `tab.plan` | Plan | Plan | Plan |
 
-## `trophy.*`  (10 Keys)
+## `trophy.*`  (23 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `trophy.axis.distance` | Distanz (km) | Distance (km) | Mesafe (km) |
+| `trophy.axis.pace` | Pace (min/km) | Pace (min/km) | Tempo (dk/km) |
+| `trophy.axis.reps` | Wdh | Reps | Tekrar |
+| `trophy.axis.seconds` | Sekunden | Seconds | Saniye |
+| `trophy.axis.volume` | Volumen (kg) | Volume (kg) | Hacim (kg) |
+| `trophy.axis.weight` | Gewicht (kg) | Weight (kg) | Ağırlık (kg) |
 | `trophy.empty.cta.detect` | Aus History detektieren | Detect from History | Geçmişten Tespit Et |
 | `trophy.empty.description.firstWorkout` | Beende dein erstes Training, um deinen ersten PR aufzustellen. | Finish your first workout to set your first PR. | İlk PR'ını koymak için ilk antrenmanını bitir. |
 | `trophy.empty.description.hasWorkouts` | Du hast bereits Trainings, aber noch keine Rekorde gespeichert. Klick unten, um sie aus deiner History zu detektieren. | You have workouts but no records saved yet. Tap below to detect them from your history. | Antrenmanların var ama henüz kayıtlı rekor yok. Geçmişinden tespit etmek için aşağıya dokun. |
 | `trophy.empty.title` | Noch keine Rekorde | No records yet | Henüz rekor yok |
+| `trophy.kind.short.bestSet` | Bestsatz | Best Set | En İyi Set |
+| `trophy.kind.short.estimated1RM` | 1RM | 1RM | 1RM |
+| `trophy.kind.short.fastestPace` | Pace | Pace | Tempo |
+| `trophy.kind.short.heaviestWeight` | Max-Gewicht | Max Weight | Maks. Ağırlık |
+| `trophy.kind.short.longestDistance` | Distanz | Distance | Mesafe |
+| `trophy.kind.short.maxHoldSeconds` | Bestzeit | Best Time | En İyi Süre |
+| `trophy.kind.short.maxReps` | Max Wdh | Max Reps | Maks. Tekrar |
 | `trophy.rebuild.confirm.cta` | Neu berechnen | Recompute | Yeniden hesapla |
 | `trophy.rebuild.confirm.message` | Setzt alle gespeicherten Rekorde zurück und detektiert sie aus deiner kompletten History neu. Nützlich nach gelöschten Sessions. | Resets all saved records and re-detects them from your complete history. Useful after deleted sessions. | Tüm kayıtlı rekorları sıfırlar ve geçmişinden yeniden tespit eder. Silinen oturumlardan sonra faydalı. |
 | `trophy.rebuild.confirm.title` | Trophy Room neu berechnen? | Recompute Trophy Room? | Kupa Odası yeniden hesaplansın mı? |

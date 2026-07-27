@@ -115,16 +115,11 @@ public enum PRCelebration {
     /// DEL-064: Cardio-PRs ans Ende — bei Mixed-Sessions sollen Strength-
     /// PRs zuerst gefeiert werden (Brand-Erinnerung: wir sind primaer eine
     /// Strength-App; Cardio ist Add-On fuer Hybrid-Athleten).
+    ///
+    /// DEL-218: liest jetzt `PersonalRecord.Kind.displayPriority` statt eine
+    /// eigene Kopie der Reihenfolge zu halten.
     private static func priority(_ kind: PersonalRecord.Kind) -> Int {
-        switch kind {
-        case .estimated1RM:     return 0
-        case .heaviestWeight:   return 1
-        case .bestSet:          return 2
-        case .maxReps:          return 3
-        case .maxHoldSeconds:   return 4
-        case .longestDistance:  return 5
-        case .fastestPace:      return 6
-        }
+        kind.displayPriority
     }
 
     /// Pace-Formatter analog zu `PaceCalculator.formatPace`, aber als
