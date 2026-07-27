@@ -70,4 +70,32 @@ public enum SessionAggregator {
         }
         return Totals(setCount: sets.count, volumeKg: volume)
     }
+
+    /// DEL-223: Ist dieser Satz ein reiner Platzhalter — also eine Zeile, in
+    /// die der User nie etwas eingetragen hat?
+    ///
+    /// Hintergrund: Wer im History-Edit eine Uebung nachtraegt, bekommt drei
+    /// vorbereitete Zeilen mit 0/0. Fuellt er nur eine davon, blieben die
+    /// anderen zwei dauerhaft in der Datenbank und zaehlten als "Satz" — in
+    /// der Session-Summe wie in der Muskel-Heatmap. Die Woche sah damit
+    /// trainierter aus, als sie war.
+    ///
+    /// Die Regel muss vier Faelle auseinanderhalten, deshalb steht sie hier
+    /// mit Tests und nicht als Einzeiler im Model:
+    ///   * Bodyweight (Klimmzuege): `weightKg == 0`, aber `reps > 0` → **Satz**
+    ///   * Cardio (Lauf): weight und reps 0, aber `distanceKm`/
+    ///     `durationSeconds` gesetzt → **Satz**
+    ///   * TimeBased (Plank): Haltezeit steckt in `reps` → **Satz**
+    ///   * Platzhalter: alles vier leer bzw. 0 → **kein Satz**
+    public static func isPlaceholder(
+        weightKg: Double,
+        reps: Int,
+        distanceKm: Double?,
+        durationSeconds: Int?
+    ) -> Bool {
+        weightKg <= 0
+            && reps <= 0
+            && (distanceKm ?? 0) <= 0
+            && (durationSeconds ?? 0) <= 0
+    }
 }

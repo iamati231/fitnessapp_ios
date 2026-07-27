@@ -2442,7 +2442,11 @@ public struct DashboardView: View {
         let weekStart = Self.currentWeekStart()
         let weekLogs = completedSessions
             .filter { $0.startTime >= weekStart }
-            .flatMap(\.logs)
+            // DEL-223: `loggedSets` statt `logs` — nie ausgefuellte
+            // Platzhalter-Zeilen (0/0 aus dem History-Nachtrag) zaehlten hier
+            // als vollwertiger Satz und liessen die Woche trainierter
+            // aussehen, als sie war.
+            .flatMap(\.loggedSets)
             .compactMap { log -> (date: Date, exerciseName: String, isCardio: Bool)? in
                 guard let name = log.resolvedExerciseName else { return nil }
                 return (date: log.date, exerciseName: name, isCardio: log.resolvedIsCardio)

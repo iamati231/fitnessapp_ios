@@ -10,7 +10,31 @@ import FitnessAppCore
 // `recomputeTotals()`. Die Formel selbst lebt in
 // `FitnessAppCore.SessionAggregator` und ist dort ohne SwiftData getestet.
 
+public extension ExerciseLog {
+
+    /// DEL-223: Zeile, in die nie etwas eingetragen wurde. Entsteht beim
+    /// Nachtragen einer Uebung im History-Edit (drei vorbereitete 0/0-Zeilen).
+    /// Die Unterscheidungsregel liegt in `SessionAggregator.isPlaceholder` —
+    /// sie muss Bodyweight, Cardio und Haltezeiten korrekt als echte Saetze
+    /// erkennen und ist dort mit Tests abgesichert.
+    var isEmptyPlaceholder: Bool {
+        SessionAggregator.isPlaceholder(
+            weightKg: weight,
+            reps: reps,
+            distanceKm: distanceKm,
+            durationSeconds: durationSeconds
+        )
+    }
+}
+
 public extension WorkoutSession {
+
+    /// DEL-223: Die Logs, die als geloggter Satz zaehlen — ohne nie
+    /// ausgefuellte Platzhalter-Zeilen.
+    var loggedSets: [ExerciseLog] {
+        logs.filter { !$0.isEmptyPlaceholder }
+    }
+
 
     /// Rechnet `totalSets` und `totalVolumeKg` aus den aktuellen Logs neu.
     ///
@@ -26,8 +50,11 @@ public extension WorkoutSession {
     ///   weiterverwenden will (z.B. fuer eine Live-Activity-Update).
     @discardableResult
     func recomputeTotals(exerciseCount newExerciseCount: Int? = nil) -> SessionAggregator.Totals {
+        // DEL-223: `loggedSets` statt `logs` — nie ausgefuellte Platzhalter-
+        // Zeilen zaehlen nicht als Satz. Vorher blaehte jede nachgetragene,
+        // aber leer gelassene Zeile `totalSets` dauerhaft auf.
         let totals = SessionAggregator.totals(
-            for: logs.map {
+            for: loggedSets.map {
                 SessionAggregator.LoggedSet(weightKg: $0.weight, reps: $0.reps)
             }
         )

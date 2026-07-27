@@ -96,4 +96,72 @@ final class SessionAggregatorTests: XCTestCase {
             SessionAggregator.Totals(setCount: 1, volumeKg: 640)
         )
     }
+
+    // MARK: - DEL-223 Platzhalter-Erkennung
+
+    /// Der Fall, um den es geht: eine im History-Edit nachgetragene, aber nie
+    /// ausgefuellte Zeile.
+    func testAllZeroSetIsPlaceholder() {
+        XCTAssertTrue(SessionAggregator.isPlaceholder(
+            weightKg: 0, reps: 0, distanceKm: nil, durationSeconds: nil
+        ))
+    }
+
+    func testExplicitZeroCardioFieldsAreStillPlaceholder() {
+        // 0 und nil muessen gleich behandelt werden — der Importer schreibt
+        // teils 0 statt nil.
+        XCTAssertTrue(SessionAggregator.isPlaceholder(
+            weightKg: 0, reps: 0, distanceKm: 0, durationSeconds: 0
+        ))
+    }
+
+    /// Klimmzuege: kein Gewicht, aber sehr wohl Arbeit.
+    func testBodyweightSetIsNotPlaceholder() {
+        XCTAssertFalse(SessionAggregator.isPlaceholder(
+            weightKg: 0, reps: 12, distanceKm: nil, durationSeconds: nil
+        ))
+    }
+
+    /// Lauf: weder Gewicht noch Reps, aber eine Distanz.
+    func testCardioWithDistanceIsNotPlaceholder() {
+        XCTAssertFalse(SessionAggregator.isPlaceholder(
+            weightKg: 0, reps: 0, distanceKm: 5.2, durationSeconds: nil
+        ))
+    }
+
+    /// Laufband ohne Distanz-Eingabe, aber mit Dauer.
+    func testCardioWithOnlyDurationIsNotPlaceholder() {
+        XCTAssertFalse(SessionAggregator.isPlaceholder(
+            weightKg: 0, reps: 0, distanceKm: nil, durationSeconds: 1800
+        ))
+    }
+
+    /// Plank: die Haltezeit steckt in `reps`.
+    func testTimeBasedHoldIsNotPlaceholder() {
+        XCTAssertFalse(SessionAggregator.isPlaceholder(
+            weightKg: 0, reps: 45, distanceKm: nil, durationSeconds: nil
+        ))
+    }
+
+    func testWeightedSetIsNotPlaceholder() {
+        XCTAssertFalse(SessionAggregator.isPlaceholder(
+            weightKg: 80, reps: 8, distanceKm: nil, durationSeconds: nil
+        ))
+    }
+
+    /// Gewicht eingetragen, Reps noch nicht — halbfertig, aber der User hat
+    /// etwas hingeschrieben. Zaehlt als Satz (0 Volumen), damit die Zeile
+    /// nicht unter ihm wegfaellt.
+    func testWeightWithoutRepsIsNotPlaceholder() {
+        XCTAssertFalse(SessionAggregator.isPlaceholder(
+            weightKg: 80, reps: 0, distanceKm: nil, durationSeconds: nil
+        ))
+    }
+
+    func testNegativeValuesCountAsPlaceholder() {
+        // Datenfehler ohne jede verwertbare Information.
+        XCTAssertTrue(SessionAggregator.isPlaceholder(
+            weightKg: -5, reps: -2, distanceKm: -1, durationSeconds: -10
+        ))
+    }
 }

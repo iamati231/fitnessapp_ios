@@ -110,6 +110,23 @@ public struct WorkoutSummaryView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .navigationBarBackButtonHidden(!isReadOnly)
+        // DEL-223: Sicherheitsnetz gegen dauerhaft falsche Summen. Der
+        // Edit-Mode rechnete `totalSets`/`totalVolumeKg` NUR im "Fertig"-
+        // Toolbar-Button neu — im History-Mode ist der System-Back-Button aber
+        // sichtbar (siehe `navigationBarBackButtonHidden(!isReadOnly)` direkt
+        // darueber). Wer den Edit-Mode ueber Zurueck oder die Back-Swipe-Gestur
+        // verliess, behielt fuer immer die Summen von VOR seiner Aenderung — in
+        // Dashboard, Wochenvolumen und History.
+        //
+        // Bewusst nur ein Recompute und KEIN Platzhalter-Sweep: Recompute ist
+        // idempotent und damit unkritisch, falls SwiftUI onDisappear
+        // unerwartet feuert. Geloescht wird nur auf die explizite
+        // "Fertig"-Aktion.
+        .onDisappear {
+            guard isReadOnly else { return }
+            recalculateSessionTotals()
+            try? modelContext.save()
+        }
         .toolbar {
             // DEL-032: History-Mode bekommt einen Edit-Toggle. Im New-Mode
             // unsichtbar (Edit dort macht keinen Sinn — totals werden gerade
@@ -118,8 +135,10 @@ public struct WorkoutSummaryView: View {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         if isEditingHistory {
-                            // Beim Beenden vom Edit-Mode: totals neu berechnen
+                            // Beim Beenden vom Edit-Mode: leere Platzhalter-
+                            // Zeilen aufraeumen (DEL-223), totals neu berechnen
                             // + persistieren, falls der User Set-Werte angefasst hat.
+                            sweepEmptyPlaceholderLogs()
                             recalculateSessionTotals()
                             try? modelContext.save()
                         }
@@ -538,6 +557,52 @@ public struct WorkoutSummaryView: View {
     /// Formel.
     private func recalculateSessionTotals() {
         session.recomputeTotals()
+    }
+
+    /// DEL-223: Entfernt Satz-Zeilen, in die nie etwas eingetragen wurde.
+    ///
+    /// Wer im Edit-Mode eine Uebung nachtraegt, bekommt drei vorbereitete
+    /// 0/0-Zeilen (`addExerciseToSession`). Traegt er nur einen Satz ein,
+    /// blieben die anderen zwei fuer immer in der Datenbank — sie zaehlten als
+    /// Satz in der Session-Summe und in der Muskel-Heatmap und tauchten in der
+    /// Satz-Liste als "0 kg × 0" auf.
+    ///
+    /// Laeuft ausschliesslich beim expliziten Verlassen des Edit-Modes, nie
+    /// automatisch: solange der User editiert, ist eine leere Zeile eine
+    /// Einladung, sie auszufuellen, und kein Muell.
+    ///
+    /// Uebungen, die dadurch komplett ohne Logs zurueckbleiben, werden
+    /// mitgeloescht. Diese Nachtrags-Uebungen haengen bewusst an keinem
+    /// Trainingstag (`day: nil`), waeren also unerreichbare Waisen.
+    private func sweepEmptyPlaceholderLogs() {
+        let placeholders = session.logs.filter(\.isEmptyPlaceholder)
+        guard !placeholders.isEmpty else { return }
+
+        // Kandidaten VOR dem Delete festhalten und die zu loeschenden IDs
+        // merken: nach dem Delete ist die Relationship-Sicht (`exercise.logs`)
+        // innerhalb derselben Transaktion nicht verlaesslich, deshalb wird die
+        // Rest-Menge explizit ueber IDs gefiltert statt auf `isDeleted` zu
+        // vertrauen.
+        let deletedIDs = Set(placeholders.map(\.persistentModelID))
+        var candidates: [Exercise] = []
+        for log in placeholders {
+            guard let exercise = log.exercise else { continue }
+            let known = candidates.contains { $0.persistentModelID == exercise.persistentModelID }
+            if !known { candidates.append(exercise) }
+        }
+
+        for log in placeholders {
+            modelContext.delete(log)
+        }
+
+        // Waisen-Uebungen aufraeumen: nur solche ohne Plan-Anbindung, bei denen
+        // kein Log mehr uebrig bleibt.
+        for exercise in candidates where exercise.day == nil {
+            let remaining = exercise.logs.filter { !deletedIDs.contains($0.persistentModelID) }
+            if remaining.isEmpty {
+                modelContext.delete(exercise)
+            }
+        }
     }
 
     // MARK: Sections
