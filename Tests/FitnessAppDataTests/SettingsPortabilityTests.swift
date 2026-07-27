@@ -7,9 +7,34 @@ import XCTest
 final class SettingsPortabilityTests: XCTestCase {
 
     private var defaults: UserDefaults!
-    private let suiteName = "SettingsPortabilityTests"
+
+    /// DEL-232: Suite-Name PRO TESTMETHODE, nicht pro Klasse.
+    ///
+    /// Vorher war das eine Konstante, alle vier Tests teilten also dieselbe
+    /// Suite — und `setUp` wie `tearDown` loeschten jeweils die KOMPLETTE
+    /// Domain. UserDefaults-Suites sind aber plist-Dateien auf der Platte und
+    /// damit prozessuebergreifend geteilt, waehrend `swift test --parallel`
+    /// die Tests in getrennten Prozessen NEBENEINANDER ausfuehrt. Das
+    /// tearDown des einen Tests hat dem anderen mitten im Lauf die Keys
+    /// weggewischt.
+    ///
+    /// Symptom war ein Test, der je nach Timing durchlief oder nicht:
+    /// `collect` fand statt vier gesetzten Keys nur noch einen. Genau die Art
+    /// Flake, die man als "Test ist kaputt" abtut und die dann echte
+    /// Regressionen verdeckt.
+    private var suiteName = ""
 
     override func setUpWithError() throws {
+        // `name` ist auf Apple-Plattformen "-[SettingsPortabilityTests testFoo]"
+        // und auf swift-corelibs "SettingsPortabilityTests.testFoo" — enthaelt
+        // also in beiden Faellen Klasse UND Methode und ist damit eindeutig.
+        // Klammern und Leerzeichen muessen raus, weil der Suite-Name als
+        // Dateiname landet; die Ersetzungen sind No-ops, wenn das Muster fehlt.
+        let methodID = name
+            .replacingOccurrences(of: "-[", with: "")
+            .replacingOccurrences(of: "]", with: "")
+            .replacingOccurrences(of: " ", with: ".")
+        suiteName = "DeltiqTests.\(methodID)"
         defaults = UserDefaults(suiteName: suiteName)
         defaults.removePersistentDomain(forName: suiteName)
     }
