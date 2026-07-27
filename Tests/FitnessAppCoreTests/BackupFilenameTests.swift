@@ -11,15 +11,22 @@ final class BackupFilenameTests: XCTestCase {
 
     // MARK: Roundtrip
 
-    func testRoundTripPreservesReasonAndTimestamp() {
+    func testRoundTripPreservesReasonAndTimestamp() throws {
         for reason in BackupFilename.Reason.allCases {
             let name = BackupFilename.make(reason: reason, at: reference)
-            let parsed = BackupFilename.parse(name)
-            XCTAssertEqual(parsed?.reason, reason, "Reason \(reason) ging verloren")
+            // XCTUnwrap statt Optional-Chaining: die accuracy-Ueberladung von
+            // XCTAssertEqual nimmt kein Optional, und ein `?? 0` wuerde einen
+            // fehlgeschlagenen Parse als "Zeitstempel 1970" durchlassen statt
+            // den Test klar scheitern zu lassen.
+            let parsed = try XCTUnwrap(
+                BackupFilename.parse(name),
+                "\(name) liess sich nicht zurueckparsen"
+            )
+            XCTAssertEqual(parsed.reason, reason, "Reason \(reason) ging verloren")
             // Sekunden-Granularitaet: der Stempel traegt keine
             // Sub-Sekunden-Anteile.
             XCTAssertEqual(
-                parsed?.date.timeIntervalSince1970,
+                parsed.date.timeIntervalSince1970,
                 reference.timeIntervalSince1970,
                 accuracy: 1.0
             )
