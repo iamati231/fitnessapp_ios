@@ -1,0 +1,255 @@
+import XCTest
+@testable import FitnessAppCore
+
+/// DEL-235: Diese Regeln greifen in die Arbeitsgewichte des Nutzers ein. Ein
+/// Fehler hier ist entweder Bevormundung (reduziert, wo niemand es wollte)
+/// oder ein Dauerzustand (kommt nie wieder hoch).
+final class ComebackAdvisorTests: XCTestCase {
+
+    // MARK: Schwelle
+
+    func testDefaultThresholdIsFourteenDays() {
+        XCTAssertEqual(ComebackAdvisor.gapThresholdDays(medianGapOfLastSessions: nil), 14)
+        XCTAssertEqual(ComebackAdvisor.minimumGapDays, 14)
+    }
+
+    /// Wer taeglich trainiert, soll nicht schon nach vier Tagen reduziert
+    /// bekommen — die Untergrenze gewinnt.
+    func testFrequentTrainerStillGetsFourteenDayFloor() {
+        XCTAssertEqual(ComebackAdvisor.gapThresholdDays(medianGapOfLastSessions: 1.5), 14)
+        XCTAssertEqual(ComebackAdvisor.gapThresholdDays(medianGapOfLastSessions: 3), 14)
+    }
+
+    /// Wer ohnehin nur alle zwei Wochen trainiert, hat bei 20 Tagen keinen
+    /// Bruch in der Gewohnheit.
+    func testInfrequentTrainerGetsHigherThreshold() {
+        XCTAssertEqual(ComebackAdvisor.gapThresholdDays(medianGapOfLastSessions: 8), 20)
+        XCTAssertEqual(ComebackAdvisor.gapThresholdDays(medianGapOfLastSessions: 14), 35)
+    }
+
+    func testZeroOrNegativeMedianFallsBackToFloor() {
+        XCTAssertEqual(ComebackAdvisor.gapThresholdDays(medianGapOfLastSessions: 0), 14)
+        XCTAssertEqual(ComebackAdvisor.gapThresholdDays(medianGapOfLastSessions: -5), 14)
+    }
+
+    // MARK: Auslöser
+
+    func testShortGapNeverSuggests() {
+        for gap in [0, 5, 10, 13] {
+            XCTAssertFalse(
+                ComebackAdvisor.shouldSuggest(gapDays: gap, medianGap: 2, sessionsBeforeGap: 12),
+                "\(gap) Tage duerfen nichts ausloesen"
+            )
+        }
+    }
+
+    func testLongGapWithHistorySuggests() {
+        XCTAssertTrue(
+            ComebackAdvisor.shouldSuggest(gapDays: 21, medianGap: 2, sessionsBeforeGap: 10)
+        )
+    }
+
+    /// Wer vor der Pause kaum trainiert hat, braucht keinen Wiedereinstieg,
+    /// sondern einen Einstieg — es gibt keine Last, von der man reduzieren
+    /// koennte.
+    func testNoSuggestionWithoutPriorRegularity() {
+        XCTAssertFalse(
+            ComebackAdvisor.shouldSuggest(gapDays: 40, medianGap: nil, sessionsBeforeGap: 2)
+        )
+        XCTAssertTrue(
+            ComebackAdvisor.shouldSuggest(gapDays: 40, medianGap: nil, sessionsBeforeGap: 3),
+            "genau 3 Sessions reichen"
+        )
+    }
+
+    /// Nach einer Ablehnung nicht nachbohren — erst eine deutlich laengere
+    /// Pause fragt erneut.
+    func testSuppressionBlocksUntilLongerGap() {
+        XCTAssertFalse(ComebackAdvisor.shouldSuggest(
+            gapDays: 20, medianGap: 2, sessionsBeforeGap: 10, suppressedUntilGapDays: 20
+        ))
+        XCTAssertFalse(ComebackAdvisor.shouldSuggest(
+            gapDays: 18, medianGap: 2, sessionsBeforeGap: 10, suppressedUntilGapDays: 20
+        ))
+        XCTAssertTrue(ComebackAdvisor.shouldSuggest(
+            gapDays: 45, medianGap: 2, sessionsBeforeGap: 10, suppressedUntilGapDays: 20
+        ))
+    }
+
+    // MARK: Verordnung
+
+    func testNoPrescriptionBelowThreshold() {
+        XCTAssertEqual(ComebackAdvisor.prescription(forGapDays: 13), .none)
+        XCTAssertEqual(ComebackAdvisor.prescription(forGapDays: 0), .none)
+    }
+
+    /// Der wichtigste Einzelwert: im haeufigsten Bucket muss ueberhaupt etwas
+    /// passieren, sonst ist das Feature dort wirkungslos.
+    func testTwoWeekGapProducesVisibleReduction() {
+        let p = ComebackAdvisor.prescription(forGapDays: 16)
+        XCTAssertEqual(p.compoundFactor, 0.95, accuracy: 0.0001)
+        XCTAssertEqual(p.firstSessionSetDelta, -1)
+        XCTAssertEqual(p.rirDelta, 1)
+        // 100 kg -> 95 kg ist auf jedem Raster darstellbar.
+        XCTAssertLessThanOrEqual(100 * p.compoundFactor, 95.0)
+    }
+
+    /// Isolation darf nie staerker reduziert werden als Compound.
+    func testIsolationIsNeverReducedMoreThanCompound() {
+        for gap in [14, 20, 21, 29, 30, 59, 60, 89, 90, 179, 200, 400] {
+            let p = ComebackAdvisor.prescription(forGapDays: gap)
+            XCTAssertGreaterThanOrEqual(
+                p.isolationFactor, p.compoundFactor,
+                "bei \(gap) Tagen ist Isolation staerker reduziert als Compound"
+            )
+        }
+    }
+
+    /// Laengere Pause darf nie zu WENIGER Reduktion fuehren (bis zur
+    /// Retest-Grenze).
+    func testReductionIsMonotonicUpToRetest() {
+        var previous = 1.01
+        for gap in [14, 21, 30, 60, 90] {
+            let p = ComebackAdvisor.prescription(forGapDays: gap)
+            XCTAssertLessThan(p.compoundFactor, previous, "bei \(gap) Tagen nicht monoton")
+            previous = p.compoundFactor
+        }
+    }
+
+    /// Ab einem halben Jahr kein geschaetzter Faktor, sondern ein Wiedertest —
+    /// die alte Last ist keine belastbare Referenz mehr.
+    func testVeryLongGapAsksForRetestInsteadOfGuessing() {
+        let p = ComebackAdvisor.prescription(forGapDays: 200)
+        XCTAssertTrue(p.needsRetest)
+        XCTAssertEqual(p.compoundFactor, 1.0, accuracy: 0.0001)
+        // Volumen und RIR werden trotzdem entschaerft.
+        XCTAssertEqual(p.firstSessionSetDelta, -2)
+        XCTAssertEqual(p.rirDelta, 2)
+    }
+
+    /// Der Reps-Boden MUSS sinken, sonst erzeugt die Comeback-Session
+    /// Deload-Verdikte im ProgressionEvaluator und zementiert die Reduktion.
+    func testRepsFloorAlwaysDropsWhenPrescribing() {
+        for gap in [14, 21, 30, 60, 90, 200] {
+            XCTAssertLessThan(
+                ComebackAdvisor.prescription(forGapDays: gap).repsFloorDelta, 0,
+                "bei \(gap) Tagen bleibt der Reps-Boden stehen"
+            )
+        }
+    }
+
+    func testRampStepsGrowWithGapAndStayBounded() {
+        XCTAssertEqual(ComebackAdvisor.prescription(forGapDays: 16).rampSteps, 2)
+        XCTAssertEqual(ComebackAdvisor.prescription(forGapDays: 120).rampSteps, 6)
+        for gap in [14, 30, 90, 400] {
+            let steps = ComebackAdvisor.prescription(forGapDays: gap).rampSteps
+            XCTAssertGreaterThanOrEqual(steps, 2)
+            XCTAssertLessThanOrEqual(steps, 6)
+        }
+    }
+
+    // MARK: Rückkehr
+
+    /// Die entscheidende Invariante: die Rampe MUSS exakt auf 1.0 landen.
+    /// Bliebe ein Restfaktor stehen, waere die Reduktion formal nie beendet.
+    func testRampReachesExactlyOne() {
+        for start in [0.75, 0.80, 0.85, 0.90, 0.95] {
+            for steps in 2...6 {
+                var factor = start
+                var remaining = steps
+                var guard_ = 0
+                while remaining > 0 && guard_ < 20 {
+                    (factor, remaining) = ComebackAdvisor.advance(factor: factor, stepsRemaining: remaining)
+                    guard_ += 1
+                }
+                XCTAssertEqual(factor, 1.0, accuracy: 0.0000001,
+                               "Start \(start) über \(steps) Stufen endet bei \(factor)")
+                XCTAssertEqual(remaining, 0)
+            }
+        }
+    }
+
+    func testRampIsMonotonicallyIncreasing() {
+        var factor = 0.80
+        var remaining = 5
+        var seen: [Double] = [factor]
+        while remaining > 0 {
+            (factor, remaining) = ComebackAdvisor.advance(factor: factor, stepsRemaining: remaining)
+            seen.append(factor)
+        }
+        for (a, b) in zip(seen, seen.dropFirst()) {
+            XCTAssertLessThan(a, b, "Rampe muss streng steigen: \(seen)")
+        }
+    }
+
+    func testRampWithOneStepJumpsToBaseline() {
+        let (factor, remaining) = ComebackAdvisor.advance(factor: 0.85, stepsRemaining: 1)
+        XCTAssertEqual(factor, 1.0)
+        XCTAssertEqual(remaining, 0)
+    }
+
+    /// 100 kg, 35 Tage Pause: 85 -> 90 -> 95 -> 100.
+    func testRealisticThirtyFiveDayRamp() {
+        let p = ComebackAdvisor.prescription(forGapDays: 35)
+        var factor = p.compoundFactor
+        var remaining = p.rampSteps
+        var weights: [Double] = [(100 * factor * 10).rounded() / 10]
+        while remaining > 0 {
+            (factor, remaining) = ComebackAdvisor.advance(factor: factor, stepsRemaining: remaining)
+            weights.append((100 * factor * 10).rounded() / 10)
+        }
+        XCTAssertEqual(weights, [85.0, 90.0, 95.0, 100.0])
+    }
+
+    // MARK: Stufen-Freigabe
+
+    func testCompleteSessionAdvances() {
+        XCTAssertEqual(
+            ComebackAdvisor.verdict(loggedSetCount: 3, targetSetCount: 3, reps: [8, 8, 8],
+                                    repsFloor: 7, medianRir: 2, targetRir: 2, sessionFeeling: 2),
+            .advance
+        )
+    }
+
+    func testHardSessionHoldsEvenIfNumbersAreFine() {
+        XCTAssertEqual(
+            ComebackAdvisor.verdict(loggedSetCount: 3, targetSetCount: 3, reps: [8, 8, 8],
+                                    repsFloor: 7, medianRir: 2, targetRir: 2, sessionFeeling: 4),
+            .hold(reason: .sessionFeltHard)
+        )
+    }
+
+    func testMissingSetsHold() {
+        XCTAssertEqual(
+            ComebackAdvisor.verdict(loggedSetCount: 2, targetSetCount: 3, reps: [8, 8],
+                                    repsFloor: 7, medianRir: 2, targetRir: 2, sessionFeeling: 2),
+            .hold(reason: .incompleteVolume)
+        )
+    }
+
+    func testRepsBelowFloorHold() {
+        XCTAssertEqual(
+            ComebackAdvisor.verdict(loggedSetCount: 3, targetSetCount: 3, reps: [8, 8, 5],
+                                    repsFloor: 7, medianRir: 2, targetRir: 2, sessionFeeling: 2),
+            .hold(reason: .repsBelowFloor)
+        )
+    }
+
+    func testTooCloseToFailureHolds() {
+        XCTAssertEqual(
+            ComebackAdvisor.verdict(loggedSetCount: 3, targetSetCount: 3, reps: [8, 8, 8],
+                                    repsFloor: 7, medianRir: 0.5, targetRir: 2, sessionFeeling: 2),
+            .hold(reason: .tooCloseToFailure)
+        )
+    }
+
+    /// Ohne Feeling-Angabe darf die Rampe nicht blockieren — das Feld ist
+    /// optional.
+    func testMissingFeelingDoesNotBlock() {
+        XCTAssertEqual(
+            ComebackAdvisor.verdict(loggedSetCount: 3, targetSetCount: 3, reps: [8, 8, 8],
+                                    repsFloor: 7, medianRir: 2, targetRir: 2, sessionFeeling: nil),
+            .advance
+        )
+    }
+}
