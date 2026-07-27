@@ -367,7 +367,13 @@ public enum DataExportService {
             // DEL-208: additive Spalte. Sichert das Original-Gewicht, falls
             // der Export mitten in einer Deload-Woche (DEL-200) passiert —
             // sonst wären nur die halbierten Gewichte im Backup.
-            "deload_original_weight"
+            "deload_original_weight",
+            // DEL-225: additive Spalte. `swappedFromOriginal` zeigt bei einer
+            // getauschten Übung (DEL-091 Urlaubs-Modus) auf die ursprüngliche
+            // Übung. Ohne die Spalte war das Original nach einem Restore nicht
+            // mehr herleitbar — der User konnte den Tausch nicht
+            // zurücknehmen. Enthält die Export-ID der Original-Übung.
+            "swapped_from_original"
         ])
         for e in items {
             // Imperatives Append statt großem Array-Literal — Swift's
@@ -408,6 +414,8 @@ public enum DataExportService {
             row.append(CSVWriter.decimal(e.technicalComplexityFactor))
             row.append(e.recoveryClassRaw)
             row.append(CSVWriter.decimal(e.deloadOriginalWeight))
+            // DEL-225: Referenz auf die Original-Übung als Export-ID.
+            row.append(e.swappedFromOriginal.map { id($0) } ?? "")
             w.appendRow(row)
         }
         return w.data()

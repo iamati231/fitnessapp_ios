@@ -675,16 +675,26 @@ public enum DataImportService {
         var errors: [RowError] = []
         var imported = 0
 
-        // DEL-192: Wenn das Backup einen aktiven Plan enthält, deaktivieren
-        // wir zuerst alle bestehenden Pläne (z.B. den vom Neu-Onboarding),
-        // damit am Ende GENAU der Backup-Plan aktiv ist — nicht zwei.
-        let csvHasActivePlan = reader.rows().contains { ($0.bool("is_active") ?? false) }
-        if csvHasActivePlan {
-            let existingPlans = try context.fetch(FetchDescriptor<TrainingPlan>())
-            for p in existingPlans where p.isActive {
-                p.isActive = false
-            }
-        }
+        // DEL-192 wollte, dass nach einem Restore GENAU der Backup-Plan aktiv
+        // ist: dazu wurden vorher alle bestehenden aktiven Plaene deaktiviert.
+        //
+        // DEL-225 ersetzt das durch eine Regel, die keinen Bestand anfasst:
+        // der aktive Zustand aus dem Backup wird nur uebernommen, wenn
+        // aktuell KEIN Plan aktiv ist.
+        //   * Restore (`replace`): die Datenbank ist vorher gewischt, es gibt
+        //     keinen aktiven Plan → Backup-Zustand gilt, wie von DEL-192
+        //     gewuenscht.
+        //   * Import in eine frische Installation: dito.
+        //   * Ergaenzender Import (`appendOnly`) bei laufendem Training: der
+        //     eigene aktive Plan bleibt aktiv, der importierte kommt inaktiv
+        //     an und kann bewusst uebernommen werden. Vorher schaltete ein
+        //     beliebiges fremdes Backup den laufenden Plan des Users still um.
+        //
+        // Nebeneffekt, den die alte Fassung nicht abdeckte: enthaelt das
+        // Backup MEHRERE aktive Plaene, wird nur der erste aktiv — sonst
+        // haette der User danach zwei "aktive" Plaene.
+        let existingPlans = try context.fetch(FetchDescriptor<TrainingPlan>())
+        var mayActivate = !existingPlans.contains(where: \.isActive)
 
         for row in reader.rows() {
             let exportID = row["id"]
@@ -706,7 +716,8 @@ public enum DataImportService {
                 // User musste manuell aktivieren. Da wir oben alle
                 // bestehenden Aktiven deaktiviert haben, gibt es keinen
                 // Doppel-Aktiv-Konflikt.
-                isActive: row.bool("is_active") ?? false,
+                // DEL-225: nur wenn aktuell kein Plan aktiv ist (siehe oben).
+                isActive: mayActivate && (row.bool("is_active") ?? false),
                 targetEnvironment: env,
                 isTemplate: row.bool("is_template") ?? false,
                 localizationKey: row.optionalString("localization_key")
@@ -714,6 +725,10 @@ public enum DataImportService {
             if let override = row.double("progression_target_rir_override") {
                 plan.progressionTargetRIROverride = Float(override)
             }
+            // DEL-225: Sobald ein Plan aktiv gesetzt wurde, darf kein weiterer
+            // folgen — ein Backup mit mehreren aktiven Plaenen soll nicht in
+            // zwei gleichzeitig aktiven Plaenen resultieren.
+            if plan.isActive { mayActivate = false }
             context.insert(plan)
             if !exportID.isEmpty { idMap[exportID] = plan }
             imported += 1
@@ -959,6 +974,8 @@ public enum DataImportService {
 
         var errors: [RowError] = []
         var imported = 0
+        // DEL-225: gesammelte Swap-Referenzen fuer den Nachlauf unten.
+        var pendingSwapRefs: [(exercise: Exercise, originalExportID: String)] = []
 
         for row in reader.rows() {
             let exportID = row["id"]
@@ -1030,7 +1047,29 @@ public enum DataImportService {
             }
             context.insert(e)
             if !exportID.isEmpty { idMap[exportID] = e }
+            // DEL-225: Swap-Referenz erst nach dem Durchlauf aufloesen — die
+            // Original-Uebung kann in derselben Datei WEITER UNTEN stehen und
+            // waere hier noch nicht in der idMap.
+            if let originalID = row.optionalString("swapped_from_original") {
+                pendingSwapRefs.append((exercise: e, originalExportID: originalID))
+            }
             imported += 1
+        }
+
+        // DEL-225: Zweiter Durchlauf fuer die Swap-Referenzen (DEL-091
+        // Urlaubs-Modus). Ohne diese Spalte war das Original nach einem Restore
+        // verloren und der Tausch nicht mehr zuruecknehmbar. Nicht aufloesbare
+        // Referenzen sind kein Fehler, sondern erwartbar bei Teil-Backups —
+        // sie landen als Info in errors.csv.
+        for ref in pendingSwapRefs {
+            if let original = idMap[ref.originalExportID] as? Exercise {
+                ref.exercise.swappedFromOriginal = original
+            } else {
+                errors.append(.init(
+                    line: 0,
+                    reason: "swapped_from_original \(ref.originalExportID) not found — Swap-Referenz bleibt leer"
+                ))
+            }
         }
         return (imported, 0, errors)
     }
@@ -1046,7 +1085,8 @@ public enum DataImportService {
         let reader: CSVReader
         do { reader = try CSVReader(text) } catch { return (0, 0, []) }
 
-        // Dedup-Strategie für Logs: session.startTime + setIndex + nameSnapshot.
+        // Dedup-Strategie für Logs: session.startTime + logDate + setIndex +
+        // nameSnapshot (DEL-225: logDate ist neu, siehe `logKey`).
         // Wir bauen den Index aus den BESTEHENDEN Logs (vor diesem Import-Lauf).
         // Die in diesem Lauf neu eingefügten Sessions haben per Definition
         // keine bestehenden Logs, also können wir nicht-naiv ohne Konflikt
@@ -1056,6 +1096,7 @@ public enum DataImportService {
         for l in existing {
             dupSet.insert(Self.logKey(
                 sessionStart: l.session?.startTime,
+                logDate: l.date,
                 setIndex: l.setIndex,
                 nameSnapshot: l.exerciseNameSnapshot
             ))
@@ -1087,6 +1128,7 @@ public enum DataImportService {
                 // den Log-eigenen `date` — orphan-Logs haben keinen Session-
                 // Pointer mehr.
                 sessionStart: session?.startTime ?? date,
+                logDate: date,
                 setIndex: setIndex,
                 nameSnapshot: nameSnap
             )
@@ -1126,10 +1168,43 @@ public enum DataImportService {
         return (imported, skipped, errors)
     }
 
-    private static func logKey(sessionStart: Date?, setIndex: Int, nameSnapshot: String?) -> String {
+    /// Dedup-Schluessel eines Satzes.
+    ///
+    /// DEL-225: `logDate` ist neu und behebt einen stillen Datenverlust. Vorher
+    /// bestand der Schluessel aus (session.startTime, setIndex, nameSnapshot).
+    /// Wer dieselbe Uebung ZWEIMAL in einem Training hatte — schwerer
+    /// Hauptsatz frueh, Back-off-Saetze spaeter, ein voellig normales Muster,
+    /// und nichts in der App verhindert es — bekam fuer beide Serien
+    /// (gleiche Session, gleicher Name, Satz-Index jeweils ab 0) identische
+    /// Schluessel. Die komplette zweite Serie wurde beim Import als Duplikat
+    /// verworfen.
+    ///
+    /// Warum der Log-Zeitstempel und nicht die Uebungs-Identitaet: Die
+    /// Uebungs-Identitaet waere die intuitive Wahl, macht den Import aber
+    /// KAPUTT. `importPlanExercises` hat kein Dedup, ein zweiter Import
+    /// derselben ZIP legt also neue Exercise-Rows an. Ein Schluessel ueber
+    /// deren Identitaet wuerde dann nicht mehr matchen und saemtliche Logs
+    /// erneut einfuegen — aus "verliert Saetze" wuerde "verdoppelt alles".
+    /// Der Log-Zeitstempel dagegen liegt auf beiden Seiten vor (im CSV als
+    /// `date_utc`, an bestehenden Logs als `date`) und ist ueber
+    /// Import-Zyklen stabil.
+    ///
+    /// Sekunden-Granularitaet ist Absicht: der Export schreibt Millisekunden,
+    /// eine in der DB liegende `Date` kann feinere Praezision haben. Beim
+    /// Roundtrip wuerde ein Sub-Millisekunden-Anteil abgeschnitten, die
+    /// Schluessel wichen um Bruchteile ab und der Re-Import wuerde
+    /// duplizieren. Zwei Serien derselben Uebung in derselben Sekunde sind
+    /// dagegen kein realer Fall.
+    private static func logKey(
+        sessionStart: Date?,
+        logDate: Date?,
+        setIndex: Int,
+        nameSnapshot: String?
+    ) -> String {
         let s = sessionStart.map { Int($0.timeIntervalSince1970) } ?? -1
+        let d = logDate.map { Int($0.timeIntervalSince1970) } ?? -1
         let n = nameSnapshot ?? ""
-        return "\(s)|\(setIndex)|\(n)"
+        return "\(s)|\(d)|\(setIndex)|\(n)"
     }
 
     // MARK: - Pass 3: PRs
