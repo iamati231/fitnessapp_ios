@@ -49,15 +49,32 @@ final class SettingsPortabilityTests: XCTestCase {
     func testUnknownKeysAreRejected() {
         // Sicherheits-Invariante: ein manipuliertes ZIP darf keine
         // beliebigen UserDefaults schreiben.
+        //
+        // DEL-230: Der frühere `XCTAssertNil(...forKey: "AppleLanguages")`
+        // konnte NIE halten. `AppleLanguages` ist ein System-Key: UserDefaults
+        // loest ihn ueber die globale Domain auf und liefert immer die
+        // Sprachliste des Geraets zurueck — voellig unabhaengig davon, ob die
+        // App je etwas geschrieben hat. Der Test behauptete also eine
+        // Sicherheitsluecke, wo keine war. Die Invariante selbst hielt: der
+        // Key wurde korrekt als `skipped` gezaehlt.
+        //
+        // Richtige Pruefung fuer einen System-Key ist deshalb nicht "ist nil",
+        // sondern "wurde nicht auf unseren Wert gesetzt".
+        let languagesBefore = defaults.array(forKey: "AppleLanguages") as? [String]
+
         let result = SettingsPortability.apply([
             ("isResetting", "true"),                 // internes Crash-Gate
             ("AppleLanguages", "hacked"),            // System-Key
             ("weight_unit", "kg"),                   // legitim
         ], to: defaults)
+
         XCTAssertEqual(result.applied, 1)
         XCTAssertEqual(result.skipped, 2)
+        // App-eigener, nicht-gewhitelisteter Key: der darf wirklich nil bleiben.
         XCTAssertNil(defaults.object(forKey: "isResetting"))
-        XCTAssertNil(defaults.object(forKey: "AppleLanguages"))
+        // System-Key: unveraendert, insbesondere nicht auf "hacked".
+        XCTAssertNotEqual(defaults.string(forKey: "AppleLanguages"), "hacked")
+        XCTAssertEqual(defaults.array(forKey: "AppleLanguages") as? [String], languagesBefore)
         XCTAssertEqual(defaults.string(forKey: "weight_unit"), "kg")
     }
 

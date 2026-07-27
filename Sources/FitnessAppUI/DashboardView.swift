@@ -1858,9 +1858,20 @@ public struct DashboardView: View {
 
     // MARK: - Compound Lift Chart
 
-    /// Names of the five canonical compound lifts (matches `isSystemCompound: true`
-    /// in `ExerciseLibraryData`). Hard-coded here so the dashboard doesn't need to
-    /// query the seed library at every render.
+    /// Die fuenf kanonischen Compound-Lifts fuer den Trend-Chart.
+    ///
+    /// DEL-230: Der frühere Kommentar behauptete, diese Liste entspreche
+    /// `isSystemCompound: true` in `ExerciseLibraryData`. Das stimmt seit
+    /// DEL-162 nicht mehr — dort sind inzwischen zehn Langhantel-Verbundlifts
+    /// geflaggt (zusaetzlich Box Squat, Trap-Bar-/Deficit-Kreuzheben, Reissen,
+    /// Umsetzen & Stossen). Die Auswahl hier ist bewusst eine kuratierte
+    /// Fuenfer-Liste und NICHT vom Flag abgeleitet: zehn Serien in einem Chart
+    /// waeren unlesbar, und die Big Five sind die Lifts, an denen der User
+    /// seinen Fortschritt misst. Wer den Chart erweitern will, entscheidet das
+    /// hier — nicht als Nebeneffekt einer Bibliotheks-Erweiterung.
+    ///
+    /// Hart kodiert, damit der Dashboard-Render nicht bei jedem Durchlauf die
+    /// Seed-Bibliothek abfragt.
     private static let compoundLiftNames = [
         "Kniebeuge",
         "Bankdrücken",

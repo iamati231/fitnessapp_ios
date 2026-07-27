@@ -16,7 +16,16 @@ final class CoachingTypesTests: XCTestCase {
 
     func testTrainingGoalCoversAllExpectedCases() {
         let cases = Set(TrainingGoal.allCases.map(\.rawValue))
-        XCTAssertEqual(cases, ["hypertrophy", "strength", "hybrid"])
+        // DEL-206 hat `weightLoss` als vierte Coaching-Achse ergaenzt; der
+        // Test wurde damals nicht mitgezogen und blieb unentdeckt, weil der
+        // macOS-Build des Pakets ab Mitte Mai scheiterte und `swift test`
+        // deshalb nie lief (siehe DEL-230).
+        //
+        // RawValues sind Persistenz-Vertrag: sie stehen in
+        // UserBodyProfile.trainingGoalRaw und in den Catalog-Keys
+        // `coaching.{context}.{tone}.{goal}`. Eine Umbenennung hier ist ein
+        // Migrations-Ereignis, deshalb bleibt der Snapshot exakt.
+        XCTAssertEqual(cases, ["hypertrophy", "strength", "hybrid", "weightLoss"])
     }
 
     /// Tonfall-Cases muessen alle ein Label, ein SF-Symbol und einen

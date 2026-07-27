@@ -33,24 +33,50 @@ final class ExerciseLibraryDataTests: XCTestCase {
 
     // MARK: System compounds
 
-    func testSystemCompoundFlagsTheFiveCanonicalLifts() {
-        // Squat, Bench, Deadlift, OHP, Row — the standard "big five". Charts and
-        // PR-tracking depend on these being explicitly flagged.
-        let compoundNames = ExerciseLibraryData.all
-            .filter { $0.isSystemCompound }
-            .map(\.name)
-            .sorted()
-
-        let expected = [
+    /// Die kanonischen "Big Five" MUESSEN geflaggt bleiben — an ihnen haengt
+    /// die Compound-Progression (`ProgramInstantiator` zieht daraus
+    /// `Exercise.isCompound`, was die Steigerungs-Schrittweite bestimmt).
+    ///
+    /// DEL-230: Vorher verlangte dieser Test eine EXAKTE Liste von genau
+    /// diesen fuenf. DEL-162 hat die Bibliothek um weitere Langhantel-
+    /// Verbundlifts erweitert (Box Squat, Trap-Bar- und Deficit-Kreuzheben,
+    /// Reissen, Umsetzen & Stossen) und sie korrekt mitgeflaggt — der Test
+    /// schlug seitdem fehl, was nur niemand sah, weil `swift test` ab Mitte
+    /// Mai nicht mehr lief (macOS-Build kaputt).
+    ///
+    /// Ein Exakt-Snapshot ist hier die falsche Zusicherung: er bricht bei
+    /// jeder legitimen Bibliotheks-Erweiterung. Geprueft wird stattdessen die
+    /// eigentliche Invariante — die Big Five sind dabei, und geflaggt wird nur,
+    /// was auch wirklich ein Langhantel-Lift ist.
+    func testCanonicalBigFiveAreFlaggedAsSystemCompound() {
+        let compoundNames = Set(
+            ExerciseLibraryData.all.filter(\.isSystemCompound).map(\.name)
+        )
+        let bigFive = [
             "Bankdrücken",
             "Kniebeuge",
             "Kreuzheben (konventionell)",
             "Rudern vorgebeugt",
-            "Schulterdrücken (stehend)"
-        ].sorted()
+            "Schulterdrücken (stehend)",
+        ]
+        for lift in bigFive {
+            XCTAssertTrue(
+                compoundNames.contains(lift),
+                "\(lift) hat das isSystemCompound-Flag verloren — das aendert die Progressions-Schrittweite"
+            )
+        }
+    }
 
-        XCTAssertEqual(compoundNames, expected,
-                       "isSystemCompound flag set on the wrong exercises — expected \(expected), got \(compoundNames)")
+    /// Gegenprobe: das Flag darf nicht auf Isolations- oder Maschinen-Uebungen
+    /// wandern. Ein geflaggter Bizeps-Curl wuerde still eine Compound-
+    /// Progression bekommen.
+    func testSystemCompoundsAreBarbellLiftsOnly() {
+        for spec in ExerciseLibraryData.all where spec.isSystemCompound {
+            XCTAssertEqual(
+                spec.equipment, .barbell,
+                "\(spec.name) ist als System-Compound geflaggt, nutzt aber \(spec.equipment)"
+            )
+        }
     }
 
     // MARK: Time-based exercises

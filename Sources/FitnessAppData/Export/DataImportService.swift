@@ -1209,7 +1209,17 @@ public enum DataImportService {
         var dupSet = Set<String>()
         for l in existing {
             dupSet.insert(Self.logKey(
-                sessionStart: l.session?.startTime,
+                // DEL-230: `?? l.date` ist entscheidend und war der Grund,
+                // warum Orphan-Logs bei JEDEM Import erneut eingefuegt wurden.
+                // Die Lese-Seite unten setzt bei fehlender Session den
+                // Log-eigenen `date` als Session-Anker ein (`?? date`), diese
+                // Seite liess das Feld dagegen leer und der Schluessel begann
+                // mit "-1". Fuer Logs ohne Session-Backref (DEL-189-Pfad)
+                // konnten die beiden Schluessel deshalb nie uebereinstimmen —
+                // ein Re-Import derselben ZIP legte den Orphan jedes Mal neu an.
+                // Der Fehler ist aelter als DEL-225 und blieb unsichtbar, weil
+                // `swift test` seit Mitte Mai nicht mehr lief (DEL-230).
+                sessionStart: l.session?.startTime ?? l.date,
                 logDate: l.date,
                 setIndex: l.setIndex,
                 nameSnapshot: l.exerciseNameSnapshot
