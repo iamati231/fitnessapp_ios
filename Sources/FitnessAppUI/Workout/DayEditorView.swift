@@ -76,7 +76,7 @@ public struct DayEditorView: View {
         // ohnehin gesperrt.
         .toolbar {
             if !isReadOnly && !day.activeExercises.isEmpty {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .deltiqTrailing) {
                     EditButton()
                 }
             }

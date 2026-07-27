@@ -51,6 +51,33 @@ public extension View {
     }
 }
 
+// MARK: - Cross-platform toolbar placement
+
+extension ToolbarItemPlacement {
+    /// Trailing-Position in der Navigation-Bar, plattform-sicher.
+    ///
+    /// `.topBarTrailing` ist `@available(macOS, unavailable)`. Fuenf Views
+    /// haben es direkt benutzt (DEL-096 und DEL-136, Mai 2026), womit der
+    /// macOS-Build des Pakets seit dem scheiterte — und mit ihm
+    /// `swift test`, weil der auf dem Host baut. Aufgefallen ist das erst,
+    /// als DEL-217 den Test-Lauf ins Release-Gate gehaengt hat: die
+    /// ~300 Core-Tests liefen zweieinhalb Monate lang gar nicht.
+    ///
+    /// iOS behaelt exakt `.topBarTrailing` — die Alternative
+    /// `.primaryAction` waere plattformneutral, wuerde auf Views mit
+    /// mehreren Toolbar-Items aber die Reihenfolge veraendern, und das
+    /// laesst sich ohne Simulator nicht beurteilen. macOS bekommt
+    /// `.automatic`; dort ist die Platzierung nur fuer Previews relevant,
+    /// die App selbst ist iOS-only.
+    static var deltiqTrailing: ToolbarItemPlacement {
+        #if os(iOS) || os(visionOS)
+        .topBarTrailing
+        #else
+        .automatic
+        #endif
+    }
+}
+
 // MARK: - Cross-platform view shims
 
 /// Cross-platform shims for SwiftUI modifiers that don't exist on macOS.

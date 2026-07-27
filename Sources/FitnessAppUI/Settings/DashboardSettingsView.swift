@@ -38,7 +38,7 @@ public struct DashboardSettingsView: View {
         // DEL-109: EditButton schaltet den nativen iOS-Drag-Mode an —
         // ohne den gibt's keine sichtbaren Drag-Handles.
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .deltiqTrailing) {
                 EditButton()
             }
         }

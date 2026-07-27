@@ -682,7 +682,7 @@ public struct DataImportView: View {
                 // Versprechen, das nicht eingehalten wurde, aber ein
                 // erzwungener Abbruch waere fuer den User schlimmer als ein
                 // Import ohne Netz.
-                try? BackupService.createBackup(context: ctx, reason: .preImport)
+                _ = try? BackupService.createBackup(context: ctx, reason: .preImport)
 
                 let zipData = try Data(contentsOf: url)
                 // DEL-176: progressHandler ist @Sendable; wir reichen

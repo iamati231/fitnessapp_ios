@@ -171,7 +171,7 @@ public struct ActiveWorkoutView: View {
         // unter den Fuessen wegrotieren.
         .toolbar {
             if session.isAdHoc, let day = session.day, !day.activeExercises.isEmpty {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .deltiqTrailing) {
                     Button {
                         showingAdHocPicker = true
                     } label: {

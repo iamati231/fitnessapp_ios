@@ -239,7 +239,7 @@ public struct DataExportView: View {
                 // erneuter Export nötig: `store` nimmt das schon gebaute
                 // Bundle. Fehler hier dürfen den Export-Flow nicht kippen —
                 // das Teilen funktioniert auch ohne die Generation.
-                try? BackupService.store(bundle: bundle, reason: .manual)
+                _ = try? BackupService.store(bundle: bundle, reason: .manual)
 
                 await MainActor.run {
                     self.temporaryFileURL = url

@@ -61,7 +61,7 @@ public struct PlanEditorView: View {
         // Bei readOnly-Templates blenden wir den Button aus.
         .toolbar {
             if !isReadOnly && !plan.days.isEmpty {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .deltiqTrailing) {
                     EditButton()
                 }
             }

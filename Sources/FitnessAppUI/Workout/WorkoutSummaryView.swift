@@ -154,7 +154,7 @@ public struct WorkoutSummaryView: View {
                 // Action. Nur im History-Mode (isReadOnly) sichtbar — im
                 // New-Mode (post-finish) gibt's keine Notwendigkeit, eine
                 // gerade erst gespeicherte Session sofort wieder zu loeschen.
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .deltiqTrailing) {
                     Menu {
                         Button(role: .destructive) {
                             showingDeleteSessionConfirm = true
