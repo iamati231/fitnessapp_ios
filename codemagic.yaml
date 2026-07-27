@@ -229,12 +229,38 @@ workflows:
         WIDGET_BUNDLE_ID: 'com.atamya.FitnessApp.widgets'
 
     scripts:
+      # DEL-217: Toolchain protokollieren. `xcode: latest` oben ist nach drei
+      # erlittenen Toolchain-Bruechen (DEL-121 String-Catalog-Symbole,
+      # Xcode-26.4-Strictness) ein bewusstes Risiko: Apple kann die Version
+      # zwischen zwei Releases wechseln, ohne dass sich hier eine Zeile
+      # aendert. Bewusst NICHT auf eine geratene Nummer gepinnt — ein nicht
+      # existierender Versionsstring laesst alle drei Workflows sofort in der
+      # Environment-Phase scheitern. Vorgehen zum Pinnen: die hier geloggte
+      # Version ablesen, in der Codemagic-UI gegen die Liste verfuegbarer
+      # Versionen pruefen, dann `xcode: latest` an allen drei Stellen
+      # ersetzen.
+      - name: Show toolchain
+        script: |
+          set -e
+          xcodebuild -version
+          swift --version
+
       - name: Install XcodeGen
         script: |
           set -e
           if ! command -v xcodegen >/dev/null 2>&1; then
             brew install xcodegen
           fi
+
+      # DEL-217: Test-Gate. Vorher lief `swift test` NUR im swift-package-
+      # Workflow (auf push/pull_request) — ein v*-Tag konnte also einen roten
+      # Commit direkt an TestFlight ausliefern. Steht absichtlich VOR dem
+      # Signing und dem Archive: faellt hier etwas um, hat der Build noch
+      # keine Zertifikate angefasst und keine Build-Nummer verbraucht.
+      - name: Run unit tests (Release-Gate)
+        script: |
+          set -e
+          swift test --parallel
 
       - name: Determine build number from App Store Connect
         # Bumps CURRENT_PROJECT_VERSION in project.yml BEFORE XcodeGen
@@ -263,34 +289,41 @@ workflows:
           sed -i '' "s/CURRENT_PROJECT_VERSION: '[0-9]*'/CURRENT_PROJECT_VERSION: '$NEXT'/" project.yml
           grep CURRENT_PROJECT_VERSION project.yml
 
-      - name: Generate placeholder app icon
-        # Generates a 1024×1024 brand-colored PNG icon inline at build time —
-        # avoids committing binary assets while still satisfying Apple's
-        # upload validator (errors 90022, 90023, 90713 in v0.1.6).
+      # DEL-217: Der frueher hier stehende Schritt "Generate placeholder app
+      # icon" ist ENTFERNT. Er hat bei JEDEM Release das committete
+      # App/FitnessApp/Assets.xcassets/AppIcon.appiconset/icon-1024.png mit
+      # einem ImageMagick-Radial-Gradienten ueberschrieben. Seit dem echten
+      # Icon-Commit (19 PNGs, 1024er mit ~997 KB) hat damit jeder
+      # TestFlight-Build einen Farbverlauf-Platzhalter ausgeliefert statt des
+      # echten Icons. Der Schritt-Kommentar verlangte selbst, ihn nach dem
+      # ersten echten Icon zu loeschen — das war ueberfaellig.
+      # Icons bitte ausschliesslich im Asset-Catalog pflegen.
+
+      - name: Set marketing version from git tag
+        # DEL-217: MARKETING_VERSION lag hart auf '0.1.0' in project.yml,
+        # waehrend nur CURRENT_PROJECT_VERSION (die Build-Nummer) gebumpt
+        # wurde — in App Store Connect hiessen deshalb ALLE Beta-Builds
+        # "0.1.0 (n)". Die Version kommt jetzt aus dem Tag, der den Build
+        # ausgeloest hat: "v0.1.73-water-widget" -> "0.1.73".
         #
-        # Xcode 15+ + iOS-17-deployment-target auto-derives all required
-        # smaller sizes (120, 152, 167, 180, etc.) from this single master
-        # at archive time, so we only need to provide the 1024 version.
+        # Muss VOR `xcodegen generate` laufen, weil XcodeGen den Wert aus
+        # project.yml in die .pbxproj-Build-Settings backt. Gleiche
+        # sed-auf-project.yml-Strategie wie beim Build-Number-Step oben,
+        # aus demselben Grund (agvtool ist auf frisch generierten Projekten
+        # unzuverlaessig).
         #
-        # ImageMagick is pre-installed on Codemagic mac_mini_m2 runners.
-        # When the design team has a real icon, drop a 1024×1024 PNG into
-        # App/FitnessApp/Assets.xcassets/AppIcon.appiconset/icon-1024.png
-        # and remove this script step.
-        #
-        # No text/font: the runner's ImageMagick install can't find
-        # "Helvetica-Bold" (v0.1.7 failure), and chasing the right font
-        # path is not worth the hassle for a placeholder. A radial-
-        # gradient looks less janky than a flat fill.
+        # Kein Abbruch, wenn der Tag kein Semver-Praefix hat — dann bleibt
+        # der Wert aus project.yml stehen und der Build laeuft weiter.
         script: |
           set -e
-          ICON_DIR="App/FitnessApp/Assets.xcassets/AppIcon.appiconset"
-          mkdir -p "$ICON_DIR"
-          # Warm-yellow → amber radial gradient. Brand-vibe match to the
-          # Trophy-Room's yellow-gradient PR cards.
-          magick -size 1024x1024 \
-            radial-gradient:'rgb(255,215,80)-rgb(210,150,30)' \
-            "$ICON_DIR/icon-1024.png"
-          echo "Generated $ICON_DIR/icon-1024.png ($(stat -f%z "$ICON_DIR/icon-1024.png") bytes)"
+          VERSION=$(printf '%s' "${CM_TAG:-}" | sed -E 's/^v//' | grep -oE '^[0-9]+\.[0-9]+(\.[0-9]+)?' || true)
+          if [ -n "$VERSION" ]; then
+            sed -i '' "s/MARKETING_VERSION: '[^']*'/MARKETING_VERSION: '$VERSION'/" project.yml
+            echo "Marketing version from tag '${CM_TAG}': $VERSION"
+          else
+            echo "WARNUNG: aus Tag '${CM_TAG:-<leer>}' liess sich keine Version ableiten — behalte den Wert aus project.yml"
+          fi
+          grep MARKETING_VERSION project.yml
 
       - name: Generate Xcode project
         script: |
