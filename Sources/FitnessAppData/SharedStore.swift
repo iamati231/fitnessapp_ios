@@ -50,18 +50,67 @@ public enum SharedStore {
     /// Group-Container und oeffnet ihn dort. Faellt ohne App-Group-Zugriff
     /// (oder bei Group-Container-Fehlern) auf den bisherigen Default-Store
     /// zurueck — Verhalten dann identisch zu vor DEL-216.
+    /// DEL-234: Zustand des geoeffneten Stores. Wird von `makeAppContainer()`
+    /// gesetzt und von `BackupService` gelesen.
+    public enum Health: Equatable, Sendable {
+        /// Group-Store offen — Normalfall.
+        case ok
+        /// Kein App-Group-Zugriff (Entitlement fehlt, z.B. unsignierter
+        /// CI-Build) ODER es gab noch nie einen Group-Store. Der Default-Store
+        /// ist hier die EINZIGE Wahrheit, also unbedenklich.
+        case legacyStoreOnly
+        /// Der Group-Store EXISTIERT, liess sich aber nicht oeffnen, und die
+        /// App laeuft ersatzweise auf dem alten Default-Store. Das ist ein
+        /// Notzustand: der alte Store ist auf dem Stand des Migrationstags
+        /// eingefroren, der Nutzer sieht also veraltete Daten.
+        case fellBackAfterGroupStoreFailure(String)
+    }
+
+    /// Nur schreibend aus `makeAppContainer()`. Kein Concurrency-Schutz noetig:
+    /// gesetzt genau einmal beim App-Start, bevor irgendetwas anderes laeuft.
+    public private(set) static var health: Health = .legacyStoreOnly
+
     public static func makeAppContainer() -> ModelContainer {
         let schema = Schema(AppSchema.types)
 
         if let groupURL = groupStoreURL {
+            let groupStoreExisted = FileManager.default.fileExists(atPath: groupURL.path)
             migrateDefaultStoreIfNeeded(to: groupURL)
             do {
                 let config = ModelConfiguration(schema: schema, url: groupURL)
-                return try ModelContainer(for: schema, configurations: config)
+                let container = try ModelContainer(for: schema, configurations: config)
+                health = .ok
+                return container
             } catch {
-                // Group-Store nicht oeffenbar → Fallback unten. Die Default-
-                // Store-Originale wurden nie angefasst, also kein Datenverlust.
+                // DEL-234: Hier stand vorher "die Default-Store-Originale wurden
+                // nie angefasst, also kein Datenverlust" — und der Fallback lief
+                // stillschweigend. Das Argument gilt nur fuer den AUGENBLICK der
+                // Migration. Danach ist der Group-Store die Wahrheit und der
+                // Default-Store auf dem Migrationstag eingefroren.
+                //
+                // Faellt die App also spaeter still zurueck, sieht der Nutzer
+                // Wochen alte Daten ohne jeden Hinweis. Und mit dem
+                // automatischen Backup (DEL-228) wuerde dieser veraltete Stand
+                // beim naechsten Hintergrund-Wechsel als neue Generation
+                // weggeschrieben und ueber die Rotation die guten Generationen
+                // verdraengen — aus einem behebbaren Oeffnen-Fehler wuerde
+                // damit endgueltiger Datenverlust.
+                //
+                // Deshalb: Der Fallback bleibt (die App soll benutzbar sein und
+                // nicht in eine Crash-Schleife laufen), aber er ist ab jetzt als
+                // Notzustand MARKIERT. `BackupService` schreibt in diesem
+                // Zustand nichts mehr, und die Bedingung ist damit reversibel.
+                //
+                // Wichtig ist die Unterscheidung: existierte der Group-Store
+                // vorher NICHT, ist ein Oeffnen-Fehler harmlos (frische
+                // Installation, nichts zu verlieren) — dann bleibt es beim
+                // gutartigen `legacyStoreOnly`.
+                health = groupStoreExisted
+                    ? .fellBackAfterGroupStoreFailure(String(describing: error))
+                    : .legacyStoreOnly
             }
+        } else {
+            health = .legacyStoreOnly
         }
 
         do {

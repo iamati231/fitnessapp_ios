@@ -33420,6 +33420,52 @@
           }
         }
       }
+    },
+    "backups.unhealthy.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backups angehalten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backups paused"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yedekler duraklatıldı"
+          }
+        }
+      }
+    },
+    "backups.unhealthy.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die App konnte ihren gewohnten Datenspeicher nicht öffnen und läuft auf einem Ersatz. Der angezeigte Stand kann veraltet sein. Es werden vorsichtshalber keine neuen Backups angelegt, damit bestehende Sicherungen nicht überschrieben werden. Bitte melde das — starte die App vorher nicht neu und lösche sie nicht."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app couldn't open its usual data store and is running on a fallback. What you see may be out of date. No new backups are being created, so existing ones stay intact. Please report this — don't reinstall or delete the app first."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uygulama olağan veri deposunu açamadı ve yedek bir depo üzerinde çalışıyor. Gördüğün veriler güncel olmayabilir. Mevcut yedeklerin bozulmaması için yeni yedek alınmıyor. Lütfen bunu bildir — önce uygulamayı yeniden yükleme veya silme."
+          }
+        }
+      }
     }
   }
 }

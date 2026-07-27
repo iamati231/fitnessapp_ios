@@ -32,6 +32,10 @@ public struct BackupListView: View {
 
     public var body: some View {
         List {
+            // DEL-234: Notzustand zuerst — wenn die App auf dem Ersatz-Store
+            // laeuft, sind alle anderen Angaben auf diesem Screen mit Vorsicht
+            // zu lesen und es werden bewusst keine Backups mehr geschrieben.
+            unhealthyStoreSection
             introSection
             if generations.isEmpty {
                 emptySection
@@ -73,6 +77,31 @@ public struct BackupListView: View {
     }
 
     // MARK: Sections
+
+    /// DEL-234: Sichtbarer Hinweis auf den Ersatz-Datenspeicher. Ohne den
+    /// wuerde der User nur bemerken, dass keine neuen Generationen mehr
+    /// dazukommen — und das erst, wenn er sie braucht.
+    @ViewBuilder
+    private var unhealthyStoreSection: some View {
+        if case .fellBackAfterGroupStoreFailure = SharedStore.health {
+            Section {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label {
+                        Text("backups.unhealthy.title", bundle: .module)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                    }
+                    .font(.headline)
+                    .foregroundStyle(.red)
+                    Text("backups.unhealthy.description", bundle: .module)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
 
     private var introSection: some View {
         Section {

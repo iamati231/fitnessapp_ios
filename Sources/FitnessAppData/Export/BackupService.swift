@@ -25,6 +25,22 @@ import FitnessAppCore
 /// einzelnes Backup waere dann schon mit dem kaputten Stand ueberschrieben.
 public enum BackupService {
 
+    /// DEL-234: Gruende, aus denen der Service bewusst NICHT sichert.
+    public enum BackupError: Error, LocalizedError {
+        /// Die App laeuft auf dem eingefrorenen Alt-Store (siehe
+        /// `SharedStore.Health`). Ein Backup waere eine Momentaufnahme
+        /// veralteter Daten.
+        case storeUnhealthy(String)
+
+        public var errorDescription: String? {
+            switch self {
+            case .storeUnhealthy(let detail):
+                return "Backup abgebrochen: die App laeuft auf einem Ersatz-Datenspeicher, "
+                    + "der Stand ist moeglicherweise veraltet. Grund: \(detail)"
+            }
+        }
+    }
+
     /// Wie viele Generationen aufbewahrt werden.
     public static let maxGenerations = 5
 
@@ -95,6 +111,16 @@ public enum BackupService {
         reason: Reason,
         now: Date = Date()
     ) throws -> Generation {
+        // DEL-234: Nichts schreiben, wenn die App auf dem eingefrorenen
+        // Alt-Store laeuft. Sonst wandert ein Wochen alter Stand als neue
+        // Generation in die Rotation und verdraengt die guten — aus einem
+        // behebbaren Oeffnen-Fehler wuerde endgueltiger Datenverlust.
+        // Gilt fuer JEDEN Grund, auch manuell und preImport: solange
+        // ungeklaert ist, welcher Store die Wahrheit haelt, ist ein Backup
+        // keine Sicherung, sondern eine Faelschung.
+        if case .fellBackAfterGroupStoreFailure(let reason) = SharedStore.health {
+            throw BackupError.storeUnhealthy(reason)
+        }
         let dir = try backupsDirectory()
         let url = dir.appendingPathComponent(BackupFilename.make(reason: reason, at: now))
 
@@ -203,6 +229,13 @@ public enum BackupService {
         defaults: UserDefaults = .standard,
         appVersion: String = "—"
     ) -> Generation? {
+        // DEL-234: Frueh raus, wenn die App auf dem Ersatz-Store laeuft. `store`
+        // wuerde ohnehin werfen, aber dann waeren Fetch, CSV-Bau und ZIP schon
+        // umsonst gelaufen. Der Zeitstempel bleibt absichtlich ungesetzt, damit
+        // der naechste Hintergrund-Wechsel es erneut versucht, sobald der
+        // Store wieder gesund ist.
+        if case .fellBackAfterGroupStoreFailure = SharedStore.health { return nil }
+
         let stored = defaults.double(forKey: lastAutoBackupKey)
         let lastBackupAt: Date? = stored > 0 ? Date(timeIntervalSince1970: stored) : nil
 

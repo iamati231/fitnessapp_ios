@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1453 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1455 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1453 / 1453** (100%) | 0 |
-| 🇬🇧 English (EN) | **1453 / 1453** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1453 / 1453** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1455 / 1455** (100%) | 0 |
+| 🇬🇧 English (EN) | **1455 / 1455** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1455 / 1455** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -82,7 +82,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `activity.veryActive.description` | Tag-täglich intensives Training oder schwere körperliche Arbeit. | Daily intense training or heavy physical labor. | Her gün yoğun antrenman ya da ağır fiziksel iş. |
 | `activity.veryActive.label` | Sehr aktiv (1.9) | Very Active (1.9) | Çok Aktif (1.9) |
 
-## `backups.*`  (15 Keys)
+## `backups.*`  (17 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -101,6 +101,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `backups.restore.done` | %1$lld Datensätze wiederhergestellt, %2$lld übersprungen. | Restored %1$lld records, skipped %2$lld. | %1$lld kayıt geri yüklendi, %2$lld atlandı. |
 | `backups.restore.running` | Wird wiederhergestellt … | Restoring … | Geri yükleniyor … |
 | `backups.title` | Backups | Backups | Yedekler |
+| `backups.unhealthy.description` | Die App konnte ihren gewohnten Datenspeicher nicht öffnen und läuft auf einem Ersatz. Der angezeigte Stand kann veraltet sein. Es werden vorsichtshalber keine neuen Backups angelegt, damit bestehende Sicherungen nicht überschrieben werden. Bitte melde das — starte die App vorher nicht neu und lösche sie nicht. | The app couldn't open its usual data store and is running on a fallback. What you see may be out of date. No new backups are being created, so existing ones stay intact. Please report this — don't reinstall or delete the app first. | Uygulama olağan veri deposunu açamadı ve yedek bir depo üzerinde çalışıyor. Gördüğün veriler güncel olmayabilir. Mevcut yedeklerin bozulmaması için yeni yedek alınmıyor. Lütfen bunu bildir — önce uygulamayı yeniden yükleme veya silme. |
+| `backups.unhealthy.title` | Backups angehalten | Backups paused | Yedekler duraklatıldı |
 
 ## `barbell.*`  (2 Keys)
 
