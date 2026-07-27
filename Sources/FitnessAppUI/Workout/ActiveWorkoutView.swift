@@ -233,8 +233,12 @@ public struct ActiveWorkoutView: View {
                     // bei Strength-Logs nil → totalKm zaehlt nur die Cardio-km.
                     if let gear, sessionHasLoggedCardio {
                         session.gear = gear
-                        let totalKm = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
-                        gear.currentDistanceKm += totalKm
+                        // DEL-222: Buchung ueber GearOdometer — den einen
+                        // Schreiber von currentDistanceKm.
+                        GearOdometer.book(
+                            deltaKm: GearOdometer.distanceKm(of: session),
+                            to: gear
+                        )
                     }
                     finishWorkout()
                 },

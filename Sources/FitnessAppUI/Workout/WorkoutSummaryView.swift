@@ -382,7 +382,9 @@ public struct WorkoutSummaryView: View {
     /// Summe der Cardio-Distanz dieser Session (km). Basis fuer die Gear-
     /// Kilometer-Buchung. Strength-Logs tragen `distanceKm == nil` → 0 bei.
     private var sessionCardioDistanceKm: Double {
-        session.logs.compactMap(\.distanceKm).reduce(0.0, +)
+        // DEL-222: eine Summen-Funktion fuer alle Gear-relevanten Distanzen —
+        // toleriert nil und ignoriert negative Ausreisser.
+        GearOdometer.distanceKm(of: session)
     }
 
     /// Picker-Optionen: aktive Gears + das aktuell zugewiesene Gear, falls
@@ -468,13 +470,9 @@ public struct WorkoutSummaryView: View {
     private func assignGear(_ newGear: Gear?) {
         let old = session.gear
         guard old?.persistentModelID != newGear?.persistentModelID else { return }
-        let distance = sessionCardioDistanceKm
-        if let old {
-            old.currentDistanceKm = max(0, old.currentDistanceKm - distance)
-        }
-        if let newGear {
-            newGear.currentDistanceKm += distance
-        }
+        // DEL-222: Umbuchung ueber GearOdometer statt zweier Handbuchungen
+        // mit eigenem Clamp.
+        GearOdometer.transfer(km: sessionCardioDistanceKm, from: old, to: newGear)
         session.gear = newGear
         try? modelContext.save()
     }
@@ -516,9 +514,8 @@ public struct WorkoutSummaryView: View {
         //    Ohne das akkumuliert geloeschte Cardio-Distanz dauerhaft auf
         //    Schuh/Rad. Clamp auf 0, falls das Gear zwischenzeitlich
         //    manuell heruntergesetzt wurde.
-        if let gear = session.gear {
-            gear.currentDistanceKm = max(0, gear.currentDistanceKm - sessionCardioDistanceKm)
-        }
+        // DEL-222: Rueckbuchung ueber GearOdometer.
+        GearOdometer.book(deltaKm: -sessionCardioDistanceKm, to: session.gear)
         // 1. Logs erst — vermeidet `nullify`-Pass auf bereits-deleted Session.
         //    Snapshot in Array kopieren, weil die Live-Relationship-Collection
         //    waehrend des Deletes mutiert.
@@ -1163,12 +1160,9 @@ public struct WorkoutSummaryView: View {
 
         // DEL-213: Gear-km der geloeschten Cardio-Logs zurueckbuchen, bevor
         // sie verschwinden — sonst bleibt die Distanz auf Schuh/Rad stehen.
-        if let gear = session.gear {
-            let removedKm = indices.compactMap { logs[$0].distanceKm }.reduce(0.0, +)
-            if removedKm > 0 {
-                gear.currentDistanceKm = max(0, gear.currentDistanceKm - removedKm)
-            }
-        }
+        // DEL-222: Rueckbuchung ueber GearOdometer.
+        let removedKm = GearDistance.total(of: indices.map { logs[$0].distanceKm })
+        GearOdometer.book(deltaKm: -removedKm, to: session.gear)
 
         for index in indices {
             modelContext.delete(logs[index])
@@ -1646,12 +1640,11 @@ private struct SetSummaryRow: View {
                       value: Binding(
                         get: { log.distanceKm },
                         set: { newValue in
-                            if let gear = log.session?.gear {
-                                let delta = (newValue ?? 0) - (log.distanceKm ?? 0)
-                                if delta != 0 {
-                                    gear.currentDistanceKm = max(0, gear.currentDistanceKm + delta)
-                                }
-                            }
+                            // DEL-222: Delta-Buchung ueber GearOdometer.
+                            GearOdometer.book(
+                                deltaKm: (newValue ?? 0) - (log.distanceKm ?? 0),
+                                to: log.session?.gear
+                            )
                             log.distanceKm = newValue
                         }
                       ),
