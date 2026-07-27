@@ -231,6 +231,16 @@ public struct DataExportView: View {
                 let bundle = try DataExportService.makeExport(context: ctx, appVersion: appVersion)
                 let url = try writeToTempFile(bundle: bundle)
 
+                // DEL-228: Das ZIP zusätzlich dauerhaft als Backup-Generation
+                // hinterlegen. Vorher war ein manueller Export flüchtig — die
+                // Datei lag nur im Caches-Ordner für das Share-Sheet, und wenn
+                // der User sie nicht selbst irgendwohin schob (oder das Sheet
+                // abbrach), war sie beim nächsten Aufräumen von iOS weg. Kein
+                // erneuter Export nötig: `store` nimmt das schon gebaute
+                // Bundle. Fehler hier dürfen den Export-Flow nicht kippen —
+                // das Teilen funktioniert auch ohne die Generation.
+                try? BackupService.store(bundle: bundle, reason: .manual)
+
                 await MainActor.run {
                     self.temporaryFileURL = url
                     self.phase = .finished(bundle: bundle)

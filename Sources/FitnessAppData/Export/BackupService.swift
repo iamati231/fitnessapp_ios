@@ -79,6 +79,22 @@ public enum BackupService {
         now: Date = Date()
     ) throws -> Generation {
         let bundle = try DataExportService.makeExport(context: context, appVersion: appVersion)
+        return try store(bundle: bundle, reason: reason, now: now)
+    }
+
+    /// Legt ein SCHON ERZEUGTES Export-Bundle als Generation ab.
+    ///
+    /// Getrennt von `createBackup`, damit der manuelle Export in den
+    /// Einstellungen seine Daten nicht zweimal aufbauen muss: er teilt das ZIP
+    /// per Share-Sheet UND hinterlegt es hier als dauerhafte Generation. Vorher
+    /// war ein manueller Export fluechtig — lag der User ihn nicht selbst
+    /// irgendwohin, war er weg.
+    @discardableResult
+    public static func store(
+        bundle: DataExportBundle,
+        reason: Reason,
+        now: Date = Date()
+    ) throws -> Generation {
         let dir = try backupsDirectory()
         let url = dir.appendingPathComponent(BackupFilename.make(reason: reason, at: now))
 
@@ -158,6 +174,64 @@ public enum BackupService {
 
     public static func delete(_ generation: Generation) throws {
         try FileManager.default.removeItem(at: generation.url)
+    }
+
+    // MARK: - Automatischer Lauf (DEL-228)
+
+    /// UserDefaults-Key des letzten automatischen Backups.
+    ///
+    /// Bewusst NICHT in der `SettingsPortability`-Whitelist: der Zeitpunkt
+    /// beschreibt den Zustand DIESES Geraets. Wuerde er mitwandern, haette ein
+    /// frisch eingerichtetes Geraet einen Stempel von gestern und wuerde
+    /// glauben, es sei schon gesichert.
+    public static let lastAutoBackupKey = "backup.lastAutomaticAt"
+
+    /// Erzeugt eine automatische Generation, falls faellig. Wird beim Wechsel
+    /// der App in den Hintergrund gerufen — dort ist ein kurzer, synchroner
+    /// Schreibvorgang unkritisch und der Zustand gerade konsistent.
+    ///
+    /// Fehler werden bewusst geschluckt: ein fehlgeschlagenes Hintergrund-
+    /// Backup darf niemals den App-Lifecycle stoeren. Es wird lediglich der
+    /// Zeitstempel nicht gesetzt, sodass der naechste Versuch erneut greift.
+    ///
+    /// - Returns: die erzeugte Generation, oder `nil` wenn nichts faellig war
+    ///   bzw. der Versuch fehlschlug.
+    @discardableResult
+    public static func runAutomaticBackupIfDue(
+        context: ModelContext,
+        now: Date = Date(),
+        defaults: UserDefaults = .standard,
+        appVersion: String = "—"
+    ) -> Generation? {
+        let stored = defaults.double(forKey: lastAutoBackupKey)
+        let lastBackupAt: Date? = stored > 0 ? Date(timeIntervalSince1970: stored) : nil
+
+        // "Hat der User Daten?" — eine abgeschlossene Session genuegt als
+        // Signal. Ohne diese Pruefung wuerde eine frische Installation leere
+        // Generationen anlegen, die spaeter die Rotation belegen und echte
+        // Backups verdraengen.
+        var descriptor = FetchDescriptor<WorkoutSession>()
+        descriptor.fetchLimit = 1
+        let hasData = ((try? context.fetchCount(descriptor)) ?? 0) > 0
+
+        guard BackupSchedule.shouldCreateBackup(
+            lastBackupAt: lastBackupAt,
+            now: now,
+            hasData: hasData
+        ) else { return nil }
+
+        do {
+            let generation = try createBackup(
+                context: context,
+                reason: .automatic,
+                appVersion: appVersion,
+                now: now
+            )
+            defaults.set(now.timeIntervalSince1970, forKey: lastAutoBackupKey)
+            return generation
+        } catch {
+            return nil
+        }
     }
 
 }

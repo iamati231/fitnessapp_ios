@@ -26,6 +26,10 @@ struct FitnessAppApp: App {
     /// alte Verhalten zurueck. Static let = genau eine Instanz pro Prozess.
     private static let sharedContainer: ModelContainer = SharedStore.makeAppContainer()
 
+    /// DEL-228: Treiber fuer das automatische Backup beim Wechsel in den
+    /// Hintergrund.
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some Scene {
         WindowGroup {
             RootView()
@@ -36,6 +40,21 @@ struct FitnessAppApp: App {
                 .tint(Color.deltiqOrange)
                 .onOpenURL { url in
                     handleDeepLink(url)
+                }
+                // DEL-228: Automatisches Backup, wenn die App in den
+                // Hintergrund geht und die letzte Sicherung mehr als einen Tag
+                // her ist. Dieser Moment ist bewusst gewaehlt: der Datenstand
+                // ist gerade konsistent (kein halb geloggter Satz), und ein
+                // kurzer synchroner Schreibvorgang stoert keine laufende
+                // Interaktion. Fehler werden im Service geschluckt — ein
+                // fehlgeschlagenes Backup darf den Lifecycle nie stoeren, der
+                // Zeitstempel bleibt dann ungesetzt und der naechste Wechsel
+                // versucht es erneut.
+                .onChange(of: scenePhase) { _, newPhase in
+                    guard newPhase == .background else { return }
+                    BackupService.runAutomaticBackupIfDue(
+                        context: Self.sharedContainer.mainContext
+                    )
                 }
         }
         .modelContainer(Self.sharedContainer)
