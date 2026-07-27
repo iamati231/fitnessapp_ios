@@ -35,6 +35,26 @@ public extension WorkoutSession {
         logs.filter { !$0.isEmptyPlaceholder }
     }
 
+    /// DEL-236: Enthielt diese Session ueberhaupt Kraftarbeit?
+    ///
+    /// `isCardio` ist das einzige Ausschlusskriterium — TimeBased-Uebungen
+    /// (Plank, Wall Sit) sind Widerstandsarbeit und zaehlen mit.
+    var containsStrengthWork: Bool {
+        loggedSets.contains { !$0.resolvedIsCardio }
+    }
+
+    /// DEL-236: CNS-Last nur aus dem Kraft-Anteil.
+    ///
+    /// `totalCNSLoad` enthaelt auch Cardio (ein langer Lauf landet im
+    /// hoechsten Belastungs-Bucket). Fuer die Deload-Entscheidung ist das die
+    /// falsche Zahl: ein Deload reduziert Arbeitsgewichte, also darf ihn nur
+    /// Kraftarbeit ausloesen. Details in `DeloadAdvisor.strengthCNSLoad`.
+    var strengthCNSLoad: Double {
+        DeloadAdvisor.strengthCNSLoad(
+            logs: loggedSets.map { (isCardio: $0.resolvedIsCardio, cnsScore: $0.cnsFatigueScore) }
+        )
+    }
+
 
     /// Rechnet `totalSets` und `totalVolumeKg` aus den aktuellen Logs neu.
     ///

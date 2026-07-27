@@ -1321,16 +1321,27 @@ public struct DashboardView: View {
         for offset in stride(from: -3, through: -1, by: 1) {
             guard let start = calendar.date(byAdding: .weekOfYear, value: offset, to: currentWeekStart),
                   let end = calendar.date(byAdding: .weekOfYear, value: 1, to: start) else { return false }
+            // DEL-236: `strengthCNSLoad` statt `totalCNSLoad` — Laufen zaehlt
+            // nicht mehr mit. Vorher konnte ein gesteigertes Laufpensum plus
+            // zwei anstrengende Laeufe eine Deload-Empfehlung ausloesen, die
+            // die LANGHANTEL-Gewichte halbiert, obwohl sich am Krafttraining
+            // nichts geaendert hatte.
             let load = completedSessions
                 .filter { $0.isRealWorkout && $0.startTime >= start && $0.startTime < end }
-                .reduce(0.0) { $0 + $1.totalCNSLoad }
+                .reduce(0.0) { $0 + $1.strengthCNSLoad }
             weeklyLoads.append(load)
         }
         let fourteenDaysAgo = calendar.date(byAdding: .day, value: -14, to: now) ?? .distantPast
+        // DEL-236: Ein zerstoerender Halbmarathon ist eine harte Session, sagt
+        // aber nichts ueber die Ermuedung beim Bankdruecken. Nur Sessions mit
+        // Kraftanteil zaehlen.
         let hardSessions = completedSessions.filter {
             $0.isRealWorkout
             && $0.startTime >= fourteenDaysAgo
-            && ($0.sessionFeeling ?? 0) >= DeloadAdvisor.hardFeelingThreshold
+            && DeloadAdvisor.isHardStrengthSession(
+                feeling: $0.sessionFeeling,
+                containsStrengthWork: $0.containsStrengthWork
+            )
         }.count
         return DeloadAdvisor.shouldRecommendDeload(
             weeklyLoads: weeklyLoads,

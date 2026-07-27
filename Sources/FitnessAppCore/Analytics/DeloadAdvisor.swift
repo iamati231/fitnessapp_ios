@@ -55,4 +55,36 @@ public enum DeloadAdvisor {
         guard w1 > 0 else { return false }
         return w3 >= w1 * minimumRampFactor
     }
+
+    // MARK: - DEL-236: Nur Krafttraining zaehlt
+
+    /// Kraft-Anteil der CNS-Last einer Session — Cardio-Saetze fliegen raus.
+    ///
+    /// **Warum das noetig war.** Beide Signale oben haben vorher JEDE reale
+    /// Session gezaehlt, und `ExerciseLog.cnsFatigueScore` liefert fuer Cardio
+    /// sehr wohl einen Wert (aus der Dauer, ueber `timeBasedScore`) — ein
+    /// langer Lauf landet im hoechsten Belastungs-Bucket. Wer sein Laufpensum
+    /// drei Wochen steigert und zwei Laeufe als sehr hart meldet, bekam damit
+    /// eine Deload-Empfehlung, die seine LANGHANTEL-Gewichte halbiert. Das
+    /// Krafttraining hatte sich dabei nie veraendert.
+    ///
+    /// Ein Deload reduziert Arbeitsgewichte. Die Entscheidung darueber darf
+    /// deshalb nur von Kraftarbeit abhaengen. Laufermuedung ist real, aber die
+    /// richtige Antwort darauf ist ein Ruhetag, nicht eine halbierte Kniebeuge.
+    ///
+    /// TimeBased-Uebungen (Plank, Wall Sit) zaehlen bewusst MIT: das ist
+    /// Widerstandsarbeit gegen den eigenen Koerper, kein Ausdauertraining.
+    /// Ausgeschlossen wird ausschliesslich `isCardio`.
+    public static func strengthCNSLoad(logs: [(isCardio: Bool, cnsScore: Double)]) -> Double {
+        logs.reduce(0.0) { $0 + ($1.isCardio ? 0 : $1.cnsScore) }
+    }
+
+    /// Zaehlt diese Session als "harte Session" im Sinne der Deload-Erkennung?
+    ///
+    /// Nur wenn ueberhaupt Kraftarbeit dabei war. Ein zerstoerender
+    /// Halbmarathon ist eine harte Session — aber keine, die etwas ueber die
+    /// Ermuedung beim Bankdruecken aussagt.
+    public static func isHardStrengthSession(feeling: Int?, containsStrengthWork: Bool) -> Bool {
+        containsStrengthWork && (feeling ?? 0) >= hardFeelingThreshold
+    }
 }
