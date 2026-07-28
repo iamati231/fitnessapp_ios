@@ -794,8 +794,14 @@ public struct SettingsView: View {
         //    Coaches). Echte Praeferenzen (Erscheinungsbild, Coaching-Ton,
         //    Erinnerungen, Chart-Zeitraeume) bleiben absichtlich stehen — der
         //    User loescht seine Daten, nicht seine Einstellungen.
+        // DEL-239: Die beiden Absenz-Deload-Keys sind DATEN-Zustand (wann
+        // wurde reduziert, bei welcher Luecke wurde abgelehnt) und gehoeren
+        // damit hierher — nicht in die SettingsPortability-Whitelist. Nach
+        // einem Wipe gibt es keine Trainings-Historie mehr, also auch keine
+        // Absenz, auf die sie sich beziehen koennten.
         for key in ["weight_unit", "height_unit", "unit_system",
-                    "deload_until", "lastDataExportAt"] {
+                    "deload_until", "lastDataExportAt",
+                    AbsenceDeload.lastAppliedKey, AbsenceDeload.suppressedUntilGapKey] {
             UserDefaults.standard.removeObject(forKey: key)
         }
 

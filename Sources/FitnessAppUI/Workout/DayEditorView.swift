@@ -39,6 +39,13 @@ public struct DayEditorView: View {
 
     @State private var showingOpenSessionDialog = false
 
+    /// DEL-238/239: Deload-Automatik + Absenz-Rueckfrage. Gleiche Semantik wie
+    /// im Dashboard; der Schalter gated nur die Frage, nie einen laufenden
+    /// Deload.
+    @AppStorage("pref_deload_enabled") private var deloadEnabled: Bool = true
+    @State private var comebackAssessment: AbsenceDeload.Assessment?
+    @State private var pendingComebackStart: (() -> Void)?
+
     public init(day: TrainingDay) {
         self.day = day
     }
@@ -140,6 +147,24 @@ public struct DayEditorView: View {
         .sheet(item: $exerciseToEdit) { exercise in
             NavigationStack {
                 ExerciseEditorView(exercise: exercise)
+            }
+        }
+        // DEL-239: Absenz-Deload-Rueckfrage (siehe `actuallyStartNewSession`).
+        .sheet(item: $comebackAssessment) { assessment in
+            ComebackPromptSheet(assessment: assessment) { factor in
+                let pending = comebackAssessment
+                comebackAssessment = nil
+                if let factor {
+                    // Fehler geschluckt: ein fehlgeschlagener Schreibvorgang
+                    // darf den Start nicht blockieren — dann trainiert der
+                    // Nutzer mit unveraenderten Gewichten weiter.
+                    try? AbsenceDeload.apply(in: modelContext, factor: factor)
+                } else if let pending {
+                    AbsenceDeload.remember(declinedAtGapDays: pending.gapDays)
+                }
+                let start = pendingComebackStart
+                pendingComebackStart = nil
+                start?()
             }
         }
         // DEL-042: Open-Session-Recovery-Dialog. Triggered von startSession()
@@ -761,6 +786,15 @@ public struct DayEditorView: View {
     /// Erstellt + navigiert in eine neue Session. Wird sowohl direkt
     /// (kein Konflikt) als auch nach Recovery-Entscheidung aufgerufen.
     private func actuallyStartNewSession() {
+        // DEL-239: Rueckfrage nach langer Pause, VOR dem Insert. Derselbe
+        // Abfang wie in DashboardView — sonst waere das Verhalten davon
+        // abhaengig, von welchem Screen aus gestartet wird.
+        if deloadEnabled, comebackAssessment == nil,
+           let assessment = AbsenceDeload.assess(in: modelContext) {
+            pendingComebackStart = { actuallyStartNewSession() }
+            comebackAssessment = assessment
+            return
+        }
         let session = WorkoutSession(
             startTime: Date(),
             endTime: Date(),

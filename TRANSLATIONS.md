@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1459 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1470 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1459 / 1459** (100%) | 0 |
-| 🇬🇧 English (EN) | **1459 / 1459** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1459 / 1459** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1470 / 1470** (100%) | 0 |
+| 🇬🇧 English (EN) | **1470 / 1470** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1470 / 1470** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -414,6 +414,22 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.tone.motivating.label` | Motivierend | Motivating | Motive Edici |
 | `coaching.tone.strict.blurb` | Direkt & fordernd. Klartext, wenn du vom Plan abweichst. | Direct & demanding. Plain talk when you deviate from the plan. | Doğrudan ve talepkar. Plandan sapınca net konuşur. |
 | `coaching.tone.strict.label` | Streng | Strict | Sıkı |
+
+## `comeback.*`  (11 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `comeback.prompt.amount` | Reduktion | Reduction | Azaltma |
+| `comeback.prompt.apply` | Gewichte senken | Lower weights | Ağırlıkları düşür |
+| `comeback.prompt.decline` | Nein, volle Last | No, full load | Hayır, tam yük |
+| `comeback.prompt.preview.header` | Das ändert sich | What changes | Neler değişiyor |
+| `comeback.prompt.preview.more` | und %lld weitere | and %lld more | ve %lld tane daha |
+| `comeback.prompt.preview.none` | Bei dieser Reduktion ändert sich auf dem Scheiben-Raster nichts. Wähle einen höheren Wert. | At this reduction nothing changes on the plate increments. Pick a higher value. | Bu azaltmada plaka kademelerinde hiçbir şey değişmiyor. Daha yüksek bir değer seç. |
+| `comeback.prompt.rationale` | Kraft hält sich über Wochen gut — was nach einer Pause zuerst nachgibt, sind Sehnen, Technik und die Toleranz für Muskelkater. Etwas weniger Last in den ersten Sessions kostet dich nichts und schützt davor. | Strength holds up well over weeks — what gives first after a break is tendons, technique and your tolerance for soreness. A little less load in the first sessions costs you nothing and protects against that. | Kuvvet haftalarca iyi korunur — molada ilk zayıflayan tendonlar, teknik ve ağrı toleransıdır. İlk seanslarda biraz daha az yük sana hiçbir şeye mal olmaz ve bundan korur. |
+| `comeback.prompt.recommended` | %lld %% (empfohlen) | %lld %% (recommended) | %%%lld (önerilen) |
+| `comeback.prompt.retest` | Nach so langer Pause ist ein Tastversuch sinnvoller als eine geschätzte Reduktion: geh die ersten Sätze bewusst leicht an und finde deine Last neu. | After a break this long, feeling it out beats a guessed reduction: start the first sets deliberately light and find your load again. | Bu kadar uzun bir moladan sonra tahmini bir azaltma yerine yoklamak daha mantıklı: ilk setlere bilinçli olarak hafif başla ve yükünü yeniden bul. |
+| `comeback.prompt.subtitle` | Dein letztes Krafttraining war vor %lld Tagen. Soll ich die Gewichte für den Wiedereinstieg senken? | Your last strength session was %lld days ago. Should I lower the weights for your return? | Son kuvvet antrenmanın %lld gün önceydi. Dönüş için ağırlıkları düşürmemi ister misin? |
+| `comeback.prompt.title` | Willkommen zurück | Welcome back | Tekrar hoş geldin |
 
 ## `common.*`  (8 Keys)
 

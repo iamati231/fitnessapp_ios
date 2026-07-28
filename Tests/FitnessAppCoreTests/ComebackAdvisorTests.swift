@@ -243,6 +243,65 @@ final class ComebackAdvisorTests: XCTestCase {
         )
     }
 
+    // MARK: - DEL-239 Rasterung und Auswahl
+
+    func testReductionSnapsDownToIncrement() {
+        XCTAssertEqual(ComebackAdvisor.reducedWeight(current: 100, factor: 0.85, increment: 2.5), 85.0, accuracy: 0.0001)
+        XCTAssertEqual(ComebackAdvisor.reducedWeight(current: 100, factor: 0.95, increment: 2.5), 95.0, accuracy: 0.0001)
+        // 62,5 * 0,85 = 53,125 -> ABWAERTS auf 52,5, nicht auf 53,75.
+        XCTAssertEqual(ComebackAdvisor.reducedWeight(current: 62.5, factor: 0.85, increment: 2.5), 52.5, accuracy: 0.0001)
+        XCTAssertEqual(ComebackAdvisor.reducedWeight(current: 20, factor: 0.90, increment: 1.25), 17.5, accuracy: 0.0001)
+    }
+
+    /// "Keine Reduktion" ist eine legitime Wahl und darf nicht in eine
+    /// Pseudo-Aenderung umkippen.
+    func testFactorAtOrAboveOneLeavesWeightAlone() {
+        XCTAssertEqual(ComebackAdvisor.reducedWeight(current: 100, factor: 1.0, increment: 2.5), 100.0)
+        XCTAssertEqual(ComebackAdvisor.reducedWeight(current: 100, factor: 1.5, increment: 2.5), 100.0)
+    }
+
+    /// Relativer Boden: nie unter die Haelfte des Ausgangsgewichts. Ein
+    /// absoluter Boden (wie die 2,5 kg in startDeload) macht aus leichter
+    /// Kurzhantel-Arbeit im Extremfall eine Halbierung und greift bei 200 kg nie.
+    func testRelativeFloorAtHalfTheWeight() {
+        XCTAssertEqual(ComebackAdvisor.reducedWeight(current: 100, factor: 0.2, increment: 2.5), 50.0, accuracy: 0.0001)
+        XCTAssertGreaterThanOrEqual(ComebackAdvisor.reducedWeight(current: 10, factor: 0.3, increment: 2.5), 5.0)
+    }
+
+    func testNeverBelowOneIncrement() {
+        XCTAssertGreaterThanOrEqual(ComebackAdvisor.reducedWeight(current: 2.5, factor: 0.5, increment: 2.5), 2.5)
+    }
+
+    func testDegenerateInputsAreSafe() {
+        XCTAssertEqual(ComebackAdvisor.reducedWeight(current: 0, factor: 0.85, increment: 2.5), 0)
+        XCTAssertEqual(ComebackAdvisor.reducedWeight(current: 100, factor: 0.85, increment: 0), 100.0)
+    }
+
+    /// Die Rueckfrage darf nicht behaupten, etwas zu tun, was auf dem Raster
+    /// verpufft.
+    func testChangesAnythingDetectsNoOps() {
+        XCTAssertTrue(ComebackAdvisor.changesAnything(current: 100, factor: 0.95, increment: 2.5))
+        XCTAssertFalse(ComebackAdvisor.changesAnything(current: 100, factor: 1.0, increment: 2.5))
+        XCTAssertFalse(ComebackAdvisor.changesAnything(current: 2.5, factor: 0.9, increment: 2.5))
+    }
+
+    func testSelectableReductionsAreFivePercentSteps() {
+        XCTAssertEqual(ComebackAdvisor.selectableReductions, [0.05, 0.10, 0.15, 0.20, 0.25, 0.30])
+        XCTAssertTrue(ComebackAdvisor.selectableReductions.allSatisfy { $0 > 0 && $0 < 1 })
+    }
+
+    /// Jede Empfehlung muss eine WAEHLBARE Stufe sein — sonst kann der Picker
+    /// in der Rueckfrage nicht auf der Empfehlung vorbelegt werden.
+    func testEveryRecommendationIsSelectable() {
+        for gap in [16, 25, 35, 70, 120] {
+            let reduction = 1.0 - ComebackAdvisor.prescription(forGapDays: gap).compoundFactor
+            XCTAssertTrue(
+                ComebackAdvisor.selectableReductions.contains { abs($0 - reduction) < 0.0001 },
+                "Empfehlung fuer \(gap) Tage ist keine waehlbare Stufe"
+            )
+        }
+    }
+
     /// Ohne Feeling-Angabe darf die Rampe nicht blockieren — das Feld ist
     /// optional.
     func testMissingFeelingDoesNotBlock() {

@@ -982,7 +982,33 @@ struct SetRow: View {
                 cardioDurationText = PaceCalculator.formatDuration(s)
             }
         } else if let previousLog {
-            weight = previousLog.weight > 0 ? previousLog.weight : exercise.suggestedWeight
+            // DEL-239: Das GEPLANTE Gewicht gewinnt, wenn es NIEDRIGER ist als
+            // das letzte geloggte.
+            //
+            // Vorher stand hier `previousLog.weight > 0 ? previousLog.weight :
+            // exercise.suggestedWeight` — der letzte geloggte Wert gewann immer,
+            // `suggestedWeight` war nur Fallback fuer Bodyweight-Saetze. Damit
+            // war jede geplante Reduktion im Training UNSICHTBAR: das Feld
+            // zeigte die alte Last, waehrend die Warmup-Rampe (ExerciseCard)
+            // schon mit dem reduzierten Wert rechnete — reduzierte Aufwaerm-
+            // stufen ueber un-reduziertem Arbeitsgewicht, auf einem Screen. Die
+            // Saetze landeten mit der alten Last im Log, also sah auch die
+            // Historie keine Reduktion.
+            //
+            // Bewusst NUR nach unten: `suggestedWeight` liegt im Normalfall
+            // durch die Progression HOEHER als der letzte Log, und dort soll
+            // weiterhin der zuletzt tatsaechlich gehobene Wert vorstehen (der
+            // Nutzer entscheidet selbst, ob er heute zulegt). Ein niedrigerer
+            // Plan-Wert ist dagegen immer eine Absicht — Absenz-Deload,
+            // Overreaching-Deload oder eine manuelle Korrektur nach unten.
+            let planned = exercise.suggestedWeight
+            if previousLog.weight > 0 {
+                weight = (planned.map { $0 < previousLog.weight } ?? false)
+                    ? planned
+                    : previousLog.weight
+            } else {
+                weight = planned
+            }
             reps = previousLog.reps
             rir = previousLog.rir
             // DEL-058 Cardio init aus previousLog — Felder bleiben leer, der

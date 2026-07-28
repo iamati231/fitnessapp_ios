@@ -147,6 +147,57 @@ public enum ComebackAdvisor {
         }
     }
 
+    // MARK: - DEL-239 Auswahl und Rundung
+
+    /// Reduktions-Stufen, die der Nutzer in der Rueckfrage waehlen kann.
+    ///
+    /// Bewusst 5-Prozent-Schritte und kein Schieberegler: Gewichte rasten auf
+    /// die Scheiben-Schrittweite der Uebung (meist 2,5 kg). Bei 60 kg
+    /// Arbeitsgewicht ist der Unterschied zwischen 12 % und 13 % nach der
+    /// Rundung null — ein feiner Regler wuerde Genauigkeit vorspiegeln, die
+    /// nicht existiert.
+    public static let selectableReductions: [Double] = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30]
+
+    /// Reduziertes Arbeitsgewicht, auf die Scheiben-Schrittweite gerastet.
+    ///
+    /// - Parameters:
+    ///   - current: aktuelles Arbeitsgewicht.
+    ///   - factor: Zielfaktor (0,85 = minus 15 %). Werte >= 1 liefern das
+    ///     Gewicht unveraendert zurueck — "keine Reduktion" ist eine legitime
+    ///     Wahl und darf nicht in eine Pseudo-Aenderung umkippen.
+    ///   - increment: Scheiben-Schrittweite der Uebung.
+    ///
+    /// **Abwaerts gerastet, nicht gerundet.** Projekt-Konvention (truncate
+    /// statt round) und hier zusaetzlich inhaltlich richtig: bei einem Deload
+    /// ist die kleinere Zahl die sichere. `startDeload` rundet historisch mit
+    /// `.rounded()` auf feste 2,5 — das bleibt unangetastet, um das Verhalten
+    /// des Overreaching-Pfads nicht zu veraendern.
+    ///
+    /// **Relativer Boden statt absoluter.** Nie unter die Haelfte des
+    /// Ausgangsgewichts, und nie unter eine Schrittweite. Ein absoluter Boden
+    /// von 2,5 kg (wie in `startDeload`) macht aus 5 kg Kurzhantel-Arbeit im
+    /// Extremfall eine Halbierung, waehrend er bei 200 kg nie greift.
+    public static func reducedWeight(current: Double, factor: Double, increment: Double) -> Double {
+        guard current > 0, increment > 0 else { return current }
+        guard factor < 1.0 else { return current }
+
+        let target = current * max(0, factor)
+        let steps = (target / increment).rounded(.down)
+        let snapped = steps * increment
+
+        let relativeFloor = current * 0.5
+        return max(snapped, increment, relativeFloor > increment ? relativeFloor : increment)
+    }
+
+    /// Aendert diese Reduktion das Gewicht ueberhaupt, nachdem gerastet wurde?
+    ///
+    /// Die Rueckfrage soll nicht behaupten, etwas zu tun, was auf dem Raster
+    /// verpufft. Bei sehr leichten Gewichten oder sehr kleinen Prozentsaetzen
+    /// ist das der Fall.
+    public static func changesAnything(current: Double, factor: Double, increment: Double) -> Bool {
+        reducedWeight(current: current, factor: factor, increment: increment) < current
+    }
+
     // MARK: - Rückkehr
 
     /// Naechste Rampenstufe. Fuehrt in `stepsRemaining` Schritten linear auf

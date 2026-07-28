@@ -33558,6 +33558,259 @@
           }
         }
       }
+    },
+    "comeback.prompt.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Willkommen zurück"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome back"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tekrar hoş geldin"
+          }
+        }
+      }
+    },
+    "comeback.prompt.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein letztes Krafttraining war vor %lld Tagen. Soll ich die Gewichte für den Wiedereinstieg senken?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your last strength session was %lld days ago. Should I lower the weights for your return?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son kuvvet antrenmanın %lld gün önceydi. Dönüş için ağırlıkları düşürmemi ister misin?"
+          }
+        }
+      }
+    },
+    "comeback.prompt.rationale": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kraft hält sich über Wochen gut — was nach einer Pause zuerst nachgibt, sind Sehnen, Technik und die Toleranz für Muskelkater. Etwas weniger Last in den ersten Sessions kostet dich nichts und schützt davor."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength holds up well over weeks — what gives first after a break is tendons, technique and your tolerance for soreness. A little less load in the first sessions costs you nothing and protects against that."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuvvet haftalarca iyi korunur — molada ilk zayıflayan tendonlar, teknik ve ağrı toleransıdır. İlk seanslarda biraz daha az yük sana hiçbir şeye mal olmaz ve bundan korur."
+          }
+        }
+      }
+    },
+    "comeback.prompt.amount": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reduktion"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reduction"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Azaltma"
+          }
+        }
+      }
+    },
+    "comeback.prompt.recommended": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %% (empfohlen)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %% (recommended)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%%%lld (önerilen)"
+          }
+        }
+      }
+    },
+    "comeback.prompt.apply": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gewichte senken"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lower weights"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ağırlıkları düşür"
+          }
+        }
+      }
+    },
+    "comeback.prompt.decline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nein, volle Last"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No, full load"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hayır, tam yük"
+          }
+        }
+      }
+    },
+    "comeback.prompt.preview.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das ändert sich"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What changes"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neler değişiyor"
+          }
+        }
+      }
+    },
+    "comeback.prompt.preview.more": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "und %lld weitere"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "and %lld more"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ve %lld tane daha"
+          }
+        }
+      }
+    },
+    "comeback.prompt.preview.none": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bei dieser Reduktion ändert sich auf dem Scheiben-Raster nichts. Wähle einen höheren Wert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At this reduction nothing changes on the plate increments. Pick a higher value."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu azaltmada plaka kademelerinde hiçbir şey değişmiyor. Daha yüksek bir değer seç."
+          }
+        }
+      }
+    },
+    "comeback.prompt.retest": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach so langer Pause ist ein Tastversuch sinnvoller als eine geschätzte Reduktion: geh die ersten Sätze bewusst leicht an und finde deine Last neu."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After a break this long, feeling it out beats a guessed reduction: start the first sets deliberately light and find your load again."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu kadar uzun bir moladan sonra tahmini bir azaltma yerine yoklamak daha mantıklı: ilk setlere bilinçli olarak hafif başla ve yükünü yeniden bul."
+          }
+        }
+      }
     }
   }
 }

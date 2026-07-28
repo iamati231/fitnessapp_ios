@@ -92,6 +92,15 @@ public struct DashboardView: View {
     /// Card; `autoEndDeloadIfExpired()` räumt nach Ablauf auf.
     @AppStorage("deload_until") private var deloadUntil: Double = 0
 
+    /// DEL-238: Deload-Automatik. Gated die Empfehlung UND die
+    /// Absenz-Rueckfrage — nie einen laufenden Deload.
+    @AppStorage("pref_deload_enabled") private var deloadEnabled: Bool = true
+
+    /// DEL-239: Bewertung der Trainingspause, solange die Rueckfrage offen ist.
+    @State private var comebackAssessment: AbsenceDeload.Assessment?
+    /// Fortsetzung des abgefangenen Trainingsstarts.
+    @State private var pendingComebackStart: (() -> Void)?
+
     /// DEL-202: getappter Kalender-Tag fürs Tages-Detail-Sheet. Identifiable-
     /// Wrapper, weil `Date` selbst kein Identifiable ist und sheet(item:)
     /// eins verlangt.
@@ -198,6 +207,15 @@ public struct DashboardView: View {
                         Image(systemName: "plus.circle.fill")
                     }
                 }
+            }
+        }
+        // DEL-239: Rueckfrage nach langer Pause. `sheet(item:)`, damit das
+        // Assessment beim Praesentieren feststeht. Die Entscheidung laeuft
+        // ueber `resolveComeback`, das anschliessend den abgefangenen
+        // Trainingsstart fortsetzt.
+        .sheet(item: $comebackAssessment) { assessment in
+            ComebackPromptSheet(assessment: assessment) { factor in
+                resolveComeback(factor: factor)
             }
         }
         // DEL-042: Conflict-Dialog wenn der User in Plan A starten will,
@@ -1795,11 +1813,56 @@ public struct DashboardView: View {
             : String(format: "%02d:%02d", m, s)
     }
 
+    // MARK: - DEL-239 Absenz-Deload-Rückfrage
+
+    /// Faengt einen Trainingsstart ab, wenn nach einer langen Pause gefragt
+    /// werden soll.
+    ///
+    /// - Returns: `true`, wenn abgefangen wurde — der Aufrufer bricht dann ab.
+    ///   Die uebergebene Fortsetzung laeuft, sobald der Nutzer entschieden hat.
+    ///
+    /// Spiegelt das bestehende `pendingNewStart`-Muster des Konflikt-Dialogs
+    /// (DEL-042), damit hier kein zweites Start-Unterbrechungs-Konzept entsteht.
+    /// Reihenfolge bei Kollision: der Konflikt-Dialog laeuft VOR dieser Frage,
+    /// weil er ueber `pendingNewStart` ohnehin erst in die Startfunktion
+    /// zurueckkehrt — dann greift hier der Abfang.
+    private func interceptForComeback(_ continuation: @escaping () -> Void) -> Bool {
+        guard deloadEnabled else { return false }
+        guard comebackAssessment == nil else { return false }
+        guard let assessment = AbsenceDeload.assess(in: modelContext) else { return false }
+        pendingComebackStart = continuation
+        comebackAssessment = assessment
+        return true
+    }
+
+    /// Der Nutzer hat entschieden. `factor == nil` = volle Last.
+    private func resolveComeback(factor: Double?) {
+        let assessment = comebackAssessment
+        comebackAssessment = nil
+        if let factor {
+            // Fehler bewusst geschluckt: ein fehlgeschlagener Schreibvorgang
+            // darf den Trainingsstart nicht blockieren. Der Nutzer sieht dann
+            // seine unveraenderten Gewichte — das ist der sichere Ausgang.
+            try? AbsenceDeload.apply(in: modelContext, factor: factor)
+        } else if let assessment {
+            // Ablehnung merken, damit nicht bei jedem Start erneut gefragt wird.
+            AbsenceDeload.remember(declinedAtGapDays: assessment.gapDays)
+        }
+        // Erst jetzt starten — die Gewichte stehen bereits.
+        let start = pendingComebackStart
+        pendingComebackStart = nil
+        start?()
+    }
+
     /// Deep-link from Dashboard into ActiveWorkout: build a stack [plan, day, active]
     /// on the workout tab so the user can back out to DayEditor (after Discard) or
     /// PlanEditor without losing context.
     private func actuallyStartNewWorkout(plan: TrainingPlan, day: TrainingDay) {
         guard !day.activeExercises.isEmpty else { return }
+        // DEL-239: Vor dem Anlegen der Session fragen. Danach ist es zu spaet —
+        // `SetRow` sperrt sich per `didInit` gegen ein zweites Befuellen, eine
+        // spaetere Gewichtsaenderung erreicht die Felder nicht mehr.
+        guard !interceptForComeback({ actuallyStartNewWorkout(plan: plan, day: day) }) else { return }
 
         let session = WorkoutSession(
             startTime: Date(),
@@ -1826,6 +1889,8 @@ public struct DashboardView: View {
     /// `WorkoutSession` mit `isAdHoc = true`. Empty-State-Logik und
     /// Discard-Sweep-Logik in der ActiveWorkoutView lesen diesen Flag.
     private func startAdHocWorkout() {
+        // DEL-239: siehe `actuallyStartNewWorkout` — Rueckfrage vor dem Insert.
+        guard !interceptForComeback({ startAdHocWorkout() }) else { return }
         // Ephemerer Tag — kein `plan`, taucht in keinem PlanEditor/PlansList
         // auf, weil alle Plan-Queries `plan != nil`-implizit filtern (via
         // `\TrainingPlan.days`-Inverse).
