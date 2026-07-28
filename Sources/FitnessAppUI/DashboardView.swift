@@ -1027,8 +1027,17 @@ public struct DashboardView: View {
 
     // MARK: - DEL-200 Deload-Apply
 
+    /// DEL-238: Der Timer ODER die Daten.
+    ///
+    /// Vorher hing das allein an `deload_until`. Der Key ist nicht portabel
+    /// und ueberlebt keine Neuinstallation — ging er verloren, verschwand das
+    /// Banner und mit ihm der einzige Weg zu `endDeload`, waehrend die
+    /// Gewichte reduziert blieben. `deloadOriginalWeight != nil` ist die
+    /// belastbare Wahrheit, weil es im Backup mitwandert. Die Oder-Verknuepfung
+    /// heilt diese Nutzer, ohne das Timer-Verhalten zu aendern.
     private var isDeloadActive: Bool {
         deloadUntil > Date().timeIntervalSince1970
+            || DeloadManager.isActive(in: modelContext)
     }
 
     /// True wenn die aktuelle Coaching-Message der Deload-Vorschlag ist —
@@ -1308,6 +1317,14 @@ public struct DashboardView: View {
     /// die Zahl harter Sessions (Feeling >= 4) der letzten 14 Tage. Die
     /// eigentliche Entscheidung lebt testbar in `DeloadAdvisor`.
     private var shouldRecommendDeload: Bool {
+        // DEL-238: Ein Gate, zwei Oberflaechen. Der Apply-Button haengt ueber
+        // `showsDeloadApplyAction` an `activeSoftCoachingContext ==
+        // .deloadRecommended`, das wiederum an dieser Property — die
+        // Coach-Nachricht UND der Button verschwinden also mit derselben
+        // Zeile. Ein laufender Deload bleibt davon unberuehrt: Banner und
+        // Beenden-Pfad sind bewusst NICHT gegated, sonst entstuende genau die
+        // Sackgasse, die DEL-238 schliesst.
+        guard deloadEnabled else { return false }
         // DEL-200: Während einer laufenden Deload-Woche keine erneute
         // Empfehlung — die Gewichte sind ja schon reduziert.
         guard !isDeloadActive else { return false }

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1455 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1459 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1455 / 1455** (100%) | 0 |
-| 🇬🇧 English (EN) | **1455 / 1455** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1455 / 1455** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1459 / 1459** (100%) | 0 |
+| 🇬🇧 English (EN) | **1459 / 1459** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1459 / 1459** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1477,7 +1477,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (122 Keys)
+## `settings.*`  (126 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1556,6 +1556,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.dataImport.strategyPicker.replace` | Ersetzen | Replace | Değiştir |
 | `settings.dataImport.strategyPicker.replaceWarning` | Alle bestehenden Workouts, Pläne, Messungen, Ausrüstung und PRs werden gelöscht, bevor das Archiv eingespielt wird. Das kann nicht rückgängig gemacht werden. | All existing workouts, plans, measurements, gear and PRs will be deleted before the archive is restored. This cannot be undone. | Arşiv geri yüklenmeden önce mevcut tüm antrenmanlar, planlar, ölçümler, ekipman ve PR'lar silinir. Bu işlem geri alınamaz. |
 | `settings.dataImport.title` | Daten-Import | Data Import | Veri İçe Aktarımı |
+| `settings.deload.description` | Deltiq erkennt Überlastung und lange Pausen und schlägt dann vor, die Arbeitsgewichte vorübergehend zu senken. Aus heißt: keine Vorschläge mehr — bereits gesenkte Gewichte bleiben, bis du sie unten zurücksetzt. | Deltiq detects overreaching and long breaks and then suggests temporarily lowering your working weights. Off means no more suggestions — weights already lowered stay until you reset them below. | Deltiq aşırı yüklenmeyi ve uzun molaları algılar ve çalışma ağırlıklarını geçici olarak düşürmeyi önerir. Kapalı: artık öneri gelmez — hâlihazırda düşürülmüş ağırlıklar, aşağıdan sıfırlayana kadar öyle kalır. |
+| `settings.deload.endNow` | Gesenkte Gewichte zurücksetzen (%lld Übungen) | Restore lowered weights (%lld exercises) | Düşürülmüş ağırlıkları geri yükle (%lld egzersiz) |
+| `settings.deload.endNow.done` | Ursprüngliche Gewichte wiederhergestellt. | Original weights restored. | Orijinal ağırlıklar geri yüklendi. |
+| `settings.deload.toggle` | Deload-Vorschläge | Deload suggestions | Deload önerileri |
 | `settings.health.connect` | Verbinden | Connect | Bağla |
 | `settings.health.denied` | Berechtigung verweigert | Permission denied | İzin reddedildi |
 | `settings.health.footer` | Bei aktivierter Verbindung wird im Messwerte-Formular das letzte Waagen-Gewicht vorausgefüllt. Beim Speichern werden Gewicht, KFA und Magere Masse zurück nach Apple Health geschrieben. | When connected, the measurement form prefills your last scale weight. Saving writes weight, body fat %, and lean mass back to Apple Health. | Bağlıyken ölçüm formu son tartı kilonu önceden doldurur. Kaydetme; kilo, yağ oranı ve yağsız kütleyi Apple Health'e yazar. |

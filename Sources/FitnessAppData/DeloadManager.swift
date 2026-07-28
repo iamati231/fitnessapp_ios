@@ -30,6 +30,33 @@ public enum DeloadManager {
     /// Standard-Dauer einer Deload-Woche in Tagen.
     public static let defaultDurationDays: Int = 7
 
+    /// DEL-238: Laeuft gerade ein Deload — aus Sicht der DATEN, nicht des
+    /// Timers?
+    ///
+    /// Bisher war `@AppStorage("deload_until")` in der DashboardView die
+    /// einzige Wahrheit darueber. Das hat zwei Loecher: der Key ist nicht
+    /// portabel (Neuinstallation, Restore aus Backup) und er lebt in einer
+    /// View, die andere Startpfade nicht kennt. Geht er verloren, bleiben die
+    /// Gewichte reduziert, das Banner verschwindet — und damit der einzige
+    /// UI-Pfad zu `endDeload`. Diese Nutzer sitzen dauerhaft auf halbierten
+    /// Gewichten fest.
+    ///
+    /// `deloadOriginalWeight != nil` ist dagegen die belastbare Wahrheit: es
+    /// wandert im Backup mit und ist genau dann gesetzt, wenn ein Original
+    /// gesichert wurde und darauf wartet, zurueckgestellt zu werden.
+    public static func isActive(in context: ModelContext) -> Bool {
+        pendingCount(in: context) > 0
+    }
+
+    /// Wie viele Uebungen warten auf ihre Original-Gewichte? Fuer die
+    /// Beschriftung des Beenden-Buttons ("N Uebungen").
+    public static func pendingCount(in context: ModelContext) -> Int {
+        let descriptor = FetchDescriptor<Exercise>(
+            predicate: #Predicate { $0.deloadOriginalWeight != nil }
+        )
+        return (try? context.fetchCount(descriptor)) ?? 0
+    }
+
     /// Reduziert die Gewichte des aktiven Plans. Liefert die Anzahl der
     /// angepassten Übungen (0 = es gab nichts zu reduzieren — UI sollte
     /// dann gar nicht erst in den Deload-Zustand wechseln).

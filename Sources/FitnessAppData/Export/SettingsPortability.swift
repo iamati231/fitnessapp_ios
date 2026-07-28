@@ -42,9 +42,16 @@ public enum SettingsPortability {
         ("pref_measurement_reminder",         .bool),
         ("pref_measurement_reminder_weekday", .int),
         ("pref_measurement_reminder_hour",    .int),
-        // Workout-Verhalten (DEL-092/143)
+        // Workout-Verhalten (DEL-092/143/238)
         ("pref_show_warmups",                 .bool),
         ("showRirTooltips",                   .bool),
+        // DEL-238: Deload-Automatik an/aus. Gehoert hierher, weil keines der
+        // beiden Ausschlusskriterien greift: es ist kein ephemerer Datenzustand
+        // wie `deload_until` und nichts gerätespezifisches wie
+        // `lastDataExportAt`, sondern eine Praeferenz wie `pref_show_warmups`.
+        // Wer die Automatik abgewaehlt hat, will sie auf dem neuen Geraet auch
+        // nicht wieder.
+        ("pref_deload_enabled",               .bool),
         // Chart-Zeiträume (DEL-152/178)
         ("dashboard.compoundChartRange",      .string),
         ("dashboard.cardioChartRange",        .string),

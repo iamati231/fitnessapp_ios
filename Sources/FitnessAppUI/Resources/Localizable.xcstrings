@@ -33466,6 +33466,98 @@
           }
         }
       }
+    },
+    "settings.deload.toggle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload-Vorschläge"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload suggestions"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload önerileri"
+          }
+        }
+      }
+    },
+    "settings.deload.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deltiq erkennt Überlastung und lange Pausen und schlägt dann vor, die Arbeitsgewichte vorübergehend zu senken. Aus heißt: keine Vorschläge mehr — bereits gesenkte Gewichte bleiben, bis du sie unten zurücksetzt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deltiq detects overreaching and long breaks and then suggests temporarily lowering your working weights. Off means no more suggestions — weights already lowered stay until you reset them below."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deltiq aşırı yüklenmeyi ve uzun molaları algılar ve çalışma ağırlıklarını geçici olarak düşürmeyi önerir. Kapalı: artık öneri gelmez — hâlihazırda düşürülmüş ağırlıklar, aşağıdan sıfırlayana kadar öyle kalır."
+          }
+        }
+      }
+    },
+    "settings.deload.endNow": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesenkte Gewichte zurücksetzen (%lld Übungen)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore lowered weights (%lld exercises)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Düşürülmüş ağırlıkları geri yükle (%lld egzersiz)"
+          }
+        }
+      }
+    },
+    "settings.deload.endNow.done": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ursprüngliche Gewichte wiederhergestellt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original weights restored."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orijinal ağırlıklar geri yüklendi."
+          }
+        }
+      }
     }
   }
 }

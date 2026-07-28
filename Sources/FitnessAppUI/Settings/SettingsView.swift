@@ -55,6 +55,14 @@ public struct SettingsView: View {
     /// das Verhalten überall sofort.
     @AppStorage("showRirTooltips") private var showRirTooltips: Bool = true
 
+    /// DEL-238: Deload-Automatik. Default AN (siehe Begruendung an der
+    /// Toggle-Zeile). Gated ausschliesslich die VORSCHLAEGE — nie einen
+    /// laufenden Deload und nie den Weg zurueck.
+    @AppStorage("pref_deload_enabled") private var deloadEnabled: Bool = true
+
+    /// Rueckmeldung nach dem manuellen Zuruecksetzen.
+    @State private var deloadRestoreMessage: String?
+
     @State private var showingResetConfirm = false
     @State private var resetErrorMessage: String?
 
@@ -348,12 +356,83 @@ public struct SettingsView: View {
                     }
                 }
             }
+            // DEL-238: Deload-Automatik abschaltbar. Default AN — ein
+            // ausgeliefertes Feature bei Bestandsnutzern still zu entfernen
+            // waere die schlechtere Voreinstellung, und alle bestehenden
+            // Praeferenzen hier sind ebenfalls `true`.
+            DeltiqFormFullRow {
+                Toggle(isOn: $deloadEnabled) {
+                    Label {
+                        Text("settings.deload.toggle", bundle: .module)
+                    } icon: {
+                        Image(systemName: "arrow.down.heart")
+                    }
+                }
+            }
+            // DEL-238: Ausweg aus einem laufenden Deload — bewusst UNABHAENGIG
+            // vom Toggle oben.
+            //
+            // Der Schalter darf niemals Trainingsdaten anfassen: ein Toggle,
+            // der stillschweigend Arbeitsgewichte ueberschreibt, ist falsch.
+            // Umgekehrt darf das Abschalten den Nutzer auch nicht mit
+            // reduzierten Gewichten einsperren. Deshalb diese eigene Zeile,
+            // sichtbar solange Originale auf ihre Rueckstellung warten.
+            //
+            // Sie behebt in einem Zug drei Sackgassen: das Abschalten mitten
+            // im Deload, das abschaltbare Coaching-Widget (bisher der EINZIGE
+            // Weg zu endDeload) und die Alt-Kohorte, deren `deload_until` bei
+            // einer Neuinstallation verloren ging.
+            if pendingDeloadCount > 0 {
+                DeltiqFormFullRow {
+                    Button {
+                        restoreDeloadWeights()
+                    } label: {
+                        HStack {
+                            Label {
+                                Text(String(
+                                    format: String(localized: "settings.deload.endNow", bundle: .module),
+                                    pendingDeloadCount
+                                ))
+                            } icon: {
+                                Image(systemName: "arrow.uturn.up")
+                            }
+                            Spacer()
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.deltiqOrange)
+                }
+            }
+            if let deloadRestoreMessage {
+                DeltiqFormFullRow {
+                    Text(deloadRestoreMessage)
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                }
+            }
         } footer: {
             VStack(alignment: .leading, spacing: 4) {
                 Text("settings.workout.footer", bundle: .module)
                 Text("settings.training.rirTooltip.description", bundle: .module)
+                Text("settings.deload.description", bundle: .module)
             }
         }
+    }
+
+    /// DEL-238: Anzahl Uebungen mit gesichertem Original-Gewicht. Aus den
+    /// DATEN abgeleitet, nicht aus `deload_until` — der Timer kann fehlen,
+    /// die Snapshots nicht.
+    private var pendingDeloadCount: Int {
+        DeloadManager.pendingCount(in: modelContext)
+    }
+
+    private func restoreDeloadWeights() {
+        let restored = (try? DeloadManager.endDeload(in: modelContext)) ?? 0
+        guard restored > 0 else { return }
+        // Timer mit aufraeumen, sonst zeigt das Dashboard weiter ein Banner
+        // fuer einen Deload, den es nicht mehr gibt.
+        UserDefaults.standard.removeObject(forKey: "deload_until")
+        deloadRestoreMessage = String(localized: "settings.deload.endNow.done", bundle: .module)
     }
 
     // DEL-018 + DEL-028: Reminder (Wasser-Frequenz + Mess-Wochentag/Uhrzeit).
