@@ -69,6 +69,16 @@ public enum AbsenceDeload {
     ///   * In den letzten 14 Tagen wurde schon eine Absenz-Reduktion
     ///     angewendet.
     ///   * Der Nutzer hat bei dieser oder einer laengeren Luecke abgelehnt.
+    /// `@MainActor`, weil diese Funktion `DeloadManager.isActive(in:)` aufruft
+    /// und `DeloadManager` main-actor-isoliert ist — von aussen waere der
+    /// Aufruf implizit asynchron und damit hier ein Fehler.
+    ///
+    /// Bewusst nur diese Funktion und nicht der ganze Typ: eine Annotation am
+    /// Enum wuerde auch das verschachtelte `Assessment` isolieren, das als
+    /// `Sendable` in SwiftUI-`@State` liegt und ueber eine Sheet-Grenze
+    /// gereicht wird. `preview`, `apply` und `remember` brauchen die Isolation
+    /// nicht: sie rufen nichts Isoliertes auf.
+    @MainActor
     public static func assess(
         in context: ModelContext,
         now: Date = Date(),
