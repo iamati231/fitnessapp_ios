@@ -37,7 +37,7 @@ final class ComebackAdvisorTests: XCTestCase {
     func testShortGapNeverSuggests() {
         for gap in [0, 5, 10, 13] {
             XCTAssertFalse(
-                ComebackAdvisor.shouldSuggest(gapDays: gap, medianGap: 2, sessionsBeforeGap: 12),
+                ComebackAdvisor.shouldSuggest(gapDays: gap, medianGap: 2, priorStrengthSessionCount: 12),
                 "\(gap) Tage duerfen nichts ausloesen"
             )
         }
@@ -45,34 +45,49 @@ final class ComebackAdvisorTests: XCTestCase {
 
     func testLongGapWithHistorySuggests() {
         XCTAssertTrue(
-            ComebackAdvisor.shouldSuggest(gapDays: 21, medianGap: 2, sessionsBeforeGap: 10)
+            ComebackAdvisor.shouldSuggest(gapDays: 21, medianGap: 2, priorStrengthSessionCount: 10)
         )
     }
 
-    /// Wer vor der Pause kaum trainiert hat, braucht keinen Wiedereinstieg,
-    /// sondern einen Einstieg — es gibt keine Last, von der man reduzieren
-    /// koennte.
+    /// Ein echter Anfaenger braucht keinen Wiedereinstieg, sondern einen
+    /// Einstieg — es gibt keine Last, von der man reduzieren koennte.
+    ///
+    /// DEL-240: Die Zahl kommt aus der GESAMTEN Historie. Vorher wurden die
+    /// 28 Tage vor der Pause gezaehlt, was "Anfaenger" mit "hatte letzten
+    /// Monat wenig Zeit" verwechselte.
     func testNoSuggestionWithoutPriorRegularity() {
         XCTAssertFalse(
-            ComebackAdvisor.shouldSuggest(gapDays: 40, medianGap: nil, sessionsBeforeGap: 2)
+            ComebackAdvisor.shouldSuggest(gapDays: 40, medianGap: nil, priorStrengthSessionCount: 2)
         )
         XCTAssertTrue(
-            ComebackAdvisor.shouldSuggest(gapDays: 40, medianGap: nil, sessionsBeforeGap: 3),
+            ComebackAdvisor.shouldSuggest(gapDays: 40, medianGap: nil, priorStrengthSessionCount: 3),
             "genau 3 Sessions reichen"
         )
+    }
+
+    /// DEL-240-Regression: der real gemeldete Fall. Eine Kraft-Session am 9.,
+    /// danach nur Laeufe, heute der 29. — 20 Tage Luecke. Die Frage MUSS
+    /// kommen, sobald ueberhaupt eine trainierte Historie existiert. Die alte
+    /// Regel (28-Tage-Fenster vor der Pause) hat sie verschluckt.
+    func testTwentyDayGapAfterQuietMonthStillSuggests() {
+        XCTAssertTrue(ComebackAdvisor.shouldSuggest(
+            gapDays: 20,
+            medianGap: nil,          // nur eine Kraft-Session im letzten Monat
+            priorStrengthSessionCount: 12   // aber 12 in der Historie
+        ))
     }
 
     /// Nach einer Ablehnung nicht nachbohren — erst eine deutlich laengere
     /// Pause fragt erneut.
     func testSuppressionBlocksUntilLongerGap() {
         XCTAssertFalse(ComebackAdvisor.shouldSuggest(
-            gapDays: 20, medianGap: 2, sessionsBeforeGap: 10, suppressedUntilGapDays: 20
+            gapDays: 20, medianGap: 2, priorStrengthSessionCount: 10, suppressedUntilGapDays: 20
         ))
         XCTAssertFalse(ComebackAdvisor.shouldSuggest(
-            gapDays: 18, medianGap: 2, sessionsBeforeGap: 10, suppressedUntilGapDays: 20
+            gapDays: 18, medianGap: 2, priorStrengthSessionCount: 10, suppressedUntilGapDays: 20
         ))
         XCTAssertTrue(ComebackAdvisor.shouldSuggest(
-            gapDays: 45, medianGap: 2, sessionsBeforeGap: 10, suppressedUntilGapDays: 20
+            gapDays: 45, medianGap: 2, priorStrengthSessionCount: 10, suppressedUntilGapDays: 20
         ))
     }
 

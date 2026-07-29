@@ -113,12 +113,13 @@ public enum AbsenceDeload {
         // Persoenliche Norm: Median-Abstand der letzten Kraft-Sessions.
         let median = medianGapDays(of: strengthSessions, calendar: calendar)
 
-        // Fenster endet an der LETZTEN Session, nicht heute — sonst waere es
-        // bei langen Pausen zwangslaeufig leer.
-        let windowStart = calendar.date(byAdding: .day, value: -28, to: last.endTime) ?? .distantPast
-        let sessionsBeforeGap = strengthSessions.filter {
-            $0.endTime >= windowStart && $0.endTime <= last.endTime
-        }.count
+        // DEL-240: GESAMTE Historie, nicht ein Fenster vor der Pause. Die
+        // erste Fassung zaehlte die 28 Tage vor der letzten Kraft-Session und
+        // hat damit jeden ausgeschlossen, der vor der Pause einen ruhigen
+        // Monat hatte — also gerade den Rueckkehrer. Aufgefallen an echten
+        // Daten: eine Kraft-Session, danach nur Laeufe, 20 Tage Luecke, keine
+        // Frage.
+        let priorStrengthSessions = strengthSessions.count
 
         let suppressedRaw = defaults.integer(forKey: suppressedUntilGapKey)
         let suppressed = suppressedRaw > 0 ? suppressedRaw : nil
@@ -126,11 +127,23 @@ public enum AbsenceDeload {
         guard ComebackAdvisor.shouldSuggest(
             gapDays: gapDays,
             medianGap: median,
-            sessionsBeforeGap: sessionsBeforeGap,
+            priorStrengthSessionCount: priorStrengthSessions,
             suppressedUntilGapDays: suppressed
         ) else { return nil }
 
         let prescription = ComebackAdvisor.prescription(forGapDays: gapDays)
+
+        // DEL-240: Nicht fragen, wenn die Antwort nichts bewirken kann. Geprueft
+        // wird mit der GROESSTEN waehlbaren Stufe: bliebe selbst dort alles
+        // beim Alten (keine Arbeitsgewichte im Plan, oder alles schon am
+        // relativen Boden), waere die Rueckfrage eine leere Zeremonie.
+        // Bei `needsRetest` gibt es ohnehin keinen Faktor — dort ist der
+        // Hinweis selbst der Zweck.
+        if !prescription.needsRetest {
+            let largest = ComebackAdvisor.selectableReductions.max() ?? 0.3
+            guard !preview(in: context, factor: 1.0 - largest).isEmpty else { return nil }
+        }
+
         return Assessment(
             gapDays: gapDays,
             recommendedFactor: prescription.compoundFactor,

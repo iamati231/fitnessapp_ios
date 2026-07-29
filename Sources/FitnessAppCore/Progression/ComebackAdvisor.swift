@@ -47,17 +47,30 @@ public enum ComebackAdvisor {
     ///     Mindestens 3 verlangt, weil nur dann ueberhaupt eine Last existiert,
     ///     von der sich reduzieren laesst. Wer noch nie regelmaessig trainiert
     ///     hat, braucht kein Comeback, sondern einen Einstieg.
+    ///
+    ///     **DEL-240: ueber die GESAMTE Historie gezaehlt, nicht in einem
+    ///     Fenster vor der Pause.** Die erste Fassung nahm die 28 Tage vor der
+    ///     letzten Kraft-Session. Das verwechselt "Anfaenger" mit "hatte
+    ///     letzten Monat wenig Zeit": wer zwei Jahre trainiert hat, dann einen
+    ///     ruhigen Monat, dann drei Wochen Pause, ist genau der Fall, fuer den
+    ///     die Rueckfrage gedacht ist — und wurde von der alten Regel
+    ///     ausgeschlossen. Aufgefallen an echten Nutzerdaten: eine
+    ///     Kraft-Session am 9., danach nur Laeufe, 20 Tage Luecke, keine Frage.
     ///   - suppressedUntilGapDays: Hat der Nutzer abgelehnt, merkt sich die App
     ///     die damalige Luecke. Erneut gefragt wird nur bei einer DEUTLICH
     ///     laengeren Pause — kein Nachbohren.
+    /// Mindestzahl an Kraft-Sessions in der GESAMTEN Historie, damit von einer
+    /// etablierten Last gesprochen werden kann.
+    public static let minimumPriorStrengthSessions = 3
+
     public static func shouldSuggest(
         gapDays: Int,
         medianGap: Double?,
-        sessionsBeforeGap: Int,
+        priorStrengthSessionCount: Int,
         suppressedUntilGapDays: Int? = nil
     ) -> Bool {
         guard gapDays >= gapThresholdDays(medianGapOfLastSessions: medianGap) else { return false }
-        guard sessionsBeforeGap >= 3 else { return false }
+        guard priorStrengthSessionCount >= minimumPriorStrengthSessions else { return false }
         if let suppressed = suppressedUntilGapDays, gapDays <= suppressed { return false }
         return true
     }
