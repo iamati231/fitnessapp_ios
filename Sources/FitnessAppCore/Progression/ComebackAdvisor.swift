@@ -71,7 +71,13 @@ public enum ComebackAdvisor {
     ) -> Bool {
         guard gapDays >= gapThresholdDays(medianGapOfLastSessions: medianGap) else { return false }
         guard priorStrengthSessionCount >= minimumPriorStrengthSessions else { return false }
-        if let suppressed = suppressedUntilGapDays, gapDays <= suppressed { return false }
+        // DEL-241: Stufen-basiert statt `gapDays <= suppressed` — siehe
+        // `isSuppressed`. Die alte Fassung fragte am Tag nach der Ablehnung
+        // wieder, weil die Luecke waechst.
+        if let declined = suppressedUntilGapDays,
+           isSuppressed(gapDays: gapDays, declinedAtGapDays: declined) {
+            return false
+        }
         return true
     }
 
@@ -130,6 +136,9 @@ public enum ComebackAdvisor {
         switch gapDays {
         case ..<14:
             return .none
+        // DEL-241: Die isolationFactor-Werte unten sind identisch zu
+        // `isolationFactor(forCompoundFactor:)` — ein Test haelt das fest,
+        // damit Tabelle und Ableiter nicht auseinanderlaufen.
         case 14...20:
             return Prescription(compoundFactor: 0.95, isolationFactor: 1.0,
                                 firstSessionSetDelta: -1, rirDelta: 1,
@@ -158,6 +167,57 @@ public enum ComebackAdvisor {
                                 firstSessionSetDelta: -2, rirDelta: 2,
                                 repsFloorDelta: -2, rampSteps: 3, needsRetest: true)
         }
+    }
+
+    // MARK: - DEL-241 Isolation wird milder reduziert
+
+    /// Um wie viele Prozentpunkte Isolations-Uebungen WENIGER reduziert werden
+    /// als Verbund-Uebungen.
+    ///
+    /// Begruendung: eine schwere Kniebeuge fordert Technik, Rumpf und
+    /// Bindegewebe; ein Bizeps-Curl nicht. Nach einer Pause gibt genau das
+    /// zuerst nach, nicht die Muskelkraft — deshalb trifft die Reduktion die
+    /// Verbundlifts staerker.
+    public static let isolationRelief = 0.05
+
+    /// Isolations-Faktor, abgeleitet aus dem Verbund-Faktor.
+    ///
+    /// Reproduziert exakt die Werte der Verordnungs-Tabelle (per Test
+    /// abgesichert), gilt aber auch fuer eine vom Nutzer FREI gewaehlte Stufe:
+    /// waehlt er minus 15 % fuer die Verbundlifts, bekommen Isolations-Uebungen
+    /// minus 10 %. Bei minus 5 % bleibt Isolation unangetastet — weniger als
+    /// eine Scheibe waere ohnehin nicht darstellbar.
+    public static func isolationFactor(forCompoundFactor factor: Double) -> Double {
+        guard factor < 1.0 else { return 1.0 }
+        let compoundReduction = 1.0 - factor
+        return 1.0 - max(0, compoundReduction - isolationRelief)
+    }
+
+    /// Passender Faktor fuer eine konkrete Uebung.
+    public static func factor(forCompoundFactor factor: Double, isCompound: Bool) -> Double {
+        isCompound ? factor : isolationFactor(forCompoundFactor: factor)
+    }
+
+    // MARK: - DEL-241 Ablehnung: wann wird erneut gefragt?
+
+    /// Ist die Rueckfrage nach einer Ablehnung noch unterdrueckt?
+    ///
+    /// **Warum das nicht `gapDays <= declined` ist.** Genau so stand es
+    /// zuerst da — und weil die Luecke waehrend einer Pause jeden Tag waechst,
+    /// war die Frage am Tag nach der Ablehnung sofort wieder faellig. Aus
+    /// "nicht nachbohren" wurde taegliches Nachbohren.
+    ///
+    /// Richtig ist: erneut fragen erst, wenn die Empfehlung inhaltlich STAERKER
+    /// waere als die abgelehnte — also wenn die Pause eine neue Stufe der
+    /// Verordnungs-Tabelle erreicht hat. Innerhalb derselben Stufe gibt es
+    /// nichts Neues zu sagen.
+    public static func isSuppressed(gapDays: Int, declinedAtGapDays: Int) -> Bool {
+        let current = prescription(forGapDays: gapDays)
+        let declined = prescription(forGapDays: declinedAtGapDays)
+        // Der Wiedertest-Hinweis ist eine andere Aussage als ein Faktor und
+        // darf eine frueher abgelehnte Reduktion ueberstimmen.
+        if current.needsRetest && !declined.needsRetest { return false }
+        return current.compoundFactor >= declined.compoundFactor
     }
 
     // MARK: - DEL-239 Auswahl und Rundung

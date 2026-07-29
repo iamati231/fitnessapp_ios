@@ -170,7 +170,13 @@ public enum AbsenceDeload {
             guard let current = exercise.suggestedWeight, current > 0 else { return nil }
             let reduced = ComebackAdvisor.reducedWeight(
                 current: current,
-                factor: factor,
+                // DEL-241: Isolations-Uebungen werden milder reduziert. Die
+                // Vorschau zeigt das mit echten Zahlen, damit der Nutzer nicht
+                // raetselt, warum nicht ueberall dasselbe abgezogen wird.
+                factor: ComebackAdvisor.factor(
+                    forCompoundFactor: factor,
+                    isCompound: exercise.isCompound
+                ),
                 increment: increment(for: exercise)
             )
             guard reduced < current else { return nil }
@@ -195,7 +201,12 @@ public enum AbsenceDeload {
             guard let current = exercise.suggestedWeight, current > 0 else { continue }
             let reduced = ComebackAdvisor.reducedWeight(
                 current: current,
-                factor: factor,
+                // DEL-241: derselbe Faktor-Ableiter wie in `preview` — die
+                // Vorschau muss zeigen, was hier auch passiert.
+                factor: ComebackAdvisor.factor(
+                    forCompoundFactor: factor,
+                    isCompound: exercise.isCompound
+                ),
                 increment: increment(for: exercise)
             )
             guard reduced < current else { continue }

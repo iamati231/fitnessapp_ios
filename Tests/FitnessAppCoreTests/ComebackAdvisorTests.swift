@@ -258,6 +258,92 @@ final class ComebackAdvisorTests: XCTestCase {
         )
     }
 
+    // MARK: - DEL-241 Isolation milder
+
+    /// Der abgeleitete Isolations-Faktor MUSS die Verordnungs-Tabelle
+    /// reproduzieren — sonst laufen Tabelle und Ableiter auseinander und der
+    /// Nutzer bekommt je nach Pfad andere Zahlen.
+    func testIsolationFactorMatchesPrescriptionTable() {
+        for gap in [14, 20, 21, 29, 30, 59, 60, 89, 90, 179] {
+            let p = ComebackAdvisor.prescription(forGapDays: gap)
+            XCTAssertEqual(
+                ComebackAdvisor.isolationFactor(forCompoundFactor: p.compoundFactor),
+                p.isolationFactor,
+                accuracy: 0.0001,
+                "bei \(gap) Tagen weicht der Ableiter von der Tabelle ab"
+            )
+        }
+    }
+
+    /// Auch fuer eine frei gewaehlte Stufe: Verbund minus 15 % bedeutet
+    /// Isolation minus 10 %.
+    func testIsolationGetsFivePointsLessForCustomChoice() {
+        XCTAssertEqual(ComebackAdvisor.isolationFactor(forCompoundFactor: 0.85), 0.90, accuracy: 0.0001)
+        XCTAssertEqual(ComebackAdvisor.isolationFactor(forCompoundFactor: 0.70), 0.75, accuracy: 0.0001)
+    }
+
+    /// Bei minus 5 % bleibt Isolation unangetastet — weniger als eine Scheibe
+    /// waere nicht darstellbar.
+    func testSmallestReductionLeavesIsolationAlone() {
+        XCTAssertEqual(ComebackAdvisor.isolationFactor(forCompoundFactor: 0.95), 1.0, accuracy: 0.0001)
+        XCTAssertEqual(ComebackAdvisor.isolationFactor(forCompoundFactor: 1.0), 1.0, accuracy: 0.0001)
+    }
+
+    func testFactorPicksTheRightAxisPerExercise() {
+        XCTAssertEqual(
+            ComebackAdvisor.factor(forCompoundFactor: 0.85, isCompound: true), 0.85, accuracy: 0.0001
+        )
+        XCTAssertEqual(
+            ComebackAdvisor.factor(forCompoundFactor: 0.85, isCompound: false), 0.90, accuracy: 0.0001
+        )
+    }
+
+    /// Isolation darf nie STAERKER reduziert werden als Verbund.
+    func testIsolationIsNeverReducedMoreThanCompoundForAnyChoice() {
+        for reduction in ComebackAdvisor.selectableReductions {
+            let compound = 1.0 - reduction
+            XCTAssertGreaterThanOrEqual(
+                ComebackAdvisor.isolationFactor(forCompoundFactor: compound), compound,
+                "bei -\(Int(reduction * 100)) % ist Isolation staerker reduziert"
+            )
+        }
+    }
+
+    // MARK: - DEL-241 Ablehnung
+
+    /// Der gemeldete Fall: abgelehnt bei 20 Tagen. Am naechsten Tag darf NICHT
+    /// erneut gefragt werden — die alte Regel (gapDays <= declined) hat genau
+    /// das getan, weil die Luecke waechst.
+    func testDeclineIsNotReAskedTheNextDay() {
+        XCTAssertTrue(ComebackAdvisor.isSuppressed(gapDays: 20, declinedAtGapDays: 20))
+        XCTAssertTrue(ComebackAdvisor.isSuppressed(gapDays: 21 - 1, declinedAtGapDays: 20))
+        // 14...20 ist eine Stufe: innerhalb bleibt es unterdrueckt.
+        XCTAssertTrue(ComebackAdvisor.isSuppressed(gapDays: 16, declinedAtGapDays: 20))
+    }
+
+    /// Erreicht die Pause eine STAERKERE Stufe, wird erneut gefragt.
+    func testStrongerBucketReArmsTheQuestion() {
+        // 20 Tage = -5 %, 21 Tage = -10 % -> neue Aussage, also fragen.
+        XCTAssertFalse(ComebackAdvisor.isSuppressed(gapDays: 21, declinedAtGapDays: 20))
+        XCTAssertFalse(ComebackAdvisor.isSuppressed(gapDays: 60, declinedAtGapDays: 20))
+    }
+
+    /// Der Wiedertest-Hinweis ist eine andere Aussage als ein Faktor und darf
+    /// eine frueher abgelehnte Reduktion ueberstimmen.
+    func testRetestAdviceOverridesAnEarlierDecline() {
+        XCTAssertFalse(ComebackAdvisor.isSuppressed(gapDays: 200, declinedAtGapDays: 100))
+    }
+
+    /// Und die Kombination in shouldSuggest.
+    func testSuggestRespectsBucketBasedSuppression() {
+        XCTAssertFalse(ComebackAdvisor.shouldSuggest(
+            gapDays: 18, medianGap: 2, priorStrengthSessionCount: 10, suppressedUntilGapDays: 20
+        ))
+        XCTAssertTrue(ComebackAdvisor.shouldSuggest(
+            gapDays: 25, medianGap: 2, priorStrengthSessionCount: 10, suppressedUntilGapDays: 20
+        ))
+    }
+
     // MARK: - DEL-239 Rasterung und Auswahl
 
     func testReductionSnapsDownToIncrement() {
