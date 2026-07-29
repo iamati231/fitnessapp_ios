@@ -93,8 +93,23 @@ public enum CoachingContext: String, Sendable {
     /// gute Idee.
     case cnsOverloaded
     /// Frische Bestleistung im letzten Workout.
+    ///
+    /// **DEL-242 — NICHT loeschen, obwohl kein Emitter existiert.** Keiner der
+    /// drei Kontext-Waehler in `DashboardView` liefert diesen Case; die
+    /// Auswahl passiert in `activeCoachingContext`. Es liegen aber je acht
+    /// Catalog-Keys (`coaching.newPR.*` bzw. `coaching.plateauDetected.*`)
+    /// dreisprachig fertig im Catalog und warten nur auf den Trigger.
+    ///
+    /// Wichtig: `dead_catalog_v3.py` wuerde diese Keys nach einem Loeschen
+    /// NICHT als unbenutzt melden — sein Interpolations-Muster matcht nur das
+    /// Praefix `coaching.`. Es gibt hier also kein Sicherheitsnetz, das den
+    /// Fehler auffangen wuerde.
+    ///
+    /// Die Datenquelle fuer `newPR` liegt mit `PersonalRecordSync.recordPRs`
+    /// bereits vor — Verdrahten ist die bessere Option als Loeschen.
     case newPR
-    /// Stagnation ueber mehrere Wochen erkannt.
+    /// Stagnation ueber mehrere Wochen erkannt. Siehe `newPR`: kein Emitter,
+    /// aber fertige Catalog-Keys und kein Audit-Netz.
     case plateauDetected
 
     // MARK: - DEL-206 Goal-Based Daily Coaching (Matrix-Kontexte)

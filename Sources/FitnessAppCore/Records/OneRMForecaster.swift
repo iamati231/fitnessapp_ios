@@ -117,13 +117,12 @@ public enum OneRMForecaster {
         return OneRMSample(date: targetDate, oneRM: value)
     }
 
-    /// True wenn die jüngsten Daten zu wackelig sind, um eine ehrliche
-    /// Projektion zu erlauben. UI sollte den Forecast dann ausblenden,
-    /// nicht "wahrscheinlich falsch" anzeigen.
-    public static func isUnreliable(samples: [OneRMSample]) -> Bool {
-        let points = Array(samples.sorted { $0.date < $1.date }.suffix(recentSamplesWindow))
-        return isUnreliable(points: points)
-    }
+    // DEL-242: Die public `isUnreliable(samples:)`-Ueberladung ist entfernt —
+    // repo-weit ohne Aufrufer. Der interne Aufruf weiter oben lautet
+    // `isUnreliable(points:)` und traf immer die private Fassung unten; die
+    // Argument-Labels trennen die beiden Overloads sauber, es gab also keine
+    // versteckte Nutzung. `projectOneRM` prueft die Verlaesslichkeit selbst,
+    // die UI blendet den Forecast damit ohnehin schon aus.
 
     private static func isUnreliable(points: [OneRMSample]) -> Bool {
         guard points.count >= 3 else { return false }

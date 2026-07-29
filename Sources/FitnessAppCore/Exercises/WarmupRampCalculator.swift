@@ -33,6 +33,12 @@ public struct WarmupStep: Equatable, Sendable {
 public enum WarmupRampCalculator {
 
     /// Standard-Stangengewicht (kg). Mirrors PlateCalculator-Konvention.
+    ///
+    /// DEL-242: `public` ist PFLICHT, auch wenn kein externer Aufrufer
+    /// existiert — die Konstante ist Default-Argument von `ramp(...)`, und
+    /// Default-Argumente werden an der AUFRUFSTELLE eingesetzt. Auf `internal`
+    /// reduziert bricht der Build von FitnessAppData/FitnessAppUI, nicht der
+    /// von Core. Gleiches gilt fuer `heavySingleThresholdKg`.
     public static let defaultBarKg: Double = 20.0
 
     /// Prozent-Stufen mit zugehörigen Reps, aufsteigend. Der 90%-Schritt

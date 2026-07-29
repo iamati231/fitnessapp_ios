@@ -66,11 +66,11 @@ public enum BodyCalculations {
         weightKg * (1.0 - bodyFatPercentage / 100.0)
     }
 
-    /// Absolute fat mass in kg — useful for fat-loss tracking where progress is measured
-    /// by absolute fat-mass change rather than percentage swings.
-    public static func fatMass(weightKg: Double, bodyFatPercentage: Double) -> Double {
-        weightKg * (bodyFatPercentage / 100.0)
-    }
+    // DEL-242: `fatMass` entfernt — nur ein Test rief es auf. Es gibt kein
+    // Feld dafuer in `DerivedBodyMetrics`, keine CSV-Spalte und keinen Aufruf
+    // in `makeDerived`. Verlustfrei rekonstruierbar als
+    // `weightKg - fatFreeMass(...)`, falls die Fettmasse je angezeigt werden
+    // soll.
 
     // MARK: FFMI / normalized FFMI
 

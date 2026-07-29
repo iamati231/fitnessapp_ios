@@ -73,10 +73,6 @@ final class BodyCalculationsTests: XCTestCase {
         XCTAssertEqual(BodyCalculations.fatFreeMass(weightKg: 80, bodyFatPercentage: 20), 64.0, accuracy: 1e-12)
     }
 
-    func testFatMass() {
-        XCTAssertEqual(BodyCalculations.fatMass(weightKg: 80, bodyFatPercentage: 20), 16.0, accuracy: 1e-12)
-    }
-
     func testFfmiExact() {
         // 64.8 kg / 1.8^2 = 64.8 / 3.24 = 20.0
         XCTAssertEqual(BodyCalculations.ffmi(fatFreeMassKg: 64.8, heightCm: 180), 20.0, accuracy: 1e-12)

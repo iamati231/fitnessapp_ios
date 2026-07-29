@@ -36,14 +36,17 @@ public enum EnvironmentType: String, Codable, Sendable, CaseIterable {
     case homeGym
     case noEquipment
 
-    /// Equipment types available in this environment.
-    public var allowedEquipment: [Equipment] {
-        switch self {
-        case .gym:         return Equipment.allCases
-        case .homeGym:     return [.barbell, .dumbbell, .bodyweight, .kettlebell, .band]
-        case .noEquipment: return [.bodyweight, .band]
-        }
-    }
+    // DEL-242: `allowedEquipment` entfernt. Es hatte repo-weit genau eine
+    // Referenz — die eigene Deklaration — UND war inhaltlich die abweichende
+    // von drei Fassungen derselben Regel: nur hier war `.barbell` im Home-Gym
+    // erlaubt. Die beiden LEBENDEN Fassungen (`ExerciseLibraryData.isEquipment`
+    // und `OnboardingView.defaultEquipment(for:)`) fuehren die Langhantel dort
+    // nicht. Bewusst nicht "wieder verdrahtet", sondern gestrichen: die
+    // Wahrheit steht schon zweimal woanders.
+    //
+    // Enum und Cases bleiben unangetastet — die RawValues sind persistiert
+    // (UserBodyProfile.environment, TrainingPlan.targetEnvironment) und
+    // CSV-Spalten.
 
     /// True when a user training in `self` can physically execute a plan
     /// designed for `planEnv`. Mirrors Android's `canExecutePlan`.

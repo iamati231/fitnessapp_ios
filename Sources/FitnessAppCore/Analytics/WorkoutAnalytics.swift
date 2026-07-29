@@ -21,10 +21,14 @@ public enum WorkoutAnalytics {
         attempts.reduce(0.0) { $0 + $1.volume }
     }
 
-    /// Number of attempts that count as "weighted lifts" — excludes cardio,
-    /// isometric (time-based), and bodyweight-only. Used as the basis for
-    /// session-set-count displays where pure cardio shouldn't inflate the number.
-    public static func liftSetCount(in attempts: [LiftAttempt]) -> Int {
-        attempts.filter { !$0.isCardio && !$0.isTimeBased && $0.weightKg > 0 }.count
-    }
+    // DEL-242: `liftSetCount` entfernt — nur ein Test rief es auf, kein
+    // Produktivcode.
+    //
+    // Bewusst NICHT verdrahtet, obwohl es verlockend aussah: die verbindliche
+    // Zaehlregel ist `SessionAggregator.totals`, und die zaehlt laut ihrer
+    // Doku Bodyweight- UND Cardio-Saetze MIT. `liftSetCount` filterte genau
+    // die heraus. Verdrahtet haette die App zwei widerspruechliche
+    // Satz-Begriffe — auf demselben Screen, weil daneben `session.totalSets`
+    // steht (WorkoutHistoryView, DashboardView). Ein Satz muss ueberall
+    // dasselbe bedeuten.
 }

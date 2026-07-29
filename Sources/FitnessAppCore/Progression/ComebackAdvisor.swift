@@ -83,7 +83,17 @@ public enum ComebackAdvisor {
 
     // MARK: - Verordnung
 
-    /// Wie stark reduziert wird und ueber wie viele Stufen es zurueckgeht.
+    /// Wie stark reduziert wird.
+    ///
+    /// DEL-242: Die Volumen- und Rampen-Felder sind entfernt
+    /// (`firstSessionSetDelta`, `rirDelta`, `repsFloorDelta`, `rampSteps`) —
+    /// ebenso `advance`, `verdict` und `StepVerdict`. Sie stammten aus DEL-235
+    /// und wurden nie verdrahtet: DEL-239 hat das Design umgedreht, seither ist
+    /// die Reduktion der neue Stand und `ProgressionApplicator` traegt die
+    /// Gewichte ueber die naechsten Sessions zurueck nach oben. Eine zweite
+    /// Rampen-Mechanik daneben waere ein widerspruechlicher zweiter Schreiber
+    /// gewesen. Gebaut-aber-nicht-verdrahtet ist die schlimmste Sorte Code: es
+    /// liest sich wie eine Zusicherung, die es nicht gibt.
     public struct Prescription: Sendable, Equatable {
         /// Faktor auf das Arbeitsgewicht bei Verbund-Uebungen (1.0 = keine
         /// Reduktion).
@@ -92,30 +102,13 @@ public enum ComebackAdvisor {
         /// Bizeps-Curls sind technisch und strukturell weniger fordernd als
         /// eine schwere Kniebeuge.
         public let isolationFactor: Double
-        /// Wie viele Saetze in der ERSTEN Session wegfallen.
-        public let firstSessionSetDelta: Int
-        /// Zusaetzlicher RIR-Puffer — der Nutzer soll bewusst weiter vom
-        /// Muskelversagen wegbleiben.
-        public let rirDelta: Int
-        /// Absenkung der unteren Wiederholungsgrenze.
-        ///
-        /// Nicht kosmetisch: `ProgressionEvaluator` urteilt gegen die untere
-        /// Grenze und vergibt ein Deload-Verdikt, sobald ein Satz darunter
-        /// liegt. Ohne abgesenkten Boden wuerde die Comeback-Session
-        /// systematisch Abwaerts-Verdikte erzeugen und die Reduktion damit
-        /// zementieren.
-        public let repsFloorDelta: Int
-        /// Ueber wie viele qualifizierte Sessions es zurueck auf Ausgangslast
-        /// geht.
-        public let rampSteps: Int
         /// Ab dieser Pausenlaenge ist ein Wiedertest sinnvoller als eine
         /// geschaetzte Reduktion — die alte Last ist keine belastbare
         /// Referenz mehr.
         public let needsRetest: Bool
 
         public static let none = Prescription(
-            compoundFactor: 1.0, isolationFactor: 1.0, firstSessionSetDelta: 0,
-            rirDelta: 0, repsFloorDelta: 0, rampSteps: 0, needsRetest: false
+            compoundFactor: 1.0, isolationFactor: 1.0, needsRetest: false
         )
     }
 
@@ -130,42 +123,34 @@ public enum ComebackAdvisor {
     /// Die Prozentwerte folgen der Detraining-Literatur: Maximalkraft haelt
     /// sich mehrere Wochen bemerkenswert gut (Muscle Memory), waehrend
     /// Belastungstoleranz von Sehnen und Bindegewebe schneller nachgibt.
-    /// Deshalb ist die Lastreduktion moderat, die Volumen- und RIR-Reduktion
-    /// dafuer deutlich — genau umgekehrt zur naiven Erwartung.
+    /// Deshalb ist die Lastreduktion moderat gehalten.
+    ///
+    /// DEL-242 — offener Punkt, der mit den Rampen-Feldern verschwunden ist und
+    /// hier festgehalten wird, damit er nicht vergessen wird: Eine Reduktion
+    /// des Volumens (weniger Saetze) und ein groesserer RIR-Puffer waeren
+    /// trainingswissenschaftlich MINDESTENS so wichtig wie die Lastreduktion.
+    /// Zusaetzlich gilt: `ProgressionEvaluator` urteilt gegen die untere
+    /// Wiederholungsgrenze und vergibt ein Abwaerts-Verdikt, sobald ein Satz
+    /// darunter liegt — wer nach der Pause mit reduzierter Last weniger
+    /// Wiederholungen schafft, bekommt derzeit also eine weitere Absenkung
+    /// obendrauf. Dieser Schutz ist NICHT aktiv. Beides gehoert in ein eigenes
+    /// Ticket, nicht in halb gebaute Felder, die niemand liest.
     public static func prescription(forGapDays gapDays: Int) -> Prescription {
-        switch gapDays {
-        case ..<14:
-            return .none
-        // DEL-241: Die isolationFactor-Werte unten sind identisch zu
+        // DEL-241: Die isolationFactor-Werte sind identisch zu
         // `isolationFactor(forCompoundFactor:)` — ein Test haelt das fest,
         // damit Tabelle und Ableiter nicht auseinanderlaufen.
-        case 14...20:
-            return Prescription(compoundFactor: 0.95, isolationFactor: 1.0,
-                                firstSessionSetDelta: -1, rirDelta: 1,
-                                repsFloorDelta: -1, rampSteps: 2, needsRetest: false)
-        case 21...29:
-            return Prescription(compoundFactor: 0.90, isolationFactor: 0.95,
-                                firstSessionSetDelta: -1, rirDelta: 1,
-                                repsFloorDelta: -1, rampSteps: 2, needsRetest: false)
-        case 30...59:
-            return Prescription(compoundFactor: 0.85, isolationFactor: 0.90,
-                                firstSessionSetDelta: -2, rirDelta: 1,
-                                repsFloorDelta: -2, rampSteps: 3, needsRetest: false)
-        case 60...89:
-            return Prescription(compoundFactor: 0.80, isolationFactor: 0.85,
-                                firstSessionSetDelta: -2, rirDelta: 2,
-                                repsFloorDelta: -2, rampSteps: 5, needsRetest: false)
-        case 90...179:
-            return Prescription(compoundFactor: 0.75, isolationFactor: 0.80,
-                                firstSessionSetDelta: -2, rirDelta: 2,
-                                repsFloorDelta: -2, rampSteps: 6, needsRetest: false)
+        switch gapDays {
+        case ..<14:      return .none
+        case 14...20:    return Prescription(compoundFactor: 0.95, isolationFactor: 1.0,  needsRetest: false)
+        case 21...29:    return Prescription(compoundFactor: 0.90, isolationFactor: 0.95, needsRetest: false)
+        case 30...59:    return Prescription(compoundFactor: 0.85, isolationFactor: 0.90, needsRetest: false)
+        case 60...89:    return Prescription(compoundFactor: 0.80, isolationFactor: 0.85, needsRetest: false)
+        case 90...179:   return Prescription(compoundFactor: 0.75, isolationFactor: 0.80, needsRetest: false)
         default:
             // Ab einem halben Jahr ist die alte Last Geschichte. Ein
             // geschaetzter Faktor waere Zahlenmystik; hier gehoert ein
-            // Wiedertest hin. Volumen und RIR werden trotzdem entschaerft.
-            return Prescription(compoundFactor: 1.0, isolationFactor: 1.0,
-                                firstSessionSetDelta: -2, rirDelta: 2,
-                                repsFloorDelta: -2, rampSteps: 3, needsRetest: true)
+            // Wiedertest hin.
+            return Prescription(compoundFactor: 1.0, isolationFactor: 1.0, needsRetest: true)
         }
     }
 
@@ -262,75 +247,18 @@ public enum ComebackAdvisor {
         return max(snapped, increment, relativeFloor > increment ? relativeFloor : increment)
     }
 
-    /// Aendert diese Reduktion das Gewicht ueberhaupt, nachdem gerastet wurde?
-    ///
-    /// Die Rueckfrage soll nicht behaupten, etwas zu tun, was auf dem Raster
-    /// verpufft. Bei sehr leichten Gewichten oder sehr kleinen Prozentsaetzen
-    /// ist das der Fall.
-    public static func changesAnything(current: Double, factor: Double, increment: Double) -> Bool {
-        reducedWeight(current: current, factor: factor, increment: increment) < current
-    }
+    // DEL-242: `changesAnything` entfernt — ohne Aufrufer. Die wirksame Regel
+    // steht als `guard reduced < current` in `AbsenceDeload.preview` und
+    // `.apply`, und zwar mit dem dort schon berechneten Wert. Ein Aufruf hier
+    // haette `reducedWeight` pro Uebung ein zweites Mal gerechnet.
 
-    // MARK: - Rückkehr
-
-    /// Naechste Rampenstufe. Fuehrt in `stepsRemaining` Schritten linear auf
-    /// 1.0 zurueck.
-    ///
-    /// Die letzte Stufe setzt exakt 1.0 statt sich asymptotisch zu naehern —
-    /// sonst blieben Restfaktoren wie 0.998 stehen und die Reduktion waere
-    /// formal nie beendet.
-    public static func advance(factor: Double, stepsRemaining: Int) -> (factor: Double, stepsRemaining: Int) {
-        guard stepsRemaining > 1 else { return (1.0, 0) }
-        let step = (1.0 - factor) / Double(stepsRemaining)
-        return (min(1.0, factor + step), stepsRemaining - 1)
-    }
-
-    /// Zaehlt eine Session als Fortschritt auf der Rampe?
-    ///
-    /// `.hold` wiederholt die Stufe, statt sie zu vergeben. Das
-    /// Feeling-Veto spiegelt die bestehende Progressions-Regel und verhindert
-    /// den Widerspruch, dass die Rampe eine Stufe freigibt, waehrend der Coach
-    /// am naechsten Tag Ueberlastung meldet.
-    public enum StepVerdict: Sendable, Equatable {
-        case advance
-        case hold(reason: HoldReason)
-
-        public enum HoldReason: String, Sendable {
-            /// Weniger Saetze geloggt als vorgesehen.
-            case incompleteVolume
-            /// Wiederholungen unter dem (bereits abgesenkten) Boden.
-            case repsBelowFloor
-            /// Naeher am Versagen als vorgesehen.
-            case tooCloseToFailure
-            /// Session subjektiv sehr hart.
-            case sessionFeltHard
-        }
-    }
-
-    public static func verdict(
-        loggedSetCount: Int,
-        targetSetCount: Int,
-        reps: [Int],
-        repsFloor: Int,
-        medianRir: Double,
-        targetRir: Double,
-        sessionFeeling: Int?
-    ) -> StepVerdict {
-        // Reihenfolge ist Absicht: das subjektive Veto zuerst, damit der
-        // Nutzer nicht auf die naechste Stufe geschoben wird, obwohl er die
-        // Session als sehr hart gemeldet hat.
-        if let sessionFeeling, sessionFeeling >= 4 {
-            return .hold(reason: .sessionFeltHard)
-        }
-        if loggedSetCount < targetSetCount {
-            return .hold(reason: .incompleteVolume)
-        }
-        if let lowest = reps.min(), lowest < repsFloor {
-            return .hold(reason: .repsBelowFloor)
-        }
-        if medianRir < targetRir {
-            return .hold(reason: .tooCloseToFailure)
-        }
-        return .advance
-    }
+    // DEL-242: Der Rampen-Block (`advance`, `verdict`, `StepVerdict`) ist
+    // entfernt. Er war ohne Aufrufer und ist es geblieben, weil DEL-239 das
+    // Design umgedreht hat: die Reduktion ist der neue Stand,
+    // `ProgressionApplicator` traegt die Gewichte ueber die naechsten Sessions
+    // zurueck nach oben. Eine eigene Rampe daneben waere ein zweiter,
+    // widerspruechlicher Schreiber auf `suggestedWeight` gewesen.
+    //
+    // Falls die Rueckkehr je feiner gesteuert werden soll, gehoert sie an
+    // GENAU EINE Stelle — dieselbe, die auch die Progression schreibt.
 }

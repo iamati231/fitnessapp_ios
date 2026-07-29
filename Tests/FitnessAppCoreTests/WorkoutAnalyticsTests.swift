@@ -40,19 +40,6 @@ final class WorkoutAnalyticsTests: XCTestCase {
         XCTAssertEqual(WorkoutAnalytics.totalVolume(in: []), 0)
     }
 
-    // MARK: liftSetCount
-
-    func testLiftSetCountExcludesCardioAndTimeBased() {
-        let attempts = [
-            lift(80, 8),                       // counts
-            lift(80, 6),                       // counts
-            lift(0, 30, cardio: true),         // excluded — cardio
-            lift(0, 60, time: true),           // excluded — isometric
-            lift(0, 10)                        // excluded — weight zero (bodyweight)
-        ]
-        XCTAssertEqual(WorkoutAnalytics.liftSetCount(in: attempts), 2)
-    }
-
     // MARK: LiftAttempt.volume
 
     func testLiftAttemptVolumeProperty() {
