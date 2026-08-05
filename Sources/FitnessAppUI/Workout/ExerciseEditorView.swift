@@ -68,33 +68,39 @@ public struct ExerciseEditorView: View {
                     Text("editor.exercise.field.name", bundle: .module)
                 }
                     .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
                 Toggle(isOn: $exercise.isCardio) {
                     Text("editor.exercise.toggle.cardio", bundle: .module)
                 }
+                    .tint(Color.deltiqOrange)
                     .disabled(isReadOnly)
                     .onChange(of: exercise.isCardio) { _, isOn in
                         if isOn { exercise.isTimeBased = false }
                     }
+                    .listRowBackground(Color.Deltiq.surface)
                 Toggle(isOn: $exercise.isTimeBased) {
                     Text("editor.exercise.toggle.timeBased", bundle: .module)
                 }
+                    .tint(Color.deltiqOrange)
                     .disabled(isReadOnly)
                     .onChange(of: exercise.isTimeBased) { _, isOn in
                         if isOn { exercise.isCardio = false }
                     }
+                    .listRowBackground(Color.Deltiq.surface)
             } header: {
                 Text("editor.exercise.section.general", bundle: .module)
             } footer: {
                 if isReadOnly {
                     Text("editor.exercise.templateLocked", bundle: .module)
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                 } else {
                     Text("editor.exercise.general.footer", bundle: .module)
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                 }
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
 
             // DEL-159: Metadaten-Section fuer Custom-Uebungen (Zielmuskel +
             // Equipment + Compound). Nur fuer frei angelegte Uebungen (kein
@@ -116,6 +122,7 @@ public struct ExerciseEditorView: View {
                         }
                     }
                     .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
                     Stepper(value: $exercise.repsMin, in: 1...100) {
                         LabeledContent {
                             Text("\(exercise.repsMin)")
@@ -127,6 +134,7 @@ public struct ExerciseEditorView: View {
                         }
                     }
                     .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
                     Stepper(value: $exercise.repsMax, in: max(exercise.repsMin, 1)...200) {
                         LabeledContent {
                             Text("\(exercise.repsMax)")
@@ -141,9 +149,11 @@ public struct ExerciseEditorView: View {
                     .onChange(of: exercise.repsMin) { _, newMin in
                         if exercise.repsMax < newMin { exercise.repsMax = newMin }
                     }
+                    .listRowBackground(Color.Deltiq.surface)
                 } header: {
                     Text("editor.exercise.section.setsReps", bundle: .module)
                 }
+                .listRowSeparatorTint(Color.Deltiq.divider)
             }
 
             if sectionVisibility.cardioTargets {
@@ -159,12 +169,15 @@ public struct ExerciseEditorView: View {
                             Text("editor.exercise.rest", bundle: .module)
                         }
                     }
+                    .listRowBackground(Color.Deltiq.surface)
                     if sectionVisibility.targetRIR {
                         targetRIRSliderRow
+                            .listRowBackground(Color.Deltiq.surface)
                     }
                 } header: {
                     Text("editor.exercise.section.pauseRIR", bundle: .module)
                 }
+                .listRowSeparatorTint(Color.Deltiq.divider)
             }
 
             if sectionVisibility.suggestedWeight {
@@ -177,9 +190,11 @@ public struct ExerciseEditorView: View {
                               format: .number,
                               prompt: Text("editor.exercise.field.weightExample", bundle: .module))
                         .decimalKeyboard()
+                        .listRowBackground(Color.Deltiq.surface)
                 } header: {
                     Text("editor.exercise.section.suggestedWeight", bundle: .module)
                 }
+                .listRowSeparatorTint(Color.Deltiq.divider)
             }
 
             if sectionVisibility.smartProgression {
@@ -194,9 +209,11 @@ public struct ExerciseEditorView: View {
                           ),
                           axis: .vertical)
                     .lineLimit(2...6)
+                    .listRowBackground(Color.Deltiq.surface)
             } header: {
                 Text("editor.exercise.section.notes", bundle: .module)
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
 
             // DEL-160: Loeschen nur fuer Custom-Uebungen. System-Library-
             // Eintraege duerfen nicht entfernt werden.
@@ -212,9 +229,13 @@ public struct ExerciseEditorView: View {
                         }
                         .frame(maxWidth: .infinity)
                     }
+                    .listRowBackground(Color.Deltiq.surface)
                 }
+                .listRowSeparatorTint(Color.Deltiq.divider)
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(Color.Deltiq.background.ignoresSafeArea())
         // DEL-124: navigationTitle via displayName, damit Library-Uebungen
         // im EN/TR-Mode auch hier korrekt rendern.
         .navigationTitle(exercise.name.isEmpty
@@ -302,6 +323,7 @@ public struct ExerciseEditorView: View {
                 Text("customExercise.field.muscle", bundle: .module)
             }
             .disabled(isReadOnly)
+            .listRowBackground(Color.Deltiq.surface)
 
             Picker(selection: Binding(
                 get: { exercise.equipment ?? .bodyweight },
@@ -317,6 +339,7 @@ public struct ExerciseEditorView: View {
                 Text("customExercise.field.equipment", bundle: .module)
             }
             .disabled(isReadOnly)
+            .listRowBackground(Color.Deltiq.surface)
 
             Toggle(isOn: Binding(
                 get: { exercise.isCompound },
@@ -327,10 +350,13 @@ public struct ExerciseEditorView: View {
             )) {
                 Text("customExercise.field.compound", bundle: .module)
             }
+            .tint(Color.deltiqOrange)
             .disabled(isReadOnly)
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
             Text("customExercise.section.metadata", bundle: .module)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     /// DEL-163: schreibt eine Metadaten-Aenderung auf das/die passende(n)
@@ -360,6 +386,7 @@ public struct ExerciseEditorView: View {
                       format: .number,
                       prompt: Text("editor.exercise.field.distanceExample", bundle: .module))
                 .decimalKeyboard()
+                .listRowBackground(Color.Deltiq.surface)
             Stepper(value: Binding(
                 get: { exercise.targetDurationMinutes ?? 0 },
                 set: { exercise.targetDurationMinutes = $0 > 0 ? $0 : nil }
@@ -370,13 +397,16 @@ public struct ExerciseEditorView: View {
                     Text("editor.exercise.field.durationMin", bundle: .module)
                 }
             }
+            .listRowBackground(Color.Deltiq.surface)
             // DEL-155: Cardio-Equipment-Picker. `@Bindable` exercise →
             // direkter Binding auf die Computed-Property.
             CardioEquipmentPicker(selection: $exercise.cardioEquipment)
                 .disabled(isReadOnly)
+                .listRowBackground(Color.Deltiq.surface)
         } header: {
             Text("editor.exercise.section.cardioTarget", bundle: .module)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     private func rirString(_ rir: Float) -> String {
@@ -431,15 +461,20 @@ public struct ExerciseEditorView: View {
             Toggle(isOn: $exercise.smartProgressionEnabled) {
                 Text("editor.exercise.toggle.smartOverload", bundle: .module)
             }
+            .tint(Color.deltiqOrange)
+            .listRowBackground(Color.Deltiq.surface)
             if exercise.smartProgressionEnabled {
                 Toggle(isOn: $exercise.isCompound) {
                     Text("editor.exercise.toggle.compoundLift", bundle: .module)
                 }
+                .tint(Color.deltiqOrange)
+                .listRowBackground(Color.Deltiq.surface)
                 Picker("Inkrement", selection: stepBinding) {
                     ForEach(ProgressionStep.allCases, id: \.self) { step in
                         Text(step.label).tag(step)
                     }
                 }
+                .listRowBackground(Color.Deltiq.surface)
             }
         } header: {
             Text("Smart-Progression")
@@ -452,6 +487,7 @@ public struct ExerciseEditorView: View {
                     .font(.footnote)
             }
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     /// Footer-Wording erklaert die RIR-Schwelle. Wird je nach Compound-Toggle

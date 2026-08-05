@@ -65,6 +65,8 @@ struct ExerciseLibraryEditorSheet: View {
                     editableContent
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.Deltiq.background.ignoresSafeArea())
             .navigationTitle(titleText)
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -96,9 +98,11 @@ struct ExerciseLibraryEditorSheet: View {
                 String(localized: "picker.exercise.namePlaceholder", bundle: .module),
                 text: $name
             )
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
             Text("customExercise.section.name", bundle: .module)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
 
         Section {
             Picker(selection: $muscle) {
@@ -108,6 +112,7 @@ struct ExerciseLibraryEditorSheet: View {
             } label: {
                 Text("customExercise.field.muscle", bundle: .module)
             }
+            .listRowBackground(Color.Deltiq.surface)
             Picker(selection: $equipment) {
                 ForEach(Equipment.allCases, id: \.self) { e in
                     Text(e.localizedName).tag(e)
@@ -115,14 +120,18 @@ struct ExerciseLibraryEditorSheet: View {
             } label: {
                 Text("customExercise.field.equipment", bundle: .module)
             }
+            .listRowBackground(Color.Deltiq.surface)
             Toggle(isOn: $isCompound) {
                 Text("customExercise.field.compound", bundle: .module)
             }
+            .tint(Color.deltiqOrange)
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
             Text("customExercise.section.metadata", bundle: .module)
         } footer: {
             Text("customExercise.section.metadataFooter", bundle: .module)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     // MARK: Read-only (system templates)
@@ -135,21 +144,25 @@ struct ExerciseLibraryEditorSheet: View {
             } label: {
                 Text("customExercise.field.muscle", bundle: .module)
             }
+            .listRowBackground(Color.Deltiq.surface)
             LabeledContent {
                 Text(equipment.localizedName)
             } label: {
                 Text("customExercise.field.equipment", bundle: .module)
             }
+            .listRowBackground(Color.Deltiq.surface)
             LabeledContent {
                 Text(isCompound ? "common.yes" : "common.no", bundle: .module)
             } label: {
                 Text("customExercise.field.compound", bundle: .module)
             }
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
             Text("customExercise.section.metadata", bundle: .module)
         } footer: {
             Text("library.readOnlyFooter", bundle: .module)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     // MARK: Save

@@ -53,6 +53,7 @@ public struct DayPickerSheet: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
             }
+            .background(Color.Deltiq.background.ignoresSafeArea())
             .navigationTitle(Text("dayPicker.title", bundle: .module))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -73,10 +74,10 @@ public struct DayPickerSheet: View {
                 .font(.title2.weight(.semibold))
             Text(String(format: String(localized: "dayPicker.prompt", bundle: .module), requiredDayCount))
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
             Text("\(selected.count) von \(requiredDayCount) ausgewählt")
                 .font(.caption.monospacedDigit())
-                .foregroundStyle(selected.count == requiredDayCount ? Color.deltiqOrange : .secondary)
+                .foregroundStyle(selected.count == requiredDayCount ? Color.deltiqOrange : Color.Deltiq.textSecondary)
         }
     }
 
@@ -109,7 +110,7 @@ public struct DayPickerSheet: View {
                     .frame(width: 32, height: 32)
                     .background(
                         Circle()
-                            .fill(isSelected ? Color.deltiqOrange : Color.secondary.opacity(0.12))
+                            .fill(isSelected ? Color.deltiqOrange : Color.Deltiq.fill)
                     )
                     .foregroundStyle(isSelected ? .white : .primary)
                 Text(label)
@@ -127,7 +128,7 @@ public struct DayPickerSheet: View {
             .background(
                 RoundedRectangle(cornerRadius: 10)
                     .stroke(
-                        isSelected ? Color.deltiqOrange : Color.secondary.opacity(0.25),
+                        isSelected ? Color.deltiqOrange : Color.Deltiq.divider,
                         lineWidth: isSelected ? 1.5 : 1
                     )
             )
@@ -163,7 +164,7 @@ public struct DayPickerSheet: View {
             }
             .padding(.vertical, 14)
             .background(
-                (selected.count == requiredDayCount ? Color.deltiqOrange : Color.secondary.opacity(0.3))
+                (selected.count == requiredDayCount ? Color.deltiqOrange : Color.Deltiq.fill)
                     .gradient
             )
             .foregroundStyle(.white)

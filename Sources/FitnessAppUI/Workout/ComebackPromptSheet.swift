@@ -46,6 +46,8 @@ struct ComebackPromptSheet: View {
                 }
                 actionSection
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.Deltiq.background.ignoresSafeArea())
             .navigationTitle(Text("comeback.prompt.title", bundle: .module))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -75,11 +77,13 @@ struct ComebackPromptSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
                 Text("comeback.prompt.rationale", bundle: .module)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.vertical, 2)
+            .listRowBackground(Color.Deltiq.surface)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     /// Ab einem halben Jahr Pause verordnet der Advisor keinen Faktor mehr —
@@ -88,9 +92,11 @@ struct ComebackPromptSheet: View {
         Section {
             Text("comeback.prompt.retest", bundle: .module)
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
+                .listRowBackground(Color.Deltiq.surface)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     private var pickerSection: some View {
@@ -105,7 +111,9 @@ struct ComebackPromptSheet: View {
             #if os(iOS)
             .pickerStyle(.inline)
             #endif
+            .listRowBackground(Color.Deltiq.surface)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     @ViewBuilder
@@ -115,8 +123,9 @@ struct ComebackPromptSheet: View {
             if list.isEmpty {
                 Text("comeback.prompt.preview.none", bundle: .module)
                     .font(.caption)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.deltiqOrange)
                     .fixedSize(horizontal: false, vertical: true)
+                    .listRowBackground(Color.Deltiq.surface)
             } else {
                 // Nur die ersten fuenf — die Liste soll den Start nicht in eine
                 // Tabelle verwandeln.
@@ -128,21 +137,24 @@ struct ComebackPromptSheet: View {
                         Spacer()
                         Text("\(formatted(change.from)) → \(formatted(change.to))")
                             .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
                     }
                 }
+                .listRowBackground(Color.Deltiq.surface)
                 if list.count > 5 {
                     Text(String(
                         format: String(localized: "comeback.prompt.preview.more", bundle: .module),
                         list.count - 5
                     ))
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(Color.Deltiq.textTertiary)
+                    .listRowBackground(Color.Deltiq.surface)
                 }
             }
         } header: {
             Text("comeback.prompt.preview.header", bundle: .module)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     private var actionSection: some View {
@@ -160,6 +172,7 @@ struct ComebackPromptSheet: View {
                     }
                 }
                 .disabled(changes.isEmpty)
+                .listRowBackground(Color.Deltiq.surface)
             }
             Button(role: .cancel) {
                 onDecision(nil)
@@ -171,7 +184,9 @@ struct ComebackPromptSheet: View {
                     Spacer()
                 }
             }
+            .listRowBackground(Color.Deltiq.surface)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     // MARK: Formatierung

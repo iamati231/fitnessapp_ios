@@ -172,9 +172,8 @@ public struct GearListView: View {
 
 /// Gruppe B (Sheet): praesentiert per `.sheet`, Cancel/Fertig statt
 /// Zurueck-Navigation - bekommt bewusst KEIN DeltiqHeader (siehe Handoff-
-/// Regel "Sheets sind kein Fall fuer DeltiqHeader"). Volle Innenausstattungs-
-/// Konvertierung (Form -> Karten) laeuft gebuendelt mit den uebrigen Gruppe-
-/// B-Sheets; hier nur der Toggle-Tint-Fix, der sofort auffiel.
+/// Regel "Sheets sind kein Fall fuer DeltiqHeader"). Native Toolbar/Titel
+/// bleiben; die Form-Rows tragen jetzt die Deltiq-Karten-Flaeche.
 @available(iOS 17.0, macOS 14.0, *)
 private struct GearEditorView: View {
     enum Mode {
@@ -198,19 +197,23 @@ private struct GearEditorView: View {
         Form {
             Section {
                 TextField(String(localized: "gear.editor.field.name", bundle: .module), text: $name)
+                    .listRowBackground(Color.Deltiq.surface)
                 Picker(selection: $type) {
                     Text("gear.editor.type.shoe", bundle: .module).tag(GearType.shoe)
                     Text("gear.editor.type.bike", bundle: .module).tag(GearType.bike)
                 } label: {
                     Text("gear.editor.field.type", bundle: .module)
                 }
+                .listRowBackground(Color.Deltiq.surface)
                 Toggle(isOn: $isActive) {
                     Text("gear.editor.toggle.active", bundle: .module)
                 }
                 .tint(Color.deltiqOrange)
+                .listRowBackground(Color.Deltiq.surface)
             } header: {
                 Text("gear.editor.section.general", bundle: .module)
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
             // Xcode-26-Fix: Section("Distanz") { … } footer: { … } prallt
             // gegen den strikten Section-API-Match — string-init kollidiert
             // mit der footer-Trailing-Closure-Overload. Explizit den
@@ -223,19 +226,24 @@ private struct GearEditorView: View {
                         Text("gear.editor.field.maxKm", bundle: .module)
                     }
                 }
+                .listRowBackground(Color.Deltiq.surface)
                 TextField(value: $currentDistance,
                           format: .number,
                           prompt: Text("0")) {
                     Text("gear.editor.field.currentKm", bundle: .module)
                 }
                     .decimalKeyboard()
+                    .listRowBackground(Color.Deltiq.surface)
             } header: {
                 Text("gear.editor.section.distance", bundle: .module)
             } footer: {
                 Text("gear.editor.distance.footer", bundle: .module)
                     .font(.footnote)
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
         }
+        .scrollContentBackground(.hidden)
+        .background(Color.Deltiq.background.ignoresSafeArea())
         .navigationTitle(navigationTitle)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)

@@ -1221,6 +1221,7 @@ private struct FinishWorkoutSheet: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
             }
+            .background(Color.Deltiq.background.ignoresSafeArea())
             .navigationTitle(Text("active.finish.title", bundle: .module))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -1261,7 +1262,7 @@ private struct FinishWorkoutSheet: View {
                                 .foregroundStyle(.primary)
                             Text("\(formatKm(gear.currentDistanceKm)) / \(formatKm(gear.maxDistanceKm)) km")
                                 .font(.caption.monospacedDigit())
-                                .foregroundStyle(gear.needsReplacement ? .red : .secondary)
+                                .foregroundStyle(gear.needsReplacement ? Color.Deltiq.error : Color.Deltiq.textSecondary)
                         }
                         Spacer()
                         if selectedGear?.persistentModelID == gear.persistentModelID {
@@ -1275,7 +1276,7 @@ private struct FinishWorkoutSheet: View {
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(selectedGear?.persistentModelID == gear.persistentModelID
                                     ? Color.deltiqOrange
-                                    : Color.secondary.opacity(0.25),
+                                    : Color.Deltiq.divider,
                                     lineWidth: selectedGear?.persistentModelID == gear.persistentModelID ? 1.5 : 1)
                     )
                 }
@@ -1322,8 +1323,8 @@ private struct FinishWorkoutSheet: View {
                 }
             }
             .padding(.vertical, 8)
-            .background(Color.secondary.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .background(Color.Deltiq.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
         }
     }
 
@@ -1334,7 +1335,7 @@ private struct FinishWorkoutSheet: View {
                 .monospacedDigit()
             Text(label)
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
         .frame(maxWidth: .infinity)
     }
@@ -1345,7 +1346,7 @@ private struct FinishWorkoutSheet: View {
                 .font(.headline)
             Text("active.finish.feeling.message", bundle: .module)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
             VStack(spacing: 8) {
                 ForEach(SessionFeeling.allCases, id: \.self) { feeling in
                     feelingRow(feeling)
@@ -1374,7 +1375,7 @@ private struct FinishWorkoutSheet: View {
                     if feeling.vetoesProgression {
                         Text("active.finish.feeling.noProgression", bundle: .module)
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
                     }
                 }
                 Spacer()
@@ -1387,7 +1388,7 @@ private struct FinishWorkoutSheet: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(selected == feeling ? Color.deltiqOrange : Color.secondary.opacity(0.25),
+                    .stroke(selected == feeling ? Color.deltiqOrange : Color.Deltiq.divider,
                             lineWidth: selected == feeling ? 1.5 : 1)
             )
         }
@@ -1398,19 +1399,14 @@ private struct FinishWorkoutSheet: View {
         Button {
             onConfirm(selected, selectedGear)
         } label: {
-            HStack {
-                Spacer()
-                Image(systemName: "checkmark.seal.fill")
+            Label {
                 Text("active.finish.save", bundle: .module)
-                    .font(.headline)
-                Spacer()
+            } icon: {
+                Image(systemName: "checkmark.seal.fill")
             }
-            .padding(.vertical, 14)
-            .background(Color.deltiqOrange.gradient)
-            .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
+        .deltiqButtonStyle()
     }
 }
 #endif

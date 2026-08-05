@@ -2536,7 +2536,10 @@ public struct DashboardView: View {
                         DashboardSessionRow(session: session)
                     }
                 }
+                .listRowBackground(Color.Deltiq.surface)
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.Deltiq.background.ignoresSafeArea())
             .navigationTitle(day.formatted(date: .abbreviated, time: .omitted))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
