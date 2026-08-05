@@ -13,6 +13,15 @@ public struct DayEditorView: View {
     @Bindable public var day: TrainingDay
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var navigation
+    @Environment(\.dismiss) private var dismiss
+
+    // `editMode` ist auf macOS/watchOS unavailable (SwiftUI.EnvironmentValues.
+    // editMode). Das Package deklariert macOS 14 als Mindestversion, damit
+    // `swift test` auf dem macOS-CI-Runner baut - eine echte macOS-Deployment
+    // dieser View gibt es nicht. Guard reicht daher als reiner Compile-Fix.
+    #if os(iOS)
+    @Environment(\.editMode) private var editMode
+    #endif
 
     @State private var showingPicker = false
     @State private var exerciseToEdit: Exercise?
@@ -51,7 +60,17 @@ public struct DayEditorView: View {
     }
 
     public var body: some View {
-        Group {
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: aus dem Plan-Tab gepusht - "alles im
+            // Plan-Tab bekommt tab.plan" (OFFENE-VIEWS.md), auch wenn der
+            // unmittelbare Aufrufer PlanEditorView ist.
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
+                title: day.name.isEmpty ? String(localized: "day.editor.untitled", bundle: .module) : day.displayName,
+                onBack: { dismiss() },
+                actions: headerActions
+            )
+
             if isRestDay {
                 // Ruhetag bekommt eine drastisch reduzierte Layout-Variante
                 // (DEL-015) — keine Picker, keine Übungen-Section, nur Hero-
@@ -59,7 +78,12 @@ public struct DayEditorView: View {
                 // und "Intensität: Keine"-Eintraege.
                 restDayLayout
             } else {
-                Form {
+                // Signature-Geruest: `List` bleibt Container - .onMove/.onDelete
+                // fuer die Uebungs-Reihenfolge sowie die Superset-Swipe-Action
+                // brauchen ihn (siehe PlanEditorView/WorkoutSummaryView, gleiches
+                // Prinzip). .scrollContentBackground(.hidden) + .listRowBackground
+                // je Zeile machen daraus optisch eine Deltiq-Karten-Reihe.
+                List {
                     metaSection
                     startSection
                     exercisesSection
@@ -72,23 +96,18 @@ public struct DayEditorView: View {
                     // Pass mit aktualisierten Werten.
                     dayAnalysisSection
                 }
+                .scrollContentBackground(.hidden)
             }
         }
-        .navigationTitle(day.name.isEmpty ? String(localized: "day.editor.untitled", bundle: .module) : day.displayName)
+        .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        // DEL-095: EditButton macht den nativen Edit-Mode an, in dem die
-        // Drag-Handles fuer Reorder + Delete sichtbar werden. Bei
-        // readOnly-Templates blenden wir den Button aus — dort ist Editing
-        // ohnehin gesperrt.
-        .toolbar {
-            if !isReadOnly && !day.activeExercises.isEmpty {
-                ToolbarItem(placement: .deltiqTrailing) {
-                    EditButton()
-                }
-            }
-        }
+        .toolbar(.hidden, for: .navigationBar)
         #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
         .sheet(isPresented: $showingPicker) {
             // DEL-210: einheitliche Übungs-Auswahl — dieselbe View wie die
             // Bibliothek unter Einstellungen, im Picker-Modus.
@@ -205,6 +224,40 @@ public struct DayEditorView: View {
         }
     }
 
+    /// DEL-095: Ersatz fuer EditButton() — aktiviert denselben Drag-Mode
+    /// fuer die Uebungs-Reihenfolge, nur als Header-Aktion statt natives
+    /// Toolbar-Item. Bei readOnly-Templates, leerem Uebungs-Array oder
+    /// Ruhetagen bleibt die Aktion ganz weg. `editMode` selbst ist auf
+    /// macOS/watchOS unavailable - leeres Array dort.
+    private var headerActions: [DeltiqHeaderAction] {
+        #if os(iOS)
+        guard !isReadOnly, !day.activeExercises.isEmpty, !isRestDay else { return [] }
+        return [
+            DeltiqHeaderAction(
+                systemImage: editMode?.wrappedValue.isEditing == true ? "checkmark" : "arrow.up.arrow.down",
+                isHighlighted: editMode?.wrappedValue.isEditing == true
+            ) {
+                withAnimation {
+                    editMode?.wrappedValue = editMode?.wrappedValue.isEditing == true ? .inactive : .active
+                }
+            }
+        ]
+        #else
+        return []
+        #endif
+    }
+
+    /// Eyebrow-Stil statt der nativen List-Section-Header-Konvention.
+    /// `.textCase(nil)` verhindert, dass List den bereits grossgeschriebenen
+    /// String noch einmal automatisch transformiert.
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 10, weight: .heavy))
+            .tracking(1.5)
+            .foregroundStyle(Color.deltiqOrange)
+            .textCase(nil)
+    }
+
     /// Hero-Card-Layout fuer Ruhetage: grosses Sofa-Icon, klare Botschaft,
     /// prominenter "Abschliessen"-Button. Versteckt alle Editor-Metadaten,
     /// die fuer einen "Tag-ohne-Training" sinnlos sind.
@@ -217,7 +270,7 @@ public struct DayEditorView: View {
                 .font(.system(size: 96))
                 .foregroundStyle(.white)
                 .frame(width: 140, height: 140)
-                .background(Color.purple.gradient)
+                .background(Color.deltiqOrange.gradient)
                 .clipShape(RoundedRectangle(cornerRadius: 28))
 
             VStack(spacing: 8) {
@@ -225,7 +278,7 @@ public struct DayEditorView: View {
                     .font(.title.weight(.bold))
                 Text("day.restDay.heroMessage", bundle: .module)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
             }
@@ -235,27 +288,18 @@ public struct DayEditorView: View {
             Button {
                 markRestDaySkipped()
             } label: {
-                HStack {
-                    Spacer()
-                    Label {
-                        Text("day.restDay.complete.button", bundle: .module)
-                    } icon: {
-                        Image(systemName: "checkmark.circle.fill")
-                    }
-                        .font(.headline)
-                    Spacer()
+                Label {
+                    Text("day.restDay.complete.button", bundle: .module)
+                } icon: {
+                    Image(systemName: "checkmark.circle.fill")
                 }
-                .padding(.vertical, 14)
-                .background(Color.purple.gradient)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
             }
             .buttonStyle(.plain)
+            .deltiqButtonStyle()
             .padding(.horizontal)
             .padding(.bottom, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.secondary.opacity(0.05))
     }
 
     // MARK: Sections
@@ -289,6 +333,7 @@ public struct DayEditorView: View {
                 Text("day.editor.field.name", bundle: .module)
             }
                 .disabled(isReadOnly)
+                .listRowBackground(Color.Deltiq.surface)
 
             Picker(selection: $day.weekday) {
                 ForEach(weekdayOptions, id: \.self) { weekday in
@@ -298,6 +343,7 @@ public struct DayEditorView: View {
                 Text("day.editor.field.weekday", bundle: .module)
             }
             .disabled(isReadOnly)
+            .listRowBackground(Color.Deltiq.surface)
 
             Picker(selection: $day.type) {
                 ForEach(DayType.allCases, id: \.self) { type in
@@ -307,6 +353,7 @@ public struct DayEditorView: View {
                 Text("day.editor.field.type", bundle: .module)
             }
             .disabled(isReadOnly)
+            .listRowBackground(Color.Deltiq.surface)
 
             Picker(selection: $day.nextIntensity) {
                 Text("day_intensity.light", bundle: .module).tag(DayIntensity.light)
@@ -315,15 +362,17 @@ public struct DayEditorView: View {
             } label: {
                 Text("day.editor.field.nextIntensity", bundle: .module)
             }
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
-            Text("day.editor.section.info", bundle: .module)
+            sectionHeader(String(localized: "day.editor.section.info", bundle: .module))
         } footer: {
             if isReadOnly {
                 Text("day.editor.templateLocked.footer", bundle: .module)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     @ViewBuilder
@@ -344,10 +393,13 @@ public struct DayEditorView: View {
                         Spacer()
                     }
                 }
+                .listRowBackground(Color.Deltiq.surface)
             } footer: {
                 Text("day.restDay.complete.footer", bundle: .module)
-                    .font(.footnote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
         } else {
             // DEL-127: Adaptive Start-CTA. Wenn fuer diesen Day bereits eine
             // offene Session existiert (App-Crash, vergessenes Speichern,
@@ -368,6 +420,10 @@ public struct DayEditorView: View {
     private var adaptiveStartSection: some View {
         let openForThisDay = openSessionForCurrentDay
         Section {
+            // Handoff 1.9: Primaerer Hero-CTA statt gruen-hinterlegter Row -
+            // .deltiqButtonStyle() bringt Gradient/Glow/Rundung schon mit,
+            // listRowBackground/-Insets werden geleert, damit Listens eigenes
+            // Zeilen-Chrome die Button-Optik nicht doppelt umrahmt.
             Button {
                 // UX-204: Medium-Impact-Haptik — der "Training starten"-
                 // Klick ist ein bewusster Commitment-Schritt, das verdient
@@ -379,32 +435,34 @@ public struct DayEditorView: View {
                     startSession()
                 }
             } label: {
-                HStack {
-                    Spacer()
-                    Label {
-                        Text(openForThisDay != nil
-                             ? "day.editor.start.resume"
-                             : "day.editor.start.button",
-                             bundle: .module)
-                    } icon: {
-                        Image(systemName: openForThisDay != nil
-                            ? "play.circle.fill"
-                            : "play.fill")
-                    }
-                        .font(.headline)
-                    Spacer()
+                Label {
+                    Text(openForThisDay != nil
+                         ? "day.editor.start.resume"
+                         : "day.editor.start.button",
+                         bundle: .module)
+                } icon: {
+                    Image(systemName: openForThisDay != nil
+                        ? "play.circle.fill"
+                        : "play.fill")
                 }
             }
+            .buttonStyle(.plain)
+            .deltiqButtonStyle()
             .disabled(day.activeExercises.isEmpty)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
         } footer: {
             if day.activeExercises.isEmpty {
                 Text("day.editor.start.hintEmpty", bundle: .module)
-                    .font(.footnote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             } else if openForThisDay != nil {
                 Text("day.editor.start.resumeHint", bundle: .module)
-                    .font(.footnote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     /// DEL-127: liefert die offene Session, deren `.day` mit dem aktuell
@@ -422,8 +480,9 @@ public struct DayEditorView: View {
                      ? "day.editor.exercises.restDayEmpty"
                      : "day.editor.exercises.empty",
                      bundle: .module)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                     .font(.callout)
+                    .listRowBackground(Color.Deltiq.surface)
             } else if isReadOnly {
                 // Template — Reorder/Delete deaktiviert. Einzelne Übung tappen
                 // führt weiterhin in den ExerciseEditor (der seinerseits read-
@@ -435,6 +494,7 @@ public struct DayEditorView: View {
                         ExerciseRow(exercise: exercise)
                     }
                     .buttonStyle(.plain)
+                    .listRowBackground(Color.Deltiq.surface)
                 }
             } else {
                 ForEach(Array(orderedExercises.enumerated()), id: \.element.persistentModelID) { idx, exercise in
@@ -444,6 +504,7 @@ public struct DayEditorView: View {
                         ExerciseRow(exercise: exercise, isInSuperset: exercise.supersetId != nil)
                     }
                     .buttonStyle(.plain)
+                    .listRowBackground(Color.Deltiq.surface)
                     // DEL-083: Swipe-Action "Mit oberer verbinden" / "Trennen".
                     // Nur sinnvoll ab Index 1 (es muss eine Uebung darueber
                     // existieren). Toggle-Verhalten: angeklickt → verbinden,
@@ -473,7 +534,7 @@ public struct DayEditorView: View {
             }
         } header: {
             HStack {
-                Text("day.editor.section.exercises", bundle: .module)
+                sectionHeader(String(localized: "day.editor.section.exercises", bundle: .module))
                 Spacer()
                 if !isReadOnly {
                     Button {
@@ -486,17 +547,21 @@ public struct DayEditorView: View {
                         }
                             .labelStyle(.iconOnly)
                     }
+                    .foregroundStyle(Color.deltiqOrange)
                 }
             }
         } footer: {
             if isReadOnly {
                 Text("day.editor.templateLocked.exercises", bundle: .module)
-                    .font(.footnote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             } else if !day.activeExercises.isEmpty {
                 Text("day.editor.exercises.editHint", bundle: .module)
-                    .font(.footnote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     // MARK: - DEL-142 Tagesanalyse
@@ -919,7 +984,7 @@ private struct ExerciseRow: View {
 
             Text("\(exercise.orderIndex + 1)")
                 .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
                 .frame(width: 22, alignment: .trailing)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -930,7 +995,7 @@ private struct ExerciseRow: View {
                     .font(.body)
                 Text(detailLine)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
             Spacer()
             if isInSuperset {
@@ -940,14 +1005,16 @@ private struct ExerciseRow: View {
                     .accessibilityLabel("Superset")
             }
             if exercise.isCardio {
-                Image(systemName: "heart.fill").foregroundStyle(.pink)
+                // Handoff: kein echter Apple-Health-Bezug (nur dekoratives
+                // "Cardio"-Symbol) - Akzent-Orange statt .pink.
+                Image(systemName: "heart.fill").foregroundStyle(Color.deltiqOrange)
             }
             if exercise.isTimeBased {
-                Image(systemName: "stopwatch").foregroundStyle(.purple)
+                Image(systemName: "stopwatch").foregroundStyle(Color.deltiqOrange)
             }
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.bold))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(Color.Deltiq.textTertiary)
         }
         .padding(.vertical, 2)
         .contentShape(Rectangle())
