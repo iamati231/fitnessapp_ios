@@ -18,6 +18,7 @@ public struct ProfileEditorView: View {
     @Bindable public var profile: UserBodyProfile
     @Environment(HealthKitController.self) private var healthKit
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
 
     @State private var healthKitFetchInProgress: Bool = false
     @State private var healthKitFilledFields: Set<String> = []
@@ -54,19 +55,36 @@ public struct ProfileEditorView: View {
     }
 
     public var body: some View {
-        Form {
-            personSection
-            bodySection
-            goalSection
-            weeklyGoalSection
-            equipmentSection
-            coachingSection
-            healthKitSection
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: direkt von SettingsView gepusht (kein
+            // eigener Zwischen-Hub) - Eyebrow zeigt den Tab, selbes Muster wie
+            // BackupListView/GearListView.
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                title: String(localized: "profile.editor.title", bundle: .module),
+                onBack: { dismiss() }
+            )
+
+            VStack(alignment: .leading, spacing: 18) {
+                personCard
+                bodyCard
+                goalCard
+                weeklyGoalCard
+                equipmentCard
+                coachingCard
+                healthCard
+            }
+            .deltiqScreen()
         }
-        .navigationTitle("Profil bearbeiten")
+        .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
         .keyboardDismissToolbar()
         // DEL-047 + DEL-049 + DEL-050: Trainingsort-Aenderung im Profil
         // triggert zwei sequentielle Schritte:
@@ -212,42 +230,67 @@ public struct ProfileEditorView: View {
         String(localized: env.localizedName)
     }
 
+    // MARK: - Health
+
     @ViewBuilder
-    private var healthKitSection: some View {
-        Section {
+    private var healthCard: some View {
+        DeltiqSection(String(localized: "profile.section.health", bundle: .module).uppercased()) {
             if !healthKit.isAvailable {
-                Label {
-                    Text("onboarding.health.unavailable", bundle: .module)
-                } icon: {
-                    Image(systemName: "heart.slash")
+                HStack {
+                    Label {
+                        Text("onboarding.health.unavailable", bundle: .module)
+                    } icon: {
+                        Image(systemName: "heart.slash")
+                    }
+                    Spacer()
                 }
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                .font(.callout)
+                .foregroundStyle(Color.Deltiq.textSecondary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
             } else {
                 switch healthKit.authorizationStatus {
                 case .sharingAuthorized:
                     Button {
                         Task { await pullProfileFromHealthKit() }
                     } label: {
-                        if healthKitFetchInProgress {
-                            HStack { ProgressView(); Text("onboarding.health.loading", bundle: .module) }
-                        } else {
-                            Label {
-                                Text("profile.health.pull", bundle: .module)
-                            } icon: {
-                                Image(systemName: "arrow.down.circle")
+                        HStack {
+                            if healthKitFetchInProgress {
+                                ProgressView()
+                                Text("onboarding.health.loading", bundle: .module)
+                            } else {
+                                Label {
+                                    Text("profile.health.pull", bundle: .module)
+                                } icon: {
+                                    Image(systemName: "arrow.down.circle")
+                                }
                             }
+                            Spacer()
                         }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .frame(minHeight: 44)
                     }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.deltiqOrange)
                     .disabled(healthKitFetchInProgress)
+
                     if !healthKitFilledFields.isEmpty {
-                        Label {
-                            Text(String(format: String(localized: "profile.health.pulled", bundle: .module), healthKitFilledFields.sorted().joined(separator: ", ")))
-                        } icon: {
-                            Image(systemName: "heart.fill")
+                        HStack {
+                            Label {
+                                Text(String(format: String(localized: "profile.health.pulled", bundle: .module), healthKitFilledFields.sorted().joined(separator: ", ")))
+                            } icon: {
+                                Image(systemName: "heart.fill")
+                            }
+                            Spacer()
                         }
-                            .font(.caption)
-                            .foregroundStyle(.pink)
+                        // Handoff-Ausnahme: echter Apple-Health-Bezug (Daten
+                        // wurden von dort uebernommen) - Color.Deltiq.health
+                        // statt Akzent-Orange, siehe .pink-Regel im Handoff.
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.health)
+                        .padding(.horizontal, 14)
+                        .padding(.bottom, 12)
                     }
                 case .notDetermined:
                     Button {
@@ -258,29 +301,38 @@ public struct ProfileEditorView: View {
                             }
                         }
                     } label: {
-                        Label {
-                            Text("onboarding.health.title", bundle: .module)
-                        } icon: {
-                            Image(systemName: "heart.fill")
+                        HStack {
+                            Label {
+                                Text("onboarding.health.title", bundle: .module)
+                            } icon: {
+                                Image(systemName: "heart.fill")
+                            }
+                            Spacer()
                         }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .frame(minHeight: 44)
                     }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.deltiqOrange)
                 case .sharingDenied:
-                    Label {
-                        Text("profile.health.denied", bundle: .module)
-                    } icon: {
-                        Image(systemName: "heart.slash")
+                    HStack {
+                        Label {
+                            Text("profile.health.denied", bundle: .module)
+                        } icon: {
+                            Image(systemName: "heart.slash")
+                        }
+                        Spacer()
                     }
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                    .font(.caption)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
                 case .unavailable:
                     EmptyView()
                 }
             }
-        } header: {
-            Text("profile.section.health", bundle: .module)
-        } footer: {
-            Text("profile.health.footer", bundle: .module)
-                .font(.footnote)
+            hintRow(String(localized: "profile.health.footer", bundle: .module))
         }
     }
 
@@ -316,79 +368,81 @@ public struct ProfileEditorView: View {
         healthKitFilledFields = filled
     }
 
-    private var personSection: some View {
-        // All inner widgets use trailing-closure Label forms — same pattern as
-        // OnboardingView. The positional `Picker(_ titleKey:)` / `DatePicker(_ titleKey:)` /
-        // `TextField(_ titleKey:value:format:)` forms confuse the type checker on macOS
-        // toolchains when nested inside Section + footer + multiple statements.
-        Section {
-            Picker(selection: $profile.profile) {
-                Text("sex.male", bundle: .module).tag(BodyFormulaProfile.male)
-                Text("sex.female", bundle: .module).tag(BodyFormulaProfile.female)
-            } label: {
-                Text("onboarding.field.sex", bundle: .module)
-            }
-            .pickerStyle(.segmented)
+    // MARK: - Sections
 
-            DatePicker(
-                selection: $profile.birthDate,
-                in: Self.minBirthDate ... Date(),
-                displayedComponents: .date
-            ) {
-                Text("onboarding.field.birthdate", bundle: .module)
+    private var personCard: some View {
+        DeltiqSection(String(localized: "profile.section.person", bundle: .module).uppercased()) {
+            DeltiqSegmentedPicker(
+                options: [
+                    DeltiqSegmentedOption(BodyFormulaProfile.male, label: String(localized: "sex.male", bundle: .module)),
+                    DeltiqSegmentedOption(BodyFormulaProfile.female, label: String(localized: "sex.female", bundle: .module))
+                ],
+                selection: $profile.profile
+            )
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+
+            Rectangle()
+                .fill(Color.Deltiq.divider)
+                .frame(height: 1)
+
+            DeltiqControlRow(label: String(localized: "onboarding.field.birthdate", bundle: .module), showsDivider: false) {
+                DatePicker(
+                    selection: $profile.birthDate,
+                    in: Self.minBirthDate ... Date(),
+                    displayedComponents: .date
+                ) {
+                    EmptyView()
+                }
+                .labelsHidden()
             }
-        } header: {
-            Text("profile.section.person", bundle: .module)
-        } footer: {
-            Text("profile.person.footer", bundle: .module)
-                .font(.footnote)
+            hintRow(String(localized: "profile.person.footer", bundle: .module))
         }
     }
 
-    private var bodySection: some View {
-        Section {
-            TextField(value: $profile.heightCm, format: .number,
-                      prompt: Text("profile.body.heightPlaceholder", bundle: .module)) {
-                Text("onboarding.field.heightCm", bundle: .module)
+    private var bodyCard: some View {
+        DeltiqSection(String(localized: "profile.section.body", bundle: .module).uppercased()) {
+            DeltiqControlRow(label: String(localized: "onboarding.field.heightCm", bundle: .module), showsDivider: false) {
+                decimalField(
+                    String(localized: "onboarding.field.heightCm", bundle: .module),
+                    value: $profile.heightCm,
+                    placeholder: String(localized: "profile.body.heightPlaceholder", bundle: .module)
+                )
             }
-            .decimalKeyboard()
-        } header: {
-            Text("profile.section.body", bundle: .module)
-        } footer: {
             if !Self.heightRange.contains(profile.heightCm) {
                 let template = String(localized: "profile.body.plausible", bundle: .module)
-                Text(template
-                    .replacingOccurrences(of: "%1$lld", with: "\(Int(Self.heightRange.lowerBound))")
-                    .replacingOccurrences(of: "%2$lld", with: "\(Int(Self.heightRange.upperBound))"))
-                    .font(.footnote)
-                    .foregroundStyle(.red)
+                hintRow(
+                    template
+                        .replacingOccurrences(of: "%1$lld", with: "\(Int(Self.heightRange.lowerBound))")
+                        .replacingOccurrences(of: "%2$lld", with: "\(Int(Self.heightRange.upperBound))"),
+                    color: Color.Deltiq.error
+                )
             } else {
-                Text("profile.body.footerOk", bundle: .module)
-                    .font(.footnote)
+                hintRow(String(localized: "profile.body.footerOk", bundle: .module))
             }
         }
     }
 
-    private var goalSection: some View {
-        Section {
-            TextField(value: $profile.goalWeightKg, format: .number,
-                      prompt: Text("profile.goal.weightPlaceholder", bundle: .module)) {
-                Text("onboarding.field.goalWeightKg", bundle: .module)
+    private var goalCard: some View {
+        DeltiqSection(String(localized: "onboarding.section.goals", bundle: .module).uppercased()) {
+            DeltiqControlRow(label: String(localized: "onboarding.field.goalWeightKg", bundle: .module)) {
+                decimalField(
+                    String(localized: "onboarding.field.goalWeightKg", bundle: .module),
+                    value: $profile.goalWeightKg,
+                    placeholder: String(localized: "profile.goal.weightPlaceholder", bundle: .module)
+                )
             }
-            .decimalKeyboard()
-
-            Picker(selection: $profile.environment) {
-                Text("environment.gym", bundle: .module).tag(EnvironmentType.gym)
-                Text("environment.home_gym", bundle: .module).tag(EnvironmentType.homeGym)
-                Text("environment.no_equipment", bundle: .module).tag(EnvironmentType.noEquipment)
-            } label: {
-                Text("onboarding.field.environment", bundle: .module)
+            DeltiqControlRow(label: String(localized: "onboarding.field.environment", bundle: .module), showsDivider: false) {
+                Picker(selection: $profile.environment) {
+                    Text("environment.gym", bundle: .module).tag(EnvironmentType.gym)
+                    Text("environment.home_gym", bundle: .module).tag(EnvironmentType.homeGym)
+                    Text("environment.no_equipment", bundle: .module).tag(EnvironmentType.noEquipment)
+                } label: {
+                    EmptyView()
+                }
+                .pickerStyle(.menu)
             }
-        } header: {
-            Text("onboarding.section.goals", bundle: .module)
-        } footer: {
-            Text("profile.goal.footer", bundle: .module)
-                .font(.footnote)
+            hintRow(String(localized: "profile.goal.footer", bundle: .module))
         }
     }
 
@@ -398,54 +452,43 @@ public struct ProfileEditorView: View {
     /// Plan-Matcher behandelt das wie "nicht gepflegt" und nimmt die
     /// Standard-Variante; sobald der User mindestens eine Box ankreuzt,
     /// wirken die Präferenzen sofort beim nächsten Plan-Adopt.
-    @ViewBuilder
-    private var equipmentSection: some View {
-        Section {
+    private var equipmentCard: some View {
+        DeltiqSection(String(localized: "profile.equipment.header", bundle: .module).uppercased()) {
             ForEach(Equipment.allCases, id: \.self) { equip in
-                Toggle(isOn: equipmentBinding(for: equip)) {
-                    Label {
-                        Text(equip.localizedName)
-                    } icon: {
-                        Image(systemName: equipmentIcon(equip))
-                            .foregroundStyle(Color.deltiqOrange)
-                    }
+                DeltiqControlRow(
+                    icon: equipmentIcon(equip),
+                    label: String(localized: equip.localizedName),
+                    showsDivider: equip != Equipment.allCases.last
+                ) {
+                    Toggle("", isOn: equipmentBinding(for: equip))
+                        .labelsHidden()
+                        .tint(Color.deltiqOrange)
                 }
             }
-        } header: {
-            Text("profile.equipment.header", bundle: .module)
-        } footer: {
-            Text("profile.equipment.footer", bundle: .module)
-                .font(.footnote)
+            hintRow(String(localized: "profile.equipment.footer", bundle: .module))
         }
     }
 
     /// DEL-203: Wochenziel für den Trainings-Streak. Stepper 1-7 —
     /// der Kalender-Streak zählt nur Wochen, die das Ziel erfüllen.
-    @ViewBuilder
-    private var weeklyGoalSection: some View {
-        Section {
-            Stepper(value: Binding(
-                get: { profile.weeklyWorkoutGoal },
-                set: { profile.weeklyWorkoutGoal = min(7, max(1, $0)) }
-            ), in: 1...7) {
-                HStack {
-                    Label {
-                        Text("profile.weeklyGoal.label", bundle: .module)
-                    } icon: {
-                        Image(systemName: "flame")
-                            .foregroundStyle(Color.deltiqOrange)
-                    }
-                    Spacer()
+    private var weeklyGoalCard: some View {
+        DeltiqSection(String(localized: "profile.weeklyGoal.header", bundle: .module).uppercased()) {
+            DeltiqControlRow(
+                icon: "flame",
+                label: String(localized: "profile.weeklyGoal.label", bundle: .module),
+                showsDivider: false
+            ) {
+                Stepper(value: Binding(
+                    get: { profile.weeklyWorkoutGoal },
+                    set: { profile.weeklyWorkoutGoal = min(7, max(1, $0)) }
+                ), in: 1...7) {
                     Text("\(profile.weeklyWorkoutGoal)×")
-                        .font(.body.weight(.semibold).monospacedDigit())
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.primary)
+                        .fitnessNumberStyle()
                 }
             }
-        } header: {
-            Text("profile.weeklyGoal.header", bundle: .module)
-        } footer: {
-            Text("profile.weeklyGoal.footer", bundle: .module)
-                .font(.footnote)
+            hintRow(String(localized: "profile.weeklyGoal.footer", bundle: .module))
         }
     }
 
@@ -478,48 +521,83 @@ public struct ProfileEditorView: View {
     /// auf die Computed-Properties von `UserBodyProfile` (die sich um das
     /// rawValue-Mapping kuemmern). Picker-Style "menu" damit beide Werte
     /// kompakt in eine Zeile passen.
-    @ViewBuilder
-    private var coachingSection: some View {
-        Section {
-            Picker(selection: Binding(
-                get: { profile.trainingGoal },
-                set: { profile.trainingGoal = $0 }
-            )) {
-                ForEach(TrainingGoal.allCases, id: \.self) { goal in
-                    Label {
-                        Text(goal.localizedName)
-                    } icon: {
-                        Image(systemName: goal.symbol)
+    private var coachingCard: some View {
+        DeltiqSection(String(localized: "profile.section.coach", bundle: .module).uppercased()) {
+            DeltiqControlRow(label: String(localized: "profile.coaching.goal", bundle: .module)) {
+                Picker(selection: Binding(
+                    get: { profile.trainingGoal },
+                    set: { profile.trainingGoal = $0 }
+                )) {
+                    ForEach(TrainingGoal.allCases, id: \.self) { goal in
+                        Label {
+                            Text(goal.localizedName)
+                        } icon: {
+                            Image(systemName: goal.symbol)
+                        }
+                        .tag(goal)
                     }
-                    .tag(goal)
+                } label: {
+                    EmptyView()
                 }
-            } label: {
-                Text("profile.coaching.goal", bundle: .module)
+                .pickerStyle(.menu)
             }
-            .pickerStyle(.menu)
-
-            Picker(selection: Binding(
-                get: { profile.coachingTone },
-                set: { profile.coachingTone = $0 }
-            )) {
-                ForEach(CoachingTone.allCases, id: \.self) { tone in
-                    Label {
-                        Text(tone.localizedName)
-                    } icon: {
-                        Image(systemName: tone.symbol)
+            DeltiqControlRow(label: String(localized: "profile.coaching.tone", bundle: .module), showsDivider: false) {
+                Picker(selection: Binding(
+                    get: { profile.coachingTone },
+                    set: { profile.coachingTone = $0 }
+                )) {
+                    ForEach(CoachingTone.allCases, id: \.self) { tone in
+                        Label {
+                            Text(tone.localizedName)
+                        } icon: {
+                            Image(systemName: tone.symbol)
+                        }
+                        .tag(tone)
                     }
-                    .tag(tone)
+                } label: {
+                    EmptyView()
                 }
-            } label: {
-                Text("profile.coaching.tone", bundle: .module)
+                .pickerStyle(.menu)
             }
-            .pickerStyle(.menu)
-        } header: {
-            Text("profile.section.coach", bundle: .module)
-        } footer: {
-            Text("profile.coaching.footer", bundle: .module)
-                .font(.footnote)
+            hintRow(String(localized: "profile.coaching.footer", bundle: .module))
         }
+    }
+
+    // MARK: - Row helpers
+
+    /// DEL-106-Muster (siehe MeasurementView.decimalField): TextField mit Decimal-
+    /// Keyboard, rechtsbuendig, `fitnessNumberStyle()`. Zwei Overloads (optional/
+    /// nicht-optional), weil `UserBodyProfile.heightCm` non-optional ist,
+    /// `goalWeightKg` aber `Double?`.
+    @ViewBuilder
+    private func decimalField(_ label: String, value: Binding<Double>, placeholder: String) -> some View {
+        TextField(label, value: value, format: .number, prompt: Text(placeholder))
+            .decimalKeyboard()
+            .multilineTextAlignment(.trailing)
+            .font(.system(size: 15))
+            .fitnessNumberStyle()
+            .frame(maxWidth: 140)
+    }
+
+    @ViewBuilder
+    private func decimalField(_ label: String, value: Binding<Double?>, placeholder: String) -> some View {
+        TextField(label, value: value, format: .number, prompt: Text(placeholder))
+            .decimalKeyboard()
+            .multilineTextAlignment(.trailing)
+            .font(.system(size: 15))
+            .fitnessNumberStyle()
+            .frame(maxWidth: 140)
+    }
+
+    /// DEL-106-Muster (siehe SettingsView.hintRow): Inline-Caption am Fuss einer Section.
+    private func hintRow(_ text: String, color: Color = Color.Deltiq.textSecondary) -> some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundStyle(color)
+            .lineSpacing(4)
+            .padding(.horizontal, 14)
+            .padding(.top, 4)
+            .padding(.bottom, 8)
     }
 
     private static let heightRange: ClosedRange<Double> = 100...250

@@ -21,6 +21,7 @@ import FitnessAppData
 public struct BackupListView: View {
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
 
     @State private var generations: [BackupService.Generation] = []
     @State private var pendingRestore: BackupService.Generation?
@@ -31,23 +32,40 @@ public struct BackupListView: View {
     public init() {}
 
     public var body: some View {
-        List {
-            // DEL-234: Notzustand zuerst — wenn die App auf dem Ersatz-Store
-            // laeuft, sind alle anderen Angaben auf diesem Screen mit Vorsicht
-            // zu lesen und es werden bewusst keine Backups mehr geschrieben.
-            unhealthyStoreSection
-            introSection
-            if generations.isEmpty {
-                emptySection
-            } else {
-                generationsSection
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: direkt von SettingsView gepusht (kein
+            // eigener Zwischen-Hub) - Eyebrow zeigt den Tab, selbes Muster wie
+            // DashboardSettingsView/DataExportView.
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                title: String(localized: "backups.title", bundle: .module),
+                onBack: { dismiss() }
+            )
+
+            VStack(alignment: .leading, spacing: 18) {
+                // DEL-234: Notzustand zuerst — wenn die App auf dem Ersatz-Store
+                // laeuft, sind alle anderen Angaben auf diesem Screen mit Vorsicht
+                // zu lesen und es werden bewusst keine Backups mehr geschrieben.
+                unhealthyStoreCard
+                introCard
+                if generations.isEmpty {
+                    emptyCard
+                } else {
+                    generationsCard
+                }
+                actionCard
             }
-            actionSection
+            .deltiqScreen()
         }
-        .navigationTitle(Text("backups.title", bundle: .module))
+        .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
         .task { reload() }
         .confirmationDialog(
             Text("backups.restore.confirm.title", bundle: .module),
@@ -82,9 +100,9 @@ public struct BackupListView: View {
     /// wuerde der User nur bemerken, dass keine neuen Generationen mehr
     /// dazukommen — und das erst, wenn er sie braucht.
     @ViewBuilder
-    private var unhealthyStoreSection: some View {
+    private var unhealthyStoreCard: some View {
         if case .fellBackAfterGroupStoreFailure = SharedStore.health {
-            Section {
+            DeltiqSection {
                 VStack(alignment: .leading, spacing: 6) {
                     Label {
                         Text("backups.unhealthy.title", bundle: .module)
@@ -92,104 +110,106 @@ public struct BackupListView: View {
                         Image(systemName: "exclamationmark.triangle.fill")
                     }
                     .font(.headline)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.Deltiq.error)
                     Text("backups.unhealthy.description", bundle: .module)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.vertical, 4)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
             }
         }
     }
 
-    private var introSection: some View {
-        Section {
+    private var introCard: some View {
+        DeltiqSection {
             Text("backups.intro", bundle: .module)
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
         }
     }
 
-    private var emptySection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 6) {
-                Label {
-                    Text("backups.empty.title", bundle: .module)
-                } icon: {
-                    Image(systemName: "clock.arrow.circlepath")
-                }
-                .font(.headline)
-                Text("backups.empty.description", bundle: .module)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.vertical, 4)
-        }
+    private var emptyCard: some View {
+        DashboardEmptyState(
+            icon: "clock.arrow.circlepath",
+            title: "backups.empty.title",
+            description: "backups.empty.description"
+        )
+        .deltiqCardStyle()
     }
 
-    private var generationsSection: some View {
-        Section {
+    private var generationsCard: some View {
+        DeltiqSection {
             ForEach(generations) { generation in
-                row(for: generation)
+                row(for: generation, showsDivider: generation.id != generations.last?.id)
+            }
+        }
+    }
+
+    /// Wiederherstellen ist destruktiv und darf nicht versehentlich per Tap
+    /// auf die Zeile passieren — deshalb ein explizites Menu statt eines
+    /// tappable Rows. Ersetzt die List-exklusiven `.swipeActions`/
+    /// `.contextMenu`, die ausserhalb einer List nicht mehr greifen.
+    private func row(for generation: BackupService.Generation, showsDivider: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(Self.dateText(generation.createdAt))
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.primary)
+                    HStack(spacing: 6) {
+                        Text(Self.reasonText(generation.reason))
+                        Text("·")
+                        Text(Self.sizeText(generation.byteCount))
+                    }
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                }
+                Spacer()
+                Menu {
+                    Button {
+                        pendingRestore = generation
+                    } label: {
+                        Label {
+                            Text("backups.restore.action", bundle: .module)
+                        } icon: {
+                            Image(systemName: "clock.arrow.circlepath")
+                        }
+                    }
+                    Button(role: .destructive) {
+                        delete(generation)
+                    } label: {
+                        Label {
+                            Text("backups.delete.action", bundle: .module)
+                        } icon: {
+                            Image(systemName: "trash")
+                        }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(minHeight: 44)
+            if showsDivider {
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
             }
         }
     }
 
     @ViewBuilder
-    private func row(for generation: BackupService.Generation) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(Self.dateText(generation.createdAt))
-                .font(.body.weight(.semibold))
-            HStack(spacing: 6) {
-                Text(Self.reasonText(generation.reason))
-                Text("·")
-                Text(Self.sizeText(generation.byteCount))
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
-        .padding(.vertical, 2)
-        // Wiederherstellen ist destruktiv und darf nicht versehentlich per Tap
-        // auf die Zeile passieren — bewusst nur ueber Swipe bzw. Kontextmenue.
-        .swipeActions(edge: .trailing) {
-            Button(role: .destructive) {
-                delete(generation)
-            } label: {
-                Text("backups.delete.action", bundle: .module)
-            }
-            Button {
-                pendingRestore = generation
-            } label: {
-                Text("backups.restore.action", bundle: .module)
-            }
-            .tint(Color.deltiqOrange)
-        }
-        .contextMenu {
-            Button {
-                pendingRestore = generation
-            } label: {
-                Label {
-                    Text("backups.restore.action", bundle: .module)
-                } icon: {
-                    Image(systemName: "clock.arrow.circlepath")
-                }
-            }
-            Button(role: .destructive) {
-                delete(generation)
-            } label: {
-                Label {
-                    Text("backups.delete.action", bundle: .module)
-                } icon: {
-                    Image(systemName: "trash")
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var actionSection: some View {
-        Section {
+    private var actionCard: some View {
+        DeltiqSection {
             Button {
                 createNow()
             } label: {
@@ -202,27 +222,51 @@ public struct BackupListView: View {
                     Spacer()
                     if isWorking { ProgressView() }
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .frame(minHeight: 44)
             }
+            .buttonStyle(.plain)
             .disabled(isWorking)
 
             if isWorking {
+                Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
                 Text("backups.restore.running", bundle: .module)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
             }
             if let resultMessage {
+                Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
                 Text(resultMessage)
                     .font(.caption)
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.Deltiq.success)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
             }
             if let errorMessage {
+                Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
                 Text(errorMessage)
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.Deltiq.error)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
             }
-        } footer: {
-            Text("backups.footer", bundle: .module)
+
+            hintRow(String(localized: "backups.footer", bundle: .module))
         }
+    }
+
+    /// DEL-106-Muster (siehe SettingsView.hintRow): Inline-Caption am Fuss einer Section.
+    private func hintRow(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundStyle(Color.Deltiq.textSecondary)
+            .lineSpacing(4)
+            .padding(.horizontal, 14)
+            .padding(.top, 4)
+            .padding(.bottom, 8)
     }
 
     // MARK: Aktionen

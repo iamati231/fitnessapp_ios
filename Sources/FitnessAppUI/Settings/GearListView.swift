@@ -6,11 +6,12 @@ import FitnessAppData
 
 /// DEL-084: Verwaltung der Equipment-Liste (primaer Laufschuhe). Listet alle
 /// `Gear`-Eintraege mit Progress-Bar (gelaufene / max km) und Markierung
-/// rot, wenn ueber Maximum. Add via Toolbar-Button, Edit via Row-Tap,
-/// Delete via Swipe.
+/// rot, wenn ueber Maximum. Add via Header-Action, Edit via Row-Tap,
+/// Delete via explizitem Knopf (kein List mehr, also keine Swipe-Geste).
 @available(iOS 17.0, macOS 14.0, *)
 public struct GearListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     @Query(sort: \Gear.createdAt, order: .reverse) private var allGears: [Gear]
 
     @State private var editingGear: Gear?
@@ -19,30 +20,39 @@ public struct GearListView: View {
     public init() {}
 
     public var body: some View {
-        Group {
-            if allGears.isEmpty {
-                emptyState
-            } else {
-                gearList
-            }
-        }
-        .navigationTitle(Text("gear.list.title", bundle: .module))
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showingNewGearSheet = true
-                } label: {
-                    Label {
-                        Text("common.add", bundle: .module)
-                    } icon: {
-                        Image(systemName: "plus")
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: direkt von SettingsView gepusht (kein
+            // eigener Zwischen-Hub) - Eyebrow zeigt den Tab, selbes Muster wie
+            // BackupListView/DataExportView.
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                title: String(localized: "gear.list.title", bundle: .module),
+                onBack: { dismiss() },
+                actions: [
+                    DeltiqHeaderAction(systemImage: "plus") {
+                        showingNewGearSheet = true
                     }
+                ]
+            )
+
+            VStack(alignment: .leading, spacing: 18) {
+                if allGears.isEmpty {
+                    emptyState
+                } else {
+                    gearCard
                 }
             }
+            .deltiqScreen()
         }
+        .background(Color.Deltiq.background.ignoresSafeArea())
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
         .sheet(isPresented: $showingNewGearSheet) {
             NavigationStack {
                 GearEditorView(mode: .new)
@@ -55,113 +65,102 @@ public struct GearListView: View {
         }
     }
 
-    // MARK: - Empty State (DEL-131-Fix)
-    //
-    // Vorher war der `ContentUnavailableView` als Row INNERHALB `List { }`
-    // gerendert. SwiftUI gibt dem Block dann verzerrte vertikale Constraints,
-    // und der `.borderedProminent`-Button im `actions:`-Slot stretcht
-    // senkrecht zu einem riesigen, fast-leeren orangen Balken (User-
-    // Smoke-Test-Befund 2026-05-21).
-    //
-    // Fix: Empty-State raus aus der List, parallel zur gefuellten List
-    // rendern. ContentUnavailableView bekommt damit den vollen Screen-Space
-    // und seine eingebauten Constraints funktionieren. Plus: actions-Button
-    // simplifiziert — kein nested Label-Composite mehr, nur direkter
-    // Text → robust gegen SwiftUI-Layout-Quirks.
+    // MARK: - Empty State
 
-    @ViewBuilder
     private var emptyState: some View {
-        ContentUnavailableView {
-            Label {
-                Text("gear.list.empty.title", bundle: .module)
-            } icon: {
-                // DEL-130: `backpack.fill` als generisches Equipment-Symbol
-                // (Schuh + Bike-Cardio).
-                Image(systemName: "backpack.fill")
+        DashboardEmptyState(
+            icon: "backpack.fill",
+            title: "gear.list.empty.title",
+            description: "gear.list.empty.description",
+            ctaTitle: "gear.list.empty.cta",
+            ctaAction: { showingNewGearSheet = true }
+        )
+        .deltiqCardStyle()
+    }
+
+    // MARK: - Gear list
+
+    private var gearCard: some View {
+        DeltiqSection {
+            ForEach(allGears) { gear in
+                gearRow(gear, showsDivider: gear.id != allGears.last?.id)
             }
-        } description: {
-            Text("gear.list.empty.description", bundle: .module)
-        } actions: {
-            // DEL-131: vereinfachter Button. Nested Label im borderedProminent-
-            // Style hat einen senkrecht-stretchenden Balken produziert; jetzt
-            // direkter Text mit explicit controlSize → predictable Layout.
-            Button {
-                showingNewGearSheet = true
-            } label: {
-                Text("gear.list.empty.cta", bundle: .module)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.regular)
-            .tint(Color.deltiqOrange)
+            hintRow(String(localized: "gear.list.footer", bundle: .module))
         }
     }
 
-    @ViewBuilder
-    private var gearList: some View {
-        List {
-            Section {
-                ForEach(allGears) { gear in
+    private func gearRow(_ gear: Gear, showsDivider: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 10) {
+                    Image(systemName: gear.type == .shoe ? "shoe" : "bicycle")
+                        .symbolRenderingMode(.hierarchical)
+                        .font(.title3)
+                        .foregroundStyle(gear.needsReplacement ? Color.Deltiq.error : Color.deltiqOrange)
+                        .frame(width: 28)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(gear.name)
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(Color.primary)
+                        Text("\(formatKm(gear.currentDistanceKm)) / \(formatKm(gear.maxDistanceKm)) km")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(gear.needsReplacement ? Color.Deltiq.error : Color.Deltiq.textSecondary)
+                    }
+                    Spacer()
+                    if !gear.isActive {
+                        Text("gear.inactive", bundle: .module).deltiqLabel()
+                    }
+                    // Ersetzt das bisherige .onDelete-Swipe (List-exklusiv,
+                    // funktioniert nicht mehr ausserhalb einer List) durch
+                    // einen expliziten Loesch-Knopf pro Zeile — Zeilen-Tap
+                    // bleibt fuer "Bearbeiten" reserviert.
                     Button {
-                        editingGear = gear
+                        delete(gear)
                     } label: {
-                        GearRow(gear: gear)
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(Color.Deltiq.textTertiary)
                     }
                     .buttonStyle(.plain)
                 }
-                .onDelete(perform: deleteGears)
-            } footer: {
-                Text("gear.list.footer", bundle: .module)
-                    .font(.footnote)
+                ProgressView(value: min(gear.progress, 1.0))
+                    .tint(gear.needsReplacement ? Color.Deltiq.error : Color.deltiqOrange)
+                if gear.needsReplacement {
+                    Label {
+                        Text("gear.needsReplacement", bundle: .module)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                    }
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Color.Deltiq.error)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                editingGear = gear
+            }
+            if showsDivider {
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
             }
         }
     }
 
-    private func deleteGears(at offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(allGears[index])
-        }
+    /// DEL-106-Muster (siehe SettingsView.hintRow): Inline-Caption am Fuss einer Section.
+    private func hintRow(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundStyle(Color.Deltiq.textSecondary)
+            .lineSpacing(4)
+            .padding(.horizontal, 14)
+            .padding(.top, 4)
+            .padding(.bottom, 8)
     }
-}
 
-// MARK: - GearRow
-
-@available(iOS 17.0, macOS 14.0, *)
-private struct GearRow: View {
-    let gear: Gear
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 10) {
-                Image(systemName: gear.type == .shoe ? "shoe" : "bicycle")
-                    .symbolRenderingMode(.hierarchical)
-                    .font(.title3)
-                    .foregroundStyle(gear.needsReplacement ? .red : Color.deltiqOrange)
-                    .frame(width: 28)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(gear.name)
-                        .font(.body.weight(.semibold))
-                    Text("\(formatKm(gear.currentDistanceKm)) / \(formatKm(gear.maxDistanceKm)) km")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(gear.needsReplacement ? .red : .secondary)
-                }
-                Spacer()
-                if !gear.isActive {
-                    Text("gear.inactive", bundle: .module).deltiqLabel()
-                }
-            }
-            ProgressView(value: min(gear.progress, 1.0))
-                .tint(gear.needsReplacement ? .red : Color.deltiqOrange)
-            if gear.needsReplacement {
-                Label {
-                    Text("gear.needsReplacement", bundle: .module)
-                } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                }
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.red)
-            }
-        }
-        .padding(.vertical, 6)
+    private func delete(_ gear: Gear) {
+        modelContext.delete(gear)
     }
 
     private func formatKm(_ km: Double) -> String {
@@ -171,6 +170,11 @@ private struct GearRow: View {
 
 // MARK: - GearEditorView (Add + Edit)
 
+/// Gruppe B (Sheet): praesentiert per `.sheet`, Cancel/Fertig statt
+/// Zurueck-Navigation - bekommt bewusst KEIN DeltiqHeader (siehe Handoff-
+/// Regel "Sheets sind kein Fall fuer DeltiqHeader"). Volle Innenausstattungs-
+/// Konvertierung (Form -> Karten) laeuft gebuendelt mit den uebrigen Gruppe-
+/// B-Sheets; hier nur der Toggle-Tint-Fix, der sofort auffiel.
 @available(iOS 17.0, macOS 14.0, *)
 private struct GearEditorView: View {
     enum Mode {
@@ -203,6 +207,7 @@ private struct GearEditorView: View {
                 Toggle(isOn: $isActive) {
                     Text("gear.editor.toggle.active", bundle: .module)
                 }
+                .tint(Color.deltiqOrange)
             } header: {
                 Text("gear.editor.section.general", bundle: .module)
             }
