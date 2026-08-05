@@ -10,6 +10,8 @@ import FitnessAppCore
 @available(iOS 17.0, macOS 14.0, *)
 public struct PlateCalculatorView: View {
 
+    @Environment(\.dismiss) private var dismiss
+
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
 
     @State private var targetWeight: Double?
@@ -23,16 +25,32 @@ public struct PlateCalculatorView: View {
     }
 
     public var body: some View {
-        Form {
-            unitSection
-            inputsSection
-            resultsSection
-            inventorySection
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: Eyebrow zeigt den Elternscreen (Rechner-Hub),
+            // nicht den Tab - selbes Muster wie WaterTrackerView.
+            DeltiqHeader(
+                eyebrow: String(localized: "calc.index.title", bundle: .module).uppercased(),
+                title: String(localized: "calc.index.plate.title", bundle: .module),
+                onBack: { dismiss() }
+            )
+
+            VStack(alignment: .leading, spacing: 18) {
+                unitCard
+                inputsCard
+                resultsCard
+                inventoryCard
+            }
+            .deltiqScreen()
         }
-        .navigationTitle(Text("calc.index.plate.title", bundle: .module))
+        .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
         .keyboardDismissToolbar()
         .onAppear { ensureDefaultsForCurrentUnit() }
         .onChange(of: weightUnitRaw) { _, _ in resetForCurrentUnit() }
@@ -40,153 +58,179 @@ public struct PlateCalculatorView: View {
 
     // MARK: Sections
 
-    private var unitSection: some View {
-        Section {
-            Picker(selection: $weightUnitRaw) {
-                Text("kg").tag("kg")
-                Text("lbs").tag("lbs")
-            } label: {
-                Text("calc.plate.unit.label", bundle: .module)
-            }
-            .pickerStyle(.segmented)
-        } footer: {
-            Text("calc.plate.unit.footer", bundle: .module)
-                .font(.footnote)
+    private var unitCard: some View {
+        DeltiqSection(String(localized: "calc.plate.unit.label", bundle: .module).uppercased()) {
+            DeltiqSegmentedPicker(
+                options: [
+                    DeltiqSegmentedOption("kg", label: "kg"),
+                    DeltiqSegmentedOption("lbs", label: "lbs")
+                ],
+                selection: $weightUnitRaw
+            )
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            hintRow(String(localized: "calc.plate.unit.footer", bundle: .module))
         }
     }
 
-    private var inputsSection: some View {
-        Section {
-            TextField(value: $targetWeight, format: .number,
-                      prompt: Text(String(format: String(localized: "calc.placeholderExample", bundle: .module),
-                                          unit == .kg ? "100" : "225"))) {
-                Text(String(format: String(localized: "calc.plate.target", bundle: .module), unit.rawValue))
+    private var inputsCard: some View {
+        DeltiqSection(String(localized: "calc.plate.section.input", bundle: .module).uppercased()) {
+            // Cap 2026-05-21: hartes Maximum auf `unit.maxTarget` (500 kg / 1100 lbs) bzw.
+            // `unit.maxBar` (30 kg / 65 lbs) - selbes Pattern wie in SetRow.weightInput -
+            // sofortiges Snap auf den Max-Wert verhindert utopische Eingaben (Vertipper,
+            // Pasten). Reagiert AUCH bei Unit-Wechsel.
+            let targetLabel = String(format: String(localized: "calc.plate.target", bundle: .module), unit.rawValue)
+            DeltiqControlRow(label: targetLabel) {
+                decimalField(
+                    targetLabel,
+                    value: $targetWeight,
+                    placeholder: String(format: String(localized: "calc.placeholderExample", bundle: .module), unit == .kg ? "100" : "225")
+                )
             }
-            .decimalKeyboard()
-            // Cap 2026-05-21: hartes Maximum auf `unit.maxTarget` (500 kg
-            // / 1100 lbs). Selber Pattern wie in SetRow.weightInput —
-            // sofortiges Snap auf den Max-Wert verhindert utopische
-            // Eingaben (Vertipper, Pasten). Reagiert AUCH bei Unit-
-            // Wechsel: wenn der User von lbs auf kg switcht und die
-            // 1000 lbs jetzt > 500 kg sind, capped es genauso.
             .onChange(of: targetWeight) { _, newValue in
                 if let w = newValue, w > unit.maxTarget {
                     targetWeight = unit.maxTarget
                 }
             }
 
-            TextField(value: $barWeight, format: .number,
-                      prompt: Text(String(format: String(localized: "calc.placeholderExample", bundle: .module),
-                                          unit == .kg ? "20" : "45"))) {
-                Text(String(format: String(localized: "calc.plate.bar", bundle: .module), unit.rawValue))
+            let barLabel = String(format: String(localized: "calc.plate.bar", bundle: .module), unit.rawValue)
+            DeltiqControlRow(label: barLabel, showsDivider: false) {
+                decimalField(
+                    barLabel,
+                    value: $barWeight,
+                    placeholder: String(format: String(localized: "calc.placeholderExample", bundle: .module), unit == .kg ? "20" : "45")
+                )
             }
-            .decimalKeyboard()
-            // Cap 2026-05-21: hartes Maximum auf `unit.maxBar` (30 kg /
-            // 65 lbs). 30 kg ist Trap-Bar-Limit — Standard-Olympic-Bar
-            // ist 20 kg.
             .onChange(of: barWeight) { _, newValue in
                 if let w = newValue, w > unit.maxBar {
                     barWeight = unit.maxBar
                 }
             }
-        } header: {
-            Text("calc.plate.section.input", bundle: .module)
         }
-        // Footer-Warning-Branches entfernt: durch den .onChange-Cap kann
-        // weder targetWeight noch barWeight jemals ueber Max stehen.
-        // `calc.plate.maxTarget` + `calc.plate.maxBar` Catalog-Keys
-        // bleiben drin als Defensive-Backstop falls die Logik jemals
-        // umgebaut wird.
     }
 
-    private var resultsSection: some View {
-        Section {
+    private var resultsCard: some View {
+        DeltiqSection(String(localized: "calc.plate.section.results", bundle: .module).uppercased()) {
             if plates.isEmpty {
                 Text(emptyResultHint)
-                    .foregroundStyle(.secondary)
-                    .font(.callout)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
             } else {
-                PlateBarVisualization(plates: plates, unit: unit)
-                    .padding(.vertical, 4)
-                    .listRowInsets(EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4))
+                VStack(alignment: .leading, spacing: 14) {
+                    PlateBarVisualization(plates: plates, unit: unit)
 
-                LabeledContent {
-                    Text("\(formatPlate(perSideLoaded)) \(unit.rawValue)")
-                } label: {
-                    Text("calc.plate.perSide", bundle: .module)
-                }
-                LabeledContent {
-                    Text("\(formatPlate(actualTotal)) \(unit.rawValue)")
-                } label: {
-                    Text("calc.plate.loaded", bundle: .module)
-                }
-                if isShortOfTarget {
-                    let template = String(localized: "calc.plate.shortOfTarget", bundle: .module)
-                    Label {
-                        Text(template
-                            .replacingOccurrences(of: "%1$@", with: formatPlate(actualTotal))
-                            .replacingOccurrences(of: "%2$@", with: unit.rawValue)
-                            .replacingOccurrences(of: "%3$@", with: formatDelta(targetDelta)))
-                    } icon: {
-                        Image(systemName: "exclamationmark.triangle")
+                    HStack(alignment: .top) {
+                        resultMetric(String(localized: "calc.plate.perSide", bundle: .module), value: "\(formatPlate(perSideLoaded)) \(unit.rawValue)")
+                        Spacer()
+                        resultMetric(String(localized: "calc.plate.loaded", bundle: .module), value: "\(formatPlate(actualTotal)) \(unit.rawValue)", highlight: true)
                     }
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+
+                    if isShortOfTarget {
+                        shortOfTargetWarning
+                    }
+
+                    Text(breakdownText)
+                        .font(.system(size: 13).monospacedDigit())
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                 }
-                Text(breakdownText)
-                    .font(.callout.monospacedDigit())
+                .padding(14)
             }
-        } header: {
-            Text("calc.plate.section.results", bundle: .module)
         }
     }
 
-    private var inventorySection: some View {
-        Section {
+    private var inventoryCard: some View {
+        DeltiqSection(String(localized: "calc.plate.section.inventory", bundle: .module).uppercased()) {
             ForEach(unit.availablePlates, id: \.self) { plate in
                 inventoryRow(for: plate)
             }
-            Button {
-                inventory = unit.defaultInventory
-            } label: {
-                Text("calc.plate.resetInventory", bundle: .module)
-            }
-            .font(.callout)
-        } header: {
-            Text("calc.plate.section.inventory", bundle: .module)
-        } footer: {
+            DeltiqRow(
+                icon: "arrow.counterclockwise",
+                label: String(localized: "calc.plate.resetInventory", bundle: .module),
+                showsDivider: false,
+                action: { inventory = unit.defaultInventory }
+            )
             // DEL-122: Unit-spezifischer Footer-Text — pro Einheit ein eigener
             // Catalog-Key, damit die Plate-Limits-Beschreibung in jeder Sprache
             // sauber unit-aware bleibt (kg → 25/20, lbs → 45/35).
-            Text(unit == .kg
-                 ? "calc.plate.inventoryFooter.kg"
-                 : "calc.plate.inventoryFooter.lbs",
-                 bundle: .module)
-                .font(.footnote)
+            hintRow(String(localized: unit == .kg ? "calc.plate.inventoryFooter.kg" : "calc.plate.inventoryFooter.lbs", bundle: .module))
         }
     }
 
     private func inventoryRow(for plate: Double) -> some View {
         let cap = unit.defaultInventory[plate] ?? 0
         let count = inventory[plate] ?? 0
-        return HStack {
-            Circle()
-                .fill(Color.secondary.opacity(0.4))
-                .frame(width: 12, height: 12)
-            Text("\(formatPlate(plate)) \(unit.rawValue)")
-            Spacer()
-            Text(String(format: String(localized: "calc.plate.inventoryRow.count", bundle: .module), count))
-                .monospacedDigit()
-                .foregroundStyle(count == 0 ? .secondary : .primary)
-            Stepper("",
-                value: Binding(
-                    get: { inventory[plate] ?? 0 },
-                    set: { inventory[plate] = $0 }
-                ),
-                in: 0...cap
-            )
-            .labelsHidden()
+        return DeltiqControlRow(label: "\(formatPlate(plate)) \(unit.rawValue)") {
+            HStack(spacing: 10) {
+                Text(String(format: String(localized: "calc.plate.inventoryRow.count", bundle: .module), count))
+                    .font(.system(size: 13))
+                    .monospacedDigit()
+                    .foregroundStyle(count == 0 ? Color.Deltiq.textTertiary : Color.Deltiq.textSecondary)
+                Stepper(
+                    "",
+                    value: Binding(
+                        get: { inventory[plate] ?? 0 },
+                        set: { inventory[plate] = $0 }
+                    ),
+                    in: 0...cap
+                )
+                .labelsHidden()
+            }
         }
+    }
+
+    // MARK: Row helpers
+
+    /// DEL-106-Muster (siehe MeasurementView.decimalField): TextField mit Decimal-Keyboard,
+    /// rechtsbuendig, `fitnessNumberStyle()`. Kein FocusState/Feld-Enum noetig — dieser
+    /// Screen hat keine Previous/Next-Tastatur-Navigation zwischen Feldern.
+    @ViewBuilder
+    private func decimalField(_ label: String, value: Binding<Double?>, placeholder: String) -> some View {
+        TextField(label, value: value, format: .number, prompt: Text(placeholder))
+            .decimalKeyboard()
+            .multilineTextAlignment(.trailing)
+            .font(.system(size: 15))
+            .fitnessNumberStyle()
+            .frame(maxWidth: 140)
+    }
+
+    private func resultMetric(_ label: String, value: String, highlight: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label.uppercased())
+                .font(.system(size: 10, weight: .heavy))
+                .tracking(0.5)
+                .foregroundStyle(Color.Deltiq.textTertiary)
+            Text(value)
+                .font(.system(size: highlight ? 20 : 17, weight: highlight ? .heavy : .semibold))
+                .foregroundStyle(highlight ? Color.deltiqOrange : Color.primary)
+                .fitnessNumberStyle()
+        }
+    }
+
+    private var shortOfTargetWarning: some View {
+        let template = String(localized: "calc.plate.shortOfTarget", bundle: .module)
+        return Label {
+            Text(template
+                .replacingOccurrences(of: "%1$@", with: formatPlate(actualTotal))
+                .replacingOccurrences(of: "%2$@", with: unit.rawValue)
+                .replacingOccurrences(of: "%3$@", with: formatDelta(targetDelta)))
+        } icon: {
+            Image(systemName: "exclamationmark.triangle")
+        }
+        .font(.caption)
+        .foregroundStyle(Color.deltiqOrange)
+    }
+
+    /// DEL-106-Muster (siehe SettingsView.hintRow): Inline-Caption am Fuss einer Section.
+    private func hintRow(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundStyle(Color.Deltiq.textSecondary)
+            .lineSpacing(4)
+            .padding(.horizontal, 14)
+            .padding(.top, 4)
+            .padding(.bottom, 8)
     }
 
     // MARK: Derived
