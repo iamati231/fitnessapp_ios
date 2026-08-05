@@ -84,6 +84,17 @@ public struct PlansListView: View {
             .scrollContentBackground(.hidden)
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
+        // Bug-Fix: der zentrale Aktionsknopf lebte vorher als EIN Overlay
+        // auf der aeusseren TabView (MainTabView) und schwebte dadurch ueber
+        // JEDEM gepushten Screen in jedem Tab. Jeder Tab-Root-View zeichnet
+        // ihn jetzt SELBST - verschwindet automatisch, sobald hier ein Kind
+        // (Plan-Editor, Aktives Training, ...) gepusht wird (siehe
+        // Theme.swift/DeltiqCentralActionButton).
+        .overlay(alignment: .bottom) {
+            DeltiqCentralActionButton {
+                navigation.startOrResumeWorkout(modelContext: modelContext)
+            }
+        }
         #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
         #endif

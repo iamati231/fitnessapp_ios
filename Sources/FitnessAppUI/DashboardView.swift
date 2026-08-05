@@ -197,6 +197,16 @@ public struct DashboardView: View {
         // Bento-Cards (Surface) abheben. Im Light-Mode identisch zu
         // systemGroupedBackground, im Dark-Mode warmer (#0A0A0A statt #000).
         .background(Color.Deltiq.background.ignoresSafeArea())
+        // Bug-Fix: der zentrale Aktionsknopf lebte vorher als EIN Overlay
+        // auf der aeusseren TabView (MainTabView) und schwebte dadurch ueber
+        // JEDEM gepushten Screen in jedem Tab. Jeder Tab-Root-View zeichnet
+        // ihn jetzt SELBST - verschwindet automatisch, sobald hier ein Kind
+        // gepusht wird (siehe Theme.swift/DeltiqCentralActionButton).
+        .overlay(alignment: .bottom) {
+            DeltiqCentralActionButton {
+                navigation.startOrResumeWorkout(modelContext: modelContext)
+            }
+        }
         // Signature-Geruest 1.2: native Navigationsleiste versteckt, die
         // eigene DeltiqHeader uebernimmt Titel + Aktionen.
         #if os(iOS)

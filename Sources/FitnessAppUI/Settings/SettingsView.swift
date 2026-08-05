@@ -105,6 +105,16 @@ public struct SettingsView: View {
             #endif
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
+        // Bug-Fix: der zentrale Aktionsknopf lebte vorher als EIN Overlay
+        // auf der aeusseren TabView (MainTabView) und schwebte dadurch ueber
+        // JEDEM gepushten Screen in jedem Tab. Jeder Tab-Root-View zeichnet
+        // ihn jetzt SELBST - verschwindet automatisch, sobald hier ein Kind
+        // gepusht wird (siehe Theme.swift/DeltiqCentralActionButton).
+        .overlay(alignment: .bottom) {
+            DeltiqCentralActionButton {
+                navigation.startOrResumeWorkout(modelContext: modelContext)
+            }
+        }
         // Signature-Geruest: eigene DeltiqHeader-Kopfzone ersetzt die native
         // Navigationsleiste - dieser Ausblend-Aufruf fehlte bislang komplett
         // (im Gegensatz zu allen anderen umgestellten Screens), wodurch auf

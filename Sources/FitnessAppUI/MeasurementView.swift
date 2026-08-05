@@ -50,6 +50,7 @@ public struct MeasurementView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(HealthKitController.self) private var healthKit
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppNavigation.self) private var navigation
 
     @Query private var profiles: [UserBodyProfile]
 
@@ -192,6 +193,24 @@ public struct MeasurementView: View {
             }
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
+        // Bug-Fix: der zentrale Aktionsknopf lebte vorher als EIN Overlay
+        // auf der aeusseren TabView (MainTabView) und schwebte dadurch ueber
+        // JEDEM gepushten Screen UND ueber der Tastatur. Dieser View wird
+        // sowohl als Tab-Root (New-Mode) als auch gepusht (Edit-Mode fuer
+        // eine historische Messung, `historyRow`) instanziiert - deshalb
+        // zusaetzlich zum ueblichen "nur am Root zeichnen"-Fix (siehe
+        // Theme.swift/DeltiqCentralActionButton) noch zwei eigene
+        // Bedingungen: `!isEditMode` (Edit-Mode-Instanz blendet ihn ganz
+        // aus) und `focusedField == nil` (Root-Instanz hat selbst
+        // Root-Level-Tastaturfelder, im Gegensatz zu den anderen drei
+        // Tab-Roots).
+        .overlay(alignment: .bottom) {
+            if !isEditMode && focusedField == nil {
+                DeltiqCentralActionButton {
+                    navigation.startOrResumeWorkout(modelContext: modelContext)
+                }
+            }
+        }
         #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
         #endif

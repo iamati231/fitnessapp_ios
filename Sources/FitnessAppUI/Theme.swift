@@ -900,4 +900,45 @@ public struct DeltiqRow: View {
         .contentShape(Rectangle())
     }
 }
+
+// MARK: - 6.9 DeltiqCentralActionButton (Abschnitt 1.11)
+
+/// Zentraler Aktionsknopf: 56×56, Kreis, Akzent-Verlauf, "Play"-Symbol.
+///
+/// Bug-Fix: lebte urspruenglich als EIN `.overlay(alignment: .bottom)` auf
+/// der aeusseren `TabView` in `MainTabView` - dadurch schwebte er ueber
+/// JEDEM gepushten Screen in jedem Tab (Rechner, Aktives Training, ...)
+/// UND ueber der Tastatur, weil ein Overlay auf der TabView selbst nicht
+/// weiss, dass ein Kind-NavigationStack gerade tiefer navigiert ist oder
+/// ein Textfeld fokussiert ist.
+///
+/// Fix: jeder der vier Tab-Root-Views (Dashboard, Plan-Liste, Messung,
+/// Einstellungen) zeichnet diesen Button jetzt SELBST per
+/// `.overlay(alignment: .bottom)` auf sich. Sobald ein Kind gepusht wird,
+/// rendert der Root-View gar nicht mehr - der Button verschwindet damit
+/// automatisch, ohne dass irgendein Navigations-Tiefe-Tracking noetig
+/// waere. Screens mit eigenem Root-Level-Keyboard (aktuell nur
+/// MeasurementView) blenden den Button zusaetzlich waehrend eines
+/// fokussierten Feldes aus (siehe dortiges `focusedField == nil`).
+public struct DeltiqCentralActionButton: View {
+    public var action: () -> Void
+
+    public init(action: @escaping () -> Void) {
+        self.action = action
+    }
+
+    public var body: some View {
+        Button(action: action) {
+            Image(systemName: "play.fill")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 56, height: 56)
+                .background(Color.Deltiq.primaryGradient)
+                .clipShape(Circle())
+                .shadow(color: Color.deltiqOrange.opacity(0.4), radius: 16, x: 0, y: 6)
+        }
+        .accessibilityLabel(Text("dashboard.action.startDirect", bundle: .module))
+        .offset(y: -18)
+    }
+}
 #endif

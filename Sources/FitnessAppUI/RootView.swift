@@ -181,7 +181,6 @@ public struct RootView: View {
 @available(iOS 17.0, macOS 14.0, *)
 struct MainTabView: View {
     @Environment(AppNavigation.self) private var navigation
-    @Environment(\.modelContext) private var modelContext
 
     /// DEL-028: Beobachtet den NotificationRouter und routet Notification-Taps
     /// (Cold-Start + Background) auf die richtige Tab. Eine `@State`-Property,
@@ -223,8 +222,11 @@ struct MainTabView: View {
 
             // Signature-Geruest 1.11: TabView kann keinen ueberstehenden
             // Mittelknopf. Uebliche Loesung — mittleren Tab-Eintrag als
-            // leeres Platzhalter-Item fuehren, den Knopf per .overlay
-            // darueberzeichnen (siehe actionButton/.overlay unten).
+            // leeres Platzhalter-Item fuehren, das jedem der vier echten
+            // Tab-Root-Views visuell Platz fuer ihren eigenen
+            // DeltiqCentralActionButton-Overlay schafft (siehe dort - NICHT
+            // hier, um Ueberlappung mit gepushten Screens/Tastatur zu
+            // vermeiden, siehe Theme.swift-Kommentar).
             Color.clear
                 .tabItem { Text("") }
                 .tag(AppTab.actionButton)
@@ -265,10 +267,6 @@ struct MainTabView: View {
             }
             .tag(AppTab.settings)
         }
-        .overlay(alignment: .bottom) {
-            actionButton
-                .offset(y: -18)
-        }
         // DEL-028 — Notification-Tap-Routing. Wird sowohl beim Cold-Start
         // (Router-Set vor MainTabView-First-Render) als auch im Background-
         // Path (Router-Set waehrend App schon laeuft) sauber gehandelt.
@@ -288,22 +286,6 @@ struct MainTabView: View {
         }
     }
 
-    /// Zentraler Aktionsknopf (Abschnitt 1.11): 56×56, Kreis, Akzent-Verlauf.
-    /// Bewusst NICHT kontextabhaengig — loest ueberall dieselbe Aktion aus
-    /// (Rueckfallebene der im Handoff offen gelassenen Produktentscheidung).
-    private var actionButton: some View {
-        Button(action: startOrResumeWorkout) {
-            Image(systemName: "play.fill")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 56, height: 56)
-                .background(Color.Deltiq.primaryGradient)
-                .clipShape(Circle())
-                .shadow(color: Color.deltiqOrange.opacity(0.4), radius: 16, x: 0, y: 6)
-        }
-        .accessibilityLabel(Text("dashboard.action.startDirect", bundle: .module))
-    }
-
     private func applyPendingRouteIfAny() {
         guard let route = notificationRouter.consumePendingRoute() else { return }
         switch route {
@@ -316,75 +298,6 @@ struct MainTabView: View {
         case .measurement:
             navigation.selectedTab = .measurement
         }
-    }
-
-    /// Startet die naechste faellige Trainingseinheit des aktiven Plans oder
-    /// setzt eine bereits offene Session fort. Absichtlich einfacher als
-    /// Dashboards `activeWorkoutButton`: kein Comeback-Prompt (DEL-239) und
-    /// kein Konfliktdialog fuer eine zweite offene Session auf einem anderen
-    /// Tag — beides haengt an View-lokalem State in `DashboardView`, den
-    /// dieser globale Kurzbefehl nicht dupliziert. Sind mehrere Sessions
-    /// offen, wird die zuletzt gestartete fortgesetzt.
-    private func startOrResumeWorkout() {
-        var openDescriptor = FetchDescriptor<WorkoutSession>(
-            predicate: #Predicate { $0.isCompleted == false && $0.isRestDay == false },
-            sortBy: [SortDescriptor(\.startTime, order: .reverse)]
-        )
-        openDescriptor.fetchLimit = 1
-        if let open = try? modelContext.fetch(openDescriptor).first {
-            navigation.workoutPath = NavigationPath()
-            if let day = open.day, let plan = day.plan {
-                navigation.workoutPath.append(plan)
-                navigation.workoutPath.append(day)
-            }
-            navigation.workoutPath.append(ActiveSessionRoute(session: open))
-            navigation.selectedTab = .plan
-            return
-        }
-
-        let planDescriptor = FetchDescriptor<TrainingPlan>(
-            predicate: #Predicate { $0.isActive == true }
-        )
-        guard let plan = try? modelContext.fetch(planDescriptor).first, !plan.days.isEmpty else {
-            // Kein aktiver Plan: Plan-Tab zeigen, dort greift der Leerzustand.
-            navigation.selectedTab = .plan
-            return
-        }
-
-        let sortedDays = PlanNavigator.sortByWeekdayMondayFirst(plan.days)
-        let completedDescriptor = FetchDescriptor<WorkoutSession>(
-            predicate: #Predicate { $0.isCompleted == true }
-        )
-        let completedCount = ((try? modelContext.fetch(completedDescriptor)) ?? []).filter {
-            $0.day?.plan?.persistentModelID == plan.persistentModelID
-        }.count
-        let idx = PlanNavigator.nextScheduledIndex(
-            dayCount: sortedDays.count,
-            completedSessions: completedCount
-        ) ?? 0
-        let day = sortedDays[idx]
-
-        guard !day.activeExercises.isEmpty else {
-            navigation.selectedTab = .plan
-            return
-        }
-
-        let session = WorkoutSession(
-            startTime: Date(),
-            endTime: Date(),
-            durationMinutes: 0,
-            exerciseCount: day.activeExercises.count,
-            isCompleted: false,
-            dayName: day.name,
-            day: day
-        )
-        modelContext.insert(session)
-
-        navigation.workoutPath = NavigationPath()
-        navigation.workoutPath.append(plan)
-        navigation.workoutPath.append(day)
-        navigation.workoutPath.append(ActiveSessionRoute(session: session))
-        navigation.selectedTab = .plan
     }
 
     /// Signature-Geruest 1.11: Hintergrund #1C1C1E @ 92%, aktiver Tab Orange,
