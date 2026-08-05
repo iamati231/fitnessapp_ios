@@ -239,6 +239,32 @@ public extension View {
     }
 }
 
+/// Handoff 1.9 (Button-Taxonomie, dritte Stufe "Sekundaer"): ruhige
+/// Fill-Flaeche (`Deltiq.fill`) statt Gradient/Glow, Orange-Text statt
+/// Weiss — fuer eine zweite, weniger dringliche Aktion direkt neben einem
+/// `.deltiqButtonStyle()`-Primary (z.B. "Leerer Plan" neben "Aus Vorlage"
+/// im Pläne-Leerzustand). Gleiche Hoehe/Rundung wie Primary, damit beide
+/// als sichtbares Paar wirken.
+public struct DeltiqSecondaryButtonModifier: ViewModifier {
+    public init() {}
+
+    public func body(content: Content) -> some View {
+        content
+            .font(.headline.weight(.semibold))
+            .foregroundStyle(Color.deltiqOrange)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(Color.Deltiq.fill)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
+public extension View {
+    func deltiqSecondaryButtonStyle() -> some View {
+        modifier(DeltiqSecondaryButtonModifier())
+    }
+}
+
 // MARK: - 5. UX-205 Icon-Badge Modifier
 
 /// UX-205: 36×36 Icon-Square mit gradientem Tint, hierarchical-rendering

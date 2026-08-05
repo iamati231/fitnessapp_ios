@@ -35,116 +35,195 @@ public struct PlansListView: View {
     public init() {}
 
     public var body: some View {
-        List {
-            if let active = activeSessions.first {
-                Section {
-                    NavigationLink(value: ActiveSessionRoute(session: active)) {
-                        ActiveSessionBanner(session: active)
-                    }
-                } header: {
-                    Text("plans.active.title", bundle: .module)
-                } footer: {
-                    Text("plans.active.hint", bundle: .module)
-                        .font(.footnote)
-                }
-            }
-
-            Section {
-                if plans.isEmpty {
-                    emptyState
-                } else {
-                    ForEach(plans) { plan in
-                        NavigationLink(value: plan) {
-                            PlanRow(plan: plan)
-                        }
-                        // DEL-070: Swipe-Action "Duplizieren" — User kann
-                        // eine Variation seines aktiven Plans bauen, ohne
-                        // das Original zu zerschiessen. Loescht keine
-                        // Daten, daher non-destructive Color (deltiqOrange).
-                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                            Button {
-                                duplicatePlan(plan)
-                            } label: {
-                                Label {
-                                    Text("plans.duplicate", bundle: .module)
-                                } icon: {
-                                    Image(systemName: "plus.square.on.square")
-                                }
+        // Signature-Geruest: eigene Kopfzone statt navigationTitle/Toolbar;
+        // "Pläne" ist der Screen-Titel, "Plan" bleibt die Eyebrow (Tab-Name).
+        // `List` bleibt Container (Swipe-Duplizieren + onDelete brauchen sie,
+        // siehe DEL-070) - anders als Rechner/Bibliothek, die komplett auf
+        // ScrollView+DeltiqSection wechseln, weil sie keine dieser Gesten
+        // benoetigen.
+        VStack(spacing: 0) {
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
+                title: String(localized: "plans.list.title", bundle: .module),
+                actions: [
+                    DeltiqHeaderAction(systemImage: "plus", menu: {
+                        Button {
+                            showingTemplatePicker = true
+                        } label: {
+                            Label {
+                                Text("plans.create.fromTemplate", bundle: .module)
+                            } icon: {
+                                Image(systemName: "rectangle.stack.fill.badge.plus")
                             }
-                            .tint(Color.deltiqOrange)
                         }
-                    }
-                    .onDelete(perform: deletePlans)
+                        Button {
+                            createNewPlan()
+                        } label: {
+                            Label {
+                                Text("plans.create.empty", bundle: .module)
+                            } icon: {
+                                Image(systemName: "plus")
+                            }
+                        }
+                    })
+                ]
+            )
+
+            List {
+                plansContextRow
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 4, trailing: 16))
+
+                if let active = activeSessions.first {
+                    activeSessionSection(active)
                 }
-            } header: {
-                Text("plans.list.title", bundle: .module)
+
+                plansSection
             }
+            .scrollContentBackground(.hidden)
         }
-        .navigationTitle(Text("tab.plan", bundle: .module))
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    Button {
-                        showingTemplatePicker = true
-                    } label: {
-                        Label {
-                            Text("plans.create.fromTemplate", bundle: .module)
-                        } icon: {
-                            Image(systemName: "rectangle.stack.fill.badge.plus")
-                        }
-                    }
-                    Button {
-                        createNewPlan()
-                    } label: {
-                        Label {
-                            Text("plans.create.empty", bundle: .module)
-                        } icon: {
-                            Image(systemName: "plus")
-                        }
-                    }
-                } label: {
-                    Label {
-                        Text("plans.new", bundle: .module)
-                    } icon: {
-                        Image(systemName: "plus.circle.fill")
-                    }
-                }
-            }
-        }
+        .background(Color.Deltiq.background.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
         .sheet(isPresented: $showingTemplatePicker) {
             ProgramTemplatePickerView()
         }
     }
 
+    // MARK: - Kontextzeile
+
+    /// Aktiver Plan (Accent-Pill, ungeprefixt — identische Darstellung wie
+    /// der Plan-Name auf dem Dashboard) + Gesamt-Anzahl (neutral). Beide
+    /// Pills entfallen einzeln, wenn der jeweilige Fakt nicht existiert;
+    /// die ganze Zeile entfaellt, wenn noch gar keine Plaene da sind (dann
+    /// uebernimmt `emptyState` die Erklaerung).
+    @ViewBuilder
+    private var plansContextRow: some View {
+        if !plans.isEmpty {
+            let activeName = plans.first(where: \.isActive)?.displayName
+            DeltiqContextRow([
+                activeName.map { DeltiqContextItem($0.uppercased(), style: .accent) },
+                DeltiqContextItem(pluralizedCount("plans.context.count", count: plans.count).uppercased(), style: .neutral)
+            ].compactMap { $0 })
+        }
+    }
+
+    /// Gleiches manuelles .one/.other-Muster wie `PlanRow.pluralized` (siehe
+    /// DEL-121/DEL-128) — hier lokal dupliziert, weil `PlanRow` ein separater
+    /// privater Typ ist und ein gemeinsamer Helper fuer zwei Zeilen Code
+    /// keinen dritten Ort rechtfertigt.
+    private func pluralizedCount(_ baseKey: String, count: Int) -> String {
+        let suffix = count == 1 ? "one" : "other"
+        let key = String.LocalizationValue(stringLiteral: "\(baseKey).\(suffix)")
+        let raw = String(localized: key, bundle: .module)
+        return raw.replacingOccurrences(of: "%lld", with: "\(count)")
+    }
+
+    // MARK: - Laufendes Training
+
+    /// Einzige Akzent-Kante des Screens (siehe 1.4, max. 1 pro Screen) — die
+    /// laufende Session ist die dringendste Aktion hier. `DeltiqCard` laesst
+    /// sich direkt als List-Row einbetten; `.listRowBackground(.clear)` +
+    /// `.listRowSeparator(.hidden)` unterdruecken Listens eigenes Zeilen-
+    /// Chrome, damit nur die Karten-Optik sichtbar bleibt.
+    private func activeSessionSection(_ session: WorkoutSession) -> some View {
+        Group {
+            NavigationLink(value: ActiveSessionRoute(session: session)) {
+                DeltiqCard(accentEdge: true) {
+                    ActiveSessionBanner(session: session)
+                }
+            }
+            .buttonStyle(.plain)
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+
+            Text("plans.active.hint", bundle: .module)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 12, trailing: 16))
+        }
+    }
+
+    // MARK: - Plaene
+
+    /// Kein `header:` — "Pläne" ist bereits der Screen-Titel in der
+    /// Kopfzone, eine zweite identische Ueberschrift waere redundant (vgl.
+    /// CalculatorsView, deren einzige Sektion aus demselben Grund
+    /// unbetitelt bleibt).
+    @ViewBuilder
+    private var plansSection: some View {
+        if plans.isEmpty {
+            emptyState
+        } else {
+            ForEach(plans) { plan in
+                NavigationLink(value: plan) {
+                    PlanRow(plan: plan)
+                }
+                .listRowBackground(Color.Deltiq.surface)
+                // DEL-070: Swipe-Action "Duplizieren" — User kann eine
+                // Variation seines aktiven Plans bauen, ohne das Original
+                // zu zerschiessen. Loescht keine Daten, daher Orange statt
+                // einer destruktiven Farbe.
+                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                    Button {
+                        duplicatePlan(plan)
+                    } label: {
+                        Label {
+                            Text("plans.duplicate", bundle: .module)
+                        } icon: {
+                            Image(systemName: "plus.square.on.square")
+                        }
+                    }
+                    .tint(Color.deltiqOrange)
+                }
+            }
+            .onDelete(perform: deletePlans)
+            .listRowSeparatorTint(Color.Deltiq.divider)
+        }
+    }
+
     @ViewBuilder
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label {
+        VStack(spacing: 14) {
+            Image(systemName: "list.bullet.rectangle.portrait")
+                .font(.system(size: 44, weight: .semibold))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(Color.deltiqOrange.opacity(0.85))
+                .padding(.top, 4)
+
+            VStack(spacing: 6) {
                 Text("plans.empty.title", bundle: .module)
-            } icon: {
-                Image(systemName: "list.bullet.rectangle.portrait")
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(Color.primary)
+                    .multilineTextAlignment(.center)
+                Text("plans.empty.hint", bundle: .module)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-                .font(.headline)
-            Text("plans.empty.hint", bundle: .module)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            HStack(spacing: 8) {
+
+            VStack(spacing: 8) {
+                // DEL-046: vorher `rectangle.stack.fill.badge.plus` — das
+                // gerenderte SF-Symbol war auf `.borderedProminent` un-
+                // sichtbar (vermutlich wegen `.badge.plus`-Komposition
+                // + Tint-Override). `list.bullet.clipboard` rendert sauber
+                // und harmonisiert visuell mit dem `+` des Leer-Buttons.
                 Button {
                     showingTemplatePicker = true
                 } label: {
-                    // DEL-046: vorher `rectangle.stack.fill.badge.plus` — das
-                    // gerenderte SF-Symbol war auf `.borderedProminent` un-
-                    // sichtbar (vermutlich wegen `.badge.plus`-Komposition
-                    // + Tint-Override). `list.bullet.clipboard` rendert sauber
-                    // und harmonisiert visuell mit dem `+` des Leer-Buttons.
                     Label {
                         Text("plans.create.fromTemplateShort", bundle: .module)
                     } icon: {
                         Image(systemName: "list.bullet.clipboard")
                     }
-                        .font(.callout.weight(.semibold))
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.plain)
+                .deltiqButtonStyle()
 
                 Button {
                     createNewPlan()
@@ -154,13 +233,15 @@ public struct PlansListView: View {
                     } icon: {
                         Image(systemName: "plus")
                     }
-                        .font(.callout)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.plain)
+                .deltiqSecondaryButtonStyle()
             }
             .padding(.top, 4)
         }
-        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .listRowBackground(Color.Deltiq.surface)
     }
 
     // MARK: Actions
@@ -261,25 +342,20 @@ private struct PlanRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // Handoff 1.10 (ein Akzent): Icon war Gruen(aktiv)/Grau(inaktiv)
+            // - beide Zustaende teilen sich jetzt dasselbe Orange-Icon; der
+            // Aktiv-Status wird ausschliesslich ueber die DeltiqPill daneben
+            // kommuniziert, nicht mehr doppelt ueber die Icon-Farbe.
             Image(systemName: "list.bullet.rectangle.portrait")
-                .font(.title3)
-                .foregroundStyle(.white)
-                .frame(width: 32, height: 32)
-                .background((plan.isActive ? Color.green : Color.gray).gradient)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .deltiqAccentIcon()
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(plan.displayName)
-                        .font(.body.weight(.semibold))
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.primary)
                     if plan.isActive {
-                        Text("plans.activeBadge", bundle: .module)
-                            .font(.caption2.weight(.bold))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.green.opacity(0.15))
-                            .foregroundStyle(.green)
-                            .clipShape(Capsule())
+                        DeltiqPill(String(localized: "plans.activeBadge", bundle: .module).uppercased(), style: .accent)
                     }
                 }
                 HStack(spacing: 8) {
@@ -292,11 +368,11 @@ private struct PlanRow: View {
                     Text("•")
                     Text(environmentLabel(plan.targetEnvironment))
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
     }
 
     // DEL-118: route durch die zentrale .localizedName-Extension.
@@ -323,11 +399,7 @@ private struct ActiveSessionBanner: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "figure.run.circle.fill")
-                .font(.title2)
-                .foregroundStyle(.white)
-                .frame(width: 38, height: 38)
-                .background(Color.orange.gradient)
-                .clipShape(Circle())
+                .deltiqAccentIcon(size: 38, glyphSize: 16)
 
             VStack(alignment: .leading, spacing: 2) {
                 // DEL-128: "Gestartet %@"-Banner via xcstrings.
@@ -341,15 +413,22 @@ private struct ActiveSessionBanner: View {
                 Text(session.day != nil || session.dayName != nil
                      ? session.displayDayName
                      : String(localized: "plans.active.fallbackName", bundle: .module))
-                    .font(.body.weight(.semibold))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.primary)
                 Text(
-                    String(format: String(localized: "plans.active.startedAt", bundle: .module),
-                           session.startTime.formatted(.relative(presentation: .named)))
+                    String(localized: "plans.active.startedAt", bundle: .module)
+                        .replacingOccurrences(
+                            of: "%@",
+                            with: session.startTime.formatted(.relative(presentation: .named))
+                        )
                 )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
             Spacer()
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.Deltiq.textTertiary)
         }
     }
 }

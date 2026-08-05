@@ -13,6 +13,8 @@ public struct PlanEditorView: View {
     @Bindable public var plan: TrainingPlan
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var navigation
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.editMode) private var editMode
 
     @Query private var allPlans: [TrainingPlan]
 
@@ -44,29 +46,49 @@ public struct PlanEditorView: View {
     }
 
     public var body: some View {
-        Form {
-            // DEL-030 + DEL-035: Templates sind jetzt voll editierbar wie
-            // Custom-Plaene — kein Lock-Banner, kein "Programm-Typ"/"Beschreibung"-
-            // Feld mehr in der UI. metaSection nur noch der Plan-Name.
-            // settingsSection (Wochen/Trainingsort/Active) wandert nach UNTEN
-            // unter daysSection, damit die Trainings-Liste oben bleibt.
-            metaSection
-            daysSection
-            settingsSection
-        }
-        .navigationTitle(plan.name.isEmpty ? String(localized: "tab.plan", bundle: .module) : plan.displayName)
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        // DEL-095: EditButton aktiviert den Drag-Mode fuer Tage-Reorder.
-        // Bei readOnly-Templates blenden wir den Button aus.
-        .toolbar {
-            if !isReadOnly && !plan.days.isEmpty {
-                ToolbarItem(placement: .deltiqTrailing) {
-                    EditButton()
-                }
+        // Signature-Geruest: eigene Kopfzone statt navigationTitle/Toolbar.
+        // `List` bleibt Container (DEL-095: .onMove/.onDelete fuer die
+        // Tage-Reihenfolge brauchen sie) - alle drei Sektionen bleiben
+        // deshalb in EINER List statt metaSection/settingsSection auf eine
+        // separate ScrollView auszulagern (gleiches Prinzip wie
+        // DashboardSettingsView).
+        VStack(spacing: 0) {
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
+                title: plan.name.isEmpty ? String(localized: "tab.plan", bundle: .module) : plan.displayName,
+                onBack: { dismiss() },
+                // DEL-095: Ersatz fuer EditButton() — aktiviert denselben
+                // Drag-Mode fuer die Tage-Reihenfolge, nur als Header-Aktion
+                // statt natives Toolbar-Item. Bei readOnly-Templates oder
+                // leerem Tage-Array bleibt die Aktion ganz weg (kein Reorder
+                // ohne mind. 2 Tage sinnvoll).
+                actions: (!isReadOnly && !plan.days.isEmpty) ? [
+                    DeltiqHeaderAction(
+                        systemImage: editMode?.wrappedValue.isEditing == true ? "checkmark" : "arrow.up.arrow.down",
+                        isHighlighted: editMode?.wrappedValue.isEditing == true
+                    ) {
+                        withAnimation {
+                            editMode?.wrappedValue = editMode?.wrappedValue.isEditing == true ? .inactive : .active
+                        }
+                    }
+                ] : []
+            )
+
+            List {
+                // DEL-030 + DEL-035: Templates sind jetzt voll editierbar wie
+                // Custom-Plaene — kein Lock-Banner, kein "Programm-Typ"/"Beschreibung"-
+                // Feld mehr in der UI. metaSection nur noch der Plan-Name.
+                // settingsSection (Wochen/Trainingsort/Active) wandert nach UNTEN
+                // unter daysSection, damit die Trainings-Liste oben bleibt.
+                metaSection
+                daysSection
+                settingsSection
             }
+            .scrollContentBackground(.hidden)
         }
-        #endif
+        .background(Color.Deltiq.background.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
         // DEL-022 + DEL-031 + DEL-049 + DEL-050 — Trainingsort-Wechsel feuert
         // einen mehrstufigen Flow:
         //
@@ -313,6 +335,17 @@ public struct PlanEditorView: View {
         .listRowBackground(Color.indigo.opacity(0.08))
     }
 
+    /// Eyebrow-Stil statt der nativen List-Section-Header-Konvention
+    /// (Caps-Grau). `.textCase(nil)` verhindert, dass List den bereits
+    /// grossgeschriebenen String noch einmal automatisch transformiert.
+    private func sectionHeader(_ key: String) -> some View {
+        Text(String(localized: String.LocalizationValue(stringLiteral: key), bundle: .module).uppercased())
+            .font(.system(size: 10, weight: .heavy))
+            .tracking(1.5)
+            .foregroundStyle(Color.deltiqOrange)
+            .textCase(nil)
+    }
+
     /// DEL-035: nur noch der Plan-Name in der Meta-Section. `programType` ist
     /// ein interner Identifier (z.B. "full_body", "ppl") fuer Recommendation-
     /// Logik und gehoert nicht ins User-UI. `descriptionText` lebt nur im
@@ -329,9 +362,12 @@ public struct PlanEditorView: View {
             ) {
                 Text("day.editor.field.name", bundle: .module)
             }
+            .font(.system(size: 15))
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
-            Text("planEditor.section.info", bundle: .module)
+            sectionHeader("planEditor.section.info")
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     private var settingsSection: some View {
@@ -343,10 +379,13 @@ public struct PlanEditorView: View {
             Stepper(value: $plan.weeks, in: 1...52) {
                 LabeledContent {
                     Text("\(plan.weeks)")
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                 } label: {
                     Text("planEditor.field.weeks", bundle: .module)
+                        .font(.system(size: 15))
                 }
             }
+            .listRowBackground(Color.Deltiq.surface)
 
             Picker(selection: $plan.targetEnvironment) {
                 Text("environment.gym", bundle: .module).tag(EnvironmentType.gym)
@@ -354,14 +393,19 @@ public struct PlanEditorView: View {
                 Text("environment.no_equipment", bundle: .module).tag(EnvironmentType.noEquipment)
             } label: {
                 Text("onboarding.field.environment", bundle: .module)
+                    .font(.system(size: 15))
             }
+            .listRowBackground(Color.Deltiq.surface)
 
             Toggle(isOn: Binding(
                 get: { plan.isActive },
                 set: { setActive($0) }
             )) {
                 Text("planEditor.toggle.setActive", bundle: .module)
+                    .font(.system(size: 15))
             }
+            .tint(Color.deltiqOrange)
+            .listRowBackground(Color.Deltiq.surface)
 
             // DEL-053 — globaler Plan-Override fuer die RIR-Schwelle der
             // Smart-Progression. Auto = pro-Uebung-Default (Compound: RIR<=3,
@@ -375,10 +419,13 @@ public struct PlanEditorView: View {
                 Text("planEditor.progressRIR.rir3", bundle: .module).tag(Optional<Float>.some(3))
             } label: {
                 Text("planEditor.progressRIR.label", bundle: .module)
+                    .font(.system(size: 15))
             }
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
-            Text("planEditor.section.settings", bundle: .module)
+            sectionHeader("planEditor.section.settings")
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     /// DEL-053 — Picker-Binding fuer den optionalen Plan-RIR-Override.
@@ -397,13 +444,15 @@ public struct PlanEditorView: View {
                      ? "planEditor.days.empty.template"
                      : "planEditor.days.empty.user",
                      bundle: .module)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .listRowBackground(Color.Deltiq.surface)
             } else if isReadOnly {
                 ForEach(orderedDays) { day in
                     NavigationLink(value: day) {
                         DayRow(day: day)
                     }
+                    .listRowBackground(Color.Deltiq.surface)
                 }
                 // onDelete bewusst NICHT registriert — Template-Tage sind gesetzt
             } else {
@@ -411,13 +460,14 @@ public struct PlanEditorView: View {
                     NavigationLink(value: day) {
                         DayRow(day: day)
                     }
+                    .listRowBackground(Color.Deltiq.surface)
                 }
                 .onMove(perform: moveDays)
                 .onDelete(perform: deleteDays)
             }
         } header: {
             HStack {
-                Text("planEditor.section.trainingDays", bundle: .module)
+                sectionHeader("planEditor.section.trainingDays")
                 Spacer()
                 if !isReadOnly {
                     // Menu statt Single-Button-Action: User entscheidet pro Klick,
@@ -442,13 +492,11 @@ public struct PlanEditorView: View {
                             }
                         }
                     } label: {
-                        Label {
-                            Text("common.add", bundle: .module)
-                        } icon: {
-                            Image(systemName: "plus")
-                        }
-                            .labelStyle(.iconOnly)
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundStyle(Color.deltiqOrange)
+                            .font(.system(size: 18))
                     }
+                    .accessibilityLabel(Text("common.add", bundle: .module))
                 }
             }
         } footer: {
@@ -456,8 +504,10 @@ public struct PlanEditorView: View {
                  ? "planEditor.days.footer.template"
                  : "planEditor.days.footer.user",
                  bundle: .module)
-                .font(.footnote)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     // MARK: Derived
@@ -590,7 +640,7 @@ private struct DayRow: View {
             // weniger Visual Noise wenn die ganze Woche untereinander steht.
             VStack {
                 Text(weekdayShort(day.weekday))
-                    .font(.caption.weight(.bold))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(Color.deltiqOrange)
             }
             .frame(width: 36, height: 36)
@@ -604,13 +654,14 @@ private struct DayRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 // DEL-123: day.displayName resolved via TrainingDay.localizationKey
                 Text(day.displayName)
-                    .font(.body.weight(.medium))
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Color.primary)
                 // DEL-123: format-string via xcstrings statt hardcoded DE.
                 Text(String(format: String(localized: "plan.dayRow.exerciseCount", bundle: .module),
                             day.activeExercises.count,
                             intensityLabel(day.nextIntensity)))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
         }
         .padding(.vertical, 2)
