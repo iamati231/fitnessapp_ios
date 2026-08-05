@@ -39,7 +39,7 @@ public struct DayAnalysisCard: View {
             }
         }
         .padding(14)
-        .background(Color.secondary.opacity(0.08))
+        .background(Color.Deltiq.surface)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .innerLightStroke(cornerRadius: 16, opacity: 0.08)
     }
@@ -62,8 +62,8 @@ public struct DayAnalysisCard: View {
                     .font(.caption2.weight(.semibold))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color.yellow.opacity(0.15))
-                    .foregroundStyle(.yellow)
+                    .background(Color.deltiqOrange.opacity(0.15))
+                    .foregroundStyle(Color.deltiqOrange)
                     .clipShape(Capsule())
             }
         }
@@ -74,17 +74,17 @@ public struct DayAnalysisCard: View {
     private var emptyContent: some View {
         Text("day.analysis.empty", bundle: .module)
             .font(.callout)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.Deltiq.textSecondary)
     }
 
     private var restDayContent: some View {
         HStack(spacing: 8) {
             Image(systemName: "bed.double.fill")
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.purple)
+                .foregroundStyle(Color.deltiqOrange)
             Text("day.analysis.restDay", bundle: .module)
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
     }
 
@@ -147,7 +147,7 @@ public struct DayAnalysisCard: View {
         HStack(spacing: 12) {
             Text("day.analysis.loadLabel", bundle: .module)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
             Spacer()
             // Mini-4-Segment-Bar — leer/gefuellt je nach Stufe.
             HStack(spacing: 3) {
@@ -155,7 +155,7 @@ public struct DayAnalysisCard: View {
                     let cat = LoadCategory.allCases[i]
                     let filled = LoadCategory.allCases.firstIndex(of: category)! >= i
                     Capsule()
-                        .fill(filled ? loadColor(cat) : Color.secondary.opacity(0.2))
+                        .fill(filled ? loadColor(cat) : Color.Deltiq.fill)
                         .frame(width: 14, height: 6)
                 }
             }
@@ -189,7 +189,7 @@ public struct DayAnalysisCard: View {
                     .foregroundStyle(Color.deltiqOrange)
                 Text("day.analysis.muscleFocusLabel", bundle: .module)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
             ForEach(MuscleStimulus.Tier.allTiers, id: \.self) { tier in
                 let muscles = focus.filter { $0.tier == tier }
@@ -209,7 +209,7 @@ public struct DayAnalysisCard: View {
                         // und CoachNoteKind.
                         Text(LocalizedStringKey(tier.localizationKey), bundle: .module)
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
                             .frame(width: 80, alignment: .leading)
                         Text(muscles.map { String(localized: $0.muscle.localizedName) }
                                     .joined(separator: ", "))
@@ -232,7 +232,7 @@ public struct DayAnalysisCard: View {
                 .frame(width: 20)
             Text(labelKey, bundle: .module)
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
             Spacer()
             Text(value)
                 .font(.callout.weight(.semibold).monospacedDigit())

@@ -53,7 +53,7 @@ struct CardioEquipmentDisplayRow: View {
                 .foregroundStyle(Color.deltiqOrange)
         }
         .font(.callout)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Color.Deltiq.textSecondary)
     }
 }
 #endif
