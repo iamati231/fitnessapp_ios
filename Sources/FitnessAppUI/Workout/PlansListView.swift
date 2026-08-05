@@ -32,11 +32,6 @@ public struct PlansListView: View {
 
     @State private var showingTemplatePicker = false
 
-    /// Dynamisch von `.deltiqCentralActionButtonOverlay(...)` befuellt
-    /// (Leistenhoehe + halber Knopf-Durchmesser) - Default 100 nur als
-    /// Platzhalter fuer den allerersten Layout-Pass.
-    @State private var actionButtonBottomInset: CGFloat = 100
-
     public init() {}
 
     public var body: some View {
@@ -85,32 +80,10 @@ public struct PlansListView: View {
                 }
 
                 plansSection
-
-                // Simulator-Befund (Light Mode, 5. August): der zentrale
-                // Aktionsknopf schwebte zu hoch und deckte in anderen
-                // Tab-Roots die letzten Zeilen ab, weil eine pauschale
-                // Zahl die tatsaechliche Leistenhoehe nicht kannte. Diese
-                // leere Spacer-Row reserviert exakt so viel Scroll-
-                // Freiraum, wie `.deltiqCentralActionButtonOverlay(...)`
-                // unten misst (Leistenhoehe + halber Knopf-Durchmesser).
-                Color.clear
-                    .frame(height: actionButtonBottomInset)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets())
             }
             .scrollContentBackground(.hidden)
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
-        // Bug-Fix: der zentrale Aktionsknopf lebte vorher als EIN Overlay
-        // auf der aeusseren TabView (MainTabView) und schwebte dadurch ueber
-        // JEDEM gepushten Screen in jedem Tab. Jeder Tab-Root-View zeichnet
-        // ihn jetzt SELBST - verschwindet automatisch, sobald hier ein Kind
-        // (Plan-Editor, Aktives Training, ...) gepusht wird (siehe
-        // Theme.swift/DeltiqCentralActionButton).
-        .deltiqCentralActionButtonOverlay(bottomContentInset: $actionButtonBottomInset) {
-            navigation.startOrResumeWorkout(modelContext: modelContext)
-        }
         #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
         #endif

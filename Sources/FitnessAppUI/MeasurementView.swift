@@ -50,7 +50,6 @@ public struct MeasurementView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(HealthKitController.self) private var healthKit
     @Environment(\.dismiss) private var dismiss
-    @Environment(AppNavigation.self) private var navigation
 
     @Query private var profiles: [UserBodyProfile]
 
@@ -74,11 +73,6 @@ public struct MeasurementView: View {
 
     @Query(sort: \BodyMeasurement.date, order: .reverse)
     private var historicalMeasurements: [BodyMeasurement]
-
-    /// Dynamisch von `.deltiqCentralActionButtonOverlay(...)` befuellt
-    /// (Leistenhoehe + halber Knopf-Durchmesser) - Default 100 nur als
-    /// Platzhalter fuer den allerersten Layout-Pass.
-    @State private var actionButtonBottomInset: CGFloat = 100
 
     @State private var lastSavedAt: Date?
     @State private var didAttemptHealthKitAutofill = false
@@ -186,7 +180,7 @@ public struct MeasurementView: View {
                     .padding(.top, 12)
                     // DEL-106: Bottom-Padding fuer die Tastatur — verhindert,
                     // dass die letzten Felder unter der Tastatur "stecken" bleiben.
-                    .padding(.bottom, focusedField == nil ? actionButtonBottomInset : 140)
+                    .padding(.bottom, focusedField == nil ? 100 : 140)
                 }
                 .scrollContentBackground(.hidden)
                 #if os(iOS)
@@ -203,23 +197,6 @@ public struct MeasurementView: View {
             }
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
-        // Bug-Fix: der zentrale Aktionsknopf lebte vorher als EIN Overlay
-        // auf der aeusseren TabView (MainTabView) und schwebte dadurch ueber
-        // JEDEM gepushten Screen UND ueber der Tastatur. Dieser View wird
-        // sowohl als Tab-Root (New-Mode) als auch gepusht (Edit-Mode fuer
-        // eine historische Messung, `historyRow`) instanziiert - deshalb
-        // zusaetzlich zum ueblichen "nur am Root zeichnen"-Fix (siehe
-        // Theme.swift/DeltiqCentralActionButton) noch zwei eigene
-        // Bedingungen: `!isEditMode` (Edit-Mode-Instanz blendet ihn ganz
-        // aus) und `focusedField == nil` (Root-Instanz hat selbst
-        // Root-Level-Tastaturfelder, im Gegensatz zu den anderen drei
-        // Tab-Roots).
-        .deltiqCentralActionButtonOverlay(
-            show: !isEditMode && focusedField == nil,
-            bottomContentInset: $actionButtonBottomInset
-        ) {
-            navigation.startOrResumeWorkout(modelContext: modelContext)
-        }
         #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
         #endif

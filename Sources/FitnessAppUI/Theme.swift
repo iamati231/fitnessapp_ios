@@ -901,114 +901,18 @@ public struct DeltiqRow: View {
     }
 }
 
-// MARK: - 6.9 DeltiqCentralActionButton (Abschnitt 1.11)
-
-/// Zentraler Aktionsknopf: 64×64 (siehe `diameter`), Kreis, Akzent-Verlauf,
-/// "Play"-Symbol.
-///
-/// Bug-Fix: lebte urspruenglich als EIN `.overlay(alignment: .bottom)` auf
-/// der aeusseren `TabView` in `MainTabView` - dadurch schwebte er ueber
-/// JEDEM gepushten Screen in jedem Tab (Rechner, Aktives Training, ...)
-/// UND ueber der Tastatur, weil ein Overlay auf der TabView selbst nicht
-/// weiss, dass ein Kind-NavigationStack gerade tiefer navigiert ist oder
-/// ein Textfeld fokussiert ist.
-///
-/// Fix: jeder der vier Tab-Root-Views (Dashboard, Plan-Liste, Messung,
-/// Einstellungen) zeichnet diesen Button jetzt SELBST per
-/// `.overlay(alignment: .bottom)` auf sich. Sobald ein Kind gepusht wird,
-/// rendert der Root-View gar nicht mehr - der Button verschwindet damit
-/// automatisch, ohne dass irgendein Navigations-Tiefe-Tracking noetig
-/// waere. Screens mit eigenem Root-Level-Keyboard (aktuell nur
-/// MeasurementView) blenden den Button zusaetzlich waehrend eines
-/// fokussierten Feldes aus (siehe dortiges `focusedField == nil`).
-public struct DeltiqCentralActionButton: View {
-    /// Kreisdurchmesser — Single-Source-of-Truth fuer den eigenen Offset
-    /// UND fuer `.deltiqCentralActionButtonOverlay(...)`s Content-Bottom-
-    /// Inset, damit Button-Position und reservierter Scroll-Freiraum nie
-    /// auseinanderlaufen koennen.
-    public static let diameter: CGFloat = 64
-
-    public var action: () -> Void
-
-    public init(action: @escaping () -> Void) {
-        self.action = action
-    }
-
-    public var body: some View {
-        Button(action: action) {
-            Image(systemName: "play.fill")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: Self.diameter, height: Self.diameter)
-                .background(Color.Deltiq.primaryGradient)
-                .clipShape(Circle())
-                .shadow(color: Color.deltiqOrange.opacity(0.4), radius: 16, x: 0, y: 6)
-        }
-        .accessibilityLabel(Text("dashboard.action.startDirect", bundle: .module))
-        // Simulator-Befund (Light Mode, 5. August): Kreismitte soll exakt
-        // auf der Oberkante der Tab-Leiste sitzen. `.overlay(alignment:
-        // .bottom)` auf einem safe-area-respektierenden Root-Container
-        // dockt OHNE Offset bereits mit der UNTERKANTE des Kreises an
-        // dieser Kante an - +halber Durchmesser zentriert ihn exakt
-        // darauf, statt (wie zuvor mit festem -18) frei darueber zu
-        // schweben.
-        .offset(y: Self.diameter / 2)
-    }
-}
-
-/// PreferenceKey fuer `.deltiqCentralActionButtonOverlay(...)`: liest den
-/// tatsaechlichen, geraetespezifischen Sicherheitsabstand unten (== Tab-
-/// Leisten-Hoehe im Tab-Root), statt ihn zu schaetzen.
-private struct DeltiqBottomSafeAreaKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
-private struct DeltiqCentralActionButtonOverlayModifier: ViewModifier {
-    var show: Bool
-    @Binding var bottomContentInset: CGFloat
-    var action: () -> Void
-
-    func body(content: Content) -> some View {
-        content
-            .background(
-                GeometryReader { proxy in
-                    Color.clear
-                        .preference(key: DeltiqBottomSafeAreaKey.self, value: proxy.safeAreaInsets.bottom)
-                }
-            )
-            .onPreferenceChange(DeltiqBottomSafeAreaKey.self) { barHeight in
-                bottomContentInset = barHeight + DeltiqCentralActionButton.diameter / 2
-            }
-            .overlay(alignment: .bottom) {
-                if show {
-                    DeltiqCentralActionButton(action: action)
-                }
-            }
-    }
-}
-
-public extension View {
-    /// Zeichnet den `DeltiqCentralActionButton` als Bottom-Overlay UND
-    /// liefert ueber `bottomContentInset` den Freiraum, den der Call-Site
-    /// als `.padding(.bottom:)` auf seinen SCROLLBAREN Content anwenden
-    /// muss (Leistenhoehe + halber Knopf-Durchmesser) — ersetzt das
-    /// bisherige pauschale "100pt" pro Tab-Root-Screen. Simulator-Befund
-    /// (Light Mode, 5. August): der Knopf schwebte zu hoch UND deckte in
-    /// Messung die letzten Zeilen ab, weil die feste Zahl die tatsaechliche
-    /// Leistenhoehe nicht kannte. `show: false` blendet nur den Button aus
-    /// (z. B. waehrend die Tastatur ein Root-Level-Feld fokussiert hat),
-    /// behaelt aber den gemessenen Inset bei.
-    func deltiqCentralActionButtonOverlay(
-        show: Bool = true,
-        bottomContentInset: Binding<CGFloat>,
-        action: @escaping () -> Void
-    ) -> some View {
-        modifier(DeltiqCentralActionButtonOverlayModifier(show: show, bottomContentInset: bottomContentInset, action: action))
-    }
-}
+// MARK: - 6.9 [entfernt] DeltiqCentralActionButton (Abschnitt 1.11, Nachtrag Weg B)
+//
+// Design-Entscheidung 5. August (README.md, Nachtrag zu 1.11, Weg B): der
+// ueberstehende, frei schwebende Aktionsknopf liess sich gegen die
+// tatsaechliche Tab-Leiste (eine schwebende Kapsel mit eigenem Aussenabstand,
+// nicht die Bildschirmkante) nicht robust positionieren - die Kapsel
+// verteilt ihre vier sichtbaren Symbole neu, sobald der Platzhalter keine
+// eigene Spalte bekommt, und ihre Oberkante laesst sich nicht aus dem
+// sicheren Bereich ableiten. Ersetzt durch ein echtes fuenftes Tab-Symbol
+// (Akzent-Kreis 34pt, Label "Start") in MainTabView/RootView.swift - siehe
+// dort. `DeltiqCentralActionButton` und `.deltiqCentralActionButtonOverlay`
+// sind damit ersatzlos entfallen.
 
 // MARK: - 6.10 Swipe-Back-Fix (Bug-Report)
 

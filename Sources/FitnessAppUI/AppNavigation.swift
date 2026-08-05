@@ -50,10 +50,8 @@ public extension AppNavigation {
     /// dieser globale Kurzbefehl nicht dupliziert. Sind mehrere Sessions
     /// offen, wird die zuletzt gestartete fortgesetzt.
     ///
-    /// Lebt hier statt in `MainTabView`, damit JEDER Tab-Root-View (der den
-    /// zentralen Aktionsknopf per `DeltiqCentralActionButton` selbst
-    /// zeichnet, siehe Theme.swift) dieselbe Logik aufrufen kann, ohne sie
-    /// zu duplizieren.
+    /// Wird von `MainTabView`s `onChange(of: navigation.selectedTab)`
+    /// aufgerufen, sobald der User den "Start"-Tab antippt (siehe `AppTab`).
     func startOrResumeWorkout(modelContext: ModelContext) {
         var openDescriptor = FetchDescriptor<WorkoutSession>(
             predicate: #Predicate { $0.isCompleted == false && $0.isRestDay == false },
@@ -129,21 +127,22 @@ public enum CalculatorsRoute: Hashable, Sendable {
     case waterTracker
 }
 
-/// Reale, sichtbare Tabs sind `dashboard`, `plan`, `measurement` und
-/// `settings` ("Mehr"). `actionButton` traegt keinen Inhalt — es ist nur das
-/// Tag des leeren Platzhalter-Tabs, der dem zentralen Aktionsknopf
-/// (Signature-Geruest, Abschnitt 1.11) in der Tab-Leiste visuell Platz
-/// schafft. Der Knopf selbst wird NICHT von `MainTabView` gezeichnet
-/// (fruehere Version schwebte dadurch ueber jedem gepushten Screen und der
-/// Tastatur) — jeder der vier echten Tab-Root-Views zeichnet ihn per
-/// `DeltiqCentralActionButton`-Overlay selbst, siehe Theme.swift. Rechner
-/// hat mit dem Tab-Umbau seinen eigenen Tab verloren und haengt jetzt
-/// unter "Mehr".
+/// Fuenf Tabs, alle mit echtem `.tabItem` (Design-Entscheidung 5. August,
+/// README.md Nachtrag zu 1.11, Weg B): `start` ist kein Platzhalter mehr,
+/// sondern ein echtes Tab-Symbol (Akzent-Kreis 34pt, Label "Start") - der
+/// fruehere freischwebende `DeltiqCentralActionButton` liess sich gegen die
+/// tatsaechliche Tab-Leiste (eine schwebende Kapsel, nicht die
+/// Bildschirmkante) nicht robust positionieren. Antippen loest in
+/// `MainTabView`s `onChange(of: navigation.selectedTab)` dieselbe
+/// `startOrResumeWorkout(modelContext:)`-Aktion aus wie zuvor der Knopf und
+/// springt danach sofort auf den zuletzt sichtbaren echten Tab zurueck -
+/// `start` selbst traegt nie eigenen Content. Rechner hat mit dem
+/// Tab-Umbau seinen eigenen Tab verloren und haengt jetzt unter "Mehr".
 @available(iOS 17.0, macOS 14.0, *)
 public enum AppTab: Hashable, Sendable {
     case dashboard
     case plan
-    case actionButton
+    case start
     case measurement
     case settings
 }
