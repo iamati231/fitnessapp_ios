@@ -195,6 +195,8 @@ public struct TemplatePreviewView: View {
     /// Anpassbarer Button-Titel.
     public let adoptButtonTitle: String
 
+    @Environment(\.dismiss) private var dismiss
+
     public init(
         template: ProgramTemplate,
         adoptButtonTitle: String = "Diesen Plan übernehmen",
@@ -206,112 +208,123 @@ public struct TemplatePreviewView: View {
     }
 
     public var body: some View {
-        List {
-            heroSection
-            ForEach(orderedDays, id: \.sequenceIndex) { day in
-                daySection(day)
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: geteilte View - wird sowohl als echter
+            // Push aus ProgramTemplatePickerView (Gruppe A) als auch aus
+            // OnboardingViews eigenem Sheet gerufen. Kein einzelner
+            // "Herkunfts"-Tab moeglich, daher eine neutrale Eyebrow, die in
+            // beiden Kontexten Sinn ergibt (User-Entscheidung).
+            DeltiqHeader(
+                eyebrow: String(localized: "picker.plan.title", bundle: .module).uppercased(),
+                title: template.displayName,
+                onBack: { dismiss() }
+            )
+
+            VStack(alignment: .leading, spacing: 18) {
+                heroCard
+                ForEach(orderedDays, id: \.sequenceIndex) { day in
+                    dayCard(day)
+                }
+                adoptButton
             }
-            adoptSection
+            .deltiqScreen()
         }
-        .navigationTitle(template.displayName)
+        .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
     }
 
     // MARK: Subsections
 
-    private var heroSection: some View {
-        Section {
+    private var heroCard: some View {
+        DeltiqCard {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 12) {
-                    // DEL-105: Brand-Akzent statt iOS-Blau (Hero-Badge + Focus-Label).
                     Image(systemName: template.iconSystemName)
-                        .font(.title2)
-                        .foregroundStyle(.white)
-                        .frame(width: 44, height: 44)
-                        .background(Color.deltiqOrange.gradient)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .deltiqAccentIcon()
                     VStack(alignment: .leading, spacing: 2) {
                         Text(template.displayFocus)
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(Color.deltiqOrange)
                         Text(template.displayTagline)
                             .font(.body.weight(.semibold))
+                            .foregroundStyle(Color.primary)
                     }
                 }
                 Text(template.displayDescription)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
-            .padding(.vertical, 4)
         }
     }
 
-    @ViewBuilder
-    private func daySection(_ day: DaySpec) -> some View {
-        Section {
+    private func dayCard(_ day: DaySpec) -> some View {
+        // DEL-088: Titel zeigt "Tag N · <Name>" (sequenceIndex statt
+        // Wochentag — Tag wird erst beim Instantiieren auf einen Weekday
+        // gemappt, siehe DayPickerSheet).
+        let dayLabel = String(format: String(localized: "plan.dayNumberLabel", bundle: .module), day.sequenceIndex)
+        return DeltiqSection("\(dayLabel) · \(day.displayName)".uppercased()) {
             // DEL-088: Templates enthalten nur noch Trainings-Tage — der
             // Rest-Day-Branch ist obsolet, bleibt aber defensiv drin fuer
             // den hypothetischen Fall einer Migration-Luecke.
             if day.exercises.isEmpty {
                 HStack(spacing: 10) {
                     Image(systemName: "bed.double.fill")
-                        .foregroundStyle(.purple)
+                        .foregroundStyle(Color.deltiqOrange)
                     Text("Ruhetag")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
             } else {
-                ForEach(Array(day.exercises.enumerated()), id: \.offset) { _, exercise in
-                    VStack(alignment: .leading, spacing: 2) {
-                        // DEL-118: lokalisierter Name via Library-Lookup
-                        // (ExerciseSpec.name ist der deutsche Raw-String aus
-                        // dem Template — wir resolven ihn ueber den Catalog-
-                        // Key des Library-Eintrags).
-                        Text(localizedExerciseName(exercise.name))
-                            .font(.body.weight(.medium))
-                        // DEL-118: format-string via xcstrings statt
-                        // hardcoded DE-Interpolation.
-                        Text(detailLine(for: exercise))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                ForEach(Array(day.exercises.enumerated()), id: \.offset) { index, exercise in
+                    VStack(alignment: .leading, spacing: 0) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            // DEL-118: lokalisierter Name via Library-Lookup
+                            // (ExerciseSpec.name ist der deutsche Raw-String aus
+                            // dem Template — wir resolven ihn ueber den Catalog-
+                            // Key des Library-Eintrags).
+                            Text(localizedExerciseName(exercise.name))
+                                .font(.body.weight(.medium))
+                                .foregroundStyle(Color.primary)
+                            // DEL-118: format-string via xcstrings statt
+                            // hardcoded DE-Interpolation.
+                            Text(detailLine(for: exercise))
+                                .font(.caption)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        if index < day.exercises.count - 1 {
+                            Rectangle()
+                                .fill(Color.Deltiq.divider)
+                                .frame(height: 1)
+                        }
                     }
-                    .padding(.vertical, 2)
                 }
-            }
-        } header: {
-            // DEL-088: Header zeigt "Tag N · <Name>" (sequenceIndex statt
-            // Wochentag — Tag wird erst beim Instantiieren auf einen Weekday
-            // gemappt, siehe DayPickerSheet).
-            HStack(spacing: 6) {
-                Text(String(format: String(localized: "plan.dayNumberLabel", bundle: .module), day.sequenceIndex))
-                    .textCase(nil)
-                Text("·").foregroundStyle(.tertiary)
-                Text(day.displayName)
-                    .textCase(nil)
-                    .foregroundStyle(.primary)
             }
         }
     }
 
-    private var adoptSection: some View {
-        Section {
+    private var adoptButton: some View {
+        VStack(alignment: .leading, spacing: 8) {
             Button {
                 onAdopt()
             } label: {
-                HStack {
-                    Spacer()
-                    Label(adoptButtonTitle, systemImage: "checkmark.circle.fill")
-                        .font(.headline)
-                    Spacer()
-                }
-                .padding(.vertical, 6)
-                .foregroundStyle(.white)
+                Label(adoptButtonTitle, systemImage: "checkmark.circle.fill")
             }
-            .listRowBackground(Color.deltiqOrange)
-        } footer: {
+            .buttonStyle(.plain)
+            .deltiqButtonStyle()
+
             Text("picker.plan.adoptFootnote", bundle: .module)
                 .font(.footnote)
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
     }
 
