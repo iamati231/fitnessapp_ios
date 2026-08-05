@@ -66,6 +66,11 @@ public struct SettingsView: View {
     @State private var showingResetConfirm = false
     @State private var resetErrorMessage: String?
 
+    /// Dynamisch von `.deltiqCentralActionButtonOverlay(...)` befuellt
+    /// (Leistenhoehe + halber Knopf-Durchmesser) - Default 100 nur als
+    /// Platzhalter fuer den allerersten Layout-Pass.
+    @State private var actionButtonBottomInset: CGFloat = 100
+
     public init() {}
 
     public var body: some View {
@@ -97,7 +102,7 @@ public struct SettingsView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
-                .padding(.bottom, 100)
+                .padding(.bottom, actionButtonBottomInset)
             }
             .scrollContentBackground(.hidden)
             #if os(iOS)
@@ -110,10 +115,8 @@ public struct SettingsView: View {
         // JEDEM gepushten Screen in jedem Tab. Jeder Tab-Root-View zeichnet
         // ihn jetzt SELBST - verschwindet automatisch, sobald hier ein Kind
         // gepusht wird (siehe Theme.swift/DeltiqCentralActionButton).
-        .overlay(alignment: .bottom) {
-            DeltiqCentralActionButton {
-                navigation.startOrResumeWorkout(modelContext: modelContext)
-            }
+        .deltiqCentralActionButtonOverlay(bottomContentInset: $actionButtonBottomInset) {
+            navigation.startOrResumeWorkout(modelContext: modelContext)
         }
         // Signature-Geruest: eigene DeltiqHeader-Kopfzone ersetzt die native
         // Navigationsleiste - dieser Ausblend-Aufruf fehlte bislang komplett

@@ -106,6 +106,11 @@ public struct DashboardView: View {
     /// eins verlangt.
     @State private var selectedCalendarDay: CalendarDaySelection?
 
+    /// Dynamisch von `.deltiqCentralActionButtonOverlay(...)` befuellt
+    /// (Leistenhoehe + halber Knopf-Durchmesser) - Default 100 nur als
+    /// Platzhalter fuer den allerersten Layout-Pass.
+    @State private var actionButtonBottomInset: CGFloat = 100
+
     private struct CalendarDaySelection: Identifiable {
         let day: Date
         var id: Date { day }
@@ -182,7 +187,7 @@ public struct DashboardView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
-                .padding(.bottom, 100)
+                .padding(.bottom, actionButtonBottomInset)
                 // DEL-214: Bugfix "Dashboard laesst sich horizontal wischen" —
                 // ein zu breites Child (z.B. Chart-Label/monospaced Text) machte
                 // den ScrollView-Content breiter als den Viewport, wodurch die
@@ -202,10 +207,8 @@ public struct DashboardView: View {
         // JEDEM gepushten Screen in jedem Tab. Jeder Tab-Root-View zeichnet
         // ihn jetzt SELBST - verschwindet automatisch, sobald hier ein Kind
         // gepusht wird (siehe Theme.swift/DeltiqCentralActionButton).
-        .overlay(alignment: .bottom) {
-            DeltiqCentralActionButton {
-                navigation.startOrResumeWorkout(modelContext: modelContext)
-            }
+        .deltiqCentralActionButtonOverlay(bottomContentInset: $actionButtonBottomInset) {
+            navigation.startOrResumeWorkout(modelContext: modelContext)
         }
         // Signature-Geruest 1.2: native Navigationsleiste versteckt, die
         // eigene DeltiqHeader uebernimmt Titel + Aktionen.

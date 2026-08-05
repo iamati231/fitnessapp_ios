@@ -32,6 +32,11 @@ public struct PlansListView: View {
 
     @State private var showingTemplatePicker = false
 
+    /// Dynamisch von `.deltiqCentralActionButtonOverlay(...)` befuellt
+    /// (Leistenhoehe + halber Knopf-Durchmesser) - Default 100 nur als
+    /// Platzhalter fuer den allerersten Layout-Pass.
+    @State private var actionButtonBottomInset: CGFloat = 100
+
     public init() {}
 
     public var body: some View {
@@ -80,6 +85,19 @@ public struct PlansListView: View {
                 }
 
                 plansSection
+
+                // Simulator-Befund (Light Mode, 5. August): der zentrale
+                // Aktionsknopf schwebte zu hoch und deckte in anderen
+                // Tab-Roots die letzten Zeilen ab, weil eine pauschale
+                // Zahl die tatsaechliche Leistenhoehe nicht kannte. Diese
+                // leere Spacer-Row reserviert exakt so viel Scroll-
+                // Freiraum, wie `.deltiqCentralActionButtonOverlay(...)`
+                // unten misst (Leistenhoehe + halber Knopf-Durchmesser).
+                Color.clear
+                    .frame(height: actionButtonBottomInset)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets())
             }
             .scrollContentBackground(.hidden)
         }
@@ -90,10 +108,8 @@ public struct PlansListView: View {
         // ihn jetzt SELBST - verschwindet automatisch, sobald hier ein Kind
         // (Plan-Editor, Aktives Training, ...) gepusht wird (siehe
         // Theme.swift/DeltiqCentralActionButton).
-        .overlay(alignment: .bottom) {
-            DeltiqCentralActionButton {
-                navigation.startOrResumeWorkout(modelContext: modelContext)
-            }
+        .deltiqCentralActionButtonOverlay(bottomContentInset: $actionButtonBottomInset) {
+            navigation.startOrResumeWorkout(modelContext: modelContext)
         }
         #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
@@ -140,9 +156,20 @@ public struct PlansListView: View {
     /// sich direkt als List-Row einbetten; `.listRowBackground(.clear)` +
     /// `.listRowSeparator(.hidden)` unterdruecken Listens eigenes Zeilen-
     /// Chrome, damit nur die Karten-Optik sichtbar bleibt.
+    ///
+    /// Simulator-Befund (Light Mode, 5. August): ein `NavigationLink`
+    /// zeichnet in einer `List` IMMER seinen eigenen nativen Chevron dazu,
+    /// egal welcher ButtonStyle gesetzt ist — zusammen mit
+    /// `ActiveSessionBanner`s eigenem, handgebautem Chevron ergab das zwei
+    /// Pfeile nebeneinander. Ein simpler `Button`, der `navigation.
+    /// workoutPath` (dieselbe Path-Instanz, die auch `WorkoutRootView`s
+    /// `.navigationDestination(for: ActiveSessionRoute.self)` bedient)
+    /// direkt befuellt, navigiert identisch — nur ohne den nativen Chevron.
     private func activeSessionSection(_ session: WorkoutSession) -> some View {
         Group {
-            NavigationLink(value: ActiveSessionRoute(session: session)) {
+            Button {
+                navigation.workoutPath.append(ActiveSessionRoute(session: session))
+            } label: {
                 DeltiqCard(accentEdge: true) {
                     ActiveSessionBanner(session: session)
                 }

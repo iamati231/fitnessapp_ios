@@ -4418,6 +4418,52 @@
         }
       }
     },
+    "measurement.field.required": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "erforderlich"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "required"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "gerekli"
+          }
+        }
+      }
+    },
+    "measurement.field.optional": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "optional"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "optional"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "opsiyonel"
+          }
+        }
+      }
+    },
     "measurement.field.neck": {
       "extractionState": "manual",
       "localizations": {
@@ -22745,52 +22791,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Son: %@"
-          }
-        }
-      }
-    },
-    "measurement.context.missing.one": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld Pflichtfeld"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld required field"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld zorunlu alan"
-          }
-        }
-      }
-    },
-    "measurement.context.missing.many": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld Pflichtfelder"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld required fields"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld zorunlu alan"
           }
         }
       }

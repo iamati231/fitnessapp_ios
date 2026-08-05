@@ -75,6 +75,11 @@ public struct MeasurementView: View {
     @Query(sort: \BodyMeasurement.date, order: .reverse)
     private var historicalMeasurements: [BodyMeasurement]
 
+    /// Dynamisch von `.deltiqCentralActionButtonOverlay(...)` befuellt
+    /// (Leistenhoehe + halber Knopf-Durchmesser) - Default 100 nur als
+    /// Platzhalter fuer den allerersten Layout-Pass.
+    @State private var actionButtonBottomInset: CGFloat = 100
+
     @State private var lastSavedAt: Date?
     @State private var didAttemptHealthKitAutofill = false
     @State private var weightCameFromHealth = false
@@ -124,7 +129,12 @@ public struct MeasurementView: View {
             DeltiqHeader(
                 eyebrow: loc("measurement.header.eyebrow"),
                 title: navTitle,
-                onBack: { dismiss() },
+                // Simulator-Befund (Light Mode, 5. August): New-Mode ist
+                // Tab-Root (kein Push, nichts zum Zurueckgehen) - der
+                // Chevron erschien trotzdem und tat nichts. Nur im
+                // gepushten Edit-Mode (historyRow-NavigationLink) gibt es
+                // etwas zum Dismissen.
+                onBack: isEditMode ? { dismiss() } : nil,
                 actions: isEditMode ? [
                     DeltiqHeaderAction(
                         systemImage: isEditingEnabled ? "checkmark" : "pencil",
@@ -176,7 +186,7 @@ public struct MeasurementView: View {
                     .padding(.top, 12)
                     // DEL-106: Bottom-Padding fuer die Tastatur — verhindert,
                     // dass die letzten Felder unter der Tastatur "stecken" bleiben.
-                    .padding(.bottom, focusedField == nil ? 100 : 140)
+                    .padding(.bottom, focusedField == nil ? actionButtonBottomInset : 140)
                 }
                 .scrollContentBackground(.hidden)
                 #if os(iOS)
@@ -204,12 +214,11 @@ public struct MeasurementView: View {
         // aus) und `focusedField == nil` (Root-Instanz hat selbst
         // Root-Level-Tastaturfelder, im Gegensatz zu den anderen drei
         // Tab-Roots).
-        .overlay(alignment: .bottom) {
-            if !isEditMode && focusedField == nil {
-                DeltiqCentralActionButton {
-                    navigation.startOrResumeWorkout(modelContext: modelContext)
-                }
-            }
+        .deltiqCentralActionButtonOverlay(
+            show: !isEditMode && focusedField == nil,
+            bottomContentInset: $actionButtonBottomInset
+        ) {
+            navigation.startOrResumeWorkout(modelContext: modelContext)
         }
         #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
@@ -266,13 +275,18 @@ public struct MeasurementView: View {
         }
     }
 
-    /// Handoff 2.5: "LETZTE: 29. JULI" (neutral) + "3 PFLICHTFELDER" (Marke,
-    /// verschwindet wenn ausgefuellt). Nur im New-Mode sinnvoll - im
+    /// Handoff 2.5: "LETZTE: 29. JULI" (neutral) + Pflichtfeld-Marke,
+    /// verschwindet wenn ausgefuellt. Nur im New-Mode sinnvoll - im
     /// Edit-Mode ist "letzte" der gerade angezeigte Eintrag selbst.
+    ///
+    /// Simulator-Befund (Light Mode, 5. August): die Marke zeigte nur eine
+    /// Zahl ("2 Pflichtfelder"), ohne dass die Zeilen darunter erkennen
+    /// liessen, WELCHE zwei gemeint waren. Sie nennt jetzt die Feldnamen
+    /// direkt (dieselben Keys wie `missingFieldsHint`s Satz).
     @ViewBuilder
     private func measurementContextRow(profile: UserBodyProfile) -> some View {
         if !isEditMode {
-            let missing = missingRequiredCount(profile: profile)
+            let missingNames = missingRequiredFieldNames(profile: profile)
             // @ViewBuilder transformiert JEDE Nicht-Deklarations-Anweisung im
             // Funktionskoerper - das vorherige `items.append(...)` (Void-
             // Aufruf) scheiterte an buildExpression ("type '()' cannot
@@ -292,15 +306,9 @@ public struct MeasurementView: View {
                     style: .neutral
                 )
             }
-            let missingItem: DeltiqContextItem? = missing > 0
-                ? DeltiqContextItem(
-                    String(
-                        format: missing == 1 ? loc("measurement.context.missing.one") : loc("measurement.context.missing.many"),
-                        missing
-                    ).uppercased(),
-                    style: .accent
-                  )
-                : nil
+            let missingItem: DeltiqContextItem? = missingNames.isEmpty
+                ? nil
+                : DeltiqContextItem(missingNames.joined(separator: ", ").uppercased(), style: .accent)
             let items = [lastItem, missingItem].compactMap { $0 }
             if !items.isEmpty {
                 DeltiqContextRow(items)
@@ -308,17 +316,19 @@ public struct MeasurementView: View {
         }
     }
 
-    /// Gleiche Bedingungen wie `missingFieldsHint`, nur als Zaehler statt
-    /// als zusammengesetzter Satz - fuer die Kontextzeile.
-    private func missingRequiredCount(profile: UserBodyProfile) -> Int {
-        var count = 0
-        if (weightKg ?? 0) <= 0 { count += 1 }
-        if (neckCm ?? 0)   <= 0 { count += 1 }
-        if (waistCm ?? 0)  <= 0 { count += 1 }
+    /// Lokalisierte Namen der noch fehlenden Pflichtfelder, in Formular-
+    /// Reihenfolge. Single-Source-of-Truth fuer die Kontextzeilen-Marke UND
+    /// `missingFieldsHint`s Satz - beide zaehlten vorher getrennt dieselbe
+    /// Logik hoch.
+    private func missingRequiredFieldNames(profile: UserBodyProfile) -> [String] {
+        var missing: [String] = []
+        if (weightKg ?? 0) <= 0 { missing.append(loc("measurement.validation.field.weight")) }
+        if (neckCm ?? 0)   <= 0 { missing.append(loc("measurement.validation.field.neck")) }
+        if (waistCm ?? 0)  <= 0 { missing.append(loc("measurement.validation.field.waist")) }
         if profile.profile == .female, (hipCm ?? 0) <= 0 {
-            count += 1
+            missing.append(loc("measurement.validation.field.hip"))
         }
-        return count
+        return missing
     }
 
     /// Titel-Mapping: New-Mode → "measurement.title.new", Edit-Mode wechselt
@@ -392,6 +402,7 @@ public struct MeasurementView: View {
                         lastHealthFilledWeight = nil
                     }
                 }
+            requirementHint(isRequired: true, isMissing: (weightKg ?? 0) <= 0)
             if weightCameFromHealth, weightKg != nil {
                 HStack {
                     Label {
@@ -411,10 +422,12 @@ public struct MeasurementView: View {
 
             // Hals (immer Pflicht)
             measurementRow(label: loc("measurement.field.neck"), value: $neckCm, field: .neck)
+            requirementHint(isRequired: true, isMissing: (neckCm ?? 0) <= 0)
             fieldHint(loc("measurement.hint.neck"))
 
             // Taille (immer Pflicht, sex-spezifischer Hint)
             measurementRow(label: loc("measurement.field.waist"), value: $waistCm, field: .waist)
+            requirementHint(isRequired: true, isMissing: (waistCm ?? 0) <= 0)
             fieldHint(profile.profile == .male
                       ? loc("measurement.hint.waist.male")
                       : loc("measurement.hint.waist.female"))
@@ -422,15 +435,54 @@ public struct MeasurementView: View {
             // Hüfte: Pflicht bei Frauen, optional/anders gruppiert bei Maennern
             if profile.profile == .female {
                 measurementRow(label: loc("measurement.field.hip"), value: $hipCm, field: .hip, showsDivider: false)
+                requirementHint(isRequired: true, isMissing: (hipCm ?? 0) <= 0)
                 fieldHint(loc("measurement.hint.broadest"))
             } else {
                 // Männer: Schulter direkt in Pflicht-Section (optional fuer SWR-Ratio).
+                // Simulator-Befund (Light Mode, 5. August): stand optisch in
+                // der Pflicht-Section, zaehlte aber nie zu canSave/
+                // missingRequiredFieldNames - "optional" macht das jetzt
+                // direkt an der Zeile sichtbar statt es zu erraten.
                 measurementRow(label: loc("measurement.field.shoulder.full"), value: $shoulderCm, field: .shoulder, showsDivider: false)
+                requirementHint(isRequired: false, isMissing: false)
                 fieldHint(loc("measurement.hint.broadest"))
             }
             hintRow(profile.profile == .female
                  ? loc("measurement.section.core.footer.female")
                  : loc("measurement.section.core.footer.male"))
+        }
+    }
+
+    /// Simulator-Befund (Light Mode, 5. August): "N Pflichtfelder" in der
+    /// Kontextzeile liess nicht erkennen, WELCHE Zeilen unten gemeint waren
+    /// - am staerksten sichtbar bei Maennern, wo "Schulter" optisch in der
+    /// Pflicht-Section sitzt, aber (nur SWR-Ratio) nie zu den Pflichtfeldern
+    /// zaehlt. Fehlende Pflichtfelder bekommen einen Akzent-Punkt +
+    /// "erforderlich"; die eine tatsaechlich optionale Zeile in dieser
+    /// Section (Schulter bei Maennern) bekommt "optional". Bereits
+    /// ausgefuellte Pflichtfelder zeigen nichts mehr — der Hinweis geht
+    /// ueber "was fehlt noch", nicht ueber Dauer-Etiketten.
+    @ViewBuilder
+    private func requirementHint(isRequired: Bool, isMissing: Bool) -> some View {
+        if isRequired {
+            if isMissing {
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(Color.deltiqOrange)
+                        .frame(width: 5, height: 5)
+                    Text("measurement.field.required", bundle: .module)
+                }
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Color.deltiqOrange)
+                .padding(.horizontal, 14)
+                .padding(.bottom, 6)
+            }
+        } else {
+            Text("measurement.field.optional", bundle: .module)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Color.Deltiq.textTertiary)
+                .padding(.horizontal, 14)
+                .padding(.bottom, 6)
         }
     }
 
@@ -918,13 +970,7 @@ public struct MeasurementView: View {
     /// DEL-107: einzelne Feldnamen + Singular/Plural-Frame komplett
     /// lokalisiert, sodass der Hint auch auf EN/TR konsistent klingt.
     private func missingFieldsHint(profile: UserBodyProfile) -> String {
-        var missing: [String] = []
-        if (weightKg ?? 0) <= 0 { missing.append(loc("measurement.validation.field.weight")) }
-        if (neckCm ?? 0)   <= 0 { missing.append(loc("measurement.validation.field.neck")) }
-        if (waistCm ?? 0)  <= 0 { missing.append(loc("measurement.validation.field.waist")) }
-        if profile.profile == .female, (hipCm ?? 0) <= 0 {
-            missing.append(loc("measurement.validation.field.hip"))
-        }
+        let missing = missingRequiredFieldNames(profile: profile)
         let joined = missing.joined(separator: ", ")
         let template = missing.count == 1
             ? String(localized: "measurement.validation.missing.one", bundle: .module)
