@@ -812,13 +812,13 @@ public struct DashboardView: View {
                             series: .value("Serie", "Tatsächlich")
                         )
                         .interpolationMethod(.monotone)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.deltiqOrange)
 
                         PointMark(
                             x: .value("Datum", p.date),
                             y: .value("Gewicht (kg)", p.weight)
                         )
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.deltiqOrange)
                         .symbolSize(40)
                     }
 
@@ -951,7 +951,8 @@ public struct DashboardView: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
                     // DEL-105: Brand-Akzent fuer Trainings-Tage statt iOS-Blau.
-                    // Rest-Day-Branch bleibt Purple — semantische Farbe fuer Ruhe.
+                    // Signature-Geruest: Rest-Day-Branch ist jetzt ebenfalls
+                    // Orange statt Purple - ein Screen, ein Akzent.
                     // DEL-133: Running-Branch bekommt play.circle.fill als
                     // Icon — User sieht sofort, dass das Workout AKTIV ist.
                     Image(systemName: isCurrentlyRunning
@@ -960,7 +961,7 @@ public struct DashboardView: View {
                         .font(.title2)
                         .foregroundStyle(.white)
                         .frame(width: 38, height: 38)
-                        .background((isRestDay ? Color.purple : Color.deltiqOrange).gradient)
+                        .background(Color.deltiqOrange.gradient)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     VStack(alignment: .leading, spacing: 2) {
                         // DEL-133: drei-Wege-Label.
@@ -1017,7 +1018,7 @@ public struct DashboardView: View {
                             Text("dashboard.plan.checkoffRestDay.button", bundle: .module)
                         }
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.purple)
+                        .foregroundStyle(Color.deltiqOrange)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text("dashboard.plan.checkoffRestDay.a11y", bundle: .module))

@@ -343,18 +343,18 @@ public struct PlanEditorView: View {
                     .font(.title3)
                     .foregroundStyle(.white)
                     .frame(width: 32, height: 32)
-                    .background(Color.indigo.gradient)
+                    .background(Color.deltiqOrange.gradient)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 VStack(alignment: .leading, spacing: 2) {
                     Text("planEditor.template.banner.title", bundle: .module)
                         .font(.body.weight(.semibold))
                     Text("planEditor.template.banner.subtitle", bundle: .module)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                 }
             }
         }
-        .listRowBackground(Color.indigo.opacity(0.08))
+        .listRowBackground(Color.Deltiq.surface)
     }
 
     /// Eyebrow-Stil statt der nativen List-Section-Header-Konvention
