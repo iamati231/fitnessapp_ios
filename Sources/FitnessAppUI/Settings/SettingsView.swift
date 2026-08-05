@@ -69,30 +69,42 @@ public struct SettingsView: View {
     public init() {}
 
     public var body: some View {
-        // DEL-104: Form → ScrollView + DeltiqFormSection. Settings hat keine
-        // Text-Inputs, daher genuegt `scrollDismissesKeyboard(.interactively)`
-        // als defensiver Default — kein FocusState-Tracking noetig.
-        ScrollView {
-            VStack(spacing: 18) {
-                profileSection
-                preferencesSection
-                appearanceSection
-                timerFeedbackSection
-                workoutBehaviorSection
-                remindersSection
-                healthKitSection
-                privacySection
-                aboutSection
-                dangerZoneSection
+        // DEL-104, umgestellt auf Signature-Geruest: ScrollView +
+        // DeltiqSection statt DeltiqFormSection - DeltiqFormSection selbst
+        // bleibt unangetastet (Theme/DeltiqFormSection.swift), weil auch
+        // DataExportView/DataImportView sie noch nutzen und nicht Teil
+        // dieses Umbaus sind. Settings hat keine Text-Inputs, daher
+        // genuegt `scrollDismissesKeyboard(.interactively)` als defensiver
+        // Default — kein FocusState-Tracking noetig.
+        VStack(spacing: 0) {
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                title: String(localized: "settings.title", bundle: .module)
+            )
+
+            ScrollView {
+                VStack(spacing: 18) {
+                    profileSection
+                    preferencesSection
+                    appearanceSection
+                    timerFeedbackSection
+                    workoutBehaviorSection
+                    remindersSection
+                    healthKitSection
+                    privacySection
+                    aboutSection
+                    dangerZoneSection
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 100)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .scrollContentBackground(.hidden)
+            #if os(iOS)
+            .scrollDismissesKeyboard(.interactively)
+            #endif
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
-        #if os(iOS)
-        .scrollDismissesKeyboard(.interactively)
-        #endif
-        .navigationTitle(Text("settings.title", bundle: .module))
         .alert(
             "Fehler beim Zurücksetzen",
             isPresented: Binding(
@@ -125,10 +137,8 @@ public struct SettingsView: View {
     // MARK: Sections
 
     private var profileSection: some View {
-        DeltiqFormSection(header: String(localized: "settings.section.profile_goals", bundle: .module)) {
-            DeltiqFormFullRow {
-                profileSectionContent
-            }
+        DeltiqSection(String(localized: "settings.section.profile_goals", bundle: .module).uppercased()) {
+            profileSectionContent
         }
     }
 
@@ -138,38 +148,35 @@ public struct SettingsView: View {
             NavigationLink {
                 ProfileEditorView(profile: profile)
             } label: {
-                profileSummary(profile)
+                DeltiqRow(
+                    icon: "person.crop.circle",
+                    label: profileHeadline(profile),
+                    subtitle: profileSubtitle(profile),
+                    showsChevron: true,
+                    showsDivider: false
+                )
             }
         } else {
-            Text("settings.profile.missing", bundle: .module)
-                .font(.callout)
-                .foregroundStyle(.secondary)
+            DeltiqRow(
+                label: String(localized: "settings.profile.missing", bundle: .module),
+                showsDivider: false
+            )
         }
     }
 
-    private func profileSummary(_ profile: UserBodyProfile) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
-                Text(profile.profile == .male ? "sex.male" : "sex.female", bundle: .module)
-                    .font(.body.weight(.semibold))
-                Text("•")
-                Text(String(format: String(localized: "settings.profile.years", bundle: .module), ageYears(for: profile)))
-                    .font(.body)
-                Spacer()
-            }
-            HStack(spacing: 8) {
-                Text(formattedHeight(profile.heightCm))
-                if let goal = profile.goalWeightKg {
-                    Text("•")
-                    Text(String(format: String(localized: "settings.profile.goal", bundle: .module), formattedWeight(goal)))
-                }
-                Text("•")
-                Text(environmentLabel(profile.environment))
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
+    private func profileHeadline(_ profile: UserBodyProfile) -> String {
+        let sex = String(localized: profile.profile == .male ? "sex.male" : "sex.female", bundle: .module)
+        let years = String(format: String(localized: "settings.profile.years", bundle: .module), ageYears(for: profile))
+        return "\(sex) • \(years)"
+    }
+
+    private func profileSubtitle(_ profile: UserBodyProfile) -> String {
+        var parts = [formattedHeight(profile.heightCm)]
+        if let goal = profile.goalWeightKg {
+            parts.append(String(format: String(localized: "settings.profile.goal", bundle: .module), formattedWeight(goal)))
         }
-        .padding(.vertical, 2)
+        parts.append(environmentLabel(profile.environment))
+        return parts.joined(separator: " • ")
     }
 
     /// DEL-109: Reusable Nav-Row für die Dashboard-Customization. Wird in
@@ -178,39 +185,25 @@ public struct SettingsView: View {
     @ViewBuilder
     private var dashboardCustomizationRow: some View {
         if let profile = profiles.first {
-            DeltiqFormFullRow {
-                NavigationLink {
-                    DashboardSettingsView(profile: profile)
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "rectangle.3.group")
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundStyle(Color.deltiqOrange)
-                            .frame(width: 28)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("dashboardSettings.entry.title", bundle: .module)
-                                .font(.body)
-                                .foregroundStyle(.primary)
-                            Text("dashboardSettings.entry.subtitle", bundle: .module)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .buttonStyle(.plain)
+            NavigationLink {
+                DashboardSettingsView(profile: profile)
+            } label: {
+                DeltiqRow(
+                    icon: "rectangle.3.group",
+                    label: String(localized: "dashboardSettings.entry.title", bundle: .module),
+                    subtitle: String(localized: "dashboardSettings.entry.subtitle", bundle: .module),
+                    showsChevron: true,
+                    showsDivider: false
+                )
             }
         }
     }
 
     private var preferencesSection: some View {
-        DeltiqFormSection(
-            header: String(localized: "settings.section.preferences", bundle: .module)
-        ) {
-            DeltiqFormRow(label: String(localized: "settings.preferences.units.label", bundle: .module)) {
+        DeltiqSection(String(localized: "settings.section.preferences", bundle: .module).uppercased()) {
+            // Kein sinnvolles Symbol fuer eine reine Einheiten-Wahl (Handoff
+            // 2.4: Zeilen ohne Icon ruecken den Text auf den normalen Rand).
+            DeltiqControlRow(label: String(localized: "settings.preferences.units.label", bundle: .module)) {
                 Picker(selection: $weightUnitRaw) {
                     Text("settings.preferences.units.metric", bundle: .module).tag("kg")
                     Text("settings.preferences.units.imperial", bundle: .module).tag("lbs")
@@ -219,8 +212,8 @@ public struct SettingsView: View {
                 .labelsHidden()
                 // DEL-119: i18n-bedingter Layout-Bug. "Metrisch (kg/cm)"
                 // sprengte auf iPhone-SE / kompakten Width-Class das
-                // DeltiqFormRow-Limit und brach um — sieht in Settings
-                // unschoen aus. lineLimit(1) verhindert den Bruch,
+                // Zeilen-Limit und brach um — sieht in Settings unschoen
+                // aus. lineLimit(1) verhindert den Bruch,
                 // minimumScaleFactor(0.8) verkleinert die Schrift dezent
                 // bei Bedarf, statt zu truncaten. Pragmatisches i18n-
                 // Sicherheitsnetz (gilt auch fuer kuenftige Sprachen).
@@ -228,128 +221,100 @@ public struct SettingsView: View {
                 .minimumScaleFactor(0.8)
             }
             // DEL-161: Globale Uebungsbibliothek.
-            DeltiqFormFullRow {
-                NavigationLink {
-                    ExerciseLibraryView()
-                } label: {
-                    HStack {
-                        Label {
-                            Text("settings.preferences.exerciseLibrary", bundle: .module)
-                        } icon: {
-                            Image(systemName: "figure.strengthtraining.traditional")
-                        }
-                            .foregroundStyle(.primary)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .buttonStyle(.plain)
+            NavigationLink {
+                ExerciseLibraryView()
+            } label: {
+                DeltiqRow(
+                    icon: "figure.strengthtraining.traditional",
+                    label: String(localized: "settings.preferences.exerciseLibrary", bundle: .module),
+                    showsChevron: true
+                )
             }
             // DEL-084: Equipment-Tracker (Laufschuhe etc.) Submenu.
-            DeltiqFormFullRow {
-                NavigationLink {
-                    GearListView()
-                } label: {
-                    HStack {
-                        Label {
-                            Text("settings.preferences.gear", bundle: .module)
-                        } icon: {
-                            Image(systemName: "shoe")
-                        }
-                            .foregroundStyle(.primary)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .buttonStyle(.plain)
+            NavigationLink {
+                GearListView()
+            } label: {
+                DeltiqRow(
+                    icon: "shoe",
+                    label: String(localized: "settings.preferences.gear", bundle: .module),
+                    showsChevron: true
+                )
             }
             // Signature-Geruest Tab-Umbau (Variante 2b): Rechner hat seinen
             // eigenen Tab verloren und haengt jetzt hier, neben Bibliothek
             // und Ausruestung. Normale NavigationLink(destination:)-Zeile —
             // braucht keinen Pfad-Wert, der Wassertracker-Deep-Link laeuft
             // separat ueber AppNavigation.morePath (siehe RootView).
-            DeltiqFormFullRow {
-                NavigationLink {
-                    CalculatorsView()
-                } label: {
-                    HStack {
-                        Label {
-                            Text("calc.index.title", bundle: .module)
-                        } icon: {
-                            Image(systemName: "function")
-                        }
-                            .foregroundStyle(.primary)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .buttonStyle(.plain)
+            NavigationLink {
+                CalculatorsView()
+            } label: {
+                DeltiqRow(
+                    icon: "function",
+                    label: String(localized: "calc.index.title", bundle: .module),
+                    showsChevron: true
+                )
             }
             // DEL-109: Dashboard-Widget-Manager.
             dashboardCustomizationRow
-        } footer: {
-            Text("settings.units.footer", bundle: .module)
+            hintRow(String(localized: "settings.units.footer", bundle: .module))
         }
+    }
+
+    /// Abschnitt 1.6: Hinweistext unter einer Zeile, wie es bereits
+    /// `DeltiqFormSection`s Footer-Slot vorsah — nur jetzt IN der Karte
+    /// als letzte Zeile statt darunter. 12pt, sekundaerer Text, keine
+    /// Trennlinie darueber.
+    private func hintRow(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundStyle(Color.Deltiq.textSecondary)
+            .lineSpacing(4)
+            .padding(.horizontal, 14)
+            .padding(.top, 4)
+            .padding(.bottom, 8)
     }
 
     // DEL-018: Theme-Picker
     private var appearanceSection: some View {
-        DeltiqFormSection(header: String(localized: "settings.appearance.section", bundle: .module)) {
-            // DEL-104: Segmented Picker spannt die ganze Row — keine
-            // Label-on-left/Control-on-right Trennung, also FullRow.
-            DeltiqFormFullRow {
-                Picker(selection: $appearanceRaw) {
-                    Text("settings.appearance.system", bundle: .module).tag("system")
-                    Text("settings.appearance.light", bundle: .module).tag("light")
-                    Text("settings.appearance.dark", bundle: .module).tag("dark")
-                } label: { EmptyView() }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-            }
-        } footer: {
-            Text("settings.appearance.footer", bundle: .module)
+        DeltiqSection(String(localized: "settings.appearance.section", bundle: .module).uppercased()) {
+            // Handoff 2.4: Systemgrau-Segment -> aktives Segment Orange mit
+            // #1A1A1A-Schrift. DeltiqSegmentedPicker spannt die ganze Row,
+            // eigenes Padding statt DeltiqRow/DeltiqControlRow.
+            DeltiqSegmentedPicker(
+                options: [
+                    DeltiqSegmentedOption("system", label: String(localized: "settings.appearance.system", bundle: .module)),
+                    DeltiqSegmentedOption("light", label: String(localized: "settings.appearance.light", bundle: .module)),
+                    DeltiqSegmentedOption("dark", label: String(localized: "settings.appearance.dark", bundle: .module))
+                ],
+                selection: $appearanceRaw
+            )
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            hintRow(String(localized: "settings.appearance.footer", bundle: .module))
         }
     }
 
     // DEL-018: Timer-Feedback (Ton + Vibration beim Pause-Ende)
     private var timerFeedbackSection: some View {
-        DeltiqFormSection(header: String(localized: "settings.timer.section", bundle: .module)) {
-            DeltiqFormFullRow {
-                Toggle(isOn: $timerSoundEnabled) {
-                    Label {
-                        Text("settings.timer.sound", bundle: .module)
-                    } icon: {
-                        Image(systemName: "speaker.wave.2.fill")
-                    }
-                }
+        DeltiqSection(String(localized: "settings.timer.section", bundle: .module).uppercased()) {
+            DeltiqControlRow(icon: "speaker.wave.2.fill", label: String(localized: "settings.timer.sound", bundle: .module)) {
+                Toggle(isOn: $timerSoundEnabled) { EmptyView() }
+                    .tint(Color.deltiqOrange)
             }
-            DeltiqFormFullRow {
-                Toggle(isOn: $timerHapticsEnabled) {
-                    Label {
-                        Text("settings.timer.haptics", bundle: .module)
-                    } icon: {
-                        Image(systemName: "iphone.radiowaves.left.and.right")
-                    }
-                }
+            DeltiqControlRow(icon: "iphone.radiowaves.left.and.right", label: String(localized: "settings.timer.haptics", bundle: .module)) {
+                Toggle(isOn: $timerHapticsEnabled) { EmptyView() }
+                    .tint(Color.deltiqOrange)
             }
             // DEL-078: PR-Celebrations on/off. Separat vom Timer-Feedback.
-            DeltiqFormFullRow {
-                Toggle(isOn: $prCelebrationsEnabled) {
-                    Label {
-                        Text("settings.timer.prCelebrations", bundle: .module)
-                    } icon: {
-                        Image(systemName: "trophy.fill")
-                    }
-                }
+            DeltiqControlRow(
+                icon: "trophy.fill",
+                label: String(localized: "settings.timer.prCelebrations", bundle: .module),
+                showsDivider: false
+            ) {
+                Toggle(isOn: $prCelebrationsEnabled) { EmptyView() }
+                    .tint(Color.deltiqOrange)
             }
-        } footer: {
-            Text("settings.timer.footer", bundle: .module)
+            hintRow(String(localized: "settings.timer.footer", bundle: .module))
         }
     }
 
@@ -358,40 +323,29 @@ public struct SettingsView: View {
     // der gleiche Toggle wird dort via `@AppStorage("pref_show_warmups")`
     // gelesen — keine Notification-Plumbing noetig.
     private var workoutBehaviorSection: some View {
-        DeltiqFormSection(header: String(localized: "settings.workout.section", bundle: .module)) {
-            DeltiqFormFullRow {
-                Toggle(isOn: $showWarmups) {
-                    Label {
-                        Text("settings.workout.showWarmups", bundle: .module)
-                    } icon: {
-                        Image(systemName: "flame.fill")
-                    }
-                }
+        DeltiqSection(String(localized: "settings.workout.section", bundle: .module).uppercased()) {
+            DeltiqControlRow(icon: "flame.fill", label: String(localized: "settings.workout.showWarmups", bundle: .module)) {
+                Toggle(isOn: $showWarmups) { EmptyView() }
+                    .tint(Color.deltiqOrange)
             }
             // DEL-143: RIR-Tooltip-Toggle. Default true (per Ticket-Spec).
             // Power-User können den Bloop ausschalten, dann werden RIR-
             // Slider stumm bedient wie vorher.
-            DeltiqFormFullRow {
-                Toggle(isOn: $showRirTooltips) {
-                    Label {
-                        Text("settings.training.rirTooltip.title", bundle: .module)
-                    } icon: {
-                        Image(systemName: "info.circle.fill")
-                    }
-                }
+            DeltiqControlRow(icon: "info.circle.fill", label: String(localized: "settings.training.rirTooltip.title", bundle: .module)) {
+                Toggle(isOn: $showRirTooltips) { EmptyView() }
+                    .tint(Color.deltiqOrange)
             }
             // DEL-238: Deload-Automatik abschaltbar. Default AN — ein
             // ausgeliefertes Feature bei Bestandsnutzern still zu entfernen
             // waere die schlechtere Voreinstellung, und alle bestehenden
             // Praeferenzen hier sind ebenfalls `true`.
-            DeltiqFormFullRow {
-                Toggle(isOn: $deloadEnabled) {
-                    Label {
-                        Text("settings.deload.toggle", bundle: .module)
-                    } icon: {
-                        Image(systemName: "arrow.down.heart")
-                    }
-                }
+            DeltiqControlRow(
+                icon: "arrow.down.heart",
+                label: String(localized: "settings.deload.toggle", bundle: .module),
+                showsDivider: pendingDeloadCount > 0 || deloadRestoreMessage != nil
+            ) {
+                Toggle(isOn: $deloadEnabled) { EmptyView() }
+                    .tint(Color.deltiqOrange)
             }
             // DEL-238: Ausweg aus einem laufenden Deload — bewusst UNABHAENGIG
             // vom Toggle oben.
@@ -407,39 +361,34 @@ public struct SettingsView: View {
             // Weg zu endDeload) und die Alt-Kohorte, deren `deload_until` bei
             // einer Neuinstallation verloren ging.
             if pendingDeloadCount > 0 {
-                DeltiqFormFullRow {
-                    Button {
-                        restoreDeloadWeights()
-                    } label: {
-                        HStack {
-                            Label {
-                                Text(String(
-                                    format: String(localized: "settings.deload.endNow", bundle: .module),
-                                    pendingDeloadCount
-                                ))
-                            } icon: {
-                                Image(systemName: "arrow.uturn.up")
-                            }
-                            Spacer()
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Color.deltiqOrange)
+                Button {
+                    restoreDeloadWeights()
+                } label: {
+                    DeltiqRow(
+                        icon: "arrow.uturn.up",
+                        label: String(
+                            format: String(localized: "settings.deload.endNow", bundle: .module),
+                            pendingDeloadCount
+                        ),
+                        showsDivider: deloadRestoreMessage != nil
+                    )
                 }
+                .buttonStyle(.plain)
             }
             if let deloadRestoreMessage {
-                DeltiqFormFullRow {
-                    Text(deloadRestoreMessage)
-                        .font(.caption)
-                        .foregroundStyle(.green)
-                }
+                Text(deloadRestoreMessage)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.Deltiq.success)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
             }
-        } footer: {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("settings.workout.footer", bundle: .module)
-                Text("settings.training.rirTooltip.description", bundle: .module)
-                Text("settings.deload.description", bundle: .module)
-            }
+            hintRow(
+                [
+                    String(localized: "settings.workout.footer", bundle: .module),
+                    String(localized: "settings.training.rirTooltip.description", bundle: .module),
+                    String(localized: "settings.deload.description", bundle: .module)
+                ].joined(separator: "\n")
+            )
         }
     }
 
@@ -463,21 +412,20 @@ public struct SettingsView: View {
     // Jede Aenderung triggert `rescheduleReminders()`, das ueber ReminderScheduler
     // re-schedulet — inkl. automatischem Cancel-Plus-Re-Add fuer Spam-Schutz.
     private var remindersSection: some View {
-        DeltiqFormSection(header: String(localized: "settings.reminders.section", bundle: .module)) {
-            DeltiqFormFullRow {
-                Toggle(isOn: $waterReminderEnabled) {
-                    Label {
-                        Text("settings.reminders.water", bundle: .module)
-                    } icon: {
-                        Image(systemName: "drop.fill")
+        DeltiqSection(String(localized: "settings.reminders.section", bundle: .module).uppercased()) {
+            DeltiqControlRow(
+                icon: "drop.fill",
+                label: String(localized: "settings.reminders.water", bundle: .module),
+                showsDivider: waterReminderEnabled
+            ) {
+                Toggle(isOn: $waterReminderEnabled) { EmptyView() }
+                    .tint(Color.deltiqOrange)
+                    .onChange(of: waterReminderEnabled) { _, _ in
+                        Task { await rescheduleReminders() }
                     }
-                }
-                .onChange(of: waterReminderEnabled) { _, _ in
-                    Task { await rescheduleReminders() }
-                }
             }
             if waterReminderEnabled {
-                DeltiqFormRow(label: String(localized: "settings.reminders.frequency", bundle: .module)) {
+                DeltiqControlRow(label: String(localized: "settings.reminders.frequency", bundle: .module)) {
                     Picker(selection: $waterReminderHours) {
                         Text("settings.reminders.every1h", bundle: .module).tag(1)
                         Text("settings.reminders.every2h", bundle: .module).tag(2)
@@ -492,20 +440,19 @@ public struct SettingsView: View {
                 }
             }
 
-            DeltiqFormFullRow {
-                Toggle(isOn: $measurementReminderEnabled) {
-                    Label {
-                        Text("settings.reminders.measurement", bundle: .module)
-                    } icon: {
-                        Image(systemName: "scalemass.fill")
+            DeltiqControlRow(
+                icon: "scalemass.fill",
+                label: String(localized: "settings.reminders.measurement", bundle: .module),
+                showsDivider: measurementReminderEnabled
+            ) {
+                Toggle(isOn: $measurementReminderEnabled) { EmptyView() }
+                    .tint(Color.deltiqOrange)
+                    .onChange(of: measurementReminderEnabled) { _, _ in
+                        Task { await rescheduleReminders() }
                     }
-                }
-                .onChange(of: measurementReminderEnabled) { _, _ in
-                    Task { await rescheduleReminders() }
-                }
             }
             if measurementReminderEnabled {
-                DeltiqFormRow(label: String(localized: "day.editor.field.weekday", bundle: .module)) {
+                DeltiqControlRow(label: String(localized: "day.editor.field.weekday", bundle: .module)) {
                     // DEL-120: Locale-aware Weekday-Symbole via Calendar.
                     let weekdaySymbols = Calendar.current.standaloneWeekdaySymbols
                     Picker(selection: $measurementWeekday) {
@@ -519,7 +466,10 @@ public struct SettingsView: View {
                         Task { await rescheduleReminders() }
                     }
                 }
-                DeltiqFormRow(label: String(localized: "settings.reminders.time", bundle: .module)) {
+                DeltiqControlRow(
+                    label: String(localized: "settings.reminders.time", bundle: .module),
+                    showsDivider: false
+                ) {
                     Picker(selection: $measurementHour) {
                         ForEach(6..<23, id: \.self) { hour in
                             Text(String(format: String(localized: "settings.reminders.hour", bundle: .module), hour)).tag(hour)
@@ -532,8 +482,7 @@ public struct SettingsView: View {
                     }
                 }
             }
-        } footer: {
-            Text("settings.reminders.footer", bundle: .module)
+            hintRow(String(localized: "settings.reminders.footer", bundle: .module))
         }
     }
 
@@ -571,73 +520,57 @@ public struct SettingsView: View {
     }
 
     private var healthKitSection: some View {
-        DeltiqFormSection(header: String(localized: "profile.section.health", bundle: .module)) {
-            DeltiqFormFullRow {
-                healthKitStatusRow
-            }
+        DeltiqSection(String(localized: "profile.section.health", bundle: .module).uppercased()) {
+            healthKitStatusRow
             if healthKit.authorizationStatus == .sharingDenied {
-                DeltiqFormFullRow {
-                    openIOSSettingsButton
-                }
+                openIOSSettingsButton
             }
             if let lastSync = healthKit.lastSyncDate {
-                DeltiqFormRow(label: String(localized: "settings.health.lastSync", bundle: .module)) {
+                DeltiqControlRow(
+                    label: String(localized: "settings.health.lastSync", bundle: .module),
+                    showsDivider: false
+                ) {
                     Text(lastSync.formatted(date: .abbreviated, time: .shortened))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                 }
             }
-        } footer: {
-            Text("settings.health.footer", bundle: .module)
+            hintRow(String(localized: "settings.health.footer", bundle: .module))
         }
     }
 
+    /// Anders als der explizite Health-Rot-Hinweis in Messung (2.5, dort
+    /// vom Handoff ausdruecklich als Fremdmarken-Ausnahme erlaubt) ist das
+    /// bisherige Pink hier nur eine System-Farbwahl ohne Erwaehnung im
+    /// Handoff - faellt daher unter die normale 1.7-Regel und wird Orange
+    /// wie jede andere Zeile.
     @ViewBuilder
     private var healthKitStatusRow: some View {
         switch healthKit.authorizationStatus {
         case .sharingAuthorized:
-            HStack {
-                Label {
-                    Text("onboarding.health.connected", bundle: .module)
-                } icon: {
-                    Image(systemName: "heart.fill")
-                }
-                    .foregroundStyle(.pink)
-                Spacer()
+            DeltiqControlRow(icon: "heart.fill", label: String(localized: "onboarding.health.connected", bundle: .module)) {
                 Image(systemName: "checkmark")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.Deltiq.success)
             }
         case .notDetermined:
-            HStack {
-                Label {
-                    Text("settings.health.notSetup", bundle: .module)
-                } icon: {
-                    Image(systemName: "heart")
-                }
-                    .foregroundStyle(.secondary)
-                Spacer()
+            DeltiqControlRow(icon: "heart", label: String(localized: "settings.health.notSetup", bundle: .module)) {
                 Button {
                     Task { await healthKit.requestAuthorization() }
                 } label: {
                     Text("settings.health.connect", bundle: .module)
                 }
-                .font(.subheadline.weight(.semibold))
+                .font(.system(size: 14, weight: .semibold))
+                .tint(Color.deltiqOrange)
                 .disabled(!healthKit.isAvailable)
             }
         case .sharingDenied:
-            Label {
-                Text("settings.health.denied", bundle: .module)
-            } icon: {
-                Image(systemName: "heart.slash")
+            DeltiqControlRow(icon: "heart.slash", label: String(localized: "settings.health.denied", bundle: .module)) {
+                EmptyView()
             }
-                .foregroundStyle(.orange)
         case .unavailable:
-            Label {
-                Text("settings.health.unavailable", bundle: .module)
-            } icon: {
-                Image(systemName: "heart.slash")
+            DeltiqControlRow(icon: "heart.slash", label: String(localized: "settings.health.unavailable", bundle: .module), showsDivider: false) {
+                EmptyView()
             }
-                .foregroundStyle(.secondary)
         }
     }
 
@@ -649,12 +582,9 @@ public struct SettingsView: View {
                 UIApplication.shared.open(url)
             }
         } label: {
-            Label {
-                Text("settings.health.openIOSSettings", bundle: .module)
-            } icon: {
-                Image(systemName: "gear")
-            }
+            DeltiqRow(icon: "gear", label: String(localized: "settings.health.openIOSSettings", bundle: .module), showsDivider: false)
         }
+        .buttonStyle(.plain)
         #endif
     }
 
@@ -663,111 +593,82 @@ public struct SettingsView: View {
     // DSGVO Art. 20 (Right to Data Portability). Re-Import folgt in einem
     // Folge-Ticket (Phase 2).
     private var privacySection: some View {
-        DeltiqFormSection(
-            header: String(localized: "settings.section.privacy", bundle: .module)
-        ) {
-            DeltiqFormFullRow {
-                NavigationLink {
-                    DataExportView()
-                } label: {
-                    HStack {
-                        Label {
-                            Text("settings.privacy.dataExport", bundle: .module)
-                        } icon: {
-                            Image(systemName: "square.and.arrow.up.on.square")
-                        }
-                            .foregroundStyle(.primary)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .buttonStyle(.plain)
+        DeltiqSection(String(localized: "settings.section.privacy", bundle: .module).uppercased()) {
+            NavigationLink {
+                DataExportView()
+            } label: {
+                DeltiqRow(
+                    icon: "square.and.arrow.up.on.square",
+                    label: String(localized: "settings.privacy.dataExport", bundle: .module),
+                    showsChevron: true
+                )
             }
             // DEL-229: Automatische Backup-Generationen (DEL-227/228) sichtbar
             // und wiederherstellbar machen. Steht bewusst VOR dem manuellen
             // Import: im Ernstfall ist "letzten Stand zurueckholen" der Weg,
             // den der User zuerst finden soll — nicht der Datei-Import.
-            DeltiqFormFullRow {
-                NavigationLink {
-                    BackupListView()
-                } label: {
-                    HStack {
-                        Label {
-                            Text("settings.privacy.backups", bundle: .module)
-                        } icon: {
-                            Image(systemName: "clock.arrow.circlepath")
-                        }
-                            .foregroundStyle(.primary)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .buttonStyle(.plain)
+            NavigationLink {
+                BackupListView()
+            } label: {
+                DeltiqRow(
+                    icon: "clock.arrow.circlepath",
+                    label: String(localized: "settings.privacy.backups", bundle: .module),
+                    showsChevron: true
+                )
             }
             // DEL-174: Daten-Import (Phase 2). Append-only mit Duplikat-
             // Erkennung — bestehende Daten bleiben unangetastet.
-            DeltiqFormFullRow {
-                NavigationLink {
-                    DataImportView()
-                } label: {
-                    HStack {
-                        Label {
-                            Text("settings.privacy.dataImport", bundle: .module)
-                        } icon: {
-                            Image(systemName: "square.and.arrow.down.on.square")
-                        }
-                            .foregroundStyle(.primary)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .buttonStyle(.plain)
+            NavigationLink {
+                DataImportView()
+            } label: {
+                DeltiqRow(
+                    icon: "square.and.arrow.down.on.square",
+                    label: String(localized: "settings.privacy.dataImport", bundle: .module),
+                    showsChevron: true,
+                    showsDivider: false
+                )
             }
-        } footer: {
-            Text("settings.privacy.footer", bundle: .module)
+            hintRow(String(localized: "settings.privacy.footer", bundle: .module))
         }
     }
 
     private var aboutSection: some View {
-        DeltiqFormSection(
-            header: String(localized: "settings.section.about", bundle: .module)
-        ) {
-            DeltiqFormRow(label: String(localized: "settings.about.version", bundle: .module)) {
-                Text(appVersion).foregroundStyle(.secondary)
+        DeltiqSection(String(localized: "settings.section.about", bundle: .module).uppercased()) {
+            DeltiqControlRow(label: String(localized: "settings.about.version", bundle: .module)) {
+                Text(appVersion)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
-            DeltiqFormRow(label: String(localized: "settings.about.bundle", bundle: .module)) {
-                Text(bundleIdentifier).foregroundStyle(.secondary).font(.caption)
+            DeltiqControlRow(label: String(localized: "settings.about.bundle", bundle: .module), showsDivider: false) {
+                Text(bundleIdentifier)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
         }
     }
 
     private var dangerZoneSection: some View {
-        DeltiqFormSection(
-            header: String(localized: "settings.section.danger_zone", bundle: .module)
-        ) {
-            DeltiqFormFullRow {
-                Button(role: .destructive) {
-                    showingResetConfirm = true
-                } label: {
-                    HStack {
-                        Spacer()
-                        Label {
-                            Text("settings.action.reset", bundle: .module)
-                        } icon: {
-                            Image(systemName: "trash")
-                        }
-                        Spacer()
+        DeltiqSection(String(localized: "settings.section.danger_zone", bundle: .module).uppercased()) {
+            Button(role: .destructive) {
+                showingResetConfirm = true
+            } label: {
+                HStack {
+                    Spacer()
+                    Label {
+                        Text("settings.action.reset", bundle: .module)
+                    } icon: {
+                        Image(systemName: "trash")
                     }
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.Deltiq.error)
+                    Spacer()
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .frame(minHeight: 44)
             }
-        } footer: {
-            Text("settings.dangerZone.footer", bundle: .module)
+            .buttonStyle(.plain)
+            hintRow(String(localized: "settings.dangerZone.footer", bundle: .module))
         }
     }
 

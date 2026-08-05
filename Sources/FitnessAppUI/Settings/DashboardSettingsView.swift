@@ -17,32 +17,55 @@ import FitnessAppData
 public struct DashboardSettingsView: View {
 
     @Bindable public var profile: UserBodyProfile
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.editMode) private var editMode
 
     public init(profile: UserBodyProfile) {
         self.profile = profile
     }
 
     public var body: some View {
-        List {
-            // DEL-132 (Phase 1): Hero-Section ZUERST — sie sitzt auch im
-            // gerenderten Dashboard oben, also matched die visuelle
-            // Vertikal-Reihenfolge das Settings-Layout.
-            heroActiveSection
-            heroInactiveSection
-            activeSection
-            inactiveSection
-        }
-        .navigationTitle(Text("dashboardSettings.title", bundle: .module))
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        // DEL-109: EditButton schaltet den nativen iOS-Drag-Mode an —
-        // ohne den gibt's keine sichtbaren Drag-Handles.
-        .toolbar {
-            ToolbarItem(placement: .deltiqTrailing) {
-                EditButton()
+        // Signature-Geruest: eigene Kopfzone statt navigationTitle/Toolbar.
+        // `List` bleibt als Container (DEL-109: .onMove braucht sie fuer
+        // Drag-Handles) - nur Hintergrund/Zeilen-Chrome wird umgestylt,
+        // anders als bei den reinen Navigations-Listen (Rechner, Bibliothek),
+        // die komplett auf ScrollView+DeltiqSection wechseln.
+        VStack(spacing: 0) {
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                title: String(localized: "dashboardSettings.title", bundle: .module),
+                onBack: { dismiss() },
+                actions: [
+                    // Ersatz fuer EditButton(): gleiche editMode-Umschaltung,
+                    // aber als Header-Aktion statt natives Toolbar-Item -
+                    // EditButton() selbst laesst sich nicht in eine
+                    // DeltiqHeaderAction verpacken (kein Closure-basiertes
+                    // API, sondern ein fertiger, selbstverwalteter View-Typ).
+                    DeltiqHeaderAction(
+                        systemImage: editMode?.wrappedValue.isEditing == true ? "checkmark" : "arrow.up.arrow.down",
+                        isHighlighted: editMode?.wrappedValue.isEditing == true
+                    ) {
+                        withAnimation {
+                            editMode?.wrappedValue = editMode?.wrappedValue.isEditing == true ? .inactive : .active
+                        }
+                    }
+                ]
+            )
+
+            List {
+                // DEL-132 (Phase 1): Hero-Section ZUERST — sie sitzt auch im
+                // gerenderten Dashboard oben, also matched die visuelle
+                // Vertikal-Reihenfolge das Settings-Layout.
+                heroActiveSection
+                heroInactiveSection
+                activeSection
+                inactiveSection
             }
+            .scrollContentBackground(.hidden)
         }
-        #endif
+        .background(Color.Deltiq.background.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
     }
 
     // MARK: Aktive Sektion (drag + toggle)
@@ -52,26 +75,42 @@ public struct DashboardSettingsView: View {
         Section {
             if profile.activeDashboardWidgets.isEmpty {
                 Text("dashboardSettings.empty", bundle: .module)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .listRowBackground(Color.Deltiq.surface)
             } else {
                 ForEach(profile.activeDashboardWidgets, id: \.self) { widget in
                     activeRow(widget)
+                        .listRowBackground(Color.Deltiq.surface)
                 }
                 .onMove(perform: moveActive)
             }
         } header: {
-            Text("dashboardSettings.section.active.title", bundle: .module)
+            sectionHeader("dashboardSettings.section.active.title")
         } footer: {
             Text("dashboardSettings.section.active.footer", bundle: .module)
-                .font(.footnote)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
+    }
+
+    /// Eyebrow-Stil statt der nativen List-Section-Header-Konvention
+    /// (Caps-Grau). `.textCase(nil)` verhindert, dass List den bereits
+    /// grossgeschriebenen String noch einmal automatisch transformiert.
+    private func sectionHeader(_ key: String) -> some View {
+        Text(String(localized: String.LocalizationValue(stringLiteral: key), bundle: .module).uppercased())
+            .font(.system(size: 10, weight: .heavy))
+            .tracking(1.5)
+            .foregroundStyle(Color.deltiqOrange)
+            .textCase(nil)
     }
 
     private func activeRow(_ widget: DashboardWidgetType) -> some View {
         HStack(spacing: 12) {
             Text(LocalizedStringKey(widget.localizationKey), bundle: .module)
-                .font(.body)
+                .font(.system(size: 15))
+                .foregroundStyle(Color.primary)
             Spacer()
             // Toggle steuert nur das Entfernen aus der aktiven Liste —
             // ein "false"-Set löscht das Widget, ein "true"-Set ist NoOp
@@ -87,6 +126,7 @@ public struct DashboardSettingsView: View {
                 }
             ))
             .labelsHidden()
+            .tint(Color.deltiqOrange)
         }
     }
 
@@ -106,26 +146,31 @@ public struct DashboardSettingsView: View {
         Section {
             if profile.heroMetricSlots.isEmpty {
                 Text("dashboardSettings.section.hero.empty", bundle: .module)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .listRowBackground(Color.Deltiq.surface)
             } else {
                 ForEach(profile.heroMetricSlots, id: \.self) { slot in
                     heroActiveRow(slot)
+                        .listRowBackground(Color.Deltiq.surface)
                 }
                 .onMove(perform: moveHero)
             }
         } header: {
-            Text("dashboardSettings.section.hero.title", bundle: .module)
+            sectionHeader("dashboardSettings.section.hero.title")
         } footer: {
             Text("dashboardSettings.section.hero.footer", bundle: .module)
-                .font(.footnote)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     private func heroActiveRow(_ slot: HeroMetricType) -> some View {
         HStack(spacing: 12) {
             Text(LocalizedStringKey(slot.localizationKey), bundle: .module)
-                .font(.body)
+                .font(.system(size: 15))
+                .foregroundStyle(Color.primary)
             Spacer()
             // DEL-132 (Phase 1): gleiche Toggle-as-removal-Logic wie
             // aktiver Widget-Section.
@@ -146,6 +191,7 @@ public struct DashboardSettingsView: View {
                 }
             ))
             .labelsHidden()
+            .tint(Color.deltiqOrange)
         }
     }
 
@@ -174,8 +220,8 @@ public struct DashboardSettingsView: View {
                 ForEach(inactive, id: \.self) { slot in
                     HStack {
                         Text(LocalizedStringKey(slot.localizationKey), bundle: .module)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 15))
+                            .foregroundStyle(Color.Deltiq.textSecondary)
                         Spacer()
                         Button {
                             // DEL-132 (Phase 4): Spring beim Add-Tap, damit
@@ -189,22 +235,25 @@ public struct DashboardSettingsView: View {
                             }
                         } label: {
                             Image(systemName: "plus.circle.fill")
-                                .foregroundStyle(atMax ? Color.secondary : Color.deltiqOrange)
+                                .foregroundStyle(atMax ? Color.Deltiq.textTertiary : Color.deltiqOrange)
                                 .font(.title3)
                         }
                         .buttonStyle(.plain)
                         .disabled(atMax)
                     }
+                    .listRowBackground(Color.Deltiq.surface)
                 }
             } header: {
-                Text("dashboardSettings.section.heroInactive.title", bundle: .module)
+                sectionHeader("dashboardSettings.section.heroInactive.title")
             } footer: {
                 Text(atMax
                      ? "dashboardSettings.section.hero.maxReached"
                      : "dashboardSettings.section.heroInactive.footer",
                      bundle: .module)
-                    .font(.footnote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
         }
     }
 
@@ -220,8 +269,8 @@ public struct DashboardSettingsView: View {
                 ForEach(inactiveWidgets, id: \.self) { widget in
                     HStack {
                         Text(LocalizedStringKey(widget.localizationKey), bundle: .module)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 15))
+                            .foregroundStyle(Color.Deltiq.textSecondary)
                         Spacer()
                         Button {
                             var arr = profile.activeDashboardWidgets
@@ -234,13 +283,16 @@ public struct DashboardSettingsView: View {
                         }
                         .buttonStyle(.plain)
                     }
+                    .listRowBackground(Color.Deltiq.surface)
                 }
             } header: {
-                Text("dashboardSettings.section.inactive.title", bundle: .module)
+                sectionHeader("dashboardSettings.section.inactive.title")
             } footer: {
                 Text("dashboardSettings.section.inactive.footer", bundle: .module)
-                    .font(.footnote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
         }
     }
 }

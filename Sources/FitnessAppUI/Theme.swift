@@ -662,7 +662,120 @@ public struct DeltiqCard<Content: View>: View {
     }
 }
 
-// MARK: - 6.6 DeltiqRow (Abschnitt 1.6)
+// MARK: - 6.6 DeltiqSegmentedPicker (Abschnitt 2.4 Erscheinungsbild-Picker)
+
+/// Ein Segment fuer `DeltiqSegmentedPicker`.
+public struct DeltiqSegmentedOption<Value: Hashable>: Identifiable {
+    public var id: Value { value }
+    public let value: Value
+    public let label: String
+
+    public init(_ value: Value, label: String) {
+        self.value = value
+        self.label = label
+    }
+}
+
+/// Handoff 2.4: Ersatz fuer den System-Segmented-Picker (Systemgrau-
+/// Segmente) - aktives Segment Orange mit dunkler #1A1A1A-Schrift, Spur
+/// Weiss/Fill 7%. Eigenbau statt `UISegmentedControl.appearance()`-Proxy:
+/// dieser gilt GLOBAL fuer jeden Segmented-Picker im Repo (siehe z.B.
+/// ChartTimeRange, PlateCalculatorView, OnboardingView) - hier soll nur
+/// dieser eine Picker das neue Aussehen bekommen.
+public struct DeltiqSegmentedPicker<Value: Hashable>: View {
+    public var options: [DeltiqSegmentedOption<Value>]
+    @Binding public var selection: Value
+
+    public init(options: [DeltiqSegmentedOption<Value>], selection: Binding<Value>) {
+        self.options = options
+        self._selection = selection
+    }
+
+    public var body: some View {
+        HStack(spacing: 4) {
+            ForEach(options) { option in
+                Button {
+                    selection = option.value
+                } label: {
+                    Text(option.label)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(
+                            option.value == selection
+                                ? Color(red: 0.102, green: 0.102, blue: 0.102)
+                                : Color.primary
+                        )
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(option.value == selection ? Color.deltiqOrange : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(4)
+        .background(Color.Deltiq.fill)
+        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input + 4, style: .continuous))
+        .animation(.easeOut(duration: 0.15), value: selection)
+    }
+}
+
+// MARK: - 6.7 DeltiqControlRow (Abschnitt 2.4 Einstellungen)
+
+/// Zeile mit einem frei waehlbaren, rechtsbuendigen Control (Toggle,
+/// Picker, TextField, ...) statt eines statischen Wert-Texts wie bei
+/// `DeltiqRow` - fuer Einstellungs-Zeilen (Settings, Messung-Formulare),
+/// die `DeltiqRow`s feste Icon/Label/Untertitel/Wert/Chevron-Form nicht
+/// abdeckt. `icon` optional: Zeilen ohne sinnvolles Symbol lassen es weg
+/// und ruecken den Text nach links auf den normalen 14pt-Zeilenrand
+/// (siehe 2.4) - dafuer reicht der bedingte Icon-Slot unten, kein
+/// zusaetzlicher Parameter noetig.
+public struct DeltiqControlRow<Control: View>: View {
+    public var icon: String?
+    public var label: String
+    public var showsDivider: Bool
+    public var control: () -> Control
+
+    public init(
+        icon: String? = nil,
+        label: String,
+        showsDivider: Bool = true,
+        @ViewBuilder control: @escaping () -> Control
+    ) {
+        self.icon = icon
+        self.label = label
+        self.showsDivider = showsDivider
+        self.control = control
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 12) {
+                if let icon {
+                    Image(systemName: icon)
+                        .deltiqAccentIcon()
+                }
+                Text(label)
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.primary)
+                    .layoutPriority(1)
+                Spacer(minLength: 12)
+                control()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(minHeight: 44)
+            if showsDivider {
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
+            }
+        }
+    }
+}
+
+// MARK: - 6.8 DeltiqRow (Abschnitt 1.6)
 
 /// Zeile innerhalb einer `DeltiqSection`. `icon` ist optional — Zeilen
 /// ohne sinnvolles Symbol lassen es weg, statt einen leeren Platzhalter
