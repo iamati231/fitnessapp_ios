@@ -771,7 +771,7 @@ public struct WorkoutSummaryView: View {
         //     Render (0.4 -> 1.0 in einer dampedDamping=0.55 Feder).
         //   * Subtle Glow via `.shadow` mit DeltiqOrange-Tint — gibt dem Icon
         //     den "leuchtenden Trophaeen"-Look ohne in Confetti zu verfallen.
-        //   * Title-Typo eine Stufe groesser (.title.weight(.bold)) damit die
+        //   * Title-Typo eine Stufe groesser (24pt/bold/rounded) damit die
         //     Hierarchie unten in den Stat-Hero-Numbers fortgesetzt wirkt.
         // Read-Only-Replay (History-Detail) ueberspringt das Spring, weil
         // die Anim nur zum frischen Finish gehoert — beim Replay wuerde es
