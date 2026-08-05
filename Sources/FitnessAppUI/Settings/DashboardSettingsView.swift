@@ -18,10 +18,39 @@ public struct DashboardSettingsView: View {
 
     @Bindable public var profile: UserBodyProfile
     @Environment(\.dismiss) private var dismiss
+    // `editMode` ist auf macOS/watchOS unavailable (SwiftUI.EnvironmentValues.
+    // editMode). Das Package deklariert macOS 14 als Mindestversion, damit
+    // `swift test` auf dem macOS-CI-Runner baut - eine echte macOS-Deployment
+    // dieser View gibt es nicht. Guard reicht daher als reiner Compile-Fix.
+    #if os(iOS)
     @Environment(\.editMode) private var editMode
+    #endif
 
     public init(profile: UserBodyProfile) {
         self.profile = profile
+    }
+
+    /// Ersatz fuer EditButton(): gleiche editMode-Umschaltung, aber als
+    /// Header-Aktion statt natives Toolbar-Item - EditButton() selbst laesst
+    /// sich nicht in eine DeltiqHeaderAction verpacken (kein Closure-
+    /// basiertes API, sondern ein fertiger, selbstverwalteter View-Typ).
+    /// `editMode` selbst ist auf macOS/watchOS unavailable - leeres Array
+    /// dort (siehe Kommentar an der Property-Deklaration).
+    private var headerActions: [DeltiqHeaderAction] {
+        #if os(iOS)
+        return [
+            DeltiqHeaderAction(
+                systemImage: editMode?.wrappedValue.isEditing == true ? "checkmark" : "arrow.up.arrow.down",
+                isHighlighted: editMode?.wrappedValue.isEditing == true
+            ) {
+                withAnimation {
+                    editMode?.wrappedValue = editMode?.wrappedValue.isEditing == true ? .inactive : .active
+                }
+            }
+        ]
+        #else
+        return []
+        #endif
     }
 
     public var body: some View {
@@ -35,21 +64,7 @@ public struct DashboardSettingsView: View {
                 eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
                 title: String(localized: "dashboardSettings.title", bundle: .module),
                 onBack: { dismiss() },
-                actions: [
-                    // Ersatz fuer EditButton(): gleiche editMode-Umschaltung,
-                    // aber als Header-Aktion statt natives Toolbar-Item -
-                    // EditButton() selbst laesst sich nicht in eine
-                    // DeltiqHeaderAction verpacken (kein Closure-basiertes
-                    // API, sondern ein fertiger, selbstverwalteter View-Typ).
-                    DeltiqHeaderAction(
-                        systemImage: editMode?.wrappedValue.isEditing == true ? "checkmark" : "arrow.up.arrow.down",
-                        isHighlighted: editMode?.wrappedValue.isEditing == true
-                    ) {
-                        withAnimation {
-                            editMode?.wrappedValue = editMode?.wrappedValue.isEditing == true ? .inactive : .active
-                        }
-                    }
-                ]
+                actions: headerActions
             )
 
             List {
@@ -64,7 +79,9 @@ public struct DashboardSettingsView: View {
             .scrollContentBackground(.hidden)
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
+        #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
+        #endif
         .navigationBarBackButtonHidden(true)
     }
 

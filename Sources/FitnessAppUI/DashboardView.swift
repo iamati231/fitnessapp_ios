@@ -199,7 +199,9 @@ public struct DashboardView: View {
         .background(Color.Deltiq.background.ignoresSafeArea())
         // Signature-Geruest 1.2: native Navigationsleiste versteckt, die
         // eigene DeltiqHeader uebernimmt Titel + Aktionen.
+        #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
+        #endif
         .navigationBarBackButtonHidden(true)
         .navigationDestination(isPresented: $showingNewMeasurement) {
             MeasurementView()

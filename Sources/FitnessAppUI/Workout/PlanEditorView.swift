@@ -14,7 +14,13 @@ public struct PlanEditorView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var navigation
     @Environment(\.dismiss) private var dismiss
+    // `editMode` ist auf macOS/watchOS unavailable (SwiftUI.EnvironmentValues.
+    // editMode). Das Package deklariert macOS 14 als Mindestversion, damit
+    // `swift test` auf dem macOS-CI-Runner baut - eine echte macOS-Deployment
+    // dieser View gibt es nicht. Guard reicht daher als reiner Compile-Fix.
+    #if os(iOS)
     @Environment(\.editMode) private var editMode
+    #endif
 
     @Query private var allPlans: [TrainingPlan]
 
@@ -57,21 +63,7 @@ public struct PlanEditorView: View {
                 eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
                 title: plan.name.isEmpty ? String(localized: "tab.plan", bundle: .module) : plan.displayName,
                 onBack: { dismiss() },
-                // DEL-095: Ersatz fuer EditButton() — aktiviert denselben
-                // Drag-Mode fuer die Tage-Reihenfolge, nur als Header-Aktion
-                // statt natives Toolbar-Item. Bei readOnly-Templates oder
-                // leerem Tage-Array bleibt die Aktion ganz weg (kein Reorder
-                // ohne mind. 2 Tage sinnvoll).
-                actions: (!isReadOnly && !plan.days.isEmpty) ? [
-                    DeltiqHeaderAction(
-                        systemImage: editMode?.wrappedValue.isEditing == true ? "checkmark" : "arrow.up.arrow.down",
-                        isHighlighted: editMode?.wrappedValue.isEditing == true
-                    ) {
-                        withAnimation {
-                            editMode?.wrappedValue = editMode?.wrappedValue.isEditing == true ? .inactive : .active
-                        }
-                    }
-                ] : []
+                actions: headerActions
             )
 
             List {
@@ -87,7 +79,9 @@ public struct PlanEditorView: View {
             .scrollContentBackground(.hidden)
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
+        #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
+        #endif
         .navigationBarBackButtonHidden(true)
         // DEL-022 + DEL-031 + DEL-049 + DEL-050 — Trainingsort-Wechsel feuert
         // einen mehrstufigen Flow:
@@ -308,6 +302,30 @@ public struct PlanEditorView: View {
     /// noch und werden in einer Aufraeumwelle entfernt.
     private var isReadOnly: Bool {
         false
+    }
+
+    /// DEL-095: Ersatz fuer EditButton() — aktiviert denselben Drag-Mode
+    /// fuer die Tage-Reihenfolge, nur als Header-Aktion statt natives
+    /// Toolbar-Item. Bei readOnly-Templates oder leerem Tage-Array bleibt
+    /// die Aktion ganz weg (kein Reorder ohne mind. 2 Tage sinnvoll).
+    /// `editMode` selbst ist auf macOS/watchOS unavailable - leeres Array
+    /// dort (siehe Kommentar an der Property-Deklaration).
+    private var headerActions: [DeltiqHeaderAction] {
+        #if os(iOS)
+        guard !isReadOnly, !plan.days.isEmpty else { return [] }
+        return [
+            DeltiqHeaderAction(
+                systemImage: editMode?.wrappedValue.isEditing == true ? "checkmark" : "arrow.up.arrow.down",
+                isHighlighted: editMode?.wrappedValue.isEditing == true
+            ) {
+                withAnimation {
+                    editMode?.wrappedValue = editMode?.wrappedValue.isEditing == true ? .inactive : .active
+                }
+            }
+        ]
+        #else
+        return []
+        #endif
     }
 
     // MARK: Sections

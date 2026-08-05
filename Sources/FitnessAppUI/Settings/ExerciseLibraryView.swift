@@ -137,7 +137,9 @@ public struct ExerciseLibraryView: View {
             .scrollContentBackground(.hidden)
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
+        #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
+        #endif
         .navigationBarBackButtonHidden(true)
         .sheet(item: $selectedTemplate) { template in
             ExerciseLibraryEditorSheet(template: template)

@@ -105,6 +105,15 @@ public struct SettingsView: View {
             #endif
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
+        // Signature-Geruest: eigene DeltiqHeader-Kopfzone ersetzt die native
+        // Navigationsleiste - dieser Ausblend-Aufruf fehlte bislang komplett
+        // (im Gegensatz zu allen anderen umgestellten Screens), wodurch auf
+        // iOS eine leere native Leiste zusaetzlich zur DeltiqHeader gerendert
+        // wurde.
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .navigationBarBackButtonHidden(true)
         .alert(
             "Fehler beim Zurücksetzen",
             isPresented: Binding(

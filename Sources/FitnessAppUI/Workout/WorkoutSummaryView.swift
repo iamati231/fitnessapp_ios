@@ -150,7 +150,9 @@ public struct WorkoutSummaryView: View {
             .scrollContentBackground(.hidden)
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
+        #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
+        #endif
         .navigationBarBackButtonHidden(true)
         // DEL-223: Sicherheitsnetz gegen dauerhaft falsche Summen. Der
         // Edit-Mode rechnete `totalSets`/`totalVolumeKg` NUR im "Fertig"-
@@ -1063,10 +1065,13 @@ public struct WorkoutSummaryView: View {
                 ForEach(logs) { log in
                     SetSummaryRow(log: log, exercise: exercise, isEditable: isEditingSets)
                 }
-                .listRowBackground(Color.Deltiq.surface)
+                // .onDelete braucht DynamicViewContent (ForEach) - muss VOR
+                // .listRowBackground stehen, sonst erased letzteres bereits
+                // auf ein generisches View, das kein .onDelete mehr hat.
                 .onDelete { offsets in
                     deleteSets(of: exercise, indices: offsets)
                 }
+                .listRowBackground(Color.Deltiq.surface)
                 // DEL-136 Part C-Iteration: "+ Satz hinzufügen"-Row im
                 // History-Edit-Mode. Nur isEditingHistory, NICHT im
                 // New-Mode (post-finish) — dort gibt's keinen Use-Case

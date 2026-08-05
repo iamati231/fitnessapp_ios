@@ -66,7 +66,9 @@ public struct WaterTrackerView: View {
             .deltiqScreen()
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
+        #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
+        #endif
         .navigationBarBackButtonHidden(true)
     }
 
@@ -110,7 +112,18 @@ public struct WaterTrackerView: View {
                 .rotationEffect(.degrees(-90))
                 // Handoff 2.3: Fortschritt in Akzent-Orange statt Cyan; "erledigt"
                 // (Ziel erreicht) bleibt Gruen (1.7: Gruen nur fuer diesen Fall).
-                .foregroundStyle(progress >= 1.0 ? Color.green.gradient : Color.Deltiq.primaryGradient)
+                // Explizites LinearGradient statt Color.green.gradient (AnyGradient) -
+                // die beiden Ternary-Zweige muessen denselben konkreten Typ haben wie
+                // Color.Deltiq.primaryGradient.
+                .foregroundStyle(
+                    progress >= 1.0
+                        ? LinearGradient(
+                            colors: [Color.Deltiq.success, Color.Deltiq.success.opacity(0.7)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                          )
+                        : Color.Deltiq.primaryGradient
+                )
                 .animation(.easeInOut(duration: 0.4), value: progress)
             VStack(spacing: 2) {
                 Text("\(todayMl)")

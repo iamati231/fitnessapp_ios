@@ -192,7 +192,9 @@ public struct MeasurementView: View {
             }
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
+        #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
+        #endif
         .navigationBarBackButtonHidden(true)
         .toolbar {
             // DEL-106: Keyboard-Accessory mit Previous/Next/Done. Da der
@@ -246,20 +248,28 @@ public struct MeasurementView: View {
     private func measurementContextRow(profile: UserBodyProfile) -> some View {
         if !isEditMode {
             let missing = missingRequiredCount(profile: profile)
-            var items: [DeltiqContextItem] = []
-            if let last = historicalMeasurements.first?.date {
-                items.append(DeltiqContextItem(
+            // @ViewBuilder transformiert JEDE Nicht-Deklarations-Anweisung im
+            // Funktionskoerper - das vorherige `items.append(...)` (Void-
+            // Aufruf) scheiterte an buildExpression ("type '()' cannot
+            // conform to 'View'"). compactMap-Array-Literal (wie
+            // DashboardView.dashboardContextRow) nutzt nur `let`-Bindings,
+            // die vom Builder-Transform ausgenommen sind.
+            let lastItem = historicalMeasurements.first?.date.map { last in
+                DeltiqContextItem(
                     String(format: loc("measurement.context.last"), last.formatted(date: .abbreviated, time: .omitted)).uppercased(),
                     style: .neutral
-                ))
+                )
             }
-            if missing > 0 {
-                let template = missing == 1 ? loc("measurement.context.missing.one") : loc("measurement.context.missing.many")
-                items.append(DeltiqContextItem(
-                    String(format: template, missing).uppercased(),
+            let missingItem: DeltiqContextItem? = missing > 0
+                ? DeltiqContextItem(
+                    String(
+                        format: missing == 1 ? loc("measurement.context.missing.one") : loc("measurement.context.missing.many"),
+                        missing
+                    ).uppercased(),
                     style: .accent
-                ))
-            }
+                  )
+                : nil
+            let items = [lastItem, missingItem].compactMap { $0 }
             if !items.isEmpty {
                 DeltiqContextRow(items)
             }

@@ -161,7 +161,9 @@ public struct ActiveWorkoutView: View {
             paginatedBody
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
+        #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
+        #endif
         .navigationBarBackButtonHidden(true)
         .keyboardDismissToolbar()
         // DEL-108: Wenn ein Halte-Timer-Set startet, killt das den Rest-

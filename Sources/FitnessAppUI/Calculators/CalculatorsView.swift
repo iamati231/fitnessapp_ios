@@ -76,7 +76,9 @@ public struct CalculatorsView: View {
             .deltiqScreen()
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
+        #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
+        #endif
         .navigationBarBackButtonHidden(true)
     }
 }
