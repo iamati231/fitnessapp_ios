@@ -276,4 +276,441 @@ public extension View {
         modifier(DeltiqIconBadgeModifier(tint: tint, size: size))
     }
 }
+
+// MARK: - 6. Signature Screen-Gerüst (Design-Handoff Turn 2b)
+//
+// Acht Schichten, in jedem View identisch. `deltiqCardStyle`,
+// `deltiqButtonStyle`, `fitnessNumberStyle` und `DeltiqFormSection`
+// bleiben unveraendert und werden hier weiterbenutzt, nicht ersetzt.
+//
+// **Light Mode:** Das Handoff-Dokument spezifiziert ausschliesslich
+// Dark-Werte. Alle unten neu eingefuehrten Farb-Tokens leiten ihre
+// Light-Variante nach demselben Muster wie `InnerLightStrokeModifier`
+// (DEL-066) ab: gleiche Opazitaet, Farbe kippt Weiss→Schwarz, damit der
+// Kontrast zum jeweiligen Hintergrund symmetrisch bleibt. Das ist eine
+// plausible Herleitung, keine Design-Vorgabe — noch nicht gegengeprueft.
+
+public extension Color.Deltiq {
+    /// Sekundaertext (Untertitel, Werte, Hinweise). Deckkraft 60%.
+    static let textSecondary = Color(
+        deltiqLight: Color.black.opacity(0.60),
+        deltiqDark:  Color.white.opacity(0.60)
+    )
+
+    /// Tertiaertext (Platzhalter, Chevrons, inaktive Werte). Deckkraft 30%.
+    static let textTertiary = Color(
+        deltiqLight: Color.black.opacity(0.30),
+        deltiqDark:  Color.white.opacity(0.30)
+    )
+
+    /// Zeilentrennlinie, volle Breite, kein Einzug. Deckkraft 6%.
+    static let divider = Color(
+        deltiqLight: Color.black.opacity(0.06),
+        deltiqDark:  Color.white.opacity(0.06)
+    )
+
+    /// Neutrale Flaeche fuer Kopfzeilen-Knoepfe, Suchfeld, Eingaben.
+    /// Deckkraft 7%.
+    static let fill = Color(
+        deltiqLight: Color.black.opacity(0.07),
+        deltiqDark:  Color.white.opacity(0.07)
+    )
+
+    /// Haarlinie unter der Kontextzeile: Verlauf von Akzent 55% nach
+    /// transparent. `deltiqOrange` ist Light/Dark identisch, daher keine
+    /// Schema-Unterscheidung noetig.
+    static let hairline = LinearGradient(
+        colors: [Color.deltiqOrange.opacity(0.55), Color.deltiqOrange.opacity(0)],
+        startPoint: .leading,
+        endPoint: .trailing
+    )
+}
+
+// MARK: - 6.1 Signature-Icon-Quadrat (Abschnitt 1.6)
+
+/// Eine Icon-Groesse fuer das gesamte Screen-Geruest: 32×32, Radius 8,
+/// Akzent-Verlauf `#FF9F0A → #FF7300`, weisser Glyph. Loest die bisherigen
+/// 30/36/38pt-Varianten mit ihren Sieben-Farben-Tints ab. Groesse bleibt
+/// ueberschreibbar fuer Kachel-Faelle (Dashboard-Hero, Rechner-Kacheln),
+/// die denselben Verlauf in anderen Massen brauchen.
+public struct DeltiqAccentIconModifier: ViewModifier {
+    public var size: CGFloat
+    public var cornerRadius: CGFloat
+    public var glyphSize: CGFloat
+
+    public init(size: CGFloat = 32, cornerRadius: CGFloat = Deltiq.Radius.input, glyphSize: CGFloat = 14) {
+        self.size = size
+        self.cornerRadius = cornerRadius
+        self.glyphSize = glyphSize
+    }
+
+    public func body(content: Content) -> some View {
+        content
+            .font(.system(size: glyphSize, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: size, height: size)
+            .background(Color.Deltiq.primaryGradient)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+    }
+}
+
+public extension View {
+    func deltiqAccentIcon(size: CGFloat = 32, cornerRadius: CGFloat = Deltiq.Radius.input, glyphSize: CGFloat = 14) -> some View {
+        modifier(DeltiqAccentIconModifier(size: size, cornerRadius: cornerRadius, glyphSize: glyphSize))
+    }
+}
+
+// MARK: - 6.2 DeltiqScreen (Abschnitt 1.1)
+
+/// Screen-Flaeche: randloser Hintergrund, `ScrollView` statt `List`/`Form`,
+/// Seitenrand 16, Bottom-Inset 100 (140 bei zusaetzlicher Bottom-Bar, z. B.
+/// aktives Training). Erwartet als Content i. d. R. einen
+/// `VStack(alignment: .leading, spacing: 18)`.
+///
+/// Der Kopf (`DeltiqHeader`) sitzt ausserhalb — bleibt fix, scrollt nicht
+/// mit. Zwischen Kopf und erstem Element liegen 12pt (siehe 1.3); das gilt
+/// unabhaengig davon, ob eine `DeltiqContextRow` vorhanden ist.
+public struct DeltiqScreenModifier: ViewModifier {
+    public var extraBottomInset: Bool
+
+    public init(extraBottomInset: Bool = false) {
+        self.extraBottomInset = extraBottomInset
+    }
+
+    public func body(content: Content) -> some View {
+        ScrollView {
+            content
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, extraBottomInset ? 140 : 100)
+        }
+        .scrollContentBackground(.hidden)
+        .background(Color.Deltiq.background.ignoresSafeArea())
+    }
+}
+
+public extension View {
+    func deltiqScreen(extraBottomInset: Bool = false) -> some View {
+        modifier(DeltiqScreenModifier(extraBottomInset: extraBottomInset))
+    }
+}
+
+// MARK: - 6.3 DeltiqHeader (Abschnitt 1.2)
+
+/// Aktion in der Kopfzeile, maximal zwei pro `DeltiqHeader`.
+public struct DeltiqHeaderAction: Identifiable {
+    public let id = UUID()
+    public let systemImage: String
+    public let isHighlighted: Bool
+    public let action: () -> Void
+
+    public init(systemImage: String, isHighlighted: Bool = false, action: @escaping () -> Void) {
+        self.systemImage = systemImage
+        self.isHighlighted = isHighlighted
+        self.action = action
+    }
+}
+
+/// Ersetzt die native Navigationsleiste. Caller blendet sie zusaetzlich
+/// aus (`.toolbar(.hidden, for: .navigationBar)`,
+/// `.navigationBarBackButtonHidden(true)`) und haelt die Swipe-Back-Geste
+/// ueber den System-Default am Leben — dieser View uebernimmt nur die
+/// Darstellung, keine Navigationslogik.
+public struct DeltiqHeader: View {
+    public var eyebrow: String
+    public var title: String
+    public var onBack: (() -> Void)?
+    public var actions: [DeltiqHeaderAction]
+
+    public init(
+        eyebrow: String,
+        title: String,
+        onBack: (() -> Void)? = nil,
+        actions: [DeltiqHeaderAction] = []
+    ) {
+        self.eyebrow = eyebrow
+        self.title = title
+        self.onBack = onBack
+        self.actions = Array(actions.prefix(2))
+    }
+
+    public var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            if let onBack {
+                Button(action: onBack) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(Color.deltiqOrange)
+                        .frame(width: 32, height: 32)
+                        .background(Color.Deltiq.fill)
+                        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+                }
+                .accessibilityLabel(Text("common.back", bundle: .module))
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(eyebrow)
+                    .font(.system(size: 10, weight: .heavy))
+                    .tracking(1.5)
+                    .foregroundStyle(Color.deltiqOrange)
+                Text(title)
+                    .font(.system(size: 24, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Color.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+
+            Spacer(minLength: 8)
+
+            ForEach(actions) { headerAction in
+                Button(action: headerAction.action) {
+                    Image(systemName: headerAction.systemImage)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.deltiqOrange)
+                        .frame(width: 32, height: 32)
+                        .background(headerAction.isHighlighted ? Color.deltiqOrange.opacity(0.16) : Color.Deltiq.fill)
+                        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 52)
+    }
+}
+
+// MARK: - 6.4 DeltiqPill + DeltiqContextRow (Abschnitt 1.3)
+
+public enum DeltiqPillStyle {
+    case accent
+    case neutral
+}
+
+/// Kontextkapsel. `text` wird nicht automatisch grossgeschrieben — Caller
+/// uebergibt bereits Grossbuchstaben (gleiche Begruendung wie bei
+/// `deltiqLabel()`: unicode-spezifische Umlaute wie ß bleiben so korrekt).
+public struct DeltiqPill: View {
+    public var text: String
+    public var style: DeltiqPillStyle
+
+    public init(_ text: String, style: DeltiqPillStyle = .neutral) {
+        self.text = text
+        self.style = style
+    }
+
+    public var body: some View {
+        Text(text)
+            .font(.system(size: 10, weight: .bold))
+            .tracking(0.6)
+            .foregroundStyle(style == .accent ? Color.deltiqOrange : Color.Deltiq.textSecondary)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            .background(style == .accent ? Color.deltiqOrange.opacity(0.15) : Color.Deltiq.fill)
+            .clipShape(Capsule())
+    }
+}
+
+/// Ein Eintrag einer `DeltiqContextRow`.
+public struct DeltiqContextItem: Identifiable {
+    public let id = UUID()
+    public let text: String
+    public let style: DeltiqPillStyle
+
+    public init(_ text: String, style: DeltiqPillStyle = .neutral) {
+        self.text = text
+        self.style = style
+    }
+}
+
+/// Kapselzeile + Haarlinie. Optional, aber wenn vorhanden immer als
+/// erstes Element im Screen-Content (siehe `DeltiqScreen`).
+public struct DeltiqContextRow: View {
+    public var items: [DeltiqContextItem]
+
+    public init(_ items: [DeltiqContextItem]) {
+        self.items = items
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                ForEach(items) { item in
+                    DeltiqPill(item.text, style: item.style)
+                }
+            }
+            Rectangle()
+                .fill(Color.Deltiq.hairline)
+                .frame(height: 1)
+        }
+    }
+}
+
+// MARK: - 6.5 DeltiqSection + DeltiqCard (Abschnitt 1.4)
+
+/// Container-Variante "Sektion": Zeilenliste ohne Innenpadding, Header
+/// (falls gesetzt) wandert als erste Zeile in die Karte (Abschnitt 1.5).
+/// `accentEdge` markiert die eine Karte pro Screen, die die Hauptaussage
+/// traegt — maximal eine pro Screen, siehe 1.4.
+public struct DeltiqSection<Content: View>: View {
+    public var title: String?
+    public var accentEdge: Bool
+    public var content: () -> Content
+
+    public init(
+        _ title: String? = nil,
+        accentEdge: Bool = false,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.title = title
+        self.accentEdge = accentEdge
+        self.content = content
+    }
+
+    public var body: some View {
+        ZStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 0) {
+                if let title {
+                    Text(title)
+                        .font(.system(size: 10, weight: .heavy))
+                        .tracking(1.5)
+                        .foregroundStyle(Color.deltiqOrange)
+                        .padding(.horizontal, 14)
+                        .padding(.top, 14)
+                        .padding(.bottom, 8)
+                    Rectangle()
+                        .fill(Color.Deltiq.divider)
+                        .frame(height: 1)
+                }
+                content()
+            }
+            if accentEdge {
+                Color.deltiqOrange.frame(width: 2)
+            }
+        }
+        .background(Color.Deltiq.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous)
+                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+        )
+    }
+}
+
+/// Container-Variante "Karte": freier Inhalt, Padding 16 rundum.
+public struct DeltiqCard<Content: View>: View {
+    public var accentEdge: Bool
+    public var content: () -> Content
+
+    public init(accentEdge: Bool = false, @ViewBuilder content: @escaping () -> Content) {
+        self.accentEdge = accentEdge
+        self.content = content
+    }
+
+    public var body: some View {
+        ZStack(alignment: .leading) {
+            content()
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            if accentEdge {
+                Color.deltiqOrange.frame(width: 2)
+            }
+        }
+        .background(Color.Deltiq.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous)
+                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - 6.6 DeltiqRow (Abschnitt 1.6)
+
+/// Zeile innerhalb einer `DeltiqSection`. `icon` ist optional — Zeilen
+/// ohne sinnvolles Symbol lassen es weg, statt einen leeren Platzhalter
+/// zu zeigen (siehe 2.4). `showsDivider` steuert die Trennlinie am Fuss
+/// der Zeile; die letzte Zeile einer Sektion setzt sie auf `false`, damit
+/// die Karte nicht mit einer Linie direkt vor der Rundung abschliesst.
+public struct DeltiqRow: View {
+    public var icon: String?
+    public var label: String
+    public var subtitle: String?
+    public var value: String?
+    public var showsChevron: Bool
+    public var showsDivider: Bool
+    public var action: (() -> Void)?
+
+    public init(
+        icon: String? = nil,
+        label: String,
+        subtitle: String? = nil,
+        value: String? = nil,
+        showsChevron: Bool = false,
+        showsDivider: Bool = true,
+        action: (() -> Void)? = nil
+    ) {
+        self.icon = icon
+        self.label = label
+        self.subtitle = subtitle
+        self.value = value
+        self.showsChevron = showsChevron
+        self.showsDivider = showsDivider
+        self.action = action
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let action {
+                Button(action: action) { rowBody }
+                    .buttonStyle(.plain)
+            } else {
+                rowBody
+            }
+            if showsDivider {
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
+            }
+        }
+    }
+
+    private var rowBody: some View {
+        HStack(spacing: 12) {
+            if let icon {
+                Image(systemName: icon)
+                    .deltiqAccentIcon()
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.primary)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .lineSpacing(4)
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            if let value {
+                Text(value)
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .fitnessNumberStyle()
+            }
+
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.Deltiq.textTertiary)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+    }
+}
 #endif
