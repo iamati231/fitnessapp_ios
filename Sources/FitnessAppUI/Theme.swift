@@ -903,7 +903,8 @@ public struct DeltiqRow: View {
 
 // MARK: - 6.9 DeltiqCentralActionButton (Abschnitt 1.11)
 
-/// Zentraler Aktionsknopf: 56×56, Kreis, Akzent-Verlauf, "Play"-Symbol.
+/// Zentraler Aktionsknopf: 64×64 (siehe `diameter`), Kreis, Akzent-Verlauf,
+/// "Play"-Symbol.
 ///
 /// Bug-Fix: lebte urspruenglich als EIN `.overlay(alignment: .bottom)` auf
 /// der aeusseren `TabView` in `MainTabView` - dadurch schwebte er ueber
@@ -925,7 +926,7 @@ public struct DeltiqCentralActionButton: View {
     /// UND fuer `.deltiqCentralActionButtonOverlay(...)`s Content-Bottom-
     /// Inset, damit Button-Position und reservierter Scroll-Freiraum nie
     /// auseinanderlaufen koennen.
-    public static let diameter: CGFloat = 56
+    public static let diameter: CGFloat = 64
 
     public var action: () -> Void
 
