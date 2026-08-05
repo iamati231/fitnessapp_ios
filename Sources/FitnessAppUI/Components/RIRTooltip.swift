@@ -64,6 +64,13 @@ public struct RIRTooltipBloop: View {
             // (375pt - Card-Padding ~76 = 299pt verfuegbar, 240 sitzt
             // bequem drin).
             .frame(minWidth: 200, idealWidth: 220, maxWidth: 240)
+            // Kartenflaeche/Radius geprueft: bewusst `.regularMaterial`
+            // statt Color.Deltiq.surface - das Bloop ist ein transientes
+            // Popover ueber wechselndem Untergrund (Slider/Card-Farben),
+            // kein persistenter Bento-Card-Container. Radius 12 passt zur
+            // Familie kleinerer Controls (siehe DayPickerSheet-Rows),
+            // nicht zur 20pt-Karten-Konvention. Gleiches Material-Muster
+            // wie der swapResultToast in DayEditorView.
             .background(.regularMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
