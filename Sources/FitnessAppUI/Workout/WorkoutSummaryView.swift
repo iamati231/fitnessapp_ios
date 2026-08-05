@@ -72,68 +72,27 @@ public struct WorkoutSummaryView: View {
     }
 
     public var body: some View {
-        List {
-            heroSection
-            // UX-202: Achievements ueber den Stats — der User soll erst den
-            // Reward sehen, dann die Zahlen analysieren. Read-Only-Replay
-            // ueberspringt die Sektion, weil die Achievements zum Frisch-
-            // Finish-Moment gehoeren (heaviestOfWeek waere im Replay stale
-            // sobald die naechste Session in derselben Woche kommt).
-            if !isReadOnly, !achievements.isEmpty {
-                achievementsSection
-            }
-            if isEditingSets {
-                editMetaSection
-            }
-            if !personalRecords.isEmpty {
-                prSection
-            }
-            // DEL-052/053: Smart-Progression-Celebration nur im New-Mode, nicht
-            // in History-Replays. Im History-Replay wuerden die Outcomes stale
-            // sein (suggestedWeight wurde seither evtl. mehrfach weiter-geupdated).
-            if !isReadOnly, !progressionOutcomes.isEmpty {
-                progressionSection
-            }
-            statsSection
-            gearSection
-            notesSection
-            breakdownSections
-            if !isReadOnly {
-                finishSection
-            }
-        }
-        #if os(iOS)
-        .listStyle(.insetGrouped)
-        #endif
-        .navigationTitle(navigationTitleText)
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
-        .navigationBarBackButtonHidden(!isReadOnly)
-        // DEL-223: Sicherheitsnetz gegen dauerhaft falsche Summen. Der
-        // Edit-Mode rechnete `totalSets`/`totalVolumeKg` NUR im "Fertig"-
-        // Toolbar-Button neu — im History-Mode ist der System-Back-Button aber
-        // sichtbar (siehe `navigationBarBackButtonHidden(!isReadOnly)` direkt
-        // darueber). Wer den Edit-Mode ueber Zurueck oder die Back-Swipe-Gestur
-        // verliess, behielt fuer immer die Summen von VOR seiner Aenderung — in
-        // Dashboard, Wochenvolumen und History.
-        //
-        // Bewusst nur ein Recompute und KEIN Platzhalter-Sweep: Recompute ist
-        // idempotent und damit unkritisch, falls SwiftUI onDisappear
-        // unerwartet feuert. Geloescht wird nur auf die explizite
-        // "Fertig"-Aktion.
-        .onDisappear {
-            guard isReadOnly else { return }
-            recalculateSessionTotals()
-            try? modelContext.save()
-        }
-        .toolbar {
-            // DEL-032: History-Mode bekommt einen Edit-Toggle. Im New-Mode
-            // unsichtbar (Edit dort macht keinen Sinn — totals werden gerade
-            // erst geschrieben).
-            if isReadOnly {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
+        // Signature-Geruest: eigene Kopfzone statt navigationTitle/Toolbar.
+        // `List` bleibt Container - der History-Edit-Mode braucht .onDelete
+        // fuer Saetze/Uebungen. Kein `onBack` im New-Mode (frisch beendete
+        // Session): der User soll ueber den expliziten "Fertig"-Button statt
+        // ueber Zurueck-Wischen zum Dashboard - identisch zum vorherigen
+        // `.navigationBarBackButtonHidden(!isReadOnly)`.
+        VStack(spacing: 0) {
+            DeltiqHeader(
+                eyebrow: String(localized: "summary.eyebrow", bundle: .module).uppercased(),
+                title: navigationTitleText,
+                onBack: isReadOnly ? { dismiss() } : nil,
+                // DEL-032/DEL-136 Part A: History-Mode bekommt einen Edit-
+                // Toggle + ein "..."-Loesch-Menu. Im New-Mode (post-finish)
+                // unsichtbar - Edit macht dort keinen Sinn (totals werden
+                // gerade erst geschrieben) und eine gerade gespeicherte
+                // Session sofort wieder zu loeschen gibt's keinen Use-Case.
+                actions: isReadOnly ? [
+                    DeltiqHeaderAction(
+                        systemImage: isEditingHistory ? "checkmark" : "pencil",
+                        isHighlighted: isEditingHistory
+                    ) {
                         if isEditingHistory {
                             // Beim Beenden vom Edit-Mode: leere Platzhalter-
                             // Zeilen aufraeumen (DEL-223), totals neu berechnen
@@ -143,19 +102,8 @@ public struct WorkoutSummaryView: View {
                             try? modelContext.save()
                         }
                         isEditingHistory.toggle()
-                    } label: {
-                        Text(isEditingHistory
-                             ? "summary.toolbar.done"
-                             : "summary.toolbar.edit",
-                             bundle: .module)
-                    }
-                }
-                // DEL-136 Part A: "..." Menu mit destructive Delete-Workout-
-                // Action. Nur im History-Mode (isReadOnly) sichtbar — im
-                // New-Mode (post-finish) gibt's keine Notwendigkeit, eine
-                // gerade erst gespeicherte Session sofort wieder zu loeschen.
-                ToolbarItem(placement: .deltiqTrailing) {
-                    Menu {
+                    },
+                    DeltiqHeaderAction(systemImage: "ellipsis", menu: {
                         Button(role: .destructive) {
                             showingDeleteSessionConfirm = true
                         } label: {
@@ -165,11 +113,61 @@ public struct WorkoutSummaryView: View {
                                 Image(systemName: "trash")
                             }
                         }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                    }
+                    })
+                ] : []
+            )
+
+            List {
+                heroSection
+                // UX-202: Achievements ueber den Stats — der User soll erst den
+                // Reward sehen, dann die Zahlen analysieren. Read-Only-Replay
+                // ueberspringt die Sektion, weil die Achievements zum Frisch-
+                // Finish-Moment gehoeren (heaviestOfWeek waere im Replay stale
+                // sobald die naechste Session in derselben Woche kommt).
+                if !isReadOnly, !achievements.isEmpty {
+                    achievementsSection
+                }
+                if isEditingSets {
+                    editMetaSection
+                }
+                if !personalRecords.isEmpty {
+                    prSection
+                }
+                // DEL-052/053: Smart-Progression-Celebration nur im New-Mode, nicht
+                // in History-Replays. Im History-Replay wuerden die Outcomes stale
+                // sein (suggestedWeight wurde seither evtl. mehrfach weiter-geupdated).
+                if !isReadOnly, !progressionOutcomes.isEmpty {
+                    progressionSection
+                }
+                statsSection
+                gearSection
+                notesSection
+                breakdownSections
+                if !isReadOnly {
+                    finishSection
                 }
             }
+            .scrollContentBackground(.hidden)
+        }
+        .background(Color.Deltiq.background.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
+        // DEL-223: Sicherheitsnetz gegen dauerhaft falsche Summen. Der
+        // Edit-Mode rechnete `totalSets`/`totalVolumeKg` NUR im "Fertig"-
+        // Toolbar-Button neu — im History-Mode ist der Zurueck-Chevron aber
+        // sichtbar (siehe `onBack: isReadOnly ? ... : nil` oben). Wer den
+        // Edit-Mode ueber Zurueck oder die Back-Swipe-Gestur verliess, behielt
+        // fuer immer die Summen von VOR seiner Aenderung — in Dashboard,
+        // Wochenvolumen und History.
+        //
+        // Bewusst nur ein Recompute und KEIN Platzhalter-Sweep: Recompute ist
+        // idempotent und damit unkritisch, falls SwiftUI onDisappear
+        // unerwartet feuert. Geloescht wird nur auf die explizite
+        // "Fertig"-Aktion.
+        .onDisappear {
+            guard isReadOnly else { return }
+            recalculateSessionTotals()
+            try? modelContext.save()
         }
         // DEL-136 Part A: Confirmation-Dialog vor dem destruktiven Delete.
         // Default-Branch ist Cancel — User kann nicht versehentlich Workout-
@@ -245,6 +243,17 @@ public struct WorkoutSummaryView: View {
         return String(localized: "summary.title", bundle: .module)
     }
 
+    /// Eyebrow-Stil statt der nativen List-Section-Header-Konvention.
+    /// `.textCase(nil)` verhindert, dass List den bereits grossgeschriebenen
+    /// String noch einmal automatisch transformiert.
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 10, weight: .heavy))
+            .tracking(1.5)
+            .foregroundStyle(Color.deltiqOrange)
+            .textCase(nil)
+    }
+
     /// Im Edit-Mode bekommt der User Datum + Dauer als editierbare Felder.
     /// Wird oben in der List eingeblendet, ueber statsSection.
     private var editMetaSection: some View {
@@ -252,20 +261,27 @@ public struct WorkoutSummaryView: View {
             DatePicker(selection: $session.startTime,
                        displayedComponents: [.date, .hourAndMinute]) {
                 Text("summary.date", bundle: .module)
+                    .font(.system(size: 15))
             }
+            .listRowBackground(Color.Deltiq.surface)
             Stepper(value: $session.durationMinutes, in: 0...600, step: 5) {
                 LabeledContent {
                     Text(String(format: String(localized: "summary.durationMinutes", bundle: .module), session.durationMinutes))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                 } label: {
                     Text("summary.duration", bundle: .module)
+                        .font(.system(size: 15))
                 }
             }
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
-            Text("summary.editMeta.header", bundle: .module)
+            sectionHeader(String(localized: "summary.editMeta.header", bundle: .module))
         } footer: {
             Text("summary.editMeta.footer", bundle: .module)
-                .font(.footnote)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     /// DEL-136 Part B: Loescht ALLE Logs einer bestimmten Uebung aus dieser
@@ -448,31 +464,39 @@ public struct WorkoutSummaryView: View {
                     } label: {
                         LabeledContent {
                             Text(session.gear?.name ?? String(localized: "summary.gear.none", bundle: .module))
-                                .foregroundStyle(.primary)
+                                .foregroundStyle(Color.primary)
+                                .font(.system(size: 15))
                         } label: {
                             Label {
                                 Text("summary.gear.header", bundle: .module)
+                                    .font(.system(size: 15))
                             } icon: {
                                 Image(systemName: gearIcon(session.gear))
                                     .foregroundStyle(Color.deltiqOrange)
                             }
                         }
                     }
+                    .listRowBackground(Color.Deltiq.surface)
                 } else if let gear = session.gear {
                     LabeledContent {
                         Text(gear.name)
+                            .font(.system(size: 15))
+                            .foregroundStyle(Color.Deltiq.textSecondary)
                     } label: {
                         Label {
                             Text("summary.gear.header", bundle: .module)
+                                .font(.system(size: 15))
                         } icon: {
                             Image(systemName: gearIcon(gear))
                                 .foregroundStyle(Color.deltiqOrange)
                         }
                     }
+                    .listRowBackground(Color.Deltiq.surface)
                 }
             } header: {
-                Text("summary.gear.header", bundle: .module)
+                sectionHeader(String(localized: "summary.gear.header", bundle: .module))
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
         }
     }
 
@@ -660,16 +684,20 @@ public struct WorkoutSummaryView: View {
             ForEach(personalRecords) { record in
                 PRBadge(record: record)
             }
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
-            HStack(spacing: 6) {
-                Image(systemName: "trophy.fill")
-                    .foregroundStyle(.yellow)
-                Text("summary.section.personalRecords", bundle: .module)
-            }
+            // Handoff 1.10 (ein Akzent): Trophaeen-Icon war Gelb, Section-
+            // Header traegt jetzt ohnehin kein Icon mehr (kein anderer
+            // Header im Geruest tut das) - die einzelnen PRBadges bleiben
+            // ueber Icon-Form + Text unterscheidbar, siehe PRBadge.kindIcon
+            // / .kindLabel.
+            sectionHeader(String(localized: "summary.section.personalRecords", bundle: .module))
         } footer: {
             Text("summary.prFooter", bundle: .module)
-                .font(.footnote)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     // MARK: - DEL-052/053 Smart Auto-Progression
@@ -687,16 +715,15 @@ public struct WorkoutSummaryView: View {
             ForEach(progressionOutcomes) { outcome in
                 ProgressionBadge(outcome: outcome)
             }
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
-            HStack(spacing: 6) {
-                Image(systemName: "arrow.up.right.circle.fill")
-                    .foregroundStyle(Color.deltiqOrange)
-                Text("summary.section.progression", bundle: .module)
-            }
+            sectionHeader(String(localized: "summary.section.progression", bundle: .module))
         } footer: {
             Text("summary.progressionFooter", bundle: .module)
-                .font(.footnote)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     // MARK: - UX-202 Achievements (Workout-of-Week, Volume-of-Week, Streak)
@@ -729,13 +756,11 @@ public struct WorkoutSummaryView: View {
             ForEach(achievements) { ach in
                 AchievementBadge(achievement: ach)
             }
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
-            HStack(spacing: 6) {
-                Image(systemName: "sparkles")
-                    .foregroundStyle(Color.deltiqOrange)
-                Text("summary.achievements.section", bundle: .module)
-            }
+            sectionHeader(String(localized: "summary.achievements.section", bundle: .module))
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     // MARK: -
@@ -756,14 +781,19 @@ public struct WorkoutSummaryView: View {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 88))
                     .symbolRenderingMode(.hierarchical)   // DEL-059
-                    .foregroundStyle(.green)
+                    // Handoff 1.10: bleibt Gruen - echtes Erfolgs-/Valenz-
+                    // Signal (Completion), keine zweite Akzentfarbe. Ueber
+                    // den Deltiq.success-Token statt hartem .green, damit
+                    // eine spaetere Token-Praezisierung hier mitzieht.
+                    .foregroundStyle(Color.Deltiq.success)
                     .shadow(color: Color.deltiqOrange.opacity(0.35),
                             radius: hasAppeared ? 18 : 0,
                             x: 0, y: 0)
                     .scaleEffect(hasAppeared ? 1.0 : 0.4)
                     .opacity(hasAppeared ? 1.0 : 0.0)
                 Text("summary.hero.title", bundle: .module)
-                    .font(.title.weight(.bold))
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.primary)
                     .multilineTextAlignment(.center)
                 // DEL-129: Day-Subtitle via Extension. Hier nur rendern wenn
                 // session WIRKLICH einen Day-Bezug hat (entweder live-ref
@@ -772,8 +802,8 @@ public struct WorkoutSummaryView: View {
                 // Summary-Hero unschoen wirkt.
                 if session.day != nil || session.dayName != nil {
                     Text(session.displayDayName)
-                        .font(.body)
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -826,7 +856,10 @@ public struct WorkoutSummaryView: View {
         Section {
             VStack(spacing: 20) {
                 heroStatView
-                Divider().opacity(0.6)
+                // DEL-137: gleiche Divider-Konvention wie das statsCard-
+                // Pendant in ActiveWorkoutView (bare Divider(), keine Custom-
+                // Rectangle) - identische UI-Sprache fuer Live + Replay.
+                Divider()
                 HStack(spacing: 0) {
                     SummaryStat(label: String(localized: "active.stats.duration", bundle: .module),
                                 value: formattedDuration)
@@ -835,9 +868,11 @@ public struct WorkoutSummaryView: View {
                 }
             }
             .padding(.vertical, 6)
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
-            Text("summary.section.stats", bundle: .module)
+            sectionHeader(String(localized: "summary.section.stats", bundle: .module))
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     /// DEL-137: zweite Sekundaer-Stat-Spalte. Drei-Wege-Branch identisch
@@ -896,7 +931,7 @@ public struct WorkoutSummaryView: View {
                 .minimumScaleFactor(0.6)
             Text(hero.unitKey, bundle: .module)
                 .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
                 .textCase(.uppercase)
                 .tracking(1.2)
         }
@@ -938,12 +973,14 @@ public struct WorkoutSummaryView: View {
             if let notes = session.notes, !notes.isEmpty {
                 Section {
                     Text(notes)
-                        .font(.body)
-                        .foregroundStyle(.primary)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .listRowBackground(Color.Deltiq.surface)
                 } header: {
-                    Text("summary.note.label", bundle: .module)
+                    sectionHeader(String(localized: "summary.note.label", bundle: .module))
                 }
+                .listRowSeparatorTint(Color.Deltiq.divider)
             }
         } else {
             Section {
@@ -957,13 +994,17 @@ public struct WorkoutSummaryView: View {
                 ) {
                     Text("summary.note.label", bundle: .module)
                 }
+                .font(.system(size: 15))
                 .lineLimit(3...8)
+                .listRowBackground(Color.Deltiq.surface)
             } header: {
-                Text("summary.note.label", bundle: .module)
+                sectionHeader(String(localized: "summary.note.label", bundle: .module))
             } footer: {
                 Text("summary.note.footer", bundle: .module)
-                    .font(.footnote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
         }
     }
 
@@ -972,11 +1013,13 @@ public struct WorkoutSummaryView: View {
         if exercisesWithLogs.isEmpty {
             Section {
                 Text("summary.setsEmpty", bundle: .module)
-                    .foregroundStyle(.secondary)
-                    .font(.callout)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .font(.system(size: 13))
+                    .listRowBackground(Color.Deltiq.surface)
             } header: {
-                Text("summary.setsHeader", bundle: .module)
+                sectionHeader(String(localized: "summary.setsHeader", bundle: .module))
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
         } else {
             ForEach(exercisesWithLogs, id: \.exercise.persistentModelID) { entry in
                 exerciseSection(for: entry.exercise, logs: entry.logs)
@@ -998,10 +1041,14 @@ public struct WorkoutSummaryView: View {
                         Image(systemName: "plus.circle.fill")
                             .foregroundStyle(Color.deltiqOrange)
                     }
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.deltiqOrange)
                 }
+                .listRowBackground(Color.Deltiq.surface)
             } footer: {
                 Text("summary.addExercise.hint", bundle: .module)
-                    .font(.footnote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
         }
     }
@@ -1016,6 +1063,7 @@ public struct WorkoutSummaryView: View {
                 ForEach(logs) { log in
                     SetSummaryRow(log: log, exercise: exercise, isEditable: isEditingSets)
                 }
+                .listRowBackground(Color.Deltiq.surface)
                 .onDelete { offsets in
                     deleteSets(of: exercise, indices: offsets)
                 }
@@ -1034,16 +1082,18 @@ public struct WorkoutSummaryView: View {
                             Text("summary.addSet.button", bundle: .module)
                         } icon: {
                             Image(systemName: "plus.circle.fill")
-                                .foregroundStyle(Color.deltiqOrange)
                         }
-                        .font(.callout)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.deltiqOrange)
                     }
                     .buttonStyle(.plain)
+                    .listRowBackground(Color.Deltiq.surface)
                 }
             } else {
                 ForEach(logs) { log in
                     SetSummaryRow(log: log, exercise: exercise, isEditable: false)
                 }
+                .listRowBackground(Color.Deltiq.surface)
             }
 
             // DEL-155: Cardio-Equipment pro Cardio-Uebung — unabhaengig davon,
@@ -1059,19 +1109,32 @@ public struct WorkoutSummaryView: View {
             // Zeile oben. Der Picker erscheint nur, wenn KEIN Gear gesetzt
             // ist (also Indoor/Maschine, wo Laufband vs Fahrrad relevant
             // für die PR-/Trend-Trennung ist).
+            //
+            // CardioEquipmentPicker/-DisplayRow bleiben unangetastet - ein
+            // gemeinsam mit dem (out-of-scope) ExerciseEditorView genutztes
+            // Shared-Component, analog zur DeltiqFormSection-Entscheidung.
             if exercise.isCardio && session.gear == nil {
                 if editable {
                     CardioEquipmentPicker(selection: Binding(
                         get: { exercise.cardioEquipment },
                         set: { exercise.cardioEquipment = $0 }
                     ))
+                    .listRowBackground(Color.Deltiq.surface)
                 } else if exercise.cardioEquipment != .none {
                     CardioEquipmentDisplayRow(equipment: exercise.cardioEquipment)
+                        .listRowBackground(Color.Deltiq.surface)
                 }
             }
         } header: {
             HStack {
+                // Handoff 1.5/1.6: Uebungsname bleibt Karten-Titel-prominent
+                // statt Eyebrow-Stil - anders als kategorische Section-
+                // Header (PRs, Achievements, ...) identifiziert er ein
+                // konkretes Item, kein Themen-Cluster. Gleiche Gewichtung
+                // wie ExerciseCard.header in ActiveWorkoutView.
                 Text(exercise.displayName)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(Color.primary)
                 Spacer()
                 // DEL-136 Part B: Im History-Edit-Mode bekommt jede Section
                 // einen kleinen "..." Menu-Button, ueber den die ganze
@@ -1089,21 +1152,23 @@ public struct WorkoutSummaryView: View {
                             }
                         }
                     } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .foregroundStyle(.secondary)
+                        Image(systemName: "ellipsis")
+                            .foregroundStyle(Color.deltiqOrange)
                     }
                     .textCase(nil)
                 } else if let best = bestSet(in: logs) {
                     Text("\(String(localized: "summary.exercise.bestPrefix", bundle: .module)): \(formatSetSummary(best, exercise: exercise))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                         .textCase(nil)
                 }
             }
         } footer: {
             Text(formatBreakdownFooter(setsCount: logs.count, volume: formatVolume(logs)))
-                .font(.footnote)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     /// DEL-126: i18n-Footer "X Satz/Sätze • Y kg Volumen". Plural-Branch wird
@@ -1122,26 +1187,27 @@ public struct WorkoutSummaryView: View {
 
     private var finishSection: some View {
         Section {
+            // Handoff 1.9: Primaerer Hero-CTA statt gruen-hinterlegter
+            // Row - .deltiqButtonStyle() bringt Gradient/Glow/Rundung schon
+            // mit, listRowBackground/-Insets werden geleert, damit Listens
+            // eigenes Zeilen-Chrome die Button-Optik nicht doppelt umrahmt.
             Button {
                 navigation.returnToDashboard()
             } label: {
-                HStack {
-                    Spacer()
-                    Label {
-                        Text("summary.action.finish", bundle: .module)
-                    } icon: {
-                        Image(systemName: "house.fill")
-                    }
-                    .font(.headline)
-                    Spacer()
+                Label {
+                    Text("summary.action.finish", bundle: .module)
+                } icon: {
+                    Image(systemName: "house.fill")
                 }
-                .padding(.vertical, 6)
-                .foregroundStyle(.white)
             }
-            .listRowBackground(Color.green)
+            .buttonStyle(.plain)
+            .deltiqButtonStyle()
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
         } footer: {
             Text("summary.finishFooter", bundle: .module)
-                .font(.footnote)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
     }
 
@@ -1171,9 +1237,7 @@ public struct WorkoutSummaryView: View {
     }
 
     private var statDivider: some View {
-        Rectangle()
-            .fill(Color.secondary.opacity(0.25))
-            .frame(width: 1, height: 32)
+        Divider().frame(height: 32)
     }
 
     // MARK: Best-set / volume helpers — delegate to Core's WorkoutAnalytics
@@ -1296,7 +1360,7 @@ private struct PRBadge: View {
             // teilen jetzt eine Single Source of Truth fuer das Icon-
             // Layout — vorher war derselbe 6-Zeiler 3x dupliziert.
             Image(systemName: kindIcon)
-                .deltiqIconBadge(tint: kindColor)
+                .deltiqIconBadge(tint: Color.deltiqOrange)
 
             VStack(alignment: .leading, spacing: 2) {
                 // DEL-149: Snapshot-resolver — rendert den DE-Base ODER
@@ -1304,22 +1368,24 @@ private struct PRBadge: View {
                 // (z.B. "Koşu Bandı") via Reverse-Lookup in der aktuellen
                 // Sprache.
                 Text(Exercise.resolvedDisplayName(forStoredName: record.exerciseName))
-                    .font(.body.weight(.semibold))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.primary)
                 Text(kindLabel)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                 Text(detailLine)
-                    .font(.callout.monospacedDigit())
-                    .foregroundStyle(.primary)
+                    .font(.system(size: 14))
+                    .fitnessNumberStyle()
+                    .foregroundStyle(Color.primary)
             }
             Spacer()
             // DEL-064: fastestPace ist lower-is-better — die Verbesserung
             // ist ein negativer Delta. Wir zeigen sie als positiv-formatiertes
             // Improvement, sonst sieht der Trophy-Pill aus wie ein Rueckschritt.
             Text(improvementPill)
-                .font(.subheadline.weight(.bold))
+                .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(Color.Deltiq.success)
-                .monospacedDigit()
+                .fitnessNumberStyle()
         }
         .padding(.vertical, 4)
         .badgeAppearEffect()   // UX-204: subtiles Spring-In auf Badge-Erscheinen
@@ -1334,6 +1400,10 @@ private struct PRBadge: View {
         return "+\(formatDelta(improvement))"
     }
 
+    /// Handoff 1.10 (ein Akzent): unterscheidet die PR-Art jetzt allein ueber
+    /// Icon-Form + `kindLabel`-Text - die fruehere `kindColor` (7 eigene
+    /// Farben pro Art) ist entfallen, alle Badges teilen sich das Orange
+    /// von `.deltiqIconBadge`.
     private var kindIcon: String {
         switch record.kind {
         case .estimated1RM:     "bolt.fill"
@@ -1344,18 +1414,6 @@ private struct PRBadge: View {
         // DEL-064 Cardio-PRs
         case .longestDistance:  "figure.run.circle.fill"
         case .fastestPace:      "hare.fill"
-        }
-    }
-
-    private var kindColor: Color {
-        switch record.kind {
-        case .estimated1RM:     .orange
-        case .heaviestWeight:   .red
-        case .bestSet:          .blue
-        case .maxReps:          .purple
-        case .maxHoldSeconds:   .yellow
-        case .longestDistance:  Color.deltiqOrange
-        case .fastestPace:      .green
         }
     }
 
@@ -1452,14 +1510,15 @@ private struct AchievementBadge: View {
         HStack(spacing: 12) {
             // UX-205: 36×36 Icon via geteiltem Modifier.
             Image(systemName: icon)
-                .deltiqIconBadge(tint: tint)
+                .deltiqIconBadge(tint: Color.deltiqOrange)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.body.weight(.semibold))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.primary)
                 Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
             Spacer()
         }
@@ -1467,23 +1526,15 @@ private struct AchievementBadge: View {
         .badgeAppearEffect()   // UX-204: subtiles Spring-In auf Badge-Erscheinen
     }
 
+    /// Handoff 1.10 (ein Akzent): unterscheidet die Achievement-Art jetzt
+    /// allein ueber Icon-Form + `title`/`subtitle` - die fruehere `tint`
+    /// (4 verschiedene Semantic-Token-Farben) ist entfallen.
     private var icon: String {
         switch achievement.kind {
         case .weeklyMilestone:           return "flame.fill"
         case .heaviestOfWeek:            return "scalemass.fill"
         case .longestOfWeek:             return "clock.badge.checkmark"
         case .longestDistanceOfWeek:     return "figure.run"
-        }
-    }
-
-    /// UX-205: Tint-Mapping nutzt Semantic-Color-Tokens — wenn die Palette
-    /// jemals shifts, lesen Achievements das automatisch nach.
-    private var tint: Color {
-        switch achievement.kind {
-        case .weeklyMilestone:           return .orange
-        case .heaviestOfWeek:            return Color.Deltiq.primary
-        case .longestOfWeek:             return Color.Deltiq.info
-        case .longestDistanceOfWeek:     return Color.Deltiq.success
         }
     }
 
@@ -1532,20 +1583,22 @@ private struct ProgressionBadge: View {
         HStack(spacing: 12) {
             // UX-205: 36×36 Icon via geteiltem Modifier.
             Image(systemName: icon)
-                .deltiqIconBadge(tint: tint)
+                .deltiqIconBadge(tint: Color.deltiqOrange)
 
             VStack(alignment: .leading, spacing: 2) {
                 // DEL-149: lokalisierter Display-Name via Snapshot-Resolver —
                 // outcome.exerciseName ist ein DE-Base-Snapshot aus dem
                 // ProgressionApplicator.
                 Text(Exercise.resolvedDisplayName(forStoredName: outcome.exerciseName))
-                    .font(.body.weight(.semibold))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.primary)
                 Text(headlineText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                 Text(detailText)
-                    .font(.callout.monospacedDigit())
-                    .foregroundStyle(.primary)
+                    .font(.system(size: 14))
+                    .fitnessNumberStyle()
+                    .foregroundStyle(Color.primary)
             }
             Spacer()
             deltaPill
@@ -1554,19 +1607,15 @@ private struct ProgressionBadge: View {
         .badgeAppearEffect()   // UX-204: subtiles Spring-In auf Badge-Erscheinen
     }
 
+    /// Handoff 1.10 (ein Akzent): Icon-Tint war Orange(increase)/
+    /// Grau(deload) - beide Faelle teilen sich jetzt dasselbe Orange;
+    /// "runter" bleibt trotzdem eindeutig ueber Icon-Richtung (Pfeil runter)
+    /// + das Minus-Vorzeichen in `deltaPill`.
     private var icon: String {
         switch outcome.action {
         case .increaseWeight: return "arrow.up.right.circle.fill"
         case .deload:         return "arrow.down.right.circle.fill"
         case .hold:           return "minus.circle.fill"   // unreachable
-        }
-    }
-
-    private var tint: Color {
-        switch outcome.action {
-        case .increaseWeight: return Color.deltiqOrange
-        case .deload:         return .gray
-        case .hold:           return .secondary
         }
     }
 
@@ -1591,9 +1640,9 @@ private struct ProgressionBadge: View {
 
     private var deltaPill: some View {
         Text(deltaString)
-            .font(.subheadline.weight(.bold))
-            .foregroundStyle(outcome.action.weightDelta >= 0 ? Color.deltiqOrange : .secondary)
-            .monospacedDigit()
+            .font(.system(size: 15, weight: .bold))
+            .foregroundStyle(outcome.action.weightDelta >= 0 ? Color.deltiqOrange : Color.Deltiq.textSecondary)
+            .fitnessNumberStyle()
     }
 
     private var deltaString: String {
@@ -1646,12 +1695,14 @@ private struct SetSummaryRow: View {
     private var readOnlyRow: some View {
         HStack(spacing: 8) {
             Text(String(format: String(localized: "set.numberLabel", bundle: .module), log.setIndex + 1))
-                .font(.subheadline.weight(.semibold))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.Deltiq.textSecondary)
                 .frame(width: 64, alignment: .leading)
 
             Text(rowText)
-                .font(.callout)
-                .monospacedDigit()
+                .font(.system(size: 15))
+                .fitnessNumberStyle()
+                .foregroundStyle(Color.primary)
 
             Spacer()
         }
@@ -1672,7 +1723,8 @@ private struct SetSummaryRow: View {
     private var editRow: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(String(format: String(localized: "set.numberLabel", bundle: .module), log.setIndex + 1))
-                .font(.subheadline.weight(.semibold))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.Deltiq.textSecondary)
             HStack(spacing: 8) {
                 if exercise.isCardio {
                     cardioDistanceField
@@ -1716,11 +1768,12 @@ private struct SetSummaryRow: View {
                       format: .number)
                 .frame(width: 60)
                 .multilineTextAlignment(.leading)
-                .font(.title3.monospacedDigit())
+                .font(.system(size: 18, weight: .semibold))
+                .fitnessNumberStyle()
                 #if os(iOS)
                 .keyboardType(.decimalPad)
                 #endif
-            Text("km").font(.caption2).foregroundStyle(.secondary)
+            Text("km").font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
         }
     }
 
@@ -1744,15 +1797,16 @@ private struct SetSummaryRow: View {
                           format: .number)
                     .frame(width: 40)
                     .multilineTextAlignment(.leading)
-                    .font(.title3.monospacedDigit())
+                    .font(.system(size: 18, weight: .semibold))
+                    .fitnessNumberStyle()
                     #if os(iOS)
                     .keyboardType(.numberPad)
                     #endif
-                Text("min").font(.caption2).foregroundStyle(.secondary)
+                Text("min").font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
             }
             Text(":")
-                .font(.title3.weight(.medium))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(Color.Deltiq.textSecondary)
                 .offset(y: -8)   // optisch zur Minuten-Zahl ausgerichtet, nicht zur Caption
             VStack(alignment: .leading, spacing: 2) {
                 TextField("sec",
@@ -1768,11 +1822,12 @@ private struct SetSummaryRow: View {
                           format: .number)
                     .frame(width: 36)
                     .multilineTextAlignment(.leading)
-                    .font(.title3.monospacedDigit())
+                    .font(.system(size: 18, weight: .semibold))
+                    .fitnessNumberStyle()
                     #if os(iOS)
                     .keyboardType(.numberPad)
                     #endif
-                Text("sec").font(.caption2).foregroundStyle(.secondary)
+                Text("sec").font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
             }
         }
     }
@@ -1782,11 +1837,12 @@ private struct SetSummaryRow: View {
             TextField("kg", value: $log.weight, format: .number)
                 .frame(width: 56)
                 .multilineTextAlignment(.leading)
-                .font(.title3.monospacedDigit())
+                .font(.system(size: 18, weight: .semibold))
+                .fitnessNumberStyle()
                 #if os(iOS)
                 .keyboardType(.decimalPad)
                 #endif
-            Text("kg").font(.caption2).foregroundStyle(.secondary)
+            Text("kg").font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
         }
     }
 
@@ -1799,11 +1855,12 @@ private struct SetSummaryRow: View {
             TextField(unit, value: $log.reps, format: .number)
                 .frame(width: 48)
                 .multilineTextAlignment(.leading)
-                .font(.title3.monospacedDigit())
+                .font(.system(size: 18, weight: .semibold))
+                .fitnessNumberStyle()
                 #if os(iOS)
                 .keyboardType(.numberPad)
                 #endif
-            Text(unit).font(.caption2).foregroundStyle(.secondary)
+            Text(unit).font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
         }
     }
 
@@ -1811,8 +1868,9 @@ private struct SetSummaryRow: View {
     private var rirBlock: some View {
         VStack(alignment: .trailing, spacing: 2) {
             Text("RIR \(formatRIR(log.rir))")
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
+                .font(.system(size: 12))
+                .fitnessNumberStyle()
+                .foregroundStyle(Color.Deltiq.textSecondary)
             Stepper(value: $log.rir, in: 0...10, step: 0.5) {
                 EmptyView()
             }

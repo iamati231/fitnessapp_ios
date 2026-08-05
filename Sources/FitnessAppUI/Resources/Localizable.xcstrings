@@ -14124,6 +14124,29 @@
         }
       }
     },
+    "summary.eyebrow": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workout"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman"
+          }
+        }
+      }
+    },
     "summary.title": {
       "extractionState": "manual",
       "localizations": {
