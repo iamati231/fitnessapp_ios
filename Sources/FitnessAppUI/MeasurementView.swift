@@ -254,7 +254,14 @@ public struct MeasurementView: View {
             // conform to 'View'"). compactMap-Array-Literal (wie
             // DashboardView.dashboardContextRow) nutzt nur `let`-Bindings,
             // die vom Builder-Transform ausgenommen sind.
-            let lastItem = historicalMeasurements.first?.date.map { last in
+            //
+            // `lastDate` zuerst als eigenes Optional materialisieren, dann
+            // separat `.map` aufrufen - `historicalMeasurements.first?.date
+            // .map { }` in EINER Kette waere `?.` ueber die GESAMTE Kette
+            // inkl. `.map` gewesen, wodurch `.map` auf dem entpackten `Date`
+            // (kein `.map`-Member) statt auf `Date?` aufgerufen wird.
+            let lastDate = historicalMeasurements.first?.date
+            let lastItem = lastDate.map { last in
                 DeltiqContextItem(
                     String(format: loc("measurement.context.last"), last.formatted(date: .abbreviated, time: .omitted)).uppercased(),
                     style: .neutral
