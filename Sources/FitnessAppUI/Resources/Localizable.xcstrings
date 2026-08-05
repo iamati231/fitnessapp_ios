@@ -19161,6 +19161,29 @@
         }
       }
     },
+    "calc.index.unitContext": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EINHEIT: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UNIT: %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BİRİM: %@"
+          }
+        }
+      }
+    },
     "calc.tdee.title": {
       "extractionState": "manual",
       "localizations": {
@@ -20192,6 +20215,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "İlk yudumu yukarıdaki butonlarla kaydet."
+          }
+        }
+      }
+    },
+    "water.todaySection.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün"
           }
         }
       }

@@ -397,17 +397,33 @@ public extension View {
 
 // MARK: - 6.3 DeltiqHeader (Abschnitt 1.2)
 
-/// Aktion in der Kopfzeile, maximal zwei pro `DeltiqHeader`.
+/// Aktion in der Kopfzeile, maximal zwei pro `DeltiqHeader`. Entweder ein
+/// direkter Tap (`action:`) oder ein Dropdown (`menu:`, z. B. Ellipsis mit
+/// mehreren Optionen wie im aktiven Training oder beim Wasser-Tracker) —
+/// visuell identisch, nur die Interaktion unterscheidet sich.
 public struct DeltiqHeaderAction: Identifiable {
     public let id = UUID()
     public let systemImage: String
     public let isHighlighted: Bool
-    public let action: () -> Void
+    public let action: (() -> Void)?
+    public let menuContent: (() -> AnyView)?
 
     public init(systemImage: String, isHighlighted: Bool = false, action: @escaping () -> Void) {
         self.systemImage = systemImage
         self.isHighlighted = isHighlighted
         self.action = action
+        self.menuContent = nil
+    }
+
+    public init<MenuContent: View>(
+        systemImage: String,
+        isHighlighted: Bool = false,
+        @ViewBuilder menu: @escaping () -> MenuContent
+    ) {
+        self.systemImage = systemImage
+        self.isHighlighted = isHighlighted
+        self.action = nil
+        self.menuContent = { AnyView(menu()) }
     }
 }
 
@@ -468,18 +484,30 @@ public struct DeltiqHeader: View {
             Spacer(minLength: 8)
 
             ForEach(actions) { headerAction in
-                Button(action: headerAction.action) {
-                    Image(systemName: headerAction.systemImage)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color.deltiqOrange)
-                        .frame(width: 32, height: 32)
-                        .background(headerAction.isHighlighted ? Color.deltiqOrange.opacity(0.16) : Color.Deltiq.fill)
-                        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+                if let menuContent = headerAction.menuContent {
+                    Menu {
+                        menuContent()
+                    } label: {
+                        headerActionIcon(headerAction)
+                    }
+                } else if let action = headerAction.action {
+                    Button(action: action) {
+                        headerActionIcon(headerAction)
+                    }
                 }
             }
         }
         .padding(.horizontal, 16)
         .frame(height: 52)
+    }
+
+    private func headerActionIcon(_ headerAction: DeltiqHeaderAction) -> some View {
+        Image(systemName: headerAction.systemImage)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(Color.deltiqOrange)
+            .frame(width: 32, height: 32)
+            .background(headerAction.isHighlighted ? Color.deltiqOrange.opacity(0.16) : Color.Deltiq.fill)
+            .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
     }
 }
 

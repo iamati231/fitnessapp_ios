@@ -6,78 +6,78 @@ import SwiftUI
 @available(iOS 17.0, macOS 14.0, *)
 public struct CalculatorsView: View {
 
+    @Environment(\.dismiss) private var dismiss
+
+    /// Handoff 2.3: der Footer-Text "Alle Rechner arbeiten mit deiner
+    /// eingestellten Einheit" wird zur Kontextzeile. Der Vorschlag "EINHEIT:
+    /// KG / CM" im Handoff nennt zwei unabhaengige Einheiten - es gibt aber
+    /// nur eine einzige Praeferenz (`weight_unit`, kg/lbs), keine separate
+    /// cm/inch-Einstellung. Die Kapsel zeigt daher die tatsaechliche,
+    /// einzelne Einheit.
+    @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
+
     public init() {}
 
     public var body: some View {
-        List {
-            Section {
-                NavigationLink(destination: PlateCalculatorView()) {
-                    CalculatorRow(
-                        icon: "scalemass.fill",
-                        tint: .blue,
-                        title: String(localized: "calc.index.plate.title", bundle: .module),
-                        subtitle: String(localized: "calc.index.plate.subtitle", bundle: .module)
+        VStack(spacing: 0) {
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                title: String(localized: "calc.index.title", bundle: .module),
+                onBack: { dismiss() }
+            )
+
+            VStack(alignment: .leading, spacing: 18) {
+                DeltiqContextRow([
+                    DeltiqContextItem(
+                        String(
+                            format: String(localized: "calc.index.unitContext", bundle: .module),
+                            weightUnitRaw.uppercased()
+                        ),
+                        style: .neutral
                     )
+                ])
+
+                DeltiqSection {
+                    NavigationLink(destination: PlateCalculatorView()) {
+                        DeltiqRow(
+                            icon: "scalemass.fill",
+                            label: String(localized: "calc.index.plate.title", bundle: .module),
+                            subtitle: String(localized: "calc.index.plate.subtitle", bundle: .module),
+                            showsChevron: true
+                        )
+                    }
+                    NavigationLink(destination: OneRepMaxView()) {
+                        DeltiqRow(
+                            icon: "figure.strengthtraining.traditional",
+                            label: String(localized: "calc.index.oneRm.title", bundle: .module),
+                            subtitle: String(localized: "calc.index.oneRm.subtitle", bundle: .module),
+                            showsChevron: true
+                        )
+                    }
+                    NavigationLink(destination: TDEEView()) {
+                        DeltiqRow(
+                            icon: "flame.fill",
+                            label: String(localized: "calc.index.tdee.title", bundle: .module),
+                            subtitle: String(localized: "calc.index.tdee.subtitle", bundle: .module),
+                            showsChevron: true
+                        )
+                    }
+                    NavigationLink(destination: WaterTrackerView()) {
+                        DeltiqRow(
+                            icon: "drop.fill",
+                            label: String(localized: "calc.index.water.title", bundle: .module),
+                            subtitle: String(localized: "calc.index.water.subtitle", bundle: .module),
+                            showsChevron: true,
+                            showsDivider: false
+                        )
+                    }
                 }
-                NavigationLink(destination: OneRepMaxView()) {
-                    CalculatorRow(
-                        icon: "figure.strengthtraining.traditional",
-                        tint: .orange,
-                        title: String(localized: "calc.index.oneRm.title", bundle: .module),
-                        subtitle: String(localized: "calc.index.oneRm.subtitle", bundle: .module)
-                    )
-                }
-                NavigationLink(destination: TDEEView()) {
-                    CalculatorRow(
-                        icon: "flame.fill",
-                        tint: .red,
-                        title: String(localized: "calc.index.tdee.title", bundle: .module),
-                        subtitle: String(localized: "calc.index.tdee.subtitle", bundle: .module)
-                    )
-                }
-                NavigationLink(destination: WaterTrackerView()) {
-                    CalculatorRow(
-                        icon: "drop.fill",
-                        tint: .cyan,
-                        title: String(localized: "calc.index.water.title", bundle: .module),
-                        subtitle: String(localized: "calc.index.water.subtitle", bundle: .module)
-                    )
-                }
-            } footer: {
-                Text("calc.index.footer", bundle: .module)
-                    .font(.footnote)
             }
+            .deltiqScreen()
         }
-        .navigationTitle(Text("calc.index.title", bundle: .module))
-    }
-}
-
-@available(iOS 17.0, macOS 14.0, *)
-private struct CalculatorRow: View {
-    let icon: String
-    let tint: Color
-    let title: String
-    let subtitle: String
-
-    var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundStyle(.white)
-                .frame(width: 38, height: 38)
-                .background(tint.gradient)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.body.weight(.semibold))
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-        }
-        .padding(.vertical, 4)
+        .background(Color.Deltiq.background.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
     }
 }
 

@@ -10,11 +10,12 @@ import WidgetKit
 /// Daily water-intake tracker. Target = `weight × 35 ml` from the most recent
 /// measurement (falls back to profile goal-weight, then to a 70-kg default).
 /// Quick-add buttons insert `WaterEntry` rows; today's list shows entries with
-/// swipe-to-delete.
+/// a per-row delete button (no more List, so no more swipe-to-delete).
 @available(iOS 17.0, macOS 14.0, *)
 public struct WaterTrackerView: View {
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \BodyMeasurement.date, order: .reverse)
     private var measurements: [BodyMeasurement]
@@ -30,35 +31,44 @@ public struct WaterTrackerView: View {
     public init() {}
 
     public var body: some View {
-        List {
-            heroSection
-            quickAddSection
-            todaySection
-        }
-        .navigationTitle(Text("water.title", bundle: .module))
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    Button(role: .destructive) {
-                        deleteTodayEntries()
-                    } label: {
-                        Text("water.resetToday", bundle: .module)
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: Eyebrow zeigt den unmittelbaren Elternscreen
+            // (Rechner), nicht den Tab (Mehr) - das entspricht "der Kontext, aus
+            // dem der Screen kommt" praeziser als der Tab-Name.
+            DeltiqHeader(
+                eyebrow: String(localized: "calc.index.title", bundle: .module).uppercased(),
+                title: String(localized: "water.title", bundle: .module),
+                onBack: { dismiss() },
+                actions: [
+                    DeltiqHeaderAction(systemImage: "ellipsis") {
+                        Button(role: .destructive) {
+                            deleteTodayEntries()
+                        } label: {
+                            Text("water.resetToday", bundle: .module)
+                        }
+                        .disabled(todayEntries.isEmpty)
                     }
-                    .disabled(todayEntries.isEmpty)
-                } label: {
-                    Image(systemName: "ellipsis.circle")
+                ]
+            )
+
+            VStack(alignment: .leading, spacing: 18) {
+                heroCard
+                quickAddCard
+                if !todayEntries.isEmpty {
+                    todayEntriesSection
                 }
             }
+            .deltiqScreen()
         }
+        .background(Color.Deltiq.background.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
     }
 
     // MARK: Sections
 
-    private var heroSection: some View {
-        Section {
+    private var heroCard: some View {
+        DeltiqCard {
             VStack(spacing: 12) {
                 progressRing
                 if progress >= 1.0 {
@@ -72,59 +82,64 @@ public struct WaterTrackerView: View {
                 } else {
                     Text(String(format: String(localized: "water.remainingToGoal", bundle: .module), targetMl - todayMl))
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                         .monospacedDigit()
                 }
+                Text(String(format: String(localized: "water.heroFooter", bundle: .module), targetSourceLabel))
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textTertiary)
+                    .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-        } footer: {
-            Text(String(format: String(localized: "water.heroFooter", bundle: .module), targetSourceLabel))
-                .font(.footnote)
         }
     }
 
     private var progressRing: some View {
         ZStack {
             Circle()
-                .stroke(lineWidth: 18)
-                .foregroundStyle(.gray.opacity(0.18))
+                .stroke(lineWidth: 6)
+                .foregroundStyle(Color.Deltiq.fill)
             Circle()
                 .trim(from: 0, to: CGFloat(progress))
-                .stroke(style: StrokeStyle(lineWidth: 18, lineCap: .round))
+                .stroke(style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-                .foregroundStyle(progress >= 1.0 ? Color.green.gradient : Color.cyan.gradient)
+                // Handoff 2.3: Fortschritt in Akzent-Orange statt Cyan; "erledigt"
+                // (Ziel erreicht) bleibt Gruen (1.7: Gruen nur fuer diesen Fall).
+                .foregroundStyle(progress >= 1.0 ? Color.green.gradient : Color.Deltiq.primaryGradient)
                 .animation(.easeInOut(duration: 0.4), value: progress)
             VStack(spacing: 2) {
                 Text("\(todayMl)")
-                    .font(.system(size: 44, weight: .bold).monospacedDigit())
+                    .font(.system(size: 26, weight: .heavy))
+                    .fitnessNumberStyle()
                     .contentTransition(.numericText())
                 Text(String(format: String(localized: "water.ofTotal", bundle: .module), targetMl))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                     .monospacedDigit()
             }
         }
-        .frame(width: 200, height: 200)
+        .frame(width: 180, height: 180)
     }
 
-    private var quickAddSection: some View {
-        Section {
-            VStack(spacing: 8) {
-                HStack(spacing: 8) {
-                    quickAddButton(amount: 125,  label: "+125 ml", systemImage: "drop")
-                    quickAddButton(amount: 250,  label: "+250 ml", systemImage: "drop.fill")
-                }
-                HStack(spacing: 8) {
-                    quickAddButton(amount: 500,  label: "+500 ml", systemImage: "cup.and.saucer.fill")
-                    quickAddButton(amount: 1000, label: "+1 L",    systemImage: "waterbottle.fill")
+    private var quickAddCard: some View {
+        DeltiqCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(String(localized: "water.quickAdd.section", bundle: .module).uppercased())
+                    .font(.system(size: 10, weight: .heavy))
+                    .tracking(1.5)
+                    .foregroundStyle(Color.deltiqOrange)
+                VStack(spacing: 8) {
+                    HStack(spacing: 8) {
+                        quickAddButton(amount: 125,  label: "+125 ml", systemImage: "drop")
+                        quickAddButton(amount: 250,  label: "+250 ml", systemImage: "drop.fill")
+                    }
+                    HStack(spacing: 8) {
+                        quickAddButton(amount: 500,  label: "+500 ml", systemImage: "cup.and.saucer.fill")
+                        quickAddButton(amount: 1000, label: "+1 L",    systemImage: "waterbottle.fill")
+                    }
                 }
             }
-            .padding(.vertical, 4)
-        } header: {
-            Text("water.quickAdd.section", bundle: .module)
+            .frame(maxWidth: .infinity)
         }
     }
 
@@ -140,36 +155,53 @@ public struct WaterTrackerView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
-            .background(Color.cyan.opacity(0.15))
-            .foregroundStyle(.cyan)
+            .background(Color.deltiqOrange.opacity(0.15))
+            .foregroundStyle(Color.deltiqOrange)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
     }
 
-    @ViewBuilder
-    private var todaySection: some View {
-        Section {
-            if todayEntries.isEmpty {
-                Text("water.empty", bundle: .module)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(todayEntries) { entry in
-                    WaterEntryRow(entry: entry)
-                }
-                .onDelete(perform: deleteEntries)
+    /// Ersetzt das bisherige `.onDelete`-Swipe (List-exklusiv, funktioniert
+    /// nicht mehr ausserhalb einer List) durch einen expliziten Loesch-Knopf
+    /// pro Zeile — nebenbei entdeckungsfreundlicher als eine versteckte
+    /// Swipe-Geste.
+    private var todayEntriesSection: some View {
+        DeltiqSection(String(localized: "water.todaySection.title", bundle: .module).uppercased()) {
+            ForEach(Array(todayEntries.enumerated()), id: \.offset) { index, entry in
+                waterEntryRow(entry, showsDivider: index < todayEntries.count - 1)
             }
-        } header: {
-            HStack {
-                Text("Heute")
+        }
+    }
+
+    private func waterEntryRow(_ entry: WaterEntry, showsDivider: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 12) {
+                Image(systemName: "drop.fill")
+                    .deltiqAccentIcon()
+                Text("\(entry.amountMl) ml")
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.primary)
+                    .fitnessNumberStyle()
                 Spacer()
-                if !todayEntries.isEmpty {
-                    Text("\(todayEntries.count) Einträge")
-                        .font(.caption)
-                        .textCase(nil)
-                        .foregroundStyle(.secondary)
+                Text(entry.date.formatted(date: .omitted, time: .shortened))
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                Button {
+                    delete(entry)
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(Color.Deltiq.textTertiary)
                 }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(minHeight: 44)
+            if showsDivider {
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
             }
         }
     }
@@ -224,11 +256,8 @@ public struct WaterTrackerView: View {
         reloadWaterWidget()
     }
 
-    private func deleteEntries(at offsets: IndexSet) {
-        let entries = todayEntries
-        for offset in offsets {
-            modelContext.delete(entries[offset])
-        }
+    private func delete(_ entry: WaterEntry) {
+        modelContext.delete(entry)
         reloadWaterWidget()
     }
 
@@ -247,25 +276,6 @@ public struct WaterTrackerView: View {
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadTimelines(ofKind: SharedStore.waterWidgetKind)
         #endif
-    }
-}
-
-@available(iOS 17.0, macOS 14.0, *)
-private struct WaterEntryRow: View {
-    let entry: WaterEntry
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "drop.fill")
-                .foregroundStyle(.cyan)
-            Text("\(entry.amountMl) ml")
-                .monospacedDigit()
-            Spacer()
-            Text(entry.date.formatted(date: .omitted, time: .shortened))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-        }
     }
 }
 
