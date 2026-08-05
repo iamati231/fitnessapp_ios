@@ -582,7 +582,7 @@ private struct KindChip: View {
             .clipShape(Capsule())
             .overlay(
                 Capsule()
-                    .stroke(isSelected ? Color.clear : Color.Deltiq.hairline, lineWidth: 1)
+                    .stroke(isSelected ? Color.clear : Color.Deltiq.divider, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
