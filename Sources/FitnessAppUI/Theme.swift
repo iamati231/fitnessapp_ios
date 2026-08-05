@@ -458,6 +458,11 @@ public struct DeltiqHeader: View {
                     .foregroundStyle(Color.primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
+                    // Ersetzt `.navigationTitle` auf allen Screens, die
+                    // dieses Geruest nutzen — ohne eigenes Heading-Trait
+                    // waere der Screen-Titel fuer VoiceOver nicht mehr als
+                    // Ueberschrift erkennbar.
+                    .accessibilityAddTraits(.isHeader)
             }
 
             Spacer(minLength: 8)
@@ -595,12 +600,18 @@ public struct DeltiqSection<Content: View>: View {
     }
 }
 
-/// Container-Variante "Karte": freier Inhalt, Padding 16 rundum.
+/// Container-Variante "Karte": freier Inhalt, Padding 16 rundum. Kleinere
+/// Kacheln (Hero-Metrics, Wochen-Stats) duerfen `padding` auf 12
+/// reduzieren — das Gerüst nennt dafuer keinen eigenen dritten
+/// Container-Typ, das Padding bleibt aber der einzige Unterschied zur
+/// vollen "Karte".
 public struct DeltiqCard<Content: View>: View {
+    public var padding: CGFloat
     public var accentEdge: Bool
     public var content: () -> Content
 
-    public init(accentEdge: Bool = false, @ViewBuilder content: @escaping () -> Content) {
+    public init(padding: CGFloat = 16, accentEdge: Bool = false, @ViewBuilder content: @escaping () -> Content) {
+        self.padding = padding
         self.accentEdge = accentEdge
         self.content = content
     }
@@ -608,7 +619,7 @@ public struct DeltiqCard<Content: View>: View {
     public var body: some View {
         ZStack(alignment: .leading) {
             content()
-                .padding(16)
+                .padding(padding)
                 .frame(maxWidth: .infinity, alignment: .leading)
             if accentEdge {
                 Color.deltiqOrange.frame(width: 2)

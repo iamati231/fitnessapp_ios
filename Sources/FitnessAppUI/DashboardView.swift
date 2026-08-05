@@ -111,69 +111,99 @@ public struct DashboardView: View {
         var id: Date { day }
     }
 
+    /// Signature-Geruest: die Kopfzone hat keine native Toolbar mehr, der
+    /// Plus-Knopf pusht daher programmatisch statt ueber einen
+    /// NavigationLink im `.toolbar`.
+    @State private var showingNewMeasurement = false
+
     public init() {}
 
     public var body: some View {
-        // DEL-214: Achse explizit vertikal — und der Content wird unten via
-        // containerRelativeFrame hart auf die Container-Breite geklemmt.
-        ScrollView(.vertical) {
-            // DEL-103: Konsistentes 16pt-Spacing zwischen allen Bento-Cards.
-            // VStack-spacing + uniformes horizontales 16pt-Padding sind die
-            // einzige geometrische Quelle der Wahrheit — nicht mehr pro-Card
-            // .padding(.horizontal) etc.
-            VStack(alignment: .leading, spacing: 16) {
-                // DEL-109: heroMetrics bleibt statisch ueber den
-                // konfigurierbaren Widgets — zu zentral fuer das Brand,
-                // nicht via Toggle abschaltbar.
-                heroMetrics
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: eigene Kopfzone statt Navigationsleiste
+            // + dynamischer Begruessung als navigationTitle. Sitzt ausserhalb
+            // der ScrollView, scrollt nicht mit.
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.dashboard", bundle: .module).uppercased(),
+                title: dashboardGreeting,
+                actions: [
+                    DeltiqHeaderAction(systemImage: "plus") {
+                        showingNewMeasurement = true
+                    }
+                ]
+            )
 
-                // DEL-215: Prominente Resume-Tile fuer offene Sessions, die
-                // die PlanDayCard NICHT abdeckt (Ad-hoc-Workouts, Sessions
-                // auf inaktiven Plaenen, oder nextWorkout-Widget vom User
-                // deaktiviert). Statisch ueber den konfigurierbaren Widgets —
-                // ein laufendes Training schlaegt jede Card-Reihenfolge.
-                if let open = unrepresentedOpenSession {
-                    resumeSessionTile(open)
-                }
+            // DEL-214: Achse explizit vertikal — und der Content wird unten via
+            // containerRelativeFrame hart auf die Container-Breite geklemmt.
+            ScrollView(.vertical) {
+                // Signature-Geruest 1.1: Sektionsabstand 18 statt 16.
+                VStack(alignment: .leading, spacing: 18) {
+                    // Signature-Geruest 1.3: Kontextzeile mit aktivem Plan
+                    // (Marke) + Wochen-Streak (neutral), plus Haarlinie.
+                    dashboardContextRow
 
-                // DEL-109: Dynamisches Widget-Rendering. Reihenfolge +
-                // Sichtbarkeit kommen aus dem User-Profil; jeder Case
-                // mappt auf den entsprechenden Card-View. Neue Widget-
-                // Typen: hier den switch erweitern UND den enum-Case
-                // anhaengen. Conditional-Rendering (z.B. cardioPaceChart
-                // wird nur sichtbar wenn `shouldShowCardioChart`) bleibt
-                // in den Card-Views selber — der Switch ruft sie nur auf.
-                ForEach(activeDashboardWidgets, id: \.self) { widget in
-                    switch widget {
-                    case .nextWorkout:     planDayCard
-                    case .coachingInsight: coachingInsightCard
-                    case .trophyRoom:      trophyRoomCard
-                    case .workoutHistory:  historyCard
-                    case .weeklyVolume:    weeklySummaryCard
-                    case .muscleHeatmap:   muscleHeatmapCard
-                    case .weightTrend:     trendChart
-                    case .compoundLifts:   compoundLiftChart
-                    case .cardioPace:      cardioPaceChart
-                    case .recentWorkouts:  recentWorkoutsCard
-                    case .volumeOverTime:  volumeOverTimeChart
-                    case .trainingCalendar: trainingCalendarCard
+                    // DEL-109: heroMetrics bleibt statisch ueber den
+                    // konfigurierbaren Widgets — zu zentral fuer das Brand,
+                    // nicht via Toggle abschaltbar.
+                    heroMetrics
+
+                    // DEL-215: Prominente Resume-Tile fuer offene Sessions, die
+                    // die PlanDayCard NICHT abdeckt (Ad-hoc-Workouts, Sessions
+                    // auf inaktiven Plaenen, oder nextWorkout-Widget vom User
+                    // deaktiviert). Statisch ueber den konfigurierbaren Widgets —
+                    // ein laufendes Training schlaegt jede Card-Reihenfolge.
+                    if let open = unrepresentedOpenSession {
+                        resumeSessionTile(open)
+                    }
+
+                    // DEL-109: Dynamisches Widget-Rendering. Reihenfolge +
+                    // Sichtbarkeit kommen aus dem User-Profil; jeder Case
+                    // mappt auf den entsprechenden Card-View. Neue Widget-
+                    // Typen: hier den switch erweitern UND den enum-Case
+                    // anhaengen. Conditional-Rendering (z.B. cardioPaceChart
+                    // wird nur sichtbar wenn `shouldShowCardioChart`) bleibt
+                    // in den Card-Views selber — der Switch ruft sie nur auf.
+                    ForEach(activeDashboardWidgets, id: \.self) { widget in
+                        switch widget {
+                        case .nextWorkout:     planDayCard
+                        case .coachingInsight: coachingInsightCard
+                        case .trophyRoom:      trophyRoomCard
+                        case .workoutHistory:  historyCard
+                        case .weeklyVolume:    weeklySummaryCard
+                        case .muscleHeatmap:   muscleHeatmapCard
+                        case .weightTrend:     trendChart
+                        case .compoundLifts:   compoundLiftChart
+                        case .cardioPace:      cardioPaceChart
+                        case .recentWorkouts:  recentWorkoutsCard
+                        case .volumeOverTime:  volumeOverTimeChart
+                        case .trainingCalendar: trainingCalendarCard
+                        }
                     }
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 100)
+                // DEL-214: Bugfix "Dashboard laesst sich horizontal wischen" —
+                // ein zu breites Child (z.B. Chart-Label/monospaced Text) machte
+                // den ScrollView-Content breiter als den Viewport, wodurch die
+                // vertikale ScrollView horizontal pannte. containerRelativeFrame
+                // proposed dem Content exakt die Container-Breite; zu breite
+                // Children werden damit eingebremst statt den Canvas zu dehnen.
+                .containerRelativeFrame(.horizontal)
             }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
-            // DEL-214: Bugfix "Dashboard laesst sich horizontal wischen" —
-            // ein zu breites Child (z.B. Chart-Label/monospaced Text) machte
-            // den ScrollView-Content breiter als den Viewport, wodurch die
-            // vertikale ScrollView horizontal pannte. containerRelativeFrame
-            // proposed dem Content exakt die Container-Breite; zu breite
-            // Children werden damit eingebremst statt den Canvas zu dehnen.
-            .containerRelativeFrame(.horizontal)
+            .scrollContentBackground(.hidden)
         }
         // DEL-102: Off-Weiss / Off-Schwarz-Background, gegen den die
         // Bento-Cards (Surface) abheben. Im Light-Mode identisch zu
         // systemGroupedBackground, im Dark-Mode warmer (#0A0A0A statt #000).
         .background(Color.Deltiq.background.ignoresSafeArea())
+        // Signature-Geruest 1.2: native Navigationsleiste versteckt, die
+        // eigene DeltiqHeader uebernimmt Titel + Aktionen.
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
+        .navigationDestination(isPresented: $showingNewMeasurement) {
+            MeasurementView()
+        }
         // DEL-132 (Phase 3): HealthKit-Werte fuer aktive Hero-Slots
         // ziehen. `.task(id:)` schiesst neu, sobald sich die Slot-Liste
         // aendert (z.B. nach Settings-Toggle), zusaetzlich beim ersten
@@ -187,27 +217,6 @@ public struct DashboardView: View {
         // Pfad: App nach einer Woche wieder öffnen.
         .task {
             autoEndDeloadIfExpired()
-        }
-        // DEL-141: Dynamische Begrüßung statt statischem "Dashboard"-Title.
-        // Tageszeit-aware (Morgen/Tag/Abend) + Vorname-aware. Wenn der
-        // User im Onboarding einen Vornamen angegeben hat, erscheint
-        // "Guten Morgen, Atakan" / "Günaydın, Atakan" / etc. Sonst
-        // Fallback auf die generische Tageszeit-Begrüßung — immer noch
-        // persoenlicher als das alte "Dashboard".
-        .navigationTitle(Text(dashboardGreeting))
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
-        #endif
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                NavigationLink(destination: MeasurementView()) {
-                    Label {
-                        Text("dashboard.newMeasurement", bundle: .module)
-                    } icon: {
-                        Image(systemName: "plus.circle.fill")
-                    }
-                }
-            }
         }
         // DEL-239: Rueckfrage nach langer Pause. `sheet(item:)`, damit das
         // Assessment beim Praesentieren feststeht. Die Entscheidung laeuft
@@ -462,6 +471,40 @@ public struct DashboardView: View {
                           trimmedName!)
         case (_, false):
             return String(localized: "dashboard.greeting.evening.generic", bundle: .module)
+        }
+    }
+
+    /// Signature-Geruest 1.3: Marken-Kapsel (aktiver Plan-Name) + neutrale
+    /// Kapsel (Wochen-Streak). Beide leer → keine Zeile (Erst-Start ohne
+    /// Plan/Historie).
+    ///
+    /// Der Handoff schlaegt woertlich "WOCHE 3 · PPL 6×" vor — einen
+    /// Wochenzaehler im aktuellen Planzyklus. Dafuer gibt es keine
+    /// Datenquelle: `TrainingPlan` hat kein Startdatum, und `programType`
+    /// ist eine interne Template-ID (bei manuell angelegten Plaenen leer),
+    /// keine anzeigefertige Kurzform. Verwendet wird stattdessen der
+    /// tatsaechliche, immer vorhandene Plan-Name.
+    @ViewBuilder
+    private var dashboardContextRow: some View {
+        let streakWeeks = TrainingCalendarAggregator.weekStreak(
+            workoutDates: completedSessions.filter(\.isRealWorkout).map(\.startTime),
+            goalPerWeek: profiles.first?.weeklyWorkoutGoal ?? 1
+        )
+        let planName = activePlans.first?.displayName
+
+        if planName != nil || streakWeeks > 0 {
+            DeltiqContextRow([
+                planName.map { DeltiqContextItem($0.uppercased(), style: .accent) },
+                streakWeeks > 0
+                    ? DeltiqContextItem(
+                        String(
+                            format: String(localized: "dashboard.calendar.streakFormat", bundle: .module),
+                            streakWeeks
+                        ).uppercased(),
+                        style: .neutral
+                      )
+                    : nil
+            ].compactMap { $0 })
         }
     }
 
@@ -890,6 +933,9 @@ public struct DashboardView: View {
             // Button mit Hint, dass Uebungen fehlen (DEL-021/023).
             let isRestDay = day.type == .rest
             let isCurrentlyRunning = runningDay != nil
+            // Signature-Geruest 1.4: die Plan-Karte traegt die Hauptaussage
+            // des Screens - die eine erlaubte Orange-Kante links pro Screen.
+            DeltiqCard(accentEdge: true) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
                     // DEL-105: Brand-Akzent fuer Trainings-Tage statt iOS-Blau.
@@ -975,10 +1021,13 @@ public struct DashboardView: View {
                     adHocWorkoutButton(prominent: false)
                 }
             }
-            // DEL-102: Bento-Card.
-            .deltiqCardStyle()
+            }
         } else {
             // No active plan or active plan has no days yet.
+            // Signature-Geruest 1.4: gleiche Orange-Kante wie im Haben-
+            // Plan-Zweig - die "Hauptaussage" bleibt dieselbe Karte, nur
+            // ohne aktiven Plan.
+            DeltiqCard(accentEdge: true) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
                     Image(systemName: "list.bullet.rectangle.portrait")
@@ -1011,8 +1060,7 @@ public struct DashboardView: View {
                 // Ad-Hoc ist hier der einzige Trainings-CTA, also prominent.
                 adHocWorkoutButton(prominent: true)
             }
-            // DEL-102: Bento-Card.
-            .deltiqCardStyle()
+            }
         }
     }
 
@@ -1093,39 +1141,37 @@ public struct DashboardView: View {
     }
 
     private var deloadActiveBanner: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "arrow.down.heart.fill")
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.teal)
-                .font(.title3)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(String(
-                    format: String(localized: "dashboard.deload.activeBanner", bundle: .module),
-                    Date(timeIntervalSince1970: deloadUntil)
-                        .formatted(date: .abbreviated, time: .omitted)
-                ))
-                .font(.subheadline)
-                .foregroundStyle(.primary)
-                .fixedSize(horizontal: false, vertical: true)
-                Button {
-                    withAnimation { endDeload() }
-                } label: {
-                    Text("dashboard.deload.endButton", bundle: .module)
-                        .font(.caption.weight(.semibold))
+        // Signature-Geruest 1.7: Teal war Sonderfarbe fuer den Deload-
+        // Hinweis, verletzt aber "alles Interaktive/Aktive ist Orange" —
+        // anders als der Health-Rot-Fall (2.5) hat Teal keine externe
+        // Marken-Begruendung. Auf Orange vereinheitlicht.
+        DeltiqCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "arrow.down.heart.fill")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(String(
+                        format: String(localized: "dashboard.deload.activeBanner", bundle: .module),
+                        Date(timeIntervalSince1970: deloadUntil)
+                            .formatted(date: .abbreviated, time: .omitted)
+                    ))
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    Button {
+                        withAnimation { endDeload() }
+                    } label: {
+                        Text("dashboard.deload.endButton", bundle: .module)
+                            .font(.caption.weight(.semibold))
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(Color.deltiqOrange)
                 }
-                .buttonStyle(.bordered)
-                .tint(.teal)
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.teal.opacity(0.10))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.teal.opacity(0.20), lineWidth: 1)
-        )
     }
 
     /// Liefert den aktuellen Coaching-Text — oder nil, wenn kein Trigger
@@ -1462,78 +1508,67 @@ public struct DashboardView: View {
         }
     }
 
-    /// DEL-100 + DEL-102: Bento-Card mit warmem DeltiqOrange-Tint. Bewusst
-    /// NICHT die generische `.deltiqCardStyle()` — die Coaching-Insight haben
-    /// wir absichtlich orange-getoent fuer visuelle Differenzierung vom
-    /// Plan-Card.
+    /// DEL-100: Coaching-Insight in der normalen Karte statt eines eigenen
+    /// Orange-Tints. Handoff 2.1: "der Inhalt traegt sich selbst, der Tint
+    /// ist ueberfluessig" — die visuelle Differenzierung von der Plan-Karte
+    /// kommt jetzt darueber, dass NUR die Plan-Karte die Orange-Kante hat.
     private func coachingInsightContent(message: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "sparkles")
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(Color.deltiqOrange)
-                .font(.title3)
-            VStack(alignment: .leading, spacing: 8) {
-                Text(message)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-                // DEL-200: Apply-Button direkt unter der Deload-Empfehlung —
-                // aus dem Hinweis wird eine Ein-Tap-Handlung.
-                if showsDeloadApplyAction {
-                    Button {
-                        withAnimation { applyDeload() }
-                    } label: {
-                        Label {
-                            Text("dashboard.deload.applyButton", bundle: .module)
-                        } icon: {
-                            Image(systemName: "arrow.down.heart")
+        DeltiqCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "sparkles")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(message)
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    // DEL-200: Apply-Button direkt unter der Deload-Empfehlung —
+                    // aus dem Hinweis wird eine Ein-Tap-Handlung.
+                    if showsDeloadApplyAction {
+                        Button {
+                            withAnimation { applyDeload() }
+                        } label: {
+                            Label {
+                                Text("dashboard.deload.applyButton", bundle: .module)
+                            } icon: {
+                                Image(systemName: "arrow.down.heart")
+                            }
+                            .font(.caption.weight(.semibold))
                         }
-                        .font(.caption.weight(.semibold))
+                        .buttonStyle(.borderedProminent)
+                        .tint(Color.deltiqOrange)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(Color.deltiqOrange)
                 }
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.deltiqOrange.opacity(0.10))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.deltiqOrange.opacity(0.20), lineWidth: 1)
-        )
     }
 
     /// DEL-166: Neutraler Empty-State, wenn das Widget aktiv ist, aber gerade
     /// kein Coaching-Trigger anliegt (kein CNS-Overload, kein Plan-Ruhetag).
-    /// Visuell gedaempfter (weniger Tint, anderes Icon) — kommuniziert "alles
-    /// gut, keine Aktion noetig" statt zu verschwinden.
+    /// Gleiche Karte wie der Insight-Zustand — der gedaempfte Ton kommt jetzt
+    /// nur noch aus Icon-Deckkraft + Copy, nicht mehr aus einem eigenen,
+    /// schwaecheren Tint.
     private var coachingInsightEmptyContent: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "checkmark.seal.fill")
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(Color.deltiqOrange.opacity(0.7))
-                .font(.title3)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("coaching.empty.title", bundle: .module)
-                    .font(.subheadline.weight(.semibold))
-                Text("coaching.empty.message", bundle: .module)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+        DeltiqCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "checkmark.seal.fill")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange.opacity(0.7))
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("coaching.empty.title", bundle: .module)
+                        .font(.subheadline.weight(.semibold))
+                    Text("coaching.empty.message", bundle: .module)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.deltiqOrange.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.deltiqOrange.opacity(0.12), lineWidth: 1)
-        )
     }
 
     /// Wahlt den passenden Coaching-Context aus dem Heute-Zustand des
@@ -2237,35 +2272,38 @@ public struct DashboardView: View {
         let distanceKm = weekLogs.compactMap(\.distanceKm).reduce(0.0, +)
 
         if volumeKg > 0 || distanceKm > 0 {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("dashboard.weeklySummary.title", bundle: .module)
-                    .font(.headline)
-                HStack(spacing: 12) {
-                    if volumeKg > 0 {
-                        // DEL-105: Indigo statt iOS-Default-Blau fuer Strength —
-                        // erhaelt die semantische Differenzierung zum Cardio-
-                        // Orange-Tile, ohne wieder in den System-Akzent zu fallen.
-                        weeklyStatTile(
-                            label: String(localized: "dashboard.weeklySummary.volume", bundle: .module),
-                            value: formatVolumeKg(volumeKg),
-                            unit: "kg",
-                            icon: "scalemass.fill",
-                            tint: .indigo
-                        )
-                    }
-                    if distanceKm > 0 {
-                        weeklyStatTile(
-                            label: String(localized: "dashboard.weeklySummary.distance", bundle: .module),
-                            value: formatDistance(distanceKm),
-                            unit: "km",
-                            icon: "figure.run",
-                            tint: Color.deltiqOrange
-                        )
+            DeltiqCard {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(String(localized: "dashboard.weeklySummary.title", bundle: .module).uppercased())
+                        .font(.system(size: 10, weight: .heavy))
+                        .tracking(1.5)
+                        .foregroundStyle(Color.deltiqOrange)
+                    HStack(spacing: 12) {
+                        if volumeKg > 0 {
+                            // Signature-Geruest 1.7: Indigo war die semantische
+                            // Differenzierung zum Cardio-Orange-Tile — das
+                            // Geruest erlaubt aber nur Orange als Icon-Tint,
+                            // beide Kacheln teilen sich die Farbe jetzt.
+                            weeklyStatTile(
+                                label: String(localized: "dashboard.weeklySummary.volume", bundle: .module),
+                                value: formatVolumeKg(volumeKg),
+                                unit: "kg",
+                                icon: "scalemass.fill",
+                                tint: Color.deltiqOrange
+                            )
+                        }
+                        if distanceKm > 0 {
+                            weeklyStatTile(
+                                label: String(localized: "dashboard.weeklySummary.distance", bundle: .module),
+                                value: formatDistance(distanceKm),
+                                unit: "km",
+                                icon: "figure.run",
+                                tint: Color.deltiqOrange
+                            )
+                        }
                     }
                 }
             }
-            // DEL-103: Bento-Card als outer Container fuer Header+Tiles.
-            .deltiqCardStyle()
         }
     }
 
@@ -2297,9 +2335,10 @@ public struct DashboardView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        // DEL-103: Tiles sitzen IN einer Bento-Card (Surface-Background), also
-        // brauchen sie selbst nur einen ganz leichten Tint, um sich abzuheben.
-        .background(Color.secondary.opacity(0.08))
+        // Tiles sitzen IN einer Bento-Card (Surface-Background), also
+        // brauchen sie selbst nur einen ganz leichten Tint, um sich
+        // abzuheben — Signature-Geruest-Fuellfarbe statt Ad-hoc-Opacity.
+        .background(Color.Deltiq.fill)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
@@ -2975,56 +3014,57 @@ private struct MetricCard: View {
     let delta: Double?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // UX-Fix 2026-05-21: Label-Layout-Hardening.
-            //   * .lineLimit(2): max 2 Zeilen (wie "Body Fat (Navy)") —
-            //     verhindert dass extreme Sprachen unbegrenzt wachsen.
-            //   * .minimumScaleFactor(0.85): wenn ein 1-Zeilen-Label knapp
-            //     ist, lieber leicht runterskalieren statt umbrechen.
-            //   * .fixedSize(vertical: true): zwingt SwiftUI die intrinsische
-            //     Hoehe zu reporten (sonst kollabiert das Label bei Equal-
-            //     Height-Layouts unsichtbar zusammen).
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-                .minimumScaleFactor(0.85)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                // DEL-102: fitnessNumberStyle ersetzt das manuelle
-                // .monospacedDigit() + erzwingt zusaetzlich .fontDesign(.rounded),
-                // damit die Hero-Zahlen sportlicher und kohaerent mit Timer-
-                // Anzeigen sind.
-                Text(value)
-                    .font(.title2.weight(.semibold))
-                    .fitnessNumberStyle()
-                if let unit {
-                    Text(unit)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+        // Signature-Geruest 1.6/1.8: Hero-Kachel-Label wird zum Eyebrow-Stil
+        // (vorher 12pt Regular Weiss 60%), Radius 14 -> 20 (1.4: 10/14/16
+        // verschwinden aus Container-Hintergruenden), kompaktes Padding 12
+        // bleibt (die drei Kacheln sitzen nebeneinander in einer Reihe).
+        DeltiqCard(padding: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                // UX-Fix 2026-05-21: Label-Layout-Hardening.
+                //   * .lineLimit(2): max 2 Zeilen (wie "Body Fat (Navy)") —
+                //     verhindert dass extreme Sprachen unbegrenzt wachsen.
+                //   * .minimumScaleFactor(0.85): wenn ein 1-Zeilen-Label knapp
+                //     ist, lieber leicht runterskalieren statt umbrechen.
+                //   * .fixedSize(vertical: true): zwingt SwiftUI die intrinsische
+                //     Hoehe zu reporten (sonst kollabiert das Label bei Equal-
+                //     Height-Layouts unsichtbar zusammen).
+                Text(label.uppercased())
+                    .font(.system(size: 9, weight: .heavy))
+                    .tracking(1.5)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    // Signature-Geruest 1.8: Kachel-Wert-Rolle (22pt/Weight800)
+                    // statt der bisherigen .title2.semibold.
+                    Text(value)
+                        .font(.system(size: 22, weight: .heavy))
+                        .fitnessNumberStyle()
+                    if let unit {
+                        Text(unit)
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    }
                 }
+                if let delta {
+                    deltaLabel(delta)
+                } else {
+                    Text(" ")
+                        .font(.caption2)
+                }
+                // UX-Fix 2026-05-21: Spacer drueckt den Card-Inhalt nach oben,
+                // wenn der HStack-Container der MetricCard mehr Hoehe gibt als
+                // ihr intrinsischer Inhalt braucht. So bleiben Label oben +
+                // Wert oben, statt vertikal zentriert zu rendern.
+                Spacer(minLength: 0)
             }
-            if let delta {
-                deltaLabel(delta)
-            } else {
-                Text(" ")
-                    .font(.caption2)
-            }
-            // UX-Fix 2026-05-21: Spacer drueckt den Card-Inhalt nach oben,
-            // wenn der HStack-Container der MetricCard mehr Hoehe gibt als
-            // ihr intrinsischer Inhalt braucht. So bleiben Label oben +
-            // Wert oben, statt vertikal zentriert zu rendern.
-            Spacer(minLength: 0)
+            // UX-Fix 2026-05-21: maxHeight: .infinity expandiert jede Card auf
+            // die Hoehe der hoechsten Geschwister-Karte im HStack (siehe
+            // `heroMetrics` Container-Modifier). topLeading alignment haelt
+            // den Inhalt oben-links statt zentriert.
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        // UX-Fix 2026-05-21: maxHeight: .infinity expandiert jede Card auf
-        // die Hoehe der hoechsten Geschwister-Karte im HStack (siehe
-        // `heroMetrics` Container-Modifier). topLeading alignment haelt
-        // den Inhalt oben-links statt zentriert.
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        // DEL-102: Sub-Card-Format (kleiner Corner-Radius, kompakteres Padding)
-        // — die Metric-Cards sind enthalten in einer Reihe von drei und sollten
-        // schmaler wirken als die Top-Level-Bento-Cards.
-        .deltiqCardStyle(padding: 12, cornerRadius: 14)
     }
 
     private func deltaLabel(_ delta: Double) -> some View {
@@ -3045,21 +3085,20 @@ private struct MetricCard: View {
 @available(iOS 17.0, macOS 14.0, *)
 private struct EmptyMetricsCard: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label {
-                Text("dashboard.trend.emptyTitle", bundle: .module)
-            } icon: {
-                Image(systemName: "scalemass")
+        DeltiqCard {
+            VStack(alignment: .leading, spacing: 6) {
+                Label {
+                    Text("dashboard.trend.emptyTitle", bundle: .module)
+                } icon: {
+                    Image(systemName: "scalemass")
+                }
+                .font(.headline)
+                Text("dashboard.trend.emptyDescription", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            .font(.headline)
-            Text("dashboard.trend.emptyDescription", bundle: .module)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Color.secondary.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 
