@@ -267,6 +267,30 @@ public struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
             }
+            // Signature-Geruest Tab-Umbau (Variante 2b): Rechner hat seinen
+            // eigenen Tab verloren und haengt jetzt hier, neben Bibliothek
+            // und Ausruestung. Normale NavigationLink(destination:)-Zeile —
+            // braucht keinen Pfad-Wert, der Wassertracker-Deep-Link laeuft
+            // separat ueber AppNavigation.morePath (siehe RootView).
+            DeltiqFormFullRow {
+                NavigationLink {
+                    CalculatorsView()
+                } label: {
+                    HStack {
+                        Label {
+                            Text("calc.index.title", bundle: .module)
+                        } icon: {
+                            Image(systemName: "function")
+                        }
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
             // DEL-109: Dashboard-Widget-Manager.
             dashboardCustomizationRow
         } footer: {

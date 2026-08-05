@@ -1,6 +1,7 @@
 #if canImport(SwiftUI) && canImport(SwiftData)
 import SwiftUI
 import SwiftData
+import FitnessAppCore
 import FitnessAppData
 import FitnessAppHealth
 import FitnessAppActivities
@@ -173,17 +174,25 @@ public struct RootView: View {
     }
 }
 
-/// Top-level container for the post-onboarding flow. Tab order:
-/// Dashboard (overview at app launch) → Plan (training) → Messung (daily entry)
-/// → Rechner (utilities). Cross-tab navigation runs through `AppNavigation`.
+/// Top-level container for the post-onboarding flow. Tab order (Signature-
+/// Geruest, Variante 2b): Dashboard → Plan → [zentraler Aktionsknopf] →
+/// Messung → Mehr (Rechner haengt seit dem Tab-Umbau dort, siehe
+/// `SettingsView`). Cross-tab navigation runs through `AppNavigation`.
 @available(iOS 17.0, macOS 14.0, *)
 struct MainTabView: View {
     @Environment(AppNavigation.self) private var navigation
+    @Environment(\.modelContext) private var modelContext
 
     /// DEL-028: Beobachtet den NotificationRouter und routet Notification-Taps
     /// (Cold-Start + Background) auf die richtige Tab. Eine `@State`-Property,
     /// damit SwiftUI das @Observable-Tracking automatisch einrichtet.
     @State private var notificationRouter = NotificationRouter.shared
+
+    /// Faengt den Fall ab, dass der leere Platzhalter-Tab (`.actionButton`)
+    /// doch mal getroffen wird (Tap knapp neben dem ueberlagernden Knopf) —
+    /// springt sofort zurueck auf den zuletzt sichtbaren echten Tab, statt
+    /// eine leere Flaeche zu zeigen.
+    @State private var lastRealTab: AppTab = .dashboard
 
     var body: some View {
         @Bindable var navigation = navigation
@@ -212,6 +221,14 @@ struct MainTabView: View {
                 }
                 .tag(AppTab.plan)
 
+            // Signature-Geruest 1.11: TabView kann keinen ueberstehenden
+            // Mittelknopf. Uebliche Loesung — mittleren Tab-Eintrag als
+            // leeres Platzhalter-Item fuehren, den Knopf per .overlay
+            // darueberzeichnen (siehe actionButton/.overlay unten).
+            Color.clear
+                .tabItem { Text("") }
+                .tag(AppTab.actionButton)
+
             NavigationStack {
                 MeasurementView()
             }
@@ -224,28 +241,20 @@ struct MainTabView: View {
             }
             .tag(AppTab.measurement)
 
-            // DEL-212: Path-Binding, damit Notification-Routen direkt in
-            // einzelne Calculator-Screens pushen koennen (Wasser-Reminder).
-            NavigationStack(path: $navigation.calculatorsPath) {
-                CalculatorsView()
+            // DEL-212, angepasst: Path-Binding fuers "Mehr"-Tab, damit die
+            // Wasser-Erinnerungs-Notification weiterhin in einem Sprung bis
+            // zum WaterTracker durchpushen kann, obwohl Rechner keinen
+            // eigenen Tab mehr hat. Der normale, getippte Weg (Mehr →
+            // Rechner → Wassertracker) laeuft unabhaengig davon ueber
+            // CalculatorsView's eigene NavigationLink(destination:)-Zeilen.
+            NavigationStack(path: $navigation.morePath) {
+                SettingsView()
                     .navigationDestination(for: CalculatorsRoute.self) { route in
                         switch route {
                         case .waterTracker:
                             WaterTrackerView()
                         }
                     }
-            }
-            .tabItem {
-                Label {
-                    Text("tab.calculators", bundle: .module)
-                } icon: {
-                    Image(systemName: "function")
-                }
-            }
-            .tag(AppTab.calculators)
-
-            NavigationStack {
-                SettingsView()
             }
             .tabItem {
                 Label {
@@ -256,13 +265,43 @@ struct MainTabView: View {
             }
             .tag(AppTab.settings)
         }
+        .overlay(alignment: .bottom) {
+            actionButton
+                .offset(y: -18)
+        }
         // DEL-028 — Notification-Tap-Routing. Wird sowohl beim Cold-Start
         // (Router-Set vor MainTabView-First-Render) als auch im Background-
         // Path (Router-Set waehrend App schon laeuft) sauber gehandelt.
-        .onAppear { applyPendingRouteIfAny() }
+        .onAppear {
+            applyPendingRouteIfAny()
+            configureTabBarAppearance()
+        }
         .onChange(of: notificationRouter.pendingRoute) { _, _ in
             applyPendingRouteIfAny()
         }
+        .onChange(of: navigation.selectedTab) { _, newValue in
+            if newValue == .actionButton {
+                navigation.selectedTab = lastRealTab
+            } else {
+                lastRealTab = newValue
+            }
+        }
+    }
+
+    /// Zentraler Aktionsknopf (Abschnitt 1.11): 56×56, Kreis, Akzent-Verlauf.
+    /// Bewusst NICHT kontextabhaengig — loest ueberall dieselbe Aktion aus
+    /// (Rueckfallebene der im Handoff offen gelassenen Produktentscheidung).
+    private var actionButton: some View {
+        Button(action: startOrResumeWorkout) {
+            Image(systemName: "play.fill")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 56, height: 56)
+                .background(Color.Deltiq.primaryGradient)
+                .clipShape(Circle())
+                .shadow(color: Color.deltiqOrange.opacity(0.4), radius: 16, x: 0, y: 6)
+        }
+        .accessibilityLabel(Text("dashboard.action.startDirect", bundle: .module))
     }
 
     private func applyPendingRouteIfAny() {
@@ -272,11 +311,110 @@ struct MainTabView: View {
             // DEL-212: Tab-Swap + Deep-Push direkt in den WaterTracker.
             // Path wird ersetzt (nicht appended), damit wiederholte Taps
             // keinen Stack aus mehreren Tracker-Screens aufbauen.
-            navigation.selectedTab = .calculators
-            navigation.calculatorsPath = NavigationPath([CalculatorsRoute.waterTracker])
+            navigation.selectedTab = .settings
+            navigation.morePath = NavigationPath([CalculatorsRoute.waterTracker])
         case .measurement:
             navigation.selectedTab = .measurement
         }
+    }
+
+    /// Startet die naechste faellige Trainingseinheit des aktiven Plans oder
+    /// setzt eine bereits offene Session fort. Absichtlich einfacher als
+    /// Dashboards `activeWorkoutButton`: kein Comeback-Prompt (DEL-239) und
+    /// kein Konfliktdialog fuer eine zweite offene Session auf einem anderen
+    /// Tag — beides haengt an View-lokalem State in `DashboardView`, den
+    /// dieser globale Kurzbefehl nicht dupliziert. Sind mehrere Sessions
+    /// offen, wird die zuletzt gestartete fortgesetzt.
+    private func startOrResumeWorkout() {
+        var openDescriptor = FetchDescriptor<WorkoutSession>(
+            predicate: #Predicate { $0.isCompleted == false && $0.isRestDay == false },
+            sortBy: [SortDescriptor(\.startTime, order: .reverse)]
+        )
+        openDescriptor.fetchLimit = 1
+        if let open = try? modelContext.fetch(openDescriptor).first {
+            navigation.workoutPath = NavigationPath()
+            if let day = open.day, let plan = day.plan {
+                navigation.workoutPath.append(plan)
+                navigation.workoutPath.append(day)
+            }
+            navigation.workoutPath.append(ActiveSessionRoute(session: open))
+            navigation.selectedTab = .plan
+            return
+        }
+
+        let planDescriptor = FetchDescriptor<TrainingPlan>(
+            predicate: #Predicate { $0.isActive == true }
+        )
+        guard let plan = try? modelContext.fetch(planDescriptor).first, !plan.days.isEmpty else {
+            // Kein aktiver Plan: Plan-Tab zeigen, dort greift der Leerzustand.
+            navigation.selectedTab = .plan
+            return
+        }
+
+        let sortedDays = PlanNavigator.sortByWeekdayMondayFirst(plan.days)
+        let completedDescriptor = FetchDescriptor<WorkoutSession>(
+            predicate: #Predicate { $0.isCompleted == true }
+        )
+        let completedCount = ((try? modelContext.fetch(completedDescriptor)) ?? []).filter {
+            $0.day?.plan?.persistentModelID == plan.persistentModelID
+        }.count
+        let idx = PlanNavigator.nextScheduledIndex(
+            dayCount: sortedDays.count,
+            completedSessions: completedCount
+        ) ?? 0
+        let day = sortedDays[idx]
+
+        guard !day.activeExercises.isEmpty else {
+            navigation.selectedTab = .plan
+            return
+        }
+
+        let session = WorkoutSession(
+            startTime: Date(),
+            endTime: Date(),
+            durationMinutes: 0,
+            exerciseCount: day.activeExercises.count,
+            isCompleted: false,
+            dayName: day.name,
+            day: day
+        )
+        modelContext.insert(session)
+
+        navigation.workoutPath = NavigationPath()
+        navigation.workoutPath.append(plan)
+        navigation.workoutPath.append(day)
+        navigation.workoutPath.append(ActiveSessionRoute(session: session))
+        navigation.selectedTab = .plan
+    }
+
+    /// Signature-Geruest 1.11: Hintergrund #1C1C1E @ 92%, aktiver Tab Orange,
+    /// inaktiv Weiss ~35%. Native `TabView`/`Label`-Styling laesst sich nur
+    /// bis zu einem gewissen Grad treffen — `UITabBarAppearance` kommt der
+    /// Vorgabe deutlich naeher als reines SwiftUI-`.tint()`, aber Blur-Radius
+    /// und die 1pt-Oberkante aus dem Handoff sind damit nicht exakt
+    /// erreichbar. Braucht Sichtpruefung im Simulator.
+    private func configureTabBarAppearance() {
+        #if canImport(UIKit)
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(Color.Deltiq.surface).withAlphaComponent(0.92)
+
+        let normalColor = UIColor.white.withAlphaComponent(0.35)
+        let selectedColor = UIColor(Color.deltiqOrange)
+        appearance.stackedLayoutAppearance.normal.iconColor = normalColor
+        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
+            .foregroundColor: normalColor,
+            .font: UIFont.systemFont(ofSize: 10, weight: .medium)
+        ]
+        appearance.stackedLayoutAppearance.selected.iconColor = selectedColor
+        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
+            .foregroundColor: selectedColor,
+            .font: UIFont.systemFont(ofSize: 10, weight: .semibold)
+        ]
+
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+        #endif
     }
 }
 
