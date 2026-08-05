@@ -39,6 +39,7 @@ public struct WorkoutHistoryView: View {
                         title: "history.empty.title",
                         description: "history.empty.description"
                     )
+                    .deltiqCardStyle()
                 }
                 .deltiqScreen()
             } else {

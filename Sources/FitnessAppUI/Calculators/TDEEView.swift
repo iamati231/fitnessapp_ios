@@ -45,6 +45,7 @@ public struct TDEEView: View {
                         title: "calc.tdee.noProfile.title",
                         description: "calc.tdee.noProfile.message"
                     )
+                    .deltiqCardStyle()
                 }
             }
             .deltiqScreen()

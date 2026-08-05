@@ -112,6 +112,7 @@ public struct PRHistoryView: View {
                     title: "trophy.empty.title",
                     description: "trophy.empty.description.firstWorkout"
                 )
+                .deltiqCardStyle()
             } else {
                 DashboardEmptyState(
                     icon: "trophy",
@@ -120,6 +121,7 @@ public struct PRHistoryView: View {
                     ctaTitle: "trophy.empty.cta.detect",
                     ctaAction: { showRebuildConfirm = true }
                 )
+                .deltiqCardStyle()
             }
         }
         .deltiqScreen()
