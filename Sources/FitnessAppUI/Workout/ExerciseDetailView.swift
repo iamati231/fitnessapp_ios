@@ -27,9 +27,19 @@ struct ExerciseDetailView: View {
     private var allPRs: [PersonalRecordEntry]
 
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ScrollView {
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: erreicht ueber den Leading-Swipe
+            // "Verlauf" in ExerciseLibraryView - Eyebrow zeigt den Tab
+            // (Mehr), nicht die Bibliothek, siehe OFFENE-VIEWS.md.
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                title: displayName,
+                onBack: { dismiss() }
+            )
+
             VStack(alignment: .leading, spacing: 18) {
                 if logs.isEmpty {
                     emptyState
@@ -44,14 +54,17 @@ struct ExerciseDetailView: View {
                     recentSetsSection
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .deltiqScreen()
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
-        .navigationTitle(displayName)
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
+        .toolbar(.hidden, for: .navigationBar)
         #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
     }
 
     // MARK: - Daten
@@ -131,7 +144,7 @@ struct ExerciseDetailView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(String(localized: labelKey, bundle: .module))
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
             Text(value)
                 .font(.title3.weight(.bold))
                 .fitnessNumberStyle()
@@ -181,7 +194,7 @@ struct ExerciseDetailView: View {
                             .font(.subheadline.weight(.medium))
                         Text(pr.date.formatted(date: .abbreviated, time: .omitted))
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
                     }
                     Spacer()
                     Text(formatWeight(pr.value))
@@ -211,7 +224,7 @@ struct ExerciseDetailView: View {
                 HStack {
                     Text(log.date.formatted(date: .abbreviated, time: .omitted))
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                     Spacer()
                     if isCardio {
                         Text(cardioLogText(log))
@@ -221,7 +234,7 @@ struct ExerciseDetailView: View {
                             .font(.subheadline.monospacedDigit())
                         Text("RIR \(log.rir.formatted(.number.precision(.fractionLength(0...1))))")
                             .font(.caption.monospacedDigit())
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(Color.Deltiq.textTertiary)
                     }
                 }
             }
@@ -233,10 +246,10 @@ struct ExerciseDetailView: View {
         VStack(spacing: 10) {
             Image(systemName: "chart.xyaxis.line")
                 .font(.system(size: 40))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(Color.Deltiq.textTertiary)
             Text("exercise.detail.empty", bundle: .module)
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
