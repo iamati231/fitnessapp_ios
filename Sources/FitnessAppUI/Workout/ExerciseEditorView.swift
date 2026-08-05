@@ -6,6 +6,13 @@ import FitnessAppData
 
 /// Sheet for editing a single Exercise's parameters. Bound directly to the @Model
 /// instance — every field change persists via SwiftData's autosave.
+///
+/// Gruppe B (Sheet), kein Gruppe-A-Kandidat: beide Call-Sites
+/// (`DayEditorView`, `ActiveWorkoutView`) praesentieren ausschliesslich per
+/// `.sheet(item:)` in einem frischen `NavigationStack` mit nativem
+/// "Fertig"-Toolbar-Button, es gibt keinen Push-Call-Site. Bekommt daher
+/// bewusst KEIN DeltiqHeader - die Form-Rows tragen die Deltiq-Karten-
+/// Flaeche (siehe Gruppe-B-Pass), navigationTitle/Toolbar bleiben nativ.
 @available(iOS 17.0, macOS 14.0, *)
 public struct ExerciseEditorView: View {
 

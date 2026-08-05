@@ -947,6 +947,10 @@ public struct DashboardView: View {
             let isCurrentlyRunning = runningDay != nil
             // Signature-Geruest 1.4: die Plan-Karte traegt die Hauptaussage
             // des Screens - die eine erlaubte Orange-Kante links pro Screen.
+            // Geprueft (wiederholt): dieser accentEdge:true und der im
+            // else-Zweig unten schliessen sich gegenseitig aus (Normal- vs.
+            // Leerzustand desselben Plan-Day-Slots, nie beide gleichzeitig
+            // sichtbar) - genau die von Abschnitt 1.4 erlaubte Ausnahme.
             DeltiqCard(accentEdge: true) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
@@ -1039,7 +1043,8 @@ public struct DashboardView: View {
             // No active plan or active plan has no days yet.
             // Signature-Geruest 1.4: gleiche Orange-Kante wie im Haben-
             // Plan-Zweig - die "Hauptaussage" bleibt dieselbe Karte, nur
-            // ohne aktiven Plan.
+            // ohne aktiven Plan. Mutual exclusive mit dem accentEdge:true
+            // oben (if/else desselben Slots) - siehe Kommentar dort.
             DeltiqCard(accentEdge: true) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
@@ -2524,6 +2529,10 @@ public struct DashboardView: View {
     /// DEL-202: Sessions eines getappten Kalendertags. Eigene
     /// NavigationStack im Sheet, Rows verlinken in die Read-Only-Summary —
     /// gleiche Ziel-View wie die Recent-Workouts-Liste.
+    ///
+    /// Gruppe B (Sheet): `.sheet(item:)`-praesentiert mit nativem
+    /// "Schliessen"-Toolbar-Button, kein Push, daher bewusst KEIN
+    /// DeltiqHeader - die List traegt die Deltiq-Karten-Flaeche.
     private func calendarDaySheet(for day: Date) -> some View {
         let sessions = completedSessions.filter {
             $0.isRealWorkout && Calendar.current.isDate($0.startTime, inSameDayAs: day)

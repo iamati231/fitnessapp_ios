@@ -167,7 +167,13 @@ public struct DayAnalysisCard: View {
         }
     }
 
-    /// Mapping LoadCategory → Brand-konformes Farb-Spektrum.
+    /// Mapping LoadCategory → Ampel-Skala (gruen/gelb/orange/rot). Bewusst
+    /// KEINE reine Akzent-Farbe: die vier Stufen muessen auf einen Blick
+    /// unterscheidbar sein (wie die IWF-Scheibenfarben oder das PR-Gruen),
+    /// ein einheitliches Orange wuerde genau die Information wegnehmen, die
+    /// dieses Mapping transportiert. `.high` liegt bewusst auf dem
+    /// Markenakzent, weil "hohe Last" ohnehin die haeufigste/wichtigste
+    /// Stufe ist.
     private func loadColor(_ category: LoadCategory) -> Color {
         switch category {
         case .low:      return .green
