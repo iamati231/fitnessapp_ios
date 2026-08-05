@@ -10,6 +10,8 @@ import FitnessAppData
 @available(iOS 17.0, macOS 14.0, *)
 public struct WorkoutHistoryView: View {
 
+    @Environment(\.dismiss) private var dismiss
+
     // Rest-day-marker sessions (skipped rest days from the Dashboard) live
     // in the store with isCompleted=true so the PlanNavigator advances its
     // pointer, but they aren't workouts and don't belong in History.
@@ -20,33 +22,82 @@ public struct WorkoutHistoryView: View {
     public init() {}
 
     public var body: some View {
-        Group {
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: direkt vom Dashboard gepusht (kein
+            // eigener Zwischen-Hub) - Eyebrow zeigt den Tab, selbes Muster wie
+            // DashboardSettingsView/DataExportView unter "Mehr".
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.dashboard", bundle: .module).uppercased(),
+                title: String(localized: "dashboard.history.title", bundle: .module),
+                onBack: { dismiss() }
+            )
+
             if sessions.isEmpty {
-                ContentUnavailableView(
-                    String(localized: "history.empty.title", bundle: .module),
-                    systemImage: "calendar.badge.exclamationmark",
-                    description: Text("history.empty.description", bundle: .module)
-                )
+                VStack(alignment: .leading, spacing: 18) {
+                    DashboardEmptyState(
+                        icon: "calendar.badge.exclamationmark",
+                        title: "history.empty.title",
+                        description: "history.empty.description"
+                    )
+                }
+                .deltiqScreen()
             } else {
-                List {
+                VStack(alignment: .leading, spacing: 18) {
+                    // DEL-Handoff 3a: Kontextzeile mit Anzahl + letzter Einheit —
+                    // dieselbe Formel wie DashboardView.historyTeaserText, nur
+                    // als Pill statt Fliesstext.
+                    DeltiqContextRow([
+                        DeltiqContextItem(historyContextText.uppercased(), style: .neutral)
+                    ])
                     ForEach(monthSections) { section in
-                        Section(section.label) {
-                            ForEach(section.sessions) { session in
-                                NavigationLink {
-                                    WorkoutSummaryView(session: session, isReadOnly: true)
-                                } label: {
-                                    HistorySessionRow(session: session)
-                                }
-                            }
-                        }
+                        monthCard(section)
                     }
                 }
+                .deltiqScreen()
             }
         }
-        .navigationTitle(Text("dashboard.history.title", bundle: .module))
+        .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
+        .toolbar(.hidden, for: .navigationBar)
         #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
+    }
+
+    // MARK: Sections
+
+    private func monthCard(_ section: MonthSection) -> some View {
+        DeltiqSection(section.label.uppercased()) {
+            ForEach(section.sessions) { session in
+                NavigationLink {
+                    WorkoutSummaryView(session: session, isReadOnly: true)
+                } label: {
+                    HistorySessionRow(session: session, showsDivider: session.id != section.sessions.last?.id)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: Context
+
+    /// Spiegelt `DashboardView.historyTeaserText` — dieselben zwei
+    /// xcstrings-Varianten (count+last / count-only), hier als Pill statt
+    /// Fliesstext, weil sie in eine `DeltiqContextRow` wandert.
+    private var historyContextText: String {
+        guard let latest = sessions.first else {
+            return String(format: String(localized: "dashboard.history.countOnly", bundle: .module), sessions.count)
+        }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        let relative = formatter.localizedString(for: latest.startTime, relativeTo: Date())
+        let template = String(localized: "dashboard.history.countWithLast", bundle: .module)
+        return template
+            .replacingOccurrences(of: "%1$lld", with: "\(sessions.count)")
+            .replacingOccurrences(of: "%2$@", with: relative)
     }
 
     // MARK: Grouping
@@ -83,26 +134,40 @@ public struct WorkoutHistoryView: View {
 @available(iOS 17.0, macOS 14.0, *)
 struct HistorySessionRow: View {
     let session: WorkoutSession
+    var showsDivider: Bool = true
 
     var body: some View {
-        HStack(spacing: 12) {
-            // DEL-065: Icon + Hintergrundfarbe je nach Session-Typ.
-            //   * Cardio  → figure.run + orange
-            //   * Rest    → bed.double.fill + purple (eigentlich gefiltert,
-            //               aber Edge-Case-safe)
-            //   * Strength → Datums-Block in blau wie bisher
-            iconBadge
-            VStack(alignment: .leading, spacing: 2) {
-                // DEL-129: displayDayName loest day.displayName + Snapshot-
-                // Fallback in einer Extension auf, sodass History-Eintraege
-                // im EN/TR-Modus korrekt rendern.
-                Text(session.displayDayName)
-                    .font(.body.weight(.semibold))
-                statsLine
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 12) {
+                // DEL-065: Icon + Hintergrundfarbe je nach Session-Typ.
+                //   * Cardio  → figure.run + Orange
+                //   * Rest    → bed.double.fill + Orange (eigentlich gefiltert,
+                //               aber Edge-Case-safe; Icon-Form ist der einzige
+                //               Unterschied zu Cardio/Strength, siehe DEL-105)
+                //   * Strength → Datums-Block in Orange wie bisher
+                iconBadge
+                VStack(alignment: .leading, spacing: 2) {
+                    // DEL-129: displayDayName loest day.displayName + Snapshot-
+                    // Fallback in einer Extension auf, sodass History-Eintraege
+                    // im EN/TR-Modus korrekt rendern.
+                    Text(session.displayDayName)
+                        .font(.body.weight(.semibold))
+                    statsLine
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.Deltiq.textTertiary)
             }
-            Spacer()
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(minHeight: 44)
+            if showsDivider {
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
+            }
         }
-        .padding(.vertical, 2)
     }
 
     @ViewBuilder
@@ -129,7 +194,7 @@ struct HistorySessionRow: View {
                     .foregroundStyle(.white)
             }
             .frame(width: 44, height: 44)
-            .background(Color.purple.gradient)
+            .background(Color.deltiqOrange.gradient)
             .clipShape(RoundedRectangle(cornerRadius: 8))
         } else {
             // DEL-105: Strength-Datums-Block uebernimmt den Brand-Akzent.
@@ -178,7 +243,7 @@ struct HistorySessionRow: View {
                 Text(averagePaceText)
             }
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.Deltiq.textSecondary)
             .monospacedDigit()
 
         case .mixed:
@@ -193,7 +258,7 @@ struct HistorySessionRow: View {
                 Text(totalDistanceText)
             }
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.Deltiq.textSecondary)
             .monospacedDigit()
 
         case .pureStrength:
@@ -208,7 +273,7 @@ struct HistorySessionRow: View {
                 Text("\(session.totalVolumeKg.truncated(to: 0).formattedTwoDecimals) kg")
             }
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.Deltiq.textSecondary)
             .monospacedDigit()
         }
     }
