@@ -70,6 +70,10 @@ public struct WaterTrackerView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
     }
 
     // MARK: Sections

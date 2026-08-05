@@ -941,4 +941,68 @@ public struct DeltiqCentralActionButton: View {
         .offset(y: -18)
     }
 }
+
+// MARK: - 6.10 Swipe-Back-Fix (Bug-Report)
+
+#if canImport(UIKit)
+/// Bug-Fix: `.navigationBarBackButtonHidden(true)` deaktiviert auf iOS als
+/// dokumentierte Nebenwirkung auch den `interactivePopGestureRecognizer`
+/// der UINavigationController - obwohl das Verstecken des nativen Zurueck-
+/// Buttons rein visuell gemeint war. Jeder Signature-Geruest-Screen
+/// versteckt die native Leiste komplett (eigener Chevron in `DeltiqHeader`
+/// uebernimmt die Optik) und will die Wisch-Geste trotzdem behalten - das
+/// war von Anfang an so dokumentiert (`DeltiqHeader`: "haelt die Swipe-
+/// Back-Geste ueber den System-Default am Leben"), lief aber durch diesen
+/// UIKit-Quirk ins Leere.
+///
+/// Hostet einen unsichtbaren `UIViewController`, der sobald er im
+/// Navigation-Stack sitzt den Pop-Gesture-Recognizer des umschliessenden
+/// `UINavigationController` wieder aktiviert und sich selbst als Delegate
+/// setzt (das Verfahren ist der etablierte Community-Standard fuer dieses
+/// Problem).
+private struct SwipeBackEnabler: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UIViewController {
+        let controller = UIViewController()
+        controller.view.backgroundColor = .clear
+        DispatchQueue.main.async {
+            if let navigationController = controller.parent?.navigationController {
+                navigationController.interactivePopGestureRecognizer?.delegate = context.coordinator
+                navigationController.interactivePopGestureRecognizer?.isEnabled = true
+            }
+        }
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            true
+        }
+    }
+}
+#endif
+
+public extension View {
+    /// Stellt die Swipe-Back-Geste wieder her, nachdem
+    /// `.navigationBarBackButtonHidden(true)` sie (iOS-Quirk) mit
+    /// abgeschaltet hat. `enabled: false` fuer Screens, die den nativen
+    /// Zurueck-Weg bewusst UND vollstaendig sperren wollen (z.B.
+    /// WorkoutSummaryView im frischen Post-Finish-Modus, wo `onBack`
+    /// ebenfalls `nil` ist). Auf Nicht-UIKit-Plattformen (macOS-Build fuer
+    /// `swift test`) ein No-Op.
+    func deltiqSwipeBackEnabled(_ enabled: Bool = true) -> some View {
+        #if canImport(UIKit)
+        background {
+            if enabled {
+                SwipeBackEnabler()
+            }
+        }
+        #else
+        self
+        #endif
+    }
+}
 #endif

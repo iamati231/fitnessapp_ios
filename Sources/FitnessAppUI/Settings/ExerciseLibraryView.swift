@@ -141,6 +141,12 @@ public struct ExerciseLibraryView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift. Harmlos im
+        // Picker-Sheet-Modus (dort ist die View die Wurzel ihres eigenen
+        // NavigationStacks, es gibt nichts zum Zurueckwischen).
+        .deltiqSwipeBackEnabled()
         .sheet(item: $selectedTemplate) { template in
             ExerciseLibraryEditorSheet(template: template)
         }

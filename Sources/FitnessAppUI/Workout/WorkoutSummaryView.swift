@@ -154,6 +154,14 @@ public struct WorkoutSummaryView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift. NUR im
+        // History-Mode aktiviert (isReadOnly), damit der frische Post-
+        // Finish-Modus weiterhin zwingend ueber den "Fertig"-Button laeuft
+        // und nicht per Wegwischen umgangen werden kann - identisch zum
+        // `onBack: isReadOnly ? ... : nil` oben.
+        .deltiqSwipeBackEnabled(isReadOnly)
         // DEL-223: Sicherheitsnetz gegen dauerhaft falsche Summen. Der
         // Edit-Mode rechnete `totalSets`/`totalVolumeKg` NUR im "Fertig"-
         // Toolbar-Button neu — im History-Mode ist der Zurueck-Chevron aber

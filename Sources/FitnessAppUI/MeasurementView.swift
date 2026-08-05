@@ -215,6 +215,12 @@ public struct MeasurementView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift. Am
+        // Tab-Root (New-Mode) ein No-Op, weil dort nichts zum Zurueck-
+        // wischen existiert.
+        .deltiqSwipeBackEnabled()
         .toolbar {
             // DEL-106: Keyboard-Accessory mit Previous/Next/Done. Da der
             // .decimalPad keinen Return-Key hat, brauchen wir das hier

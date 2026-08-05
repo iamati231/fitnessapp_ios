@@ -83,6 +83,10 @@ public struct PlanEditorView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
         // DEL-022 + DEL-031 + DEL-049 + DEL-050 — Trainingsort-Wechsel feuert
         // einen mehrstufigen Flow:
         //

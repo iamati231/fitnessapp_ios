@@ -165,6 +165,10 @@ public struct ActiveWorkoutView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
         .keyboardDismissToolbar()
         // DEL-108: Wenn ein Halte-Timer-Set startet, killt das den Rest-
         // Timer sofort. Rationale — ein laufender Pausen-Timer waehrend
