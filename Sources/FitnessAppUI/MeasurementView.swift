@@ -115,77 +115,86 @@ public struct MeasurementView: View {
     private var isEditMode: Bool { editingMeasurement != nil }
 
     public var body: some View {
-        // DEL-106: ScrollViewReader hostet die Auto-Scroll-Choreografie,
-        // wenn der fokussierte Field-State wechselt. ScrollView ersetzt
-        // das Apple-Form — Side-Effect: wir verlieren das auto-Scroll-
-        // auf-Tastatur-Behavior, und holen es hier explizit zurueck.
-        ScrollViewReader { scrollProxy in
-            ScrollView {
-                VStack(spacing: 18) {
-                    if let profile = profiles.first {
-                        profileSection(profile)
-                        // ── Sektion 1: Pflichtwerte (geschlechtsspezifisch)
-                        requiredFieldsSection(forProfile: profile)
-                        // ── Sektion 2: Auswertung (KFA/BMI/FFMI/Ratios)
-                        derivedSection(forProfile: profile)
-                        ratiosSection(forProfile: profile)
-                        // ── Sektion 3: Weitere Umfaenge (optional, geschlechtsspez.)
-                        additionalMeasurementsSection(forProfile: profile)
-                        // HealthKit + Actions + History
-                        if !isEditMode {
-                            healthKitSection
-                        }
-                        actionsSection(forProfile: profile)
-                        if !isEditMode {
-                            historySection
-                        }
-                    } else {
-                        ContentUnavailableView(
-                            loc("measurement.empty.title"),
-                            systemImage: "person.crop.circle.badge.exclamationmark",
-                            description: Text("measurement.empty.description", bundle: .module)
-                        )
-                        .padding(.top, 60)
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: Eyebrow MESSUNG, Titel folgt dem
+            // bestehenden new/detail/edit-Mapping. Der Bearbeiten/Fertig-
+            // Text-Button wird zu einem Icon (Stift/Haken) - DeltiqHeader
+            // hat keinen Text-Aktions-Slot, nur 32x32-Icon-Quadrate.
+            DeltiqHeader(
+                eyebrow: loc("measurement.header.eyebrow"),
+                title: navTitle,
+                onBack: { dismiss() },
+                actions: isEditMode ? [
+                    DeltiqHeaderAction(
+                        systemImage: isEditingEnabled ? "checkmark" : "pencil",
+                        isHighlighted: isEditingEnabled
+                    ) {
+                        isEditingEnabled.toggle()
                     }
+                ] : []
+            )
+
+            // DEL-106: ScrollViewReader hostet die Auto-Scroll-Choreografie,
+            // wenn der fokussierte Field-State wechselt. ScrollView ersetzt
+            // das Apple-Form — Side-Effect: wir verlieren das auto-Scroll-
+            // auf-Tastatur-Behavior, und holen es hier explizit zurueck.
+            ScrollViewReader { scrollProxy in
+                ScrollView {
+                    VStack(spacing: 18) {
+                        if let profile = profiles.first {
+                            // Signature-Geruest 1.3: Kontextzeile mit letztem
+                            // Eintrag (neutral) + fehlenden Pflichtfeldern
+                            // (Marke, verschwindet bei 0).
+                            measurementContextRow(profile: profile)
+                            profileSection(profile)
+                            // ── Sektion 1: Pflichtwerte (geschlechtsspezifisch)
+                            requiredFieldsSection(forProfile: profile)
+                            // ── Sektion 2: Auswertung (KFA/BMI/FFMI/Ratios)
+                            derivedSection(forProfile: profile)
+                            ratiosSection(forProfile: profile)
+                            // ── Sektion 3: Weitere Umfaenge (optional, geschlechtsspez.)
+                            additionalMeasurementsSection(forProfile: profile)
+                            // HealthKit + Actions + History
+                            if !isEditMode {
+                                healthKitSection
+                            }
+                            actionsSection(forProfile: profile)
+                            if !isEditMode {
+                                historySection
+                            }
+                        } else {
+                            ContentUnavailableView(
+                                loc("measurement.empty.title"),
+                                systemImage: "person.crop.circle.badge.exclamationmark",
+                                description: Text("measurement.empty.description", bundle: .module)
+                            )
+                            .padding(.top, 60)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    // DEL-106: Bottom-Padding fuer die Tastatur — verhindert,
+                    // dass die letzten Felder unter der Tastatur "stecken" bleiben.
+                    .padding(.bottom, focusedField == nil ? 100 : 140)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                // DEL-106: Bottom-Padding fuer die Tastatur — verhindert,
-                // dass die letzten Felder unter der Tastatur "stecken" bleiben.
-                .padding(.bottom, focusedField == nil ? 24 : 80)
-            }
-            .background(Color.Deltiq.background.ignoresSafeArea())
-            #if os(iOS)
-            .scrollDismissesKeyboard(.interactively)
-            #endif
-            // DEL-106: Auto-Scroll auf das aktive Feld. .center sorgt fuer
-            // sichtbaren Bereich oberhalb der Tastatur.
-            .onChange(of: focusedField) { _, newValue in
-                guard let field = newValue else { return }
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    scrollProxy.scrollTo(field, anchor: .center)
+                .scrollContentBackground(.hidden)
+                #if os(iOS)
+                .scrollDismissesKeyboard(.interactively)
+                #endif
+                // DEL-106: Auto-Scroll auf das aktive Feld. .center sorgt fuer
+                // sichtbaren Bereich oberhalb der Tastatur.
+                .onChange(of: focusedField) { _, newValue in
+                    guard let field = newValue else { return }
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        scrollProxy.scrollTo(field, anchor: .center)
+                    }
                 }
             }
         }
-        .navigationTitle(navTitle)
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .background(Color.Deltiq.background.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
-            // DEL-034: Edit-Mode startet read-only. Toolbar-Button toggled
-            // den Edit-State. Im New-Mode unsichtbar (Felder eh editierbar).
-            if isEditMode {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        isEditingEnabled.toggle()
-                    } label: {
-                        Text(isEditingEnabled
-                             ? "measurement.action.done"
-                             : "measurement.action.edit",
-                             bundle: .module)
-                    }
-                }
-            }
             // DEL-106: Keyboard-Accessory mit Previous/Next/Done. Da der
             // .decimalPad keinen Return-Key hat, brauchen wir das hier
             // zwingend — ohne kann der User die Tastatur nur per Swipe-
@@ -230,6 +239,46 @@ public struct MeasurementView: View {
         }
     }
 
+    /// Handoff 2.5: "LETZTE: 29. JULI" (neutral) + "3 PFLICHTFELDER" (Marke,
+    /// verschwindet wenn ausgefuellt). Nur im New-Mode sinnvoll - im
+    /// Edit-Mode ist "letzte" der gerade angezeigte Eintrag selbst.
+    @ViewBuilder
+    private func measurementContextRow(profile: UserBodyProfile) -> some View {
+        if !isEditMode {
+            let missing = missingRequiredCount(profile: profile)
+            var items: [DeltiqContextItem] = []
+            if let last = historicalMeasurements.first?.date {
+                items.append(DeltiqContextItem(
+                    String(format: loc("measurement.context.last"), last.formatted(date: .abbreviated, time: .omitted)).uppercased(),
+                    style: .neutral
+                ))
+            }
+            if missing > 0 {
+                let template = missing == 1 ? loc("measurement.context.missing.one") : loc("measurement.context.missing.many")
+                items.append(DeltiqContextItem(
+                    String(format: template, missing).uppercased(),
+                    style: .accent
+                ))
+            }
+            if !items.isEmpty {
+                DeltiqContextRow(items)
+            }
+        }
+    }
+
+    /// Gleiche Bedingungen wie `missingFieldsHint`, nur als Zaehler statt
+    /// als zusammengesetzter Satz - fuer die Kontextzeile.
+    private func missingRequiredCount(profile: UserBodyProfile) -> Int {
+        var count = 0
+        if (weightKg ?? 0) <= 0 { count += 1 }
+        if (neckCm ?? 0)   <= 0 { count += 1 }
+        if (waistCm ?? 0)  <= 0 { count += 1 }
+        if profile.profile == .female, (hipCm ?? 0) <= 0 {
+            count += 1
+        }
+        return count
+    }
+
     /// Titel-Mapping: New-Mode → "measurement.title.new", Edit-Mode wechselt
     /// zwischen "measurement.title.detail" und "measurement.title.edit" je
     /// nach Editing-Toggle (DEL-107).
@@ -247,31 +296,36 @@ public struct MeasurementView: View {
         // DEL-107: Einheiten "kg" / "cm" / "%" bleiben unlokalisiert —
         // identisch in DE/EN/TR. Nur "Jahre"/"Years"/"Yıl" wandert in den
         // Catalog. String-Interpolation klebt Wert + Unit zusammen.
-        DeltiqFormSection(header: loc("measurement.section.profile")) {
-            DeltiqFormRow(label: loc("measurement.profile.height")) {
-                Text(profile.heightCm.formattedTwoDecimals + " cm")
-                    .foregroundStyle(.secondary)
-                    .fitnessNumberStyle()
+        DeltiqSection(loc("measurement.section.profile").uppercased()) {
+            DeltiqControlRow(label: loc("measurement.profile.height")) {
+                valueText(profile.heightCm.formattedTwoDecimals + " cm")
             }
-            DeltiqFormRow(label: loc("measurement.profile.age.label")) {
-                Text("\(ageYears(for: profile)) \(loc("measurement.profile.age.unit"))")
-                    .foregroundStyle(.secondary)
-                    .fitnessNumberStyle()
+            DeltiqControlRow(label: loc("measurement.profile.age.label")) {
+                valueText("\(ageYears(for: profile)) \(loc("measurement.profile.age.unit"))")
             }
-            DeltiqFormRow(label: loc("measurement.profile.sex.label")) {
-                Text(profile.profile == .male
+            DeltiqControlRow(
+                label: loc("measurement.profile.sex.label"),
+                showsDivider: profile.goalWeightKg != nil
+            ) {
+                valueText(profile.profile == .male
                      ? loc("measurement.profile.sex.male")
                      : loc("measurement.profile.sex.female"))
-                    .foregroundStyle(.secondary)
             }
             if let goal = profile.goalWeightKg {
-                DeltiqFormRow(label: loc("measurement.profile.goalWeight")) {
-                    Text(goal.formattedTwoDecimals + " kg")
-                        .foregroundStyle(.secondary)
-                        .fitnessNumberStyle()
+                DeltiqControlRow(label: loc("measurement.profile.goalWeight"), showsDivider: false) {
+                    valueText(goal.formattedTwoDecimals + " kg")
                 }
             }
         }
+    }
+
+    /// Signature-Geruest 1.6: "Wert rechts 15pt, Weiss 60%; Zahlen
+    /// zusaetzlich fitnessNumberStyle()".
+    private func valueText(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 15))
+            .foregroundStyle(Color.Deltiq.textSecondary)
+            .fitnessNumberStyle()
     }
 
     // MARK: - Sektion 1: Pflichtwerte (geschlechtsspezifisch)
@@ -285,7 +339,9 @@ public struct MeasurementView: View {
     /// Wert per Auto-Fill aus dem HK-Profil kam.
     @ViewBuilder
     private func requiredFieldsSection(forProfile profile: UserBodyProfile) -> some View {
-        DeltiqFormSection(header: loc("measurement.section.core.title")) {
+        // Signature-Geruest 1.4: die Pflichtwerte-Karte traegt die
+        // Hauptaussage des Screens - die eine erlaubte Orange-Kante.
+        DeltiqSection(loc("measurement.section.core.title").uppercased(), accentEdge: true) {
             // Gewicht (immer Pflicht)
             measurementRow(label: loc("measurement.field.weight"), value: $weightKg, field: .weight)
                 .onChange(of: weightKg) { _, newValue in
@@ -301,8 +357,10 @@ public struct MeasurementView: View {
                     } icon: {
                         Image(systemName: "heart.fill")
                     }
-                    .font(.caption)
-                    .foregroundStyle(.pink)
+                    .font(.system(size: 12))
+                    // Handoff 2.5: Apple-Health-Hinweis bleibt in Health-Rot -
+                    // Fremdmarke, keine Deltiq-Farbe, darf abweichen.
+                    .foregroundStyle(Color.Deltiq.health)
                     Spacer()
                 }
                 .padding(.horizontal, 14)
@@ -321,26 +379,36 @@ public struct MeasurementView: View {
 
             // Hüfte: Pflicht bei Frauen, optional/anders gruppiert bei Maennern
             if profile.profile == .female {
-                measurementRow(label: loc("measurement.field.hip"), value: $hipCm, field: .hip)
+                measurementRow(label: loc("measurement.field.hip"), value: $hipCm, field: .hip, showsDivider: false)
                 fieldHint(loc("measurement.hint.broadest"))
             } else {
                 // Männer: Schulter direkt in Pflicht-Section (optional fuer SWR-Ratio).
-                measurementRow(label: loc("measurement.field.shoulder.full"), value: $shoulderCm, field: .shoulder)
+                measurementRow(label: loc("measurement.field.shoulder.full"), value: $shoulderCm, field: .shoulder, showsDivider: false)
                 fieldHint(loc("measurement.hint.broadest"))
             }
-        } footer: {
-            Text(profile.profile == .female
-                 ? "measurement.section.core.footer.female"
-                 : "measurement.section.core.footer.male",
-                 bundle: .module)
+            hintRow(profile.profile == .female
+                 ? loc("measurement.section.core.footer.female")
+                 : loc("measurement.section.core.footer.male"))
         }
+    }
+
+    /// Abschnitt 1.6: Hinweistext (12pt, sekundaer) als letzte Zeile in der
+    /// Karte statt als Footer darunter.
+    private func hintRow(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundStyle(Color.Deltiq.textSecondary)
+            .lineSpacing(4)
+            .padding(.horizontal, 14)
+            .padding(.top, 4)
+            .padding(.bottom, 8)
     }
 
     // MARK: - Sektion 3: Weitere Umfaenge (geschlechtsspezifische Reihenfolge)
 
     @ViewBuilder
     private func additionalMeasurementsSection(forProfile profile: UserBodyProfile) -> some View {
-        DeltiqFormSection(header: loc("measurement.section.additional.title")) {
+        DeltiqSection(loc("measurement.section.additional.title").uppercased()) {
             if profile.profile == .male {
                 // Maenner: Brust, Bizeps, Hüfte, Oberschenkel, Wade
                 // (Schulter ist schon oben als Pflicht-optional)
@@ -348,7 +416,7 @@ public struct MeasurementView: View {
                 measurementRow(label: loc("measurement.field.biceps"), value: $bicepsCm, field: .biceps)
                 measurementRow(label: loc("measurement.field.hip"),    value: $hipCm,    field: .hip)
                 measurementRow(label: loc("measurement.field.thigh"),  value: $thighCm,  field: .thigh)
-                measurementRow(label: loc("measurement.field.calf"),   value: $calfCm,   field: .calf)
+                measurementRow(label: loc("measurement.field.calf"),   value: $calfCm,   field: .calf, showsDivider: false)
             } else {
                 // Frauen: Schulter, Brust, Bizeps, Oberschenkel, Wade
                 // (Hüfte ist schon oben als Pflicht)
@@ -359,10 +427,9 @@ public struct MeasurementView: View {
                 measurementRow(label: loc("measurement.field.chest"),  value: $chestCm,  field: .chest)
                 measurementRow(label: loc("measurement.field.biceps"), value: $bicepsCm, field: .biceps)
                 measurementRow(label: loc("measurement.field.thigh"),  value: $thighCm,  field: .thigh)
-                measurementRow(label: loc("measurement.field.calf"),   value: $calfCm,   field: .calf)
+                measurementRow(label: loc("measurement.field.calf"),   value: $calfCm,   field: .calf, showsDivider: false)
             }
-        } footer: {
-            Text("measurement.section.additional.footer", bundle: .module)
+            hintRow(loc("measurement.section.additional.footer"))
         }
     }
 
@@ -370,7 +437,7 @@ public struct MeasurementView: View {
 
     @ViewBuilder
     private func derivedSection(forProfile profile: UserBodyProfile) -> some View {
-        DeltiqFormSection(header: loc("measurement.section.derived")) {
+        DeltiqSection(loc("measurement.section.derived").uppercased()) {
             if let derived = derivedMetrics(for: profile) {
                 metricRow(loc("measurement.derived.bmi"),         value: derived.bmi)
                 navyRow(derived.navyBodyFatPct, profileSex: profile.profile)
@@ -380,10 +447,10 @@ public struct MeasurementView: View {
                 metricRow(loc("measurement.derived.ffmiNorm"),    value: derived.normalizedFfmi)
                 metricRow(loc("measurement.derived.bmr"),         value: derived.bmr, suffix: " kcal")
             } else {
-                DeltiqFormFullRow {
-                    Text("measurement.derived.empty", bundle: .module)
-                        .foregroundStyle(.secondary)
-                }
+                DeltiqRow(
+                    label: String(localized: "measurement.derived.empty", bundle: .module),
+                    showsDivider: false
+                )
             }
         }
     }
@@ -395,59 +462,54 @@ public struct MeasurementView: View {
         switch profile.profile {
         case .female:
             if let waist = waistCm, let hip = hipCm, waist > 0, hip > 0 {
-                DeltiqFormSection(header: loc("measurement.section.ratios")) {
-                    DeltiqFormFullRow {
-                        ratioTile(
-                            title: loc("measurement.ratio.whr.title"),
-                            value: waist / hip,
-                            label: whrLabel(waist / hip),
-                            icon: "figure.dress.line.vertical.figure",
-                            tint: .purple
-                        )
-                    }
-                } footer: {
-                    Text("measurement.ratio.whr.footer", bundle: .module)
+                DeltiqSection(loc("measurement.section.ratios").uppercased()) {
+                    ratioTile(
+                        title: loc("measurement.ratio.whr.title"),
+                        value: waist / hip,
+                        label: whrLabel(waist / hip),
+                        icon: "figure.dress.line.vertical.figure"
+                    )
+                    hintRow(loc("measurement.ratio.whr.footer"))
                 }
             }
         case .male:
             if let shoulder = shoulderCm, let waist = waistCm, shoulder > 0, waist > 0 {
-                DeltiqFormSection(header: loc("measurement.section.ratios")) {
-                    DeltiqFormFullRow {
-                        ratioTile(
-                            title: loc("measurement.ratio.swr.title"),
-                            value: shoulder / waist,
-                            label: swrLabel(shoulder / waist),
-                            icon: "figure.arms.open",
-                            tint: Color.deltiqOrange
-                        )
-                    }
-                } footer: {
-                    Text("measurement.ratio.swr.footer", bundle: .module)
+                DeltiqSection(loc("measurement.section.ratios").uppercased()) {
+                    ratioTile(
+                        title: loc("measurement.ratio.swr.title"),
+                        value: shoulder / waist,
+                        label: swrLabel(shoulder / waist),
+                        icon: "figure.arms.open"
+                    )
+                    hintRow(loc("measurement.ratio.swr.footer"))
                 }
             }
         }
     }
 
-    private func ratioTile(title: String, value: Double, label: String, icon: String, tint: Color) -> some View {
+    /// Handoff 1.7: beide Ratio-Kacheln (WHR fuer Frauen, SWR fuer Maenner)
+    /// waren bisher Lila bzw. Orange getont - Lila ist nach der neuen Regel
+    /// nicht mehr erlaubt, beide werden einheitlich Orange.
+    private func ratioTile(title: String, value: Double, label: String, icon: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(.white)
-                .frame(width: 36, height: 36)
-                .background(tint.gradient)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .deltiqAccentIcon()
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                 Text(value.truncated(to: 2).formattedTwoDecimals)
-                    .font(.title3.weight(.semibold).monospacedDigit())
+                    .font(.system(size: 22, weight: .heavy))
+                    .fitnessNumberStyle()
             }
             Spacer()
             Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(minHeight: 44)
     }
 
     private func whrLabel(_ ratio: Double) -> String {
@@ -471,87 +533,38 @@ public struct MeasurementView: View {
 
     @ViewBuilder
     private var healthKitSection: some View {
-        DeltiqFormSection(header: loc("measurement.section.healthkit")) {
+        DeltiqSection(loc("measurement.section.healthkit").uppercased()) {
             if !healthKit.isAvailable {
-                DeltiqFormFullRow {
-                    Label {
-                        Text("measurement.healthkit.unavailable", bundle: .module)
-                    } icon: {
-                        Image(systemName: "heart.slash")
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                }
+                DeltiqRow(icon: "heart.slash", label: loc("measurement.healthkit.unavailable"), showsDivider: false)
             } else {
                 switch healthKit.authorizationStatus {
                 case .notDetermined:
-                    DeltiqFormFullRow {
-                        Button {
-                            Task { await healthKit.requestAuthorization() }
-                        } label: {
-                            Label {
-                                Text("measurement.healthkit.connect", bundle: .module)
-                            } icon: {
-                                Image(systemName: "heart.fill")
-                            }
-                        }
-                    }
+                    DeltiqRow(
+                        icon: "heart.fill",
+                        label: loc("measurement.healthkit.connect"),
+                        showsDivider: false,
+                        action: { Task { await healthKit.requestAuthorization() } }
+                    )
                 case .sharingAuthorized:
-                    DeltiqFormFullRow {
-                        HStack {
-                            Label {
-                                Text("measurement.healthkit.connected", bundle: .module)
-                            } icon: {
-                                Image(systemName: "heart.fill")
-                            }
-                            .foregroundStyle(.pink)
-                            Spacer()
-                            if let lastSync = healthKit.lastSyncDate {
-                                Text("Sync \(lastSync.formatted(.relative(presentation: .named)))")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .monospacedDigit()
-                            }
+                    DeltiqControlRow(icon: "heart.fill", label: loc("measurement.healthkit.connected")) {
+                        if let lastSync = healthKit.lastSyncDate {
+                            Text("Sync \(lastSync.formatted(.relative(presentation: .named)))")
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color.Deltiq.textSecondary)
                         }
                     }
-                    DeltiqFormFullRow {
-                        Button {
-                            Task { await pullLatestWeightFromHealth() }
-                        } label: {
-                            Label {
-                                Text("measurement.healthkit.pullWeight", bundle: .module)
-                            } icon: {
-                                Image(systemName: "arrow.down.circle")
-                            }
-                        }
-                    }
+                    DeltiqRow(
+                        icon: "arrow.down.circle",
+                        label: loc("measurement.healthkit.pullWeight"),
+                        showsDivider: false,
+                        action: { Task { await pullLatestWeightFromHealth() } }
+                    )
+                    hintRow(loc("measurement.healthkit.footer"))
                 case .sharingDenied:
-                    DeltiqFormFullRow {
-                        Label {
-                            Text("measurement.healthkit.blocked", bundle: .module)
-                        } icon: {
-                            Image(systemName: "heart.slash")
-                        }
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                    }
+                    DeltiqRow(icon: "heart.slash", label: loc("measurement.healthkit.blocked"), showsDivider: false)
                 case .unavailable:
-                    DeltiqFormFullRow {
-                        Label {
-                            Text("measurement.healthkit.unavailable", bundle: .module)
-                        } icon: {
-                            Image(systemName: "heart.slash")
-                        }
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    }
+                    DeltiqRow(icon: "heart.slash", label: loc("measurement.healthkit.unavailable"), showsDivider: false)
                 }
-            }
-        } footer: {
-            if healthKit.authorizationStatus == .sharingAuthorized {
-                Text("measurement.healthkit.footer", bundle: .module)
-            } else {
-                EmptyView()
             }
         }
     }
@@ -584,6 +597,9 @@ public struct MeasurementView: View {
                 .disabled(!canSave(profile: profile))
 
                 if isEditMode {
+                    // Signature-Geruest 1.9: Destruktiv = Text 15pt in
+                    // #FF453A, kein Hintergrund - statt des bisherigen
+                    // .bordered-System-Buttons.
                     Button(role: .destructive) {
                         deleteCurrentMeasurement()
                     } label: {
@@ -592,9 +608,11 @@ public struct MeasurementView: View {
                         } icon: {
                             Image(systemName: "trash")
                         }
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.Deltiq.error)
                         .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.plain)
                 }
 
                 if let lastSavedAt {
@@ -603,14 +621,14 @@ public struct MeasurementView: View {
                     Text(isEditMode
                          ? String(localized: "measurement.lastSaved.edit", bundle: .module).replacingOccurrences(of: "%@", with: stamp)
                          : String(localized: "measurement.lastSaved.new", bundle: .module).replacingOccurrences(of: "%@", with: stamp))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                 }
 
                 if !canSave(profile: profile) {
                     Text(missingFieldsHint(profile: profile))
-                        .font(.footnote)
-                        .foregroundStyle(.orange)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.deltiqOrange)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 4)
                 }
@@ -620,41 +638,53 @@ public struct MeasurementView: View {
 
     @ViewBuilder
     private var historySection: some View {
-        DeltiqFormSection(header: loc("measurement.section.history")) {
+        DeltiqSection(loc("measurement.section.history").uppercased()) {
             if historicalMeasurements.isEmpty {
-                DeltiqFormFullRow {
-                    Text("measurement.history.empty", bundle: .module)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
+                DeltiqRow(label: loc("measurement.history.empty"), showsDivider: false)
             } else {
-                ForEach(Array(historicalMeasurements.prefix(12))) { m in
-                    DeltiqFormFullRow {
-                        NavigationLink {
-                            MeasurementView(editing: m)
-                        } label: {
-                            HStack {
-                                HistoryRow(measurement: m)
-                                Image(systemName: "chevron.right")
-                                    .font(.caption.weight(.bold))
-                                    .foregroundStyle(.tertiary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                    }
+                let recent = Array(historicalMeasurements.prefix(12))
+                ForEach(Array(recent.enumerated()), id: \.element.persistentModelID) { idx, m in
+                    historyRow(m, showsDivider: idx < recent.count - 1)
+                }
+                if historicalMeasurements.count > 12 {
+                    // DEL-107: %lld-Placeholder fuer Integer-Count.
+                    hintRow(
+                        String(localized: "measurement.history.older", bundle: .module)
+                            .replacingOccurrences(of: "%lld", with: "\(historicalMeasurements.count - 12)")
+                    )
+                } else {
+                    hintRow(loc("measurement.history.hint"))
                 }
             }
-        } footer: {
-            if historicalMeasurements.count > 12 {
-                // DEL-107: %lld-Placeholder fuer Integer-Count.
-                Text(
-                    String(localized: "measurement.history.older", bundle: .module)
-                        .replacingOccurrences(of: "%lld", with: "\(historicalMeasurements.count - 12)")
-                )
-            } else if !historicalMeasurements.isEmpty {
-                Text("measurement.history.hint", bundle: .module)
-            } else {
-                EmptyView()
+        }
+    }
+
+    /// Handoff 1.6: `HistoryRow`s zweispaltiger Inhalt (Datum+KFA links,
+    /// Gewicht+Bizeps rechts) passt in keinen der festen `DeltiqRow`-Slots
+    /// (nur ein `value`-Text) - deshalb hier von Hand die gleiche Zeilen-
+    /// Chrome (Padding 14/12, Trennlinie, Chevron) nachgebaut statt
+    /// `DeltiqRow` zu erzwingen. Vgl. `ratioTile` fuer das gleiche Muster.
+    private func historyRow(_ measurement: BodyMeasurement, showsDivider: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            NavigationLink {
+                MeasurementView(editing: measurement)
+            } label: {
+                HStack(spacing: 12) {
+                    HistoryRow(measurement: measurement)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.Deltiq.textTertiary)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if showsDivider {
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
             }
         }
     }
@@ -663,28 +693,32 @@ public struct MeasurementView: View {
 
     @ViewBuilder
     private func metricRow(_ label: String, value: Double, suffix: String = "") -> some View {
-        DeltiqFormRow(label: label) {
-            Text(value.truncated(to: 2).formattedTwoDecimals + suffix)
-                .foregroundStyle(.secondary)
-                .fitnessNumberStyle()
+        DeltiqControlRow(label: label) {
+            valueText(value.truncated(to: 2).formattedTwoDecimals + suffix)
         }
     }
 
     @ViewBuilder
     private func navyRow(_ navy: Double?, profileSex: BodyFormulaProfile) -> some View {
-        DeltiqFormRow(label: loc("measurement.derived.navy.label")) {
+        DeltiqControlRow(label: loc("measurement.derived.navy.label")) {
             if let navy {
                 Text(navy.truncated(to: 2).formattedTwoDecimals + " %")
-                    .foregroundStyle(.primary)
-                    .fontWeight(.semibold)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.primary)
                     .fitnessNumberStyle()
             } else {
-                Text(profileSex == .female
-                     ? "measurement.derived.navy.fallback.female"
-                     : "measurement.derived.navy.fallback.male",
-                     bundle: .module)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                // Handoff 2.5: leere Werte als "—" statt "0,00" - hier gibt
+                // es zwar schon einen Fallback-Satz statt einer nackten
+                // Zahl, aber auch der wird auf den knappen Gedankenstrich
+                // reduziert, damit er sich optisch wie die anderen leeren
+                // Pflichtwerte verhaelt statt wie ein ganzer Satz zu wirken.
+                Text("—")
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.Deltiq.textTertiary)
+                    .accessibilityLabel(Text(profileSex == .female
+                         ? "measurement.derived.navy.fallback.female"
+                         : "measurement.derived.navy.fallback.male",
+                         bundle: .module))
             }
         }
     }
@@ -703,33 +737,35 @@ public struct MeasurementView: View {
             .disabled(!fieldsEnabled)
             .focused($focusedField, equals: field)
             .multilineTextAlignment(.trailing)
+            .font(.system(size: 15))
             .fitnessNumberStyle()
             .frame(maxWidth: 140)
     }
 
-    /// DEL-106: Decimal-Eingabe-Row im neuen DeltiqForm-Stil. Wrapped die
-    /// TextField in eine `DeltiqFormRow` mit Label links + Input rechts;
+    /// DEL-106: Decimal-Eingabe-Row im Signature-Geruest. Wrapped die
+    /// TextField in eine `DeltiqControlRow` mit Label links + Input rechts;
     /// die outer `.id(field)` ist der Anker fuer ScrollViewReader.scrollTo.
     @ViewBuilder
     private func measurementRow(
         label: String,
         value: Binding<Double?>,
-        field: MeasurementField
+        field: MeasurementField,
+        showsDivider: Bool = true
     ) -> some View {
-        DeltiqFormRow(label: label) {
+        DeltiqControlRow(label: label, showsDivider: showsDivider) {
             decimalField(label, value: value, field: field)
         }
         .id(field)
     }
 
     /// DEL-106: Inline-Caption zwischen Form-Rows. Sitzt direkt im VStack
-    /// des DeltiqFormSection-Containers; kein Divider, weil das Visual als
+    /// des DeltiqSection-Containers; kein Divider, weil das Visual als
     /// "Hint zur vorigen Zeile" gelesen werden soll.
     @ViewBuilder
     private func fieldHint(_ text: String) -> some View {
         Text(text)
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            .font(.system(size: 12))
+            .foregroundStyle(Color.Deltiq.textSecondary)
             .padding(.horizontal, 14)
             .padding(.bottom, 8)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1001,26 +1037,28 @@ private struct HistoryRow: View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(measurement.date.formatted(date: .abbreviated, time: .omitted))
-                    .font(.body.weight(.semibold))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.primary)
                 if let kfa = bestBodyFatPct {
                     Text("KFA \(kfa.truncated(to: 1).formattedTwoDecimals) %")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                 }
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
                 Text("\(measurement.weightKg.truncated(to: 2).formattedTwoDecimals) kg")
-                    .font(.body.monospacedDigit())
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.primary)
+                    .fitnessNumberStyle()
                 if let bicepsAvg = bicepsDisplay {
                     Text("Bizeps \(bicepsAvg.truncated(to: 1).formattedTwoDecimals) cm")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .fitnessNumberStyle()
                 }
             }
         }
-        .padding(.vertical, 2)
     }
 
     private var bestBodyFatPct: Double? {

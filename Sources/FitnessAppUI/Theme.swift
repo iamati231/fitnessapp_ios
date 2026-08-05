@@ -324,6 +324,15 @@ public extension Color.Deltiq {
         startPoint: .leading,
         endPoint: .trailing
     )
+
+    /// Handoff 2.5: "Apple-Health-Hinweis bleibt in Health-Rot — das ist
+    /// eine Fremdmarke, keine Deltiq-Farbe, und darf abweichen." Bisher
+    /// stand an dieser Stelle System-`.pink`; das Geruest nennt explizit
+    /// den Hex-Wert, daher als eigenes Token statt weiter `.pink` zu
+    /// verwenden. Nur fuer den EINEN explizit genannten Hinweis gedacht
+    /// (Gewichtsfeld-Badge "aus Apple Health uebernommen"), nicht fuer
+    /// jedes HealthKit-Icon im Rest der App.
+    static let health = Color(red: 1.0, green: 0.216, blue: 0.373)
 }
 
 // MARK: - 6.1 Signature-Icon-Quadrat (Abschnitt 1.6)
