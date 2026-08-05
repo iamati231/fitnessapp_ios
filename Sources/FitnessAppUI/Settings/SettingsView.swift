@@ -70,12 +70,12 @@ public struct SettingsView: View {
 
     public var body: some View {
         // DEL-104, umgestellt auf Signature-Geruest: ScrollView +
-        // DeltiqSection statt DeltiqFormSection - DeltiqFormSection selbst
-        // bleibt unangetastet (Theme/DeltiqFormSection.swift), weil auch
-        // DataExportView/DataImportView sie noch nutzen und nicht Teil
-        // dieses Umbaus sind. Settings hat keine Text-Inputs, daher
-        // genuegt `scrollDismissesKeyboard(.interactively)` als defensiver
-        // Default — kein FocusState-Tracking noetig.
+        // DeltiqSection statt DeltiqFormSection - Letzteres ist inzwischen
+        // komplett entfernt (Theme/DeltiqFormSection.swift), nachdem auch
+        // DataExportView/DataImportView auf DeltiqSection migriert wurden.
+        // Settings hat keine Text-Inputs, daher genuegt
+        // `scrollDismissesKeyboard(.interactively)` als defensiver Default —
+        // kein FocusState-Tracking noetig.
         VStack(spacing: 0) {
             DeltiqHeader(
                 eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),

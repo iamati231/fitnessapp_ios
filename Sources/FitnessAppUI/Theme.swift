@@ -306,8 +306,8 @@ public extension View {
 // MARK: - 6. Signature Screen-Gerüst (Design-Handoff Turn 2b)
 //
 // Acht Schichten, in jedem View identisch. `deltiqCardStyle`,
-// `deltiqButtonStyle`, `fitnessNumberStyle` und `DeltiqFormSection`
-// bleiben unveraendert und werden hier weiterbenutzt, nicht ersetzt.
+// `deltiqButtonStyle` und `fitnessNumberStyle` bleiben unveraendert und
+// werden hier weiterbenutzt, nicht ersetzt.
 //
 // **Light Mode:** Das Handoff-Dokument spezifiziert ausschliesslich
 // Dark-Werte. Alle unten neu eingefuehrten Farb-Tokens leiten ihre

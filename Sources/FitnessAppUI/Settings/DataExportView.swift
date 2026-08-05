@@ -26,6 +26,7 @@ import UIKit
 public struct DataExportView: View {
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
 
     /// DEL-177: Letzter erfolgreicher Export als UTC-Timestamp
     /// (`Date.timeIntervalSince1970`). 0 = nie. Wird vom Dashboard gelesen,
@@ -49,21 +50,35 @@ public struct DataExportView: View {
     public init() {}
 
     public var body: some View {
-        ScrollView {
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: direkt von SettingsView gepusht (kein
+            // eigener Zwischen-Hub) - Eyebrow zeigt den Tab, selbes Muster wie
+            // DashboardSettingsView/ExerciseLibraryView.
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                title: String(localized: "settings.dataExport.title", bundle: .module),
+                onBack: { dismiss() }
+            )
+
             VStack(alignment: .leading, spacing: 18) {
                 introCard
                 contentsCard
-                actionButton
+                actionCard
                 if let errorMessage {
                     errorBanner(message: errorMessage)
                 }
-                Spacer(minLength: 24)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .deltiqScreen()
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
-        .navigationTitle(Text("settings.dataExport.title", bundle: .module))
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
         #if os(iOS)
         .sheet(isPresented: $showShareSheet) {
             if let url = temporaryFileURL {
@@ -76,34 +91,31 @@ public struct DataExportView: View {
     // MARK: - Sections
 
     private var introCard: some View {
-        DeltiqFormSection(header: String(localized: "settings.dataExport.intro.header", bundle: .module)) {
-            DeltiqFormFullRow {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("settings.dataExport.intro.body", bundle: .module)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        } footer: {
-            Text("settings.dataExport.intro.footer", bundle: .module)
+        DeltiqSection(String(localized: "settings.dataExport.intro.header", bundle: .module).uppercased()) {
+            Text("settings.dataExport.intro.body", bundle: .module)
+                .font(.callout)
+                .foregroundStyle(Color.Deltiq.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+            hintRow(String(localized: "settings.dataExport.intro.footer", bundle: .module))
         }
     }
 
     private var contentsCard: some View {
-        DeltiqFormSection(header: String(localized: "settings.dataExport.contents.header", bundle: .module)) {
-            DeltiqFormFullRow {
-                VStack(alignment: .leading, spacing: 6) {
-                    bullet("settings.dataExport.contents.profile")
-                    bullet("settings.dataExport.contents.measurements")
-                    bullet("settings.dataExport.contents.workouts")
-                    bullet("settings.dataExport.contents.plans")
-                    bullet("settings.dataExport.contents.records")
-                    bullet("settings.dataExport.contents.gear")
-                    bullet("settings.dataExport.contents.custom")
-                    bullet("settings.dataExport.contents.settings")
-                }
+        DeltiqSection(String(localized: "settings.dataExport.contents.header", bundle: .module).uppercased()) {
+            VStack(alignment: .leading, spacing: 6) {
+                bullet("settings.dataExport.contents.profile")
+                bullet("settings.dataExport.contents.measurements")
+                bullet("settings.dataExport.contents.workouts")
+                bullet("settings.dataExport.contents.plans")
+                bullet("settings.dataExport.contents.records")
+                bullet("settings.dataExport.contents.gear")
+                bullet("settings.dataExport.contents.custom")
+                bullet("settings.dataExport.contents.settings")
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
         }
     }
 
@@ -115,78 +127,71 @@ public struct DataExportView: View {
                 .font(.caption.weight(.bold))
             Text(String(localized: key, bundle: .module))
                 .font(.subheadline)
-                .foregroundStyle(.primary)
+                .foregroundStyle(Color.primary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer()
         }
     }
 
     @ViewBuilder
-    private var actionButton: some View {
+    private var actionCard: some View {
         switch phase {
         case .ready:
-            DeltiqFormSection(header: nil) {
-                DeltiqFormFullRow {
-                    Button {
-                        startExport()
-                    } label: {
-                        HStack {
-                            Spacer()
-                            Label {
-                                Text("settings.dataExport.action.start", bundle: .module)
-                            } icon: {
-                                Image(systemName: "square.and.arrow.up")
-                            }
-                            .font(.body.weight(.semibold))
-                            Spacer()
-                        }
+            DeltiqSection {
+                Button {
+                    startExport()
+                } label: {
+                    Label {
+                        Text("settings.dataExport.action.start", bundle: .module)
+                    } icon: {
+                        Image(systemName: "square.and.arrow.up")
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(Color.deltiqOrange)
                 }
+                .buttonStyle(.plain)
+                .deltiqButtonStyle()
+                .padding(14)
             }
         case .exporting:
-            DeltiqFormSection(header: nil) {
-                DeltiqFormFullRow {
-                    HStack(spacing: 12) {
-                        ProgressView()
-                        Text("settings.dataExport.exporting", bundle: .module)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                    }
+            DeltiqSection {
+                HStack(spacing: 12) {
+                    ProgressView()
+                    Text("settings.dataExport.exporting", bundle: .module)
+                        .font(.callout)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                    Spacer()
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
             }
         case .finished(let bundle):
-            DeltiqFormSection(header: String(localized: "settings.dataExport.finished.header", bundle: .module)) {
-                DeltiqFormFullRow {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(String(format: String(localized: "settings.dataExport.finished.summary", bundle: .module), bundle.totalRows))
-                            .font(.callout)
-                            .foregroundStyle(.primary)
-                        Text(bundle.suggestedFilename)
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
+            DeltiqSection(String(localized: "settings.dataExport.finished.header", bundle: .module).uppercased()) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(String(format: String(localized: "settings.dataExport.finished.summary", bundle: .module), bundle.totalRows))
+                        .font(.callout)
+                        .foregroundStyle(Color.primary)
+                    Text(bundle.suggestedFilename)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
+
+                Button {
+                    showShareSheet = true
+                } label: {
+                    Label {
+                        Text("settings.dataExport.action.share", bundle: .module)
+                    } icon: {
+                        Image(systemName: "square.and.arrow.up")
                     }
                 }
-                DeltiqFormFullRow {
-                    Button {
-                        showShareSheet = true
-                    } label: {
-                        HStack {
-                            Spacer()
-                            Label {
-                                Text("settings.dataExport.action.share", bundle: .module)
-                            } icon: {
-                                Image(systemName: "square.and.arrow.up")
-                            }
-                            .font(.body.weight(.semibold))
-                            Spacer()
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(Color.deltiqOrange)
-                }
+                .buttonStyle(.plain)
+                .deltiqButtonStyle()
+                .padding(14)
             }
         }
     }
@@ -194,14 +199,25 @@ public struct DataExportView: View {
     private func errorBanner(message: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.red)
+                .foregroundStyle(Color.Deltiq.error)
             Text(message)
                 .font(.callout)
-                .foregroundStyle(.primary)
+                .foregroundStyle(Color.primary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(12)
-        .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(Color.Deltiq.error.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    /// DEL-106-Muster (siehe SettingsView.hintRow): Inline-Caption am Fuss einer Section.
+    private func hintRow(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundStyle(Color.Deltiq.textSecondary)
+            .lineSpacing(4)
+            .padding(.horizontal, 14)
+            .padding(.top, 4)
+            .padding(.bottom, 8)
     }
 
     // MARK: - Export logic
