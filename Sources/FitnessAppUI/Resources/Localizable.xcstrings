@@ -22933,6 +22933,98 @@
         }
       }
     },
+    "active.context.eyebrow.running": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LÄUFT · %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RUNNING · %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ÇALIŞIYOR · %@"
+          }
+        }
+      }
+    },
+    "active.context.exercise": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ÜBUNG %1$d/%2$d"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EXERCISE %1$d/%2$d"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EGZERSİZ %1$d/%2$d"
+          }
+        }
+      }
+    },
+    "active.context.volume": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VOLUMEN %@ KG"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VOLUME %@ KG"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HACİM %@ KG"
+          }
+        }
+      }
+    },
+    "active.context.distance": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DISTANZ %@ KM"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DISTANCE %@ KM"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MESAFE %@ KM"
+          }
+        }
+      }
+    },
     "active.stats.duration": {
       "extractionState": "manual",
       "localizations": {

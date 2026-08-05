@@ -40,14 +40,19 @@ public struct WaterTrackerView: View {
                 title: String(localized: "water.title", bundle: .module),
                 onBack: { dismiss() },
                 actions: [
-                    DeltiqHeaderAction(systemImage: "ellipsis") {
+                    // Explizites `menu:`-Label statt bare trailing closure -
+                    // sonst muss der Compiler zwischen den beiden
+                    // DeltiqHeaderAction-Initializern per Typ-Inferenz
+                    // entscheiden, was bei einem View-liefernden Closure-Body
+                    // unnoetig fragil waere.
+                    DeltiqHeaderAction(systemImage: "ellipsis", menu: {
                         Button(role: .destructive) {
                             deleteTodayEntries()
                         } label: {
                             Text("water.resetToday", bundle: .module)
                         }
                         .disabled(todayEntries.isEmpty)
-                    }
+                    })
                 ]
             )
 

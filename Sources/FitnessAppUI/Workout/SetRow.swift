@@ -246,17 +246,20 @@ struct SetRow: View {
         .padding(.vertical, 10)
         .padding(.horizontal, 8)
         .background(
-            RoundedRectangle(cornerRadius: 10)
+            // Signature-Geruest 2.2: die aktive Zeile bekommt Radius 12
+            // statt 10 (nur sie - abgeschlossene/kommende Zeilen bleiben
+            // bei 10, das Handoff nennt explizit nur die aktive Zeile).
+            RoundedRectangle(cornerRadius: isActiveSet ? 12 : 10)
                 .fill(rowStateBackground)
         )
         .overlay(alignment: .leading) {
-            // UX-203: 3pt-Brand-Akzent links bei der aktiven Row. Wirkt wie
-            // ein "du-bist-hier"-Marker und ist im Dark-Mode auch ohne
-            // Background-Tint sichtbar.
+            // UX-203, angepasst: 2pt statt 3pt Brand-Akzent links bei der
+            // aktiven Row. Wirkt wie ein "du-bist-hier"-Marker und ist im
+            // Dark-Mode auch ohne Background-Tint sichtbar.
             if isActiveSet {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(Color.deltiqOrange)
-                    .frame(width: 3)
+                    .frame(width: 2)
                     .padding(.vertical, 6)
             }
         }
@@ -438,13 +441,14 @@ struct SetRow: View {
     }
 
     /// DEL-087: Checkmark-Farbe je nach Exercise-Rolle und Completed-State.
-    /// Working-Sets bekommen die Brand-Color (DeltiqOrange); Warmup/Cooldown
-    /// gehen auf Grau — klar abgegrenzt vom "echten" Progressions-Lift.
+    /// Signature-Geruest 1.7: Orange bedeutet jetzt ausschliesslich "aktiv",
+    /// nicht mehr "fertig" — ein abgehaktes Working-Set bekommt daher Gruen
+    /// statt der Brand-Farbe. Warmup/Cooldown bleiben auf Grau, unveraendert.
     private var checkmarkColor: Color {
         if isCompleted {
             return exercise.role.skipsProgression
                 ? Color.secondary
-                : Color.deltiqOrange
+                : Color.Deltiq.success
         }
         return Color.secondary.opacity(0.5)
     }
@@ -1126,14 +1130,16 @@ struct SetRow: View {
         .padding(.vertical, 10)
         .padding(.horizontal, 8)
         .background(
-            RoundedRectangle(cornerRadius: 10)
+            // Signature-Geruest 2.2: gleiche Radius-Anpassung wie
+            // compactSetRow - beide Zeilentypen teilen dieses Snippet.
+            RoundedRectangle(cornerRadius: isActiveSet ? 12 : 10)
                 .fill(rowStateBackground)
         )
         .overlay(alignment: .leading) {
             if isActiveSet {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(Color.deltiqOrange)
-                    .frame(width: 3)
+                    .frame(width: 2)
                     .padding(.vertical, 6)
             }
         }

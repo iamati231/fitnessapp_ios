@@ -127,27 +127,41 @@ public struct ActiveWorkoutView: View {
 
     public var body: some View {
         // DEL-039: paginierte Ansicht statt scrollbarer Single-Page-List.
-        // Stats oben fix, dann TabView mit einer Page pro Uebung + einer
+        // Kopf oben fix, dann TabView mit einer Page pro Uebung + einer
         // finalen "Finish"-Page (Save/Discard). User swipt horizontal
         // zwischen Uebungen, page-indicator unten zeigt Position.
-        VStack(spacing: 8) {
-            // DEL-086: Interference-Warning ueber dem Header. Banner zieht
-            // sich aus, sobald der User es dismissed oder die Bedingungen
-            // nicht erfuellt sind.
-            interferenceBanner
-                .padding(.horizontal)
-                .padding(.top, 8)
-            statsCard
-                .padding(.horizontal)
+        //
+        // Signature-Geruest 1.2/1.3: eigene Kopfzone (Eyebrow = Live-Timer)
+        // statt navigationTitle, Kontextzeile statt statsCard. Der Rest der
+        // paginatedBody-Struktur (TabView.page mit einer ExerciseCard pro
+        // Seite) bleibt unangetastet - .deltiqScreen() eignet sich hier
+        // NICHT, weil es eine eigene ScrollView um den gesamten Inhalt legt,
+        // die mit der TabView-Pagination kollidieren wuerde.
+        VStack(spacing: 0) {
+            DeltiqHeader(
+                eyebrow: String(
+                    format: String(localized: "active.context.eyebrow.running", bundle: .module),
+                    formattedDuration
+                ),
+                title: session.displayDayName,
+                onBack: { dismiss() },
+                actions: headerActions
+            )
+
+            VStack(alignment: .leading, spacing: 12) {
+                // DEL-086: Interference-Warning ueber dem Header. Banner zieht
+                // sich aus, sobald der User es dismissed oder die Bedingungen
+                // nicht erfuellt sind.
+                interferenceBanner
+                activeContextRow
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
 
             paginatedBody
         }
-        .background(Color(.gray).opacity(0.04).ignoresSafeArea())
-        // DEL-129: lokalisierter Display-Name via Extension.
-        .navigationTitle(session.displayDayName)
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .background(Color.Deltiq.background.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
         .keyboardDismissToolbar()
         // DEL-108: Wenn ein Halte-Timer-Set startet, killt das den Rest-
@@ -161,27 +175,6 @@ public struct ActiveWorkoutView: View {
                 restTimerEnd = nil
                 cancelRestTimerNotification()
                 Task { await restTimerActivity.endRestTimer(reason: .skipped) }
-            }
-        }
-        // DEL-096: "+Übung"-Toolbar-Button waehrend einer non-empty
-        // Ad-Hoc-Session — User darf jederzeit weitere Uebungen einschieben,
-        // ohne den Workflow zu verlassen. Plan-Sessions kriegen den Button
-        // bewusst NICHT: dort kommt die Uebungs-Liste aus dem Plan, und
-        // mid-workout-Adds wuerden den Pagination-State (currentPageIndex)
-        // unter den Fuessen wegrotieren.
-        .toolbar {
-            if session.isAdHoc, let day = session.day, !day.activeExercises.isEmpty {
-                ToolbarItem(placement: .deltiqTrailing) {
-                    Button {
-                        showingAdHocPicker = true
-                    } label: {
-                        Label {
-                            Text("active.addExercise", bundle: .module)
-                        } icon: {
-                            Image(systemName: "plus")
-                        }
-                    }
-                }
             }
         }
         .onReceive(tick) { now = $0 }
@@ -327,44 +320,82 @@ public struct ActiveWorkoutView: View {
 
     // MARK: Sections
 
-    /// DEL-061 + DEL-081: Stats-Karte mit drei States.
-    ///   * pureCardio  → Dauer | Distanz | ⌀ Pace
-    ///   * mixed       → Dauer | Volumen kg | Distanz km
-    ///   * pureStrength → Dauer | Saetze | Volumen kg
-    /// Mixed-Header zeigt allgemeine Werte beider Welten, ohne page-aware
-    /// hin- und herzuspringen wenn der User durch die Day-Pages swipet —
-    /// das wirkte vorher unruhig.
+    /// Signature-Geruest 1.2: max. 2 Kopfzeilen-Aktionen. "+Übung" nur bei
+    /// non-empty Ad-Hoc-Sessions (User darf jederzeit weitere Uebungen
+    /// einschieben, Plan-Sessions kriegen den Button bewusst NICHT — dort
+    /// kommt die Uebungs-Liste aus dem Plan und mid-workout-Adds wuerden
+    /// den Pagination-State unter den Fuessen wegrotieren). Ellipsis ist
+    /// immer da und haengt am bereits existierenden Discard-Dialog.
+    private var headerActions: [DeltiqHeaderAction] {
+        var actions: [DeltiqHeaderAction] = []
+        if session.isAdHoc, let day = session.day, !day.activeExercises.isEmpty {
+            actions.append(DeltiqHeaderAction(systemImage: "plus") {
+                showingAdHocPicker = true
+            })
+        }
+        // Explizites `menu:`-Label statt bare trailing closure - sonst muss
+        // der Compiler zwischen den beiden DeltiqHeaderAction-Initializern
+        // (action: () -> Void vs. menu: () -> MenuContent) per Typ-Inferenz
+        // entscheiden, was bei einem View-liefernden Closure-Body unnoetig
+        // fragil waere.
+        actions.append(DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+            Button(role: .destructive) {
+                showingDiscardConfirm = true
+            } label: {
+                Text("active.action.discard", bundle: .module)
+            }
+        }))
+        return actions
+    }
+
+    /// DEL-061 + DEL-081, umgestellt auf Signature-Geruest 1.3: ersetzt die
+    /// bisherige statsCard (Dauer|Saetze/Distanz|Volumen/Pace) durch zwei
+    /// Kapseln. Dauer wandert in den Eyebrow (Live-Timer, siehe body).
+    /// Die zweite Kapsel passt sich an die Tages-Kategorie an: bei reinem
+    /// Cardio zeigt sie Distanz statt Volumen (Ruecksprache — eine woertlich
+    /// feste "Volumen"-Kapsel waere an einem Cardio-Tag bedeutungslos, weil
+    /// Cardio-Logs keine Gewicht×Wdh-Volumen-Zahl haben). ⌀-Pace und die
+    /// Satz-Zaehlung fallen damit aus der Kopfzone — beide bleiben aber
+    /// weiterhin Teil des Finish-Sheets (siehe .sheet(isPresented:
+    /// $showingFinishConfirm) weiter oben, unveraendert).
     @ViewBuilder
-    private var statsCard: some View {
-        HStack(spacing: 0) {
-            StatBlock(label: String(localized: "active.stats.duration", bundle: .module),
-                      value: formattedDuration, monospacedDigit: true)
-            divider
-            switch dayCategory {
-            case .pureCardio:
-                StatBlock(label: String(localized: "active.stats.distance", bundle: .module),
-                          value: formatTotalDistance(), monospacedDigit: true)
-                divider
-                StatBlock(label: String(localized: "active.stats.avgPace", bundle: .module),
-                          value: formatAveragePace(), monospacedDigit: true)
-            case .mixed:
-                StatBlock(label: String(localized: "active.stats.volumeKg", bundle: .module),
-                          value: formatVolume(), monospacedDigit: true)
-                divider
-                StatBlock(label: String(localized: "active.stats.distanceKm", bundle: .module),
-                          value: formatTotalDistance(stripUnit: true), monospacedDigit: true)
-            case .pureStrength:
-                StatBlock(label: String(localized: "active.stats.sets", bundle: .module),
-                          value: "\(loggedSetsCount)", monospacedDigit: true)
-                divider
-                StatBlock(label: String(localized: "active.stats.volumeKg", bundle: .module),
-                          value: formatVolume(), monospacedDigit: true)
+    private var activeContextRow: some View {
+        let exercises = session.day.map { orderedExercises(in: $0) } ?? []
+        let secondPillText: String = {
+            if dayCategory == .pureCardio {
+                return String(
+                    format: String(localized: "active.context.distance", bundle: .module),
+                    formatTotalDistance(stripUnit: true)
+                )
+            }
+            return String(
+                format: String(localized: "active.context.volume", bundle: .module),
+                formatVolume()
+            )
+        }()
+        let secondPill = DeltiqContextItem(secondPillText, style: .neutral)
+
+        if !exercises.isEmpty {
+            if currentPageIndex < exercises.count {
+                // %1$d/%2$d bewusst manuell ersetzt statt via String(format:) -
+                // gleiche Konvention wie an anderen Mehrfach-Platzhalter-
+                // Stellen im Catalog (z.B. dashboard.openSession.message.
+                // withInfo): vermeidet %d-vs-%lld-Interger-Groessen-
+                // Mismatches bei mehreren positionellen Platzhaltern.
+                let exerciseTemplate = String(localized: "active.context.exercise", bundle: .module)
+                let exerciseText = exerciseTemplate
+                    .replacingOccurrences(of: "%1$d", with: "\(currentPageIndex + 1)")
+                    .replacingOccurrences(of: "%2$d", with: "\(exercises.count)")
+                DeltiqContextRow([
+                    DeltiqContextItem(exerciseText, style: .accent),
+                    secondPill
+                ])
+            } else {
+                // Finish-Seite (currentPageIndex == exercises.count): kein
+                // "Uebung x/y" mehr sinnvoll, nur noch die zweite Kapsel.
+                DeltiqContextRow([secondPill])
             }
         }
-        .padding(.vertical, 12)
-        .background(Color.secondary.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .innerLightStroke(cornerRadius: 16, opacity: 0.08)
     }
 
     // MARK: - DEL-086 Hybrid-Interference-Banner
@@ -528,12 +559,6 @@ public struct ActiveWorkoutView: View {
         guard let pace, pace > 0 else { return "—:——" }
         let totalSeconds = Int((pace * 60.0).rounded())
         return String(format: "%d:%02d", totalSeconds / 60, totalSeconds % 60)
-    }
-
-    private var divider: some View {
-        Rectangle()
-            .fill(Color.secondary.opacity(0.25))
-            .frame(width: 1, height: 32)
     }
 
     /// DEL-039: paginierte TabView mit einer Übung pro Seite + finaler Save/
@@ -1132,32 +1157,6 @@ public struct ActiveWorkoutView: View {
 }
 
 // MARK: - Subviews
-
-@available(iOS 17.0, macOS 14.0, *)
-private struct StatBlock: View {
-    let label: String
-    let value: String
-    var monospacedDigit: Bool = false
-
-    var body: some View {
-        VStack(spacing: 2) {
-            Text(value)
-                .font(.title3.weight(.semibold))
-                .applyIf(monospacedDigit) { $0.monospacedDigit() }
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
-private extension View {
-    @ViewBuilder
-    func applyIf<T: View>(_ condition: Bool, _ transform: (Self) -> T) -> some View {
-        if condition { transform(self) } else { self }
-    }
-}
 
 // MARK: - DEL-057 FinishWorkoutSheet
 

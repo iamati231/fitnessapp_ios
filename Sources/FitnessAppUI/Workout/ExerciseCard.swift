@@ -50,14 +50,21 @@ struct ExerciseCard: View {
         // weitergereicht, damit die Row nicht selber nach activeIndex
         // suchen muss (vermeidet O(n²) in der For-Each).
         let active = activeSetIndex
+        // Signature-Geruest 2.2: Grau-8%/Radius-16-Karte -> Surface/Radius-20.
+        // accentEdge ist bewusst immer an (nicht an isActiveSet-artige Logik
+        // gekoppelt): auf iOS zeigt die TabView.page-Pagination immer nur
+        // EINE ExerciseCard gleichzeitig, es gibt also keine "kommenden"
+        // Karten zum Abdunkeln (siehe Ruecksprache) - die eine sichtbare
+        // Karte ist immer die aktive.
+        DeltiqCard(accentEdge: true) {
         VStack(alignment: .leading, spacing: 10) {
             header
-            Divider()
+            Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
             // DEL-195: Aufwärm-Rampe (collapsed by default) — nur für
             // Barbell-Working-Sets mit bekanntem Zielgewicht.
             if let ramp = warmupRamp, !ramp.isEmpty {
                 warmupRampSection(ramp)
-                Divider().opacity(0.2)
+                Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
             }
             ForEach(0..<exercise.sets, id: \.self) { setIndex in
                 SetRow(
@@ -80,10 +87,10 @@ struct ExerciseCard: View {
                 // DEL-157: id mit structureToken → frisches Re-Seed nach Delete.
                 .id("set-\(setIndex)-\(structureToken)")
                 if setIndex < exercise.sets - 1 {
-                    // UX-203: Divider noch ruhiger (0.4 → 0.2), weil die
-                    // Active-Set-Background-Tint jetzt die primaere
-                    // visuelle Trennung uebernimmt.
-                    Divider().opacity(0.2)
+                    // Signature-Geruest 1.6: Trennlinie einheitlich 6% statt
+                    // der bisherigen 20% - die Active-Set-Background-Tint
+                    // uebernimmt weiterhin die primaere visuelle Trennung.
+                    Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
                 }
             }
 
@@ -117,12 +124,7 @@ struct ExerciseCard: View {
             .buttonStyle(.plain)
             .padding(.top, 4)
         }
-        .padding(14)
-        .background(Color.secondary.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        // DEL-059: subtile Licht-Kante — gibt dem Card das premium-erhabene
-        // Gefuehl auf Dark-Mode, no-op auf Light-Mode.
-        .innerLightStroke(cornerRadius: 16, opacity: 0.08)
+        }
     }
 
     // MARK: Header
