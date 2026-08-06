@@ -396,9 +396,31 @@ private struct EMOMPlayerView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // README 2.9 Phase 4: Alle Minutentrigger im Voraus planen, nicht
+        // erst reaktiv beim Minutenwechsel - Timer.publish unten pausiert
+        // sobald die App backgrounded wird, es gibt also keine Gelegenheit
+        // mehr, waehrend des Trainings nachzuplanen. Gated ueber denselben
+        // Pref wie der In-App-Ton (wer den ausgeschaltet hat, will
+        // vermutlich auch keine Notification-Toene).
+        .task {
+            guard timerSoundEnabled else { return }
+            await ReminderScheduler.scheduleEMOMSignals(
+                totalMinutes: totalMinutes,
+                minuteTitle: "EMOM",
+                minuteBodyFormat: String(localized: "timedWorkout.emom.notification.nextMinute", bundle: .module),
+                finishTitle: "EMOM",
+                finishBody: String(localized: "timedWorkout.emom.notification.complete", bundle: .module)
+            )
+        }
+        .onDisappear {
+            // Muss in JEDEM Ausstiegspfad laufen (Finish, Discard, Zurueck-
+            // Chevron) - sonst poppen spaeter Banner fuer eine laengst
+            // verlassene Session auf.
+            Task { await ReminderScheduler.cancelEMOMSignals() }
+        }
         .onReceive(tick) { _ in
             guard !isFinished else { return }
-            // DEL-... Drei Signaltoene ab 0:03, Blick bleibt auf der Hantel.
+            // Drei Signaltoene ab 0:03, Blick bleibt auf der Hantel.
             if timerSoundEnabled, (1...3).contains(remainingInMinute) {
                 TimerSoundPlayer.shared.playShort()
             }

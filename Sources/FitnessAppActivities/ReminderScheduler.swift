@@ -175,6 +175,84 @@ public enum ReminderScheduler {
         identifier == restTimerIdentifier
     }
 
+    // MARK: - Zeitformate: EMOM Hintergrund-Signal (README 2.9, Phase 4)
+
+    /// Identifier-Praefix fuer die EMOM-Minutentrigger (`emom.minute.01` ...).
+    private static let emomIdentifierPrefix = "emom.minute."
+
+    /// Plant EIN Signal pro Minutenwechsel im Voraus, inklusive Abschluss-
+    /// Signal fuer die letzte Minute.
+    ///
+    /// Anders als `scheduleRestTimerEnd` (ein einzelner, bei jedem Reset neu
+    /// gesetzter Slot) braucht EMOM ALLE `totalMinutes` Trigger auf einmal:
+    /// `Timer.publish` im Player pausiert, sobald die App backgrounded wird,
+    /// es gibt also keine Gelegenheit, waehrend des Trainings neu zu planen.
+    /// In-App uebernehmen TimerSoundPlayer + Haptik das Feedback; diese
+    /// Notifications sind NUR fuers Background-/Lock-Screen-Feedback -
+    /// der AppDelegate unterdrueckt sie im Vordergrund (kein Doppel-Feedback,
+    /// gleiche Logik wie beim Rest-Timer).
+    ///
+    /// - Parameters:
+    ///   - totalMinutes: Gesamtzahl EMOM-Minuten (== Rundenanzahl).
+    ///   - minuteTitle: Titel fuer jeden Minutenwechsel VOR der letzten Minute.
+    ///   - minuteBodyFormat: lokalisiertes Format mit einem `%lld`-Platzhalter
+    ///     fuer die kommende Minutennummer (z.B. "Minute %lld beginnt").
+    ///   - finishTitle/finishBody: Text fuer den letzten Trigger (EMOM komplett).
+    public static func scheduleEMOMSignals(
+        totalMinutes: Int,
+        minuteTitle: String,
+        minuteBodyFormat: String,
+        finishTitle: String,
+        finishBody: String
+    ) async {
+        #if canImport(UserNotifications)
+        guard totalMinutes > 0, await isAuthorized() else { return }
+        await cancelEMOMSignals()
+
+        let center = UNUserNotificationCenter.current()
+        for minute in 1...totalMinutes {
+            let isFinal = minute == totalMinutes
+            let content = UNMutableNotificationContent()
+            content.title = isFinal ? finishTitle : minuteTitle
+            content.body = isFinal ? finishBody : String(format: minuteBodyFormat, minute + 1)
+            content.sound = .default
+            content.interruptionLevel = .timeSensitive
+
+            let trigger = UNTimeIntervalNotificationTrigger(
+                timeInterval: TimeInterval(minute * 60),
+                repeats: false
+            )
+            let request = UNNotificationRequest(
+                identifier: "\(emomIdentifierPrefix)\(String(format: "%02d", minute))",
+                content: content,
+                trigger: trigger
+            )
+            try? await center.add(request)
+        }
+        #endif
+    }
+
+    /// Raeumt alle geplanten UND bereits zugestellten EMOM-Trigger ab -
+    /// analog zu `cancelRestTimerEnd`. Muss in JEDEM Pfad laufen, der die
+    /// EMOM-Session beendet/verlaesst (Finish, Discard, Zurueck-Chevron),
+    /// sonst poppen spaeter Banner fuer eine laengst verlassene Session auf.
+    public static func cancelEMOMSignals() async {
+        #if canImport(UserNotifications)
+        let center = UNUserNotificationCenter.current()
+        let pending = await center.pendingNotificationRequests()
+        let ids = pending.map(\.identifier).filter { $0.hasPrefix(emomIdentifierPrefix) }
+        center.removePendingNotificationRequests(withIdentifiers: ids)
+        center.removeDeliveredNotifications(withIdentifiers: ids)
+        #endif
+    }
+
+    /// True wenn die Notification-Identifier zu einem EMOM-Minutentrigger
+    /// gehoert - der AppDelegate nutzt das, um Foreground-Banner zu
+    /// unterdruecken (In-App-Feedback uebernimmt dann TimerSoundPlayer).
+    public static func isEMOMNotification(identifier: String) -> Bool {
+        identifier.hasPrefix(emomIdentifierPrefix)
+    }
+
     // MARK: - Helpers
 
     /// Checkt aktuelle Authorization-Status. Reminder-Scheduling nur wenn

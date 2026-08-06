@@ -31,12 +31,17 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     /// Background-Feedback gedacht — im Vordergrund übernimmt die
     /// RestTimerBar Sound + Haptik. Ohne die Suppression gäbe es beim
     /// Timer-Ende in der App Doppel-Feedback (Banner + In-App-Sound).
+    ///
+    /// README 2.9 Phase 4: gleiche Ausnahme fuer die EMOM-Minutentrigger —
+    /// im Vordergrund uebernimmt TimerSoundPlayer.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        if ReminderScheduler.isRestTimerNotification(identifier: notification.request.identifier) {
+        let identifier = notification.request.identifier
+        if ReminderScheduler.isRestTimerNotification(identifier: identifier)
+            || ReminderScheduler.isEMOMNotification(identifier: identifier) {
             completionHandler([])
             return
         }

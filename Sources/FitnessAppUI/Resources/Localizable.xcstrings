@@ -98,6 +98,22 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Sonraki dakika" } }
       }
     },
+    "timedWorkout.emom.notification.complete": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "EMOM geschafft! Ergebnis speichern." } },
+        "en": { "stringUnit": { "state": "translated", "value": "EMOM complete! Save your result." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "EMOM tamamlandı! Sonucu kaydet." } }
+      }
+    },
+    "timedWorkout.emom.notification.nextMinute": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Minute %lld beginnt" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Minute %lld starts" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld. dakika başlıyor" } }
+      }
+    },
     "timedWorkout.emom.thisMinute": {
       "extractionState": "manual",
       "localizations": {

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1505 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1507 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1505 / 1505** (100%) | 0 |
-| 🇬🇧 English (EN) | **1505 / 1505** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1505 / 1505** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1507 / 1507** (100%) | 0 |
+| 🇬🇧 English (EN) | **1507 / 1507** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1507 / 1507** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1700,7 +1700,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `tab.plan` | Plan | Plan | Plan |
 | `tab.tools` | Werkzeuge | Tools | Araçlar |
 
-## `timedWorkout.*`  (18 Keys)
+## `timedWorkout.*`  (20 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1716,6 +1716,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `timedWorkout.emom.markDone` | Minute geschafft | Minute done | Dakika tamam |
 | `timedWorkout.emom.minuteContext` | Minute %lld / %lld | Minute %lld of %lld | %lld. / %lld. dakika |
 | `timedWorkout.emom.nextMinute` | Nächste Minute | Next minute | Sonraki dakika |
+| `timedWorkout.emom.notification.complete` | EMOM geschafft! Ergebnis speichern. | EMOM complete! Save your result. | EMOM tamamlandı! Sonucu kaydet. |
+| `timedWorkout.emom.notification.nextMinute` | Minute %lld beginnt | Minute %lld starts | %lld. dakika başlıyor |
 | `timedWorkout.emom.thisMinute` | DIESE MINUTE | THIS MINUTE | BU DAKİKA |
 | `timedWorkout.finish.save` | Speichern | Save | Kaydet |
 | `timedWorkout.forTime.finishedLabel` | Geschafft! | Done! | Tamamlandı! |
