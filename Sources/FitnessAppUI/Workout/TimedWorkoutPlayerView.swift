@@ -385,6 +385,12 @@ private struct AMRAPPlayerView: View {
                                 showsDivider: index != exercises.count - 1,
                                 action: {
                                     currentStationID = exercise.persistentModelID
+                                    // Nachtrag (Nutzer-Feedback): der Zaehler
+                                    // gehoert der NEUEN Station, nicht der
+                                    // vorigen - sonst zeigt ein Wechsel von
+                                    // "5/5 Liegestuetze" auf Kniebeugen
+                                    // faelschlich "5" statt bei 0 zu starten.
+                                    partialReps = 0
                                     DeltiqHaptics.selection()
                                 }
                             )
@@ -515,17 +521,26 @@ private struct AMRAPPlayerView: View {
     /// statt des generischen "Zusaetzliche Wdh." - "7" allein sagt nicht,
     /// ob sieben Liegestuetze oder sieben Kniebeugen. Wert zeigt zusaetzlich
     /// das Ziel dahinter ("7 / 10").
+    /// Nachtrag (Nutzer-Feedback 6. August): Stepper-Range jetzt an das
+    /// tatsaechliche Ziel der Station gebunden statt 0...999 - die
+    /// Standard-Wiederholungszahl MUSS man sowieso machen, ein offener
+    /// Zaehler bis 999 suggerierte faelschlich freie Wahl. Erreichen des
+    /// Ziels ruckt automatisch zur naechsten Station vor (`advancePartialRound`).
     private var partialRepsStepperRow: some View {
         DeltiqControlRow(label: currentStation?.displayName ?? String(localized: "timedWorkout.amrap.partialReps", bundle: .module)) {
             HStack(spacing: 8) {
                 Text(partialRepsValueText)
                     .font(.system(size: 17))
                     .fitnessNumberStyle()
-                Stepper(value: $partialReps, in: 0...999) {
+                Stepper(value: $partialReps, in: 0...(currentStation?.repsMin ?? 999)) {
                     Text("\(partialReps)")
                         .fitnessNumberStyle()
                 }
                 .labelsHidden()
+                .onChange(of: partialReps) { _, newValue in
+                    guard let target = currentStation?.repsMin, target > 0, newValue >= target else { return }
+                    advancePartialRound()
+                }
             }
         }
     }
@@ -533,6 +548,39 @@ private struct AMRAPPlayerView: View {
     private var partialRepsValueText: String {
         guard let currentStation else { return "\(partialReps)" }
         return "\(partialReps) / \(currentStation.repsMin)"
+    }
+
+    private var currentStationIndex: Int? {
+        guard let currentStation else { return nil }
+        return exercises.firstIndex { $0.persistentModelID == currentStation.persistentModelID }
+    }
+
+    /// README (Nutzer-Feedback 6. August): das Erreichen der vollen
+    /// Wiederholungszahl an der aktuellen Station bedeutet automatisch
+    /// "weiter zur naechsten" - die Standard-Wiederholungen sind ja
+    /// ohnehin Pflicht, ein manueller Stationswechsel per Antippen bleibt
+    /// nur noch fuer Korrekturen/Spruenge noetig. An der letzten Station
+    /// schliesst das Erreichen des Ziels stattdessen eine komplette Runde
+    /// ab - identisch zum manuellen "+1 Runde"-Knopf.
+    private func advancePartialRound() {
+        guard let currentStationIndex else { return }
+        let nextIndex = currentStationIndex + 1
+        if nextIndex < exercises.count {
+            currentStationID = exercises[nextIndex].persistentModelID
+            partialReps = 0
+            DeltiqHaptics.selection()
+        } else {
+            completeRound()
+        }
+    }
+
+    /// Gemeinsamer Pfad fuer den manuellen "+1 Runde"-Knopf UND das
+    /// automatische Rundenende aus `advancePartialRound()`.
+    private func completeRound() {
+        roundsCompleted += 1
+        partialReps = 0
+        currentStationID = nil
+        DeltiqHaptics.notify(.success)
     }
 
     private var roundBar: some View {
@@ -558,13 +606,7 @@ private struct AMRAPPlayerView: View {
                 .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
 
                 Button {
-                    roundsCompleted += 1
-                    // README 2.15/23d: eine neue Runde faengt wieder bei der
-                    // ersten Uebung an - der Zaehler der letzten Runde darf
-                    // nicht in die naechste hinueberlaufen.
-                    partialReps = 0
-                    currentStationID = nil
-                    DeltiqHaptics.notify(.success)
+                    completeRound()
                 } label: {
                     Text("timedWorkout.amrap.addRound", bundle: .module)
                         .frame(maxWidth: .infinity)

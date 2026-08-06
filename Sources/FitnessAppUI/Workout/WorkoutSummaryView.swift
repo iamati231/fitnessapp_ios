@@ -951,6 +951,13 @@ public struct WorkoutSummaryView: View {
             // angebrochene Wdh. oder Session von vor diesem Feature).
             SummaryStat(label: String(localized: "timedWorkout.amrap.partialReps", bundle: .module),
                         value: partialRepsSummaryValue)
+            // Nutzer-Feedback 6. August: "wie schnell pro Runde" ist die
+            // eigentliche Leistungskennzahl bei AMRAP, nicht nur die
+            // Rundenzahl selbst - dieselbe Pace-Denke wie beim Cardio-
+            // Ø-Pace-Stat oben (`formattedAvgPace`), nur Runden statt km.
+            statDivider
+            SummaryStat(label: String(localized: "summary.amrap.avgPace", bundle: .module),
+                        value: amrapAvgPaceText)
         case .emom:
             // Kein Snapshot-Feld fuer den Minuten-Deckel (anders als
             // `dayName`) - v1-Vereinfachung. Degradiert auf "—", falls der
@@ -972,6 +979,24 @@ public struct WorkoutSummaryView: View {
         let reps = session.partialReps ?? 0
         guard let name = session.partialRepsExerciseName else { return "\(reps)" }
         return "\(reps) \(name)"
+    }
+
+    /// Nutzer-Feedback 6. August: durchschnittliche Rundenzeit - wie
+    /// schnell ein Athlet tatsaechlich pro Runde wird, nicht nur "wie viele
+    /// Runden". Bezieht sich bewusst nur auf VOLLSTAENDIGE Runden (nicht
+    /// anteilig auf eine angebrochene) - Standardkonvention beim Reporten
+    /// von AMRAP-Rundenzeiten. `durationMinutes` (persistiert, ganzzahlig)
+    /// ist die einzige verfuegbare Zeitbasis fuer eine gespeicherte Session
+    /// - der Live-`elapsedSeconds`-Zaehler im Player wird nirgends
+    /// persistiert. Verliert dadurch bis zu 59s Praezision, was bei
+    /// ueblichen 10-20-Minuten-Laeufen ueber viele Runden vernachlaessigbar
+    /// ist.
+    private var amrapAvgPaceText: String {
+        guard let rounds = session.roundsCompleted, rounds > 0 else { return "—:——" }
+        let totalSeconds = session.durationMinutes * 60
+        guard totalSeconds > 0 else { return "—:——" }
+        let perRound = Int((Double(totalSeconds) / Double(rounds)).rounded())
+        return String(format: "%d:%02d", perRound / 60, perRound % 60)
     }
 
     /// DEL-137: Gesamtdistanz aller Cardio-Sets in dieser Session. Format:
@@ -1218,25 +1243,95 @@ public struct WorkoutSummaryView: View {
     private func timedFormatCircuitSection(_ format: WorkoutTimeFormat) -> some View {
         let exercises = (session.day?.activeExercises ?? []).sorted { $0.orderIndex < $1.orderIndex }
         if !exercises.isEmpty {
+            // Nutzer-Feedback 6. August: "15 Runden" allein beantwortet nicht
+            // "wie viele Klimmzuege waren das insgesamt" - fuer AMRAP zeigt
+            // die Zeile jetzt Gesamt-Wiederholungen statt nur dem Pro-Runde-
+            // Ziel. EMOM/Auf-Zeit bleiben unveraendert (dort gibt es kein
+            // sinnvolles "Gesamt" - EMOM ist pass/fail pro Minute, Auf Zeit
+            // hat schon eine feste Rundenzahl als Ziel selbst).
+            let amrapTotals = format == .amrap ? amrapExerciseTotals(exercises) : nil
             Section {
                 ForEach(exercises, id: \.persistentModelID) { exercise in
-                    HStack(spacing: 8) {
-                        Text(exercise.displayName)
-                            .font(.system(size: 15))
-                            .foregroundStyle(Color.primary)
-                        Spacer()
-                        Text(circuitValueLabel(exercise, format: format))
-                            .font(.system(size: 15))
-                            .fitnessNumberStyle()
-                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    if let amrapTotals {
+                        HStack(spacing: 8) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(exercise.displayName)
+                                    .font(.system(size: 15))
+                                    .foregroundStyle(Color.primary)
+                                Text(
+                                    String(
+                                        format: String(localized: "summary.amrap.perRound", bundle: .module),
+                                        timedFormatTargetLabel(exercise)
+                                    )
+                                )
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                            }
+                            Spacer()
+                            Text(amrapTotalValueText(exercise, totals: amrapTotals))
+                                .font(.system(size: 15))
+                                .fitnessNumberStyle()
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        .listRowBackground(Color.Deltiq.surface)
+                    } else {
+                        HStack(spacing: 8) {
+                            Text(exercise.displayName)
+                                .font(.system(size: 15))
+                                .foregroundStyle(Color.primary)
+                            Spacer()
+                            Text(circuitValueLabel(exercise, format: format))
+                                .font(.system(size: 15))
+                                .fitnessNumberStyle()
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        .listRowBackground(Color.Deltiq.surface)
                     }
-                    .listRowBackground(Color.Deltiq.surface)
                 }
             } header: {
                 sectionHeader(String(localized: "summary.stat.exercises", bundle: .module))
             }
             .listRowSeparatorTint(Color.Deltiq.divider)
         }
+    }
+
+    /// README (Nutzer-Feedback 6. August): Gesamt-Wiederholungen pro Uebung
+    /// ueber die komplette Session - "15 Runden Cindy" heisst 75 Klimmzuege +
+    /// 150 Liegestuetze + 225 Kniebeugen, nicht nur "15 Runden". Stationen
+    /// VOR der im Namens-Snapshot vermerkten angebrochenen Station zaehlen in
+    /// der letzten (unvollstaendigen) Runde ebenfalls als voll erledigt - wer
+    /// bis zu einer spaeteren Station gekommen ist, hat alle davor im
+    /// selben Zirkeldurchgang zwangslaeufig komplett durchlaufen (gleiche
+    /// Zirkel-Reihenfolge wie im Player). `nil` wenn es nichts zu zeigen
+    /// gibt (weder Runde noch angebrochene Station erreicht).
+    private func amrapExerciseTotals(_ exercises: [Exercise]) -> [PersistentIdentifier: Int]? {
+        let rounds = session.roundsCompleted ?? 0
+        let partial = session.partialReps ?? 0
+        guard rounds > 0 || partial > 0 else { return nil }
+        let currentIndex = session.partialRepsExerciseName.flatMap { name in
+            exercises.firstIndex { $0.displayName == name }
+        }
+        var totals: [PersistentIdentifier: Int] = [:]
+        for (index, exercise) in exercises.enumerated() {
+            var total = rounds * exercise.repsMin
+            if let currentIndex {
+                if index < currentIndex {
+                    total += exercise.repsMin
+                } else if index == currentIndex {
+                    total += partial
+                }
+            }
+            totals[exercise.persistentModelID] = total
+        }
+        return totals
+    }
+
+    private func amrapTotalValueText(_ exercise: Exercise, totals: [PersistentIdentifier: Int]) -> String {
+        let total = totals[exercise.persistentModelID] ?? 0
+        let unit = exercise.isTimeBased
+            ? String(localized: "unit.seconds.short", bundle: .module)
+            : String(localized: "unit.reps.short", bundle: .module)
+        return "\(total) \(unit)"
     }
 
     /// Duenner Wrapper um das geteilte `timedFormatCircuitLabel`

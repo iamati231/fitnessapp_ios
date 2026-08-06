@@ -25752,6 +25752,22 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Egzersizler" } }
       }
     },
+    "summary.amrap.perRound": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%@ pro Runde" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%@ per round" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "tur başına %@" } }
+      }
+    },
+    "summary.amrap.avgPace": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "⌀ / Runde" } },
+        "en": { "stringUnit": { "state": "translated", "value": "⌀ / Round" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "⌀ / Tur" } }
+      }
+    },
     "plan.metadata.days.one": {
       "extractionState": "manual",
       "localizations": {

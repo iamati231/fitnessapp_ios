@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1580 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1582 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1580 / 1580** (100%) | 0 |
-| 🇬🇧 English (EN) | **1580 / 1580** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1580 / 1580** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1582 / 1582** (100%) | 0 |
+| 🇬🇧 English (EN) | **1582 / 1582** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1582 / 1582** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1693,7 +1693,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `sex.female` | Weiblich | Female | Kadın |
 | `sex.male` | Männlich | Male | Erkek |
 
-## `summary.*`  (59 Keys)
+## `summary.*`  (61 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1710,6 +1710,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.addExercise.button` | Übung hinzufügen | Add exercise | Egzersiz ekle |
 | `summary.addExercise.hint` | Vergessen, eine Übung im Training zu loggen? Hinzufügen, Sätze eintragen, fertig. | Forgot to log an exercise during the workout? Add it here, fill in the sets, done. | Antrenman sırasında bir egzersizi kaydetmeyi unuttun mu? Buradan ekle, setleri doldur, hazır. |
 | `summary.addSet.button` | Satz hinzufügen | Add set | Set ekle |
+| `summary.amrap.avgPace` | ⌀ / Runde | ⌀ / Round | ⌀ / Tur |
+| `summary.amrap.perRound` | %@ pro Runde | %@ per round | tur başına %@ |
 | `summary.date` | Datum | Date | Tarih |
 | `summary.deleteSession.confirmDelete` | Löschen | Delete | Sil |
 | `summary.deleteSession.confirmMessage` | Alle Sätze und das Volumen dieses Trainings werden entfernt. Diese Aktion kann nicht rückgängig gemacht werden. | All sets and the volume of this workout will be removed. This cannot be undone. | Bu antrenmanın tüm setleri ve hacmi kaldırılacak. Bu işlem geri alınamaz. |
