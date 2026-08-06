@@ -2078,12 +2078,19 @@ public struct DashboardView: View {
     /// `compoundLiftColors` - `chartForegroundStyleScale` braucht eine
     /// garantierte Zuordnung, sonst kann Swift Charts Farben zwischen
     /// Zeitraum-Filterwechseln neu vergeben (Serie B haette dann nicht mehr
-    /// dieselbe Farbe wie vorher).
-    private var compoundColorScale: [String: Color] {
-        Dictionary(uniqueKeysWithValues: zip(
-            Self.compoundLiftNames.map { Exercise.resolvedDisplayName(forStoredName: $0) },
-            Self.compoundLiftColors
-        ))
+    /// dieselbe Farbe wie vorher). Nimmt bewusst nur die Namen der gerade
+    /// SICHTBAREN Serien (nicht immer alle fuenf moeglichen) als Scale-
+    /// Domain - eine explizite Scale mit allen fuenf Namen wuerde die
+    /// Legende auch dann komplett zeigen, wenn der Zeitraum-Filter nur
+    /// zwei der fuenf Lifts mit Daten uebrig laesst. Die Farbe pro Lift
+    /// bleibt trotzdem stabil, weil sie immer vom selben, festen Index in
+    /// `compoundLiftNames` kommt - nur die Domain schrumpft mit der
+    /// aktuellen Auswahl.
+    private func compoundColorScale(for series: [CompoundSeries]) -> [String: Color] {
+        let visibleNames = Set(series.map(\.exerciseName))
+        let allNames = Self.compoundLiftNames.map { Exercise.resolvedDisplayName(forStoredName: $0) }
+        return Dictionary(uniqueKeysWithValues: zip(allNames, Self.compoundLiftColors))
+            .filter { visibleNames.contains($0.key) }
     }
 
     /// One series per compound lift. Each series carries one point per session
@@ -2327,7 +2334,7 @@ public struct DashboardView: View {
                             }
                     }
                 }
-                .chartForegroundStyleScale(compoundColorScale)
+                .chartForegroundStyleScale(compoundColorScale(for: series))
                 .chartXScale(domain: domain)
                 .chartXAxis {
                     // DEL-153: feste Kalender-Anker statt daten-getriebener
