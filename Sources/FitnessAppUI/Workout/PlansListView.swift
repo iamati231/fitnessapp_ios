@@ -69,12 +69,9 @@ public struct PlansListView: View {
                 ]
             )
 
-            List {
-                plansContextRow
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 4, trailing: 16))
+            plansContextRow
 
+            List {
                 if let active = activeSessions.first {
                     activeSessionSection(active)
                 }
@@ -82,6 +79,18 @@ public struct PlansListView: View {
                 plansSection
             }
             .scrollContentBackground(.hidden)
+            // Nachtrag 6. August (README 2.6): plansContextRow sass vorher als
+            // erste List-Row hier drin - 12pt eigener Top-Inset plus der
+            // Standard-Top-Einzug der List addierten sich zu ~60pt statt der
+            // ueblichen 12pt unter der Kopfzeile. Jetzt lebt die Kontextzeile
+            // ausserhalb der List (siehe oben), also muss deren Top-Einzug weg.
+            .contentMargins(.top, 0, for: .scrollContent)
+            // Der seitliche Einzug der List wird ebenfalls entfernt - Banner
+            // und Plan-Karten tragen ihre 16pt jetzt selbst ueber
+            // listRowInsets, ein zusaetzlicher List-Einzug wuerde beide
+            // Karten schmaeler als 16pt machen.
+            .contentMargins(.horizontal, 0, for: .scrollContent)
+            .listSectionSpacing(.compact)
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
@@ -108,6 +117,8 @@ public struct PlansListView: View {
                 activeName.map { DeltiqContextItem($0.uppercased(), style: .accent) },
                 DeltiqContextItem(pluralizedCount("plans.context.count", count: plans.count).uppercased(), style: .neutral)
             ].compactMap { $0 })
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
         }
     }
 
@@ -174,9 +185,20 @@ public struct PlansListView: View {
         } else {
             ForEach(plans) { plan in
                 NavigationLink(value: plan) {
-                    PlanRow(plan: plan)
+                    // Nachtrag 6. August (README 2.6): ein blosses
+                    // .listRowBackground(Color.Deltiq.surface) uebernimmt nur
+                    // die Flaeche, nicht unseren 20pt-Karten-Radius - die Zeile
+                    // fuellte vorher die vollen List-Insets und war schmaeler
+                    // als die 16pt-Vorgabe, dazu mit dem falschen Radius.
+                    // Eine echte DeltiqCard plus dieselben Insets wie das
+                    // Banner (siehe activeSessionSection) gleicht beide an.
+                    DeltiqCard {
+                        PlanRow(plan: plan)
+                    }
                 }
-                .listRowBackground(Color.Deltiq.surface)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                 // DEL-070: Swipe-Action "Duplizieren" — User kann eine
                 // Variation seines aktiven Plans bauen, ohne das Original
                 // zu zerschiessen. Loescht keine Daten, daher Orange statt
@@ -195,7 +217,6 @@ public struct PlansListView: View {
                 }
             }
             .onDelete(perform: deletePlans)
-            .listRowSeparatorTint(Color.Deltiq.divider)
         }
     }
 
@@ -255,6 +276,9 @@ public struct PlansListView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
         .listRowBackground(Color.Deltiq.surface)
+        // Haelt die 16pt Seitenrand, jetzt wo .contentMargins(.horizontal, 0, ...)
+        // den eigenen Einzug der List oben entfernt (siehe body).
+        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
     }
 
     // MARK: Actions

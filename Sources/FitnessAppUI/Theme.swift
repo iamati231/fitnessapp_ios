@@ -437,7 +437,16 @@ public extension View {
 /// mehreren Optionen wie im aktiven Training oder beim Wasser-Tracker) —
 /// visuell identisch, nur die Interaktion unterscheidet sich.
 public struct DeltiqHeaderAction: Identifiable {
-    public let id = UUID()
+    // Nachtrag 6. August: eine frische UUID bei jedem Redraw liess ein
+    // offenes Menu (siehe `menu:`-Initializer) spaetestens nach einer
+    // Sekunde zufallen, sobald die Kopfzeile neu gezeichnet wurde - z.B.
+    // durch den sekuendlich tickenden "LAEUFT · mm:ss"-Eyebrow im aktiven
+    // Training. `ForEach(actions)` hielt die neue UUID fuer ein anderes
+    // Element und das offene Menu gehoerte danach zu einer Ansicht, die es
+    // nicht mehr gab. `systemImage` ist ueber Redraws stabil (kein Screen
+    // im Repo hat zwei gleichzeitige Actions mit demselben Icon) und ersetzt
+    // die UUID als Identitaet.
+    public var id: String { systemImage }
     public let systemImage: String
     public let isHighlighted: Bool
     public let action: (() -> Void)?
@@ -579,7 +588,11 @@ public struct DeltiqPill: View {
 
 /// Ein Eintrag einer `DeltiqContextRow`.
 public struct DeltiqContextItem: Identifiable {
-    public let id = UUID()
+    // Nachtrag 6. August: dieselbe Instabilitaet wie bei `DeltiqHeaderAction.id`
+    // (siehe dort) - hier bisher folgenlos, weil an einer Kontextkapsel kein
+    // offener Zustand haengt, aber derselbe fehleranfaellige Aufbau. `text`
+    // ist innerhalb einer Zeile eindeutig und stabil ueber Redraws.
+    public var id: String { text }
     public let text: String
     public let style: DeltiqPillStyle
 

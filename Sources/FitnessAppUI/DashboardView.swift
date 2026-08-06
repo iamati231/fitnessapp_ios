@@ -64,6 +64,13 @@ public struct DashboardView: View {
     @State private var showingActiveSessionConflict = false
     @State private var pendingNewStart: (() -> Void)?
 
+    /// Nachtrag 6. August (README 2.1): Umschaltzustand fuer die
+    /// aufklappbare Uebungsliste der Plan-Karte. View-lokal und bewusst
+    /// nicht persistiert - faellt beim Verlassen des Dashboards zurueck
+    /// auf zugeklappt. Nur eine Plan-Karte ist je Dashboard sichtbar
+    /// (`activePlans.first`), ein einzelner Bool reicht.
+    @State private var isExercisesExpanded = false
+
     /// DEL-132 (Phase 3): Async-fetched HealthKit-Werte fuer die
     /// entsprechenden Hero-Slots. Werden in `.task(id:)` auf Slot-
     /// Aenderung neu gezogen, sind nil solange noch nicht geholt /
@@ -988,10 +995,7 @@ public struct DashboardView: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 } else if !day.activeExercises.isEmpty {
-                    Text(exercisesPreview(for: day))
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                    exercisesList(for: day)
                 }
 
                 if isRestDay {
@@ -1628,29 +1632,54 @@ public struct DashboardView: View {
         return sortedDays[idx]
     }
 
-    private func exercisesPreview(for day: TrainingDay) -> String {
+    /// Nachtrag 6. August (README 2.1): ersetzt die alte Fliesszeile mit
+    /// Auslassungspunkten (`names.joined(separator: ", ")` + " …") durch
+    /// echte Zeilen. Erste drei Uebungen sind immer sichtbar; bei mehr als
+    /// drei kommt darunter eine Umschaltzeile dazu, die den Rest ein- und
+    /// wieder ausblendet.
+    @ViewBuilder
+    private func exercisesList(for day: TrainingDay) -> some View {
         // DEL-049: archivierte Snapshots (Urlaubs-Modus) gehoeren nicht in
         // die Dashboard-Vorschau — sonst zeigt der Card "Bankdruecken" auch
         // wenn der User nur noch Liegestuetze trainiert.
-        let active = day.activeExercises
-        let names = active
-            .sorted { $0.orderIndex < $1.orderIndex }
-            .prefix(3)
-            .map { $0.displayName }   // DEL-111: lokalisierter Name fuer Library-Übungen
-        let joined = names.joined(separator: ", ")
-        // DEL-121: Apple's format-as-key Plural-Convention war
-        // "%lld Übungen — %@" mit variations.plural. Xcode 26.4.1's
-        // GenerateStringSymbols-Step chokes auf den format-pattern-keys,
-        // daher umgestellt auf explizite one/other namespace-Keys mit
-        // manueller %lld/%@-Substitution.
-        let key: String.LocalizationValue = active.count == 1
-            ? "dashboard.exercisesPreview.one"
-            : "dashboard.exercisesPreview.other"
+        let sorted = day.activeExercises.sorted { $0.orderIndex < $1.orderIndex }
+        let remaining = sorted.count - 3
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(sorted.prefix(isExercisesExpanded ? sorted.count : 3), id: \.persistentModelID) { exercise in
+                Text(exercise.displayName)   // DEL-111: lokalisierter Name fuer Library-Übungen
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            }
+            if remaining > 0 {
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        isExercisesExpanded.toggle()
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(isExercisesExpanded
+                             ? String(localized: "dashboard.exerciseList.showLess", bundle: .module)
+                             : pluralizedShowMore(remaining: remaining))
+                        Image(systemName: isExercisesExpanded ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.deltiqOrange)
+                    .frame(minHeight: 44, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    /// Gleiches manuelles .one/.other-Muster wie `PlansListView.pluralizedCount`
+    /// (siehe DEL-121/DEL-128) - Apple's format-as-key Plural-Convention
+    /// chokt Xcode 26.4.1s GenerateStringSymbols-Step.
+    private func pluralizedShowMore(remaining: Int) -> String {
+        let suffix = remaining == 1 ? "one" : "other"
+        let key = String.LocalizationValue(stringLiteral: "dashboard.exerciseList.showMore.\(suffix)")
         let raw = String(localized: key, bundle: .module)
-        let template = raw
-            .replacingOccurrences(of: "%1$lld", with: "\(active.count)")
-            .replacingOccurrences(of: "%2$@",   with: joined)
-        return active.count > 3 ? template + " …" : template
+        return raw.replacingOccurrences(of: "%lld", with: "\(remaining)")
     }
 
     /// DEL-042: Adaptive Start-Button. Drei States:

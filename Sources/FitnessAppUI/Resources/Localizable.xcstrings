@@ -21829,48 +21829,71 @@
         }
       }
     },
-    "dashboard.exercisesPreview.one": {
+    "dashboard.exerciseList.showLess": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld Übung — %2$@"
+            "value": "Weniger anzeigen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld exercise — %2$@"
+            "value": "Show less"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld egzersiz — %2$@"
+            "value": "Daha az göster"
           }
         }
       }
     },
-    "dashboard.exercisesPreview.other": {
+    "dashboard.exerciseList.showMore.one": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld Übungen — %2$@"
+            "value": "%lld weitere anzeigen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld exercises — %2$@"
+            "value": "Show %lld more"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld egzersiz — %2$@"
+            "value": "%lld tane daha göster"
+          }
+        }
+      }
+    },
+    "dashboard.exerciseList.showMore.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld weitere anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show %lld more"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld tane daha göster"
           }
         }
       }

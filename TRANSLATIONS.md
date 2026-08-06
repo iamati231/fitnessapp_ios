@@ -457,7 +457,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `customExercise.section.name` | Name | Name | Ad |
 | `customExercise.title` | Neue Übung | New exercise | Yeni hareket |
 
-## `dashboard.*`  (80 Keys)
+## `dashboard.*`  (81 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -480,8 +480,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.deload.endButton` | Deload beenden & Gewichte zurücksetzen | End deload & restore weights | Deload'u bitir ve ağırlıkları geri yükle |
 | `dashboard.empty.cta.addMeasurement` | Messung hinzufügen | Add measurement | Ölçüm ekle |
 | `dashboard.empty.cta.startWorkout` | Training starten | Start workout | Antrenmana başla |
-| `dashboard.exercisesPreview.one` | %1$lld Übung — %2$@ | %1$lld exercise — %2$@ | %1$lld egzersiz — %2$@ |
-| `dashboard.exercisesPreview.other` | %1$lld Übungen — %2$@ | %1$lld exercises — %2$@ | %1$lld egzersiz — %2$@ |
+| `dashboard.exerciseList.showLess` | Weniger anzeigen | Show less | Daha az göster |
+| `dashboard.exerciseList.showMore.one` | %lld weitere anzeigen | Show %lld more | %lld tane daha göster |
+| `dashboard.exerciseList.showMore.other` | %lld weitere anzeigen | Show %lld more | %lld tane daha göster |
 | `dashboard.goal.line` | Ziel %@ kg | Goal %@ kg | Hedef %@ kg |
 | `dashboard.greeting.afternoon.generic` | Guten Tag | Good afternoon | İyi günler |
 | `dashboard.greeting.afternoon.named` | Guten Tag, %@ | Good afternoon, %@ | İyi günler, %@ |
