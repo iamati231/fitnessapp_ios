@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1562 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1573 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1562 / 1562** (100%) | 0 |
-| 🇬🇧 English (EN) | **1562 / 1562** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1562 / 1562** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1573 / 1573** (100%) | 0 |
+| 🇬🇧 English (EN) | **1573 / 1573** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1573 / 1573** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -721,7 +721,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `equipment.kettlebell` | Kettlebell | Kettlebell | Kettlebell |
 | `equipment.machine` | Maschine | Machine | Makine |
 
-## `exercise.*`  (181 Keys)
+## `exercise.*`  (192 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -787,6 +787,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.dragonFlag` | Dragon Flag | Dragon Flag | Dragon Flag |
 | `exercise.name.dumbbellBenchPress` | Bankdrücken (KH) | Dumbbell Bench Press | Dumbbell Bench Press |
 | `exercise.name.dumbbellCalfRaise` | Wadenheben (KH) | Dumbbell Calf Raise | Dumbbell Calf Raise |
+| `exercise.name.dumbbellDeadlift` | Kreuzheben (KH) | Dumbbell Deadlift | Dumbbell Deadlift |
 | `exercise.name.dumbbellFlyFlat` | Flyes flach (KH) | Flat Dumbbell Fly | Flat Dumbbell Fly |
 | `exercise.name.dumbbellFlyIncline` | Flyes Schrägbank (KH) | Incline Dumbbell Fly | Incline Dumbbell Fly |
 | `exercise.name.dumbbellHipThrust` | Hip Thrust (KH) | Dumbbell Hip Thrust | Dumbbell Hip Thrust |
@@ -794,10 +795,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.dumbbellLunge` | Ausfallschritte (KH) | Dumbbell Lunges | Dumbbell Lunges |
 | `exercise.name.dumbbellOverheadTricepExtension` | Trizepsstrecker über Kopf (KH) | Overhead Dumbbell Triceps Extension | Overhead Dumbbell Triceps Extension |
 | `exercise.name.dumbbellPullover` | Pullover (KH) | Dumbbell Pullover | Dumbbell Pullover |
+| `exercise.name.dumbbellPushPress` | Push Press (KH) | Dumbbell Push Press | Dumbbell Push Press |
 | `exercise.name.dumbbellRDL` | Rumänisches Kreuzheben (KH) | Dumbbell Romanian Deadlift | Dumbbell Romanian Deadlift |
 | `exercise.name.dumbbellRowOneArm` | Rudern einarmig (KH) | One-Arm Dumbbell Row | One-Arm Dumbbell Row |
 | `exercise.name.dumbbellShoulderPress` | Schulterdrücken (KH) | Dumbbell Shoulder Press | Dumbbell Shoulder Press |
 | `exercise.name.dumbbellShrug` | Shrug (KH) | Dumbbell Shrug | Dumbbell Shrug |
+| `exercise.name.dumbbellThruster` | Thruster (KH) | Dumbbell Thruster | Dumbbell Thruster |
 | `exercise.name.dumbbellTricepKickback` | Trizepskickback (KH) | Dumbbell Triceps Kickback | Dumbbell Triceps Kickback |
 | `exercise.name.easyRun` | Easy Run | Easy Run | Kolay Koşu |
 | `exercise.name.elliptical` | Crosstrainer | Elliptical | Eliptik |
@@ -819,16 +822,23 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.intervals` | Intervalle | Intervals | İnterval |
 | `exercise.name.invertedRow` | Inverted Row | Inverted Row | Inverted Row |
 | `exercise.name.jumpSquat` | Jump Squat | Jump Squat | Jump Squat |
+| `exercise.name.jumpingLunges` | Gesprungene Ausfallschritte | Jumping Lunges | Jumping Lunges |
 | `exercise.name.kettlebellCleanAndPress` | Kettlebell Clean & Press | Kettlebell Clean & Press | Kettlebell Clean & Press |
+| `exercise.name.kettlebellDeadlift` | Kettlebell Kreuzheben | Kettlebell Deadlift | Kettlebell Deadlift |
 | `exercise.name.kettlebellFloorPress` | Kettlebell Floor Press | Kettlebell Floor Press | Kettlebell Floor Press |
+| `exercise.name.kettlebellFrontSquat` | Kettlebell Front Squat | Kettlebell Front Squat | Kettlebell Front Squat |
 | `exercise.name.kettlebellGobletSquat` | Kettlebell Goblet Squat | Kettlebell Goblet Squat | Kettlebell Goblet Squat |
 | `exercise.name.kettlebellHalo` | Kettlebell Halo | Kettlebell Halo | Kettlebell Halo |
+| `exercise.name.kettlebellOverheadPress` | Kettlebell Overhead Press | Kettlebell Overhead Press | Kettlebell Overhead Press |
 | `exercise.name.kettlebellPushPress` | Kettlebell Push Press | Kettlebell Push Press | Kettlebell Push Press |
 | `exercise.name.kettlebellRDL` | Kettlebell RDL | Kettlebell RDL | Kettlebell RDL |
 | `exercise.name.kettlebellRowSingleArm` | Kettlebell Row einarmig | Kettlebell Single-Arm Row | Kettlebell Tek Kol Row |
 | `exercise.name.kettlebellSnatch` | Kettlebell Snatch | Kettlebell Snatch | Kettlebell Snatch |
+| `exercise.name.kettlebellSnatchLeft` | Kettlebell Snatch (Links) | Kettlebell Snatch (Left) | Kettlebell Snatch (Sol) |
+| `exercise.name.kettlebellSnatchRight` | Kettlebell Snatch (Rechts) | Kettlebell Snatch (Right) | Kettlebell Snatch (Sağ) |
 | `exercise.name.kettlebellSuitcaseCarry` | Kettlebell Suitcase Carry | Kettlebell Suitcase Carry | Kettlebell Bavul Taşıma |
 | `exercise.name.kettlebellSwing` | Kettlebell Swing | Kettlebell Swing | Kettlebell Swing |
+| `exercise.name.kneePushup` | Liegestütze (Knie) | Knee Push-Up | Diz Üstü Şınav |
 | `exercise.name.lSit` | L-Sit | L-Sit | L-Sit |
 | `exercise.name.latPulldownClose` | Latzug (eng) | Close-Grip Lat Pulldown | Close-Grip Lat Pulldown |
 | `exercise.name.lateralRaise` | Seitheben | Lateral Raise | Lateral Raise |
@@ -855,6 +865,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.plank` | Plank | Plank | Plank |
 | `exercise.name.preacherCurl` | Preacher Curl (Maschine) | Machine Preacher Curl | Machine Preacher Curl |
 | `exercise.name.pullup` | Klimmzüge (eng/Chin-up) | Chin-Up | Barfiks (Chin-Up) |
+| `exercise.name.pullupStandard` | Klimmzüge | Pull-Up | Barfiks |
 | `exercise.name.pushPress` | Push Press | Push Press | Push Press |
 | `exercise.name.pushup` | Liegestütze | Push-Up | Şınav |
 | `exercise.name.renegadeRow` | Renegade Row | Renegade Row | Renegade Row |

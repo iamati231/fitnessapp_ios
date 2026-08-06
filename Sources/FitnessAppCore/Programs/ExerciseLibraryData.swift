@@ -82,6 +82,10 @@ public enum ExerciseLibraryData {
 
         // ── DUMBBELL · SHOULDERS ───────────────────────────────────────────
         ExerciseTemplateSpec(name: "Schulterdrücken (KH)",              equipment: .dumbbell, primaryMuscle: .shoulders, localizationKey: "exercise.name.dumbbellShoulderPress"),
+        // README 2.9 Phase 6: gedaempfte KH-Variante des barbell "Push Press"
+        // fuer crossfitWeighted "EMOM Ganzkörper" - dieselbe Explosiv-aus-den-
+        // Beinen-Mechanik, nur mit Kurzhanteln statt Langhantel.
+        ExerciseTemplateSpec(name: "Push Press (KH)",                  equipment: .dumbbell, primaryMuscle: .shoulders,  difficultyLevel: .advanced, localizationKey: "exercise.name.dumbbellPushPress"),
         ExerciseTemplateSpec(name: "Seitheben",                        equipment: .dumbbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner, localizationKey: "exercise.name.lateralRaise"),
         ExerciseTemplateSpec(name: "Frontheben",                       equipment: .dumbbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner, localizationKey: "exercise.name.frontRaise"),
         ExerciseTemplateSpec(name: "Reverse Flyes (KH)",               equipment: .dumbbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner, localizationKey: "exercise.name.reverseFlyDB"),
@@ -92,7 +96,18 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Ausfallschritte (KH)",               equipment: .dumbbell, primaryMuscle: .quads, localizationKey: "exercise.name.dumbbellLunge"),
         ExerciseTemplateSpec(name: "Bulgarische Kniebeuge (KH)",       equipment: .dumbbell, primaryMuscle: .quads, localizationKey: "exercise.name.bulgarianSplitSquatDB"),
         ExerciseTemplateSpec(name: "Rumänisches Kreuzheben (KH)",             equipment: .dumbbell, primaryMuscle: .hamstrings, localizationKey: "exercise.name.dumbbellRDL"),
+        // README 2.9 Phase 6: KH-Pendant zum barbell "Kreuzheben (konven-
+        // tionell)" (primaryMuscle .back, gleiche Konvention) - fuer
+        // crossfitWeighted "Grundlagen-AMRAP", zugaenglicher als die
+        // Langhantel-Variante.
+        ExerciseTemplateSpec(name: "Kreuzheben (KH)",                  equipment: .dumbbell, primaryMuscle: .back,       difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellDeadlift"),
         ExerciseTemplateSpec(name: "Step-Up (KH)",                     equipment: .dumbbell, primaryMuscle: .quads,      difficultyLevel: .beginner, localizationKey: "exercise.name.stepUpDB"),
+        // README 2.9 Phase 6: Kniebeuge-in-Drueck-Kombolift (crossfitWeighted
+        // "Auf Zeit: Thruster & Burpees") - genug systemic/CNS-Last fuer
+        // explizite DEL-098-Faktoren wie andere grosse Compounds.
+        ExerciseTemplateSpec(name: "Thruster (KH)",                    equipment: .dumbbell, primaryMuscle: .quads,      difficultyLevel: .intermediate, isSystemCompound: true,
+                             systemicFatigueFactor: 0.70, localMuscleDamageFactor: 0.60, cnsDemandFactor: 0.65, axialLoadFactor: 0.45, technicalComplexityFactor: 0.55, recoveryClass: .high,
+                             localizationKey: "exercise.name.dumbbellThruster"),
         ExerciseTemplateSpec(name: "Hip Thrust (KH)",                    equipment: .dumbbell, primaryMuscle: .glutes,     difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellHipThrust"),
         ExerciseTemplateSpec(name: "Wadenheben (KH)",                    equipment: .dumbbell, primaryMuscle: .calves,     difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellCalfRaise"),
 
@@ -118,9 +133,19 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Klimmzüge (eng/Chin-up)",         equipment: .bodyweight, primaryMuscle: .back,
                              systemicFatigueFactor: 0.50, localMuscleDamageFactor: 0.65, cnsDemandFactor: 0.45, axialLoadFactor: 0.10, technicalComplexityFactor: 0.45, recoveryClass: .medium,
                              localizationKey: "exercise.name.pullup"),
+        // README 2.9 Phase 6: neutraler/ueberhandgriff Standard-Klimmzug ohne
+        // Griff-Qualifier - genutzt in den CrossFit-Bodyweight-Templates
+        // (Cindy Rx). Gleiche DEL-098-Faktoren wie die beiden Griff-Varianten
+        // oben, da dieselbe Bewegung.
+        ExerciseTemplateSpec(name: "Klimmzüge",                        equipment: .bodyweight, primaryMuscle: .back,
+                             systemicFatigueFactor: 0.50, localMuscleDamageFactor: 0.65, cnsDemandFactor: 0.45, axialLoadFactor: 0.10, technicalComplexityFactor: 0.45, recoveryClass: .medium,
+                             localizationKey: "exercise.name.pullupStandard"),
         ExerciseTemplateSpec(name: "Australian Pull-ups",              equipment: .bodyweight, primaryMuscle: .back, localizationKey: "exercise.name.australianPullup"),
         ExerciseTemplateSpec(name: "Handtuch-Rudern (Türrahmen)",     equipment: .bodyweight, primaryMuscle: .back,      difficultyLevel: .beginner, localizationKey: "exercise.name.towelRowDoorframe"),
         ExerciseTemplateSpec(name: "Liegestütze",                     equipment: .bodyweight, primaryMuscle: .chest,     difficultyLevel: .beginner, localizationKey: "exercise.name.pushup"),
+        // README 2.9 Phase 6: Knie-Regression fuer Cindy (Scaled) - genutzt
+        // statt der vollen Liegestuetz-Variante fuer Einsteiger.
+        ExerciseTemplateSpec(name: "Liegestütze (Knie)",              equipment: .bodyweight, primaryMuscle: .chest,     difficultyLevel: .beginner, localizationKey: "exercise.name.kneePushup"),
         ExerciseTemplateSpec(name: "Diamant-Liegestütze",             equipment: .bodyweight, primaryMuscle: .triceps, localizationKey: "exercise.name.diamondPushup"),
         ExerciseTemplateSpec(name: "Breite Liegestütze",              equipment: .bodyweight, primaryMuscle: .chest, localizationKey: "exercise.name.widePushup"),
         ExerciseTemplateSpec(name: "Dips (Brust)",                     equipment: .bodyweight, primaryMuscle: .chest, localizationKey: "exercise.name.chestDip"),
@@ -135,6 +160,10 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Kniebeuge (BW)",                   equipment: .bodyweight, primaryMuscle: .quads,     difficultyLevel: .beginner, localizationKey: "exercise.name.bodyweightSquat"),
         ExerciseTemplateSpec(name: "Jump Squat",                       equipment: .bodyweight, primaryMuscle: .quads, localizationKey: "exercise.name.jumpSquat"),
         ExerciseTemplateSpec(name: "Ausfallschritte (BW)",             equipment: .bodyweight, primaryMuscle: .quads,     difficultyLevel: .beginner, localizationKey: "exercise.name.bodyweightLunge"),
+        // README 2.9 Phase 6: plyometrische Variante fuer den EMOM-Intensitaets-
+        // Tag (crossfitBodyweightRx) - gleiches Muster wie "Jump Squat" direkt
+        // darunter (keine explizite Difficulty/Faktoren-Ueberschreibung).
+        ExerciseTemplateSpec(name: "Gesprungene Ausfallschritte",      equipment: .bodyweight, primaryMuscle: .quads, localizationKey: "exercise.name.jumpingLunges"),
         ExerciseTemplateSpec(name: "Box Jump",                         equipment: .bodyweight, primaryMuscle: .quads, localizationKey: "exercise.name.boxJump"),
         // DEL-098: Wall Sit = isometrische Quad-Belastung. Lokales DOMS hoch,
         // CNS / systemic eher niedrig (kein Bewegungsablauf, keine schweren
@@ -226,6 +255,19 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Kettlebell RDL",                   equipment: .kettlebell, primaryMuscle: .hamstrings, difficultyLevel: .intermediate, localizationKey: "exercise.name.kettlebellRDL"),
         ExerciseTemplateSpec(name: "Kettlebell Push Press",            equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced,    localizationKey: "exercise.name.kettlebellPushPress"),
         ExerciseTemplateSpec(name: "Kettlebell Suitcase Carry",        equipment: .kettlebell, primaryMuscle: .core,      difficultyLevel: .beginner, isTimeBased: true, localizationKey: "exercise.name.kettlebellSuitcaseCarry"),
+        // Übungen der CrossFit-/Kettlebell-Trainingspläne (README 2.9 Phase 6),
+        // die bisher nur in `ProgramTemplates` als roher Name standen, ohne
+        // Library-Match — jetzt offiziell im Catalog, gleiches Muster wie
+        // die "Cardio · Hybrid-Plan-Lifts"-Promotion oben (DEL-116).
+        ExerciseTemplateSpec(name: "Kettlebell Kreuzheben",            equipment: .kettlebell, primaryMuscle: .back,      difficultyLevel: .beginner, localizationKey: "exercise.name.kettlebellDeadlift"),
+        ExerciseTemplateSpec(name: "Kettlebell Overhead Press",        equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .beginner, localizationKey: "exercise.name.kettlebellOverheadPress"),
+        ExerciseTemplateSpec(name: "Kettlebell Front Squat",           equipment: .kettlebell, primaryMuscle: .quads,     difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellFrontSquat"),
+        // Unilaterale Snatch-Variante fuer EMOM-Wechsel Links/Rechts pro
+        // Minute (kettlebellAdvanced Tag 1) — dieselbe Bewegung wie das
+        // bestehende "Kettlebell Snatch", nur seitengetrennt als eigene
+        // Uebung, weil ein Tag im Datenmodell keine Seiten-Alternation kennt.
+        ExerciseTemplateSpec(name: "Kettlebell Snatch (Links)",        equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellSnatchLeft"),
+        ExerciseTemplateSpec(name: "Kettlebell Snatch (Rechts)",       equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellSnatchRight"),
 
         // ── CARDIO (DEL-080 — Ad-Hoc-Optionen fuer Hybrid-/freie Trainings) ─
         // Alle `isCardio: true` damit der DayEditor beim Picker-Pick die

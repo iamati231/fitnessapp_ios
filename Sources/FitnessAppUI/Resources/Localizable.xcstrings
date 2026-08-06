@@ -8467,6 +8467,14 @@
         }
       }
     },
+    "exercise.name.pullupStandard": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Klimmzüge" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Pull-Up" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Barfiks" } }
+      }
+    },
     "exercise.name.latpulldown": {
       "extractionState": "manual",
       "localizations": {
@@ -9226,6 +9234,14 @@
         }
       }
     },
+    "exercise.name.dumbbellPushPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Push Press (KH)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Dumbbell Push Press" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dumbbell Push Press" } }
+      }
+    },
     "exercise.name.lateralRaise": {
       "extractionState": "manual",
       "localizations": {
@@ -9408,6 +9424,22 @@
             "value": "Dumbbell Romanian Deadlift"
           }
         }
+      }
+    },
+    "exercise.name.dumbbellDeadlift": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kreuzheben (KH)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Dumbbell Deadlift" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dumbbell Deadlift" } }
+      }
+    },
+    "exercise.name.dumbbellThruster": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Thruster (KH)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Dumbbell Thruster" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dumbbell Thruster" } }
       }
     },
     "exercise.name.stepUpDB": {
@@ -9686,6 +9718,14 @@
         }
       }
     },
+    "exercise.name.kneePushup": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Liegestütze (Knie)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Knee Push-Up" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Diz Üstü Şınav" } }
+      }
+    },
     "exercise.name.diamondPushup": {
       "extractionState": "manual",
       "localizations": {
@@ -9914,6 +9954,14 @@
             "value": "Bodyweight Lunges"
           }
         }
+      }
+    },
+    "exercise.name.jumpingLunges": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Gesprungene Ausfallschritte" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Jumping Lunges" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Jumping Lunges" } }
       }
     },
     "exercise.name.boxJump": {
@@ -11018,6 +11066,46 @@
             "value": "Kettlebell Bavul Taşıma"
           }
         }
+      }
+    },
+    "exercise.name.kettlebellDeadlift": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Kreuzheben" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Deadlift" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Deadlift" } }
+      }
+    },
+    "exercise.name.kettlebellOverheadPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Overhead Press" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Overhead Press" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Overhead Press" } }
+      }
+    },
+    "exercise.name.kettlebellFrontSquat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Front Squat" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Front Squat" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Front Squat" } }
+      }
+    },
+    "exercise.name.kettlebellSnatchLeft": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Snatch (Links)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Snatch (Left)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Snatch (Sol)" } }
+      }
+    },
+    "exercise.name.kettlebellSnatchRight": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Snatch (Rechts)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Snatch (Right)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Snatch (Sağ)" } }
       }
     },
     "exercise.name.treadmill": {
