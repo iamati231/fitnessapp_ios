@@ -33318,6 +33318,14 @@
         }
       }
     },
+    "trophy.axis.rounds": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Runden" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Rounds" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tur" } }
+      }
+    },
     "trophy.axis.reps": {
       "extractionState": "manual",
       "localizations": {

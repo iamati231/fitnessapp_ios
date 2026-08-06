@@ -642,6 +642,9 @@ enum PRKindStyle {
         // DEL-064 Cardio-PRs (Spiegelung von WorkoutSummaryView's PRBadge).
         case .longestDistance: "figure.run.circle.fill"
         case .fastestPace:     "hare.fill"
+        // Zeitformate (README 2.9) — Spiegelung von PRBadge.kindIcon.
+        case .mostRounds:      "repeat.circle.fill"
+        case .fastestTime:     "stopwatch.fill"
         }
     }
 
@@ -661,6 +664,9 @@ enum PRKindStyle {
         case .maxHoldSeconds:  String(localized: "trophy.kind.short.maxHoldSeconds", bundle: .module)
         case .longestDistance: String(localized: "trophy.kind.short.longestDistance", bundle: .module)
         case .fastestPace:     String(localized: "trophy.kind.short.fastestPace", bundle: .module)
+        // Zeitformate (README 2.9) — dieselben Keys wie PRBadge.kindLabel.
+        case .mostRounds:      String(localized: "pr.kind.mostRounds", bundle: .module)
+        case .fastestTime:     String(localized: "pr.kind.fastestTime", bundle: .module)
         }
     }
 
@@ -678,6 +684,9 @@ enum PRKindStyle {
         case .maxHoldSeconds:                return String(localized: "trophy.axis.seconds", bundle: .module)
         case .longestDistance:               return String(localized: "trophy.axis.distance", bundle: .module)
         case .fastestPace:                   return String(localized: "trophy.axis.pace", bundle: .module)
+        // Zeitformate (README 2.9).
+        case .mostRounds:                    return String(localized: "trophy.axis.rounds", bundle: .module)
+        case .fastestTime:                   return String(localized: "trophy.axis.seconds", bundle: .module)
         }
     }
 }

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1546 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1547 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1546 / 1546** (100%) | 0 |
-| 🇬🇧 English (EN) | **1546 / 1546** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1546 / 1546** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1547 / 1547** (100%) | 0 |
+| 🇬🇧 English (EN) | **1547 / 1547** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1547 / 1547** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1764,13 +1764,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `timedWorkout.forTime.pillLabel` | Auf Zeit | For Time | Süreye Karşı |
 | `timedWorkout.forTime.progressContext` | %lld / %lld erledigt | %lld of %lld done | %lld / %lld tamam |
 
-## `trophy.*`  (23 Keys)
+## `trophy.*`  (24 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `trophy.axis.distance` | Distanz (km) | Distance (km) | Mesafe (km) |
 | `trophy.axis.pace` | Pace (min/km) | Pace (min/km) | Tempo (dk/km) |
 | `trophy.axis.reps` | Wdh | Reps | Tekrar |
+| `trophy.axis.rounds` | Runden | Rounds | Tur |
 | `trophy.axis.seconds` | Sekunden | Seconds | Saniye |
 | `trophy.axis.volume` | Volumen (kg) | Volume (kg) | Hacim (kg) |
 | `trophy.axis.weight` | Gewicht (kg) | Weight (kg) | Ağırlık (kg) |
