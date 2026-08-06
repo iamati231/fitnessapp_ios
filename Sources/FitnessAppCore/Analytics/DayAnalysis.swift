@@ -9,10 +9,17 @@ import Foundation
 /// `Exercise`-Instanzen iteriert.
 ///
 /// **Felder** (siehe Ticket-Scope):
-///   * `loadScore` — interner Roh-Score; primaer fuer relative
-///     Vergleiche zwischen Tagen (heute vs. gestern), nicht als
-///     User-facing Wert. Bucketing in `LoadCategory` ist die
-///     UI-relevante Aggregation.
+///   * `loadScore` — interner Roh-Score, nicht User-facing. **Zwei
+///     inkompatible Skalen je nach `timeFormat`** (README 2.13
+///     Nachtrag): bei einem normalen Krafttag ein Punkte-Score der
+///     Groessenordnung 25-85 (`computeLoadScore`); bei einem Zeitformat-
+///     Tag schlicht die Tagesdauer in Minuten (`analyzeTimedFormat`).
+///     Ein Vergleich "heute vs. gestern" ist daher nur INNERHALB
+///     derselben Tagesart aussagekraeftig, nicht ueber `timeFormat`-
+///     Grenzen hinweg. Bucketing in `LoadCategory` (UI-relevant) rechnet
+///     beide Skalen bereits korrekt getrennt (`categorize` vs.
+///     `categorizeByDuration`) und ist von dieser Doppelbedeutung nicht
+///     betroffen.
 ///   * `loadCategory` — semantische Einordnung low/moderate/high/
 ///     veryHigh, mit Farb- + Label-Mapping fuer die Visual-Skala.
 ///   * `muscleFocus` — geordnete Liste der gestimulierten Muskel-

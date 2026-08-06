@@ -119,7 +119,7 @@ public enum DayAnalyzer {
         format: WorkoutTimeFormat,
         capMinutes: Int?
     ) -> DayAnalysis {
-        let muscleFocus = computeMuscleFocus(working: working)
+        let muscleFocus = computeMuscleFocus(working: working, timeFormat: format)
         let isCardioOnly = working.allSatisfy { $0.isCardio }
 
         let durationRange: ClosedRange<Int>
@@ -214,7 +214,16 @@ public enum DayAnalyzer {
 
     /// Aggregiert Primärmuskel-Stimulus über alle Übungen, sortiert
     /// nach Punktzahl absteigend, klassifiziert in 3 Tiers.
-    private static func computeMuscleFocus(working: [Exercise]) -> [MuscleStimulus] {
+    ///
+    /// README 2.13 Nachtrag: bei AMRAP/EMOM steht `exercise.sets` immer auf 1
+    /// (die Uhr entscheidet ueber die Runden, nicht eine feste Satzzahl) -
+    /// als Mengenfaktor wuerde das jede Uebung auf denselben winzigen Wert
+    /// setzen, alle landen in "Primaer" und `recoveryRangeForTopStimulus`
+    /// faellt immer in den niedrigsten Eimer, unabhaengig von der echten
+    /// Tagesdauer. Bei gesetztem `timeFormat` tritt `repsMin` (Wdh. pro
+    /// Runde) an die Stelle von `sets`; bei Auf Zeit ist `sets` aber
+    /// tatsaechlich die Rundenzahl, dort zaehlt das Produkt aus beidem.
+    private static func computeMuscleFocus(working: [Exercise], timeFormat: WorkoutTimeFormat? = nil) -> [MuscleStimulus] {
         var perMuscle: [MuscleGroup: Double] = [:]
 
         for exercise in working {
@@ -226,7 +235,18 @@ public enum DayAnalyzer {
             // Versagen) verursacht mehr lokalen Reiz.
             let intensityFactor = intensityMultiplier(targetRir: exercise.targetRir)
             let perSet = compoundBonus * intensityFactor
-            let total = Double(exercise.sets) * perSet
+            let quantity: Double
+            switch timeFormat {
+            case nil:
+                quantity = Double(exercise.sets)
+            case .amrap, .emom:
+                // Wdh. pro Runde statt der immer-1 Satzzahl.
+                quantity = Double(exercise.repsMin)
+            case .forTime:
+                // `sets` ist bei Auf Zeit die echte Rundenzahl - Produkt aus beidem.
+                quantity = Double(exercise.sets) * Double(exercise.repsMin)
+            }
+            let total = quantity * perSet
             perMuscle[primary, default: 0] += total
         }
         guard let maxPoints = perMuscle.values.max(), maxPoints > 0 else {
