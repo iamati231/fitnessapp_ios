@@ -64,6 +64,14 @@ public final class WorkoutSession {
     public var finishTimeSeconds: Int?
     /// EMOM: Anzahl der Minuten, in denen das Pensum geschafft wurde (von `day.timeCapMinutes`).
     public var completedMinuteCount: Int?
+    /// True nur bei regulaerem Ende (Zeit-Deckel erreicht bzw. bei Auf Zeit
+    /// alle Runden abgehakt), false beim vorzeitigen manuellen "Speichern"
+    /// aus dem Punkte-Menue (README 2.10/19e). Vorbedingung dafuer, dass
+    /// `PersonalRecordSync.recordTimedFormatPR` bei Auf Zeit einen frueh
+    /// abgebrochenen (kuerzeren) Lauf nicht als Bestzeit werten kann. Default
+    /// `false` — Lightweight-Migration markiert Bestandsdaten damit korrekt
+    /// als "nicht verifiziert vollstaendig" statt faelschlich als komplett.
+    public var completedTarget: Bool = false
 
     /// DEL-057: Vom User auf der Finish-Half-Sheet gewaehltes Session-Gefuehl.
     /// 1 = Grossartig, 2 = Gut, 3 = Okay, 4 = Sehr schwer, 5 = Zerstoert.
@@ -103,7 +111,8 @@ public final class WorkoutSession {
         roundsCompleted: Int? = nil,
         partialReps: Int? = nil,
         finishTimeSeconds: Int? = nil,
-        completedMinuteCount: Int? = nil
+        completedMinuteCount: Int? = nil,
+        completedTarget: Bool = false
     ) {
         self.startTime = startTime
         self.endTime = endTime
@@ -122,6 +131,7 @@ public final class WorkoutSession {
         self.partialReps = partialReps
         self.finishTimeSeconds = finishTimeSeconds
         self.completedMinuteCount = completedMinuteCount
+        self.completedTarget = completedTarget
     }
 
     /// True when this is a finished, non-rest-day session — i.e., a real

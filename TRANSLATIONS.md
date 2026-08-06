@@ -1753,7 +1753,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `timedWorkout.amrap.roundsLabel` | RUNDEN | ROUNDS | TUR |
 | `timedWorkout.discard.confirmButton` | Abbrechen & verwerfen | Cancel & discard | İptal et ve sil |
 | `timedWorkout.discard.confirmTitle` | Training abbrechen? | Cancel workout? | Antrenmanı iptal et? |
-| `timedWorkout.discard.menu` | Abbrechen | Cancel | İptal et |
+| `timedWorkout.discard.menu` | Verwerfen | Discard | Sil |
 | `timedWorkout.elapsed` | Verstrichen: %@ | Elapsed: %@ | Geçen süre: %@ |
 | `timedWorkout.emom.completedPill` | %lld erledigt | %lld done | %lld tamam |
 | `timedWorkout.emom.markDone` | Minute geschafft | Minute done | Dakika tamam |

@@ -73,7 +73,8 @@ public enum PersonalRecordSync {
             date: session.startTime,
             roundsCompleted: session.roundsCompleted,
             partialReps: session.partialReps,
-            finishTimeSeconds: session.finishTimeSeconds
+            finishTimeSeconds: session.finishTimeSeconds,
+            completedTarget: session.completedTarget
         )
         let history = fetchHistoricalTimedAttempts(excluding: session, in: context)
 
@@ -110,7 +111,8 @@ public enum PersonalRecordSync {
                 date: other.startTime,
                 roundsCompleted: other.roundsCompleted,
                 partialReps: other.partialReps,
-                finishTimeSeconds: other.finishTimeSeconds
+                finishTimeSeconds: other.finishTimeSeconds,
+                completedTarget: other.completedTarget
             )
         }
     }

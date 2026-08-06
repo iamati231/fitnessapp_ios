@@ -398,8 +398,14 @@ public enum PRDetector {
             )
 
         case .forTime:
-            guard let time = session.finishTimeSeconds else { return nil }
-            guard let prevBest = priorAttempts.compactMap(\.finishTimeSeconds).min() else { return nil }
+            // README 2.10/19e: eine frueh gespeicherte (und dadurch kuerzere)
+            // Session darf weder selbst als Bestzeit gelten noch als
+            // schlagbare Baseline fuer spaetere Laeufe zaehlen - sonst
+            // gewinnt strukturell immer der kuerzeste, nicht der schnellste
+            // vollstaendige Lauf.
+            guard session.completedTarget, let time = session.finishTimeSeconds else { return nil }
+            let completedPriorAttempts = priorAttempts.filter(\.completedTarget)
+            guard let prevBest = completedPriorAttempts.compactMap(\.finishTimeSeconds).min() else { return nil }
             guard time < prevBest else { return nil }   // Schneller = kleiner = besser.
             return PersonalRecord(
                 kind: .fastestTime,

@@ -436,8 +436,8 @@ final class PRDetectorTests: XCTestCase {
         TimedWorkoutAttempt(wodName: wod, format: .amrap, date: date ?? now, roundsCompleted: rounds, partialReps: partial)
     }
 
-    private func forTimeAttempt(seconds: Int, wod: String = "Fran", date: Date? = nil) -> TimedWorkoutAttempt {
-        TimedWorkoutAttempt(wodName: wod, format: .forTime, date: date ?? now, finishTimeSeconds: seconds)
+    private func forTimeAttempt(seconds: Int, wod: String = "Fran", date: Date? = nil, completedTarget: Bool = true) -> TimedWorkoutAttempt {
+        TimedWorkoutAttempt(wodName: wod, format: .forTime, date: date ?? now, finishTimeSeconds: seconds, completedTarget: completedTarget)
     }
 
     func testAmrapFirstAttemptProducesNoPR() {
@@ -500,6 +500,28 @@ final class PRDetectorTests: XCTestCase {
             history: [forTimeAttempt(seconds: 330, date: weekAgo)]
         )
         XCTAssertNil(tied, "Identische Zeit ist kein PR — strict > only, analog zu Kraft-PRs")
+    }
+
+    /// README 2.10/19e-Vorbedingung: ein frueh gespeicherter (kuerzerer) Lauf
+    /// darf nicht als Bestzeit durchgehen, egal wie schnell seine Zeit
+    /// gegenueber einem echten, vollstaendigen Lauf wirkt.
+    func testForTimeAbandonedRunNeverProducesAPR() {
+        let pr = PRDetector.detectTimedFormatPR(
+            session: forTimeAttempt(seconds: 192, completedTarget: false),
+            history: [forTimeAttempt(seconds: 580, date: weekAgo)]
+        )
+        XCTAssertNil(pr, "4 von 9 Runden in 3:12 darf 9 von 9 in 9:40 nicht schlagen")
+    }
+
+    /// Gegenstueck: eine abgebrochene HISTORISCHE Session darf nicht als
+    /// schlagbare Baseline zaehlen — sonst wuerde ein spaeterer, ebenfalls
+    /// abgebrochener Lauf sie faelschlich als PR ausweisen.
+    func testForTimeAbandonedHistoryIsNotABaseline() {
+        let pr = PRDetector.detectTimedFormatPR(
+            session: forTimeAttempt(seconds: 400),
+            history: [forTimeAttempt(seconds: 192, date: weekAgo, completedTarget: false)]
+        )
+        XCTAssertNil(pr, "Eine abgebrochene Historie darf keine Baseline liefern, egal wie kurz")
     }
 
     func testEmomNeverProducesAPR() {

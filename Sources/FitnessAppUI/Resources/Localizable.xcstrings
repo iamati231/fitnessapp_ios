@@ -61,9 +61,9 @@
     "timedWorkout.discard.menu": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Abbrechen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Cancel" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "İptal et" } }
+        "de": { "stringUnit": { "state": "translated", "value": "Verwerfen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Discard" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sil" } }
       }
     },
     "timedWorkout.elapsed": {

@@ -192,7 +192,7 @@ private struct AMRAPPlayerView: View {
                 eyebrow: "AMRAP",
                 title: session.displayDayName,
                 onBack: { dismiss() },
-                actions: [discardMenuAction]
+                actions: [sessionMenuAction]
             )
 
             VStack(alignment: .leading, spacing: 18) {
@@ -278,8 +278,20 @@ private struct AMRAPPlayerView: View {
         }
     }
 
-    private var discardMenuAction: DeltiqHeaderAction {
+    /// Punkte-Menue mit zwei Eintraegen statt nur Verwerfen (README 2.10/19e):
+    /// "Speichern" sichert den aktuellen Stand jederzeit ohne Rueckfrage,
+    /// "Verwerfen" bleibt destruktiv mit Bestaetigung wie bisher.
+    private var sessionMenuAction: DeltiqHeaderAction {
         DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+            Button {
+                saveNow()
+            } label: {
+                Label {
+                    Text("timedWorkout.finish.save", bundle: .module)
+                } icon: {
+                    Image(systemName: "checkmark.circle")
+                }
+            }
             Button(role: .destructive) {
                 showingDiscardConfirm = true
             } label: {
@@ -292,35 +304,69 @@ private struct AMRAPPlayerView: View {
         })
     }
 
-    private var roundBar: some View {
-        HStack(spacing: 12) {
-            VStack(spacing: 2) {
-                Text("\(roundsCompleted)")
-                    .font(.system(size: 22, weight: .heavy))
-                    .fitnessNumberStyle()
-                    .foregroundStyle(Color.primary)
-                Text("timedWorkout.amrap.roundsLabel", bundle: .module)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(Color.Deltiq.textSecondary)
-            }
-            // Nachtrag 6. August, abends (README 2.9/18e): war 56pt fix,
-            // der Knopf daneben bekommt seine Hoehe aus deltiqButtonStyle
-            // (.headline + 14pt vertikales Padding ≈ 49pt) - beide standen
-            // in der zentrierten HStack 3.5pt versetzt. 49 matcht die
-            // tatsaechliche Knopf-Hoehe.
-            .frame(width: 76, height: 49)
-            .background(Color.Deltiq.fill)
-            .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+    /// Gemeinsamer Speicherpfad fuer den Menue-Eintrag UND den Knopf in
+    /// `finishBar` — `completedTarget` spiegelt exakt, ob `isFinished` zum
+    /// Zeitpunkt des Tippens schon (regulaer) oder noch nicht (vorzeitig)
+    /// erreicht war.
+    private func saveNow() {
+        session.roundsCompleted = roundsCompleted
+        session.partialReps = partialReps
+        session.completedTarget = isFinished
+        session.timeFormatSnapshot = .amrap
+        finishTimedSession(
+            session, modelContext: modelContext, healthKit: healthKit,
+            prNotifications: prNotifications, navigation: navigation,
+            prCelebrationsEnabled: prCelebrationsEnabled
+        )
+    }
 
-            Button {
-                roundsCompleted += 1
-                DeltiqHaptics.notify(.success)
-            } label: {
-                Text("timedWorkout.amrap.addRound", bundle: .module)
-                    .frame(maxWidth: .infinity)
+    /// Nachtrag 6. August, abends (README 2.10/19e): stand bisher nur in
+    /// `finishBar`, also erst nach Ablauf der Zielzeit editierbar - waehrend
+    /// eines laufenden AMRAP steckt man aber jederzeit in einer angebrochenen
+    /// Runde, die Eingabe gehoert daher durchgehend sichtbar, nicht erst am
+    /// Ende.
+    private var partialRepsStepperRow: some View {
+        DeltiqControlRow(label: String(localized: "timedWorkout.amrap.partialReps", bundle: .module)) {
+            Stepper(value: $partialReps, in: 0...999) {
+                Text("\(partialReps)")
+                    .fitnessNumberStyle()
             }
-            .buttonStyle(.plain)
-            .deltiqButtonStyle()
+            .labelsHidden()
+        }
+    }
+
+    private var roundBar: some View {
+        VStack(spacing: 10) {
+            partialRepsStepperRow
+            HStack(spacing: 12) {
+                VStack(spacing: 2) {
+                    Text("\(roundsCompleted)")
+                        .font(.system(size: 22, weight: .heavy))
+                        .fitnessNumberStyle()
+                        .foregroundStyle(Color.primary)
+                    Text("timedWorkout.amrap.roundsLabel", bundle: .module)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                }
+                // Nachtrag 6. August, abends (README 2.9/18e): war 56pt fix,
+                // der Knopf daneben bekommt seine Hoehe aus deltiqButtonStyle
+                // (.headline + 14pt vertikales Padding ≈ 49pt) - beide standen
+                // in der zentrierten HStack 3.5pt versetzt. 49 matcht die
+                // tatsaechliche Knopf-Hoehe.
+                .frame(width: 76, height: 49)
+                .background(Color.Deltiq.fill)
+                .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+
+                Button {
+                    roundsCompleted += 1
+                    DeltiqHaptics.notify(.success)
+                } label: {
+                    Text("timedWorkout.amrap.addRound", bundle: .module)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.plain)
+                .deltiqButtonStyle()
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -329,22 +375,9 @@ private struct AMRAPPlayerView: View {
 
     private var finishBar: some View {
         VStack(spacing: 10) {
-            DeltiqControlRow(label: String(localized: "timedWorkout.amrap.partialReps", bundle: .module)) {
-                Stepper(value: $partialReps, in: 0...999) {
-                    Text("\(partialReps)")
-                        .fitnessNumberStyle()
-                }
-                .labelsHidden()
-            }
+            partialRepsStepperRow
             Button {
-                session.roundsCompleted = roundsCompleted
-                session.partialReps = partialReps
-                session.timeFormatSnapshot = .amrap
-                finishTimedSession(
-                    session, modelContext: modelContext, healthKit: healthKit,
-                    prNotifications: prNotifications, navigation: navigation,
-                    prCelebrationsEnabled: prCelebrationsEnabled
-                )
+                saveNow()
             } label: {
                 Text("timedWorkout.finish.save", bundle: .module)
                     .frame(maxWidth: .infinity)
@@ -401,7 +434,7 @@ private struct EMOMPlayerView: View {
                 eyebrow: "EMOM",
                 title: session.displayDayName,
                 onBack: { dismiss() },
-                actions: [discardMenuAction]
+                actions: [sessionMenuAction]
             )
 
             VStack(alignment: .leading, spacing: 18) {
@@ -542,8 +575,20 @@ private struct EMOMPlayerView: View {
         }
     }
 
-    private var discardMenuAction: DeltiqHeaderAction {
+    /// Punkte-Menue mit zwei Eintraegen statt nur Verwerfen (README 2.10/19e):
+    /// "Speichern" sichert den aktuellen Stand jederzeit ohne Rueckfrage,
+    /// "Verwerfen" bleibt destruktiv mit Bestaetigung wie bisher.
+    private var sessionMenuAction: DeltiqHeaderAction {
         DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+            Button {
+                saveNow()
+            } label: {
+                Label {
+                    Text("timedWorkout.finish.save", bundle: .module)
+                } icon: {
+                    Image(systemName: "checkmark.circle")
+                }
+            }
             Button(role: .destructive) {
                 showingDiscardConfirm = true
             } label: {
@@ -554,6 +599,22 @@ private struct EMOMPlayerView: View {
                 }
             }
         })
+    }
+
+    /// Gemeinsamer Speicherpfad fuer den Menue-Eintrag UND den Knopf in
+    /// `finishBar` — `completedTarget` spiegelt exakt, ob `isFinished` zum
+    /// Zeitpunkt des Tippens schon (regulaer, Minuten schon auf
+    /// `Set(1...totalMinutes)` aufgefuellt) oder noch nicht (vorzeitig)
+    /// erreicht war.
+    private func saveNow() {
+        session.completedMinuteCount = completedMinutes.count
+        session.completedTarget = isFinished
+        session.timeFormatSnapshot = .emom
+        finishTimedSession(
+            session, modelContext: modelContext, healthKit: healthKit,
+            prNotifications: prNotifications, navigation: navigation,
+            prCelebrationsEnabled: prCelebrationsEnabled
+        )
     }
 
     /// Tippen markiert die LAUFENDE Minute als geschafft - ein einzelner
@@ -580,13 +641,7 @@ private struct EMOMPlayerView: View {
 
     private var finishBar: some View {
         Button {
-            session.completedMinuteCount = completedMinutes.count
-            session.timeFormatSnapshot = .emom
-            finishTimedSession(
-                session, modelContext: modelContext, healthKit: healthKit,
-                prNotifications: prNotifications, navigation: navigation,
-                prCelebrationsEnabled: prCelebrationsEnabled
-            )
+            saveNow()
         } label: {
             Text("timedWorkout.finish.save", bundle: .module)
                 .frame(maxWidth: .infinity)
@@ -635,7 +690,7 @@ private struct ForTimePlayerView: View {
                 eyebrow: pillLabel.uppercased(),
                 title: session.displayDayName,
                 onBack: { dismiss() },
-                actions: [discardMenuAction]
+                actions: [sessionMenuAction]
             )
 
             VStack(alignment: .leading, spacing: 18) {
@@ -699,10 +754,14 @@ private struct ForTimePlayerView: View {
                 DeltiqHaptics.notify(.success)
             }
         }
+        // Nachtrag 6. August, abends (README 2.9/18e): stand bisher komplett
+        // in `if isFinished` - waehrend des Laufs gab es dadurch als einziges
+        // der drei Formate GAR keine feste Leiste, obwohl die gemeinsame
+        // Anatomie eine fuer alle drei vorsieht. `finishBar` ist jetzt
+        // durchgehend sichtbar und speichert ueber `saveNow()` mit dem
+        // jeweils aktuellen Stand, egal ob regulaer oder vorzeitig.
         .safeAreaInset(edge: .bottom) {
-            if isFinished {
-                finishBar
-            }
+            finishBar
         }
         .confirmationDialog(
             String(localized: "timedWorkout.discard.confirmTitle", bundle: .module),
@@ -721,8 +780,20 @@ private struct ForTimePlayerView: View {
         String(localized: "timedWorkout.forTime.pillLabel", bundle: .module)
     }
 
-    private var discardMenuAction: DeltiqHeaderAction {
+    /// Punkte-Menue mit zwei Eintraegen statt nur Verwerfen (README 2.10/19e):
+    /// "Speichern" sichert den aktuellen Stand jederzeit ohne Rueckfrage,
+    /// "Verwerfen" bleibt destruktiv mit Bestaetigung wie bisher.
+    private var sessionMenuAction: DeltiqHeaderAction {
         DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+            Button {
+                saveNow()
+            } label: {
+                Label {
+                    Text("timedWorkout.finish.save", bundle: .module)
+                } icon: {
+                    Image(systemName: "checkmark.circle")
+                }
+            }
             Button(role: .destructive) {
                 showingDiscardConfirm = true
             } label: {
@@ -733,6 +804,23 @@ private struct ForTimePlayerView: View {
                 }
             }
         })
+    }
+
+    /// Gemeinsamer Speicherpfad fuer den Menue-Eintrag UND den durchgehend
+    /// sichtbaren `finishBar`-Knopf — `completedTarget` spiegelt exakt, ob
+    /// `isFinished` zum Zeitpunkt des Tippens schon (alle Runden abgehakt
+    /// bzw. Zeit-Deckel erreicht) oder noch nicht (vorzeitig) erreicht war.
+    /// `PRDetector.detectTimedFormatPR` nutzt genau das, um zu verhindern
+    /// dass ein frueh gespeicherter, kuerzerer Lauf als Bestzeit durchgeht.
+    private func saveNow() {
+        session.finishTimeSeconds = elapsedSeconds
+        session.completedTarget = isFinished
+        session.timeFormatSnapshot = .forTime
+        finishTimedSession(
+            session, modelContext: modelContext, healthKit: healthKit,
+            prNotifications: prNotifications, navigation: navigation,
+            prCelebrationsEnabled: prCelebrationsEnabled
+        )
     }
 
     private var isLastBoxRemainingHintVisible: Bool {
@@ -762,7 +850,6 @@ private struct ForTimePlayerView: View {
                             .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
-                    .disabled(isFinished)
                 }
             }
         }
@@ -773,24 +860,30 @@ private struct ForTimePlayerView: View {
     /// Haekchen sind sequentiell pro Uebung (kein wahlfreier Zugriff): ein
     /// Tap auf Index N markiert alle Runden bis N als erledigt bzw. nimmt
     /// bei einem bereits abgehakten Index alles ab N wieder zurueck.
+    ///
+    /// Nachtrag 6. August, abends (README 2.9/18e): das letzte Haekchen
+    /// setzte bisher hart `isFinished` und alle Kreise wurden ab da
+    /// `.disabled` - ein Fehltipp beendete den Lauf ohne Weg zurueck. Die
+    /// Kreise bleiben jetzt immer tappbar; ein Zurueck-Abhaken macht
+    /// `isFinished` rueckgaengig, AUSSER der Zeit-Deckel selbst hat schon
+    /// beendet (dann ist die Uhr echt abgelaufen, das darf ein Haekchen
+    /// nicht wieder aufleben lassen).
     private func toggleRound(_ tappedIndex: Int, for exercise: Exercise) {
         let current = checkedRounds[exercise.persistentModelID] ?? 0
         checkedRounds[exercise.persistentModelID] = tappedIndex < current ? tappedIndex : tappedIndex + 1
         DeltiqHaptics.notify(.success)
         if checkedBoxes == totalBoxes {
             isFinished = true
+        } else if let capSeconds, elapsedSeconds >= capSeconds {
+            // Zeit-Deckel hat schon beendet - ein Abhaken darf die Uhr nicht wieder starten.
+        } else {
+            isFinished = false
         }
     }
 
     private var finishBar: some View {
         Button {
-            session.finishTimeSeconds = elapsedSeconds
-            session.timeFormatSnapshot = .forTime
-            finishTimedSession(
-                session, modelContext: modelContext, healthKit: healthKit,
-                prNotifications: prNotifications, navigation: navigation,
-                prCelebrationsEnabled: prCelebrationsEnabled
-            )
+            saveNow()
         } label: {
             Text("timedWorkout.finish.save", bundle: .module)
                 .frame(maxWidth: .infinity)

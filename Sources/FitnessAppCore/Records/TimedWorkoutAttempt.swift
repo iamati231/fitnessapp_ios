@@ -18,6 +18,14 @@ public struct TimedWorkoutAttempt: Sendable, Hashable {
     public let partialReps: Int?
     /// Auf Zeit: Gesamtzeit in Sekunden.
     public let finishTimeSeconds: Int?
+    /// True nur bei regulaerem Ende (Zeit-Deckel erreicht bzw. bei Auf Zeit
+    /// alle Runden abgehakt), false bei einem vorzeitigen manuellen Speichern
+    /// (README 2.10/19e). `detectTimedFormatPR` nutzt das bei Auf Zeit, um zu
+    /// verhindern dass ein frueh abgebrochener (und dadurch kuerzerer) Lauf
+    /// eine echte Bestzeit schlaegt oder selbst als eine gilt. Default `true`
+    /// fuer Bestands-Aufrufer (Tests), die vor dieser Unterscheidung nur
+    /// durchgezogene Laeufe modelliert haben.
+    public let completedTarget: Bool
 
     public init(
         wodName: String,
@@ -25,7 +33,8 @@ public struct TimedWorkoutAttempt: Sendable, Hashable {
         date: Date,
         roundsCompleted: Int? = nil,
         partialReps: Int? = nil,
-        finishTimeSeconds: Int? = nil
+        finishTimeSeconds: Int? = nil,
+        completedTarget: Bool = true
     ) {
         self.wodName = wodName
         self.format = format
@@ -33,5 +42,6 @@ public struct TimedWorkoutAttempt: Sendable, Hashable {
         self.roundsCompleted = roundsCompleted
         self.partialReps = partialReps
         self.finishTimeSeconds = finishTimeSeconds
+        self.completedTarget = completedTarget
     }
 }
