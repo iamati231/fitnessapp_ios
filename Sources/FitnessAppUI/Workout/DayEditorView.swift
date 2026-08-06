@@ -535,6 +535,12 @@ public struct DayEditorView: View {
         } header: {
             HStack {
                 sectionHeader(String(localized: "day.editor.section.exercises", bundle: .module))
+                // README 2.10/19c-19d: Format + Deckel als neutrale Kapsel
+                // neben dem Section-Header, statt dass die Zeilen darunter
+                // eine erfundene Pausen-Angabe zeigen.
+                if let format = day.timeFormat {
+                    DeltiqPill(timedFormatPillText(format), style: .neutral)
+                }
                 Spacer()
                 if !isReadOnly {
                     Button {
@@ -551,14 +557,23 @@ public struct DayEditorView: View {
                 }
             }
         } footer: {
-            if isReadOnly {
-                Text("day.editor.templateLocked.exercises", bundle: .module)
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.Deltiq.textSecondary)
-            } else if !day.activeExercises.isEmpty {
-                Text("day.editor.exercises.editHint", bundle: .module)
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.Deltiq.textSecondary)
+            VStack(alignment: .leading, spacing: 4) {
+                // README 2.10/19c-19d: ersetzt die (bei Zeitformaten
+                // erfundene) Pausen-Angabe durch einen ehrlichen Fusshinweis.
+                if let format = day.timeFormat {
+                    Text(String(localized: String.LocalizationValue(timedFormatHintKey(for: format)), bundle: .module))
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                }
+                if isReadOnly {
+                    Text("day.editor.templateLocked.exercises", bundle: .module)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                } else if !day.activeExercises.isEmpty {
+                    Text("day.editor.exercises.editHint", bundle: .module)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                }
             }
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
@@ -963,6 +978,17 @@ public struct DayEditorView: View {
     private func typeLabel(_ type: DayType) -> String {
         String(localized: type.localizedName)
     }
+
+    /// README 2.10/19c-19d: "AMRAP · 20 MIN"-Kapsel neben dem Uebungen-
+    /// Section-Header. `DeltiqPill` grossschreibt nicht selbst (siehe dessen
+    /// Doc-Kommentar), darum hier explizit `.uppercased()`.
+    private func timedFormatPillText(_ format: WorkoutTimeFormat) -> String {
+        var parts = [timedFormatDisplayName(format)]
+        if let cap = day.timeCapMinutes {
+            parts.append("\(cap) " + String(localized: "unit.minutes.short", bundle: .module))
+        }
+        return parts.joined(separator: " · ").uppercased()
+    }
 }
 
 // MARK: - Subviews
@@ -1025,17 +1051,31 @@ private struct ExerciseRow: View {
     //   * Cardio → "workout.detail.cardio"
     //   * Time-based (Plank, Wall Sit) → "workout.detail.seconds"
     //   * Standard Strength → "workout.detail.reps"
+    //
+    // README 2.10/19c-19d: Zeitformat-Tage (`exercise.day?.timeFormat`)
+    // zeigen stattdessen nur das Ziel pro Runde (`timedFormatCircuitLabel`,
+    // TimedWorkoutPlayerView.swift - dieselbe Fassung wie im Player und in
+    // WorkoutSummaryView/TemplatePreviewView).
     private var detailLine: String {
+        if let format = exercise.day?.timeFormat {
+            return timedFormatCircuitLabel(
+                repsMin: exercise.repsMin, isTimeBased: exercise.isTimeBased,
+                sets: exercise.sets, format: format
+            )
+        }
         if exercise.isCardio {
             return String(format: String(localized: "workout.detail.cardio", bundle: .module), exercise.restSeconds)
         }
         let repsText = exercise.repsMin == exercise.repsMax
             ? "\(exercise.repsMin)"
             : "\(exercise.repsMin)-\(exercise.repsMax)"
-        let key: String.LocalizationValue = exercise.isTimeBased
-            ? "workout.detail.seconds"
-            : "workout.detail.reps"
-        let template = String(localized: key, bundle: .module)
+        // DEL-118-Nachtrag (README 2.10): manuelle .one/.other-Auswahl statt
+        // eines einzelnen Format-Strings - sonst bleibt "Sätze"/"Sek" (DE)
+        // fuer exercise.sets == 1 stehen (replacingOccurrences loest keine
+        // echten Plurals auf, siehe PlanRow.pluralized fuer dasselbe Muster).
+        let baseKey = exercise.isTimeBased ? "workout.detail.seconds" : "workout.detail.reps"
+        let key = exercise.sets == 1 ? "\(baseKey).one" : "\(baseKey).other"
+        let template = String(localized: String.LocalizationValue(key), bundle: .module)
         return template
             .replacingOccurrences(of: "%1$lld", with: "\(exercise.sets)")
             .replacingOccurrences(of: "%2$@",   with: repsText)

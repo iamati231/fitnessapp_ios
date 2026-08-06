@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1547 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1552 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1547 / 1547** (100%) | 0 |
-| 🇬🇧 English (EN) | **1547 / 1547** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1547 / 1547** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1552 / 1552** (100%) | 0 |
+| 🇬🇧 English (EN) | **1552 / 1552** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1552 / 1552** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -562,7 +562,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboardSettings.section.inactive.title` | Inaktive Widgets | Inactive Widgets | Pasif Widget'lar |
 | `dashboardSettings.title` | Dashboard anpassen | Customize Dashboard | Panoyu Özelleştir |
 
-## `day.*`  (48 Keys)
+## `day.*`  (51 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -609,6 +609,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `day.editor.superset.unlink` | Trennen | Unlink | Ayır |
 | `day.editor.templateLocked.exercises` | Template-Plan — Übungen sind festgelegt. Du kannst sie ansehen, aber nicht hinzufügen, entfernen oder umsortieren. | Template plan — exercises are fixed. You can view them but not add, remove, or reorder. | Şablon plan — hareketler sabit. Görüntüleyebilirsin ama ekleyemez, kaldıramaz veya sıralayamazsın. |
 | `day.editor.templateLocked.footer` | Dieser Tag gehört zu einem vorgefertigten Plan-Template und kann strukturell nicht bearbeitet werden. Du kannst aber die Trainings-Intensität anpassen. | This day belongs to a built-in plan template and can't be edited structurally. You can adjust training intensity though. | Bu gün hazır bir plan şablonuna ait ve yapısal olarak düzenlenemez. Ancak antrenman yoğunluğunu ayarlayabilirsin. |
+| `day.editor.timedFormat.hintAmrap` | Keine festen Pausen — so viele Runden wie möglich, bis die Zeit um ist. | No fixed rest — as many rounds as possible until time is up. | Sabit mola yok — süre bitene kadar mümkün olduğunca çok tur. |
+| `day.editor.timedFormat.hintEmom` | Keine festen Pausen — jede Minute startet neu. | No fixed rest — every minute starts fresh. | Sabit mola yok — her dakika yeniden başlar. |
+| `day.editor.timedFormat.hintForTime` | Keine festen Pausen — so schnell wie möglich durcharbeiten. | No fixed rest — work through it as fast as possible. | Sabit mola yok — mümkün olduğunca hızlı bitir. |
 | `day.editor.untitled` | Tag | Day | Gün |
 | `day.restDay.complete.button` | Ruhetag abschließen | Complete Rest Day | Dinlenme Gününü Tamamla |
 | `day.restDay.complete.footer` | Markiert den Ruhetag als erledigt — kein leerer Eintrag in der History, aber der Plan-Pointer rückt zum nächsten echten Training. | Marks the rest day as done — no empty history entry, but the plan pointer advances to the next real training day. | Dinlenme gününü tamamlandı olarak işaretler — geçmişte boş kayıt olmaz ama plan işaretçisi bir sonraki gerçek antrenmana ilerler. |
@@ -1844,14 +1847,16 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `widget.weightTrend.name` | Gewichts-Trend | Weight Trend | Kilo Trendi |
 | `widget.workoutHistory.name` | Trainingsverlauf | Workout History | Antrenman Geçmişi |
 
-## `workout.*`  (4 Keys)
+## `workout.*`  (6 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `workout.allSetsDone` | Alle Sätze erledigt | All sets done | Tüm setler tamam |
 | `workout.detail.cardio` | Cardio • %llds Pause | Cardio • %llds rest | Kardiyo • %llds mola |
-| `workout.detail.reps` | %1$lld Sätze • %2$@ Wdh • %3$llds Pause | %1$lld sets • %2$@ reps • %3$llds rest | %1$lld set • %2$@ tekrar • %3$llds mola |
-| `workout.detail.seconds` | %1$lld Sätze • %2$@ Sek • %3$llds Pause | %1$lld sets • %2$@ sec • %3$llds rest | %1$lld set • %2$@ sn • %3$llds mola |
+| `workout.detail.reps.one` | %1$lld Satz • %2$@ Wdh • %3$llds Pause | %1$lld set • %2$@ reps • %3$llds rest | %1$lld set • %2$@ tekrar • %3$llds mola |
+| `workout.detail.reps.other` | %1$lld Sätze • %2$@ Wdh • %3$llds Pause | %1$lld sets • %2$@ reps • %3$llds rest | %1$lld set • %2$@ tekrar • %3$llds mola |
+| `workout.detail.seconds.one` | %1$lld Satz • %2$@ Sek • %3$llds Pause | %1$lld set • %2$@ sec • %3$llds rest | %1$lld set • %2$@ sn • %3$llds mola |
+| `workout.detail.seconds.other` | %1$lld Sätze • %2$@ Sek • %3$llds Pause | %1$lld sets • %2$@ sec • %3$llds rest | %1$lld set • %2$@ sn • %3$llds mola |
 
 
 ---

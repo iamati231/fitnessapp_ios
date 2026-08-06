@@ -91,7 +91,7 @@ private func discardTimedSession(_ session: WorkoutSession, modelContext: ModelC
 }
 
 @available(iOS 17.0, macOS 14.0, *)
-private func timedWorkoutHintRow(_ text: String) -> some View {
+func timedWorkoutHintRow(_ text: String) -> some View {
     Text(text)
         .font(.system(size: 12))
         .foregroundStyle(Color.Deltiq.textSecondary)
@@ -103,14 +103,62 @@ private func timedWorkoutHintRow(_ text: String) -> some View {
 /// "N Wdh." fuer normale Zirkel-Uebungen, "N Sek." fuer `isTimeBased`
 /// (z.B. Plank in einem EMOM-Zirkel, README 2.9 Phase 6) - `repsMin` wird
 /// bei Zeitformaten als "Wdh./Sek. pro Runde" reused (siehe DaySpec/
-/// TrainingDay-Kommentar), keine neuen Felder dafuer noetig. Geteilt
-/// zwischen allen drei Playern + WorkoutSummaryView (interne, nicht
-/// `private` Sichtbarkeit).
+/// TrainingDay-Kommentar), keine neuen Felder dafuer noetig.
+///
+/// Primitive Fassung ohne `Exercise`-Abhaengigkeit: `ExerciseSpec` (Core,
+/// Pre-Instanziierung in `TemplatePreviewView`) hat kein `isTimeBased`-Feld
+/// (der `ProgramInstantiator` leitet das erst per Namens-Lookup gegen
+/// `ExerciseLibraryData` her) - Aufrufer, die noch keine materialisierte
+/// `Exercise` haben, machen diesen Lookup selbst und uebergeben das Ergebnis
+/// hier rein. Geteilt zwischen allen drei Playern, WorkoutSummaryView,
+/// TemplatePreviewView und DayEditorView (interne, nicht `private`
+/// Sichtbarkeit).
+func timedFormatTargetLabel(repsMin: Int, isTimeBased: Bool) -> String {
+    isTimeBased
+        ? "\(repsMin) " + String(localized: "unit.seconds.short", bundle: .module)
+        : "\(repsMin) " + String(localized: "unit.reps.short", bundle: .module)
+}
+
 @available(iOS 17.0, macOS 14.0, *)
 func timedFormatTargetLabel(_ exercise: Exercise) -> String {
-    exercise.isTimeBased
-        ? "\(exercise.repsMin) " + String(localized: "unit.seconds.short", bundle: .module)
-        : "\(exercise.repsMin) " + String(localized: "unit.reps.short", bundle: .module)
+    timedFormatTargetLabel(repsMin: exercise.repsMin, isTimeBased: exercise.isTimeBased)
+}
+
+/// Fuer Auf-Zeit: Rundenzahl × Ziel pro Runde (z.B. "5× 30 Wdh."). AMRAP/EMOM
+/// zeigen nur das Ziel - der Zirkel wiederholt sich, bis die Zeit um ist,
+/// es gibt keine feste Rundenzahl im Voraus.
+func timedFormatCircuitLabel(repsMin: Int, isTimeBased: Bool, sets: Int, format: WorkoutTimeFormat) -> String {
+    let target = timedFormatTargetLabel(repsMin: repsMin, isTimeBased: isTimeBased)
+    switch format {
+    case .amrap, .emom:
+        return target
+    case .forTime:
+        return "\(max(sets, 1))× \(target)"
+    }
+}
+
+/// Anzeigename des Formats - dieselben Werte, die die drei Player schon als
+/// Eyebrow/Pill-Label nutzen (AMRAP/EMOM sind Akronyme, unveraendert in
+/// DE/EN/TR). Fuer die Format-Kapsel ausserhalb des Players (README 2.10),
+/// damit dort kein zweiter Satz Strings entsteht.
+func timedFormatDisplayName(_ format: WorkoutTimeFormat) -> String {
+    switch format {
+    case .amrap:   return "AMRAP"
+    case .emom:    return "EMOM"
+    case .forTime: return String(localized: "timedWorkout.forTime.pillLabel", bundle: .module)
+    }
+}
+
+/// Loc-Key fuer den "keine festen Pausen"-Fusshinweis ausserhalb des
+/// Players (README 2.10/19c-19d, TemplatePreviewView + DayEditorView) - dort
+/// steht statt einer (erfundenen) Pausen-Angabe eine ehrliche Erklaerung,
+/// was das Format bedeutet.
+func timedFormatHintKey(for format: WorkoutTimeFormat) -> String {
+    switch format {
+    case .amrap:   return "day.editor.timedFormat.hintAmrap"
+    case .emom:    return "day.editor.timedFormat.hintEmom"
+    case .forTime: return "day.editor.timedFormat.hintForTime"
+    }
 }
 
 // MARK: - AMRAP

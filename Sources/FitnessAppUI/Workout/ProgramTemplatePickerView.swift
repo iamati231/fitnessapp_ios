@@ -167,9 +167,10 @@ private struct ProgramRow: View {
                     .lineLimit(2)
             }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.tertiary)
+            // Nachtrag 6. August, abends (README 2.10/19b): dieser Screen
+            // ist bewusst eine native Sheet-Liste (siehe Aufruf-Stelle oben)
+            // - der `NavigationLink` dort bringt schon einen Chevron mit.
+            // Dieser handgezeichnete duplizierte ihn.
         }
         .padding(.vertical, 4)
         .contentShape(Rectangle())
@@ -268,8 +269,20 @@ public struct TemplatePreviewView: View {
         // DEL-088: Titel zeigt "Tag N · <Name>" (sequenceIndex statt
         // Wochentag — Tag wird erst beim Instantiieren auf einen Weekday
         // gemappt, siehe DayPickerSheet).
+        //
+        // README 2.10/19c-19d: Zeitformat-Tage haengen das Format + den
+        // Deckel an denselben Titel an ("TAG 1 · CINDY · AMRAP · 20 MIN")
+        // statt eine separate Kapsel zu bauen - `DeltiqSection` hat keinen
+        // Slot dafuer, und der Titel ist schon derselbe Eyebrow-Stil.
         let dayLabel = String(format: String(localized: "plan.dayNumberLabel", bundle: .module), day.sequenceIndex)
-        return DeltiqSection("\(dayLabel) · \(day.displayName)".uppercased()) {
+        var titleParts = ["\(dayLabel) · \(day.displayName)"]
+        if let format = day.timeFormat {
+            titleParts.append(timedFormatDisplayName(format))
+            if let cap = day.timeCapMinutes {
+                titleParts.append("\(cap) " + String(localized: "unit.minutes.short", bundle: .module))
+            }
+        }
+        return DeltiqSection(titleParts.joined(separator: " · ").uppercased()) {
             // DEL-088: Templates enthalten nur noch Trainings-Tage — der
             // Rest-Day-Branch ist obsolet, bleibt aber defensiv drin fuer
             // den hypothetischen Fall einer Migration-Luecke.
@@ -294,8 +307,10 @@ public struct TemplatePreviewView: View {
                                 .font(.body.weight(.medium))
                                 .foregroundStyle(Color.primary)
                             // DEL-118: format-string via xcstrings statt
-                            // hardcoded DE-Interpolation.
-                            Text(detailLine(for: exercise))
+                            // hardcoded DE-Interpolation. README 2.10/19c-19d:
+                            // Zeitformat-Tage zeigen nur noch das Ziel pro
+                            // Runde statt Saetze × Wdh × Pause.
+                            Text(detailLine(for: exercise, dayFormat: day.timeFormat))
                                 .font(.caption)
                                 .foregroundStyle(Color.Deltiq.textSecondary)
                         }
@@ -307,6 +322,11 @@ public struct TemplatePreviewView: View {
                                 .frame(height: 1)
                         }
                     }
+                }
+                // README 2.10/19c-19d: ersetzt die (bei Zeitformaten
+                // erfundene) Pausen-Angabe durch einen ehrlichen Fusshinweis.
+                if let format = day.timeFormat {
+                    timedWorkoutHintRow(String(localized: String.LocalizationValue(timedFormatHintKey(for: format)), bundle: .module))
                 }
             }
         }
@@ -349,9 +369,31 @@ public struct TemplatePreviewView: View {
         return name
     }
 
+    /// README 2.9 Phase 6: `ExerciseSpec` hat kein eigenes `isTimeBased`-Feld
+    /// - der `ProgramInstantiator` leitet das erst beim Materialisieren per
+    /// Namens-Lookup gegen `ExerciseLibraryData` her (siehe `timeBasedNames`
+    /// dort). Fuer die Vorschau, die noch vor der Instanziierung steht,
+    /// machen wir denselben Lookup hier.
+    private func isTimeBasedSpec(_ name: String) -> Bool {
+        ExerciseLibraryData.all.first(where: { $0.name == name })?.isTimeBased ?? false
+    }
+
     /// DEL-118: format-string fuer die Detail-Zeile (Saetze × Wdh × Pause)
     /// via xcstrings.
-    private func detailLine(for exercise: ExerciseSpec) -> String {
+    ///
+    /// README 2.10/19c-19d: Zeitformat-Tage (`dayFormat != nil`) zeigen
+    /// stattdessen nur das Ziel pro Runde (`timedFormatCircuitLabel`,
+    /// TimedWorkoutPlayerView.swift - dieselbe Fassung wie im Player und in
+    /// WorkoutSummaryView, keine dritte Implementierung). Sätze × Wdh ×
+    /// Pause ergeben bei einem AMRAP/EMOM/Auf-Zeit-Tag keinen Sinn: die Uhr
+    /// entscheidet ueber Runden, eine feste Pause steht im Plan gar nicht.
+    private func detailLine(for exercise: ExerciseSpec, dayFormat: WorkoutTimeFormat?) -> String {
+        if let dayFormat {
+            return timedFormatCircuitLabel(
+                repsMin: exercise.repsMin, isTimeBased: isTimeBasedSpec(exercise.name),
+                sets: exercise.sets, format: dayFormat
+            )
+        }
         if exercise.isCardio {
             return String(format: String(localized: "workout.detail.cardio", bundle: .module), exercise.restSeconds)
         }
@@ -361,7 +403,13 @@ public struct TemplatePreviewView: View {
         // Templates haben keinen `isTimeBased`-Flag pro ExerciseSpec —
         // wir nutzen einheitlich die reps-Variante. Time-based Lifts in
         // Templates (z.B. Plank) tragen Sekunden im repsMin/Max-Feld.
-        let template = String(localized: "workout.detail.reps", bundle: .module)
+        //
+        // DEL-118-Nachtrag (README 2.10): manuelle .one/.other-Auswahl statt
+        // eines einzelnen Format-Strings - sonst bleibt "Sätze" (DE) fuer
+        // exercise.sets == 1 stehen, weil replacingOccurrences keine echte
+        // Plural-Aufloesung ist (siehe PlanRow.pluralized fuer dasselbe Muster).
+        let key = exercise.sets == 1 ? "workout.detail.reps.one" : "workout.detail.reps.other"
+        let template = String(localized: String.LocalizationValue(key), bundle: .module)
         return template
             .replacingOccurrences(of: "%1$lld", with: "\(exercise.sets)")
             .replacingOccurrences(of: "%2$@",   with: repsText)

@@ -189,7 +189,17 @@ public struct PlansListView: View {
             emptyState
         } else {
             ForEach(plans) { plan in
-                NavigationLink(value: plan) {
+                // Nachtrag 6. August, abends (README 2.10/19a): ein
+                // `NavigationLink` zeichnet in einer `List` IMMER seinen
+                // eigenen nativen Chevron dazu - der sitzt dann ausserhalb
+                // der `DeltiqCard`, im Leerraum der Zeile, statt darin wie
+                // beim Session-Banner. Gleicher Fix wie bei
+                // `activeSessionSection` oben: `Button`, der dieselbe
+                // Path-Instanz befuellt, plus handgezeichneter Chevron IN
+                // `PlanRow`.
+                Button {
+                    navigation.workoutPath.append(plan)
+                } label: {
                     // Nachtrag 6. August (README 2.6): ein blosses
                     // .listRowBackground(Color.Deltiq.surface) uebernimmt nur
                     // die Flaeche, nicht unseren 20pt-Karten-Radius - die Zeile
@@ -201,6 +211,8 @@ public struct PlansListView: View {
                         PlanRow(plan: plan)
                     }
                 }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(.isButton)
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
@@ -413,6 +425,16 @@ private struct PlanRow: View {
                 .font(.system(size: 12))
                 .foregroundStyle(Color.Deltiq.textSecondary)
             }
+
+            Spacer()
+
+            // Nachtrag 6. August, abends (README 2.10/19a): ersetzt den
+            // nativen List-Chevron, der jetzt entfaellt (der Button-Wrapper
+            // in `plansSection` bringt keinen mit) - gleiches Muster wie
+            // `ActiveSessionBanner` darunter.
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.Deltiq.textTertiary)
         }
         .padding(.vertical, 4)
     }

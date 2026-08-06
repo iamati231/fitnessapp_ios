@@ -1160,17 +1160,13 @@ public struct WorkoutSummaryView: View {
         }
     }
 
-    /// AMRAP/EMOM zeigen Wdh./Sek. pro Durchgang (Circuit wiederholt sich,
-    /// bis die Zeit abgelaufen ist); Auf Zeit zeigt Runden×Wdh./Sek.
-    /// (Circuit laeuft genau einmal ueber die feste Rundenzahl).
+    /// Duenner Wrapper um das geteilte `timedFormatCircuitLabel`
+    /// (TimedWorkoutPlayerView.swift) - siehe dort fuer die Begruendung.
     private func circuitValueLabel(_ exercise: Exercise, format: WorkoutTimeFormat) -> String {
-        let target = timedFormatTargetLabel(exercise)
-        switch format {
-        case .amrap, .emom:
-            return target
-        case .forTime:
-            return "\(max(exercise.sets, 1))× \(target)"
-        }
+        timedFormatCircuitLabel(
+            repsMin: exercise.repsMin, isTimeBased: exercise.isTimeBased,
+            sets: exercise.sets, format: format
+        )
     }
 
     private func exerciseSection(for exercise: Exercise, logs: [ExerciseLog]) -> some View {

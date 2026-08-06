@@ -15296,6 +15296,30 @@
         }
       }
     },
+    "day.editor.timedFormat.hintAmrap": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Keine festen Pausen — so viele Runden wie möglich, bis die Zeit um ist." } },
+        "en": { "stringUnit": { "state": "translated", "value": "No fixed rest — as many rounds as possible until time is up." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sabit mola yok — süre bitene kadar mümkün olduğunca çok tur." } }
+      }
+    },
+    "day.editor.timedFormat.hintEmom": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Keine festen Pausen — jede Minute startet neu." } },
+        "en": { "stringUnit": { "state": "translated", "value": "No fixed rest — every minute starts fresh." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sabit mola yok — her dakika yeniden başlar." } }
+      }
+    },
+    "day.editor.timedFormat.hintForTime": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Keine festen Pausen — so schnell wie möglich durcharbeiten." } },
+        "en": { "stringUnit": { "state": "translated", "value": "No fixed rest — work through it as fast as possible." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sabit mola yok — mümkün olduğunca hızlı bitir." } }
+      }
+    },
     "day.editor.superset.link": {
       "extractionState": "manual",
       "localizations": {
@@ -20586,50 +20610,36 @@
         }
       }
     },
-    "workout.detail.reps": {
+    "workout.detail.reps.one": {
       "extractionState": "manual",
       "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld Sätze • %2$@ Wdh • %3$llds Pause"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld sets • %2$@ reps • %3$llds rest"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld set • %2$@ tekrar • %3$llds mola"
-          }
-        }
+        "de": { "stringUnit": { "state": "translated", "value": "%1$lld Satz • %2$@ Wdh • %3$llds Pause" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%1$lld set • %2$@ reps • %3$llds rest" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%1$lld set • %2$@ tekrar • %3$llds mola" } }
       }
     },
-    "workout.detail.seconds": {
+    "workout.detail.reps.other": {
       "extractionState": "manual",
       "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld Sätze • %2$@ Sek • %3$llds Pause"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld sets • %2$@ sec • %3$llds rest"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld set • %2$@ sn • %3$llds mola"
-          }
-        }
+        "de": { "stringUnit": { "state": "translated", "value": "%1$lld Sätze • %2$@ Wdh • %3$llds Pause" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%1$lld sets • %2$@ reps • %3$llds rest" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%1$lld set • %2$@ tekrar • %3$llds mola" } }
+      }
+    },
+    "workout.detail.seconds.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%1$lld Satz • %2$@ Sek • %3$llds Pause" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%1$lld set • %2$@ sec • %3$llds rest" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%1$lld set • %2$@ sn • %3$llds mola" } }
+      }
+    },
+    "workout.detail.seconds.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%1$lld Sätze • %2$@ Sek • %3$llds Pause" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%1$lld sets • %2$@ sec • %3$llds rest" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%1$lld set • %2$@ sn • %3$llds mola" } }
       }
     },
     "workout.detail.cardio": {
