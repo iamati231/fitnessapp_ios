@@ -74,6 +74,14 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Geçen süre: %@" } }
       }
     },
+    "timedWorkout.emom.completedPill": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%lld erledigt" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%lld done" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld tamam" } }
+      }
+    },
     "timedWorkout.emom.markDone": {
       "extractionState": "manual",
       "localizations": {

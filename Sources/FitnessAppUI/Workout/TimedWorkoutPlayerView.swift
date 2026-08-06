@@ -196,8 +196,15 @@ private struct AMRAPPlayerView: View {
             )
 
             VStack(alignment: .leading, spacing: 18) {
+                // Nachtrag 6. August, abends (README 2.9/18e): die erste
+                // Kapsel zeigte bisher "AMRAP" - dasselbe wie der Eyebrow
+                // direkt darueber. Live-Rundenstand ist die Information, die
+                // sonst nirgends in der Kopfzone steht.
                 DeltiqContextRow([
-                    DeltiqContextItem("AMRAP", style: .accent),
+                    DeltiqContextItem(
+                        "\(roundsCompleted) " + String(localized: "timedWorkout.amrap.roundsLabel", bundle: .module),
+                        style: .accent
+                    ),
                     DeltiqContextItem(
                         String(format: String(localized: "timedWorkout.amrap.capContext", bundle: .module), (day?.timeCapMinutes ?? 20)).uppercased(),
                         style: .neutral
@@ -296,7 +303,12 @@ private struct AMRAPPlayerView: View {
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(Color.Deltiq.textSecondary)
             }
-            .frame(width: 76, height: 56)
+            // Nachtrag 6. August, abends (README 2.9/18e): war 56pt fix,
+            // der Knopf daneben bekommt seine Hoehe aus deltiqButtonStyle
+            // (.headline + 14pt vertikales Padding ≈ 49pt) - beide standen
+            // in der zentrierten HStack 3.5pt versetzt. 49 matcht die
+            // tatsaechliche Knopf-Hoehe.
+            .frame(width: 76, height: 49)
             .background(Color.Deltiq.fill)
             .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
 
@@ -393,8 +405,15 @@ private struct EMOMPlayerView: View {
             )
 
             VStack(alignment: .leading, spacing: 18) {
+                // Nachtrag 6. August, abends (README 2.9/18e): die erste
+                // Kapsel zeigte bisher "EMOM" - dasselbe wie der Eyebrow
+                // direkt darueber. Live-Stand der geschafften Minuten ist
+                // die Information, die sonst nirgends in der Kopfzone steht.
                 DeltiqContextRow([
-                    DeltiqContextItem("EMOM", style: .accent),
+                    DeltiqContextItem(
+                        String(format: String(localized: "timedWorkout.emom.completedPill", bundle: .module), completedMinutes.count).uppercased(),
+                        style: .accent
+                    ),
                     DeltiqContextItem(
                         String(
                             format: String(localized: "timedWorkout.emom.minuteContext", bundle: .module),
@@ -614,14 +633,21 @@ private struct ForTimePlayerView: View {
             )
 
             VStack(alignment: .leading, spacing: 18) {
+                // Nachtrag 6. August, abends (README 2.9/18e): die erste
+                // Kapsel kam aus derselben `pillLabel`-Variable wie der
+                // Eyebrow direkt darueber - identischer Text zweimal. Anders
+                // als AMRAP/EMOM gibt's bei Auf Zeit keinen weiteren Live-
+                // Zustand, der noch nicht angezeigt wird (Zeit ist schon die
+                // Hero-Zahl, Fortschritt ist schon die verbleibende Kapsel) -
+                // die redundante Kapsel entfaellt komplett statt erfundenen
+                // Inhalt zu zeigen.
                 DeltiqContextRow([
-                    DeltiqContextItem(pillLabel.uppercased(), style: .accent),
                     DeltiqContextItem(
                         String(
                             format: String(localized: "timedWorkout.forTime.progressContext", bundle: .module),
                             checkedBoxes, totalBoxes
                         ).uppercased(),
-                        style: .neutral
+                        style: .accent
                     )
                 ])
 

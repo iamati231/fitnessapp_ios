@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1552 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1553 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1552 / 1552** (100%) | 0 |
-| 🇬🇧 English (EN) | **1552 / 1552** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1552 / 1552** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1553 / 1553** (100%) | 0 |
+| 🇬🇧 English (EN) | **1553 / 1553** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1553 / 1553** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1742,7 +1742,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `tab.plan` | Plan | Plan | Plan |
 | `tab.tools` | Werkzeuge | Tools | Araçlar |
 
-## `timedWorkout.*`  (20 Keys)
+## `timedWorkout.*`  (21 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1755,6 +1755,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `timedWorkout.discard.confirmTitle` | Training abbrechen? | Cancel workout? | Antrenmanı iptal et? |
 | `timedWorkout.discard.menu` | Abbrechen | Cancel | İptal et |
 | `timedWorkout.elapsed` | Verstrichen: %@ | Elapsed: %@ | Geçen süre: %@ |
+| `timedWorkout.emom.completedPill` | %lld erledigt | %lld done | %lld tamam |
 | `timedWorkout.emom.markDone` | Minute geschafft | Minute done | Dakika tamam |
 | `timedWorkout.emom.minuteContext` | Minute %lld / %lld | Minute %lld of %lld | %lld. / %lld. dakika |
 | `timedWorkout.emom.nextMinute` | Nächste Minute | Next minute | Sonraki dakika |

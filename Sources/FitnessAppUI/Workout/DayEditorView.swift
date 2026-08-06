@@ -590,20 +590,30 @@ public struct DayEditorView: View {
     /// Section-Header bleibt leer — die Card hat ihren eigenen Header
     /// mit Icon + Titel. listRowInsets removed so the Bento-Card-Look
     /// dasselbe Padding-System hat wie auf dem Dashboard.
+    ///
+    /// README 2.10/19f: `DayAnalyzer` leitet Belastung/Dauer/Regeneration
+    /// aus Saetzen × Wdh × Pause ab - fuer einen Zeitformat-Tag (z.B. Cindy,
+    /// AMRAP 20 Min) kommt dabei das Gegenteil der Wahrheit heraus ("Leicht,
+    /// ~5-11 Min, passend fuer Deload"). Eine eigene Belastungsschaetzung
+    /// fuer AMRAP/EMOM/Auf Zeit waere ein eigenes Feature (andere Reiz-
+    /// Quelle: Zeit unter Anstrengung statt Saetze × Reps × RIR) - bis dahin
+    /// zeigen wir fuer diese Tage lieber gar keine Analyse als eine falsche.
     @ViewBuilder
     private var dayAnalysisSection: some View {
-        Section {
-            let exercises = day.activeExercises
-            let analysis = DayAnalyzer.analyze(exercises: exercises)
+        if day.timeFormat == nil {
+            Section {
+                let exercises = day.activeExercises
+                let analysis = DayAnalyzer.analyze(exercises: exercises)
 
-            if let analysis {
-                DayAnalysisCard(mode: .analysis(analysis))
-            } else {
-                DayAnalysisCard(mode: .empty)
+                if let analysis {
+                    DayAnalysisCard(mode: .analysis(analysis))
+                } else {
+                    DayAnalysisCard(mode: .empty)
+                }
             }
+            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+            .listRowBackground(Color.clear)
         }
-        .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
-        .listRowBackground(Color.clear)
     }
 
     // MARK: Derived
