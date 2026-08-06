@@ -307,7 +307,10 @@ public struct DashboardView: View {
                         .font(.title2)
                         .foregroundStyle(.white)
                         .frame(width: 38, height: 38)
-                        .background(Color.yellow.gradient)
+                        // Signature-Geruest 2.16: war Color.yellow - einziger
+                        // Ausreisser gegen 1.7 (ein Akzent), in der
+                        // Zusammenfassung war das schon behoben, hier nicht.
+                        .background(Color.deltiqOrange.gradient)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     VStack(alignment: .leading, spacing: 2) {
                         Text("dashboard.trophy.title", bundle: .module)
@@ -574,30 +577,33 @@ public struct DashboardView: View {
                            bundle: .module)
         switch slot {
         case .weight:
+            // Signature-Geruest 2.16: eine Nachkommastelle statt zwei -
+            // "70,00 kg" taeuschte eine Praezision vor, die eine
+            // Personenwaage (100g-Aufloesung) gar nicht liefert.
             MetricCard(
                 label: label,
-                value: latest.weightKg.truncated(to: 2).formattedTwoDecimals,
+                value: latest.weightKg.truncated(to: 1).formattedOneDecimal,
                 unit: "kg",
                 delta: weeklyWeightDelta()
             )
         case .bodyFatNavy:
             MetricCard(
                 label: label,
-                value: latest.navyBodyFatPct?.truncated(to: 2).formattedTwoDecimals ?? "—",
+                value: latest.navyBodyFatPct?.truncated(to: 1).formattedOneDecimal ?? "—",
                 unit: latest.navyBodyFatPct != nil ? "%" : nil,
                 delta: nil
             )
         case .ffmi:
             MetricCard(
                 label: label,
-                value: latest.ffmi?.truncated(to: 2).formattedTwoDecimals ?? "—",
+                value: latest.ffmi?.truncated(to: 1).formattedOneDecimal ?? "—",
                 unit: nil,
                 delta: nil
             )
         case .leanMass:
             MetricCard(
                 label: label,
-                value: latest.fatFreeMassKg?.truncated(to: 2).formattedTwoDecimals ?? "—",
+                value: latest.fatFreeMassKg?.truncated(to: 1).formattedOneDecimal ?? "—",
                 unit: latest.fatFreeMassKg != nil ? "kg" : nil,
                 delta: nil
             )
@@ -605,7 +611,7 @@ public struct DashboardView: View {
             let bmi = computedBMI(measurement: latest)
             MetricCard(
                 label: label,
-                value: bmi?.truncated(to: 2).formattedTwoDecimals ?? "—",
+                value: bmi?.truncated(to: 1).formattedOneDecimal ?? "—",
                 unit: nil,
                 delta: nil
             )
@@ -841,7 +847,7 @@ public struct DashboardView: View {
                             .annotation(position: .top, alignment: .leading) {
                                 Text(String(localized: "dashboard.goal.line", bundle: .module)
                                         .replacingOccurrences(of: "%@",
-                                                              with: goal.truncated(to: 2).formattedTwoDecimals))
+                                                              with: goal.truncated(to: 1).formattedOneDecimal))
                                     .font(.caption2)
                                     .foregroundStyle(.green)
                             }
@@ -2048,6 +2054,38 @@ public struct DashboardView: View {
         "Rudern vorgebeugt"
     ]
 
+    /// Signature-Geruest 2.16: validierte, CVD-sichere Fuenfer-Kategorie-
+    /// Palette (dataviz-Skill, adjacent-pairs-Check fuer Linien-Charts,
+    /// beide Modi PASS) - feste Reihenfolge, nie zyklisch neu zugeordnet.
+    /// Passend zu `compoundLiftNames` per Index gepaart in
+    /// `compoundColorScale`, nicht hartcodiert auf einen bestimmten Lift,
+    /// weil die Legenden-Beschriftung lokalisiert ist (siehe dort).
+    private static let compoundLiftColors: [Color] = [
+        Color(deltiqLight: Color(red: 0.165, green: 0.471, blue: 0.839),
+              deltiqDark: Color(red: 0.224, green: 0.529, blue: 0.898)),
+        Color(deltiqLight: Color(red: 0.922, green: 0.408, blue: 0.204),
+              deltiqDark: Color(red: 0.851, green: 0.349, blue: 0.149)),
+        Color(deltiqLight: Color(red: 0.106, green: 0.686, blue: 0.478),
+              deltiqDark: Color(red: 0.098, green: 0.620, blue: 0.439)),
+        Color(deltiqLight: Color(red: 0.929, green: 0.631, blue: 0.000),
+              deltiqDark: Color(red: 0.788, green: 0.522, blue: 0.000)),
+        Color(deltiqLight: Color(red: 0.910, green: 0.482, blue: 0.643),
+              deltiqDark: Color(red: 0.835, green: 0.318, blue: 0.506))
+    ]
+
+    /// Bindet jeden Lift-NAMEN (lokalisiert, wie er auch als `.value("Lift",
+    /// ...)`-Plot-Key verwendet wird) an eine feste Farbe aus
+    /// `compoundLiftColors` - `chartForegroundStyleScale` braucht eine
+    /// garantierte Zuordnung, sonst kann Swift Charts Farben zwischen
+    /// Zeitraum-Filterwechseln neu vergeben (Serie B haette dann nicht mehr
+    /// dieselbe Farbe wie vorher).
+    private var compoundColorScale: [String: Color] {
+        Dictionary(uniqueKeysWithValues: zip(
+            Self.compoundLiftNames.map { Exercise.resolvedDisplayName(forStoredName: $0) },
+            Self.compoundLiftColors
+        ))
+    }
+
     /// One series per compound lift. Each series carries one point per session
     /// (the best estimated 1RM of any set in that session). Lifts with fewer
     /// than 2 data points are dropped — a "trend" needs at least two sessions.
@@ -2198,6 +2236,16 @@ public struct DashboardView: View {
                 base: compoundChartRange.domain(oldestDataDate: oldestCompound),
                 forecastPoints: forecastSamples
             )
+            // Signature-Geruest 2.16: datengetriebene y-Achse statt Swift-
+            // Charts-Automatik - die rundete bei Werten zwischen 60-110 kg
+            // auf "schoene" Ticks wie 0/50/100/150 und liess die obere
+            // Haelfte des Charts leer.
+            let allOneRMValues = series.flatMap(\.points).map(\.oneRM)
+                + forecastSamples.flatMap(\.points).map(\.oneRM)
+            let yMin = allOneRMValues.min() ?? 0
+            let yMax = allOneRMValues.max() ?? 100
+            let yPadding = max((yMax - yMin) * 0.1, 5)
+            let yDomain = max(0, yMin - yPadding)...(yMax + yPadding)
             if allCompound.isEmpty {
                 // UX-201: Premium-Empty-State (icon + headline + description
                 // + CTA). Vorher: kompakte HStack ohne Aktion.
@@ -2235,12 +2283,19 @@ public struct DashboardView: View {
                     // verbindet den letzten echten Punkt mit dem
                     // projizierten 4-Wochen-Wert. Nur für Lifts, deren
                     // Trend nicht als "unreliable" markiert ist.
+                    // Signature-Geruest 2.16: eigener `series`-Schluessel
+                    // ("-forecast"-Suffix) trennt das Prognose-Segment vom
+                    // Ist-Verlauf - vorher teilten sich beide denselben
+                    // "Lift"-Series-Key, wodurch Swift Charts beide Segmente
+                    // als EINEN durchgehenden Pfad interpretieren konnte.
+                    // `foregroundStyle(by:)` bleibt auf dem echten Lift-Namen,
+                    // damit die Farbe trotzdem an den Ist-Verlauf gekoppelt ist.
                     ForEach(forecastSamples) { line in
                         ForEach(line.points) { point in
                             LineMark(
                                 x: .value("Datum", point.date),
                                 y: .value("1RM (kg)", point.oneRM),
-                                series: .value("Lift", line.exerciseName)
+                                series: .value("Serie", "\(line.exerciseName)-forecast")
                             )
                             .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
                             .foregroundStyle(by: .value("Lift", line.exerciseName))
@@ -2259,7 +2314,20 @@ public struct DashboardView: View {
                             .opacity(0.8)
                         }
                     }
+                    // Signature-Geruest 2.16: "Heute"-Markierung, damit
+                    // gemessene und projizierte Punkte unterscheidbar bleiben.
+                    if !forecastSamples.isEmpty {
+                        RuleMark(x: .value("Heute", Date()))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 2]))
+                            .foregroundStyle(.secondary)
+                            .annotation(position: .top, alignment: .trailing) {
+                                Text("dashboard.compoundChart.today", bundle: .module)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                    }
                 }
+                .chartForegroundStyleScale(compoundColorScale)
                 .chartXScale(domain: domain)
                 .chartXAxis {
                     // DEL-153: feste Kalender-Anker statt daten-getriebener
@@ -2287,8 +2355,12 @@ public struct DashboardView: View {
                         AxisValueLabel()
                     }
                 }
+                .chartYScale(domain: yDomain)
                 .chartLegend(position: .bottom, alignment: .leading)
-                .frame(height: 220)
+                // Signature-Geruest 2.16: 220 -> 260, damit bei bis zu fuenf
+                // Serien (Farbe + Symbol je Eintrag) die Legende umbrechen
+                // kann, ohne die Plot-Flaeche zusammenzudruecken.
+                .frame(height: 260)
                 .fitnessNumberStyle()
             }
         }
@@ -2390,8 +2462,9 @@ public struct DashboardView: View {
     }
 
     private func formatVolumeKg(_ kg: Double) -> String {
-        let rounded = kg.truncated(to: 0)
-        return rounded.formattedTwoDecimals
+        // Signature-Geruest 2.16: Volumen ist eine diskrete Groesse - "0,00 KG"
+        // taeuschte eine Praezision vor, die hier niemand braucht.
+        kg.truncated(to: 0).formattedNoDecimals
     }
 
     private func formatDistance(_ km: Double) -> String {
@@ -2437,9 +2510,16 @@ public struct DashboardView: View {
                 )
             } else {
                 ChartTimeRangePicker(selection: $volumeChartRange)
-                let domain = volumeChartRange.domain(
+                let rawDomain = volumeChartRange.domain(
                     oldestDataDate: points.first?.weekStart
                 )
+                // Signature-Geruest 2.16: 3 Tage Nachlauf-Puffer rechts -
+                // die harte Obergrenze `now` liess Swift Charts das letzte
+                // Achsen-Label (Tag + Monat) genau am rechten Plot-Rand
+                // zentrieren, wo es ohne reservierten Rand abgeschnitten
+                // wurde (nur die fuehrende Tagesziffer blieb sichtbar).
+                let domain = rawDomain.lowerBound...rawDomain.upperBound.addingTimeInterval(3 * 86_400)
+                let maxVolumeKg = points.map(\.volumeKg).max() ?? 0
                 Chart {
                     ForEach(points) { point in
                         BarMark(
@@ -2482,6 +2562,10 @@ public struct DashboardView: View {
                         AxisValueLabel()
                     }
                 }
+                // Signature-Geruest 2.16: Balken starten bei 0 (kein
+                // Bar-Chart mit verschobener Grundlinie), oben 15% Puffer
+                // statt Swift-Charts-Automatik.
+                .chartYScale(domain: 0...(maxVolumeKg * 1.15))
                 .frame(height: 220)
                 .fitnessNumberStyle()
             }
@@ -3032,10 +3116,17 @@ private struct DashboardSessionRow: View {
                     .font(.subheadline.weight(.semibold))
                 HStack(spacing: 6) {
                     Text(session.startTime.formatted(date: .abbreviated, time: .omitted))
+                    // Signature-Geruest 2.16: 0 Min ist typischerweise eine
+                    // Unter-Minuten-Session (Ganzzahl-Trunkierung bei der
+                    // Dauer-Berechnung) oder ein CSV-Import ohne Dauer-
+                    // Spalte - beides zeigt man besser gar nicht als eine
+                    // irrefuehrende Null.
+                    if session.durationMinutes > 0 {
+                        Text("•")
+                        Text(minutesText)
+                    }
                     Text("•")
-                    Text("\(session.durationMinutes) Min")
-                    Text("•")
-                    Text("\(session.totalSets) Sätze")
+                    Text(setsText)
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -3048,6 +3139,24 @@ private struct DashboardSessionRow: View {
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())
+    }
+
+    private var minutesText: String {
+        String(
+            format: String(localized: "dashboard.recent.minutesShort", bundle: .module),
+            session.durationMinutes
+        )
+    }
+
+    /// Signature-Geruest 2.16: "Sätze" war hartes Deutsch ohne Katalog-
+    /// Schluessel - gleiches .one/.other-Muster wie `PlanRow.pluralized`
+    /// bzw. `DashboardView.pluralizedShowMore` (DEL-121/DEL-128).
+    private var setsText: String {
+        let count = session.totalSets
+        let suffix = count == 1 ? "one" : "other"
+        let key = String.LocalizationValue(stringLiteral: "dashboard.recent.sets.\(suffix)")
+        let raw = String(localized: key, bundle: .module)
+        return raw.replacingOccurrences(of: "%lld", with: "\(count)")
     }
 }
 
@@ -3116,7 +3225,9 @@ private struct MetricCard: View {
 
     private func deltaLabel(_ delta: Double) -> some View {
         let prefix = delta > 0 ? "+" : (delta < 0 ? "" : "±")
-        let formatted = abs(delta).truncated(to: 2).formattedTwoDecimals
+        // Signature-Geruest 2.16: eine Nachkommastelle wie beim Gewicht selbst
+        // ("+1,00 kg" -> "+1,0 kg") - gleiche Begruendung wie beim Hero-Wert.
+        let formatted = abs(delta).truncated(to: 1).formattedOneDecimal
         let arrow = delta > 0 ? "arrow.up" : (delta < 0 ? "arrow.down" : "minus")
         return HStack(spacing: 2) {
             Image(systemName: arrow)

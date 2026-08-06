@@ -1,6 +1,6 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1583 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1587 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
@@ -285,7 +285,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.highFatigueYesterday.analytical.weightLoss` | Gestern war hochvolumig. Aktive Regeneration — ein lockerer Spaziergang — verbrennt heute Kalorien, ohne zusätzlichen Erholungsbedarf zu erzeugen. | Yesterday was high volume. Active recovery — an easy walk — burns calories today without adding recovery debt. | Dün yüksek hacimliydi. Aktif toparlanma — hafif bir yürüyüş — bugün toparlanma borcu eklemeden kalori yakar. |
 | `coaching.highFatigueYesterday.motivating.hybrid` | Gestern war intensiv! Ein lockerer Recovery-Run oder eine Radrunde spült heute die schweren Beine frei. 🚴 | Yesterday was intense! An easy recovery run or bike spin will flush those heavy legs today. 🚴 | Dün yoğundu! Hafif bir toparlanma koşusu veya bisiklet turu bugün ağır bacakları açar. 🚴 |
 | `coaching.highFatigueYesterday.motivating.hypertrophy` | Dein Volumen gestern war massiv! Muskeln wachsen in der Ruhephase — gönn dir heute einen kompletten Rest-Day. 😴 | Your volume yesterday was massive! Muscles grow during rest — treat yourself to a full rest day today. 😴 | Dünkü hacmin devasaydı! Kaslar dinlenirken büyür — bugün kendine tam bir dinlenme günü hediye et. 😴 |
-| `coaching.highFatigueYesterday.motivating.strength` | Gestern ordentlich Last bewegt! Dein Nervensystem lädt gerade nach — morgen kommst du stärker zurück. ⚡ | You moved serious load yesterday! Your nervous system is recharging — you'll come back stronger tomorrow. ⚡ | Dün ciddi yük kaldırdın! Sinir sistemin şarj oluyor — yarın daha güçlü dönersin. ⚡ |
+| `coaching.highFatigueYesterday.motivating.strength` | Gestern ordentlich Last bewegt! Dein Nervensystem lädt gerade nach — morgen kommst du stärker zurück. | You moved serious load yesterday! Your nervous system is recharging — you'll come back stronger tomorrow. | Dün ciddi yük kaldırdın! Sinir sistemin şarj oluyor — yarın daha güçlü dönersin. |
 | `coaching.highFatigueYesterday.motivating.weightLoss` | Du hast gestern hart trainiert! Ein leichter Spaziergang heute verbrennt Kalorien UND hilft der Regeneration — doppelter Gewinn. 🚶 | You trained hard yesterday! An easy walk today burns calories AND helps recovery — double win. 🚶 | Dün sıkı çalıştın! Bugün hafif bir yürüyüş hem kalori yakar HEM toparlanmaya yardım eder — çifte kazanç. 🚶 |
 | `coaching.highFatigueYesterday.strict.hybrid` | Intensiver Tag gestern. Recovery heißt aktiv: 20 Minuten lockeres Rollen, nicht 'mal schauen' auf der Couch. | Intense day yesterday. Recovery means active: 20 easy minutes rolling, not 'we'll see' on the couch. | Dün yoğun bir gündü. Toparlanma aktif demek: 20 dakika hafif tempo, koltukta 'bakarız' değil. |
 | `coaching.highFatigueYesterday.strict.hypertrophy` | Gestern massiv trainiert. Heute trotzdem ins Gym zu rennen wäre Ego, kein Plan — Rest-Day, Punkt. | Massive session yesterday. Running back to the gym today would be ego, not programming — rest day, period. | Dün devasa bir seans. Bugün salona koşmak ego olur, program değil — dinlenme günü, nokta. |
@@ -297,7 +297,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.morningCardioDone.analytical.weightLoss` | Cardio heute Morgen verbucht. Für den Fettabbau ist Muskelerhalt entscheidend — ein leichtes Ganzkörper-Krafttraining heute schützt die Magermasse im Defizit. | Cardio logged this morning. For weight loss, muscle retention is key — a light full-body strength session today protects lean mass in the deficit. | Kardiyo bu sabah kaydedildi. Yağ kaybında kas koruması kritik — bugün hafif bir tüm vücut kuvvet antrenmanı açıkta yağsız kütleyi korur. |
 | `coaching.morningCardioDone.motivating.hybrid` | Cardio-Check! ✅ Dein Hybrid-Ziel braucht auch Kraft — heb heute Abend noch etwas Eisen. | Cardio: check! ✅ Your hybrid goal needs strength too — lift some iron tonight. | Kardiyo: tamam! ✅ Hibrit hedefin kuvvet de ister — bu akşam biraz demir kaldır. |
 | `coaching.morningCardioDone.motivating.hypertrophy` | Cardio ist im Kasten! Heute Abend gehört dem Oberkörper — die Beine haben ihren Teil schon geleistet. 💪 | Cardio is in the bag! Tonight belongs to the upper body — your legs already did their part. 💪 | Kardiyo cepte! Bu akşam üst vücudun — bacaklar payına düşeni yaptı. 💪 |
-| `coaching.morningCardioDone.motivating.strength` | Cardio-Basis steht! Falls heute noch gehoben wird: Oberkörper rockt, Beine schonen. ⚡ | Cardio base is set! If you lift today: rock the upper body, spare the legs. ⚡ | Kardiyo tabanı hazır! Bugün kaldıracaksan: üst vücut coşsun, bacaklar dinlensin. ⚡ |
+| `coaching.morningCardioDone.motivating.strength` | Cardio-Basis steht! Falls heute noch gehoben wird: Oberkörper rockt, Beine schonen. | Cardio base is set! If you lift today: rock the upper body, spare the legs. | Kardiyo tabanı hazır! Bugün kaldıracaksan: üst vücut coşsun, bacaklar dinlensin. |
 | `coaching.morningCardioDone.motivating.weightLoss` | Super Start in den Tag! Wenn du heute noch Energie hast, bau ein leichtes Ganzkörper-Krafttraining ein — so bleiben die Muskeln im Defizit erhalten. 🌅 | Great start to the day! If you have energy left, add a light full-body strength session — it keeps your muscle while you cut. 🌅 | Güne süper başlangıç! Enerjin kaldıysa hafif bir tüm vücut kuvvet antrenmanı ekle — açıkta kasını korur. 🌅 |
 | `coaching.morningCardioDone.strict.hybrid` | Halbzeit. Cardio war heute Morgen, Kraft steht noch aus — Hybrid gibt's nicht zum halben Preis. | Halftime. Cardio was this morning, strength is still owed — hybrid doesn't come at half price. | Devre arası. Kardiyo sabahtı, kuvvet hâlâ borç — hibrit yarı fiyata olmaz. |
 | `coaching.morningCardioDone.strict.hypertrophy` | Cardio war noch nicht alles. Heute Abend Krafttraining — Oberkörper, die Beine sind durch. Aufbau passiert am Eisen. | Cardio wasn't the whole job. Strength tonight — upper body, the legs are spent. Muscle is built at the iron. | Kardiyo işin tamamı değildi. Akşam kuvvet — üst vücut, bacaklar bitti. Kas demirde yapılır. |
@@ -309,7 +309,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.morningStrengthDone.analytical.weightLoss` | Kraft ist für heute erledigt. Für den Fettabbau bringt lockere Nachmittags-Aktivität — Spaziergang oder leichte Radtour — extra Kalorienverbrauch, ohne die Erholung zu stören. | Strength is done for today. For fat loss, easy afternoon activity — a walk or light ride — adds calorie burn without hurting recovery. | Bugünlük kuvvet tamam. Yağ kaybı için öğleden sonra hafif aktivite — yürüyüş veya hafif bisiklet — toparlanmayı bozmadan ekstra kalori yakar. |
 | `coaching.morningStrengthDone.motivating.hybrid` | Kraft ist drin! Wenn du Zeit hast, mach heute noch 20-30 Minuten lockeres Zone-2-Cardio — dein Hybrid-Motor dankt es dir. 🚴 | Strength is in! If you have time, add 20-30 minutes of easy zone-2 cardio today — your hybrid engine will thank you. 🚴 | Kuvvet tamam! Vaktin varsa bugün 20-30 dakika rahat zone-2 kardiyo ekle — hibrit motorun teşekkür eder. 🚴 |
 | `coaching.morningStrengthDone.motivating.hypertrophy` | Guter Pump heute Morgen! Iss genug Protein und ruh dich für den Rest des Tages aus. 💪 | Great pump this morning! Eat enough protein and rest up for the remainder of the day. 💪 | Bu sabah harika bir pump! Yeterince protein ye ve günün geri kalanında dinlen. 💪 |
-| `coaching.morningStrengthDone.motivating.strength` | Schwere Arbeit heute Morgen erledigt! Gönn deinem Nervensystem jetzt die Pause, die es für den nächsten PR braucht. ⚡ | Heavy work done this morning! Now give your nervous system the rest it needs for the next PR. ⚡ | Ağır iş bu sabah bitti! Şimdi sinir sistemine bir sonraki PR için ihtiyacı olan molayı ver. ⚡ |
+| `coaching.morningStrengthDone.motivating.strength` | Schwere Arbeit heute Morgen erledigt! Gönn deinem Nervensystem jetzt die Pause, die es für den nächsten PR braucht. | Heavy work done this morning! Now give your nervous system the rest it needs for the next PR. | Ağır iş bu sabah bitti! Şimdi sinir sistemine bir sonraki PR için ihtiyacı olan molayı ver. |
 | `coaching.morningStrengthDone.motivating.weightLoss` | Kraft ist erledigt! Für maximalen Fettabbau häng heute Nachmittag noch einen Spaziergang oder eine lockere Radtour dran. 🚶 | Strength: done! For maximum fat burn, add a walk or an easy bike ride this afternoon. 🚶 | Kuvvet tamam! Maksimum yağ yakımı için bu öğleden sonra bir yürüyüş veya hafif bisiklet turu ekle. 🚶 |
 | `coaching.morningStrengthDone.strict.hybrid` | Kraft erledigt — halbes Soll. Hybrid heißt beides: 20 Minuten lockeres Cardio heute noch, dann ist der Tag komplett. | Strength done — that's half the job. Hybrid means both: 20 minutes of easy cardio today completes the day. | Kuvvet bitti — işin yarısı. Hibrit ikisi de demek: bugün 20 dakika hafif kardiyo günü tamamlar. |
 | `coaching.morningStrengthDone.strict.hypertrophy` | Training war heute Morgen. Jetzt nicht den Aufbau sabotieren: Protein rein, Füße hoch, kein Junk-Cardio. | Training was this morning. Don't sabotage the gains now: protein in, feet up, no junk cardio. | Antrenman bu sabahtı. Şimdi kazanımları sabote etme: protein al, ayakları uzat, gereksiz kardiyo yok. |
@@ -355,7 +355,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.soft.planPreview.analytical.1` | Heute steht eine Einheit im Plan. Ein kurzer Blick auf die letzten Gewichte vor dem Start spart Zeit im Gym. | A session is on today's plan. A quick look at your last weights before starting saves time at the gym. | Bugün planında bir seans var. Başlamadan önce son ağırlıklara hızlıca bakmak salonda zaman kazandırır. |
 | `coaching.soft.planPreview.analytical.2` | Trainingstag laut Plan. Die beste Leistung kommt ~2-3 Stunden nach der letzten vollen Mahlzeit. | Training day per plan. Peak performance comes ~2-3 hours after your last full meal. | Plana göre antrenman günü. En iyi performans son tam öğünden ~2-3 saat sonra gelir. |
 | `coaching.soft.planPreview.motivating` | Heute steht ein Training an. Mach dich gut warm und gib alles für die schweren Sätze! | A workout's on the schedule today. Warm up well and give it your all on the heavy sets! | Bugün bir antrenman var. İyi ısın ve ağır setlerde her şeyini ver! |
-| `coaching.soft.planPreview.motivating.1` | Heute ist Trainingstag! Die beste Version von dir wartet im Gym. ⚡ | It's training day! The best version of you is waiting at the gym. ⚡ | Bugün antrenman günü! Senin en iyi versiyonun salonda bekliyor. ⚡ |
+| `coaching.soft.planPreview.motivating.1` | Heute ist Trainingstag! Die beste Version von dir wartet im Gym. | It's training day! The best version of you is waiting at the gym. | Bugün antrenman günü! Senin en iyi versiyonun salonda bekliyor. |
 | `coaching.soft.planPreview.motivating.2` | Dein Plan ruft! Schon der Gang zum Gym ist der halbe Sieg. | Your plan is calling! Just getting to the gym is half the victory. | Planın seni çağırıyor! Salona gitmek bile zaferin yarısı. |
 | `coaching.soft.planPreview.strict` | Heute ist Trainingstag. Kein Aufschub. Punkt. | Today is a training day. No postponing. Period. | Bugün antrenman günü. Erteleme yok. Nokta. |
 | `coaching.soft.planPreview.strict.1` | Im Plan steht heute Training. Pläne sind keine Vorschläge. | The plan says training today. Plans are not suggestions. | Planda bugün antrenman yazıyor. Planlar öneri değildir. |
@@ -457,7 +457,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `customExercise.section.name` | Name | Name | Ad |
 | `customExercise.title` | Neue Übung | New exercise | Yeni hareket |
 
-## `dashboard.*`  (82 Keys)
+## `dashboard.*`  (86 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -476,6 +476,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.compoundChart.empty.title` | Noch zu wenig Daten | Not enough data yet | Henüz yeterli veri yok |
 | `dashboard.compoundChart.legend` | Geschätztes 1RM · gestrichelt = 4-Wochen-Prognose | Estimated 1RM · dashed = 4-week forecast | Tahmini 1RM · kesik çizgi = 4 haftalık tahmin |
 | `dashboard.compoundChart.title` | Compound-Lift-Trend | Compound Lift Trend | Temel Hareket Trendi |
+| `dashboard.compoundChart.today` | Heute | Today | Bugün |
 | `dashboard.deload.activeBanner` | Deload-Woche aktiv bis %@ — Arbeitsgewichte um ~50%% reduziert. Trainiere die Bewegungen, lass das Schleifen weg. | Deload week active until %@ — working weights reduced by ~50%%. Train the movements, skip the grind. | Deload haftası %@ tarihine kadar aktif — çalışma ağırlıkları ~%%50 azaltıldı. Hareketleri çalış, kendini ezme. |
 | `dashboard.deload.applyButton` | Deload-Woche starten | Start deload week | Deload haftasını başlat |
 | `dashboard.deload.endButton` | Deload beenden & Gewichte zurücksetzen | End deload & restore weights | Deload'u bitir ve ağırlıkları geri yükle |
@@ -521,6 +522,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.plan.todayRestDay` | Heute: Ruhetag | Today: rest day | Bugün: dinlenme günü |
 | `dashboard.recent.empty.description` | Beende dein erstes Training, dann erscheint es hier mit Dauer, Sätzen und Volumen. | Finish your first workout — it appears here with duration, sets, and volume. | İlk antrenmanını tamamla — burada süre, set ve hacimle birlikte görünür. |
 | `dashboard.recent.empty.title` | Noch keine Trainingseinheiten | No training sessions yet | Henüz antrenman yok |
+| `dashboard.recent.minutesShort` | %lld Min | %lld min | %lld dk |
+| `dashboard.recent.sets.one` | %lld Satz | %lld set | %lld set |
+| `dashboard.recent.sets.other` | %lld Sätze | %lld sets | %lld set |
 | `dashboard.recent.title` | Letzte Trainings | Recent Workouts | Son Antrenmanlar |
 | `dashboard.recent.viewAll` | Alle anzeigen | Show all | Tümünü göster |
 | `dashboard.resume.caption` | Aktuelles Training fortsetzen | Resume current workout | Devam eden antrenmanı sürdür |
@@ -535,7 +539,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.trophy.emptyTitle` | Noch keine PRs | No PRs yet | Henüz PR yok |
 | `dashboard.trophy.recordCount.one` | %lld Rekord | %lld record | %lld rekor |
 | `dashboard.trophy.recordCount.other` | %lld Rekorde | %lld records | %lld rekor |
-| `dashboard.trophy.title` | Trophy Room | Trophy Room | Kupa Odası |
+| `dashboard.trophy.title` | Rekorde | Trophy Room | Kupa Odası |
 | `dashboard.volumeChart.empty.description` | Absolviere ein paar Kraft-Sessions und dein wöchentliches Volumen erscheint hier. | Complete some strength sessions and your weekly volume will show up here. | Birkaç kuvvet antrenmanı tamamla, haftalık hacmin burada görünecek. |
 | `dashboard.volumeChart.empty.title` | Noch kein Kraft-Volumen | No strength volume yet | Henüz kuvvet hacmi yok |
 | `dashboard.volumeChart.legend` | kg pro Woche | kg per week | haftada kg |

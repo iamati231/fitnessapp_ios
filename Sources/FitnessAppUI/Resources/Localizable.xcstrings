@@ -6189,7 +6189,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trophy Room"
+            "value": "Rekorde"
           }
         },
         "en": {
@@ -6850,6 +6850,29 @@
         }
       }
     },
+    "dashboard.compoundChart.today": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün"
+          }
+        }
+      }
+    },
     "dashboard.compoundChart.empty.title": {
       "extractionState": "manual",
       "localizations": {
@@ -7076,6 +7099,75 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tümünü göster"
+          }
+        }
+      }
+    },
+    "dashboard.recent.minutesShort": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Min"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld dk"
+          }
+        }
+      }
+    },
+    "dashboard.recent.sets.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Satz"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld set"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld set"
+          }
+        }
+      }
+    },
+    "dashboard.recent.sets.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Sätze"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sets"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld set"
           }
         }
       }
@@ -30544,19 +30636,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "It's training day! The best version of you is waiting at the gym. ⚡"
+            "value": "It's training day! The best version of you is waiting at the gym."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Heute ist Trainingstag! Die beste Version von dir wartet im Gym. ⚡"
+            "value": "Heute ist Trainingstag! Die beste Version von dir wartet im Gym."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bugün antrenman günü! Senin en iyi versiyonun salonda bekliyor. ⚡"
+            "value": "Bugün antrenman günü! Senin en iyi versiyonun salonda bekliyor."
           }
         }
       }
@@ -32108,19 +32200,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Heavy work done this morning! Now give your nervous system the rest it needs for the next PR. ⚡"
+            "value": "Heavy work done this morning! Now give your nervous system the rest it needs for the next PR."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Schwere Arbeit heute Morgen erledigt! Gönn deinem Nervensystem jetzt die Pause, die es für den nächsten PR braucht. ⚡"
+            "value": "Schwere Arbeit heute Morgen erledigt! Gönn deinem Nervensystem jetzt die Pause, die es für den nächsten PR braucht."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ağır iş bu sabah bitti! Şimdi sinir sistemine bir sonraki PR için ihtiyacı olan molayı ver. ⚡"
+            "value": "Ağır iş bu sabah bitti! Şimdi sinir sistemine bir sonraki PR için ihtiyacı olan molayı ver."
           }
         }
       }
@@ -32384,19 +32476,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cardio base is set! If you lift today: rock the upper body, spare the legs. ⚡"
+            "value": "Cardio base is set! If you lift today: rock the upper body, spare the legs."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cardio-Basis steht! Falls heute noch gehoben wird: Oberkörper rockt, Beine schonen. ⚡"
+            "value": "Cardio-Basis steht! Falls heute noch gehoben wird: Oberkörper rockt, Beine schonen."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kardiyo tabanı hazır! Bugün kaldıracaksan: üst vücut coşsun, bacaklar dinlensin. ⚡"
+            "value": "Kardiyo tabanı hazır! Bugün kaldıracaksan: üst vücut coşsun, bacaklar dinlensin."
           }
         }
       }
@@ -32660,19 +32752,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You moved serious load yesterday! Your nervous system is recharging — you'll come back stronger tomorrow. ⚡"
+            "value": "You moved serious load yesterday! Your nervous system is recharging — you'll come back stronger tomorrow."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gestern ordentlich Last bewegt! Dein Nervensystem lädt gerade nach — morgen kommst du stärker zurück. ⚡"
+            "value": "Gestern ordentlich Last bewegt! Dein Nervensystem lädt gerade nach — morgen kommst du stärker zurück."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dün ciddi yük kaldırdın! Sinir sistemin şarj oluyor — yarın daha güçlü dönersin. ⚡"
+            "value": "Dün ciddi yük kaldırdın! Sinir sistemin şarj oluyor — yarın daha güçlü dönersin."
           }
         }
       }
