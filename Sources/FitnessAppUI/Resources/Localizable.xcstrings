@@ -170,6 +170,22 @@
         "tr": { "stringUnit": { "state": "translated", "value": "%lld / %lld tamam" } }
       }
     },
+    "timedWorkout.preroll.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "STARTET GLEICH" } },
+        "en": { "stringUnit": { "state": "translated", "value": "STARTING SOON" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "HEMEN BAŞLIYOR" } }
+      }
+    },
+    "timedWorkout.preroll.startNow": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Jetzt starten" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Start now" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Şimdi başla" } }
+      }
+    },
     "tab.dashboard": {
       "extractionState": "manual",
       "localizations": {
@@ -18860,25 +18876,140 @@
         }
       }
     },
+    "settings.timer.preroll": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorlauf vor dem Start"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lead-in before start"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başlamadan önce geri sayım"
+          }
+        }
+      }
+    },
+    "settings.timer.preroll.off": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kapalı"
+          }
+        }
+      }
+    },
+    "settings.timer.preroll.5s": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 Sekunden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 seconds"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 saniye"
+          }
+        }
+      }
+    },
+    "settings.timer.preroll.10s": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10 Sekunden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10 seconds"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10 saniye"
+          }
+        }
+      }
+    },
+    "settings.timer.preroll.15s": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 Sekunden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 seconds"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 saniye"
+          }
+        }
+      }
+    },
     "settings.timer.footer": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wird beim Ablauf des Pausen-Timers ausgelöst. Vibrations-Toggle hat auf iPads keine Wirkung. 'PR-Feiern' steuert Save-Screen-Popups, Live-Activity-Headline und lokale Benachrichtigungen — die Bestleistungen werden trotzdem im Trophy-Room gespeichert."
+            "value": "Wird beim Ablauf des Pausen-Timers ausgelöst. Vibrations-Toggle hat auf iPads keine Wirkung. 'PR-Feiern' steuert Save-Screen-Popups, Live-Activity-Headline und lokale Benachrichtigungen — die Bestleistungen werden trotzdem im Trophy-Room gespeichert. 'Vorlauf vor dem Start' zeigt vor AMRAP/EMOM/Auf-Zeit-Läufen einen Countdown, bevor die Uhr wirklich startet."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fires when the rest timer ends. Vibration has no effect on iPads. 'Celebrate PRs' drives save-screen popups, Live Activity headlines, and local notifications — PRs are saved to the Trophy Room either way."
+            "value": "Fires when the rest timer ends. Vibration has no effect on iPads. 'Celebrate PRs' drives save-screen popups, Live Activity headlines, and local notifications — PRs are saved to the Trophy Room either way. 'Lead-in before start' shows a countdown before AMRAP/EMOM/For-Time runs, before the clock actually starts."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mola zamanlayıcısı bittiğinde tetiklenir. Titreşim iPad'lerde etkisizdir. 'PR'ı Kutla' kaydetme ekranı pencerelerini, Live Activity başlıklarını ve yerel bildirimleri yönlendirir — PR'lar her durumda Kupa Odası'na kaydedilir."
+            "value": "Mola zamanlayıcısı bittiğinde tetiklenir. Titreşim iPad'lerde etkisizdir. 'PR'ı Kutla' kaydetme ekranı pencerelerini, Live Activity başlıklarını ve yerel bildirimleri yönlendirir — PR'lar her durumda Kupa Odası'na kaydedilir. 'Başlamadan önce geri sayım', AMRAP/EMOM/Süreye Karşı koşularından önce saat gerçekten başlamadan bir geri sayım gösterir."
           }
         }
       }

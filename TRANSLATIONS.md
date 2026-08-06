@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1573 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1580 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1573 / 1573** (100%) | 0 |
-| 🇬🇧 English (EN) | **1573 / 1573** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1573 / 1573** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1580 / 1580** (100%) | 0 |
+| 🇬🇧 English (EN) | **1580 / 1580** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1580 / 1580** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1550,7 +1550,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (126 Keys)
+## `settings.*`  (131 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1668,9 +1668,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.section.preferences` | Präferenzen | Preferences | Tercihler |
 | `settings.section.privacy` | Datenschutz | Privacy | Gizlilik |
 | `settings.section.profile_goals` | Profil & Ziele | Profile & Goals | Profil & Hedefler |
-| `settings.timer.footer` | Wird beim Ablauf des Pausen-Timers ausgelöst. Vibrations-Toggle hat auf iPads keine Wirkung. 'PR-Feiern' steuert Save-Screen-Popups, Live-Activity-Headline und lokale Benachrichtigungen — die Bestleistungen werden trotzdem im Trophy-Room gespeichert. | Fires when the rest timer ends. Vibration has no effect on iPads. 'Celebrate PRs' drives save-screen popups, Live Activity headlines, and local notifications — PRs are saved to the Trophy Room either way. | Mola zamanlayıcısı bittiğinde tetiklenir. Titreşim iPad'lerde etkisizdir. 'PR'ı Kutla' kaydetme ekranı pencerelerini, Live Activity başlıklarını ve yerel bildirimleri yönlendirir — PR'lar her durumda Kupa Odası'na kaydedilir. |
+| `settings.timer.footer` | Wird beim Ablauf des Pausen-Timers ausgelöst. Vibrations-Toggle hat auf iPads keine Wirkung. 'PR-Feiern' steuert Save-Screen-Popups, Live-Activity-Headline und lokale Benachrichtigungen — die Bestleistungen werden trotzdem im Trophy-Room gespeichert. 'Vorlauf vor dem Start' zeigt vor AMRAP/EMOM/Auf-Zeit-Läufen einen Countdown, bevor die Uhr wirklich startet. | Fires when the rest timer ends. Vibration has no effect on iPads. 'Celebrate PRs' drives save-screen popups, Live Activity headlines, and local notifications — PRs are saved to the Trophy Room either way. 'Lead-in before start' shows a countdown before AMRAP/EMOM/For-Time runs, before the clock actually starts. | Mola zamanlayıcısı bittiğinde tetiklenir. Titreşim iPad'lerde etkisizdir. 'PR'ı Kutla' kaydetme ekranı pencerelerini, Live Activity başlıklarını ve yerel bildirimleri yönlendirir — PR'lar her durumda Kupa Odası'na kaydedilir. 'Başlamadan önce geri sayım', AMRAP/EMOM/Süreye Karşı koşularından önce saat gerçekten başlamadan bir geri sayım gösterir. |
 | `settings.timer.haptics` | Vibrieren | Vibrate | Titret |
 | `settings.timer.prCelebrations` | PR-Feiern | Celebrate PRs | PR'ı Kutla |
+| `settings.timer.preroll` | Vorlauf vor dem Start | Lead-in before start | Başlamadan önce geri sayım |
+| `settings.timer.preroll.10s` | 10 Sekunden | 10 seconds | 10 saniye |
+| `settings.timer.preroll.15s` | 15 Sekunden | 15 seconds | 15 saniye |
+| `settings.timer.preroll.5s` | 5 Sekunden | 5 seconds | 5 saniye |
+| `settings.timer.preroll.off` | Aus | Off | Kapalı |
 | `settings.timer.section` | Pausen-Timer-Feedback | Rest Timer Feedback | Mola Zamanlayıcı Geri Bildirimi |
 | `settings.timer.sound` | Ton abspielen | Play sound | Ses çal |
 | `settings.title` | Einstellungen | Settings | Ayarlar |
@@ -1762,7 +1767,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `tab.plan` | Plan | Plan | Plan |
 | `tab.tools` | Werkzeuge | Tools | Araçlar |
 
-## `timedWorkout.*`  (21 Keys)
+## `timedWorkout.*`  (23 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1787,6 +1792,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `timedWorkout.forTime.lastRoundHint` | Das letzte Häkchen stoppt die Uhr. | The last checkmark stops the clock. | Son işaret saati durdurur. |
 | `timedWorkout.forTime.pillLabel` | Auf Zeit | For Time | Süreye Karşı |
 | `timedWorkout.forTime.progressContext` | %lld / %lld erledigt | %lld of %lld done | %lld / %lld tamam |
+| `timedWorkout.preroll.label` | STARTET GLEICH | STARTING SOON | HEMEN BAŞLIYOR |
+| `timedWorkout.preroll.startNow` | Jetzt starten | Start now | Şimdi başla |
 
 ## `trophy.*`  (24 Keys)
 

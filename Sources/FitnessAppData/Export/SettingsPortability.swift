@@ -36,6 +36,7 @@ public enum SettingsPortability {
         ("pref_timer_sound",                  .bool),
         ("pref_timer_haptics",                .bool),
         ("pref_pr_celebrations",              .bool),
+        ("pref_preroll_seconds",              .int),
         // Erinnerungen (DEL-018/028)
         ("pref_water_reminder",               .bool),
         ("pref_water_reminder_hours",         .int),

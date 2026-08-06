@@ -34,6 +34,12 @@ public struct SettingsView: View {
     @AppStorage("pref_appearance") private var appearanceRaw: String = "system"   // system|light|dark
     @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
     @AppStorage("pref_timer_haptics") private var timerHapticsEnabled: Bool = true
+    /// README 2.15/23b-23c: Laenge der Vorlauf-Phase vor AMRAP/EMOM/Auf-Zeit-
+    /// Laeufen, global fuer alle drei Player (kein Pro-Tag-Override - die
+    /// gleiche Begruendung wie bei den anderen Timer-Feedback-Prefs hier:
+    /// ein Wert, ueberall wirksam). 0 = deaktiviert, entspricht dem
+    /// bisherigen Verhalten ohne Vorlauf.
+    @AppStorage("pref_preroll_seconds") private var prerollSeconds: Int = 10
     /// DEL-078: Global-Toggle fuer PR-Celebrations. Wenn off, werden Save-
     /// Screen-Popups, Live-Activity-Linger UND lokale PR-Notifications
     /// unterdrueckt. PR-Detection selbst (Trophy-Room) laeuft weiter — der
@@ -303,11 +309,26 @@ public struct SettingsView: View {
             // DEL-078: PR-Celebrations on/off. Separat vom Timer-Feedback.
             DeltiqControlRow(
                 icon: "trophy.fill",
-                label: String(localized: "settings.timer.prCelebrations", bundle: .module),
-                showsDivider: false
+                label: String(localized: "settings.timer.prCelebrations", bundle: .module)
             ) {
                 Toggle(isOn: $prCelebrationsEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
+            }
+            // README 2.15/23b-23c: Vorlauf-Laenge vor Zeitformat-Laeufen -
+            // Picker statt Toggle, weil vier Werte (aus/5/10/15s) statt zwei.
+            DeltiqControlRow(
+                icon: "timer",
+                label: String(localized: "settings.timer.preroll", bundle: .module),
+                showsDivider: false
+            ) {
+                Picker(selection: $prerollSeconds) {
+                    Text("settings.timer.preroll.off", bundle: .module).tag(0)
+                    Text("settings.timer.preroll.5s", bundle: .module).tag(5)
+                    Text("settings.timer.preroll.10s", bundle: .module).tag(10)
+                    Text("settings.timer.preroll.15s", bundle: .module).tag(15)
+                } label: { EmptyView() }
+                .pickerStyle(.menu)
+                .labelsHidden()
             }
             hintRow(String(localized: "settings.timer.footer", bundle: .module))
         }

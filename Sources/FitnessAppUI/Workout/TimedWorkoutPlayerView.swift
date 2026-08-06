@@ -161,6 +161,105 @@ func timedFormatHintKey(for format: WorkoutTimeFormat) -> String {
     }
 }
 
+// MARK: - Vorlauf-Phase (README 2.15/23b-23c)
+//
+// Eigene Phase vor dem eigentlichen Lauf, gleich fuer alle drei Formate:
+// Ring von n auf 0, Uebungsliste sichtbar aber gedimmt, "Jetzt starten"
+// ueberspringt den Rest, Zurueck-Chevron bleibt aktiv (die Kopfzone aendert
+// sich nicht - es laeuft ja noch nichts). Laenge ist eine globale
+// Einstellung neben dem Timer-Ton (0 = deaktiviert, verhaelt sich exakt wie
+// bisher).
+
+/// `object(forKey:)` statt `integer(forKey:)`, damit ein fehlender Eintrag
+/// (Erstinstallation) den dokumentierten Default 10 bekommt statt der
+/// UserDefaults-Fallback-0 fuer fehlende Int-Keys (gleiches Muster wie
+/// `DeltiqHaptics.isEnabled`). Direkter `UserDefaults`-Zugriff statt
+/// `@AppStorage`, weil der Wert schon beim ersten Frame feststehen muss -
+/// die Player lesen ihn im eigenen `init`, um den Countdown-State korrekt
+/// vorzubelegen (kein Flackern zwischen "laeuft schon" und "Vorlauf").
+private func storedPrerollSeconds() -> Int {
+    UserDefaults.standard.object(forKey: "pref_preroll_seconds") as? Int ?? 10
+}
+
+/// Tonschema (README 2.15/23c): kurzer Ton bei 10 Sekunden einmal als
+/// Vorwarnung, kurzer Ton bei 3/2/1, langer Ton beim Erreichen von 0 -
+/// identisch fuer alle drei Formate und an denselben Schalter
+/// `pref_timer_sound` gekoppelt wie die EMOM-Minutentoene. Ein Vorlauf
+/// unter zehn Sekunden durchlaeuft die 10 nie, die Vorwarnung entfaellt
+/// dadurch von selbst, ohne eigene Fallunterscheidung.
+@MainActor
+private func playPrerollTone(remaining: Int, enabled: Bool) {
+    guard enabled else { return }
+    switch remaining {
+    case 10, 3, 2, 1: TimerSoundPlayer.shared.playShort()
+    case 0: TimerSoundPlayer.shared.playLong()
+    default: break
+    }
+}
+
+/// Gemeinsamer Zeitblock waehrend des Vorlaufs - dieselbe Ring-Geometrie
+/// wie der EMOM-Minutenring, ohne Uebungsname darunter (es hat ja noch
+/// keine begonnen).
+@available(iOS 17.0, macOS 14.0, *)
+private func timedWorkoutPrerollCard(remaining: Int, total: Int) -> some View {
+    DeltiqCard(accentEdge: true) {
+        VStack(spacing: 8) {
+            ZStack {
+                Circle()
+                    .stroke(Color.Deltiq.fill, lineWidth: 11)
+                Circle()
+                    .trim(from: 0, to: total > 0 ? CGFloat(remaining) / CGFloat(total) : 0)
+                    .stroke(Color.deltiqOrange, style: StrokeStyle(lineWidth: 11, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                Text("\(remaining)")
+                    .font(.system(size: 56, weight: .heavy))
+                    .fitnessNumberStyle()
+                    .foregroundStyle(Color.primary)
+            }
+            .frame(width: 200, height: 200)
+            Text("timedWorkout.preroll.label", bundle: .module)
+                .font(.system(size: 10, weight: .heavy))
+                .tracking(1.0)
+                .foregroundStyle(Color.Deltiq.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+/// Uebungsliste waehrend des Vorlaufs - sichtbar aber gedimmt und nicht
+/// interaktiv. Zeigt immer ALLE Uebungen des Tages statt nur "aktuell/
+/// naechste" wie EMOMs laufende Anzeige, weil waehrend des Vorlaufs noch
+/// keine "aktuell" ist.
+@available(iOS 17.0, macOS 14.0, *)
+private func timedWorkoutPrerollExerciseList(_ exercises: [Exercise]) -> some View {
+    DeltiqSection {
+        ForEach(Array(exercises.enumerated()), id: \.element.persistentModelID) { index, exercise in
+            DeltiqRow(
+                label: exercise.displayName,
+                value: timedFormatTargetLabel(exercise),
+                showsDivider: index != exercises.count - 1
+            )
+        }
+    }
+    .opacity(0.4)
+    .allowsHitTesting(false)
+}
+
+/// Feste Leiste waehrend des Vorlaufs - einziger Knopf, ueberspringt den
+/// Rest des Countdowns.
+@available(iOS 17.0, macOS 14.0, *)
+private func timedWorkoutPrerollStartBar(onStart: @escaping () -> Void) -> some View {
+    Button(action: onStart) {
+        Text("timedWorkout.preroll.startNow", bundle: .module)
+            .frame(maxWidth: .infinity)
+    }
+    .buttonStyle(.plain)
+    .deltiqButtonStyle()
+    .padding(.horizontal, 16)
+    .padding(.vertical, 12)
+    .background(Color.Deltiq.surface.ignoresSafeArea(edges: .bottom))
+}
+
 // MARK: - AMRAP
 
 @available(iOS 17.0, macOS 14.0, *)
@@ -172,13 +271,27 @@ private struct AMRAPPlayerView: View {
     @Environment(HealthKitController.self) private var healthKit
     @Environment(PRNotificationCenter.self) private var prNotifications
     @AppStorage("pref_pr_celebrations") private var prCelebrationsEnabled: Bool = true
+    @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
 
     @State private var elapsedSeconds = 0
     @State private var roundsCompleted = 0
     @State private var partialReps = 0
     @State private var isFinished = false
     @State private var showingDiscardConfirm = false
+    /// README 2.15/23b-23c: Vorlauf-Countdown vor dem eigentlichen Lauf -
+    /// `prerollTotal` ist die Einstellung zum Mount-Zeitpunkt (unveraenderlich
+    /// waehrend die View lebt), `prerollRemaining` zaehlt runter. 0
+    /// ueberspringt die Phase komplett (Einstellung war deaktiviert).
+    @State private var prerollRemaining: Int
+    private let prerollTotal: Int
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    init(session: WorkoutSession) {
+        self.session = session
+        let stored = storedPrerollSeconds()
+        prerollTotal = stored
+        _prerollRemaining = State(initialValue: stored)
+    }
 
     private var day: TrainingDay? { session.day }
     private var exercises: [Exercise] {
@@ -206,50 +319,55 @@ private struct AMRAPPlayerView: View {
             )
 
             VStack(alignment: .leading, spacing: 18) {
-                // Nachtrag 6. August, abends (README 2.9/18e): die erste
-                // Kapsel zeigte bisher "AMRAP" - dasselbe wie der Eyebrow
-                // direkt darueber. Live-Rundenstand ist die Information, die
-                // sonst nirgends in der Kopfzone steht. Nachtrag 6. August,
-                // spaeter (README 2.12/21a-21b): traegt jetzt auch die
-                // angebrochene Runde, sonst steht der volle Live-Stand
-                // nirgends auf einen Blick.
-                DeltiqContextRow([
-                    DeltiqContextItem(roundsContextText, style: .accent),
-                    DeltiqContextItem(
-                        String(format: String(localized: "timedWorkout.amrap.capContext", bundle: .module), (day?.timeCapMinutes ?? 20)).uppercased(),
-                        style: .neutral
-                    )
-                ])
+                if prerollRemaining > 0 {
+                    timedWorkoutPrerollCard(remaining: prerollRemaining, total: prerollTotal)
+                    timedWorkoutPrerollExerciseList(exercises)
+                } else {
+                    // Nachtrag 6. August, abends (README 2.9/18e): die erste
+                    // Kapsel zeigte bisher "AMRAP" - dasselbe wie der Eyebrow
+                    // direkt darueber. Live-Rundenstand ist die Information, die
+                    // sonst nirgends in der Kopfzone steht. Nachtrag 6. August,
+                    // spaeter (README 2.12/21a-21b): traegt jetzt auch die
+                    // angebrochene Runde, sonst steht der volle Live-Stand
+                    // nirgends auf einen Blick.
+                    DeltiqContextRow([
+                        DeltiqContextItem(roundsContextText, style: .accent),
+                        DeltiqContextItem(
+                            String(format: String(localized: "timedWorkout.amrap.capContext", bundle: .module), (day?.timeCapMinutes ?? 20)).uppercased(),
+                            style: .neutral
+                        )
+                    ])
 
-                DeltiqCard(accentEdge: true) {
-                    VStack(spacing: 8) {
-                        Text(PaceCalculator.formatDuration(max(0, capSeconds - elapsedSeconds)))
-                            .font(.system(size: 64, weight: .heavy))
-                            .fitnessNumberStyle()
-                            .foregroundStyle(Color.primary)
-                        ProgressView(value: Double(min(elapsedSeconds, capSeconds)), total: Double(capSeconds))
-                            .tint(Color.deltiqOrange)
-                        Text(
-                            String(
-                                format: String(localized: "timedWorkout.elapsed", bundle: .module),
-                                PaceCalculator.formatDuration(elapsedSeconds)
+                    DeltiqCard(accentEdge: true) {
+                        VStack(spacing: 8) {
+                            Text(PaceCalculator.formatDuration(max(0, capSeconds - elapsedSeconds)))
+                                .font(.system(size: 64, weight: .heavy))
+                                .fitnessNumberStyle()
+                                .foregroundStyle(Color.primary)
+                            ProgressView(value: Double(min(elapsedSeconds, capSeconds)), total: Double(capSeconds))
+                                .tint(Color.deltiqOrange)
+                            Text(
+                                String(
+                                    format: String(localized: "timedWorkout.elapsed", bundle: .module),
+                                    PaceCalculator.formatDuration(elapsedSeconds)
+                                )
                             )
-                        )
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color.Deltiq.textSecondary)
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
-                }
 
-                DeltiqSection {
-                    ForEach(Array(exercises.enumerated()), id: \.element.persistentModelID) { index, exercise in
-                        DeltiqRow(
-                            label: exercise.displayName,
-                            value: timedFormatTargetLabel(exercise),
-                            showsDivider: index != exercises.count - 1
-                        )
+                    DeltiqSection {
+                        ForEach(Array(exercises.enumerated()), id: \.element.persistentModelID) { index, exercise in
+                            DeltiqRow(
+                                label: exercise.displayName,
+                                value: timedFormatTargetLabel(exercise),
+                                showsDivider: index != exercises.count - 1
+                            )
+                        }
+                        timedWorkoutHintRow(String(localized: "timedWorkout.amrap.circuitHint", bundle: .module))
                     }
-                    timedWorkoutHintRow(String(localized: "timedWorkout.amrap.circuitHint", bundle: .module))
                 }
             }
             .deltiqScreen()
@@ -259,7 +377,21 @@ private struct AMRAPPlayerView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        .onAppear {
+            if prerollRemaining > 0 {
+                playPrerollTone(remaining: prerollRemaining, enabled: timerSoundEnabled)
+            }
+        }
         .onReceive(tick) { _ in
+            if prerollRemaining > 0 {
+                prerollRemaining -= 1
+                if prerollRemaining == 0 {
+                    finishPreroll()
+                } else {
+                    playPrerollTone(remaining: prerollRemaining, enabled: timerSoundEnabled)
+                }
+                return
+            }
             guard !isFinished else { return }
             guard elapsedSeconds < capSeconds else { return }
             elapsedSeconds += 1
@@ -269,7 +401,9 @@ private struct AMRAPPlayerView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if isFinished {
+            if prerollRemaining > 0 {
+                timedWorkoutPrerollStartBar { finishPreroll() }
+            } else if isFinished {
                 finishBar
             } else {
                 roundBar
@@ -328,6 +462,16 @@ private struct AMRAPPlayerView: View {
             prNotifications: prNotifications, navigation: navigation,
             prCelebrationsEnabled: prCelebrationsEnabled
         )
+    }
+
+    /// README 2.15/23b-23c: Uebergang von Vorlauf in den echten Lauf - egal
+    /// ob durch Ablauf des Countdowns oder "Jetzt starten". Setzt `startTime`
+    /// neu auf jetzt, sonst zaehlten die Vorlauf-Sekunden in Dauer/HealthKit
+    /// mit (`finishTimedSession` liest `session.startTime`).
+    private func finishPreroll() {
+        prerollRemaining = 0
+        session.startTime = Date()
+        playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
     }
 
     /// Nachtrag 6. August, abends (README 2.10/19e): stand bisher nur in
@@ -429,7 +573,20 @@ private struct EMOMPlayerView: View {
     @State private var completedMinutes: Set<Int> = []
     @State private var isFinished = false
     @State private var showingDiscardConfirm = false
+    /// README 2.15/23b-23c: Vorlauf-Countdown vor der ersten Minute -
+    /// `prerollTotal` ist die Einstellung zum Mount-Zeitpunkt (unveraenderlich
+    /// waehrend die View lebt), `prerollRemaining` zaehlt runter. 0
+    /// ueberspringt die Phase komplett (Einstellung war deaktiviert).
+    @State private var prerollRemaining: Int
+    private let prerollTotal: Int
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    init(session: WorkoutSession) {
+        self.session = session
+        let stored = storedPrerollSeconds()
+        prerollTotal = stored
+        _prerollRemaining = State(initialValue: stored)
+    }
 
     private var day: TrainingDay? { session.day }
     private var exercises: [Exercise] {
@@ -458,67 +615,72 @@ private struct EMOMPlayerView: View {
             )
 
             VStack(alignment: .leading, spacing: 18) {
-                // Nachtrag 6. August, abends (README 2.9/18e): die erste
-                // Kapsel zeigte bisher "EMOM" - dasselbe wie der Eyebrow
-                // direkt darueber. Live-Stand der geschafften Minuten ist
-                // die Information, die sonst nirgends in der Kopfzone steht.
-                DeltiqContextRow([
-                    DeltiqContextItem(
-                        String(format: String(localized: "timedWorkout.emom.completedPill", bundle: .module), completedMinutes.count).uppercased(),
-                        style: .accent
-                    ),
-                    DeltiqContextItem(
-                        String(
-                            format: String(localized: "timedWorkout.emom.minuteContext", bundle: .module),
-                            min(currentMinute, totalMinutes), totalMinutes
-                        ).uppercased(),
-                        style: .neutral
-                    )
-                ])
+                if prerollRemaining > 0 {
+                    timedWorkoutPrerollCard(remaining: prerollRemaining, total: prerollTotal)
+                    timedWorkoutPrerollExerciseList(exercises)
+                } else {
+                    // Nachtrag 6. August, abends (README 2.9/18e): die erste
+                    // Kapsel zeigte bisher "EMOM" - dasselbe wie der Eyebrow
+                    // direkt darueber. Live-Stand der geschafften Minuten ist
+                    // die Information, die sonst nirgends in der Kopfzone steht.
+                    DeltiqContextRow([
+                        DeltiqContextItem(
+                            String(format: String(localized: "timedWorkout.emom.completedPill", bundle: .module), completedMinutes.count).uppercased(),
+                            style: .accent
+                        ),
+                        DeltiqContextItem(
+                            String(
+                                format: String(localized: "timedWorkout.emom.minuteContext", bundle: .module),
+                                min(currentMinute, totalMinutes), totalMinutes
+                            ).uppercased(),
+                            style: .neutral
+                        )
+                    ])
 
-                DeltiqCard(accentEdge: true) {
-                    VStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .stroke(Color.Deltiq.fill, lineWidth: 11)
-                            Circle()
-                                .trim(from: 0, to: CGFloat(remainingInMinute) / 60.0)
-                                .stroke(Color.deltiqOrange, style: StrokeStyle(lineWidth: 11, lineCap: .round))
-                                .rotationEffect(.degrees(-90))
-                            VStack(spacing: 2) {
-                                Text("\(remainingInMinute)")
-                                    .font(.system(size: 56, weight: .heavy))
-                                    .fitnessNumberStyle()
+                    DeltiqCard(accentEdge: true) {
+                        VStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .stroke(Color.Deltiq.fill, lineWidth: 11)
+                                Circle()
+                                    .trim(from: 0, to: CGFloat(remainingInMinute) / 60.0)
+                                    .stroke(Color.deltiqOrange, style: StrokeStyle(lineWidth: 11, lineCap: .round))
+                                    .rotationEffect(.degrees(-90))
+                                VStack(spacing: 2) {
+                                    Text("\(remainingInMinute)")
+                                        .font(.system(size: 56, weight: .heavy))
+                                        .fitnessNumberStyle()
+                                        .foregroundStyle(Color.primary)
+                                    Text("timedWorkout.emom.thisMinute", bundle: .module)
+                                        .font(.system(size: 10, weight: .heavy))
+                                        .tracking(1.0)
+                                        .foregroundStyle(Color.Deltiq.textSecondary)
+                                }
+                            }
+                            .frame(width: 200, height: 200)
+
+                            if let currentExercise {
+                                Text(currentExercise.displayName)
+                                    .font(.system(size: 24, weight: .heavy, design: .rounded))
                                     .foregroundStyle(Color.primary)
-                                Text("timedWorkout.emom.thisMinute", bundle: .module)
-                                    .font(.system(size: 10, weight: .heavy))
-                                    .tracking(1.0)
-                                    .foregroundStyle(Color.Deltiq.textSecondary)
+                                    .multilineTextAlignment(.center)
+                                Text(timedFormatTargetLabel(currentExercise))
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(Color.deltiqOrange)
                             }
                         }
-                        .frame(width: 200, height: 200)
-
-                        if let currentExercise {
-                            Text(currentExercise.displayName)
-                                .font(.system(size: 24, weight: .heavy, design: .rounded))
-                                .foregroundStyle(Color.primary)
-                                .multilineTextAlignment(.center)
-                            Text(timedFormatTargetLabel(currentExercise))
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(Color.deltiqOrange)
-                        }
+                        .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
-                }
 
-                if let nextExercise {
-                    DeltiqSection {
-                        DeltiqRow(
-                            label: nextExercise.displayName,
-                            subtitle: String(localized: "timedWorkout.emom.nextMinute", bundle: .module),
-                            value: timedFormatTargetLabel(nextExercise),
-                            showsDivider: false
-                        )
+                    if let nextExercise {
+                        DeltiqSection {
+                            DeltiqRow(
+                                label: nextExercise.displayName,
+                                subtitle: String(localized: "timedWorkout.emom.nextMinute", bundle: .module),
+                                value: timedFormatTargetLabel(nextExercise),
+                                showsDivider: false
+                            )
+                        }
                     }
                 }
             }
@@ -529,21 +691,12 @@ private struct EMOMPlayerView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
-        // README 2.9 Phase 4: Alle Minutentrigger im Voraus planen, nicht
-        // erst reaktiv beim Minutenwechsel - Timer.publish unten pausiert
-        // sobald die App backgrounded wird, es gibt also keine Gelegenheit
-        // mehr, waehrend des Trainings nachzuplanen. Gated ueber denselben
-        // Pref wie der In-App-Ton (wer den ausgeschaltet hat, will
-        // vermutlich auch keine Notification-Toene).
-        .task {
-            guard timerSoundEnabled else { return }
-            await ReminderScheduler.scheduleEMOMSignals(
-                totalMinutes: totalMinutes,
-                minuteTitle: "EMOM",
-                minuteBodyFormat: String(localized: "timedWorkout.emom.notification.nextMinute", bundle: .module),
-                finishTitle: "EMOM",
-                finishBody: String(localized: "timedWorkout.emom.notification.complete", bundle: .module)
-            )
+        .onAppear {
+            if prerollRemaining > 0 {
+                playPrerollTone(remaining: prerollRemaining, enabled: timerSoundEnabled)
+            } else {
+                scheduleBackgroundSignals()
+            }
         }
         .onDisappear {
             // Muss in JEDEM Ausstiegspfad laufen (Finish, Discard, Zurueck-
@@ -552,6 +705,15 @@ private struct EMOMPlayerView: View {
             Task { await ReminderScheduler.cancelEMOMSignals() }
         }
         .onReceive(tick) { _ in
+            if prerollRemaining > 0 {
+                prerollRemaining -= 1
+                if prerollRemaining == 0 {
+                    finishPreroll()
+                } else {
+                    playPrerollTone(remaining: prerollRemaining, enabled: timerSoundEnabled)
+                }
+                return
+            }
             guard !isFinished else { return }
             // Drei Signaltoene ab 0:03, Blick bleibt auf der Hantel.
             if timerSoundEnabled, (1...3).contains(remainingInMinute) {
@@ -576,7 +738,9 @@ private struct EMOMPlayerView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if isFinished {
+            if prerollRemaining > 0 {
+                timedWorkoutPrerollStartBar { finishPreroll() }
+            } else if isFinished {
                 finishBar
             } else {
                 doneBar
@@ -637,6 +801,41 @@ private struct EMOMPlayerView: View {
         )
     }
 
+    /// README 2.15/23b-23c: Uebergang von Vorlauf in den echten Lauf - egal
+    /// ob durch Ablauf des Countdowns oder "Jetzt starten". Setzt `startTime`
+    /// neu auf jetzt (sonst zaehlten die Vorlauf-Sekunden in Dauer/HealthKit
+    /// mit) und stoesst die Hintergrund-Signale erst JETZT an, nicht schon
+    /// beim Mount - sonst waeren sie um die Vorlauf-Laenge zu frueh.
+    private func finishPreroll() {
+        prerollRemaining = 0
+        session.startTime = Date()
+        playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
+        scheduleBackgroundSignals()
+    }
+
+    /// README 2.9 Phase 4: Alle Minutentrigger im Voraus planen, nicht erst
+    /// reaktiv beim Minutenwechsel - `Timer.publish` oben pausiert sobald
+    /// die App backgrounded wird, es gibt also keine Gelegenheit mehr,
+    /// waehrend des Trainings nachzuplanen. Gated ueber denselben Pref wie
+    /// der In-App-Ton (wer den ausgeschaltet hat, will vermutlich auch
+    /// keine Notification-Toene). Laeuft entweder direkt beim Mount (kein
+    /// Vorlauf eingestellt) oder beim Uebergang aus dem Vorlauf
+    /// (`finishPreroll`) - nie beides, da sich die beiden Aufrufstellen
+    /// gegenseitig ausschliessen (`prerollRemaining == 0` beim Mount
+    /// bedeutet, dass der Vorlauf-Zweig in `onReceive` nie greift).
+    private func scheduleBackgroundSignals() {
+        guard timerSoundEnabled else { return }
+        Task {
+            await ReminderScheduler.scheduleEMOMSignals(
+                totalMinutes: totalMinutes,
+                minuteTitle: "EMOM",
+                minuteBodyFormat: String(localized: "timedWorkout.emom.notification.nextMinute", bundle: .module),
+                finishTitle: "EMOM",
+                finishBody: String(localized: "timedWorkout.emom.notification.complete", bundle: .module)
+            )
+        }
+    }
+
     /// Tippen markiert die LAUFENDE Minute als geschafft - ein einzelner
     /// Tap-Bereich pro Zeiteinheit, gleiches Interaktionsmuster wie AMRAPs
     /// "+1 Runde".
@@ -685,12 +884,26 @@ private struct ForTimePlayerView: View {
     @Environment(HealthKitController.self) private var healthKit
     @Environment(PRNotificationCenter.self) private var prNotifications
     @AppStorage("pref_pr_celebrations") private var prCelebrationsEnabled: Bool = true
+    @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
 
     @State private var elapsedSeconds = 0
     @State private var checkedRounds: [PersistentIdentifier: Int] = [:]
     @State private var isFinished = false
     @State private var showingDiscardConfirm = false
+    /// README 2.15/23b-23c: Vorlauf-Countdown vor dem eigentlichen Lauf -
+    /// `prerollTotal` ist die Einstellung zum Mount-Zeitpunkt (unveraenderlich
+    /// waehrend die View lebt), `prerollRemaining` zaehlt runter. 0
+    /// ueberspringt die Phase komplett (Einstellung war deaktiviert).
+    @State private var prerollRemaining: Int
+    private let prerollTotal: Int
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    init(session: WorkoutSession) {
+        self.session = session
+        let stored = storedPrerollSeconds()
+        prerollTotal = stored
+        _prerollRemaining = State(initialValue: stored)
+    }
 
     private var day: TrainingDay? { session.day }
     private var exercises: [Exercise] {
@@ -714,48 +927,53 @@ private struct ForTimePlayerView: View {
             )
 
             VStack(alignment: .leading, spacing: 18) {
-                // Nachtrag 6. August, abends (README 2.9/18e): die erste
-                // Kapsel kam aus derselben `pillLabel`-Variable wie der
-                // Eyebrow direkt darueber - identischer Text zweimal. Anders
-                // als AMRAP/EMOM gibt's bei Auf Zeit keinen weiteren Live-
-                // Zustand, der noch nicht angezeigt wird (Zeit ist schon die
-                // Hero-Zahl, Fortschritt ist schon die verbleibende Kapsel) -
-                // die redundante Kapsel entfaellt komplett statt erfundenen
-                // Inhalt zu zeigen.
-                DeltiqContextRow([
-                    DeltiqContextItem(
-                        String(
-                            format: String(localized: "timedWorkout.forTime.progressContext", bundle: .module),
-                            checkedBoxes, totalBoxes
-                        ).uppercased(),
-                        style: .accent
-                    )
-                ])
+                if prerollRemaining > 0 {
+                    timedWorkoutPrerollCard(remaining: prerollRemaining, total: prerollTotal)
+                    timedWorkoutPrerollExerciseList(exercises)
+                } else {
+                    // Nachtrag 6. August, abends (README 2.9/18e): die erste
+                    // Kapsel kam aus derselben `pillLabel`-Variable wie der
+                    // Eyebrow direkt darueber - identischer Text zweimal. Anders
+                    // als AMRAP/EMOM gibt's bei Auf Zeit keinen weiteren Live-
+                    // Zustand, der noch nicht angezeigt wird (Zeit ist schon die
+                    // Hero-Zahl, Fortschritt ist schon die verbleibende Kapsel) -
+                    // die redundante Kapsel entfaellt komplett statt erfundenen
+                    // Inhalt zu zeigen.
+                    DeltiqContextRow([
+                        DeltiqContextItem(
+                            String(
+                                format: String(localized: "timedWorkout.forTime.progressContext", bundle: .module),
+                                checkedBoxes, totalBoxes
+                            ).uppercased(),
+                            style: .accent
+                        )
+                    ])
 
-                DeltiqCard(accentEdge: true) {
-                    VStack(spacing: 4) {
-                        Text(PaceCalculator.formatDuration(elapsedSeconds))
-                            .font(.system(size: 64, weight: .heavy))
-                            .fitnessNumberStyle()
-                            .foregroundStyle(Color.primary)
-                        if isFinished {
-                            Text("timedWorkout.forTime.finishedLabel", bundle: .module)
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(Color.Deltiq.success)
+                    DeltiqCard(accentEdge: true) {
+                        VStack(spacing: 4) {
+                            Text(PaceCalculator.formatDuration(elapsedSeconds))
+                                .font(.system(size: 64, weight: .heavy))
+                                .fitnessNumberStyle()
+                                .foregroundStyle(Color.primary)
+                            if isFinished {
+                                Text("timedWorkout.forTime.finishedLabel", bundle: .module)
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(Color.Deltiq.success)
+                            }
                         }
+                        .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
-                }
 
-                DeltiqSection {
-                    ForEach(Array(exercises.enumerated()), id: \.element.persistentModelID) { index, exercise in
-                        exerciseRoundsRow(exercise)
-                        if index != exercises.count - 1 {
-                            Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
+                    DeltiqSection {
+                        ForEach(Array(exercises.enumerated()), id: \.element.persistentModelID) { index, exercise in
+                            exerciseRoundsRow(exercise)
+                            if index != exercises.count - 1 {
+                                Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
+                            }
                         }
-                    }
-                    if isLastBoxRemainingHintVisible {
-                        timedWorkoutHintRow(String(localized: "timedWorkout.forTime.lastRoundHint", bundle: .module))
+                        if isLastBoxRemainingHintVisible {
+                            timedWorkoutHintRow(String(localized: "timedWorkout.forTime.lastRoundHint", bundle: .module))
+                        }
                     }
                 }
             }
@@ -766,7 +984,21 @@ private struct ForTimePlayerView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        .onAppear {
+            if prerollRemaining > 0 {
+                playPrerollTone(remaining: prerollRemaining, enabled: timerSoundEnabled)
+            }
+        }
         .onReceive(tick) { _ in
+            if prerollRemaining > 0 {
+                prerollRemaining -= 1
+                if prerollRemaining == 0 {
+                    finishPreroll()
+                } else {
+                    playPrerollTone(remaining: prerollRemaining, enabled: timerSoundEnabled)
+                }
+                return
+            }
             guard !isFinished else { return }
             elapsedSeconds += 1
             if let capSeconds, elapsedSeconds >= capSeconds {
@@ -781,7 +1013,11 @@ private struct ForTimePlayerView: View {
         // durchgehend sichtbar und speichert ueber `saveNow()` mit dem
         // jeweils aktuellen Stand, egal ob regulaer oder vorzeitig.
         .safeAreaInset(edge: .bottom) {
-            finishBar
+            if prerollRemaining > 0 {
+                timedWorkoutPrerollStartBar { finishPreroll() }
+            } else {
+                finishBar
+            }
         }
         .confirmationDialog(
             String(localized: "timedWorkout.discard.confirmTitle", bundle: .module),
@@ -841,6 +1077,16 @@ private struct ForTimePlayerView: View {
             prNotifications: prNotifications, navigation: navigation,
             prCelebrationsEnabled: prCelebrationsEnabled
         )
+    }
+
+    /// README 2.15/23b-23c: Uebergang von Vorlauf in den echten Lauf - egal
+    /// ob durch Ablauf des Countdowns oder "Jetzt starten". Setzt `startTime`
+    /// neu auf jetzt, sonst zaehlten die Vorlauf-Sekunden in Dauer/HealthKit
+    /// mit (`finishTimedSession` liest `session.startTime`).
+    private func finishPreroll() {
+        prerollRemaining = 0
+        session.startTime = Date()
+        playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
     }
 
     private var isLastBoxRemainingHintVisible: Bool {
