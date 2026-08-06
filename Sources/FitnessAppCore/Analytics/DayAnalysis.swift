@@ -38,6 +38,11 @@ public struct DayAnalysis: Equatable, Sendable {
     public let systemicLoad: LoadCategory
     public let coachNote: CoachNoteKind
     public let isEstimated: Bool
+    /// README 2.13: gesetzt fuer AMRAP/EMOM/Auf-Zeit-Tage - die Karte
+    /// braucht das, um die Format-Kapsel statt der Schaetzung-Pille zu
+    /// zeigen und den formatspezifischen Coach-Notiz-Satz zu waehlen.
+    /// `nil` fuer normale Krafttage.
+    public let timeFormat: WorkoutTimeFormat?
 
     public init(
         loadScore: Double,
@@ -47,7 +52,8 @@ public struct DayAnalysis: Equatable, Sendable {
         localRecoveryHours: ClosedRange<Int>,
         systemicLoad: LoadCategory,
         coachNote: CoachNoteKind,
-        isEstimated: Bool
+        isEstimated: Bool,
+        timeFormat: WorkoutTimeFormat? = nil
     ) {
         self.loadScore = loadScore
         self.loadCategory = loadCategory
@@ -57,6 +63,7 @@ public struct DayAnalysis: Equatable, Sendable {
         self.systemicLoad = systemicLoad
         self.coachNote = coachNote
         self.isEstimated = isEstimated
+        self.timeFormat = timeFormat
     }
 }
 
@@ -132,6 +139,13 @@ public enum CoachNoteKind: String, Sendable, CaseIterable {
     /// Cardio-only-Tag. Eigene Sprach-Logik (Dauer + Distanz statt
     /// Hypertrophie-Reiz).
     case cardioFocused
+    /// README 2.13: AMRAP/EMOM/Auf-Zeit-Tage - Dichte statt Gewicht ist
+    /// die Belastungsquelle. `DayAnalysisCard` rendert diesen Fall NICHT
+    /// ueber `localizationKey` direkt, sondern waehlt eine von drei
+    /// formatspezifischen, mit der Dauer parametrisierten Varianten
+    /// (siehe `DayAnalysisCard.metabolicDensityText`). Der generische Key
+    /// unten ist nur ein Fallback, falls `timeFormat` je fehlen sollte.
+    case metabolicDensity
 
     public var localizationKey: String {
         "day.analysis.coachNote.\(rawValue)"

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1558 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1562 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1558 / 1558** (100%) | 0 |
-| 🇬🇧 English (EN) | **1558 / 1558** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1558 / 1558** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1562 / 1562** (100%) | 0 |
+| 🇬🇧 English (EN) | **1562 / 1562** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1562 / 1562** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -562,7 +562,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboardSettings.section.inactive.title` | Inaktive Widgets | Inactive Widgets | Pasif Widget'lar |
 | `dashboardSettings.title` | Dashboard anpassen | Customize Dashboard | Panoyu Özelleştir |
 
-## `day.*`  (51 Keys)
+## `day.*`  (55 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -571,6 +571,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `day.analysis.coachNote.compoundHeavy` | Systemisch fordernder Compound-Tag. Plane danach eher Erholung oder einen leichten Oberkörper-Tag. | Systemically demanding compound day. Plan for recovery or a light upper-body day afterwards. | Sistemik olarak zorlayıcı bir compound günü. Sonrasında toparlanma veya hafif üst vücut günü planla. |
 | `day.analysis.coachNote.highLocal` | Hoher lokaler Reiz bei moderater Systemlast — klassischer Hypertrophie-Tag. | High local stimulus with moderate systemic load — classic hypertrophy day. | Yüksek yerel uyaran, orta düzey sistemik yük — klasik hipertrofi günü. |
 | `day.analysis.coachNote.lightDeload` | Geringer Reiz — passend für Deload, Technik oder Erhaltung. | Low stimulus — ideal for deload, technique, or maintenance. | Düşük uyaran — deload, teknik veya koruma için ideal. |
+| `day.analysis.coachNote.metabolicDensity` | Ein Zeitformat-Tag: Die Belastung kommt hier aus der Dichte, nicht aus dem Gewicht. | A time-format day: the load here comes from density, not from weight. | Bir zaman formatı günü: Buradaki yük ağırlıktan değil, yoğunluktan gelir. |
+| `day.analysis.coachNote.metabolicDensity.amrap` | %@ ohne feste Pause. Die Belastung kommt hier aus der Dichte, nicht aus dem Gewicht. | %@ with no fixed rest. The load here comes from density, not weight. | Sabit molasız %@. Buradaki yük ağırlıktan değil, yoğunluktan gelir. |
+| `day.analysis.coachNote.metabolicDensity.emom` | %@ im Minutentakt. Die Pause steckt in der Minute selbst, nicht dazwischen. | %@ on the minute. The rest lives inside the minute itself, not between them. | %@ dakika bazında. Mola dakikanın kendi içinde, aralarda değil. |
+| `day.analysis.coachNote.metabolicDensity.forTime` | %@ im eigenen Tempo. Die Belastung kommt aus der Dichte, nicht aus dem Gewicht. | %@ at your own pace. The load comes from density, not weight. | %@ kendi temponda. Yük ağırlıktan değil, yoğunluktan gelir. |
 | `day.analysis.coachNote.veryHighStress` | Sehr hohe Belastung. Achte danach besonders auf Schlaf und Nahrung — und plane keinen zweiten harten Tag direkt im Anschluss. | Very high load. Pay extra attention to sleep and food afterwards — and don't stack another hard day right after. | Çok yüksek yük. Sonrasında uykuya ve beslenmeye özellikle dikkat et — ve hemen ardına başka bir zor gün koyma. |
 | `day.analysis.duration` | Geschätzte Dauer | Estimated Duration | Tahmini Süre |
 | `day.analysis.empty` | Füge Übungen hinzu, um die Tagesanalyse zu sehen. | Add exercises to see the day analysis. | Gün analizini görmek için egzersiz ekle. |

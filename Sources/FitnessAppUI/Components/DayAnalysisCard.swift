@@ -55,9 +55,21 @@ public struct DayAnalysisCard: View {
             Text("day.analysis.title", bundle: .module)
                 .font(.headline)
             Spacer()
-            // "Estimated"-Pill — visualisiert grobe Schaetzung wenn die
-            // Übungsdaten unvollständig sind (siehe DayAnalyzer.isEstimated).
-            if case .analysis(let a) = mode, a.isEstimated {
+            // README 2.13: Zeitformat-Tage MIT Deckel zeigen die Format-
+            // Kapsel ("AMRAP · 20 Min") statt der Schaetzung-Pille - die
+            // Dauer ist dann keine Schaetzung. Auf Zeit ohne Deckel bleibt
+            // bei der Schaetzung-Pille (echte Schaetzung aus Runden × Wdh).
+            if case .analysis(let a) = mode, let format = a.timeFormat, !a.isEstimated {
+                Text(timedFormatCapsuleText(format: format, minutes: a.estimatedDurationMinutes.lowerBound))
+                    .font(.caption2.weight(.semibold))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.deltiqOrange.opacity(0.15))
+                    .foregroundStyle(Color.deltiqOrange)
+                    .clipShape(Capsule())
+            } else if case .analysis(let a) = mode, a.isEstimated {
+                // "Estimated"-Pill — visualisiert grobe Schaetzung wenn die
+                // Übungsdaten unvollständig sind (siehe DayAnalyzer.isEstimated).
                 Text("day.analysis.estimated", bundle: .module)
                     .font(.caption2.weight(.semibold))
                     .padding(.horizontal, 6)
@@ -67,6 +79,13 @@ public struct DayAnalysisCard: View {
                     .clipShape(Capsule())
             }
         }
+    }
+
+    /// "AMRAP · 20 Min" — dieselbe Fassung wie in Vorlagen-Vorschau und
+    /// Tag-Editor (`timedFormatDisplayName`, README 2.10), damit keine
+    /// dritte Formulierung fuer dieselbe Information entsteht.
+    private func timedFormatCapsuleText(format: WorkoutTimeFormat, minutes: Int) -> String {
+        "\(timedFormatDisplayName(format)) · \(minutes) " + String(localized: "unit.minutes.short", bundle: .module)
     }
 
     // MARK: Empty / Rest-Day branches
@@ -106,11 +125,12 @@ public struct DayAnalysisCard: View {
 
         // Duration + Recovery + Systemic — in einer 2-Spalten-Grid-artigen
         // VStack, damit auf iPhone-SE auch lesbar.
+        let durationText = formatDurationRange(a.estimatedDurationMinutes, isEstimated: a.isEstimated)
         VStack(alignment: .leading, spacing: 8) {
             metricRow(
                 icon: "clock",
                 labelKey: "day.analysis.duration",
-                value: formatDurationRange(a.estimatedDurationMinutes)
+                value: durationText
             )
             metricRow(
                 icon: "arrow.clockwise.heart",
@@ -126,17 +146,39 @@ public struct DayAnalysisCard: View {
 
         Divider().opacity(0.5)
 
-        // Coach-Note ganz unten — kurzer Bewertungs-Text.
+        // Coach-Note ganz unten — kurzer Bewertungs-Text. README 2.13:
+        // `.metabolicDensity` (Zeitformat-Tage) rendert NICHT ueber den
+        // generischen Catalog-Key, sondern ueber eine formatspezifische,
+        // mit der schon berechneten Dauer parametrisierte Variante.
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "quote.bubble.fill")
                 .font(.callout)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.deltiqOrange)
-            Text(LocalizedStringKey(a.coachNote.localizationKey), bundle: .module)
-                .font(.callout)
-                .foregroundStyle(.primary)
-                .fixedSize(horizontal: false, vertical: true)
+            Group {
+                if a.coachNote == .metabolicDensity, let format = a.timeFormat {
+                    Text(metabolicDensityText(format: format, durationText: durationText))
+                } else {
+                    Text(LocalizedStringKey(a.coachNote.localizationKey), bundle: .module)
+                }
+            }
+            .font(.callout)
+            .foregroundStyle(.primary)
+            .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    /// README 2.13: ein Satz je Format, parametrisiert mit der bereits
+    /// berechneten Dauer-Anzeige (teilt sich damit die Capped-vs-Schaetzung-
+    /// Unterscheidung aus `formatDurationRange` statt sie zu duplizieren).
+    private func metabolicDensityText(format: WorkoutTimeFormat, durationText: String) -> String {
+        let key: String
+        switch format {
+        case .amrap:   key = "day.analysis.coachNote.metabolicDensity.amrap"
+        case .emom:    key = "day.analysis.coachNote.metabolicDensity.emom"
+        case .forTime: key = "day.analysis.coachNote.metabolicDensity.forTime"
+        }
+        return String(format: String(localized: String.LocalizationValue(key), bundle: .module), durationText)
     }
 
     // MARK: Building blocks
@@ -255,10 +297,14 @@ public struct DayAnalysisCard: View {
 
     /// "~50–65 Min" Format. Nutzt no-break-Hyphen damit der Bereich nicht
     /// am Hyphen umbricht.
-    private func formatDurationRange(_ range: ClosedRange<Int>) -> String {
+    /// README 2.13: ein Zeitformat-Tag MIT Deckel zeigt den Deckel als
+    /// exakten Wert ohne Tilde - die Dauer ist dann keine Schaetzung,
+    /// sondern der Deckel selbst. Alle anderen Faelle (normale Krafttage,
+    /// Auf Zeit ohne Deckel) bleiben bei der bisherigen "~"-Schaetzung.
+    private func formatDurationRange(_ range: ClosedRange<Int>, isEstimated: Bool) -> String {
         let unit = String(localized: "unit.minutes.short", bundle: .module)
         if range.lowerBound == range.upperBound {
-            return "~\(range.lowerBound) \(unit)"
+            return isEstimated ? "~\(range.lowerBound) \(unit)" : "\(range.lowerBound) \(unit)"
         }
         return "~\(range.lowerBound)–\(range.upperBound) \(unit)"
     }
@@ -296,6 +342,47 @@ extension MuscleStimulus.Tier {
         systemicLoad: .high,
         coachNote: .compoundHeavy,
         isEstimated: false
+    )))
+    .padding()
+}
+
+@available(iOS 17.0, macOS 14.0, *)
+#Preview("Analysis — AMRAP mit Deckel") {
+    // README 2.13: Format-Kapsel statt Schaetzung-Pille, kein Tilde vor
+    // der Dauer - der Deckel IST die Dauer.
+    DayAnalysisCard(mode: .analysis(DayAnalysis(
+        loadScore: 20,
+        loadCategory: .high,
+        muscleFocus: [
+            MuscleStimulus(muscle: .quads, points: 10.0, tier: .primary),
+            MuscleStimulus(muscle: .core, points: 4.0, tier: .secondary),
+        ],
+        estimatedDurationMinutes: 20...20,
+        localRecoveryHours: 36...60,
+        systemicLoad: .high,
+        coachNote: .metabolicDensity,
+        isEstimated: false,
+        timeFormat: .amrap
+    )))
+    .padding()
+}
+
+@available(iOS 17.0, macOS 14.0, *)
+#Preview("Analysis — Auf Zeit ohne Deckel") {
+    // README 2.13, "Auf Zeit ohne Deckel": echte Schaetzung aus Runden ×
+    // Wiederholungen, Schaetzung-Pille bleibt statt Format-Kapsel.
+    DayAnalysisCard(mode: .analysis(DayAnalysis(
+        loadScore: 14,
+        loadCategory: .moderate,
+        muscleFocus: [
+            MuscleStimulus(muscle: .shoulders, points: 8.0, tier: .primary),
+        ],
+        estimatedDurationMinutes: 12...18,
+        localRecoveryHours: 24...48,
+        systemicLoad: .moderate,
+        coachNote: .metabolicDensity,
+        isEstimated: true,
+        timeFormat: .forTime
     )))
     .padding()
 }

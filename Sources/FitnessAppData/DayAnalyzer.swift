@@ -34,8 +34,18 @@ import FitnessAppCore
 @MainActor
 public enum DayAnalyzer {
 
+    /// - Parameters:
+    ///   - timeFormat: gesetzt fuer AMRAP/EMOM/Auf-Zeit-Tage (README 2.13).
+    ///     Schaltet auf eine dauerbasierte Berechnung um, da Saetze x Wdh x
+    ///     Pause fuer diese Tage keine Bedeutung hat (die Uhr entscheidet,
+    ///     nicht eine feste Pausen-Angabe).
+    ///   - timeCapMinutes: der Zeit-Deckel, wenn einer gesetzt ist. Bei Auf
+    ///     Zeit meist `nil` - dann bestimmt das Pensum die Dauer, und das
+    ///     Ergebnis ist wieder eine echte Schaetzung (`isEstimated = true`).
     public static func analyze(
-        exercises: [Exercise]
+        exercises: [Exercise],
+        timeFormat: WorkoutTimeFormat? = nil,
+        timeCapMinutes: Int? = nil
     ) -> DayAnalysis? {
         // Nur aktive Working-Sets fliessen in die Analyse — Warmup +
         // Cooldown werden vom User als optional erlebt und sollen die
@@ -44,6 +54,10 @@ public enum DayAnalyzer {
             !$0.isArchived && $0.role == .workingSet
         }
         guard !working.isEmpty else { return nil }
+
+        if let timeFormat {
+            return analyzeTimedFormat(working: working, format: timeFormat, capMinutes: timeCapMinutes)
+        }
 
         let isCardioOnly = working.allSatisfy { $0.isCardio }
 
@@ -91,6 +105,109 @@ public enum DayAnalyzer {
             coachNote: coachNote,
             isEstimated: isEstimated
         )
+    }
+
+    // MARK: - Zeitformate (README 2.13)
+
+    /// AMRAP/EMOM/Auf-Zeit-Tage rechnen aus der Dauer statt aus Saetze x
+    /// Wdh x Pause - eine feste Pausen-Angabe existiert bei diesen Formaten
+    /// gar nicht, die Uhr (bzw. das Pensum bei Auf Zeit ohne Deckel)
+    /// entscheidet ueber die Dauer. Muscle-Focus bleibt unveraendert aus den
+    /// Uebungen, unabhaengig vom Format.
+    private static func analyzeTimedFormat(
+        working: [Exercise],
+        format: WorkoutTimeFormat,
+        capMinutes: Int?
+    ) -> DayAnalysis {
+        let muscleFocus = computeMuscleFocus(working: working)
+        let isCardioOnly = working.allSatisfy { $0.isCardio }
+
+        let durationRange: ClosedRange<Int>
+        let isEstimated: Bool
+        if let capMinutes {
+            // Ein gesetzter Deckel IST die Dauer, keine Schaetzung.
+            durationRange = capMinutes...capMinutes
+            isEstimated = false
+        } else {
+            // Auf Zeit meist ohne Deckel (README 2.9) - das Pensum
+            // (Runden x Ziel pro Runde) bestimmt die Dauer, wieder als
+            // echte Schaetzung mit Range.
+            durationRange = computeForTimeDurationEstimate(working: working)
+            isEstimated = true
+        }
+
+        let representativeMinutes = (durationRange.lowerBound + durationRange.upperBound) / 2
+        let loadCategory = categorizeByDuration(representativeMinutes)
+        // EMOM ist eine Stufe milder als sein eigener loadCategory - die
+        // Pause steckt bereits in jeder Minute, anders als bei AMRAP/Auf
+        // Zeit, die durchgehend ohne Pause laufen.
+        let systemicLoad = format == .emom ? stepDown(loadCategory) : loadCategory
+
+        let recoveryRange = recoveryRangeForTopStimulus(
+            muscleFocus: muscleFocus,
+            isCardioOnly: isCardioOnly,
+            systemicLoad: systemicLoad
+        )
+
+        return DayAnalysis(
+            loadScore: Double(representativeMinutes),
+            loadCategory: loadCategory,
+            muscleFocus: muscleFocus,
+            estimatedDurationMinutes: durationRange,
+            localRecoveryHours: recoveryRange,
+            systemicLoad: systemicLoad,
+            coachNote: .metabolicDensity,
+            isEstimated: isEstimated,
+            timeFormat: format
+        )
+    }
+
+    /// Schwellen fuer Zeitformat-Tage (Vorschlag README 2.13, kalibriert auf
+    /// die Dauer statt auf Saetze x Wdh x Pause): "Leicht" wird fuer
+    /// Zeitformate nicht vergeben - selbst ein kurzes AMRAP ist durchgehende
+    /// Belastung ohne Pause, nie ein Leicht-Tag.
+    private static func categorizeByDuration(_ minutes: Int) -> LoadCategory {
+        switch minutes {
+        case ...10:   return .moderate
+        case 11...20: return .high
+        default:      return .veryHigh
+        }
+    }
+
+    /// Eine Stufe milder - fuer EMOMs `systemicLoad` (README 2.13). Anders
+    /// als `loadCategory` darf das hier bis auf "Leicht" absinken: die Pause
+    /// steckt bereits in jeder Minute, das ist eine echte Erleichterung
+    /// gegenueber dem Gesamt-Eindruck des Tages.
+    private static func stepDown(_ category: LoadCategory) -> LoadCategory {
+        switch category {
+        case .veryHigh: return .high
+        case .high:     return .moderate
+        case .moderate: return .low
+        case .low:      return .low
+        }
+    }
+
+    /// README 2.13, "Auf Zeit ohne Deckel": ohne Zeit-Deckel bestimmt das
+    /// Pensum (Runden x Ziel pro Runde) die Dauer. Anders als
+    /// `computeDurationRange` (normale Krafttage) wird KEINE Pause
+    /// addiert - Auf Zeit laeuft durchgehend, das ist gerade der Punkt des
+    /// Formats. Wiederverwendet `workTimePerSet` fuer die Pro-Runde-Zeit,
+    /// `exercise.sets` ist bei Auf Zeit die Rundenzahl.
+    private static func computeForTimeDurationEstimate(working: [Exercise]) -> ClosedRange<Int> {
+        var minSec = 0
+        var maxSec = 0
+        for ex in working {
+            let perRound = workTimePerSet(exercise: ex)
+            let rounds = max(ex.sets, 1)
+            minSec += perRound.lower * rounds
+            maxSec += perRound.upper * rounds
+            // Kurzer Wechsel zur naechsten Uebung, keine echte Pause dazwischen.
+            minSec += 15
+            maxSec += 30
+        }
+        let minMin = max(1, minSec / 60)
+        let maxMin = max(minMin, maxSec / 60 + 1)
+        return minMin...maxMin
     }
 
     // MARK: - Muscle Focus

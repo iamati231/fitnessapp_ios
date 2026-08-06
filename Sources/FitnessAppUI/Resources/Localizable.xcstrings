@@ -27396,6 +27396,38 @@
         }
       }
     },
+    "day.analysis.coachNote.metabolicDensity": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ein Zeitformat-Tag: Die Belastung kommt hier aus der Dichte, nicht aus dem Gewicht." } },
+        "en": { "stringUnit": { "state": "translated", "value": "A time-format day: the load here comes from density, not from weight." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bir zaman formatı günü: Buradaki yük ağırlıktan değil, yoğunluktan gelir." } }
+      }
+    },
+    "day.analysis.coachNote.metabolicDensity.amrap": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%@ ohne feste Pause. Die Belastung kommt hier aus der Dichte, nicht aus dem Gewicht." } },
+        "en": { "stringUnit": { "state": "translated", "value": "%@ with no fixed rest. The load here comes from density, not weight." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sabit molasız %@. Buradaki yük ağırlıktan değil, yoğunluktan gelir." } }
+      }
+    },
+    "day.analysis.coachNote.metabolicDensity.emom": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%@ im Minutentakt. Die Pause steckt in der Minute selbst, nicht dazwischen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "%@ on the minute. The rest lives inside the minute itself, not between them." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%@ dakika bazında. Mola dakikanın kendi içinde, aralarda değil." } }
+      }
+    },
+    "day.analysis.coachNote.metabolicDensity.forTime": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%@ im eigenen Tempo. Die Belastung kommt aus der Dichte, nicht aus dem Gewicht." } },
+        "en": { "stringUnit": { "state": "translated", "value": "%@ at your own pace. The load comes from density, not weight." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%@ kendi temponda. Yük ağırlıktan değil, yoğunluktan gelir." } }
+      }
+    },
     "day.analysis.empty": {
       "extractionState": "manual",
       "localizations": {
