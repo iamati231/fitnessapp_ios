@@ -2,6 +2,150 @@
   "sourceLanguage": "en",
   "version": "1.0",
   "strings": {
+    "timedWorkout.amrap.addRound": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "+1 Runde" } },
+        "en": { "stringUnit": { "state": "translated", "value": "+1 round" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "+1 tur" } }
+      }
+    },
+    "timedWorkout.amrap.capContext": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%lld Min. Deckel" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%lld min cap" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld dk limit" } }
+      }
+    },
+    "timedWorkout.amrap.circuitHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Von vorn, bis die Zeit abgelaufen ist." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Start over, until time runs out." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Süre bitene kadar baştan başla." } }
+      }
+    },
+    "timedWorkout.amrap.partialReps": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Zusätzliche Wdh." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Extra reps" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ek tekrar" } }
+      }
+    },
+    "timedWorkout.amrap.roundsLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "RUNDEN" } },
+        "en": { "stringUnit": { "state": "translated", "value": "ROUNDS" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "TUR" } }
+      }
+    },
+    "timedWorkout.discard.confirmButton": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Abbrechen & verwerfen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cancel & discard" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "İptal et ve sil" } }
+      }
+    },
+    "timedWorkout.discard.confirmTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Training abbrechen?" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cancel workout?" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Antrenmanı iptal et?" } }
+      }
+    },
+    "timedWorkout.discard.menu": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Abbrechen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cancel" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "İptal et" } }
+      }
+    },
+    "timedWorkout.elapsed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Verstrichen: %@" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Elapsed: %@" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Geçen süre: %@" } }
+      }
+    },
+    "timedWorkout.emom.markDone": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Minute geschafft" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Minute done" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dakika tamam" } }
+      }
+    },
+    "timedWorkout.emom.minuteContext": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Minute %lld / %lld" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Minute %lld of %lld" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld. / %lld. dakika" } }
+      }
+    },
+    "timedWorkout.emom.nextMinute": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nächste Minute" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Next minute" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sonraki dakika" } }
+      }
+    },
+    "timedWorkout.emom.thisMinute": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "DIESE MINUTE" } },
+        "en": { "stringUnit": { "state": "translated", "value": "THIS MINUTE" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "BU DAKİKA" } }
+      }
+    },
+    "timedWorkout.finish.save": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Speichern" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Save" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kaydet" } }
+      }
+    },
+    "timedWorkout.forTime.finishedLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Geschafft!" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Done!" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tamamlandı!" } }
+      }
+    },
+    "timedWorkout.forTime.lastRoundHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Das letzte Häkchen stoppt die Uhr." } },
+        "en": { "stringUnit": { "state": "translated", "value": "The last checkmark stops the clock." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Son işaret saati durdurur." } }
+      }
+    },
+    "timedWorkout.forTime.pillLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Auf Zeit" } },
+        "en": { "stringUnit": { "state": "translated", "value": "For Time" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Süreye Karşı" } }
+      }
+    },
+    "timedWorkout.forTime.progressContext": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%lld / %lld erledigt" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%lld of %lld done" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld / %lld tamam" } }
+      }
+    },
     "tab.dashboard": {
       "extractionState": "manual",
       "localizations": {

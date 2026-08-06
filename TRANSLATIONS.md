@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1470 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1505 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1470 / 1470** (100%) | 0 |
-| 🇬🇧 English (EN) | **1470 / 1470** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1470 / 1470** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1505 / 1505** (100%) | 0 |
+| 🇬🇧 English (EN) | **1505 / 1505** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1505 / 1505** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1699,6 +1699,29 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `tab.more` | Mehr | More | Daha Fazla |
 | `tab.plan` | Plan | Plan | Plan |
 | `tab.tools` | Werkzeuge | Tools | Araçlar |
+
+## `timedWorkout.*`  (18 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `timedWorkout.amrap.addRound` | +1 Runde | +1 round | +1 tur |
+| `timedWorkout.amrap.capContext` | %lld Min. Deckel | %lld min cap | %lld dk limit |
+| `timedWorkout.amrap.circuitHint` | Von vorn, bis die Zeit abgelaufen ist. | Start over, until time runs out. | Süre bitene kadar baştan başla. |
+| `timedWorkout.amrap.partialReps` | Zusätzliche Wdh. | Extra reps | Ek tekrar |
+| `timedWorkout.amrap.roundsLabel` | RUNDEN | ROUNDS | TUR |
+| `timedWorkout.discard.confirmButton` | Abbrechen & verwerfen | Cancel & discard | İptal et ve sil |
+| `timedWorkout.discard.confirmTitle` | Training abbrechen? | Cancel workout? | Antrenmanı iptal et? |
+| `timedWorkout.discard.menu` | Abbrechen | Cancel | İptal et |
+| `timedWorkout.elapsed` | Verstrichen: %@ | Elapsed: %@ | Geçen süre: %@ |
+| `timedWorkout.emom.markDone` | Minute geschafft | Minute done | Dakika tamam |
+| `timedWorkout.emom.minuteContext` | Minute %lld / %lld | Minute %lld of %lld | %lld. / %lld. dakika |
+| `timedWorkout.emom.nextMinute` | Nächste Minute | Next minute | Sonraki dakika |
+| `timedWorkout.emom.thisMinute` | DIESE MINUTE | THIS MINUTE | BU DAKİKA |
+| `timedWorkout.finish.save` | Speichern | Save | Kaydet |
+| `timedWorkout.forTime.finishedLabel` | Geschafft! | Done! | Tamamlandı! |
+| `timedWorkout.forTime.lastRoundHint` | Das letzte Häkchen stoppt die Uhr. | The last checkmark stops the clock. | Son işaret saati durdurur. |
+| `timedWorkout.forTime.pillLabel` | Auf Zeit | For Time | Süreye Karşı |
+| `timedWorkout.forTime.progressContext` | %lld / %lld erledigt | %lld of %lld done | %lld / %lld tamam |
 
 ## `trophy.*`  (23 Keys)
 

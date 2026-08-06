@@ -51,6 +51,70 @@ public enum PersonalRecordSync {
         return prs
     }
 
+    // MARK: - Zeitformate (README 2.9: AMRAP/EMOM/Auf Zeit)
+
+    /// Analog zu `recordPRs(for:in:)`, aber fuer den Session-weiten
+    /// AMRAP/Auf-Zeit-Ergebnispfad statt Set-basierter `ExerciseLog`s.
+    /// Kein-op fuer EMOM-Sessions (kein PR-Kind, siehe `PRDetector`) oder
+    /// wenn `session.timeFormatSnapshot == nil` (normale Krafteinheit).
+    @discardableResult
+    public static func recordTimedFormatPR(
+        for session: WorkoutSession,
+        in context: ModelContext
+    ) -> PersonalRecord? {
+        guard session.isCompleted,
+              let format = session.timeFormatSnapshot,
+              let wodName = session.dayName
+        else { return nil }
+
+        let attempt = TimedWorkoutAttempt(
+            wodName: wodName,
+            format: format,
+            date: session.startTime,
+            roundsCompleted: session.roundsCompleted,
+            partialReps: session.partialReps,
+            finishTimeSeconds: session.finishTimeSeconds
+        )
+        let history = fetchHistoricalTimedAttempts(excluding: session, in: context)
+
+        guard let record = PRDetector.detectTimedFormatPR(session: attempt, history: history) else {
+            return nil
+        }
+        context.insert(PersonalRecordEntry(record: record, session: session))
+        return record
+    }
+
+    /// Pullt alle ANDEREN abgeschlossenen Sessions mit einem Zeitformat-
+    /// Ergebnis. Breiter Fetch + In-Memory-Filter (gleiches Muster wie
+    /// `fetchHistoricalLifts`) statt eines `#Predicate` auf dem optionalen
+    /// Enum-Feld — SwiftData-Predicates auf optionalen Codable-RawValue-
+    /// Enums sind unzuverlaessig.
+    private static func fetchHistoricalTimedAttempts(
+        excluding session: WorkoutSession,
+        in context: ModelContext
+    ) -> [TimedWorkoutAttempt] {
+        let thisID = session.persistentModelID
+        let descriptor = FetchDescriptor<WorkoutSession>(
+            predicate: #Predicate { $0.isCompleted == true && $0.isRestDay == false },
+            sortBy: [SortDescriptor(\.startTime, order: .forward)]
+        )
+        let sessions = (try? context.fetch(descriptor)) ?? []
+        return sessions.compactMap { other -> TimedWorkoutAttempt? in
+            guard other.persistentModelID != thisID,
+                  let format = other.timeFormatSnapshot,
+                  let wodName = other.dayName
+            else { return nil }
+            return TimedWorkoutAttempt(
+                wodName: wodName,
+                format: format,
+                date: other.startTime,
+                roundsCompleted: other.roundsCompleted,
+                partialReps: other.partialReps,
+                finishTimeSeconds: other.finishTimeSeconds
+            )
+        }
+    }
+
     // MARK: - Full rebuild (Trophy-Room manual button + first-run backfill)
 
     /// Wipes every `PersonalRecordEntry` in the store and re-detects PRs for
