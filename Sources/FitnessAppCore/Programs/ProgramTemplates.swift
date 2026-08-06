@@ -888,6 +888,231 @@ public enum ProgramTemplates {
         ]
     )
 
+    // MARK: - 15. CrossFit Bodyweight (Rx)
+    //
+    // README 2.9 / Nachtrag "Komplette Trainingsplaene Crossfit Kettlebell".
+    // Rx + Scaled sind als ZWEI eigenstaendige Templates abgebildet statt
+    // eines In-Workout-Toggles (Datenmodell/UI dafuer existiert nicht -
+    // Umfang waere ein eigenes Feature, kein Teil dieser Phase).
+    //
+    // Tag 3 (Auf Zeit): Original-Leiter 50-40-30-20-10 - das Datenmodell
+    // kennt nur gleichmaessige Runden (`Exercise.sets` × `repsMin`), darum
+    // approximiert als 5 Runden × 30 Wdh. (gleiche Gesamt-Wiederholungszahl
+    // 150 wie die Original-Leiter).
+
+    private static let crossfitBodyweightRx = ProgramTemplate(
+        id: "crossfit_bodyweight_rx",
+        name: "CrossFit Bodyweight (Rx)",
+        localizationKey: "plan.template.crossfitBodyweightRx.name",
+        tagline: "3 Tage · Klassische Bodyweight-WODs",
+        taglineKey: "plan.template.crossfitBodyweightRx.tagline",
+        descriptionText: "Benchmark-WODs nur mit Körpergewicht: ein 20-Minuten-AMRAP, ein Intensitäts-EMOM und eine Auf-Zeit-Rundenleiter. Volle Rx-Bewegungen — Klimmzüge, Liegestütze, Air Squats.",
+        descriptionKey: "plan.template.crossfitBodyweightRx.description",
+        focus: "CrossFit & Kettlebell",
+        focusKey: "plan.template.crossfitBodyweightRx.focus",
+        daysPerWeek: 3,
+        days: [
+            DaySpec(name: "Cindy", localizationKey: "plan.day.cindyRx", type: .fullBody, sequenceIndex: 1,
+                    exercises: [
+                        ExerciseSpec(name: "Klimmzüge",        sets: 1, repsMin: 5,  repsMax: 5),
+                        ExerciseSpec(name: "Liegestütze",      sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kniebeuge (BW)",   sets: 1, repsMin: 15, repsMax: 15)
+                    ],
+                    timeFormat: .amrap, timeCapMinutes: 20),
+            DaySpec(name: "EMOM Intensität", localizationKey: "plan.day.emomIntensityRx", type: .fullBody, sequenceIndex: 2,
+                    exercises: [
+                        ExerciseSpec(name: "Burpees",                       sets: 1, repsMin: 15, repsMax: 15),
+                        ExerciseSpec(name: "Gesprungene Ausfallschritte",   sets: 1, repsMin: 20, repsMax: 20)
+                    ],
+                    timeFormat: .emom, timeCapMinutes: 12),
+            DaySpec(name: "Auf Zeit: Sit-ups & Squats", localizationKey: "plan.day.forTimeSitupsSquatsRx", type: .fullBody, sequenceIndex: 3,
+                    exercises: [
+                        ExerciseSpec(name: "Sit-ups",          sets: 5, repsMin: 30, repsMax: 30),
+                        ExerciseSpec(name: "Kniebeuge (BW)",   sets: 5, repsMin: 30, repsMax: 30)
+                    ],
+                    timeFormat: .forTime)
+        ],
+        targetEnvironment: .noEquipment,
+        iconSystemName: "figure.mixed.cardio",
+        targetExperience: [.advanced],
+        targetGoals: [.functional, .fatloss]
+    )
+
+    // MARK: - 16. CrossFit Bodyweight (Scaled)
+
+    private static let crossfitBodyweightScaled = ProgramTemplate(
+        id: "crossfit_bodyweight_scaled",
+        name: "CrossFit Bodyweight (Scaled)",
+        localizationKey: "plan.template.crossfitBodyweightScaled.name",
+        tagline: "3 Tage · Bodyweight-WODs, Einsteiger-Varianten",
+        taglineKey: "plan.template.crossfitBodyweightScaled.tagline",
+        descriptionText: "Dieselben Benchmark-WODs wie Rx, mit Einsteiger-Bewegungen: Handtuch-Rudern statt Klimmzüge, Liegestütze auf den Knien und eine kürzere Rundenleiter.",
+        descriptionKey: "plan.template.crossfitBodyweightScaled.description",
+        focus: "CrossFit & Kettlebell",
+        focusKey: "plan.template.crossfitBodyweightScaled.focus",
+        daysPerWeek: 3,
+        days: [
+            DaySpec(name: "Cindy (Scaled)", localizationKey: "plan.day.cindyScaled", type: .fullBody, sequenceIndex: 1,
+                    exercises: [
+                        ExerciseSpec(name: "Handtuch-Rudern (Türrahmen)",  sets: 1, repsMin: 5,  repsMax: 5),
+                        ExerciseSpec(name: "Liegestütze (Knie)",           sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kniebeuge (BW)",               sets: 1, repsMin: 15, repsMax: 15)
+                    ],
+                    timeFormat: .amrap, timeCapMinutes: 20),
+            DaySpec(name: "EMOM Intensität (Scaled)", localizationKey: "plan.day.emomIntensityScaled", type: .fullBody, sequenceIndex: 2,
+                    exercises: [
+                        ExerciseSpec(name: "Burpees",              sets: 1, repsMin: 8,  repsMax: 8),
+                        ExerciseSpec(name: "Ausfallschritte (BW)", sets: 1, repsMin: 12, repsMax: 12)
+                    ],
+                    timeFormat: .emom, timeCapMinutes: 12),
+            DaySpec(name: "Auf Zeit: Sit-ups & Squats (Scaled)", localizationKey: "plan.day.forTimeSitupsSquatsScaled", type: .fullBody, sequenceIndex: 3,
+                    exercises: [
+                        ExerciseSpec(name: "Sit-ups",        sets: 3, repsMin: 20, repsMax: 20),
+                        ExerciseSpec(name: "Kniebeuge (BW)", sets: 3, repsMin: 20, repsMax: 20)
+                    ],
+                    timeFormat: .forTime)
+        ],
+        targetEnvironment: .noEquipment,
+        iconSystemName: "figure.mixed.cardio",
+        targetExperience: [.beginner],
+        targetGoals: [.functional, .fatloss]
+    )
+
+    // MARK: - 17. CrossFit mit Gewichten
+
+    private static let crossfitWeighted = ProgramTemplate(
+        id: "crossfit_weighted",
+        name: "CrossFit mit Gewichten",
+        localizationKey: "plan.template.crossfitWeighted.name",
+        tagline: "3 Tage · Funktionelle WODs mit Kurzhantel/Kettlebell",
+        taglineKey: "plan.template.crossfitWeighted.tagline",
+        descriptionText: "Metcon-Workouts mit Zusatzgewicht statt reinem Körpergewicht — die Schwierigkeit steuerst du über das Gewicht, nicht über die Bewegung. Für Einsteiger und Fortgeschrittene.",
+        descriptionKey: "plan.template.crossfitWeighted.description",
+        focus: "CrossFit & Kettlebell",
+        focusKey: "plan.template.crossfitWeighted.focus",
+        daysPerWeek: 3,
+        days: [
+            DaySpec(name: "Grundlagen-AMRAP", localizationKey: "plan.day.crossfitWeightedAmrap", type: .fullBody, sequenceIndex: 1,
+                    exercises: [
+                        ExerciseSpec(name: "Goblet Squat",       sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Liegestütze",        sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kreuzheben (KH)",    sets: 1, repsMin: 10, repsMax: 10)
+                    ],
+                    timeFormat: .amrap, timeCapMinutes: 12),
+            DaySpec(name: "EMOM Ganzkörper", localizationKey: "plan.day.crossfitWeightedEmom", type: .fullBody, sequenceIndex: 2,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Swing",  sets: 1, repsMin: 12, repsMax: 12),
+                        ExerciseSpec(name: "Push Press (KH)",   sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Plank",              sets: 1, repsMin: 40, repsMax: 40)
+                    ],
+                    timeFormat: .emom, timeCapMinutes: 15),
+            // Original-Leiter 15-12-9 approximiert als 3 Runden × 12 Wdh.
+            // (gleiche Gesamt-Wiederholungszahl 36) — selbe Begründung wie
+            // bei Cindys Auf-Zeit-Tag oben.
+            DaySpec(name: "Auf Zeit: Thruster & Burpees", localizationKey: "plan.day.crossfitWeightedForTime", type: .fullBody, sequenceIndex: 3,
+                    exercises: [
+                        ExerciseSpec(name: "Thruster (KH)", sets: 3, repsMin: 12, repsMax: 12),
+                        ExerciseSpec(name: "Burpees",        sets: 3, repsMin: 12, repsMax: 12)
+                    ],
+                    timeFormat: .forTime)
+        ],
+        targetEnvironment: .homeGym,
+        iconSystemName: "dumbbell.fill",
+        targetExperience: [.beginner, .advanced],
+        targetGoals: [.functional, .fatloss]
+    )
+
+    // MARK: - 18. Kettlebell Grundlagen (Anfänger)
+
+    private static let kettlebellBeginner = ProgramTemplate(
+        id: "kettlebell_beginner",
+        name: "Kettlebell Grundlagen",
+        localizationKey: "plan.template.kettlebellBeginner.name",
+        tagline: "3 Tage · Technik, Kraftausdauer, Stabilität",
+        taglineKey: "plan.template.kettlebellBeginner.tagline",
+        descriptionText: "Einstieg ins Kettlebell-Training: saubere Grundtechnik bei Deadlift, Goblet Squat und Swing, ergänzt von einem AMRAP-Finisher zum Rundenaufbau.",
+        descriptionKey: "plan.template.kettlebellBeginner.description",
+        focus: "CrossFit & Kettlebell",
+        focusKey: "plan.template.kettlebellBeginner.focus",
+        daysPerWeek: 3,
+        days: [
+            DaySpec(name: "Grundlagen-Zirkel", localizationKey: "plan.day.kbFoundationsCircuit", type: .fullBody, sequenceIndex: 1,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Kreuzheben",       sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60),
+                        ExerciseSpec(name: "Kettlebell Goblet Squat",     sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60),
+                        ExerciseSpec(name: "Plank",                       sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60)
+                    ]),
+            DaySpec(name: "Push, Pull & Core", localizationKey: "plan.day.kbPushPullCore", type: .fullBody, sequenceIndex: 2,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Row einarmig",      sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 60),
+                        ExerciseSpec(name: "Kettlebell Overhead Press",    sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 60),
+                        ExerciseSpec(name: "Sit-ups",                      sets: 3, repsMin: 15, repsMax: 15, restSeconds: 60)
+                    ]),
+            DaySpec(name: "Schwung & Ausdauer", localizationKey: "plan.day.kbSwingEndurance", type: .fullBody, sequenceIndex: 3,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Swing",        sets: 1, repsMin: 15, repsMax: 15),
+                        ExerciseSpec(name: "Kettlebell Goblet Squat", sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Liegestütze",             sets: 1, repsMin: 5,  repsMax: 5)
+                    ],
+                    timeFormat: .amrap, timeCapMinutes: 15)
+        ],
+        targetEnvironment: .homeGym,
+        iconSystemName: "figure.strengthtraining.functional",
+        targetExperience: [.beginner],
+        targetGoals: [.functional, .fatloss]
+    )
+
+    // MARK: - 19. Kettlebell Fortgeschritten
+    //
+    // Tag 1 (Quelle: "Heavy Pull & Core") kombiniert laut Dokument einen
+    // Kraft-Block (Turkish Get-Up, 5×2/Seite) MIT einem separaten EMOM-WOD
+    // (Snatch links/rechts) - ein Tag hat in diesem Datenmodell aber
+    // entweder normale Sätze ODER genau ein Zeitformat, nicht beides. Der
+    // WOD-Teil gewinnt (zeigt das neue Feature), der Kraft-Teil entfällt
+    // hier bewusst. Tag 3 der Quelle ("Aktive Erholung") ist kein
+    // Trainingstag und wird wie jeder andere Rest-Day nicht als eigener
+    // DaySpec abgebildet (DEL-088) - der Instantiator füllt ihn beim Adopt
+    // automatisch; `daysPerWeek` zählt darum 3 statt der 4 Tage aus der Quelle.
+
+    private static let kettlebellAdvanced = ProgramTemplate(
+        id: "kettlebell_advanced",
+        name: "Kettlebell Fortgeschritten",
+        localizationKey: "plan.template.kettlebellAdvanced.name",
+        tagline: "3 Trainingstage · Maximalkraft, Explosivität, Metcon",
+        taglineKey: "plan.template.kettlebellAdvanced.tagline",
+        descriptionText: "Komplexe Kettlebell-Lifts (Snatch, Clean & Press) für erfahrene Trainierende, ergänzt von einem 20-Minuten-Metcon. Plane zwischen den Einheiten einen Tag aktiver Erholung ein.",
+        descriptionKey: "plan.template.kettlebellAdvanced.description",
+        focus: "CrossFit & Kettlebell",
+        focusKey: "plan.template.kettlebellAdvanced.focus",
+        daysPerWeek: 3,
+        days: [
+            DaySpec(name: "Heavy Pull: EMOM Snatch", localizationKey: "plan.day.kbHeavyPullEmom", type: .fullBody, sequenceIndex: 1,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Snatch (Links)",   sets: 1, repsMin: 6, repsMax: 8),
+                        ExerciseSpec(name: "Kettlebell Snatch (Rechts)",  sets: 1, repsMin: 6, repsMax: 8)
+                    ],
+                    timeFormat: .emom, timeCapMinutes: 10),
+            DaySpec(name: "Heavy Push & Squat", localizationKey: "plan.day.kbHeavyPushSquat", type: .fullBody, sequenceIndex: 2,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Clean & Press",  sets: 6, repsMin: 8,  repsMax: 8,  restSeconds: 120),
+                        ExerciseSpec(name: "Kettlebell Front Squat",    sets: 4, repsMin: 10, repsMax: 10, restSeconds: 90),
+                        ExerciseSpec(name: "Renegade Row",               sets: 4, repsMin: 12, repsMax: 12, restSeconds: 90)
+                    ]),
+            DaySpec(name: "Metabolic Conditioning", localizationKey: "plan.day.kbMetcon", type: .fullBody, sequenceIndex: 3,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Swing",        sets: 1, repsMin: 20, repsMax: 20),
+                        ExerciseSpec(name: "Kettlebell Goblet Squat", sets: 1, repsMin: 15, repsMax: 15),
+                        ExerciseSpec(name: "Liegestütze",             sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Burpees",                  sets: 1, repsMin: 5,  repsMax: 5)
+                    ],
+                    timeFormat: .amrap, timeCapMinutes: 20)
+        ],
+        targetEnvironment: .homeGym,
+        iconSystemName: "flame.fill",
+        targetExperience: [.advanced],
+        targetGoals: [.functional, .fatloss]
+    )
+
     // MARK: - Display order
 
     /// Display order in the picker — beginner-friendly programs first, then specialised.
@@ -907,6 +1132,14 @@ public enum ProgramTemplates {
         // sodass die Picker-UI sie als eigene Section rendern kann.
         hybridBeginner,
         hybridBalanced,
-        hybridPerformance
+        hybridPerformance,
+        // README 2.9 / Nachtrag Crossfit+Kettlebell. Gruppiert via
+        // `focus = "CrossFit & Kettlebell"`, gleiches Section-Muster wie
+        // die Hybrid-Familie oben.
+        crossfitBodyweightRx,
+        crossfitBodyweightScaled,
+        crossfitWeighted,
+        kettlebellBeginner,
+        kettlebellAdvanced
     ]
 }

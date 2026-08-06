@@ -5,9 +5,10 @@ final class ProgramTemplatesTests: XCTestCase {
 
     // MARK: Inventory + uniqueness
 
-    func testFourteenProgramsAreShipped() {
-        // DEL-055: 11 → 14 Programme (Hybrid Beginner/Balanced/Performance dazu).
-        XCTAssertEqual(ProgramTemplates.all.count, 14,
+    func testNineteenProgramsAreShipped() {
+        // README 2.9: 14 → 19 Programme (CrossFit Bodyweight Rx/Scaled,
+        // CrossFit mit Gewichten, Kettlebell Beginner/Advanced dazu).
+        XCTAssertEqual(ProgramTemplates.all.count, 19,
                        "Editing the catalog needs an explicit count update — fail-fast prevents silent template drops")
     }
 
@@ -145,6 +146,36 @@ final class ProgramTemplatesTests: XCTestCase {
             let cardioExercises = template.days.flatMap { $0.exercises }.filter { $0.isCardio }
             XCTAssertTrue(cardioExercises.isEmpty,
                           "\(template.name) has unexpected cardio-flagged exercises: \(cardioExercises.map(\.name))")
+        }
+    }
+
+    // MARK: README 2.9 Zeitformate (AMRAP/EMOM/Auf Zeit)
+
+    /// AMRAP/EMOM brauchen einen Deckel, sonst weiss der Player nicht, wann
+    /// die Runde/Minute endet (die View-Defaults von 12/20 Minuten sind nur
+    /// ein Nothelfer fuer fehlerhafte Daten, kein Ersatz fuer echte Werte
+    /// in den Templates selbst).
+    func testAmrapAndEmomDaysHaveATimeCap() {
+        for template in ProgramTemplates.all {
+            for day in template.days {
+                guard let format = day.timeFormat, format == .amrap || format == .emom else { continue }
+                XCTAssertNotNil(day.timeCapMinutes,
+                                "\(template.name) / \(day.name): \(format) ohne timeCapMinutes")
+                XCTAssertGreaterThan(day.timeCapMinutes ?? 0, 0,
+                                     "\(template.name) / \(day.name): timeCapMinutes muss positiv sein")
+            }
+        }
+    }
+
+    /// Zeitformat-Tage tragen kein Ad-Hoc-/Zusatz-Feld, das sie versehentlich
+    /// wie einen normalen Kraft-Tag behandeln liesse — DayType.rest ist fuer
+    /// Zeitformat-Tage genauso ausgeschlossen wie fuer normale Tage.
+    func testTimedFormatDaysAreNeverRestDays() {
+        for template in ProgramTemplates.all {
+            for day in template.days where day.timeFormat != nil {
+                XCTAssertNotEqual(day.type, .rest,
+                                  "\(template.name) / \(day.name) ist ein Zeitformat-Tag mit type .rest")
+            }
         }
     }
 

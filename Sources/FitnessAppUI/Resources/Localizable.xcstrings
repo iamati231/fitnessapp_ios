@@ -22081,6 +22081,286 @@
         }
       }
     },
+    "plan.template.crossfitBodyweightRx.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "CrossFit Bodyweight (Rx)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "CrossFit Bodyweight (Rx)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "CrossFit Bodyweight (Rx)" } }
+      }
+    },
+    "plan.template.crossfitBodyweightRx.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "3 Tage · Klassische Bodyweight-WODs" } },
+        "en": { "stringUnit": { "state": "translated", "value": "3 days · Classic bodyweight WODs" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "3 gün · Klasik vücut ağırlığı WOD'ları" } }
+      }
+    },
+    "plan.template.crossfitBodyweightRx.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } },
+        "en": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } }
+      }
+    },
+    "plan.template.crossfitBodyweightRx.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Benchmark-WODs nur mit Körpergewicht: ein 20-Minuten-AMRAP, ein Intensitäts-EMOM und eine Auf-Zeit-Rundenleiter. Volle Rx-Bewegungen — Klimmzüge, Liegestütze, Air Squats." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Benchmark WODs using bodyweight only: a 20-minute AMRAP, an intensity EMOM, and a for-time round ladder. Full Rx movements — pull-ups, push-ups, air squats." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sadece vücut ağırlığıyla ölçüt WOD'ları: 20 dakikalık bir AMRAP, bir yoğunluk EMOM'u ve süreye karşı bir tur merdiveni. Tam Rx hareketleri — barfiks, şınav, hava squat." } }
+      }
+    },
+    "plan.template.crossfitBodyweightScaled.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "CrossFit Bodyweight (Scaled)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "CrossFit Bodyweight (Scaled)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "CrossFit Bodyweight (Scaled)" } }
+      }
+    },
+    "plan.template.crossfitBodyweightScaled.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "3 Tage · Bodyweight-WODs, Einsteiger-Varianten" } },
+        "en": { "stringUnit": { "state": "translated", "value": "3 days · Bodyweight WODs, beginner variations" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "3 gün · Vücut ağırlığı WOD'ları, başlangıç seviyesi varyasyonlar" } }
+      }
+    },
+    "plan.template.crossfitBodyweightScaled.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } },
+        "en": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } }
+      }
+    },
+    "plan.template.crossfitBodyweightScaled.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Dieselben Benchmark-WODs wie Rx, mit Einsteiger-Bewegungen: Handtuch-Rudern statt Klimmzüge, Liegestütze auf den Knien und eine kürzere Rundenleiter." } },
+        "en": { "stringUnit": { "state": "translated", "value": "The same benchmark WODs as Rx, with beginner-friendly movements: towel rows instead of pull-ups, knee push-ups, and a shorter round ladder." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Rx ile aynı ölçüt WOD'ları, başlangıç seviyesi hareketlerle: barfiks yerine havlu çekişi, dizde şınav ve daha kısa bir tur merdiveni." } }
+      }
+    },
+    "plan.template.crossfitWeighted.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "CrossFit mit Gewichten" } },
+        "en": { "stringUnit": { "state": "translated", "value": "CrossFit with Weights" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ağırlıklarla CrossFit" } }
+      }
+    },
+    "plan.template.crossfitWeighted.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "3 Tage · Funktionelle WODs mit Kurzhantel/Kettlebell" } },
+        "en": { "stringUnit": { "state": "translated", "value": "3 days · Functional WODs with dumbbell/kettlebell" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "3 gün · Dambıl/kettlebell ile fonksiyonel WOD'lar" } }
+      }
+    },
+    "plan.template.crossfitWeighted.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } },
+        "en": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } }
+      }
+    },
+    "plan.template.crossfitWeighted.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Metcon-Workouts mit Zusatzgewicht statt reinem Körpergewicht — die Schwierigkeit steuerst du über das Gewicht, nicht über die Bewegung. Für Einsteiger und Fortgeschrittene." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Metcon workouts with added weight instead of pure bodyweight — you control the difficulty through the load, not the movement. For beginners and advanced athletes alike." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Salt vücut ağırlığı yerine ek yüklü metcon antrenmanları — zorluğu hareketle değil ağırlıkla ayarlarsın. Hem başlangıç hem ileri seviye için." } }
+      }
+    },
+    "plan.template.kettlebellBeginner.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Grundlagen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Fundamentals" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Temelleri" } }
+      }
+    },
+    "plan.template.kettlebellBeginner.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "3 Tage · Technik, Kraftausdauer, Stabilität" } },
+        "en": { "stringUnit": { "state": "translated", "value": "3 days · Technique, strength endurance, stability" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "3 gün · Teknik, kuvvet dayanıklılığı, stabilite" } }
+      }
+    },
+    "plan.template.kettlebellBeginner.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } },
+        "en": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } }
+      }
+    },
+    "plan.template.kettlebellBeginner.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Einstieg ins Kettlebell-Training: saubere Grundtechnik bei Deadlift, Goblet Squat und Swing, ergänzt von einem AMRAP-Finisher zum Rundenaufbau." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Your entry into kettlebell training: clean technique on deadlifts, goblet squats and swings, rounded off with an AMRAP finisher to build round count." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell antrenmanına giriş: deadlift, goblet squat ve swing'de temiz teknik, tur sayısı oluşturmak için bir AMRAP bitiricisiyle tamamlanır." } }
+      }
+    },
+    "plan.template.kettlebellAdvanced.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Fortgeschritten" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Advanced" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "İleri Seviye Kettlebell" } }
+      }
+    },
+    "plan.template.kettlebellAdvanced.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "3 Trainingstage · Maximalkraft, Explosivität, Metcon" } },
+        "en": { "stringUnit": { "state": "translated", "value": "3 training days · Maximal strength, explosiveness, metcon" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "3 antrenman günü · Maksimal kuvvet, patlayıcılık, metcon" } }
+      }
+    },
+    "plan.template.kettlebellAdvanced.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } },
+        "en": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } }
+      }
+    },
+    "plan.template.kettlebellAdvanced.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Komplexe Kettlebell-Lifts (Snatch, Clean & Press) für erfahrene Trainierende, ergänzt von einem 20-Minuten-Metcon. Plane zwischen den Einheiten einen Tag aktiver Erholung ein." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Complex kettlebell lifts (snatch, clean & press) for experienced athletes, rounded off with a 20-minute metcon. Plan a day of active recovery between sessions." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Deneyimli sporcular için karmaşık kettlebell hareketleri (snatch, clean & press), 20 dakikalık bir metconla tamamlanır. Seanslar arasında bir aktif toparlanma günü planla." } }
+      }
+    },
+    "plan.day.cindyRx": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Cindy" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cindy" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Cindy" } }
+      }
+    },
+    "plan.day.emomIntensityRx": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "EMOM Intensität" } },
+        "en": { "stringUnit": { "state": "translated", "value": "EMOM Intensity" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "EMOM Yoğunluk" } }
+      }
+    },
+    "plan.day.forTimeSitupsSquatsRx": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Auf Zeit: Sit-ups & Squats" } },
+        "en": { "stringUnit": { "state": "translated", "value": "For Time: Sit-ups & Squats" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Süreye Karşı: Mekik & Squat" } }
+      }
+    },
+    "plan.day.cindyScaled": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Cindy (Scaled)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cindy (Scaled)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Cindy (Scaled)" } }
+      }
+    },
+    "plan.day.emomIntensityScaled": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "EMOM Intensität (Scaled)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "EMOM Intensity (Scaled)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "EMOM Yoğunluk (Scaled)" } }
+      }
+    },
+    "plan.day.forTimeSitupsSquatsScaled": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Auf Zeit: Sit-ups & Squats (Scaled)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "For Time: Sit-ups & Squats (Scaled)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Süreye Karşı: Mekik & Squat (Scaled)" } }
+      }
+    },
+    "plan.day.crossfitWeightedAmrap": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Grundlagen-AMRAP" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Foundations AMRAP" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Temel AMRAP" } }
+      }
+    },
+    "plan.day.crossfitWeightedEmom": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "EMOM Ganzkörper" } },
+        "en": { "stringUnit": { "state": "translated", "value": "EMOM Full Body" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "EMOM Tüm Vücut" } }
+      }
+    },
+    "plan.day.crossfitWeightedForTime": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Auf Zeit: Thruster & Burpees" } },
+        "en": { "stringUnit": { "state": "translated", "value": "For Time: Thrusters & Burpees" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Süreye Karşı: Thruster & Burpee" } }
+      }
+    },
+    "plan.day.kbFoundationsCircuit": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Grundlagen-Zirkel" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Foundations Circuit" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Temel Devre" } }
+      }
+    },
+    "plan.day.kbPushPullCore": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Push, Pull & Core" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Push, Pull & Core" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "İtme, Çekme & Core" } }
+      }
+    },
+    "plan.day.kbSwingEndurance": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schwung & Ausdauer" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Swing & Endurance" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Salınım & Dayanıklılık" } }
+      }
+    },
+    "plan.day.kbHeavyPullEmom": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Heavy Pull: EMOM Snatch" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Heavy Pull: EMOM Snatch" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ağır Çekiş: EMOM Snatch" } }
+      }
+    },
+    "plan.day.kbHeavyPushSquat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Heavy Push & Squat" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Heavy Push & Squat" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ağır İtme & Squat" } }
+      }
+    },
+    "plan.day.kbMetcon": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Metabolic Conditioning" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Metabolic Conditioning" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Metabolik Kondisyon" } }
+      }
+    },
     "plan.template.bodyweightMastery.name": {
       "extractionState": "manual",
       "localizations": {

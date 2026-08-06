@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1511 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1546 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1511 / 1511** (100%) | 0 |
-| 🇬🇧 English (EN) | **1511 / 1511** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1511 / 1511** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1546 / 1546** (100%) | 0 |
+| 🇬🇧 English (EN) | **1546 / 1546** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1546 / 1546** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1205,7 +1205,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `picker.plan.filterFootnote` | Gefiltert nach deinem Trainingsort (%@). Im Profil anpassen, wenn du auch andere Pläne sehen willst. | Filtered by your training location (%@). Adjust in profile to see other plans. | Antrenman yerine göre filtrelendi (%@). Diğer planları görmek için profilden ayarla. |
 | `picker.plan.title` | Programm wählen | Choose Program | Program Seç |
 
-## `plan.*`  (106 Keys)
+## `plan.*`  (141 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1215,16 +1215,31 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.day.chest` | Brust | Chest | Göğüs |
 | `plan.day.chestBackA` | Brust & Rücken A | Chest & Back A | Göğüs & Sırt A |
 | `plan.day.chestBackB` | Brust & Rücken B | Chest & Back B | Göğüs & Sırt B |
+| `plan.day.cindyRx` | Cindy | Cindy | Cindy |
+| `plan.day.cindyScaled` | Cindy (Scaled) | Cindy (Scaled) | Cindy (Scaled) |
+| `plan.day.crossfitWeightedAmrap` | Grundlagen-AMRAP | Foundations AMRAP | Temel AMRAP |
+| `plan.day.crossfitWeightedEmom` | EMOM Ganzkörper | EMOM Full Body | EMOM Tüm Vücut |
+| `plan.day.crossfitWeightedForTime` | Auf Zeit: Thruster & Burpees | For Time: Thrusters & Burpees | Süreye Karşı: Thruster & Burpee |
 | `plan.day.deadliftDay` | Tag 3 – Kreuzhebe-Tag | Day 3 - Deadlift Day | Gün 3 - Deadlift Günü |
 | `plan.day.easyRun` | Easy Run | Easy Run | Kolay Koşu |
+| `plan.day.emomIntensityRx` | EMOM Intensität | EMOM Intensity | EMOM Yoğunluk |
+| `plan.day.emomIntensityScaled` | EMOM Intensität (Scaled) | EMOM Intensity (Scaled) | EMOM Yoğunluk (Scaled) |
 | `plan.day.fatBurnA` | Cut A | Cut A | Cut A |
 | `plan.day.fatBurnB` | Cut B | Cut B | Cut B |
 | `plan.day.fatBurnC` | Cut C | Cut C | Cut C |
+| `plan.day.forTimeSitupsSquatsRx` | Auf Zeit: Sit-ups & Squats | For Time: Sit-ups & Squats | Süreye Karşı: Mekik & Squat |
+| `plan.day.forTimeSitupsSquatsScaled` | Auf Zeit: Sit-ups & Squats (Scaled) | For Time: Sit-ups & Squats (Scaled) | Süreye Karşı: Mekik & Squat (Scaled) |
 | `plan.day.fullBodyA` | Ganzkörper A | Full Body A | Tüm Vücut A |
 | `plan.day.fullBodyB` | Ganzkörper B | Full Body B | Tüm Vücut B |
 | `plan.day.fullBodyC` | Ganzkörper C | Full Body C | Tüm Vücut C |
 | `plan.day.fullBodyHIIT` | Ganzkörper HIIT | Full Body HIIT | Tüm Vücut HIIT |
 | `plan.day.intervals` | Intervalle | Intervals | İnterval |
+| `plan.day.kbFoundationsCircuit` | Grundlagen-Zirkel | Foundations Circuit | Temel Devre |
+| `plan.day.kbHeavyPullEmom` | Heavy Pull: EMOM Snatch | Heavy Pull: EMOM Snatch | Ağır Çekiş: EMOM Snatch |
+| `plan.day.kbHeavyPushSquat` | Heavy Push & Squat | Heavy Push & Squat | Ağır İtme & Squat |
+| `plan.day.kbMetcon` | Metabolic Conditioning | Metabolic Conditioning | Metabolik Kondisyon |
+| `plan.day.kbPushPullCore` | Push, Pull & Core | Push, Pull & Core | İtme, Çekme & Core |
+| `plan.day.kbSwingEndurance` | Schwung & Ausdauer | Swing & Endurance | Salınım & Dayanıklılık |
 | `plan.day.legs` | Beine | Legs | Bacak |
 | `plan.day.legsA` | Beine A | Legs A | Bacak A |
 | `plan.day.legsB` | Beine B | Legs B | Bacak B |
@@ -1271,6 +1286,18 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.broSplit.focus` | Hypertrophie | Hypertrophy | Hipertrofi |
 | `plan.template.broSplit.name` | Bro-Split | Bro-Split | Bro-Split |
 | `plan.template.broSplit.tagline` | 5 Tage · Hypertrophie | 5 Days · Hypertrophy | 5 Gün · Hipertrofi |
+| `plan.template.crossfitBodyweightRx.description` | Benchmark-WODs nur mit Körpergewicht: ein 20-Minuten-AMRAP, ein Intensitäts-EMOM und eine Auf-Zeit-Rundenleiter. Volle Rx-Bewegungen — Klimmzüge, Liegestütze, Air Squats. | Benchmark WODs using bodyweight only: a 20-minute AMRAP, an intensity EMOM, and a for-time round ladder. Full Rx movements — pull-ups, push-ups, air squats. | Sadece vücut ağırlığıyla ölçüt WOD'ları: 20 dakikalık bir AMRAP, bir yoğunluk EMOM'u ve süreye karşı bir tur merdiveni. Tam Rx hareketleri — barfiks, şınav, hava squat. |
+| `plan.template.crossfitBodyweightRx.focus` | CrossFit & Kettlebell | CrossFit & Kettlebell | CrossFit & Kettlebell |
+| `plan.template.crossfitBodyweightRx.name` | CrossFit Bodyweight (Rx) | CrossFit Bodyweight (Rx) | CrossFit Bodyweight (Rx) |
+| `plan.template.crossfitBodyweightRx.tagline` | 3 Tage · Klassische Bodyweight-WODs | 3 days · Classic bodyweight WODs | 3 gün · Klasik vücut ağırlığı WOD'ları |
+| `plan.template.crossfitBodyweightScaled.description` | Dieselben Benchmark-WODs wie Rx, mit Einsteiger-Bewegungen: Handtuch-Rudern statt Klimmzüge, Liegestütze auf den Knien und eine kürzere Rundenleiter. | The same benchmark WODs as Rx, with beginner-friendly movements: towel rows instead of pull-ups, knee push-ups, and a shorter round ladder. | Rx ile aynı ölçüt WOD'ları, başlangıç seviyesi hareketlerle: barfiks yerine havlu çekişi, dizde şınav ve daha kısa bir tur merdiveni. |
+| `plan.template.crossfitBodyweightScaled.focus` | CrossFit & Kettlebell | CrossFit & Kettlebell | CrossFit & Kettlebell |
+| `plan.template.crossfitBodyweightScaled.name` | CrossFit Bodyweight (Scaled) | CrossFit Bodyweight (Scaled) | CrossFit Bodyweight (Scaled) |
+| `plan.template.crossfitBodyweightScaled.tagline` | 3 Tage · Bodyweight-WODs, Einsteiger-Varianten | 3 days · Bodyweight WODs, beginner variations | 3 gün · Vücut ağırlığı WOD'ları, başlangıç seviyesi varyasyonlar |
+| `plan.template.crossfitWeighted.description` | Metcon-Workouts mit Zusatzgewicht statt reinem Körpergewicht — die Schwierigkeit steuerst du über das Gewicht, nicht über die Bewegung. Für Einsteiger und Fortgeschrittene. | Metcon workouts with added weight instead of pure bodyweight — you control the difficulty through the load, not the movement. For beginners and advanced athletes alike. | Salt vücut ağırlığı yerine ek yüklü metcon antrenmanları — zorluğu hareketle değil ağırlıkla ayarlarsın. Hem başlangıç hem ileri seviye için. |
+| `plan.template.crossfitWeighted.focus` | CrossFit & Kettlebell | CrossFit & Kettlebell | CrossFit & Kettlebell |
+| `plan.template.crossfitWeighted.name` | CrossFit mit Gewichten | CrossFit with Weights | Ağırlıklarla CrossFit |
+| `plan.template.crossfitWeighted.tagline` | 3 Tage · Funktionelle WODs mit Kurzhantel/Kettlebell | 3 days · Functional WODs with dumbbell/kettlebell | 3 gün · Dambıl/kettlebell ile fonksiyonel WOD'lar |
 | `plan.template.fatBurnFullBody.description` | Fettverlust kommt aus dem Kaloriendefizit — dieser Plan schützt Muskel und Kraft im Cut: solides Hypertrophie-Volumen bei moderaten Lasten plus ein Cardio-Finisher pro Einheit. Reps und Pausen folgen Standard-Hypertrophie (6–12 bzw. 8–15, 60–180 s Pause), kein 'hohe Wdh = Fett weg'-Mythos. | Fat loss comes from the calorie deficit — this plan preserves muscle and strength during the cut: solid hypertrophy volume at moderate loads plus a cardio finisher per session. Reps and rest follow standard hypertrophy (6–12 or 8–15, 60–180 s rest); no 'high reps melt fat' myth. | Yağ kaybı kalori açığından gelir — bu plan diyet sırasında kası ve kuvveti korur: orta yüklerde sağlam hipertrofi hacmi artı her seansta bir kardiyo finisher. Tekrar ve dinlenme standart hipertrofiye uyar (6–12 ya da 8–15, 60–180 sn dinlenme); 'yüksek tekrar = yağ erir' miti yok. |
 | `plan.template.fatBurnFullBody.focus` | Defizit-Phase | Cut Phase | Cut Fazı |
 | `plan.template.fatBurnFullBody.name` | Cut-Phase Ganzkörper | Cut Phase Full Body | Cut Fazı – Tüm Vücut |
@@ -1299,6 +1326,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.hybridPerformance.focus` | Hybrid & Athletik | Hybrid & Athletics | Hibrit & Atletik |
 | `plan.template.hybridPerformance.name` | Hybrid Athlete — Performance | Hybrid Athlete — Performance | Hybrid Athlete — Performance |
 | `plan.template.hybridPerformance.tagline` | 6 Tage · Wettkampf-Hybrid | 6 Days · Competitive Hybrid | 6 Gün · Rekabetçi Hibrit |
+| `plan.template.kettlebellAdvanced.description` | Komplexe Kettlebell-Lifts (Snatch, Clean & Press) für erfahrene Trainierende, ergänzt von einem 20-Minuten-Metcon. Plane zwischen den Einheiten einen Tag aktiver Erholung ein. | Complex kettlebell lifts (snatch, clean & press) for experienced athletes, rounded off with a 20-minute metcon. Plan a day of active recovery between sessions. | Deneyimli sporcular için karmaşık kettlebell hareketleri (snatch, clean & press), 20 dakikalık bir metconla tamamlanır. Seanslar arasında bir aktif toparlanma günü planla. |
+| `plan.template.kettlebellAdvanced.focus` | CrossFit & Kettlebell | CrossFit & Kettlebell | CrossFit & Kettlebell |
+| `plan.template.kettlebellAdvanced.name` | Kettlebell Fortgeschritten | Kettlebell Advanced | İleri Seviye Kettlebell |
+| `plan.template.kettlebellAdvanced.tagline` | 3 Trainingstage · Maximalkraft, Explosivität, Metcon | 3 training days · Maximal strength, explosiveness, metcon | 3 antrenman günü · Maksimal kuvvet, patlayıcılık, metcon |
+| `plan.template.kettlebellBeginner.description` | Einstieg ins Kettlebell-Training: saubere Grundtechnik bei Deadlift, Goblet Squat und Swing, ergänzt von einem AMRAP-Finisher zum Rundenaufbau. | Your entry into kettlebell training: clean technique on deadlifts, goblet squats and swings, rounded off with an AMRAP finisher to build round count. | Kettlebell antrenmanına giriş: deadlift, goblet squat ve swing'de temiz teknik, tur sayısı oluşturmak için bir AMRAP bitiricisiyle tamamlanır. |
+| `plan.template.kettlebellBeginner.focus` | CrossFit & Kettlebell | CrossFit & Kettlebell | CrossFit & Kettlebell |
+| `plan.template.kettlebellBeginner.name` | Kettlebell Grundlagen | Kettlebell Fundamentals | Kettlebell Temelleri |
+| `plan.template.kettlebellBeginner.tagline` | 3 Tage · Technik, Kraftausdauer, Stabilität | 3 days · Technique, strength endurance, stability | 3 gün · Teknik, kuvvet dayanıklılığı, stabilite |
 | `plan.template.powerlifting3x5.description` | Dreier-Frequenz auf die Grundübungen Kniebeuge, Bankdrücken und Kreuzheben. Jede Session dreht sich um eine primäre Wettkampfübung mit schweren 3x5-Sätzen. | Triple frequency on the core lifts: squat, bench press, and deadlift. Each session focuses on one primary competition lift with heavy 3x5 sets. | Temel hareketler (squat, bench press, deadlift) için üçlü frekans. Her seans ağır 3x5 setleriyle bir ana yarışma hareketine odaklanır. |
 | `plan.template.powerlifting3x5.focus` | Kraft | Strength | Güç |
 | `plan.template.powerlifting3x5.name` | Powerlifting 3x5 | Powerlifting 3x5 | Powerlifting 3x5 |

@@ -100,6 +100,19 @@ private func timedWorkoutHintRow(_ text: String) -> some View {
         .padding(.bottom, 8)
 }
 
+/// "N Wdh." fuer normale Zirkel-Uebungen, "N Sek." fuer `isTimeBased`
+/// (z.B. Plank in einem EMOM-Zirkel, README 2.9 Phase 6) - `repsMin` wird
+/// bei Zeitformaten als "Wdh./Sek. pro Runde" reused (siehe DaySpec/
+/// TrainingDay-Kommentar), keine neuen Felder dafuer noetig. Geteilt
+/// zwischen allen drei Playern + WorkoutSummaryView (interne, nicht
+/// `private` Sichtbarkeit).
+@available(iOS 17.0, macOS 14.0, *)
+func timedFormatTargetLabel(_ exercise: Exercise) -> String {
+    exercise.isTimeBased
+        ? "\(exercise.repsMin) " + String(localized: "unit.seconds.short", bundle: .module)
+        : "\(exercise.repsMin) " + String(localized: "unit.reps.short", bundle: .module)
+}
+
 // MARK: - AMRAP
 
 @available(iOS 17.0, macOS 14.0, *)
@@ -167,7 +180,7 @@ private struct AMRAPPlayerView: View {
                     ForEach(Array(exercises.enumerated()), id: \.element.persistentModelID) { index, exercise in
                         DeltiqRow(
                             label: exercise.displayName,
-                            value: repsLabel(exercise),
+                            value: timedFormatTargetLabel(exercise),
                             showsDivider: index != exercises.count - 1
                         )
                     }
@@ -222,10 +235,6 @@ private struct AMRAPPlayerView: View {
                 }
             }
         })
-    }
-
-    private func repsLabel(_ exercise: Exercise) -> String {
-        "\(exercise.repsMin) " + String(localized: "unit.reps.short", bundle: .module)
     }
 
     private var roundBar: some View {
@@ -374,7 +383,7 @@ private struct EMOMPlayerView: View {
                                 .font(.system(size: 24, weight: .heavy, design: .rounded))
                                 .foregroundStyle(Color.primary)
                                 .multilineTextAlignment(.center)
-                            Text(repsLabel(currentExercise))
+                            Text(timedFormatTargetLabel(currentExercise))
                                 .font(.system(size: 15, weight: .semibold))
                                 .foregroundStyle(Color.deltiqOrange)
                         }
@@ -387,7 +396,7 @@ private struct EMOMPlayerView: View {
                         DeltiqRow(
                             label: nextExercise.displayName,
                             subtitle: String(localized: "timedWorkout.emom.nextMinute", bundle: .module),
-                            value: repsLabel(nextExercise),
+                            value: timedFormatTargetLabel(nextExercise),
                             showsDivider: false
                         )
                     }
@@ -472,10 +481,6 @@ private struct EMOMPlayerView: View {
                 }
             }
         })
-    }
-
-    private func repsLabel(_ exercise: Exercise) -> String {
-        "\(exercise.repsMin) " + String(localized: "unit.reps.short", bundle: .module)
     }
 
     /// Tippen markiert die LAUFENDE Minute als geschafft - ein einzelner
@@ -662,7 +667,7 @@ private struct ForTimePlayerView: View {
                 Text(exercise.displayName)
                     .font(.system(size: 15))
                     .foregroundStyle(Color.primary)
-                Text("\(exercise.repsMin) " + String(localized: "unit.reps.short", bundle: .module))
+                Text(timedFormatTargetLabel(exercise))
                     .font(.system(size: 12))
                     .foregroundStyle(Color.Deltiq.textSecondary)
             }

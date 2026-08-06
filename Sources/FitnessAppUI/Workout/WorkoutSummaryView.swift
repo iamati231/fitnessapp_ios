@@ -1160,16 +1160,16 @@ public struct WorkoutSummaryView: View {
         }
     }
 
-    /// AMRAP/EMOM zeigen Wdh. pro Durchgang (Circuit wiederholt sich, bis
-    /// die Zeit abgelaufen ist); Auf Zeit zeigt Runden×Wdh. (Circuit laeuft
-    /// genau einmal ueber die feste Rundenzahl).
+    /// AMRAP/EMOM zeigen Wdh./Sek. pro Durchgang (Circuit wiederholt sich,
+    /// bis die Zeit abgelaufen ist); Auf Zeit zeigt Runden×Wdh./Sek.
+    /// (Circuit laeuft genau einmal ueber die feste Rundenzahl).
     private func circuitValueLabel(_ exercise: Exercise, format: WorkoutTimeFormat) -> String {
-        let reps = "\(exercise.repsMin) " + String(localized: "unit.reps.short", bundle: .module)
+        let target = timedFormatTargetLabel(exercise)
         switch format {
         case .amrap, .emom:
-            return reps
+            return target
         case .forTime:
-            return "\(max(exercise.sets, 1))× \(reps)"
+            return "\(max(exercise.sets, 1))× \(target)"
         }
     }
 
