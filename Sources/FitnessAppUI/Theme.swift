@@ -891,6 +891,8 @@ public struct DeltiqRow: View {
                         .lineSpacing(4)
                 }
             }
+            .layoutPriority(1)
+            .fixedSize(horizontal: false, vertical: true)
 
             Spacer(minLength: 8)
 
