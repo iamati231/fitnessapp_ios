@@ -272,11 +272,24 @@ private struct AMRAPPlayerView: View {
     @Environment(PRNotificationCenter.self) private var prNotifications
     @AppStorage("pref_pr_celebrations") private var prCelebrationsEnabled: Bool = true
     @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
+    /// Nutzer-Feedback: der Timer muss auch dann korrekt weiterlaufen, wenn
+    /// die App im Hintergrund war. `scenePhase` allein loest hier schon einen
+    /// Re-Render aus (der die computed `elapsedSeconds` frisch aus `Date()`
+    /// liest); der `.onChange` unten prueft zusaetzlich SOFORT beim
+    /// Ruecksprung, ob der Deckel waehrend des Hintergrunds schon
+    /// ueberschritten wurde, statt bis zum naechsten Tick zu warten.
+    @Environment(\.scenePhase) private var scenePhase
 
-    @State private var elapsedSeconds = 0
     @State private var roundsCompleted = 0
     @State private var partialReps = 0
     @State private var isFinished = false
+    /// Erzwingt einen Redraw pro Sekunde, solange laeuft: `elapsedSeconds`
+    /// ist ein reiner Computed-Property-Read (Wanduhr-basiert) und loest
+    /// SwiftUI's Dependency-Tracking allein NICHT aus - ohne diesen
+    /// Wegwerf-Zaehler wuerde die Live-Anzeige im Vordergrund einfrieren,
+    /// sobald kein anderer State mehr geschrieben wird, und erst beim
+    /// naechsten echten Tap/Deckel-Ende/Szenenwechsel weiterspringen.
+    @State private var displayTick = 0
     @State private var showingDiscardConfirm = false
     /// README 2.15/23b-23c: Vorlauf-Countdown vor dem eigentlichen Lauf -
     /// `prerollTotal` ist die Einstellung zum Mount-Zeitpunkt (unveraenderlich
@@ -302,6 +315,19 @@ private struct AMRAPPlayerView: View {
         (day?.activeExercises ?? []).sorted { $0.orderIndex < $1.orderIndex }
     }
     private var capSeconds: Int { max(1, (day?.timeCapMinutes ?? 20)) * 60 }
+
+    /// Nutzer-Feedback: aus der Wanduhr abgeleitet statt Tick-fuer-Tick
+    /// hochgezaehlt - `Timer.publish` pausiert komplett, sobald die App
+    /// backgrounded wird (iOS haelt RunLoop-Timer fuer suspendierte Apps
+    /// an), ein reiner Akkumulator wuerde die Hintergrund-Sekunden also
+    /// stillschweigend verschlucken. `session.startTime` ist ohnehin schon
+    /// der um den Vorlauf bereinigte Anker (`finishPreroll()`), also reicht
+    /// die Differenz zu `Date()` - waehrend des Vorlaufs selbst (noch kein
+    /// echter Start) liefert das 0.
+    private var elapsedSeconds: Int {
+        guard prerollRemaining == 0 else { return 0 }
+        return max(0, Int(Date().timeIntervalSince(session.startTime)))
+    }
 
     /// Faellt auf die erste Uebung zurueck, wenn noch keine Station
     /// angetippt wurde (oder die Liste zwischenzeitlich leer sein sollte) -
@@ -421,13 +447,20 @@ private struct AMRAPPlayerView: View {
                 }
                 return
             }
+            // Verifikation (Workflow): `checkCapReached()` allein schreibt bei
+            // jedem Tick VOR Deckel-Erreichen keinen State - `displayTick`
+            // erzwingt trotzdem den Redraw, siehe Kommentar bei der Property.
             guard !isFinished else { return }
-            guard elapsedSeconds < capSeconds else { return }
-            elapsedSeconds += 1
-            if elapsedSeconds >= capSeconds {
-                isFinished = true
-                DeltiqHaptics.notify(.success)
-            }
+            displayTick += 1
+            checkCapReached()
+        }
+        // Nutzer-Feedback: sobald die App wieder aktiv wird, sofort pruefen
+        // statt bis zum naechsten Tick zu warten - `elapsedSeconds` selbst
+        // ist schon korrekt (Wanduhr-basiert), es geht nur darum, `isFinished`
+        // nicht erst mit bis zu 1s Verzoegerung nachzuziehen.
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            checkCapReached()
         }
         .safeAreaInset(edge: .bottom) {
             if prerollRemaining > 0 {
@@ -513,6 +546,17 @@ private struct AMRAPPlayerView: View {
         prerollRemaining = 0
         session.startTime = Date()
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
+    }
+
+    /// Nutzer-Feedback: `elapsedSeconds` ist Wanduhr-basiert, prueft sich
+    /// also von selbst korrekt nach - dieser Check muss nur EXISTIEREN,
+    /// nicht selbst die Zeit fortschreiben. Gerufen vom Tick (Normalfall,
+    /// waehrend die App vorne ist) UND vom Ruecksprung aus dem Hintergrund
+    /// (damit der Deckel-Ablauf nicht erst mit Verzoegerung ankommt).
+    private func checkCapReached() {
+        guard !isFinished, elapsedSeconds >= capSeconds else { return }
+        isFinished = true
+        DeltiqHaptics.notify(.success)
     }
 
     /// Nachtrag 6. August, abends (README 2.10/19e): stand bisher nur in
@@ -658,12 +702,32 @@ private struct EMOMPlayerView: View {
     @Environment(PRNotificationCenter.self) private var prNotifications
     @AppStorage("pref_pr_celebrations") private var prCelebrationsEnabled: Bool = true
     @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
+    /// Nutzer-Feedback: der Timer muss auch dann korrekt weiterlaufen, wenn
+    /// die App im Hintergrund war - siehe `totalElapsedSeconds` unten.
+    @Environment(\.scenePhase) private var scenePhase
 
-    @State private var currentMinute = 1          // 1-basiert
-    @State private var secondsIntoMinute = 0      // 0..59
     @State private var completedMinutes: Set<Int> = []
     @State private var isFinished = false
+    /// Erzwingt einen Redraw pro Sekunde, solange laeuft - siehe Kommentar
+    /// bei derselben Property in AMRAPPlayerView.
+    @State private var displayTick = 0
     @State private var showingDiscardConfirm = false
+    /// Nutzer-Feedback: haelt fest, welche Minute beim LETZTEN Resync
+    /// bekannt war - unterscheidet einen echten Live-Uebergang
+    /// (`currentMinute` steigt genau um 1 -> langer Ton) von einem
+    /// Hintergrund-Aufholsprung (mehrere Minuten auf einmal). Beim
+    /// Aufholsprung wird still resynchronisiert statt den Ton nachtraeglich
+    /// abzuspielen - das haben die Hintergrund-Notifications schon
+    /// uebernommen (siehe `scheduleBackgroundSignals`).
+    @State private var lastKnownMinute = 1
+    /// Nutzer-Feedback (Verifikation): eine Hintergrund-Notification kann
+    /// genau EINE Minutengrenze ueberqueren, waehrend die App kurz
+    /// backgrounded war (z.B. Bildschirm gesperrt/entsperrt) - das sieht
+    /// fuer `resyncMinuteState()` identisch zu einem normalen Live-Uebergang
+    /// aus (`currentMinute == lastKnownMinute + 1`), obwohl iOS den Ton der
+    /// Notification bereits abgespielt hat. Ohne dieses Flag wuerde der
+    /// lange Ton beim Zurueckkehren ein zweites Mal ausgeloest.
+    @State private var wasBackgroundedSinceLastResync = false
     /// README 2.15/23b-23c: Vorlauf-Countdown vor der ersten Minute -
     /// `prerollTotal` ist die Einstellung zum Mount-Zeitpunkt (unveraenderlich
     /// waehrend die View lebt), `prerollRemaining` zaehlt runter. 0
@@ -684,6 +748,23 @@ private struct EMOMPlayerView: View {
         (day?.activeExercises ?? []).sorted { $0.orderIndex < $1.orderIndex }
     }
     private var totalMinutes: Int { max(1, day?.timeCapMinutes ?? 12) }
+    /// Nutzer-Feedback: aus der Wanduhr abgeleitet statt Tick-fuer-Tick
+    /// hochgezaehlt - gleiches Muster wie bei AMRAP/Auf Zeit. `Timer.publish`
+    /// pausiert komplett im Hintergrund, ein Akkumulator wuerde die
+    /// verpassten Sekunden verschlucken.
+    private var totalElapsedSeconds: Int {
+        guard prerollRemaining == 0 else { return 0 }
+        return max(0, Int(Date().timeIntervalSince(session.startTime)))
+    }
+    private var currentMinute: Int {
+        min(totalElapsedSeconds / 60 + 1, totalMinutes)
+    }
+    private var secondsIntoMinute: Int {
+        totalElapsedSeconds % 60
+    }
+    private var isPastCap: Bool {
+        totalElapsedSeconds >= totalMinutes * 60
+    }
     /// Bei mehr Minuten als Uebungen wiederholt sich der Zirkel (z.B. 2
     /// Uebungen ueber 12 Minuten = 6 Durchgaenge).
     private var currentExercise: Exercise? {
@@ -806,27 +887,31 @@ private struct EMOMPlayerView: View {
                 return
             }
             guard !isFinished else { return }
+            // Verifikation (Workflow): `resyncMinuteState()` allein schreibt
+            // bei den meisten Ticks keinen State (nur beim Minutenwechsel
+            // oder Deckel-Ende) - `displayTick` erzwingt trotzdem den
+            // Redraw, siehe Kommentar bei der Property.
+            displayTick += 1
             // Drei Signaltoene ab 0:03, Blick bleibt auf der Hantel.
             if timerSoundEnabled, (1...3).contains(remainingInMinute) {
                 TimerSoundPlayer.shared.playShort()
             }
-            secondsIntoMinute += 1
-            if secondsIntoMinute >= 60 {
-                secondsIntoMinute = 0
-                if currentMinute >= totalMinutes {
-                    isFinished = true
-                    // Nachtrag 6. August (README 2.9/OFFENE-VIEWS): ein
-                    // komplett durchgezogener Lauf zaehlt als alle Minuten
-                    // geschafft, unabhaengig davon ob "Minute geschafft"
-                    // jedes Mal angetippt wurde - sonst landet ein voll
-                    // absolviertes EMOM als 0 im Verlauf.
-                    completedMinutes = Set(1...totalMinutes)
-                    DeltiqHaptics.notify(.success)
-                } else {
-                    currentMinute += 1
-                    if timerSoundEnabled { TimerSoundPlayer.shared.playLong() }
-                }
+            resyncMinuteState()
+        }
+        // Nutzer-Feedback: sofortige Pruefung beim Ruecksprung aus dem
+        // Hintergrund statt bis zum naechsten Tick zu warten - gleiches
+        // Muster wie bei AMRAP/Auf Zeit. Verifikation (Workflow): der
+        // Uebergang IN den Hintergrund wird jetzt ebenfalls erfasst, damit
+        // `resyncMinuteState()` einen genau-eine-Minute-Sprung waehrend eines
+        // kurzen Hintergrund-Ausflugs nicht mit einem echten Live-Uebergang
+        // verwechselt (siehe `wasBackgroundedSinceLastResync`).
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background {
+                wasBackgroundedSinceLastResync = true
+                return
             }
+            guard newPhase == .active else { return }
+            resyncMinuteState()
         }
         .safeAreaInset(edge: .bottom) {
             if prerollRemaining > 0 {
@@ -927,6 +1012,44 @@ private struct EMOMPlayerView: View {
         }
     }
 
+    /// Nutzer-Feedback: `currentMinute`/`secondsIntoMinute` sind jetzt
+    /// Wanduhr-basiert und daher immer korrekt - diese Funktion sorgt nur
+    /// noch dafuer, dass der lange Uebergangston GENAU EINMAL pro echtem
+    /// Live-Uebergang faellt (`currentMinute` steigt exakt um 1), waehrend
+    /// ein Hintergrund-Aufholsprung ueber mehrere Minuten still
+    /// resynchronisiert wird (die Hintergrund-Notifications haben das
+    /// Audio-Feedback fuer die verpassten Minuten schon uebernommen), und
+    /// dass `isFinished`/`completedMinutes` beim Erreichen des Deckels
+    /// korrekt gesetzt werden.
+    /// Verifikation (Workflow): ein Hintergrund-Ausflug kann GENAU EINE
+    /// Minutengrenze ueberqueren (kurzes Sperren/Entsperren) - das sieht fuer
+    /// den `+1`-Vergleich unten identisch zu einem echten Live-Uebergang
+    /// aus, obwohl die Hintergrund-Notification den Ton dafuer schon
+    /// gespielt hat. `wasBackgroundedSinceLastResync` unterscheidet die
+    /// beiden Faelle zusaetzlich zur Sprunggroesse; `defer` setzt es bei
+    /// jedem Durchlauf zurueck, damit ein spaeterer echter Live-Uebergang
+    /// nicht faelschlich stumm bleibt.
+    private func resyncMinuteState() {
+        guard !isFinished else { return }
+        defer { wasBackgroundedSinceLastResync = false }
+        if isPastCap {
+            isFinished = true
+            // Nachtrag 6. August (README 2.9/OFFENE-VIEWS): ein komplett
+            // durchgezogener Lauf zaehlt als alle Minuten geschafft,
+            // unabhaengig davon ob "Minute geschafft" jedes Mal angetippt
+            // wurde - sonst landet ein voll absolviertes EMOM als 0 im
+            // Verlauf.
+            completedMinutes = Set(1...totalMinutes)
+            DeltiqHaptics.notify(.success)
+            return
+        }
+        guard currentMinute != lastKnownMinute else { return }
+        if currentMinute == lastKnownMinute + 1, timerSoundEnabled, !wasBackgroundedSinceLastResync {
+            TimerSoundPlayer.shared.playLong()
+        }
+        lastKnownMinute = currentMinute
+    }
+
     /// Tippen markiert die LAUFENDE Minute als geschafft - ein einzelner
     /// Tap-Bereich pro Zeiteinheit, gleiches Interaktionsmuster wie AMRAPs
     /// "+1 Runde".
@@ -976,10 +1099,25 @@ private struct ForTimePlayerView: View {
     @Environment(PRNotificationCenter.self) private var prNotifications
     @AppStorage("pref_pr_celebrations") private var prCelebrationsEnabled: Bool = true
     @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
+    /// Nutzer-Feedback: der Timer muss auch dann korrekt weiterlaufen, wenn
+    /// die App im Hintergrund war - siehe `elapsedSeconds` unten.
+    @Environment(\.scenePhase) private var scenePhase
 
-    @State private var elapsedSeconds = 0
     @State private var checkedRounds: [PersistentIdentifier: Int] = [:]
     @State private var isFinished = false
+    /// Erzwingt einen Redraw pro Sekunde, solange laeuft - siehe Kommentar
+    /// bei derselben Property in AMRAPPlayerView.
+    @State private var displayTick = 0
+    /// Verifikation (Workflow-Nachtrag): `elapsedSeconds` ist bewusst eine
+    /// reine Wanduhr-Ablesung und waechst deshalb unbegrenzt weiter, AUCH
+    /// nachdem `isFinished` schon feststeht - ohne diesen eingefrorenen
+    /// Schnappschuss wuerde ein Zoegern vor dem Tippen auf "Speichern" die
+    /// gespeicherte Zielzeit verfaelschen (frueher fror der reine Akkumulator
+    /// automatisch ein, sobald `isFinished` griff). Wird bei Abschluss
+    /// GENAU EINMAL gesetzt (`toggleRound` bei letztem Haekchen,
+    /// `checkCapReached` bei Deckel-Ende) und beim Zurueck-Abhaken wieder
+    /// geloescht.
+    @State private var finishedElapsedSeconds: Int?
     @State private var showingDiscardConfirm = false
     /// README 2.15/23b-23c: Vorlauf-Countdown vor dem eigentlichen Lauf -
     /// `prerollTotal` ist die Einstellung zum Mount-Zeitpunkt (unveraenderlich
@@ -999,6 +1137,20 @@ private struct ForTimePlayerView: View {
     private var day: TrainingDay? { session.day }
     private var exercises: [Exercise] {
         (day?.activeExercises ?? []).sorted { $0.orderIndex < $1.orderIndex }
+    }
+    /// Nutzer-Feedback: aus der Wanduhr abgeleitet statt Tick-fuer-Tick
+    /// hochgezaehlt - gleiches Muster wie bei AMRAP (siehe dortiger
+    /// Kommentar): `Timer.publish` pausiert komplett im Hintergrund, ein
+    /// Akkumulator wuerde die verpassten Sekunden verschlucken.
+    private var elapsedSeconds: Int {
+        guard prerollRemaining == 0 else { return 0 }
+        return max(0, Int(Date().timeIntervalSince(session.startTime)))
+    }
+    /// Verifikation (Workflow-Nachtrag): das eigentliche Ergebnis - fuer
+    /// Anzeige NACH Abschluss und fuer `saveNow()` - ist der eingefrorene
+    /// Schnappschuss, sobald einer existiert, sonst die laufende Wanduhr.
+    private var resultElapsedSeconds: Int {
+        finishedElapsedSeconds ?? elapsedSeconds
     }
     /// Optionaler Abbruch-Deckel - anders als AMRAP/EMOM ist bei Auf Zeit
     /// meist gar keiner gesetzt, das Pensum selbst beendet den Lauf.
@@ -1042,7 +1194,7 @@ private struct ForTimePlayerView: View {
 
                     DeltiqCard(accentEdge: true) {
                         VStack(spacing: 4) {
-                            Text(PaceCalculator.formatDuration(elapsedSeconds))
+                            Text(PaceCalculator.formatDuration(resultElapsedSeconds))
                                 .font(.system(size: 64, weight: .heavy))
                                 .fitnessNumberStyle()
                                 .foregroundStyle(Color.primary)
@@ -1090,12 +1242,19 @@ private struct ForTimePlayerView: View {
                 }
                 return
             }
+            // Verifikation (Workflow): `checkCapReached()` allein schreibt bei
+            // jedem Tick VOR Deckel-Erreichen keinen State - `displayTick`
+            // erzwingt trotzdem den Redraw, siehe Kommentar bei der Property.
             guard !isFinished else { return }
-            elapsedSeconds += 1
-            if let capSeconds, elapsedSeconds >= capSeconds {
-                isFinished = true
-                DeltiqHaptics.notify(.success)
-            }
+            displayTick += 1
+            checkCapReached()
+        }
+        // Nutzer-Feedback: sofortige Pruefung beim Ruecksprung aus dem
+        // Hintergrund statt bis zum naechsten Tick zu warten - gleiches
+        // Muster wie bei AMRAP.
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            checkCapReached()
         }
         // Nachtrag 6. August, abends (README 2.9/18e): stand bisher komplett
         // in `if isFinished` - waehrend des Laufs gab es dadurch als einziges
@@ -1160,7 +1319,7 @@ private struct ForTimePlayerView: View {
     /// `PRDetector.detectTimedFormatPR` nutzt genau das, um zu verhindern
     /// dass ein frueh gespeicherter, kuerzerer Lauf als Bestzeit durchgeht.
     private func saveNow() {
-        session.finishTimeSeconds = elapsedSeconds
+        session.finishTimeSeconds = resultElapsedSeconds
         session.completedTarget = isFinished
         session.timeFormatSnapshot = .forTime
         finishTimedSession(
@@ -1178,6 +1337,21 @@ private struct ForTimePlayerView: View {
         prerollRemaining = 0
         session.startTime = Date()
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
+    }
+
+    /// Nutzer-Feedback: `elapsedSeconds` ist Wanduhr-basiert, prueft sich
+    /// also von selbst korrekt nach - dieser Check muss nur EXISTIEREN,
+    /// nicht selbst die Zeit fortschreiben. Gerufen vom Tick (Normalfall)
+    /// UND vom Ruecksprung aus dem Hintergrund.
+    private func checkCapReached() {
+        guard !isFinished, let capSeconds, elapsedSeconds >= capSeconds else { return }
+        isFinished = true
+        // Verifikation (Workflow-Nachtrag): eingefroren auf den Deckel selbst,
+        // nicht auf den zufaelligen `elapsedSeconds`-Wert im Moment des
+        // Checks (Tick-Granularitaet oder ein Hintergrund-Ruecksprung
+        // koennten sonst leicht darueber liegen).
+        finishedElapsedSeconds = capSeconds
+        DeltiqHaptics.notify(.success)
     }
 
     private var isLastBoxRemainingHintVisible: Bool {
@@ -1231,10 +1405,15 @@ private struct ForTimePlayerView: View {
         DeltiqHaptics.notify(.success)
         if checkedBoxes == totalBoxes {
             isFinished = true
+            // Verifikation (Workflow-Nachtrag): JETZT einfrieren, nicht erst
+            // beim Speichern - `elapsedSeconds` ist Wanduhr-basiert und
+            // wuerde sonst bis zum tatsaechlichen Speichern-Tap weiterlaufen.
+            finishedElapsedSeconds = elapsedSeconds
         } else if let capSeconds, elapsedSeconds >= capSeconds {
             // Zeit-Deckel hat schon beendet - ein Abhaken darf die Uhr nicht wieder starten.
         } else {
             isFinished = false
+            finishedElapsedSeconds = nil
         }
     }
 
