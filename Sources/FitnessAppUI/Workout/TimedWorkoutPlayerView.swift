@@ -509,6 +509,12 @@ private struct EMOMPlayerView: View {
                 secondsIntoMinute = 0
                 if currentMinute >= totalMinutes {
                     isFinished = true
+                    // Nachtrag 6. August (README 2.9/OFFENE-VIEWS): ein
+                    // komplett durchgezogener Lauf zaehlt als alle Minuten
+                    // geschafft, unabhaengig davon ob "Minute geschafft"
+                    // jedes Mal angetippt wurde - sonst landet ein voll
+                    // absolviertes EMOM als 0 im Verlauf.
+                    completedMinutes = Set(1...totalMinutes)
                     DeltiqHaptics.notify(.success)
                 } else {
                     currentMinute += 1
