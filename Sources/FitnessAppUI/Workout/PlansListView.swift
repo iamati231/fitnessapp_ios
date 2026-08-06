@@ -90,7 +90,12 @@ public struct PlansListView: View {
             // listRowInsets, ein zusaetzlicher List-Einzug wuerde beide
             // Karten schmaeler als 16pt machen.
             .contentMargins(.horizontal, 0, for: .scrollContent)
+            // CI-Fix: .listSectionSpacing ist iOS/tvOS/watchOS-only und auf
+            // macOS (dieses Target baut fuer beide, siehe Release-Gate) gar
+            // nicht deklariert - harter Compile-Error statt @available-Warnung.
+            #if os(iOS)
             .listSectionSpacing(.compact)
+            #endif
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
