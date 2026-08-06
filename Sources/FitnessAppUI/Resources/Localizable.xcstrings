@@ -2263,6 +2263,46 @@
         }
       }
     },
+    "summary.hero.title.early": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Vorzeitig gespeichert" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Saved early" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Erken kaydedildi" } }
+      }
+    },
+    "summary.early.progress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%1$@ von %2$@" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%1$@ of %2$@" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%2$@ içinde %1$@" } }
+      }
+    },
+    "summary.early.unitWithTime": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%1$@ in %2$@" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%1$@ in %2$@" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%2$@ içinde %1$@" } }
+      }
+    },
+    "summary.early.footnote": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Der Lauf ist gespeichert, zählt aber nicht als Bestleistung — das Pensum war noch offen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "This run is saved but doesn't count as a personal best — the target wasn't fully reached." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bu antrenman kaydedildi ama hedef tamamlanmadığı için rekor olarak sayılmıyor." } }
+      }
+    },
+    "history.early.badge": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "VORZEITIG" } },
+        "en": { "stringUnit": { "state": "translated", "value": "EARLY" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "ERKEN" } }
+      }
+    },
     "summary.action.finish": {
       "extractionState": "manual",
       "localizations": {

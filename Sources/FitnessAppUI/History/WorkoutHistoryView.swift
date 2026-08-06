@@ -151,8 +151,18 @@ struct HistorySessionRow: View {
                     // DEL-129: displayDayName loest day.displayName + Snapshot-
                     // Fallback in einer Extension auf, sodass History-Eintraege
                     // im EN/TR-Modus korrekt rendern.
-                    Text(session.displayDayName)
-                        .font(.body.weight(.semibold))
+                    HStack(spacing: 6) {
+                        Text(session.displayDayName)
+                            .font(.body.weight(.semibold))
+                            .lineLimit(1)
+                        // README 2.11: unterscheidet einen vorzeitig gespeicherten
+                        // Zeitformat-Lauf von einem vollstaendigen beim Durch-
+                        // blaettern - sonst liest sich die Kennzahl in `statsLine`
+                        // gegen einen vollen Lauf falsch.
+                        if isEarlySaveTimedFormat {
+                            DeltiqPill(String(localized: "history.early.badge", bundle: .module), style: .neutral)
+                        }
+                    }
                     statsLine
                 }
                 Spacer()
@@ -169,6 +179,13 @@ struct HistorySessionRow: View {
                     .frame(height: 1)
             }
         }
+    }
+
+    /// README 2.11: siehe `WorkoutSummaryView.isEarlySaveTimedFormat` -
+    /// dieselbe Bedingung, hier lokal dupliziert statt geteilt, da beide
+    /// Views sonst keine gemeinsame Basis haben.
+    private var isEarlySaveTimedFormat: Bool {
+        session.timeFormatSnapshot != nil && !session.completedTarget
     }
 
     @ViewBuilder

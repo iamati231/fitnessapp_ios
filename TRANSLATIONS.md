@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1553 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1558 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1553 / 1553** (100%) | 0 |
-| 🇬🇧 English (EN) | **1553 / 1553** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1553 / 1553** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1558 / 1558** (100%) | 0 |
+| 🇬🇧 English (EN) | **1558 / 1558** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1558 / 1558** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -970,10 +970,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `heroMetric.weight.label` | Gewicht | Weight | Ağırlık |
 | `heroMetric.workoutsThisWeek.label` | Trainings diese Woche | Workouts this week | Bu haftaki antrenmanlar |
 
-## `history.*`  (3 Keys)
+## `history.*`  (4 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `history.early.badge` | VORZEITIG | EARLY | ERKEN |
 | `history.empty.description` | Beende dein erstes Training, um deine Historie zu sehen. | Finish your first workout to see your history. | Geçmişini görmek için ilk antrenmanını bitir. |
 | `history.empty.title` | Noch keine Trainings | No workouts yet | Henüz antrenman yok |
 | `history.session.fallback` | Training | Workout | Antrenman |
@@ -1672,7 +1673,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `sex.female` | Weiblich | Female | Kadın |
 | `sex.male` | Männlich | Male | Erkek |
 
-## `summary.*`  (55 Keys)
+## `summary.*`  (59 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1696,6 +1697,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.detailTitle` | Trainings-Detail | Workout Details | Antrenman Detayı |
 | `summary.duration` | Dauer | Duration | Süre |
 | `summary.durationMinutes` | %lld Min | %lld min | %lld dk |
+| `summary.early.footnote` | Der Lauf ist gespeichert, zählt aber nicht als Bestleistung — das Pensum war noch offen. | This run is saved but doesn't count as a personal best — the target wasn't fully reached. | Bu antrenman kaydedildi ama hedef tamamlanmadığı için rekor olarak sayılmıyor. |
+| `summary.early.progress` | %1$@ von %2$@ | %1$@ of %2$@ | %2$@ içinde %1$@ |
+| `summary.early.unitWithTime` | %1$@ in %2$@ | %1$@ in %2$@ | %2$@ içinde %1$@ |
 | `summary.editMeta.footer` | Datum + Dauer werden hier überschrieben. Set-Werte unten editierst du direkt am Satz. | Date + duration are overridden here. Edit set values directly on each set below. | Tarih + süre burada üzerine yazılır. Set değerlerini aşağıda doğrudan her sette düzenle. |
 | `summary.editMeta.header` | Eckdaten | Key Data | Temel Veriler |
 | `summary.editTitle` | Training bearbeiten | Edit Workout | Antrenmanı Düzenle |
@@ -1707,6 +1711,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.gear.header` | Ausrüstung | Gear | Ekipman |
 | `summary.gear.none` | Kein Gear | No gear | Ekipman yok |
 | `summary.hero.title` | Training abgeschlossen | Workout completed | Antrenman Tamamlandı |
+| `summary.hero.title.early` | Vorzeitig gespeichert | Saved early | Erken kaydedildi |
 | `summary.hero.unit.km` | km Cardio | km cardio | km kardiyo |
 | `summary.hero.unit.minutes` | Minuten Training | minutes training | dakika antrenman |
 | `summary.hero.unit.minutesDone` | Minuten geschafft | minutes done | tamamlanan dakika |

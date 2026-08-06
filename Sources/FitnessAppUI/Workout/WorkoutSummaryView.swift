@@ -788,29 +788,39 @@ public struct WorkoutSummaryView: View {
         // jedes Mal triggern und nervt.
         Section {
             VStack(spacing: 12) {
-                Image(systemName: "checkmark.seal.fill")
+                // README 2.11: ein vorzeitig gespeicherter Zeitformat-Lauf
+                // feiert nicht wie ein vollstaendiger - gestrichelte Uhr statt
+                // gruenem Siegel, kein Glow, `textSecondary` statt Erfolgsfarbe.
+                Image(systemName: isEarlySaveTimedFormat ? "clock.badge.exclamationmark" : "checkmark.seal.fill")
                     .font(.system(size: 88))
                     .symbolRenderingMode(.hierarchical)   // DEL-059
                     // Handoff 1.10: bleibt Gruen - echtes Erfolgs-/Valenz-
                     // Signal (Completion), keine zweite Akzentfarbe. Ueber
                     // den Deltiq.success-Token statt hartem .green, damit
                     // eine spaetere Token-Praezisierung hier mitzieht.
-                    .foregroundStyle(Color.Deltiq.success)
-                    .shadow(color: Color.deltiqOrange.opacity(0.35),
-                            radius: hasAppeared ? 18 : 0,
+                    .foregroundStyle(isEarlySaveTimedFormat ? Color.Deltiq.textSecondary : Color.Deltiq.success)
+                    .shadow(color: Color.deltiqOrange.opacity(isEarlySaveTimedFormat ? 0 : 0.35),
+                            radius: (hasAppeared && !isEarlySaveTimedFormat) ? 18 : 0,
                             x: 0, y: 0)
                     .scaleEffect(hasAppeared ? 1.0 : 0.4)
                     .opacity(hasAppeared ? 1.0 : 0.0)
-                Text("summary.hero.title", bundle: .module)
+                Text(isEarlySaveTimedFormat ? "summary.hero.title.early" : "summary.hero.title", bundle: .module)
                     .font(.system(size: 24, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.primary)
                     .multilineTextAlignment(.center)
+                if isEarlySaveTimedFormat {
+                    DeltiqPill(
+                        (session.displayDayName + " · " + earlySaveStatusText).uppercased(),
+                        style: .neutral
+                    )
+                }
                 // DEL-129: Day-Subtitle via Extension. Hier nur rendern wenn
                 // session WIRKLICH einen Day-Bezug hat (entweder live-ref
                 // oder Snapshot) — sonst wuerde der generische "Training"-
                 // Fallback aus history.session.fallback erscheinen, was im
-                // Summary-Hero unschoen wirkt.
-                if session.day != nil || session.dayName != nil {
+                // Summary-Hero unschoen wirkt. Bei vorzeitigem Speichern
+                // steht der Tag schon in der Kapsel darueber.
+                if !isEarlySaveTimedFormat, session.day != nil || session.dayName != nil {
                     Text(session.displayDayName)
                         .font(.system(size: 15))
                         .foregroundStyle(Color.Deltiq.textSecondary)
@@ -821,8 +831,12 @@ public struct WorkoutSummaryView: View {
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
             .onAppear {
-                if isReadOnly {
-                    // Replay: skip the celebration spring, render final state.
+                // README 2.11: kein Spring, kein zweiter Feier-Haptik-Impuls
+                // fuer einen vorzeitig gespeicherten Lauf - der erste Impuls
+                // aus dem Speichern-Pfad bleibt, aber die Praesentation hier
+                // ist bewusst nuechtern statt feiernd.
+                if isReadOnly || isEarlySaveTimedFormat {
+                    // Replay bzw. vorzeitig gespeichert: kein Spring, finaler Stand direkt.
                     hasAppeared = true
                     return
                 }
@@ -881,6 +895,14 @@ public struct WorkoutSummaryView: View {
             .listRowBackground(Color.Deltiq.surface)
         } header: {
             sectionHeader(String(localized: "summary.section.stats", bundle: .module))
+        } footer: {
+            // README 2.11: ordnet die Kennzahl ein, damit "4 Runden" nicht
+            // faelschlich als Bestleistung gelesen wird.
+            if isEarlySaveTimedFormat {
+                Text("summary.early.footnote", bundle: .module)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            }
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
     }
@@ -971,10 +993,13 @@ public struct WorkoutSummaryView: View {
         VStack(spacing: 4) {
             Text(hero.value)
                 .font(.system(size: 56, weight: .bold, design: .rounded).monospacedDigit())
-                .foregroundStyle(Color.deltiqOrange)
+                // README 2.11: bei einem vorzeitig gespeicherten Zeitformat-
+                // Lauf traegt die Zahl nicht die Akzentfarbe - "4 Runden"
+                // liest sich sonst als Ergebnis statt als Zwischenstand.
+                .foregroundStyle(isEarlySaveTimedFormat ? Color.Deltiq.textSecondary : Color.deltiqOrange)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
-            Text(hero.unitKey, bundle: .module)
+            Text(hero.unit)
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(Color.Deltiq.textSecondary)
                 .textCase(.uppercase)
@@ -983,10 +1008,38 @@ public struct WorkoutSummaryView: View {
         .frame(maxWidth: .infinity)
     }
 
-    /// Repräsentiert den Hero-Wert + sein Unit-Label (lokalisiert).
+    /// README 2.11: `completedTarget` wird geschrieben und von der PR-
+    /// Erkennung gelesen, aber vorher nirgends angezeigt - ein vorzeitig
+    /// gespeicherter Lauf feierte wie ein vollstaendiger.
+    private var isEarlySaveTimedFormat: Bool {
+        session.timeFormatSnapshot != nil && !session.completedTarget
+    }
+
+    /// Praezise (sekundengenaue) Laufzeit aus den Zeitstempeln - anders als
+    /// `session.durationMinutes` (auf ganze Minuten gerundet) reicht das fuer
+    /// eine "8:37"-Anzeige, ohne ein neues Feld einzufuehren.
+    private var elapsedTimeText: String {
+        PaceCalculator.formatDuration(max(0, Int(session.endTime.timeIntervalSince(session.startTime))))
+    }
+
+    /// README 2.11: Kurzfassung "Tag · Stand" fuer die neutrale Kapsel im
+    /// Vorzeitig-gespeichert-Hero, z.B. "8:37 VON 20:00" bei einem Zeit-
+    /// Deckel bzw. nur die gelaufene Zeit ohne Deckel (Auf Zeit meist ohne).
+    private var earlySaveStatusText: String {
+        guard let capMinutes = session.day?.timeCapMinutes else { return elapsedTimeText }
+        return String(
+            format: String(localized: "summary.early.progress", bundle: .module),
+            elapsedTimeText, PaceCalculator.formatDuration(capMinutes * 60)
+        )
+    }
+
+    /// Repräsentiert den Hero-Wert + sein Unit-Label. Als bereits aufgeloester
+    /// `String` statt `LocalizedStringKey`, weil der vorzeitig-gespeichert-
+    /// Fall die verstrichene Zeit dynamisch ins Unit-Label einsetzt (README
+    /// 2.11) - das laesst sich mit einem reinen Catalog-Key nicht komponieren.
     private struct HeroStat {
         let value: String
-        let unitKey: LocalizedStringKey
+        let unit: String
     }
 
     private var heroStat: HeroStat {
@@ -1000,12 +1053,12 @@ public struct WorkoutSummaryView: View {
                 let str = km == km.rounded()
                     ? "\(Int(km))"
                     : km.truncated(to: 2).formattedTwoDecimals
-                return HeroStat(value: str, unitKey: "summary.hero.unit.km")
+                return HeroStat(value: str, unit: String(localized: "summary.hero.unit.km", bundle: .module))
             }
             return HeroStat(value: "\(session.durationMinutes)",
-                            unitKey: "summary.hero.unit.minutes")
+                            unit: String(localized: "summary.hero.unit.minutes", bundle: .module))
         case .mixed, .pureStrength:
-            return HeroStat(value: formattedVolume, unitKey: "summary.hero.unit.volumeKg")
+            return HeroStat(value: formattedVolume, unit: String(localized: "summary.hero.unit.volumeKg", bundle: .module))
         }
     }
 
@@ -1013,16 +1066,28 @@ public struct WorkoutSummaryView: View {
     /// kg bei Strength bzw. km bei Cardio. Auf-Zeit nutzt `pillLabel` als
     /// Unit-Text ("Auf Zeit"/"For Time") statt eines eigenen Keys - identisch
     /// zur Kontextzeile im Player.
+    ///
+    /// README 2.11: bei einem vorzeitig gespeicherten AMRAP/EMOM wandert die
+    /// verstrichene Zeit zusaetzlich ins Unit-Label ("RUNDEN GESCHAFFT IN
+    /// 8:37") - "4 Runden" allein liest sich sonst als Ergebnis, nicht als
+    /// Zwischenstand. Bei Auf Zeit ist die Hero-Zahl selbst schon die Zeit,
+    /// eine zweite Zeitangabe waere redundant.
     private func timedFormatHeroStat(_ format: WorkoutTimeFormat) -> HeroStat {
         switch format {
         case .amrap:
-            return HeroStat(value: "\(session.roundsCompleted ?? 0)", unitKey: "summary.hero.unit.rounds")
+            return HeroStat(value: "\(session.roundsCompleted ?? 0)", unit: timedFormatHeroUnit("summary.hero.unit.rounds"))
         case .emom:
-            return HeroStat(value: "\(session.completedMinuteCount ?? 0)", unitKey: "summary.hero.unit.minutesDone")
+            return HeroStat(value: "\(session.completedMinuteCount ?? 0)", unit: timedFormatHeroUnit("summary.hero.unit.minutesDone"))
         case .forTime:
             return HeroStat(value: PaceCalculator.formatDuration(session.finishTimeSeconds ?? 0),
-                            unitKey: "timedWorkout.forTime.pillLabel")
+                            unit: String(localized: "timedWorkout.forTime.pillLabel", bundle: .module))
         }
+    }
+
+    private func timedFormatHeroUnit(_ key: String) -> String {
+        let base = String(localized: String.LocalizationValue(key), bundle: .module)
+        guard isEarlySaveTimedFormat else { return base }
+        return String(format: String(localized: "summary.early.unitWithTime", bundle: .module), base, elapsedTimeText)
     }
 
     @ViewBuilder
