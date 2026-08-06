@@ -48,29 +48,6 @@
         }
       }
     },
-    "tab.start": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Start"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Start"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Başlat"
-          }
-        }
-      }
-    },
     "tab.measurement": {
       "extractionState": "manual",
       "localizations": {
@@ -94,7 +71,7 @@
         }
       }
     },
-    "tab.calculators": {
+    "tab.tools": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -106,7 +83,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rechner"
+            "value": "Werkzeuge"
           }
         },
         "tr": {

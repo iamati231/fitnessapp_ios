@@ -33,8 +33,8 @@ public struct WaterTrackerView: View {
     public var body: some View {
         VStack(spacing: 0) {
             // Signature-Geruest 1.2: Eyebrow zeigt den unmittelbaren Elternscreen
-            // (Rechner), nicht den Tab (Mehr) - das entspricht "der Kontext, aus
-            // dem der Screen kommt" praeziser als der Tab-Name.
+            // (Rechner), nicht den Tab (Werkzeuge) - das entspricht "der Kontext,
+            // aus dem der Screen kommt" praeziser als der Tab-Name.
             DeltiqHeader(
                 eyebrow: String(localized: "calc.index.title", bundle: .module).uppercased(),
                 title: String(localized: "water.title", bundle: .module),

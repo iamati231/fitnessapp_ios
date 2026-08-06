@@ -175,30 +175,17 @@ public struct RootView: View {
 }
 
 /// Top-level container for the post-onboarding flow. Tab order (Signature-
-/// Geruest, Variante 2b, Weg B seit 5. August): Dashboard → Plan → Start →
-/// Messung → Mehr (Rechner haengt seit dem Tab-Umbau dort, siehe
-/// `SettingsView`). Cross-tab navigation runs through `AppNavigation`.
+/// Geruest, Nachtrag 6. August: "der Start-Tab weicht den Werkzeugen"):
+/// Dashboard → Plan → Messung → Werkzeuge → Mehr. Cross-tab navigation runs
+/// through `AppNavigation`.
 @available(iOS 17.0, macOS 14.0, *)
 struct MainTabView: View {
     @Environment(AppNavigation.self) private var navigation
-    @Environment(\.modelContext) private var modelContext
 
     /// DEL-028: Beobachtet den NotificationRouter und routet Notification-Taps
     /// (Cold-Start + Background) auf die richtige Tab. Eine `@State`-Property,
     /// damit SwiftUI das @Observable-Tracking automatisch einrichtet.
     @State private var notificationRouter = NotificationRouter.shared
-
-    /// Der "Start"-Tab traegt nie eigenen Content (siehe `AppTab.start`) -
-    /// jede Auswahl springt in `onChange(of: navigation.selectedTab)` sofort
-    /// auf den zuletzt sichtbaren echten Tab zurueck, nachdem die Aktion
-    /// ausgeloest wurde.
-    @State private var lastRealTab: AppTab = .dashboard
-
-    #if canImport(UIKit)
-    /// Einmalig gerendertes Icon fuer den "Start"-Tab (Design-Entscheidung
-    /// 5. August, Weg B) - siehe `renderStartTabIcon()`.
-    @State private var startTabIcon: UIImage?
-    #endif
 
     var body: some View {
         @Bindable var navigation = navigation
@@ -227,29 +214,6 @@ struct MainTabView: View {
                 }
                 .tag(AppTab.plan)
 
-            // Design-Entscheidung 5. August (README.md, Nachtrag zu 1.11,
-            // Weg B): der ueberstehende, frei schwebende Aktionsknopf liess
-            // sich gegen die tatsaechliche Tab-Leiste (eine schwebende
-            // Kapsel mit eigenem Aussenabstand, nicht die Bildschirmkante)
-            // nicht robust positionieren. Echtes fuenftes Tab-Symbol statt
-            // Platzhalter: traegt selbst keinen Content, `onChange` unten
-            // loest beim Antippen `startOrResumeWorkout` aus und springt
-            // sofort auf den zuletzt sichtbaren echten Tab zurueck.
-            Color.clear
-                .tabItem {
-                    #if canImport(UIKit)
-                    if let startTabIcon {
-                        Image(uiImage: startTabIcon)
-                    } else {
-                        Image(systemName: "play.circle.fill")
-                    }
-                    #else
-                    Image(systemName: "play.circle.fill")
-                    #endif
-                    Text("tab.start", bundle: .module)
-                }
-                .tag(AppTab.start)
-
             NavigationStack {
                 MeasurementView()
             }
@@ -262,20 +226,33 @@ struct MainTabView: View {
             }
             .tag(AppTab.measurement)
 
-            // DEL-212, angepasst: Path-Binding fuers "Mehr"-Tab, damit die
-            // Wasser-Erinnerungs-Notification weiterhin in einem Sprung bis
-            // zum WaterTracker durchpushen kann, obwohl Rechner keinen
-            // eigenen Tab mehr hat. Der normale, getippte Weg (Mehr →
-            // Rechner → Wassertracker) laeuft unabhaengig davon ueber
-            // CalculatorsView's eigene NavigationLink(destination:)-Zeilen.
-            NavigationStack(path: $navigation.morePath) {
-                SettingsView()
+            // Nachtrag 6. August (README.md, "der Start-Tab weicht den
+            // Werkzeugen"): Rechner bekommt den frei gewordenen Platz 4
+            // zurueck, mit eigenem NavigationStack/Path statt einer Ebene
+            // tief unter "Mehr". Label "Werkzeuge" statt "Rechner", weil der
+            // Wassertracker misst statt rechnet. Die Wasser-Erinnerungs-
+            // Notification pusht darueber weiterhin direkt bis zum
+            // WaterTracker, jetzt nur noch eine Ebene statt zwei.
+            NavigationStack(path: $navigation.toolsPath) {
+                CalculatorsView()
                     .navigationDestination(for: CalculatorsRoute.self) { route in
                         switch route {
                         case .waterTracker:
                             WaterTrackerView()
                         }
                     }
+            }
+            .tabItem {
+                Label {
+                    Text("tab.tools", bundle: .module)
+                } icon: {
+                    Image(systemName: "square.grid.2x2")
+                }
+            }
+            .tag(AppTab.tools)
+
+            NavigationStack {
+                SettingsView()
             }
             .tabItem {
                 Label {
@@ -292,22 +269,9 @@ struct MainTabView: View {
         .onAppear {
             applyPendingRouteIfAny()
             configureTabBarAppearance()
-            #if canImport(UIKit)
-            if startTabIcon == nil {
-                startTabIcon = Self.renderStartTabIcon()
-            }
-            #endif
         }
         .onChange(of: notificationRouter.pendingRoute) { _, _ in
             applyPendingRouteIfAny()
-        }
-        .onChange(of: navigation.selectedTab) { _, newValue in
-            if newValue == .start {
-                navigation.startOrResumeWorkout(modelContext: modelContext)
-                navigation.selectedTab = lastRealTab
-            } else {
-                lastRealTab = newValue
-            }
         }
     }
 
@@ -318,8 +282,8 @@ struct MainTabView: View {
             // DEL-212: Tab-Swap + Deep-Push direkt in den WaterTracker.
             // Path wird ersetzt (nicht appended), damit wiederholte Taps
             // keinen Stack aus mehreren Tracker-Screens aufbauen.
-            navigation.selectedTab = .settings
-            navigation.morePath = NavigationPath([CalculatorsRoute.waterTracker])
+            navigation.selectedTab = .tools
+            navigation.toolsPath = NavigationPath([CalculatorsRoute.waterTracker])
         case .measurement:
             navigation.selectedTab = .measurement
         }
@@ -354,30 +318,6 @@ struct MainTabView: View {
         UITabBar.appearance().scrollEdgeAppearance = appearance
         #endif
     }
-
-    #if canImport(UIKit)
-    /// Design-Entscheidung 5. August (README.md, Nachtrag zu 1.11, Weg B):
-    /// Akzent-Kreis 34pt, IMMER Orange-Verlauf - unabhaengig vom
-    /// Selected/Unselected-Tint, den `configureTabBarAppearance()` sonst auf
-    /// jedes Tab-Icon anwendet. `ImageRenderer` rastert dieselbe
-    /// Circle+Gradient+Play-Optik, die zuvor `DeltiqCentralActionButton`
-    /// zeichnete, einmalig zu einem `UIImage` — `.alwaysOriginal`
-    /// verhindert, dass `UITabBarAppearance` eine eigene Tint-Farbe
-    /// drueberlegt.
-    @MainActor
-    private static func renderStartTabIcon() -> UIImage {
-        let renderer = ImageRenderer(content:
-            Image(systemName: "play.fill")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 34, height: 34)
-                .background(Color.Deltiq.primaryGradient)
-                .clipShape(Circle())
-        )
-        renderer.scale = UIScreen.main.scale
-        return (renderer.uiImage ?? UIImage()).withRenderingMode(.alwaysOriginal)
-    }
-    #endif
 }
 
 // MARK: - Previews

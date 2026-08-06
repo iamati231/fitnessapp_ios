@@ -249,20 +249,6 @@ public struct SettingsView: View {
                     showsChevron: true
                 )
             }
-            // Signature-Geruest Tab-Umbau (Variante 2b): Rechner hat seinen
-            // eigenen Tab verloren und haengt jetzt hier, neben Bibliothek
-            // und Ausruestung. Normale NavigationLink(destination:)-Zeile —
-            // braucht keinen Pfad-Wert, der Wassertracker-Deep-Link laeuft
-            // separat ueber AppNavigation.morePath (siehe RootView).
-            NavigationLink {
-                CalculatorsView()
-            } label: {
-                DeltiqRow(
-                    icon: "function",
-                    label: String(localized: "calc.index.title", bundle: .module),
-                    showsChevron: true
-                )
-            }
             // DEL-109: Dashboard-Widget-Manager.
             dashboardCustomizationRow
             hintRow(String(localized: "settings.units.footer", bundle: .module))

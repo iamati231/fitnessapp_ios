@@ -17,13 +17,12 @@ public final class AppNavigation {
     public var selectedTab: AppTab = .dashboard
     public var workoutPath = NavigationPath()
 
-    /// DEL-212, angepasst fuers Signature-Screen-Geruest (Variante 2b):
-    /// NavigationPath des "Mehr"-Tabs. Rechner haengt seit dem Tab-Umbau
-    /// (Abschnitt 1.11 des Handoffs) nicht mehr an einem eigenen Tab,
-    /// sondern wird von `SettingsView` aus gepusht — dieser Pfad erlaubt
-    /// weiterhin den Deep-Push aus der Wasser-Erinnerungs-Notification
-    /// direkt bis zum WaterTracker, statt den User nur auf "Mehr" abzusetzen.
-    public var morePath = NavigationPath()
+    /// DEL-212, angepasst fuers Signature-Screen-Geruest (Nachtrag 6. August:
+    /// "Werkzeuge"-Tab statt "Start"): NavigationPath des vierten Tabs
+    /// (`CalculatorsView` als Wurzel). Erlaubt den Deep-Push aus der
+    /// Wasser-Erinnerungs-Notification direkt bis zum WaterTracker, ohne den
+    /// User nur auf dem Tab abzusetzen.
+    public var toolsPath = NavigationPath()
 
     public init() {}
 
@@ -35,90 +34,9 @@ public final class AppNavigation {
     }
 }
 
-#if canImport(SwiftData)
-import SwiftData
-import FitnessAppCore
-import FitnessAppData
-
-@available(iOS 17.0, macOS 14.0, *)
-public extension AppNavigation {
-    /// Startet die naechste faellige Trainingseinheit des aktiven Plans oder
-    /// setzt eine bereits offene Session fort. Absichtlich einfacher als
-    /// Dashboards `activeWorkoutButton`: kein Comeback-Prompt (DEL-239) und
-    /// kein Konfliktdialog fuer eine zweite offene Session auf einem anderen
-    /// Tag — beides haengt an View-lokalem State in `DashboardView`, den
-    /// dieser globale Kurzbefehl nicht dupliziert. Sind mehrere Sessions
-    /// offen, wird die zuletzt gestartete fortgesetzt.
-    ///
-    /// Wird von `MainTabView`s `onChange(of: navigation.selectedTab)`
-    /// aufgerufen, sobald der User den "Start"-Tab antippt (siehe `AppTab`).
-    func startOrResumeWorkout(modelContext: ModelContext) {
-        var openDescriptor = FetchDescriptor<WorkoutSession>(
-            predicate: #Predicate { $0.isCompleted == false && $0.isRestDay == false },
-            sortBy: [SortDescriptor(\.startTime, order: .reverse)]
-        )
-        openDescriptor.fetchLimit = 1
-        if let open = try? modelContext.fetch(openDescriptor).first {
-            workoutPath = NavigationPath()
-            if let day = open.day, let plan = day.plan {
-                workoutPath.append(plan)
-                workoutPath.append(day)
-            }
-            workoutPath.append(ActiveSessionRoute(session: open))
-            selectedTab = .plan
-            return
-        }
-
-        let planDescriptor = FetchDescriptor<TrainingPlan>(
-            predicate: #Predicate { $0.isActive == true }
-        )
-        guard let plan = try? modelContext.fetch(planDescriptor).first, !plan.days.isEmpty else {
-            // Kein aktiver Plan: Plan-Tab zeigen, dort greift der Leerzustand.
-            selectedTab = .plan
-            return
-        }
-
-        let sortedDays = PlanNavigator.sortByWeekdayMondayFirst(plan.days)
-        let completedDescriptor = FetchDescriptor<WorkoutSession>(
-            predicate: #Predicate { $0.isCompleted == true }
-        )
-        let completedCount = ((try? modelContext.fetch(completedDescriptor)) ?? []).filter {
-            $0.day?.plan?.persistentModelID == plan.persistentModelID
-        }.count
-        let idx = PlanNavigator.nextScheduledIndex(
-            dayCount: sortedDays.count,
-            completedSessions: completedCount
-        ) ?? 0
-        let day = sortedDays[idx]
-
-        guard !day.activeExercises.isEmpty else {
-            selectedTab = .plan
-            return
-        }
-
-        let session = WorkoutSession(
-            startTime: Date(),
-            endTime: Date(),
-            durationMinutes: 0,
-            exerciseCount: day.activeExercises.count,
-            isCompleted: false,
-            dayName: day.name,
-            day: day
-        )
-        modelContext.insert(session)
-
-        workoutPath = NavigationPath()
-        workoutPath.append(plan)
-        workoutPath.append(day)
-        workoutPath.append(ActiveSessionRoute(session: session))
-        selectedTab = .plan
-    }
-}
-#endif
-
 /// DEL-212: Push-Route fuer den Wassertracker-Deep-Link. Der normale,
-/// getippte Weg (Mehr → Rechner → Wassertracker) laeuft ueber gewoehnliche
-/// `NavigationLink(destination:)`-Pushes in `CalculatorsView` und braucht
+/// getippte Weg (Werkzeuge → Wassertracker) laeuft ueber eine gewoehnliche
+/// `NavigationLink(destination:)`-Push in `CalculatorsView` und braucht
 /// diesen Typ nicht — er existiert nur fuer den programmatischen
 /// Ein-Tap-Sprung aus der lokalen Erinnerungs-Notification, aufgeloest
 /// von der `navigationDestination(for:)`-Registrierung in RootView.
@@ -127,23 +45,20 @@ public enum CalculatorsRoute: Hashable, Sendable {
     case waterTracker
 }
 
-/// Fuenf Tabs, alle mit echtem `.tabItem` (Design-Entscheidung 5. August,
-/// README.md Nachtrag zu 1.11, Weg B): `start` ist kein Platzhalter mehr,
-/// sondern ein echtes Tab-Symbol (Akzent-Kreis 34pt, Label "Start") - der
-/// fruehere freischwebende `DeltiqCentralActionButton` liess sich gegen die
-/// tatsaechliche Tab-Leiste (eine schwebende Kapsel, nicht die
-/// Bildschirmkante) nicht robust positionieren. Antippen loest in
-/// `MainTabView`s `onChange(of: navigation.selectedTab)` dieselbe
-/// `startOrResumeWorkout(modelContext:)`-Aktion aus wie zuvor der Knopf und
-/// springt danach sofort auf den zuletzt sichtbaren echten Tab zurueck -
-/// `start` selbst traegt nie eigenen Content. Rechner hat mit dem
-/// Tab-Umbau seinen eigenen Tab verloren und haengt jetzt unter "Mehr".
+/// Fuenf Tabs (Signature-Screen-Geruest, Nachtrag 6. August: "der Start-Tab
+/// weicht den Werkzeugen"): der vorherige `start`-Tab war die einzige
+/// Tab-"Aktion" statt eines Ziels — dieselbe Aktion liegt bereits als
+/// Hauptknopf auf dem Dashboard und als Banner in der Plan-Liste, ein
+/// eigenes Tab-Symbol dafuer war redundant. Der frei gewordene Platz geht
+/// an `tools` (Label "Werkzeuge", nicht "Rechner" — der Wassertracker misst
+/// nur, rechnet nichts): `CalculatorsView` als eigene Tab-Wurzel mit
+/// eigenem `NavigationStack`, statt eine Ebene tief unter "Mehr" zu haengen.
 @available(iOS 17.0, macOS 14.0, *)
 public enum AppTab: Hashable, Sendable {
     case dashboard
     case plan
-    case start
     case measurement
+    case tools
     case settings
 }
 

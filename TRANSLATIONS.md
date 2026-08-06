@@ -1691,11 +1691,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
-| `tab.calculators` | Rechner | Tools | Araçlar |
 | `tab.dashboard` | Dashboard | Dashboard | Panel |
 | `tab.measurement` | Messung | Measurement | Ölçüm |
 | `tab.more` | Mehr | More | Daha Fazla |
 | `tab.plan` | Plan | Plan | Plan |
+| `tab.tools` | Werkzeuge | Tools | Araçlar |
 
 ## `trophy.*`  (23 Keys)
 
