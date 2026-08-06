@@ -1,6 +1,6 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1582 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1583 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
@@ -457,13 +457,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `customExercise.section.name` | Name | Name | Ad |
 | `customExercise.title` | Neue Übung | New exercise | Yeni hareket |
 
-## `dashboard.*`  (81 Keys)
+## `dashboard.*`  (82 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `dashboard.action.adHoc.a11y` | Spontanes Training starten — leere Session ohne Plan-Anbindung | Start a spontaneous workout — empty session without plan attachment | Spontane antrenman başlat — plana bağlı olmayan boş oturum |
 | `dashboard.action.adHoc.primary` | Spontanes Training starten | Start spontaneous workout | Spontane antrenman başlat |
 | `dashboard.action.adHoc.secondary` | Vom Plan abweichen — Spontanes Training | Skip the plan — spontaneous workout | Plandan sap — spontane antrenman |
+| `dashboard.action.otherRunning` | Anderes Training läuft | Another workout is running | Başka bir antrenman sürüyor |
 | `dashboard.action.resumeRunning` | Laufendes Training fortsetzen | Resume running workout | Devam eden antrenmanı sürdür |
 | `dashboard.action.startDirect` | Direkt starten | Start now | Hemen başlat |
 | `dashboard.calendar.a11y` | Trainings-Kalender, %1$lld Trainingstage in diesem Monat, %2$lld-Wochen-Streak | Training calendar, %1$lld workout days this month, %2$lld-week streak | Antrenman takvimi, bu ay %1$lld antrenman günü, %2$lld haftalık seri |

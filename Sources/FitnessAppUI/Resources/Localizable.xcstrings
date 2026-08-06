@@ -6643,6 +6643,29 @@
         }
       }
     },
+    "dashboard.action.otherRunning": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anderes Training läuft"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another workout is running"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başka bir antrenman sürüyor"
+          }
+        }
+      }
+    },
     "dashboard.action.adHoc.primary": {
       "extractionState": "manual",
       "localizations": {

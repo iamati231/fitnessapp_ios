@@ -1686,12 +1686,15 @@ public struct DashboardView: View {
     ///   1. Keine offene Session       → "Direkt starten" (blau, neu)
     ///   2. Offene Session AUF DEM-Tag → "Fortsetzen" (orange, navigiert in
     ///      die existing Session — kein neuer Insert)
-    ///   3. Offene Session AUF ANDEREM Tag → "Direkt starten", Klick
+    ///   3. Offene Session AUF ANDEREM Tag → "Anderes Training läuft", Klick
     ///      triggert Conflict-Dialog mit drei Optionen.
-    /// DEL-105: Beide Branches nutzen jetzt `.deltiqButtonStyle()` (Hero-CTA-
-    /// Modifier aus DEL-102). Mode-Unterscheidung "Fortsetzen" vs "Direkt
-    /// starten" laeuft nur noch ueber Label + Icon, nicht ueber Farbe — das
-    /// frueher blau-vs-orange Pattern stoerte das Markenbild.
+    /// DEL-105: Alle Branches nutzen jetzt `.deltiqButtonStyle()` (Hero-CTA-
+    /// Modifier aus DEL-102). Mode-Unterscheidung laeuft nur noch ueber Label
+    /// + Icon, nicht ueber Farbe — das frueher blau-vs-orange Pattern stoerte
+    /// das Markenbild.
+    /// DEL-146: State 3 hatte bislang denselben Text wie State 1 ("Direkt
+    /// starten"), obwohl ein Klick tatsaechlich den Conflict-Dialog oeffnet
+    /// statt sofort zu starten — eigener Text macht das ehrlich sichtbar.
     @ViewBuilder
     private func activeWorkoutButton(plan: TrainingPlan, day: TrainingDay) -> some View {
         let matchingOpen = openSessionForDay(day)
@@ -1709,14 +1712,14 @@ public struct DashboardView: View {
                 actuallyStartNewWorkout(plan: plan, day: day)
             }
         } label: {
-            // DEL-073: Beide Branches via xcstrings.
+            // DEL-073/DEL-146: Alle drei Branches via xcstrings.
             Label {
                 Text(matchingOpen != nil
                      ? "dashboard.action.resumeRunning"
-                     : "dashboard.action.startDirect",
+                     : (hasOtherOpen ? "dashboard.action.otherRunning" : "dashboard.action.startDirect"),
                      bundle: .module)
             } icon: {
-                Image(systemName: matchingOpen != nil ? "play.circle.fill" : "play.fill")
+                Image(systemName: matchingOpen != nil ? "play.circle.fill" : (hasOtherOpen ? "exclamationmark.circle.fill" : "play.fill"))
             }
         }
         .buttonStyle(.plain)
