@@ -19487,19 +19487,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Welche Plates für dein Zielgewicht — mit Inventar-Cap und visualer Stange."
+            "value": "Scheiben für dein Zielgewicht"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Which plates for your target weight — with inventory cap and visual bar."
+            "value": "Plates for your target weight"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hedef ağırlığın için hangi plakalar — envanter sınırı ve görsel barla."
+            "value": "Hedef ağırlığın için plakalar"
           }
         }
       }
@@ -19533,19 +19533,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "BMR + TDEE aus deinem Profil und Aktivitäts-Level."
+            "value": "BMR und TDEE aus deinem Profil"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "BMR + TDEE from your profile and activity level."
+            "value": "BMR and TDEE from your profile"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Profil ve aktivite seviyenden BMR + TDEE."
+            "value": "Profilinden BMR ve TDEE"
           }
         }
       }
@@ -19579,19 +19579,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tagesziel = Gewicht × 35 ml. Mit Quick-Add."
+            "value": "Tagesziel aus deinem Gewicht"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Daily goal = weight × 35 ml. With quick-add."
+            "value": "Daily goal from your weight"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Günlük hedef = kilo × 35 ml. Hızlı ekleme ile."
+            "value": "Kilona göre günlük hedef"
           }
         }
       }
@@ -21957,19 +21957,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Epley + Brzycki + Mittelwert, plus Trainings-%-Tabelle."
+            "value": "Epley, Brzycki und Mittelwert"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Epley + Brzycki + average, plus a training-% table."
+            "value": "Epley, Brzycki and average"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Epley + Brzycki + ortalama, artı antrenman % tablosu."
+            "value": "Epley, Brzycki ve ortalama"
           }
         }
       }
@@ -23502,7 +23502,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cap pro Plate: 25/20 kg → 10, alle anderen → 1. Auf 0 setzen, wenn die Plate bei dir fehlt."
+            "value": "Cap pro Scheibe: 25/20 kg → 10, alle anderen → 1. Auf 0 setzen, wenn die Scheibe bei dir fehlt."
           }
         },
         "en": {
@@ -23525,7 +23525,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cap pro Plate: 45/35 lbs → 10, alle anderen → 1. Auf 0 setzen, wenn die Plate bei dir fehlt."
+            "value": "Cap pro Scheibe: 45/35 lbs → 10, alle anderen → 1. Auf 0 setzen, wenn die Scheibe bei dir fehlt."
           }
         },
         "en": {
