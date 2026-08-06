@@ -97,6 +97,27 @@ public enum DayIntensity: String, Codable, Sendable, CaseIterable {
     case heavy
 }
 
+/// Zeitformat eines Trainingstags — orthogonal zu `DayType` (das beschreibt
+/// den Muskelfokus, nicht die Struktur). `nil` auf `TrainingDay.timeFormat`
+/// ist der bisherige Normalfall: ganz gewöhnliches Satz/Wiederholungs-
+/// Krafttraining, ungeaendertes Verhalten. Ein gesetzter Case bedeutet,
+/// dass `ActiveWorkoutView` statt der gepagten Uebungs-Navigation den
+/// `TimedWorkoutPlayerView` fuer dieses Format rendert.
+///
+/// String-RawValue, damit SwiftData-Lightweight-Migration + CSV-Export
+/// (siehe `DataExportService`) stabile, lesbare Werte persistieren —
+/// gleiches Muster wie `CardioEquipment`/`EnvironmentType`.
+public enum WorkoutTimeFormat: String, Codable, Sendable, CaseIterable {
+    /// As Many Rounds/Reps As Possible in `timeCapMinutes`.
+    case amrap
+    /// Every Minute On the Minute — eine Uebung pro 60s-Intervall,
+    /// wiederholt ueber `timeCapMinutes`.
+    case emom
+    /// Vorgegebenes Pensum so schnell wie moeglich; `timeCapMinutes`
+    /// optional als Abbruch-Deckel.
+    case forTime
+}
+
 /// Difficulty classification for exercise templates — used by the library filter (F99).
 public enum DifficultyLevel: String, Codable, Sendable, CaseIterable {
     case beginner

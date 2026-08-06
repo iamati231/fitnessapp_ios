@@ -26,11 +26,29 @@ public struct DaySpec: Sendable, Hashable {
     /// fuer bestehende Plan-Instanzen.
     public let localizationKey: String?
 
-    public init(name: String, localizationKey: String? = nil, type: DayType, sequenceIndex: Int, exercises: [ExerciseSpec]) {
+    /// Zeitformat dieses Tags (AMRAP/EMOM/Auf Zeit) — `nil` fuer normales
+    /// Satz/Wiederholungs-Training (der bestehende, unveraenderte Fall).
+    public let timeFormat: WorkoutTimeFormat?
+    /// AMRAP-Deckel bzw. EMOM-Gesamtdauer in Minuten. Bei Auf-Zeit optional
+    /// als Abbruch-Deckel. `nil` wenn `timeFormat == nil` oder das Format
+    /// keinen Deckel braucht.
+    public let timeCapMinutes: Int?
+
+    public init(
+        name: String,
+        localizationKey: String? = nil,
+        type: DayType,
+        sequenceIndex: Int,
+        exercises: [ExerciseSpec],
+        timeFormat: WorkoutTimeFormat? = nil,
+        timeCapMinutes: Int? = nil
+    ) {
         self.name = name
         self.localizationKey = localizationKey
         self.type = type
         self.sequenceIndex = sequenceIndex
         self.exercises = exercises
+        self.timeFormat = timeFormat
+        self.timeCapMinutes = timeCapMinutes
     }
 }

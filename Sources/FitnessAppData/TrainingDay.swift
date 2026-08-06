@@ -26,6 +26,13 @@ public final class TrainingDay {
     /// zurueck. Lightweight-Migration kompatibel.
     public var localizationKey: String?
 
+    /// Zeitformat dieses Tags (AMRAP/EMOM/Auf Zeit) — `nil` fuer normales
+    /// Satz/Wiederholungs-Training (unveraenderter Bestandsfall). Additive,
+    /// optionale Felder: bestehende Rows migrieren lightweight auf `nil`.
+    public var timeFormat: WorkoutTimeFormat?
+    /// AMRAP-Deckel bzw. EMOM-Gesamtdauer in Minuten. Siehe `DaySpec.timeCapMinutes`.
+    public var timeCapMinutes: Int?
+
     @Relationship(deleteRule: .cascade, inverse: \Exercise.day)
     public var exercises: [Exercise] = []
 
@@ -55,7 +62,9 @@ public final class TrainingDay {
         type: DayType = .custom,
         nextIntensity: DayIntensity = .normal,
         plan: TrainingPlan? = nil,
-        localizationKey: String? = nil
+        localizationKey: String? = nil,
+        timeFormat: WorkoutTimeFormat? = nil,
+        timeCapMinutes: Int? = nil
     ) {
         self.name = name
         self.customName = customName
@@ -64,6 +73,8 @@ public final class TrainingDay {
         self.nextIntensity = nextIntensity
         self.plan = plan
         self.localizationKey = localizationKey
+        self.timeFormat = timeFormat
+        self.timeCapMinutes = timeCapMinutes
     }
 }
 

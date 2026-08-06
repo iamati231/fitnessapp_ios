@@ -133,7 +133,9 @@ public enum ProgramInstantiator {
                 weekday: targetWeekday,
                 type: daySpec.type,
                 plan: plan,
-                localizationKey: daySpec.localizationKey
+                localizationKey: daySpec.localizationKey,
+                timeFormat: daySpec.timeFormat,
+                timeCapMinutes: daySpec.timeCapMinutes
             )
             context.insert(day)
 

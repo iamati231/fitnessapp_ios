@@ -45,6 +45,26 @@ public final class WorkoutSession {
     /// the source `TrainingDay` is renamed or deleted (F123 Bug #2).
     public var dayName: String?
 
+    // MARK: - Zeitformat-Ergebnisse (AMRAP/EMOM/Auf Zeit)
+    //
+    // Nur eine der vier Ergebnis-Groessen ist je Session gesetzt, je nach
+    // `timeFormatSnapshot`. Bei einer normalen Krafttrainings-Session
+    // bleiben alle fuenf Felder `nil`.
+
+    /// Snapshot von `day.timeFormat` bei Session-Start — gleiches Muster
+    /// wie `dayName`: ueberlebt einen spaeteren Format- oder Tag-Wechsel,
+    /// damit Zusammenfassung und Verlauf weiterhin wissen, wie diese
+    /// konkrete Session zu lesen ist.
+    public var timeFormatSnapshot: WorkoutTimeFormat?
+    /// AMRAP: Anzahl vollstaendig abgeschlossener Runden.
+    public var roundsCompleted: Int?
+    /// AMRAP: Wiederholungen in die angebrochene, nicht mehr vollstaendige Runde hinein.
+    public var partialReps: Int?
+    /// Auf Zeit: Gesamtzeit bis zum letzten Haekchen, in Sekunden.
+    public var finishTimeSeconds: Int?
+    /// EMOM: Anzahl der Minuten, in denen das Pensum geschafft wurde (von `day.timeCapMinutes`).
+    public var completedMinuteCount: Int?
+
     /// DEL-057: Vom User auf der Finish-Half-Sheet gewaehltes Session-Gefuehl.
     /// 1 = Grossartig, 2 = Gut, 3 = Okay, 4 = Sehr schwer, 5 = Zerstoert.
     /// Wird vom `ProgressionApplicator` ausgewertet: bei 4/5 wird jede
@@ -78,7 +98,12 @@ public final class WorkoutSession {
         isRestDay: Bool = false,
         isAdHoc: Bool = false,
         dayName: String? = nil,
-        day: TrainingDay? = nil
+        day: TrainingDay? = nil,
+        timeFormatSnapshot: WorkoutTimeFormat? = nil,
+        roundsCompleted: Int? = nil,
+        partialReps: Int? = nil,
+        finishTimeSeconds: Int? = nil,
+        completedMinuteCount: Int? = nil
     ) {
         self.startTime = startTime
         self.endTime = endTime
@@ -92,6 +117,11 @@ public final class WorkoutSession {
         self.isAdHoc = isAdHoc
         self.dayName = dayName
         self.day = day
+        self.timeFormatSnapshot = timeFormatSnapshot
+        self.roundsCompleted = roundsCompleted
+        self.partialReps = partialReps
+        self.finishTimeSeconds = finishTimeSeconds
+        self.completedMinuteCount = completedMinuteCount
     }
 
     /// True when this is a finished, non-rest-day session — i.e., a real
