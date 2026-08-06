@@ -186,6 +186,16 @@ private struct AMRAPPlayerView: View {
     }
     private var capSeconds: Int { max(1, (day?.timeCapMinutes ?? 20)) * 60 }
 
+    /// README 2.12/21a-21b: die Akzentkapsel traegt den vollen Live-Stand,
+    /// nicht nur die Runden - "4 RUNDEN + 7 WDH." statt nur "4 RUNDEN". Ohne
+    /// angebrochene Wiederholungen bleibt es bei den Runden allein, kein "+ 0".
+    private var roundsContextText: String {
+        let roundsPart = "\(roundsCompleted) " + String(localized: "timedWorkout.amrap.roundsLabel", bundle: .module)
+        guard partialReps > 0 else { return roundsPart.uppercased() }
+        let repsPart = "\(partialReps) " + String(localized: "unit.reps.short", bundle: .module)
+        return (roundsPart + " + " + repsPart).uppercased()
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             DeltiqHeader(
@@ -199,12 +209,12 @@ private struct AMRAPPlayerView: View {
                 // Nachtrag 6. August, abends (README 2.9/18e): die erste
                 // Kapsel zeigte bisher "AMRAP" - dasselbe wie der Eyebrow
                 // direkt darueber. Live-Rundenstand ist die Information, die
-                // sonst nirgends in der Kopfzone steht.
+                // sonst nirgends in der Kopfzone steht. Nachtrag 6. August,
+                // spaeter (README 2.12/21a-21b): traegt jetzt auch die
+                // angebrochene Runde, sonst steht der volle Live-Stand
+                // nirgends auf einen Blick.
                 DeltiqContextRow([
-                    DeltiqContextItem(
-                        "\(roundsCompleted) " + String(localized: "timedWorkout.amrap.roundsLabel", bundle: .module),
-                        style: .accent
-                    ),
+                    DeltiqContextItem(roundsContextText, style: .accent),
                     DeltiqContextItem(
                         String(format: String(localized: "timedWorkout.amrap.capContext", bundle: .module), (day?.timeCapMinutes ?? 20)).uppercased(),
                         style: .neutral
@@ -325,13 +335,23 @@ private struct AMRAPPlayerView: View {
     /// eines laufenden AMRAP steckt man aber jederzeit in einer angebrochenen
     /// Runde, die Eingabe gehoert daher durchgehend sichtbar, nicht erst am
     /// Ende.
+    /// README 2.12/21a-21b: `.labelsHidden()` blendet das Stepper-eigene
+    /// Label aus - das war bisher zugleich die EINZIGE Anzeige des Werts, ein
+    /// Fehltipp beim Mitzaehlen war nicht erkennbar. Der Wert steht jetzt
+    /// zusaetzlich, sichtbar, im rechten Slot vor dem Stepper (Muster der
+    /// anderen 15 `DeltiqControlRow`-Stellen im Repo, z.B. `OneRepMaxView`).
     private var partialRepsStepperRow: some View {
         DeltiqControlRow(label: String(localized: "timedWorkout.amrap.partialReps", bundle: .module)) {
-            Stepper(value: $partialReps, in: 0...999) {
+            HStack(spacing: 8) {
                 Text("\(partialReps)")
+                    .font(.system(size: 17))
                     .fitnessNumberStyle()
+                Stepper(value: $partialReps, in: 0...999) {
+                    Text("\(partialReps)")
+                        .fitnessNumberStyle()
+                }
+                .labelsHidden()
             }
-            .labelsHidden()
         }
     }
 
