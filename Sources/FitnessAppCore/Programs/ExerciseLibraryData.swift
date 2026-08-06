@@ -104,8 +104,12 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Step-Up (KH)",                     equipment: .dumbbell, primaryMuscle: .quads,      difficultyLevel: .beginner, localizationKey: "exercise.name.stepUpDB"),
         // README 2.9 Phase 6: Kniebeuge-in-Drueck-Kombolift (crossfitWeighted
         // "Auf Zeit: Thruster & Burpees") - genug systemic/CNS-Last fuer
-        // explizite DEL-098-Faktoren wie andere grosse Compounds.
-        ExerciseTemplateSpec(name: "Thruster (KH)",                    equipment: .dumbbell, primaryMuscle: .quads,      difficultyLevel: .intermediate, isSystemCompound: true,
+        // explizite DEL-098-Faktoren wie andere grosse Compounds. KEIN
+        // isSystemCompound trotzdem - das Flag ist laut
+        // testSystemCompoundsAreBarbellLiftsOnly ausschliesslich fuer
+        // Langhantel-Lifts reserviert (aendert die Progressions-
+        // Schrittweite), ein Dumbbell-Thruster faellt nicht darunter.
+        ExerciseTemplateSpec(name: "Thruster (KH)",                    equipment: .dumbbell, primaryMuscle: .quads,      difficultyLevel: .intermediate,
                              systemicFatigueFactor: 0.70, localMuscleDamageFactor: 0.60, cnsDemandFactor: 0.65, axialLoadFactor: 0.45, technicalComplexityFactor: 0.55, recoveryClass: .high,
                              localizationKey: "exercise.name.dumbbellThruster"),
         ExerciseTemplateSpec(name: "Hip Thrust (KH)",                    equipment: .dumbbell, primaryMuscle: .glutes,     difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellHipThrust"),
