@@ -284,6 +284,10 @@ private struct AMRAPPlayerView: View {
     /// ueberspringt die Phase komplett (Einstellung war deaktiviert).
     @State private var prerollRemaining: Int
     private let prerollTotal: Int
+    /// README 2.15/23d: welche Uebung `partialReps` gerade meint - tippbar
+    /// in der Uebungsliste umzustellen. `nil` = "erste Uebung" (Default nach
+    /// Start und nach jedem "+1 Runde"), aufgeloest ueber `currentStation`.
+    @State private var currentStationID: PersistentIdentifier?
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     init(session: WorkoutSession) {
@@ -298,6 +302,17 @@ private struct AMRAPPlayerView: View {
         (day?.activeExercises ?? []).sorted { $0.orderIndex < $1.orderIndex }
     }
     private var capSeconds: Int { max(1, (day?.timeCapMinutes ?? 20)) * 60 }
+
+    /// Faellt auf die erste Uebung zurueck, wenn noch keine Station
+    /// angetippt wurde (oder die Liste zwischenzeitlich leer sein sollte) -
+    /// deckt zugleich den "+1 Runde"-Reset ab, der `currentStationID` auf
+    /// `nil` setzt statt selbst wieder auf die erste Uebung zu zeigen.
+    private var currentStation: Exercise? {
+        if let currentStationID, let match = exercises.first(where: { $0.persistentModelID == currentStationID }) {
+            return match
+        }
+        return exercises.first
+    }
 
     /// README 2.12/21a-21b: die Akzentkapsel traegt den vollen Live-Stand,
     /// nicht nur die Runden - "4 RUNDEN + 7 WDH." statt nur "4 RUNDEN". Ohne
@@ -360,10 +375,18 @@ private struct AMRAPPlayerView: View {
 
                     DeltiqSection {
                         ForEach(Array(exercises.enumerated()), id: \.element.persistentModelID) { index, exercise in
+                            // README 2.15/23d: Marker fuer die aktuelle
+                            // Station - tippbar, um sie umzustellen, statt
+                            // sie nur passiv anzuzeigen.
                             DeltiqRow(
+                                icon: exercise.persistentModelID == currentStation?.persistentModelID ? "arrow.right.circle.fill" : nil,
                                 label: exercise.displayName,
                                 value: timedFormatTargetLabel(exercise),
-                                showsDivider: index != exercises.count - 1
+                                showsDivider: index != exercises.count - 1,
+                                action: {
+                                    currentStationID = exercise.persistentModelID
+                                    DeltiqHaptics.selection()
+                                }
                             )
                         }
                         timedWorkoutHintRow(String(localized: "timedWorkout.amrap.circuitHint", bundle: .module))
@@ -455,6 +478,10 @@ private struct AMRAPPlayerView: View {
     private func saveNow() {
         session.roundsCompleted = roundsCompleted
         session.partialReps = partialReps
+        // README 2.15/23d: nur setzen, wenn es ueberhaupt etwas zuzuordnen
+        // gibt - sonst wuerde eine Session mit 0 angebrochenen Wdh. trotzdem
+        // eine "aktuelle Station" tragen, die nie zustande kam.
+        session.partialRepsExerciseName = partialReps > 0 ? currentStation?.displayName : nil
         session.completedTarget = isFinished
         session.timeFormatSnapshot = .amrap
         finishTimedSession(
@@ -484,10 +511,14 @@ private struct AMRAPPlayerView: View {
     /// Fehltipp beim Mitzaehlen war nicht erkennbar. Der Wert steht jetzt
     /// zusaetzlich, sichtbar, im rechten Slot vor dem Stepper (Muster der
     /// anderen 15 `DeltiqControlRow`-Stellen im Repo, z.B. `OneRepMaxView`).
+    /// README 2.15/23d: Label traegt jetzt den Namen der aktuellen Station
+    /// statt des generischen "Zusaetzliche Wdh." - "7" allein sagt nicht,
+    /// ob sieben Liegestuetze oder sieben Kniebeugen. Wert zeigt zusaetzlich
+    /// das Ziel dahinter ("7 / 10").
     private var partialRepsStepperRow: some View {
-        DeltiqControlRow(label: String(localized: "timedWorkout.amrap.partialReps", bundle: .module)) {
+        DeltiqControlRow(label: currentStation?.displayName ?? String(localized: "timedWorkout.amrap.partialReps", bundle: .module)) {
             HStack(spacing: 8) {
-                Text("\(partialReps)")
+                Text(partialRepsValueText)
                     .font(.system(size: 17))
                     .fitnessNumberStyle()
                 Stepper(value: $partialReps, in: 0...999) {
@@ -497,6 +528,11 @@ private struct AMRAPPlayerView: View {
                 .labelsHidden()
             }
         }
+    }
+
+    private var partialRepsValueText: String {
+        guard let currentStation else { return "\(partialReps)" }
+        return "\(partialReps) / \(currentStation.repsMin)"
     }
 
     private var roundBar: some View {
@@ -523,6 +559,11 @@ private struct AMRAPPlayerView: View {
 
                 Button {
                     roundsCompleted += 1
+                    // README 2.15/23d: eine neue Runde faengt wieder bei der
+                    // ersten Uebung an - der Zaehler der letzten Runde darf
+                    // nicht in die naechste hinueberlaufen.
+                    partialReps = 0
+                    currentStationID = nil
                     DeltiqHaptics.notify(.success)
                 } label: {
                     Text("timedWorkout.amrap.addRound", bundle: .module)

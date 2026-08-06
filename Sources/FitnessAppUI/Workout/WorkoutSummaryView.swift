@@ -944,8 +944,13 @@ public struct WorkoutSummaryView: View {
     private func timedFormatSecondaryStat(_ format: WorkoutTimeFormat) -> some View {
         switch format {
         case .amrap:
+            // README 2.15/23d: "7" allein sagt nicht, ob sieben Liegestuetze
+            // oder sieben Kniebeugen - mit Namens-Snapshot traegt der Wert
+            // die Uebung mit ("7 Liegestütze" statt nur "7"). Faellt auf die
+            // bisherige bare Zahl zurueck, wenn kein Snapshot da ist (0
+            // angebrochene Wdh. oder Session von vor diesem Feature).
             SummaryStat(label: String(localized: "timedWorkout.amrap.partialReps", bundle: .module),
-                        value: "\(session.partialReps ?? 0)")
+                        value: partialRepsSummaryValue)
         case .emom:
             // Kein Snapshot-Feld fuer den Minuten-Deckel (anders als
             // `dayName`) - v1-Vereinfachung. Degradiert auf "—", falls der
@@ -958,6 +963,15 @@ public struct WorkoutSummaryView: View {
             SummaryStat(label: String(localized: "summary.stat.exercises", bundle: .module),
                         value: "\(session.exerciseCount)")
         }
+    }
+
+    /// README 2.15/23d: "N Name" statt der bloßen Zahl, wenn ein
+    /// Namens-Snapshot vorliegt - sonst (0 angebrochene Wdh. oder Session
+    /// von vor diesem Feature) die bisherige bare Zahl.
+    private var partialRepsSummaryValue: String {
+        let reps = session.partialReps ?? 0
+        guard let name = session.partialRepsExerciseName else { return "\(reps)" }
+        return "\(reps) \(name)"
     }
 
     /// DEL-137: Gesamtdistanz aller Cardio-Sets in dieser Session. Format:

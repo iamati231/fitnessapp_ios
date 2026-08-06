@@ -60,6 +60,13 @@ public final class WorkoutSession {
     public var roundsCompleted: Int?
     /// AMRAP: Wiederholungen in die angebrochene, nicht mehr vollstaendige Runde hinein.
     public var partialReps: Int?
+    /// AMRAP: Name-Snapshot der Uebung, auf die sich `partialReps` bezieht
+    /// (README 2.15/23d) - "7" allein sagt nicht, ob sieben Liegestuetze
+    /// oder sieben Kniebeugen. Gleiches Snapshot-Muster wie `dayName`: ein
+    /// Index auf die Uebungsliste wuerde brechen, sobald der Tag spaeter
+    /// bearbeitet wird. `nil` wenn `partialReps` 0 ist (nichts zuzuordnen)
+    /// oder bei Sessions von vor diesem Feature.
+    public var partialRepsExerciseName: String?
     /// Auf Zeit: Gesamtzeit bis zum letzten Haekchen, in Sekunden.
     public var finishTimeSeconds: Int?
     /// EMOM: Anzahl der Minuten, in denen das Pensum geschafft wurde (von `day.timeCapMinutes`).
@@ -110,6 +117,7 @@ public final class WorkoutSession {
         timeFormatSnapshot: WorkoutTimeFormat? = nil,
         roundsCompleted: Int? = nil,
         partialReps: Int? = nil,
+        partialRepsExerciseName: String? = nil,
         finishTimeSeconds: Int? = nil,
         completedMinuteCount: Int? = nil,
         completedTarget: Bool = false
@@ -129,6 +137,7 @@ public final class WorkoutSession {
         self.timeFormatSnapshot = timeFormatSnapshot
         self.roundsCompleted = roundsCompleted
         self.partialReps = partialReps
+        self.partialRepsExerciseName = partialRepsExerciseName
         self.finishTimeSeconds = finishTimeSeconds
         self.completedMinuteCount = completedMinuteCount
         self.completedTarget = completedTarget
