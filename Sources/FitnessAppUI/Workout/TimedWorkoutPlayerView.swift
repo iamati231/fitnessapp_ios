@@ -484,10 +484,18 @@ private struct AMRAPPlayerView: View {
     private func saveNow() {
         session.roundsCompleted = roundsCompleted
         session.partialReps = partialReps
-        // README 2.15/23d: nur setzen, wenn es ueberhaupt etwas zuzuordnen
-        // gibt - sonst wuerde eine Session mit 0 angebrochenen Wdh. trotzdem
-        // eine "aktuelle Station" tragen, die nie zustande kam.
-        session.partialRepsExerciseName = partialReps > 0 ? currentStation?.displayName : nil
+        // Nachtrag (Verifikation nach Nutzer-Feedback 6. August): NICHT mehr
+        // an `partialReps > 0` gekoppelt - seit dem Auto-Advance ist
+        // "partialReps == 0" der GANZ NORMALE Zustand direkt nach einer
+        // komplett durchlaufenen Station (der Zaehler setzt sich dabei
+        // selbst zurueck), nicht mehr "nichts passiert". Sonst verschwinden
+        // die gerade fertig gemachten Wdh. der VORHERIGEN Station spurlos
+        // aus der Zusammenfassung, sobald genau in diesem Moment gespeichert
+        // wird. `currentStationID != nil` ist die richtige Bedingung: nil
+        // heisst wirklich "keine Station begonnen" (Start oder direkt nach
+        // `completeRound()`), alles andere ist eine echte laufende Station,
+        // auch bei 0 Wdh. bisher.
+        session.partialRepsExerciseName = currentStationID != nil ? currentStation?.displayName : nil
         session.completedTarget = isFinished
         session.timeFormatSnapshot = .amrap
         finishTimedSession(

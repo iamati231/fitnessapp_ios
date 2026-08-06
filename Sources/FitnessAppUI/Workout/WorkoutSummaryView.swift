@@ -1307,7 +1307,14 @@ public struct WorkoutSummaryView: View {
     private func amrapExerciseTotals(_ exercises: [Exercise]) -> [PersistentIdentifier: Int]? {
         let rounds = session.roundsCompleted ?? 0
         let partial = session.partialReps ?? 0
-        guard rounds > 0 || partial > 0 else { return nil }
+        // Nachtrag (Verifikation): der Namens-Snapshot allein reicht schon
+        // als "es gibt etwas zu zeigen" - seit dem Auto-Advance im Player
+        // kann eine Station mit 0 Wdh. bereits erreicht sein, waehrend
+        // `rounds` und `partial` beide noch 0 sind (z.B. direkt nach der
+        // allerersten, komplett durchlaufenen Station). Ohne diesen Zusatz
+        // wuerde die Zeile faelschlich auf den generischen Pro-Runde-Wert
+        // zurueckfallen, obwohl bereits echte Wdh. gemacht wurden.
+        guard rounds > 0 || partial > 0 || session.partialRepsExerciseName != nil else { return nil }
         let currentIndex = session.partialRepsExerciseName.flatMap { name in
             exercises.firstIndex { $0.displayName == name }
         }
