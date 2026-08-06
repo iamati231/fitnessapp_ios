@@ -24382,6 +24382,52 @@
         }
       }
     },
+    "pr.kind.fastestTime": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue WOD-Bestzeit"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New WOD best time"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeni WOD en iyi süresi"
+          }
+        }
+      }
+    },
+    "pr.kind.mostRounds": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Bestrunde"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New round record"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeni tur rekoru"
+          }
+        }
+      }
+    },
     "pr.previousShort": {
       "extractionState": "manual",
       "localizations": {

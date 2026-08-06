@@ -505,10 +505,11 @@ private struct PRHistoryRow: View {
 
     /// DEL-064: fastestPace ist lower-is-better — die Verbesserung ist ein
     /// negativer Delta, daher invertiertes Vorzeichen (siehe
-    /// PRBadge.improvementPill in WorkoutSummaryView).
+    /// PRBadge.improvementPill in WorkoutSummaryView). fastestTime (README
+    /// 2.9) ist aus demselben Grund ebenfalls lower-is-better.
     private var improvementText: String? {
         guard entry.previousValue > 0, let kind = entry.kind else { return nil }
-        let isLowerBetter = (kind == .fastestPace)
+        let isLowerBetter = (kind == .fastestPace || kind == .fastestTime)
         let raw = (entry.value - entry.previousValue) / entry.previousValue
         let improvement = isLowerBetter ? -raw : raw
         guard improvement > 0 else { return nil }
@@ -537,7 +538,18 @@ private struct PRHistoryRow: View {
             return "\(formatKm(entry.value)) km (vorher \(formatKm(entry.previousValue)) km)"
         case .fastestPace:
             return "\(formatPace(entry.value)) (vorher \(formatPace(entry.previousValue)))"
+        // Zeitformate (README 2.9) — Xcode-26-strict braucht alle Cases.
+        case .mostRounds:
+            return "\(Int(entry.value)) Runden + \(entry.reps) Wdh (vorher \(Int(entry.previousValue)) Runden)"
+        case .fastestTime:
+            return "\(formatDuration(entry.value)) (vorher \(formatDuration(entry.previousValue)))"
         }
+    }
+
+    /// Formatiert Auf-Zeit-Ergebnisse (Sekunden). Wiederverwendet
+    /// `PaceCalculator.formatDuration` statt eines eigenen mm:ss-Formatters.
+    private func formatDuration(_ totalSeconds: Double) -> String {
+        PaceCalculator.formatDuration(Int(totalSeconds.rounded()))
     }
 
     /// DEL-064: km-Formatter (Spiegelung von WorkoutSummaryView.formatKm).

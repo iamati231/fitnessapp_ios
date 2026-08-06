@@ -48,6 +48,11 @@ public enum PRCelebration {
                 return "🏆 \(formatNumber(headline.newValue)) km \(exercise)"
             case .fastestPace:
                 return "🏆 \(formatPace(headline.newValue)) \(exercise)"
+            // Zeitformate (README 2.9)
+            case .mostRounds:
+                return "🏆 \(Int(headline.newValue)) Runden \(exercise)"
+            case .fastestTime:
+                return "🏆 \(formatDuration(headline.newValue)) \(exercise)"
             }
         }()
 
@@ -87,6 +92,8 @@ public enum PRCelebration {
         case .maxHoldSeconds:   return "Neue Bestzeit! ⏱️"
         case .longestDistance:  return "Längste Distanz! 🎉"
         case .fastestPace:      return "Neue Best-Pace! 🔥"
+        case .mostRounds:       return "Neue Bestrunde! 🎉"
+        case .fastestTime:      return "Neue WOD-Bestzeit! ⚡"
         }
     }
 
@@ -106,6 +113,10 @@ public enum PRCelebration {
             return "\(record.exerciseName) — \(formatNumber(record.newValue)) km (vorher \(formatNumber(record.previousValue)) km)"
         case .fastestPace:
             return "\(record.exerciseName) — \(formatPace(record.newValue)) (vorher \(formatPace(record.previousValue)))"
+        case .mostRounds:
+            return "\(record.exerciseName) — \(Int(record.newValue)) Runden + \(record.reps) Wdh (vorher \(Int(record.previousValue)) Runden)"
+        case .fastestTime:
+            return "\(record.exerciseName) — \(formatDuration(record.newValue)) (vorher \(formatDuration(record.previousValue)))"
         }
     }
 
@@ -129,6 +140,13 @@ public enum PRCelebration {
         guard minutesPerKm.isFinite, minutesPerKm > 0 else { return "—:——" }
         let total = Int((minutesPerKm * 60.0).rounded())
         return String(format: "%d:%02d /km", total / 60, total % 60)
+    }
+
+    /// Formatiert Auf-Zeit-Ergebnisse (Sekunden). Wiederverwendet
+    /// `PaceCalculator.formatDuration`, statt einen dritten eigenen
+    /// mm:ss-Formatter zu schreiben.
+    private static func formatDuration(_ totalSeconds: Double) -> String {
+        PaceCalculator.formatDuration(Int(totalSeconds.rounded()))
     }
 
     /// Truncate exercise names so the Dynamic Island doesn't overflow. ~14 chars

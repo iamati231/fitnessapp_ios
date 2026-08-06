@@ -31,6 +31,14 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
         /// = besser). Nur valide ueber Sessions mit `totalKm >=` Mindestdistanz —
         /// PRDetector guarded gegen Sprint-Outlier.
         case fastestPace
+        /// Zeitformate (README 2.9): meiste Runden in einem AMRAP-WOD.
+        /// `exerciseName` traegt hier den WOD-/Tagesnamen (z.B. "Cindy")
+        /// statt eines Uebungsnamens — siehe `PRDetector.detectTimedFormatPR`.
+        case mostRounds
+        /// Zeitformate: schnellste Zeit in einem Auf-Zeit-WOD (Sekunden,
+        /// niedriger = besser). Kein Kind fuer EMOM - "alle Minuten
+        /// geschafft" ist pass/fail, kein maximierbarer Wert.
+        case fastestTime
 
         /// DEL-218: EINZIGE Quelle der Anzeige-Reihenfolge. Vorher existierte
         /// diese Liste vierfach: `PRDetector.kindOrder` und
@@ -55,6 +63,8 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
             .maxHoldSeconds,
             .longestDistance,
             .fastestPace,
+            .mostRounds,
+            .fastestTime,
         ]
 
         /// Rang in `displayOrder` — niedriger = beeindruckender. Cases, die

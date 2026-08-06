@@ -362,6 +362,60 @@ public enum PRDetector {
         )
     }
 
+    // MARK: - Zeitformate (README 2.9: AMRAP/EMOM/Auf Zeit)
+
+    /// Erkennt einen `.mostRounds`- oder `.fastestTime`-PR fuer einen
+    /// WOD-Versuch gegen die Historie DESSELBEN WODs (gleicher `wodName` +
+    /// `format`). Getrennt von `detectPRs`, weil die Ergebnis-Form pro
+    /// Session (Runden/Zeit) nicht auf das Set-basierte `LiftAttempt`-Modell
+    /// passt. Gleicher Grundsatz wie oben: strikt besser, keine Ties, erste
+    /// Session etabliert nur die Baseline.
+    ///
+    /// EMOM liefert bewusst nie einen PR — "alle Minuten geschafft" ist
+    /// pass/fail, kein maximierbarer Wert wie Runden oder Zeit.
+    public static func detectTimedFormatPR(
+        session: TimedWorkoutAttempt,
+        history: [TimedWorkoutAttempt]
+    ) -> PersonalRecord? {
+        let priorAttempts = history.filter {
+            $0.wodName == session.wodName && $0.format == session.format
+        }
+        guard !priorAttempts.isEmpty else { return nil }
+
+        switch session.format {
+        case .amrap:
+            guard let rounds = session.roundsCompleted else { return nil }
+            let prevBest = priorAttempts.compactMap(\.roundsCompleted).max() ?? 0
+            guard rounds > prevBest else { return nil }
+            return PersonalRecord(
+                kind: .mostRounds,
+                exerciseName: session.wodName,
+                weightKg: 0,
+                reps: session.partialReps ?? 0,
+                previousValue: Double(prevBest),
+                newValue: Double(rounds),
+                achievedAt: session.date
+            )
+
+        case .forTime:
+            guard let time = session.finishTimeSeconds else { return nil }
+            guard let prevBest = priorAttempts.compactMap(\.finishTimeSeconds).min() else { return nil }
+            guard time < prevBest else { return nil }   // Schneller = kleiner = besser.
+            return PersonalRecord(
+                kind: .fastestTime,
+                exerciseName: session.wodName,
+                weightKg: 0,
+                reps: 0,
+                previousValue: Double(prevBest),
+                newValue: Double(time),
+                achievedAt: session.date
+            )
+
+        case .emom:
+            return nil
+        }
+    }
+
     // MARK: Helpers
 
     private static func estimated1RM(_ lift: LiftAttempt) -> Double? {

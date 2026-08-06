@@ -1366,17 +1366,19 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plans.list.title` | Pläne | Plans | Planlar |
 | `plans.new` | Neuer Plan | New Plan | Yeni Plan |
 
-## `pr.*`  (9 Keys)
+## `pr.*`  (11 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `pr.kind.bestSet` | Neuer Bestsatz (Volumen) | New best set (volume) | Yeni en iyi set (hacim) |
 | `pr.kind.estimated1RM` | Neuer 1RM (geschätzt) | New 1RM (estimated) | Yeni 1TM (tahmini) |
 | `pr.kind.fastestPace` | Neue Best-Pace | New best pace | Yeni en iyi tempo |
+| `pr.kind.fastestTime` | Neue WOD-Bestzeit | New WOD best time | Yeni WOD en iyi süresi |
 | `pr.kind.heaviestWeight` | Neues Maximalgewicht | New max weight | Yeni maksimum ağırlık |
 | `pr.kind.longestDistance` | Längste Distanz | Longest distance | En uzun mesafe |
 | `pr.kind.maxHoldSeconds` | Neue Bestzeit | New best time | Yeni en iyi süre |
 | `pr.kind.maxReps` | Neuer Reps-Rekord | New reps record | Yeni tekrar rekoru |
+| `pr.kind.mostRounds` | Neue Bestrunde | New round record | Yeni tur rekoru |
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 

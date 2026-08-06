@@ -1405,9 +1405,9 @@ private struct PRBadge: View {
     }
 
     /// DEL-064: kind-aware Improvement-Prozent. Lower-is-better-Kinds
-    /// (`.fastestPace`) invertieren den Delta-Vorzug.
+    /// (`.fastestPace`, `.fastestTime`) invertieren den Delta-Vorzug.
     private var improvementPill: String {
-        let isLowerBetter: Bool = (record.kind == .fastestPace)
+        let isLowerBetter: Bool = (record.kind == .fastestPace || record.kind == .fastestTime)
         let raw = record.deltaPercent
         let improvement = isLowerBetter ? -raw : raw
         return "+\(formatDelta(improvement))"
@@ -1427,6 +1427,9 @@ private struct PRBadge: View {
         // DEL-064 Cardio-PRs
         case .longestDistance:  "figure.run.circle.fill"
         case .fastestPace:      "hare.fill"
+        // Zeitformate (README 2.9)
+        case .mostRounds:       "repeat.circle.fill"
+        case .fastestTime:      "stopwatch.fill"
         }
     }
 
@@ -1439,6 +1442,8 @@ private struct PRBadge: View {
         case .maxHoldSeconds:   String(localized: "pr.kind.maxHoldSeconds",  bundle: .module)
         case .longestDistance:  String(localized: "pr.kind.longestDistance", bundle: .module)
         case .fastestPace:      String(localized: "pr.kind.fastestPace",     bundle: .module)
+        case .mostRounds:       String(localized: "pr.kind.mostRounds",      bundle: .module)
+        case .fastestTime:      String(localized: "pr.kind.fastestTime",     bundle: .module)
         }
     }
 
@@ -1483,7 +1488,21 @@ private struct PRBadge: View {
             return "\(formatKm(record.newValue)) km (\(prev) \(formatKm(record.previousValue)) km)"
         case .fastestPace:
             return "\(formatPace(record.newValue)) (\(prev) \(formatPace(record.previousValue)))"
+
+        // Zeitformate (README 2.9)
+        case .mostRounds:
+            let prevRounds = Int(record.previousValue.rounded())
+            return "\(Int(record.newValue)) Runden + \(record.reps) \(repUnit) (\(prev) \(prevRounds) Runden)"
+        case .fastestTime:
+            return "\(formatDuration(record.newValue)) (\(prev) \(formatDuration(record.previousValue)))"
         }
+    }
+
+    /// Formatiert Auf-Zeit-Ergebnisse (Sekunden). Wiederverwendet
+    /// `PaceCalculator.formatDuration` statt eines eigenen mm:ss-Formatters
+    /// (dieselbe Funktion ruft die Datei bereits an anderer Stelle, Z. 1923).
+    private func formatDuration(_ totalSeconds: Double) -> String {
+        PaceCalculator.formatDuration(Int(totalSeconds.rounded()))
     }
 
     /// DEL-064: km-Formatter — Integer wenn ganzzahlig, sonst 2 Nachkommastellen.

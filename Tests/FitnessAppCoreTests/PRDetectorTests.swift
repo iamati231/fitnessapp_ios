@@ -430,6 +430,91 @@ final class PRDetectorTests: XCTestCase {
         XCTAssertTrue(prs.contains { $0.kind == .heaviestWeight })
     }
 
+    // MARK: - Zeitformate (README 2.9): detectTimedFormatPR
+
+    private func amrapAttempt(rounds: Int, partial: Int = 0, wod: String = "Cindy", date: Date? = nil) -> TimedWorkoutAttempt {
+        TimedWorkoutAttempt(wodName: wod, format: .amrap, date: date ?? now, roundsCompleted: rounds, partialReps: partial)
+    }
+
+    private func forTimeAttempt(seconds: Int, wod: String = "Fran", date: Date? = nil) -> TimedWorkoutAttempt {
+        TimedWorkoutAttempt(wodName: wod, format: .forTime, date: date ?? now, finishTimeSeconds: seconds)
+    }
+
+    func testAmrapFirstAttemptProducesNoPR() {
+        let pr = PRDetector.detectTimedFormatPR(session: amrapAttempt(rounds: 10), history: [])
+        XCTAssertNil(pr, "Erste Session an diesem WOD hat keine Baseline zum Schlagen")
+    }
+
+    func testAmrapDifferentWodNameIsNotABaseline() {
+        let pr = PRDetector.detectTimedFormatPR(
+            session: amrapAttempt(rounds: 10, wod: "Cindy"),
+            history: [amrapAttempt(rounds: 5, wod: "Annie", date: weekAgo)]
+        )
+        XCTAssertNil(pr, "Historie eines ANDEREN WODs darf keine Baseline liefern")
+    }
+
+    func testAmrapMoreRoundsIsAPR() {
+        let pr = PRDetector.detectTimedFormatPR(
+            session: amrapAttempt(rounds: 13, partial: 4),
+            history: [amrapAttempt(rounds: 12, partial: 8, date: weekAgo)]
+        )
+        XCTAssertEqual(pr?.kind, .mostRounds)
+        XCTAssertEqual(pr?.newValue, 13)
+        XCTAssertEqual(pr?.previousValue, 12)
+        XCTAssertEqual(pr?.reps, 4, "reps traegt die aktuellen partialReps fuer die Anzeige")
+    }
+
+    func testAmrapFewerOrEqualRoundsIsNotAPR() {
+        let sameRounds = PRDetector.detectTimedFormatPR(
+            session: amrapAttempt(rounds: 12, partial: 8),
+            history: [amrapAttempt(rounds: 12, partial: 2, date: weekAgo)]
+        )
+        XCTAssertNil(sameRounds, "Gleiche Rundenzahl ist kein PR, auch mit mehr Restwiederholungen (v1-Vereinfachung)")
+
+        let fewerRounds = PRDetector.detectTimedFormatPR(
+            session: amrapAttempt(rounds: 11),
+            history: [amrapAttempt(rounds: 12, date: weekAgo)]
+        )
+        XCTAssertNil(fewerRounds)
+    }
+
+    func testForTimeFasterIsAPR() {
+        let pr = PRDetector.detectTimedFormatPR(
+            session: forTimeAttempt(seconds: 300),
+            history: [forTimeAttempt(seconds: 330, date: weekAgo)]
+        )
+        XCTAssertEqual(pr?.kind, .fastestTime)
+        XCTAssertEqual(pr?.newValue, 300)
+        XCTAssertEqual(pr?.previousValue, 330)
+    }
+
+    func testForTimeSlowerOrEqualIsNotAPR() {
+        let slower = PRDetector.detectTimedFormatPR(
+            session: forTimeAttempt(seconds: 340),
+            history: [forTimeAttempt(seconds: 330, date: weekAgo)]
+        )
+        XCTAssertNil(slower)
+
+        let tied = PRDetector.detectTimedFormatPR(
+            session: forTimeAttempt(seconds: 330),
+            history: [forTimeAttempt(seconds: 330, date: weekAgo)]
+        )
+        XCTAssertNil(tied, "Identische Zeit ist kein PR — strict > only, analog zu Kraft-PRs")
+    }
+
+    func testEmomNeverProducesAPR() {
+        let attempt = TimedWorkoutAttempt(
+            wodName: "EMOM 12", format: .emom, date: now, roundsCompleted: 12
+        )
+        let history = TimedWorkoutAttempt(
+            wodName: "EMOM 12", format: .emom, date: weekAgo, roundsCompleted: 6
+        )
+        XCTAssertNil(
+            PRDetector.detectTimedFormatPR(session: attempt, history: [history]),
+            "EMOM ist pass/fail, kein maximierbarer Wert — bewusst kein PR-Kind"
+        )
+    }
+
     // MARK: - DEL-218 displayOrder
 
     /// Regression: `displayOrder` MUSS jeden Case enthalten. Vor DEL-218 lag
