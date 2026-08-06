@@ -25163,6 +25163,38 @@
         }
       }
     },
+    "summary.hero.unit.rounds": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Runden geschafft" } },
+        "en": { "stringUnit": { "state": "translated", "value": "rounds completed" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "tamamlanan tur" } }
+      }
+    },
+    "summary.hero.unit.minutesDone": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Minuten geschafft" } },
+        "en": { "stringUnit": { "state": "translated", "value": "minutes done" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "tamamlanan dakika" } }
+      }
+    },
+    "summary.stat.minuteTarget": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Minuten-Ziel" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Minute target" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dakika hedefi" } }
+      }
+    },
+    "summary.stat.exercises": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Übungen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Exercises" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Egzersizler" } }
+      }
+    },
     "plan.metadata.days.one": {
       "extractionState": "manual",
       "localizations": {

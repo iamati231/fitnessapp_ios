@@ -888,18 +888,53 @@ public struct WorkoutSummaryView: View {
     /// DEL-137: zweite Sekundaer-Stat-Spalte. Drei-Wege-Branch identisch
     /// zum aktiven `statsCard` in ActiveWorkoutView — selbe UI-Sprache
     /// fuer Live + Replay.
+    ///
+    /// README 2.9: Zeitformat-Sessions haben keine `sessionCategory` (die
+    /// liest aus `logs`, und Zeitformat-Tage loggen nie ExerciseLogs) -
+    /// eigener Branch VOR dem Switch, sonst kippt das faelschlich auf
+    /// `.pureStrength` (0 Saetze, siehe DEL-093-Praezedenzfall bei Ad-Hoc-
+    /// Cardio fuer dasselbe Muster).
     @ViewBuilder
     private var secondarySummaryStat: some View {
-        switch session.sessionCategory {
-        case .pureCardio:
-            SummaryStat(label: String(localized: "active.stats.avgPace", bundle: .module),
-                        value: formattedAvgPace)
-        case .mixed:
-            SummaryStat(label: String(localized: "active.stats.distance", bundle: .module),
-                        value: formattedTotalDistance)
-        case .pureStrength:
-            SummaryStat(label: String(localized: "active.stats.sets", bundle: .module),
-                        value: "\(session.totalSets)")
+        if let format = session.timeFormatSnapshot {
+            timedFormatSecondaryStat(format)
+        } else {
+            switch session.sessionCategory {
+            case .pureCardio:
+                SummaryStat(label: String(localized: "active.stats.avgPace", bundle: .module),
+                            value: formattedAvgPace)
+            case .mixed:
+                SummaryStat(label: String(localized: "active.stats.distance", bundle: .module),
+                            value: formattedTotalDistance)
+            case .pureStrength:
+                SummaryStat(label: String(localized: "active.stats.sets", bundle: .module),
+                            value: "\(session.totalSets)")
+            }
+        }
+    }
+
+    /// README 2.9: dritte Zeitformat-Metrik neben Dauer (Spalte 1, bleibt
+    /// unveraendert) und dem Hero-Stat unten. AMRAP hat mit den Restwieder-
+    /// holungen eine echte zweite Zahl; EMOM/Auf-Zeit haben das nicht (das
+    /// Ergebnis IST schon der Hero-Stat) - EMOM zeigt darum den Minuten-
+    /// Deckel als Kontext, Auf-Zeit die Anzahl Uebungen im Zirkel.
+    @ViewBuilder
+    private func timedFormatSecondaryStat(_ format: WorkoutTimeFormat) -> some View {
+        switch format {
+        case .amrap:
+            SummaryStat(label: String(localized: "timedWorkout.amrap.partialReps", bundle: .module),
+                        value: "\(session.partialReps ?? 0)")
+        case .emom:
+            // Kein Snapshot-Feld fuer den Minuten-Deckel (anders als
+            // `dayName`) - v1-Vereinfachung. Degradiert auf "—", falls der
+            // Tag inzwischen geloescht wurde (`day`-Relationship ist
+            // `.nullify`), statt eine zweite Snapshot-Spalte einzufuehren.
+            let target = session.day?.timeCapMinutes
+            SummaryStat(label: String(localized: "summary.stat.minuteTarget", bundle: .module),
+                        value: target.map { "\($0)" } ?? "—")
+        case .forTime:
+            SummaryStat(label: String(localized: "summary.stat.exercises", bundle: .module),
+                        value: "\(session.exerciseCount)")
         }
     }
 
@@ -955,6 +990,9 @@ public struct WorkoutSummaryView: View {
     }
 
     private var heroStat: HeroStat {
+        if let format = session.timeFormatSnapshot {
+            return timedFormatHeroStat(format)
+        }
         switch session.sessionCategory {
         case .pureCardio:
             let km = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
@@ -968,6 +1006,22 @@ public struct WorkoutSummaryView: View {
                             unitKey: "summary.hero.unit.minutes")
         case .mixed, .pureStrength:
             return HeroStat(value: formattedVolume, unitKey: "summary.hero.unit.volumeKg")
+        }
+    }
+
+    /// README 2.9: das Ergebnis selbst ist der Hero-Stat, analog zu Volumen-
+    /// kg bei Strength bzw. km bei Cardio. Auf-Zeit nutzt `pillLabel` als
+    /// Unit-Text ("Auf Zeit"/"For Time") statt eines eigenen Keys - identisch
+    /// zur Kontextzeile im Player.
+    private func timedFormatHeroStat(_ format: WorkoutTimeFormat) -> HeroStat {
+        switch format {
+        case .amrap:
+            return HeroStat(value: "\(session.roundsCompleted ?? 0)", unitKey: "summary.hero.unit.rounds")
+        case .emom:
+            return HeroStat(value: "\(session.completedMinuteCount ?? 0)", unitKey: "summary.hero.unit.minutesDone")
+        case .forTime:
+            return HeroStat(value: PaceCalculator.formatDuration(session.finishTimeSeconds ?? 0),
+                            unitKey: "timedWorkout.forTime.pillLabel")
         }
     }
 
@@ -1020,7 +1074,15 @@ public struct WorkoutSummaryView: View {
 
     @ViewBuilder
     private var breakdownSections: some View {
-        if exercisesWithLogs.isEmpty {
+        // README 2.9: Zeitformat-Sessions loggen nie ExerciseLogs (das
+        // Ergebnis lebt in roundsCompleted/finishTimeSeconds/... statt
+        // Set-Historie) - `exercisesWithLogs.isEmpty` waere hier IMMER
+        // true und wuerde faelschlich "Keine Saetze geloggt." zeigen, als
+        // waere etwas schiefgelaufen. Eigener Read-Only-Zirkel-Branch statt
+        // des Leer-Zustands.
+        if let format = session.timeFormatSnapshot {
+            timedFormatCircuitSection(format)
+        } else if exercisesWithLogs.isEmpty {
             Section {
                 Text("summary.setsEmpty", bundle: .module)
                     .foregroundStyle(Color.Deltiq.textSecondary)
@@ -1040,7 +1102,10 @@ public struct WorkoutSummaryView: View {
         // gerade fertig und soll nicht zurueck zu mehr Volumen geprompted
         // werden. Tap → ExercisePicker Sheet → onSelect erstellt eine
         // orphan Exercise (day=nil, kein Plan-Polluting) + N Default-Logs.
-        if isReadOnly && isEditingHistory {
+        // README 2.9: bei Zeitformaten ausgeblendet - es gibt kein Set-
+        // basiertes Log, in das sich eine hinzugefuegte Uebung einreihen
+        // koennte.
+        if isReadOnly && isEditingHistory && session.timeFormatSnapshot == nil {
             Section {
                 Button {
                     showingAddExercisePicker = true
@@ -1060,6 +1125,51 @@ public struct WorkoutSummaryView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(Color.Deltiq.textSecondary)
             }
+        }
+    }
+
+    /// README 2.9: Read-only Referenzliste der Zirkel-Uebungen (Name +
+    /// Wdh./Runden), damit man Wochen spaeter noch sieht, WAS man gemacht
+    /// hat - ohne eine Set-Historie zu erfinden, die es fuer Zeitformate
+    /// nie gab. Nur sichtbar, solange die Plan-Beziehung noch lebt
+    /// (`day` ist `.nullify` bei Tag-Loeschung); kein eigenes Snapshot-
+    /// Feld dafuer, das waere ein weiteres, nie angefragtes Datenfeld nur
+    /// fuer diese Erinnerungshilfe.
+    @ViewBuilder
+    private func timedFormatCircuitSection(_ format: WorkoutTimeFormat) -> some View {
+        let exercises = (session.day?.activeExercises ?? []).sorted { $0.orderIndex < $1.orderIndex }
+        if !exercises.isEmpty {
+            Section {
+                ForEach(exercises, id: \.persistentModelID) { exercise in
+                    HStack(spacing: 8) {
+                        Text(exercise.displayName)
+                            .font(.system(size: 15))
+                            .foregroundStyle(Color.primary)
+                        Spacer()
+                        Text(circuitValueLabel(exercise, format: format))
+                            .font(.system(size: 15))
+                            .fitnessNumberStyle()
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    }
+                    .listRowBackground(Color.Deltiq.surface)
+                }
+            } header: {
+                sectionHeader(String(localized: "summary.stat.exercises", bundle: .module))
+            }
+            .listRowSeparatorTint(Color.Deltiq.divider)
+        }
+    }
+
+    /// AMRAP/EMOM zeigen Wdh. pro Durchgang (Circuit wiederholt sich, bis
+    /// die Zeit abgelaufen ist); Auf Zeit zeigt Runden×Wdh. (Circuit laeuft
+    /// genau einmal ueber die feste Rundenzahl).
+    private func circuitValueLabel(_ exercise: Exercise, format: WorkoutTimeFormat) -> String {
+        let reps = "\(exercise.repsMin) " + String(localized: "unit.reps.short", bundle: .module)
+        switch format {
+        case .amrap, .emom:
+            return reps
+        case .forTime:
+            return "\(max(exercise.sets, 1))× \(reps)"
         }
     }
 

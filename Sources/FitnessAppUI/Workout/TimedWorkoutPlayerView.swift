@@ -58,6 +58,10 @@ private func finishTimedSession(
     session.endTime = endTime
     session.durationMinutes = max(0, Int(endTime.timeIntervalSince(session.startTime) / 60))
     session.isCompleted = true
+    // Sonst bleibt's beim init-Default 0 - ActiveWorkoutView.finishWorkout()
+    // setzt das analog aus der Plan-Uebungsliste (siehe dort), Zeitformat-
+    // Tage haben aber nie ExerciseLogs, aus denen es sich sonst herleiten liesse.
+    session.exerciseCount = session.day?.activeExercises.count ?? 0
 
     let detectedPR = PersonalRecordSync.recordTimedFormatPR(for: session, in: modelContext)
     let celebration = prCelebrationsEnabled

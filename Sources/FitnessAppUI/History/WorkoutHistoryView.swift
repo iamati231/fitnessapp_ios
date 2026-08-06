@@ -173,7 +173,19 @@ struct HistorySessionRow: View {
 
     @ViewBuilder
     private var iconBadge: some View {
-        if isCardioSession {
+        // README 2.9: eigenes Icon fuer AMRAP/EMOM/Auf Zeit, analog zum
+        // Cardio-/Rest-Sonderfall darueber - ein gemeinsames "stopwatch"
+        // reicht, die Format-Differenzierung passiert schon in statsLine.
+        if session.timeFormatSnapshot != nil {
+            VStack {
+                Image(systemName: "stopwatch")
+                    .font(.title2)
+                    .foregroundStyle(.white)
+            }
+            .frame(width: 44, height: 44)
+            .background(Color.deltiqOrange.gradient)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        } else if isCardioSession {
             // Cardio-Tag: figure.run-Symbol + Orange. Datum wandert als
             // kleiner Untertitel in die statsLine? Nein — wir behalten den
             // Datums-Stempel, aber mit Orange-Tint.
@@ -229,8 +241,30 @@ struct HistorySessionRow: View {
     ///   * pureCardio   → Dauer · Distanz · Ø-Pace
     ///   * mixed        → Dauer · Volumen · Distanz (Pace + Saetze entfallen
     ///     aus Platzgruenden; User sieht beide Hauptmetriken sofort)
+    ///
+    /// README 2.9: vierter State fuer Zeitformate, VOR `sessionCategory`
+    /// geprueft - die liest aus `logs` und wuerde Zeitformat-Sessions (nie
+    /// ExerciseLogs) faelschlich als "0 Saetze · 0 kg" lesen.
     @ViewBuilder
     private var statsLine: some View {
+        if let format = session.timeFormatSnapshot {
+            HStack(spacing: 6) {
+                Image(systemName: "clock")
+                Text("\(session.durationMinutes) \(String(localized: "unit.minutes.short", bundle: .module))")
+                Text("•")
+                Image(systemName: timedFormatIcon(format))
+                Text(timedFormatValueText(format))
+            }
+            .font(.caption)
+            .foregroundStyle(Color.Deltiq.textSecondary)
+            .monospacedDigit()
+        } else {
+            timedFormatAgnosticStatsLine
+        }
+    }
+
+    @ViewBuilder
+    private var timedFormatAgnosticStatsLine: some View {
         switch session.sessionCategory {
         case .pureCardio:
             HStack(spacing: 6) {
@@ -276,6 +310,25 @@ struct HistorySessionRow: View {
             .font(.caption)
             .foregroundStyle(Color.Deltiq.textSecondary)
             .monospacedDigit()
+        }
+    }
+
+    private func timedFormatIcon(_ format: WorkoutTimeFormat) -> String {
+        switch format {
+        case .amrap: return "repeat"
+        case .emom: return "checkmark.circle"
+        case .forTime: return "flag.checkered"
+        }
+    }
+
+    /// Bare Zahl statt Zahl+Einheit — gleiche Konvention wie "list.number"
+    /// oben fuer Saetze: das Icon traegt die Bedeutung, der Wert bleibt kurz
+    /// genug fuer die einzeilige Kompakt-Zeile.
+    private func timedFormatValueText(_ format: WorkoutTimeFormat) -> String {
+        switch format {
+        case .amrap: return "\(session.roundsCompleted ?? 0)"
+        case .emom: return "\(session.completedMinuteCount ?? 0)"
+        case .forTime: return PaceCalculator.formatDuration(session.finishTimeSeconds ?? 0)
         }
     }
 

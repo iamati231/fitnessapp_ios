@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1507 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1511 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1507 / 1507** (100%) | 0 |
-| 🇬🇧 English (EN) | **1507 / 1507** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1507 / 1507** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1511 / 1511** (100%) | 0 |
+| 🇬🇧 English (EN) | **1511 / 1511** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1511 / 1511** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1634,7 +1634,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `sex.female` | Weiblich | Female | Kadın |
 | `sex.male` | Männlich | Male | Erkek |
 
-## `summary.*`  (51 Keys)
+## `summary.*`  (55 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1671,6 +1671,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.hero.title` | Training abgeschlossen | Workout completed | Antrenman Tamamlandı |
 | `summary.hero.unit.km` | km Cardio | km cardio | km kardiyo |
 | `summary.hero.unit.minutes` | Minuten Training | minutes training | dakika antrenman |
+| `summary.hero.unit.minutesDone` | Minuten geschafft | minutes done | tamamlanan dakika |
+| `summary.hero.unit.rounds` | Runden geschafft | rounds completed | tamamlanan tur |
 | `summary.hero.unit.volumeKg` | kg Volumen | kg volume | kg hacim |
 | `summary.menu.deleteSession` | Training löschen | Delete Workout | Antrenmanı sil |
 | `summary.note.footer` | Tauchen später in der History pro Session auf — gut für Form-Cues und Verletzungs-Tracking. | Show up later in history per session — useful for form cues and injury tracking. | Geçmişte oturum başına görünür — form ipuçları ve sakatlık takibi için faydalı. |
@@ -1686,6 +1688,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.section.stats` | Zusammenfassung | Summary | Özet |
 | `summary.setsEmpty` | Keine Sätze geloggt. | No sets logged. | Set kaydedilmedi. |
 | `summary.setsHeader` | Sätze | Sets | Setler |
+| `summary.stat.exercises` | Übungen | Exercises | Egzersizler |
+| `summary.stat.minuteTarget` | Minuten-Ziel | Minute target | Dakika hedefi |
 | `summary.title` | Zusammenfassung | Summary | Özet |
 | `summary.toolbar.done` | Fertig | Done | Tamam |
 | `summary.toolbar.edit` | Bearbeiten | Edit | Düzenle |
