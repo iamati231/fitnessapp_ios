@@ -367,19 +367,30 @@ public struct ActiveWorkoutView: View {
     @ViewBuilder
     private var activeContextRow: some View {
         let exercises = session.day.map { orderedExercises(in: $0) } ?? []
-        let secondPillText: String = {
+        // Signature-Geruest 2.16: die Volumen-Kapsel erschien bisher auch VOR
+        // dem ersten geloggten Satz ("VOLUMEN 0,00 KG") - erscheint jetzt erst,
+        // sobald wirklich etwas geloggt ist. Die Distanz-Kapsel am Cardio-Tag
+        // bleibt unbedingt (dort gab es keinen gemeldeten Leerlauf-Fall).
+        let currentVolumeKg = session.logs.reduce(0.0) { $0 + $1.weight * Double($1.reps) }
+        let secondPill: DeltiqContextItem? = {
             if dayCategory == .pureCardio {
-                return String(
-                    format: String(localized: "active.context.distance", bundle: .module),
-                    formatTotalDistance(stripUnit: true)
+                return DeltiqContextItem(
+                    String(
+                        format: String(localized: "active.context.distance", bundle: .module),
+                        formatTotalDistance(stripUnit: true)
+                    ),
+                    style: .neutral
                 )
             }
-            return String(
-                format: String(localized: "active.context.volume", bundle: .module),
-                formatVolume()
+            guard currentVolumeKg > 0 else { return nil }
+            return DeltiqContextItem(
+                String(
+                    format: String(localized: "active.context.volume", bundle: .module),
+                    formatVolume()
+                ),
+                style: .neutral
             )
         }()
-        let secondPill = DeltiqContextItem(secondPillText, style: .neutral)
 
         if !exercises.isEmpty {
             if currentPageIndex < exercises.count {
@@ -392,14 +403,14 @@ public struct ActiveWorkoutView: View {
                 let exerciseText = exerciseTemplate
                     .replacingOccurrences(of: "%1$d", with: "\(currentPageIndex + 1)")
                     .replacingOccurrences(of: "%2$d", with: "\(exercises.count)")
-                DeltiqContextRow([
-                    DeltiqContextItem(exerciseText, style: .accent),
-                    secondPill
-                ])
+                var items = [DeltiqContextItem(exerciseText, style: .accent)]
+                if let secondPill { items.append(secondPill) }
+                DeltiqContextRow(items)
             } else {
                 // Finish-Seite (currentPageIndex == exercises.count): kein
-                // "Uebung x/y" mehr sinnvoll, nur noch die zweite Kapsel.
-                DeltiqContextRow([secondPill])
+                // "Uebung x/y" mehr sinnvoll, nur noch die zweite Kapsel (falls
+                // vorhanden).
+                DeltiqContextRow(secondPill.map { [$0] } ?? [])
             }
         }
     }
@@ -815,7 +826,7 @@ public struct ActiveWorkoutView: View {
 
     private func formatVolume() -> String {
         let total = session.logs.reduce(0.0) { $0 + $1.weight * Double($1.reps) }
-        return total.truncated(to: 0).formattedTwoDecimals
+        return total.truncated(to: 0).formattedNoDecimals
     }
 
     // MARK: Rest-timer

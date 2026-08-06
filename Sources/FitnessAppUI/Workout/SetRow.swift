@@ -8,11 +8,11 @@ import UIKit
 
 /// Single row inside an `ExerciseCard` — represents one planned set of an exercise.
 ///
-/// **DEL-045 redesign:**
+/// **DEL-045 redesign, Signature-Geruest 2.16 aktualisiert:**
 ///   - Strength + Cardio: kompaktes Single-Line-Layout
-///     `[Satz #] [kg-Input] [Wdh-Input] [Spacer] [Checkmark-Icon]`
-///     plus RIR-Slider in einem Container mit FESTER HOEHE darunter (verhindert
-///     Layout-Shifts beim Toggle in den completed-State).
+///     `[Satz #] [kg-Input] [Wdh-Input] [Spacer] [RIR-Kapsel] [Checkmark-Icon]`
+///     plus optional ausklappbarem RIR-Regler darunter (nur bei Bedarf, kein
+///     fester Platzverbrauch mehr fuer ruhende Saetze).
 ///   - Tap auf einen completed-Set → ExerciseLog wird geloescht, Row wechselt
 ///     zurueck in den editierbaren Status (Tippfehler-Korrektur).
 ///   - Time-based (Plank, Wall Sit, etc.): eigener Flow mit Countdown-Overlay
@@ -60,6 +60,10 @@ struct SetRow: View {
     @State private var reps: Int = 0
     @State private var rir: Float = 2.0
     @State private var didInit = false
+    /// Signature-Geruest 2.16: der RIR-Regler ist nur noch bei Bedarf
+    /// eingeblendet (Tap auf `rirCapsule`), statt permanent eine feste
+    /// Statuszone zu belegen.
+    @State private var rirExpanded = false
 
     /// DEL-058 Cardio-State. Wird nur initialisiert + befuellt wenn die
     /// Uebung `.isCardio == true` ist; ansonsten bleiben die Felder leer.
@@ -160,9 +164,12 @@ struct SetRow: View {
 
     // MARK: - DEL-045 Compact Set Row (Strength + Cardio)
 
-    /// Kompaktes Layout: Satz-Nummer, KG, Wdh, Spacer, Checkmark — alle in
-    /// einer HStack. RIR-Slider darunter in einem ZStack mit fester Hoehe,
-    /// damit das Toggle isCompleted↔editable keinen Layout-Shift triggert.
+    /// Kompaktes Layout: Satz-Nummer, KG, Wdh, Spacer, RIR-Kapsel, Checkmark
+    /// — alle in einer HStack. Darunter zwei OPTIONALE Zeilen (Signature-
+    /// Geruest 2.16): der ausgeklappte RIR-Regler (Tap auf die Kapsel) und
+    /// der "letztes Mal"-Vergleich (nur beim aktiven Satz). Ein ruhender Satz
+    /// (completed oder upcoming, kein Regler offen) braucht dadurch keine
+    /// feste zweite Zone mehr.
     ///
     /// UX-203 Layering der Visual-States:
     ///   * completed → ganze Row Opacity 0.55, kein Background
@@ -171,7 +178,7 @@ struct SetRow: View {
     ///                 welche Row als naechstes dran ist.
     ///   * upcoming  → neutral, kein Background, kein Akzent
     private var compactSetRow: some View {
-        VStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: 4) {
             // Layout-Fix 2026-05-21: HStack-Spacing 12 → 8. Auf iPhone-SE
             // (375pt Bildschirm) ist die HStack mit 7 Children (Set-Nummer,
             // weightInput, "KG", plateCalcButton, repsInput, "WDH",
@@ -208,10 +215,20 @@ struct SetRow: View {
                     // nur Sichtbarkeit + Tap-Empfaenglichkeit per Opacity
                     // + allowsHitTesting gegated. Platz bleibt reserviert,
                     // kein Sprung mehr.
-                    let plateShown = (weight ?? 0) > 0 && !exercise.isTimeBased
-                    plateCalculatorButton(weight: weight ?? 0)
-                        .opacity(plateShown ? 1 : 0)
-                        .allowsHitTesting(plateShown)
+                    // Signature-Geruest 2.17: die Aufladung selbst gehoert
+                    // strukturell aus dem Layout (`if isBarbellExercise`),
+                    // nicht nur per Opacity ausgeblendet — sonst bliebe bei
+                    // Kurzhantel/Maschine/Kabel/Kettlebell/Band/Bodyweight
+                    // dauerhaft eine leere Luecke, statt dass `repsInput`
+                    // aufrueckt. `equipment` aendert sich waehrend der
+                    // Lebensdauer einer sichtbaren Row nie, also kein neuer
+                    // Jitter-Risiko wie beim `weight`-Tipp-Gate oben.
+                    if isBarbellExercise {
+                        let plateShown = (weight ?? 0) > 0 && !exercise.isTimeBased
+                        plateCalculatorButton(weight: weight ?? 0)
+                            .opacity(plateShown ? 1 : 0)
+                            .allowsHitTesting(plateShown)
+                    }
                 }
 
                 repsInput
@@ -225,6 +242,7 @@ struct SetRow: View {
 
                 Spacer(minLength: 6)
 
+                rirCapsule
                 checkmarkButton
             }
             // Layout-Fix 2026-05-21 (Iteration 2): minHeight 44 auf der
@@ -235,15 +253,25 @@ struct SetRow: View {
             // und matched Apple's HIG-Minimum-Touch-Target-Size.
             .frame(minHeight: 44)
 
-            // Status-Container mit FESTER HOEHE — verhindert Layout-Shift beim
-            // Toggle isCompleted↔editable. UX-203: 28 → 38 fuer den RIR-
-            // Slider, damit Slider + Wert + previous-Hint nicht mehr in
-            // einer 28pt-Klemme stecken.
-            statusZone
-                .frame(height: 38)
-                .padding(.leading, 36)
+            // Signature-Geruest 2.16: der Regler belegt nur noch Platz,
+            // wenn er per Tap auf `rirCapsule` aufgeklappt wurde.
+            if rirExpanded, !isCompleted {
+                rirSliderRow
+                    .padding(.leading, 36)
+                    .transition(.opacity)
+            }
+
+            // Signature-Geruest 2.16: der "letztes Mal"-Vergleich gilt nur
+            // noch fuer den AKTIVEN Satz, in voller Laenge auf eigener
+            // Zeile — vorher stand er bei JEDEM nicht abgeschlossenen Satz
+            // inline hinter dem RIR-Regler und wurde dort abgeschnitten
+            // (einziger Schutz war `.lineLimit(1)` + `.minimumScaleFactor`).
+            if isActiveSet, let prev = previousLog {
+                previousHintLine(prev)
+                    .padding(.leading, 36)
+            }
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 4)
         .padding(.horizontal, 8)
         .background(
             // Signature-Geruest 2.2: die aktive Zeile bekommt Radius 12
@@ -271,6 +299,12 @@ struct SetRow: View {
         .onTapGesture {
             if isCompleted {
                 withAnimation(.easeInOut(duration: 0.2)) {
+                    // Verifikation (Review): `rirExpanded` ueberlebt sonst
+                    // einen Log→Unlog-Zyklus (die View-Identitaet bleibt
+                    // ueber `structureToken` stabil) - ohne Reset klappt der
+                    // Regler nach dem Un-Loggen ungefragt wieder auf, obwohl
+                    // der User die Kapsel gar nicht erneut angetippt hat.
+                    rirExpanded = false
                     onUnlog()
                 }
             }
@@ -295,6 +329,16 @@ struct SetRow: View {
         if isCompleted { return .secondary }
         if isActiveSet { return Color.deltiqOrange }
         return .primary
+    }
+
+    /// Signature-Geruest 2.17: Barbell-Detection nach demselben Fallback-
+    /// Muster wie `ExerciseCard.isBarbellExercise` — DEL-159-Override
+    /// gewinnt, sonst Library-Lookup ueber den System-Namen.
+    private var isBarbellExercise: Bool {
+        if let equipment = exercise.equipment {
+            return equipment == .barbell
+        }
+        return ExerciseLibraryData.all.first { $0.name == exercise.name }?.equipment == .barbell
     }
 
     /// DEL-085: Quick-Access-Button fuer den Plate-Calculator. Wird neben
@@ -453,105 +497,85 @@ struct SetRow: View {
         return Color.secondary.opacity(0.5)
     }
 
-    /// ZStack mit fester Hoehe (per `.frame(height: 28)` am Caller).
-    /// - editable: RIR-Slider mit Label
-    /// - completed: Status-Text "vor X Sek abgeschlossen" + Previous-Hint
-    @ViewBuilder
-    private var statusZone: some View {
-        if isCompleted, let log = existingLog {
-            // Status-Text — gleicher Container-Slot, kein Springen.
-            Text(completedSummary(log))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        } else if !exercise.isCardio {
-            // UX-203: HStack-Spacing 10 → 14, plus dedizierte Slider-min-
-            // Höhe via .frame(height: 24), damit der Touch-Bereich nicht
-            // mehr aus dem 28pt-Container gedrückt wird. Previous-Hint
-            // bekommt explizite .caption2 + .tertiary → klar als ruhige
-            // Sekundär-Info abgesetzt vom RIR-Wert.
-            HStack(spacing: 14) {
-                // Layout-Fix 2026-05-21: `.fixedSize()` damit der RIR-Label
-                // im engen Slider-Zone-Layout nicht komprimiert wird.
-                Text("RIR").deltiqLabel().fixedSize()
-                Slider(
-                    value: Binding(
-                        get: { Double(rir) },
-                        set: { rir = Float($0) }
-                    ),
-                    in: 0...5,
-                    step: 0.5,
-                    // DEL-143: onEditingChanged steuert das RIR-Tooltip.
-                    // Drag-Start → editing=true → Bloop fade-in. Release →
-                    // editing=false → Bloop fade-out 1.8s spaeter.
-                    // Gated durch User-Toggle (Power-User schalten's aus).
-                    onEditingChanged: { editing in
-                        guard showRirTooltips else { return }
-                        rirTooltip.setVisible(editing)
-                    }
-                )
-                .tint(Color.deltiqOrange)
-                .frame(minHeight: 24)
-                // DEL-143: Tooltip-Overlay über dem Slider. zIndex 1000 +
-                // allowsHitTesting(false) damit weder die unteren Card-
-                // Inhalte verdeckt werden (Touch geht durch), noch der
-                // Slider selber blockiert wird. Offset -38 sitzt den
-                // Bloop über dem Slider-Thumb-Bereich, finger-frei.
-                .overlay(alignment: .top) {
-                    RIRTooltipBloop(rir: rir, isVisible: rirTooltip.isVisible)
-                        .offset(y: -38)
+    /// Signature-Geruest 2.16: Kapsel statt permanentem Regler — zeigt den
+    /// aktuellen RIR-Wert, Tap klappt `rirSliderRow` auf/zu. Gesperrt bei
+    /// abgeschlossenen Saetzen (zeigt dann nur noch den geloggten Wert),
+    /// gleiches Sperr-Muster wie `weightInput`/`repsInput`.
+    private var rirCapsule: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) { rirExpanded.toggle() }
+        } label: {
+            Text("RIR \(formatRIR(rir))")
+                .font(.caption.weight(.semibold).monospacedDigit())
+                .foregroundStyle(Color.deltiqOrange)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 4)
+                .background(Color.deltiqOrange.opacity(0.12))
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .disabled(isCompleted)
+        .opacity(isCompleted ? 0.6 : 1.0)
+    }
+
+    /// UX-203: HStack-Spacing 10 → 14, plus dedizierte Slider-min-Höhe via
+    /// .frame(height: 24), damit der Touch-Bereich nicht mehr aus einem zu
+    /// engen Container gedrückt wird. Nur der Regler selbst — der
+    /// "letztes Mal"-Hinweis lebt jetzt in `previousHintLine`.
+    private var rirSliderRow: some View {
+        HStack(spacing: 14) {
+            // Layout-Fix 2026-05-21: `.fixedSize()` damit der RIR-Label
+            // im engen Slider-Zone-Layout nicht komprimiert wird.
+            Text("RIR").deltiqLabel().fixedSize()
+            Slider(
+                value: Binding(
+                    get: { Double(rir) },
+                    set: { rir = Float($0) }
+                ),
+                in: 0...5,
+                step: 0.5,
+                // DEL-143: onEditingChanged steuert das RIR-Tooltip.
+                // Drag-Start → editing=true → Bloop fade-in. Release →
+                // editing=false → Bloop fade-out 1.8s spaeter.
+                // Gated durch User-Toggle (Power-User schalten's aus).
+                onEditingChanged: { editing in
+                    guard showRirTooltips else { return }
+                    rirTooltip.setVisible(editing)
                 }
-                Text(formatRIR(rir))
-                    .font(.caption.weight(.semibold).monospacedDigit())
-                    .foregroundStyle(.primary)
-                    .frame(width: 32, alignment: .trailing)
-                if let prev = previousLog {
-                    // Bug-Fix 2026-05-22: "letztes:" war hardcoded DE.
-                    // Jetzt via `active.set.previousFormat`-Catalog-Key
-                    // mit %@-Placeholder → DE/EN/TR sauber.
-                    let hint = String(format:
-                        String(localized: "active.set.previousFormat", bundle: .module),
-                        previousLogHint(prev))
-                    Text("· \(hint)")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                        // DEL-220: Der Hint traegt jetzt zusaetzlich den RIR,
-                        // ist also ~8 Zeichen laenger. In dieser Row sitzen
-                        // schon Gewicht, Reps, RIR-Slider und -Wert; auf
-                        // iPhone-SE-Breite wuerde als erstes der neue
-                        // RIR-Teil weggeschnitten und die Aenderung waere
-                        // wirkungslos. Lieber leicht runterskalieren als
-                        // truncaten — gleiche Strategie wie bei den
-                        // Hero-Metric-Labels.
-                        .minimumScaleFactor(0.8)
-                }
+            )
+            .tint(Color.deltiqOrange)
+            .frame(minHeight: 24)
+            // DEL-143: Tooltip-Overlay über dem Slider. zIndex 1000 +
+            // allowsHitTesting(false) damit weder die unteren Card-
+            // Inhalte verdeckt werden (Touch geht durch), noch der
+            // Slider selber blockiert wird. Offset -38 sitzt den
+            // Bloop über dem Slider-Thumb-Bereich, finger-frei.
+            .overlay(alignment: .top) {
+                RIRTooltipBloop(rir: rir, isVisible: rirTooltip.isVisible)
+                    .offset(y: -38)
             }
-        } else {
-            // Cardio editable: kein RIR, nur evtl. Hint
-            if let prev = previousLog {
-                Text(String(format:
-                    String(localized: "active.set.previousFormat", bundle: .module),
-                    previousLogHint(prev)))
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            } else {
-                Color.clear
-            }
+            Text(formatRIR(rir))
+                .font(.caption.weight(.semibold).monospacedDigit())
+                .foregroundStyle(.primary)
+                .frame(width: 32, alignment: .trailing)
         }
     }
 
-    private func completedSummary(_ log: ExerciseLog) -> String {
-        // DEL-128: Sek/Wdh-Unit-Label via xcstrings.
-        let rel = log.date.formatted(.relative(presentation: .named))
-        if exercise.isCardio {
-            let unit = exercise.isTimeBased
-                ? String(localized: "unit.seconds.short", bundle: .module)
-                : String(localized: "unit.reps.short", bundle: .module)
-            return "\(log.reps) \(unit) · \(rel)"
-        }
-        return "\(formatWeight(log.weight)) kg × \(log.reps) (RIR \(formatRIR(log.rir))) · \(rel)"
+    /// Signature-Geruest 2.16: eigene, volle Zeile statt Inline-Anhaengsel
+    /// hinter dem RIR-Regler — vorher wurde der Hinweis auf schmalen
+    /// Bildschirmen (`.lineLimit(1)` + `.minimumScaleFactor(0.8)`)
+    /// abgeschnitten bzw. verkleinert. Nur der aktive Satz zeigt sie
+    /// (siehe Aufrufstelle), daher kein zusaetzliches Gate hier noetig.
+    private func previousHintLine(_ log: ExerciseLog) -> some View {
+        // Bug-Fix 2026-05-22: "letztes:" war hardcoded DE. Jetzt via
+        // `active.set.previousFormat`-Catalog-Key mit %@-Placeholder →
+        // DE/EN/TR sauber.
+        Text(String(format:
+            String(localized: "active.set.previousFormat", bundle: .module),
+            previousLogHint(log)))
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - DEL-040 + DEL-045 Schritt 4: Hold-Timer (isTimeBased)

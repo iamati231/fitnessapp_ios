@@ -15,7 +15,7 @@ import SwiftUI
 /// damit das Bloop NICHT vom Finger verdeckt wird. Hier rendern wir
 /// nur das Capsule-Pill — Layout-Kontext bestimmt der Caller, weil
 /// der Slider auch innerhalb einer HStack mit Labels links/rechts
-/// sitzen kann (siehe SetRow.statusZone).
+/// sitzen kann (siehe SetRow.rirSliderRow).
 @available(iOS 17.0, macOS 14.0, *)
 public struct RIRTooltipBloop: View {
 

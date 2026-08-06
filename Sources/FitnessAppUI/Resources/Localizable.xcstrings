@@ -26050,19 +26050,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld × %2$@ %3$@ • %4$llds %5$@"
+            "value": "%1$lld × %2$@ %3$@ • %4$@ %5$@"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld × %2$@ %3$@ • %4$llds %5$@"
+            "value": "%1$lld × %2$@ %3$@ • %4$@ %5$@"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld × %2$@ %3$@ • %4$llds %5$@"
+            "value": "%1$lld × %2$@ %3$@ • %4$@ %5$@"
           }
         }
       }
@@ -26073,19 +26073,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ • %2$llds %3$@"
+            "value": "%1$@ • %2$@ %3$@"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ • %2$llds %3$@"
+            "value": "%1$@ • %2$@ %3$@"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ • %2$llds %3$@"
+            "value": "%1$@ • %2$@ %3$@"
           }
         }
       }

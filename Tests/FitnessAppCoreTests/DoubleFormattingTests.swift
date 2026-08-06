@@ -40,4 +40,22 @@ final class DoubleFormattingTests: XCTestCase {
         XCTAssertTrue(truncatedFirst == "15.86" || truncatedFirst == "15,86",
                       "got \(truncatedFirst) — truncation didn't floor before format")
     }
+
+    // MARK: formattedOneDecimal / formattedNoDecimals / formatted(decimals:)
+
+    func testFormattedOneDecimal() {
+        let s = (70.36).truncated(to: 1).formattedOneDecimal
+        XCTAssertTrue(s == "70.3" || s == "70,3", "got \(s)")
+    }
+
+    func testFormattedNoDecimalsHasNoFraction() {
+        let s = (1250.0).formattedNoDecimals
+        XCTAssertEqual(s, "1250")
+    }
+
+    func testFormattedDecimalsMatchesNamedVariants() {
+        XCTAssertEqual((42.0).formatted(decimals: 0), (42.0).formattedNoDecimals)
+        XCTAssertEqual((42.5).formatted(decimals: 1), (42.5).formattedOneDecimal)
+        XCTAssertEqual((42.5).formatted(decimals: 2), (42.5).formattedTwoDecimals)
+    }
 }

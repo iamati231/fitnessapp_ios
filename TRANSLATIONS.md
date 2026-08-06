@@ -916,8 +916,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.zPress` | Z-Press | Z-Press | Z-Press |
 | `exercise.name.zercherSquat` | Zercher Squat | Zercher Squat | Zercher Squat |
 | `exercise.rest.label` | Pause | Rest | Mola |
-| `exercise.target.cardioFormat` | %1$@ • %2$llds %3$@ | %1$@ • %2$llds %3$@ | %1$@ • %2$llds %3$@ |
-| `exercise.target.strengthFormat` | %1$lld × %2$@ %3$@ • %4$llds %5$@ | %1$lld × %2$@ %3$@ • %4$llds %5$@ | %1$lld × %2$@ %3$@ • %4$llds %5$@ |
+| `exercise.target.cardioFormat` | %1$@ • %2$@ %3$@ | %1$@ • %2$@ %3$@ | %1$@ • %2$@ %3$@ |
+| `exercise.target.strengthFormat` | %1$lld × %2$@ %3$@ • %4$@ %5$@ | %1$lld × %2$@ %3$@ • %4$@ %5$@ | %1$lld × %2$@ %3$@ • %4$@ %5$@ |
 
 ## `experience.*`  (3 Keys)
 

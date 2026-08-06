@@ -15,6 +15,17 @@ extension Double {
         return (self * factor).rounded(.down) / factor
     }
 
+    /// Formats to a fixed number of decimals, locale-aware via `Locale.current`.
+    /// Signature-Geruest 2.16: der Nachkommastellen-Bedarf ist nicht mehr fuer
+    /// jeden Wert gleich (Gewicht/Koerperfett/Differenzen brauchen eine Stelle,
+    /// Volumen/Kalorien keine, nur echte Praezisions-Messungen wie Scheiben-
+    /// gewichte oder Distanzen zwei) - `formattedTwoDecimals` bleibt der
+    /// unveraenderte Default fuer alle bestehenden Aufrufstellen.
+    public func formatted(decimals: Int) -> String {
+        precondition(decimals >= 0, "decimals must be non-negative")
+        return String(format: "%.\(decimals)f", locale: Locale.current, self)
+    }
+
     /// App-wide standard for numeric display — ALWAYS 2 decimals.
     ///
     /// Forces trailing zeros (80.0 -> "80,00") for a uniform typographic look across
@@ -23,7 +34,15 @@ extension Double {
     ///
     /// Where it matters, apply `truncated(to: 2)` BEFORE formatting so values aren't
     /// rounded up:  `value.truncated(to: 2).formattedTwoDecimals`.
-    public var formattedTwoDecimals: String {
-        String(format: "%.2f", locale: Locale.current, self)
-    }
+    public var formattedTwoDecimals: String { formatted(decimals: 2) }
+
+    /// Signature-Geruest 2.16: eine Nachkommastelle - Koerpergewicht,
+    /// Koerperfett-Prozent, Gewichts-Differenzen und aehnliche Kennzahlen mit
+    /// Personenwaagen-Aufloesung (100 g).
+    public var formattedOneDecimal: String { formatted(decimals: 1) }
+
+    /// Signature-Geruest 2.16: keine Nachkommastelle - diskrete Groessen wie
+    /// Trainingsvolumen oder Kalorien, bei denen "0,00" nur erfundene
+    /// Praezision vortaeuscht.
+    public var formattedNoDecimals: String { formatted(decimals: 0) }
 }

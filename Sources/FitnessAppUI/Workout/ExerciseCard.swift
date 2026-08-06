@@ -220,10 +220,21 @@ struct ExerciseCard: View {
     /// definiert; Swift macht die Substitution via `String(format:)`.
     private var targetText: String {
         let pauseLabel = String(localized: "exercise.rest.label", bundle: .module)
+        // Signature-Geruest 2.16: mm:ss statt reiner Sekundenzahl ("150s" ->
+        // "2:30") - gleicher Formatter, den der Rest der App fuer Dauern
+        // schon nutzt (siehe TimedWorkoutPlayerView/WorkoutSummaryView etc.).
+        // `restSeconds == 0` ist ein bewusst gueltiger Wert (Drop-Sets,
+        // Supersets, Rest-Pause, siehe Kommentar bei ActiveWorkoutView's
+        // Timer-Start) - `PaceCalculator.formatDuration(0)` liefert dafuer
+        // "—" (gedacht fuer "keine Dauer vorhanden"), was hier faelschlich
+        // nach fehlendem statt nach bewusst leerem Wert aussehen wuerde.
+        let restText = exercise.restSeconds > 0
+            ? PaceCalculator.formatDuration(exercise.restSeconds)
+            : "0:00"
         if exercise.isCardio {
             let cardioLabel = String(localized: "exercise.kind.cardio", bundle: .module)
             let fmt = String(localized: "exercise.target.cardioFormat", bundle: .module)
-            return String(format: fmt, cardioLabel, exercise.restSeconds, pauseLabel)
+            return String(format: fmt, cardioLabel, restText, pauseLabel)
         }
         let unit = exercise.isTimeBased
             ? String(localized: "unit.seconds.short", bundle: .module)
@@ -232,7 +243,7 @@ struct ExerciseCard: View {
             ? "\(exercise.repsMin)"
             : "\(exercise.repsMin)-\(exercise.repsMax)"
         let fmt = String(localized: "exercise.target.strengthFormat", bundle: .module)
-        return String(format: fmt, exercise.sets, range, unit, exercise.restSeconds, pauseLabel)
+        return String(format: fmt, exercise.sets, range, unit, restText, pauseLabel)
     }
 
     private var progressPill: some View {
