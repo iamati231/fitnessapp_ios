@@ -232,7 +232,18 @@ struct SetRow: View {
 
                 Spacer(minLength: 6)
 
-                rirCapsule
+                // README 2.25 (Nutzer-Feedback, fuenf Simulator-Screenshots):
+                // die Eingabezeile ist mit Satznummer/Gewicht/KG/Aufladung/
+                // Wdh/WDH/Haekchen bereits fast voll (340 von 342 pt auf
+                // einem 390-pt-Schirm) - die Kapsel war das einzige flexible
+                // Kind ohne `.fixedSize()`/`.lineLimit(1)` und bekam nur die
+                // verbleibenden ~2pt, der Wert brach darin Zeichen fuer
+                // Zeichen um. Bei aufgeklapptem Satz zieht die Kapsel jetzt
+                // in `rirSliderRow` (dort ist Platz) - hier bleibt sie nur
+                // als getoenter Aufklapp-Knopf, wenn die Zone geschlossen ist.
+                if !rirExpanded {
+                    rirCapsule
+                }
                 checkmarkButton
             }
             // Layout-Fix 2026-05-21 (Iteration 2): minHeight 44 auf der
@@ -439,6 +450,16 @@ struct SetRow: View {
                 // Reduce-Motion-Pfad ersetzt den Spring durch ein ruhiges
                 // easeInOut — Apple-HIG-Konform.
                 withAnimation(checkmarkAnimation) {
+                    // README 2.25 (Review-Befund): ohne Reset bleibt der
+                    // Regler aufgeklappt, wenn der User bei offener RIR-Zone
+                    // direkt das Haekchen tippt statt vorher die Kapsel
+                    // erneut anzutippen - `rirCapsule` wuerde dann NIRGENDS
+                    // mehr gerendert (weder in der Eingabezeile, `!rirExpanded`
+                    // greift nicht mehr, noch in `rirSliderRow`, `!isCompleted`
+                    // greift nicht mehr), der RIR-Wert verschwindet komplett
+                    // aus der Zeile bis zum naechsten Un-/Relog. Gleiches
+                    // Reset-Muster wie beim Unlog-Pfad unten (`onTapGesture`).
+                    rirExpanded = false
                     logCurrentValues()
                 }
             }
@@ -492,15 +513,24 @@ struct SetRow: View {
     /// aktuellen RIR-Wert, Tap klappt `rirSliderRow` auf/zu. Gesperrt bei
     /// abgeschlossenen Saetzen (zeigt dann nur noch den geloggten Wert),
     /// gleiches Sperr-Muster wie `weightInput`/`repsInput`.
-    /// README 2.24: gefuellt statt nur getoent, solange die Zone offen ist -
-    /// der Wert steht jetzt NUR noch hier (die frueher zusaetzliche Zahl
-    /// rechts neben dem Regler ist entfallen, siehe `rirSliderRow`).
+    /// README 2.24: gefuellt statt nur getoent, solange die Zone offen ist.
+    /// README 2.25 (Nutzer-Feedback): `.fixedSize()` + `.lineLimit(1)` -
+    /// dieselbe Absicherung, die "KG"/"WDH" seit dem Layout-Fix vom 21. Mai
+    /// tragen. Ohne sie war die Kapsel das einzige flexible Kind der
+    /// Eingabezeile-HStack und wurde auf ~2pt zusammengedrueckt - der Wert
+    /// brach darin Zeichen fuer Zeichen um (unlesbar) UND bestimmte die
+    /// Zeilenhoehe ueber seine Zeichenzahl ("RIR 1" vs "RIR 3,5" - jeder
+    /// Halbschritt aenderte die Hoehe). Wird bei aufgeklapptem Satz nicht
+    /// mehr in der Eingabezeile gebraucht (siehe Aufrufstelle dort) - lebt
+    /// dann in `rirSliderRow`, wo Platz ist.
     private var rirCapsule: some View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) { rirExpanded.toggle() }
         } label: {
             Text("RIR \(rir.formattedRIR)")
                 .font(.caption.weight(.semibold).monospacedDigit())
+                .lineLimit(1)
+                .fixedSize()
                 .foregroundStyle(rirExpanded ? .white : Color.deltiqOrange)
                 .padding(.horizontal, 9)
                 .padding(.vertical, 4)
@@ -539,10 +569,14 @@ struct SetRow: View {
     /// liessen sich hier nicht verifizieren).
     private var rirSliderRow: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                // Layout-Fix 2026-05-21: `.fixedSize()` damit der RIR-Label
-                // im engen Slider-Zone-Layout nicht komprimiert wird.
-                Text("RIR").deltiqLabel().fixedSize()
+            // README 2.25: die Kapsel selbst statt eines bloßen "RIR"-Labels
+            // - sie zieht bei aufgeklapptem Satz hier ein (siehe `rirCapsule`-
+            // Doc), weil die Eingabezeile ihr keinen Platz mit Breite geben
+            // kann. `.center` statt `.firstTextBaseline`, weil die Kapsel
+            // (Button+Capsule, kein reiner Text) keine sinnvolle
+            // Baseline neben einem Fliesstext hat.
+            HStack(alignment: .center, spacing: 8) {
+                rirCapsule
                 Text("active.set.rir.subtitle", bundle: .module)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)

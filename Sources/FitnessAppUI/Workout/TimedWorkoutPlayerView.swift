@@ -286,13 +286,6 @@ private struct AMRAPPlayerView: View {
     @State private var roundsCompleted = 0
     @State private var partialReps = 0
     @State private var isFinished = false
-    /// Erzwingt einen Redraw pro Sekunde, solange laeuft: `elapsedSeconds`
-    /// ist ein reiner Computed-Property-Read (Wanduhr-basiert) und loest
-    /// SwiftUI's Dependency-Tracking allein NICHT aus - ohne diesen
-    /// Wegwerf-Zaehler wuerde die Live-Anzeige im Vordergrund einfrieren,
-    /// sobald kein anderer State mehr geschrieben wird, und erst beim
-    /// naechsten echten Tap/Deckel-Ende/Szenenwechsel weiterspringen.
-    @State private var displayTick = 0
     @State private var showingDiscardConfirm = false
     /// README 2.15/23b-23c: Vorlauf-Countdown vor dem eigentlichen Lauf -
     /// `prerollTotal` ist die Einstellung zum Mount-Zeitpunkt (unveraenderlich
@@ -304,17 +297,26 @@ private struct AMRAPPlayerView: View {
     /// in der Uebungsliste umzustellen. `nil` = "erste Uebung" (Default nach
     /// Start und nach jedem "+1 Runde"), aufgeloest ueber `currentStation`.
     @State private var currentStationID: PersistentIdentifier?
-    /// Nutzer-Feedback (Verifikation): als einfaches `let` wurde dieser
-    /// Publisher bei JEDER View-Rekonstruktion neu erzeugt (u.a. durch
-    /// `displayTick += 1` im eigenen `.onReceive`-Handler ausgeloest) - ein
-    /// reiner Stored-`let` mit Default-Ausdruck wird von SwiftUI NICHT ueber
-    /// Rekonstruktionen hinweg festgehalten, nur `@State` ist das. Das fuehrte
-    /// dazu, dass der Timer im Vordergrund nach 1-2 Ticks einfror, weil bei
-    /// jedem Tick ein frischer, noch nicht abgelaufener Timer entstand -
-    /// sichtbar wurde es erst beim Hintergrund/Vordergrund-Wechsel, der eine
-    /// echte Neu-Konstruktion samt Aufhol-Check via `scenePhase` ausloest.
-    /// Als `@State` wird der Initial-Ausdruck nur EINMAL beim ersten Mount
-    /// ausgewertet und der entstandene Publisher danach unveraendert gehalten.
+    /// README 2.26 (Nutzer-Feedback, Screenshot Cindy/AMRAP): bleibt als
+    /// `@State` (siehe Historie unten), dient aber nur noch dem Deckel-Check
+    /// und der Vorlauf-Dekrementierung - die Live-ANZEIGE (Uhr, Leiste,
+    /// Verstrichen-Zeile) haengt seit diesem Fix an `TimelineView` statt an
+    /// einem erzwungenen State-Schreiben pro Tick (siehe `body`). Vorher
+    /// schrieb der Handler bei JEDEM Tick unbedingt `displayTick += 1`, nur
+    /// um ein Redraw zu erzwingen - das trieb `.onReceive` dazu, seine
+    /// Combine-Anmeldung bei JEDER Rekonstruktion neu aufzubauen (Timer-
+    /// Publisher sind nicht `Equatable`, SwiftUI kann "dieselbe Anmeldung
+    /// wie eben" also nicht billig feststellen). `.autoconnect()` bindet die
+    /// Lebensdauer des zugrundeliegenden Timers an genau DIESE Anmeldung,
+    /// nicht an den Publisher selbst - eine Anmeldung, die vor Ablauf der
+    /// eigenen Sekunde schon wieder verworfen und neu aufgebaut wird, kommt
+    /// nie zum Fertig-Ticken. Ohne den unbedingten Pro-Tick-Schreibzwang
+    /// bleibt die Anmeldung jetzt so lange stabil, wie tatsaechlich nichts
+    /// anderes im View schreibt.
+    /// Aeltere Historie: als einfaches `let` wurde der Publisher bei JEDER
+    /// Rekonstruktion komplett neu ERZEUGT (noch vor jeder Anmeldungsfrage) -
+    /// ein reiner Stored-`let` mit Default-Ausdruck wird von SwiftUI nicht
+    /// ueber Rekonstruktionen hinweg festgehalten, nur `@State` ist das.
     @State private var tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     init(session: WorkoutSession) {
@@ -391,7 +393,16 @@ private struct AMRAPPlayerView: View {
                     // spaeter (README 2.12/21a-21b): traegt jetzt auch die
                     // angebrochene Runde, sonst steht der volle Live-Stand
                     // nirgends auf einen Blick.
-                    DeltiqContextRow([
+                    // README 2.26 (Nutzer-Feedback): dritte Kapsel "LÄUFT" -
+                    // eine stehende Uhr war von einer laufenden nicht zu
+                    // unterscheiden, waehrend der Vorlauf mit "STARTET GLEICH"
+                    // (timedWorkoutPrerollCard) schon einen Zustandshinweis
+                    // trug. Nur solange die Session noch wirklich laeuft -
+                    // nach `isFinished` steht die Uhr echt (Deckel/Pensum
+                    // erreicht, `finishBar` wartet auf "Speichern"), "LÄUFT"
+                    // waere dann selbst die Falschmeldung.
+                    DeltiqContextRow(
+                        (isFinished ? [] : [DeltiqContextItem(String(localized: "timedWorkout.running.label", bundle: .module), style: .accent)]) + [
                         DeltiqContextItem(roundsContextText, style: .accent),
                         DeltiqContextItem(
                             String(format: String(localized: "timedWorkout.amrap.capContext", bundle: .module), (day?.timeCapMinutes ?? 20)).uppercased(),
@@ -399,24 +410,40 @@ private struct AMRAPPlayerView: View {
                         )
                     ])
 
-                    DeltiqCard(accentEdge: true) {
-                        VStack(spacing: 8) {
-                            Text(PaceCalculator.formatDuration(max(0, capSeconds - elapsedSeconds)))
-                                .font(.system(size: 64, weight: .heavy))
-                                .fitnessNumberStyle()
-                                .foregroundStyle(Color.primary)
-                            ProgressView(value: Double(min(elapsedSeconds, capSeconds)), total: Double(capSeconds))
-                                .tint(Color.deltiqOrange)
-                            Text(
-                                String(
-                                    format: String(localized: "timedWorkout.elapsed", bundle: .module),
-                                    PaceCalculator.formatDuration(elapsedSeconds)
+                    // README 2.26 (Nutzer-Feedback): Uhr, Leiste und
+                    // Verstrichen-Zeile bekommen ihren Takt jetzt von
+                    // `TimelineView` statt von einem erzwungenen State-
+                    // Schreiben pro Tick (siehe Kommentar bei `tick` oben) -
+                    // der Zeitpunkt ist eine sichtbare Eingabe (`context.date`),
+                    // kein Nebeneffekt, und es gibt keine Combine-Anmeldung
+                    // mehr, die vorzeitig abreissen kann.
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        let liveElapsed = max(0, Int(context.date.timeIntervalSince(session.startTime)))
+                        DeltiqCard(accentEdge: true) {
+                            VStack(spacing: 8) {
+                                Text(PaceCalculator.formatDuration(max(0, capSeconds - liveElapsed)))
+                                    .font(.system(size: 64, weight: .heavy))
+                                    .fitnessNumberStyle()
+                                    .foregroundStyle(Color.primary)
+                                ProgressView(value: Double(min(liveElapsed, capSeconds)), total: Double(capSeconds))
+                                    .tint(Color.deltiqOrange)
+                                Text(
+                                    String(
+                                        format: String(localized: "timedWorkout.elapsed", bundle: .module),
+                                        // README 2.26 (Kleinigkeit): "—" ist fuer
+                                        // einen FEHLENDEN Wert richtig, fuer eine
+                                        // echte Null falsch - gleiche Unterscheidung
+                                        // wie die Pausen-Zeile in ExerciseCard.swift
+                                        // (`restSeconds == 0`). Aufrufstelle
+                                        // entscheidet, nicht `PaceCalculator`.
+                                        liveElapsed > 0 ? PaceCalculator.formatDuration(liveElapsed) : "0:00"
+                                    )
                                 )
-                            )
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color.Deltiq.textSecondary)
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                            }
+                            .frame(maxWidth: .infinity)
                         }
-                        .frame(maxWidth: .infinity)
                     }
 
                     DeltiqSection {
@@ -467,11 +494,12 @@ private struct AMRAPPlayerView: View {
                 }
                 return
             }
-            // Verifikation (Workflow): `checkCapReached()` allein schreibt bei
-            // jedem Tick VOR Deckel-Erreichen keinen State - `displayTick`
-            // erzwingt trotzdem den Redraw, siehe Kommentar bei der Property.
+            // README 2.26: der Tick treibt hier nur noch den Deckel-Check -
+            // die Live-Anzeige haengt seit diesem Fix an `TimelineView`
+            // (siehe `body`), kein erzwungenes State-Schreiben pro Tick mehr
+            // noetig (siehe Kommentar bei `tick` oben, warum das sogar
+            // schaedlich war).
             guard !isFinished else { return }
-            displayTick += 1
             checkCapReached()
         }
         // Nutzer-Feedback: sobald die App wieder aktiv wird, sofort pruefen
@@ -728,9 +756,6 @@ private struct EMOMPlayerView: View {
 
     @State private var completedMinutes: Set<Int> = []
     @State private var isFinished = false
-    /// Erzwingt einen Redraw pro Sekunde, solange laeuft - siehe Kommentar
-    /// bei derselben Property in AMRAPPlayerView.
-    @State private var displayTick = 0
     @State private var showingDiscardConfirm = false
     /// Nutzer-Feedback: haelt fest, welche Minute beim LETZTEN Resync
     /// bekannt war - unterscheidet einen echten Live-Uebergang
@@ -754,17 +779,11 @@ private struct EMOMPlayerView: View {
     /// ueberspringt die Phase komplett (Einstellung war deaktiviert).
     @State private var prerollRemaining: Int
     private let prerollTotal: Int
-    /// Nutzer-Feedback (Verifikation): als einfaches `let` wurde dieser
-    /// Publisher bei JEDER View-Rekonstruktion neu erzeugt (u.a. durch
-    /// `displayTick += 1` im eigenen `.onReceive`-Handler ausgeloest) - ein
-    /// reiner Stored-`let` mit Default-Ausdruck wird von SwiftUI NICHT ueber
-    /// Rekonstruktionen hinweg festgehalten, nur `@State` ist das. Das fuehrte
-    /// dazu, dass der Timer im Vordergrund nach 1-2 Ticks einfror, weil bei
-    /// jedem Tick ein frischer, noch nicht abgelaufener Timer entstand -
-    /// sichtbar wurde es erst beim Hintergrund/Vordergrund-Wechsel, der eine
-    /// echte Neu-Konstruktion samt Aufhol-Check via `scenePhase` ausloest.
-    /// Als `@State` wird der Initial-Ausdruck nur EINMAL beim ersten Mount
-    /// ausgewertet und der entstandene Publisher danach unveraendert gehalten.
+    /// README 2.26: bleibt als `@State`, dient aber nur noch dem Deckel-
+    /// Check und den Signaltoenen (`resyncMinuteState`) - die Live-ANZEIGE
+    /// haengt seit diesem Fix an `TimelineView` statt an einem erzwungenen
+    /// State-Schreiben pro Tick. Ausfuehrliche Begruendung bei derselben
+    /// Property in `AMRAPPlayerView`.
     @State private var tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     init(session: WorkoutSession) {
@@ -784,11 +803,21 @@ private struct EMOMPlayerView: View {
     /// pausiert komplett im Hintergrund, ein Akkumulator wuerde die
     /// verpassten Sekunden verschlucken.
     private var totalElapsedSeconds: Int {
-        guard prerollRemaining == 0 else { return 0 }
-        return max(0, Int(Date().timeIntervalSince(session.startTime)))
+        totalElapsedSeconds(at: Date())
     }
-    private var currentMinute: Int {
-        min(totalElapsedSeconds / 60 + 1, totalMinutes)
+    /// README 2.26: parametrisierte Fassung, damit `TimelineView` in `body`
+    /// dieselbe Formel mit `context.date` statt `Date()` aufrufen kann -
+    /// eine einzige Quelle der Wahrheit statt zweier paralleler
+    /// Implementierungen. Die unparametrisierte `totalElapsedSeconds`
+    /// bleibt fuer alle bestehenden, nicht-visuellen Aufrufstellen
+    /// (Deckel-Check, Ton-Logik) unveraendert bestehen.
+    private func totalElapsedSeconds(at now: Date) -> Int {
+        guard prerollRemaining == 0 else { return 0 }
+        return max(0, Int(now.timeIntervalSince(session.startTime)))
+    }
+    private var currentMinute: Int { currentMinute(elapsed: totalElapsedSeconds) }
+    private func currentMinute(elapsed: Int) -> Int {
+        min(elapsed / 60 + 1, totalMinutes)
     }
     private var secondsIntoMinute: Int {
         totalElapsedSeconds % 60
@@ -798,15 +827,18 @@ private struct EMOMPlayerView: View {
     }
     /// Bei mehr Minuten als Uebungen wiederholt sich der Zirkel (z.B. 2
     /// Uebungen ueber 12 Minuten = 6 Durchgaenge).
-    private var currentExercise: Exercise? {
+    private var currentExercise: Exercise? { currentExercise(atMinute: currentMinute) }
+    private func currentExercise(atMinute minute: Int) -> Exercise? {
         guard !exercises.isEmpty else { return nil }
-        return exercises[(currentMinute - 1) % exercises.count]
+        return exercises[(minute - 1) % exercises.count]
     }
-    private var nextExercise: Exercise? {
-        guard !exercises.isEmpty, currentMinute < totalMinutes else { return nil }
-        return exercises[currentMinute % exercises.count]
+    private var nextExercise: Exercise? { nextExercise(atMinute: currentMinute) }
+    private func nextExercise(atMinute minute: Int) -> Exercise? {
+        guard !exercises.isEmpty, minute < totalMinutes else { return nil }
+        return exercises[minute % exercises.count]
     }
-    private var remainingInMinute: Int { max(0, 60 - secondsIntoMinute) }
+    private var remainingInMinute: Int { remainingInMinute(elapsed: totalElapsedSeconds) }
+    private func remainingInMinute(elapsed: Int) -> Int { max(0, 60 - elapsed % 60) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -822,67 +854,89 @@ private struct EMOMPlayerView: View {
                     timedWorkoutPrerollCard(remaining: prerollRemaining, total: prerollTotal)
                     timedWorkoutPrerollExerciseList(exercises)
                 } else {
-                    // Nachtrag 6. August, abends (README 2.9/18e): die erste
-                    // Kapsel zeigte bisher "EMOM" - dasselbe wie der Eyebrow
-                    // direkt darueber. Live-Stand der geschafften Minuten ist
-                    // die Information, die sonst nirgends in der Kopfzone steht.
-                    DeltiqContextRow([
-                        DeltiqContextItem(
-                            String(format: String(localized: "timedWorkout.emom.completedPill", bundle: .module), completedMinutes.count).uppercased(),
-                            style: .accent
-                        ),
-                        DeltiqContextItem(
-                            String(
-                                format: String(localized: "timedWorkout.emom.minuteContext", bundle: .module),
-                                min(currentMinute, totalMinutes), totalMinutes
-                            ).uppercased(),
-                            style: .neutral
-                        )
-                    ])
+                    // README 2.26 (Nutzer-Feedback): Kontextzeile, Ring und
+                    // Naechste-Minute-Zeile bekommen ihren Takt jetzt von
+                    // `TimelineView` statt von einem erzwungenen State-
+                    // Schreiben pro Tick (siehe Kommentar bei `tick` oben) -
+                    // alle drei haengen an derselben Wanduhr-Ablesung
+                    // (`context.date`), also EINE gemeinsame `TimelineView`
+                    // statt drei getrennter. Dazu dritte Kapsel "LÄUFT" -
+                    // eine stehende Uhr war von einer laufenden nicht zu
+                    // unterscheiden.
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        let liveElapsed = totalElapsedSeconds(at: context.date)
+                        let liveMinute = currentMinute(elapsed: liveElapsed)
+                        let liveRemaining = remainingInMinute(elapsed: liveElapsed)
+                        let liveExercise = currentExercise(atMinute: liveMinute)
+                        let liveNextExercise = nextExercise(atMinute: liveMinute)
 
-                    DeltiqCard(accentEdge: true) {
-                        VStack(spacing: 12) {
-                            ZStack {
-                                Circle()
-                                    .stroke(Color.Deltiq.fill, lineWidth: 11)
-                                Circle()
-                                    .trim(from: 0, to: CGFloat(remainingInMinute) / 60.0)
-                                    .stroke(Color.deltiqOrange, style: StrokeStyle(lineWidth: 11, lineCap: .round))
-                                    .rotationEffect(.degrees(-90))
-                                VStack(spacing: 2) {
-                                    Text("\(remainingInMinute)")
-                                        .font(.system(size: 56, weight: .heavy))
-                                        .fitnessNumberStyle()
+                        // Nachtrag 6. August, abends (README 2.9/18e): die erste
+                        // Kapsel zeigte bisher "EMOM" - dasselbe wie der Eyebrow
+                        // direkt darueber. Live-Stand der geschafften Minuten ist
+                        // die Information, die sonst nirgends in der Kopfzone steht.
+                        // README 2.26 (Nutzer-Feedback): dritte Kapsel "LÄUFT",
+                        // solange die Session noch wirklich laeuft - nach
+                        // `isFinished` (Deckel erreicht, `finishBar` wartet auf
+                        // "Speichern") waere sie selbst die Falschmeldung.
+                        DeltiqContextRow(
+                            (isFinished ? [] : [DeltiqContextItem(String(localized: "timedWorkout.running.label", bundle: .module), style: .accent)]) + [
+                            DeltiqContextItem(
+                                String(format: String(localized: "timedWorkout.emom.completedPill", bundle: .module), completedMinutes.count).uppercased(),
+                                style: .accent
+                            ),
+                            DeltiqContextItem(
+                                String(
+                                    format: String(localized: "timedWorkout.emom.minuteContext", bundle: .module),
+                                    min(liveMinute, totalMinutes), totalMinutes
+                                ).uppercased(),
+                                style: .neutral
+                            )
+                        ])
+
+                        DeltiqCard(accentEdge: true) {
+                            VStack(spacing: 12) {
+                                ZStack {
+                                    Circle()
+                                        .stroke(Color.Deltiq.fill, lineWidth: 11)
+                                    Circle()
+                                        .trim(from: 0, to: CGFloat(liveRemaining) / 60.0)
+                                        .stroke(Color.deltiqOrange, style: StrokeStyle(lineWidth: 11, lineCap: .round))
+                                        .rotationEffect(.degrees(-90))
+                                    VStack(spacing: 2) {
+                                        Text("\(liveRemaining)")
+                                            .font(.system(size: 56, weight: .heavy))
+                                            .fitnessNumberStyle()
+                                            .foregroundStyle(Color.primary)
+                                        Text("timedWorkout.emom.thisMinute", bundle: .module)
+                                            .font(.system(size: 10, weight: .heavy))
+                                            .tracking(1.0)
+                                            .foregroundStyle(Color.Deltiq.textSecondary)
+                                    }
+                                }
+                                .frame(width: 200, height: 200)
+
+                                if let liveExercise {
+                                    Text(liveExercise.displayName)
+                                        .font(.system(size: 24, weight: .heavy, design: .rounded))
                                         .foregroundStyle(Color.primary)
-                                    Text("timedWorkout.emom.thisMinute", bundle: .module)
-                                        .font(.system(size: 10, weight: .heavy))
-                                        .tracking(1.0)
-                                        .foregroundStyle(Color.Deltiq.textSecondary)
+                                        .multilineTextAlignment(.center)
+                                    Text(timedFormatTargetLabel(liveExercise))
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundStyle(Color.deltiqOrange)
                                 }
                             }
-                            .frame(width: 200, height: 200)
-
-                            if let currentExercise {
-                                Text(currentExercise.displayName)
-                                    .font(.system(size: 24, weight: .heavy, design: .rounded))
-                                    .foregroundStyle(Color.primary)
-                                    .multilineTextAlignment(.center)
-                                Text(timedFormatTargetLabel(currentExercise))
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundStyle(Color.deltiqOrange)
-                            }
+                            .frame(maxWidth: .infinity)
                         }
-                        .frame(maxWidth: .infinity)
-                    }
 
-                    if let nextExercise {
-                        DeltiqSection {
-                            DeltiqRow(
-                                label: nextExercise.displayName,
-                                subtitle: String(localized: "timedWorkout.emom.nextMinute", bundle: .module),
-                                value: timedFormatTargetLabel(nextExercise),
-                                showsDivider: false
-                            )
+                        if let liveNextExercise {
+                            DeltiqSection {
+                                DeltiqRow(
+                                    label: liveNextExercise.displayName,
+                                    subtitle: String(localized: "timedWorkout.emom.nextMinute", bundle: .module),
+                                    value: timedFormatTargetLabel(liveNextExercise),
+                                    showsDivider: false
+                                )
+                            }
                         }
                     }
                 }
@@ -918,11 +972,9 @@ private struct EMOMPlayerView: View {
                 return
             }
             guard !isFinished else { return }
-            // Verifikation (Workflow): `resyncMinuteState()` allein schreibt
-            // bei den meisten Ticks keinen State (nur beim Minutenwechsel
-            // oder Deckel-Ende) - `displayTick` erzwingt trotzdem den
-            // Redraw, siehe Kommentar bei der Property.
-            displayTick += 1
+            // README 2.26: der Tick treibt hier nur noch Ton-Logik und
+            // `resyncMinuteState()` - die Live-Anzeige haengt seit diesem
+            // Fix an `TimelineView` (siehe `body`).
             // Drei Signaltoene ab 0:03, Blick bleibt auf der Hantel.
             if timerSoundEnabled, (1...3).contains(remainingInMinute) {
                 TimerSoundPlayer.shared.playShort()
@@ -1136,9 +1188,6 @@ private struct ForTimePlayerView: View {
 
     @State private var checkedRounds: [PersistentIdentifier: Int] = [:]
     @State private var isFinished = false
-    /// Erzwingt einen Redraw pro Sekunde, solange laeuft - siehe Kommentar
-    /// bei derselben Property in AMRAPPlayerView.
-    @State private var displayTick = 0
     /// Verifikation (Workflow-Nachtrag): `elapsedSeconds` ist bewusst eine
     /// reine Wanduhr-Ablesung und waechst deshalb unbegrenzt weiter, AUCH
     /// nachdem `isFinished` schon feststeht - ohne diesen eingefrorenen
@@ -1156,17 +1205,10 @@ private struct ForTimePlayerView: View {
     /// ueberspringt die Phase komplett (Einstellung war deaktiviert).
     @State private var prerollRemaining: Int
     private let prerollTotal: Int
-    /// Nutzer-Feedback (Verifikation): als einfaches `let` wurde dieser
-    /// Publisher bei JEDER View-Rekonstruktion neu erzeugt (u.a. durch
-    /// `displayTick += 1` im eigenen `.onReceive`-Handler ausgeloest) - ein
-    /// reiner Stored-`let` mit Default-Ausdruck wird von SwiftUI NICHT ueber
-    /// Rekonstruktionen hinweg festgehalten, nur `@State` ist das. Das fuehrte
-    /// dazu, dass der Timer im Vordergrund nach 1-2 Ticks einfror, weil bei
-    /// jedem Tick ein frischer, noch nicht abgelaufener Timer entstand -
-    /// sichtbar wurde es erst beim Hintergrund/Vordergrund-Wechsel, der eine
-    /// echte Neu-Konstruktion samt Aufhol-Check via `scenePhase` ausloest.
-    /// Als `@State` wird der Initial-Ausdruck nur EINMAL beim ersten Mount
-    /// ausgewertet und der entstandene Publisher danach unveraendert gehalten.
+    /// README 2.26: bleibt als `@State`, dient aber nur noch dem Deckel-
+    /// Check - die Live-ANZEIGE haengt seit diesem Fix an `TimelineView`
+    /// statt an einem erzwungenen State-Schreiben pro Tick. Ausfuehrliche
+    /// Begruendung bei derselben Property in `AMRAPPlayerView`.
     @State private var tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     init(session: WorkoutSession) {
@@ -1192,7 +1234,18 @@ private struct ForTimePlayerView: View {
     /// Anzeige NACH Abschluss und fuer `saveNow()` - ist der eingefrorene
     /// Schnappschuss, sobald einer existiert, sonst die laufende Wanduhr.
     private var resultElapsedSeconds: Int {
-        finishedElapsedSeconds ?? elapsedSeconds
+        resultElapsedSeconds(at: Date())
+    }
+    /// README 2.26: parametrisierte Fassung, damit `TimelineView` in `body`
+    /// dieselbe Formel mit `context.date` statt `Date()` aufrufen kann -
+    /// der eingefrorene Schnappschuss (falls vorhanden) hat weiterhin
+    /// Vorrang vor jeder Wanduhr-Ablesung, live oder nicht.
+    private func resultElapsedSeconds(at now: Date) -> Int {
+        guard let finishedElapsedSeconds else {
+            guard prerollRemaining == 0 else { return 0 }
+            return max(0, Int(now.timeIntervalSince(session.startTime)))
+        }
+        return finishedElapsedSeconds
     }
     /// Optionaler Abbruch-Deckel - anders als AMRAP/EMOM ist bei Auf Zeit
     /// meist gar keiner gesetzt, das Pensum selbst beendet den Lauf.
@@ -1224,7 +1277,12 @@ private struct ForTimePlayerView: View {
                     // Hero-Zahl, Fortschritt ist schon die verbleibende Kapsel) -
                     // die redundante Kapsel entfaellt komplett statt erfundenen
                     // Inhalt zu zeigen.
-                    DeltiqContextRow([
+                    // README 2.26 (Nutzer-Feedback): zweite Kapsel "LÄUFT",
+                    // solange die Session noch wirklich laeuft - nach
+                    // `isFinished` (Pensum/Deckel erreicht, "Geschafft!" steht
+                    // schon in der Karte) waere sie selbst die Falschmeldung.
+                    DeltiqContextRow(
+                        (isFinished ? [] : [DeltiqContextItem(String(localized: "timedWorkout.running.label", bundle: .module), style: .accent)]) + [
                         DeltiqContextItem(
                             String(
                                 format: String(localized: "timedWorkout.forTime.progressContext", bundle: .module),
@@ -1234,19 +1292,36 @@ private struct ForTimePlayerView: View {
                         )
                     ])
 
-                    DeltiqCard(accentEdge: true) {
-                        VStack(spacing: 4) {
-                            Text(PaceCalculator.formatDuration(resultElapsedSeconds))
+                    // README 2.26 (Nutzer-Feedback): die Hero-Zahl bekommt
+                    // ihren Takt jetzt von `TimelineView` statt von einem
+                    // erzwungenen State-Schreiben pro Tick (siehe Kommentar
+                    // bei `tick` oben) - `resultElapsedSeconds(at:)` bevorzugt
+                    // weiterhin den eingefrorenen Schnappschuss, falls einer
+                    // existiert, sonst die Wanduhr-Ablesung aus `context.date`.
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        let liveResult = resultElapsedSeconds(at: context.date)
+                        DeltiqCard(accentEdge: true) {
+                            VStack(spacing: 4) {
+                                Text(
+                                    // README 2.26 (Kleinigkeit): "—" ist fuer
+                                    // einen FEHLENDEN Wert richtig, fuer eine
+                                    // echte Null falsch (direkt beim Start,
+                                    // bevor die erste Sekunde vergangen ist) -
+                                    // gleiche Unterscheidung wie AMRAPs
+                                    // Verstrichen-Zeile.
+                                    liveResult > 0 ? PaceCalculator.formatDuration(liveResult) : "0:00"
+                                )
                                 .font(.system(size: 64, weight: .heavy))
                                 .fitnessNumberStyle()
                                 .foregroundStyle(Color.primary)
-                            if isFinished {
-                                Text("timedWorkout.forTime.finishedLabel", bundle: .module)
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(Color.Deltiq.success)
+                                if isFinished {
+                                    Text("timedWorkout.forTime.finishedLabel", bundle: .module)
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundStyle(Color.Deltiq.success)
+                                }
                             }
+                            .frame(maxWidth: .infinity)
                         }
-                        .frame(maxWidth: .infinity)
                     }
 
                     DeltiqSection {
@@ -1284,11 +1359,10 @@ private struct ForTimePlayerView: View {
                 }
                 return
             }
-            // Verifikation (Workflow): `checkCapReached()` allein schreibt bei
-            // jedem Tick VOR Deckel-Erreichen keinen State - `displayTick`
-            // erzwingt trotzdem den Redraw, siehe Kommentar bei der Property.
+            // README 2.26: der Tick treibt hier nur noch den Deckel-Check -
+            // die Live-Anzeige haengt seit diesem Fix an `TimelineView`
+            // (siehe `body`).
             guard !isFinished else { return }
-            displayTick += 1
             checkCapReached()
         }
         // Nutzer-Feedback: sofortige Pruefung beim Ruecksprung aus dem

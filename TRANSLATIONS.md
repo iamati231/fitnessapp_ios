@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1640 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1641 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1640 / 1640** (100%) | 0 |
-| 🇬🇧 English (EN) | **1640 / 1640** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1640 / 1640** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1641 / 1641** (100%) | 0 |
+| 🇬🇧 English (EN) | **1641 / 1641** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1641 / 1641** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1843,7 +1843,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `tab.plan` | Plan | Plan | Plan |
 | `tab.tools` | Werkzeuge | Tools | Araçlar |
 
-## `timedWorkout.*`  (25 Keys)
+## `timedWorkout.*`  (26 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1872,6 +1872,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `timedWorkout.forTime.progressContext` | %lld / %lld erledigt | %lld of %lld done | %lld / %lld tamam |
 | `timedWorkout.preroll.label` | STARTET GLEICH | STARTING SOON | HEMEN BAŞLIYOR |
 | `timedWorkout.preroll.startNow` | Jetzt starten | Start now | Şimdi başla |
+| `timedWorkout.running.label` | LÄUFT | RUNNING | ÇALIŞIYOR |
 
 ## `trophy.*`  (24 Keys)
 
