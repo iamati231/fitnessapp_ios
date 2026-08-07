@@ -2300,14 +2300,21 @@ public struct DashboardView: View {
                     ForEach(forecastSamples) { line in
                         let forecastSeriesKey = "\(line.exerciseName)-forecast"
                         ForEach(line.points) { point in
-                            LineMark(
-                                x: .value("Datum", point.date),
-                                y: .value("1RM (kg)", point.oneRM),
-                                series: .value("Serie", forecastSeriesKey)
-                            )
-                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
-                            .foregroundStyle(by: .value("Lift", line.exerciseName))
-                            .opacity(0.6)
+                            // Fix Runde 2 (Release-Gate-Log): das Auslagern
+                            // der Serien-Strings allein reichte nicht - der
+                            // Type-Checker haengt weiterhin an den drei
+                            // gemeinsam aufgeloesten `.value(...)`-Ueberladungen
+                            // INNERHALB des LineMark-Aufrufs. Jeden Plot-Wert
+                            // vorab einzeln binden trennt die Ueberladungs-
+                            // Aufloesung in drei billige Einzelschritte statt
+                            // einem gemeinsamen.
+                            let xValue: PlottableValue<Date> = .value("Datum", point.date)
+                            let yValue: PlottableValue<Double> = .value("1RM (kg)", point.oneRM)
+                            let seriesValue: PlottableValue<String> = .value("Serie", forecastSeriesKey)
+                            LineMark(x: xValue, y: yValue, series: seriesValue)
+                                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                                .foregroundStyle(by: .value("Lift", line.exerciseName))
+                                .opacity(0.6)
                         }
                         // Forecast-Endpunkt als hohler Ring — visuell als
                         // "Projektion" erkennbar, kein voller PointMark.
