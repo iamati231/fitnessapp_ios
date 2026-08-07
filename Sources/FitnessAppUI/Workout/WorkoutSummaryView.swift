@@ -323,29 +323,41 @@ public struct WorkoutSummaryView: View {
                     }
                 }
                 .listRowBackground(Color.Deltiq.surface)
-                Stepper(value: partialRepsBinding, in: 0...partialRepsStepperMax) {
-                    LabeledContent {
-                        Text("\(partialRepsBinding.wrappedValue)")
-                            .foregroundStyle(Color.Deltiq.textSecondary)
+                // Nachtrag (Verifikation): ohne mindestens eine Uebung gibt
+                // es niemanden, dem sich Restwdh. zuordnen liessen (Tag
+                // zwischenzeitlich geloescht, `.nullify`) - Runden bleiben
+                // trotzdem editierbar, nur dieser Teil wird ausgeblendet,
+                // statt `partialReps` > 0 ohne Namen zu erlauben.
+                if !editableTimedFormatExercises.isEmpty {
+                    Stepper(value: partialRepsBinding, in: 0...partialRepsStepperMax) {
+                        LabeledContent {
+                            Text("\(partialRepsBinding.wrappedValue)")
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        } label: {
+                            Text("timedWorkout.amrap.partialReps", bundle: .module)
+                                .font(.system(size: 15))
+                        }
+                    }
+                    .listRowBackground(Color.Deltiq.surface)
+                    Picker(selection: partialRepsExerciseBinding) {
+                        Text("summary.editResult.partialRepsExercise.none", bundle: .module)
+                            .tag(String?.none)
+                        ForEach(editableTimedFormatExercises, id: \.persistentModelID) { exercise in
+                            Text(exercise.displayName).tag(String?.some(exercise.displayName))
+                        }
                     } label: {
-                        Text("timedWorkout.amrap.partialReps", bundle: .module)
+                        Text("summary.editResult.partialRepsExercise", bundle: .module)
                             .font(.system(size: 15))
                     }
+                    .listRowBackground(Color.Deltiq.surface)
                 }
-                .listRowBackground(Color.Deltiq.surface)
-                Picker(selection: partialRepsExerciseBinding) {
-                    Text("summary.editResult.partialRepsExercise.none", bundle: .module)
-                        .tag(String?.none)
-                    ForEach(editableTimedFormatExercises, id: \.persistentModelID) { exercise in
-                        Text(exercise.displayName).tag(String?.some(exercise.displayName))
-                    }
-                } label: {
-                    Text("summary.editResult.partialRepsExercise", bundle: .module)
-                        .font(.system(size: 15))
-                }
-                .listRowBackground(Color.Deltiq.surface)
             case .emom:
-                Stepper(value: completedMinuteCountBinding, in: 0...max(60, session.day?.timeCapMinutes ?? 60)) {
+                // Nachtrag (Verifikation): reiner Fallback fuers geloeschte
+                // Tag (`day == nil`) - existiert der Tag noch, gilt IMMER
+                // sein echtes Minuten-Ziel als Obergrenze, nicht ein
+                // kuenstlicher 60-Min-Mindestwert, der einen kurzen EMOM-
+                // Deckel (z.B. 12 Min) sonst aushebeln wuerde.
+                Stepper(value: completedMinuteCountBinding, in: 0...(session.day?.timeCapMinutes ?? 60)) {
                     LabeledContent {
                         Text(String(format: String(localized: "summary.durationMinutes", bundle: .module),
                                     completedMinuteCountBinding.wrappedValue))
