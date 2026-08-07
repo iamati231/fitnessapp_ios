@@ -2086,11 +2086,19 @@ public struct DashboardView: View {
     /// bleibt trotzdem stabil, weil sie immer vom selben, festen Index in
     /// `compoundLiftNames` kommt - nur die Domain schrumpft mit der
     /// aktuellen Auswahl.
-    private func compoundColorScale(for series: [CompoundSeries]) -> [String: Color] {
+    ///
+    /// CI-Fix: `chartForegroundStyleScale` hat KEINE Ueberladung, die ein
+    /// `[String: Color]`-Dictionary annimmt - nur `KeyValuePairs<...>`
+    /// (ausschliesslich per Literal an der Aufrufstelle konstruierbar,
+    /// nicht aus einer Variable) oder `domain:`/`range:` als zwei parallele
+    /// Arrays. Dieser Fehler war vorher durch den Type-Checker-Timeout im
+    /// LineMark-Block DARUEBER maskiert - der Compiler kam nie bis zu
+    /// dieser Zeile. Rueckgabetyp deshalb auf das Array-Paar umgestellt.
+    private func compoundColorScale(for series: [CompoundSeries]) -> (domain: [String], range: [Color]) {
         let visibleNames = Set(series.map(\.exerciseName))
         let allNames = Self.compoundLiftNames.map { Exercise.resolvedDisplayName(forStoredName: $0) }
-        return Dictionary(uniqueKeysWithValues: zip(allNames, Self.compoundLiftColors))
-            .filter { visibleNames.contains($0.key) }
+        let pairs = zip(allNames, Self.compoundLiftColors).filter { visibleNames.contains($0.0) }
+        return (domain: pairs.map(\.0), range: pairs.map(\.1))
     }
 
     /// One series per compound lift. Each series carries one point per session
@@ -2243,6 +2251,7 @@ public struct DashboardView: View {
                 base: compoundChartRange.domain(oldestDataDate: oldestCompound),
                 forecastPoints: forecastSamples
             )
+            let colorScale = compoundColorScale(for: series)
             // Signature-Geruest 2.16: datengetriebene y-Achse statt Swift-
             // Charts-Automatik - die rundete bei Werten zwischen 60-110 kg
             // auf "schoene" Ticks wie 0/50/100/150 und liess die obere
@@ -2352,7 +2361,7 @@ public struct DashboardView: View {
                             }
                     }
                 }
-                .chartForegroundStyleScale(compoundColorScale(for: series))
+                .chartForegroundStyleScale(domain: colorScale.domain, range: colorScale.range)
                 .chartXScale(domain: domain)
                 .chartXAxis {
                     // DEL-153: feste Kalender-Anker statt daten-getriebener
