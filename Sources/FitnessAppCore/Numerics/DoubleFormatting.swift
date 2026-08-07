@@ -21,9 +21,22 @@ extension Double {
     /// Volumen/Kalorien keine, nur echte Praezisions-Messungen wie Scheiben-
     /// gewichte oder Distanzen zwei) - `formattedTwoDecimals` bleibt der
     /// unveraenderte Default fuer alle bestehenden Aufrufstellen.
+    ///
+    /// CI-Fix: `String(format:locale:)` mit `%f` uebernimmt je nach OS-/ICU-
+    /// Version auch die Tausender-GRUPPIERUNG der Locale, nicht nur das
+    /// Dezimaltrennzeichen (auf dieser CI-Maschine z.B. "1250" -> "1,250").
+    /// "Locale-aware" ist hier aber explizit nur als Dezimaltrennzeichen
+    /// gemeint (siehe Kommentar oben) - Trainingsvolumen/Kalorien-Werte
+    /// sollen nie eine Tausendergruppierung zeigen. Entfernt sie deshalb
+    /// gezielt nach der Formatierung, ohne das Rundungsverhalten von `%f`
+    /// selbst anzufassen.
     public func formatted(decimals: Int) -> String {
         precondition(decimals >= 0, "decimals must be non-negative")
-        return String(format: "%.\(decimals)f", locale: Locale.current, self)
+        let raw = String(format: "%.\(decimals)f", locale: Locale.current, self)
+        guard let groupingSeparator = Locale.current.groupingSeparator, !groupingSeparator.isEmpty else {
+            return raw
+        }
+        return raw.replacingOccurrences(of: groupingSeparator, with: "")
     }
 
     /// App-wide standard for numeric display — ALWAYS 2 decimals.
