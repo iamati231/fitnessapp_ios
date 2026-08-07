@@ -366,7 +366,8 @@ struct SetRow: View {
             PlatePopoverContent(
                 targetWeight: weight,
                 barWeight: barWeightKgRaw,
-                unitRaw: weightUnitRaw
+                unitRaw: weightUnitRaw,
+                exerciseName: exercise.name
             )
             .padding(16)
             .frame(minWidth: 260, idealWidth: 280)
@@ -1318,18 +1319,44 @@ private struct PlatePopoverContent: View {
     /// Bevorzugtes Standard-Langhantel-Gewicht (`pref_bar_weight_kg`).
     let barWeight: Double
     let unitRaw: String
+    let exerciseName: String
 
     /// Signature-Geruest 2.17 Nachtrag: SZ-Stange (~10 kg) und Trap-Bar
     /// (~25 kg) sind ebenfalls `.barbell`, teilen sich bisher aber die eine
     /// Standard-Einstellung — die Aufladung rechnet fuer sie mit der
-    /// falschen Stange. Kein Feld pro Uebung (waere zu viel), stattdessen
-    /// eine Auswahl je Popover-Aufruf, die beim naechsten Oeffnen wieder
-    /// auf Standard zurueckfaellt.
-    private enum BarType: Hashable {
+    /// falschen Stange.
+    private enum BarType: String, Hashable {
         case standard, ezBar, trapBar
     }
 
-    @State private var barType: BarType = .standard
+    @State private var barType: BarType
+
+    /// README 2.17 (28c): Skull Crusher ist immer SZ, Trap-Bar-Kreuzheben
+    /// immer Trap - bei jedem Oeffnen auf Standard zurueckzufallen zeigt
+    /// dort jedes Mal zuerst die falsche Zahl. Gemerkt wird Name -> Stange,
+    /// dasselbe Muster wie der Bibliotheks-Rueckfall fuer `equipment` -
+    /// kein Feld am Datenmodell, keine Migration.
+    private static let barTypeByExerciseKey = "pref_bar_type_by_exercise"
+
+    private static func rememberedBarType(for exerciseName: String) -> BarType {
+        let stored = UserDefaults.standard.dictionary(forKey: barTypeByExerciseKey) as? [String: String]
+        guard let raw = stored?[exerciseName], let matched = BarType(rawValue: raw) else { return .standard }
+        return matched
+    }
+
+    private static func rememberBarType(_ type: BarType, for exerciseName: String) {
+        var stored = (UserDefaults.standard.dictionary(forKey: barTypeByExerciseKey) as? [String: String]) ?? [:]
+        stored[exerciseName] = type.rawValue
+        UserDefaults.standard.set(stored, forKey: barTypeByExerciseKey)
+    }
+
+    init(targetWeight: Double, barWeight: Double, unitRaw: String, exerciseName: String) {
+        self.targetWeight = targetWeight
+        self.barWeight = barWeight
+        self.unitRaw = unitRaw
+        self.exerciseName = exerciseName
+        _barType = State(initialValue: Self.rememberedBarType(for: exerciseName))
+    }
 
     private var unit: PlateCalculator.Unit {
         PlateCalculator.Unit(rawValue: unitRaw) ?? .kg
@@ -1378,6 +1405,9 @@ private struct PlatePopoverContent: View {
                 ],
                 selection: $barType
             )
+            .onChange(of: barType) { _, newValue in
+                Self.rememberBarType(newValue, for: exerciseName)
+            }
 
             Text("Stange: \(formatWeight(effectiveBarWeight)) \(unit.rawValue)")
                 .font(.caption)

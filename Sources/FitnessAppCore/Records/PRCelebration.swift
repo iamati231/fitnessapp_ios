@@ -11,7 +11,14 @@ public enum PRCelebration {
 
     /// Returns nil when `records` is empty. Otherwise picks the highest-priority
     /// PR as the headline; remaining PRs are summarized as a count if any.
-    public static func make(from records: [PersonalRecord]) -> Celebration? {
+    ///
+    /// README 2.16 Nachtrag (28c): Emoji sind eine Eigenschaft der Tonlage,
+    /// nicht der Oberflaeche — die `coaching.*.motivating`-Katalogtexte
+    /// tragen sie schon nur in dieser einen Tonlage, hier zieht dieselbe
+    /// Regel ein. `tone` hat einen Default, damit bestehende Aufrufer
+    /// (Tests) unveraendert bleiben; Produktionsaufrufer geben die
+    /// tatsaechliche `UserBodyProfile.coachingTone` mit.
+    public static func make(from records: [PersonalRecord], tone: CoachingTone = .motivating) -> Celebration? {
         guard !records.isEmpty else { return nil }
 
         // Sort by display priority; ties resolved by exerciseName for stability.
@@ -25,34 +32,35 @@ public enum PRCelebration {
         let headline = sorted[0]
         let remaining = sorted.count - 1
 
-        let title = title(for: headline)
+        let title = title(for: headline, tone: tone)
         var body = detail(for: headline)
         if remaining > 0 {
             body += "  •  +\(remaining) weitere\(remaining == 1 ? "r" : "") Rekord\(remaining == 1 ? "" : "e")"
         }
 
         // Compact one-liner for the Live Activity (limited horizontal space).
+        let trophyPrefix = tone == .motivating ? "🏆 " : ""
         let activityLine: String = {
             let exercise = shortenExercise(headline.exerciseName)
             switch headline.kind {
             case .maxReps:
-                return "🏆 \(headline.reps) Wdh \(exercise)"
+                return "\(trophyPrefix)\(headline.reps) Wdh \(exercise)"
             case .maxHoldSeconds:
-                return "🏆 \(headline.reps)s \(exercise)"
+                return "\(trophyPrefix)\(headline.reps)s \(exercise)"
             case .estimated1RM, .heaviestWeight:
-                return "🏆 \(formatNumber(headline.newValue)) kg \(exercise)"
+                return "\(trophyPrefix)\(formatNumber(headline.newValue)) kg \(exercise)"
             case .bestSet:
-                return "🏆 \(formatNumber(headline.weightKg))×\(headline.reps) \(exercise)"
+                return "\(trophyPrefix)\(formatNumber(headline.weightKg))×\(headline.reps) \(exercise)"
             // DEL-064 Cardio
             case .longestDistance:
-                return "🏆 \(formatNumber(headline.newValue)) km \(exercise)"
+                return "\(trophyPrefix)\(formatNumber(headline.newValue)) km \(exercise)"
             case .fastestPace:
-                return "🏆 \(formatPace(headline.newValue)) \(exercise)"
+                return "\(trophyPrefix)\(formatPace(headline.newValue)) \(exercise)"
             // Zeitformate (README 2.9)
             case .mostRounds:
-                return "🏆 \(Int(headline.newValue)) Runden \(exercise)"
+                return "\(trophyPrefix)\(Int(headline.newValue)) Runden \(exercise)"
             case .fastestTime:
-                return "🏆 \(formatDuration(headline.newValue)) \(exercise)"
+                return "\(trophyPrefix)\(formatDuration(headline.newValue)) \(exercise)"
             }
         }()
 
@@ -83,18 +91,22 @@ public enum PRCelebration {
 
     // MARK: - Title / detail per kind
 
-    private static func title(for record: PersonalRecord) -> String {
+    private static func title(for record: PersonalRecord, tone: CoachingTone) -> String {
+        let base: String
+        let emoji: String
         switch record.kind {
-        case .estimated1RM:     return "Neuer 1RM-Rekord! 🏆"
-        case .heaviestWeight:   return "Neues Maximalgewicht! 💪"
-        case .bestSet:          return "Neuer Bestsatz! 📈"
-        case .maxReps:          return "Neuer Reps-Rekord! 🔥"
-        case .maxHoldSeconds:   return "Neue Bestzeit! ⏱️"
-        case .longestDistance:  return "Längste Distanz! 🎉"
-        case .fastestPace:      return "Neue Best-Pace! 🔥"
-        case .mostRounds:       return "Neue Bestrunde! 🎉"
-        case .fastestTime:      return "Neue WOD-Bestzeit! ⚡"
+        case .estimated1RM:     base = "Neuer 1RM-Rekord!";       emoji = "🏆"
+        case .heaviestWeight:   base = "Neues Maximalgewicht!";   emoji = "💪"
+        case .bestSet:          base = "Neuer Bestsatz!";         emoji = "📈"
+        case .maxReps:          base = "Neuer Reps-Rekord!";      emoji = "🔥"
+        case .maxHoldSeconds:   base = "Neue Bestzeit!";          emoji = "⏱️"
+        case .longestDistance:  base = "Längste Distanz!";        emoji = "🎉"
+        case .fastestPace:      base = "Neue Best-Pace!";         emoji = "🔥"
+        case .mostRounds:       base = "Neue Bestrunde!";         emoji = "🎉"
+        case .fastestTime:      base = "Neue WOD-Bestzeit!";      emoji = "⚡"
         }
+        guard tone == .motivating else { return base }
+        return "\(base) \(emoji)"
     }
 
     private static func detail(for record: PersonalRecord) -> String {

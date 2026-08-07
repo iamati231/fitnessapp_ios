@@ -64,8 +64,11 @@ private func finishTimedSession(
     session.exerciseCount = session.day?.activeExercises.count ?? 0
 
     let detectedPR = PersonalRecordSync.recordTimedFormatPR(for: session, in: modelContext)
+    // README 2.16 (28c): gleiche Tonlage-Kopplung wie ActiveWorkoutView.finishWorkout()
+    // - hier ohne @Query, da finishTimedSession eine freie Funktion ist.
+    let tone = (try? modelContext.fetch(FetchDescriptor<UserBodyProfile>()))?.first?.coachingTone ?? .analytical
     let celebration = prCelebrationsEnabled
-        ? PRCelebration.make(from: detectedPR.map { [$0] } ?? [])
+        ? PRCelebration.make(from: detectedPR.map { [$0] } ?? [], tone: tone)
         : nil
 
     let workoutStart = session.startTime

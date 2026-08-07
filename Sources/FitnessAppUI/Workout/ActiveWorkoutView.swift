@@ -83,6 +83,11 @@ public struct ActiveWorkoutView: View {
     /// nur isCompleted-Sessions.
     @Query private var recentSessions: [WorkoutSession]
 
+    /// README 2.16 (28c): liefert die Tonlage fuer `PRCelebration.make` -
+    /// Emoji nur bei "Motivierend", damit PR-Feier und Coach-Texte
+    /// konsistent bleiben.
+    @Query private var profiles: [UserBodyProfile]
+
     @State private var now: Date = Date()
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -1010,7 +1015,7 @@ public struct ActiveWorkoutView: View {
         // DEL-204: Workout beendet → keine "Pause vorbei"-Notification mehr.
         cancelRestTimerNotification()
         let celebration = prCelebrationsEnabled
-            ? PRCelebration.make(from: detectedPRs)
+            ? PRCelebration.make(from: detectedPRs, tone: profiles.first?.coachingTone ?? .analytical)
             : nil
         Task { [celebration] in
             if let celebration {
