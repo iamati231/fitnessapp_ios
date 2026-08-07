@@ -2311,9 +2311,10 @@ public struct DashboardView: View {
                             let xValue: PlottableValue<Date> = .value("Datum", point.date)
                             let yValue: PlottableValue<Double> = .value("1RM (kg)", point.oneRM)
                             let seriesValue: PlottableValue<String> = .value("Serie", forecastSeriesKey)
+                            let liftStyleValue: PlottableValue<String> = .value("Lift", line.exerciseName)
                             LineMark(x: xValue, y: yValue, series: seriesValue)
                                 .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
-                                .foregroundStyle(by: .value("Lift", line.exerciseName))
+                                .foregroundStyle(by: liftStyleValue)
                                 .opacity(0.6)
                         }
                         // Forecast-Endpunkt als hohler Ring — visuell als
