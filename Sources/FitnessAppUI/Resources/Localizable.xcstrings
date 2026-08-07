@@ -25204,6 +25204,62 @@
         }
       }
     },
+    "summary.editResult.completedMinutes": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Geschaffte Minuten" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Minutes completed" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tamamlanan dakika" } }
+      }
+    },
+    "summary.editResult.finishTime": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Zielzeit" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Finish time" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bitiş süresi" } }
+      }
+    },
+    "summary.editResult.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nachträglich korrigieren, falls beim Speichern etwas danebenging." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Correct after the fact if something was off when you saved." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kaydederken bir şey yanlış gittiyse sonradan düzelt." } }
+      }
+    },
+    "summary.editResult.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ergebnis" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Result" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sonuç" } }
+      }
+    },
+    "summary.editResult.partialRepsExercise": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Übung (Restwdh.)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Exercise (extra reps)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Egzersiz (ek tekrar)" } }
+      }
+    },
+    "summary.editResult.partialRepsExercise.none": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Keine" } },
+        "en": { "stringUnit": { "state": "translated", "value": "None" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yok" } }
+      }
+    },
+    "summary.editResult.rounds": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Runden" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Rounds" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tur" } }
+      }
+    },
     "summary.editMeta.footer": {
       "extractionState": "manual",
       "localizations": {

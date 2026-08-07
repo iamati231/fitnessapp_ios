@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1631 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1638 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1631 / 1631** (100%) | 0 |
-| 🇬🇧 English (EN) | **1631 / 1631** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1631 / 1631** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1638 / 1638** (100%) | 0 |
+| 🇬🇧 English (EN) | **1638 / 1638** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1638 / 1638** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1757,7 +1757,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `sex.female` | Weiblich | Female | Kadın |
 | `sex.male` | Männlich | Male | Erkek |
 
-## `summary.*`  (62 Keys)
+## `summary.*`  (69 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1788,6 +1788,13 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.early.unitWithTime` | %1$@ in %2$@ | %1$@ in %2$@ | %2$@ içinde %1$@ |
 | `summary.editMeta.footer` | Datum + Dauer werden hier überschrieben. Set-Werte unten editierst du direkt am Satz. | Date + duration are overridden here. Edit set values directly on each set below. | Tarih + süre burada üzerine yazılır. Set değerlerini aşağıda doğrudan her sette düzenle. |
 | `summary.editMeta.header` | Eckdaten | Key Data | Temel Veriler |
+| `summary.editResult.completedMinutes` | Geschaffte Minuten | Minutes completed | Tamamlanan dakika |
+| `summary.editResult.finishTime` | Zielzeit | Finish time | Bitiş süresi |
+| `summary.editResult.footer` | Nachträglich korrigieren, falls beim Speichern etwas danebenging. | Correct after the fact if something was off when you saved. | Kaydederken bir şey yanlış gittiyse sonradan düzelt. |
+| `summary.editResult.header` | Ergebnis | Result | Sonuç |
+| `summary.editResult.partialRepsExercise` | Übung (Restwdh.) | Exercise (extra reps) | Egzersiz (ek tekrar) |
+| `summary.editResult.partialRepsExercise.none` | Keine | None | Yok |
+| `summary.editResult.rounds` | Runden | Rounds | Tur |
 | `summary.editTitle` | Training bearbeiten | Edit Workout | Antrenmanı Düzenle |
 | `summary.exercise.bestPrefix` | Beste | Best | En İyi |
 | `summary.exercise.footer.one` | %1$lld Satz • %2$@ kg Volumen | %1$lld set • %2$@ kg volume | %1$lld set • %2$@ kg hacim |

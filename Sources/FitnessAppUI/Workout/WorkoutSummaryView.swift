@@ -130,6 +130,15 @@ public struct WorkoutSummaryView: View {
                 if isEditingSets {
                     editMetaSection
                 }
+                // Nutzer-Feedback (7. August): Datum + Dauer liessen sich im
+                // History-Edit-Mode bereits korrigieren, das Zeitformat-
+                // ERGEBNIS selbst (Runden/Restwdh. bei AMRAP, geschaffte
+                // Minuten bei EMOM, Zielzeit bei Auf Zeit) aber nicht -
+                // `timedFormatCircuitSection` in breakdownSections blieb
+                // unabhaengig vom Edit-Mode rein lesend.
+                if isEditingSets, let format = session.timeFormatSnapshot {
+                    editTimedResultSection(format)
+                }
                 if !personalRecords.isEmpty {
                     prSection
                 }
@@ -292,6 +301,152 @@ public struct WorkoutSummaryView: View {
                 .foregroundStyle(Color.Deltiq.textSecondary)
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
+    }
+
+    /// Nutzer-Feedback (7. August): Zeitformat-ERGEBNIS im History-Edit-Mode
+    /// editierbar machen - vorher liess sich nur Datum/Dauer (editMetaSection)
+    /// korrigieren, `timedFormatCircuitSection` in breakdownSections blieb
+    /// unabhaengig vom Edit-Mode rein lesend. Eigene Section statt Erweiterung
+    /// von editMetaSection, weil sie nur bei Zeitformat-Sessions erscheint.
+    @ViewBuilder
+    private func editTimedResultSection(_ format: WorkoutTimeFormat) -> some View {
+        Section {
+            switch format {
+            case .amrap:
+                Stepper(value: roundsCompletedBinding, in: 0...999) {
+                    LabeledContent {
+                        Text(roundsCompletedValueText)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    } label: {
+                        Text("summary.editResult.rounds", bundle: .module)
+                            .font(.system(size: 15))
+                    }
+                }
+                .listRowBackground(Color.Deltiq.surface)
+                Stepper(value: partialRepsBinding, in: 0...partialRepsStepperMax) {
+                    LabeledContent {
+                        Text("\(partialRepsBinding.wrappedValue)")
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    } label: {
+                        Text("timedWorkout.amrap.partialReps", bundle: .module)
+                            .font(.system(size: 15))
+                    }
+                }
+                .listRowBackground(Color.Deltiq.surface)
+                Picker(selection: partialRepsExerciseBinding) {
+                    Text("summary.editResult.partialRepsExercise.none", bundle: .module)
+                        .tag(String?.none)
+                    ForEach(editableTimedFormatExercises, id: \.persistentModelID) { exercise in
+                        Text(exercise.displayName).tag(String?.some(exercise.displayName))
+                    }
+                } label: {
+                    Text("summary.editResult.partialRepsExercise", bundle: .module)
+                        .font(.system(size: 15))
+                }
+                .listRowBackground(Color.Deltiq.surface)
+            case .emom:
+                Stepper(value: completedMinuteCountBinding, in: 0...max(60, session.day?.timeCapMinutes ?? 60)) {
+                    LabeledContent {
+                        Text(String(format: String(localized: "summary.durationMinutes", bundle: .module),
+                                    completedMinuteCountBinding.wrappedValue))
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    } label: {
+                        Text("summary.editResult.completedMinutes", bundle: .module)
+                            .font(.system(size: 15))
+                    }
+                }
+                .listRowBackground(Color.Deltiq.surface)
+            case .forTime:
+                Stepper(value: finishTimeSecondsBinding, in: 0...7200, step: 5) {
+                    LabeledContent {
+                        Text(PaceCalculator.formatDuration(finishTimeSecondsBinding.wrappedValue))
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    } label: {
+                        Text("summary.editResult.finishTime", bundle: .module)
+                            .font(.system(size: 15))
+                    }
+                }
+                .listRowBackground(Color.Deltiq.surface)
+            }
+        } header: {
+            sectionHeader(String(localized: "summary.editResult.header", bundle: .module))
+        } footer: {
+            Text("summary.editResult.footer", bundle: .module)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
+        }
+        .listRowSeparatorTint(Color.Deltiq.divider)
+    }
+
+    private var editableTimedFormatExercises: [Exercise] {
+        (session.day?.activeExercises ?? []).sorted { $0.orderIndex < $1.orderIndex }
+    }
+
+    private var roundsCompletedBinding: Binding<Int> {
+        Binding(
+            get: { session.roundsCompleted ?? 0 },
+            set: { session.roundsCompleted = $0 }
+        )
+    }
+
+    private var roundsCompletedValueText: String {
+        let rounds = session.roundsCompleted ?? 0
+        let suffix = rounds == 1 ? "one" : "other"
+        let key = String.LocalizationValue(stringLiteral: "timedWorkout.amrap.rounds.\(suffix)")
+        return String(localized: key, bundle: .module).replacingOccurrences(of: "%lld", with: "\(rounds)")
+    }
+
+    /// Deckt sich mit der Stepper-Range im Live-Player (`partialRepsStepperRow`
+    /// in TimedWorkoutPlayerView.swift): begrenzt auf das Pro-Runde-Ziel der
+    /// zugeordneten Uebung, weil mehr Restwdh. als das Rundenziel bereits eine
+    /// weitere volle Runde waere.
+    private var partialRepsStepperMax: Int {
+        guard let name = session.partialRepsExerciseName,
+              let match = editableTimedFormatExercises.first(where: { $0.displayName == name })
+        else { return 999 }
+        return match.repsMin
+    }
+
+    private var partialRepsBinding: Binding<Int> {
+        Binding(
+            get: { session.partialReps ?? 0 },
+            set: { newValue in
+                session.partialReps = newValue
+                if newValue == 0 {
+                    session.partialRepsExerciseName = nil
+                } else if session.partialRepsExerciseName == nil {
+                    session.partialRepsExerciseName = editableTimedFormatExercises.first?.displayName
+                }
+            }
+        )
+    }
+
+    /// Gleiche Begruendung wie beim Stations-Wechsel im Live-Player (siehe
+    /// dortiger Kommentar bei `currentStationID =`): ein Wechsel der
+    /// Zuordnung darf nicht die Restwdh.-Zahl der VORHERIGEN Uebung fuer die
+    /// neue weiterschleppen.
+    private var partialRepsExerciseBinding: Binding<String?> {
+        Binding(
+            get: { session.partialRepsExerciseName },
+            set: { newValue in
+                session.partialRepsExerciseName = newValue
+                session.partialReps = 0
+            }
+        )
+    }
+
+    private var completedMinuteCountBinding: Binding<Int> {
+        Binding(
+            get: { session.completedMinuteCount ?? 0 },
+            set: { session.completedMinuteCount = $0 }
+        )
+    }
+
+    private var finishTimeSecondsBinding: Binding<Int> {
+        Binding(
+            get: { session.finishTimeSeconds ?? 0 },
+            set: { session.finishTimeSeconds = $0 }
+        )
     }
 
     /// DEL-136 Part B: Loescht ALLE Logs einer bestimmten Uebung aus dieser
