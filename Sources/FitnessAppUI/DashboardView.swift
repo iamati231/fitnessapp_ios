@@ -2269,21 +2269,26 @@ public struct DashboardView: View {
                 Chart {
                     ForEach(series) { line in
                         ForEach(line.points) { point in
-                            LineMark(
-                                x: .value("Datum", point.date),
-                                y: .value("1RM (kg)", point.oneRM),
-                                series: .value("Lift", line.exerciseName)
-                            )
-                            .interpolationMethod(.monotone)
-                            .foregroundStyle(by: .value("Lift", line.exerciseName))
-                            .symbol(by: .value("Lift", line.exerciseName))
+                            // Gleicher Fix wie beim Forecast-Segment unten:
+                            // LineMark(x:y:series:) plus zwei weitere
+                            // ueberladene `.value(...)`-Aufrufe in
+                            // `.foregroundStyle(by:)`/`.symbol(by:)` zwingen
+                            // den Type-Checker, alle Ueberladungen gemeinsam
+                            // aufzuloesen - erst als eigene, typisierte
+                            // `let`s vorab macht jede Aufloesung billig und
+                            // unabhaengig.
+                            let xValue: PlottableValue<Date> = .value("Datum", point.date)
+                            let yValue: PlottableValue<Double> = .value("1RM (kg)", point.oneRM)
+                            let seriesValue: PlottableValue<String> = .value("Lift", line.exerciseName)
+                            let liftStyleValue: PlottableValue<String> = .value("Lift", line.exerciseName)
+                            LineMark(x: xValue, y: yValue, series: seriesValue)
+                                .interpolationMethod(.monotone)
+                                .foregroundStyle(by: liftStyleValue)
+                                .symbol(by: liftStyleValue)
 
-                            PointMark(
-                                x: .value("Datum", point.date),
-                                y: .value("1RM (kg)", point.oneRM)
-                            )
-                            .foregroundStyle(by: .value("Lift", line.exerciseName))
-                            .symbolSize(40)
+                            PointMark(x: xValue, y: yValue)
+                                .foregroundStyle(by: liftStyleValue)
+                                .symbolSize(40)
                         }
                     }
                     // DEL-179: gestrichelte Forecast-Linie pro Lift —
@@ -2299,6 +2304,12 @@ public struct DashboardView: View {
                     // damit die Farbe trotzdem an den Ist-Verlauf gekoppelt ist.
                     ForEach(forecastSamples) { line in
                         let forecastSeriesKey = "\(line.exerciseName)-forecast"
+                        // Auf DIESER Ebene deklariert (nicht in der inneren
+                        // ForEach-Closure) - der Forecast-Endpunkt-PointMark
+                        // gleich unten ist ein GESCHWISTER-Statement der
+                        // inneren ForEach, braucht also seinen eigenen
+                        // Zugriff auf denselben Wert.
+                        let liftStyleValue: PlottableValue<String> = .value("Lift", line.exerciseName)
                         ForEach(line.points) { point in
                             // Fix Runde 2 (Release-Gate-Log): das Auslagern
                             // der Serien-Strings allein reichte nicht - der
@@ -2311,7 +2322,6 @@ public struct DashboardView: View {
                             let xValue: PlottableValue<Date> = .value("Datum", point.date)
                             let yValue: PlottableValue<Double> = .value("1RM (kg)", point.oneRM)
                             let seriesValue: PlottableValue<String> = .value("Serie", forecastSeriesKey)
-                            let liftStyleValue: PlottableValue<String> = .value("Lift", line.exerciseName)
                             LineMark(x: xValue, y: yValue, series: seriesValue)
                                 .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
                                 .foregroundStyle(by: liftStyleValue)
@@ -2320,14 +2330,13 @@ public struct DashboardView: View {
                         // Forecast-Endpunkt als hohler Ring — visuell als
                         // "Projektion" erkennbar, kein voller PointMark.
                         if let last = line.points.last {
-                            PointMark(
-                                x: .value("Datum", last.date),
-                                y: .value("1RM (kg)", last.oneRM)
-                            )
-                            .symbol(.circle.strokeBorder(lineWidth: 1.5))
-                            .symbolSize(50)
-                            .foregroundStyle(by: .value("Lift", line.exerciseName))
-                            .opacity(0.8)
+                            let lastXValue: PlottableValue<Date> = .value("Datum", last.date)
+                            let lastYValue: PlottableValue<Double> = .value("1RM (kg)", last.oneRM)
+                            PointMark(x: lastXValue, y: lastYValue)
+                                .symbol(.circle.strokeBorder(lineWidth: 1.5))
+                                .symbolSize(50)
+                                .foregroundStyle(by: liftStyleValue)
+                                .opacity(0.8)
                         }
                     }
                     // Signature-Geruest 2.16: "Heute"-Markierung, damit
@@ -2882,21 +2891,24 @@ public struct DashboardView: View {
                 Chart {
                     ForEach(series) { line in
                         ForEach(line.points) { point in
-                            LineMark(
-                                x: .value("Datum", point.date),
-                                y: .value("Pace (min/km)", point.paceMinPerKm),
-                                series: .value("Lauf", line.exerciseName)
-                            )
-                            .interpolationMethod(.monotone)
-                            .foregroundStyle(by: .value("Lauf", line.exerciseName))
-                            .symbol(by: .value("Lauf", line.exerciseName))
+                            // Gleicher Type-Checker-Fix wie beim Compound-
+                            // Lift-Chart oben: LineMark(x:y:series:) plus
+                            // zwei weitere ueberladene `.value(...)`-Aufrufe
+                            // in `.foregroundStyle(by:)`/`.symbol(by:)`
+                            // erst als eigene, typisierte `let`s vorab
+                            // aufloesen statt gemeinsam inline.
+                            let xValue: PlottableValue<Date> = .value("Datum", point.date)
+                            let yValue: PlottableValue<Double> = .value("Pace (min/km)", point.paceMinPerKm)
+                            let seriesValue: PlottableValue<String> = .value("Lauf", line.exerciseName)
+                            let runStyleValue: PlottableValue<String> = .value("Lauf", line.exerciseName)
+                            LineMark(x: xValue, y: yValue, series: seriesValue)
+                                .interpolationMethod(.monotone)
+                                .foregroundStyle(by: runStyleValue)
+                                .symbol(by: runStyleValue)
 
-                            PointMark(
-                                x: .value("Datum", point.date),
-                                y: .value("Pace (min/km)", point.paceMinPerKm)
-                            )
-                            .foregroundStyle(by: .value("Lauf", line.exerciseName))
-                            .symbolSize(40)
+                            PointMark(x: xValue, y: yValue)
+                                .foregroundStyle(by: runStyleValue)
+                                .symbolSize(40)
                         }
                     }
                 }
