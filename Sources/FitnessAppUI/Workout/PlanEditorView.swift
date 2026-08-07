@@ -293,6 +293,27 @@ public struct PlanEditorView: View {
         }
     }
 
+    // MARK: - README 2.20 "Plan bauen": neu rechnen
+
+    /// Rechnet den am Plan gespeicherten `generatorInput` neu (siehe
+    /// `PlanGeneratorInstantiator.recalculate`) und meldet per Toast, wie
+    /// viele Tage tatsaechlich ueberschrieben wurden - alle vom User seither
+    /// bearbeiteten Tage bleiben unangetastet stehen.
+    private func recalculateFromGenerator() {
+        let rewritten = PlanGeneratorInstantiator.recalculate(plan, in: modelContext)
+        let message = rewritten == 0
+            ? "Keine unveraenderten Tage zum Neu-Rechnen gefunden"
+            : "\(rewritten) \(rewritten == 1 ? "Tag" : "Tage") neu berechnet"
+        withAnimation(.easeOut(duration: 0.2)) {
+            swapResultToast = message
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            withAnimation(.easeIn(duration: 0.2)) {
+                swapResultToast = nil
+            }
+        }
+    }
+
     // DEL-118: route durch die zentrale .localizedName-Extension.
     private func environmentLabel(_ env: EnvironmentType) -> String {
         String(localized: env.localizedName)
@@ -308,28 +329,39 @@ public struct PlanEditorView: View {
         false
     }
 
-    /// DEL-095: Ersatz fuer EditButton() — aktiviert denselben Drag-Mode
-    /// fuer die Tage-Reihenfolge, nur als Header-Aktion statt natives
-    /// Toolbar-Item. Bei readOnly-Templates oder leerem Tage-Array bleibt
-    /// die Aktion ganz weg (kein Reorder ohne mind. 2 Tage sinnvoll).
-    /// `editMode` selbst ist auf macOS/watchOS unavailable - leeres Array
-    /// dort (siehe Kommentar an der Property-Deklaration).
+    /// Zwei unabhaengige Header-Aktionen, je nur sichtbar wenn zutreffend:
+    ///
+    /// * README 2.20 "neu rechnen" — nur fuer Plaene mit `generatorInput`
+    ///   (ueber "Plan bauen" entstanden), auf allen Plattformen.
+    /// * DEL-095: Ersatz fuer EditButton() — aktiviert denselben Drag-Mode
+    ///   fuer die Tage-Reihenfolge, nur als Header-Aktion statt natives
+    ///   Toolbar-Item. Bei readOnly-Templates oder leerem Tage-Array bleibt
+    ///   die Aktion ganz weg (kein Reorder ohne mind. 2 Tage sinnvoll).
+    ///   `editMode` selbst ist auf macOS/watchOS unavailable - dort iOS-only
+    ///   gegated (siehe Kommentar an der Property-Deklaration).
     private var headerActions: [DeltiqHeaderAction] {
+        var actions: [DeltiqHeaderAction] = []
+        // README 2.20: nur Plaene, die ueber "Plan bauen" entstanden sind,
+        // tragen `generatorInput` - kein Platform-Guard noetig, im Gegensatz
+        // zum Reorder-Toggle unten haengt das nicht an `editMode` (UIKit-only).
+        if plan.generatorInput != nil {
+            actions.append(DeltiqHeaderAction(systemImage: "arrow.triangle.2.circlepath") {
+                recalculateFromGenerator()
+            })
+        }
         #if os(iOS)
-        guard !isReadOnly, !plan.days.isEmpty else { return [] }
-        return [
-            DeltiqHeaderAction(
+        if !isReadOnly, !plan.days.isEmpty {
+            actions.append(DeltiqHeaderAction(
                 systemImage: editMode?.wrappedValue.isEditing == true ? "checkmark" : "arrow.up.arrow.down",
                 isHighlighted: editMode?.wrappedValue.isEditing == true
             ) {
                 withAnimation {
                     editMode?.wrappedValue = editMode?.wrappedValue.isEditing == true ? .inactive : .active
                 }
-            }
-        ]
-        #else
-        return []
+            })
+        }
         #endif
+        return actions
     }
 
     // MARK: Sections

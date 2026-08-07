@@ -130,6 +130,8 @@ public struct PlanBuilderView: View {
                                         set: { newValue in if newValue { selectKind(kind) } }
                                     )
                                 )
+                                .disabled(!canAddMoreDays)
+                                .opacity(canAddMoreDays ? 1.0 : 0.4)
                             }
                         }
                         .padding(.top, 8)
@@ -251,14 +253,24 @@ public struct PlanBuilderView: View {
         return [days, minutes, experience].joined(separator: " · ")
     }
 
+    /// `configControls`s Deckel greift nur, wenn eine BEREITS ausgewaehlte
+    /// Karte aufgeklappt und ihr eigener Stepper bewegt wird. Ohne diesen
+    /// zweiten Check koennte `selectKind` selbst die Summe ueber 7 treiben
+    /// (jede neu hinzugefuegte Art bekommt via `max(1, ...)` mindestens
+    /// einen Tag, auch wenn schon alle 7 Wochentage vergeben sind) - mit
+    /// genau der stillen Truncation, vor der `configControls` warnt.
+    private var canAddMoreDays: Bool { totalSelectedDays < 7 }
+
     private func selectKind(_ kind: TrainingTypeKind) {
-        guard !selectedKinds.contains(kind) else { return }
+        guard !selectedKinds.contains(kind), canAddMoreDays else { return }
         selectedKinds.append(kind)
         // README 2.20 Beispiel: "3 Tage Kettlebell, 45 Min." - gleiche Zahlen
-        // als sinnvoller Startwert fuer jede neu hinzugefuegte Art.
+        // als sinnvoller Startwert fuer jede neu hinzugefuegte Art. `guard`
+        // oben garantiert bereits totalSelectedDays < 7, also ist
+        // 7 - totalSelectedDays hier immer >= 1.
         configByKind[kind] = PlanGeneratorTypeSelection(
             kind: kind,
-            daysPerWeek: min(3, max(1, 7 - totalSelectedDays)),
+            daysPerWeek: min(3, 7 - totalSelectedDays),
             sessionDurationMinutes: 45,
             experience: .intermediate
         )
@@ -544,7 +556,7 @@ public struct PlanBuilderView: View {
         }
         let hours = totalMinutes / 60
         let minutes = totalMinutes % 60
-        return String(format: "%d:%02d", hours, minutes)
+        return String(format: "%lld:%02lld", hours, minutes)
     }
 
     // MARK: - Navigation

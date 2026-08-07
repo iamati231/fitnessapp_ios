@@ -40,7 +40,18 @@ public enum PlanGeneratorInstantiator {
             userEquipment: input.equipmentPreferences
         )
         plan.generatorInput = input
-        for day in plan.days where day.type != .rest {
+
+        // Genau JETZT - direkt nach `instantiate`, bevor irgendein Edit
+        // stattfinden konnte - entspricht die Montag-first-sortierte
+        // Position exakt dem `sequenceIndex`, mit dem `ProgramInstantiator`
+        // gerade erst jeden Tag angelegt hat (siehe dortige
+        // `sortedDays.enumerated()` + `normalized[idx]`-Zuordnung). Das ist
+        // die EINZIGE Stelle, an der wir uns auf Listenposition statt auf
+        // den gespeicherten `generatorSequenceIndex` verlassen duerfen -
+        // `recalculate` tut das bewusst NICHT mehr (siehe dort).
+        let orderedDays = PlanNavigator.sortByWeekdayMondayFirst(plan.days.filter { $0.type != .rest })
+        for (day, generated) in zip(orderedDays, result.days) {
+            day.generatorSequenceIndex = generated.spec.sequenceIndex
             day.generationFingerprint = day.currentContentFingerprint
         }
         return plan
@@ -54,10 +65,20 @@ public enum PlanGeneratorInstantiator {
     /// `generationFingerprint` noch exakt seinem `currentContentFingerprint`
     /// entspricht; alles andere ist ein User-Edit und bleibt stehen.
     ///
-    /// Matching generierter <-> bestehender Tage laeuft rein positional
-    /// (Montag-first sortiert = `sequenceIndex`-Reihenfolge, siehe
-    /// `ProgramInstantiator.instantiate`s Wochentag-Zuordnung) - Tage
-    /// aendern ihren Wochentag durch `recalculate` nie, nur Name/Inhalt.
+    /// Matching generierter <-> bestehender Tage laeuft NICHT positional,
+    /// sondern ueber den bei der Erzeugung gestempelten
+    /// `TrainingDay.generatorSequenceIndex`. Ein frueherer Entwurf sortierte
+    /// die Trainings-Tage Montag-first und griff per Listen-Index in
+    /// `result.days` - das bricht, sobald der User ueber `DayEditorView`
+    /// den Wochentag EINES Tages aendert oder einen Tag zum Ruhetag macht:
+    /// die Montag-first-Position verschiebt sich fuer alle NACHFOLGENDEN
+    /// Tage, obwohl die als unangetastet gelten und ueberschrieben werden
+    /// sollten - mit dem Inhalt des FALSCHEN generierten Tages. Der
+    /// `generatorSequenceIndex` bleibt dagegen stabil, ganz gleich wie oft
+    /// Wochentag/Typ seither editiert wurden (beide sind zusaetzlich Teil
+    /// von `currentContentFingerprint`, schuetzen einen so geaenderten Tag
+    /// also ohnehin vor dem Ueberschreiben).
+    ///
     /// Kein-Op (Rueckgabe 0), wenn der Plan gar keinen `generatorInput`
     /// traegt (nicht ueber den Assistenten entstanden).
     ///
@@ -66,31 +87,26 @@ public enum PlanGeneratorInstantiator {
     public static func recalculate(_ plan: TrainingPlan, in context: ModelContext) -> Int {
         guard let input = plan.generatorInput else { return 0 }
         let result = PlanGenerator.generate(from: input)
-
-        // WICHTIG: entlang der VOLLSTAENDIGEN Liste iterieren und per Index
-        // in `result.days` greifen - NICHT `existingWorkoutDays.filter(...)`
-        // gegen `result.days` zippen. Sobald irgendein Tag VOR dem letzten
-        // uebersprungen wird, haetten die beiden Listen unterschiedliche
-        // Luecken und ein positionelles Zip wuerde jeden nachfolgenden Tag
-        // mit dem FALSCHEN generierten Tag verheiraten.
-        let existingWorkoutDays = PlanNavigator.sortByWeekdayMondayFirst(
-            plan.days.filter { $0.type != .rest }
+        let generatedBySequenceIndex = Dictionary(
+            uniqueKeysWithValues: result.days.map { ($0.spec.sequenceIndex, $0.spec) }
         )
 
         let (timeBasedNames, compoundNames) = ProgramInstantiator.libraryLookupNames()
         let specByName = ProgramInstantiator.libraryLookupSpecs()
 
         var rewritten = 0
-        for (index, day) in existingWorkoutDays.enumerated() {
-            // Tage-Anzahl kann seit der Erzeugung abweichen, wenn der User
-            // ueber den Editor einen Ruhetag zu einem Trainingstag gemacht
-            // hat (oder umgekehrt) - defensiv abbrechen statt out-of-bounds
-            // zu greifen.
-            guard index < result.days.count else { break }
+        for day in plan.days {
+            // `daysPerWeek` kann sich seit der Erzeugung veraendert haben
+            // (andere `input`-Selektion nach erneutem Wizard-Durchlauf waere
+            // ein Zukunfts-Feature - heute unveraendert, aber die Anzahl der
+            // Tage kann trotzdem abweichen); ein `sequenceIndex`, den es im
+            // frischen Ergebnis nicht mehr gibt, wird defensiv uebersprungen.
+            guard let sequenceIndex = day.generatorSequenceIndex,
+                  let generatedSpec = generatedBySequenceIndex[sequenceIndex] else { continue }
             guard day.generationFingerprint != nil,
                   day.generationFingerprint == day.currentContentFingerprint else { continue }
             apply(
-                result.days[index].spec,
+                generatedSpec,
                 to: day,
                 timeBasedNames: timeBasedNames,
                 compoundNames: compoundNames,
@@ -106,6 +122,14 @@ public enum PlanGeneratorInstantiator {
     /// generierten `DaySpec` und schreibt den neuen Fingerprint fest -
     /// gleiche Exercise-Anreicherung wie beim ersten Erzeugen
     /// (`ProgramInstantiator.makeExercise`), keine Zweit-Implementierung.
+    ///
+    /// Loescht bewusst nur `activeExercises`, NICHT die volle `exercises`-
+    /// Relationship: `currentContentFingerprint` ignoriert archivierte
+    /// Eintraege absichtlich (ein automatischer Urlaubs-Modus-Swap soll
+    /// "neu rechnen" nicht blockieren, siehe dortige Doku) - wuerden hier
+    /// trotzdem ALLE Uebungen geloescht, riesse das genau die archivierten
+    /// Originale mit, auf die `PlanEnvironmentMigrator.restoreOriginals`
+    /// beim Verlassen des Urlaubs-Modus angewiesen ist.
     private static func apply(
         _ spec: DaySpec,
         to day: TrainingDay,
@@ -114,10 +138,9 @@ public enum PlanGeneratorInstantiator {
         specByName: [String: ExerciseTemplateSpec],
         in context: ModelContext
     ) {
-        for exercise in day.exercises {
+        for exercise in day.activeExercises {
             context.delete(exercise)
         }
-        day.exercises = []
 
         day.name = spec.name
         day.customName = nil

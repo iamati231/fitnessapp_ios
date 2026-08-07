@@ -134,13 +134,13 @@ public extension DifficultyLevel {
 /// `LocalizedStringResource` gehuellt, kein zweiter Switch noetig.
 public extension TrainingTypeKind {
     var localizedName: LocalizedStringResource {
-        LocalizedStringResource(titleKey, bundle: .fitnessAppUI)
+        LocalizedStringResource(String.LocalizationValue(titleKey), bundle: .fitnessAppUI)
     }
 }
 
 public extension PlanLoadLevel {
     var localizedName: LocalizedStringResource {
-        LocalizedStringResource(titleKey, bundle: .fitnessAppUI)
+        LocalizedStringResource(String.LocalizationValue(titleKey), bundle: .fitnessAppUI)
     }
 }
 

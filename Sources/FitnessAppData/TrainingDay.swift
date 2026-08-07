@@ -46,6 +46,16 @@ public final class TrainingDay {
     /// ueberschreiben.
     public var generationFingerprint: String?
 
+    /// README 2.20: 1-basierter `DaySpec.sequenceIndex`, wie er bei der
+    /// Erzeugung durch den "Plan bauen"-Assistenten vergeben wurde. Nil =
+    /// kein Wizard-Tag. Stabiler Anker fuer "neu rechnen": `weekday` und
+    /// `type` sind in `DayEditorView` frei editierbar (Wochentag tauschen,
+    /// Tag zu Ruhetag machen) - danach stimmt die Montag-first-sortierte
+    /// Position eines Tages nicht mehr mit seinem urspruenglichen
+    /// `sequenceIndex` ueberein. `PlanGeneratorInstantiator.recalculate`
+    /// matcht deshalb ueber DIESEN Wert statt ueber die Listenposition.
+    public var generatorSequenceIndex: Int?
+
     @Relationship(deleteRule: .cascade, inverse: \Exercise.day)
     public var exercises: [Exercise] = []
 
@@ -77,18 +87,32 @@ public final class TrainingDay {
     /// Relationship-Reihenfolge (nicht garantiert stabil) keinen falschen
     /// Unterschied erzeugt; `orderIndex` selbst ist Teil des Strings, damit
     /// ein reines Umsortieren (`moveExercises`) trotzdem als Aenderung zaehlt.
-    /// `customName` ist ebenfalls Teil des Strings: ein Umbenennen ueber
-    /// `DayEditorView` ist genauso ein User-Edit wie eine Uebungs-Aenderung
-    /// und muss den Tag vor "neu rechnen" schuetzen.
+    ///
+    /// Deckt JEDES Feld ab, das `DayEditorView`/`ExerciseEditorView`
+    /// tatsaechlich editierbar machen: Tag-`customName`, `weekday`, `type`
+    /// (Wochentag tauschen bzw. zu Ruhetag machen ist genauso ein Edit wie
+    /// eine Uebungs-Aenderung), sowie pro Uebung `customName`, `targetRir`,
+    /// `targetDistanceKm`, `targetDurationMinutes` — gerade die beiden
+    /// Cardio-Ziel-Felder sind der wahrscheinlichste Edit an einem
+    /// generierten Lauf-/Rad-Tag und muessen erkannt werden, sonst
+    /// verwirft "neu rechnen" sie kommentarlos.
     public var currentContentFingerprint: String {
         let exercisePart = activeExercises
             .sorted { $0.orderIndex < $1.orderIndex }
-            .map { "\($0.name)|\($0.orderIndex)|\($0.sets)|\($0.repsMin)|\($0.repsMax)|\($0.restSeconds)" }
+            .map {
+                [
+                    $0.name, $0.customName ?? "-", "\($0.orderIndex)",
+                    "\($0.sets)", "\($0.repsMin)", "\($0.repsMax)", "\($0.restSeconds)",
+                    "\($0.targetRir)",
+                    $0.targetDistanceKm.map { "\($0)" } ?? "-",
+                    $0.targetDurationMinutes.map { "\($0)" } ?? "-"
+                ].joined(separator: "|")
+            }
             .joined(separator: ";")
         let timeFormatPart = timeFormat?.rawValue ?? "-"
         let timeCapPart = timeCapMinutes.map(String.init) ?? "-"
         let customNamePart = customName ?? "-"
-        return "\(exercisePart)#\(timeFormatPart)#\(timeCapPart)#\(customNamePart)"
+        return "\(exercisePart)#\(timeFormatPart)#\(timeCapPart)#\(customNamePart)#\(weekday)#\(type.rawValue)"
     }
 
     public init(
@@ -101,7 +125,8 @@ public final class TrainingDay {
         localizationKey: String? = nil,
         timeFormat: WorkoutTimeFormat? = nil,
         timeCapMinutes: Int? = nil,
-        generationFingerprint: String? = nil
+        generationFingerprint: String? = nil,
+        generatorSequenceIndex: Int? = nil
     ) {
         self.name = name
         self.customName = customName
@@ -113,6 +138,7 @@ public final class TrainingDay {
         self.timeFormat = timeFormat
         self.timeCapMinutes = timeCapMinutes
         self.generationFingerprint = generationFingerprint
+        self.generatorSequenceIndex = generatorSequenceIndex
     }
 }
 
