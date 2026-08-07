@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1637 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1640 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1637 / 1637** (100%) | 0 |
-| 🇬🇧 English (EN) | **1637 / 1637** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1637 / 1637** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1640 / 1640** (100%) | 0 |
+| 🇬🇧 English (EN) | **1640 / 1640** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1640 / 1640** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -20,7 +20,7 @@ Quelle: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
 Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind separat aufgelistet — die haben one/other-Varianten.
 
 
-## `active.*`  (46 Keys)
+## `active.*`  (49 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -61,6 +61,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `active.set.previousFormat` | letztes: %@ | last: %@ | son: %@ |
 | `active.set.previousRIR` | RIR %@ | RIR %@ | RIR %@ |
 | `active.set.remove` | Satz entfernen | Remove set | Seti kaldır |
+| `active.set.rir.scaleMax` | 5 — locker | 5 — easy | 5 — kolay |
+| `active.set.rir.scaleMin` | 0 — nichts mehr | 0 — nothing left | 0 — hiç kalmadı |
+| `active.set.rir.subtitle` | Wiederholungen in Reserve | Reps in Reserve | Yedek tekrar |
 | `active.stats.avgPace` | ⌀ Pace | ⌀ Pace | ⌀ Tempo |
 | `active.stats.distance` | Distanz | Distance | Mesafe |
 | `active.stats.distanceKm` | Distanz km | Distance km | Mesafe km |

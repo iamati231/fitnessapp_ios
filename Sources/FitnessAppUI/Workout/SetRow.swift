@@ -77,16 +77,6 @@ struct SetRow: View {
     @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
     @AppStorage("pref_timer_haptics") private var timerHapticsEnabled: Bool = true
 
-    /// DEL-143: Globaler User-Toggle für RIR-Tooltips. Default true.
-    /// Wenn off → kein Bloop beim Slider-Drag, der Power-User wird
-    /// nicht gestoert.
-    @AppStorage("showRirTooltips") private var showRirTooltips: Bool = true
-
-    /// DEL-143: Tooltip-Controller für den RIR-Slider. Steuert
-    /// show-immediately/hide-delayed über das `onEditingChanged`-
-    /// Callback des Sliders.
-    @State private var rirTooltip = RIRTooltipController()
-
     /// DEL-072: Accessibility — respektiere die System-Praeferenz "Reduce
     /// Motion". Wenn true, ersetzen wir Spring-Animationen durch ruhige
     /// `easeInOut`-Variante.
@@ -502,16 +492,19 @@ struct SetRow: View {
     /// aktuellen RIR-Wert, Tap klappt `rirSliderRow` auf/zu. Gesperrt bei
     /// abgeschlossenen Saetzen (zeigt dann nur noch den geloggten Wert),
     /// gleiches Sperr-Muster wie `weightInput`/`repsInput`.
+    /// README 2.24: gefuellt statt nur getoent, solange die Zone offen ist -
+    /// der Wert steht jetzt NUR noch hier (die frueher zusaetzliche Zahl
+    /// rechts neben dem Regler ist entfallen, siehe `rirSliderRow`).
     private var rirCapsule: some View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) { rirExpanded.toggle() }
         } label: {
             Text("RIR \(rir.formattedRIR)")
                 .font(.caption.weight(.semibold).monospacedDigit())
-                .foregroundStyle(Color.deltiqOrange)
+                .foregroundStyle(rirExpanded ? .white : Color.deltiqOrange)
                 .padding(.horizontal, 9)
                 .padding(.vertical, 4)
-                .background(Color.deltiqOrange.opacity(0.12))
+                .background(rirExpanded ? Color.deltiqOrange : Color.deltiqOrange.opacity(0.12))
                 .clipShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -521,44 +514,73 @@ struct SetRow: View {
 
     /// UX-203: HStack-Spacing 10 → 14, plus dedizierte Slider-min-Höhe via
     /// .frame(height: 24), damit der Touch-Bereich nicht mehr aus einem zu
-    /// engen Container gedrückt wird. Nur der Regler selbst — der
-    /// "letztes Mal"-Hinweis lebt jetzt in `previousHintLine`.
+    /// engen Container gedrückt wird.
+    ///
+    /// README 2.24 (Nutzer-Feedback, zwei Simulator-Screenshots): der
+    /// Erklaerungstext war ein `.overlay` mit fester `.offset(y: -38)`
+    /// UEBER dem Regler - bei laengeren Texten (1-3 Zeilen je Halbschritt,
+    /// neun Katalog-Eintraege `rir.tooltip.0`...`.4plus`) legte er sich
+    /// damit auf `weightInput`/`repsInput`, also genau die Felder, in die
+    /// man gerade tippt. Jetzt eine normale Zeile UNTER dem Regler mit
+    /// reservierter Mindesthoehe statt eines Timer-gesteuerten Overlays -
+    /// `RIRTooltipController`/`RIRTooltipBloop.isVisible`/`showRirTooltips`
+    /// werden hier nicht mehr gebraucht. Bleiben unveraendert im Einsatz
+    /// fuer `ExerciseEditorView.targetRIRSliderRow` (eigene Instanz dort) -
+    /// der Regler steht dort allein in einer Section und verdeckt nichts,
+    /// eine bewusst eigene Entscheidung.
+    ///
+    /// Dazu eine sichtbare Skala, weil der Regler vorher nicht sagte, was
+    /// er misst (Label "RIR" ohne Erklaerung, keine Enden-Beschriftung,
+    /// Wert doppelt). Die 11 Rasterstriche sind rein dekorativ (`.background`
+    /// HINTER dem Slider, `allowsHitTesting(false)` + `accessibilityHidden`)
+    /// - Drag-Gesture, Werte-Fuellung und VoiceOver-Adjustable-Action bleiben
+    /// beim nativen `Slider`, absichtlich NICHT durch einen selbstgebauten
+    /// Regler ersetzt (Touch-Handling + Accessibility eines Custom-Reglers
+    /// liessen sich hier nicht verifizieren).
     private var rirSliderRow: some View {
-        HStack(spacing: 14) {
-            // Layout-Fix 2026-05-21: `.fixedSize()` damit der RIR-Label
-            // im engen Slider-Zone-Layout nicht komprimiert wird.
-            Text("RIR").deltiqLabel().fixedSize()
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                // Layout-Fix 2026-05-21: `.fixedSize()` damit der RIR-Label
+                // im engen Slider-Zone-Layout nicht komprimiert wird.
+                Text("RIR").deltiqLabel().fixedSize()
+                Text("active.set.rir.subtitle", bundle: .module)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
             Slider(
                 value: Binding(
                     get: { Double(rir) },
                     set: { rir = Float($0) }
                 ),
                 in: 0...5,
-                step: 0.5,
-                // DEL-143: onEditingChanged steuert das RIR-Tooltip.
-                // Drag-Start → editing=true → Bloop fade-in. Release →
-                // editing=false → Bloop fade-out 1.8s spaeter.
-                // Gated durch User-Toggle (Power-User schalten's aus).
-                onEditingChanged: { editing in
-                    guard showRirTooltips else { return }
-                    rirTooltip.setVisible(editing)
-                }
+                step: 0.5
             )
             .tint(Color.deltiqOrange)
             .frame(minHeight: 24)
-            // DEL-143: Tooltip-Overlay über dem Slider. zIndex 1000 +
-            // allowsHitTesting(false) damit weder die unteren Card-
-            // Inhalte verdeckt werden (Touch geht durch), noch der
-            // Slider selber blockiert wird. Offset -38 sitzt den
-            // Bloop über dem Slider-Thumb-Bereich, finger-frei.
-            .overlay(alignment: .top) {
-                RIRTooltipBloop(rir: rir, isVisible: rirTooltip.isVisible)
-                    .offset(y: -38)
+            .background(alignment: .center) {
+                HStack(spacing: 0) {
+                    ForEach(0..<11) { index in
+                        Rectangle()
+                            .fill(Color.secondary.opacity(index.isMultiple(of: 2) ? 0.35 : 0.2))
+                            .frame(width: 1, height: index.isMultiple(of: 2) ? 8 : 5)
+                        if index < 10 { Spacer(minLength: 0) }
+                    }
+                }
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
             }
-            Text(rir.formattedRIR)
-                .font(.caption.weight(.semibold).monospacedDigit())
-                .foregroundStyle(.primary)
-                .frame(width: 32, alignment: .trailing)
+            HStack {
+                Text("active.set.rir.scaleMin", bundle: .module)
+                Spacer()
+                Text("active.set.rir.scaleMax", bundle: .module)
+            }
+            .font(.system(size: 10))
+            .foregroundStyle(.tertiary)
+            Text(LocalizedStringKey(RIRTooltipBloop.tooltipKey(for: rir)), bundle: .module)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(minHeight: 32, alignment: .topLeading)
         }
     }
 

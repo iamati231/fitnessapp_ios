@@ -28575,6 +28575,30 @@
         }
       }
     },
+    "active.set.rir.scaleMax": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "5 — locker" } },
+        "en": { "stringUnit": { "state": "translated", "value": "5 — easy" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "5 — kolay" } }
+      }
+    },
+    "active.set.rir.scaleMin": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "0 — nichts mehr" } },
+        "en": { "stringUnit": { "state": "translated", "value": "0 — nothing left" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "0 — hiç kalmadı" } }
+      }
+    },
+    "active.set.rir.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Wiederholungen in Reserve" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Reps in Reserve" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yedek tekrar" } }
+      }
+    },
     "settings.section.privacy": {
       "extractionState": "manual",
       "localizations": {
