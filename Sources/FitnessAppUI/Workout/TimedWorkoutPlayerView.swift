@@ -304,7 +304,18 @@ private struct AMRAPPlayerView: View {
     /// in der Uebungsliste umzustellen. `nil` = "erste Uebung" (Default nach
     /// Start und nach jedem "+1 Runde"), aufgeloest ueber `currentStation`.
     @State private var currentStationID: PersistentIdentifier?
-    private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    /// Nutzer-Feedback (Verifikation): als einfaches `let` wurde dieser
+    /// Publisher bei JEDER View-Rekonstruktion neu erzeugt (u.a. durch
+    /// `displayTick += 1` im eigenen `.onReceive`-Handler ausgeloest) - ein
+    /// reiner Stored-`let` mit Default-Ausdruck wird von SwiftUI NICHT ueber
+    /// Rekonstruktionen hinweg festgehalten, nur `@State` ist das. Das fuehrte
+    /// dazu, dass der Timer im Vordergrund nach 1-2 Ticks einfror, weil bei
+    /// jedem Tick ein frischer, noch nicht abgelaufener Timer entstand -
+    /// sichtbar wurde es erst beim Hintergrund/Vordergrund-Wechsel, der eine
+    /// echte Neu-Konstruktion samt Aufhol-Check via `scenePhase` ausloest.
+    /// Als `@State` wird der Initial-Ausdruck nur EINMAL beim ersten Mount
+    /// ausgewertet und der entstandene Publisher danach unveraendert gehalten.
+    @State private var tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     init(session: WorkoutSession) {
         self.session = session
@@ -743,7 +754,18 @@ private struct EMOMPlayerView: View {
     /// ueberspringt die Phase komplett (Einstellung war deaktiviert).
     @State private var prerollRemaining: Int
     private let prerollTotal: Int
-    private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    /// Nutzer-Feedback (Verifikation): als einfaches `let` wurde dieser
+    /// Publisher bei JEDER View-Rekonstruktion neu erzeugt (u.a. durch
+    /// `displayTick += 1` im eigenen `.onReceive`-Handler ausgeloest) - ein
+    /// reiner Stored-`let` mit Default-Ausdruck wird von SwiftUI NICHT ueber
+    /// Rekonstruktionen hinweg festgehalten, nur `@State` ist das. Das fuehrte
+    /// dazu, dass der Timer im Vordergrund nach 1-2 Ticks einfror, weil bei
+    /// jedem Tick ein frischer, noch nicht abgelaufener Timer entstand -
+    /// sichtbar wurde es erst beim Hintergrund/Vordergrund-Wechsel, der eine
+    /// echte Neu-Konstruktion samt Aufhol-Check via `scenePhase` ausloest.
+    /// Als `@State` wird der Initial-Ausdruck nur EINMAL beim ersten Mount
+    /// ausgewertet und der entstandene Publisher danach unveraendert gehalten.
+    @State private var tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     init(session: WorkoutSession) {
         self.session = session
@@ -1134,7 +1156,18 @@ private struct ForTimePlayerView: View {
     /// ueberspringt die Phase komplett (Einstellung war deaktiviert).
     @State private var prerollRemaining: Int
     private let prerollTotal: Int
-    private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    /// Nutzer-Feedback (Verifikation): als einfaches `let` wurde dieser
+    /// Publisher bei JEDER View-Rekonstruktion neu erzeugt (u.a. durch
+    /// `displayTick += 1` im eigenen `.onReceive`-Handler ausgeloest) - ein
+    /// reiner Stored-`let` mit Default-Ausdruck wird von SwiftUI NICHT ueber
+    /// Rekonstruktionen hinweg festgehalten, nur `@State` ist das. Das fuehrte
+    /// dazu, dass der Timer im Vordergrund nach 1-2 Ticks einfror, weil bei
+    /// jedem Tick ein frischer, noch nicht abgelaufener Timer entstand -
+    /// sichtbar wurde es erst beim Hintergrund/Vordergrund-Wechsel, der eine
+    /// echte Neu-Konstruktion samt Aufhol-Check via `scenePhase` ausloest.
+    /// Als `@State` wird der Initial-Ausdruck nur EINMAL beim ersten Mount
+    /// ausgewertet und der entstandene Publisher danach unveraendert gehalten.
+    @State private var tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     init(session: WorkoutSession) {
         self.session = session
