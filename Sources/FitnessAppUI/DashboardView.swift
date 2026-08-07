@@ -2298,11 +2298,12 @@ public struct DashboardView: View {
                     // `foregroundStyle(by:)` bleibt auf dem echten Lift-Namen,
                     // damit die Farbe trotzdem an den Ist-Verlauf gekoppelt ist.
                     ForEach(forecastSamples) { line in
+                        let forecastSeriesKey = "\(line.exerciseName)-forecast"
                         ForEach(line.points) { point in
                             LineMark(
                                 x: .value("Datum", point.date),
                                 y: .value("1RM (kg)", point.oneRM),
-                                series: .value("Serie", "\(line.exerciseName)-forecast")
+                                series: .value("Serie", forecastSeriesKey)
                             )
                             .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
                             .foregroundStyle(by: .value("Lift", line.exerciseName))

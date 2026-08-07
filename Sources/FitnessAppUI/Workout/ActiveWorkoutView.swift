@@ -403,8 +403,8 @@ public struct ActiveWorkoutView: View {
                 let exerciseText = exerciseTemplate
                     .replacingOccurrences(of: "%1$d", with: "\(currentPageIndex + 1)")
                     .replacingOccurrences(of: "%2$d", with: "\(exercises.count)")
-                var items = [DeltiqContextItem(exerciseText, style: .accent)]
-                if let secondPill { items.append(secondPill) }
+                let firstPill = DeltiqContextItem(exerciseText, style: .accent)
+                let items = secondPill.map { [firstPill, $0] } ?? [firstPill]
                 DeltiqContextRow(items)
             } else {
                 // Finish-Seite (currentPageIndex == exercises.count): kein
