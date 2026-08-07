@@ -21937,6 +21937,52 @@
         }
       }
     },
+    "quiz.equipment.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was steht dir zur Verfügung?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What do you have available?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elinde ne var?"
+          }
+        }
+      }
+    },
+    "quiz.equipment.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir filtern Programme, für die du das passende Equipment hast."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We filter programs based on the equipment you have."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Programları elindeki ekipmana göre filtreleriz."
+          }
+        }
+      }
+    },
     "quiz.environment.gym": {
       "extractionState": "manual",
       "localizations": {

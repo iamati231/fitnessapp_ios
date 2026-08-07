@@ -2,9 +2,10 @@
 import SwiftUI
 import FitnessAppCore
 
-/// DEL-090: Smart Onboarding Quiz. Vier kompakte Fragen (Goal, Experience,
-/// preferredDays, Environment) → `PlanMatchmaker` ranked die 14 Templates
-/// → Result-Screen praesentiert den Top-Match + Liste der Alternativen.
+/// DEL-090: Smart Onboarding Quiz. Fuenf kompakte Fragen (Goal, Experience,
+/// preferredDays, Environment, Equipment) → `PlanMatchmaker` ranked die 19
+/// Templates → Result-Screen praesentiert den Top-Match + Liste der
+/// Alternativen.
 ///
 /// Der Caller (OnboardingView Step 3) gibt das vor-ausgewaehlte
 /// Environment (aus dem Profile-Setup) mit; der Quiz bietet es als
@@ -24,6 +25,10 @@ public struct OnboardingQuizView: View {
     @State private var experience: ExperienceLevel = .intermediate
     @State private var preferredDays: Int = 3
     @State private var environment: EnvironmentType
+    /// README 2.19: fehlte bisher komplett - `QuizAnswers` wurde ohne
+    /// `equipmentPreferences` gebaut, der DEL-170-Filter lief im Onboarding
+    /// also immer leer.
+    @State private var equipmentPreferences: Set<Equipment> = []
 
     public init(
         preselectedEnvironment: EnvironmentType,
@@ -46,7 +51,7 @@ public struct OnboardingQuizView: View {
     }
 
     enum QuizStep: Int, CaseIterable {
-        case goal, experience, days, environment, result
+        case goal, experience, days, environment, equipment, result
     }
 
     public var body: some View {
@@ -62,6 +67,7 @@ public struct OnboardingQuizView: View {
                     case .experience:  experienceStep
                     case .days:        daysStep
                     case .environment: environmentStep
+                    case .equipment:   equipmentStep
                     case .result:      resultStep
                     }
                 }
@@ -191,14 +197,46 @@ public struct OnboardingQuizView: View {
         }
     }
 
-    // MARK: - Step 5: Result
+    // MARK: - Step 5: Equipment
+
+    /// README 2.19: dieselbe Frage, die `QuizAnswers.equipmentPreferences`
+    /// seit DEL-170 erwartet und die dieser Quiz nie gestellt hat - der
+    /// Equipment-Filter in `PlanMatchmaker` lief dadurch immer leer.
+    private var equipmentStep: some View {
+        quizQuestion(
+            title: String(localized: "quiz.equipment.title", bundle: .module),
+            subtitle: String(localized: "quiz.equipment.subtitle", bundle: .module)
+        ) {
+            ForEach(Equipment.allCases, id: \.self) { equip in
+                FilterToggleRow(
+                    label: String(localized: equip.localizedName),
+                    isOn: Binding(
+                        get: { equipmentPreferences.contains(equip) },
+                        set: { newValue in
+                            if newValue { equipmentPreferences.insert(equip) }
+                            else        { equipmentPreferences.remove(equip) }
+                        }
+                    )
+                )
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.secondary.opacity(0.25), lineWidth: 1)
+                )
+            }
+        }
+    }
+
+    // MARK: - Step 6: Result
 
     private var rankedPlans: [ProgramTemplate] {
         let answers = QuizAnswers(
             goal: goal,
             experience: experience,
             preferredDays: preferredDays,
-            environment: environment
+            environment: environment,
+            equipmentPreferences: equipmentPreferences
         )
         return PlanMatchmaker.rankPlans(for: answers, templates: ProgramTemplates.all)
     }
@@ -334,7 +372,7 @@ public struct OnboardingQuizView: View {
                     goToNextStep()
                 } label: {
                     Label {
-                        Text(step == .environment ? "quiz.title" : "quiz.nav.next",
+                        Text(step == .equipment ? "quiz.title" : "quiz.nav.next",
                              bundle: .module)
                     } icon: {
                         Image(systemName: "arrow.right")

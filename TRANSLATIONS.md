@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1592 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1594 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1592 / 1592** (100%) | 0 |
-| 🇬🇧 English (EN) | **1592 / 1592** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1592 / 1592** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1594 / 1594** (100%) | 0 |
+| 🇬🇧 English (EN) | **1594 / 1594** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1594 / 1594** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1487,7 +1487,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `progression.headline.deload` | Lass uns kurz zurückrudern | Let's pull back briefly | Biraz geri çekilelim |
 | `progression.headline.increase` | 🎯 Ziel erreicht — nächstes Mal mehr | 🎯 Goal hit — more next time | 🎯 Hedefe ulaşıldı — bir dahaki sefer daha fazla |
 
-## `quiz.*`  (17 Keys)
+## `quiz.*`  (19 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1499,6 +1499,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `quiz.environment.noEquipment` | Überall (ohne Geräte) | Anywhere (no equipment) | Her yer (ekipmansız) |
 | `quiz.environment.subtitle` | Wir filtern Programme, die zu deinem Equipment passen. | We filter programs to match your equipment. | Programları ekipmanına göre filtreleriz. |
 | `quiz.environment.title` | Wo trainierst du meistens? | Where do you usually train? | Genelde nerede antrenman yapıyorsun? |
+| `quiz.equipment.subtitle` | Wir filtern Programme, für die du das passende Equipment hast. | We filter programs based on the equipment you have. | Programları elindeki ekipmana göre filtreleriz. |
+| `quiz.equipment.title` | Was steht dir zur Verfügung? | What do you have available? | Elinde ne var? |
 | `quiz.experience.subtitle` | Wir wählen Programme, die dich nicht überfordern. | We pick programs that won't overwhelm you. | Seni zorlamayacak programlar seçeriz. |
 | `quiz.experience.title` | Wie viel Erfahrung hast du im Training? | How much training experience do you have? | Antrenmanda ne kadar deneyimin var? |
 | `quiz.goal.subtitle` | Wähle das, was dich aktuell am meisten antreibt. | Pick what drives you most right now. | Şu an seni en çok motive edeni seç. |

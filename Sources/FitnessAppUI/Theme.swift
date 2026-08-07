@@ -953,6 +953,7 @@ private struct SwipeBackEnabler: UIViewControllerRepresentable {
         controller.view.backgroundColor = .clear
         DispatchQueue.main.async {
             if let navigationController = controller.parent?.navigationController {
+                context.coordinator.navigationController = navigationController
                 navigationController.interactivePopGestureRecognizer?.delegate = context.coordinator
                 navigationController.interactivePopGestureRecognizer?.isEnabled = true
             }
@@ -965,8 +966,16 @@ private struct SwipeBackEnabler: UIViewControllerRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        // README 2.19: der Delegate haengt am UINavigationController, nicht
+        // am Screen, und wird nie zurueckgesetzt - nach einem Pop blieb er
+        // liegen und startete die Geste auch auf der Stack-Wurzel (wo es
+        // nichts zu poppen gibt), was den Navigations-Stack in einem halben
+        // interaktiven Uebergang stehen liess. Schwache Referenz, damit der
+        // Coordinator den Controller nicht am Leben haelt.
+        weak var navigationController: UINavigationController?
+
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-            true
+            (navigationController?.viewControllers.count ?? 0) > 1
         }
     }
 }

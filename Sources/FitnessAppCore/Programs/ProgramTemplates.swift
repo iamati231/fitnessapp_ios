@@ -1018,7 +1018,10 @@ public enum ProgramTemplates {
         ],
         targetEnvironment: .homeGym,
         iconSystemName: "dumbbell.fill",
-        targetExperience: [.beginner, .advanced],
+        // README 2.19: .intermediate ergaenzt - der Quiz-Default (.intermediate)
+        // gab diesem Template sonst 0 statt +2 Erfahrungspunkte, obwohl die
+        // Beschreibung "Einsteiger und Fortgeschrittene" beide Enden schon nennt.
+        targetExperience: [.beginner, .intermediate, .advanced],
         targetGoals: [.functional, .fatloss]
     )
 
@@ -1058,7 +1061,10 @@ public enum ProgramTemplates {
         ],
         targetEnvironment: .homeGym,
         iconSystemName: "figure.strengthtraining.functional",
-        targetExperience: [.beginner],
+        // README 2.19: .intermediate ergaenzt - saubere Grundtechnik ist
+        // auch fuer Kettlebell-Einsteiger mit anderweitiger Trainingserfahrung
+        // relevant, nicht nur fuer komplette Anfaenger.
+        targetExperience: [.beginner, .intermediate],
         targetGoals: [.functional, .fatloss]
     )
 
