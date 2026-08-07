@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1590 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1592 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1590 / 1590** (100%) | 0 |
-| 🇬🇧 English (EN) | **1590 / 1590** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1590 / 1590** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1592 / 1592** (100%) | 0 |
+| 🇬🇧 English (EN) | **1592 / 1592** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1592 / 1592** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1778,7 +1778,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `tab.plan` | Plan | Plan | Plan |
 | `tab.tools` | Werkzeuge | Tools | Araçlar |
 
-## `timedWorkout.*`  (23 Keys)
+## `timedWorkout.*`  (25 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1786,6 +1786,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `timedWorkout.amrap.capContext` | %lld Min. Deckel | %lld min cap | %lld dk limit |
 | `timedWorkout.amrap.circuitHint` | Von vorn, bis die Zeit abgelaufen ist. | Start over, until time runs out. | Süre bitene kadar baştan başla. |
 | `timedWorkout.amrap.partialReps` | Zusätzliche Wdh. | Extra reps | Ek tekrar |
+| `timedWorkout.amrap.rounds.one` | %lld Runde | %lld round | %lld tur |
+| `timedWorkout.amrap.rounds.other` | %lld Runden | %lld rounds | %lld tur |
 | `timedWorkout.amrap.roundsLabel` | RUNDEN | ROUNDS | TUR |
 | `timedWorkout.discard.confirmButton` | Abbrechen & verwerfen | Cancel & discard | İptal et ve sil |
 | `timedWorkout.discard.confirmTitle` | Training abbrechen? | Cancel workout? | Antrenmanı iptal et? |

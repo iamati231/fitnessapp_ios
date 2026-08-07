@@ -42,6 +42,22 @@
         "tr": { "stringUnit": { "state": "translated", "value": "TUR" } }
       }
     },
+    "timedWorkout.amrap.rounds.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%lld Runde" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%lld round" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld tur" } }
+      }
+    },
+    "timedWorkout.amrap.rounds.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%lld Runden" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%lld rounds" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld tur" } }
+      }
+    },
     "timedWorkout.discard.confirmButton": {
       "extractionState": "manual",
       "localizations": {

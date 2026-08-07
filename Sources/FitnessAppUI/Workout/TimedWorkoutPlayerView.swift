@@ -344,7 +344,13 @@ private struct AMRAPPlayerView: View {
     /// nicht nur die Runden - "4 RUNDEN + 7 WDH." statt nur "4 RUNDEN". Ohne
     /// angebrochene Wiederholungen bleibt es bei den Runden allein, kein "+ 0".
     private var roundsContextText: String {
-        let roundsPart = "\(roundsCompleted) " + String(localized: "timedWorkout.amrap.roundsLabel", bundle: .module)
+        // README 2.18 Nachtrag (28c/27d): "1 RUNDEN" - vierte Fundstelle der
+        // "1 Saetze"-Familie. Gleiches Muster wie dashboard.recent.sets.one/
+        // .other: Zahl steckt im Format-String, nicht mehr in der Konkatenation.
+        let suffix = roundsCompleted == 1 ? "one" : "other"
+        let key = String.LocalizationValue(stringLiteral: "timedWorkout.amrap.rounds.\(suffix)")
+        let roundsPart = String(localized: key, bundle: .module)
+            .replacingOccurrences(of: "%lld", with: "\(roundsCompleted)")
         guard partialReps > 0 else { return roundsPart.uppercased() }
         let repsPart = "\(partialReps) " + String(localized: "unit.reps.short", bundle: .module)
         return (roundsPart + " + " + repsPart).uppercased()
