@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1594 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1631 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1594 / 1594** (100%) | 0 |
-| 🇬🇧 English (EN) | **1594 / 1594** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1594 / 1594** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1631 / 1631** (100%) | 0 |
+| 🇬🇧 English (EN) | **1631 / 1631** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1631 / 1631** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -20,7 +20,7 @@ Quelle: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
 Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind separat aufgelistet — die haben one/other-Varianten.
 
 
-## `active.*`  (42 Keys)
+## `active.*`  (46 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -29,6 +29,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `active.addExercise` | Übung | Exercise | Hareket |
 | `active.addExerciseCTA` | Übung hinzufügen | Add Exercise | Hareket Ekle |
 | `active.confirm.discard.title` | Training verwerfen? | Discard workout? | Antrenmanı silmek istiyor musun? |
+| `active.context.distance` | DISTANZ %@ KM | DISTANCE %@ KM | MESAFE %@ KM |
+| `active.context.exercise` | ÜBUNG %1$d/%2$d | EXERCISE %1$d/%2$d | EGZERSİZ %1$d/%2$d |
+| `active.context.eyebrow.running` | LÄUFT · %@ | RUNNING · %@ | ÇALIŞIYOR · %@ |
+| `active.context.volume` | VOLUMEN %@ KG | VOLUME %@ KG | HACİM %@ KG |
 | `active.discard.cta` | Training abbrechen | Discard Workout | Antrenmanı Sil |
 | `active.discard.message` | Die Session und alle %lld bisher geloggten Sätze gehen verloren. | The session and all %lld logged sets will be lost. | Oturum ve şimdiye kadar kaydedilen %lld set kaybolacak. |
 | `active.empty.adhoc.message` | Such dir aus der Library eine Übung — alles weitere passiert wie im Plan-Training. | Pick an exercise from the library — everything else works like a plan workout. | Kütüphaneden bir hareket seç — gerisi plan antrenmanı gibi çalışır. |
@@ -114,7 +118,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `barbell.loading.type.standard` | Langhantel | Barbell | Halter |
 | `barbell.loading.type.trapBar` | Trap | Trap | Trap |
 
-## `calc.*`  (59 Keys)
+## `calc.*`  (60 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -126,6 +130,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `calc.index.tdee.subtitle` | BMR und TDEE aus deinem Profil | BMR and TDEE from your profile | Profilinden BMR ve TDEE |
 | `calc.index.tdee.title` | Kalorien-Rechner | Calorie Calculator | Kalori Hesaplayıcı |
 | `calc.index.title` | Rechner | Calculators | Hesaplayıcılar |
+| `calc.index.unitContext` | EINHEIT: %@ | UNIT: %@ | BİRİM: %@ |
 | `calc.index.water.subtitle` | Tagesziel aus deinem Gewicht | Daily goal from your weight | Kilona göre günlük hedef |
 | `calc.index.water.title` | Wasser-Tracker | Water Tracker | Su Takipçisi |
 | `calc.oneRm.input.footer` | Gültig für 1-36 Reps. Bei sehr hohen Reps wird die Schätzung unzuverlässig — die Formeln liefern nur für den Hypertrophie- bis Kraft-Bereich (~1-12 Reps) brauchbare Werte. | Valid for 1-36 reps. Estimates get unreliable at very high reps — formulas work best in the hypertrophy-to-strength range (~1-12 reps). | 1-36 tekrar için geçerli. Çok yüksek tekrarlarda tahmin güvenilmez olur — formüller hipertrofi-güç aralığında (~1-12 tekrar) en iyi sonucu verir. |
@@ -1041,7 +1046,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `library.searchPlaceholder` | Übung suchen | Search exercise | Hareket ara |
 | `library.title` | Übungsbibliothek | Exercise Library | Hareket Kütüphanesi |
 
-## `measurement.*`  (80 Keys)
+## `measurement.*`  (84 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1050,6 +1055,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `measurement.action.edit` | Bearbeiten | Edit | Düzenle |
 | `measurement.action.save` | Messung speichern | Save Measurement | Ölçümü Kaydet |
 | `measurement.action.saveEdit` | Änderungen speichern | Save Changes | Değişiklikleri Kaydet |
+| `measurement.context.last` | Letzte: %@ | Last: %@ | Son: %@ |
 | `measurement.derived.bmi` | BMI | BMI | BKİ |
 | `measurement.derived.bmr` | BMR | BMR | BMR |
 | `measurement.derived.deurenberg` | KFA Deurenberg | Body Fat (Deurenberg) | Yağ Oranı (Deurenberg) |
@@ -1067,11 +1073,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `measurement.field.chest` | Brust (cm) | Chest (cm) | Göğüs (cm) |
 | `measurement.field.hip` | Hüfte (cm) | Hip (cm) | Kalça (cm) |
 | `measurement.field.neck` | Halsumfang (cm) | Neck (cm) | Boyun (cm) |
+| `measurement.field.optional` | optional | optional | opsiyonel |
+| `measurement.field.required` | erforderlich | required | gerekli |
 | `measurement.field.shoulder.full` | Schulterumfang (cm) | Shoulder Circumference (cm) | Omuz Çevresi (cm) |
 | `measurement.field.shoulder.label` | Schulter (cm) | Shoulder (cm) | Omuz (cm) |
 | `measurement.field.thigh` | Oberschenkel (cm) | Thigh (cm) | Uyluk (cm) |
 | `measurement.field.waist` | Taille (cm) | Waist (cm) | Bel (cm) |
 | `measurement.field.weight` | Gewicht (kg) | Weight (kg) | Ağırlık (kg) |
+| `measurement.header.eyebrow` | MESSUNG | MEASUREMENT | ÖLÇÜM |
 | `measurement.healthkit.blocked` | Apple Health blockiert. Ändere die Berechtigung in den iOS-Einstellungen. | Apple Health is blocked. Change the permission in iOS Settings. | Apple Health engellendi. İzni iOS Ayarları'ndan değiştir. |
 | `measurement.healthkit.connect` | Apple Health verbinden | Connect Apple Health | Apple Health'e Bağlan |
 | `measurement.healthkit.connected` | Verbunden | Connected | Bağlı |
@@ -1378,6 +1387,47 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.upperLower.name` | Upper-Lower-Split | Upper-Lower Split | Upper-Lower Split |
 | `plan.template.upperLower.tagline` | 4 Tage · Kraft & Hypertrophie | 4 Days · Strength & Hypertrophy | 4 Gün · Güç & Hipertrofi |
 
+## `planBuilder.*`  (36 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `planBuilder.equipment.subtitle` | Welche Ausrüstung steht dir zur Verfügung? | What equipment do you have available? | Hangi ekipmana erişimin var? |
+| `planBuilder.equipment.title` | Ausrüstung | Equipment | Ekipman |
+| `planBuilder.load.easy` | Locker | Easy | Hafif |
+| `planBuilder.load.hard` | Schwer | Hard | Ağır |
+| `planBuilder.load.medium` | Mittel | Medium | Orta |
+| `planBuilder.load.tough` | Hart | Tough | Zor |
+| `planBuilder.nav.next` | Weiter | Next | İleri |
+| `planBuilder.result.adopt` | Plan übernehmen | Adopt Plan | Planı Onayla |
+| `planBuilder.result.empty.message` | Für diese Kombination aus Ausrüstung und Erfahrung gibt es keine passenden Übungen in der Bibliothek. Wähle andere Optionen. | No matching exercises exist in the library for this combination of equipment and experience. Choose different options. | Bu ekipman ve deneyim kombinasyonu için kütüphanede uygun egzersiz yok. Farklı seçenekler dene. |
+| `planBuilder.result.empty.title` | Keine Übungen gefunden | No Exercises Found | Egzersiz Bulunamadı |
+| `planBuilder.result.explanation.spread` | Die Reihenfolge verteilt harte und leichte Einheiten über die Woche, statt sie zu häufen. | The order spreads hard and light sessions across the week instead of clustering them. | Sıralama, zor ve hafif antrenmanları haftaya yayar, art arda toplamaz. |
+| `planBuilder.result.recalculate` | Neu rechnen | Recalculate | Yeniden Hesapla |
+| `planBuilder.result.weeklyTotal` | %@ pro Woche | %@ per week | Haftada %@ |
+| `planBuilder.rhythm.fixedWeekdays` | Feste Wochentage | Fixed Weekdays | Sabit Günler |
+| `planBuilder.rhythm.orderOnly` | Nur Reihenfolge | Order Only | Sadece Sıralama |
+| `planBuilder.rhythm.subtitle` | Feste Wochentage oder einfach nur die Reihenfolge festlegen. | Fixed weekdays, or just set the order. | Sabit haftanın günleri mi, yoksa sadece sıralama mı? |
+| `planBuilder.rhythm.title` | Rhythmus | Rhythm | Ritim |
+| `planBuilder.title` | Plan bauen | Build Plan | Plan Oluştur |
+| `planBuilder.type.barbell` | Langhantel | Barbell | Halter |
+| `planBuilder.type.bodyweight` | Körpergewicht | Bodyweight | Vücut Ağırlığı |
+| `planBuilder.type.cycling` | Radfahren | Cycling | Bisiklet |
+| `planBuilder.type.dumbbell` | Kurzhantel | Dumbbell | Dambıl |
+| `planBuilder.type.kettlebell` | Kettlebell | Kettlebell | Kettlebell |
+| `planBuilder.type.running` | Laufen | Running | Koşu |
+| `planBuilder.types.more` | Weitere Trainingsarten | More Training Types | Diğer Antrenman Türleri |
+| `planBuilder.types.subtitle` | Wähle eine oder mehrere Trainingsarten. Für jede legst du Tage, Dauer und Erfahrung fest. | Choose one or more training types. For each, set days, duration, and experience. | Bir veya daha fazla antrenman türü seç. Her biri için gün, süre ve deneyim belirle. |
+| `planBuilder.types.title` | Trainingsarten | Training Types | Antrenman Türleri |
+| `planBuilder.wizard.daysPerWeek.one` | %lld Tag pro Woche | %lld day per week | Haftada %lld gün |
+| `planBuilder.wizard.daysPerWeek.other` | %lld Tage pro Woche | %lld days per week | Haftada %lld gün |
+| `planBuilder.wizard.exerciseCount.one` | %lld Übung | %lld exercise | %lld egzersiz |
+| `planBuilder.wizard.exerciseCount.other` | %lld Übungen | %lld exercises | %lld egzersiz |
+| `planBuilder.wizard.experience` | Erfahrung | Experience | Deneyim |
+| `planBuilder.wizard.kmValue` | %.1f km | %.1f km | %.1f km |
+| `planBuilder.wizard.minutesValue` | %lld Min. | %lld min | %lld dk |
+| `planBuilder.wizard.unitsCount.one` | %lld Einheit | %lld unit | %lld birim |
+| `planBuilder.wizard.unitsCount.other` | %lld Einheiten | %lld units | %lld birim |
+
 ## `planEditor.*`  (26 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
@@ -1409,7 +1459,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planEditor.template.banner.title` | Template-Plan | Template Plan | Şablon Plan |
 | `planEditor.toggle.setActive` | Als aktiven Plan setzen | Set as Active Plan | Aktif Plan Olarak Ayarla |
 
-## `plans.*`  (14 Keys)
+## `plans.*`  (17 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1418,8 +1468,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plans.active.startedAt` | Gestartet %@ | Started %@ | %@ başladı |
 | `plans.active.title` | Laufendes Training | Active Workout | Aktif Antrenman |
 | `plans.activeBadge` | Aktiv | Active | Aktif |
+| `plans.context.count.one` | %lld Plan | %lld plan | %lld plan |
+| `plans.context.count.other` | %lld Pläne | %lld plans | %lld plan |
 | `plans.create.empty` | Leerer Plan | Empty Plan | Boş Plan |
 | `plans.create.emptyShort` | Leer | Empty | Boş |
+| `plans.create.fromBuilder` | Plan bauen | Build Plan | Plan Oluştur |
 | `plans.create.fromTemplate` | Aus Template anlegen | From Template | Şablondan Oluştur |
 | `plans.create.fromTemplateShort` | Aus Template | From Template | Şablondan |
 | `plans.duplicate` | Duplizieren | Duplicate | Çoğalt |
@@ -1444,7 +1497,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (30 Keys)
+## `profile.*`  (31 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1454,6 +1507,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.coaching.footer` | Steuert Tonfall und Inhalt der Coaching-Insights auf dem Dashboard. Lässt sich jederzeit ändern. | Drives tone and content of coaching insights on the dashboard. Changeable any time. | Paneldeki koçluk öngörülerinin tonunu ve içeriğini yönlendirir. Her zaman değiştirilebilir. |
 | `profile.coaching.goal` | Trainingsziel | Training Goal | Antrenman Hedefi |
 | `profile.coaching.tone` | Coaching-Stil | Coaching Style | Koçluk Tarzı |
+| `profile.editor.title` | Profil bearbeiten | Edit Profile | Profili Düzenle |
 | `profile.envRestore.adjustNew` | Nein, neu anpassen | No, Re-Adjust | Hayır, Yeniden Uyarla |
 | `profile.envRestore.confirm` | Ja, wiederherstellen | Yes, Restore | Evet, Geri Yükle |
 | `profile.envRestore.message` | Wir haben Original-Übungen aus einem früheren Equipment-Wechsel gespeichert. Möchtest du diese in deinen Plänen wiederherstellen (inkl. der letzten Arbeitsgewichte)? | We saved original exercises from a previous equipment change. Restore them in your plans (with the last working weights)? | Önceki bir ekipman değişikliğinden orijinal hareketleri kaydettik. Bunları planlarına geri yüklemek ister misin (son çalışma ağırlıklarıyla)? |
@@ -1857,7 +1911,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `warmup.ramp.emptyBar` | Leere Stange | Empty bar | Boş bar |
 | `warmup.ramp.title` | Aufwärm-Sätze | Warm-up sets | Isınma setleri |
 
-## `water.*`  (11 Keys)
+## `water.*`  (12 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1872,6 +1926,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `water.source.goalWeight` | Profil-Zielgewicht | profile goal weight | profil hedef kilo |
 | `water.source.lastMeasurement` | letzte Messung | last measurement | son ölçüm |
 | `water.title` | Wasser | Water | Su |
+| `water.todaySection.title` | Heute | Today | Bugün |
 
 ## `widget.*`  (12 Keys)
 

@@ -14452,6 +14452,302 @@
         }
       }
     },
+    "plans.create.fromBuilder": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Plan bauen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Build Plan" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Plan Oluştur" } }
+      }
+    },
+    "planBuilder.type.barbell": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Langhantel" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Barbell" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Halter" } }
+      }
+    },
+    "planBuilder.type.dumbbell": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kurzhantel" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Dumbbell" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dambıl" } }
+      }
+    },
+    "planBuilder.type.kettlebell": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell" } }
+      }
+    },
+    "planBuilder.type.bodyweight": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Körpergewicht" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Bodyweight" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Vücut Ağırlığı" } }
+      }
+    },
+    "planBuilder.type.running": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Laufen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Running" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Koşu" } }
+      }
+    },
+    "planBuilder.type.cycling": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Radfahren" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cycling" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bisiklet" } }
+      }
+    },
+    "planBuilder.load.easy": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Locker" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Easy" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hafif" } }
+      }
+    },
+    "planBuilder.load.medium": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Mittel" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Medium" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Orta" } }
+      }
+    },
+    "planBuilder.load.hard": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schwer" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Hard" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ağır" } }
+      }
+    },
+    "planBuilder.load.tough": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Hart" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Tough" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Zor" } }
+      }
+    },
+    "planBuilder.result.explanation.spread": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Die Reihenfolge verteilt harte und leichte Einheiten über die Woche, statt sie zu häufen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "The order spreads hard and light sessions across the week instead of clustering them." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sıralama, zor ve hafif antrenmanları haftaya yayar, art arda toplamaz." } }
+      }
+    },
+    "planBuilder.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Plan bauen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Build Plan" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Plan Oluştur" } }
+      }
+    },
+    "planBuilder.types.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Trainingsarten" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Training Types" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Antrenman Türleri" } }
+      }
+    },
+    "planBuilder.types.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Wähle eine oder mehrere Trainingsarten. Für jede legst du Tage, Dauer und Erfahrung fest." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Choose one or more training types. For each, set days, duration, and experience." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bir veya daha fazla antrenman türü seç. Her biri için gün, süre ve deneyim belirle." } }
+      }
+    },
+    "planBuilder.types.more": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Weitere Trainingsarten" } },
+        "en": { "stringUnit": { "state": "translated", "value": "More Training Types" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Diğer Antrenman Türleri" } }
+      }
+    },
+    "planBuilder.wizard.unitsCount.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%lld Einheit" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%lld unit" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld birim" } }
+      }
+    },
+    "planBuilder.wizard.unitsCount.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%lld Einheiten" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%lld units" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld birim" } }
+      }
+    },
+    "planBuilder.wizard.daysPerWeek.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%lld Tag pro Woche" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%lld day per week" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Haftada %lld gün" } }
+      }
+    },
+    "planBuilder.wizard.daysPerWeek.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%lld Tage pro Woche" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%lld days per week" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Haftada %lld gün" } }
+      }
+    },
+    "planBuilder.wizard.minutesValue": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%lld Min." } },
+        "en": { "stringUnit": { "state": "translated", "value": "%lld min" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld dk" } }
+      }
+    },
+    "planBuilder.wizard.kmValue": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%.1f km" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%.1f km" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%.1f km" } }
+      }
+    },
+    "planBuilder.wizard.exerciseCount.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%lld Übung" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%lld exercise" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld egzersiz" } }
+      }
+    },
+    "planBuilder.wizard.exerciseCount.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%lld Übungen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%lld exercises" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld egzersiz" } }
+      }
+    },
+    "planBuilder.wizard.experience": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Erfahrung" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Experience" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Deneyim" } }
+      }
+    },
+    "planBuilder.equipment.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ausrüstung" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Equipment" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ekipman" } }
+      }
+    },
+    "planBuilder.equipment.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Welche Ausrüstung steht dir zur Verfügung?" } },
+        "en": { "stringUnit": { "state": "translated", "value": "What equipment do you have available?" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hangi ekipmana erişimin var?" } }
+      }
+    },
+    "planBuilder.rhythm.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rhythmus" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Rhythm" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ritim" } }
+      }
+    },
+    "planBuilder.rhythm.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Feste Wochentage oder einfach nur die Reihenfolge festlegen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Fixed weekdays, or just set the order." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sabit haftanın günleri mi, yoksa sadece sıralama mı?" } }
+      }
+    },
+    "planBuilder.rhythm.orderOnly": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nur Reihenfolge" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Order Only" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sadece Sıralama" } }
+      }
+    },
+    "planBuilder.rhythm.fixedWeekdays": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Feste Wochentage" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Fixed Weekdays" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sabit Günler" } }
+      }
+    },
+    "planBuilder.result.weeklyTotal": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%@ pro Woche" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%@ per week" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Haftada %@" } }
+      }
+    },
+    "planBuilder.result.recalculate": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Neu rechnen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Recalculate" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yeniden Hesapla" } }
+      }
+    },
+    "planBuilder.result.adopt": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Plan übernehmen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Adopt Plan" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Planı Onayla" } }
+      }
+    },
+    "planBuilder.result.empty.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Keine Übungen gefunden" } },
+        "en": { "stringUnit": { "state": "translated", "value": "No Exercises Found" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Egzersiz Bulunamadı" } }
+      }
+    },
+    "planBuilder.result.empty.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Für diese Kombination aus Ausrüstung und Erfahrung gibt es keine passenden Übungen in der Bibliothek. Wähle andere Optionen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "No matching exercises exist in the library for this combination of equipment and experience. Choose different options." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bu ekipman ve deneyim kombinasyonu için kütüphanede uygun egzersiz yok. Farklı seçenekler dene." } }
+      }
+    },
+    "planBuilder.nav.next": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Weiter" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Next" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "İleri" } }
+      }
+    },
     "plans.create.fromTemplate": {
       "extractionState": "manual",
       "localizations": {

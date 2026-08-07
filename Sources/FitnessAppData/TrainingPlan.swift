@@ -47,8 +47,34 @@ public final class TrainingPlan {
     /// addiert das Feld als nil auf existierende Rows ohne Schema-Bruch.
     public var localizationKey: String?
 
+    /// README 2.20: JSON-codiertes `PlanGeneratorInput`, gesetzt wenn dieser
+    /// Plan ueber den "Plan bauen"-Assistenten erzeugt wurde. Nil = manuell
+    /// angelegter oder direkt aus einem `ProgramTemplate` instanziierter
+    /// Plan. Ermoeglicht "neu rechnen": der Assistent liest die urspruenglich
+    /// gewaehlten Trainingsarten zurueck, statt sie erneut abzufragen.
+    /// Gleiches Raw+Computed-Prinzip wie
+    /// `UserBodyProfile.equipmentPreferencesRaw`.
+    public var generatorInputRaw: String?
+
     @Relationship(deleteRule: .cascade, inverse: \TrainingDay.plan)
     public var days: [TrainingDay] = []
+
+    /// Typisierter Zugriff auf `generatorInputRaw`. Getter dekodiert JSON;
+    /// liefert `nil` still (kein Crash) wenn der Plan kein Wizard-Plan ist
+    /// oder das JSON aus irgendeinem Grund nicht mehr decodierbar ist.
+    public var generatorInput: PlanGeneratorInput? {
+        get {
+            guard let raw = generatorInputRaw, let data = raw.data(using: .utf8) else { return nil }
+            return try? JSONDecoder().decode(PlanGeneratorInput.self, from: data)
+        }
+        set {
+            guard let newValue, let data = try? JSONEncoder().encode(newValue) else {
+                generatorInputRaw = nil
+                return
+            }
+            generatorInputRaw = String(data: data, encoding: .utf8)
+        }
+    }
 
     public init(
         name: String = "",
@@ -59,7 +85,8 @@ public final class TrainingPlan {
         isActive: Bool = false,
         targetEnvironment: EnvironmentType = .gym,
         isTemplate: Bool = false,
-        localizationKey: String? = nil
+        localizationKey: String? = nil,
+        generatorInputRaw: String? = nil
     ) {
         self.name = name
         self.customName = customName
@@ -70,6 +97,7 @@ public final class TrainingPlan {
         self.targetEnvironment = targetEnvironment
         self.isTemplate = isTemplate
         self.localizationKey = localizationKey
+        self.generatorInputRaw = generatorInputRaw
     }
 }
 #endif

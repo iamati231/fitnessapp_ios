@@ -127,6 +127,23 @@ public extension DifficultyLevel {
     }
 }
 
+/// README 2.20: beide Enums leben in `FitnessAppCore` OHNE eigenes
+/// `Bundle.module` (siehe `PlanGenerator.swift`-Datei-Kommentar) und exposen
+/// deshalb nur den rohen `titleKey`/`titleKey`-String statt eines vollen
+/// Switches wie oben - hier wird der Key nur noch in eine
+/// `LocalizedStringResource` gehuellt, kein zweiter Switch noetig.
+public extension TrainingTypeKind {
+    var localizedName: LocalizedStringResource {
+        LocalizedStringResource(titleKey, bundle: .fitnessAppUI)
+    }
+}
+
+public extension PlanLoadLevel {
+    var localizedName: LocalizedStringResource {
+        LocalizedStringResource(titleKey, bundle: .fitnessAppUI)
+    }
+}
+
 // ──────────────────────────────────────────────────────────────────────
 // DEL-120: Enum-Localization fuer alle UI-rendered Model-Daten-Enums.
 //

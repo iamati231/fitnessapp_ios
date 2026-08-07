@@ -62,20 +62,13 @@ public enum ProgramInstantiator {
         }
 
         // 2) Library-Lookups fuer isTimeBased + isCompound.
-        let timeBasedNames: Set<String> = Set(
-            ExerciseLibraryData.all.filter { $0.isTimeBased }.map { $0.name }
-        )
-        let compoundNames: Set<String> = Set(
-            ExerciseLibraryData.all.filter { $0.isSystemCompound }.map { $0.name }
-        )
+        let (timeBasedNames, compoundNames) = libraryLookupNames()
 
         // DEL-098: Library-Spec-Lookup nach Namen, damit wir die statischen
         // Belastungsfaktoren auf die neu instanziierten Plan-Uebungen ziehen
         // koennen. Uebungen ohne Library-Match (z.B. ungewoehnliche Custom-
         // Namen in Templates) bekommen die Default-Faktoren von `Exercise.init`.
-        let specByName: [String: ExerciseTemplateSpec] = Dictionary(
-            uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) }
-        )
+        let specByName = libraryLookupSpecs()
 
         // 3) Create new active plan.
         // DEL-123: localizationKey aus dem Template-Spec propagieren, damit
@@ -143,27 +136,12 @@ public enum ProgramInstantiator {
                 // DEL-098: Wenn der Name in der Library bekannt ist, nehmen
                 // wir die handgepflegten Faktoren. Sonst greifen die
                 // Defaults aus `Exercise.init` ("moderate Isolation").
-                let librarySpec = specByName[exerciseSpec.name]
-                let exercise = Exercise(
-                    name: exerciseSpec.name,
-                    sets: exerciseSpec.sets,
-                    repsMin: exerciseSpec.repsMin,
-                    repsMax: exerciseSpec.repsMax,
-                    restSeconds: exerciseSpec.restSeconds,
+                let exercise = makeExercise(
+                    from: exerciseSpec,
                     orderIndex: orderIndex,
-                    targetRir: exerciseSpec.targetRir,
-                    isCardio: exerciseSpec.isCardio,
-                    isTimeBased: timeBasedNames.contains(exerciseSpec.name),
-                    isCompound: compoundNames.contains(exerciseSpec.name),
-                    targetDistanceKm: exerciseSpec.targetDistanceKm,
-                    targetDurationMinutes: exerciseSpec.targetDurationMinutes,
-                    role: exerciseSpec.role,
-                    systemicFatigueFactor: librarySpec?.systemicFatigueFactor ?? 0.35,
-                    localMuscleDamageFactor: librarySpec?.localMuscleDamageFactor ?? 0.35,
-                    cnsDemandFactor: librarySpec?.cnsDemandFactor ?? 0.25,
-                    axialLoadFactor: librarySpec?.axialLoadFactor ?? 0.20,
-                    technicalComplexityFactor: librarySpec?.technicalComplexityFactor ?? 0.30,
-                    recoveryClass: librarySpec?.recoveryClass ?? .medium,
+                    timeBasedNames: timeBasedNames,
+                    compoundNames: compoundNames,
+                    librarySpecByName: specByName,
                     day: day
                 )
                 context.insert(exercise)
@@ -210,6 +188,63 @@ public enum ProgramInstantiator {
         let weightA = a == 1 ? 8 : a
         let weightB = b == 1 ? 8 : b
         return weightA < weightB
+    }
+
+    /// Materialisiert einen einzelnen `ExerciseSpec` in eine `Exercise`
+    /// inklusive DEL-098-Bibliotheks-Anreicherung — extrahiert aus der
+    /// Schleife oben, damit `PlanGeneratorInstantiator` (README 2.20 "neu
+    /// rechnen") sie ohne Duplikation wiederverwenden kann statt die
+    /// Anreicherungs-Logik ein zweites Mal abzutippen (Risiko: die beiden
+    /// Kopien laufen bei einer spaeteren DEL-098-Aenderung auseinander).
+    /// Nimmt die Lookup-Tabellen als Parameter entgegen statt sie selbst zu
+    /// bauen, damit `instantiate`s bestehende Einmal-Berechnung vor der
+    /// Tage-Schleife (siehe oben) ihren Performance-Vorteil behaelt.
+    public static func makeExercise(
+        from spec: ExerciseSpec,
+        orderIndex: Int,
+        timeBasedNames: Set<String>,
+        compoundNames: Set<String>,
+        librarySpecByName: [String: ExerciseTemplateSpec],
+        day: TrainingDay?
+    ) -> Exercise {
+        let librarySpec = librarySpecByName[spec.name]
+        return Exercise(
+            name: spec.name,
+            sets: spec.sets,
+            repsMin: spec.repsMin,
+            repsMax: spec.repsMax,
+            restSeconds: spec.restSeconds,
+            orderIndex: orderIndex,
+            targetRir: spec.targetRir,
+            isCardio: spec.isCardio,
+            isTimeBased: timeBasedNames.contains(spec.name),
+            isCompound: compoundNames.contains(spec.name),
+            targetDistanceKm: spec.targetDistanceKm,
+            targetDurationMinutes: spec.targetDurationMinutes,
+            role: spec.role,
+            systemicFatigueFactor: librarySpec?.systemicFatigueFactor ?? 0.35,
+            localMuscleDamageFactor: librarySpec?.localMuscleDamageFactor ?? 0.35,
+            cnsDemandFactor: librarySpec?.cnsDemandFactor ?? 0.25,
+            axialLoadFactor: librarySpec?.axialLoadFactor ?? 0.20,
+            technicalComplexityFactor: librarySpec?.technicalComplexityFactor ?? 0.30,
+            recoveryClass: librarySpec?.recoveryClass ?? .medium,
+            day: day
+        )
+    }
+
+    /// Baut die beiden Namens-Lookup-Sets, die `makeExercise` braucht -
+    /// gleiche Berechnung wie in `instantiate` oben, herausgezogen damit
+    /// `PlanGeneratorInstantiator` sie nicht duplizieren muss.
+    public static func libraryLookupNames() -> (timeBased: Set<String>, compound: Set<String>) {
+        let timeBased = Set(ExerciseLibraryData.all.filter { $0.isTimeBased }.map { $0.name })
+        let compound = Set(ExerciseLibraryData.all.filter { $0.isSystemCompound }.map { $0.name })
+        return (timeBased, compound)
+    }
+
+    /// Namens-Lookup fuer die DEL-098-Faktoren - gleiche Berechnung wie in
+    /// `instantiate` oben, herausgezogen fuer `PlanGeneratorInstantiator`.
+    public static func libraryLookupSpecs() -> [String: ExerciseTemplateSpec] {
+        Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) })
     }
 }
 #endif

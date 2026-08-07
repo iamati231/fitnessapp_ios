@@ -31,6 +31,7 @@ public struct PlansListView: View {
     private var activeSessions: [WorkoutSession]
 
     @State private var showingTemplatePicker = false
+    @State private var showingPlanBuilder = false
 
     public init() {}
 
@@ -54,6 +55,15 @@ public struct PlansListView: View {
                                 Text("plans.create.fromTemplate", bundle: .module)
                             } icon: {
                                 Image(systemName: "rectangle.stack.fill.badge.plus")
+                            }
+                        }
+                        Button {
+                            showingPlanBuilder = true
+                        } label: {
+                            Label {
+                                Text("plans.create.fromBuilder", bundle: .module)
+                            } icon: {
+                                Image(systemName: "wand.and.stars")
                             }
                         }
                         Button {
@@ -104,6 +114,9 @@ public struct PlansListView: View {
         .navigationBarBackButtonHidden(true)
         .sheet(isPresented: $showingTemplatePicker) {
             ProgramTemplatePickerView()
+        }
+        .sheet(isPresented: $showingPlanBuilder) {
+            PlanBuilderView()
         }
     }
 

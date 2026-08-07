@@ -33,6 +33,19 @@ public final class TrainingDay {
     /// AMRAP-Deckel bzw. EMOM-Gesamtdauer in Minuten. Siehe `DaySpec.timeCapMinutes`.
     public var timeCapMinutes: Int?
 
+    /// README 2.20: Fingerprint des Tagesinhalts unmittelbar NACH der
+    /// Erzeugung durch den "Plan bauen"-Assistenten. Nil = kein Wizard-Tag
+    /// (oder noch nicht generiert). "Neu rechnen" vergleicht diesen
+    /// gespeicherten Wert mit `currentContentFingerprint`: stimmen sie
+    /// ueberein, hat der User seit der Generierung nichts an diesem Tag
+    /// geaendert und der Assistent darf ihn ueberschreiben. Weicht der
+    /// Live-Wert ab (User hat Uebungen editiert/verschoben/geloescht), wird
+    /// der Tag beim Neu-Rechnen uebersprungen. Bewusst KEIN reaktives
+    /// Dirty-Flag an den Editor-Mutationsstellen — ein Fingerprint-Vergleich
+    /// kann keinen Mutationspfad "vergessen" und dadurch still Daten
+    /// ueberschreiben.
+    public var generationFingerprint: String?
+
     @Relationship(deleteRule: .cascade, inverse: \Exercise.day)
     public var exercises: [Exercise] = []
 
@@ -55,6 +68,29 @@ public final class TrainingDay {
         exercises.filter { $0.isArchived }
     }
 
+    /// README 2.20: deterministischer Live-Fingerprint des sichtbaren
+    /// Tagesinhalts — siehe `generationFingerprint`. Nutzt bewusst
+    /// `activeExercises` (nicht `exercises`): ein automatischer Equipment-
+    /// Swap (Urlaubs-Modus) archiviert/reaktiviert Eintraege, ohne dass der
+    /// User selbst etwas editiert hat, und soll "neu rechnen" nicht
+    /// blockieren. Sortiert nach `orderIndex`, damit die reine SwiftData-
+    /// Relationship-Reihenfolge (nicht garantiert stabil) keinen falschen
+    /// Unterschied erzeugt; `orderIndex` selbst ist Teil des Strings, damit
+    /// ein reines Umsortieren (`moveExercises`) trotzdem als Aenderung zaehlt.
+    /// `customName` ist ebenfalls Teil des Strings: ein Umbenennen ueber
+    /// `DayEditorView` ist genauso ein User-Edit wie eine Uebungs-Aenderung
+    /// und muss den Tag vor "neu rechnen" schuetzen.
+    public var currentContentFingerprint: String {
+        let exercisePart = activeExercises
+            .sorted { $0.orderIndex < $1.orderIndex }
+            .map { "\($0.name)|\($0.orderIndex)|\($0.sets)|\($0.repsMin)|\($0.repsMax)|\($0.restSeconds)" }
+            .joined(separator: ";")
+        let timeFormatPart = timeFormat?.rawValue ?? "-"
+        let timeCapPart = timeCapMinutes.map(String.init) ?? "-"
+        let customNamePart = customName ?? "-"
+        return "\(exercisePart)#\(timeFormatPart)#\(timeCapPart)#\(customNamePart)"
+    }
+
     public init(
         name: String,
         customName: String? = nil,
@@ -64,7 +100,8 @@ public final class TrainingDay {
         plan: TrainingPlan? = nil,
         localizationKey: String? = nil,
         timeFormat: WorkoutTimeFormat? = nil,
-        timeCapMinutes: Int? = nil
+        timeCapMinutes: Int? = nil,
+        generationFingerprint: String? = nil
     ) {
         self.name = name
         self.customName = customName
@@ -75,6 +112,7 @@ public final class TrainingDay {
         self.localizationKey = localizationKey
         self.timeFormat = timeFormat
         self.timeCapMinutes = timeCapMinutes
+        self.generationFingerprint = generationFingerprint
     }
 }
 
