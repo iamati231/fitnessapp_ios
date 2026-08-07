@@ -62,7 +62,7 @@ public enum PlanGenerator {
     /// Ein noch nicht platzierter, aber inhaltlich fertiger Tag samt
     /// geschaetzter Belastung fuer die Reihenfolge-Regel.
     private struct Candidate {
-        let name: String
+        var name: String
         let exercises: [ExerciseSpec]
         let timeFormat: WorkoutTimeFormat?
         let timeCapMinutes: Int?
@@ -164,7 +164,31 @@ public enum PlanGenerator {
                 hardness: hardness
             ))
         }
+        disambiguateDuplicateNames(&result)
         return result
+    }
+
+    /// README 2.21: bei mehreren Tagen derselben Trainingsart kann
+    /// `muscleFocusLabel` denselben Titel liefern, obwohl sich die Uebungen
+    /// unterscheiden - mit dem Kettlebell-Pool z.B. an zwei Tagen je "Push &
+    /// Pull" (`group[dayIndex % group.count]` waehlt andere Uebungen, aber
+    /// dieselben ERSTEN ZWEI Muskel-Kategorien). Haengt bei einer Kollision
+    /// den Tages-Buchstaben an, exakt wie `ProgramTemplates` es mit
+    /// "Ganzkoerper A"/"Ganzkoerper B" tut.
+    private static func disambiguateDuplicateNames(_ candidates: inout [Candidate]) {
+        var totalCounts: [String: Int] = [:]
+        for candidate in candidates {
+            totalCounts[candidate.name, default: 0] += 1
+        }
+        var nextLetterIndex: [String: Int] = [:]
+        for index in candidates.indices {
+            let baseName = candidates[index].name
+            guard totalCounts[baseName, default: 0] > 1 else { continue }
+            let letterIndex = nextLetterIndex[baseName, default: 0]
+            nextLetterIndex[baseName] = letterIndex + 1
+            let letter = Character(UnicodeScalar(UInt8(65 + letterIndex)))
+            candidates[index].name = "\(baseName) \(letter)"
+        }
     }
 
     /// EMOM-Ganzkoerper-Finisher aus dem gleichen gefilterten Pool - vier

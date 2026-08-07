@@ -14620,14 +14620,6 @@
         "tr": { "stringUnit": { "state": "translated", "value": "%lld dk" } }
       }
     },
-    "planBuilder.wizard.kmValue": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "%.1f km" } },
-        "en": { "stringUnit": { "state": "translated", "value": "%.1f km" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "%.1f km" } }
-      }
-    },
     "planBuilder.wizard.exerciseCount.one": {
       "extractionState": "manual",
       "localizations": {

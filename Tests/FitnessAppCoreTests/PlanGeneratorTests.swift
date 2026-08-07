@@ -60,6 +60,24 @@ final class PlanGeneratorTests: XCTestCase {
         XCTAssertTrue(result.days.allSatisfy { $0.spec.timeFormat == nil })
     }
 
+    // MARK: - README 2.21: Tages-Titel-Kollision
+
+    /// Nutzer-Feedback: `muscleFocusLabel` konnte bei mehreren Krafttagen
+    /// derselben Art denselben Titel liefern (z.B. zwei Kettlebell-Tage
+    /// beide "Push & Pull"), obwohl sich die Uebungen unterscheiden
+    /// (`group[dayIndex % group.count]` waehlt andere Uebungen, nur die
+    /// ERSTEN ZWEI Muskel-Kategorien sind identisch). Testet die Erwartung
+    /// black-box statt die interne Kollisions-Ursache nachzubilden - egal
+    /// WELCHE Tage kollidieren, `disambiguateDuplicateNames` muss sie
+    /// eindeutig machen.
+    func testStrengthDaysOfSameKindNeverShareIdenticalName() {
+        for days in 2...6 {
+            let result = PlanGenerator.generate(from: input([selection(.kettlebell, days: days)]))
+            let names = result.days.map { $0.spec.name }
+            XCTAssertEqual(names.count, Set(names).count, "Tages-Titel wiederholen sich bei \(days) Tagen: \(names)")
+        }
+    }
+
     // MARK: - README 2.20: Lauf-Typologie
 
     func testRunningThreeDaysCoversAllThreeZones() {

@@ -528,7 +528,10 @@ public struct PlanBuilderView: View {
         switch level {
         case .easy:   return .green
         case .medium: return Color.deltiqOrange
-        case .hard:   return .orange
+        // README 2.21: System-`.orange` (#FF9500) lag fast auf `deltiqOrange`
+        // (#FF9F0A) - vier Stufen, aber nur drei unterscheidbare Farben.
+        // Eigener, deutlich dunklerer Brand-Ton statt System-Orange.
+        case .hard:   return Color(red: 0.80, green: 0.35, blue: 0.05)
         case .tough:  return .red
         }
     }
@@ -543,7 +546,11 @@ public struct PlanBuilderView: View {
                 return String(format: String(localized: "planBuilder.wizard.minutesValue", bundle: .module), duration)
             }
             if let distance = exercise.targetDistanceKm {
-                return String(format: String(localized: "planBuilder.wizard.kmValue", bundle: .module), distance)
+                // README 2.21: "%.1f km" ohne Locale ("0.4 km" statt "0,4 km"
+                // auf Deutsch) - gleiche Bug-Familie wie der RIR-Punkt aus
+                // 2.18, fuenfte Fundstelle. `formattedOneDecimal` (locale-
+                // aware) plus reiner Einheiten-String statt `String(format:)`.
+                return "\(distance.formattedOneDecimal) km"
             }
         }
         return pluralizedCount("planBuilder.wizard.exerciseCount", count: spec.exercises.count)

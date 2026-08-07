@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1638 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1637 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1638 / 1638** (100%) | 0 |
-| 🇬🇧 English (EN) | **1638 / 1638** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1638 / 1638** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1637 / 1637** (100%) | 0 |
+| 🇬🇧 English (EN) | **1637 / 1637** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1637 / 1637** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1387,7 +1387,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.upperLower.name` | Upper-Lower-Split | Upper-Lower Split | Upper-Lower Split |
 | `plan.template.upperLower.tagline` | 4 Tage · Kraft & Hypertrophie | 4 Days · Strength & Hypertrophy | 4 Gün · Güç & Hipertrofi |
 
-## `planBuilder.*`  (36 Keys)
+## `planBuilder.*`  (35 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1423,7 +1423,6 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.wizard.exerciseCount.one` | %lld Übung | %lld exercise | %lld egzersiz |
 | `planBuilder.wizard.exerciseCount.other` | %lld Übungen | %lld exercises | %lld egzersiz |
 | `planBuilder.wizard.experience` | Erfahrung | Experience | Deneyim |
-| `planBuilder.wizard.kmValue` | %.1f km | %.1f km | %.1f km |
 | `planBuilder.wizard.minutesValue` | %lld Min. | %lld min | %lld dk |
 | `planBuilder.wizard.unitsCount.one` | %lld Einheit | %lld unit | %lld birim |
 | `planBuilder.wizard.unitsCount.other` | %lld Einheiten | %lld units | %lld birim |
