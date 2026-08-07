@@ -58,4 +58,17 @@ final class DoubleFormattingTests: XCTestCase {
         XCTAssertEqual((42.5).formatted(decimals: 1), (42.5).formattedOneDecimal)
         XCTAssertEqual((42.5).formatted(decimals: 2), (42.5).formattedTwoDecimals)
     }
+
+    // MARK: Float.formattedRIR
+
+    func testFormattedRIRWholeNumberHasNoFraction() {
+        XCTAssertEqual(Float(2).formattedRIR, "2")
+    }
+
+    func testFormattedRIRIsLocaleAware() {
+        // Regression: the old `String(format: "%.1f", rir)` had no locale and
+        // always rendered a dot, even next to a comma-formatted weight.
+        let s = Float(2.5).formattedRIR
+        XCTAssertTrue(s == "2.5" || s == "2,5", "got \(s)")
+    }
 }

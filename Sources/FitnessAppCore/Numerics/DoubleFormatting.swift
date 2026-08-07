@@ -46,3 +46,15 @@ extension Double {
     /// Praezision vortaeuscht.
     public var formattedNoDecimals: String { formatted(decimals: 0) }
 }
+
+extension Float {
+    /// Signature-Geruest 2.18: RIR wie ein Trainingsgewicht formatieren -
+    /// ganze Zahlen ohne Nachkommastelle, sonst lokalisiert (Komma in DE).
+    /// Ersetzt das bisherige `String(format: "%.1f", rir)` ohne Locale, das
+    /// im deutschen Satz einen Punkt erzwang ("47,5 kg" neben "RIR 0.5").
+    /// Gemeinsamer Helfer fuer SetRow.swift und WorkoutSummaryView.swift.
+    public var formattedRIR: String {
+        let value = Double(self)
+        return value == value.rounded() ? "\(Int(value))" : value.formattedOneDecimal
+    }
+}

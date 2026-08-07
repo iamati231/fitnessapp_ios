@@ -505,7 +505,7 @@ struct SetRow: View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) { rirExpanded.toggle() }
         } label: {
-            Text("RIR \(formatRIR(rir))")
+            Text("RIR \(rir.formattedRIR)")
                 .font(.caption.weight(.semibold).monospacedDigit())
                 .foregroundStyle(Color.deltiqOrange)
                 .padding(.horizontal, 9)
@@ -554,7 +554,7 @@ struct SetRow: View {
                 RIRTooltipBloop(rir: rir, isVisible: rirTooltip.isVisible)
                     .offset(y: -38)
             }
-            Text(formatRIR(rir))
+            Text(rir.formattedRIR)
                 .font(.caption.weight(.semibold).monospacedDigit())
                 .foregroundStyle(.primary)
                 .frame(width: 32, alignment: .trailing)
@@ -981,10 +981,10 @@ struct SetRow: View {
         }
 
         let kgUnit = String(localized: "unit.kg.lower", bundle: .module)
-        let base = "\(formatWeight(log.weight)) \(kgUnit) × \(log.reps)"
+        let base = "\(formatWeight(log.weight, decimals: 1)) \(kgUnit) × \(log.reps)"
         let rirPart = String(
             format: String(localized: "active.set.previousRIR", bundle: .module),
-            formatRIR(log.rir)
+            log.rir.formattedRIR
         )
         return "\(base) · \(rirPart)"
     }
@@ -1108,12 +1108,8 @@ struct SetRow: View {
         #endif
     }
 
-    private func formatWeight(_ w: Double) -> String {
-        w == w.rounded() ? "\(Int(w))" : w.truncated(to: 2).formattedTwoDecimals
-    }
-
-    private func formatRIR(_ rir: Float) -> String {
-        rir == rir.rounded() ? String(format: "%.0f", rir) : String(format: "%.1f", rir)
+    private func formatWeight(_ w: Double, decimals: Int = 2) -> String {
+        w == w.rounded() ? "\(Int(w))" : w.truncated(to: decimals).formatted(decimals: decimals)
     }
 
     // MARK: - DEL-058 Cardio Set Row
@@ -1319,11 +1315,32 @@ struct SetRow: View {
 @available(iOS 17.0, macOS 14.0, *)
 private struct PlatePopoverContent: View {
     let targetWeight: Double
+    /// Bevorzugtes Standard-Langhantel-Gewicht (`pref_bar_weight_kg`).
     let barWeight: Double
     let unitRaw: String
 
+    /// Signature-Geruest 2.17 Nachtrag: SZ-Stange (~10 kg) und Trap-Bar
+    /// (~25 kg) sind ebenfalls `.barbell`, teilen sich bisher aber die eine
+    /// Standard-Einstellung — die Aufladung rechnet fuer sie mit der
+    /// falschen Stange. Kein Feld pro Uebung (waere zu viel), stattdessen
+    /// eine Auswahl je Popover-Aufruf, die beim naechsten Oeffnen wieder
+    /// auf Standard zurueckfaellt.
+    private enum BarType: Hashable {
+        case standard, ezBar, trapBar
+    }
+
+    @State private var barType: BarType = .standard
+
     private var unit: PlateCalculator.Unit {
         PlateCalculator.Unit(rawValue: unitRaw) ?? .kg
+    }
+
+    private var effectiveBarWeight: Double {
+        switch barType {
+        case .standard: return barWeight
+        case .ezBar: return 10
+        case .trapBar: return 25
+        }
     }
 
     var body: some View {
@@ -1341,7 +1358,28 @@ private struct PlatePopoverContent: View {
                     .font(.title3.bold().monospacedDigit())
                     .foregroundStyle(Color.deltiqOrange)
             }
-            Text("Stange: \(formatWeight(barWeight)) \(unit.rawValue)")
+
+            // Signature-Geruest: DeltiqSegmentedPicker statt System-Picker,
+            // gleiches Muster wie die Einheiten-Auswahl in PlateCalculatorView.
+            DeltiqSegmentedPicker(
+                options: [
+                    DeltiqSegmentedOption(
+                        BarType.standard,
+                        label: String(localized: "barbell.loading.type.standard", bundle: .module)
+                    ),
+                    DeltiqSegmentedOption(
+                        BarType.ezBar,
+                        label: String(localized: "barbell.loading.type.ezBar", bundle: .module)
+                    ),
+                    DeltiqSegmentedOption(
+                        BarType.trapBar,
+                        label: String(localized: "barbell.loading.type.trapBar", bundle: .module)
+                    )
+                ],
+                selection: $barType
+            )
+
+            Text("Stange: \(formatWeight(effectiveBarWeight)) \(unit.rawValue)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -1349,9 +1387,9 @@ private struct PlatePopoverContent: View {
             // flaches `[PlateConfig]`, KEIN Wrapper-Struct mit `.plates` /
             // `.actualWeight`. `actualWeight` rechnen wir manuell (Stange +
             // 2× pro-Seite-Summe) — selbe Formel wie in PlateCalculatorView.
-            let plates = PlateCalculator.calculate(target: targetWeight, bar: barWeight, unit: unit)
+            let plates = PlateCalculator.calculate(target: targetWeight, bar: effectiveBarWeight, unit: unit)
             let perSideLoaded = plates.reduce(0.0) { $0 + Double($1.count) * $1.weight }
-            let actualWeight = barWeight + 2 * perSideLoaded
+            let actualWeight = effectiveBarWeight + 2 * perSideLoaded
 
             if plates.isEmpty {
                 Label {

@@ -2186,7 +2186,7 @@ private struct SetSummaryRow: View {
     /// RIR-Block: Label oben, Stepper darunter — kein Overlay-Trick mehr.
     private var rirBlock: some View {
         VStack(alignment: .trailing, spacing: 2) {
-            Text("RIR \(formatRIR(log.rir))")
+            Text("RIR \(log.rir.formattedRIR)")
                 .font(.system(size: 12))
                 .fitnessNumberStyle()
                 .foregroundStyle(Color.Deltiq.textSecondary)
@@ -2216,17 +2216,13 @@ private struct SetSummaryRow: View {
         }
         if exercise.isTimeBased {
             let secUnit = String(localized: "unit.seconds.short", bundle: .module)
-            return "\(log.reps) \(secUnit) (RIR \(formatRIR(log.rir)))"
+            return "\(log.reps) \(secUnit) (RIR \(log.rir.formattedRIR))"
         }
-        return "\(formatWeight(log.weight)) kg × \(log.reps) (RIR \(formatRIR(log.rir)))"
+        return "\(formatWeight(log.weight)) kg × \(log.reps) (RIR \(log.rir.formattedRIR))"
     }
 
     private func formatWeight(_ w: Double) -> String {
         w == w.rounded() ? "\(Int(w))" : w.truncated(to: 2).formattedTwoDecimals
-    }
-
-    private func formatRIR(_ rir: Float) -> String {
-        rir == rir.rounded() ? String(format: "%.0f", rir) : String(format: "%.1f", rir)
     }
 }
 

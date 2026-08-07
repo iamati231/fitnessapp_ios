@@ -416,10 +416,6 @@ public struct ExerciseEditorView: View {
         .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
-    private func rirString(_ rir: Float) -> String {
-        rir == rir.rounded() ? String(format: "%.0f", rir) : String(format: "%.1f", rir)
-    }
-
     // MARK: - DEL-143 Target-RIR-Slider mit Tooltip-Bloop
 
     /// Slider-basierter Target-RIR-Picker. Ersetzt den frueheren
@@ -436,7 +432,7 @@ public struct ExerciseEditorView: View {
             HStack {
                 Text("editor.exercise.field.targetRIR", bundle: .module)
                 Spacer()
-                Text(rirString(exercise.targetRir))
+                Text(exercise.targetRir.formattedRIR)
                     .font(.callout.monospacedDigit().weight(.semibold))
                     .foregroundStyle(Color.deltiqOrange)
                     .frame(minWidth: 28, alignment: .trailing)
