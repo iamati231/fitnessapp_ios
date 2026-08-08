@@ -540,6 +540,13 @@ private struct PRHistoryRow: View {
             return "\(formatPace(entry.value)) (vorher \(formatPace(entry.previousValue)))"
         // Zeitformate (README 2.9) — Xcode-26-strict braucht alle Cases.
         case .mostRounds:
+            // Bugfix (Teil-Wiederholungen entfernt): neue Sessions liefern nie
+            // wieder reps > 0 - der Zusatz bleibt nur fuer AELTERE Eintraege
+            // sichtbar, die noch echte Restwdh. eingefroren haben, statt fuer
+            // alle kuenftigen PRs faelschlich "+ 0 Wdh" anzuzeigen.
+            guard entry.reps > 0 else {
+                return "\(Int(entry.value)) Runden (vorher \(Int(entry.previousValue)) Runden)"
+            }
             return "\(Int(entry.value)) Runden + \(entry.reps) Wdh (vorher \(Int(entry.previousValue)) Runden)"
         case .fastestTime:
             return "\(formatDuration(entry.value)) (vorher \(formatDuration(entry.previousValue)))"

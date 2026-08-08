@@ -323,34 +323,6 @@ public struct WorkoutSummaryView: View {
                     }
                 }
                 .listRowBackground(Color.Deltiq.surface)
-                // Nachtrag (Verifikation): ohne mindestens eine Uebung gibt
-                // es niemanden, dem sich Restwdh. zuordnen liessen (Tag
-                // zwischenzeitlich geloescht, `.nullify`) - Runden bleiben
-                // trotzdem editierbar, nur dieser Teil wird ausgeblendet,
-                // statt `partialReps` > 0 ohne Namen zu erlauben.
-                if !editableTimedFormatExercises.isEmpty {
-                    Stepper(value: partialRepsBinding, in: 0...partialRepsStepperMax) {
-                        LabeledContent {
-                            Text("\(partialRepsBinding.wrappedValue)")
-                                .foregroundStyle(Color.Deltiq.textSecondary)
-                        } label: {
-                            Text("timedWorkout.amrap.partialReps", bundle: .module)
-                                .font(.system(size: 15))
-                        }
-                    }
-                    .listRowBackground(Color.Deltiq.surface)
-                    Picker(selection: partialRepsExerciseBinding) {
-                        Text("summary.editResult.partialRepsExercise.none", bundle: .module)
-                            .tag(String?.none)
-                        ForEach(editableTimedFormatExercises, id: \.persistentModelID) { exercise in
-                            Text(exercise.displayName).tag(String?.some(exercise.displayName))
-                        }
-                    } label: {
-                        Text("summary.editResult.partialRepsExercise", bundle: .module)
-                            .font(.system(size: 15))
-                    }
-                    .listRowBackground(Color.Deltiq.surface)
-                }
             case .emom:
                 // Nachtrag (Verifikation): reiner Fallback fuers geloeschte
                 // Tag (`day == nil`) - existiert der Tag noch, gilt IMMER
@@ -390,10 +362,6 @@ public struct WorkoutSummaryView: View {
         .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
-    private var editableTimedFormatExercises: [Exercise] {
-        (session.day?.activeExercises ?? []).sorted { $0.orderIndex < $1.orderIndex }
-    }
-
     private var roundsCompletedBinding: Binding<Int> {
         Binding(
             get: { session.roundsCompleted ?? 0 },
@@ -406,45 +374,6 @@ public struct WorkoutSummaryView: View {
         let suffix = rounds == 1 ? "one" : "other"
         let key = String.LocalizationValue(stringLiteral: "timedWorkout.amrap.rounds.\(suffix)")
         return String(localized: key, bundle: .module).replacingOccurrences(of: "%lld", with: "\(rounds)")
-    }
-
-    /// Deckt sich mit der Stepper-Range im Live-Player (`partialRepsStepperRow`
-    /// in TimedWorkoutPlayerView.swift): begrenzt auf das Pro-Runde-Ziel der
-    /// zugeordneten Uebung, weil mehr Restwdh. als das Rundenziel bereits eine
-    /// weitere volle Runde waere.
-    private var partialRepsStepperMax: Int {
-        guard let name = session.partialRepsExerciseName,
-              let match = editableTimedFormatExercises.first(where: { $0.displayName == name })
-        else { return 999 }
-        return match.repsMin
-    }
-
-    private var partialRepsBinding: Binding<Int> {
-        Binding(
-            get: { session.partialReps ?? 0 },
-            set: { newValue in
-                session.partialReps = newValue
-                if newValue == 0 {
-                    session.partialRepsExerciseName = nil
-                } else if session.partialRepsExerciseName == nil {
-                    session.partialRepsExerciseName = editableTimedFormatExercises.first?.displayName
-                }
-            }
-        )
-    }
-
-    /// Gleiche Begruendung wie beim Stations-Wechsel im Live-Player (siehe
-    /// dortiger Kommentar bei `currentStationID =`): ein Wechsel der
-    /// Zuordnung darf nicht die Restwdh.-Zahl der VORHERIGEN Uebung fuer die
-    /// neue weiterschleppen.
-    private var partialRepsExerciseBinding: Binding<String?> {
-        Binding(
-            get: { session.partialRepsExerciseName },
-            set: { newValue in
-                session.partialRepsExerciseName = newValue
-                session.partialReps = 0
-            }
-        )
     }
 
     private var completedMinuteCountBinding: Binding<Int> {
@@ -1111,18 +1040,10 @@ public struct WorkoutSummaryView: View {
     private func timedFormatSecondaryStat(_ format: WorkoutTimeFormat) -> some View {
         switch format {
         case .amrap:
-            // README 2.15/23d: "7" allein sagt nicht, ob sieben Liegestuetze
-            // oder sieben Kniebeugen - mit Namens-Snapshot traegt der Wert
-            // die Uebung mit ("7 Liegestütze" statt nur "7"). Faellt auf die
-            // bisherige bare Zahl zurueck, wenn kein Snapshot da ist (0
-            // angebrochene Wdh. oder Session von vor diesem Feature).
-            SummaryStat(label: String(localized: "timedWorkout.amrap.partialReps", bundle: .module),
-                        value: partialRepsSummaryValue)
             // Nutzer-Feedback 6. August: "wie schnell pro Runde" ist die
             // eigentliche Leistungskennzahl bei AMRAP, nicht nur die
             // Rundenzahl selbst - dieselbe Pace-Denke wie beim Cardio-
             // Ø-Pace-Stat oben (`formattedAvgPace`), nur Runden statt km.
-            statDivider
             SummaryStat(label: String(localized: "summary.amrap.avgPace", bundle: .module),
                         value: amrapAvgPaceText)
         case .emom:
@@ -1137,15 +1058,6 @@ public struct WorkoutSummaryView: View {
             SummaryStat(label: String(localized: "summary.stat.exercises", bundle: .module),
                         value: "\(session.exerciseCount)")
         }
-    }
-
-    /// README 2.15/23d: "N Name" statt der bloßen Zahl, wenn ein
-    /// Namens-Snapshot vorliegt - sonst (0 angebrochene Wdh. oder Session
-    /// von vor diesem Feature) die bisherige bare Zahl.
-    private var partialRepsSummaryValue: String {
-        let reps = session.partialReps ?? 0
-        guard let name = session.partialRepsExerciseName else { return "\(reps)" }
-        return "\(reps) \(name)"
     }
 
     /// Nutzer-Feedback 6. August: durchschnittliche Rundenzeit - wie
@@ -1464,38 +1376,16 @@ public struct WorkoutSummaryView: View {
 
     /// README (Nutzer-Feedback 6. August): Gesamt-Wiederholungen pro Uebung
     /// ueber die komplette Session - "15 Runden Cindy" heisst 75 Klimmzuege +
-    /// 150 Liegestuetze + 225 Kniebeugen, nicht nur "15 Runden". Stationen
-    /// VOR der im Namens-Snapshot vermerkten angebrochenen Station zaehlen in
-    /// der letzten (unvollstaendigen) Runde ebenfalls als voll erledigt - wer
-    /// bis zu einer spaeteren Station gekommen ist, hat alle davor im
-    /// selben Zirkeldurchgang zwangslaeufig komplett durchlaufen (gleiche
-    /// Zirkel-Reihenfolge wie im Player). `nil` wenn es nichts zu zeigen
-    /// gibt (weder Runde noch angebrochene Station erreicht).
+    /// 150 Liegestuetze + 225 Kniebeugen, nicht nur "15 Runden". `nil` wenn es
+    /// nichts zu zeigen gibt (noch keine volle Runde geschafft).
+    /// Bugfix (Teil-Wiederholungen entfernt): zaehlt nur noch volle Runden -
+    /// eine angebrochene Station gibt es im Datenmodell nicht mehr.
     private func amrapExerciseTotals(_ exercises: [Exercise]) -> [PersistentIdentifier: Int]? {
         let rounds = session.roundsCompleted ?? 0
-        let partial = session.partialReps ?? 0
-        // Nachtrag (Verifikation): der Namens-Snapshot allein reicht schon
-        // als "es gibt etwas zu zeigen" - seit dem Auto-Advance im Player
-        // kann eine Station mit 0 Wdh. bereits erreicht sein, waehrend
-        // `rounds` und `partial` beide noch 0 sind (z.B. direkt nach der
-        // allerersten, komplett durchlaufenen Station). Ohne diesen Zusatz
-        // wuerde die Zeile faelschlich auf den generischen Pro-Runde-Wert
-        // zurueckfallen, obwohl bereits echte Wdh. gemacht wurden.
-        guard rounds > 0 || partial > 0 || session.partialRepsExerciseName != nil else { return nil }
-        let currentIndex = session.partialRepsExerciseName.flatMap { name in
-            exercises.firstIndex { $0.displayName == name }
-        }
+        guard rounds > 0 else { return nil }
         var totals: [PersistentIdentifier: Int] = [:]
-        for (index, exercise) in exercises.enumerated() {
-            var total = rounds * exercise.repsMin
-            if let currentIndex {
-                if index < currentIndex {
-                    total += exercise.repsMin
-                } else if index == currentIndex {
-                    total += partial
-                }
-            }
-            totals[exercise.persistentModelID] = total
+        for exercise in exercises {
+            totals[exercise.persistentModelID] = rounds * exercise.repsMin
         }
         return totals
     }
@@ -1946,6 +1836,11 @@ private struct PRBadge: View {
         // Zeitformate (README 2.9)
         case .mostRounds:
             let prevRounds = Int(record.previousValue.rounded())
+            // Bugfix (Teil-Wiederholungen entfernt): siehe PRHistoryView.swift
+            // fuer die Begruendung des reps > 0-Gates.
+            guard record.reps > 0 else {
+                return "\(Int(record.newValue)) Runden (\(prev) \(prevRounds) Runden)"
+            }
             return "\(Int(record.newValue)) Runden + \(record.reps) \(repUnit) (\(prev) \(prevRounds) Runden)"
         case .fastestTime:
             return "\(formatDuration(record.newValue)) (\(prev) \(formatDuration(record.previousValue)))"

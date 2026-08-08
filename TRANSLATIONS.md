@@ -578,7 +578,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboardSettings.section.inactive.title` | Inaktive Widgets | Inactive Widgets | Pasif Widget'lar |
 | `dashboardSettings.title` | Dashboard anpassen | Customize Dashboard | Panoyu Özelleştir |
 
-## `day.*`  (55 Keys)
+## `day.*`  (58 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -615,8 +615,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `day.editor.exercises.editHint` | Tippe eine Übung an um sie zu bearbeiten. „Bearbeiten" oben rechts aktiviert die Drag-Handles zum Umsortieren — Superset-Partner werden automatisch mit verschoben. | Tap an exercise to edit. "Edit" top-right enables drag handles for reordering — superset partners move together. | Düzenlemek için bir harekete dokun. Sağ üstteki "Düzenle" sıralama tutamaçlarını etkinleştirir — süperset eşleri birlikte hareket eder. |
 | `day.editor.exercises.empty` | Noch keine Übungen. | No exercises yet. | Henüz hareket yok. |
 | `day.editor.exercises.restDayEmpty` | Ruhetag — keine Übungen. | Rest day — no exercises. | Dinlenme günü — hareket yok. |
+| `day.editor.field.duration` | Dauer | Duration | Süre |
 | `day.editor.field.name` | Name | Name | Ad |
 | `day.editor.field.nextIntensity` | Nächste Intensität | Next Intensity | Sonraki Yoğunluk |
+| `day.editor.field.timeCap` | Zeitlimit | Time cap | Süre sınırı |
+| `day.editor.field.timeCap.noLimit` | Kein Limit | No limit | Sınırsız |
 | `day.editor.field.type` | Typ | Type | Tip |
 | `day.editor.field.weekday` | Wochentag | Weekday | Gün |
 | `day.editor.section.exercises` | Übungen | Exercises | Hareketler |
@@ -1759,7 +1762,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `sex.female` | Weiblich | Female | Kadın |
 | `sex.male` | Männlich | Male | Erkek |
 
-## `summary.*`  (69 Keys)
+## `summary.*`  (67 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1794,8 +1797,6 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.editResult.finishTime` | Zielzeit | Finish time | Bitiş süresi |
 | `summary.editResult.footer` | Nachträglich korrigieren, falls beim Speichern etwas danebenging. | Correct after the fact if something was off when you saved. | Kaydederken bir şey yanlış gittiyse sonradan düzelt. |
 | `summary.editResult.header` | Ergebnis | Result | Sonuç |
-| `summary.editResult.partialRepsExercise` | Übung (Restwdh.) | Exercise (extra reps) | Egzersiz (ek tekrar) |
-| `summary.editResult.partialRepsExercise.none` | Keine | None | Yok |
 | `summary.editResult.rounds` | Runden | Rounds | Tur |
 | `summary.editTitle` | Training bearbeiten | Edit Workout | Antrenmanı Düzenle |
 | `summary.exercise.bestPrefix` | Beste | Best | En İyi |
@@ -1843,14 +1844,13 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `tab.plan` | Plan | Plan | Plan |
 | `tab.tools` | Werkzeuge | Tools | Araçlar |
 
-## `timedWorkout.*`  (26 Keys)
+## `timedWorkout.*`  (25 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `timedWorkout.amrap.addRound` | +1 Runde | +1 round | +1 tur |
 | `timedWorkout.amrap.capContext` | %lld Min. Deckel | %lld min cap | %lld dk limit |
 | `timedWorkout.amrap.circuitHint` | Von vorn, bis die Zeit abgelaufen ist. | Start over, until time runs out. | Süre bitene kadar baştan başla. |
-| `timedWorkout.amrap.partialReps` | Zusätzliche Wdh. | Extra reps | Ek tekrar |
 | `timedWorkout.amrap.rounds.one` | %lld Runde | %lld round | %lld tur |
 | `timedWorkout.amrap.rounds.other` | %lld Runden | %lld rounds | %lld tur |
 | `timedWorkout.amrap.roundsLabel` | RUNDEN | ROUNDS | TUR |

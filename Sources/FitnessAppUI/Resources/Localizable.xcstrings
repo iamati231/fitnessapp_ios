@@ -26,14 +26,6 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Süre bitene kadar baştan başla." } }
       }
     },
-    "timedWorkout.amrap.partialReps": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Zusätzliche Wdh." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Extra reps" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Ek tekrar" } }
-      }
-    },
     "timedWorkout.amrap.roundsLabel": {
       "extractionState": "manual",
       "localizations": {
@@ -15760,6 +15752,30 @@
         }
       }
     },
+    "day.editor.field.duration": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Dauer" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Duration" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Süre" } }
+      }
+    },
+    "day.editor.field.timeCap": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Zeitlimit" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Time cap" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Süre sınırı" } }
+      }
+    },
+    "day.editor.field.timeCap.noLimit": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kein Limit" } },
+        "en": { "stringUnit": { "state": "translated", "value": "No limit" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sınırsız" } }
+      }
+    },
     "day.editor.section.info": {
       "extractionState": "manual",
       "localizations": {
@@ -25234,22 +25250,6 @@
         "de": { "stringUnit": { "state": "translated", "value": "Ergebnis" } },
         "en": { "stringUnit": { "state": "translated", "value": "Result" } },
         "tr": { "stringUnit": { "state": "translated", "value": "Sonuç" } }
-      }
-    },
-    "summary.editResult.partialRepsExercise": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Übung (Restwdh.)" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Exercise (extra reps)" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Egzersiz (ek tekrar)" } }
-      }
-    },
-    "summary.editResult.partialRepsExercise.none": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Keine" } },
-        "en": { "stringUnit": { "state": "translated", "value": "None" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Yok" } }
       }
     },
     "summary.editResult.rounds": {

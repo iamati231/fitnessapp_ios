@@ -126,6 +126,11 @@ public enum PRCelebration {
         case .fastestPace:
             return "\(record.exerciseName) — \(formatPace(record.newValue)) (vorher \(formatPace(record.previousValue)))"
         case .mostRounds:
+            // Bugfix (Teil-Wiederholungen entfernt): siehe PRHistoryView.swift
+            // fuer die Begruendung des reps > 0-Gates.
+            guard record.reps > 0 else {
+                return "\(record.exerciseName) — \(Int(record.newValue)) Runden (vorher \(Int(record.previousValue)) Runden)"
+            }
             return "\(record.exerciseName) — \(Int(record.newValue)) Runden + \(record.reps) Wdh (vorher \(Int(record.previousValue)) Runden)"
         case .fastestTime:
             return "\(record.exerciseName) — \(formatDuration(record.newValue)) (vorher \(formatDuration(record.previousValue)))"

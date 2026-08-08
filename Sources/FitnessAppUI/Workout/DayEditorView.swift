@@ -363,6 +363,44 @@ public struct DayEditorView: View {
                 Text("day.editor.field.nextIntensity", bundle: .module)
             }
             .listRowBackground(Color.Deltiq.surface)
+
+            // Feature (Dauer/Time-Cap konfigurierbar): AMRAP/EMOM brauchen
+            // eine feste Dauer fuer den Countdown, Auf Zeit dagegen nur ein
+            // OPTIONALES Abbruch-Cap (0 = kein Limit, der bisherige
+            // Bestandsfall fuer alle bisherigen Auf-Zeit-Tage).
+            if let format = day.timeFormat {
+                switch format {
+                case .amrap, .emom:
+                    Stepper(value: Binding(
+                        get: { day.timeCapMinutes ?? defaultDurationMinutes(for: format) },
+                        set: { day.timeCapMinutes = $0 }
+                    ), in: 5...60) {
+                        LabeledContent {
+                            Text("\(day.timeCapMinutes ?? defaultDurationMinutes(for: format)) " + String(localized: "unit.minutes.short", bundle: .module))
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        } label: {
+                            Text("day.editor.field.duration", bundle: .module)
+                        }
+                    }
+                    .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
+                case .forTime:
+                    Stepper(value: Binding(
+                        get: { day.timeCapMinutes ?? 0 },
+                        set: { day.timeCapMinutes = $0 > 0 ? $0 : nil }
+                    ), in: 0...60, step: 5) {
+                        LabeledContent {
+                            Text(day.timeCapMinutes.map { "\($0) " + String(localized: "unit.minutes.short", bundle: .module) }
+                                ?? String(localized: "day.editor.field.timeCap.noLimit", bundle: .module))
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        } label: {
+                            Text("day.editor.field.timeCap", bundle: .module)
+                        }
+                    }
+                    .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
+                }
+            }
         } header: {
             sectionHeader(String(localized: "day.editor.section.info", bundle: .module))
         } footer: {
@@ -1004,6 +1042,18 @@ public struct DayEditorView: View {
             parts.append("\(cap) " + String(localized: "unit.minutes.short", bundle: .module))
         }
         return parts.joined(separator: " · ").uppercased()
+    }
+
+    /// Feature (Dauer konfigurierbar): Vorschlagswert fuer den Stepper, wenn
+    /// `timeCapMinutes` noch nil ist - identisch zum Fallback in
+    /// `TimedWorkoutPlayerView` (`capSeconds`/`totalMinutes`). `.forTime`
+    /// braucht keinen Default, das Cap ist dort optional (siehe Stepper oben).
+    private func defaultDurationMinutes(for format: WorkoutTimeFormat) -> Int {
+        switch format {
+        case .amrap: return 15
+        case .emom: return 12
+        case .forTime: return 0
+        }
     }
 }
 
