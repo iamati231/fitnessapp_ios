@@ -1943,7 +1943,12 @@ public struct DashboardView: View {
         // DEL-239: Vor dem Anlegen der Session fragen. Danach ist es zu spaet —
         // `SetRow` sperrt sich per `didInit` gegen ein zweites Befuellen, eine
         // spaetere Gewichtsaenderung erreicht die Felder nicht mehr.
-        guard !interceptForComeback({ actuallyStartNewWorkout(plan: plan, day: day) }) else { return }
+        // Bugfix (Comeback-Advisor bei Zeitformat-Sessions): reine
+        // Zeitformat-Tage werden nie abgefangen — siehe `actuallyStartNewSession`
+        // in DayEditorView fuer die Begruendung.
+        if day.timeFormat == nil {
+            guard !interceptForComeback({ actuallyStartNewWorkout(plan: plan, day: day) }) else { return }
+        }
 
         let session = WorkoutSession(
             startTime: Date(),

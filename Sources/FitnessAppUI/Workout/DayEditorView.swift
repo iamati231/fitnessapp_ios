@@ -879,7 +879,13 @@ public struct DayEditorView: View {
         // DEL-239: Rueckfrage nach langer Pause, VOR dem Insert. Derselbe
         // Abfang wie in DashboardView — sonst waere das Verhalten davon
         // abhaengig, von welchem Screen aus gestartet wird.
-        if deloadEnabled, comebackAssessment == nil,
+        // Bugfix (Comeback-Advisor bei Zeitformat-Sessions): reine
+        // Zeitformat-Tage (AMRAP/EMOM/Auf Zeit) haben keine Zielgewichte,
+        // die eine Reduktion betreffen koennte — die Rueckfrage waere hier
+        // irrefuehrend. `timeFormat` ist ein einzelnes Feld pro TrainingDay,
+        // ein Tag ist also nie "gemischt": entweder komplett Zeitformat
+        // oder komplett normales Satz/Wiederholungs-Training.
+        if day.timeFormat == nil, deloadEnabled, comebackAssessment == nil,
            let assessment = AbsenceDeload.assess(in: modelContext) {
             pendingComebackStart = { actuallyStartNewSession() }
             comebackAssessment = assessment
