@@ -186,7 +186,20 @@ struct SetRow: View {
             // Checkmark) plus Spacer knapp am Overflow — mit 12pt Spacing
             // zwischen jeden zwei kommt zu viel Luft zusammen, mit 8pt
             // bleibt's auch bei 3-stelligem Gewicht (125 kg) komfortabel.
-            HStack(spacing: 8) {
+            //
+            // Bugfix (Nutzer-Feedback, Screenshot Ganzkoerper C/Front Squat):
+            // 8pt war bei Hantelübungen (`plateCalcButton` zusätzlich im
+            // Layout) weiterhin zu knapp, sobald die RIR-Kapsel einen
+            // Halbschritt-Wert zeigt ("RIR 2,5" statt "RIR 2" - zwei Zeichen
+            // breiter). Die Eingabezeile ragte dann minimal ueber den
+            // Bildschirmrand hinaus; da die Seite in einer `ScrollView`
+            // innerhalb der Exercise-TabView sitzt, zentriert SwiftUI den zu
+            // breiten Inhalt und beschneidet ihn beidseitig — sichtbar als
+            // abgeschnittener Uebungsname links UND abgeschnittene Werte
+            // rechts, obwohl nur EIN Element (die Kapsel) tatsaechlich zu
+            // breit war. 8 → 6pt (siehe auch `rirCapsule`-Padding unten)
+            // schafft den fehlenden Puffer zurueck.
+            HStack(spacing: 6) {
                 // DEL-059 + UX-203: Rounded-Design + monospacedDigit fuer
                 // konsistente Zahlen-Ausrichtung (sonst springt der Slot
                 // zwischen 1-stellig und 2-stellig). Active-Set bekommt
@@ -534,6 +547,12 @@ struct SetRow: View {
     /// Halbschritt aenderte die Hoehe). Wird bei aufgeklapptem Satz nicht
     /// mehr in der Eingabezeile gebraucht (siehe Aufrufstelle dort) - lebt
     /// dann in `rirSliderRow`, wo Platz ist.
+    ///
+    /// Bugfix (Nutzer-Feedback): horizontales Padding 9 → 7. Die Kapsel ist
+    /// die einzige Breite-variable Komponente der Eingabezeile (Halbschritt-
+    /// Werte wie "RIR 2,5" sind zwei Zeichen breiter als "RIR 2") und war bei
+    /// Hantelübungen (zusaetzliches Plate-Icon) genau deswegen fuer einen
+    /// Overflow der ganzen Zeile verantwortlich, siehe `compactSetRow`.
     private var rirCapsule: some View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) { rirExpanded.toggle() }
@@ -543,7 +562,7 @@ struct SetRow: View {
                 .lineLimit(1)
                 .fixedSize()
                 .foregroundStyle(rirExpanded ? .white : Color.deltiqOrange)
-                .padding(.horizontal, 9)
+                .padding(.horizontal, 7)
                 .padding(.vertical, 4)
                 .background(rirExpanded ? Color.deltiqOrange : Color.deltiqOrange.opacity(0.12))
                 .clipShape(Capsule())
