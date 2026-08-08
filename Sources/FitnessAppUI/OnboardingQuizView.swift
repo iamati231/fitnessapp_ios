@@ -94,12 +94,20 @@ public struct OnboardingQuizView: View {
 
     private var progressIndicator: some View {
         HStack(spacing: 6) {
-            ForEach(QuizStep.allCases, id: \.self) { s in
+            ForEach(visibleSteps, id: \.self) { s in
                 Capsule()
                     .fill(s.rawValue <= step.rawValue ? Color.deltiqOrange : Color.secondary.opacity(0.2))
                     .frame(height: 4)
             }
         }
+    }
+
+    /// Bugfix (Audit): DEL-207-Pendant zu `OnboardingView.visibleSteps` fehlte
+    /// hier komplett - bei "Kein Equipment" wurde der Equipment-Schritt trotz
+    /// widersprechender Antwort weiterhin angezeigt (`goToNextStep`/
+    /// `goToPreviousStep` unten ueberspringen ihn jetzt konsistent).
+    private var visibleSteps: [QuizStep] {
+        QuizStep.allCases.filter { $0 != .equipment || environment != .noEquipment }
     }
 
     // MARK: - Step 1: Goal
@@ -384,12 +392,24 @@ public struct OnboardingQuizView: View {
     }
 
     private func goToNextStep() {
-        guard let next = QuizStep(rawValue: step.rawValue + 1) else { return }
+        guard var next = QuizStep(rawValue: step.rawValue + 1) else { return }
+        // Bugfix (Audit): DEL-207-Pendant zu OnboardingView - wer "Kein
+        // Equipment" gewaehlt hat, hat auf dem Equipment-Schritt nichts
+        // auszuwaehlen.
+        if next == .equipment, environment == .noEquipment,
+           let afterEquipment = QuizStep(rawValue: next.rawValue + 1) {
+            next = afterEquipment
+        }
         step = next
     }
 
     private func goToPreviousStep() {
-        guard let prev = QuizStep(rawValue: step.rawValue - 1) else { return }
+        guard var prev = QuizStep(rawValue: step.rawValue - 1) else { return }
+        // Bugfix (Audit): Skip auch rueckwaerts symmetrisch.
+        if prev == .equipment, environment == .noEquipment,
+           let beforeEquipment = QuizStep(rawValue: prev.rawValue - 1) {
+            prev = beforeEquipment
+        }
         step = prev
     }
 

@@ -361,22 +361,39 @@ public struct PlansListView: View {
         for day in source.days {
             // DEL-123: Tag-localizationKey schon — die Kopie ist strukturell
             // identisch und behaelt das Template-Origin.
+            // Bugfix (Audit): customName/timeFormat/timeCapMinutes fehlten -
+            // ein User-umbenannter Tag verlor seinen Namen, ein Zeitformat-Tag
+            // (AMRAP/EMOM/Auf Zeit) sein Format komplett (Routing landete nach
+            // dem Duplizieren faelschlich in ActiveWorkoutView statt
+            // TimedWorkoutPlayerView).
             let dayCopy = TrainingDay(
                 name: day.name,
+                customName: day.customName,
                 weekday: day.weekday,
                 type: day.type,
                 nextIntensity: day.nextIntensity,
                 plan: copy,
-                localizationKey: day.localizationKey
+                localizationKey: day.localizationKey,
+                timeFormat: day.timeFormat,
+                timeCapMinutes: day.timeCapMinutes
             )
             modelContext.insert(dayCopy)
 
             // Nur AKTIVE Uebungen kopieren — archivierte Urlaubs-Modus-
             // Snapshots gehoeren der Original-Plan-Instanz und sollen
-            // nicht in der Kopie geistern.
+            // nicht in der Kopie geistern. `swappedFromOriginal`/`isArchived`
+            // bleiben bewusst aussen vor (siehe Funktions-Kommentar oben) -
+            // die Kopie startet ohne Urlaubs-Modus-Historie.
+            //
+            // Bugfix (Audit): customName, supersetId, role und die DEL-098-
+            // Fatigue-Faktoren + primaryMuscle/equipment-Overrides fehlten -
+            // Warmups wurden zu normalen Arbeitssaetzen, Supersets trennten
+            // sich, Recovery-Scoring + eigene Uebungsklassifikation gingen
+            // auf Default-Werte zurueck.
             for ex in day.activeExercises.sorted(by: { $0.orderIndex < $1.orderIndex }) {
                 let exCopy = Exercise(
                     name: ex.name,
+                    customName: ex.customName,
                     sets: ex.sets,
                     repsMin: ex.repsMin,
                     repsMax: ex.repsMax,
@@ -393,6 +410,16 @@ public struct PlansListView: View {
                     isCompound: ex.isCompound,
                     targetDistanceKm: ex.targetDistanceKm,
                     targetDurationMinutes: ex.targetDurationMinutes,
+                    supersetId: ex.supersetId,
+                    role: ex.role,
+                    systemicFatigueFactor: ex.systemicFatigueFactor,
+                    localMuscleDamageFactor: ex.localMuscleDamageFactor,
+                    cnsDemandFactor: ex.cnsDemandFactor,
+                    axialLoadFactor: ex.axialLoadFactor,
+                    technicalComplexityFactor: ex.technicalComplexityFactor,
+                    recoveryClass: ex.recoveryClass,
+                    primaryMuscle: ex.primaryMuscle,
+                    equipment: ex.equipment,
                     day: dayCopy
                 )
                 modelContext.insert(exCopy)

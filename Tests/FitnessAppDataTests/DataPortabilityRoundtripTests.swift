@@ -356,6 +356,86 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(swapped?.swappedFromOriginal?.name, "Bankdrücken")
     }
 
+    // MARK: - Bugfix (Audit): Zeitformat + Generator-Metadaten im Roundtrip
+
+    /// Vor diesem Fix hatten `buildDays`/`buildWorkouts`/`buildPlans` keine
+    /// Spalten fuer `timeFormat`/`timeCapMinutes` (Tag), die sieben
+    /// Zeitformat-Ergebnisfelder (Session) oder `generatorInputRaw` (Plan) -
+    /// jeder Export/Import-Roundtrip (Backups eingeschlossen) verwandelte
+    /// einen AMRAP-Tag stillschweigend in einen normalen Satz/Wiederholungs-
+    /// Tag, loeschte das WOD-Ergebnis komplett und deaktivierte "neu rechnen"
+    /// fuer Wizard-generierte Plaene fuer immer.
+    func testTimedFormatDayAndSessionSurviveRoundtrip() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "WOD-Plan", programType: "custom", isActive: true)
+        plan.generatorInputRaw = #"{"selections":[]}"#
+        ctx.insert(plan)
+        let day = TrainingDay(
+            name: "Cindy", weekday: 2, type: .fullBody, plan: plan,
+            timeFormat: .amrap, timeCapMinutes: 20
+        )
+        ctx.insert(day)
+        let session = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_760_100_000),
+            endTime: Date(timeIntervalSince1970: 1_760_101_200),
+            durationMinutes: 20, isCompleted: true, dayName: "Cindy", day: day,
+            timeFormatSnapshot: .amrap,
+            roundsCompleted: 15,
+            partialReps: 7,
+            partialRepsExerciseName: "Kniebeugen",
+            completedTarget: true
+        )
+        ctx.insert(session)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let importedDay = try target.mainContext.fetch(FetchDescriptor<TrainingDay>()).first
+        XCTAssertEqual(importedDay?.timeFormat, .amrap, "Zeitformat-Tag darf nach dem Roundtrip nicht zu einem normalen Tag werden")
+        XCTAssertEqual(importedDay?.timeCapMinutes, 20)
+
+        let importedSession = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
+        XCTAssertEqual(importedSession?.timeFormatSnapshot, .amrap)
+        XCTAssertEqual(importedSession?.roundsCompleted, 15)
+        XCTAssertEqual(importedSession?.partialReps, 7)
+        XCTAssertEqual(importedSession?.partialRepsExerciseName, "Kniebeugen")
+        XCTAssertEqual(importedSession?.completedTarget, true)
+
+        let importedPlan = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
+        XCTAssertEqual(importedPlan?.generatorInputRaw, #"{"selections":[]}"#,
+                       "\"neu rechnen\" braucht generatorInputRaw, um nach einem Restore weiter zu funktionieren")
+    }
+
+    /// Ein normaler Satz/Wiederholungs-Tag (kein Zeitformat) darf durch die
+    /// neuen additiven Spalten nicht ploetzlich ein Zeitformat annehmen -
+    /// leere Zelle muss zuverlaessig als nil ankommen, nicht als "amrap"
+    /// o.ae. missinterpretiert werden.
+    func testNormalDayStaysNilTimeFormatAfterRoundtrip() throws {
+        let source = try makeContainer()
+        try seed(source.mainContext)
+        let bundle = try DataExportService.makeExport(context: source.mainContext)
+
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        let importedDay = try target.mainContext.fetch(FetchDescriptor<TrainingDay>()).first
+        XCTAssertNil(importedDay?.timeFormat)
+        XCTAssertNil(importedDay?.timeCapMinutes)
+        let importedSession = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
+        XCTAssertNil(importedSession?.timeFormatSnapshot)
+        XCTAssertNil(importedSession?.roundsCompleted)
+    }
+
     // MARK: - DEL-226 Trockenlauf
 
     /// Die Vorschau muss den Inhalt korrekt melden und dabei NICHTS schreiben.

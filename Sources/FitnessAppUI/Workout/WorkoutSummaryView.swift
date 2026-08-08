@@ -100,6 +100,17 @@ public struct WorkoutSummaryView: View {
                             sweepEmptyPlaceholderLogs()
                             recalculateSessionTotals()
                             try? modelContext.save()
+                            // Bugfix (Audit): ohne dies blieb die Trophy Room
+                            // nach einer History-Korrektur (z.B. ein falsch
+                            // getipptes Gewicht oder eine falsche AMRAP-
+                            // Rundenzahl) auf dem alten, jetzt fabrizierten
+                            // PR-Stand stehen - PersonalRecordEntry wurde nur
+                            // beim urspruenglichen Speichern geschrieben, nie
+                            // erneut. `rebuild` ist die bereits vorhandene,
+                            // korrekte "alles neu berechnen"-Operation (siehe
+                            // "Aus History neu berechnen" im Trophy Room).
+                            PersonalRecordSync.rebuild(in: modelContext)
+                            try? modelContext.save()
                         }
                         isEditingHistory.toggle()
                     },

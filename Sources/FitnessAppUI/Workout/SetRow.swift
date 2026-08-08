@@ -143,7 +143,18 @@ struct SetRow: View {
             // automatischem Speichern (DEL-040 + DEL-045 Schritt 4).
             timeBasedSetView
                 .onAppear { initializeOnce() }
-                .onDisappear { invalidateHoldTimer() }
+                .onDisappear {
+                    invalidateHoldTimer()
+                    // Bugfix (Audit): ohne dies bleibt `activeTimedSet` fuer
+                    // den Rest der Session auf dieser Zeile stehen, wenn sie
+                    // waehrend eines laufenden Holds verschwindet (z.B. die
+                    // Uebung wird im Ad-Hoc-Workout geloescht) - danach kann
+                    // KEINE zeitbasierte Uebung mehr starten
+                    // (`isBlockedByOtherTimedExercise` bleibt dauerhaft
+                    // `true`). Identity-checked, daher gefahrlos auch beim
+                    // gewoehnlichen Wegblaettern aufzurufen.
+                    releaseTimedExerciseLockIfHeld()
+                }
         } else {
             // Strength (inkl. Bodyweight per BW-Placeholder): kompaktes
             // Layout (DEL-045 Schritt 1+2).

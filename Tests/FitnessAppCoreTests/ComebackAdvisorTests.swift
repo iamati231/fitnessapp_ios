@@ -253,6 +253,16 @@ final class ComebackAdvisorTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(ComebackAdvisor.reducedWeight(current: 2.5, factor: 0.5, increment: 2.5), 2.5)
     }
 
+    /// Bugfix (Audit): der relative Boden (current * 0.5) muss selbst auf die
+    /// Schrittweite gerastet sein. Vorher konnte er ungerastert gegen
+    /// `snapped` gewinnen, z.B. current=6, increment=2.5 -> Boden 3.0, kein
+    /// Vielfaches von 2.5, also mit dieser Schrittweite gar nicht ladbar.
+    func testRelativeFloorIsSnappedToIncrement() {
+        let result = ComebackAdvisor.reducedWeight(current: 6.0, factor: 0.75, increment: 2.5)
+        XCTAssertEqual(result.truncatingRemainder(dividingBy: 2.5), 0, accuracy: 0.0001)
+        XCTAssertGreaterThanOrEqual(result, 3.0)
+    }
+
     func testDegenerateInputsAreSafe() {
         XCTAssertEqual(ComebackAdvisor.reducedWeight(current: 0, factor: 0.85, increment: 2.5), 0)
         XCTAssertEqual(ComebackAdvisor.reducedWeight(current: 100, factor: 0.85, increment: 0), 100.0)

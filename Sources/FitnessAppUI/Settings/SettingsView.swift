@@ -723,7 +723,13 @@ public struct SettingsView: View {
 
         // 1) Navigation-State sofort zuruecksetzen — entfernt @Bindable-
         //    References auf gleich-zu-loeschende UserBodyProfile/Plan/Day.
+        // Bugfix (Audit): `toolsPath` fehlte hier - ohne Reset konnte der
+        // Werkzeuge-Tab nach einem Reset in einer veralteten Detail-Ansicht
+        // (z.B. Wassertracker) statt der Uebersicht landen, weil
+        // `AppNavigation` als langlebiges @State den Onboarding<->Main-Swap
+        // ueberlebt.
         navigation.workoutPath = NavigationPath()
+        navigation.toolsPath = NavigationPath()
         navigation.selectedTab = .dashboard
 
         // 2) AppStorage-Keys sofort wegwerfen (synchron OK, kein Model).

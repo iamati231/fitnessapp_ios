@@ -243,8 +243,15 @@ public enum ComebackAdvisor {
         let steps = (target / increment).rounded(.down)
         let snapped = steps * increment
 
+        // Bugfix (Audit): der Boden selbst muss ebenfalls gerastet sein, sonst
+        // kann `max()` ihn gegen `snapped` gewinnen lassen und ein Gewicht
+        // liefern, das mit der Schrittweite gar nicht ladbar ist (z.B. current
+        // = 6, increment = 2.5 -> Boden 3.0 statt eines Vielfachen von 2.5).
+        // Aufwaerts gerastet (nicht abwaerts wie `snapped`), damit der Boden
+        // nie UNTERSCHRITTEN wird - das ist hier die staerkere Garantie.
         let relativeFloor = current * 0.5
-        return max(snapped, increment, relativeFloor > increment ? relativeFloor : increment)
+        let snappedFloor = (relativeFloor / increment).rounded(.up) * increment
+        return max(snapped, increment, snappedFloor > increment ? snappedFloor : increment)
     }
 
     // DEL-242: `changesAnything` entfernt — ohne Aufrufer. Die wirksame Regel

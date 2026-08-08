@@ -164,7 +164,12 @@ public struct GearListView: View {
     }
 
     private func formatKm(_ km: Double) -> String {
-        km == km.rounded() ? "\(Int(km))" : km.truncated(to: 0).formattedTwoDecimals
+        // Bugfix (Audit): truncated(to: 0) rundete VOR der Zwei-Dezimalstellen-
+        // Formatierung bereits auf eine ganze Zahl, sodass Nachkommastellen
+        // nie sichtbar wurden (142.73 km -> "142,00"). truncated(to: 2)
+        // verhindert weiterhin ein kosmetisches Aufrunden, ohne die
+        // Nachkommastellen selbst zu verschlucken.
+        km == km.rounded() ? "\(Int(km))" : km.truncated(to: 2).formattedTwoDecimals
     }
 }
 

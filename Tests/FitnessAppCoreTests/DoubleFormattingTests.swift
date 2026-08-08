@@ -25,6 +25,14 @@ final class DoubleFormattingTests: XCTestCase {
         XCTAssertEqual((15.86).truncated(to: 1), 15.8, accuracy: 1e-12)
     }
 
+    /// Bugfix (Audit): flooring a negative value grows its MAGNITUDE
+    /// (-2.34 -> -2.4), which overstates rather than avoids overstating -
+    /// the opposite of this function's purpose. Must round toward zero.
+    func testTruncatedRoundsNegativeValuesTowardZeroNotAwayFromIt() {
+        XCTAssertEqual((-2.34).truncated(to: 1), -2.3, accuracy: 1e-12)
+        XCTAssertEqual((-0.3).truncated(to: 0), 0.0, accuracy: 1e-12)
+    }
+
     // MARK: formattedTwoDecimals
 
     func testFormattedTwoDecimalsForcesTrailingZeros() {
@@ -70,5 +78,14 @@ final class DoubleFormattingTests: XCTestCase {
         // always rendered a dot, even next to a comma-formatted weight.
         let s = Float(2.5).formattedRIR
         XCTAssertTrue(s == "2.5" || s == "2,5", "got \(s)")
+    }
+
+    /// Bugfix (Audit): `Int(value)` traps for non-finite/too-large values.
+    /// `.infinity.rounded() == .infinity` is true, so without a guard this
+    /// took the `Int(value)` branch and crashed.
+    func testFormattedRIRDoesNotCrashOnNonFiniteValues() {
+        XCTAssertFalse(Float.infinity.formattedRIR.isEmpty)
+        XCTAssertFalse(Float.nan.formattedRIR.isEmpty)
+        XCTAssertFalse(Float(1e30).formattedRIR.isEmpty)
     }
 }

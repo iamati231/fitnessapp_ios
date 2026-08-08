@@ -1396,10 +1396,20 @@ private struct ForTimePlayerView: View {
         DeltiqHaptics.notify(.success)
         if checkedBoxes == totalBoxes {
             isFinished = true
-            // Verifikation (Workflow-Nachtrag): JETZT einfrieren, nicht erst
-            // beim Speichern - `elapsedSeconds` ist Wanduhr-basiert und
-            // wuerde sonst bis zum tatsaechlichen Speichern-Tap weiterlaufen.
-            finishedElapsedSeconds = elapsedSeconds
+            if let capSeconds, elapsedSeconds >= capSeconds {
+                // Bugfix (Audit): der Deckel hatte die Zeit schon eingefroren,
+                // BEVOR der letzte Kasten abgehakt wurde - `elapsedSeconds`
+                // lief seither als reine Wanduhr weiter und ist inzwischen
+                // groesser als der Deckel. Ohne diesen Zweig wuerde das
+                // spaete Abhaken die bereits eingefrorene Zielzeit wieder
+                // ueberschreiben und faelschlich verlaengern.
+                finishedElapsedSeconds = capSeconds
+            } else {
+                // Verifikation (Workflow-Nachtrag): JETZT einfrieren, nicht erst
+                // beim Speichern - `elapsedSeconds` ist Wanduhr-basiert und
+                // wuerde sonst bis zum tatsaechlichen Speichern-Tap weiterlaufen.
+                finishedElapsedSeconds = elapsedSeconds
+            }
         } else if let capSeconds, elapsedSeconds >= capSeconds {
             // Zeit-Deckel hat schon beendet - ein Abhaken darf die Uhr nicht wieder starten.
         } else {

@@ -587,7 +587,17 @@ public struct PlanEditorView: View {
     /// gleich Uebungen hinzufuegen kann. Ruhetage werden nur in der Liste
     /// gespeichert — kein Editor noetig.
     private func createNewDay(type: DayType) {
-        let nextWeekday = (plan.days.map(\.weekday).max() ?? 1) % 7 + 1
+        // Bugfix (Audit): ein numerisches max() ueber `weekday` behandelt
+        // Sonntag (1) faelschlich als kleinsten statt letzten Wochentag
+        // (siehe `PlanNavigator.sortByWeekdayMondayFirst`) - bei einem Plan
+        // mit Samstag(7)+Sonntag(1) landete der naechste Tag wieder auf
+        // Sonntag statt auf dem tatsaechlich freien Montag. Erster freier
+        // Wochentag in Montag-first-Reihenfolge, sonst deterministischer
+        // Fallback ueber die Tagesanzahl.
+        let mondayFirstCycle = [2, 3, 4, 5, 6, 7, 1]
+        let usedWeekdays = Set(plan.days.map(\.weekday))
+        let nextWeekday = mondayFirstCycle.first { !usedWeekdays.contains($0) }
+            ?? mondayFirstCycle[plan.days.count % mondayFirstCycle.count]
         let defaultName: String
         switch type {
         case .rest: defaultName = "Ruhetag"

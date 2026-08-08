@@ -48,10 +48,30 @@ final class PlanGeneratorTests: XCTestCase {
     // MARK: - README 2.20: Kettlebell-EMOM-Finisher
 
     func testKettlebellThreeDaysAddsExactlyOneEmomFinisher() {
+        // 45 Min (Test-Default) liegt oberhalb des EMOM-Finisher-Deckels,
+        // wird also auf das Maximum von 30 geklemmt (Bugfix, Audit: vorher
+        // fix 20, unabhaengig von der gewaehlten Sessiondauer).
         let result = PlanGenerator.generate(from: input([selection(.kettlebell, days: 3)]))
         let emomDays = result.days.filter { $0.spec.timeFormat == .emom }
         XCTAssertEqual(emomDays.count, 1)
-        XCTAssertEqual(emomDays.first?.spec.timeCapMinutes, 20)
+        XCTAssertEqual(emomDays.first?.spec.timeCapMinutes, 30)
+    }
+
+    /// Bugfix (Audit): der EMOM-Finisher-Deckel muss die vom User gewaehlte
+    /// Sessiondauer respektieren (auf einen sinnvollen EMOM-Bereich
+    /// geklemmt), nicht immer denselben Fixwert liefern.
+    func testKettlebellEmomFinisherCapScalesWithSessionDurationWithinBounds() {
+        let short = PlanGenerator.generate(from: input([selection(.kettlebell, days: 3, minutes: 15)]))
+        XCTAssertEqual(short.days.first { $0.spec.timeFormat == .emom }?.spec.timeCapMinutes, 15)
+
+        let midRange = PlanGenerator.generate(from: input([selection(.kettlebell, days: 3, minutes: 20)]))
+        XCTAssertEqual(midRange.days.first { $0.spec.timeFormat == .emom }?.spec.timeCapMinutes, 20)
+
+        let veryShort = PlanGenerator.generate(from: input([selection(.kettlebell, days: 3, minutes: 5)]))
+        XCTAssertEqual(veryShort.days.first { $0.spec.timeFormat == .emom }?.spec.timeCapMinutes, 10, "unter 10 Minuten lohnt sich die Rotation kaum")
+
+        let veryLong = PlanGenerator.generate(from: input([selection(.kettlebell, days: 3, minutes: 120)]))
+        XCTAssertEqual(veryLong.days.first { $0.spec.timeFormat == .emom }?.spec.timeCapMinutes, 30, "ueber 30 Minuten waere ein \"Finisher\" kein Finisher mehr")
     }
 
     func testKettlebellTwoDaysHasNoEmomFinisher() {
@@ -75,6 +95,34 @@ final class PlanGeneratorTests: XCTestCase {
             let result = PlanGenerator.generate(from: input([selection(.kettlebell, days: days)]))
             let names = result.days.map { $0.spec.name }
             XCTAssertEqual(names.count, Set(names).count, "Tages-Titel wiederholen sich bei \(days) Tagen: \(names)")
+        }
+    }
+
+    /// Bugfix (Audit): `UInt8(65 + letterIndex)` produzierte ab dem 27.
+    /// Duplikat entweder Muell-Zeichen oder trapte per Ueberlauf. Nicht
+    /// ueber die UI erreichbar (Cap: 7 Tage/Woche insgesamt), aber der
+    /// Core-API selbst fehlt diese Grenze - erzwingt die Kollision direkt
+    /// ueber `PlanGeneratorTypeSelection`, das den UI-Cap nicht kennt.
+    /// Radfahren-Tage teilen sich IMMER denselben Basisnamen, daher
+    /// garantiert `days: 30` genau 30 Kollisionen in einem Aufruf.
+    func testDisambiguationSuffixFallsBackToNumbersPastTwentySixDuplicates() {
+        let result = PlanGenerator.generate(from: input([selection(.cycling, days: 30)]))
+        let names = Set(result.days.map { $0.spec.name })
+        XCTAssertEqual(names.count, 30, "alle 30 Titel muessen trotz Buchstaben-Ueberlauf eindeutig bleiben")
+        XCTAssertTrue(names.contains("Radfahren Z"), "26. Duplikat bekommt noch den letzten Buchstaben")
+        XCTAssertTrue(names.contains("Radfahren 27"), "27. Duplikat muss auf einen Zahlen-Fallback ausweichen")
+        XCTAssertTrue(names.contains("Radfahren 30"))
+    }
+
+    func testCardioDaysOfSameKindNeverShareIdenticalName() {
+        for days in 2...7 {
+            let cycling = PlanGenerator.generate(from: input([selection(.cycling, days: days)]))
+            let cyclingNames = cycling.days.map { $0.spec.name }
+            XCTAssertEqual(cyclingNames.count, Set(cyclingNames).count, "Radfahren-Titel wiederholen sich bei \(days) Tagen: \(cyclingNames)")
+
+            let running = PlanGenerator.generate(from: input([selection(.running, days: days)]))
+            let runningNames = running.days.map { $0.spec.name }
+            XCTAssertEqual(runningNames.count, Set(runningNames).count, "Lauf-Titel wiederholen sich bei \(days) Tagen: \(runningNames)")
         }
     }
 

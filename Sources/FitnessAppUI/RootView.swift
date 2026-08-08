@@ -129,6 +129,14 @@ public struct RootView: View {
     ///      Live-Activity nach Crash), bleiben wir auf der Plan-Liste.
     private func handleOpenActiveWorkout() {
         navigation.selectedTab = .plan
+        // Bugfix (Audit): Pfad-Reset galt bisher nur im gefundenen-Session-
+        // Zweig unten - bei einem veralteten/spaeten Live-Activity-Tap ohne
+        // noch existierende Session (z.B. App-Cold-Start nach Crash) blieb
+        // ein bereits vorhandener verschachtelter Pfad stehen, obwohl der
+        // Kommentar unten genau das verhindern soll. Reset gilt jetzt fuer
+        // beide Faelle: Session gefunden -> Route wird angehaengt; Session
+        // nicht gefunden -> User landet auf der Plan-Liste.
+        navigation.workoutPath = NavigationPath()
         // Aktive Session pullen. Defensive: FetchDescriptor auf nicht-
         // completed, nicht-rest-day Sessions, neueste zuerst.
         var descriptor = FetchDescriptor<WorkoutSession>(
@@ -137,9 +145,6 @@ public struct RootView: View {
         )
         descriptor.fetchLimit = 1
         if let session = try? modelContext.fetch(descriptor).first {
-            // Pfad zuruecksetzen + Session pushen. Ohne Reset wuerde der
-            // User bei nested-Plan-Editor-Screens landen.
-            navigation.workoutPath = NavigationPath()
             navigation.workoutPath.append(ActiveSessionRoute(session: session))
         }
     }

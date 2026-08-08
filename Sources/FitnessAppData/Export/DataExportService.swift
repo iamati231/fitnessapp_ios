@@ -301,10 +301,18 @@ public enum DataExportService {
         _ items: [TrainingPlan],
         id: (AnyObject) -> String
     ) -> Data {
+        // Bugfix (Audit): `generator_input_raw` als additive Spalte - ohne sie
+        // war "neu rechnen" nach jedem Export/Import-Roundtrip (Backup-
+        // Restore eingeschlossen) fuer JEDEN Wizard-generierten Plan
+        // stillschweigend deaktiviert (`plan.generatorInput` kam als `nil`
+        // zurueck). Gleiches additiv-rueckwaertskompatibles Muster wie DEL-203
+        // (`weekly_workout_goal`): aeltere Importer/aeltere ZIPs kennen die
+        // Spalte nicht, kein formatVersion-Bump noetig.
         var w = CSVWriter(headers: [
             "id", "name", "custom_name", "program_type", "description",
             "weeks", "is_active", "target_environment", "is_template",
-            "progression_target_rir_override", "localization_key"
+            "progression_target_rir_override", "localization_key",
+            "generator_input_raw"
         ])
         for p in items {
             w.appendRow([
@@ -318,7 +326,8 @@ public enum DataExportService {
                 p.targetEnvironment.rawValue,
                 CSVWriter.bool(p.isTemplate),
                 p.progressionTargetRIROverride.map { CSVWriter.decimal(Double($0)) } ?? "",
-                p.localizationKey ?? ""
+                p.localizationKey ?? "",
+                p.generatorInputRaw ?? ""
             ])
         }
         return w.data()
@@ -328,9 +337,15 @@ public enum DataExportService {
         _ items: [TrainingDay],
         id: (AnyObject) -> String
     ) -> Data {
+        // Bugfix (Audit): `time_format`/`time_cap_minutes` als additive
+        // Spalten - ohne sie verlor ein AMRAP/EMOM/Auf-Zeit-Tag nach jedem
+        // Export/Import-Roundtrip sein Zeitformat komplett und wurde beim
+        // naechsten Start faelschlich in ActiveWorkoutView statt
+        // TimedWorkoutPlayerView geroutet.
         var w = CSVWriter(headers: [
             "id", "plan_id", "name", "custom_name", "weekday",
-            "type", "next_intensity", "localization_key"
+            "type", "next_intensity", "localization_key",
+            "time_format", "time_cap_minutes"
         ])
         for d in items {
             w.appendRow([
@@ -341,7 +356,9 @@ public enum DataExportService {
                 String(d.weekday),
                 d.type.rawValue,
                 d.nextIntensity.rawValue,
-                d.localizationKey ?? ""
+                d.localizationKey ?? "",
+                d.timeFormat?.rawValue ?? "",
+                d.timeCapMinutes.map(String.init) ?? ""
             ])
         }
         return w.data()
@@ -425,12 +442,20 @@ public enum DataExportService {
         _ items: [WorkoutSession],
         id: (AnyObject) -> String
     ) -> Data {
+        // Bugfix (Audit): die sieben Zeitformat-Ergebnisfelder fehlten
+        // komplett als additive Spalten - eine abgeschlossene AMRAP/EMOM/
+        // Auf-Zeit-Session (Runden, Restwdh., Zielzeit, ...) verlor ihr
+        // Ergebnis vollstaendig bei jedem Export/Import-Roundtrip bzw.
+        // Backup-Restore, obwohl Dauer/Volumen korrekt erhalten blieben.
         var w = CSVWriter(headers: [
             "id", "start_time_utc", "end_time_utc", "duration_minutes",
             "exercise_count", "total_sets", "total_volume_kg",
             "notes", "is_completed", "is_rest_day", "is_ad_hoc",
             "day_name_snapshot", "session_feeling",
-            "gear_id", "day_id"
+            "gear_id", "day_id",
+            "time_format_snapshot", "rounds_completed", "partial_reps",
+            "partial_reps_exercise_name", "finish_time_seconds",
+            "completed_minute_count", "completed_target"
         ])
         for s in items {
             w.appendRow([
@@ -448,7 +473,14 @@ public enum DataExportService {
                 s.dayName ?? "",
                 s.sessionFeeling.map(String.init) ?? "",
                 s.gear.map { id($0) } ?? "",
-                s.day.map { id($0) } ?? ""
+                s.day.map { id($0) } ?? "",
+                s.timeFormatSnapshot?.rawValue ?? "",
+                s.roundsCompleted.map(String.init) ?? "",
+                s.partialReps.map(String.init) ?? "",
+                s.partialRepsExerciseName ?? "",
+                s.finishTimeSeconds.map(String.init) ?? "",
+                s.completedMinuteCount.map(String.init) ?? "",
+                CSVWriter.bool(s.completedTarget)
             ])
         }
         return w.data()

@@ -88,9 +88,6 @@ public struct ActiveWorkoutView: View {
     /// konsistent bleiben.
     @Query private var profiles: [UserBodyProfile]
 
-    @State private var now: Date = Date()
-    private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-
     /// DEL-039: aktuelle Page in der paginierten TabView. 0..N-1 sind die
     /// Uebungs-Pages, Page N ist die "Finish"-Seite mit Save/Discard.
     @State private var currentPageIndex: Int = 0
@@ -143,15 +140,24 @@ public struct ActiveWorkoutView: View {
         // NICHT, weil es eine eigene ScrollView um den gesamten Inhalt legt,
         // die mit der TabView-Pagination kollidieren wuerde.
         VStack(spacing: 0) {
-            DeltiqHeader(
-                eyebrow: String(
-                    format: String(localized: "active.context.eyebrow.running", bundle: .module),
-                    formattedDuration
-                ),
-                title: session.displayDayName,
-                onBack: { dismiss() },
-                actions: headerActions
-            )
+            // Bugfix (Audit): war ein `@State private var now` + `.onReceive`
+            // -Combine-Timer, der `now` bei JEDEM Tick unbedingt schrieb, nur
+            // um ein Redraw zu erzwingen - exakt das Muster, das in
+            // TimedWorkoutPlayerView.swift bereits als Ursache des
+            // Vordergrund-Freeze-Bugs identifiziert wurde (siehe dortiger
+            // Kommentar bei `tick`). `TimelineView` uebernimmt den Redraw
+            // jetzt eigenstaendig, `context.date` ist die sichtbare Eingabe.
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                DeltiqHeader(
+                    eyebrow: String(
+                        format: String(localized: "active.context.eyebrow.running", bundle: .module),
+                        formattedDuration(at: context.date)
+                    ),
+                    title: session.displayDayName,
+                    onBack: { dismiss() },
+                    actions: headerActions
+                )
+            }
 
             VStack(alignment: .leading, spacing: 12) {
                 // DEL-086: Interference-Warning ueber dem Header. Banner zieht
@@ -188,7 +194,6 @@ public struct ActiveWorkoutView: View {
                 Task { await restTimerActivity.endRestTimer(reason: .skipped) }
             }
         }
-        .onReceive(tick) { now = $0 }
         .safeAreaInset(edge: .bottom) {
             if let end = restTimerEnd {
                 RestTimerBar(
@@ -596,7 +601,12 @@ public struct ActiveWorkoutView: View {
             let exercises = orderedExercises(in: day)
             #if os(iOS)
             TabView(selection: $currentPageIndex) {
-                ForEach(Array(exercises.enumerated()), id: \.offset) { idx, exercise in
+                // Bugfix (Audit): Identitaet ueber die Uebung selbst, nicht
+                // die Array-Position - sonst uebernimmt SwiftUI nach dem
+                // Loeschen einer Uebung mitten im Ad-Hoc-Workout die bereits
+                // gemountete SetRow-Instanz (samt getippter Werte) fuer die
+                // nachgerueckte Uebung an derselben Position weiter.
+                ForEach(Array(exercises.enumerated()), id: \.element.persistentModelID) { idx, exercise in
                     ScrollView {
                         ExerciseCard(
                             exercise: exercise,
@@ -814,7 +824,13 @@ public struct ActiveWorkoutView: View {
         return visible.sorted { $0.orderIndex < $1.orderIndex }
     }
 
-    private var formattedDuration: String {
+    /// Snapshot-Aufrufstellen (z.B. `FinishWorkoutSheet`s `durationText`)
+    /// nutzen weiterhin diese Date()-basierte Form; die live-tickende
+    /// Kopfzone nutzt `formattedDuration(at:)` mit `context.date` aus der
+    /// `TimelineView` in `body`.
+    private var formattedDuration: String { formattedDuration(at: Date()) }
+
+    private func formattedDuration(at now: Date) -> String {
         let elapsed = max(0, Int(now.timeIntervalSince(session.startTime)))
         let h = elapsed / 3600
         let m = (elapsed % 3600) / 60
@@ -858,10 +874,9 @@ public struct ActiveWorkoutView: View {
             return
         }
         // ── 1) Harter Reset des aktuellen In-App-Timers ─────────────────
-        // Die `Timer.publish(every: 1, ...)` Subscription oben bleibt fix
-        // (sie liefert nur den `now`-Tick); das eigentliche "Timer-State"
-        // sitzt in restTimerEnd. Auf nil setzen blendet die RestTimerBar
-        // aus + verhindert dass die alte Bar fuer einen Frame mit-rendert.
+        // Das eigentliche "Timer-State" sitzt in restTimerEnd. Auf nil
+        // setzen blendet die RestTimerBar aus + verhindert dass die alte
+        // Bar fuer einen Frame mit-rendert.
         restTimerEnd = nil
         restTimerOriginalSeconds = 0
 

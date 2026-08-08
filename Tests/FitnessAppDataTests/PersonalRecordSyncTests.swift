@@ -343,5 +343,99 @@ final class PersonalRecordSyncTests: XCTestCase {
         XCTAssertEqual(inserted, 0)
         XCTAssertTrue(try allPREs().isEmpty)
     }
+
+    // MARK: - Zeitformate (Bugfix, Audit)
+
+    /// Timed-format sessions (AMRAP/EMOM/Auf Zeit) never write `ExerciseLog`s,
+    /// so `sessionLifts` is always empty for them. Creates a completed
+    /// session directly (no log, no exercise) — mirrors how
+    /// `TimedWorkoutPlayerView.finishTimedSession` actually persists a WOD run.
+    @discardableResult
+    private func makeTimedSession(
+        wodName: String = "Cindy",
+        format: WorkoutTimeFormat = .amrap,
+        date: Date,
+        roundsCompleted: Int? = nil,
+        finishTimeSeconds: Int? = nil,
+        completedTarget: Bool = false
+    ) -> WorkoutSession {
+        let session = WorkoutSession(
+            startTime: date,
+            endTime: date,
+            durationMinutes: 20,
+            exerciseCount: 3,
+            isCompleted: true,
+            dayName: wodName,
+            timeFormatSnapshot: format,
+            roundsCompleted: roundsCompleted,
+            finishTimeSeconds: finishTimeSeconds,
+            completedTarget: completedTarget
+        )
+        context.insert(session)
+        return session
+    }
+
+    /// Bugfix (Audit): `rebuild()` used to wipe every `PersonalRecordEntry`
+    /// and regenerate PRs ONLY from `ExerciseLog`-based lifts — timed-format
+    /// sessions were never re-examined, so "Aus History neu berechnen"
+    /// permanently deleted every WOD personal record without ever restoring
+    /// it. Two AMRAP "Cindy" runs, same WOD name — the second, higher round
+    /// count must produce exactly one `mostRounds` PR, just like the
+    /// incremental `recordTimedFormatPR` path already did.
+    func testRebuildDetectsAmrapMostRoundsPR() throws {
+        makeTimedSession(date: day(1), roundsCompleted: 12, completedTarget: true)
+        makeTimedSession(date: day(2), roundsCompleted: 15, completedTarget: true)
+        try context.save()
+
+        let inserted = PersonalRecordSync.rebuild(in: context)
+        try context.save()
+
+        XCTAssertEqual(inserted, 1, "Erste Session ist die Baseline, nur die zweite liefert einen PR")
+        let prs = try allPREs()
+        XCTAssertEqual(prs.count, 1)
+        XCTAssertEqual(prs.first?.kindRaw, PersonalRecord.Kind.mostRounds.rawValue)
+        XCTAssertEqual(prs.first?.value, 15)
+        XCTAssertEqual(prs.first?.previousValue, 12)
+        XCTAssertEqual(prs.first?.date, day(2))
+    }
+
+    /// Gleiche Erwartung fuer `.forTime` — die zweite (schnellere,
+    /// vollstaendig abgeschlossene) Session muss eine `fastestTime`-PR
+    /// liefern, nicht nur die AMRAP-Variante.
+    func testRebuildDetectsForTimeFastestTimePR() throws {
+        makeTimedSession(wodName: "Fran", format: .forTime, date: day(1),
+                          finishTimeSeconds: 300, completedTarget: true)
+        makeTimedSession(wodName: "Fran", format: .forTime, date: day(2),
+                          finishTimeSeconds: 240, completedTarget: true)
+        try context.save()
+
+        PersonalRecordSync.rebuild(in: context)
+        try context.save()
+
+        let prs = try allPREs()
+        XCTAssertEqual(prs.count, 1)
+        XCTAssertEqual(prs.first?.kindRaw, PersonalRecord.Kind.fastestTime.rawValue)
+        XCTAssertEqual(prs.first?.value, 240)
+        XCTAssertEqual(prs.first?.previousValue, 300)
+    }
+
+    /// Strength- und Zeitformat-PRs muessen im selben Rebuild-Durchlauf
+    /// unabhaengig voneinander erkannt werden — keiner darf den anderen
+    /// verdraengen oder dessen Historie-Akkumulator kontaminieren.
+    func testRebuildDetectsBothStrengthAndTimedFormatPRsInSameRun() throws {
+        makeSession(weight: 80, reps: 5, date: day(1))
+        makeSession(weight: 85, reps: 5, date: day(2))
+        makeTimedSession(date: day(1), roundsCompleted: 12, completedTarget: true)
+        makeTimedSession(date: day(2), roundsCompleted: 15, completedTarget: true)
+        try context.save()
+
+        let inserted = PersonalRecordSync.rebuild(in: context)
+        try context.save()
+
+        let prs = try allPREs()
+        XCTAssertGreaterThanOrEqual(inserted, 2)
+        XCTAssertTrue(prs.contains { $0.kindRaw == PersonalRecord.Kind.mostRounds.rawValue })
+        XCTAssertTrue(prs.contains { $0.kindRaw == PersonalRecord.Kind.heaviestWeight.rawValue })
+    }
 }
 #endif

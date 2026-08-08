@@ -839,6 +839,14 @@ public enum DataImportService {
             if let override = row.double("progression_target_rir_override") {
                 plan.progressionTargetRIROverride = Float(override)
             }
+            // Bugfix (Audit): additive Spalte, siehe DataExportService.buildPlans.
+            // Aeltere ZIPs ohne die Spalte -> nil, "neu rechnen" bleibt fuer sie
+            // einfach deaktiviert (unveraendertes Verhalten von vorher), statt
+            // dass diese Zeile crasht oder eine leere Zeichenkette als "echtes"
+            // JSON missversteht.
+            if let raw = row.optionalString("generator_input_raw") {
+                plan.generatorInputRaw = raw
+            }
             // DEL-225: Sobald ein Plan aktiv gesetzt wurde, darf kein weiterer
             // folgen — ein Backup mit mehreren aktiven Plaenen soll nicht in
             // zwei gleichzeitig aktiven Plaenen resultieren.
@@ -989,6 +997,10 @@ public enum DataImportService {
             }
             let type = DayType(rawValue: row["type"]) ?? .custom
             let intensity = DayIntensity(rawValue: row["next_intensity"]) ?? .normal
+            // Bugfix (Audit): additive Spalten, siehe DataExportService.buildDays.
+            // Aeltere ZIPs ohne sie -> beide nil, exakt der schon immer
+            // bestehende "normaler Satz/Wiederholungs-Tag"-Bestandsfall.
+            let timeFormat = row.optionalString("time_format").flatMap(WorkoutTimeFormat.init(rawValue:))
 
             let day = TrainingDay(
                 name: name,
@@ -997,7 +1009,9 @@ public enum DataImportService {
                 type: type,
                 nextIntensity: intensity,
                 plan: plan,
-                localizationKey: row.optionalString("localization_key")
+                localizationKey: row.optionalString("localization_key"),
+                timeFormat: timeFormat,
+                timeCapMinutes: row.int("time_cap_minutes")
             )
             context.insert(day)
             if !exportID.isEmpty { idMap[exportID] = day }
@@ -1047,6 +1061,12 @@ public enum DataImportService {
                 skipped += 1
                 continue
             }
+            // Bugfix (Audit): additive Spalten, siehe DataExportService.
+            // buildWorkouts. Aeltere ZIPs ohne sie -> `timeFormatSnapshot`
+            // bleibt nil (normale Krafteinheit), die restlichen Felder ihre
+            // Modell-Defaults (nil/false) - unveraendertes Verhalten von vorher.
+            let timeFormatSnapshot = row.optionalString("time_format_snapshot").flatMap(WorkoutTimeFormat.init(rawValue:))
+
             let s = WorkoutSession(
                 startTime: start,
                 endTime: end,
@@ -1058,7 +1078,14 @@ public enum DataImportService {
                 isCompleted: row.bool("is_completed") ?? true,
                 isRestDay: row.bool("is_rest_day") ?? false,
                 isAdHoc: row.bool("is_ad_hoc") ?? false,
-                dayName: row.optionalString("day_name_snapshot")
+                dayName: row.optionalString("day_name_snapshot"),
+                timeFormatSnapshot: timeFormatSnapshot,
+                roundsCompleted: row.int("rounds_completed"),
+                partialReps: row.int("partial_reps"),
+                partialRepsExerciseName: row.optionalString("partial_reps_exercise_name"),
+                finishTimeSeconds: row.int("finish_time_seconds"),
+                completedMinuteCount: row.int("completed_minute_count"),
+                completedTarget: row.bool("completed_target") ?? false
             )
             if let feeling = row.int("session_feeling") {
                 s.sessionFeeling = feeling

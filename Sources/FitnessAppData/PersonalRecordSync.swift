@@ -145,6 +145,15 @@ public enum PersonalRecordSync {
 
         // 3) Walk chronologically, accumulating history-as-we-go.
         var historyLifts: [LiftAttempt] = []
+        // Bugfix (Audit): Zeitformat-Sessions (AMRAP/EMOM/Auf Zeit) schreiben
+        // nie `ExerciseLog`s, `sessionLifts` ist fuer sie also immer leer -
+        // ohne diesen zweiten Akkumulator erkannte ein Rebuild ihre PRs nie
+        // erneut, waehrend Schritt 1) oben alle bestehenden Zeilen (auch die
+        // bereits korrekt erkannten WOD-Bestleistungen) zuerst geloescht hat.
+        // "Aus History neu berechnen" hat also jede WOD-PR unwiderruflich
+        // vernichtet. Paralleler Erkennungspfad, analog zu
+        // `recordTimedFormatPR`/`fetchHistoricalTimedAttempts` oben.
+        var historyTimedAttempts: [TimedWorkoutAttempt] = []
         var inserted = 0
 
         for session in sessions {
@@ -158,6 +167,23 @@ public enum PersonalRecordSync {
             // Append AFTER detection — the current session shouldn't be its
             // own history (matches the strict-greater-than contract).
             historyLifts.append(contentsOf: sessionLifts)
+
+            if let format = session.timeFormatSnapshot, let wodName = session.dayName {
+                let attempt = TimedWorkoutAttempt(
+                    wodName: wodName,
+                    format: format,
+                    date: session.startTime,
+                    roundsCompleted: session.roundsCompleted,
+                    partialReps: session.partialReps,
+                    finishTimeSeconds: session.finishTimeSeconds,
+                    completedTarget: session.completedTarget
+                )
+                if let record = PRDetector.detectTimedFormatPR(session: attempt, history: historyTimedAttempts) {
+                    context.insert(PersonalRecordEntry(record: record, session: session))
+                    inserted += 1
+                }
+                historyTimedAttempts.append(attempt)
+            }
         }
         return inserted
     }

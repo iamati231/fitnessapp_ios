@@ -129,7 +129,10 @@ public enum PlanGenerator {
             // Kettlebell-Vorlagen-Stil (README 2.9) statt jede Trainingsart
             // gleich zu behandeln.
             if selection.kind == .kettlebell, selection.daysPerWeek >= 3, dayIndex == selection.daysPerWeek - 1 {
-                result.append(kettlebellEmomCandidate(pool: pool, muscleOrder: muscleOrder, kindLabel: kindLabel))
+                result.append(kettlebellEmomCandidate(
+                    pool: pool, muscleOrder: muscleOrder, kindLabel: kindLabel,
+                    sessionDurationMinutes: selection.sessionDurationMinutes
+                ))
                 continue
             }
 
@@ -186,18 +189,31 @@ public enum PlanGenerator {
             guard totalCounts[baseName, default: 0] > 1 else { continue }
             let letterIndex = nextLetterIndex[baseName, default: 0]
             nextLetterIndex[baseName] = letterIndex + 1
-            let letter = Character(UnicodeScalar(UInt8(65 + letterIndex)))
-            candidates[index].name = "\(baseName) \(letter)"
+            candidates[index].name = "\(baseName) \(disambiguationSuffix(for: letterIndex))"
         }
     }
 
+    /// A, B, C, ... Z, dann 27, 28, ... - kein Aufrufer erreicht heute mehr
+    /// als 6 Duplikate desselben Namens (UI-Cap: max. 7 Tage/Woche insgesamt,
+    /// siehe Audit-Notiz), aber `UInt8(65 + index)` wuerde ab Index 26
+    /// entweder Muell-Zeichen liefern oder ueberlaufen und trapen - diese
+    /// Grenze gehoert in die oeffentliche Core-API, nicht nur in die UI.
+    private static func disambiguationSuffix(for index: Int) -> String {
+        guard index < 26 else { return "\(index + 1)" }
+        return String(UnicodeScalar(UInt8(65 + index)))
+    }
+
     /// EMOM-Ganzkoerper-Finisher aus dem gleichen gefilterten Pool - vier
-    /// Uebungen, je eine Minute, Deckel 20 Minuten (deckt sich mit
-    /// `kettlebellAdvanced`s bereits gebautem Metcon-Tag, README 2.9).
+    /// Uebungen, je eine Minute. Deckel skaliert mit der vom User gewaehlten
+    /// Session-Dauer (Bugfix, Audit - vorher fix 20 Minuten, ignorierte die
+    /// Eingabe komplett), auf einen sinnvollen EMOM-Bereich geklemmt: unter
+    /// 10 Minuten lohnt sich die Rotation kaum, ueber 30 waere ein
+    /// "Finisher" kein Finisher mehr.
     private static func kettlebellEmomCandidate(
         pool: [ExerciseTemplateSpec],
         muscleOrder: [MuscleGroup],
-        kindLabel: String
+        kindLabel: String,
+        sessionDurationMinutes: Int
     ) -> Candidate {
         let byMuscle = Dictionary(grouping: pool, by: \.primaryMuscle)
         var exercises: [ExerciseSpec] = []
@@ -217,7 +233,7 @@ public enum PlanGenerator {
             name: "\(kindLabel) · \(fullBodyGermanLabel)",
             exercises: exercises,
             timeFormat: .emom,
-            timeCapMinutes: 20,
+            timeCapMinutes: min(30, max(10, sessionDurationMinutes)),
             // README 2.18/DayAnalyzer-Konvention: EMOM wird gegenueber
             // reinen Kraft-Score-Punkten eine Stufe milder eingeordnet
             // (die Pause steckt in der Minute) - hier grob mit 0.85 nachgebildet.
@@ -359,9 +375,12 @@ public enum PlanGenerator {
         guard selection.kind == .running else {
             // Radfahren: das Dokument beschreibt die fehlende Typologie
             // explizit nur fuers Laufen - Radfahren bleibt bewusst eine
-            // einzelne, gleichfoermige Cardio-Einheit ohne Zonen.
+            // einzelne, gleichfoermige Cardio-Einheit ohne Zonen. Die
+            // TITEL muessen trotzdem eindeutig sein (Bugfix, Audit) - sonst
+            // stehen z.B. 3 identisch "Radfahren" benannte Tage
+            // ununterscheidbar in der Plan-Uebersicht.
             let title = germanTypeLabel(.cycling)
-            return (0..<selection.daysPerWeek).map { _ in
+            var result = (0..<selection.daysPerWeek).map { _ in
                 Candidate(
                     name: title,
                     exercises: [ExerciseSpec(
@@ -375,6 +394,8 @@ public enum PlanGenerator {
                     hardness: 20 * durationFactor
                 )
             }
+            disambiguateDuplicateNames(&result)
+            return result
         }
 
         // README 2.18/2.20: Reihenfolge so gewaehlt, dass bei genau zwei
@@ -382,7 +403,7 @@ public enum PlanGenerator {
         // herauskommen - "ruhig" deckt die Luecke.
         let cycle: [RunZone] = [.easy, .interval, .tempo]
 
-        return (0..<selection.daysPerWeek).map { dayIndex in
+        var result = (0..<selection.daysPerWeek).map { dayIndex in
             let zone = cycle[dayIndex % cycle.count]
             let title = zone.germanLabel
             let exercise: ExerciseSpec
@@ -411,6 +432,11 @@ public enum PlanGenerator {
                 hardness: zone.baseHardness * durationFactor
             )
         }
+        // Bugfix (Audit): der 3-Zonen-Zyklus wiederholt sich ab Tag 4 (z.B.
+        // 5x/Woche -> Tag 1 und 4 beide "Ruhiger Lauf") - ohne Disambiguierung
+        // stehen dann zwei identisch benannte Lauf-Tage in der Uebersicht.
+        disambiguateDuplicateNames(&result)
+        return result
     }
 
     // MARK: - Ordering

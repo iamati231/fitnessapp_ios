@@ -9,10 +9,17 @@ extension Double {
     /// the moment the user spot-checks the math.
     ///
     /// Mirrors `Double.truncateTo(decimals: Int)` in `BodyCalculations.kt` (uses `floor`).
+    ///
+    /// Bugfix (Audit): rounds TOWARD zero, not always down. For every
+    /// non-negative input (every confirmed call site today) this is
+    /// identical to the previous floor-based behavior. For a negative input,
+    /// flooring would grow the MAGNITUDE (-2.34 -> -2.4), i.e. overstate
+    /// rather than avoid overstating - the opposite of this function's
+    /// documented purpose.
     public func truncated(to decimals: Int) -> Double {
         precondition(decimals >= 0, "decimals must be non-negative")
         let factor = pow(10.0, Double(decimals))
-        return (self * factor).rounded(.down) / factor
+        return (self * factor).rounded(.towardZero) / factor
     }
 
     /// Formats to a fixed number of decimals, locale-aware via `Locale.current`.
@@ -68,6 +75,11 @@ extension Float {
     /// Gemeinsamer Helfer fuer SetRow.swift und WorkoutSummaryView.swift.
     public var formattedRIR: String {
         let value = Double(self)
+        // Bugfix (Audit): `Int(value)` traps for non-finite or too-large
+        // values. Not reachable today (RIR is Slider/Stepper-clamped to
+        // 0...10 at every call site), but this is a shared, generically-
+        // typed helper with no caller-side guarantee.
+        guard value.isFinite, abs(value) < Double(Int.max) else { return value.formattedOneDecimal }
         return value == value.rounded() ? "\(Int(value))" : value.formattedOneDecimal
     }
 }
