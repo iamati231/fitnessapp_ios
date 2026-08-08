@@ -285,6 +285,12 @@ private struct AMRAPPlayerView: View {
 
     @State private var roundsCompleted = 0
     @State private var isFinished = false
+    /// Feature (Nutzerwunsch): einmaliger Hinweis-Ton beim Eintritt in die
+    /// letzte Minute des Zeit-Caps. Write-Once-Flag nach demselben Muster
+    /// wie `hasFiredCompletionFeedback` in `RestTimerBar` - verhindert, dass
+    /// der Ton bei jedem weiteren Tick innerhalb der letzten Minute erneut
+    /// abgespielt wird.
+    @State private var hasFiredLastMinuteWarning = false
     @State private var showingDiscardConfirm = false
     /// README 2.15/23b-23c: Vorlauf-Countdown vor dem eigentlichen Lauf -
     /// `prerollTotal` ist die Einstellung zum Mount-Zeitpunkt (unveraenderlich
@@ -467,6 +473,7 @@ private struct AMRAPPlayerView: View {
             // noetig (siehe Kommentar bei `tick` oben, warum das sogar
             // schaedlich war).
             guard !isFinished else { return }
+            checkLastMinuteWarning()
             checkCapReached()
         }
         // Nutzer-Feedback: sobald die App wieder aktiv wird, sofort pruefen
@@ -475,6 +482,7 @@ private struct AMRAPPlayerView: View {
         // nicht erst mit bis zu 1s Verzoegerung nachzuziehen.
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
+            checkLastMinuteWarning()
             checkCapReached()
         }
         .safeAreaInset(edge: .bottom) {
@@ -566,6 +574,29 @@ private struct AMRAPPlayerView: View {
         isFinished = true
         DeltiqHaptics.notify(.success)
         saveNow()
+    }
+
+    /// Feature (Nutzerwunsch): akustischer + haptischer Hinweis beim Eintritt
+    /// in die letzte Minute vor Ablauf des Zeit-Caps. Wanduhr-basiert wie
+    /// `checkCapReached()` (kein Pro-Tick-Akkumulator) und aus demselben
+    /// Grund an ZWEI Stellen gerufen (Tick UND Ruecksprung aus dem
+    /// Hintergrund) - sonst wuerde ein Hintergrund-Ausflug, der die
+    /// 60-Sekunden-Marke ueberspringt, den Hinweis nie ausloesen.
+    /// `remaining > 0` schliesst den Fall aus, dass die App erst NACH
+    /// Ablauf des Caps wieder aktiv wird - dann hat `checkCapReached()`
+    /// bereits das eigentliche Fertig-Signal uebernommen, ein nachtraeglicher
+    /// "eine Minute uebrig"-Hinweis waere falsch.
+    private func checkLastMinuteWarning() {
+        let remaining = capSeconds - elapsedSeconds
+        guard !hasFiredLastMinuteWarning, !isFinished, remaining > 0, remaining <= 60 else { return }
+        hasFiredLastMinuteWarning = true
+        if timerSoundEnabled {
+            // Gleicher lange Ton wie EMOMs Minutenwechsel (`resyncMinuteState`)
+            // - im bestehenden Klang-Vokabular dieser App steht er fuer
+            // "eine Zeit-Schwelle wurde ueberschritten", nicht nur fuer GO.
+            TimerSoundPlayer.shared.playLong()
+        }
+        DeltiqHaptics.notify(.warning)
     }
 
     /// Bugfix (Teil-Wiederholungen entfernt): der "+1 Runde"-Knopf ist der
@@ -850,8 +881,10 @@ private struct EMOMPlayerView: View {
             // README 2.26: der Tick treibt hier nur noch Ton-Logik und
             // `resyncMinuteState()` - die Live-Anzeige haengt seit diesem
             // Fix an `TimelineView` (siehe `body`).
-            // Drei Signaltoene ab 0:03, Blick bleibt auf der Hantel.
-            if timerSoundEnabled, (1...3).contains(remainingInMinute) {
+            // Zehn Signaltoene ab 0:10 (Nutzerwunsch, vorher nur die letzten
+            // drei) - kuendigt den bevorstehenden Minutenwechsel deutlich
+            // frueher an, Blick bleibt auf der Hantel.
+            if timerSoundEnabled, (1...10).contains(remainingInMinute) {
                 TimerSoundPlayer.shared.playShort()
             }
             resyncMinuteState()
