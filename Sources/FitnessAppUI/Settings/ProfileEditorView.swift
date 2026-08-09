@@ -23,6 +23,17 @@ public struct ProfileEditorView: View {
     @State private var healthKitFetchInProgress: Bool = false
     @State private var healthKitFilledFields: Set<String> = []
 
+    /// DEL-250: MM:SS-Eingabepuffer fuer die 5-km-Referenzzeit. Bewusst ein
+    /// eigenstaendiger `@State`-String statt einer Binding<String> ueber
+    /// `profile.current5kReferenceSeconds` (Review-Fund): eine computed
+    /// Binding wuerde nach jedem Tastenanschlag sofort aus dem geparsten
+    /// Sekundenwert zurueckformatieren und das Feld dabei ueberschreiben
+    /// (z.B. "2" -> sofort "2:00"), bevor die zweite Ziffer ankommt - exakt
+    /// das Problem, das `SetRow.cardioDurationText` mit einem eigenen Puffer
+    /// vermeidet. Wird in `init` aus dem Modell vorbefuellt, geschrieben wird
+    /// nur per `.onChange` (Modell folgt der Eingabe, nicht umgekehrt).
+    @State private var fiveKReferenceText: String = ""
+
     // DEL-047: aktive Plaene laden, damit wir bei einer Trainingsort-Aenderung
     // einen Sync-Prompt anbieten koennen. Wir laden alle Plaene (auch
     // inaktive) — der User-Erwartung nach soll sich "mein Trainingsort" auch
@@ -52,6 +63,9 @@ public struct ProfileEditorView: View {
 
     public init(profile: UserBodyProfile) {
         self.profile = profile
+        _fiveKReferenceText = State(
+            initialValue: profile.current5kReferenceSeconds.map(PaceCalculator.formatDuration) ?? ""
+        )
     }
 
     public var body: some View {
@@ -486,7 +500,7 @@ public struct ProfileEditorView: View {
                     .pickerStyle(.menu)
                 }
                 DeltiqControlRow(label: String(localized: "profile.cardio.fiveKReference", bundle: .module)) {
-                    TextField("MM:SS", text: fiveKReferenceBinding, prompt: Text("MM:SS"))
+                    TextField("MM:SS", text: $fiveKReferenceText, prompt: Text("MM:SS"))
                         #if os(iOS)
                         .keyboardType(.numbersAndPunctuation)
                         #endif
@@ -495,6 +509,9 @@ public struct ProfileEditorView: View {
                         .font(.system(size: 15))
                         .fitnessNumberStyle()
                         .frame(maxWidth: 90)
+                        .onChange(of: fiveKReferenceText) { _, newValue in
+                            profile.current5kReferenceSeconds = PaceCalculator.parseDurationToSeconds(newValue)
+                        }
                 }
                 if let zonesSummary {
                     hintRow(zonesSummary)
@@ -539,22 +556,6 @@ public struct ProfileEditorView: View {
             }
             hintRow(String(localized: "profile.cardio.footer", bundle: .module))
         }
-    }
-
-    /// String-Bruecke fuer die MM:SS-Eingabe der 5-km-Referenzzeit —
-    /// identisches Parse/Format-Paar wie `SetRow.cardioDurationInput`
-    /// (`PaceCalculator.parseDurationToSeconds`/`.formatDuration`), nur
-    /// gegen `UserBodyProfile.current5kReferenceSeconds` statt einen
-    /// Log-Wert gebunden. Unparsebare Eingaben (inkl. leer) setzen nil —
-    /// identisch zum Verhalten von `decimalField`s optionalen Overloads.
-    private var fiveKReferenceBinding: Binding<String> {
-        Binding(
-            get: {
-                guard let seconds = profile.current5kReferenceSeconds else { return "" }
-                return PaceCalculator.formatDuration(seconds)
-            },
-            set: { profile.current5kReferenceSeconds = PaceCalculator.parseDurationToSeconds($0) }
-        )
     }
 
     /// Formatierter Hinweistext mit den aus der Referenzzeit abgeleiteten
