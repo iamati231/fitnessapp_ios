@@ -1160,16 +1160,13 @@ private struct ForTimePlayerView: View {
     /// die App im Hintergrund war - siehe `elapsedSeconds` unten.
     @Environment(\.scenePhase) private var scenePhase
 
-    /// Bekanntes Problem (Nutzer-Feedback, nicht mitgefixt): anders als
-    /// `AMRAPPlayerView.roundsCompleted`/`EMOMPlayerView.completedMinutes`
-    /// gibt es fuer diese Pro-Uebung-Zaehlung KEIN existierendes
-    /// `WorkoutSession`-Feld, das sich als Restore-Quelle zweckentfremden
-    /// liesse - ein "Training fortsetzen" verliert den Fortschritt hier
-    /// also weiterhin, UND der Vorlauf startet erneut (`finishPreroll()`
-    /// setzt `session.startTime` ohne Erkennungsmoeglichkeit fuer "schon
-    /// gestartet"). Ein echter Fix braucht ein neues, persistiertes Feld
-    /// (z.B. serialisiert pro Uebung) - das ist ein Schema-Zusatz, den ohne
-    /// Compiler zu verifizieren zu riskant ist.
+    /// Bugfix (Nutzer-Feedback): "Training fortsetzen" erzeugt eine neue
+    /// View-Instanz fuer dieselbe Session (siehe ausfuehrliche Begruendung
+    /// bei `AMRAPPlayerView.init`) - anders als dort reicht hier kein
+    /// einzelner Int als Restore-Signal, weil der Fortschritt PRO UEBUNG
+    /// gezaehlt wird. `session.forTimeCheckedRoundsRaw` persistiert das
+    /// jetzt (siehe `WorkoutSession.swift`), `init`/`toggleRound` halten
+    /// diesen `@State` und das Modell synchron.
     @State private var checkedRounds: [PersistentIdentifier: Int] = [:]
     @State private var isFinished = false
     /// Verifikation (Workflow-Nachtrag): `elapsedSeconds` ist bewusst eine
@@ -1195,11 +1192,66 @@ private struct ForTimePlayerView: View {
     /// Begruendung bei derselben Property in `AMRAPPlayerView`.
     @State private var tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
+    /// Bugfix (Nutzer-Feedback): siehe ausfuehrliche Begruendung bei
+    /// `AMRAPPlayerView.init` - identisches Problem, analoge Loesung.
+    /// `session.forTimeCheckedRoundsRaw` ist `nil`, bis `finishPreroll()`
+    /// es beim allerersten echten Start auf den "-"-Platzhalter setzt - ein
+    /// Nicht-nil-Wert beweist also "Vorlauf schon durchlaufen". Die Exercise-Liste wird
+    /// hier ueber den PARAMETER `session` (nicht `self`) berechnet, um
+    /// `decodeCheckedRounds` aufrufen zu koennen, bevor alle Stored
+    /// Properties gesetzt sind - `self.exercises` waere an dieser Stelle
+    /// nicht erlaubt.
     init(session: WorkoutSession) {
         self.session = session
-        let stored = storedPrerollSeconds()
-        prerollTotal = stored
-        _prerollRemaining = State(initialValue: stored)
+        if let raw = session.forTimeCheckedRoundsRaw {
+            prerollTotal = 0
+            _prerollRemaining = State(initialValue: 0)
+            let exercisesAtInit = (session.day?.activeExercises ?? []).sorted { $0.orderIndex < $1.orderIndex }
+            _checkedRounds = State(initialValue: Self.decodeCheckedRounds(raw, exercises: exercisesAtInit))
+        } else {
+            let stored = storedPrerollSeconds()
+            prerollTotal = stored
+            _prerollRemaining = State(initialValue: stored)
+        }
+    }
+
+    /// Serialisiert `checkedRounds` (Schluessel: `Exercise.persistentModelID`,
+    /// nicht selbst speicherbar) als "orderIndex=Anzahl"-Paare, kommagetrennt
+    /// - `orderIndex` ist pro Tag eindeutig und aendert sich waehrend einer
+    /// laufenden Zeitformat-Session nicht (kein Editieren der Uebungsliste
+    /// im Player). Uebungen ohne abgehakte Runde werden weggelassen. Ergaebe
+    /// das insgesamt den leeren String (frischer Start ODER die letzte
+    /// verbliebene Markierung wurde gerade zurueckgenommen), wird statt
+    /// dessen der Platzhalter "-" zurueckgegeben - ein leerer String wuerde
+    /// beim CSV-Export/Import-Roundtrip zu `nil` normalisiert und damit
+    /// "gestartet, 0 abgehakt" faelschlich zu "Vorlauf nie durchlaufen".
+    private static func encodeCheckedRounds(_ checkedRounds: [PersistentIdentifier: Int], exercises: [Exercise]) -> String {
+        let joined = exercises
+            .compactMap { exercise -> String? in
+                guard let count = checkedRounds[exercise.persistentModelID], count > 0 else { return nil }
+                return "\(exercise.orderIndex)=\(count)"
+            }
+            .joined(separator: ",")
+        return joined.isEmpty ? "-" : joined
+    }
+
+    /// Kehrt `encodeCheckedRounds` um. Robust gegen leere/kaputte Eintraege
+    /// (ueberspringt sie statt zu crashen, deckt auch den "-"-Platzhalter
+    /// ab - er hat kein "=" und faellt beim Parsen einfach durch) und gegen
+    /// ein inzwischen entferntes `orderIndex` (kann dann keiner aktuellen
+    /// Uebung mehr zugeordnet werden, faellt also ebenfalls weg statt einen
+    /// Fehlerwert zu erzeugen).
+    private static func decodeCheckedRounds(_ raw: String, exercises: [Exercise]) -> [PersistentIdentifier: Int] {
+        guard !raw.isEmpty else { return [:] }
+        var result: [PersistentIdentifier: Int] = [:]
+        for pair in raw.split(separator: ",") {
+            let parts = pair.split(separator: "=")
+            guard parts.count == 2, let orderIndex = Int(parts[0]), let count = Int(parts[1]) else { continue }
+            if let exercise = exercises.first(where: { $0.orderIndex == orderIndex }) {
+                result[exercise.persistentModelID] = count
+            }
+        }
+        return result
     }
 
     private var day: TrainingDay? { session.day }
@@ -1432,10 +1484,16 @@ private struct ForTimePlayerView: View {
     /// README 2.15/23b-23c: Uebergang von Vorlauf in den echten Lauf - egal
     /// ob durch Ablauf des Countdowns oder "Jetzt starten". Setzt `startTime`
     /// neu auf jetzt, sonst zaehlten die Vorlauf-Sekunden in Dauer/HealthKit
-    /// mit (`finishTimedSession` liest `session.startTime`).
+    /// mit (`finishTimedSession` liest `session.startTime`). Laeuft nur
+    /// beim ALLERERSTEN echten Start (ein Resume ueberspringt den Vorlauf
+    /// komplett, siehe `init`) - das Setzen von `session.forTimeCheckedRoundsRaw`
+    /// (hier immer der "-"-Platzhalter, da `checkedRounds` waehrend des
+    /// Vorlaufs garantiert noch leer ist) markiert hier zuverlaessig "diese
+    /// Session hat jetzt begonnen".
     private func finishPreroll() {
         prerollRemaining = 0
         session.startTime = Date()
+        session.forTimeCheckedRoundsRaw = Self.encodeCheckedRounds(checkedRounds, exercises: exercises)
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
     }
 
@@ -1502,6 +1560,11 @@ private struct ForTimePlayerView: View {
     private func toggleRound(_ tappedIndex: Int, for exercise: Exercise) {
         let current = checkedRounds[exercise.persistentModelID] ?? 0
         checkedRounds[exercise.persistentModelID] = tappedIndex < current ? tappedIndex : tappedIndex + 1
+        // Bugfix (Nutzer-Feedback): laufend persistieren statt erst bei
+        // `saveNow()` - sonst wuerde "Training fortsetzen" zwischen zwei
+        // Haekchen wieder auf den zuletzt GESPEICHERTEN statt den zuletzt
+        // ABGEHAKTEN Stand zurueckfallen.
+        session.forTimeCheckedRoundsRaw = Self.encodeCheckedRounds(checkedRounds, exercises: exercises)
         DeltiqHaptics.notify(.success)
         if checkedBoxes == totalBoxes {
             isFinished = true

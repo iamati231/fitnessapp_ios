@@ -1084,6 +1084,7 @@ public enum DataImportService {
                 partialReps: row.int("partial_reps"),
                 partialRepsExerciseName: row.optionalString("partial_reps_exercise_name"),
                 finishTimeSeconds: row.int("finish_time_seconds"),
+                forTimeCheckedRoundsRaw: row.optionalString("for_time_checked_rounds_raw"),
                 completedMinuteCount: row.int("completed_minute_count"),
                 completedTarget: row.bool("completed_target") ?? false
             )

@@ -69,6 +69,22 @@ public final class WorkoutSession {
     public var partialRepsExerciseName: String?
     /// Auf Zeit: Gesamtzeit bis zum letzten Haekchen, in Sekunden.
     public var finishTimeSeconds: Int?
+    /// Auf Zeit: Zwischenstand der pro Uebung abgehakten Runden, damit
+    /// "Training fortsetzen" (eine neue View-Instanz fuer dieselbe Session,
+    /// siehe `ForTimePlayerView.init`) den Fortschritt nicht verliert -
+    /// gleiches Problem wie bei `roundsCompleted`/`completedMinuteCount`,
+    /// aber ohne einen einzelnen Int als Signal: es braucht eine Zuordnung
+    /// PRO Uebung. `PersistentIdentifier` selbst laesst sich nicht als
+    /// SwiftData-Attribut speichern, daher ein kompaktes eigenes Format
+    /// ueber die (pro Tag eindeutige) `Exercise.orderIndex`:
+    /// "orderIndex=Anzahl" Paare, kommagetrennt, z.B. "0=3,2=1". `nil` heisst
+    /// "Vorlauf noch nicht durchlaufen", der Platzhalter "-" heisst
+    /// "gestartet, noch nichts abgehakt" (bewusst NICHT der leere String -
+    /// der CSV-Reader normalisiert ein leeres Feld beim Roundtrip wieder zu
+    /// `nil`, siehe `CSVRow.optionalString`, was genau diese Unterscheidung
+    /// nach einem Backup/Restore wieder zerstoert haette) - siehe
+    /// `ForTimePlayerView`.
+    public var forTimeCheckedRoundsRaw: String?
     /// EMOM: Anzahl der Minuten, in denen das Pensum geschafft wurde (von `day.timeCapMinutes`).
     public var completedMinuteCount: Int?
     /// True nur bei regulaerem Ende (Zeit-Deckel erreicht bzw. bei Auf Zeit
@@ -119,6 +135,7 @@ public final class WorkoutSession {
         partialReps: Int? = nil,
         partialRepsExerciseName: String? = nil,
         finishTimeSeconds: Int? = nil,
+        forTimeCheckedRoundsRaw: String? = nil,
         completedMinuteCount: Int? = nil,
         completedTarget: Bool = false
     ) {
@@ -139,6 +156,7 @@ public final class WorkoutSession {
         self.partialReps = partialReps
         self.partialRepsExerciseName = partialRepsExerciseName
         self.finishTimeSeconds = finishTimeSeconds
+        self.forTimeCheckedRoundsRaw = forTimeCheckedRoundsRaw
         self.completedMinuteCount = completedMinuteCount
         self.completedTarget = completedTarget
     }

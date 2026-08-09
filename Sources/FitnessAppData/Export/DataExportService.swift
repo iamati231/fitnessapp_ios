@@ -447,6 +447,11 @@ public enum DataExportService {
         // Auf-Zeit-Session (Runden, Restwdh., Zielzeit, ...) verlor ihr
         // Ergebnis vollstaendig bei jedem Export/Import-Roundtrip bzw.
         // Backup-Restore, obwohl Dauer/Volumen korrekt erhalten blieben.
+        // Bugfix (Nutzer-Feedback, Resume-Fix): additive Spalte
+        // `for_time_checked_rounds_raw` - sonst wuerde ein Backup/Restore
+        // waehrend einer laufenden Auf-Zeit-Session denselben Fortschritt
+        // verlieren, den `ForTimePlayerView` jetzt bei "Training
+        // fortsetzen" korrekt erhaelt.
         var w = CSVWriter(headers: [
             "id", "start_time_utc", "end_time_utc", "duration_minutes",
             "exercise_count", "total_sets", "total_volume_kg",
@@ -455,6 +460,7 @@ public enum DataExportService {
             "gear_id", "day_id",
             "time_format_snapshot", "rounds_completed", "partial_reps",
             "partial_reps_exercise_name", "finish_time_seconds",
+            "for_time_checked_rounds_raw",
             "completed_minute_count", "completed_target"
         ])
         for s in items {
@@ -479,6 +485,7 @@ public enum DataExportService {
                 s.partialReps.map(String.init) ?? "",
                 s.partialRepsExerciseName ?? "",
                 s.finishTimeSeconds.map(String.init) ?? "",
+                s.forTimeCheckedRoundsRaw ?? "",
                 s.completedMinuteCount.map(String.init) ?? "",
                 CSVWriter.bool(s.completedTarget)
             ])

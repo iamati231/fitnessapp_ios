@@ -414,6 +414,72 @@ final class DataPortabilityRoundtripTests: XCTestCase {
                        "\"neu rechnen\" braucht generatorInputRaw, um nach einem Restore weiter zu funktionieren")
     }
 
+    /// Bugfix (Nutzer-Feedback, Auf-Zeit-Resume): `forTimeCheckedRoundsRaw`
+    /// nutzt bewusst den Platzhalter "-" statt eines leeren Strings fuer
+    /// "gestartet, noch nichts abgehakt" - ein echter leerer String wuerde
+    /// `CSVRow.optionalString` beim Import wieder zu `nil` normalisieren
+    /// (siehe deren Doc-Kommentar) und damit "bereits gestartet" faelschlich
+    /// zu "Vorlauf nie durchlaufen" machen. Deckt alle drei moeglichen
+    /// Zustaende in einem Export/Import-Durchlauf ab: nie gestartet (nil),
+    /// gestartet ohne Fortschritt ("-"), gestartet mit Fortschritt (echte
+    /// Daten) - keiner darf durch den Roundtrip in einen anderen kippen.
+    func testForTimeCheckedRoundsRawSurvivesRoundtripIncludingPlaceholder() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "WOD-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let day = TrainingDay(
+            name: "Auf Zeit Tag", weekday: 2, type: .fullBody, plan: plan,
+            timeFormat: .forTime, timeCapMinutes: 20
+        )
+        ctx.insert(day)
+
+        let startedButUnchecked = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_760_200_000),
+            endTime: Date(timeIntervalSince1970: 1_760_200_600),
+            isCompleted: false, dayName: "Auf Zeit Tag", day: day,
+            timeFormatSnapshot: .forTime,
+            forTimeCheckedRoundsRaw: "-"
+        )
+        ctx.insert(startedButUnchecked)
+
+        let inProgress = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_760_300_000),
+            endTime: Date(timeIntervalSince1970: 1_760_300_600),
+            isCompleted: false, dayName: "Auf Zeit Tag", day: day,
+            timeFormatSnapshot: .forTime,
+            forTimeCheckedRoundsRaw: "0=2,1=1"
+        )
+        ctx.insert(inProgress)
+
+        let neverStarted = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_760_400_000),
+            endTime: Date(timeIntervalSince1970: 1_760_400_600),
+            isCompleted: false, dayName: "Auf Zeit Tag", day: day,
+            timeFormatSnapshot: .forTime
+        )
+        ctx.insert(neverStarted)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(
+            FetchDescriptor<WorkoutSession>(sortBy: [SortDescriptor(\.startTime, order: .forward)])
+        )
+        XCTAssertEqual(imported.count, 3)
+        XCTAssertEqual(imported[0].forTimeCheckedRoundsRaw, "-",
+                       "Platzhalter fuer \"gestartet, 0 abgehakt\" darf nicht zu nil normalisiert werden")
+        XCTAssertEqual(imported[1].forTimeCheckedRoundsRaw, "0=2,1=1")
+        XCTAssertNil(imported[2].forTimeCheckedRoundsRaw, "nie gestartet muss nil bleiben")
+    }
+
     /// Ein normaler Satz/Wiederholungs-Tag (kein Zeitformat) darf durch die
     /// neuen additiven Spalten nicht ploetzlich ein Zeitformat annehmen -
     /// leere Zelle muss zuverlaessig als nil ankommen, nicht als "amrap"
