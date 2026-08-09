@@ -1288,25 +1288,49 @@ public struct DashboardView: View {
 
     /// Auswahl in Prioritaets-Reihenfolge — erster Treffer gewinnt. Wird nur
     /// erreicht, wenn `activeCoachingContext` nil ist (keine P1-Warnung).
+    /// Nachtrag (Audit): diese Liste war ueber mehrere Tickets hinweg nicht
+    /// mitgepflegt worden - hier vollstaendig, in der tatsaechlichen
+    /// Code-Reihenfolge:
     ///
-    ///   1. **reEntry**       — Lange nicht trainiert (≥5 Tage Pause). Hat
-    ///      Vorrang, weil "wieder einsteigen" der wichtigste Re-Engagement-
-    ///      Hinweis ist.
-    ///   2. **postVolume**    — Gestrige Session ueber 5.000 kg Volumen.
-    ///   3. **postCardio**    — Gestrige Cardio-Distanz ueber 5 km.
-    ///   4. **streak**        — ≥5 reale Sessions in den letzten 7 Tagen.
-    ///   5. **planPreview**   — Heutiger Plan-Tag ist ein Trainings-Tag
-    ///      (kein Rest, kein Skip-Marker).
+    ///   1. **deloadRecommended**   — Overreaching-Muster im Krafttraining
+    ///      (DEL-196). Gesundheitsrelevanter als jedes Kompliment.
+    ///   2. **cardioVolumeSpike**   — Lauf-KM dieser Woche > 120% der
+    ///      Vorwoche (DEL-248). Cardio-Pendant zu 1., direkt danach.
+    ///   3. **reEntry**             — Lange nicht trainiert (≥5 Tage Pause).
+    ///      Der wichtigste Re-Engagement-Hinweis.
+    ///   4. **volumeRecord**        — Letzte volle Woche war die
+    ///      volumenstaerkste der Historie (DEL-198).
+    ///   5. **cardioMissedLongRun** — Plan sieht einen langen Lauf vor, aber
+    ///      keiner in den letzten 7 Tagen geloggt (DEL-248).
+    ///   6. **cardioJunkMiles**     — letzter lockerer Lauf deutlich
+    ///      schneller als seine Zielpace (DEL-248).
+    ///   7. **postVolume**/**postCardio** — gestrige Session ueber 5.000 kg
+    ///      bzw. 5 km (Volumen gewinnt bei Gleichstand).
+    ///   8. **streak**              — ≥5 reale Sessions in den letzten 7 Tagen.
+    ///   9. **trainedYesterday**    — irgendeine reale Session gestern
+    ///      (DEL-211, faengt alles ab, was 7. nicht schon abdeckt).
+    ///  10. **planPreview**         — heutiger Plan-Tag ist ein Trainings-Tag.
+    ///  11. **measurementOverdue**/**hydrationLow**/**backupOverdue** —
+    ///      Feature-Nudges, niedrigste Prioritaet.
     /// Sonst nil → Dashboard zeigt den neutralen Empty-State (DEL-166).
     private var activeSoftCoachingContext: CoachingContext? {
         // DEL-196: Deload zuerst — gesundheitsrelevanter als jedes Post-
         // Workout-Kompliment. Praktisch nie gleichzeitig mit reEntry
         // (Deload braucht hohe RECENT-Aktivität, reEntry Inaktivität).
         if shouldRecommendDeload { return .deloadRecommended }
+        // DEL-248: direktes Cardio-Pendant zu shouldRecommendDeload — rangiert
+        // gleich danach, weil beide gesundheitsrelevante Overreaching-
+        // Warnungen sind, nur fuer unterschiedliche Trainingsarten.
+        if isCardioVolumeSpikeActive { return .cardioVolumeSpike }
         if daysSinceLastRealSession >= 5 { return .reEntry }
         // DEL-198: Volumen-Rekord schlägt die generischen Post-Workout-
         // Komplimente — "beste Woche ever" ist die stärkere Nachricht.
         if hadVolumeRecordWeek { return .volumeRecord }
+        // DEL-248: ein fehlendes Schluessel-Training (Long Run) ist wichtiger
+        // als eine leicht falsche Pace, und beide sind wichtiger als die
+        // generischen Post-Workout-Komplimente unten.
+        if isLongRunOverdueForActivePlan { return .cardioMissedLongRun }
+        if isMostRecentEasyRunTooFast { return .cardioJunkMiles }
         if let yKm = yesterdayCardioDistanceKm, let yVol = yesterdayVolumeKg {
             if yVol >= 5_000 { return .postVolume }
             if yKm >= 5      { return .postCardio }
@@ -1366,6 +1390,92 @@ public struct DashboardView: View {
               let lastFull = fullWeeks.last, lastFull.volumeKg > 0 else { return false }
         // Strikt größer als ALLE vorherigen vollen Wochen.
         return fullWeeks.dropLast().allSatisfy { $0.volumeKg < lastFull.volumeKg }
+    }
+
+    // MARK: - DEL-248 (Phase 4): Cardio-Coaching-Trigger
+
+    /// DEL-248: Cardio-Pendant zu `shouldRecommendDeload` — anders als dort
+    /// wird bewusst die LAUFENDE (unvollstaendige) aktuelle Woche gegen die
+    /// letzte volle Vorwoche verglichen, nicht zwei volle Wochen. Ziel ist,
+    /// einen Spike zu erkennen, WAEHREND er passiert ("schon Donnerstag bei
+    /// 130% der Vorwoche") - beim Warten auf eine volle Woche waere die
+    /// Warnung erst nuetzlich, wenn die Woche schon vorbei ist.
+    private var isCardioVolumeSpikeActive: Bool {
+        let calendar = Calendar.current
+        let now = Date()
+        guard let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: now)?.start else {
+            return false
+        }
+        func cardioKm(weeksAgo: Int) -> Double {
+            guard let start = calendar.date(byAdding: .weekOfYear, value: -weeksAgo, to: currentWeekStart),
+                  let end = calendar.date(byAdding: .weekOfYear, value: 1, to: start) else { return 0 }
+            return completedSessions
+                .filter { $0.isRealWorkout && $0.startTime >= start && $0.startTime < end }
+                .flatMap(\.logs)
+                .filter(\.resolvedIsCardio)
+                .compactMap(\.distanceKm)
+                .reduce(0, +)
+        }
+        return CardioCoachingAdvisor.isVolumeSpike(
+            currentWeekKm: cardioKm(weeksAgo: 0),
+            previousWeekKm: cardioKm(weeksAgo: 1)
+        )
+    }
+
+    /// DEL-248: der aktive Plan gilt als "hat einen langen Lauf", wenn
+    /// irgendein Tag eine Cardio-Uebung mit Ziel-Dauer >=
+    /// `CardioCoachingAdvisor.longRunMinimumMinutes` enthaelt - rein
+    /// strukturell, KEIN Namens-/Key-Abgleich (siehe Datei-Kommentar auf
+    /// `CardioCoachingAdvisor`: "Long Run" ist im Generator tatsaechlich der
+    /// Uebungs-Name der Tempo-Zone, ein Namensabgleich waere hier irrefuehrend).
+    private var isLongRunOverdueForActivePlan: Bool {
+        guard let plan = activePlans.first else { return false }
+        let planIncludesLongRun = plan.days.contains { day in
+            day.activeExercises.contains {
+                $0.isCardio && ($0.targetDurationMinutes ?? 0) >= CardioCoachingAdvisor.longRunMinimumMinutes
+            }
+        }
+        let sevenDaysAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? .distantPast
+        let recentRunMinutes = completedSessions
+            .filter { $0.isRealWorkout && $0.startTime >= sevenDaysAgo }
+            .flatMap(\.logs)
+            .filter(\.resolvedIsCardio)
+            .compactMap { $0.durationSeconds.map { $0 / 60 } }
+        return CardioCoachingAdvisor.isLongRunOverdue(
+            planIncludesLongRun: planIncludesLongRun,
+            recentRunDurationsMinutes: recentRunMinutes
+        )
+    }
+
+    /// DEL-248: vergleicht den JUENGSTEN geloggten Cardio-Log (letzte 7 Tage)
+    /// gegen seine eigene Tages-Zielpace (aus `targetDistanceKm`/
+    /// `targetDurationMinutes` der zugehoerigen Uebung) - es gibt noch kein
+    /// Profil-weites `paceEasy`. Intervall-/Tempo-Einheiten werden ueber den
+    /// Uebungsnamen ausgeschlossen: dort schneller als "Ziel" zu laufen ist
+    /// der Sinn der Uebung, keine Junk-Miles.
+    private var isMostRecentEasyRunTooFast: Bool {
+        let sevenDaysAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? .distantPast
+        let candidateLogs = completedSessions
+            .filter { $0.isRealWorkout && $0.startTime >= sevenDaysAgo }
+            .flatMap(\.logs)
+            .filter { log in
+                guard log.resolvedIsCardio else { return false }
+                let name = log.exerciseNameSnapshot ?? log.exercise?.name ?? ""
+                return !name.localizedCaseInsensitiveContains("interval")
+            }
+            .sorted { $0.date > $1.date }
+        guard let mostRecent = candidateLogs.first,
+              let distanceKm = mostRecent.distanceKm,
+              let durationSeconds = mostRecent.durationSeconds,
+              let actualPace = PaceCalculator.minutesPerKm(distanceKm: distanceKm, durationSeconds: durationSeconds),
+              let targetDistanceKm = mostRecent.exercise?.targetDistanceKm,
+              let targetDurationMinutes = mostRecent.exercise?.targetDurationMinutes,
+              let targetPace = PaceCalculator.minutesPerKm(
+                  distanceKm: targetDistanceKm,
+                  durationSeconds: targetDurationMinutes * 60
+              )
+        else { return false }
+        return CardioCoachingAdvisor.isJunkMiles(actualPaceMinPerKm: actualPace, targetPaceMinPerKm: targetPace)
     }
 
     /// True wenn die letzte Körpermessung > 14 Tage her ist UND der User

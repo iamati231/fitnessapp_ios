@@ -34151,6 +34151,213 @@
         }
       }
     },
+    "coaching.soft.cardioVolumeSpike.analytical": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your running distance is up more than 20% versus last week. A rapid jump in weekly mileage is one of the most reliable predictors of overuse injuries like shin splints."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Lauf-Kilometer sind diese Woche über 20% höher als letzte Woche. Ein schneller Anstieg im Laufvolumen ist einer der zuverlässigsten Prädiktoren für Überlastungsschäden wie das Schienbeinkantensyndrom."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu haftaki koşu mesafen geçen haftaya göre %20'den fazla arttı. Haftalık mesafede ani bir sıçrama, kaval kemiği ağrısı gibi aşırı yüklenme sakatlanmalarının en güvenilir habercilerinden biridir."
+          }
+        }
+      }
+    },
+    "coaching.soft.cardioVolumeSpike.motivating": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You've been putting in serious miles this week! Just don't let the excitement outrun your body — steady beats fast when it comes to staying injury-free."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du bist diese Woche richtig aktiv unterwegs! Achte trotzdem darauf, das Tempo nicht zu übertreiben – lieber konstant dranbleiben als sich zu verletzen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu hafta gerçekten çok koştun! Ama heyecana kapılıp vücudunu zorlama — sakatlanmadan devam etmek için sabit tempo hızlı tempodan daha önemlidir."
+          }
+        }
+      }
+    },
+    "coaching.soft.cardioVolumeSpike.strict": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're increasing your running volume too fast. That's a direct path to overuse injuries. Pull back this week."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du hast dein Laufvolumen zu schnell gesteigert. Das ist ein direkter Weg zu Überlastungsschäden. Bremse diese Woche bewusst ab."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu hacmini çok hızlı artırıyorsun. Bu, aşırı yüklenme sakatlanmalarına doğrudan giden bir yol. Bu hafta bilerek yavaşla."
+          }
+        }
+      }
+    },
+    "coaching.soft.cardioMissedLongRun.analytical": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your plan includes a long run, but none has been logged in the last 7 days. The long run is the single most important building block for aerobic base — try to fit it in soon."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Plan enthält einen langen Lauf, aber in den letzten 7 Tagen ist keiner dabei gewesen. Der lange Lauf ist der wichtigste Baustein für die Grundlagenausdauer – hol ihn möglichst bald nach."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planında uzun bir koşu var, ama son 7 gündür hiç kaydedilmedi. Uzun koşu, aerobik tabanı oluşturan en önemli yapı taşıdır — yakın zamanda tamamlamaya çalış."
+          }
+        }
+      }
+    },
+    "coaching.soft.cardioMissedLongRun.motivating": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your long run is still missing this week! No matter how slow, find a window to get it in."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein langer Lauf diese Woche fehlt noch! Egal wie langsam – such dir ein Zeitfenster, in dem du ihn nachholen kannst."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu haftanın uzun koşusu hâlâ eksik! Ne kadar yavaş olursa olsun, bunun için bir zaman bul."
+          }
+        }
+      }
+    },
+    "coaching.soft.cardioMissedLongRun.strict": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You skipped your long run this week. That's exactly what builds the endurance your goal needs. Make it up."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du hast deinen langen Lauf diese Woche ausgelassen. Genau der baut die Ausdauer auf, die du für dein Ziel brauchst. Trag ihn nach."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu hafta uzun koşunu atladın. Hedefin için gereken dayanıklılığı tam olarak o oluşturur. Telafi et."
+          }
+        }
+      }
+    },
+    "coaching.soft.cardioJunkMiles.analytical": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your last easy run came in noticeably faster than your target pace. Training in too high a zone builds less aerobic base than genuinely easy running does. Slow down to go faster on the days that matter."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein letzter lockerer Lauf war deutlich schneller als deine Zielpace. Training in einer zu hohen Zone baut weniger Grundlagenausdauer auf als echtes lockeres Training. Werde langsamer, um an wichtigen Tagen schneller zu sein."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son tempo koşun, hedef pace'inden gözle görülür şekilde hızlıydı. Çok yüksek bir bölgede antrenman yapmak, gerçek tempo koşusundan daha az aerobik taban oluşturur. Önemli günlerde daha hızlı olmak için yavaşla."
+          }
+        }
+      }
+    },
+    "coaching.soft.cardioJunkMiles.motivating": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your last easy run was pretty quick! On recovery days, though, rest matters more than pace — dial it back a bit next time."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein letzter lockerer Lauf war ziemlich flott! Am Erholungstag zählt aber Ruhe mehr als Tempo – gönn dir beim nächsten Mal bewusst mehr Langsamkeit."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son tempo koşun epey hızlıydı! Ama toparlanma günlerinde tempo değil dinlenme önemlidir — bir dahaki sefere biraz daha yavaş tut."
+          }
+        }
+      }
+    },
+    "coaching.soft.cardioJunkMiles.strict": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your easy run was too fast. That's not easy training anymore. Stick to the target pace."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein lockerer Lauf war zu schnell. Das ist kein lockeres Training mehr. Halte dich an die Zielpace."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo koşun çok hızlıydı. Bu artık tempo antrenmanı değil. Hedef pace'e sadık kal."
+          }
+        }
+      }
+    },
     "dashboard.resume.caption": {
       "extractionState": "manual",
       "localizations": {

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1648 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1657 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1648 / 1648** (100%) | 0 |
-| 🇬🇧 English (EN) | **1648 / 1648** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1648 / 1648** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1657 / 1657** (100%) | 0 |
+| 🇬🇧 English (EN) | **1657 / 1657** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1657 / 1657** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -205,7 +205,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `chart.timeRange.oneMonth` | 1M | 1M | 1A |
 | `chart.timeRange.threeMonths` | 3M | 3M | 3A |
 
-## `coaching.*`  (216 Keys)
+## `coaching.*`  (225 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -353,6 +353,15 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.soft.backupOverdue.analytical` | Dein letzter Daten-Export ist über 30 Tage her. Ein frisches Backup bewahrt deine Trainings-Historie. | Your last data export was over 30 days ago. A fresh backup keeps your training history safe. | Son veri dışa aktarımının üzerinden 30 günden fazla geçti. Yeni bir yedek antrenman geçmişini güvende tutar. |
 | `coaching.soft.backupOverdue.motivating` | All diese PRs verdienen ein Sicherheitsnetz — kurzer CSV-Export und du bist zukunftssicher. 🛡️ | All these PRs deserve a safety net — quick CSV export and you're future-proof. 🛡️ | Tüm bu PR'lar bir güvenlik ağını hak ediyor — hızlı bir CSV dışa aktarımı seni geleceğe hazırlar. 🛡️ |
 | `coaching.soft.backupOverdue.strict` | 30+ Tage ohne Backup. Mach's jetzt, bevor ein Handy-Wechsel dich deine Historie kostet. | 30+ days without a backup. Do it now before a phone swap costs you your history. | 30+ gündür yedek yok. Bir telefon değişikliği seni geçmişinden etmeden hemen yap. |
+| `coaching.soft.cardioJunkMiles.analytical` | Dein letzter lockerer Lauf war deutlich schneller als deine Zielpace. Training in einer zu hohen Zone baut weniger Grundlagenausdauer auf als echtes lockeres Training. Werde langsamer, um an wichtigen Tagen schneller zu sein. | Your last easy run came in noticeably faster than your target pace. Training in too high a zone builds less aerobic base than genuinely easy running does. Slow down to go faster on the days that matter. | Son tempo koşun, hedef pace'inden gözle görülür şekilde hızlıydı. Çok yüksek bir bölgede antrenman yapmak, gerçek tempo koşusundan daha az aerobik taban oluşturur. Önemli günlerde daha hızlı olmak için yavaşla. |
+| `coaching.soft.cardioJunkMiles.motivating` | Dein letzter lockerer Lauf war ziemlich flott! Am Erholungstag zählt aber Ruhe mehr als Tempo – gönn dir beim nächsten Mal bewusst mehr Langsamkeit. | Your last easy run was pretty quick! On recovery days, though, rest matters more than pace — dial it back a bit next time. | Son tempo koşun epey hızlıydı! Ama toparlanma günlerinde tempo değil dinlenme önemlidir — bir dahaki sefere biraz daha yavaş tut. |
+| `coaching.soft.cardioJunkMiles.strict` | Dein lockerer Lauf war zu schnell. Das ist kein lockeres Training mehr. Halte dich an die Zielpace. | Your easy run was too fast. That's not easy training anymore. Stick to the target pace. | Tempo koşun çok hızlıydı. Bu artık tempo antrenmanı değil. Hedef pace'e sadık kal. |
+| `coaching.soft.cardioMissedLongRun.analytical` | Dein Plan enthält einen langen Lauf, aber in den letzten 7 Tagen ist keiner dabei gewesen. Der lange Lauf ist der wichtigste Baustein für die Grundlagenausdauer – hol ihn möglichst bald nach. | Your plan includes a long run, but none has been logged in the last 7 days. The long run is the single most important building block for aerobic base — try to fit it in soon. | Planında uzun bir koşu var, ama son 7 gündür hiç kaydedilmedi. Uzun koşu, aerobik tabanı oluşturan en önemli yapı taşıdır — yakın zamanda tamamlamaya çalış. |
+| `coaching.soft.cardioMissedLongRun.motivating` | Dein langer Lauf diese Woche fehlt noch! Egal wie langsam – such dir ein Zeitfenster, in dem du ihn nachholen kannst. | Your long run is still missing this week! No matter how slow, find a window to get it in. | Bu haftanın uzun koşusu hâlâ eksik! Ne kadar yavaş olursa olsun, bunun için bir zaman bul. |
+| `coaching.soft.cardioMissedLongRun.strict` | Du hast deinen langen Lauf diese Woche ausgelassen. Genau der baut die Ausdauer auf, die du für dein Ziel brauchst. Trag ihn nach. | You skipped your long run this week. That's exactly what builds the endurance your goal needs. Make it up. | Bu hafta uzun koşunu atladın. Hedefin için gereken dayanıklılığı tam olarak o oluşturur. Telafi et. |
+| `coaching.soft.cardioVolumeSpike.analytical` | Deine Lauf-Kilometer sind diese Woche über 20% höher als letzte Woche. Ein schneller Anstieg im Laufvolumen ist einer der zuverlässigsten Prädiktoren für Überlastungsschäden wie das Schienbeinkantensyndrom. | Your running distance is up more than 20% versus last week. A rapid jump in weekly mileage is one of the most reliable predictors of overuse injuries like shin splints. | Bu haftaki koşu mesafen geçen haftaya göre %20'den fazla arttı. Haftalık mesafede ani bir sıçrama, kaval kemiği ağrısı gibi aşırı yüklenme sakatlanmalarının en güvenilir habercilerinden biridir. |
+| `coaching.soft.cardioVolumeSpike.motivating` | Du bist diese Woche richtig aktiv unterwegs! Achte trotzdem darauf, das Tempo nicht zu übertreiben – lieber konstant dranbleiben als sich zu verletzen. | You've been putting in serious miles this week! Just don't let the excitement outrun your body — steady beats fast when it comes to staying injury-free. | Bu hafta gerçekten çok koştun! Ama heyecana kapılıp vücudunu zorlama — sakatlanmadan devam etmek için sabit tempo hızlı tempodan daha önemlidir. |
+| `coaching.soft.cardioVolumeSpike.strict` | Du hast dein Laufvolumen zu schnell gesteigert. Das ist ein direkter Weg zu Überlastungsschäden. Bremse diese Woche bewusst ab. | You're increasing your running volume too fast. That's a direct path to overuse injuries. Pull back this week. | Koşu hacmini çok hızlı artırıyorsun. Bu, aşırı yüklenme sakatlanmalarına doğrudan giden bir yol. Bu hafta bilerek yavaşla. |
 | `coaching.soft.deloadRecommended.analytical` | Deine Trainings-Last ist über drei Wochen um mehr als 20% gestiegen, und die letzten Einheiten fühlten sich schwer an. Die Daten sprechen für eine Deload-Woche: Gewichte um ~40-50% reduzieren, Bewegungen beibehalten. | Your training load has risen over 20% across three weeks, and your last sessions felt heavy. The data points to a deload week: cut weights by ~40-50% and keep the movements. | Antrenman yükün üç haftada %20'den fazla arttı ve son seanslar ağır hissettirdi. Veriler bir deload haftasını işaret ediyor: ağırlıkları ~%40-50 azalt, hareketleri koru. |
 | `coaching.soft.deloadRecommended.motivating` | Du hast drei Wochen am Stück Vollgas gegeben — genau so entsteht Fortschritt! Gönn deinem Körper jetzt eine leichte Woche, um die Gains einzusammeln. Deload, erholen, stärker zurückkommen. 💪 | You've been pushing hard for three weeks straight — that's how progress is built! Now give your body a light week to cash in those gains. Deload, recover, come back stronger. 💪 | Üç haftadır aralıksız yükleniyorsun — ilerleme tam böyle olur! Şimdi vücuduna kazanımları toplaması için hafif bir hafta ver. Deload yap, toparlan, daha güçlü dön. 💪 |
 | `coaching.soft.deloadRecommended.strict` | Drei Wochen steigende Last und du bewertest die Einheiten als brutal. Erholung ist Teil des Programms — plane jetzt eine Deload-Woche, sonst plant dein Körper sie für dich. | Three weeks of climbing load and you're rating sessions as brutal. Recovery is part of the program — schedule a deload week now, or your body will schedule one for you. | Üç haftadır artan yük ve seansları çok ağır olarak değerlendiriyorsun. Toparlanma programın parçası — şimdi bir deload haftası planla, yoksa vücudun senin yerine planlar. |

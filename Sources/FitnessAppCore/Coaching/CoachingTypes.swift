@@ -164,12 +164,35 @@ public enum CoachingContext: String, Sendable {
     /// jedes Post-Workout-Kompliment. Entscheidung via `DeloadAdvisor`.
     case deloadRecommended
 
+    // MARK: - DEL-248 (Phase 4): Cardio-Coaching-Trigger
+
+    /// Lauf-Kilometer dieser Woche > 120% der Vorwoche — direktes
+    /// Cardio-Pendant zu `deloadRecommended` (dort bewusst nur Kraft,
+    /// Laufvolumen braucht eine eigene Rechnung). Rangiert direkt danach:
+    /// beide sind gesundheitsrelevante Overreaching-Warnungen. Entscheidung
+    /// via `CardioCoachingAdvisor.isVolumeSpike`.
+    case cardioVolumeSpike
+
     // MARK: - DEL-198 Coach-Ausbau (mehr Dialog-Anlässe)
 
     /// Die letzte VOLLE Trainingswoche war die volumenstärkste der
     /// gesamten Historie (>= 4 Wochen Daten). Positiver Meilenstein —
     /// rangiert vor den generischen Post-Workout-Komplimenten.
     case volumeRecord
+
+    /// Der Plan sieht einen langen Lauf vor, aber in den letzten 7 Tagen
+    /// wurde keiner geloggt. Rangiert vor `cardioJunkMiles` (ein fehlendes
+    /// Training ist wichtiger als eine leicht falsche Pace) und vor den
+    /// generischen Post-Workout-Komplimenten. Entscheidung via
+    /// `CardioCoachingAdvisor.isLongRunOverdue`.
+    case cardioMissedLongRun
+    /// Letzter lockerer Lauf war deutlich schneller als seine Zielpace
+    /// (Tages-Ziel, nicht Profil-weit). Rangiert vor `postCardio` — eine
+    /// gezielte Pace-Korrektur ist wertvoller als das generische
+    /// Distanz-Kompliment fuer denselben Lauf. Entscheidung via
+    /// `CardioCoachingAdvisor.isJunkMiles`.
+    case cardioJunkMiles
+
     /// Letzte Körpermessung > 14 Tage her, obwohl der User das Feature
     /// aktiv nutzt (>= 2 Messungen vorhanden). Sanfter Mess-Reminder.
     case measurementOverdue
