@@ -27,9 +27,26 @@ public enum PlanGeneratorInstantiator {
     /// zurueckkommt, aber diese Funktion verlaesst sich nicht darauf: ein
     /// `daysPerWeek: 0`-Template wuerde `ProgramInstantiator.defaultWeekdays`
     /// in eine ungueltige Range (`2...1`) und damit einen Crash laufen lassen.
+    ///
+    /// `precomputed`: Bugfix (Nutzer-Feedback, "Neu rechnen"-Shuffle) - ohne
+    /// diesen Parameter wuerde `build` `input` intern IMMER frisch (und
+    /// damit deterministisch, `shuffle: false`) neu rechnen. Hat der User im
+    /// Wizard vorher mehrfach "Neu rechnen" getippt, um eine ihm zusagende
+    /// Variante zu finden, und tippt dann "Plan uebernehmen", wuerde der
+    /// instanziierte Plan NICHT der zuletzt angezeigten (gemischten)
+    /// Vorschau entsprechen, sondern immer der ersten, deterministischen
+    /// Variante - fuer den User nicht nachvollziehbar. `PlanBuilderView`
+    /// reicht deshalb das bereits im Schritt-3-State gehaltene
+    /// `PlanGenerator.Result` durch; jeder andere Aufrufer (`recalculate`
+    /// unten, alle bestehenden Tests) laesst den Parameter weg und bekommt
+    /// exakt das alte Verhalten.
     @discardableResult
-    public static func build(from input: PlanGeneratorInput, in context: ModelContext) -> TrainingPlan? {
-        let result = PlanGenerator.generate(from: input)
+    public static func build(
+        from input: PlanGeneratorInput,
+        in context: ModelContext,
+        result precomputed: PlanGenerator.Result? = nil
+    ) -> TrainingPlan? {
+        let result = precomputed ?? PlanGenerator.generate(from: input)
         guard !result.days.isEmpty else { return nil }
         let template = makeTemplate(from: result)
 

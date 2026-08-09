@@ -203,4 +203,65 @@ final class PlanGeneratorTests: XCTestCase {
         ]))
         XCTAssertNotNil(result.explanationKey)
     }
+
+    // MARK: - Bugfix (Nutzer-Feedback): "Neu rechnen" liefert keine neuen Plaene
+
+    /// Regressions-Schutz: `shuffle` ist additiv, jeder bestehende Aufrufer
+    /// (u.a. `PlanGeneratorInstantiator.recalculate`, alle anderen Tests in
+    /// dieser Datei) ruft `generate(from:)` ohne den Parameter auf und muss
+    /// exakt das alte, deterministische Verhalten behalten.
+    func testShuffleFalseKeepsGenerateFullyDeterministic() {
+        let selections = [selection(.barbell, days: 5, experience: .advanced)]
+        let withoutParameter = PlanGenerator.generate(from: input(selections))
+        let explicitFalse = PlanGenerator.generate(from: input(selections), shuffle: false)
+        XCTAssertEqual(exerciseFingerprint(withoutParameter), exerciseFingerprint(explicitFalse))
+    }
+
+    /// Kern der Ticket-Anforderung: `shuffle: true` muss ueber mehrere
+    /// Versuche mindestens einmal eine andere Uebungsauswahl liefern als die
+    /// deterministische Baseline. `.advanced` erlaubt alle drei
+    /// Schwierigkeitsstufen und maximiert damit den Pool pro Muskelgruppe -
+    /// je groesser der Pool, desto unwahrscheinlicher, dass 30 gemischte
+    /// Versuche rein zufaellig alle exakt auf der Baseline-Reihenfolge
+    /// landen (kein `.shuffled()`-Determinismus vorausgesetzt - der Test
+    /// wertet ueber viele Versuche aus statt einen einzelnen Lauf zu fixieren).
+    func testShuffleTrueCanProduceADifferentExerciseSelection() {
+        let selections = [selection(.barbell, days: 5, experience: .advanced)]
+        let baseline = exerciseFingerprint(PlanGenerator.generate(from: input(selections)))
+
+        let foundDifferentVariant = (0..<30).contains { _ in
+            exerciseFingerprint(PlanGenerator.generate(from: input(selections), shuffle: true)) != baseline
+        }
+        XCTAssertTrue(foundDifferentVariant, "shuffle: true muss ueber mehrere Versuche mindestens einmal eine andere Uebungsauswahl liefern")
+    }
+
+    /// Mischen darf nur WELCHE Uebungen gezogen werden aendern - Tagesanzahl,
+    /// die Kettlebell->EMOM-Finisher-Regel (genau ein EMOM-Tag ab 3 Tagen)
+    /// und die Eindeutigkeit der Tagesnamen (`disambiguateDuplicateNames`)
+    /// muessen unabhaengig davon weiter gelten.
+    func testShuffleTruePreservesDayCountFormatsAndUniqueNames() {
+        let selections = [selection(.kettlebell, days: 4, experience: .advanced)]
+        let baseline = PlanGenerator.generate(from: input(selections))
+        let shuffled = PlanGenerator.generate(from: input(selections), shuffle: true)
+
+        XCTAssertEqual(shuffled.days.count, baseline.days.count)
+        XCTAssertEqual(shuffled.days.filter { $0.spec.timeFormat == .emom }.count, 1)
+        XCTAssertEqual(Set(shuffled.days.map(\.spec.name)).count, shuffled.days.count,
+                       "Namensdisambiguierung muss auch nach dem Mischen jeden Tagesnamen eindeutig halten")
+    }
+
+    /// README 2.20/Bugfix-Kommentar in `PlanGenerator.generate`: Cardio hat
+    /// pro Lauf-Zone nur eine feste Uebung (kein Pool), `shuffle` darf die
+    /// Cardio-Auswahl deshalb gar nicht veraendern - nur die Kraft-Kandidaten
+    /// werden gemischt.
+    func testShuffleTrueDoesNotAffectCardioExerciseChoice() {
+        let selections = [selection(.running, days: 5)]
+        let baseline = exerciseFingerprint(PlanGenerator.generate(from: input(selections)))
+        let shuffled = exerciseFingerprint(PlanGenerator.generate(from: input(selections), shuffle: true))
+        XCTAssertEqual(baseline, shuffled)
+    }
+
+    private func exerciseFingerprint(_ result: PlanGenerator.Result) -> [[String]] {
+        result.days.map { $0.spec.exercises.map(\.name) }
+    }
 }

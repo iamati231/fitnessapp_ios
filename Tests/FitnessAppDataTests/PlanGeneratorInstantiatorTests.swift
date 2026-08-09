@@ -62,6 +62,36 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         XCTAssertNil(PlanGeneratorInstantiator.build(from: input([]), in: context))
     }
 
+    /// Bugfix (Nutzer-Feedback, "Neu rechnen"-Shuffle): `build` darf einen
+    /// bereits berechneten `PlanGenerator.Result` nicht verwerfen und
+    /// stattdessen `input` erneut (und damit wieder deterministisch) neu
+    /// rechnen - sonst weicht ein instanziierter Plan von der zuletzt in
+    /// der Wizard-Vorschau gezeigten (z.B. gemischten) Variante ab.
+    /// `differentResult` kommt bewusst aus einer STRUKTURELL anderen
+    /// Auswahl (Kurzhantel statt Langhantel) ueber die oeffentliche
+    /// `generate`-API - ohne den Fix wuerden die Tagesnamen zwangslaeufig
+    /// den Langhantel-Namen von `barbellInput` entsprechen, nicht denen aus
+    /// `differentResult`.
+    func testBuildUsesThePrecomputedResultInsteadOfRecomputingFromInput() throws {
+        let barbellInput = input([selection(.barbell, days: 2)])
+        let differentResult = PlanGenerator.generate(from: input([selection(.dumbbell, days: 2)]))
+        XCTAssertFalse(differentResult.days.isEmpty)
+
+        let plan = try XCTUnwrap(
+            PlanGeneratorInstantiator.build(from: barbellInput, in: context, result: differentResult)
+        )
+        let workoutDays = plan.days.filter { $0.type != .rest }
+        XCTAssertEqual(workoutDays.count, differentResult.days.count)
+        XCTAssertEqual(Set(workoutDays.map(\.name)), Set(differentResult.days.map { $0.spec.name }),
+                       "build() muss den durchgereichten Result verwenden, nicht `from: input` neu rechnen")
+
+        // `plan.generatorInput` bleibt trotzdem das ECHTE `barbellInput` -
+        // ein spaeteres `recalculate` fuer den adoptierten Plan soll
+        // weiterhin deterministisch aus dem passenden Input arbeiten, nicht
+        // aus der einmaligen Vorschau-Variante.
+        XCTAssertEqual(plan.generatorInput, barbellInput)
+    }
+
     // MARK: - recalculate() Grundfaelle
 
     func testRecalculateIsNoOpForPlansWithoutGeneratorInput() {

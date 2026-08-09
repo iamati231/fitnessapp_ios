@@ -449,8 +449,12 @@ public struct PlanBuilderView: View {
         )
     }
 
-    private func recalculatePreview() {
-        result = PlanGenerator.generate(from: currentInput)
+    /// `shuffle`: Bugfix (Nutzer-Feedback) - der erste Aufruf beim Betreten
+    /// von Schritt 3 (`goToNextStep`/`.onAppear`) bleibt bewusst
+    /// deterministisch (Default `false`), nur der explizite "Neu rechnen"-
+    /// Tap fordert eine Variante an (siehe `resultStepView`).
+    private func recalculatePreview(shuffle: Bool = false) {
+        result = PlanGenerator.generate(from: currentInput, shuffle: shuffle)
     }
 
     private var resultStepView: some View {
@@ -475,7 +479,17 @@ public struct PlanBuilderView: View {
                         .foregroundStyle(.secondary)
 
                     Button {
-                        recalculatePreview()
+                        // Bugfix (Nutzer-Feedback): "Neu rechnen" fordert
+                        // jetzt explizit eine gemischte Variante an (statt
+                        // denselben `currentInput` deterministisch erneut zu
+                        // rechnen und exakt dasselbe Ergebnis zu zeigen).
+                        // `withAnimation` gibt sichtbares Feedback (Kapsel-
+                        // Farbwechsel, Erklaerungstext-Ein-/Ausblenden,
+                        // Zeilenhoehen), selbst wenn sich die gewaehlten
+                        // Uebungen im Einzelfall kaum unterscheiden.
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            recalculatePreview(shuffle: true)
+                        }
                     } label: {
                         Label {
                             Text("planBuilder.result.recalculate", bundle: .module)
@@ -620,7 +634,13 @@ public struct PlanBuilderView: View {
     }
 
     private func adoptPlan() {
-        guard let plan = PlanGeneratorInstantiator.build(from: currentInput, in: modelContext) else { return }
+        // Bugfix (Nutzer-Feedback, "Neu rechnen"-Shuffle): das bereits in
+        // Schritt 3 angezeigte `result` wird durchgereicht, statt `build`
+        // `currentInput` erneut (und damit wieder deterministisch, ohne
+        // Shuffle) rechnen zu lassen - sonst wuerde ein zuvor per "Neu
+        // rechnen" gefundener, dem User zusagender Plan beim Uebernehmen
+        // durch die urspruengliche Variante ersetzt.
+        guard let plan = PlanGeneratorInstantiator.build(from: currentInput, in: modelContext, result: result) else { return }
         dismiss()
         // Gleiches 0.3s-Defer-Muster wie `ProgramTemplatePickerView.instantiate`
         // - gibt der Sheet-Dismiss-Animation Zeit, bevor der Navigations-Stack

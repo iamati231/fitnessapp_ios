@@ -69,13 +69,26 @@ public enum PlanGenerator {
         let hardness: Double
     }
 
-    public static func generate(from input: PlanGeneratorInput) -> Result {
+    /// `shuffle`: Bugfix (Nutzer-Feedback) - `generate(from:)` war komplett
+    /// deterministisch, "Neu rechnen" im Wizard (Schritt 3) rief dieselbe
+    /// Funktion mit demselben `input` erneut auf und produzierte daher
+    /// IMMER exakt dasselbe Ergebnis, obwohl der User eine Alternative
+    /// erwartet. `shuffle: true` mischt den nach Muskelgruppe gruppierten
+    /// Uebungs-Pool in `strengthCandidates`/`kettlebellEmomCandidate`
+    /// (siehe dort) VOR der Auswahl, sodass verschiedene Uebungen aus der
+    /// Bibliothek gezogen werden - Tagesanzahl, Cardio-Zonen-Zyklus und die
+    /// "keine zwei harten Cardio-Tage direkt hintereinander"-Regel bleiben
+    /// unveraendert (Cardio hat pro Zone ohnehin nur eine feste Uebung,
+    /// dort gibt es nichts zu mischen). Default `false` haelt jeden
+    /// bestehenden Aufrufer (u.a. `PlanGeneratorInstantiator.recalculate`,
+    /// alle bisherigen Tests) exakt beim alten, deterministischen Verhalten.
+    public static func generate(from input: PlanGeneratorInput, shuffle: Bool = false) -> Result {
         var candidates: [Candidate] = []
         for selection in input.selections {
             if selection.kind.isCardio {
                 candidates.append(contentsOf: cardioCandidates(for: selection))
             } else {
-                candidates.append(contentsOf: strengthCandidates(for: selection))
+                candidates.append(contentsOf: strengthCandidates(for: selection, shuffle: shuffle))
             }
         }
 
@@ -108,7 +121,7 @@ public enum PlanGenerator {
 
     // MARK: - Strength candidates
 
-    private static func strengthCandidates(for selection: PlanGeneratorTypeSelection) -> [Candidate] {
+    private static func strengthCandidates(for selection: PlanGeneratorTypeSelection, shuffle: Bool) -> [Candidate] {
         guard let equipment = selection.kind.equipmentFilter else { return [] }
         let allowedDifficulties = difficultiesAtOrBelow(selection.experience)
         let pool = ExerciseLibraryData.all.filter {
@@ -116,7 +129,7 @@ public enum PlanGenerator {
         }
         guard !pool.isEmpty else { return [] }
 
-        let byMuscle = Dictionary(grouping: pool, by: \.primaryMuscle)
+        let byMuscle = groupedByMuscle(pool, shuffle: shuffle)
         let muscleOrder = MuscleGroup.allCases
         let exerciseCount = max(3, min(7, selection.sessionDurationMinutes / 7))
         let (sets, repsMin, repsMax, restSeconds) = strengthVolume(for: selection.experience)
@@ -131,7 +144,8 @@ public enum PlanGenerator {
             if selection.kind == .kettlebell, selection.daysPerWeek >= 3, dayIndex == selection.daysPerWeek - 1 {
                 result.append(kettlebellEmomCandidate(
                     pool: pool, muscleOrder: muscleOrder, kindLabel: kindLabel,
-                    sessionDurationMinutes: selection.sessionDurationMinutes
+                    sessionDurationMinutes: selection.sessionDurationMinutes,
+                    shuffle: shuffle
                 ))
                 continue
             }
@@ -213,9 +227,10 @@ public enum PlanGenerator {
         pool: [ExerciseTemplateSpec],
         muscleOrder: [MuscleGroup],
         kindLabel: String,
-        sessionDurationMinutes: Int
+        sessionDurationMinutes: Int,
+        shuffle: Bool
     ) -> Candidate {
-        let byMuscle = Dictionary(grouping: pool, by: \.primaryMuscle)
+        let byMuscle = groupedByMuscle(pool, shuffle: shuffle)
         var exercises: [ExerciseSpec] = []
         var hardness = 0.0
         var muscleCursor = 0
@@ -262,6 +277,23 @@ public enum PlanGenerator {
         case .intermediate: return (3, 8, 12, 90)
         case .advanced:     return (4, 6, 10, 100)
         }
+    }
+
+    /// Bugfix (Nutzer-Feedback): gemeinsamer Gruppierungs-Helfer fuer
+    /// `strengthCandidates`/`kettlebellEmomCandidate` - mischt jede
+    /// Muskelgruppen-Liste GENAU EINMAL (nicht bei jedem einzelnen Zugriff),
+    /// bevor `dayIndex % group.count` daraus auswaehlt. Ein Mischen pro
+    /// Zugriff wuerde die bestehende Garantie zerstoeren, dass
+    /// aufeinanderfolgende Tage derselben Trainingsart verschiedene
+    /// Uebungen bekommen (`dayIndex % group.count` waehlt sonst aus einem
+    /// bei jedem Aufruf neu gemischten Array, zwei Tage koennten dann
+    /// zufaellig dieselbe Uebung treffen).
+    private static func groupedByMuscle(
+        _ pool: [ExerciseTemplateSpec],
+        shuffle: Bool
+    ) -> [MuscleGroup: [ExerciseTemplateSpec]] {
+        let grouped = Dictionary(grouping: pool, by: \.primaryMuscle)
+        return shuffle ? grouped.mapValues { $0.shuffled() } : grouped
     }
 
     private static func difficultiesAtOrBelow(_ level: DifficultyLevel) -> Set<DifficultyLevel> {
