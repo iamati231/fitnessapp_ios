@@ -321,11 +321,32 @@ private struct AMRAPPlayerView: View {
     /// ueber Rekonstruktionen hinweg festgehalten, nur `@State` ist das.
     @State private var tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
+    /// Bugfix (Nutzer-Feedback): "Training fortsetzen" (z.B.
+    /// `DayEditorView.resumeOpenSession`) haengt eine NEUE
+    /// `ActiveSessionRoute` an den Navigationspfad, wodurch SwiftUI eine
+    /// KOMPLETT NEUE `AMRAPPlayerView`-Instanz fuer dieselbe, bereits
+    /// laufende `session` erzeugt - jedes `@State` (inkl. `roundsCompleted`
+    /// und `prerollRemaining`) faellt dabei auf seinen Default zurueck, der
+    /// Vorlauf fing deshalb von neuem an UND `finishPreroll()` haette
+    /// `session.startTime` ein zweites Mal auf "jetzt" gesetzt (die bereits
+    /// verstrichene Cap-Zeit waere verschluckt worden).
+    /// `session.roundsCompleted` ist `nil`, bis `finishPreroll()` es beim
+    /// ALLERERSTEN echten Start auf 0 setzt (siehe dort) - ein Nicht-nil-Wert
+    /// beweist also zuverlaessig "diese Session hat den Vorlauf schon einmal
+    /// durchlaufen", ganz ohne neues Schema-Feld. Vorlauf wird in diesem
+    /// Fall komplett uebersprungen, `roundsCompleted` aus der Session
+    /// wiederhergestellt.
     init(session: WorkoutSession) {
         self.session = session
-        let stored = storedPrerollSeconds()
-        prerollTotal = stored
-        _prerollRemaining = State(initialValue: stored)
+        if let existingRounds = session.roundsCompleted {
+            prerollTotal = 0
+            _prerollRemaining = State(initialValue: 0)
+            _roundsCompleted = State(initialValue: existingRounds)
+        } else {
+            let stored = storedPrerollSeconds()
+            prerollTotal = stored
+            _prerollRemaining = State(initialValue: stored)
+        }
     }
 
     private var day: TrainingDay? { session.day }
@@ -554,10 +575,15 @@ private struct AMRAPPlayerView: View {
     /// README 2.15/23b-23c: Uebergang von Vorlauf in den echten Lauf - egal
     /// ob durch Ablauf des Countdowns oder "Jetzt starten". Setzt `startTime`
     /// neu auf jetzt, sonst zaehlten die Vorlauf-Sekunden in Dauer/HealthKit
-    /// mit (`finishTimedSession` liest `session.startTime`).
+    /// mit (`finishTimedSession` liest `session.startTime`). Laeuft nur beim
+    /// ALLERERSTEN echten Start (ein Resume ueberspringt den Vorlauf
+    /// komplett, siehe `init`) - `session.roundsCompleted = 0` markiert hier
+    /// zuverlaessig "diese Session hat jetzt begonnen", der Wert war bis
+    /// hierher `nil`.
     private func finishPreroll() {
         prerollRemaining = 0
         session.startTime = Date()
+        session.roundsCompleted = 0
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
     }
 
@@ -603,8 +629,13 @@ private struct AMRAPPlayerView: View {
     /// Bugfix (Teil-Wiederholungen entfernt): der "+1 Runde"-Knopf ist der
     /// einzige verbleibende Weg, den Rundenstand zu aendern - keine
     /// Zwischenschritte pro Uebung/Station mehr.
+    /// Bugfix (Nutzer-Feedback): `session.roundsCompleted` wird jetzt bei
+    /// JEDER Runde mitgeschrieben, nicht erst bei `saveNow()` - sonst wuerde
+    /// ein "Training fortsetzen" zwischen zwei Runden wieder auf den zuletzt
+    /// GESPEICHERTEN Stand zurueckfallen statt auf den zuletzt GEZAEHLTEN.
     private func completeRound() {
         roundsCompleted += 1
+        session.roundsCompleted = roundsCompleted
         DeltiqHaptics.notify(.success)
     }
 
@@ -693,11 +724,35 @@ private struct EMOMPlayerView: View {
     /// Property in `AMRAPPlayerView`.
     @State private var tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
+    /// Bugfix (Nutzer-Feedback): siehe ausfuehrliche Begruendung bei
+    /// `AMRAPPlayerView.init` - identisches Problem ("Training fortsetzen"
+    /// erzeugt eine komplett neue View-Instanz fuer dieselbe Session),
+    /// identische Loesung. `session.completedMinuteCount` ist `nil`, bis
+    /// `finishPreroll()` es beim allerersten echten Start auf 0 setzt - ein
+    /// Nicht-nil-Wert beweist also "Vorlauf schon durchlaufen".
+    /// Persistiert ist nur die ANZAHL, nicht welche konkreten Minuten
+    /// abgehakt wurden - "die ersten N Minuten" rekonstruiert das bei der
+    /// ueblichen sequentiellen Abhak-Reihenfolge exakt; bei uebersprungenen
+    /// Minuten weicht nur der Haekchen-Zustand DIESER einen Minute
+    /// kosmetisch ab, die gespeicherte Gesamtzahl bleibt in jedem Fall
+    /// korrekt. `lastKnownMinute` wird auf die AKTUELLE Minute vorbelegt
+    /// (statt Default 1), sonst wuerde `resyncMinuteState()` beim ersten
+    /// Tick nach dem Resume faelschlich einen Live-Uebergangston abspielen,
+    /// wenn genau Minute 2 gerade laeuft.
     init(session: WorkoutSession) {
         self.session = session
-        let stored = storedPrerollSeconds()
-        prerollTotal = stored
-        _prerollRemaining = State(initialValue: stored)
+        if let existingCount = session.completedMinuteCount {
+            prerollTotal = 0
+            _prerollRemaining = State(initialValue: 0)
+            _completedMinutes = State(initialValue: existingCount > 0 ? Set(1...existingCount) : [])
+            let totalMinutesAtInit = max(1, session.day?.timeCapMinutes ?? 12)
+            let elapsedAtInit = max(0, Int(Date().timeIntervalSince(session.startTime)))
+            _lastKnownMinute = State(initialValue: min(elapsedAtInit / 60 + 1, totalMinutesAtInit))
+        } else {
+            let stored = storedPrerollSeconds()
+            prerollTotal = stored
+            _prerollRemaining = State(initialValue: stored)
+        }
     }
 
     private var day: TrainingDay? { session.day }
@@ -973,10 +1028,14 @@ private struct EMOMPlayerView: View {
     /// ob durch Ablauf des Countdowns oder "Jetzt starten". Setzt `startTime`
     /// neu auf jetzt (sonst zaehlten die Vorlauf-Sekunden in Dauer/HealthKit
     /// mit) und stoesst die Hintergrund-Signale erst JETZT an, nicht schon
-    /// beim Mount - sonst waeren sie um die Vorlauf-Laenge zu frueh.
+    /// beim Mount - sonst waeren sie um die Vorlauf-Laenge zu frueh. Laeuft
+    /// nur beim ALLERERSTEN echten Start (ein Resume ueberspringt den
+    /// Vorlauf komplett, siehe `init`) - `session.completedMinuteCount = 0`
+    /// markiert hier zuverlaessig "diese Session hat jetzt begonnen".
     private func finishPreroll() {
         prerollRemaining = 0
         session.startTime = Date()
+        session.completedMinuteCount = 0
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
         scheduleBackgroundSignals()
     }
@@ -1032,6 +1091,7 @@ private struct EMOMPlayerView: View {
             // wurde - sonst landet ein voll absolviertes EMOM als 0 im
             // Verlauf.
             completedMinutes = Set(1...totalMinutes)
+            session.completedMinuteCount = totalMinutes
             DeltiqHaptics.notify(.success)
             return
         }
@@ -1048,6 +1108,11 @@ private struct EMOMPlayerView: View {
     private var doneBar: some View {
         Button {
             if completedMinutes.insert(currentMinute).inserted {
+                // Bugfix (Nutzer-Feedback): laufend persistieren statt erst
+                // bei `saveNow()` - sonst wuerde "Training fortsetzen"
+                // zwischen zwei abgehakten Minuten wieder auf den zuletzt
+                // GESPEICHERTEN statt den zuletzt ABGEHAKTEN Stand zurueckfallen.
+                session.completedMinuteCount = completedMinutes.count
                 DeltiqHaptics.notify(.success)
             }
         } label: {
@@ -1095,6 +1160,16 @@ private struct ForTimePlayerView: View {
     /// die App im Hintergrund war - siehe `elapsedSeconds` unten.
     @Environment(\.scenePhase) private var scenePhase
 
+    /// Bekanntes Problem (Nutzer-Feedback, nicht mitgefixt): anders als
+    /// `AMRAPPlayerView.roundsCompleted`/`EMOMPlayerView.completedMinutes`
+    /// gibt es fuer diese Pro-Uebung-Zaehlung KEIN existierendes
+    /// `WorkoutSession`-Feld, das sich als Restore-Quelle zweckentfremden
+    /// liesse - ein "Training fortsetzen" verliert den Fortschritt hier
+    /// also weiterhin, UND der Vorlauf startet erneut (`finishPreroll()`
+    /// setzt `session.startTime` ohne Erkennungsmoeglichkeit fuer "schon
+    /// gestartet"). Ein echter Fix braucht ein neues, persistiertes Feld
+    /// (z.B. serialisiert pro Uebung) - das ist ein Schema-Zusatz, den ohne
+    /// Compiler zu verifizieren zu riskant ist.
     @State private var checkedRounds: [PersistentIdentifier: Int] = [:]
     @State private var isFinished = false
     /// Verifikation (Workflow-Nachtrag): `elapsedSeconds` ist bewusst eine
