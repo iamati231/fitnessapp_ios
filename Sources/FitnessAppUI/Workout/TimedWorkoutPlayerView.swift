@@ -184,19 +184,20 @@ private func storedPrerollSeconds() -> Int {
     UserDefaults.standard.object(forKey: "pref_preroll_seconds") as? Int ?? 10
 }
 
-/// Tonschema (README 2.15/23c): kurzer Ton bei 10 Sekunden einmal als
-/// Vorwarnung, kurzer Ton bei 3/2/1, langer Ton beim Erreichen von 0 -
-/// identisch fuer alle drei Formate und an denselben Schalter
-/// `pref_timer_sound` gekoppelt wie die EMOM-Minutentoene. Ein Vorlauf
-/// unter zehn Sekunden durchlaeuft die 10 nie, die Vorwarnung entfaellt
-/// dadurch von selbst, ohne eigene Fallunterscheidung.
+/// Tonschema (Nutzerwunsch): jede Sekunde des Vorlaufs piept kurz, GO bei
+/// Erreichen von 0 bekommt weiterhin den langen Ton - identisch fuer alle
+/// drei Formate und an denselben Schalter `pref_timer_sound` gekoppelt wie
+/// die EMOM-Minutentoene. Gilt unveraendert fuer alle drei einstellbaren
+/// Vorlauf-Laengen (5/10/15s, siehe SettingsView.prerollSeconds-Picker).
+/// Vorherige Fassung (README 2.15/23c) piepte nur bei 10 (Vorwarnung) und
+/// 3/2/1 - bei 10s/15s Vorlauf blieb der Grossteil der Sekunden stumm.
 @MainActor
 private func playPrerollTone(remaining: Int, enabled: Bool) {
     guard enabled else { return }
-    switch remaining {
-    case 10, 3, 2, 1: TimerSoundPlayer.shared.playShort()
-    case 0: TimerSoundPlayer.shared.playLong()
-    default: break
+    if remaining > 0 {
+        TimerSoundPlayer.shared.playShort()
+    } else {
+        TimerSoundPlayer.shared.playLong()
     }
 }
 
