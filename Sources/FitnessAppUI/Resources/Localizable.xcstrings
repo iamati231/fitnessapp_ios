@@ -14548,6 +14548,30 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Sıralama, zor ve hafif antrenmanları haftaya yayar, art arda toplamaz." } }
       }
     },
+    "planBuilder.day.runEasy": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ruhiger Lauf" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Easy Run" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kolay Koşu" } }
+      }
+    },
+    "planBuilder.day.runTempo": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Tempolauf" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Tempo Run" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tempo Koşusu" } }
+      }
+    },
+    "planBuilder.day.runInterval": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Intervalle" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Intervals" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "İnterval" } }
+      }
+    },
     "planBuilder.title": {
       "extractionState": "manual",
       "localizations": {

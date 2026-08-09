@@ -264,4 +264,109 @@ final class PlanGeneratorTests: XCTestCase {
     private func exerciseFingerprint(_ result: PlanGenerator.Result) -> [[String]] {
         result.days.map { $0.spec.exercises.map(\.name) }
     }
+
+    // MARK: - DEL-247: localizationKey fuer generierte Tage
+
+    /// Kernanforderung des Tickets: JEDER generierte Tag muss einen
+    /// aufloesbaren Key tragen, unabhaengig von Trainingsart - vorher war
+    /// `localizationKey` fuer diesen Codepfad immer `nil`.
+    func testEveryGeneratedDayHasANonEmptyLocalizationKey() {
+        let allKinds: [PlanGeneratorTypeSelection] = TrainingTypeKind.allCases.map {
+            selection($0, days: $0.isCardio ? 2 : 3)
+        }
+        let result = PlanGenerator.generate(from: input(allKinds))
+        for day in result.days {
+            XCTAssertNotNil(day.spec.localizationKey, "Tag \"\(day.spec.name)\" hat keinen localizationKey")
+            XCTAssertFalse(day.spec.localizationKey?.isEmpty ?? true)
+        }
+    }
+
+    /// Radfahren komponiert `name`/`localizationKey` aus genau EINEM Teil
+    /// (kein Fokus-Zusatz) - der Key muss exakt `TrainingTypeKind.cycling.
+    /// titleKey` sein, ohne jeden Trennzeichen-Zusatz.
+    func testCyclingLocalizationKeyIsBareKindKey() {
+        let result = PlanGenerator.generate(from: input([selection(.cycling, days: 1)]))
+        XCTAssertEqual(result.days.first?.spec.localizationKey, "planBuilder.type.cycling")
+    }
+
+    /// Derselbe rohe Buchstaben-Suffix, den `disambiguateDuplicateNames` an
+    /// `name` haengt ("Radfahren B"), muss ans `#`-Ende des Keys wandern -
+    /// sonst driften Anzeige (aus `name`, Fallback) und Key (aus
+    /// `localizationKey`, Regelfall) fuer EN/TR-Nutzer auseinander.
+    func testCyclingDisambiguationSuffixAppearsOnBothNameAndKey() {
+        let result = PlanGenerator.generate(from: input([selection(.cycling, days: 2)]))
+        let sorted = result.days.sorted { $0.spec.name < $1.spec.name }
+        XCTAssertEqual(sorted.map(\.spec.name), ["Radfahren A", "Radfahren B"])
+        XCTAssertEqual(sorted.map(\.spec.localizationKey), ["planBuilder.type.cycling#A", "planBuilder.type.cycling#B"])
+    }
+
+    /// Die drei Lauf-Zonen-Titel sind komplett eigenstaendige Keys (kein
+    /// `kind·focus`-Aufbau, siehe `RunZone.localizationKey`-Dokumentation).
+    func testRunningZonesMapToTheirOwnStandaloneKeys() {
+        let result = PlanGenerator.generate(from: input([selection(.running, days: 3)]))
+        let keys = Set(result.days.compactMap(\.spec.localizationKey))
+        XCTAssertEqual(keys, ["planBuilder.day.runEasy", "planBuilder.day.runTempo", "planBuilder.day.runInterval"])
+    }
+
+    /// Kettlebell-EMOM-Finisher komponiert immer `kind·day_type.full_body` -
+    /// unabhaengig davon, welche Uebungen der Pool liefert.
+    func testKettlebellEmomFinisherKeyComposesKindAndFullBody() {
+        let result = PlanGenerator.generate(from: input([selection(.kettlebell, days: 3)]))
+        let emomDay = result.days.first { $0.spec.timeFormat == .emom }
+        XCTAssertEqual(emomDay?.spec.localizationKey, "planBuilder.type.kettlebell·day_type.full_body")
+    }
+
+    /// Krafttage komponieren `kind·focus` - `focus` ist entweder eine
+    /// `day_type.*`/`muscle.core`-Kategorie (moeglicherweise `&`-verbunden zu
+    /// zweit) oder der "Ganzkoerper N"-Fallback mit rohem Zahlen-Suffix.
+    /// Statt einen konkreten Fokus vorherzusagen (haengt von der Library-
+    /// Reihenfolge ab), prueft dieser Test die FORM: erster Teil ist immer
+    /// der Kind-Key, jeder Bestandteil danach ist entweder ein bekannter
+    /// Fokus-Key oder der Ganzkoerper-Fallback mit Ziffern-Suffix.
+    func testStrengthDayLocalizationKeyStartsWithKindKeyAndHasValidFocus() {
+        let knownFocusKeys: Set<String> = ["day_type.push", "day_type.pull", "day_type.legs", "muscle.core"]
+        for kind in [TrainingTypeKind.barbell, .dumbbell, .kettlebell, .bodyweight] {
+            let result = PlanGenerator.generate(from: input([selection(kind, days: 4)]))
+            for day in result.days where day.spec.timeFormat != .emom {
+                guard let key = day.spec.localizationKey else {
+                    XCTFail("Krafttag \"\(day.spec.name)\" hat keinen localizationKey")
+                    continue
+                }
+                XCTAssertTrue(key.hasPrefix("\(kind.titleKey)·"), "\"\(key)\" beginnt nicht mit dem Kind-Key von \(kind)")
+                let focusPart = key
+                    .dropFirst(kind.titleKey.count + 1)
+                    .split(separator: "#").first.map(String.init) ?? ""
+                let isKnownFocus = focusPart.split(separator: "&").allSatisfy { knownFocusKeys.contains(String($0)) }
+                let isFullBodyFallback = focusPart == "day_type.full_body"
+                XCTAssertTrue(isKnownFocus || isFullBodyFallback, "unerwarteter Fokus-Teil \"\(focusPart)\" in \"\(key)\"")
+            }
+        }
+    }
+
+    /// Regressionsschutz fuer den in `disambiguateDuplicateNames` dokumentierten
+    /// Fall: `name` und `localizationKey` muessen fuer JEDEN generierten Tag
+    /// dieselbe Anzahl an "Teilen" haben (Trennzeichen " · "/" & " in `name`
+    /// vs. `·`/`&` im Key) - sonst haetten sich die zwei parallelen
+    /// Repraesentationen auseinanderentwickelt.
+    func testNameAndLocalizationKeySegmentCountsStayInSyncAcrossAllKinds() {
+        let allKinds: [PlanGeneratorTypeSelection] = TrainingTypeKind.allCases.map {
+            selection($0, days: $0.isCardio ? 3 : 4)
+        }
+        let result = PlanGenerator.generate(from: input(allKinds))
+        for day in result.days {
+            guard let key = day.spec.localizationKey else {
+                XCTFail("Tag \"\(day.spec.name)\" hat keinen localizationKey")
+                continue
+            }
+            let nameSegments = day.spec.name
+                .components(separatedBy: " · ")
+                .flatMap { $0.components(separatedBy: " & ") }
+                .count
+            let keySegments = key
+                .split(separator: "#").first.map(String.init).map { keyPart -> Int in
+                    keyPart.split(separator: "·").flatMap { $0.split(separator: "&") }.count
+                } ?? 0
+            XCTAssertEqual(nameSegments, keySegments, "Segment-Anzahl weicht ab: name=\"\(day.spec.name)\" key=\"\(key)\"")
+        }
+    }
 }

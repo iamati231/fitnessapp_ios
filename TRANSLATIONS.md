@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1645 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1648 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1645 / 1645** (100%) | 0 |
-| 🇬🇧 English (EN) | **1645 / 1645** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1645 / 1645** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1648 / 1648** (100%) | 0 |
+| 🇬🇧 English (EN) | **1648 / 1648** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1648 / 1648** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1397,10 +1397,13 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.upperLower.name` | Upper-Lower-Split | Upper-Lower Split | Upper-Lower Split |
 | `plan.template.upperLower.tagline` | 4 Tage · Kraft & Hypertrophie | 4 Days · Strength & Hypertrophy | 4 Gün · Güç & Hipertrofi |
 
-## `planBuilder.*`  (35 Keys)
+## `planBuilder.*`  (38 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `planBuilder.day.runEasy` | Ruhiger Lauf | Easy Run | Kolay Koşu |
+| `planBuilder.day.runInterval` | Intervalle | Intervals | İnterval |
+| `planBuilder.day.runTempo` | Tempolauf | Tempo Run | Tempo Koşusu |
 | `planBuilder.equipment.subtitle` | Welche Ausrüstung steht dir zur Verfügung? | What equipment do you have available? | Hangi ekipmana erişimin var? |
 | `planBuilder.equipment.title` | Ausrüstung | Equipment | Ekipman |
 | `planBuilder.load.easy` | Locker | Easy | Hafif |

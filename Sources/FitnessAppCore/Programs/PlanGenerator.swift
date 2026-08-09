@@ -23,16 +23,24 @@ import Foundation
 /// **Keine Lokalisierung in diesem Typ:** `FitnessAppCore` deklariert in
 /// `Package.swift` keine `resources:` - es gibt hier gar kein
 /// `Bundle.module`, jeder `String(localized:bundle: .module)`-Aufruf waere
-/// ein Compile-Fehler. Erzeugte Tages-/Plan-Namen sind deshalb bewusst
-/// hartcodierte deutsche Strings, exakt die gleiche Konvention wie jede
-/// `DaySpec(name: "Push A", ...)` in `ProgramTemplates.swift` - Anzeige in
-/// EN/TR faellt fuer generierte Tage auf diesen deutschen String zurueck
-/// (kein `localizationKey`, da der Name dynamisch aus mehreren Teilen
-/// zusammengesetzt ist, nicht ein fixer Katalog-Eintrag). Die einzige
-/// echte Lokalisierung ist `Result.explanationKey` - eine KEY-STRING, die
-/// FitnessAppUI (wo `.module` existiert) aufloest. Fuer Schritt-1 der
-/// Wizard-UI (Trainingsart-AUSWAHL) siehe stattdessen
-/// `TrainingTypeKind.titleKey` in `PlanGeneratorInput.swift`.
+/// ein Compile-Fehler. `Candidate.name`/`DaySpec.name` bleiben deshalb
+/// hartcodierte deutsche Strings - exakt die gleiche Konvention wie jede
+/// `DaySpec(name: "Push A", ...)` in `ProgramTemplates.swift`, und weiterhin
+/// der Fallback falls ein Key mal nicht aufloest.
+///
+/// DEL-247: zusaetzlich traegt jede `DaySpec` einen ZUSAMMENGESETZTEN
+/// `localizationKey` im Format `"key1[·key2[&key3]][#rawSuffix]"` -
+/// `DaySpec+DisplayName`/`TrainingDay+DisplayName` in FitnessAppUI loesen
+/// das auf (Details dort) und geben generierten Tagen damit dieselbe
+/// live-sprachumschaltende Anzeige wie Template-Tagen (`plan.day.*`).
+/// Wiederverwendet bewusst bereits existierende Keys (`planBuilder.type.*`,
+/// `day_type.*`, `muscle.core`) statt neuer Duplikate - nur die drei
+/// Lauf-Zonen-Titel (`RunZone.localizationKey`) sind echte neue Keys, weil
+/// dafuer noch nichts existierte. Die einzige weitere echte Lokalisierung
+/// bleibt `Result.explanationKey` - eine KEY-STRING, die FitnessAppUI (wo
+/// `.module` existiert) aufloest. Fuer Schritt-1 der Wizard-UI
+/// (Trainingsart-AUSWAHL) siehe `TrainingTypeKind.titleKey` in
+/// `PlanGeneratorInput.swift`.
 public enum PlanGenerator {
 
     public struct Result: Sendable {
@@ -63,6 +71,10 @@ public enum PlanGenerator {
     /// geschaetzter Belastung fuer die Reihenfolge-Regel.
     private struct Candidate {
         var name: String
+        /// DEL-247: siehe Datei-Kommentar. `nil` bleibt moeglich, falls ein
+        /// kuenftiger Candidate-Erzeuger mal keinen Key beitragen kann -
+        /// `DaySpec.localizationKey` ist schon lange optional.
+        var localizationKey: String?
         let exercises: [ExerciseSpec]
         let timeFormat: WorkoutTimeFormat?
         let timeCapMinutes: Int?
@@ -102,6 +114,7 @@ public enum PlanGenerator {
             Result.GeneratedDay(
                 spec: DaySpec(
                     name: candidate.name,
+                    localizationKey: candidate.localizationKey,
                     type: .fullBody,
                     sequenceIndex: index + 1,
                     exercises: candidate.exercises,
@@ -134,6 +147,7 @@ public enum PlanGenerator {
         let exerciseCount = max(3, min(7, selection.sessionDurationMinutes / 7))
         let (sets, repsMin, repsMax, restSeconds) = strengthVolume(for: selection.experience)
         let kindLabel = germanTypeLabel(selection.kind)
+        let kindKey = selection.kind.titleKey
 
         var result: [Candidate] = []
         for dayIndex in 0..<selection.daysPerWeek {
@@ -143,7 +157,7 @@ public enum PlanGenerator {
             // gleich zu behandeln.
             if selection.kind == .kettlebell, selection.daysPerWeek >= 3, dayIndex == selection.daysPerWeek - 1 {
                 result.append(kettlebellEmomCandidate(
-                    pool: pool, muscleOrder: muscleOrder, kindLabel: kindLabel,
+                    pool: pool, muscleOrder: muscleOrder, kindLabel: kindLabel, kindKey: kindKey,
                     sessionDurationMinutes: selection.sessionDurationMinutes,
                     shuffle: shuffle
                 ))
@@ -175,6 +189,7 @@ public enum PlanGenerator {
 
             result.append(Candidate(
                 name: "\(kindLabel) · \(muscleFocusLabel(pickedMuscles, dayIndex: dayIndex))",
+                localizationKey: "\(kindKey)·\(muscleFocusKey(pickedMuscles, dayIndex: dayIndex))",
                 exercises: exercises,
                 timeFormat: nil,
                 timeCapMinutes: nil,
@@ -203,7 +218,17 @@ public enum PlanGenerator {
             guard totalCounts[baseName, default: 0] > 1 else { continue }
             let letterIndex = nextLetterIndex[baseName, default: 0]
             nextLetterIndex[baseName] = letterIndex + 1
-            candidates[index].name = "\(baseName) \(disambiguationSuffix(for: letterIndex))"
+            let suffix = disambiguationSuffix(for: letterIndex)
+            candidates[index].name = "\(baseName) \(suffix)"
+            // DEL-247: derselbe rohe (nicht zu lokalisierende) Buchstaben-
+            // Suffix wird ans `#`-Ende des Keys gehaengt - siehe
+            // Datei-Kommentar fuer das Format. Kollidiert nie mit dem
+            // "Ganzkoerper N"-Fallback-Suffix aus `muscleFocusKey`, weil
+            // dessen Kandidaten durch die eindeutige Zahl bereits garantiert
+            // nicht in `totalCounts` kollidieren.
+            if let key = candidates[index].localizationKey {
+                candidates[index].localizationKey = "\(key)#\(suffix)"
+            }
         }
     }
 
@@ -227,6 +252,7 @@ public enum PlanGenerator {
         pool: [ExerciseTemplateSpec],
         muscleOrder: [MuscleGroup],
         kindLabel: String,
+        kindKey: String,
         sessionDurationMinutes: Int,
         shuffle: Bool
     ) -> Candidate {
@@ -246,6 +272,7 @@ public enum PlanGenerator {
         }
         return Candidate(
             name: "\(kindLabel) · \(fullBodyGermanLabel)",
+            localizationKey: "\(kindKey)·day_type.full_body",
             exercises: exercises,
             timeFormat: .emom,
             timeCapMinutes: min(30, max(10, sessionDurationMinutes)),
@@ -332,30 +359,82 @@ public enum PlanGenerator {
     /// "Push"/"Pull"/"Core" sind im Deutschen dieser App bereits etablierte
     /// Gym-Fachbegriffe (siehe z.B. `DaySpec(name: "Push & Core", ...)` in
     /// `ProgramTemplates.swift` und den DE-Wert von `muscle.core`).
-    private static func muscleCategoryGermanLabel(_ muscle: MuscleGroup) -> String {
-        switch muscle {
-        case .chest, .shoulders, .triceps: return "Push"
-        case .back, .biceps:               return "Pull"
-        case .quads, .hamstrings, .glutes, .calves: return "Beine"
-        case .core:                        return "Core"
+    ///
+    /// DEL-247: `germanLabel`/`localizationKey` sitzen bewusst NEBENEINANDER
+    /// in derselben Switch-Anweisung (statt in zwei getrennten Funktionen
+    /// wie zuvor) - der Compiler erzwingt so Exhaustivitaet fuer BEIDE
+    /// Repraesentationen gleichzeitig, sie koennen nicht mehr auseinander-
+    /// laufen. `localizationKey`s wiederverwenden bewusst bereits
+    /// existierende Keys (`day_type.push/.pull/.legs`, `muscle.core` - siehe
+    /// `DomainEnums+Localization.swift` in FitnessAppUI) statt neuer
+    /// Duplikate, weil ihre DE-Werte exakt den hier hartcodierten Woertern
+    /// entsprechen.
+    private enum MuscleCategory: Equatable {
+        case push, pull, legs, core
+
+        init(_ muscle: MuscleGroup) {
+            switch muscle {
+            case .chest, .shoulders, .triceps: self = .push
+            case .back, .biceps:               self = .pull
+            case .quads, .hamstrings, .glutes, .calves: self = .legs
+            case .core:                        self = .core
+            }
+        }
+
+        var germanLabel: String {
+            switch self {
+            case .push: return "Push"
+            case .pull: return "Pull"
+            case .legs: return "Beine"
+            case .core: return "Core"
+            }
+        }
+
+        var localizationKey: String {
+            switch self {
+            case .push: return "day_type.push"
+            case .pull: return "day_type.pull"
+            case .legs: return "day_type.legs"
+            case .core: return "muscle.core"
+            }
         }
     }
 
     /// Erste zwei UNTERSCHIEDLICHEN Muskel-Kategorien aus den tatsaechlich
-    /// gewaehlten Uebungen, in Auftrittsreihenfolge. Faellt auf
-    /// "Ganzkoerper" zurueck, wenn nichts Eindeutiges herauskommt (leerer
-    /// Tag oder mehr als zwei Kategorien gleichmaessig vertreten).
-    private static func muscleFocusLabel(_ muscles: [MuscleGroup], dayIndex: Int) -> String {
-        var seen: [String] = []
+    /// gewaehlten Uebungen, in Auftrittsreihenfolge - gemeinsame Auswahl-
+    /// Logik fuer `muscleFocusLabel`/`muscleFocusKey` (DEL-247), die nur
+    /// noch unterschiedlich FORMATIEREN muessen, nicht mehr getrennt
+    /// AUSWAEHLEN. Leer, wenn nichts Eindeutiges herauskommt (leerer Tag
+    /// oder mehr als zwei Kategorien gleichmaessig vertreten) - beide
+    /// Aufrufer behandeln das als "Ganzkoerper"-Fallback.
+    private static func pickedFocusCategories(_ muscles: [MuscleGroup]) -> [MuscleCategory] {
+        var seen: [MuscleCategory] = []
         for muscle in muscles {
-            let label = muscleCategoryGermanLabel(muscle)
-            if !seen.contains(label) { seen.append(label) }
+            let category = MuscleCategory(muscle)
+            if !seen.contains(category) { seen.append(category) }
             if seen.count == 2 { break }
         }
-        guard !seen.isEmpty else {
+        return seen
+    }
+
+    private static func muscleFocusLabel(_ muscles: [MuscleGroup], dayIndex: Int) -> String {
+        let categories = pickedFocusCategories(muscles)
+        guard !categories.isEmpty else {
             return "\(fullBodyGermanLabel) \(dayIndex + 1)"
         }
-        return seen.joined(separator: " & ")
+        return categories.map(\.germanLabel).joined(separator: " & ")
+    }
+
+    /// DEL-247: Key-Pendant zu `muscleFocusLabel` - siehe Datei-Kommentar
+    /// fuer das `key1&key2`-Format. Der "Ganzkoerper N"-Fallback kodiert
+    /// die Zahl als rohes `#`-Suffix (nicht zu lokalisieren - Ziffern
+    /// brauchen in DE/EN/TR keine Uebersetzung).
+    private static func muscleFocusKey(_ muscles: [MuscleGroup], dayIndex: Int) -> String {
+        let categories = pickedFocusCategories(muscles)
+        guard !categories.isEmpty else {
+            return "day_type.full_body#\(dayIndex + 1)"
+        }
+        return categories.map(\.localizationKey).joined(separator: "&")
     }
 
     // MARK: - Cardio candidates
@@ -392,6 +471,23 @@ public enum PlanGenerator {
             }
         }
 
+        /// DEL-247: echte NEUE Keys (Namespace `planBuilder.day.*`) - anders
+        /// als die Trainingsart-/Muskel-Fokus-Keys gibt es fuer diese drei
+        /// Lauf-Zonen-Titel noch keine wiederverwendbare Entsprechung.
+        /// Bewusst UNABHAENGIG von `exercise.name.intervals` etc., obwohl der
+        /// DE-Wert fuer `.interval` zufaellig identisch ist - Tages-Titel und
+        /// Uebungs-Name sind semantisch getrennte Konzepte (siehe
+        /// `exerciseName` oben: `.tempo` nutzt "Long Run" als Uebung, aber
+        /// "Tempolauf" als Tages-Titel), die nicht ueber einen Key gekoppelt
+        /// sein sollten.
+        var localizationKey: String {
+            switch self {
+            case .easy:     return "planBuilder.day.runEasy"
+            case .tempo:    return "planBuilder.day.runTempo"
+            case .interval: return "planBuilder.day.runInterval"
+            }
+        }
+
         var baseHardness: Double {
             switch self {
             case .easy:     return 15
@@ -412,9 +508,11 @@ public enum PlanGenerator {
             // stehen z.B. 3 identisch "Radfahren" benannte Tage
             // ununterscheidbar in der Plan-Uebersicht.
             let title = germanTypeLabel(.cycling)
+            let titleKey = TrainingTypeKind.cycling.titleKey
             var result = (0..<selection.daysPerWeek).map { _ in
                 Candidate(
                     name: title,
+                    localizationKey: titleKey,
                     exercises: [ExerciseSpec(
                         name: "Radfahren (outdoor)",
                         sets: 1, repsMin: 0, repsMax: 0,
@@ -458,6 +556,7 @@ public enum PlanGenerator {
             }
             return Candidate(
                 name: title,
+                localizationKey: zone.localizationKey,
                 exercises: [exercise],
                 timeFormat: nil,
                 timeCapMinutes: nil,

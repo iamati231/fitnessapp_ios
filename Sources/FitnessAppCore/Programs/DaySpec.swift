@@ -16,14 +16,15 @@ public struct DaySpec: Sendable, Hashable {
     public let sequenceIndex: Int
     public let exercises: [ExerciseSpec]
 
-    /// DEL-115: i18n-Lookup-Key fuer den Tag-Namen (Namespace `plan.day.*`).
-    /// Optional — User-generierte Custom-Tage haben naturgemaess keinen Key
-    /// und fallen via `DaySpec+DisplayName`-Extension auf `name` zurueck.
-    /// Beim Instanziieren in `ProgramInstantiator` wird das Key NICHT auf
-    /// das SwiftData-Modell propagiert: `TrainingDay.name` snapshotet den
-    /// (potentiell lokalisierten) String beim Adopt-Zeitpunkt — die spaetere
-    /// Sprachumschaltung greift somit nur fuer Template-Surfaces, nicht
-    /// fuer bestehende Plan-Instanzen.
+    /// DEL-115: i18n-Lookup-Key fuer den Tag-Namen (Namespace `plan.day.*`;
+    /// DEL-247 ergaenzt zusammengesetzte Keys fuer generierte Plaene, siehe
+    /// `PlanGenerator`-Datei-Kommentar). Optional — User-generierte
+    /// Custom-Tage haben naturgemaess keinen Key und fallen via
+    /// `DaySpec+DisplayName`-Extension auf `name` zurueck. DEL-123: wird
+    /// beim Instanziieren in `ProgramInstantiator` AUF
+    /// `TrainingDay.localizationKey` propagiert — eine spaetere
+    /// Sprachumschaltung greift damit auch fuer bereits adoptierte
+    /// Plan-Instanzen, nicht nur fuer Template-Vorschauen.
     public let localizationKey: String?
 
     /// Zeitformat dieses Tags (AMRAP/EMOM/Auf Zeit) — `nil` fuer normales

@@ -534,7 +534,12 @@ public struct PlanBuilderView: View {
     private func resultDayRow(_ day: PlanGenerator.Result.GeneratedDay) -> some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(day.spec.name)
+                // DEL-247: `displayName` statt `.name` - loest den seit
+                // DEL-247 gesetzten `localizationKey` auf, damit die
+                // Wizard-Vorschau selbst schon in EN/TR korrekt anzeigt statt
+                // erst nach dem Adopt (wo `TrainingDay.displayName` das
+                // ohnehin schon tat).
+                Text(day.spec.displayName)
                     .font(.body.weight(.semibold))
                 Text(scopeLine(for: day.spec))
                     .font(.caption)
