@@ -1422,18 +1422,31 @@ public struct DashboardView: View {
         )
     }
 
-    /// DEL-248: der aktive Plan gilt als "hat einen langen Lauf", wenn
-    /// irgendein Tag eine Cardio-Uebung mit Ziel-Dauer >=
-    /// `CardioCoachingAdvisor.longRunMinimumMinutes` enthaelt - rein
-    /// strukturell, KEIN Namens-/Key-Abgleich (siehe Datei-Kommentar auf
-    /// `CardioCoachingAdvisor`: "Long Run" ist im Generator tatsaechlich der
-    /// Uebungs-Name der Tempo-Zone, ein Namensabgleich waere hier irrefuehrend).
+    /// DEL-248: der aktive Plan gilt als "hat einen langen Lauf", wenn seine
+    /// Cardio-Uebungen mindestens zwei unterschiedliche Ziel-Dauern haben -
+    /// die laengste davon ist dann `planLongRunTargetMinutes`. Bewusst
+    /// RELATIV zum eigenen Plan statt ein fixer globaler Minutenwert (siehe
+    /// Kommentar auf `CardioCoachingAdvisor.isLongRunOverdue`: ein
+    /// Anfaenger-Tier setzt seinen langen Lauf bei 50 Minuten an, ein
+    /// Performance-Tier bei 85 - ein einzelner globaler Schwellwert wuerde
+    /// fuer kuerzere Tiers nie greifen). Hat der Plan gar keine Cardio-
+    /// Uebungen, oder sind alle gleich lang (z.B. nur gleich lange Easy
+    /// Runs), gibt es keinen erkennbar LAENGEREN Tag ->
+    /// `planLongRunTargetMinutes` ist `nil`, die Frage ist gegenstandslos.
+    /// Rein strukturell, KEIN Namens-/Key-Abgleich (siehe Datei-Kommentar
+    /// auf `CardioCoachingAdvisor`: "Long Run" ist im Generator tatsaechlich
+    /// der Uebungs-Name der Tempo-Zone, ein Namensabgleich waere hier
+    /// irrefuehrend).
     private var isLongRunOverdueForActivePlan: Bool {
         guard let plan = activePlans.first else { return false }
-        let planIncludesLongRun = plan.days.contains { day in
-            day.activeExercises.contains {
-                $0.isCardio && ($0.targetDurationMinutes ?? 0) >= CardioCoachingAdvisor.longRunMinimumMinutes
-            }
+        let cardioDurations = plan.days
+            .flatMap(\.activeExercises)
+            .filter(\.isCardio)
+            .compactMap(\.targetDurationMinutes)
+        var planLongRunTargetMinutes: Int?
+        if let maxDuration = cardioDurations.max(), let minDuration = cardioDurations.min(),
+           maxDuration > minDuration {
+            planLongRunTargetMinutes = maxDuration
         }
         let sevenDaysAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? .distantPast
         let recentRunMinutes = completedSessions
@@ -1442,7 +1455,7 @@ public struct DashboardView: View {
             .filter(\.resolvedIsCardio)
             .compactMap { $0.durationSeconds.map { $0 / 60 } }
         return CardioCoachingAdvisor.isLongRunOverdue(
-            planIncludesLongRun: planIncludesLongRun,
+            planLongRunTargetMinutes: planLongRunTargetMinutes,
             recentRunDurationsMinutes: recentRunMinutes
         )
     }

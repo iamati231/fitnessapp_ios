@@ -45,24 +45,34 @@ public enum CardioCoachingAdvisor {
 
     // MARK: - Long-Run ueberfaellig
 
-    /// Ab welcher Dauer ein Lauf als "langer Lauf" zaehlt.
-    public static let longRunMinimumMinutes: Int = 60
+    /// Ein geloggter Lauf zaehlt schon als "erledigt", wenn er mindestens
+    /// diesen Anteil der Ziel-Dauer erreicht - siehe Coach-Text ("egal wie
+    /// langsam"): der Punkt ist, die lange Einheit ueberhaupt anzugehen,
+    /// nicht exakt die Ziel-Dauer zu treffen.
+    public static let longRunCompletionTolerance: Double = 0.8
 
     /// Entscheidet, ob ein ueberfaelliger langer Lauf gemeldet werden soll.
     ///
-    /// - Parameter planIncludesLongRun: liefert der aktive Plan ueberhaupt
-    ///   einen Tag mit Ziel-Dauer >= `longRunMinimumMinutes`? Ohne das ist
-    ///   die Frage gegenstandslos (Kraft-only-Plan, oder ein Lauf-Plan ohne
-    ///   lange Einheit).
+    /// - Parameter planLongRunTargetMinutes: die Ziel-Dauer des laengsten
+    ///   Cardio-Tages im aktiven Plan, `nil` wenn der Plan keinen erkennbar
+    ///   LAENGEREN Cardio-Tag hat (Kraft-only-Plan, oder ein Lauf-Plan ohne
+    ///   distinct lange Einheit - z.B. nur gleich lange Easy Runs). Bewusst
+    ///   KEIN fixer globaler Minutenwert: ein Anfaenger-Template kann seinen
+    ///   "langen Lauf" bei 50 Minuten ansetzen, ein Performance-Tier bei 85 -
+    ///   ein einzelner globaler Schwellwert wuerde fuer die kuerzeren Tiers
+    ///   nie greifen (siehe Audit-Fund: `hybrid_beginner`s 50-Minuten-Long-
+    ///   Run wurde von einem frueheren festen 60-Minuten-Schwellwert nie
+    ///   erfasst). Der Aufrufer bestimmt "laenger" relativ zum eigenen Plan.
     /// - Parameter recentRunDurationsMinutes: tatsaechlich geloggte
     ///   Lauf-Dauern (Minuten) im Betrachtungsfenster (typischerweise die
     ///   letzten 7 Tage) - der Aufrufer entscheidet das Fenster.
     public static func isLongRunOverdue(
-        planIncludesLongRun: Bool,
+        planLongRunTargetMinutes: Int?,
         recentRunDurationsMinutes: [Int]
     ) -> Bool {
-        guard planIncludesLongRun else { return false }
-        return !recentRunDurationsMinutes.contains { $0 >= longRunMinimumMinutes }
+        guard let target = planLongRunTargetMinutes, target > 0 else { return false }
+        let requiredMinutes = Double(target) * longRunCompletionTolerance
+        return !recentRunDurationsMinutes.contains { Double($0) >= requiredMinutes }
     }
 
     // MARK: - Junk Miles
