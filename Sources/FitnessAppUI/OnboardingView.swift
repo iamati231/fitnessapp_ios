@@ -97,6 +97,17 @@ public struct OnboardingView: View {
     // der manuellen Plan-Liste. Quiz-Result fuehrt zum DayPicker.
     @State private var showingQuiz: Bool = false
 
+    // DEL-243: dritte Alternative
+    // neben Template-Liste und Quiz. `PlanBuilderView(onGenerated:)`
+    // liefert Input + Ergebnis nur zurueck, statt selbst zu instanziieren
+    // (siehe dortige Typ-Doku) - `finishOnboarding()` baut den Plan dann
+    // ZUSAMMEN mit dem UserBodyProfile, exakt wie beim Template-Pfad.
+    // `selectedTemplate` und dieses Paar schliessen sich gegenseitig aus
+    // (siehe `clearCustomPlan()`/`clearSelectedTemplate()`).
+    @State private var showingPlanBuilder: Bool = false
+    @State private var customPlanInput: PlanGeneratorInput?
+    @State private var customPlanResult: PlanGenerator.Result?
+
     // DEL-088: Tag-Auswahl-Sheet, das nach Plan-Adopt erscheint. Sobald
     // `dayPickerTemplate != nil`, oeffnet sich das DayPickerSheet mit dem
     // dort hinterlegten Template. `onConfirm` setzt `selectedWeekdays` und
@@ -167,6 +178,11 @@ public struct OnboardingView: View {
                         selectedTemplate = template
                         previewingTemplate = nil
                         dayPickerTemplate = template
+                        // DEL-243: ein
+                        // zuvor gebauter Custom-Plan wird verworfen, sobald
+                        // sich der User stattdessen fuer ein Template
+                        // entscheidet - beide Wege schliessen sich aus.
+                        clearCustomPlan()
                     }
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
@@ -192,6 +208,9 @@ public struct OnboardingView: View {
                         // Quiz-Result direkt weiter in den DayPicker — das
                         // ist der naechste Pflicht-Step im Wave-14-Flow.
                         dayPickerTemplate = template
+                        // DEL-243: siehe
+                        // Kommentar beim Template-Preview-Adopt weiter oben.
+                        clearCustomPlan()
                     },
                     onCancel: {
                         showingQuiz = false
@@ -215,6 +234,19 @@ public struct OnboardingView: View {
                         dayPickerTemplate = nil
                     }
                 )
+            }
+            // DEL-243: dritte
+            // Alternative zu Template-Liste/Quiz. `onGenerated` liefert
+            // Input+Result nur zurueck (siehe Typ-Doku in PlanBuilderView) —
+            // finishOnboarding() instanziiert den Plan zusammen mit dem
+            // UserBodyProfile, kein DayPicker noetig (Step 2 des Builders
+            // deckt Wochentage/Equipment bereits ab).
+            .sheet(isPresented: $showingPlanBuilder) {
+                PlanBuilderView { input, result in
+                    customPlanInput = input
+                    customPlanResult = result
+                    clearSelectedTemplate()
+                }
             }
         }
     }
@@ -901,6 +933,50 @@ public struct OnboardingView: View {
                 Text(String(format: String(localized: "onboarding.plan.footnote", bundle: .module), environmentLabel))
                     .font(.footnote)
             }
+
+            // DEL-243: dritte
+            // Alternative - oeffnet denselben 3-Schritte-Wizard wie der
+            // Plus-Button in PlansListView (siehe PlanBuilderView.onGenerated-
+            // Doku). Eigene Section statt Teil von "Empfohlen" oben, weil
+            // "bauen" bewusst kein Vorschlag ist, sondern der Gegenentwurf dazu.
+            Section {
+                Button {
+                    showingPlanBuilder = true
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "wand.and.stars")
+                            .font(.title2)
+                            .foregroundStyle(.white)
+                            .frame(width: 44, height: 44)
+                            .background(Color.accentColor.gradient)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("onboarding.plan.builderCard.title", bundle: .module)
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(.primary)
+                            Text("onboarding.plan.builderCard.subtitle", bundle: .module)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        if customPlanInput != nil {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                                .font(.title3)
+                        } else {
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+            } header: {
+                Text("onboarding.plan.builderSection", bundle: .module)
+            } footer: {
+                Text("onboarding.plan.builderCard.footnote", bundle: .module)
+                    .font(.footnote)
+            }
         }
     }
 
@@ -990,6 +1066,18 @@ public struct OnboardingView: View {
                     .font(.title3)
             }
         }
+    }
+
+    // DEL-243: Template-Pfad und
+    // Custom-Plan-Pfad schliessen sich gegenseitig aus - jede Bestaetigung
+    // des einen Pfads verwirft den bereits begonnenen anderen Pfad.
+    private func clearCustomPlan() {
+        customPlanInput = nil
+        customPlanResult = nil
+    }
+
+    private func clearSelectedTemplate() {
+        selectedTemplate = nil
     }
 
     // MARK: - Navigation buttons
@@ -1180,6 +1268,12 @@ public struct OnboardingView: View {
                 selectedWeekdays: selectedWeekdays.isEmpty ? nil : selectedWeekdays,
                 userEquipment: equipmentPreferences
             )
+        } else if let customPlanInput, let customPlanResult {
+            // DEL-243: der im Builder-
+            // Sheet vorberechnete Result wird 1:1 uebernommen (nicht neu
+            // gerechnet) — sonst wiche der instanziierte Plan von der im
+            // Wizard zuletzt gezeigten Vorschau ab (siehe PlanGeneratorInstantiatorTests).
+            PlanGeneratorInstantiator.build(from: customPlanInput, in: modelContext, result: customPlanResult)
         }
 
         // 4) Notification-Präferenzen persistieren. Permission wird angefordert,

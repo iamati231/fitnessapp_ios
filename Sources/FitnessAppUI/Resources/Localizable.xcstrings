@@ -16812,6 +16812,98 @@
         }
       }
     },
+    "onboarding.plan.builderCard.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan bauen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Build Plan"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan Oluştur"
+          }
+        }
+      }
+    },
+    "onboarding.plan.builderCard.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsarten, Tage und Ausstattung frei kombinieren."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Freely combine training types, days, and equipment."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman türlerini, günleri ve ekipmanı özgürce birleştir."
+          }
+        }
+      }
+    },
+    "onboarding.plan.builderSection": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selbst bauen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Build Your Own"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kendin Oluştur"
+          }
+        }
+      }
+    },
+    "onboarding.plan.builderCard.footnote": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ideal, wenn dir keines der Templates genau passt oder du volle Kontrolle willst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ideal if none of the templates quite fit, or if you want full control."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şablonlardan hiçbiri tam uymuyorsa veya tam kontrol istiyorsan idealdir."
+          }
+        }
+      }
+    },
     "profile.envSwap.title": {
       "extractionState": "manual",
       "localizations": {

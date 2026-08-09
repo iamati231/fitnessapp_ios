@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1641 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1645 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1641 / 1641** (100%) | 0 |
-| 🇬🇧 English (EN) | **1641 / 1641** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1641 / 1641** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1645 / 1645** (100%) | 0 |
+| 🇬🇧 English (EN) | **1645 / 1645** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1645 / 1645** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1171,7 +1171,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `muscleVolume.bucket.overreaching` | Übervolumen | Overreach | Aşırı yük |
 | `muscleVolume.bucket.untrained` | Untrainiert | Untrained | Eğitilmemiş |
 
-## `onboarding.*`  (53 Keys)
+## `onboarding.*`  (57 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1211,6 +1211,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.notif.measurement` | Mess-Erinnerung | Measurement Reminder | Ölçüm Hatırlatıcısı |
 | `onboarding.notif.section` | Benachrichtigungen | Notifications | Bildirimler |
 | `onboarding.notif.water` | Wasser-Erinnerung | Water Reminder | Su Hatırlatıcısı |
+| `onboarding.plan.builderCard.footnote` | Ideal, wenn dir keines der Templates genau passt oder du volle Kontrolle willst. | Ideal if none of the templates quite fit, or if you want full control. | Şablonlardan hiçbiri tam uymuyorsa veya tam kontrol istiyorsan idealdir. |
+| `onboarding.plan.builderCard.subtitle` | Trainingsarten, Tage und Ausstattung frei kombinieren. | Freely combine training types, days, and equipment. | Antrenman türlerini, günleri ve ekipmanı özgürce birleştir. |
+| `onboarding.plan.builderCard.title` | Plan bauen | Build Plan | Plan Oluştur |
+| `onboarding.plan.builderSection` | Selbst bauen | Build Your Own | Kendin Oluştur |
 | `onboarding.plan.footnote` | Templates sind nach deinem Trainingsort gefiltert (%@). Auch ohne Plan starten ist okay. | Templates are filtered by your training location (%@). Starting without a plan is fine too. | Şablonlar antrenman yerine göre filtrelendi (%@). Plansız başlamak da mümkün. |
 | `onboarding.plan.goalMatch` | Passt zu deinem Ziel | Matches your goal | Hedefine uygun |
 | `onboarding.plan.noTemplates` | Keine Templates für '%@'. Du kannst trotzdem ohne Plan starten und später einen eigenen anlegen. | No templates for '%@'. You can still start without a plan and create your own later. | '%@' için şablon yok. Plansız başlayıp sonradan kendi planını oluşturabilirsin. |

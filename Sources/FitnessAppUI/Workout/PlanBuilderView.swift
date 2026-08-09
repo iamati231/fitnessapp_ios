@@ -15,6 +15,19 @@ import FitnessAppData
 /// Multi-Step-Assistent in dieser Codebase): `NavigationStack`, oberer
 /// Fortschrittsbalken, `Group { switch step { ... } }`, untere
 /// Zurueck/Weiter-Leiste.
+///
+/// DEL-243: `onGenerated` ist der EINZIGE Weg,
+/// dieses Verhalten zu ueberschreiben - `OnboardingView` kann den fertig
+/// gerechneten Plan nicht sofort selbst instanziieren (adoptieren wuerde
+/// sonst eine verwaiste `TrainingPlan`-Zeile anlegen, BEVOR das
+/// `UserBodyProfile` existiert, und `RootView`s Query-basierter Onboarding-
+/// Abschluss haengt exakt an diesem Insert, nicht an der Plan-Erzeugung).
+/// Ist `onGenerated` gesetzt, liefert `adoptPlan()` `PlanGeneratorInput` +
+/// `PlanGenerator.Result` stattdessen nur nach oben durch - der Aufrufer
+/// entscheidet selbst, wann/ob `PlanGeneratorInstantiator.build(...)`
+/// laeuft (bei `OnboardingView` erst zusammen mit dem Profil in
+/// `finishOnboarding()`). `nil` (Default) erhaelt das bisherige, sich
+/// selbst adoptierende Verhalten fuer `PlansListView` unveraendert.
 @available(iOS 17.0, macOS 14.0, *)
 public struct PlanBuilderView: View {
 
@@ -22,7 +35,11 @@ public struct PlanBuilderView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppNavigation.self) private var navigation
 
-    public init() {}
+    private let onGenerated: ((PlanGeneratorInput, PlanGenerator.Result) -> Void)?
+
+    public init(onGenerated: ((PlanGeneratorInput, PlanGenerator.Result) -> Void)? = nil) {
+        self.onGenerated = onGenerated
+    }
 
     enum BuilderStep: Int, CaseIterable {
         case types, equipment, result
@@ -635,11 +652,25 @@ public struct PlanBuilderView: View {
 
     private func adoptPlan() {
         // Bugfix (Nutzer-Feedback, "Neu rechnen"-Shuffle): das bereits in
-        // Schritt 3 angezeigte `result` wird durchgereicht, statt `build`
-        // `currentInput` erneut (und damit wieder deterministisch, ohne
-        // Shuffle) rechnen zu lassen - sonst wuerde ein zuvor per "Neu
-        // rechnen" gefundener, dem User zusagender Plan beim Uebernehmen
-        // durch die urspruengliche Variante ersetzt.
+        // Schritt 3 angezeigte `result` wird durchgereicht statt neu zu
+        // rechnen (und damit wieder deterministisch, ohne Shuffle) - sonst
+        // wuerde ein zuvor per "Neu rechnen" gefundener, dem User
+        // zusagender Plan beim Uebernehmen durch die urspruengliche
+        // Variante ersetzt. Der Knopf ist disabled, solange `result` leer/
+        // nil ist (siehe `navigationBar`), das `guard` hier ist die
+        // gemeinsame Absicherung fuer BEIDE Pfade unten.
+        guard let result else { return }
+
+        // DEL-243: siehe Typ-Doku - `onGenerated`
+        // uebernimmt hier NICHT das Instanziieren, sondern reicht Input +
+        // Ergebnis nur nach oben durch. Der Aufrufer schliesst den Sheet
+        // selbst nicht extra an - `dismiss()` unten laeuft in JEDEM Fall.
+        if let onGenerated {
+            onGenerated(currentInput, result)
+            dismiss()
+            return
+        }
+
         guard let plan = PlanGeneratorInstantiator.build(from: currentInput, in: modelContext, result: result) else { return }
         dismiss()
         // Gleiches 0.3s-Defer-Muster wie `ProgramTemplatePickerView.instantiate`
