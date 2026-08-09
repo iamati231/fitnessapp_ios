@@ -42,6 +42,24 @@ public struct ProfileEditorView: View {
     @Query(sort: \TrainingPlan.name)
     private var allPlans: [TrainingPlan]
 
+    /// DEL-251: Grundlage fuer den Cardio-Retro-Sync (Wochenvolumen +
+    /// Referenzpace aus bereits geloggten Laeufen). Gleiches Query-Muster
+    /// wie `DashboardView.completedSessions`.
+    @Query(filter: #Predicate<WorkoutSession> { $0.isCompleted == true },
+           sort: \WorkoutSession.startTime, order: .reverse)
+    private var completedSessions: [WorkoutSession]
+
+    /// DEL-251: Ergebnis eines Retro-Sync-Laufs, wartet auf Bestaetigung.
+    /// Non-nil zeigt den confirmationDialog; beide Dialog-Aktionen setzen
+    /// das Feld wieder auf nil zurueck (identisches Pattern wie
+    /// `pendingProfileEnvSwap`).
+    @State private var pendingCardioBaseline: CardioBaselineCalculator.Result?
+
+    /// DEL-251: true fuer einen kurzen Hinweis, wenn Retro-Sync keine
+    /// verwertbaren Laeufe findet (kein geloggter Cardio-Log ueberhaupt,
+    /// oder keiner erfuellt die Mindest-Schwellen).
+    @State private var retroSyncEmptyNoticeVisible: Bool = false
+
     /// DEL-047: gehaltete `oldEnv`-Referenz fuer den Confirmation-Dialog. Wenn
     /// non-nil, wird der Dialog angezeigt; alle drei Dialog-Aktionen setzen
     /// das Feld wieder auf nil zurueck.
@@ -183,6 +201,33 @@ public struct ProfileEditorView: View {
             }
         } message: { swap in
             Text("profile.envRestore.message", bundle: .module)
+        }
+        // DEL-251: Retro-Sync-Bestaetigung — leichtgewichtiges
+        // confirmationDialog analog envSwap/envRestore oben, statt eines
+        // vollen Sheets (Nutzer-Entscheidung: nur zwei berechnete Werte,
+        // kein Review einzelner zugrunde liegender Laeufe in dieser Runde).
+        .confirmationDialog(
+            Text("profile.cardio.retroSync.title", bundle: .module),
+            isPresented: Binding(
+                get: { pendingCardioBaseline != nil },
+                set: { if !$0 { pendingCardioBaseline = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: pendingCardioBaseline
+        ) { result in
+            Button {
+                applyCardioBaseline(result)
+                pendingCardioBaseline = nil
+            } label: {
+                Text("profile.cardio.retroSync.apply", bundle: .module)
+            }
+            Button(role: .cancel) {
+                pendingCardioBaseline = nil
+            } label: {
+                Text("profile.cardio.retroSync.discard", bundle: .module)
+            }
+        } message: { result in
+            Text(cardioBaselineMessage(result))
         }
         .overlay(alignment: .bottom) {
             if let msg = profileSwapToast {
@@ -481,6 +526,41 @@ public struct ProfileEditorView: View {
                     .tint(Color.deltiqOrange)
             }
             if profile.cardioCoachingEnabled {
+                // DEL-251: Retro-Sync — berechnet Wochenvolumen + Referenzpace
+                // aus bereits in Deltiq geloggten Laeufen, statt der Felder
+                // unten mit 0 zu starten. Bewusst NUR In-App-Daten diese
+                // Runde (siehe Doc-Kommentar auf `CardioBaselineCalculator`) -
+                // kein HealthKit-Permission-Dialog fuer Bestandsnutzer, die
+                // das Feature nie nutzen.
+                Button {
+                    let result = computeCardioBaseline()
+                    if result.isEmpty {
+                        retroSyncEmptyNoticeVisible = true
+                    } else {
+                        retroSyncEmptyNoticeVisible = false
+                        pendingCardioBaseline = result
+                    }
+                } label: {
+                    HStack {
+                        Label {
+                            Text("profile.cardio.retroSync.button", bundle: .module)
+                        } icon: {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .frame(minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.deltiqOrange)
+                if retroSyncEmptyNoticeVisible {
+                    hintRow(String(localized: "profile.cardio.retroSync.empty", bundle: .module))
+                }
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
                 DeltiqControlRow(label: String(localized: "profile.cardio.goal", bundle: .module)) {
                     Picker(selection: Binding(
                         get: { profile.cardioGoal },
@@ -585,6 +665,73 @@ public struct ProfileEditorView: View {
     /// 12 Wochen im Voraus, ein gaengiger Trainings-Zyklus-Horizont.
     private static var defaultRaceDate: Date {
         Calendar.current.date(byAdding: .weekOfYear, value: 12, to: Date()) ?? Date()
+    }
+
+    // MARK: - DEL-251 Retro-Sync
+
+    /// Geloggte Cardio-Logs der letzten `days` Tage — identische Filter-
+    /// Kette wie `DashboardView.isCardioVolumeSpikeActive`s
+    /// `cardioKm(weeksAgo:)`: erst auf Session-Ebene nach echten,
+    /// abgeschlossenen Workouts im Zeitfenster filtern, DANN erst auf die
+    /// einzelnen Logs herunterbrechen und die Nicht-Cardio-Logs raus.
+    private func cardioLogs(sinceDaysAgo days: Int) -> [ExerciseLog] {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? .distantPast
+        return completedSessions
+            .filter { $0.isRealWorkout && $0.startTime >= cutoff }
+            .flatMap(\.logs)
+            .filter(\.resolvedIsCardio)
+    }
+
+    /// Aggregiert die Rohdaten und ruft `CardioBaselineCalculator` fuer die
+    /// eigentliche Berechnung — DashboardView/ProfileEditorView liefern nur
+    /// die SwiftData-Abfrage, die Kern-Logik bleibt in Core testbar.
+    private func computeCardioBaseline() -> CardioBaselineCalculator.Result {
+        let volumeDistancesKm = cardioLogs(sinceDaysAgo: CardioBaselineCalculator.weeklyVolumeWindowDays)
+            .compactMap(\.distanceKm)
+        let referenceRuns = cardioLogs(sinceDaysAgo: CardioBaselineCalculator.referenceWindowDays)
+            .compactMap { log -> CardioBaselineCalculator.RunSample? in
+                guard let distanceKm = log.distanceKm, let durationSeconds = log.durationSeconds else { return nil }
+                return CardioBaselineCalculator.RunSample(distanceKm: distanceKm, durationSeconds: durationSeconds)
+            }
+        return CardioBaselineCalculator.Result(
+            weeklyVolumeKm: CardioBaselineCalculator.weeklyVolumeKm(distancesKm: volumeDistancesKm),
+            referenceSeconds: CardioBaselineCalculator.fastestReferenceSeconds(from: referenceRuns)
+        )
+    }
+
+    /// Schreibt einen bestaetigten Retro-Sync in `UserBodyProfile` — nur die
+    /// Felder, fuer die tatsaechlich ein Wert ermittelt wurde; ein `nil`-Feld
+    /// im Ergebnis laesst den bestehenden Profil-Wert unangetastet, statt ihn
+    /// zu leeren. `current5kReferenceSeconds` schreibt zusaetzlich in den
+    /// MM:SS-Eingabepuffer, sonst zeigt das Textfeld den alten Wert weiter.
+    private func applyCardioBaseline(_ result: CardioBaselineCalculator.Result) {
+        if let weeklyVolumeKm = result.weeklyVolumeKm {
+            profile.weeklyBaseVolumeKm = weeklyVolumeKm
+        }
+        if let referenceSeconds = result.referenceSeconds {
+            profile.current5kReferenceSeconds = referenceSeconds
+            fiveKReferenceText = PaceCalculator.formatDuration(referenceSeconds)
+        }
+    }
+
+    /// Baut den Dialog-Text passend zur tatsaechlich verfuegbaren
+    /// Kombination (beide Werte / nur Volumen / nur Pace) — der Aufrufer
+    /// zeigt den Dialog ohnehin nur, wenn `!result.isEmpty`.
+    private func cardioBaselineMessage(_ result: CardioBaselineCalculator.Result) -> String {
+        let volumeText = result.weeklyVolumeKm.map { String(format: "%.1f", $0) }
+        let paceText = result.referenceSeconds
+            .flatMap(PaceZoneCalculator.racePaceMinutesPerKm)
+            .map(PaceCalculator.formatPace)
+        switch (volumeText, paceText) {
+        case let (.some(v), .some(p)):
+            return String(format: String(localized: "profile.cardio.retroSync.messageBoth", bundle: .module), v, p)
+        case let (.some(v), nil):
+            return String(format: String(localized: "profile.cardio.retroSync.messageVolumeOnly", bundle: .module), v)
+        case let (nil, .some(p)):
+            return String(format: String(localized: "profile.cardio.retroSync.messagePaceOnly", bundle: .module), p)
+        case (nil, nil):
+            return ""
+        }
     }
 
     /// DEL-170: Equipment-Präferenzen (Multi-Select). Steuert die Auswahl

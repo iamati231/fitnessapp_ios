@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1674 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1682 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1674 / 1674** (100%) | 0 |
-| 🇬🇧 English (EN) | **1674 / 1674** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1674 / 1674** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1682 / 1682** (100%) | 0 |
+| 🇬🇧 English (EN) | **1682 / 1682** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1682 / 1682** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1528,7 +1528,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (43 Keys)
+## `profile.*`  (51 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1544,6 +1544,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.cardio.paceZones` | Locker ~%1$@ · Tempo ~%2$@ | Easy ~%1$@ · Tempo ~%2$@ | Rahat ~%1$@ · Tempo ~%2$@ |
 | `profile.cardio.raceDateToggle` | Renn-Datum festlegen | Set race date | Yarış tarihi belirle |
 | `profile.cardio.raceDateValue` | Datum | Date | Tarih |
+| `profile.cardio.retroSync.apply` | Als Basis übernehmen | Use as baseline | Temel olarak kullan |
+| `profile.cardio.retroSync.button` | Aus Trainingsverlauf berechnen | Calculate from training history | Antrenman geçmişinden hesapla |
+| `profile.cardio.retroSync.discard` | Verwerfen | Discard | Vazgeç |
+| `profile.cardio.retroSync.empty` | Noch keine geloggten Läufe in den letzten 60 Tagen gefunden. Trage die Werte unten manuell ein, oder logge ein paar Läufe und versuche es erneut. | No logged runs found in the last 60 days. Enter the values below manually, or log a few runs and try again. | Son 60 günde kayıtlı koşu bulunamadı. Aşağıdaki değerleri elle gir veya birkaç koşu kaydettikten sonra tekrar dene. |
+| `profile.cardio.retroSync.messageBoth` | Wochenvolumen: ca. %1$@ km · Beste Pace: %2$@ | Weekly volume: approx. %1$@ km · Best pace: %2$@ | Haftalık hacim: yaklaşık %1$@ km · En iyi tempo: %2$@ |
+| `profile.cardio.retroSync.messagePaceOnly` | Beste Pace: %1$@. Noch kein Wochenvolumen der letzten 4 Wochen gefunden. | Best pace: %1$@. No weekly volume found for the last 4 weeks yet. | En iyi tempo: %1$@. Son 4 haftaya ait haftalık hacim henüz bulunamadı. |
+| `profile.cardio.retroSync.messageVolumeOnly` | Wochenvolumen: ca. %1$@ km. Noch keine Referenzpace gefunden (mind. 3 km, 5 Min). | Weekly volume: approx. %1$@ km. No reference pace found yet (min. 3 km, 5 min). | Haftalık hacim: yaklaşık %1$@ km. Henüz referans tempo bulunamadı (en az 3 km, 5 dk). |
+| `profile.cardio.retroSync.title` | Retro-Sync | Retro-Sync | Geriye Dönük Senkron |
 | `profile.cardio.weeklyVolume` | Start-Laufvolumen (km/Woche) | Starting volume (km/week) | Başlangıç hacmi (km/hafta) |
 | `profile.cardio.weeklyVolumePlaceholder` | z.B. 20 | e.g. 20 | örn. 20 |
 | `profile.coaching.footer` | Steuert Tonfall und Inhalt der Coaching-Insights auf dem Dashboard. Lässt sich jederzeit ändern. | Drives tone and content of coaching insights on the dashboard. Changeable any time. | Paneldeki koçluk öngörülerinin tonunu ve içeriğini yönlendirir. Her zaman değiştirilebilir. |

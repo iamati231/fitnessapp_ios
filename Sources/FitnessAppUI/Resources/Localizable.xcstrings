@@ -32886,6 +32886,190 @@
         }
       }
     },
+    "profile.cardio.retroSync.button": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculate from training history"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus Trainingsverlauf berechnen"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman geçmişinden hesapla"
+          }
+        }
+      }
+    },
+    "profile.cardio.retroSync.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No logged runs found in the last 60 days. Enter the values below manually, or log a few runs and try again."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine geloggten Läufe in den letzten 60 Tagen gefunden. Trage die Werte unten manuell ein, oder logge ein paar Läufe und versuche es erneut."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son 60 günde kayıtlı koşu bulunamadı. Aşağıdaki değerleri elle gir veya birkaç koşu kaydettikten sonra tekrar dene."
+          }
+        }
+      }
+    },
+    "profile.cardio.retroSync.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retro-Sync"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retro-Sync"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geriye Dönük Senkron"
+          }
+        }
+      }
+    },
+    "profile.cardio.retroSync.apply": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use as baseline"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als Basis übernehmen"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temel olarak kullan"
+          }
+        }
+      }
+    },
+    "profile.cardio.retroSync.discard": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verwerfen"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vazgeç"
+          }
+        }
+      }
+    },
+    "profile.cardio.retroSync.messageBoth": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekly volume: approx. %1$@ km · Best pace: %2$@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wochenvolumen: ca. %1$@ km · Beste Pace: %2$@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haftalık hacim: yaklaşık %1$@ km · En iyi tempo: %2$@"
+          }
+        }
+      }
+    },
+    "profile.cardio.retroSync.messageVolumeOnly": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekly volume: approx. %1$@ km. No reference pace found yet (min. 3 km, 5 min)."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wochenvolumen: ca. %1$@ km. Noch keine Referenzpace gefunden (mind. 3 km, 5 Min)."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haftalık hacim: yaklaşık %1$@ km. Henüz referans tempo bulunamadı (en az 3 km, 5 dk)."
+          }
+        }
+      }
+    },
+    "profile.cardio.retroSync.messagePaceOnly": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Best pace: %1$@. No weekly volume found for the last 4 weeks yet."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beste Pace: %1$@. Noch kein Wochenvolumen der letzten 4 Wochen gefunden."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En iyi tempo: %1$@. Son 4 haftaya ait haftalık hacim henüz bulunamadı."
+          }
+        }
+      }
+    },
     "rest.notification.title": {
       "extractionState": "manual",
       "localizations": {
