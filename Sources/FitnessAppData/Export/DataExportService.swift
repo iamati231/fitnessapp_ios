@@ -342,10 +342,20 @@ public enum DataExportService {
         // Export/Import-Roundtrip sein Zeitformat komplett und wurde beim
         // naechsten Start faelschlich in ActiveWorkoutView statt
         // TimedWorkoutPlayerView geroutet.
+        //
+        // Bugfix (Audit): `generation_fingerprint`/`generator_sequence_index`
+        // fehlten hier komplett - jeder mit "Plan bauen" erzeugte Plan
+        // verlor nach einem Export/Import-Roundtrip (inkl. jedem
+        // BackupService-Restore) stillschweigend seinen sequenceIndex.
+        // `PlanGeneratorInstantiator.recalculate` ueberspringt Tage ohne
+        // `generatorSequenceIndex` komplett (`guard let ... else { continue }`)
+        // - "Neu rechnen" tat danach fuer den ganzen Plan dauerhaft nichts
+        // mehr, ohne jeden Fehler.
         var w = CSVWriter(headers: [
             "id", "plan_id", "name", "custom_name", "weekday",
             "type", "next_intensity", "localization_key",
-            "time_format", "time_cap_minutes"
+            "time_format", "time_cap_minutes",
+            "generation_fingerprint", "generator_sequence_index"
         ])
         for d in items {
             w.appendRow([
@@ -358,7 +368,9 @@ public enum DataExportService {
                 d.nextIntensity.rawValue,
                 d.localizationKey ?? "",
                 d.timeFormat?.rawValue ?? "",
-                d.timeCapMinutes.map(String.init) ?? ""
+                d.timeCapMinutes.map(String.init) ?? "",
+                d.generationFingerprint ?? "",
+                d.generatorSequenceIndex.map(String.init) ?? ""
             ])
         }
         return w.data()

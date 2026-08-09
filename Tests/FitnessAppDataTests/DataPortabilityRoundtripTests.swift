@@ -365,6 +365,17 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// einen AMRAP-Tag stillschweigend in einen normalen Satz/Wiederholungs-
     /// Tag, loeschte das WOD-Ergebnis komplett und deaktivierte "neu rechnen"
     /// fuer Wizard-generierte Plaene fuer immer.
+    ///
+    /// Bugfix (Audit, Nachtrag): dieser Test behauptete "Generator-Metadaten"
+    /// im Namen/Kommentar abzudecken, pruefte aber nur `generatorInputRaw`
+    /// (Plan-Ebene) - `TrainingDay.generationFingerprint`/
+    /// `.generatorSequenceIndex` fehlten in `buildDays`/`importPlanDays`
+    /// KOMPLETT und wurden von keinem Test erfasst. Genau die Luecke, vor
+    /// der der urspruengliche Fix eigentlich schuetzen sollte: nach jedem
+    /// Restore ueberspringt `PlanGeneratorInstantiator.recalculate` (siehe
+    /// dort: `guard let sequenceIndex = day.generatorSequenceIndex ... else
+    /// { continue }`) jeden Tag des Plans, "neu rechnen" tut fortan nichts
+    /// mehr - ohne Fehler, ohne Hinweis.
     func testTimedFormatDayAndSessionSurviveRoundtrip() throws {
         let source = try makeContainer()
         let ctx = source.mainContext
@@ -374,7 +385,9 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         ctx.insert(plan)
         let day = TrainingDay(
             name: "Cindy", weekday: 2, type: .fullBody, plan: plan,
-            timeFormat: .amrap, timeCapMinutes: 20
+            timeFormat: .amrap, timeCapMinutes: 20,
+            generationFingerprint: "fingerprint-cindy-v1",
+            generatorSequenceIndex: 1
         )
         ctx.insert(day)
         let session = WorkoutSession(
@@ -401,6 +414,10 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         let importedDay = try target.mainContext.fetch(FetchDescriptor<TrainingDay>()).first
         XCTAssertEqual(importedDay?.timeFormat, .amrap, "Zeitformat-Tag darf nach dem Roundtrip nicht zu einem normalen Tag werden")
         XCTAssertEqual(importedDay?.timeCapMinutes, 20)
+        XCTAssertEqual(importedDay?.generationFingerprint, "fingerprint-cindy-v1",
+                       "ohne Fingerprint erkennt \"neu rechnen\" den Tag faelschlich als unveraendert/veraendert")
+        XCTAssertEqual(importedDay?.generatorSequenceIndex, 1,
+                       "ohne sequenceIndex ueberspringt recalculate() den Tag fuer immer - \"neu rechnen\" wuerde stillschweigend nichts mehr tun")
 
         let importedSession = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
         XCTAssertEqual(importedSession?.timeFormatSnapshot, .amrap)
@@ -543,6 +560,45 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertThrowsError(
             try DataImportService.preview(zipData: Data("kein zip".utf8))
         )
+    }
+
+    // MARK: - Bugfix (Audit): "alles ausblenden" im Roundtrip
+
+    /// `activeDashboardWidgetsRaw`/`heroMetricSlotsRaw` sind beide leer ein
+    /// gueltiger, bewusst vom User gewaehlter Zustand (siehe
+    /// `DashboardSettingsView` - dort laesst sich jedes Widget/jeder
+    /// Hero-Slot einzeln bis auf null abwaehlen). `importProfile` konnte
+    /// "Spalte existiert, Wert ist bewusst leer" bisher nicht von "alter
+    /// Export kannte die Spalte noch nicht" unterscheiden (`row["..."]`
+    /// liefert fuer beide `""`) und ueberschrieb eine bewusst geleerte Liste
+    /// nach jedem Restore stillschweigend mit dem nicht-leeren
+    /// Konstruktor-Default.
+    func testEmptyDashboardWidgetsAndHeroSlotsSurviveRoundtrip() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        profile.activeDashboardWidgetsRaw = []
+        profile.heroMetricSlotsRaw = []
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.activeDashboardWidgetsRaw, [],
+                       "bewusst leere Dashboard-Widget-Liste darf nach dem Restore nicht auf den Default zurueckspringen")
+        XCTAssertEqual(imported?.heroMetricSlotsRaw, [],
+                       "bewusst leere Hero-Metric-Liste darf nach dem Restore nicht auf den Default zurueckspringen")
     }
 }
 #endif

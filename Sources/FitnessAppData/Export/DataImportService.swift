@@ -586,6 +586,7 @@ public enum DataImportService {
         // inserten wie bisher.
         let existing = try context.fetch(FetchDescriptor<UserBodyProfile>())
         let target = existing.first
+        let headerSet = Set(reader.headers)
 
         var errors: [RowError] = []
         var imported = 0
@@ -619,10 +620,23 @@ public enum DataImportService {
             p.coachingToneRaw = row.optionalString("coaching_tone") ?? CoachingTone.analytical.rawValue
             p.trainingGoalRaw = row.optionalString("training_goal") ?? TrainingGoal.hybrid.rawValue
             p.equipmentPreferencesRaw = splitMulti(row["equipment_preferences"])
-            let dashboardRaw = splitMulti(row["dashboard_widgets"])
-            if !dashboardRaw.isEmpty { p.activeDashboardWidgetsRaw = dashboardRaw }
-            let heroRaw = splitMulti(row["hero_metric_slots"])
-            if !heroRaw.isEmpty { p.heroMetricSlotsRaw = heroRaw }
+            // Bugfix (Audit): Spalten-PRAESENZ statt Wert-Leerheit pruefen.
+            // Eine leere Liste ist ein gueltiger, bewusst vom User gewaehlter
+            // Zustand ("alle Hero-Metriken/Dashboard-Widgets ausgeblendet",
+            // siehe DashboardSettingsView) - kein Zeichen fuer "alter Export
+            // kannte diese Spalte noch nicht". `row["..."]` liefert fuer
+            // BEIDE Faelle `""` (CSVRow.subscript kennt den Unterschied
+            // nicht), `splitMulti("")` also fuer beide `[]` - der alte
+            // "nur ueberschreiben wenn nicht leer"-Guard konnte die Faelle
+            // deshalb nie unterscheiden und hat ein bewusstes Leeren nach
+            // jedem Restore stillschweigend auf den Konstruktor-Default
+            // (3 Hero-Slots / alle Widgets sichtbar) zurueckgesetzt.
+            if headerSet.contains("dashboard_widgets") {
+                p.activeDashboardWidgetsRaw = splitMulti(row["dashboard_widgets"])
+            }
+            if headerSet.contains("hero_metric_slots") {
+                p.heroMetricSlotsRaw = splitMulti(row["hero_metric_slots"])
+            }
             // DEL-203: additive Spalte — ältere ZIPs ohne sie → Default 1.
             p.weeklyWorkoutGoal = row.int("weekly_workout_goal") ?? 1
 
@@ -1001,6 +1015,12 @@ public enum DataImportService {
             // Aeltere ZIPs ohne sie -> beide nil, exakt der schon immer
             // bestehende "normaler Satz/Wiederholungs-Tag"-Bestandsfall.
             let timeFormat = row.optionalString("time_format").flatMap(WorkoutTimeFormat.init(rawValue:))
+            // Bugfix (Audit): `generation_fingerprint`/`generator_sequence_index`
+            // fehlten hier komplett, siehe DataExportService.buildDays. Aeltere
+            // ZIPs ohne die Spalten -> beide nil, exakt der Bestandsfall
+            // "kein Wizard-Tag" (siehe Feld-Dokumentation auf TrainingDay).
+            let generationFingerprint = row.optionalString("generation_fingerprint")
+            let generatorSequenceIndex = row.int("generator_sequence_index")
 
             let day = TrainingDay(
                 name: name,
@@ -1011,7 +1031,9 @@ public enum DataImportService {
                 plan: plan,
                 localizationKey: row.optionalString("localization_key"),
                 timeFormat: timeFormat,
-                timeCapMinutes: row.int("time_cap_minutes")
+                timeCapMinutes: row.int("time_cap_minutes"),
+                generationFingerprint: generationFingerprint,
+                generatorSequenceIndex: generatorSequenceIndex
             )
             context.insert(day)
             if !exportID.isEmpty { idMap[exportID] = day }
