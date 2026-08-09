@@ -17,6 +17,10 @@
 //      Zielpace. Bewusst gegen die TAGES-Zielpace (aus `targetDistanceKm`/
 //      `targetDurationMinutes` des jeweiligen Tages), nicht gegen ein
 //      Profil-weites `paceEasy` - letzteres existiert noch nicht.
+//      HINWEIS: aktuell OHNE Aufrufer in DashboardView (Review-Fund:
+//      `PlanGenerator.cardioCandidates` setzt targetDistanceKm nie, siehe
+//      Doc-Kommentar auf `CoachingContext.cardioJunkMiles`) - die Funktion
+//      selbst bleibt korrekt und einsatzbereit fuer Phase 1.
 //
 // Pure functions — DashboardView aggregiert die Rohdaten (Wochen-KM,
 // geloggte Lauf-Dauern, Plan-Struktur) und ruft hier nur die Entscheidung
