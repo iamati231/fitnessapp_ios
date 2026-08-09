@@ -211,11 +211,17 @@ public enum DataExportService {
         // lesen Spalten per Name und ignorieren Unbekanntes, ältere ZIPs
         // ohne die Spalte fallen beim Import auf Default 1. Kein
         // formatVersion-Bump nötig (additiv-rückwärtskompatibel).
+        // DEL-250: sechs weitere additive Spalten fürs Cardio-Profil, gleiches
+        // Prinzip — ältere Importer ignorieren sie, ältere ZIPs liefern beim
+        // Import row.optionalString/.date/.int/.double == nil bzw. den
+        // dokumentierten Default.
         var w = CSVWriter(headers: [
             "id", "birth_date", "height_cm", "profile", "goal_weight_kg",
             "environment", "first_name", "coaching_tone", "training_goal",
             "equipment_preferences", "dashboard_widgets", "hero_metric_slots",
-            "weekly_workout_goal"
+            "weekly_workout_goal", "cardio_coaching_enabled", "cardio_goal",
+            "cardio_race_date", "current_5k_reference_seconds",
+            "weekly_base_volume_km", "max_heart_rate_bpm"
         ])
         for p in profiles {
             w.appendRow([
@@ -231,7 +237,13 @@ public enum DataExportService {
                 p.equipmentPreferencesRaw.joined(separator: ";"),
                 p.activeDashboardWidgetsRaw.joined(separator: ";"),
                 p.heroMetricSlotsRaw.joined(separator: ";"),
-                String(p.weeklyWorkoutGoal)
+                String(p.weeklyWorkoutGoal),
+                CSVWriter.bool(p.cardioCoachingEnabled),
+                p.cardioGoalRaw,
+                p.cardioRaceDate.map(CSVWriter.iso8601) ?? "",
+                p.current5kReferenceSeconds.map(String.init) ?? "",
+                CSVWriter.decimal(p.weeklyBaseVolumeKm),
+                p.maxHeartRateBpm.map(String.init) ?? ""
             ])
         }
         return w.data()

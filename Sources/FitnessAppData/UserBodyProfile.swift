@@ -64,6 +64,51 @@ public final class UserBodyProfile {
     /// Lightweight-Migration für Bestand.
     public var weeklyWorkoutGoal: Int = 1
 
+    /// DEL-250: Master-Schalter fuer die Cardio-/Lauf-Ziel-Sektion im
+    /// Profil-Editor. Default `false` — Bestandsnutzer (Update von einer
+    /// Version ohne DEL-250) sehen die Sektion eingeklappt, keine der
+    /// folgenden Felder wird angezeigt oder ausgewertet, bis der User aktiv
+    /// zustimmt. Kein Coaching-Trigger liest dieses Feld aktuell (DEL-250
+    /// ist bewusst auf den Profil-Editor beschraenkt) — rein UI-Zustand.
+    public var cardioCoachingEnabled: Bool = false
+
+    /// DEL-250: Lauf-Ziel-Kategorie. Persistiert als String, sodass
+    /// pre-DEL-250-Bestand via Default-Wert lightweight migriert wird
+    /// (identisches Muster wie `coachingToneRaw`/`trainingGoalRaw`).
+    public var cardioGoalRaw: String = CardioGoal.generalFitness.rawValue
+
+    /// DEL-250: Ziel-Renn-Datum. Echt optional (nicht jedes `cardioGoal`
+    /// hat ein konkretes Renn-Datum, z.B. "Allgemeine Fitness") — nil heisst
+    /// "kein Renn-Datum gesetzt", nicht "unbekannt/Fehler". Ergaenzt trotz
+    /// Fehlens im urspruenglichen Ticket-Text: ohne dieses Feld bliebe der
+    /// zurueckgestellte `cardioRaceWeek`-Coaching-Trigger dauerhaft unbaubar.
+    public var cardioRaceDate: Date?
+
+    /// DEL-250: Referenz-Zeit ueber 5 km in Sekunden — Grundlage fuer die
+    /// abgeleiteten Pace-Zonen (`PaceZoneCalculator`). Bewusst eine
+    /// ZEIT-ueber-Referenzdistanz statt einer direkt eingegebenen Pace:
+    /// praeziser fuer eine spaetere `cardioProgressionEarned`-Verfeinerung.
+    /// Nil = kein Referenzwert gepflegt (z.B. "Allgemeine Fitness"-Ziel
+    /// ohne konkrete Zeitmessung).
+    public var current5kReferenceSeconds: Int?
+
+    /// DEL-250: "Start-Laufvolumen" (km/Woche) — optionale Metrik aus dem
+    /// Ticket. Rein deskriptiv, aktuell kein Trigger-Verbraucher (der
+    /// bestehende `cardioVolumeSpike`-Trigger misst tatsaechlich geloggte
+    /// Wochen-KM, keinen statischen Profil-Wert).
+    public var weeklyBaseVolumeKm: Double?
+
+    /// DEL-250: Maximalpuls (bpm) — optionale Metrik aus dem Ticket. Rein
+    /// deskriptiv, kein HR-basierter Coaching-Trigger existiert aktuell.
+    public var maxHeartRateBpm: Int?
+
+    /// Convenience-Accessor mit Default-Fallback, falls jemand einen
+    /// invaliden String reinschreibt.
+    public var cardioGoal: CardioGoal {
+        get { CardioGoal(rawValue: cardioGoalRaw) ?? .generalFitness }
+        set { cardioGoalRaw = newValue.rawValue }
+    }
+
     /// Convenience-Accessor mit Default-Fallback, falls jemand einen
     /// invaliden String reinschreibt.
     public var coachingTone: CoachingTone {
@@ -118,7 +163,15 @@ public final class UserBodyProfile {
         trainingGoal: TrainingGoal = .hybrid,
         // DEL-170: optionale Equipment-Präferenzen. Default leer — der Matcher
         // behandelt das wie "nicht gepflegt" und nimmt die Standard-Variante.
-        equipmentPreferences: Set<Equipment> = []
+        equipmentPreferences: Set<Equipment> = [],
+        // DEL-250: Cardio-Ziele. Default = ausgeschaltet/leer, identisch zum
+        // Lightweight-Migration-Default fuer Bestand (siehe Property-Docs).
+        cardioCoachingEnabled: Bool = false,
+        cardioGoal: CardioGoal = .generalFitness,
+        cardioRaceDate: Date? = nil,
+        current5kReferenceSeconds: Int? = nil,
+        weeklyBaseVolumeKm: Double? = nil,
+        maxHeartRateBpm: Int? = nil
     ) {
         self.birthDate = birthDate
         self.heightCm = heightCm
@@ -129,6 +182,12 @@ public final class UserBodyProfile {
         self.coachingToneRaw = coachingTone.rawValue
         self.trainingGoalRaw = trainingGoal.rawValue
         self.equipmentPreferencesRaw = equipmentPreferences.map(\.rawValue).sorted()
+        self.cardioCoachingEnabled = cardioCoachingEnabled
+        self.cardioGoalRaw = cardioGoal.rawValue
+        self.cardioRaceDate = cardioRaceDate
+        self.current5kReferenceSeconds = current5kReferenceSeconds
+        self.weeklyBaseVolumeKm = weeklyBaseVolumeKm
+        self.maxHeartRateBpm = maxHeartRateBpm
     }
 }
 #endif

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1657 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1674 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1657 / 1657** (100%) | 0 |
-| 🇬🇧 English (EN) | **1657 / 1657** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1657 / 1657** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1674 / 1674** (100%) | 0 |
+| 🇬🇧 English (EN) | **1674 / 1674** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1674 / 1674** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -196,6 +196,16 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `cardioEquipment.none` | Kein Gerät | No equipment | Cihaz yok |
 | `cardioEquipment.rowingMachine` | Rudergerät | Rowing machine | Kürek makinesi |
 | `cardioEquipment.treadmill` | Laufband | Treadmill | Koşu Bandı |
+
+## `cardioGoal.*`  (5 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `cardioGoal.fiveK` | 5 km | 5K | 5 km |
+| `cardioGoal.generalFitness` | Allgemeine Fitness | General Fitness | Genel Fitness |
+| `cardioGoal.halfMarathon` | Halbmarathon | Half Marathon | Yarı Maraton |
+| `cardioGoal.marathon` | Marathon | Marathon | Maraton |
+| `cardioGoal.tenK` | 10 km | 10K | 10 km |
 
 ## `chart.*`  (3 Keys)
 
@@ -1518,13 +1528,24 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (31 Keys)
+## `profile.*`  (43 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `profile.body.footerOk` | Alle Berechnungen lesen Höhe metrisch aus dieser Quelle. | All calculations read height metrically from this source. | Tüm hesaplamalar boyu metrik olarak bu kaynaktan okur. |
 | `profile.body.heightPlaceholder` | z.B. 180 | e.g. 180 | örn. 180 |
 | `profile.body.plausible` | Plausibel: %1$lld–%2$lld cm. | Plausible: %1$lld–%2$lld cm. | Makul: %1$lld–%2$lld cm. |
+| `profile.cardio.enable` | Lauf-Coaching aktivieren | Enable running coaching | Koşu koçluğunu etkinleştir |
+| `profile.cardio.fiveKReference` | Aktuelle 5-km-Zeit | Current 5K time | Güncel 5 km süresi |
+| `profile.cardio.footer` | Aktiviere Lauf-Coaching, um Cardio-spezifische Hinweise zu erhalten (z.B. bei zu schnell gesteigertem Laufvolumen). Deine 5-km-Zeit hilft, sinnvolle Trainings-Paces abzuleiten. | Enable running coaching to get cardio-specific insights (e.g. when your running volume ramps up too fast). Your 5K time helps derive sensible training paces. | Kardiyoya özel bilgiler almak için (örn. koşu hacmin çok hızlı artarsa) koşu koçluğunu etkinleştir. 5 km süren, anlamlı antrenman temposu türetmemize yardımcı olur. |
+| `profile.cardio.goal` | Lauf-Ziel | Running goal | Koşu hedefi |
+| `profile.cardio.maxHeartRate` | Maximalpuls (bpm) | Max heart rate (bpm) | Maksimum nabız (bpm) |
+| `profile.cardio.maxHeartRatePlaceholder` | z.B. 185 | e.g. 185 | örn. 185 |
+| `profile.cardio.paceZones` | Locker ~%1$@ · Tempo ~%2$@ | Easy ~%1$@ · Tempo ~%2$@ | Rahat ~%1$@ · Tempo ~%2$@ |
+| `profile.cardio.raceDateToggle` | Renn-Datum festlegen | Set race date | Yarış tarihi belirle |
+| `profile.cardio.raceDateValue` | Datum | Date | Tarih |
+| `profile.cardio.weeklyVolume` | Start-Laufvolumen (km/Woche) | Starting volume (km/week) | Başlangıç hacmi (km/hafta) |
+| `profile.cardio.weeklyVolumePlaceholder` | z.B. 20 | e.g. 20 | örn. 20 |
 | `profile.coaching.footer` | Steuert Tonfall und Inhalt der Coaching-Insights auf dem Dashboard. Lässt sich jederzeit ändern. | Drives tone and content of coaching insights on the dashboard. Changeable any time. | Paneldeki koçluk öngörülerinin tonunu ve içeriğini yönlendirir. Her zaman değiştirilebilir. |
 | `profile.coaching.goal` | Trainingsziel | Training Goal | Antrenman Hedefi |
 | `profile.coaching.tone` | Coaching-Stil | Coaching Style | Koçluk Tarzı |
@@ -1547,6 +1568,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.health.pulled` | Aus Apple Health übernommen: %@ | Imported from Apple Health: %@ | Apple Health'ten alındı: %@ |
 | `profile.person.footer` | Sex steuert die Navy/Deurenberg-Formeln; das Alter geht in Mifflin-St-Jeor-BMR und Deurenberg ein. | Sex drives the Navy/Deurenberg formulas; age feeds into Mifflin-St-Jeor BMR and Deurenberg. | Cinsiyet Navy/Deurenberg formüllerini etkiler; yaş Mifflin-St-Jeor BMR ve Deurenberg'e dahil olur. |
 | `profile.section.body` | Körpermasse | Body Metrics | Vücut Ölçüleri |
+| `profile.section.cardio` | Cardio- & Lauf-Ziele | Cardio & Running Goals | Kardiyo ve Koşu Hedefleri |
 | `profile.section.coach` | Coach | Coach | Koç |
 | `profile.section.health` | Apple Health | Apple Health | Apple Health |
 | `profile.section.person` | Person | Person | Kişi |

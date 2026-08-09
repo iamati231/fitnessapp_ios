@@ -192,6 +192,18 @@ public extension TrainingGoal {
     }
 }
 
+public extension CardioGoal {
+    var localizedName: LocalizedStringResource {
+        switch self {
+        case .generalFitness: LocalizedStringResource("cardioGoal.generalFitness", bundle: .fitnessAppUI)
+        case .fiveK:           LocalizedStringResource("cardioGoal.fiveK",           bundle: .fitnessAppUI)
+        case .tenK:            LocalizedStringResource("cardioGoal.tenK",            bundle: .fitnessAppUI)
+        case .halfMarathon:    LocalizedStringResource("cardioGoal.halfMarathon",    bundle: .fitnessAppUI)
+        case .marathon:        LocalizedStringResource("cardioGoal.marathon",        bundle: .fitnessAppUI)
+        }
+    }
+}
+
 public extension ExperienceLevel {
     var localizedName: LocalizedStringResource {
         switch self {

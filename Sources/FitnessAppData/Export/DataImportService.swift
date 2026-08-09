@@ -640,6 +640,19 @@ public enum DataImportService {
             // DEL-203: additive Spalte — ältere ZIPs ohne sie → Default 1.
             p.weeklyWorkoutGoal = row.int("weekly_workout_goal") ?? 1
 
+            // DEL-250: sechs additive Cardio-Profil-Spalten. `cardio_coaching_
+            // enabled` braucht keinen headerSet-Check wie dashboard_widgets/
+            // hero_metric_slots (dort war "Spalte fehlt" vs. "Wert bewusst
+            // leer" nicht unterscheidbar) — `row.bool` liefert fuer eine
+            // fehlende Spalte UND einen leeren Wert identisch `false`, und
+            // `false` ist in beiden Faellen exakt der gewuenschte Default.
+            p.cardioCoachingEnabled = row.bool("cardio_coaching_enabled") ?? false
+            p.cardioGoalRaw = row.optionalString("cardio_goal") ?? CardioGoal.generalFitness.rawValue
+            p.cardioRaceDate = row.date("cardio_race_date")
+            p.current5kReferenceSeconds = row.int("current_5k_reference_seconds")
+            p.weeklyBaseVolumeKm = row.double("weekly_base_volume_km")
+            p.maxHeartRateBpm = row.int("max_heart_rate_bpm")
+
             if target == nil {
                 context.insert(p)
             }

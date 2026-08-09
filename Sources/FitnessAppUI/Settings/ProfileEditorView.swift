@@ -69,6 +69,7 @@ public struct ProfileEditorView: View {
                 personCard
                 bodyCard
                 goalCard
+                cardioCard
                 weeklyGoalCard
                 equipmentCard
                 coachingCard
@@ -446,6 +447,145 @@ public struct ProfileEditorView: View {
         }
     }
 
+    /// DEL-250: Cardio-/Lauf-Ziele nachtraeglich editierbar (Post-Onboarding).
+    /// Umfang bewusst auf den Profil-Editor beschraenkt — kein neuer
+    /// Onboarding-Schritt in dieser Runde, keine neue Coaching-Trigger-
+    /// Verdrahtung (CardioCoachingAdvisor/DashboardView/PlanGenerator
+    /// unveraendert). Toggle-blendet-Sektion-Pattern analog
+    /// `SettingsView.waterReminderEnabled`; Referenzzeit statt direkter
+    /// Pace-Eingabe (praeziser fuer eine spaetere
+    /// `cardioProgressionEarned`-Verfeinerung, siehe `PaceZoneCalculator`).
+    private var cardioCard: some View {
+        DeltiqSection(String(localized: "profile.section.cardio", bundle: .module).uppercased()) {
+            DeltiqControlRow(
+                icon: "figure.run",
+                label: String(localized: "profile.cardio.enable", bundle: .module),
+                showsDivider: profile.cardioCoachingEnabled
+            ) {
+                Toggle("", isOn: $profile.cardioCoachingEnabled)
+                    .labelsHidden()
+                    .tint(Color.deltiqOrange)
+            }
+            if profile.cardioCoachingEnabled {
+                DeltiqControlRow(label: String(localized: "profile.cardio.goal", bundle: .module)) {
+                    Picker(selection: Binding(
+                        get: { profile.cardioGoal },
+                        set: { profile.cardioGoal = $0 }
+                    )) {
+                        ForEach(CardioGoal.allCases, id: \.self) { goal in
+                            Label {
+                                Text(goal.localizedName)
+                            } icon: {
+                                Image(systemName: goal.symbol)
+                            }
+                            .tag(goal)
+                        }
+                    } label: {
+                        EmptyView()
+                    }
+                    .pickerStyle(.menu)
+                }
+                DeltiqControlRow(label: String(localized: "profile.cardio.fiveKReference", bundle: .module)) {
+                    TextField("MM:SS", text: fiveKReferenceBinding, prompt: Text("MM:SS"))
+                        #if os(iOS)
+                        .keyboardType(.numbersAndPunctuation)
+                        #endif
+                        .monospacedDigit()
+                        .multilineTextAlignment(.trailing)
+                        .font(.system(size: 15))
+                        .fitnessNumberStyle()
+                        .frame(maxWidth: 90)
+                }
+                if let zonesSummary {
+                    hintRow(zonesSummary)
+                }
+                DeltiqControlRow(
+                    label: String(localized: "profile.cardio.raceDateToggle", bundle: .module),
+                    showsDivider: profile.cardioRaceDate != nil
+                ) {
+                    Toggle("", isOn: cardioRaceDateToggleBinding)
+                        .labelsHidden()
+                        .tint(Color.deltiqOrange)
+                }
+                if profile.cardioRaceDate != nil {
+                    DeltiqControlRow(label: String(localized: "profile.cardio.raceDateValue", bundle: .module)) {
+                        DatePicker(
+                            selection: Binding(
+                                get: { profile.cardioRaceDate ?? Self.defaultRaceDate },
+                                set: { profile.cardioRaceDate = $0 }
+                            ),
+                            in: Date()...,
+                            displayedComponents: .date
+                        ) {
+                            EmptyView()
+                        }
+                        .labelsHidden()
+                    }
+                }
+                DeltiqControlRow(label: String(localized: "profile.cardio.weeklyVolume", bundle: .module)) {
+                    decimalField(
+                        String(localized: "profile.cardio.weeklyVolume", bundle: .module),
+                        value: $profile.weeklyBaseVolumeKm,
+                        placeholder: String(localized: "profile.cardio.weeklyVolumePlaceholder", bundle: .module)
+                    )
+                }
+                DeltiqControlRow(label: String(localized: "profile.cardio.maxHeartRate", bundle: .module), showsDivider: false) {
+                    intField(
+                        String(localized: "profile.cardio.maxHeartRate", bundle: .module),
+                        value: $profile.maxHeartRateBpm,
+                        placeholder: String(localized: "profile.cardio.maxHeartRatePlaceholder", bundle: .module)
+                    )
+                }
+            }
+            hintRow(String(localized: "profile.cardio.footer", bundle: .module))
+        }
+    }
+
+    /// String-Bruecke fuer die MM:SS-Eingabe der 5-km-Referenzzeit —
+    /// identisches Parse/Format-Paar wie `SetRow.cardioDurationInput`
+    /// (`PaceCalculator.parseDurationToSeconds`/`.formatDuration`), nur
+    /// gegen `UserBodyProfile.current5kReferenceSeconds` statt einen
+    /// Log-Wert gebunden. Unparsebare Eingaben (inkl. leer) setzen nil —
+    /// identisch zum Verhalten von `decimalField`s optionalen Overloads.
+    private var fiveKReferenceBinding: Binding<String> {
+        Binding(
+            get: {
+                guard let seconds = profile.current5kReferenceSeconds else { return "" }
+                return PaceCalculator.formatDuration(seconds)
+            },
+            set: { profile.current5kReferenceSeconds = PaceCalculator.parseDurationToSeconds($0) }
+        )
+    }
+
+    /// Formatierter Hinweistext mit den aus der Referenzzeit abgeleiteten
+    /// Pace-Zonen. Nil solange keine Referenzzeit gepflegt ist.
+    private var zonesSummary: String? {
+        guard let seconds = profile.current5kReferenceSeconds,
+              let easy = PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: seconds),
+              let tempo = PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: seconds)
+        else { return nil }
+        let template = String(localized: "profile.cardio.paceZones", bundle: .module)
+        return String(format: template, PaceCalculator.formatPace(easy), PaceCalculator.formatPace(tempo))
+    }
+
+    /// An/Aus-Bruecke fuers Renn-Datum: An setzt (falls noch keins gepflegt)
+    /// ein plausibles Default-Datum, Aus loescht auf nil zurueck — echtes
+    /// "kein Datum gesetzt" statt eines Platzhalter-Datums.
+    private var cardioRaceDateToggleBinding: Binding<Bool> {
+        Binding(
+            get: { profile.cardioRaceDate != nil },
+            set: { isOn in
+                profile.cardioRaceDate = isOn ? (profile.cardioRaceDate ?? Self.defaultRaceDate) : nil
+            }
+        )
+    }
+
+    /// Plausibler Default beim erstmaligen Aktivieren des Renn-Datums —
+    /// 12 Wochen im Voraus, ein gaengiger Trainings-Zyklus-Horizont.
+    private static var defaultRaceDate: Date {
+        Calendar.current.date(byAdding: .weekOfYear, value: 12, to: Date()) ?? Date()
+    }
+
     /// DEL-170: Equipment-Präferenzen (Multi-Select). Steuert die Auswahl
     /// von `EquipmentVariant` bei Templates mit mehreren Implement-Varianten
     /// (z.B. Hybrid-Pläne: Barbell-Gym vs. Dumbbell-Only). Default leer →
@@ -583,6 +723,20 @@ public struct ProfileEditorView: View {
     private func decimalField(_ label: String, value: Binding<Double?>, placeholder: String) -> some View {
         TextField(label, value: value, format: .number, prompt: Text(placeholder))
             .decimalKeyboard()
+            .multilineTextAlignment(.trailing)
+            .font(.system(size: 15))
+            .fitnessNumberStyle()
+            .frame(maxWidth: 140)
+    }
+
+    /// DEL-250: Int?-Variante von `decimalField` (Maximalpuls). Kein
+    /// Dezimal-Keyboard noetig — ganzzahlige bpm-Eingabe.
+    @ViewBuilder
+    private func intField(_ label: String, value: Binding<Int?>, placeholder: String) -> some View {
+        TextField(label, value: value, format: .number, prompt: Text(placeholder))
+            #if os(iOS)
+            .keyboardType(.numberPad)
+            #endif
             .multilineTextAlignment(.trailing)
             .font(.system(size: 15))
             .fitnessNumberStyle()
