@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1702 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1704 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1702 / 1702** (100%) | 0 |
-| 🇬🇧 English (EN) | **1702 / 1702** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1702 / 1702** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1704 / 1704** (100%) | 0 |
+| 🇬🇧 English (EN) | **1704 / 1704** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1704 / 1704** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1505,7 +1505,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planEditor.template.banner.title` | Template-Plan | Template Plan | Şablon Plan |
 | `planEditor.toggle.setActive` | Als aktiven Plan setzen | Set as Active Plan | Aktif Plan Olarak Ayarla |
 
-## `plans.*`  (22 Keys)
+## `plans.*`  (23 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1515,6 +1515,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plans.active.title` | Laufendes Training | Active Workout | Aktif Antrenman |
 | `plans.activeBadge` | Aktiv | Active | Aktif |
 | `plans.cardioFeasibility.acceptSuggestion` | Vorschlag annehmen | Accept suggestion | Öneriyi kabul et |
+| `plans.cardioFeasibility.adjustPlan` | Plan anpassen | Adjust plan | Planı düzenle |
 | `plans.cardioFeasibility.apply` | Plan übernehmen | Adopt plan | Planı benimse |
 | `plans.cardioFeasibility.feasibleTitle` | Dein Lauf-Ziel ist machbar | Your running goal is achievable | Koşu hedefin ulaşılabilir |
 | `plans.cardioFeasibility.infeasibleTitle` | Dein Lauf-Ziel wird eng | Your running goal is getting tight | Koşu hedefin zorlaşıyor |
@@ -1548,7 +1549,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (56 Keys)
+## `profile.*`  (57 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1557,6 +1558,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.body.plausible` | Plausibel: %1$lld–%2$lld cm. | Plausible: %1$lld–%2$lld cm. | Makul: %1$lld–%2$lld cm. |
 | `profile.cardio.enable` | Lauf-Coaching aktivieren | Enable running coaching | Koşu koçluğunu etkinleştir |
 | `profile.cardio.feasibility.acceptSuggestion` | Vorschlag annehmen | Accept suggestion | Öneriyi kabul et |
+| `profile.cardio.feasibility.adjustPlan` | Plan anpassen | Adjust plan | Planı düzenle |
 | `profile.cardio.feasibility.apply` | Plan übernehmen | Adopt plan | Planı benimse |
 | `profile.cardio.feasibility.feasibleHeadline` | Dein Ziel ist machbar | Your goal is achievable | Hedefin ulaşılabilir |
 | `profile.cardio.feasibility.infeasibleHeadline` | Das wird eng | This is going to be tight | Bu biraz zor olacak |

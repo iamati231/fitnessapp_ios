@@ -34,6 +34,10 @@ public struct PlansListView: View {
 
     @State private var showingTemplatePicker = false
     @State private var showingPlanBuilder = false
+    /// Nachtrag "Plan anpassen": eigener Zustand, NICHT `showingPlanBuilder`
+    /// wiederverwenden - der haengt am Plus-Menue mit leerem Wizard-Start,
+    /// hier soll er mit dem Machbarkeits-Vorschlag vorbefuellt oeffnen.
+    @State private var showingPlanAdjustSheet = false
 
     public init() {}
 
@@ -229,23 +233,36 @@ public struct PlansListView: View {
                     }
                 }
             }
+            // Nachtrag "Plan anpassen", Layout-Hinweis: die primaere Aktion
+            // steht allein in voller Staerke, "Plan anpassen" und "Ziel
+            // behalten" folgen als gleichrangiges, leiseres Paar darunter.
+            if model.hasPlan {
+                Button {
+                    withAnimation {
+                        let plan = model.accept(profile: profile, in: modelContext)
+                        if let plan {
+                            navigation.workoutPath.append(plan)
+                        }
+                    }
+                } label: {
+                    Text(model.verdict.feasible
+                         ? String(localized: "plans.cardioFeasibility.apply", bundle: .module)
+                         : String(localized: "plans.cardioFeasibility.acceptSuggestion", bundle: .module))
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.deltiqOrange)
+            }
             HStack(spacing: 20) {
                 if model.hasPlan {
                     Button {
-                        withAnimation {
-                            let plan = model.accept(profile: profile, in: modelContext)
-                            if let plan {
-                                navigation.workoutPath.append(plan)
-                            }
-                        }
+                        showingPlanAdjustSheet = true
                     } label: {
-                        Text(model.verdict.feasible
-                             ? String(localized: "plans.cardioFeasibility.apply", bundle: .module)
-                             : String(localized: "plans.cardioFeasibility.acceptSuggestion", bundle: .module))
-                            .font(.subheadline.weight(.semibold))
+                        Text("plans.cardioFeasibility.adjustPlan", bundle: .module)
+                            .font(.subheadline)
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(Color.deltiqOrange)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                 }
                 if !model.verdict.feasible {
                     Button {
@@ -269,6 +286,18 @@ public struct PlansListView: View {
         .listRowBackground(Color.clear)
         .listRowSeparator(.hidden)
         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+        .sheet(isPresented: $showingPlanAdjustSheet) {
+            if let input = model.planInput {
+                PlanBuilderView(initialInput: input) { adjustedInput, adjustedResult in
+                    let plan = model.acceptCustom(input: adjustedInput, result: adjustedResult, profile: profile, in: modelContext)
+                    if let plan {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            navigation.workoutPath.append(plan)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Plaene

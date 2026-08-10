@@ -129,5 +129,32 @@ public struct CardioFeasibilityCardModel {
     public func dismiss(profile: UserBodyProfile) {
         profile.cardioFeasibilityDismissedFingerprint = fingerprint
     }
+
+    /// Nachtrag "Plan anpassen": derselbe Instanziierungs-Effekt wie
+    /// `accept(profile:in:)`, aber fuer einen im "Plan bauen"-Assistenten
+    /// selbst angepassten Input/Ergebnis statt `planInput`/`planResult` -
+    /// kein zweiter Preview-Rechner, der Wizard liefert `PlanGenerator.generate`
+    /// bereits selbst. Ruehrt bewusst NICHT `profile.cardioGoal` an: der
+    /// angepasste Mix hat nach freier Bearbeitung keine verlaessliche 1:1-
+    /// Entsprechung zu einem `CardioGoal` mehr. Schreibt trotzdem denselben
+    /// Fingerprint wie eine direkte Annahme (empfohlene Entscheidung im
+    /// Ticket) - sonst zeigt der Hinweis auf den anderen beiden Oberflaechen
+    /// weiter an, obwohl der Nutzer sein Anliegen bereits geloest hat. Da
+    /// `cardioGoal` hier unveraendert bleibt, ist `self.fingerprint` (aus
+    /// `make(for:)`, bereits fuer den aktuellen `profile`-Stand berechnet)
+    /// exakt der richtige Wert - keine Neuberechnung noetig.
+    @discardableResult
+    @MainActor
+    public func acceptCustom(
+        input: PlanGeneratorInput,
+        result: PlanGenerator.Result,
+        profile: UserBodyProfile,
+        in context: ModelContext
+    ) -> TrainingPlan? {
+        guard !result.days.isEmpty else { return nil }
+        let plan = PlanGeneratorInstantiator.build(from: input, in: context, result: result, generationSource: .cardioCoach)
+        profile.cardioFeasibilityDismissedFingerprint = fingerprint
+        return plan
+    }
 }
 #endif

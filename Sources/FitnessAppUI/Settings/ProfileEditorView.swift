@@ -59,6 +59,9 @@ public struct ProfileEditorView: View {
     /// verwertbaren Laeufe findet (kein geloggter Cardio-Log ueberhaupt,
     /// oder keiner erfuellt die Mindest-Schwellen).
     @State private var retroSyncEmptyNoticeVisible: Bool = false
+    /// Nachtrag "Plan anpassen": `PlanBuilderView` als Sheet, vorbefuellt
+    /// mit dem aktuellen Machbarkeits-Vorschlag.
+    @State private var showingPlanAdjustSheet: Bool = false
 
     /// DEL-047: gehaltete `oldEnv`-Referenz fuer den Confirmation-Dialog. Wenn
     /// non-nil, wird der Dialog angezeigt; alle drei Dialog-Aktionen setzen
@@ -768,18 +771,32 @@ public struct ProfileEditorView: View {
                     }
                 }
             }
+            // Nachtrag "Plan anpassen", Layout-Hinweis: die primaere Aktion
+            // steht allein in voller Staerke, "Plan anpassen" und "Ziel
+            // behalten" folgen als gleichrangiges, leiseres Paar darunter -
+            // drei Text-Knoepfe in einer Zeile waeren auf Kartenbreite eng.
+            if model.hasPlan {
+                Button {
+                    withAnimation { _ = model.accept(profile: profile, in: modelContext) }
+                } label: {
+                    Text(model.verdict.feasible
+                         ? String(localized: "profile.cardio.feasibility.apply", bundle: .module)
+                         : String(localized: "profile.cardio.feasibility.acceptSuggestion", bundle: .module))
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.deltiqOrange)
+            }
             HStack(spacing: 20) {
                 if model.hasPlan {
                     Button {
-                        withAnimation { _ = model.accept(profile: profile, in: modelContext) }
+                        showingPlanAdjustSheet = true
                     } label: {
-                        Text(model.verdict.feasible
-                             ? String(localized: "profile.cardio.feasibility.apply", bundle: .module)
-                             : String(localized: "profile.cardio.feasibility.acceptSuggestion", bundle: .module))
-                            .font(.subheadline.weight(.semibold))
+                        Text("profile.cardio.feasibility.adjustPlan", bundle: .module)
+                            .font(.subheadline)
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(Color.deltiqOrange)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                 }
                 if !model.verdict.feasible {
                     Button {
@@ -795,6 +812,13 @@ public struct ProfileEditorView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
+        .sheet(isPresented: $showingPlanAdjustSheet) {
+            if let input = model.planInput {
+                PlanBuilderView(initialInput: input) { adjustedInput, adjustedResult in
+                    _ = model.acceptCustom(input: adjustedInput, result: adjustedResult, profile: profile, in: modelContext)
+                }
+            }
+        }
     }
 
     /// DEL-170: Equipment-Präferenzen (Multi-Select). Steuert die Auswahl

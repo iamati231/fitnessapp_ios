@@ -62,6 +62,24 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         XCTAssertNil(PlanGeneratorInstantiator.build(from: input([]), in: context))
     }
 
+    // Handoff "Lauf-Coaching - Machbarkeits-Check": generationSource wird
+    // an den frisch instanziierten Plan durchgereicht - CardioFeasibility-
+    // CardModel.accept()/.acceptCustom() verlassen sich darauf, dass der so
+    // gebaute Plan spaeter als .cardioCoach erkennbar ist. Ohne expliziten
+    // Parameter bleibt es beim Default .manual (bestehendes Verhalten aller
+    // anderen Tests in dieser Datei).
+    func testBuildStampsExplicitGenerationSource() throws {
+        let plan = try XCTUnwrap(PlanGeneratorInstantiator.build(
+            from: input([selection(.running, days: 2)]), in: context, generationSource: .cardioCoach
+        ))
+        XCTAssertEqual(plan.generationSource, .cardioCoach)
+    }
+
+    func testBuildDefaultsGenerationSourceToManual() throws {
+        let plan = try XCTUnwrap(PlanGeneratorInstantiator.build(from: input([selection(.barbell, days: 2)]), in: context))
+        XCTAssertEqual(plan.generationSource, .manual)
+    }
+
     /// Bugfix (Nutzer-Feedback, "Neu rechnen"-Shuffle): `build` darf einen
     /// bereits berechneten `PlanGenerator.Result` nicht verwerfen und
     /// stattdessen `input` erneut (und damit wieder deterministisch) neu

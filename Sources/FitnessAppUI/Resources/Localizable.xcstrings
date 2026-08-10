@@ -32932,6 +32932,29 @@
         }
       }
     },
+    "profile.cardio.feasibility.adjustPlan": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjust plan"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan anpassen"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planı düzenle"
+          }
+        }
+      }
+    },
     "profile.cardio.feasibility.keepGoal": {
       "extractionState": "manual",
       "localizations": {
@@ -33273,6 +33296,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Öneriyi kabul et"
+          }
+        }
+      }
+    },
+    "plans.cardioFeasibility.adjustPlan": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjust plan"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan anpassen"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planı düzenle"
           }
         }
       }

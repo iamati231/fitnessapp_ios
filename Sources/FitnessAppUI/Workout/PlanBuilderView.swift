@@ -35,10 +35,38 @@ public struct PlanBuilderView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppNavigation.self) private var navigation
 
-    private let onGenerated: ((PlanGeneratorInput, PlanGenerator.Result) -> Void)?
+    // @MainActor explizit statt inferiert: `adoptPlan()` ruft diese Closure
+    // synchron auf (kein await) und darf innerhalb selbst @MainActor-
+    // isolierte Aufrufe machen (z.B. CardioFeasibilityCardModel.acceptCustom).
+    // Ohne die explizite Annotation muesste der Compiler das aus dem
+    // lexikalischen Kontext der jeweiligen Closure-Literale ableiten - nach
+    // dem @MainActor-CI-Fund an CardioFeasibilityCardModel lieber explizit.
+    private let onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> Void)?
 
-    public init(onGenerated: ((PlanGeneratorInput, PlanGenerator.Result) -> Void)? = nil) {
+    /// Handoff "Lauf-Coaching - Machbarkeits-Check", Nachtrag "Plan
+    /// anpassen": seedet Schritt 1/2 aus einem vorhandenen Input statt der
+    /// leeren Defaults - der Nutzer landet weiterhin bei Schritt 1, sieht
+    /// dort aber den Kraft-/Lauf-Mix aus dem Machbarkeits-Vorschlag bereits
+    /// eingetragen und kann ihn frei weiter anpassen ("Neu rechnen" bleibt
+    /// unveraendert nutzbar). `Dictionary(_:uniquingKeysWith:)` statt
+    /// `uniqueKeysWithValues:` - defensiv gegen einen (hier nie auftretenden)
+    /// Input mit zwei Selections derselben Kind, damit ein fremd erzeugter
+    /// Input diesen Init nicht crasht.
+    public init(
+        initialInput: PlanGeneratorInput? = nil,
+        onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> Void)? = nil
+    ) {
         self.onGenerated = onGenerated
+        if let initialInput {
+            _selectedKinds = State(initialValue: initialInput.selections.map(\.kind))
+            _configByKind = State(initialValue: Dictionary(
+                initialInput.selections.map { ($0.kind, $0) },
+                uniquingKeysWith: { _, latest in latest }
+            ))
+            _equipmentPreferences = State(initialValue: initialInput.equipmentPreferences)
+            _usesFixedWeekdays = State(initialValue: initialInput.usesFixedWeekdays)
+            _fixedWeekdays = State(initialValue: Set(initialInput.fixedWeekdays))
+        }
     }
 
     enum BuilderStep: Int, CaseIterable {
