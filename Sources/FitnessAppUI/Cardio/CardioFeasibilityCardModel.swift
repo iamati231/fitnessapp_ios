@@ -101,7 +101,12 @@ public struct CardioFeasibilityCardModel {
     /// beim naechsten Aufruf sofort wieder, jetzt positiv fuer das neue Ziel.
     /// `nil`, wenn `hasPlan == false` oder der Generator (defensiv) doch
     /// nichts liefert.
+    // Bugfix (CI): PlanGeneratorInstantiator ist @MainActor - der Aufruf aus
+    // diesem nicht isolierten Struct-Kontext ist unter Swift 6 ein
+    // Compile-Fehler. Die Aufrufer (ProfileEditorView/PlansListView-Button-
+    // Actions) laufen ohnehin bereits auf dem Main Actor, kein await noetig.
     @discardableResult
+    @MainActor
     public func accept(profile: UserBodyProfile, in context: ModelContext) -> TrainingPlan? {
         guard hasPlan,
               let planInput, let planResult, let proposedGoal,
