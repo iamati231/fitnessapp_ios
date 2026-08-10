@@ -718,7 +718,7 @@ public struct ProfileEditorView: View {
     /// Kombination (beide Werte / nur Volumen / nur Pace) — der Aufrufer
     /// zeigt den Dialog ohnehin nur, wenn `!result.isEmpty`.
     private func cardioBaselineMessage(_ result: CardioBaselineCalculator.Result) -> String {
-        let volumeText = result.weeklyVolumeKm.map { String(format: "%.1f", $0) }
+        let volumeText = result.weeklyVolumeKm.map(\.formattedOneDecimal)
         let paceText = result.referenceSeconds
             .flatMap(PaceZoneCalculator.racePaceMinutesPerKm)
             .map(PaceCalculator.formatPace)
