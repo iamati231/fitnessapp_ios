@@ -6,18 +6,18 @@ final class PaceZoneCalculatorTests: XCTestCase {
     // 25:00 5k -> exakt 5.0 min/km Renn-Pace (glatte Zahl fuer die Tests).
     private let referenceSecondsFor25MinuteFiveK = 1_500
 
-    func testRacePaceMatchesSimpleDivision() {
-        let pace = PaceZoneCalculator.racePaceMinutesPerKm(fiveKReferenceSeconds: referenceSecondsFor25MinuteFiveK)
+    func testRacePaceMatchesSimpleDivision() throws {
+        let pace = try XCTUnwrap(PaceZoneCalculator.racePaceMinutesPerKm(fiveKReferenceSeconds: referenceSecondsFor25MinuteFiveK))
         XCTAssertEqual(pace, 5.0, accuracy: 0.0001)
     }
 
-    func testEasyPaceIsThirtyPercentSlowerThanRacePace() {
-        let pace = PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: referenceSecondsFor25MinuteFiveK)
+    func testEasyPaceIsThirtyPercentSlowerThanRacePace() throws {
+        let pace = try XCTUnwrap(PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: referenceSecondsFor25MinuteFiveK))
         XCTAssertEqual(pace, 6.5, accuracy: 0.0001)
     }
 
-    func testTempoPaceIsTenPercentSlowerThanRacePace() {
-        let pace = PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: referenceSecondsFor25MinuteFiveK)
+    func testTempoPaceIsTenPercentSlowerThanRacePace() throws {
+        let pace = try XCTUnwrap(PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: referenceSecondsFor25MinuteFiveK))
         XCTAssertEqual(pace, 5.5, accuracy: 0.0001)
     }
 

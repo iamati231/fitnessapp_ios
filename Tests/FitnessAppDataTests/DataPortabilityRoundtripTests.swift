@@ -629,16 +629,15 @@ final class DataPortabilityRoundtripTests: XCTestCase {
             strategy: .appendOnly
         )
 
-        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
-        XCTAssertEqual(imported?.cardioCoachingEnabled, true)
-        XCTAssertEqual(imported?.cardioGoal, .halfMarathon)
-        XCTAssertEqual(
-            imported?.cardioRaceDate?.timeIntervalSince1970,
-            1_800_000_000, accuracy: 1.0
-        )
-        XCTAssertEqual(imported?.current5kReferenceSeconds, 1_500)
-        XCTAssertEqual(imported?.weeklyBaseVolumeKm, 25.5, accuracy: 0.01)
-        XCTAssertEqual(imported?.maxHeartRateBpm, 188)
+        let imported = try XCTUnwrap(try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first)
+        XCTAssertEqual(imported.cardioCoachingEnabled, true)
+        XCTAssertEqual(imported.cardioGoal, .halfMarathon)
+        let restoredRaceDate = try XCTUnwrap(imported.cardioRaceDate)
+        XCTAssertEqual(restoredRaceDate.timeIntervalSince1970, 1_800_000_000, accuracy: 1.0)
+        XCTAssertEqual(imported.current5kReferenceSeconds, 1_500)
+        let restoredWeeklyVolumeKm = try XCTUnwrap(imported.weeklyBaseVolumeKm)
+        XCTAssertEqual(restoredWeeklyVolumeKm, 25.5, accuracy: 0.01)
+        XCTAssertEqual(imported.maxHeartRateBpm, 188)
     }
 
     /// DEL-250: ein Profil OHNE Cardio-Ziele (Default-Zustand, z.B.

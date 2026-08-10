@@ -9,16 +9,16 @@ final class CardioBaselineCalculatorTests: XCTestCase {
         XCTAssertNil(CardioBaselineCalculator.weeklyVolumeKm(distancesKm: []))
     }
 
-    func testWeeklyVolumeIsSumDividedByFourWeeks() {
+    func testWeeklyVolumeIsSumDividedByFourWeeks() throws {
         // 10 + 15 + 20 + 25 = 70 km ueber 4 Wochen -> 17.5 km/Woche.
-        let result = CardioBaselineCalculator.weeklyVolumeKm(distancesKm: [10, 15, 20, 25])
+        let result = try XCTUnwrap(CardioBaselineCalculator.weeklyVolumeKm(distancesKm: [10, 15, 20, 25]))
         XCTAssertEqual(result, 17.5, accuracy: 0.0001)
     }
 
-    func testWeeklyVolumeCountsEveryLoggedRunRegardlessOfLength() {
+    func testWeeklyVolumeCountsEveryLoggedRunRegardlessOfLength() throws {
         // Anders als die Referenzpace hat das Wochenvolumen KEINEN
         // Mindest-Distanz-/Dauer-Filter - auch ein kurzer Erholungslauf zaehlt.
-        let result = CardioBaselineCalculator.weeklyVolumeKm(distancesKm: [0.5, 1.0])
+        let result = try XCTUnwrap(CardioBaselineCalculator.weeklyVolumeKm(distancesKm: [0.5, 1.0]))
         XCTAssertEqual(result, 0.375, accuracy: 0.0001)
     }
 
