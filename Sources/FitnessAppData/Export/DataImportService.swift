@@ -652,6 +652,7 @@ public enum DataImportService {
             p.current5kReferenceSeconds = row.int("current_5k_reference_seconds")
             p.weeklyBaseVolumeKm = row.double("weekly_base_volume_km")
             p.maxHeartRateBpm = row.int("max_heart_rate_bpm")
+            p.cardioFeasibilityDismissedFingerprint = row.optionalString("cardio_feasibility_dismissed_fingerprint")
 
             if target == nil {
                 context.insert(p)
@@ -874,6 +875,11 @@ public enum DataImportService {
             if let raw = row.optionalString("generator_input_raw") {
                 plan.generatorInputRaw = raw
             }
+            // Handoff "Lauf-Coaching - Machbarkeits-Check": additive Spalte,
+            // gleiches Prinzip wie generator_input_raw - aeltere ZIPs ohne die
+            // Spalte fallen auf den Default `.manual` zurueck statt zu
+            // crashen.
+            plan.generationSourceRaw = row.optionalString("generation_source") ?? GenerationSource.manual.rawValue
             // DEL-225: Sobald ein Plan aktiv gesetzt wurde, darf kein weiterer
             // folgen — ein Backup mit mehreren aktiven Plaenen soll nicht in
             // zwei gleichzeitig aktiven Plaenen resultieren.

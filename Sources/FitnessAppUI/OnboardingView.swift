@@ -1273,7 +1273,7 @@ public struct OnboardingView: View {
             // Sheet vorberechnete Result wird 1:1 uebernommen (nicht neu
             // gerechnet) — sonst wiche der instanziierte Plan von der im
             // Wizard zuletzt gezeigten Vorschau ab (siehe PlanGeneratorInstantiatorTests).
-            PlanGeneratorInstantiator.build(from: customPlanInput, in: modelContext, result: customPlanResult)
+            PlanGeneratorInstantiator.build(from: customPlanInput, in: modelContext, result: customPlanResult, generationSource: .planBuilder)
         }
 
         // 4) Notification-Präferenzen persistieren. Permission wird angefordert,

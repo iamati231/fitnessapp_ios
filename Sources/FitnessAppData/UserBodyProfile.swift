@@ -102,6 +102,19 @@ public final class UserBodyProfile {
     /// deskriptiv, kein HR-basierter Coaching-Trigger existiert aktuell.
     public var maxHeartRateBpm: Int?
 
+    /// Handoff "Lauf-Coaching - Machbarkeits-Check": Fingerprint aus
+    /// Ziel+Renn-Datum+Wochenvolumen, fuer den die Vorschlags-Karte auf
+    /// Profil/Dashboard/Plan-Tab NICHT mehr erscheinen soll — entweder weil
+    /// der Nutzer sie explizit verworfen/das Ziel behalten hat, oder weil er
+    /// den Vorschlag bereits angenommen hat (siehe
+    /// `CardioFeasibilityCalculator.suppressionFingerprint`). Bewusst ein
+    /// SwiftData-Feld statt `@AppStorage` — ein reiner `@AppStorage`-Key
+    /// ueberlebt keine Neuinstallation/Restore (dieselbe Luecke, die
+    /// `deload_until` frueher hatte, siehe DEL-238-Kommentar in
+    /// `DashboardView`); dieses Feld wandert stattdessen normal im Backup mit.
+    /// Nil = noch nie unterdrueckt worden.
+    public var cardioFeasibilityDismissedFingerprint: String?
+
     /// Convenience-Accessor mit Default-Fallback, falls jemand einen
     /// invaliden String reinschreibt.
     public var cardioGoal: CardioGoal {
@@ -171,7 +184,8 @@ public final class UserBodyProfile {
         cardioRaceDate: Date? = nil,
         current5kReferenceSeconds: Int? = nil,
         weeklyBaseVolumeKm: Double? = nil,
-        maxHeartRateBpm: Int? = nil
+        maxHeartRateBpm: Int? = nil,
+        cardioFeasibilityDismissedFingerprint: String? = nil
     ) {
         self.birthDate = birthDate
         self.heightCm = heightCm
@@ -188,6 +202,7 @@ public final class UserBodyProfile {
         self.current5kReferenceSeconds = current5kReferenceSeconds
         self.weeklyBaseVolumeKm = weeklyBaseVolumeKm
         self.maxHeartRateBpm = maxHeartRateBpm
+        self.cardioFeasibilityDismissedFingerprint = cardioFeasibilityDismissedFingerprint
     }
 }
 #endif

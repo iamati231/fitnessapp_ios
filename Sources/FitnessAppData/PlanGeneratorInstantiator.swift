@@ -44,7 +44,8 @@ public enum PlanGeneratorInstantiator {
     public static func build(
         from input: PlanGeneratorInput,
         in context: ModelContext,
-        result precomputed: PlanGenerator.Result? = nil
+        result precomputed: PlanGenerator.Result? = nil,
+        generationSource: GenerationSource = .manual
     ) -> TrainingPlan? {
         let result = precomputed ?? PlanGenerator.generate(from: input)
         guard !result.days.isEmpty else { return nil }
@@ -57,6 +58,7 @@ public enum PlanGeneratorInstantiator {
             userEquipment: input.equipmentPreferences
         )
         plan.generatorInput = input
+        plan.generationSource = generationSource
 
         // Genau JETZT - direkt nach `instantiate`, bevor irgendein Edit
         // stattfinden konnte - entspricht die Montag-first-sortierte

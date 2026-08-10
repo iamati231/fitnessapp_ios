@@ -215,13 +215,16 @@ public enum DataExportService {
         // Prinzip — ältere Importer ignorieren sie, ältere ZIPs liefern beim
         // Import row.optionalString/.date/.int/.double == nil bzw. den
         // dokumentierten Default.
+        // Handoff "Lauf-Coaching - Machbarkeits-Check": siebte additive
+        // Spalte, gleiches Prinzip.
         var w = CSVWriter(headers: [
             "id", "birth_date", "height_cm", "profile", "goal_weight_kg",
             "environment", "first_name", "coaching_tone", "training_goal",
             "equipment_preferences", "dashboard_widgets", "hero_metric_slots",
             "weekly_workout_goal", "cardio_coaching_enabled", "cardio_goal",
             "cardio_race_date", "current_5k_reference_seconds",
-            "weekly_base_volume_km", "max_heart_rate_bpm"
+            "weekly_base_volume_km", "max_heart_rate_bpm",
+            "cardio_feasibility_dismissed_fingerprint"
         ])
         for p in profiles {
             w.appendRow([
@@ -243,7 +246,8 @@ public enum DataExportService {
                 p.cardioRaceDate.map(CSVWriter.iso8601) ?? "",
                 p.current5kReferenceSeconds.map(String.init) ?? "",
                 CSVWriter.decimal(p.weeklyBaseVolumeKm),
-                p.maxHeartRateBpm.map(String.init) ?? ""
+                p.maxHeartRateBpm.map(String.init) ?? "",
+                p.cardioFeasibilityDismissedFingerprint ?? ""
             ])
         }
         return w.data()
@@ -324,7 +328,7 @@ public enum DataExportService {
             "id", "name", "custom_name", "program_type", "description",
             "weeks", "is_active", "target_environment", "is_template",
             "progression_target_rir_override", "localization_key",
-            "generator_input_raw"
+            "generator_input_raw", "generation_source"
         ])
         for p in items {
             w.appendRow([
@@ -339,7 +343,8 @@ public enum DataExportService {
                 CSVWriter.bool(p.isTemplate),
                 p.progressionTargetRIROverride.map { CSVWriter.decimal(Double($0)) } ?? "",
                 p.localizationKey ?? "",
-                p.generatorInputRaw ?? ""
+                p.generatorInputRaw ?? "",
+                p.generationSourceRaw
             ])
         }
         return w.data()

@@ -103,3 +103,16 @@ public struct PlanGeneratorInput: Codable, Sendable, Hashable {
         selections.reduce(0) { $0 + $1.daysPerWeek }
     }
 }
+
+/// Handoff "Lauf-Coaching - Machbarkeits-Check": Herkunft eines `TrainingPlan`.
+/// Zweck ist rein die Wiedererkennung "existiert fuer dieses Ziel schon ein
+/// angenommener Coach-Plan" auf Dashboard/Plan-Tab/Profil - die eigentliche
+/// Unterdrueckung laeuft aber ueber den Fingerprint auf
+/// `UserBodyProfile.cardioFeasibilityDismissedFingerprint`
+/// (`CardioFeasibilityCalculator.suppressionFingerprint`), nicht ueber eine
+/// Suche nach diesem Fall hier - siehe Kommentar dort.
+public enum GenerationSource: String, Codable, Sendable, CaseIterable {
+    case manual
+    case planBuilder
+    case cardioCoach
+}

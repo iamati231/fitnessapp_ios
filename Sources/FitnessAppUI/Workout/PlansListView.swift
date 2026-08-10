@@ -30,6 +30,8 @@ public struct PlansListView: View {
            sort: \WorkoutSession.startTime, order: .reverse)
     private var activeSessions: [WorkoutSession]
 
+    @Query private var profiles: [UserBodyProfile]
+
     @State private var showingTemplatePicker = false
     @State private var showingPlanBuilder = false
 
@@ -84,6 +86,10 @@ public struct PlansListView: View {
             List {
                 if let active = activeSessions.first {
                     activeSessionSection(active)
+                }
+
+                if let profile = profiles.first, let model = CardioFeasibilityCardModel.make(for: profile) {
+                    cardioFeasibilitySection(model, profile: profile)
                 }
 
                 plansSection
@@ -188,6 +194,81 @@ public struct PlansListView: View {
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 12, trailing: 16))
         }
+    }
+
+    // MARK: - Handoff "Lauf-Coaching - Machbarkeits-Check"
+
+    /// Vor den eigenen Plaenen (2.30), bewusst KEIN `DeltiqCard` wie die
+    /// echten Plaene darunter - gestrichelter Rand macht sofort erkennbar
+    /// "das hier laeuft noch nicht". Uebernehmen/Verwerfen direkt hier,
+    /// anders als die verkuerzte Dashboard-Karte (die nur zu dieser Stelle
+    /// verlinkt).
+    private func cardioFeasibilitySection(_ model: CardioFeasibilityCardModel, profile: UserBodyProfile) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "flag.checkered")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(model.verdict.feasible
+                         ? String(localized: "plans.cardioFeasibility.feasibleTitle", bundle: .module)
+                         : String(localized: "plans.cardioFeasibility.infeasibleTitle", bundle: .module))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    Text(model.detailText)
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            if model.hasPlan, let days = model.planResult?.days {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(days.enumerated()), id: \.offset) { _, day in
+                        CardioFeasibilityDayRow(day: day)
+                    }
+                }
+            }
+            HStack(spacing: 20) {
+                if model.hasPlan {
+                    Button {
+                        withAnimation {
+                            let plan = model.accept(profile: profile, in: modelContext)
+                            if let plan {
+                                navigation.workoutPath.append(plan)
+                            }
+                        }
+                    } label: {
+                        Text(model.verdict.feasible
+                             ? String(localized: "plans.cardioFeasibility.apply", bundle: .module)
+                             : String(localized: "plans.cardioFeasibility.acceptSuggestion", bundle: .module))
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.deltiqOrange)
+                }
+                if !model.verdict.feasible {
+                    Button {
+                        withAnimation { model.dismiss(profile: profile) }
+                    } label: {
+                        Text("plans.cardioFeasibility.keepGoal", bundle: .module)
+                            .font(.subheadline)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.Deltiq.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous)
+                .strokeBorder(Color.deltiqOrange.opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+        )
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
     }
 
     // MARK: - Plaene

@@ -671,5 +671,100 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertNil(imported?.weeklyBaseVolumeKm)
         XCTAssertNil(imported?.maxHeartRateBpm)
     }
+
+    // Handoff "Lauf-Coaching - Machbarkeits-Check": der Fingerprint muss
+    // ein Backup/Restore ueberleben, sonst zeigt die Karte nach einem
+    // Restore erneut einen bereits verworfenen/angenommenen Vorschlag.
+    func testCardioFeasibilityDismissedFingerprintSurvivesRoundtrip() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        profile.cardioFeasibilityDismissedFingerprint = "marathon#1800000000#22.4"
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.cardioFeasibilityDismissedFingerprint, "marathon#1800000000#22.4")
+    }
+
+    func testCardioFeasibilityDismissedFingerprintDefaultsToNilOnRoundtrip() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertNil(imported?.cardioFeasibilityDismissedFingerprint)
+    }
+
+    // Handoff "Lauf-Coaching - Machbarkeits-Check": generationSource muss
+    // ein Backup/Restore ueberleben, sonst haelt die "bereits angenommen"-
+    // Erkennung (bzw. hier: die zugrundeliegende Herkunfts-Markierung) einen
+    // Restore nicht durch.
+    func testGenerationSourceSurvivesRoundtrip() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Cardio-Coach-Plan", programType: "custom", isActive: false)
+        plan.generationSource = .cardioCoach
+        ctx.insert(plan)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
+        XCTAssertEqual(imported?.generationSource, .cardioCoach)
+    }
+
+    func testGenerationSourceDefaultsToManualOnRoundtrip() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Handangelegter Plan", programType: "custom", isActive: false)
+        ctx.insert(plan)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
+        XCTAssertEqual(imported?.generationSource, .manual)
+    }
 }
 #endif

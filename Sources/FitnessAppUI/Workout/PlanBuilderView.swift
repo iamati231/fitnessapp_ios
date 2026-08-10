@@ -676,7 +676,7 @@ public struct PlanBuilderView: View {
             return
         }
 
-        guard let plan = PlanGeneratorInstantiator.build(from: currentInput, in: modelContext, result: result) else { return }
+        guard let plan = PlanGeneratorInstantiator.build(from: currentInput, in: modelContext, result: result, generationSource: .planBuilder) else { return }
         dismiss()
         // Gleiches 0.3s-Defer-Muster wie `ProgramTemplatePickerView.instantiate`
         // - gibt der Sheet-Dismiss-Animation Zeit, bevor der Navigations-Stack

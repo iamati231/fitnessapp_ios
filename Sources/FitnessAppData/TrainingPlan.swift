@@ -56,6 +56,13 @@ public final class TrainingPlan {
     /// `UserBodyProfile.equipmentPreferencesRaw`.
     public var generatorInputRaw: String?
 
+    /// Handoff "Lauf-Coaching - Machbarkeits-Check": Herkunft dieses Plans.
+    /// Default `.manual`, weil das die einzige Herkunft ist, die kein
+    /// Instantiator explizit setzt (Template-Adopt/Leerer-Plan gehen nicht
+    /// ueber `PlanGeneratorInstantiator`). Gleiches Raw+Computed-Prinzip wie
+    /// `UserBodyProfile.cardioGoalRaw`.
+    public var generationSourceRaw: String = GenerationSource.manual.rawValue
+
     @Relationship(deleteRule: .cascade, inverse: \TrainingDay.plan)
     public var days: [TrainingDay] = []
 
@@ -76,6 +83,11 @@ public final class TrainingPlan {
         }
     }
 
+    public var generationSource: GenerationSource {
+        get { GenerationSource(rawValue: generationSourceRaw) ?? .manual }
+        set { generationSourceRaw = newValue.rawValue }
+    }
+
     public init(
         name: String = "",
         customName: String? = nil,
@@ -86,7 +98,8 @@ public final class TrainingPlan {
         targetEnvironment: EnvironmentType = .gym,
         isTemplate: Bool = false,
         localizationKey: String? = nil,
-        generatorInputRaw: String? = nil
+        generatorInputRaw: String? = nil,
+        generationSource: GenerationSource = .manual
     ) {
         self.name = name
         self.customName = customName
@@ -98,6 +111,7 @@ public final class TrainingPlan {
         self.isTemplate = isTemplate
         self.localizationKey = localizationKey
         self.generatorInputRaw = generatorInputRaw
+        self.generationSourceRaw = generationSource.rawValue
     }
 }
 #endif

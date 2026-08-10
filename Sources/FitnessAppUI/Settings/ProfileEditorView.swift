@@ -626,12 +626,15 @@ public struct ProfileEditorView: View {
                         placeholder: String(localized: "profile.cardio.weeklyVolumePlaceholder", bundle: .module)
                     )
                 }
-                DeltiqControlRow(label: String(localized: "profile.cardio.maxHeartRate", bundle: .module), showsDivider: false) {
+                DeltiqControlRow(label: String(localized: "profile.cardio.maxHeartRate", bundle: .module), showsDivider: feasibilityModel != nil) {
                     intField(
                         String(localized: "profile.cardio.maxHeartRate", bundle: .module),
                         value: $profile.maxHeartRateBpm,
                         placeholder: String(localized: "profile.cardio.maxHeartRatePlaceholder", bundle: .module)
                     )
+                }
+                if let model = feasibilityModel {
+                    feasibilitySection(model)
                 }
             }
             hintRow(String(localized: "profile.cardio.footer", bundle: .module))
@@ -732,6 +735,66 @@ public struct ProfileEditorView: View {
         case (nil, nil):
             return ""
         }
+    }
+
+    // MARK: - Handoff "Lauf-Coaching - Machbarkeits-Check"
+
+    /// Live gerechnet bei jedem Render - keine gespeicherte "ausstehende
+    /// Empfehlung" (2.30): Profil, Dashboard und Plan-Tab rufen alle
+    /// denselben `CardioFeasibilityCardModel.make(for:)` auf.
+    private var feasibilityModel: CardioFeasibilityCardModel? {
+        CardioFeasibilityCardModel.make(for: profile)
+    }
+
+    @ViewBuilder
+    private func feasibilitySection(_ model: CardioFeasibilityCardModel) -> some View {
+        Rectangle()
+            .fill(Color.Deltiq.divider)
+            .frame(height: 1)
+        VStack(alignment: .leading, spacing: 8) {
+            Text(model.verdict.feasible
+                 ? String(localized: "profile.cardio.feasibility.feasibleHeadline", bundle: .module)
+                 : String(localized: "profile.cardio.feasibility.infeasibleHeadline", bundle: .module))
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+            Text(model.detailText)
+                .font(.caption)
+                .foregroundStyle(Color.Deltiq.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if model.hasPlan, let days = model.planResult?.days {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(days.enumerated()), id: \.offset) { _, day in
+                        CardioFeasibilityDayRow(day: day)
+                    }
+                }
+            }
+            HStack(spacing: 20) {
+                if model.hasPlan {
+                    Button {
+                        withAnimation { _ = model.accept(profile: profile, in: modelContext) }
+                    } label: {
+                        Text(model.verdict.feasible
+                             ? String(localized: "profile.cardio.feasibility.apply", bundle: .module)
+                             : String(localized: "profile.cardio.feasibility.acceptSuggestion", bundle: .module))
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.deltiqOrange)
+                }
+                if !model.verdict.feasible {
+                    Button {
+                        withAnimation { model.dismiss(profile: profile) }
+                    } label: {
+                        Text("profile.cardio.feasibility.keepGoal", bundle: .module)
+                            .font(.subheadline)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                }
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
     }
 
     /// DEL-170: Equipment-Präferenzen (Multi-Select). Steuert die Auswahl

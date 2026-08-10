@@ -163,6 +163,15 @@ public struct DashboardView: View {
                         resumeSessionTile(open)
                     }
 
+                    // Handoff "Lauf-Coaching - Machbarkeits-Check" (2.30):
+                    // statisch ueber den konfigurierbaren Widgets, gleiche
+                    // Prioritaet wie unrepresentedOpenSession - kein
+                    // gespeicherter Zustand, jeder Aufruf rechnet live neu
+                    // (siehe CardioFeasibilityCardModel).
+                    if let model = cardioFeasibilityModel {
+                        cardioFeasibilityDashboardCard(model)
+                    }
+
                     // DEL-109: Dynamisches Widget-Rendering. Reihenfolge +
                     // Sichtbarkeit kommen aus dem User-Profil; jeder Case
                     // mappt auf den entsprechenden Card-View. Neue Widget-
@@ -1967,6 +1976,57 @@ public struct DashboardView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("dashboard.resume.caption", bundle: .module))
+    }
+
+    // MARK: - Handoff "Lauf-Coaching - Machbarkeits-Check"
+
+    /// Live gerechnet bei jedem Render, keine gespeicherte "ausstehende
+    /// Empfehlung" - Profil, Dashboard und Plan-Tab rufen alle denselben
+    /// `CardioFeasibilityCardModel.make(for:)` auf.
+    private var cardioFeasibilityModel: CardioFeasibilityCardModel? {
+        profiles.first.flatMap(CardioFeasibilityCardModel.make(for:))
+    }
+
+    /// Verkuerzte Vorschau (2.30): zwei Tage statt der vollen Woche, kein
+    /// Wochensummen-Fusstext. Knopf ist "Plan ansehen", nicht "Uebernehmen"
+    /// - die Annahme selbst passiert im Profil oder im Plan-Tab (dort erneut
+    /// `CardioFeasibilityCardModel.make(for:)`, nicht dasselbe Objekt).
+    private func cardioFeasibilityDashboardCard(_ model: CardioFeasibilityCardModel) -> some View {
+        DeltiqCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "flag.checkered")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(model.verdict.feasible
+                         ? String(localized: "dashboard.cardioFeasibility.feasibleTitle", bundle: .module)
+                         : String(localized: "dashboard.cardioFeasibility.infeasibleTitle", bundle: .module))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    Text(model.detailText)
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if model.hasPlan, let days = model.planResult?.days {
+                        VStack(alignment: .leading, spacing: 0) {
+                            ForEach(Array(days.prefix(2).enumerated()), id: \.offset) { _, day in
+                                CardioFeasibilityDayRow(day: day)
+                            }
+                        }
+                    }
+                    Button {
+                        navigation.selectedTab = .plan
+                    } label: {
+                        Text("dashboard.cardioFeasibility.viewPlan", bundle: .module)
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.deltiqOrange)
+                }
+                Spacer(minLength: 0)
+            }
+        }
     }
 
     /// DEL-215: Resume fuer beliebige offene Sessions. Plan-gebundene

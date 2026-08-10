@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1682 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1702 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1682 / 1682** (100%) | 0 |
-| 🇬🇧 English (EN) | **1682 / 1682** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1682 / 1682** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1702 / 1702** (100%) | 0 |
+| 🇬🇧 English (EN) | **1702 / 1702** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1702 / 1702** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -196,6 +196,18 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `cardioEquipment.none` | Kein Gerät | No equipment | Cihaz yok |
 | `cardioEquipment.rowingMachine` | Rudergerät | Rowing machine | Kürek makinesi |
 | `cardioEquipment.treadmill` | Laufband | Treadmill | Koşu Bandı |
+
+## `cardioFeasibility.*`  (7 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `cardioFeasibility.day.interval` | %1$lld × %2$@ km | %1$lld × %2$@ km | %1$lld × %2$@ km |
+| `cardioFeasibility.day.run` | ~%lld Min. Lauf | ~%lld min run | ~%lld dk koşu |
+| `cardioFeasibility.day.runFallback` | Lauf | Run | Koşu |
+| `cardioFeasibility.day.strength` | Krafttraining | Strength training | Kuvvet antrenmanı |
+| `cardioFeasibility.detail.feasible` | Du brauchst rechnerisch %1$lld Wochen, verfügbar sind %2$lld – das reicht. | You need about %1$lld weeks, %2$lld are available – that's enough. | Hesaba göre %1$lld hafta gerekiyor, %2$lld hafta mevcut – bu yeterli. |
+| `cardioFeasibility.detail.infeasibleNoSuggestion` | Du brauchst rechnerisch %1$lld Wochen, verfügbar sind nur %2$lld. Selbst ein kleineres Ziel passt nicht mehr in die verbleibende Zeit. | You need about %1$lld weeks, but only %2$lld are available. Even a smaller goal no longer fits in the remaining time. | Hesaba göre %1$lld hafta gerekiyor, ama sadece %2$lld hafta mevcut. Daha küçük bir hedef bile kalan süreye sığmıyor. |
+| `cardioFeasibility.detail.infeasibleWithSuggestion` | Du brauchst rechnerisch %1$lld Wochen, verfügbar sind nur %2$lld. Realistischer wäre aktuell: %3$@. | You need about %1$lld weeks, but only %2$lld are available. A more realistic goal right now: %3$@. | Hesaba göre %1$lld hafta gerekiyor, ama sadece %2$lld hafta mevcut. Şu an daha gerçekçi bir hedef: %3$@. |
 
 ## `cardioGoal.*`  (5 Keys)
 
@@ -487,7 +499,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `customExercise.section.name` | Name | Name | Ad |
 | `customExercise.title` | Neue Übung | New exercise | Yeni hareket |
 
-## `dashboard.*`  (86 Keys)
+## `dashboard.*`  (89 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -502,6 +514,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.calendar.title` | Trainings-Kalender | Training calendar | Antrenman takvimi |
 | `dashboard.cardioChart.legend` | min/km · niedriger = besser | min/km · lower = better | dk/km · daha düşük = daha iyi |
 | `dashboard.cardioChart.title` | Cardio-Pace-Trend | Cardio Pace Trend | Kardiyo Tempo Trendi |
+| `dashboard.cardioFeasibility.feasibleTitle` | Dein Lauf-Ziel ist machbar | Your running goal is achievable | Koşu hedefin ulaşılabilir |
+| `dashboard.cardioFeasibility.infeasibleTitle` | Dein Lauf-Ziel wird eng | Your running goal is getting tight | Koşu hedefin zorlaşıyor |
+| `dashboard.cardioFeasibility.viewPlan` | Plan ansehen | View plan | Planı görüntüle |
 | `dashboard.compoundChart.empty.description` | Logge zwei oder mehr Sätze deiner großen Lifts, um die Kurve zu sehen. | Log two or more sets of your main lifts to see the trend. | Eğriyi görmek için ana liftlerinden iki veya daha fazla set kaydet. |
 | `dashboard.compoundChart.empty.title` | Noch zu wenig Daten | Not enough data yet | Henüz yeterli veri yok |
 | `dashboard.compoundChart.legend` | Geschätztes 1RM · gestrichelt = 4-Wochen-Prognose | Estimated 1RM · dashed = 4-week forecast | Tahmini 1RM · kesik çizgi = 4 haftalık tahmin |
@@ -1490,7 +1505,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planEditor.template.banner.title` | Template-Plan | Template Plan | Şablon Plan |
 | `planEditor.toggle.setActive` | Als aktiven Plan setzen | Set as Active Plan | Aktif Plan Olarak Ayarla |
 
-## `plans.*`  (17 Keys)
+## `plans.*`  (22 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1499,6 +1514,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plans.active.startedAt` | Gestartet %@ | Started %@ | %@ başladı |
 | `plans.active.title` | Laufendes Training | Active Workout | Aktif Antrenman |
 | `plans.activeBadge` | Aktiv | Active | Aktif |
+| `plans.cardioFeasibility.acceptSuggestion` | Vorschlag annehmen | Accept suggestion | Öneriyi kabul et |
+| `plans.cardioFeasibility.apply` | Plan übernehmen | Adopt plan | Planı benimse |
+| `plans.cardioFeasibility.feasibleTitle` | Dein Lauf-Ziel ist machbar | Your running goal is achievable | Koşu hedefin ulaşılabilir |
+| `plans.cardioFeasibility.infeasibleTitle` | Dein Lauf-Ziel wird eng | Your running goal is getting tight | Koşu hedefin zorlaşıyor |
+| `plans.cardioFeasibility.keepGoal` | Ziel behalten | Keep goal | Hedefi koru |
 | `plans.context.count.one` | %lld Plan | %lld plan | %lld plan |
 | `plans.context.count.other` | %lld Pläne | %lld plans | %lld plan |
 | `plans.create.empty` | Leerer Plan | Empty Plan | Boş Plan |
@@ -1528,7 +1548,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (51 Keys)
+## `profile.*`  (56 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1536,6 +1556,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.body.heightPlaceholder` | z.B. 180 | e.g. 180 | örn. 180 |
 | `profile.body.plausible` | Plausibel: %1$lld–%2$lld cm. | Plausible: %1$lld–%2$lld cm. | Makul: %1$lld–%2$lld cm. |
 | `profile.cardio.enable` | Lauf-Coaching aktivieren | Enable running coaching | Koşu koçluğunu etkinleştir |
+| `profile.cardio.feasibility.acceptSuggestion` | Vorschlag annehmen | Accept suggestion | Öneriyi kabul et |
+| `profile.cardio.feasibility.apply` | Plan übernehmen | Adopt plan | Planı benimse |
+| `profile.cardio.feasibility.feasibleHeadline` | Dein Ziel ist machbar | Your goal is achievable | Hedefin ulaşılabilir |
+| `profile.cardio.feasibility.infeasibleHeadline` | Das wird eng | This is going to be tight | Bu biraz zor olacak |
+| `profile.cardio.feasibility.keepGoal` | Ziel behalten | Keep goal | Hedefi koru |
 | `profile.cardio.fiveKReference` | Aktuelle 5-km-Zeit | Current 5K time | Güncel 5 km süresi |
 | `profile.cardio.footer` | Aktiviere Lauf-Coaching, um Cardio-spezifische Hinweise zu erhalten (z.B. bei zu schnell gesteigertem Laufvolumen). Deine 5-km-Zeit hilft, sinnvolle Trainings-Paces abzuleiten. | Enable running coaching to get cardio-specific insights (e.g. when your running volume ramps up too fast). Your 5K time helps derive sensible training paces. | Kardiyoya özel bilgiler almak için (örn. koşu hacmin çok hızlı artarsa) koşu koçluğunu etkinleştir. 5 km süren, anlamlı antrenman temposu türetmemize yardımcı olur. |
 | `profile.cardio.goal` | Lauf-Ziel | Running goal | Koşu hedefi |
