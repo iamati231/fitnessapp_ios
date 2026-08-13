@@ -74,6 +74,15 @@ public struct DashboardView: View {
     /// eine Uebung tragen.
     @State private var pendingAdHocTimeFormat: WorkoutTimeFormat?
     @State private var showingTimedAdHocPicker = false
+    /// Nutzer-Feedback: der Start fuehlte sich "sofort" an - direkt nach der
+    /// Uebungswahl wurden Tag/Uebung/Session angelegt und in den laufenden
+    /// Player navigiert, ohne einen bewussten "Los geht's"-Moment (anders
+    /// als beim Uebernehmen einer Vorlage, wo DayEditorView erst die volle
+    /// Uebungsliste zeigt, bevor "Training starten" getippt wird). Die
+    /// Bibliotheks-Auswahl merkt hier nur noch die Wahl vor, `finishTimedAdHocWorkout`
+    /// laeuft erst nach explizitem Bestaetigen in `TimedAdHocConfirmSheet`.
+    @State private var pendingAdHocExerciseTemplate: ExerciseTemplate?
+    @State private var showingTimedAdHocConfirm = false
 
     /// Nachtrag 6. August (README 2.1): Umschaltzustand fuer die
     /// aufklappbare Uebungsliste der Plan-Karte. View-lokal und bewusst
@@ -259,17 +268,46 @@ public struct DashboardView: View {
         // README 2.35 (43b): Bibliotheks-Picker fuer den Ad-Hoc-Zeitformat-
         // Start - gleiche Einschraenkung wie `ActiveWorkoutView`s Picker
         // (DEL-096: Custom-Eintragen bewusst nicht erlaubt, Library-Pick
-        // reicht). Genau EIN Pick, danach wird sofort gestartet (die
-        // gewaehlte Uebung ist die einzige, wiederholte Bewegung der Runde -
-        // "Eine Uebung reicht" laut Entscheidung).
+        // reicht). Genau EIN Pick (die gewaehlte Uebung wird die einzige,
+        // wiederholte Bewegung der Runde - "Eine Uebung reicht" laut
+        // Entscheidung); merkt die Wahl nur vor, `finishTimedAdHocWorkout`
+        // laeuft erst nach Bestaetigung im `TimedAdHocConfirmSheet` unten.
         .sheet(isPresented: $showingTimedAdHocPicker) {
             ExerciseLibraryPickerSheet(
                 planEnvironment: nil,
                 onSelect: { template in
-                    finishTimedAdHocWorkout(with: template)
+                    pendingAdHocExerciseTemplate = template
+                    // Zwei `.sheet(isPresented:)`-Modifier haengen hier auf
+                    // derselben View (plus ein dritter fuer
+                    // `comebackAssessment`) - ein zweites Sheet direkt in der
+                    // Dismiss-Transaktion des gerade schliessenden Pickers zu
+                    // praesentieren ist fragil, SwiftUI kann das Flip-auf-
+                    // true sonst schlucken. Gleiche Technik (nicht derselbe
+                    // Fall) wie der bestehende Sheet-Dismiss-vor-
+                    // Navigations-Mutation-Versatz in `ProgramTemplatePickerView.instantiate`/
+                    // `PlansListView`/`PlanBuilderView` - hier fuer eine
+                    // zweite Sheet-Praesentation statt einer
+                    // NavigationStack-Mutation.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        showingTimedAdHocConfirm = true
+                    }
                 },
                 onCreateCustom: { _ in }
             )
+        }
+        // Nutzer-Feedback: expliziter Bestaetigungs-Schritt, bevor Tag/
+        // Uebung/Session ueberhaupt angelegt werden - siehe Doc-Kommentar
+        // bei `pendingAdHocExerciseTemplate`.
+        .sheet(isPresented: $showingTimedAdHocConfirm) {
+            if let format = pendingAdHocTimeFormat, let template = pendingAdHocExerciseTemplate {
+                TimedAdHocConfirmSheet(format: format, exerciseName: template.displayName) {
+                    finishTimedAdHocWorkout(with: template)
+                    pendingAdHocExerciseTemplate = nil
+                } onCancel: {
+                    pendingAdHocTimeFormat = nil
+                    pendingAdHocExerciseTemplate = nil
+                }
+            }
         }
         // DEL-042: Conflict-Dialog wenn der User in Plan A starten will,
         // waehrend in Plan B noch eine offene Session lebt.
@@ -2312,9 +2350,17 @@ public struct DashboardView: View {
         )
         modelContext.insert(session)
 
-        navigation.workoutPath = NavigationPath()
-        navigation.workoutPath.append(ActiveSessionRoute(session: session))
-        navigation.selectedTab = .plan
+        // Bugfix (analog `ProgramTemplatePickerView.instantiate`): der
+        // Aufrufer (`TimedAdHocConfirmSheet`) dismissed sich direkt nach
+        // diesem Funktionsaufruf - eine Navigations-Mutation in derselben
+        // Transaktion wie ein Sheet-Dismiss kann mit dessen Stack-Update
+        // racen, der Player erscheint dann manchmal nicht. Gleicher
+        // Versatz wie dort.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            navigation.workoutPath = NavigationPath()
+            navigation.workoutPath.append(ActiveSessionRoute(session: session))
+            navigation.selectedTab = .plan
+        }
     }
 
     /// Erzeugt eine "skipped"-WorkoutSession fuer einen Ruhetag. Die Session

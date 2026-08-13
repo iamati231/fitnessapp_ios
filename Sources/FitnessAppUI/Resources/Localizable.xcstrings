@@ -6751,6 +6751,22 @@
         }
       }
     },
+    "dashboard.action.adHoc.confirm.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Bereit?" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Ready?" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hazır mısın?" } }
+      }
+    },
+    "dashboard.action.adHoc.confirm.start": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Los geht's" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Let's go" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hadi başlayalım" } }
+      }
+    },
     "dashboard.compoundChart.title": {
       "extractionState": "manual",
       "localizations": {
