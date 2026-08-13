@@ -88,13 +88,15 @@ private func finishTimedSession(
 /// im Ellipsis-Menu). Frueher (vor README 2.35) waren Zeitformat-Tage immer
 /// reine Plan-Tage - ein Discard durfte nur die Session loeschen, nie den
 /// Tag (der gehoert weiter zum Plan). Seit dem Ad-Hoc-Zeitformat-Start
-/// (`DashboardView.finishTimedAdHocWorkout`, 43b) gibt es aber auch
-/// ephemere, planlose `TrainingDay`s hier - ohne dieses Mit-Loeschen wuerde
-/// ein verworfener Ad-Hoc-Start einen verwaisten Tag fuer immer im Store
-/// zuruecklassen, exakt das Problem, das `ActiveWorkoutView`s
-/// `sweepEmptyAdHocSession()` fuer den anderen Ad-Hoc-Pfad schon loest.
-/// `session.day` wird VOR dem Session-Delete gesichert statt danach
-/// gelesen, weil die Beziehung ohne Inverse nullified (Task #115).
+/// (`DashboardView.beginTimedAdHocWorkout` legt den Tag an,
+/// `DayEditorView.actuallyStartNewSession` die Session, 43b) gibt es aber
+/// auch ephemere, planlose `TrainingDay`s hier - ohne dieses Mit-Loeschen
+/// wuerde ein verworfener Ad-Hoc-Start einen verwaisten Tag fuer immer im
+/// Store zuruecklassen, exakt das Problem, das `ActiveWorkoutView`s
+/// `sweepEmptyAdHocSession()` bzw. `DayEditorView`s
+/// `sweepAbandonedAdHocDayIfNeeded()` fuer die jeweils anderen Ad-Hoc-Pfade
+/// schon loesen. `session.day` wird VOR dem Session-Delete gesichert statt
+/// danach gelesen, weil die Beziehung ohne Inverse nullified (Task #115).
 @MainActor
 private func discardTimedSession(_ session: WorkoutSession, modelContext: ModelContext, dismiss: DismissAction) {
     let orphanedAdHocDay = session.isAdHoc ? session.day : nil

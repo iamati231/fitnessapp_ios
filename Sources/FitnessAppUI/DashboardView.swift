@@ -64,25 +64,19 @@ public struct DashboardView: View {
     @State private var showingActiveSessionConflict = false
     @State private var pendingNewStart: (() -> Void)?
 
-    /// README 2.35 (43b): Ad-Hoc-Zeitformat-Start. `pendingAdHocTimeFormat`
-    /// merkt sich die Menue-Wahl, waehrend `showingTimedAdHocPicker` den
-    /// Bibliotheks-Picker zeigt - dieselbe zweistufige Konstruktion wie
-    /// `ActiveWorkoutView.showingAdHocPicker`, nur VOR statt nach dem
-    /// Session-Insert, weil `TimedWorkoutPlayerView` (anders als
-    /// `ActiveWorkoutView`) keinen eigenen Uebungs-Picker/Empty-State fuer
-    /// einen leeren Tag hat - der Tag muss also schon beim Insert mindestens
-    /// eine Uebung tragen.
-    @State private var pendingAdHocTimeFormat: WorkoutTimeFormat?
-    @State private var showingTimedAdHocPicker = false
-    /// Nutzer-Feedback: der Start fuehlte sich "sofort" an - direkt nach der
-    /// Uebungswahl wurden Tag/Uebung/Session angelegt und in den laufenden
-    /// Player navigiert, ohne einen bewussten "Los geht's"-Moment (anders
-    /// als beim Uebernehmen einer Vorlage, wo DayEditorView erst die volle
-    /// Uebungsliste zeigt, bevor "Training starten" getippt wird). Die
-    /// Bibliotheks-Auswahl merkt hier nur noch die Wahl vor, `finishTimedAdHocWorkout`
-    /// laeuft erst nach explizitem Bestaetigen in `TimedAdHocConfirmSheet`.
-    @State private var pendingAdHocExerciseTemplate: ExerciseTemplate?
-    @State private var showingTimedAdHocConfirm = false
+    /// README 2.35 (43b): Ad-Hoc-Zeitformat-Start. Kein eigener Picker/
+    /// Bestaetigungs-Sheet mehr (Nutzer-Feedback: nur eine Uebung waehlbar,
+    /// keine Bearbeitung von Wiederholungen/Zeit moeglich) - `beginTimedAdHocWorkout`
+    /// legt stattdessen einen leeren Tag mit gesetztem `timeFormat` an und
+    /// navigiert direkt in `DayEditorView`. Der bietet bereits alles, was
+    /// hier fehlte: beliebig viele Uebungen ueber den bestehenden Bibliotheks-
+    /// Picker hinzufuegen, jede einzeln ueber `ExerciseEditorView` bearbeiten
+    /// (Wiederholungen/Sekunden je nach `isTimeBased`), die Struktur-Wahl
+    /// (README 2.35, 43a) aendern, und "Training starten" ist ohnehin schon
+    /// deaktiviert, solange keine Uebung existiert (`day.activeExercises.isEmpty`).
+    /// Der "Training starten"-Knopf dort liefert auch den bewusst
+    /// zu bestaetigenden Start-Moment, den ein separates Sheet zuvor extra
+    /// nachbilden musste.
 
     /// Nachtrag 6. August (README 2.1): Umschaltzustand fuer die
     /// aufklappbare Uebungsliste der Plan-Karte. View-lokal und bewusst
@@ -263,50 +257,6 @@ public struct DashboardView: View {
         .sheet(item: $comebackAssessment) { assessment in
             ComebackPromptSheet(assessment: assessment) { factor in
                 resolveComeback(factor: factor)
-            }
-        }
-        // README 2.35 (43b): Bibliotheks-Picker fuer den Ad-Hoc-Zeitformat-
-        // Start - gleiche Einschraenkung wie `ActiveWorkoutView`s Picker
-        // (DEL-096: Custom-Eintragen bewusst nicht erlaubt, Library-Pick
-        // reicht). Genau EIN Pick (die gewaehlte Uebung wird die einzige,
-        // wiederholte Bewegung der Runde - "Eine Uebung reicht" laut
-        // Entscheidung); merkt die Wahl nur vor, `finishTimedAdHocWorkout`
-        // laeuft erst nach Bestaetigung im `TimedAdHocConfirmSheet` unten.
-        .sheet(isPresented: $showingTimedAdHocPicker) {
-            ExerciseLibraryPickerSheet(
-                planEnvironment: nil,
-                onSelect: { template in
-                    pendingAdHocExerciseTemplate = template
-                    // Zwei `.sheet(isPresented:)`-Modifier haengen hier auf
-                    // derselben View (plus ein dritter fuer
-                    // `comebackAssessment`) - ein zweites Sheet direkt in der
-                    // Dismiss-Transaktion des gerade schliessenden Pickers zu
-                    // praesentieren ist fragil, SwiftUI kann das Flip-auf-
-                    // true sonst schlucken. Gleiche Technik (nicht derselbe
-                    // Fall) wie der bestehende Sheet-Dismiss-vor-
-                    // Navigations-Mutation-Versatz in `ProgramTemplatePickerView.instantiate`/
-                    // `PlansListView`/`PlanBuilderView` - hier fuer eine
-                    // zweite Sheet-Praesentation statt einer
-                    // NavigationStack-Mutation.
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        showingTimedAdHocConfirm = true
-                    }
-                },
-                onCreateCustom: { _ in }
-            )
-        }
-        // Nutzer-Feedback: expliziter Bestaetigungs-Schritt, bevor Tag/
-        // Uebung/Session ueberhaupt angelegt werden - siehe Doc-Kommentar
-        // bei `pendingAdHocExerciseTemplate`.
-        .sheet(isPresented: $showingTimedAdHocConfirm) {
-            if let format = pendingAdHocTimeFormat, let template = pendingAdHocExerciseTemplate {
-                TimedAdHocConfirmSheet(format: format, exerciseName: template.displayName) {
-                    finishTimedAdHocWorkout(with: template)
-                    pendingAdHocExerciseTemplate = nil
-                } onCancel: {
-                    pendingAdHocTimeFormat = nil
-                    pendingAdHocExerciseTemplate = nil
-                }
             }
         }
         // DEL-042: Conflict-Dialog wenn der User in Plan A starten will,
@@ -2252,56 +2202,20 @@ public struct DashboardView: View {
         navigation.selectedTab = .plan
     }
 
-    /// README 2.35 (43b): Menue-Wahl gemerkt, Bibliotheks-Picker geoeffnet -
-    /// die eigentliche Erzeugung passiert erst in `finishTimedAdHocWorkout`,
-    /// sobald eine Uebung feststeht (siehe Doc-Kommentar bei
-    /// `pendingAdHocTimeFormat`). Keine Comeback-Rueckfrage hier: reine
-    /// Zeitformat-Tage haben keine Zielgewichte, die eine Reduktion betreffen
-    /// koennte - identische Begruendung wie
-    /// `DayEditorView.actuallyStartNewSession`.
+    /// Nutzer-Feedback: der urspruengliche Ein-Uebung-Sofort-Start liess
+    /// weder mehrere Uebungen noch das Bearbeiten von Wiederholungen/Zeit
+    /// zu. Legt stattdessen einen LEEREN Tag mit gesetztem `timeFormat` an
+    /// und navigiert in `DayEditorView` - der bietet bereits alles, was
+    /// hier fehlte (Uebungen beliebig oft ueber den bestehenden Bibliotheks-
+    /// Picker hinzufuegen, jede einzeln in `ExerciseEditorView` bearbeiten,
+    /// die Struktur-Wahl aus 43a jederzeit aendern), plus den bewusst zu
+    /// bestaetigenden Start-Moment gratis mit ("Training starten" ist ueber
+    /// `day.activeExercises.isEmpty` disabled, bis mindestens eine Uebung
+    /// existiert - kein eigener Guard hier noetig). Keine Comeback-
+    /// Rueckfrage/Konflikt-Handling noetig: `DayEditorView.actuallyStartNewSession`
+    /// deckt beides bereits ab, inklusive des Zeitformat-Tage-Sonderfalls
+    /// (keine Zielgewichte, die eine Reduktion betreffen koennte).
     private func beginTimedAdHocWorkout(format: WorkoutTimeFormat) {
-        pendingAdHocTimeFormat = format
-        showingTimedAdHocPicker = true
-    }
-
-    /// Baut Tag + Uebung + Session in einem Zug, sobald die Bibliotheks-
-    /// Auswahl feststeht. Anders als `startAdHocWorkout()` (leerer Tag,
-    /// Uebungen kommen erst danach ueber den Header-"+"-Knopf) MUSS der Tag
-    /// hier schon beim Insert mindestens eine Uebung tragen:
-    /// `WorkoutRootView` waehlt allein anhand `session.day?.timeFormat`
-    /// zwischen `TimedWorkoutPlayerView` und `ActiveWorkoutView`, und
-    /// Ersterer hat (anders als Letzterer) keinen eigenen Empty-State/Picker
-    /// fuer einen noch leeren Tag.
-    private func finishTimedAdHocWorkout(with template: ExerciseTemplate) {
-        guard let format = pendingAdHocTimeFormat else { return }
-        pendingAdHocTimeFormat = nil
-
-        // README 2.35: gleiche Rundenzahl-Konvention wie
-        // `PlanGenerator.timedCardioCandidates` - AMRAP/EMOM zaehlen ihre
-        // Runden/Minuten selbst live (`sets: 1`), nur Auf Zeit hakt ueber
-        // `ForTimePlayerView.totalBoxes` `sets`-viele Boxen ab und braucht
-        // deshalb eine echte Rundenzahl.
-        let sets: Int
-        let timeCapMinutes: Int?
-        switch format {
-        case .amrap, .emom:
-            sets = 1
-            timeCapMinutes = defaultTimedFormatDurationMinutes(for: format)
-        case .forTime:
-            sets = 5
-            timeCapMinutes = nil
-        }
-        // Bugfix (Review): `Exercise`s eigene Defaults (repsMin 8/repsMax 12)
-        // sind fuer eine "rep range" bei normalem Satz-Training gedacht -
-        // `timedFormatTargetLabel` liest aber nur `repsMin` als Runden-Ziel
-        // ("8 Sek."/"8 Wdh."), und keiner der drei Player kann das danach
-        // noch aendern (anders als normale Ad-Hoc-Uebungen, die ueber
-        // `ExerciseEditorView` editierbar bleiben). Gleicher fester
-        // Runden-Wert wie `PlanGenerator.timedCardioCandidates.roundSeconds`
-        // (40) - passt als Sekunden-Ziel (isTimeBased-Pick) genauso wie als
-        // Wiederholungs-Ziel (normaler Pick, z.B. 40 Kniebeugen/Runde).
-        let roundTarget = 40
-
         let todayWeekday = Calendar.current.component(.weekday, from: Date())
         let adHocDay = TrainingDay(
             name: "Spontanes Training",
@@ -2310,57 +2224,13 @@ public struct DashboardView: View {
             plan: nil,
             localizationKey: "session.adHoc.dayName",
             timeFormat: format,
-            timeCapMinutes: timeCapMinutes
+            timeCapMinutes: format == .forTime ? nil : defaultTimedFormatDurationMinutes(for: format)
         )
         modelContext.insert(adHocDay)
 
-        // Gleicher Feld-Uebernahme-Weg wie `addAdHocExercise` unten (DEL-149/
-        // 163: Library-Anker-Name statt lokalisiertem Display-Namen,
-        // Recovery-/Equipment-Metadaten vom Template uebernommen).
-        let exercise = Exercise(
-            name: template.name,
-            sets: sets,
-            repsMin: roundTarget,
-            repsMax: roundTarget,
-            orderIndex: 0,
-            isCardio: template.isCardio,
-            isTimeBased: template.isTimeBased,
-            isCompound: template.isSystemCompound,
-            systemicFatigueFactor: template.systemicFatigueFactor,
-            localMuscleDamageFactor: template.localMuscleDamageFactor,
-            cnsDemandFactor: template.cnsDemandFactor,
-            axialLoadFactor: template.axialLoadFactor,
-            technicalComplexityFactor: template.technicalComplexityFactor,
-            recoveryClass: template.recoveryClass,
-            primaryMuscle: template.primaryMuscle,
-            equipment: template.equipment,
-            day: adHocDay
-        )
-        modelContext.insert(exercise)
-
-        let session = WorkoutSession(
-            startTime: Date(),
-            endTime: Date(),
-            durationMinutes: 0,
-            exerciseCount: 1,
-            isCompleted: false,
-            isAdHoc: true,
-            dayName: nil,
-            day: adHocDay
-        )
-        modelContext.insert(session)
-
-        // Bugfix (analog `ProgramTemplatePickerView.instantiate`): der
-        // Aufrufer (`TimedAdHocConfirmSheet`) dismissed sich direkt nach
-        // diesem Funktionsaufruf - eine Navigations-Mutation in derselben
-        // Transaktion wie ein Sheet-Dismiss kann mit dessen Stack-Update
-        // racen, der Player erscheint dann manchmal nicht. Gleicher
-        // Versatz wie dort.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            navigation.workoutPath = NavigationPath()
-            navigation.workoutPath.append(ActiveSessionRoute(session: session))
-            navigation.selectedTab = .plan
-        }
+        navigation.workoutPath = NavigationPath()
+        navigation.workoutPath.append(adHocDay)
+        navigation.selectedTab = .plan
     }
 
     /// Erzeugt eine "skipped"-WorkoutSession fuer einen Ruhetag. Die Session

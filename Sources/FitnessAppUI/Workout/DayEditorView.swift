@@ -55,6 +55,16 @@ public struct DayEditorView: View {
     @State private var comebackAssessment: AbsenceDeload.Assessment?
     @State private var pendingComebackStart: (() -> Void)?
 
+    /// README 2.35: schuetzt einen Ad-Hoc-Zeitformat-Tag (`day.plan == nil`)
+    /// vor `sweepAbandonedAdHocDayIfNeeded()`, sobald `actuallyStartNewSession()`
+    /// tatsaechlich eine Session angelegt hat - analog zu
+    /// `ActiveWorkoutView.sweepEmptyAdHocSession()`s `!session.isCompleted`-
+    /// Check: `.onDisappear` feuert auch dann, wenn dieser Editor nur von
+    /// `TimedWorkoutPlayerView` UEBERDECKT (nicht wirklich vom Stack
+    /// entfernt) wird - dieses Flag unterscheidet "erfolgreich gestartet"
+    /// von "abgebrochen".
+    @State private var didStartSessionForAdHocDay = false
+
     public init(day: TrainingDay) {
         self.day = day
     }
@@ -221,6 +231,19 @@ public struct DayEditorView: View {
             } else {
                 Text("session.recovery.message.fallback", bundle: .module)
             }
+        }
+        // Nutzer-Feedback (README 2.35): der Ad-Hoc-Zeitformat-Start
+        // (`DashboardView.beginTimedAdHocWorkout`) legt den Tag OHNE Session
+        // an und navigiert direkt hierher - anders als jeder bisherige Weg
+        // zu diesem Editor (immer ein bereits bestehender Plan-Tag).
+        // Verlaesst der User diesen Editor, BEVOR "Training starten"
+        // erfolgreich lief (Zurueck-Chevron, Swipe-Back, App-Beendigung),
+        // bliebe der eingefuegte Tag sonst fuer immer verwaist im Store - er
+        // taucht in keiner PlansListView/keinem PlanEditor auf, es gibt
+        // keinen anderen Weg zurueck zu ihm. Gleiches Muster wie
+        // `ActiveWorkoutView.sweepEmptyAdHocSession()`.
+        .onDisappear {
+            sweepAbandonedAdHocDayIfNeeded()
         }
     }
 
@@ -957,11 +980,36 @@ public struct DayEditorView: View {
             durationMinutes: 0,
             exerciseCount: day.activeExercises.count,
             isCompleted: false,
+            // Bugfix (README 2.35, Ad-Hoc-Zeitformat-Start ueber diesen Editor):
+            // `isAdHoc` galt bisher als stabiler Marker mit GENAU einem
+            // Erzeugungspfad (`startAdHocWorkout`, siehe Kommentar in
+            // `WorkoutSession+DisplayName.swift`) - das stimmt seit dem Ad-Hoc-
+            // Zeitformat-Start nicht mehr, der ebenfalls einen planlosen Tag
+            // hier her navigiert. Ohne dieses Flag wuerde z.B.
+            // `TimedWorkoutPlayerView.discardTimedSession` den verwaisten Tag
+            // beim Abbrechen nicht mitloeschen (die Bedingung dort prueft
+            // `session.isAdHoc`, nicht `day.plan == nil`).
+            isAdHoc: day.plan == nil,
             dayName: day.name,
             day: day
         )
         modelContext.insert(session)
+        // README 2.35: schuetzt den Ad-Hoc-Tag jetzt endgueltig vor
+        // `sweepAbandonedAdHocDayIfNeeded()` - siehe Doc-Kommentar bei
+        // `didStartSessionForAdHocDay`.
+        didStartSessionForAdHocDay = true
         navigation.workoutPath.append(ActiveSessionRoute(session: session))
+    }
+
+    /// README 2.35: siehe Doc-Kommentar bei `didStartSessionForAdHocDay` und
+    /// beim `.onDisappear`-Aufruf in `body`. Loescht NUR einen planlosen Tag,
+    /// fuer den nie erfolgreich eine Session angelegt wurde - egal wie viele
+    /// Uebungen ueber den Bibliotheks-Picker schon hinzugefuegt wurden, ohne
+    /// Session ist davon nichts "echt" (kein anderer Weg fuehrt je wieder zu
+    /// diesem Tag zurueck).
+    private func sweepAbandonedAdHocDayIfNeeded() {
+        guard day.plan == nil, !didStartSessionForAdHocDay else { return }
+        modelContext.delete(day)
     }
 
     /// DEL-042 "Fortsetzen": navigiere in die existing offene Session ohne

@@ -1,6 +1,6 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1710 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1708 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
@@ -499,13 +499,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `customExercise.section.name` | Name | Name | Ad |
 | `customExercise.title` | Neue Übung | New exercise | Yeni hareket |
 
-## `dashboard.*`  (91 Keys)
+## `dashboard.*`  (89 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `dashboard.action.adHoc.a11y` | Spontanes Training starten — ohne Plan-Anbindung | Start a spontaneous workout — without plan attachment | Spontane antrenman başlat — plana bağlı olmadan |
-| `dashboard.action.adHoc.confirm.start` | Los geht's | Let's go | Hadi başlayalım |
-| `dashboard.action.adHoc.confirm.title` | Bereit? | Ready? | Hazır mısın? |
 | `dashboard.action.adHoc.primary` | Spontanes Training starten | Start spontaneous workout | Spontane antrenman başlat |
 | `dashboard.action.adHoc.secondary` | Vom Plan abweichen — Spontanes Training | Skip the plan — spontaneous workout | Plandan sap — spontane antrenman |
 | `dashboard.action.otherRunning` | Anderes Training läuft | Another workout is running | Başka bir antrenman sürüyor |
