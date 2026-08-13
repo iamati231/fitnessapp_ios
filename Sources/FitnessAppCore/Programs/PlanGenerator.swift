@@ -498,6 +498,14 @@ public enum PlanGenerator {
     }
 
     private static func cardioCandidates(for selection: PlanGeneratorTypeSelection) -> [Candidate] {
+        // README 2.35: Zeitformat-Wahl im Wizard gilt nur fuer Laufen/
+        // Radfahren (die vier Kraft-Arten haben keinen Format-Picker in
+        // Schritt 1, siehe PlanBuilderView) - baut hier komplett anders als
+        // die Zonen-/Einzel-Cardio-Logik unten, deshalb ein frueher Abzweig.
+        if let format = selection.timeFormat {
+            return timedCardioCandidates(for: selection, format: format)
+        }
+
         let durationFactor = Double(selection.sessionDurationMinutes) / 30.0
 
         guard selection.kind == .running else {
@@ -566,6 +574,64 @@ public enum PlanGenerator {
         // Bugfix (Audit): der 3-Zonen-Zyklus wiederholt sich ab Tag 4 (z.B.
         // 5x/Woche -> Tag 1 und 4 beide "Ruhiger Lauf") - ohne Disambiguierung
         // stehen dann zwei identisch benannte Lauf-Tage in der Uebersicht.
+        disambiguateDuplicateNames(&result)
+        return result
+    }
+
+    /// README 2.35: Laufen/Radfahren mit gewaehltem Zeitformat (AMRAP/EMOM/
+    /// Auf Zeit) bekommen eine einzelne, wiederholte Cardio-Uebung statt
+    /// mehrerer Kraft-Uebungen pro Runde - "dieselbe Mechanik, nur mit einer
+    /// Uebung" (README-Formulierung). Referenziert bewusst die eigenen
+    /// "Lauf-Intervall"/"Rad-Intervall"-Library-Eintraege statt "Easy Run"/
+    /// "Radfahren (outdoor)" wiederzuverwenden: nur die neuen Eintraege sind
+    /// `isTimeBased` (siehe `ExerciseLibraryData`), also zeigt
+    /// `timedFormatTargetLabel` in FitnessAppUI korrekt "N Sek." statt "N
+    /// Wdh." - exakt derselbe Anzeige-Pfad, den Bodyweight-Holds (Plank im
+    /// EMOM) schon heute benutzen, hier nur mit einer Lauf-/Rad-Bewegung.
+    ///
+    /// `sets` traegt die Rundenzahl nur bei `.forTime` (dort zaehlt der
+    /// Player abgehakte Boxen, siehe `ForTimePlayerView.totalBoxes`) - AMRAP/
+    /// EMOM zaehlen ihre Runden/Minuten selbst live, `sets: 1` matcht damit
+    /// exakt das bestehende Cindy-Muster (dort tragen AMRAP-/EMOM-Uebungen
+    /// ebenfalls immer `sets: 1`).
+    private static func timedCardioCandidates(
+        for selection: PlanGeneratorTypeSelection,
+        format: WorkoutTimeFormat
+    ) -> [Candidate] {
+        let exerciseName = selection.kind == .running ? "Lauf-Intervall" : "Rad-Intervall"
+        // 40 Sek. Arbeit passt in jedes der drei Formate: laesst bei EMOM
+        // Puffer bis zur vollen Minute, ist bei AMRAP ein uebliches
+        // Intervall-Mass, und ergibt bei Auf Zeit (5 Runden) ein kurzes,
+        // finisher-artiges Gesamtpensum - gleiche Groessenordnung wie
+        // `kettlebellEmomCandidate`s Finisher-Charakter oben.
+        let roundSeconds = 40
+        let sets: Int
+        let timeCapMinutes: Int?
+        switch format {
+        case .amrap, .emom:
+            sets = 1
+            timeCapMinutes = min(30, max(10, selection.sessionDurationMinutes))
+        case .forTime:
+            sets = 5
+            timeCapMinutes = nil
+        }
+
+        var result = (0..<selection.daysPerWeek).map { _ in
+            Candidate(
+                name: germanTypeLabel(selection.kind),
+                localizationKey: selection.kind.titleKey,
+                exercises: [ExerciseSpec(
+                    name: exerciseName,
+                    sets: sets, repsMin: roundSeconds, repsMax: roundSeconds,
+                    isCardio: true
+                )],
+                timeFormat: format,
+                timeCapMinutes: timeCapMinutes,
+                hardness: 30 * (Double(selection.sessionDurationMinutes) / 30.0)
+            )
+        }
+        // Gleicher Bugfix wie beim uniformen Radfahren-Zweig oben: mehrere
+        // Tage derselben Trainingsart brauchen eindeutige Titel.
         disambiguateDuplicateNames(&result)
         return result
     }

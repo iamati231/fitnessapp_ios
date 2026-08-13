@@ -88,6 +88,12 @@ public struct RootView: View {
             // Seed the canonical exercise library on first launch (idempotent
             // — fetchCount short-circuits when rows already exist).
             LibrarySeeder.seedIfNeeded(in: modelContext)
+            // README 2.35: Backfill fuer Library-Eintraege, die NACH dem
+            // ersten Seed hinzugekommen sind (z.B. "Lauf-Intervall"/
+            // "Rad-Intervall") - ohne das waeren sie fuer jeden
+            // Bestandsnutzer dauerhaft unsichtbar im Bibliotheks-Picker.
+            // Idempotent — Diff gegen bereits vorhandene System-Namen.
+            LibrarySeeder.backfillNewLibraryEntriesIfNeeded(in: modelContext)
             // DEL-051: Snapshot-Backfill fuer Pre-DEL-051-Logs. Idempotent —
             // FetchDescriptor filtert auf nil-Snapshot, also lauft das nach
             // dem ersten Erfolg leer durch.

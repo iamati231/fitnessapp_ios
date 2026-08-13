@@ -288,6 +288,34 @@ public struct PlanBuilderView: View {
                 }
                 .pickerStyle(.segmented)
             }
+
+            // README 2.35: Zeitformat-Wahl gilt EXPLIZIT nur fuer Laufen/
+            // Radfahren, nicht die vier Kraft-Arten (Gegenteil der zuerst
+            // naheliegenden Annahme - siehe README-Text). `kind.isCardio`
+            // ist exakt derselbe Schalter, den `PlanGenerator.cardioCandidates`
+            // schon zur Filterung benutzt. Wiederverwendet dieselben Keys
+            // wie `DayEditorView.metaSection`s "Struktur"-Zeile (43a) -
+            // gleiches Konzept, keine zweiten Strings noetig.
+            if kind.isCardio {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("day.editor.field.structure", bundle: .module)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Picker(
+                        "",
+                        selection: Binding(
+                            get: { config.timeFormat },
+                            set: { updateTimeFormat(kind, timeFormat: $0) }
+                        )
+                    ) {
+                        Text("day.editor.field.structure.sets", bundle: .module).tag(nil as WorkoutTimeFormat?)
+                        ForEach(WorkoutTimeFormat.allCases, id: \.self) { format in
+                            Text(timedFormatDisplayName(format)).tag(format as WorkoutTimeFormat?)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+            }
         }
     }
 
@@ -295,7 +323,15 @@ public struct PlanBuilderView: View {
         let days = pluralizedCount("planBuilder.wizard.daysPerWeek", count: config.daysPerWeek)
         let minutes = String(format: String(localized: "planBuilder.wizard.minutesValue", bundle: .module), config.sessionDurationMinutes)
         let experience = String(localized: config.experience.localizedName)
-        return [days, minutes, experience].joined(separator: " · ")
+        var parts = [days, minutes, experience]
+        // README 2.35: sonst sieht ein eingeklapptes Laufen/Radfahren-Karte
+        // mit z.B. AMRAP identisch zu "Saetze & Wdh." aus - die Zeile
+        // existiert ja gerade, damit der User seine Wahl auf einen Blick
+        // wiederfindet, ohne jede Karte erneut aufzuklappen.
+        if let format = config.timeFormat {
+            parts.append(timedFormatDisplayName(format))
+        }
+        return parts.joined(separator: " · ")
     }
 
     /// `configControls`s Deckel greift nur, wenn eine BEREITS ausgewaehlte
@@ -339,7 +375,30 @@ public struct PlanBuilderView: View {
             kind: kind,
             daysPerWeek: daysPerWeek ?? current.daysPerWeek,
             sessionDurationMinutes: sessionDurationMinutes ?? current.sessionDurationMinutes,
-            experience: experience ?? current.experience
+            experience: experience ?? current.experience,
+            // Bugfix (README 2.35): ohne dieses Feld wuerde JEDE Aenderung
+            // an Tagen/Dauer/Erfahrung ueber diese Funktion die zuvor
+            // gewaehlte Zeitformat-Struktur stillschweigend auf "Saetze &
+            // Wdh." zuruecksetzen, weil der Memberwise-Reconstruct sonst
+            // keinen Wert dafuer mitgibt.
+            timeFormat: current.timeFormat
+        )
+    }
+
+    /// README 2.35: eigene, kleine Aktualisierungs-Funktion statt eines
+    /// weiteren `updateConfig`-Parameters - `timeFormat` ist selbst optional
+    /// (nil = "Saetze & Wdh."), ein `WorkoutTimeFormat? = nil`-Default-Param
+    /// koennte "nicht angegeben" und "explizit auf nil setzen" nicht
+    /// unterscheiden, ohne den gesamten Aufrufer auf einen doppelten
+    /// Optional-Typ umzustellen.
+    private func updateTimeFormat(_ kind: TrainingTypeKind, timeFormat: WorkoutTimeFormat?) {
+        guard let current = configByKind[kind] else { return }
+        configByKind[kind] = PlanGeneratorTypeSelection(
+            kind: kind,
+            daysPerWeek: current.daysPerWeek,
+            sessionDurationMinutes: current.sessionDurationMinutes,
+            experience: current.experience,
+            timeFormat: timeFormat
         )
     }
 

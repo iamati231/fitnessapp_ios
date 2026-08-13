@@ -66,6 +66,67 @@ public enum LibrarySeeder {
         return true
     }
 
+    /// README 2.35: One-Shot-Backfill fuer NEUE System-Library-Eintraege.
+    ///
+    /// `seedIfNeeded` seedet nur ein KOMPLETT leeres System-Library-Set
+    /// (siehe dortiger Kommentar) - jeder Bestandsnutzer, der die App schon
+    /// vor einem neu hinzugekommenen `ExerciseLibraryData.all`-Eintrag
+    /// gestartet hat, bekommt diesen neuen Eintrag NIE in die persistierte
+    /// `ExerciseTemplate`-Tabelle. `ExerciseLibraryPickerSheet`/
+    /// `ExerciseLibraryView` fragen aber genau diese Tabelle ab (nicht
+    /// `ExerciseLibraryData.all` direkt) - ohne diesen Backfill waere ein
+    /// neuer Eintrag fuer alle Bestandsnutzer dauerhaft unsichtbar im
+    /// Picker. Konkreter Ausloeser: die "Lauf-Intervall"/"Rad-Intervall"-
+    /// Eintraege aus README 2.35 (Ad-Hoc-Zeitformat-Start, 43b) - generisch
+    /// gehalten, damit jede kuenftige Library-Erweiterung automatisch
+    /// nachzieht, statt denselben Bug bei der naechsten neuen Uebung zu
+    /// wiederholen.
+    ///
+    /// Strategie: Diff zwischen `ExerciseLibraryData.all`-Namen und den
+    /// bereits persistierten System-Template-Namen (`isCustom == false`);
+    /// jeder fehlende Name wird als neues `ExerciseTemplate` nachgezogen -
+    /// identischer Konstruktions-Code wie `seedIfNeeded`s Schleife.
+    ///
+    /// Idempotent: nach dem ersten erfolgreichen Pass ist die Differenzmenge
+    /// leer, der Fetch bleibt aber (wie bei den anderen Backfills) guenstig
+    /// genug fuer jeden App-Start. Auf einem frischen Install laeuft
+    /// `seedIfNeeded` VOR diesem Aufruf und hat bereits alle Namen inseriert,
+    /// die Differenzmenge ist dann ebenfalls leer.
+    ///
+    /// Returns: Anzahl der nachgezogenen Eintraege.
+    @discardableResult
+    public static func backfillNewLibraryEntriesIfNeeded(in context: ModelContext) -> Int {
+        let descriptor = FetchDescriptor<ExerciseTemplate>(
+            predicate: #Predicate { $0.isCustom == false }
+        )
+        let existingNames = Set(((try? context.fetch(descriptor)) ?? []).map(\.name))
+
+        var updated = 0
+        for spec in ExerciseLibraryData.all where !existingNames.contains(spec.name) {
+            let template = ExerciseTemplate(
+                name: spec.name,
+                equipment: spec.equipment,
+                primaryMuscle: spec.primaryMuscle,
+                isCustom: false,
+                difficultyLevel: spec.difficultyLevel,
+                isSystemCompound: spec.isSystemCompound,
+                isTimeBased: spec.isTimeBased,
+                isCardio: spec.isCardio,
+                systemicFatigueFactor: spec.systemicFatigueFactor,
+                localMuscleDamageFactor: spec.localMuscleDamageFactor,
+                cnsDemandFactor: spec.cnsDemandFactor,
+                axialLoadFactor: spec.axialLoadFactor,
+                technicalComplexityFactor: spec.technicalComplexityFactor,
+                recoveryClass: spec.recoveryClass,
+                localizationKey: spec.localizationKey,
+                isSystemProvided: true
+            )
+            context.insert(template)
+            updated += 1
+        }
+        return updated
+    }
+
     /// DEL-051: One-Shot-Backfill der Snapshot-Felder auf vorhandenen
     /// `ExerciseLog`-Eintraegen. Bestand aus den Pre-DEL-051-Versionen hat
     /// `exerciseNameSnapshot == nil` — `resolvedExerciseName` fallback'ed

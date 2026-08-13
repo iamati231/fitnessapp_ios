@@ -323,6 +323,21 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Gehen / Einlaufen",                equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true,
                              systemicFatigueFactor: 0.15, localMuscleDamageFactor: 0.10, cnsDemandFactor: 0.05, axialLoadFactor: 0.05, technicalComplexityFactor: 0.05, recoveryClass: .low,
                              localizationKey: "exercise.name.warmupWalk"),
+        // README 2.35 (43a/43b): eigene `isTimeBased`-Cardio-Eintraege fuer
+        // die einzelne, wiederholte Cardio-Uebung, die ein Lauf-/Rad-Tag mit
+        // Zeitformat (AMRAP/EMOM/Auf Zeit) braucht - `repsMin`/`repsMax`
+        // tragen dann Sekunden statt Wiederholungen (siehe Doc-Kommentar
+        // `isTimeBased` oben), genau der Mechanismus, den `TimedWorkoutPlayerView`
+        // schon fuer Bodyweight-Holds (z.B. Plank im EMOM) benutzt - hier nur
+        // mit einer Lauf-/Rad-Bewegung statt einer Kraft-Uebung. Faktoren an
+        // "Intervalle"/"Radfahren (outdoor)" angelehnt, leicht haerter (Intervall-
+        // Charakter).
+        ExerciseTemplateSpec(name: "Lauf-Intervall",                   equipment: .bodyweight, primaryMuscle: .core,      isTimeBased: true, isCardio: true,
+                             systemicFatigueFactor: 0.75, localMuscleDamageFactor: 0.50, cnsDemandFactor: 0.55, axialLoadFactor: 0.20, technicalComplexityFactor: 0.20, recoveryClass: .high,
+                             localizationKey: "exercise.name.runInterval"),
+        ExerciseTemplateSpec(name: "Rad-Intervall",                    equipment: .bodyweight, primaryMuscle: .core,      isTimeBased: true, isCardio: true,
+                             systemicFatigueFactor: 0.65, localMuscleDamageFactor: 0.40, cnsDemandFactor: 0.35, axialLoadFactor: 0.10, technicalComplexityFactor: 0.15, recoveryClass: .high,
+                             localizationKey: "exercise.name.cyclingInterval"),
 
         // ── DEL-162: Bibliotheks-Erweiterung (verbreitete Standardübungen) ──
         // Heavy-Compounds (DL-/Squat-Varianten + Olympic-Lifts) tragen explizite

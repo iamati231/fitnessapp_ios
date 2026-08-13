@@ -59,16 +59,26 @@ public struct PlanGeneratorTypeSelection: Codable, Sendable, Hashable {
     public let sessionDurationMinutes: Int
     public let experience: DifficultyLevel
 
+    /// README 2.35: nur fuer `.running`/`.cycling` abgefragt (Schritt 1 blendet
+    /// den Picker fuer die vier Kraft-Arten aus) - `nil` heisst "Saetze & Wdh."
+    /// (heutiges Verhalten, unveraendert). `Optional` mit Default `nil` decodiert
+    /// bei fehlendem JSON-Key automatisch zu `nil`, also bleiben bereits
+    /// gespeicherte `generatorInputRaw`-Snapshots (vor diesem Feld) fuer "neu
+    /// rechnen" ohne Migration lesbar.
+    public let timeFormat: WorkoutTimeFormat?
+
     public init(
         kind: TrainingTypeKind,
         daysPerWeek: Int,
         sessionDurationMinutes: Int,
-        experience: DifficultyLevel
+        experience: DifficultyLevel,
+        timeFormat: WorkoutTimeFormat? = nil
     ) {
         self.kind = kind
         self.daysPerWeek = daysPerWeek
         self.sessionDurationMinutes = sessionDurationMinutes
         self.experience = experience
+        self.timeFormat = timeFormat
     }
 }
 

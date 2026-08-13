@@ -6734,19 +6734,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Spontanes Training starten — leere Session ohne Plan-Anbindung"
+            "value": "Spontanes Training starten — ohne Plan-Anbindung"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Start a spontaneous workout — empty session without plan attachment"
+            "value": "Start a spontaneous workout — without plan attachment"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Spontane antrenman başlat — plana bağlı olmayan boş oturum"
+            "value": "Spontane antrenman başlat — plana bağlı olmadan"
           }
         }
       }
@@ -12497,6 +12497,22 @@
         }
       }
     },
+    "exercise.name.runInterval": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Lauf-Intervall" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Run Interval" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Koşu İnterval" } }
+      }
+    },
+    "exercise.name.cyclingInterval": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rad-Intervall" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cycling Interval" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bisiklet İnterval" } }
+      }
+    },
     "exercise.name.warmupWalk": {
       "extractionState": "manual",
       "localizations": {
@@ -15774,6 +15790,22 @@
             "value": "Sonraki Yoğunluk"
           }
         }
+      }
+    },
+    "day.editor.field.structure": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Struktur" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Structure" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yapı" } }
+      }
+    },
+    "day.editor.field.structure.sets": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Sätze & Wdh." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Sets & Reps" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Set ve Tekrar" } }
       }
     },
     "day.editor.field.duration": {

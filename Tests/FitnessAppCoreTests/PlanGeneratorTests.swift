@@ -7,9 +7,10 @@ final class PlanGeneratorTests: XCTestCase {
         _ kind: TrainingTypeKind,
         days: Int,
         minutes: Int = 45,
-        experience: DifficultyLevel = .intermediate
+        experience: DifficultyLevel = .intermediate,
+        timeFormat: WorkoutTimeFormat? = nil
     ) -> PlanGeneratorTypeSelection {
-        PlanGeneratorTypeSelection(kind: kind, daysPerWeek: days, sessionDurationMinutes: minutes, experience: experience)
+        PlanGeneratorTypeSelection(kind: kind, daysPerWeek: days, sessionDurationMinutes: minutes, experience: experience, timeFormat: timeFormat)
     }
 
     private func input(
@@ -368,5 +369,109 @@ final class PlanGeneratorTests: XCTestCase {
                 } ?? 0
             XCTAssertEqual(nameSegments, keySegments, "Segment-Anzahl weicht ab: name=\"\(day.spec.name)\" key=\"\(key)\"")
         }
+    }
+
+    // MARK: - README 2.35: Zeitformat fuer Laufen/Radfahren
+
+    func testRunningAmrapProducesSingleRepeatedTimedExercise() {
+        let result = PlanGenerator.generate(from: input([selection(.running, days: 2, timeFormat: .amrap)]))
+        XCTAssertEqual(result.days.count, 2)
+        for day in result.days {
+            XCTAssertEqual(day.spec.timeFormat, .amrap)
+            XCTAssertEqual(day.spec.exercises.map(\.name), ["Lauf-Intervall"])
+            XCTAssertEqual(day.spec.exercises.first?.sets, 1, "AMRAP zaehlt Runden live, nicht ueber `sets`")
+        }
+    }
+
+    func testCyclingEmomProducesSingleRepeatedTimedExercise() {
+        let result = PlanGenerator.generate(from: input([selection(.cycling, days: 2, timeFormat: .emom)]))
+        XCTAssertEqual(result.days.count, 2)
+        for day in result.days {
+            XCTAssertEqual(day.spec.timeFormat, .emom)
+            XCTAssertEqual(day.spec.exercises.map(\.name), ["Rad-Intervall"])
+            XCTAssertEqual(day.spec.exercises.first?.sets, 1, "EMOM zaehlt Minuten live, nicht ueber `sets`")
+        }
+    }
+
+    /// README 2.35: Auf Zeit hat keine live-gezaehlten Runden wie AMRAP/EMOM -
+    /// `ForTimePlayerView` hakt stattdessen `sets` viele Boxen ab, deshalb
+    /// braucht nur dieses Format eine echte Rundenzahl > 1.
+    func testRunningForTimeSetsFiveRoundsAndNoTimeCap() {
+        let result = PlanGenerator.generate(from: input([selection(.running, days: 1, timeFormat: .forTime)]))
+        XCTAssertEqual(result.days.first?.spec.exercises.first?.sets, 5)
+        XCTAssertNil(result.days.first?.spec.timeCapMinutes, "Auf Zeit hat wie die kuratierten ForTime-Vorlagen ueblicherweise keinen Deckel")
+    }
+
+    /// Gleiches Klemm-Verhalten wie der bestehende Kettlebell-EMOM-Finisher
+    /// (`testKettlebellEmomFinisherCapScalesWithSessionDurationWithinBounds`) -
+    /// derselbe [10, 30]-Bereich, hier fuer AMRAP/EMOM auf Lauf-/Rad-Tagen.
+    func testRunningAmrapTimeCapScalesWithSessionDurationWithinBounds() {
+        let short = PlanGenerator.generate(from: input([selection(.running, days: 1, minutes: 15, timeFormat: .amrap)]))
+        XCTAssertEqual(short.days.first?.spec.timeCapMinutes, 15)
+
+        let veryShort = PlanGenerator.generate(from: input([selection(.running, days: 1, minutes: 5, timeFormat: .amrap)]))
+        XCTAssertEqual(veryShort.days.first?.spec.timeCapMinutes, 10)
+
+        let veryLong = PlanGenerator.generate(from: input([selection(.running, days: 1, minutes: 120, timeFormat: .amrap)]))
+        XCTAssertEqual(veryLong.days.first?.spec.timeCapMinutes, 30)
+    }
+
+    func testTimedCardioDaysOfSameKindNeverShareIdenticalName() {
+        let result = PlanGenerator.generate(from: input([selection(.cycling, days: 5, timeFormat: .emom)]))
+        let names = result.days.map { $0.spec.name }
+        XCTAssertEqual(names.count, Set(names).count, "Zeitformat-Radfahren-Titel wiederholen sich: \(names)")
+    }
+
+    /// Regressionsschutz analog zu `testAllGeneratedExerciseNamesExistInLibrary`:
+    /// die neuen `isTimeBased`-Cardio-Eintraege muessen exakte Library-Treffer
+    /// sein, sonst faellt `ProgramInstantiator` auf generische Isolations-
+    /// Defaults zurueck UND `isTimeBased` bleibt faelschlich `false`.
+    func testTimedCardioExerciseNamesExistInLibraryAndAreTimeBased() {
+        let libraryByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) })
+        for (kind, format, expectedName) in [
+            (TrainingTypeKind.running, WorkoutTimeFormat.amrap, "Lauf-Intervall"),
+            (TrainingTypeKind.cycling, WorkoutTimeFormat.emom, "Rad-Intervall")
+        ] {
+            let result = PlanGenerator.generate(from: input([selection(kind, days: 1, timeFormat: format)]))
+            let exerciseName = result.days.first?.spec.exercises.first?.name
+            XCTAssertEqual(exerciseName, expectedName)
+            let libraryEntry = exerciseName.flatMap { libraryByName[$0] }
+            XCTAssertEqual(libraryEntry?.isTimeBased, true, "\(expectedName) muss isTimeBased sein, sonst zeigt der Player \"Wdh.\" statt \"Sek.\"")
+            XCTAssertEqual(libraryEntry?.isCardio, true)
+        }
+    }
+
+    /// README 2.35: die vier Kraft-Arten haben keinen Format-Picker im
+    /// Assistenten - `PlanGeneratorTypeSelection.timeFormat` existiert zwar
+    /// als Feld auf dem Typ, `strengthCandidates`/`kettlebellEmomCandidate`
+    /// duerfen es aber nie lesen, damit ein (UI-seitig ohnehin unerreichbares)
+    /// gesetztes Feld dort keine stille Verhaltensaenderung ausloest.
+    func testTimeFormatOnStrengthKindsIsIgnoredByGenerator() {
+        let withFormat = PlanGenerator.generate(from: input([selection(.barbell, days: 3, timeFormat: .amrap)]))
+        let withoutFormat = PlanGenerator.generate(from: input([selection(.barbell, days: 3)]))
+        XCTAssertEqual(withFormat.days.map(\.spec.name), withoutFormat.days.map(\.spec.name))
+        XCTAssertTrue(withFormat.days.allSatisfy { $0.spec.timeFormat == nil })
+    }
+
+    /// `PlanGeneratorInput` wird als JSON auf `TrainingPlan.generatorInputRaw`
+    /// gespeichert ("neu rechnen"), `timeFormat` muss also verlustfrei durch
+    /// Encode/Decode kommen.
+    func testTimeFormatSurvivesJSONRoundtrip() {
+        let original = selection(.running, days: 2, timeFormat: .emom)
+        let data = try! JSONEncoder().encode(original)
+        let decoded = try! JSONDecoder().decode(PlanGeneratorTypeSelection.self, from: data)
+        XCTAssertEqual(decoded.timeFormat, .emom)
+    }
+
+    /// Bugfix-Vorbeugung: ein VOR diesem Feld gespeicherter `generatorInputRaw`-
+    /// Snapshot hat gar keinen "timeFormat"-Schluessel im JSON - muss trotzdem
+    /// ohne Fehler zu `nil` decodieren, sonst wuerde "neu rechnen" fuer jeden
+    /// bereits bestehenden Plan mit einem Decode-Fehler abbrechen.
+    func testMissingTimeFormatKeyDecodesToNilForBackwardCompatibility() {
+        let legacyJSON = """
+        {"kind":"running","daysPerWeek":2,"sessionDurationMinutes":45,"experience":"intermediate"}
+        """
+        let decoded = try! JSONDecoder().decode(PlanGeneratorTypeSelection.self, from: Data(legacyJSON.utf8))
+        XCTAssertNil(decoded.timeFormat)
     }
 }

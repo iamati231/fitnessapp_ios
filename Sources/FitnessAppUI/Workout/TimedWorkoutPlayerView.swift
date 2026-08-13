@@ -85,11 +85,23 @@ private func finishTimedSession(
 }
 
 /// Loescht eine noch nicht abgeschlossene Zeitformat-Session (Abbrechen-Pfad
-/// im Ellipsis-Menu). Zeitformat-Tage sind reine Plan-Tage, kein Ad-Hoc-
-/// TrainingDay zum Mitloeschen wie bei `ActiveWorkoutView.discardWorkout()`.
+/// im Ellipsis-Menu). Frueher (vor README 2.35) waren Zeitformat-Tage immer
+/// reine Plan-Tage - ein Discard durfte nur die Session loeschen, nie den
+/// Tag (der gehoert weiter zum Plan). Seit dem Ad-Hoc-Zeitformat-Start
+/// (`DashboardView.finishTimedAdHocWorkout`, 43b) gibt es aber auch
+/// ephemere, planlose `TrainingDay`s hier - ohne dieses Mit-Loeschen wuerde
+/// ein verworfener Ad-Hoc-Start einen verwaisten Tag fuer immer im Store
+/// zuruecklassen, exakt das Problem, das `ActiveWorkoutView`s
+/// `sweepEmptyAdHocSession()` fuer den anderen Ad-Hoc-Pfad schon loest.
+/// `session.day` wird VOR dem Session-Delete gesichert statt danach
+/// gelesen, weil die Beziehung ohne Inverse nullified (Task #115).
 @MainActor
 private func discardTimedSession(_ session: WorkoutSession, modelContext: ModelContext, dismiss: DismissAction) {
+    let orphanedAdHocDay = session.isAdHoc ? session.day : nil
     modelContext.delete(session)
+    if let orphanedAdHocDay {
+        modelContext.delete(orphanedAdHocDay)
+    }
     dismiss()
 }
 
@@ -161,6 +173,21 @@ func timedFormatHintKey(for format: WorkoutTimeFormat) -> String {
     case .amrap:   return "day.editor.timedFormat.hintAmrap"
     case .emom:    return "day.editor.timedFormat.hintEmom"
     case .forTime: return "day.editor.timedFormat.hintForTime"
+    }
+}
+
+/// Vorschlagswert fuer einen Dauer-Stepper/neu angelegten Zeitformat-Tag,
+/// solange `timeCapMinutes` noch nil ist - identisch zum Fallback, den die
+/// drei Player selbst benutzen (`AMRAPPlayerView.capSeconds`/
+/// `EMOMPlayerView.totalMinutes`, beide `?? 15`/`?? 12`). Geteilt zwischen
+/// `DayEditorView`s Stepper und `DashboardView`s Ad-Hoc-Zeitformat-Start
+/// (README 2.35, 43b), damit beide Stellen densel­ben Vorschlag machen.
+/// `.forTime` braucht keinen Default, das Cap ist dort optional.
+func defaultTimedFormatDurationMinutes(for format: WorkoutTimeFormat) -> Int {
+    switch format {
+    case .amrap: return 15
+    case .emom: return 12
+    case .forTime: return 0
     }
 }
 
@@ -656,7 +683,15 @@ private struct AMRAPPlayerView: View {
                 // (.headline + 14pt vertikales Padding ≈ 49pt) - beide standen
                 // in der zentrierten HStack 3.5pt versetzt. 49 matcht die
                 // tatsaechliche Knopf-Hoehe.
-                .frame(width: 76, height: 49)
+                // Nachtrag 13. August (README 2.34, Nutzer-Feedback): 49pt
+                // erfuellt Apples 44pt-Minimum, ist fuer wiederholte, hastige
+                // Taps mitten im Satz (ausser Atem, schwitzige/zitternde
+                // Finger) knapp bemessen - zumal direkt neben einem gleich
+                // hohen, nicht interaktiven Kasten. Beide auf 64pt.
+                // deltiqButtonStyle() bleibt unveraendert (jeder andere Knopf
+                // haette das Problem sonst mit) - der Rundenknopf baut dessen
+                // Optik hier lokal mit expliziter Mindesthoehe nach.
+                .frame(width: 76, height: 64)
                 .background(Color.Deltiq.fill)
                 .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
 
@@ -664,10 +699,14 @@ private struct AMRAPPlayerView: View {
                     completeRound()
                 } label: {
                     Text("timedWorkout.amrap.addRound", bundle: .module)
-                        .frame(maxWidth: .infinity)
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, minHeight: 64)
                 }
                 .buttonStyle(.plain)
-                .deltiqButtonStyle()
+                .background(Color.Deltiq.primaryGradient)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(color: Color.deltiqOrange.opacity(0.25), radius: 8, x: 0, y: 4)
             }
         }
         .padding(.horizontal, 16)
@@ -1120,10 +1159,18 @@ private struct EMOMPlayerView: View {
                 Image(systemName: completedMinutes.contains(currentMinute) ? "checkmark.circle.fill" : "checkmark.circle")
                 Text("timedWorkout.emom.markDone", bundle: .module)
             }
-            .frame(maxWidth: .infinity)
+            .font(.headline.weight(.bold))
+            .foregroundStyle(.white)
+            // Nachtrag 13. August (README 2.34, Nutzer-Feedback): wie
+            // AMRAPs Rundenknopf auf 64pt statt der 49pt aus
+            // deltiqButtonStyle() (unveraendert) - derselbe Knopf wird
+            // mitten in der Uebung, ausser Atem, wiederholt angetippt.
+            .frame(maxWidth: .infinity, minHeight: 64)
         }
         .buttonStyle(.plain)
-        .deltiqButtonStyle()
+        .background(Color.Deltiq.primaryGradient)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: Color.deltiqOrange.opacity(0.25), radius: 8, x: 0, y: 4)
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(Color.Deltiq.surface.ignoresSafeArea(edges: .bottom))

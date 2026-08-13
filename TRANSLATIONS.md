@@ -1,6 +1,6 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1704 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1708 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
@@ -503,7 +503,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
-| `dashboard.action.adHoc.a11y` | Spontanes Training starten — leere Session ohne Plan-Anbindung | Start a spontaneous workout — empty session without plan attachment | Spontane antrenman başlat — plana bağlı olmayan boş oturum |
+| `dashboard.action.adHoc.a11y` | Spontanes Training starten — ohne Plan-Anbindung | Start a spontaneous workout — without plan attachment | Spontane antrenman başlat — plana bağlı olmadan |
 | `dashboard.action.adHoc.primary` | Spontanes Training starten | Start spontaneous workout | Spontane antrenman başlat |
 | `dashboard.action.adHoc.secondary` | Vom Plan abweichen — Spontanes Training | Skip the plan — spontaneous workout | Plandan sap — spontane antrenman |
 | `dashboard.action.otherRunning` | Anderes Training läuft | Another workout is running | Başka bir antrenman sürüyor |
@@ -612,7 +612,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboardSettings.section.inactive.title` | Inaktive Widgets | Inactive Widgets | Pasif Widget'lar |
 | `dashboardSettings.title` | Dashboard anpassen | Customize Dashboard | Panoyu Özelleştir |
 
-## `day.*`  (58 Keys)
+## `day.*`  (60 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -652,6 +652,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `day.editor.field.duration` | Dauer | Duration | Süre |
 | `day.editor.field.name` | Name | Name | Ad |
 | `day.editor.field.nextIntensity` | Nächste Intensität | Next Intensity | Sonraki Yoğunluk |
+| `day.editor.field.structure` | Struktur | Structure | Yapı |
+| `day.editor.field.structure.sets` | Sätze & Wdh. | Sets & Reps | Set ve Tekrar |
 | `day.editor.field.timeCap` | Zeitlimit | Time cap | Süre sınırı |
 | `day.editor.field.timeCap.noLimit` | Kein Limit | No limit | Sınırsız |
 | `day.editor.field.type` | Typ | Type | Tip |
@@ -774,7 +776,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `equipment.kettlebell` | Kettlebell | Kettlebell | Kettlebell |
 | `equipment.machine` | Maschine | Machine | Makine |
 
-## `exercise.*`  (192 Keys)
+## `exercise.*`  (194 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -833,6 +835,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.copenhagenPlank` | Copenhagen Plank | Copenhagen Plank | Copenhagen Plank |
 | `exercise.name.crunch` | Crunches (BW) | Crunches | Mekik |
 | `exercise.name.cycling` | Radfahren (outdoor) | Outdoor Cycling | Bisiklet |
+| `exercise.name.cyclingInterval` | Rad-Intervall | Cycling Interval | Bisiklet İnterval |
 | `exercise.name.deadlift` | Kreuzheben (konventionell) | Conventional Deadlift | Conventional Deadlift |
 | `exercise.name.declineBenchPress` | Schrägbankdrücken (abwärts) | Decline Bench Press | Decline Bench Press |
 | `exercise.name.deficitDeadlift` | Deficit-Kreuzheben | Deficit Deadlift | Deficit Deadlift |
@@ -930,6 +933,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.romanianDeadlift` | Rumänisches Kreuzheben | Romanian Deadlift | Romanian Deadlift |
 | `exercise.name.rowingMachine` | Rudermaschine | Rowing Machine | Kürek Ergometresi |
 | `exercise.name.run` | Freier Lauf | Outdoor Run | Koşu |
+| `exercise.name.runInterval` | Lauf-Intervall | Run Interval | Koşu İnterval |
 | `exercise.name.russianTwist` | Russian Twists | Russian Twist | Russian Twist |
 | `exercise.name.sandbagCarry` | Sandbag Carry | Sandbag Carry | Kum Torbası Taşıma |
 | `exercise.name.seatedCableRow` | Kabelrudern sitzend | Seated Cable Row | Seated Cable Row |

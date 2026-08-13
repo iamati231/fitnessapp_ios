@@ -560,7 +560,20 @@ struct SetRow: View {
             Text("RIR \(rir.formattedRIR)")
                 .font(.caption.weight(.semibold).monospacedDigit())
                 .lineLimit(1)
-                .fixedSize()
+                // Bugfix (README 2.36, Nutzer-Screenshots): dieselbe Befund-
+                // Familie wie 2.24/2.25 - dort brach die Kapsel zeichenweise
+                // um (variable Zeilenhoehe), behoben durch .fixedSize() +
+                // .lineLimit(1). Bei einer Langhantel-Uebung (Aufladungs-
+                // Knopf zusaetzlich in der Zeile) UND drei RIR-Halbschritten
+                // (laengerer Text wie "3,5") reicht der seither
+                // zurueckgewonnene Puffer nicht mehr - die Zeile hat nirgends
+                // mehr hin auszuweichen und wird breiter als der Bildschirm.
+                // .fixedSize() verlangt dabei immer die volle einzeilige
+                // Ideal-Breite und verhindert so genau das Schrumpfen, das
+                // .minimumScaleFactor ermoeglichen soll - deshalb entfernt,
+                // nicht nur ergaenzt. .lineLimit(1) allein verhindert weiter
+                // zuverlaessig den urspruenglichen Zeichen-Umbruch.
+                .minimumScaleFactor(0.85)
                 .foregroundStyle(rirExpanded ? .white : Color.deltiqOrange)
                 .padding(.horizontal, 7)
                 .padding(.vertical, 4)

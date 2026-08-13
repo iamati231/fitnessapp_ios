@@ -364,6 +364,28 @@ public struct DayEditorView: View {
             }
             .listRowBackground(Color.Deltiq.surface)
 
+            // README 2.35 (43a): eigene Trainings konnten `timeFormat` bisher
+            // gar nicht setzen - nur die kuratierten Templates (Cindy,
+            // CrossFit/Kettlebell) tragen es. Gleiches Picker-Muster wie Typ/
+            // Intensitaet direkt darueber, inklusive derselben (in der Praxis
+            // wirkungslosen) `isReadOnly`-Sperre: `day.plan?.isTemplate` ist
+            // seit `ProgramInstantiator.instantiate` durchgehend `false`,
+            // auch fuer adoptierte kuratierte Plaene (siehe `isReadOnly`-
+            // Kommentar in `PlanEditorView.swift`) - kein neues Problem
+            // dieses Pickers, nur keine echte Sperre, obwohl der Name das
+            // suggeriert. Die Dauer-/Zeit-Deckel-Zeile direkt darunter
+            // reagiert bereits automatisch auf `day.timeFormat`.
+            Picker(selection: $day.timeFormat) {
+                Text("day.editor.field.structure.sets", bundle: .module).tag(nil as WorkoutTimeFormat?)
+                ForEach(WorkoutTimeFormat.allCases, id: \.self) { format in
+                    Text(timedFormatDisplayName(format)).tag(format as WorkoutTimeFormat?)
+                }
+            } label: {
+                Text("day.editor.field.structure", bundle: .module)
+            }
+            .disabled(isReadOnly)
+            .listRowBackground(Color.Deltiq.surface)
+
             // Feature (Dauer/Time-Cap konfigurierbar): AMRAP/EMOM brauchen
             // eine feste Dauer fuer den Countdown, Auf Zeit dagegen nur ein
             // OPTIONALES Abbruch-Cap (0 = kein Limit, der bisherige
@@ -372,11 +394,11 @@ public struct DayEditorView: View {
                 switch format {
                 case .amrap, .emom:
                     Stepper(value: Binding(
-                        get: { day.timeCapMinutes ?? defaultDurationMinutes(for: format) },
+                        get: { day.timeCapMinutes ?? defaultTimedFormatDurationMinutes(for: format) },
                         set: { day.timeCapMinutes = $0 }
                     ), in: 5...60) {
                         LabeledContent {
-                            Text("\(day.timeCapMinutes ?? defaultDurationMinutes(for: format)) " + String(localized: "unit.minutes.short", bundle: .module))
+                            Text("\(day.timeCapMinutes ?? defaultTimedFormatDurationMinutes(for: format)) " + String(localized: "unit.minutes.short", bundle: .module))
                                 .foregroundStyle(Color.Deltiq.textSecondary)
                         } label: {
                             Text("day.editor.field.duration", bundle: .module)
@@ -1044,17 +1066,6 @@ public struct DayEditorView: View {
         return parts.joined(separator: " · ").uppercased()
     }
 
-    /// Feature (Dauer konfigurierbar): Vorschlagswert fuer den Stepper, wenn
-    /// `timeCapMinutes` noch nil ist - identisch zum Fallback in
-    /// `TimedWorkoutPlayerView` (`capSeconds`/`totalMinutes`). `.forTime`
-    /// braucht keinen Default, das Cap ist dort optional (siehe Stepper oben).
-    private func defaultDurationMinutes(for format: WorkoutTimeFormat) -> Int {
-        switch format {
-        case .amrap: return 15
-        case .emom: return 12
-        case .forTime: return 0
-        }
-    }
 }
 
 // MARK: - Subviews
