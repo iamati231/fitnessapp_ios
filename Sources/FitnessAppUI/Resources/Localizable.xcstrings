@@ -26,6 +26,30 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Süre bitene kadar baştan başla." } }
       }
     },
+    "timedWorkout.amrap.partialReps": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Zusätzliche Wdh." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Extra reps" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ek tekrar" } }
+      }
+    },
+    "timedWorkout.amrap.partialReps.exercise": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Übung (Restwdh.)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Exercise (extra reps)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Egzersiz (ek tekrar)" } }
+      }
+    },
+    "timedWorkout.amrap.partialReps.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Zeit ist abgelaufen. Trag ein, wie weit du in der angebrochenen Runde gekommen bist." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Time's up. Enter how far you got in the unfinished round." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Süre doldu. Bitmeyen turda ne kadar ilerlediğini gir." } }
+      }
+    },
     "timedWorkout.amrap.roundsLabel": {
       "extractionState": "manual",
       "localizations": {

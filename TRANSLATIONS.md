@@ -1928,6 +1928,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `timedWorkout.amrap.addRound` | +1 Runde | +1 round | +1 tur |
 | `timedWorkout.amrap.capContext` | %lld Min. Deckel | %lld min cap | %lld dk limit |
 | `timedWorkout.amrap.circuitHint` | Von vorn, bis die Zeit abgelaufen ist. | Start over, until time runs out. | Süre bitene kadar baştan başla. |
+| `timedWorkout.amrap.partialReps` | Zusätzliche Wdh. | Extra reps | Ek tekrar |
+| `timedWorkout.amrap.partialReps.exercise` | Übung (Restwdh.) | Exercise (extra reps) | Egzersiz (ek tekrar) |
+| `timedWorkout.amrap.partialReps.hint` | Zeit ist abgelaufen. Trag ein, wie weit du in der angebrochenen Runde gekommen bist. | Time's up. Enter how far you got in the unfinished round. | Süre doldu. Bitmeyen turda ne kadar ilerlediğini gir. |
 | `timedWorkout.amrap.rounds.one` | %lld Runde | %lld round | %lld tur |
 | `timedWorkout.amrap.rounds.other` | %lld Runden | %lld rounds | %lld tur |
 | `timedWorkout.amrap.roundsLabel` | RUNDEN | ROUNDS | TUR |

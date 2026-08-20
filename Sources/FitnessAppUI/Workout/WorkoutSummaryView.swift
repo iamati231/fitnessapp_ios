@@ -1204,7 +1204,17 @@ public struct WorkoutSummaryView: View {
     private func timedFormatHeroStat(_ format: WorkoutTimeFormat) -> HeroStat {
         switch format {
         case .amrap:
-            return HeroStat(value: "\(session.roundsCompleted ?? 0)", unit: timedFormatHeroUnit("summary.hero.unit.rounds"))
+            var unit = timedFormatHeroUnit("summary.hero.unit.rounds")
+            // Nutzer-Feedback (13. August, zweite Runde): Teil-Wiederholungen
+            // der angebrochenen Runde sind im Player wieder eingebbar
+            // (`AMRAPPlayerView.finishBar`) - ohne diesen Zusatz wuerde der
+            // eingetragene Wert hier kommentarlos verschwinden, obwohl er
+            // korrekt gespeichert wurde (sichtbar bleibt er sonst nur in
+            // `PRHistoryView`, und nur falls die Session ein PR war).
+            if let partialReps = session.partialReps, partialReps > 0 {
+                unit += " + \(partialReps) " + String(localized: "unit.reps.short", bundle: .module)
+            }
+            return HeroStat(value: "\(session.roundsCompleted ?? 0)", unit: unit)
         case .emom:
             return HeroStat(value: "\(session.completedMinuteCount ?? 0)", unit: timedFormatHeroUnit("summary.hero.unit.minutesDone"))
         case .forTime:
@@ -1388,15 +1398,35 @@ public struct WorkoutSummaryView: View {
     /// README (Nutzer-Feedback 6. August): Gesamt-Wiederholungen pro Uebung
     /// ueber die komplette Session - "15 Runden Cindy" heisst 75 Klimmzuege +
     /// 150 Liegestuetze + 225 Kniebeugen, nicht nur "15 Runden". `nil` wenn es
-    /// nichts zu zeigen gibt (noch keine volle Runde geschafft).
-    /// Bugfix (Teil-Wiederholungen entfernt): zaehlt nur noch volle Runden -
-    /// eine angebrochene Station gibt es im Datenmodell nicht mehr.
+    /// nichts zu zeigen gibt (noch keine volle Runde geschafft und keine
+    /// angebrochene Station).
+    /// Wiederhergestellt (13. August, zweite Runde): `finishBar` befuellt
+    /// `partialReps`/`partialRepsExerciseName` wieder - ohne diesen Zusatz
+    /// wuerden die Uebungen VOR der angebrochenen Station in derselben Runde
+    /// (schon fertig, bevor die Zeit ablief) und die angebrochene Station
+    /// selbst hier stillschweigend unterzaehlt, waehrend die Hero-Zahl direkt
+    /// darueber (`timedFormatHeroStat`) den vollen Stand korrekt zeigt.
+    /// Namens- statt ID-Abgleich fuer `currentIndex`, weil
+    /// `partialRepsExerciseName` ein Snapshot ist (gleiches Muster wie
+    /// `dayName`), keine live Relationship.
     private func amrapExerciseTotals(_ exercises: [Exercise]) -> [PersistentIdentifier: Int]? {
         let rounds = session.roundsCompleted ?? 0
-        guard rounds > 0 else { return nil }
+        let partial = session.partialReps ?? 0
+        guard rounds > 0 || partial > 0 || session.partialRepsExerciseName != nil else { return nil }
+        let currentIndex = session.partialRepsExerciseName.flatMap { name in
+            exercises.firstIndex { $0.displayName == name }
+        }
         var totals: [PersistentIdentifier: Int] = [:]
-        for exercise in exercises {
-            totals[exercise.persistentModelID] = rounds * exercise.repsMin
+        for (index, exercise) in exercises.enumerated() {
+            var total = rounds * exercise.repsMin
+            if let currentIndex {
+                if index < currentIndex {
+                    total += exercise.repsMin
+                } else if index == currentIndex {
+                    total += partial
+                }
+            }
+            totals[exercise.persistentModelID] = total
         }
         return totals
     }

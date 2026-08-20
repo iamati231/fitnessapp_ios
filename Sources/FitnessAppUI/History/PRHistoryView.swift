@@ -540,10 +540,13 @@ private struct PRHistoryRow: View {
             return "\(formatPace(entry.value)) (vorher \(formatPace(entry.previousValue)))"
         // Zeitformate (README 2.9) — Xcode-26-strict braucht alle Cases.
         case .mostRounds:
-            // Bugfix (Teil-Wiederholungen entfernt): neue Sessions liefern nie
-            // wieder reps > 0 - der Zusatz bleibt nur fuer AELTERE Eintraege
-            // sichtbar, die noch echte Restwdh. eingefroren haben, statt fuer
-            // alle kuenftigen PRs faelschlich "+ 0 Wdh" anzuzeigen.
+            // Nutzer-Feedback (13. August, zweite Runde): `partialReps` wird
+            // seit `AMRAPPlayerView.finishBar` wieder befuellt (Ticket A hatte
+            // die Eingabe entfernt, das Feld selbst blieb aber immer im
+            // Modell) - der "+ N Wdh."-Zusatz gilt also wieder fuer neue PRs,
+            // nicht nur fuer aeltere Bestandsdaten. `entry.reps == 0` bleibt
+            // trotzdem der richtige Guard, sonst stuende bei jeder Session
+            // ohne angebrochene Runde faelschlich "+ 0 Wdh" dabei.
             guard entry.reps > 0 else {
                 return "\(Int(entry.value)) Runden (vorher \(Int(entry.previousValue)) Runden)"
             }

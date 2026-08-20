@@ -314,6 +314,20 @@ private struct AMRAPPlayerView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var roundsCompleted = 0
+    /// Nutzer-Feedback (13. August, zweite Runde): Wiederholungen der
+    /// angebrochenen Runde sind wieder eingebbar - anders als vor Ticket A
+    /// ("Teil-Wiederholungen entfernt") aber NICHT mehr durchgehend
+    /// waehrend des Laufens, sondern nur noch als letzter Schritt in
+    /// `finishBar`, nachdem der Deckel erreicht wurde (siehe
+    /// `checkCapReached()`). Default 0 deckt genau den Fall ab, dass die
+    /// Runde ueberhaupt nicht begonnen wurde.
+    @State private var partialReps = 0
+    /// Welche Uebung `partialReps` gerade meint - nur relevant/sichtbar,
+    /// wenn der Zirkel mehr als eine Uebung hat (`partialRepsExercisePickerRow`).
+    /// Wird in `checkCapReached()` auf die erste Uebung vorbelegt, damit
+    /// `partialRepsExercise` nie ins generische Leere faellt, sobald
+    /// `finishBar` erscheint.
+    @State private var partialRepsExerciseID: PersistentIdentifier?
     @State private var isFinished = false
     /// Feature (Nutzerwunsch): einmaliger Hinweis-Ton beim Eintritt in die
     /// letzte Minute des Zeit-Caps. Write-Once-Flag nach demselben Muster
@@ -402,12 +416,30 @@ private struct AMRAPPlayerView: View {
     /// README 2.18 Nachtrag (28c/27d): "1 RUNDEN" - vierte Fundstelle der
     /// "1 Saetze"-Familie. Gleiches Muster wie dashboard.recent.sets.one/
     /// .other: Zahl steckt im Format-String, nicht mehr in der Konkatenation.
+    /// Nutzer-Feedback (13. August, zweite Runde): traegt wieder den
+    /// "+ N Wdh."-Zusatz der angebrochenen Runde, sobald `finishBar` (nach
+    /// Deckel-Ende) einen Wert > 0 eingestellt hat - identisch zum Verhalten
+    /// vor Ticket A, nur dass `partialReps` jetzt ausschliesslich dort
+    /// geaendert wird, nicht mehr durchgehend waehrend des Laufens.
     private var roundsContextText: String {
         let suffix = roundsCompleted == 1 ? "one" : "other"
         let key = String.LocalizationValue(stringLiteral: "timedWorkout.amrap.rounds.\(suffix)")
-        return String(localized: key, bundle: .module)
+        let roundsPart = String(localized: key, bundle: .module)
             .replacingOccurrences(of: "%lld", with: "\(roundsCompleted)")
-            .uppercased()
+        guard partialReps > 0 else { return roundsPart.uppercased() }
+        let repsPart = "\(partialReps) " + String(localized: "unit.reps.short", bundle: .module)
+        return (roundsPart + " + " + repsPart).uppercased()
+    }
+
+    /// Faellt auf die erste Uebung zurueck, wenn `partialRepsExerciseID`
+    /// noch nicht gesetzt ist (kann nur der Fall sein, bevor `finishBar`
+    /// je gerendert wurde) oder auf eine inzwischen entfernte Uebung
+    /// zeigt.
+    private var partialRepsExercise: Exercise? {
+        if let partialRepsExerciseID, let match = exercises.first(where: { $0.persistentModelID == partialRepsExerciseID }) {
+            return match
+        }
+        return exercises.first
     }
 
     var body: some View {
@@ -436,9 +468,10 @@ private struct AMRAPPlayerView: View {
                     // unterscheiden, waehrend der Vorlauf mit "STARTET GLEICH"
                     // (timedWorkoutPrerollCard) schon einen Zustandshinweis
                     // trug. Nur solange die Session noch wirklich laeuft -
-                    // `isFinished` fuehrt (Bugfix Teil-Wiederholungen entfernt)
-                    // direkt zum automatischen Speichern, "LÄUFT" waere dann
-                    // ohnehin nur noch fuer einen Render-Zyklus falsch.
+                    // nach `isFinished` steht die Uhr echt (Deckel erreicht,
+                    // `finishBar` wartet auf die letzte Wiederholungs-Eingabe
+                    // + "Speichern"), "LÄUFT" waere dann selbst die
+                    // Falschmeldung.
                     DeltiqContextRow(
                         (isFinished ? [] : [DeltiqContextItem(String(localized: "timedWorkout.running.label", bundle: .module), style: .accent)]) + [
                         DeltiqContextItem(roundsContextText, style: .accent),
@@ -539,11 +572,12 @@ private struct AMRAPPlayerView: View {
         .safeAreaInset(edge: .bottom) {
             if prerollRemaining > 0 {
                 timedWorkoutPrerollStartBar { finishPreroll() }
+            } else if isFinished {
+                // Nutzer-Feedback (13. August, zweite Runde): `checkCapReached()`
+                // speichert nicht mehr selbst - `finishBar` ist der letzte
+                // Schritt, um die angebrochene Runde noch einzutragen.
+                finishBar
             } else {
-                // Bugfix (Teil-Wiederholungen entfernt): `isFinished` fuehrt
-                // ueber `checkCapReached()` direkt zum Speichern (`saveNow()`
-                // navigiert selbst weiter), eine eigene "fertig, bitte
-                // speichern"-Leiste existiert daher nicht mehr.
                 roundBar
             }
         }
@@ -586,12 +620,17 @@ private struct AMRAPPlayerView: View {
         })
     }
 
-    /// Gemeinsamer Speicherpfad fuer den Menue-Eintrag UND `checkCapReached()`
-    /// — `completedTarget` spiegelt exakt, ob `isFinished` zum Zeitpunkt des
-    /// Aufrufs schon (regulaer, Deckel erreicht) oder noch nicht (vorzeitig
-    /// ueber das Menue) erreicht war.
+    /// Gemeinsamer Speicherpfad fuer den Menue-Eintrag UND den Knopf in
+    /// `finishBar` — `completedTarget` spiegelt exakt, ob `isFinished` zum
+    /// Zeitpunkt des Aufrufs schon (regulaer, Deckel erreicht) oder noch
+    /// nicht (vorzeitig ueber das Menue) erreicht war. Das Menue bleibt
+    /// bewusst der ungefragte Sofort-Pfad ("ohne Rueckfrage", README 2.10/
+    /// 19e) - `partialReps`/`partialRepsExerciseID` haben dort noch ihren
+    /// Default (0/nil), weil `finishBar` in diesem Pfad nie sichtbar wird.
     private func saveNow() {
         session.roundsCompleted = roundsCompleted
+        session.partialReps = partialReps
+        session.partialRepsExerciseName = partialReps > 0 ? partialRepsExercise?.displayName : nil
         session.completedTarget = isFinished
         session.timeFormatSnapshot = .amrap
         finishTimedSession(
@@ -621,15 +660,19 @@ private struct AMRAPPlayerView: View {
     /// nicht selbst die Zeit fortschreiben. Gerufen vom Tick (Normalfall,
     /// waehrend die App vorne ist) UND vom Ruecksprung aus dem Hintergrund
     /// (damit der Deckel-Ablauf nicht erst mit Verzoegerung ankommt).
-    /// Bugfix (Teil-Wiederholungen entfernt): kein `finishBar`/Speichern-Knopf
-    /// mehr noetig - sobald der Deckel erreicht ist, gibt es nichts mehr
-    /// einzugeben, also wird direkt gespeichert (`saveNow()` navigiert selbst
-    /// weiter zur Zusammenfassung).
+    /// Nutzer-Feedback (13. August, zweite Runde): speichert nicht mehr
+    /// automatisch - der Deckel kann mitten in einer Runde erreicht werden,
+    /// die angebrochene Runde verdient noch einen Wert, bevor die Session
+    /// tatsaechlich abgeschlossen wird (`finishBar` uebernimmt das, inkl.
+    /// eigenem "Speichern"-Knopf, der `saveNow()` ruft). Vorbelegung von
+    /// `partialRepsExerciseID` auf die erste Uebung passiert genau hier,
+    /// nicht schon im `init` - erst ab jetzt gibt es ueberhaupt eine Stelle,
+    /// die den Wert liest (`partialRepsExercise`/`finishBar`).
     private func checkCapReached() {
         guard !isFinished, elapsedSeconds >= capSeconds else { return }
         isFinished = true
+        partialRepsExerciseID = exercises.first?.persistentModelID
         DeltiqHaptics.notify(.success)
-        saveNow()
     }
 
     /// Feature (Nutzerwunsch): akustischer + haptischer Hinweis beim Eintritt
@@ -714,6 +757,87 @@ private struct AMRAPPlayerView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(Color.Deltiq.surface.ignoresSafeArea(edges: .bottom))
+    }
+
+    /// Nutzer-Feedback (13. August, zweite Runde): letzter Schritt, nachdem
+    /// der Deckel erreicht wurde - anders als vor Ticket A NICHT durchgehend
+    /// waehrend des Laufs sichtbar (das war der als "fiddly" entfernte
+    /// Teil), sondern nur noch hier, einmalig. Uebungs-Picker nur bei einem
+    /// Mehr-Uebungs-Zirkel noetig - bei genau einer Uebung (z.B. dem
+    /// Ad-Hoc-Zeitformat-Start, README 2.35/43b) steht `partialRepsExercise`
+    /// schon ohne jede Auswahl fest.
+    private var finishBar: some View {
+        VStack(spacing: 10) {
+            timedWorkoutHintRow(String(localized: "timedWorkout.amrap.partialReps.hint", bundle: .module))
+            if exercises.count > 1 {
+                partialRepsExercisePickerRow
+            }
+            partialRepsStepperRow
+            Button {
+                saveNow()
+            } label: {
+                Text("timedWorkout.finish.save", bundle: .module)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.plain)
+            .deltiqButtonStyle()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color.Deltiq.surface.ignoresSafeArea(edges: .bottom))
+    }
+
+    /// Wechsel der Uebung setzt `partialReps` zurueck auf 0 - ein
+    /// mitgenommener Zaehler vom vorher gewaehlten Ziel waere fuer das neue
+    /// Ziel (anderer Wiederholungs-/Sekunden-Deckel) i.d.R. falsch. Gleiches
+    /// Verhalten wie der Stations-Wechsel vor Ticket A.
+    private var partialRepsExercisePickerRow: some View {
+        DeltiqControlRow(label: String(localized: "timedWorkout.amrap.partialReps.exercise", bundle: .module)) {
+            Picker(selection: Binding<PersistentIdentifier?>(
+                get: { partialRepsExerciseID ?? exercises.first?.persistentModelID },
+                set: { newValue in
+                    partialRepsExerciseID = newValue
+                    partialReps = 0
+                }
+            )) {
+                ForEach(exercises, id: \.persistentModelID) { exercise in
+                    Text(exercise.displayName).tag(exercise.persistentModelID as PersistentIdentifier?)
+                }
+            } label: { EmptyView() }
+            .pickerStyle(.menu)
+        }
+    }
+
+    /// README 2.15/23d (wiederhergestellt): Label traegt den Namen der
+    /// gewaehlten Uebung statt eines generischen "Zusaetzliche Wdh." - "7"
+    /// allein sagt nicht, ob sieben Liegestuetze oder sieben Kniebeugen.
+    /// Stepper-Range an das tatsaechliche Ziel gebunden statt 0...999 - die
+    /// volle Wiederholungszahl MUSS man fuer eine komplette Runde sowieso
+    /// schaffen, ein offener Zaehler bis 999 suggerierte faelschlich freie
+    /// Wahl. Anders als vor Ticket A kein automatisches Vorruecken zur
+    /// naechsten Station beim Erreichen des Ziels - die Zeit ist an dieser
+    /// Stelle schon abgelaufen, es gibt kein "naechste Station" mehr.
+    private var partialRepsStepperRow: some View {
+        DeltiqControlRow(
+            label: partialRepsExercise?.displayName ?? String(localized: "timedWorkout.amrap.partialReps", bundle: .module),
+            showsDivider: false
+        ) {
+            HStack(spacing: 8) {
+                Text(partialRepsValueText)
+                    .font(.system(size: 17))
+                    .fitnessNumberStyle()
+                Stepper(value: $partialReps, in: 0...(partialRepsExercise?.repsMin ?? 999)) {
+                    Text("\(partialReps)")
+                        .fitnessNumberStyle()
+                }
+                .labelsHidden()
+            }
+        }
+    }
+
+    private var partialRepsValueText: String {
+        guard let partialRepsExercise else { return "\(partialReps)" }
+        return "\(partialReps) / \(partialRepsExercise.repsMin)"
     }
 }
 
