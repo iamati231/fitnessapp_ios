@@ -444,6 +444,49 @@ public struct DayEditorView: View {
                     }
                     .disabled(isReadOnly)
                     .listRowBackground(Color.Deltiq.surface)
+                case .circuit:
+                    // Zirkel hat kein Minuten-Dauer-Konzept - stattdessen
+                    // Rundenzahl, Pause zwischen den Runden, und der Modus
+                    // (feste Wdh. je Runde vs. bis zur Ausbelastung).
+                    Stepper(value: Binding(
+                        get: { day.circuitRounds ?? defaultCircuitRounds() },
+                        set: { day.circuitRounds = $0 }
+                    ), in: 1...20) {
+                        LabeledContent {
+                            Text("\(day.circuitRounds ?? defaultCircuitRounds())")
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        } label: {
+                            Text("day.editor.field.circuitRounds", bundle: .module)
+                        }
+                    }
+                    .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
+
+                    Stepper(value: Binding(
+                        get: { day.circuitRestSeconds ?? defaultCircuitRestSeconds() },
+                        set: { day.circuitRestSeconds = $0 }
+                    ), in: 10...300, step: 5) {
+                        LabeledContent {
+                            Text("\(day.circuitRestSeconds ?? defaultCircuitRestSeconds())" + String(localized: "unit.seconds.short", bundle: .module))
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        } label: {
+                            Text("day.editor.field.circuitRest", bundle: .module)
+                        }
+                    }
+                    .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
+
+                    Picker(selection: Binding(
+                        get: { day.circuitMode ?? .fixedReps },
+                        set: { day.circuitMode = $0 }
+                    )) {
+                        Text("day.editor.field.circuitMode.fixedReps", bundle: .module).tag(CircuitRoundMode.fixedReps)
+                        Text("day.editor.field.circuitMode.toFailure", bundle: .module).tag(CircuitRoundMode.toFailure)
+                    } label: {
+                        Text("day.editor.field.circuitMode", bundle: .module)
+                    }
+                    .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
                 }
             }
         } header: {
@@ -686,7 +729,9 @@ public struct DayEditorView: View {
             let analysis = DayAnalyzer.analyze(
                 exercises: exercises,
                 timeFormat: day.timeFormat,
-                timeCapMinutes: day.timeCapMinutes
+                timeCapMinutes: day.timeCapMinutes,
+                circuitRounds: day.circuitRounds,
+                circuitRestSeconds: day.circuitRestSeconds
             )
 
             if let analysis {
@@ -1110,6 +1155,11 @@ public struct DayEditorView: View {
         var parts = [timedFormatDisplayName(format)]
         if let cap = day.timeCapMinutes {
             parts.append("\(cap) " + String(localized: "unit.minutes.short", bundle: .module))
+        }
+        // Zirkel hat kein `timeCapMinutes` - die Rundenzahl uebernimmt hier
+        // dieselbe Rolle als knapper Kontext-Zusatz.
+        if format == .circuit, let rounds = day.circuitRounds {
+            parts.append("\(rounds)×")
         }
         return parts.joined(separator: " · ").uppercased()
     }

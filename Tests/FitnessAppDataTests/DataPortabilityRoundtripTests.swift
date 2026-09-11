@@ -431,6 +431,63 @@ final class DataPortabilityRoundtripTests: XCTestCase {
                        "\"neu rechnen\" braucht generatorInputRaw, um nach einem Restore weiter zu funktionieren")
     }
 
+    /// Nutzer-Feedback (13. August, zweite Runde): neues `.circuit`-Zeitformat
+    /// - deckt sowohl die drei neuen `TrainingDay`-Felder (`circuitRounds`/
+    /// `circuitRestSeconds`/`circuitMode`) als auch die drei neuen
+    /// `WorkoutSession`-Resume-Felder ab (`circuitRoundsCompleted`,
+    /// `circuitRestEndDate` als optionales Datum, `circuitCurrentRoundCheckedRaw`
+    /// als Snapshot einer laufenden Pause mitten in einer Session) - gleiches
+    /// Prinzip wie `testTimedFormatDayAndSessionSurviveRoundtrip` fuer AMRAP.
+    func testCircuitDayAndSessionSurviveRoundtrip() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Zirkel-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let day = TrainingDay(
+            name: "Ganzkörper-Komplex", weekday: 2, type: .fullBody, plan: plan,
+            timeFormat: .circuit,
+            circuitRounds: 5, circuitRestSeconds: 90, circuitMode: .fixedReps
+        )
+        ctx.insert(day)
+        let restEnd = Date(timeIntervalSince1970: 1_760_500_090)
+        let session = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_760_500_000),
+            endTime: Date(timeIntervalSince1970: 1_760_500_090),
+            isCompleted: false, dayName: "Ganzkörper-Komplex", day: day,
+            timeFormatSnapshot: .circuit,
+            circuitRoundsCompleted: 2,
+            circuitRestEndDate: restEnd,
+            circuitCurrentRoundCheckedRaw: "0,2"
+        )
+        ctx.insert(session)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let importedDay = try target.mainContext.fetch(FetchDescriptor<TrainingDay>()).first
+        XCTAssertEqual(importedDay?.timeFormat, .circuit)
+        XCTAssertEqual(importedDay?.circuitRounds, 5)
+        XCTAssertEqual(importedDay?.circuitRestSeconds, 90)
+        XCTAssertEqual(importedDay?.circuitMode, .fixedReps)
+
+        let importedSession = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
+        XCTAssertEqual(importedSession?.timeFormatSnapshot, .circuit)
+        XCTAssertEqual(importedSession?.circuitRoundsCompleted, 2)
+        XCTAssertEqual(
+            importedSession?.circuitRestEndDate.map { $0.timeIntervalSince1970.rounded() },
+            restEnd.timeIntervalSince1970.rounded(),
+            "circuitRestEndDate muss den laufenden Pausen-Countdown ueberleben, sonst verliert ein Backup/Restore mitten in einer Pause die verbleibende Zeit"
+        )
+        XCTAssertEqual(importedSession?.circuitCurrentRoundCheckedRaw, "0,2")
+    }
+
     /// Bugfix (Nutzer-Feedback, Auf-Zeit-Resume): `forTimeCheckedRoundsRaw`
     /// nutzt bewusst den Platzhalter "-" statt eines leeren Strings fuer
     /// "gestartet, noch nichts abgehakt" - ein echter leerer String wuerde

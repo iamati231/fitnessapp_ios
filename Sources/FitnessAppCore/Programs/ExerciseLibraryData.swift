@@ -272,6 +272,28 @@ public enum ExerciseLibraryData {
         // Uebung, weil ein Tag im Datenmodell keine Seiten-Alternation kennt.
         ExerciseTemplateSpec(name: "Kettlebell Snatch (Links)",        equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellSnatchLeft"),
         ExerciseTemplateSpec(name: "Kettlebell Snatch (Rechts)",       equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellSnatchRight"),
+        // Nutzer-Upload (13. August, zweite Runde): 5 Kettlebell-Komplexe
+        // ("Athletik beginnt hier") - sechs neue Bewegungen, die noch keine
+        // Library-Entsprechung hatten (siehe Kommentare je Zeile fuer die
+        // Abgrenzung zu bereits vorhandenen, aehnlichen Eintraegen).
+        ExerciseTemplateSpec(name: "Kettlebell Clean to Front Squat",  equipment: .kettlebell, primaryMuscle: .quads,     difficultyLevel: .intermediate, localizationKey: "exercise.name.kettlebellCleanToFrontSquat"),
+        // Anders als "Pullover (KH)" oben (Kurzhantel, beidhaendig): mit
+        // EINER Kettlebell, ansonsten dieselbe Bewegung.
+        ExerciseTemplateSpec(name: "Kettlebell Pullover",              equipment: .kettlebell, primaryMuscle: .back,     difficultyLevel: .beginner, localizationKey: "exercise.name.kettlebellPullover"),
+        // Einarmige KB-Variante von "Thruster (KH)" oben (Zweihand-Kurzhantel)
+        // - gleiche Faktoren wie dort, ein Komplex mit Kniebeuge+Drueck ist
+        // aehnlich fordernd, unabhaengig vom Geraet.
+        ExerciseTemplateSpec(name: "Kettlebell Thruster einarmig",     equipment: .kettlebell, primaryMuscle: .quads,     difficultyLevel: .intermediate,
+                             systemicFatigueFactor: 0.70, localMuscleDamageFactor: 0.60, cnsDemandFactor: 0.65, axialLoadFactor: 0.45, technicalComplexityFactor: 0.55, recoveryClass: .high,
+                             localizationKey: "exercise.name.kettlebellThrusterSingleArm"),
+        // Anders als "Sit-ups" oben (Bodyweight): der Overhead-Hold macht es
+        // zu einer eigenstaendigen Core-Stabilitaets-Uebung, kein reiner
+        // Bodyweight-Bauchmuskel-Move mehr.
+        ExerciseTemplateSpec(name: "Kettlebell Sit-Up (Overhead Hold)", equipment: .kettlebell, primaryMuscle: .core,     difficultyLevel: .intermediate, localizationKey: "exercise.name.kettlebellSitUpOverhead"),
+        // Anders als "Diamant-Liegestütze" oben (Boden): Haende auf dem
+        // Kettlebell-Griff, instabiler als eine feste Bodenflaeche.
+        ExerciseTemplateSpec(name: "Liegestütze auf Kettlebell",       equipment: .kettlebell, primaryMuscle: .triceps,  difficultyLevel: .intermediate, localizationKey: "exercise.name.kettlebellPushup"),
+        ExerciseTemplateSpec(name: "Kettlebell Uppercut Rotation",     equipment: .kettlebell, primaryMuscle: .core,     difficultyLevel: .beginner, localizationKey: "exercise.name.kettlebellUppercutRotation"),
 
         // ── CARDIO (DEL-080 — Ad-Hoc-Optionen fuer Hybrid-/freie Trainings) ─
         // Alle `isCardio: true` damit der DayEditor beim Picker-Pick die

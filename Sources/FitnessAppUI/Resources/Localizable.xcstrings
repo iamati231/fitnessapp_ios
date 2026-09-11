@@ -37089,6 +37089,278 @@
           }
         }
       }
+    },
+    "timedWorkout.circuit.pillLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Zirkel" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Circuit" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Devre" } }
+      }
+    },
+    "day.editor.timedFormat.hintCircuit": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Feste Rundenzahl, feste Pause dazwischen — je nach Modus zaehlst du entweder feste Wiederholungen ab oder beendest die Runde selbst, wenn du am Limit bist." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Fixed round count, fixed rest in between — depending on the mode you either count off fixed reps or end the round yourself once you've hit your limit." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sabit tur sayısı, aralarda sabit mola — moda göre ya sabit tekrarları sayarsın ya da limitine ulaştığında turu kendin bitirirsin." } }
+      }
+    },
+    "day.analysis.coachNote.metabolicDensity.circuit": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%@ mit fester Pause zwischen den Runden. Die Belastung kommt aus der Dichte pro Runde, nicht aus dem Gewicht." } },
+        "en": { "stringUnit": { "state": "translated", "value": "%@ with a fixed rest between rounds. The load comes from the density per round, not the weight." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%@ turlar arasında sabit molayla. Yük ağırlıktan değil, tur başına yoğunluktan gelir." } }
+      }
+    },
+    "summary.editResult.circuitRounds": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Runden geschafft" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Rounds completed" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tamamlanan tur" } }
+      }
+    },
+    "summary.stat.circuitRest": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Pause" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Rest" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Mola" } }
+      }
+    },
+    "summary.hero.unit.circuitRounds": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Runden geschafft" } },
+        "en": { "stringUnit": { "state": "translated", "value": "rounds completed" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "tamamlanan tur" } }
+      }
+    },
+    "day.editor.field.circuitRounds": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Runden" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Rounds" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tur" } }
+      }
+    },
+    "day.editor.field.circuitRest": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Pause zwischen Runden" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Rest between rounds" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Turlar arası mola" } }
+      }
+    },
+    "day.editor.field.circuitMode": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Modus" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Mode" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Mod" } }
+      }
+    },
+    "day.editor.field.circuitMode.fixedReps": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Feste Wiederholungen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Fixed reps" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sabit tekrar" } }
+      }
+    },
+    "day.editor.field.circuitMode.toFailure": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Bis zur Ausbelastung" } },
+        "en": { "stringUnit": { "state": "translated", "value": "To failure" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tükenene kadar" } }
+      }
+    },
+    "timedWorkout.circuit.pauseLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "PAUSE" } },
+        "en": { "stringUnit": { "state": "translated", "value": "REST" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "MOLA" } }
+      }
+    },
+    "timedWorkout.circuit.roundContext": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "RUNDE %lld/%lld" } },
+        "en": { "stringUnit": { "state": "translated", "value": "ROUND %lld/%lld" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "TUR %lld/%lld" } }
+      }
+    },
+    "timedWorkout.circuit.pauseHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nutze die Pause zum Durchatmen - die naechste Runde startet automatisch, sobald die Zeit um ist." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Use the rest to catch your breath - the next round starts automatically once time's up." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Nefes almak icin molayi kullan - sure dolunca bir sonraki tur otomatik baslar." } }
+      }
+    },
+    "timedWorkout.circuit.fixedRepsHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Hake jede Uebung ab, sobald du ihr Ziel fuer diese Runde geschafft hast." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Check off each exercise once you've hit its target for this round." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bu turdaki hedefine ulastigin her egzersizi isaretle." } }
+      }
+    },
+    "timedWorkout.circuit.toFailureHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Wiederhole die Sequenz, bis keine sauberen Wiederholungen mehr moeglich sind, dann \"Runde beenden\" antippen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Repeat the sequence until no more clean reps are possible, then tap \"End round\"." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Temiz tekrar yapamayana kadar diziyi tekrarla, sonra \"Turu bitir\"e dokun." } }
+      }
+    },
+    "timedWorkout.circuit.skipRest": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Pause überspringen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Skip rest" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Molayı atla" } }
+      }
+    },
+    "timedWorkout.circuit.finishRound": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Runde beenden" } },
+        "en": { "stringUnit": { "state": "translated", "value": "End round" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Turu bitir" } }
+      }
+    },
+    "timedWorkout.circuit.checkedProgress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%lld von %lld abgehakt" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%lld of %lld checked" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld/%lld işaretlendi" } }
+      }
+    },
+    "exercise.name.kettlebellCleanToFrontSquat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Clean to Front Squat" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Clean to Front Squat" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Clean to Front Squat" } }
+      }
+    },
+    "exercise.name.kettlebellThrusterSingleArm": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Thruster einarmig" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Single-Arm Thruster" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tek Kollu Kettlebell Thruster" } }
+      }
+    },
+    "exercise.name.kettlebellSitUpOverhead": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Sit-Up (Overhead-Halten)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Sit-Up (Overhead Hold)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Mekik (Overhead Tutuş)" } }
+      }
+    },
+    "exercise.name.kettlebellPushup": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Liegestütze auf Kettlebell" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Push-Up on Kettlebell" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Üzerinde Şınav" } }
+      }
+    },
+    "exercise.name.kettlebellUppercutRotation": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Uppercut Rotation" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Uppercut Rotation" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Uppercut Rotasyonu" } }
+      }
+    },
+    "exercise.name.kettlebellPullover": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Pullover" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Pullover" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Pullover" } }
+      }
+    },
+    "plan.template.kettlebellComplexes.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Komplexe" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Complexes" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Kompleksleri" } }
+      }
+    },
+    "plan.template.kettlebellComplexes.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "5 Tage · Ganzkörper-Komplexe für Athletik & Kraftausdauer" } },
+        "en": { "stringUnit": { "state": "translated", "value": "5 days · Full-body complexes for athleticism & muscular endurance" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "5 gün · Atletizm ve kas dayanıklılığı için tüm vücut kompleksleri" } }
+      }
+    },
+    "plan.template.kettlebellComplexes.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Fünf eigenständige Kettlebell-Komplexe für Ganzkörper-Athletik - von rundenbasierten Ganzkörper- und Explosivitäts-Komplexen bis zu einem AMRAP-Finisher für die Körpermitte. Moderates Gewicht wählen, saubere Technik vor Tempo." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Five standalone kettlebell complexes for full-body athleticism - from round-based full-body and explosive complexes to an AMRAP finisher for your core. Choose a moderate weight, clean technique before speed." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tüm vücut atletizmi için beş bağımsız kettlebell kompleksi - tur bazlı tüm vücut ve patlayıcı kompleksten karın bölgesi için bir AMRAP bitirişine kadar. Orta ağırlık seç, hız yerine temiz teknik." } }
+      }
+    },
+    "plan.template.kettlebellComplexes.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } },
+        "en": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "CrossFit & Kettlebell" } }
+      }
+    },
+    "plan.day.kbComplexFullBody": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ganzkörper-Komplex" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Full-Body Complex" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tüm Vücut Kompleksi" } }
+      }
+    },
+    "plan.day.kbComplexShoulderCore": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schulter & Core" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Shoulder & Core" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Omuz & Core" } }
+      }
+    },
+    "plan.day.kbComplexExplosive": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Explosivität" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Explosiveness" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Patlayıcılık" } }
+      }
+    },
+    "plan.day.kbComplexSeatedControl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Seated Control" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Seated Control" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Seated Control" } }
+      }
+    },
+    "plan.day.kbComplexEndurance": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kraftausdauer" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Muscular Endurance" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kas Dayanıklılığı" } }
+      }
     }
   }
 }

@@ -45,11 +45,11 @@ public final class WorkoutSession {
     /// the source `TrainingDay` is renamed or deleted (F123 Bug #2).
     public var dayName: String?
 
-    // MARK: - Zeitformat-Ergebnisse (AMRAP/EMOM/Auf Zeit)
+    // MARK: - Zeitformat-Ergebnisse (AMRAP/EMOM/Auf Zeit/Zirkel)
     //
-    // Nur eine der vier Ergebnis-Groessen ist je Session gesetzt, je nach
-    // `timeFormatSnapshot`. Bei einer normalen Krafttrainings-Session
-    // bleiben alle fuenf Felder `nil`.
+    // Nur die Ergebnis-Groessen des jeweiligen Formats sind je Session
+    // gesetzt, je nach `timeFormatSnapshot`. Bei einer normalen
+    // Krafttrainings-Session bleiben alle diese Felder `nil`.
 
     /// Snapshot von `day.timeFormat` bei Session-Start — gleiches Muster
     /// wie `dayName`: ueberlebt einen spaeteren Format- oder Tag-Wechsel,
@@ -87,6 +87,22 @@ public final class WorkoutSession {
     public var forTimeCheckedRoundsRaw: String?
     /// EMOM: Anzahl der Minuten, in denen das Pensum geschafft wurde (von `day.timeCapMinutes`).
     public var completedMinuteCount: Int?
+    /// Zirkel: Anzahl vollstaendig abgeschlossener Runden (von
+    /// `day.circuitRounds`). `nil` bis zum allerersten echten Start nach
+    /// dem Vorlauf — gleiches Muster wie `roundsCompleted`.
+    public var circuitRoundsCompleted: Int?
+    /// Zirkel: Ende der aktuell laufenden Pause zwischen zwei Runden, `nil`
+    /// wenn gerade eine Runde laeuft (nicht pausiert wird). Wanduhr-Anker
+    /// statt Sekunden-Zaehler — ueberlebt Hintergrund/Resume wie
+    /// `session.startTime` bei den anderen drei Formaten.
+    public var circuitRestEndDate: Date?
+    /// Zirkel (`.fixedReps`): Zwischenstand der in der LAUFENDEN Runde
+    /// abgehakten Uebungen — anders als `forTimeCheckedRoundsRaw` (kumulativ
+    /// ueber die ganze Session) wird dieser Wert bei jedem Rundenwechsel
+    /// wieder auf den "-"-Platzhalter zurueckgesetzt. Gleiches
+    /// "orderIndex=Anzahl"-Format wie bei Auf Zeit, siehe dortigen
+    /// Kommentar. `nil` bei `.toFailure`-Tagen (keine Checkboxen).
+    public var circuitCurrentRoundCheckedRaw: String?
     /// True nur bei regulaerem Ende (Zeit-Deckel erreicht bzw. bei Auf Zeit
     /// alle Runden abgehakt), false beim vorzeitigen manuellen "Speichern"
     /// aus dem Punkte-Menue (README 2.10/19e). Vorbedingung dafuer, dass
@@ -137,6 +153,9 @@ public final class WorkoutSession {
         finishTimeSeconds: Int? = nil,
         forTimeCheckedRoundsRaw: String? = nil,
         completedMinuteCount: Int? = nil,
+        circuitRoundsCompleted: Int? = nil,
+        circuitRestEndDate: Date? = nil,
+        circuitCurrentRoundCheckedRaw: String? = nil,
         completedTarget: Bool = false
     ) {
         self.startTime = startTime
@@ -158,6 +177,9 @@ public final class WorkoutSession {
         self.finishTimeSeconds = finishTimeSeconds
         self.forTimeCheckedRoundsRaw = forTimeCheckedRoundsRaw
         self.completedMinuteCount = completedMinuteCount
+        self.circuitRoundsCompleted = circuitRoundsCompleted
+        self.circuitRestEndDate = circuitRestEndDate
+        self.circuitCurrentRoundCheckedRaw = circuitCurrentRoundCheckedRaw
         self.completedTarget = completedTarget
     }
 

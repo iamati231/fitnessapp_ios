@@ -537,6 +537,25 @@ final class PRDetectorTests: XCTestCase {
         )
     }
 
+    /// Nutzer-Feedback (13. August, zweite Runde): `.circuit` hat eine vom
+    /// Tag fest vorgegebene Rundenzahl (`TrainingDay.circuitRounds`) - anders
+    /// als EMOM (pass/fail) ist hier `roundsCompleted` sogar ein Zahlenwert,
+    /// der theoretisch verglichen werden KOENNTE, aber bewusst nicht wird:
+    /// die Zahl ist durch den Plan fix, keine variable Leistung, gegen die
+    /// sich ein Bestwert bilden liesse.
+    func testCircuitNeverProducesAPR() {
+        let attempt = TimedWorkoutAttempt(
+            wodName: "Ganzkörper-Komplex", format: .circuit, date: now, roundsCompleted: 5
+        )
+        let history = TimedWorkoutAttempt(
+            wodName: "Ganzkörper-Komplex", format: .circuit, date: weekAgo, roundsCompleted: 3
+        )
+        XCTAssertNil(
+            PRDetector.detectTimedFormatPR(session: attempt, history: [history]),
+            "Zirkel-Rundenzahl ist durch den Tag fest vorgegeben, kein maximierbarer Wert — bewusst kein PR-Kind"
+        )
+    }
+
     // MARK: - DEL-218 displayOrder
 
     /// Regression: `displayOrder` MUSS jeden Case enthalten. Vor DEL-218 lag

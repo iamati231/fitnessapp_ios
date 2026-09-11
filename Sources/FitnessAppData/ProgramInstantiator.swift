@@ -128,7 +128,10 @@ public enum ProgramInstantiator {
                 plan: plan,
                 localizationKey: daySpec.localizationKey,
                 timeFormat: daySpec.timeFormat,
-                timeCapMinutes: daySpec.timeCapMinutes
+                timeCapMinutes: daySpec.timeCapMinutes,
+                circuitRounds: daySpec.circuitRounds,
+                circuitRestSeconds: daySpec.circuitRestSeconds,
+                circuitMode: daySpec.circuitMode
             )
             context.insert(day)
 

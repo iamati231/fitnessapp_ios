@@ -476,6 +476,10 @@ public struct PlansListView: View {
             // (AMRAP/EMOM/Auf Zeit) sein Format komplett (Routing landete nach
             // dem Duplizieren faelschlich in ActiveWorkoutView statt
             // TimedWorkoutPlayerView).
+            // Bugfix (Review-Fund, Zirkel-Feature): dieselbe Luecke fuer die
+            // drei neuen Zirkel-Felder - ohne sie verlor ein dupliziertes
+            // .circuit-Tag Rundenzahl/Pause/Modus und fiel stillschweigend
+            // auf die generischen Defaults zurueck.
             let dayCopy = TrainingDay(
                 name: day.name,
                 customName: day.customName,
@@ -485,7 +489,10 @@ public struct PlansListView: View {
                 plan: copy,
                 localizationKey: day.localizationKey,
                 timeFormat: day.timeFormat,
-                timeCapMinutes: day.timeCapMinutes
+                timeCapMinutes: day.timeCapMinutes,
+                circuitRounds: day.circuitRounds,
+                circuitRestSeconds: day.circuitRestSeconds,
+                circuitMode: day.circuitMode
             )
             modelContext.insert(dayCopy)
 

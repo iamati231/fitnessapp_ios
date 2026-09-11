@@ -35,6 +35,15 @@ public struct DaySpec: Sendable, Hashable {
     /// keinen Deckel braucht.
     public let timeCapMinutes: Int?
 
+    /// Nur bei `timeFormat == .circuit` gesetzt: Anzahl der Runden.
+    public let circuitRounds: Int?
+    /// Nur bei `timeFormat == .circuit` gesetzt: Pause zwischen den Runden
+    /// in Sekunden.
+    public let circuitRestSeconds: Int?
+    /// Nur bei `timeFormat == .circuit` gesetzt: wie eine Runde als "fertig"
+    /// erkannt wird.
+    public let circuitMode: CircuitRoundMode?
+
     public init(
         name: String,
         localizationKey: String? = nil,
@@ -42,7 +51,10 @@ public struct DaySpec: Sendable, Hashable {
         sequenceIndex: Int,
         exercises: [ExerciseSpec],
         timeFormat: WorkoutTimeFormat? = nil,
-        timeCapMinutes: Int? = nil
+        timeCapMinutes: Int? = nil,
+        circuitRounds: Int? = nil,
+        circuitRestSeconds: Int? = nil,
+        circuitMode: CircuitRoundMode? = nil
     ) {
         self.name = name
         self.localizationKey = localizationKey
@@ -51,5 +63,8 @@ public struct DaySpec: Sendable, Hashable {
         self.exercises = exercises
         self.timeFormat = timeFormat
         self.timeCapMinutes = timeCapMinutes
+        self.circuitRounds = circuitRounds
+        self.circuitRestSeconds = circuitRestSeconds
+        self.circuitMode = circuitMode
     }
 }

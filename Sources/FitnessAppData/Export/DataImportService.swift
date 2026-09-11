@@ -1034,6 +1034,10 @@ public enum DataImportService {
             // Aeltere ZIPs ohne sie -> beide nil, exakt der schon immer
             // bestehende "normaler Satz/Wiederholungs-Tag"-Bestandsfall.
             let timeFormat = row.optionalString("time_format").flatMap(WorkoutTimeFormat.init(rawValue:))
+            // Nutzer-Feedback (13. August, zweite Runde): additive Spalten,
+            // siehe DataExportService.buildDays - aeltere ZIPs ohne sie ->
+            // alle drei nil, der Bestandsfall "kein Zirkel-Tag".
+            let circuitMode = row.optionalString("circuit_mode").flatMap(CircuitRoundMode.init(rawValue:))
             // Bugfix (Audit): `generation_fingerprint`/`generator_sequence_index`
             // fehlten hier komplett, siehe DataExportService.buildDays. Aeltere
             // ZIPs ohne die Spalten -> beide nil, exakt der Bestandsfall
@@ -1051,6 +1055,9 @@ public enum DataImportService {
                 localizationKey: row.optionalString("localization_key"),
                 timeFormat: timeFormat,
                 timeCapMinutes: row.int("time_cap_minutes"),
+                circuitRounds: row.int("circuit_rounds"),
+                circuitRestSeconds: row.int("circuit_rest_seconds"),
+                circuitMode: circuitMode,
                 generationFingerprint: generationFingerprint,
                 generatorSequenceIndex: generatorSequenceIndex
             )
@@ -1127,6 +1134,9 @@ public enum DataImportService {
                 finishTimeSeconds: row.int("finish_time_seconds"),
                 forTimeCheckedRoundsRaw: row.optionalString("for_time_checked_rounds_raw"),
                 completedMinuteCount: row.int("completed_minute_count"),
+                circuitRoundsCompleted: row.int("circuit_rounds_completed"),
+                circuitRestEndDate: row.date("circuit_rest_end_date_utc"),
+                circuitCurrentRoundCheckedRaw: row.optionalString("circuit_current_round_checked_raw"),
                 completedTarget: row.bool("completed_target") ?? false
             )
             if let feeling = row.int("session_feeling") {

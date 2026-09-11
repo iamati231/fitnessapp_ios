@@ -166,6 +166,9 @@ public enum PlanGeneratorInstantiator {
         day.localizationKey = spec.localizationKey
         day.timeFormat = spec.timeFormat
         day.timeCapMinutes = spec.timeCapMinutes
+        day.circuitRounds = spec.circuitRounds
+        day.circuitRestSeconds = spec.circuitRestSeconds
+        day.circuitMode = spec.circuitMode
 
         for (orderIndex, exerciseSpec) in spec.exercises.enumerated() {
             let exercise = ProgramInstantiator.makeExercise(

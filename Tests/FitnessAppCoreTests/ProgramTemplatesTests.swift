@@ -5,10 +5,12 @@ final class ProgramTemplatesTests: XCTestCase {
 
     // MARK: Inventory + uniqueness
 
-    func testNineteenProgramsAreShipped() {
+    func testTwentyProgramsAreShipped() {
         // README 2.9: 14 → 19 Programme (CrossFit Bodyweight Rx/Scaled,
         // CrossFit mit Gewichten, Kettlebell Beginner/Advanced dazu).
-        XCTAssertEqual(ProgramTemplates.all.count, 19,
+        // Nutzer-Upload (13. August, zweite Runde): 19 → 20 (Kettlebell
+        // Komplexe, neues .circuit-Zeitformat).
+        XCTAssertEqual(ProgramTemplates.all.count, 20,
                        "Editing the catalog needs an explicit count update — fail-fast prevents silent template drops")
     }
 
@@ -163,6 +165,43 @@ final class ProgramTemplatesTests: XCTestCase {
                                 "\(template.name) / \(day.name): \(format) ohne timeCapMinutes")
                 XCTAssertGreaterThan(day.timeCapMinutes ?? 0, 0,
                                      "\(template.name) / \(day.name): timeCapMinutes muss positiv sein")
+            }
+        }
+    }
+
+    /// Nutzer-Feedback (13. August, zweite Runde): `.circuit`-Tage brauchen
+    /// alle drei Zirkel-Felder, sonst faellt der Player auf die generischen
+    /// `defaultCircuitRounds()`/`defaultCircuitRestSeconds()`-Fallbacks
+    /// zurueck statt die im Template beabsichtigten Werte zu zeigen -
+    /// gleiches Fail-fast-Prinzip wie `testAmrapAndEmomDaysHaveATimeCap`.
+    func testCircuitDaysHaveCompleteConfiguration() {
+        for template in ProgramTemplates.all {
+            for day in template.days where day.timeFormat == .circuit {
+                XCTAssertNotNil(day.circuitRounds,
+                                "\(template.name) / \(day.name): .circuit ohne circuitRounds")
+                XCTAssertGreaterThan(day.circuitRounds ?? 0, 0,
+                                     "\(template.name) / \(day.name): circuitRounds muss positiv sein")
+                XCTAssertNotNil(day.circuitRestSeconds,
+                                "\(template.name) / \(day.name): .circuit ohne circuitRestSeconds")
+                XCTAssertGreaterThan(day.circuitRestSeconds ?? 0, 0,
+                                     "\(template.name) / \(day.name): circuitRestSeconds muss positiv sein")
+                XCTAssertNotNil(day.circuitMode,
+                                "\(template.name) / \(day.name): .circuit ohne circuitMode")
+            }
+        }
+    }
+
+    /// Ergaenzt `testExerciseRepRangesAreValid`: bei `.circuit` spiegelt
+    /// `ExerciseSpec.sets` bewusst `circuitRounds` (gleiche Konvention wie
+    /// bei Auf-Zeit) - eine Abweichung waere ein stiller Kopier-Fehler beim
+    /// Anlegen des Tages, keine gueltige Variation.
+    func testCircuitExerciseSetsMatchCircuitRounds() {
+        for template in ProgramTemplates.all {
+            for day in template.days where day.timeFormat == .circuit {
+                for exercise in day.exercises {
+                    XCTAssertEqual(exercise.sets, day.circuitRounds,
+                                   "\(template.name) / \(day.name) / \(exercise.name): sets (\(exercise.sets)) != circuitRounds (\(day.circuitRounds ?? -1))")
+                }
             }
         }
     }

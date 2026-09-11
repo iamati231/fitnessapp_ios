@@ -1119,6 +1119,79 @@ public enum ProgramTemplates {
         targetGoals: [.functional, .fatloss]
     )
 
+    // MARK: - 20. Kettlebell Komplexe (Zirkel-Zeitformat)
+    //
+    // Nutzer-Upload (13. August, zweite Runde): "Athletik beginnt hier - 5
+    // Kettlebell-Komplexe". Fuenf eigenstaendige Komplexe statt eines
+    // klassischen 3er-Splits, darum `daysPerWeek: 5` statt der ueblichen 3.
+    // Vier der fuenf nutzen das neue `.circuit`-Zeitformat (feste
+    // Rundenzahl, feste Pause dazwischen) - Komplex 4 ("Seated Control")
+    // ist im Original schon ein waschechtes 15-Minuten-AMRAP und braucht
+    // keine Uebersetzung. `ExerciseSpec.sets` spiegelt hier ueberall
+    // `circuitRounds` (gleiche Konvention wie bei Auf-Zeit, siehe
+    // `timedFormatCircuitLabel`), `restSeconds` bleibt unbenutzter Default -
+    // die tatsaechliche Pause lebt in `circuitRestSeconds`.
+    private static let kettlebellComplexes = ProgramTemplate(
+        id: "kettlebell_complexes",
+        name: "Kettlebell Komplexe",
+        localizationKey: "plan.template.kettlebellComplexes.name",
+        tagline: "5 Tage · Ganzkörper-Komplexe für Athletik & Kraftausdauer",
+        taglineKey: "plan.template.kettlebellComplexes.tagline",
+        descriptionText: "Fünf eigenständige Kettlebell-Komplexe für Ganzkörper-Athletik - von rundenbasierten Ganzkörper- und Explosivitäts-Komplexen bis zu einem AMRAP-Finisher für die Körpermitte. Moderates Gewicht wählen, saubere Technik vor Tempo.",
+        descriptionKey: "plan.template.kettlebellComplexes.description",
+        focus: "CrossFit & Kettlebell",
+        focusKey: "plan.template.kettlebellComplexes.focus",
+        daysPerWeek: 5,
+        days: [
+            DaySpec(name: "Ganzkörper-Komplex", localizationKey: "plan.day.kbComplexFullBody", type: .fullBody, sequenceIndex: 1,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Clean to Front Squat", sets: 5, repsMin: 7,  repsMax: 7),
+                        ExerciseSpec(name: "Kettlebell Thruster einarmig",   sets: 5, repsMin: 7,  repsMax: 7),
+                        ExerciseSpec(name: "Kettlebell Swing",               sets: 5, repsMin: 7,  repsMax: 7),
+                        ExerciseSpec(name: "Kettlebell Row einarmig",        sets: 5, repsMin: 7,  repsMax: 7),
+                        ExerciseSpec(name: "Liegestütze auf Kettlebell",     sets: 5, repsMin: 14, repsMax: 14)
+                    ],
+                    timeFormat: .circuit, circuitRounds: 5, circuitRestSeconds: 90, circuitMode: .fixedReps),
+            DaySpec(name: "Schulter & Core", localizationKey: "plan.day.kbComplexShoulderCore", type: .fullBody, sequenceIndex: 2,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Halo",     sets: 10, repsMin: 2, repsMax: 2),
+                        ExerciseSpec(name: "Kettlebell Pullover",  sets: 10, repsMin: 2, repsMax: 2),
+                        ExerciseSpec(name: "Kettlebell Halo",     sets: 10, repsMin: 2, repsMax: 2)
+                    ],
+                    timeFormat: .circuit, circuitRounds: 10, circuitRestSeconds: 90, circuitMode: .toFailure),
+            DaySpec(name: "Explosivität", localizationKey: "plan.day.kbComplexExplosive", type: .fullBody, sequenceIndex: 3,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Snatch",         sets: 5, repsMin: 20, repsMax: 20),
+                        ExerciseSpec(name: "Kettlebell Clean & Press",  sets: 5, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kettlebell Goblet Squat",   sets: 5, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kettlebell Swing",          sets: 5, repsMin: 20, repsMax: 20)
+                    ],
+                    timeFormat: .circuit, circuitRounds: 5, circuitRestSeconds: 90, circuitMode: .fixedReps),
+            // Einziger Komplex ohne Zirkel - im Original schon ein normales
+            // 15-Minuten-AMRAP, exakt das bestehende Zeitformat.
+            DaySpec(name: "Seated Control", localizationKey: "plan.day.kbComplexSeatedControl", type: .fullBody, sequenceIndex: 4,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Uppercut Rotation",     sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kettlebell Halo",                 sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kettlebell Overhead Press",       sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kettlebell Sit-Up (Overhead Hold)", sets: 1, repsMin: 10, repsMax: 10)
+                    ],
+                    timeFormat: .amrap, timeCapMinutes: 15),
+            DaySpec(name: "Kraftausdauer", localizationKey: "plan.day.kbComplexEndurance", type: .fullBody, sequenceIndex: 5,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Row einarmig",      sets: 5, repsMin: 5,  repsMax: 5),
+                        ExerciseSpec(name: "Kettlebell Swing",             sets: 5, repsMin: 5,  repsMax: 5),
+                        ExerciseSpec(name: "Kettlebell Thruster einarmig", sets: 5, repsMin: 5,  repsMax: 5),
+                        ExerciseSpec(name: "Liegestütze",                  sets: 5, repsMin: 10, repsMax: 10)
+                    ],
+                    timeFormat: .circuit, circuitRounds: 5, circuitRestSeconds: 90, circuitMode: .fixedReps)
+        ],
+        targetEnvironment: .homeGym,
+        iconSystemName: "figure.highintensity.intervaltraining",
+        targetExperience: [.intermediate, .advanced],
+        targetGoals: [.functional, .fatloss]
+    )
+
     // MARK: - Display order
 
     /// Display order in the picker — beginner-friendly programs first, then specialised.
@@ -1146,6 +1219,7 @@ public enum ProgramTemplates {
         crossfitBodyweightScaled,
         crossfitWeighted,
         kettlebellBeginner,
-        kettlebellAdvanced
+        kettlebellAdvanced,
+        kettlebellComplexes
     ]
 }

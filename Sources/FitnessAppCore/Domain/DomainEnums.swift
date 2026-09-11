@@ -116,7 +116,39 @@ public enum WorkoutTimeFormat: String, Codable, Sendable, CaseIterable {
     /// Vorgegebenes Pensum so schnell wie moeglich; `timeCapMinutes`
     /// optional als Abbruch-Deckel.
     case forTime
+    /// Nutzer-Feedback (Kettlebell-Komplexe): feste Rundenzahl
+    /// (`TrainingDay.circuitRounds`), zwischen den Runden eine feste,
+    /// konfigurierbare Pause (`circuitRestSeconds`). Anders als AMRAP/EMOM
+    /// keine gemeinsame Uhr fuer den ganzen Tag — jede Runde endet einzeln,
+    /// je nach `circuitMode` entweder automatisch (alle Uebungs-Ziele der
+    /// Runde abgehakt) oder manuell ("Runde beenden"-Knopf bei einer
+    /// Ausbelastungs-Runde ohne festes Wiederholungsziel).
+    case circuit
 }
+
+/// Nur relevant, wenn `TrainingDay.timeFormat == .circuit` — legt fest, wie
+/// eine einzelne Runde als "fertig" erkannt wird.
+public enum CircuitRoundMode: String, Codable, Sendable, CaseIterable {
+    /// Runde endet automatisch, sobald alle Uebungen ihr Wiederholungsziel
+    /// erreicht haben (Checkbox-UI wie bei Auf-Zeit, aber pro Runde
+    /// zurueckgesetzt statt kumulativ ueber die ganze Session).
+    case fixedReps
+    /// Runde endet erst, wenn der User selbst "Runde beenden" antippt -
+    /// fuer Vorgaben wie "wiederholen, bis keine saubere Wiederholung mehr
+    /// moeglich ist".
+    case toFailure
+}
+
+/// Vorschlagswert fuer die Rundenzahl eines neu angelegten Zirkel-Tages,
+/// solange `circuitRounds` noch `nil` ist. In Core statt in FitnessAppUI,
+/// weil sowohl `DayAnalyzer` (FitnessAppData) als auch `DayEditorView`/
+/// `DashboardView` (FitnessAppUI) denselben Vorschlag brauchen.
+public func defaultCircuitRounds() -> Int { 5 }
+
+/// Vorschlagswert fuer die Pause zwischen zwei Runden in Sekunden, solange
+/// `circuitRestSeconds` noch `nil` ist - 90s ist der Wert, den jeder
+/// Kettlebell-Komplex aus der Nutzer-Vorlage durchgehend verwendet.
+public func defaultCircuitRestSeconds() -> Int { 90 }
 
 /// Difficulty classification for exercise templates — used by the library filter (F99).
 public enum DifficultyLevel: String, Codable, Sendable, CaseIterable {

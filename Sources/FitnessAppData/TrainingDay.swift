@@ -33,6 +33,13 @@ public final class TrainingDay {
     /// AMRAP-Deckel bzw. EMOM-Gesamtdauer in Minuten. Siehe `DaySpec.timeCapMinutes`.
     public var timeCapMinutes: Int?
 
+    /// Nur bei `timeFormat == .circuit`. Siehe `DaySpec.circuitRounds`.
+    public var circuitRounds: Int?
+    /// Nur bei `timeFormat == .circuit`. Siehe `DaySpec.circuitRestSeconds`.
+    public var circuitRestSeconds: Int?
+    /// Nur bei `timeFormat == .circuit`. Siehe `DaySpec.circuitMode`.
+    public var circuitMode: CircuitRoundMode?
+
     /// README 2.20: Fingerprint des Tagesinhalts unmittelbar NACH der
     /// Erzeugung durch den "Plan bauen"-Assistenten. Nil = kein Wizard-Tag
     /// (oder noch nicht generiert). "Neu rechnen" vergleicht diesen
@@ -95,7 +102,10 @@ public final class TrainingDay {
     /// `targetDistanceKm`, `targetDurationMinutes` — gerade die beiden
     /// Cardio-Ziel-Felder sind der wahrscheinlichste Edit an einem
     /// generierten Lauf-/Rad-Tag und muessen erkannt werden, sonst
-    /// verwirft "neu rechnen" sie kommentarlos.
+    /// verwirft "neu rechnen" sie kommentarlos. `timeFormat`/`timeCapMinutes`
+    /// sowie die neuen `circuitRounds`/`circuitRestSeconds`/`circuitMode`
+    /// fliessen ebenfalls ein — ein Struktur-Wechsel im Tag-Editor ist
+    /// genauso ein Edit.
     public var currentContentFingerprint: String {
         let exercisePart = activeExercises
             .sorted { $0.orderIndex < $1.orderIndex }
@@ -112,7 +122,8 @@ public final class TrainingDay {
         let timeFormatPart = timeFormat?.rawValue ?? "-"
         let timeCapPart = timeCapMinutes.map(String.init) ?? "-"
         let customNamePart = customName ?? "-"
-        return "\(exercisePart)#\(timeFormatPart)#\(timeCapPart)#\(customNamePart)#\(weekday)#\(type.rawValue)"
+        let circuitPart = "\(circuitRounds.map(String.init) ?? "-")|\(circuitRestSeconds.map(String.init) ?? "-")|\(circuitMode?.rawValue ?? "-")"
+        return "\(exercisePart)#\(timeFormatPart)#\(timeCapPart)#\(customNamePart)#\(weekday)#\(type.rawValue)#\(circuitPart)"
     }
 
     public init(
@@ -125,6 +136,9 @@ public final class TrainingDay {
         localizationKey: String? = nil,
         timeFormat: WorkoutTimeFormat? = nil,
         timeCapMinutes: Int? = nil,
+        circuitRounds: Int? = nil,
+        circuitRestSeconds: Int? = nil,
+        circuitMode: CircuitRoundMode? = nil,
         generationFingerprint: String? = nil,
         generatorSequenceIndex: Int? = nil
     ) {
@@ -137,6 +151,9 @@ public final class TrainingDay {
         self.localizationKey = localizationKey
         self.timeFormat = timeFormat
         self.timeCapMinutes = timeCapMinutes
+        self.circuitRounds = circuitRounds
+        self.circuitRestSeconds = circuitRestSeconds
+        self.circuitMode = circuitMode
         self.generationFingerprint = generationFingerprint
         self.generatorSequenceIndex = generatorSequenceIndex
     }

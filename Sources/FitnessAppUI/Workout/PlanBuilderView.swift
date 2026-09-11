@@ -309,7 +309,14 @@ public struct PlanBuilderView: View {
                         )
                     ) {
                         Text("day.editor.field.structure.sets", bundle: .module).tag(nil as WorkoutTimeFormat?)
-                        ForEach(WorkoutTimeFormat.allCases, id: \.self) { format in
+                        // Zirkel (feste Rundenzahl + Pause dazwischen)
+                        // bewusst ausgeschlossen: fuer Laufen/Radfahren deckt
+                        // sich das schon mit dem bestehenden
+                        // `RunZone.interval`-Muster in `PlanGenerator`
+                        // (Intervall-Wiederholungen mit fester Pause, ueber
+                        // das normale Saetze/Pause-Schema, kein eigenes
+                        // Zeitformat noetig).
+                        ForEach(WorkoutTimeFormat.allCases.filter { $0 != .circuit }, id: \.self) { format in
                             Text(timedFormatDisplayName(format)).tag(format as WorkoutTimeFormat?)
                         }
                     }

@@ -2217,6 +2217,12 @@ public struct DashboardView: View {
     /// (keine Zielgewichte, die eine Reduktion betreffen koennte).
     private func beginTimedAdHocWorkout(format: WorkoutTimeFormat) {
         let todayWeekday = Calendar.current.component(.weekday, from: Date())
+        // Zirkel hat kein Minuten-Dauer-Konzept (siehe
+        // `defaultTimedFormatDurationMinutes`-Kommentar) - bekommt
+        // stattdessen die Runden-/Pause-/Modus-Defaults, `timeCapMinutes`
+        // bleibt wie bei Auf Zeit `nil`. `.fixedReps` als Vorgabe-Modus, weil
+        // das der haeufigere Fall ist - "bis zur Ausbelastung" bleibt in
+        // DayEditorView jederzeit umstellbar.
         let adHocDay = TrainingDay(
             name: "Spontanes Training",
             weekday: todayWeekday,
@@ -2224,7 +2230,10 @@ public struct DashboardView: View {
             plan: nil,
             localizationKey: "session.adHoc.dayName",
             timeFormat: format,
-            timeCapMinutes: format == .forTime ? nil : defaultTimedFormatDurationMinutes(for: format)
+            timeCapMinutes: (format == .forTime || format == .circuit) ? nil : defaultTimedFormatDurationMinutes(for: format),
+            circuitRounds: format == .circuit ? defaultCircuitRounds() : nil,
+            circuitRestSeconds: format == .circuit ? defaultCircuitRestSeconds() : nil,
+            circuitMode: format == .circuit ? .fixedReps : nil
         )
         modelContext.insert(adHocDay)
 

@@ -362,6 +362,20 @@ public struct WorkoutSummaryView: View {
                     }
                 }
                 .listRowBackground(Color.Deltiq.surface)
+            case .circuit:
+                // Gleiche Obergrenze wie EMOM oben: existiert der Tag noch,
+                // ist seine tatsaechliche Rundenzahl die sinnvolle Grenze,
+                // sonst ein grosszuegiger Fallback.
+                Stepper(value: circuitRoundsCompletedBinding, in: 0...(session.day?.circuitRounds ?? 20)) {
+                    LabeledContent {
+                        Text(circuitRoundsCompletedValueText)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    } label: {
+                        Text("summary.editResult.circuitRounds", bundle: .module)
+                            .font(.system(size: 15))
+                    }
+                }
+                .listRowBackground(Color.Deltiq.surface)
             }
         } header: {
             sectionHeader(String(localized: "summary.editResult.header", bundle: .module))
@@ -392,6 +406,19 @@ public struct WorkoutSummaryView: View {
             get: { session.completedMinuteCount ?? 0 },
             set: { session.completedMinuteCount = $0 }
         )
+    }
+
+    private var circuitRoundsCompletedBinding: Binding<Int> {
+        Binding(
+            get: { session.circuitRoundsCompleted ?? 0 },
+            set: { session.circuitRoundsCompleted = $0 }
+        )
+    }
+
+    private var circuitRoundsCompletedValueText: String {
+        let rounds = session.circuitRoundsCompleted ?? 0
+        guard let target = session.day?.circuitRounds else { return "\(rounds)" }
+        return "\(rounds) / \(target)"
     }
 
     private var finishTimeSecondsBinding: Binding<Int> {
@@ -1068,6 +1095,13 @@ public struct WorkoutSummaryView: View {
         case .forTime:
             SummaryStat(label: String(localized: "summary.stat.exercises", bundle: .module),
                         value: "\(session.exerciseCount)")
+        case .circuit:
+            // Gleiche "kein Snapshot-Feld"-Vereinfachung wie EMOM oben -
+            // die konfigurierte Pause ist der zweite feste Rahmenwert neben
+            // der Rundenzahl (die schon der Hero-Stat traegt).
+            let restSeconds = session.day?.circuitRestSeconds
+            SummaryStat(label: String(localized: "summary.stat.circuitRest", bundle: .module),
+                        value: restSeconds.map { "\($0)s" } ?? "—")
         }
     }
 
@@ -1220,6 +1254,13 @@ public struct WorkoutSummaryView: View {
         case .forTime:
             return HeroStat(value: PaceCalculator.formatDuration(session.finishTimeSeconds ?? 0),
                             unit: String(localized: "timedWorkout.forTime.pillLabel", bundle: .module))
+        case .circuit:
+            // Anders als AMRAP (offene Rundenzahl) hat Zirkel ein festes
+            // Rundenziel - "3/5" liest sich als Fortschritt, nicht nur als
+            // Ergebnis, gerade beim vorzeitigen Speichern.
+            let completed = session.circuitRoundsCompleted ?? 0
+            let value = session.day?.circuitRounds.map { "\(completed)/\($0)" } ?? "\(completed)"
+            return HeroStat(value: value, unit: timedFormatHeroUnit("summary.hero.unit.circuitRounds"))
         }
     }
 

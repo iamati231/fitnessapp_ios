@@ -335,6 +335,7 @@ struct HistorySessionRow: View {
         case .amrap: return "repeat"
         case .emom: return "checkmark.circle"
         case .forTime: return "flag.checkered"
+        case .circuit: return "arrow.triangle.2.circlepath"
         }
     }
 
@@ -346,6 +347,7 @@ struct HistorySessionRow: View {
         case .amrap: return "\(session.roundsCompleted ?? 0)"
         case .emom: return "\(session.completedMinuteCount ?? 0)"
         case .forTime: return PaceCalculator.formatDuration(session.finishTimeSeconds ?? 0)
+        case .circuit: return "\(session.circuitRoundsCompleted ?? 0)"
         }
     }
 

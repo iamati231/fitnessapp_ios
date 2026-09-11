@@ -368,10 +368,16 @@ public enum DataExportService {
         // `generatorSequenceIndex` komplett (`guard let ... else { continue }`)
         // - "Neu rechnen" tat danach fuer den ganzen Plan dauerhaft nichts
         // mehr, ohne jeden Fehler.
+        // Nutzer-Feedback (13. August, zweite Runde): `circuit_rounds`/
+        // `circuit_rest_seconds`/`circuit_mode` als additive Spalten -
+        // gleiches Bugfix-Muster wie `time_format`/`time_cap_minutes` oben,
+        // sonst verliert ein Zirkel-Tag diese drei Felder nach jedem
+        // Export/Import-Roundtrip.
         var w = CSVWriter(headers: [
             "id", "plan_id", "name", "custom_name", "weekday",
             "type", "next_intensity", "localization_key",
             "time_format", "time_cap_minutes",
+            "circuit_rounds", "circuit_rest_seconds", "circuit_mode",
             "generation_fingerprint", "generator_sequence_index"
         ])
         for d in items {
@@ -386,6 +392,9 @@ public enum DataExportService {
                 d.localizationKey ?? "",
                 d.timeFormat?.rawValue ?? "",
                 d.timeCapMinutes.map(String.init) ?? "",
+                d.circuitRounds.map(String.init) ?? "",
+                d.circuitRestSeconds.map(String.init) ?? "",
+                d.circuitMode?.rawValue ?? "",
                 d.generationFingerprint ?? "",
                 d.generatorSequenceIndex.map(String.init) ?? ""
             ])
@@ -481,6 +490,8 @@ public enum DataExportService {
         // waehrend einer laufenden Auf-Zeit-Session denselben Fortschritt
         // verlieren, den `ForTimePlayerView` jetzt bei "Training
         // fortsetzen" korrekt erhaelt.
+        // Nutzer-Feedback (13. August, zweite Runde): gleiches Muster fuer
+        // die drei Zirkel-Resume-Felder.
         var w = CSVWriter(headers: [
             "id", "start_time_utc", "end_time_utc", "duration_minutes",
             "exercise_count", "total_sets", "total_volume_kg",
@@ -490,7 +501,10 @@ public enum DataExportService {
             "time_format_snapshot", "rounds_completed", "partial_reps",
             "partial_reps_exercise_name", "finish_time_seconds",
             "for_time_checked_rounds_raw",
-            "completed_minute_count", "completed_target"
+            "completed_minute_count",
+            "circuit_rounds_completed", "circuit_rest_end_date_utc",
+            "circuit_current_round_checked_raw",
+            "completed_target"
         ])
         for s in items {
             w.appendRow([
@@ -516,6 +530,9 @@ public enum DataExportService {
                 s.finishTimeSeconds.map(String.init) ?? "",
                 s.forTimeCheckedRoundsRaw ?? "",
                 s.completedMinuteCount.map(String.init) ?? "",
+                s.circuitRoundsCompleted.map(String.init) ?? "",
+                s.circuitRestEndDate.map { CSVWriter.iso8601($0) } ?? "",
+                s.circuitCurrentRoundCheckedRaw ?? "",
                 CSVWriter.bool(s.completedTarget)
             ])
         }

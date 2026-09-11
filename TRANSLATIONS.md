@@ -623,6 +623,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `day.analysis.coachNote.lightDeload` | Geringer Reiz — passend für Deload, Technik oder Erhaltung. | Low stimulus — ideal for deload, technique, or maintenance. | Düşük uyaran — deload, teknik veya koruma için ideal. |
 | `day.analysis.coachNote.metabolicDensity` | Ein Zeitformat-Tag: Die Belastung kommt hier aus der Dichte, nicht aus dem Gewicht. | A time-format day: the load here comes from density, not from weight. | Bir zaman formatı günü: Buradaki yük ağırlıktan değil, yoğunluktan gelir. |
 | `day.analysis.coachNote.metabolicDensity.amrap` | %@ ohne feste Pause. Die Belastung kommt hier aus der Dichte, nicht aus dem Gewicht. | %@ with no fixed rest. The load here comes from density, not weight. | Sabit molasız %@. Buradaki yük ağırlıktan değil, yoğunluktan gelir. |
+| `day.analysis.coachNote.metabolicDensity.circuit` | %@ mit fester Pause zwischen den Runden. Die Belastung kommt aus der Dichte pro Runde, nicht aus dem Gewicht. | %@ with a fixed rest between rounds. The load comes from the density per round, not the weight. | %@ turlar arasında sabit molayla. Yük ağırlıktan değil, tur başına yoğunluktan gelir. |
 | `day.analysis.coachNote.metabolicDensity.emom` | %@ im Minutentakt. Die Pause steckt in der Minute selbst, nicht dazwischen. | %@ on the minute. The rest lives inside the minute itself, not between them. | %@ dakika bazında. Mola dakikanın kendi içinde, aralarda değil. |
 | `day.analysis.coachNote.metabolicDensity.forTime` | %@ im eigenen Tempo. Die Belastung kommt aus der Dichte, nicht aus dem Gewicht. | %@ at your own pace. The load comes from density, not weight. | %@ kendi temponda. Yük ağırlıktan değil, yoğunluktan gelir. |
 | `day.analysis.coachNote.veryHighStress` | Sehr hohe Belastung. Achte danach besonders auf Schlaf und Nahrung — und plane keinen zweiten harten Tag direkt im Anschluss. | Very high load. Pay extra attention to sleep and food afterwards — and don't stack another hard day right after. | Çok yüksek yük. Sonrasında uykuya ve beslenmeye özellikle dikkat et — ve hemen ardına başka bir zor gün koyma. |
@@ -649,6 +650,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `day.editor.exercises.editHint` | Tippe eine Übung an um sie zu bearbeiten. „Bearbeiten" oben rechts aktiviert die Drag-Handles zum Umsortieren — Superset-Partner werden automatisch mit verschoben. | Tap an exercise to edit. "Edit" top-right enables drag handles for reordering — superset partners move together. | Düzenlemek için bir harekete dokun. Sağ üstteki "Düzenle" sıralama tutamaçlarını etkinleştirir — süperset eşleri birlikte hareket eder. |
 | `day.editor.exercises.empty` | Noch keine Übungen. | No exercises yet. | Henüz hareket yok. |
 | `day.editor.exercises.restDayEmpty` | Ruhetag — keine Übungen. | Rest day — no exercises. | Dinlenme günü — hareket yok. |
+| `day.editor.field.circuitMode` | Modus | Mode | Mod |
+| `day.editor.field.circuitMode.fixedReps` | Feste Wiederholungen | Fixed reps | Sabit tekrar |
+| `day.editor.field.circuitMode.toFailure` | Bis zur Ausbelastung | To failure | Tükenene kadar |
+| `day.editor.field.circuitRest` | Pause zwischen Runden | Rest between rounds | Turlar arası mola |
+| `day.editor.field.circuitRounds` | Runden | Rounds | Tur |
 | `day.editor.field.duration` | Dauer | Duration | Süre |
 | `day.editor.field.name` | Name | Name | Ad |
 | `day.editor.field.nextIntensity` | Nächste Intensität | Next Intensity | Sonraki Yoğunluk |
@@ -669,6 +675,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `day.editor.templateLocked.exercises` | Template-Plan — Übungen sind festgelegt. Du kannst sie ansehen, aber nicht hinzufügen, entfernen oder umsortieren. | Template plan — exercises are fixed. You can view them but not add, remove, or reorder. | Şablon plan — hareketler sabit. Görüntüleyebilirsin ama ekleyemez, kaldıramaz veya sıralayamazsın. |
 | `day.editor.templateLocked.footer` | Dieser Tag gehört zu einem vorgefertigten Plan-Template und kann strukturell nicht bearbeitet werden. Du kannst aber die Trainings-Intensität anpassen. | This day belongs to a built-in plan template and can't be edited structurally. You can adjust training intensity though. | Bu gün hazır bir plan şablonuna ait ve yapısal olarak düzenlenemez. Ancak antrenman yoğunluğunu ayarlayabilirsin. |
 | `day.editor.timedFormat.hintAmrap` | Keine festen Pausen — so viele Runden wie möglich, bis die Zeit um ist. | No fixed rest — as many rounds as possible until time is up. | Sabit mola yok — süre bitene kadar mümkün olduğunca çok tur. |
+| `day.editor.timedFormat.hintCircuit` | Feste Rundenzahl, feste Pause dazwischen — je nach Modus zaehlst du entweder feste Wiederholungen ab oder beendest die Runde selbst, wenn du am Limit bist. | Fixed round count, fixed rest in between — depending on the mode you either count off fixed reps or end the round yourself once you've hit your limit. | Sabit tur sayısı, aralarda sabit mola — moda göre ya sabit tekrarları sayarsın ya da limitine ulaştığında turu kendin bitirirsin. |
 | `day.editor.timedFormat.hintEmom` | Keine festen Pausen — jede Minute startet neu. | No fixed rest — every minute starts fresh. | Sabit mola yok — her dakika yeniden başlar. |
 | `day.editor.timedFormat.hintForTime` | Keine festen Pausen — so schnell wie möglich durcharbeiten. | No fixed rest — work through it as fast as possible. | Sabit mola yok — mümkün olduğunca hızlı bitir. |
 | `day.editor.untitled` | Tag | Day | Gün |
@@ -880,20 +887,26 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.jumpSquat` | Jump Squat | Jump Squat | Jump Squat |
 | `exercise.name.jumpingLunges` | Gesprungene Ausfallschritte | Jumping Lunges | Jumping Lunges |
 | `exercise.name.kettlebellCleanAndPress` | Kettlebell Clean & Press | Kettlebell Clean & Press | Kettlebell Clean & Press |
+| `exercise.name.kettlebellCleanToFrontSquat` | Kettlebell Clean to Front Squat | Kettlebell Clean to Front Squat | Kettlebell Clean to Front Squat |
 | `exercise.name.kettlebellDeadlift` | Kettlebell Kreuzheben | Kettlebell Deadlift | Kettlebell Deadlift |
 | `exercise.name.kettlebellFloorPress` | Kettlebell Floor Press | Kettlebell Floor Press | Kettlebell Floor Press |
 | `exercise.name.kettlebellFrontSquat` | Kettlebell Front Squat | Kettlebell Front Squat | Kettlebell Front Squat |
 | `exercise.name.kettlebellGobletSquat` | Kettlebell Goblet Squat | Kettlebell Goblet Squat | Kettlebell Goblet Squat |
 | `exercise.name.kettlebellHalo` | Kettlebell Halo | Kettlebell Halo | Kettlebell Halo |
 | `exercise.name.kettlebellOverheadPress` | Kettlebell Overhead Press | Kettlebell Overhead Press | Kettlebell Overhead Press |
+| `exercise.name.kettlebellPullover` | Kettlebell Pullover | Kettlebell Pullover | Kettlebell Pullover |
 | `exercise.name.kettlebellPushPress` | Kettlebell Push Press | Kettlebell Push Press | Kettlebell Push Press |
+| `exercise.name.kettlebellPushup` | Liegestütze auf Kettlebell | Push-Up on Kettlebell | Kettlebell Üzerinde Şınav |
 | `exercise.name.kettlebellRDL` | Kettlebell RDL | Kettlebell RDL | Kettlebell RDL |
 | `exercise.name.kettlebellRowSingleArm` | Kettlebell Row einarmig | Kettlebell Single-Arm Row | Kettlebell Tek Kol Row |
+| `exercise.name.kettlebellSitUpOverhead` | Kettlebell Sit-Up (Overhead-Halten) | Kettlebell Sit-Up (Overhead Hold) | Kettlebell Mekik (Overhead Tutuş) |
 | `exercise.name.kettlebellSnatch` | Kettlebell Snatch | Kettlebell Snatch | Kettlebell Snatch |
 | `exercise.name.kettlebellSnatchLeft` | Kettlebell Snatch (Links) | Kettlebell Snatch (Left) | Kettlebell Snatch (Sol) |
 | `exercise.name.kettlebellSnatchRight` | Kettlebell Snatch (Rechts) | Kettlebell Snatch (Right) | Kettlebell Snatch (Sağ) |
 | `exercise.name.kettlebellSuitcaseCarry` | Kettlebell Suitcase Carry | Kettlebell Suitcase Carry | Kettlebell Bavul Taşıma |
 | `exercise.name.kettlebellSwing` | Kettlebell Swing | Kettlebell Swing | Kettlebell Swing |
+| `exercise.name.kettlebellThrusterSingleArm` | Kettlebell Thruster einarmig | Kettlebell Single-Arm Thruster | Tek Kollu Kettlebell Thruster |
+| `exercise.name.kettlebellUppercutRotation` | Kettlebell Uppercut Rotation | Kettlebell Uppercut Rotation | Kettlebell Uppercut Rotasyonu |
 | `exercise.name.kneePushup` | Liegestütze (Knie) | Knee Push-Up | Diz Üstü Şınav |
 | `exercise.name.lSit` | L-Sit | L-Sit | L-Sit |
 | `exercise.name.latPulldownClose` | Latzug (eng) | Close-Grip Lat Pulldown | Close-Grip Lat Pulldown |
@@ -1318,6 +1331,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.day.fullBodyC` | Ganzkörper C | Full Body C | Tüm Vücut C |
 | `plan.day.fullBodyHIIT` | Ganzkörper HIIT | Full Body HIIT | Tüm Vücut HIIT |
 | `plan.day.intervals` | Intervalle | Intervals | İnterval |
+| `plan.day.kbComplexEndurance` | Kraftausdauer | Muscular Endurance | Kas Dayanıklılığı |
+| `plan.day.kbComplexExplosive` | Explosivität | Explosiveness | Patlayıcılık |
+| `plan.day.kbComplexFullBody` | Ganzkörper-Komplex | Full-Body Complex | Tüm Vücut Kompleksi |
+| `plan.day.kbComplexSeatedControl` | Seated Control | Seated Control | Seated Control |
+| `plan.day.kbComplexShoulderCore` | Schulter & Core | Shoulder & Core | Omuz & Core |
 | `plan.day.kbFoundationsCircuit` | Grundlagen-Zirkel | Foundations Circuit | Temel Devre |
 | `plan.day.kbHeavyPullEmom` | Heavy Pull: EMOM Snatch | Heavy Pull: EMOM Snatch | Ağır Çekiş: EMOM Snatch |
 | `plan.day.kbHeavyPushSquat` | Heavy Push & Squat | Heavy Push & Squat | Ağır İtme & Squat |
@@ -1418,6 +1436,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.kettlebellBeginner.focus` | CrossFit & Kettlebell | CrossFit & Kettlebell | CrossFit & Kettlebell |
 | `plan.template.kettlebellBeginner.name` | Kettlebell Grundlagen | Kettlebell Fundamentals | Kettlebell Temelleri |
 | `plan.template.kettlebellBeginner.tagline` | 3 Tage · Technik, Kraftausdauer, Stabilität | 3 days · Technique, strength endurance, stability | 3 gün · Teknik, kuvvet dayanıklılığı, stabilite |
+| `plan.template.kettlebellComplexes.description` | Fünf eigenständige Kettlebell-Komplexe für Ganzkörper-Athletik - von rundenbasierten Ganzkörper- und Explosivitäts-Komplexen bis zu einem AMRAP-Finisher für die Körpermitte. Moderates Gewicht wählen, saubere Technik vor Tempo. | Five standalone kettlebell complexes for full-body athleticism - from round-based full-body and explosive complexes to an AMRAP finisher for your core. Choose a moderate weight, clean technique before speed. | Tüm vücut atletizmi için beş bağımsız kettlebell kompleksi - tur bazlı tüm vücut ve patlayıcı kompleksten karın bölgesi için bir AMRAP bitirişine kadar. Orta ağırlık seç, hız yerine temiz teknik. |
+| `plan.template.kettlebellComplexes.focus` | CrossFit & Kettlebell | CrossFit & Kettlebell | CrossFit & Kettlebell |
+| `plan.template.kettlebellComplexes.name` | Kettlebell Komplexe | Kettlebell Complexes | Kettlebell Kompleksleri |
+| `plan.template.kettlebellComplexes.tagline` | 5 Tage · Ganzkörper-Komplexe für Athletik & Kraftausdauer | 5 days · Full-body complexes for athleticism & muscular endurance | 5 gün · Atletizm ve kas dayanıklılığı için tüm vücut kompleksleri |
 | `plan.template.powerlifting3x5.description` | Dreier-Frequenz auf die Grundübungen Kniebeuge, Bankdrücken und Kreuzheben. Jede Session dreht sich um eine primäre Wettkampfübung mit schweren 3x5-Sätzen. | Triple frequency on the core lifts: squat, bench press, and deadlift. Each session focuses on one primary competition lift with heavy 3x5 sets. | Temel hareketler (squat, bench press, deadlift) için üçlü frekans. Her seans ağır 3x5 setleriyle bir ana yarışma hareketine odaklanır. |
 | `plan.template.powerlifting3x5.focus` | Kraft | Strength | Güç |
 | `plan.template.powerlifting3x5.name` | Powerlifting 3x5 | Powerlifting 3x5 | Powerlifting 3x5 |
@@ -1870,6 +1892,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.early.unitWithTime` | %1$@ in %2$@ | %1$@ in %2$@ | %2$@ içinde %1$@ |
 | `summary.editMeta.footer` | Datum + Dauer werden hier überschrieben. Set-Werte unten editierst du direkt am Satz. | Date + duration are overridden here. Edit set values directly on each set below. | Tarih + süre burada üzerine yazılır. Set değerlerini aşağıda doğrudan her sette düzenle. |
 | `summary.editMeta.header` | Eckdaten | Key Data | Temel Veriler |
+| `summary.editResult.circuitRounds` | Runden geschafft | Rounds completed | Tamamlanan tur |
 | `summary.editResult.completedMinutes` | Geschaffte Minuten | Minutes completed | Tamamlanan dakika |
 | `summary.editResult.finishTime` | Zielzeit | Finish time | Bitiş süresi |
 | `summary.editResult.footer` | Nachträglich korrigieren, falls beim Speichern etwas danebenging. | Correct after the fact if something was off when you saved. | Kaydederken bir şey yanlış gittiyse sonradan düzelt. |
@@ -1886,6 +1909,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.gear.none` | Kein Gear | No gear | Ekipman yok |
 | `summary.hero.title` | Training abgeschlossen | Workout completed | Antrenman Tamamlandı |
 | `summary.hero.title.early` | Vorzeitig gespeichert | Saved early | Erken kaydedildi |
+| `summary.hero.unit.circuitRounds` | Runden geschafft | rounds completed | tamamlanan tur |
 | `summary.hero.unit.km` | km Cardio | km cardio | km kardiyo |
 | `summary.hero.unit.minutes` | Minuten Training | minutes training | dakika antrenman |
 | `summary.hero.unit.minutesDone` | Minuten geschafft | minutes done | tamamlanan dakika |
@@ -1905,6 +1929,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.section.stats` | Zusammenfassung | Summary | Özet |
 | `summary.setsEmpty` | Keine Sätze geloggt. | No sets logged. | Set kaydedilmedi. |
 | `summary.setsHeader` | Sätze | Sets | Setler |
+| `summary.stat.circuitRest` | Pause | Rest | Mola |
 | `summary.stat.exercises` | Übungen | Exercises | Egzersizler |
 | `summary.stat.minuteTarget` | Minuten-Ziel | Minute target | Dakika hedefi |
 | `summary.title` | Zusammenfassung | Summary | Özet |
@@ -1934,6 +1959,15 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `timedWorkout.amrap.rounds.one` | %lld Runde | %lld round | %lld tur |
 | `timedWorkout.amrap.rounds.other` | %lld Runden | %lld rounds | %lld tur |
 | `timedWorkout.amrap.roundsLabel` | RUNDEN | ROUNDS | TUR |
+| `timedWorkout.circuit.checkedProgress` | %lld von %lld abgehakt | %lld of %lld checked | %lld/%lld işaretlendi |
+| `timedWorkout.circuit.finishRound` | Runde beenden | End round | Turu bitir |
+| `timedWorkout.circuit.fixedRepsHint` | Hake jede Uebung ab, sobald du ihr Ziel fuer diese Runde geschafft hast. | Check off each exercise once you've hit its target for this round. | Bu turdaki hedefine ulastigin her egzersizi isaretle. |
+| `timedWorkout.circuit.pauseHint` | Nutze die Pause zum Durchatmen - die naechste Runde startet automatisch, sobald die Zeit um ist. | Use the rest to catch your breath - the next round starts automatically once time's up. | Nefes almak icin molayi kullan - sure dolunca bir sonraki tur otomatik baslar. |
+| `timedWorkout.circuit.pauseLabel` | PAUSE | REST | MOLA |
+| `timedWorkout.circuit.pillLabel` | Zirkel | Circuit | Devre |
+| `timedWorkout.circuit.roundContext` | RUNDE %lld/%lld | ROUND %lld/%lld | TUR %lld/%lld |
+| `timedWorkout.circuit.skipRest` | Pause überspringen | Skip rest | Molayı atla |
+| `timedWorkout.circuit.toFailureHint` | Wiederhole die Sequenz, bis keine sauberen Wiederholungen mehr moeglich sind, dann "Runde beenden" antippen. | Repeat the sequence until no more clean reps are possible, then tap "End round". | Temiz tekrar yapamayana kadar diziyi tekrarla, sonra "Turu bitir"e dokun. |
 | `timedWorkout.discard.confirmButton` | Abbrechen & verwerfen | Cancel & discard | İptal et ve sil |
 | `timedWorkout.discard.confirmTitle` | Training abbrechen? | Cancel workout? | Antrenmanı iptal et? |
 | `timedWorkout.discard.menu` | Verwerfen | Discard | Sil |

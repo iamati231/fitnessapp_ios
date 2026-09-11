@@ -28,6 +28,7 @@ public struct TimedWorkoutPlayerView: View {
         case .amrap:   AMRAPPlayerView(session: session)
         case .emom:    EMOMPlayerView(session: session)
         case .forTime: ForTimePlayerView(session: session)
+        case .circuit: CircuitPlayerView(session: session)
         case nil:      EmptyView()   // WorkoutRootView routet hierher nur mit gesetztem Format.
         }
     }
@@ -42,9 +43,12 @@ public struct TimedWorkoutPlayerView: View {
 /// Detection, HealthKit-Push und Summary-Navigation bleiben gleich. Caller
 /// setzt das format-spezifische Ergebnisfeld + `timeFormatSnapshot` auf
 /// `session`, BEVOR diese Funktion aufgerufen wird.
+/// Nutzer-Feedback (13. August, zweite Runde): nicht mehr `private` -
+/// `CircuitPlayerView` (eigene Datei, `CircuitWorkoutPlayerView.swift`)
+/// braucht denselben Speicherpfad wie die drei Player hier.
 @available(iOS 17.0, macOS 14.0, *)
 @MainActor
-private func finishTimedSession(
+func finishTimedSession(
     _ session: WorkoutSession,
     modelContext: ModelContext,
     healthKit: HealthKitController,
@@ -97,8 +101,10 @@ private func finishTimedSession(
 /// `sweepAbandonedAdHocDayIfNeeded()` fuer die jeweils anderen Ad-Hoc-Pfade
 /// schon loesen. `session.day` wird VOR dem Session-Delete gesichert statt
 /// danach gelesen, weil die Beziehung ohne Inverse nullified (Task #115).
+/// Nicht mehr `private` (Nutzer-Feedback, 13. August, zweite Runde) -
+/// `CircuitPlayerView` (eigene Datei) braucht denselben Abbrechen-Pfad.
 @MainActor
-private func discardTimedSession(_ session: WorkoutSession, modelContext: ModelContext, dismiss: DismissAction) {
+func discardTimedSession(_ session: WorkoutSession, modelContext: ModelContext, dismiss: DismissAction) {
     let orphanedAdHocDay = session.isAdHoc ? session.day : nil
     modelContext.delete(session)
     if let orphanedAdHocDay {
@@ -149,12 +155,16 @@ func timedFormatCircuitLabel(repsMin: Int, isTimeBased: Bool, sets: Int, format:
     switch format {
     case .amrap, .emom:
         return target
-    case .forTime:
+    case .forTime, .circuit:
+        // Zirkel-Tage spiegeln `TrainingDay.circuitRounds` redundant in
+        // `ExerciseSpec.sets` (gleiche Konvention wie Auf-Zeit, das ebenso
+        // kein eigenes Tages-Rundenfeld hat) - so braucht diese rein
+        // anzeigende Funktion keinen dritten Parameter fuer die Rundenzahl.
         return "\(max(sets, 1))× \(target)"
     }
 }
 
-/// Anzeigename des Formats - dieselben Werte, die die drei Player schon als
+/// Anzeigename des Formats - dieselben Werte, die die Player schon als
 /// Eyebrow/Pill-Label nutzen (AMRAP/EMOM sind Akronyme, unveraendert in
 /// DE/EN/TR). Fuer die Format-Kapsel ausserhalb des Players (README 2.10),
 /// damit dort kein zweiter Satz Strings entsteht.
@@ -163,33 +173,43 @@ func timedFormatDisplayName(_ format: WorkoutTimeFormat) -> String {
     case .amrap:   return "AMRAP"
     case .emom:    return "EMOM"
     case .forTime: return String(localized: "timedWorkout.forTime.pillLabel", bundle: .module)
+    case .circuit: return String(localized: "timedWorkout.circuit.pillLabel", bundle: .module)
     }
 }
 
 /// Loc-Key fuer den "keine festen Pausen"-Fusshinweis ausserhalb des
 /// Players (README 2.10/19c-19d, TemplatePreviewView + DayEditorView) - dort
 /// steht statt einer (erfundenen) Pausen-Angabe eine ehrliche Erklaerung,
-/// was das Format bedeutet.
+/// was das Format bedeutet. Zirkel hat tatsaechlich feste Pausen (anders als
+/// die anderen drei Formate) - der Hint erklaert stattdessen, dass die Pause
+/// per Konfiguration kommt, nicht als erfundener Wert.
 func timedFormatHintKey(for format: WorkoutTimeFormat) -> String {
     switch format {
     case .amrap:   return "day.editor.timedFormat.hintAmrap"
     case .emom:    return "day.editor.timedFormat.hintEmom"
     case .forTime: return "day.editor.timedFormat.hintForTime"
+    case .circuit: return "day.editor.timedFormat.hintCircuit"
     }
 }
 
 /// Vorschlagswert fuer einen Dauer-Stepper/neu angelegten Zeitformat-Tag,
 /// solange `timeCapMinutes` noch nil ist - identisch zum Fallback, den die
-/// drei Player selbst benutzen (`AMRAPPlayerView.capSeconds`/
+/// Player selbst benutzen (`AMRAPPlayerView.capSeconds`/
 /// `EMOMPlayerView.totalMinutes`, beide `?? 15`/`?? 12`). Geteilt zwischen
 /// `DayEditorView`s Stepper und `DashboardView`s Ad-Hoc-Zeitformat-Start
 /// (README 2.35, 43b), damit beide Stellen densel­ben Vorschlag machen.
-/// `.forTime` braucht keinen Default, das Cap ist dort optional.
+/// `.forTime` braucht keinen Default, das Cap ist dort optional. `.circuit`
+/// hat gar kein Minuten-Dauer-Konzept (Runden + Pause statt Uhr) - der
+/// Rueckgabewert wird fuer dieses Format nirgends gelesen, siehe stattdessen
+/// `defaultCircuitRounds()`/`defaultCircuitRestSeconds()` (FitnessAppCore -
+/// werden auch von `DayAnalyzer` in FitnessAppData gebraucht, muessen also
+/// unterhalb von UI liegen).
 func defaultTimedFormatDurationMinutes(for format: WorkoutTimeFormat) -> Int {
     switch format {
     case .amrap: return 15
     case .emom: return 12
     case .forTime: return 0
+    case .circuit: return 0
     }
 }
 
@@ -209,7 +229,9 @@ func defaultTimedFormatDurationMinutes(for format: WorkoutTimeFormat) -> Int {
 /// `@AppStorage`, weil der Wert schon beim ersten Frame feststehen muss -
 /// die Player lesen ihn im eigenen `init`, um den Countdown-State korrekt
 /// vorzubelegen (kein Flackern zwischen "laeuft schon" und "Vorlauf").
-private func storedPrerollSeconds() -> Int {
+/// Nicht mehr `private` - `CircuitPlayerView` (eigene Datei) braucht
+/// denselben Vorlauf-Mechanismus.
+func storedPrerollSeconds() -> Int {
     UserDefaults.standard.object(forKey: "pref_preroll_seconds") as? Int ?? 10
 }
 
@@ -221,7 +243,7 @@ private func storedPrerollSeconds() -> Int {
 /// Vorherige Fassung (README 2.15/23c) piepte nur bei 10 (Vorwarnung) und
 /// 3/2/1 - bei 10s/15s Vorlauf blieb der Grossteil der Sekunden stumm.
 @MainActor
-private func playPrerollTone(remaining: Int, enabled: Bool) {
+func playPrerollTone(remaining: Int, enabled: Bool) {
     guard enabled else { return }
     if remaining > 0 {
         TimerSoundPlayer.shared.playShort()
@@ -234,7 +256,7 @@ private func playPrerollTone(remaining: Int, enabled: Bool) {
 /// wie der EMOM-Minutenring, ohne Uebungsname darunter (es hat ja noch
 /// keine begonnen).
 @available(iOS 17.0, macOS 14.0, *)
-private func timedWorkoutPrerollCard(remaining: Int, total: Int) -> some View {
+func timedWorkoutPrerollCard(remaining: Int, total: Int) -> some View {
     DeltiqCard(accentEdge: true) {
         VStack(spacing: 8) {
             ZStack {
@@ -264,7 +286,7 @@ private func timedWorkoutPrerollCard(remaining: Int, total: Int) -> some View {
 /// naechste" wie EMOMs laufende Anzeige, weil waehrend des Vorlaufs noch
 /// keine "aktuell" ist.
 @available(iOS 17.0, macOS 14.0, *)
-private func timedWorkoutPrerollExerciseList(_ exercises: [Exercise]) -> some View {
+func timedWorkoutPrerollExerciseList(_ exercises: [Exercise]) -> some View {
     DeltiqSection {
         ForEach(Array(exercises.enumerated()), id: \.element.persistentModelID) { index, exercise in
             DeltiqRow(
@@ -281,7 +303,7 @@ private func timedWorkoutPrerollExerciseList(_ exercises: [Exercise]) -> some Vi
 /// Feste Leiste waehrend des Vorlaufs - einziger Knopf, ueberspringt den
 /// Rest des Countdowns.
 @available(iOS 17.0, macOS 14.0, *)
-private func timedWorkoutPrerollStartBar(onStart: @escaping () -> Void) -> some View {
+func timedWorkoutPrerollStartBar(onStart: @escaping () -> Void) -> some View {
     Button(action: onStart) {
         Text("timedWorkout.preroll.startNow", bundle: .module)
             .frame(maxWidth: .infinity)

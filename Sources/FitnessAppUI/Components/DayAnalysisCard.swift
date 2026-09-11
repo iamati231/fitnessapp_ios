@@ -177,6 +177,7 @@ public struct DayAnalysisCard: View {
         case .amrap:   key = "day.analysis.coachNote.metabolicDensity.amrap"
         case .emom:    key = "day.analysis.coachNote.metabolicDensity.emom"
         case .forTime: key = "day.analysis.coachNote.metabolicDensity.forTime"
+        case .circuit: key = "day.analysis.coachNote.metabolicDensity.circuit"
         }
         return String(format: String(localized: String.LocalizationValue(key), bundle: .module), durationText)
     }

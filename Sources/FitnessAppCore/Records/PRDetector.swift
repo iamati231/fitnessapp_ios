@@ -419,6 +419,14 @@ public enum PRDetector {
 
         case .emom:
             return nil
+
+        case .circuit:
+            // Die Rundenzahl ist durch den Tag fest vorgegeben
+            // (`TrainingDay.circuitRounds`), keine variable Groesse wie bei
+            // AMRAP (Zeit fix, Runden variabel) oder Auf Zeit (Pensum fix,
+            // Zeit variabel) - es gibt nichts, worauf sich ein Bestwert
+            // beziehen koennte.
+            return nil
         }
     }
 
