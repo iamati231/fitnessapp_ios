@@ -205,7 +205,7 @@ public actor HealthKitService {
     /// simply returns an empty array, indistinguishable from "no matching
     /// workouts exist yet".
     public func fetchExternalWorkouts(since: Date?) async throws -> [ExternalWorkoutSample] {
-        var predicates = [
+        var predicates: [NSPredicate] = [
             NSCompoundPredicate(orPredicateWithSubpredicates: [
                 HKQuery.predicateForWorkouts(with: .running),
                 HKQuery.predicateForWorkouts(with: .cycling)

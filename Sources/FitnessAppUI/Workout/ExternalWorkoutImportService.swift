@@ -34,11 +34,18 @@ public enum ExternalWorkoutImportService {
         guard !samples.isEmpty else { return }
 
         let existing = (try? context.fetch(FetchDescriptor<WorkoutSession>(
-            predicate: #Predicate<WorkoutSession> { $0.isCompleted == true }
+            predicate: #Predicate<WorkoutSession> { $0.isCompleted == true && $0.isRestDay == false }
         ))) ?? []
 
         var knownUUIDs = Set(existing.compactMap(\.healthKitSampleUUID))
-        let existingWindows = existing.map { (start: $0.startTime, end: $0.endTime) }
+        // `var`, nicht `let`: muss um jede in DIESEM Sync-Lauf neu eingefuegte
+        // Session wachsen. Sonst wuerden zwei verschiedene HK-Samples fuer
+        // dasselbe reale Event (z.B. ein Lauf, den sowohl Adidas Running ALS
+        // AUCH Strava getrackt und mit unterschiedlicher UUID nach HealthKit
+        // geschrieben haben) im selben Durchlauf beide durchrutschen — der
+        // Overlap-Check saehe fuer das zweite Sample immer noch nur den
+        // DB-Stand von vor dem Sync, nicht die Session aus dem ersten Sample.
+        var existingWindows = existing.map { (start: $0.startTime, end: $0.endTime) }
 
         for sample in samples {
             guard !knownUUIDs.contains(sample.hkUUID) else { continue }
@@ -50,6 +57,7 @@ public enum ExternalWorkoutImportService {
             guard !overlaps else { continue }
             insertSession(for: sample, in: context)
             knownUUIDs.insert(sample.hkUUID)
+            existingWindows.append((start: sample.startDate, end: sample.endDate))
         }
 
         try? context.save()
