@@ -40,6 +40,10 @@ public struct RootView: View {
     /// wenn profiles leer, sonst Main).
     @AppStorage("isResetting") private var isResetting: Bool = false
 
+    /// Siehe SettingsView — Opt-in fuer den automatischen Import von Lauf-/
+    /// Rad-Workouts aus Fremd-Apps via Apple Health.
+    @AppStorage("pref_healthkit_workout_import") private var externalWorkoutImportEnabled: Bool = false
+
     public init() {}
 
     public var body: some View {
@@ -122,6 +126,18 @@ public struct RootView: View {
             // Custom-Uebungen ohne Muskel/Equipment-Override bekommen die
             // Werte aus ihrem Custom-Template nachgezogen. Idempotent.
             LibrarySeeder.backfillCustomExerciseMetadataIfNeeded(in: modelContext)
+
+            // Auto-Sync externer HealthKit-Workouts (z.B. Adidas Running) —
+            // nur wenn der User das in Settings explizit aktiviert hat. Nach
+            // den Library-Backfills oben, damit die "Freier Lauf"/"Radfahren
+            // (outdoor)"-Templates fuer die synthetischen Exercises sicher
+            // existieren.
+            if externalWorkoutImportEnabled {
+                await ExternalWorkoutImportService.syncExternalWorkouts(
+                    healthKit: healthKit,
+                    context: modelContext
+                )
+            }
         }
     }
 

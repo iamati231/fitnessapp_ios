@@ -51,6 +51,14 @@ public struct SettingsView: View {
     @AppStorage("pref_measurement_reminder_weekday") private var measurementWeekday: Int = 1  // 1=So, 2=Mo, ..., 7=Sa
     @AppStorage("pref_measurement_reminder_hour") private var measurementHour: Int = 8
 
+    /// Automatischer Import von Lauf-/Rad-Workouts, die eine ANDERE App
+    /// (z.B. Adidas Running) nach Apple Health geschrieben hat. Bewusst ein
+    /// eigener Toggle statt an `healthKit.authorizationStatus` gekoppelt —
+    /// dieser Read-Zugriff wird separat angefragt (`requestWorkoutReadAuthorization`),
+    /// damit Bestandsnutzer, die diesen Toggle nie anfassen, nie einen neuen
+    /// Permission-Dialog sehen.
+    @AppStorage("pref_healthkit_workout_import") private var externalWorkoutImportEnabled: Bool = false
+
     /// DEL-092: Globaler Opt-out fuer Warmup-/Cooldown-Uebungen im
     /// Active-Workout-Flow. Default `true` — wer schnell ohne Mobility
     /// trainieren will, kann es einmalig abschalten.
@@ -543,15 +551,42 @@ public struct SettingsView: View {
             }
             if let lastSync = healthKit.lastSyncDate {
                 DeltiqControlRow(
-                    label: String(localized: "settings.health.lastSync", bundle: .module),
-                    showsDivider: false
+                    label: String(localized: "settings.health.lastSync", bundle: .module)
                 ) {
                     Text(lastSync.formatted(date: .abbreviated, time: .shortened))
                         .font(.system(size: 13))
                         .foregroundStyle(Color.Deltiq.textSecondary)
                 }
             }
-            hintRow(String(localized: "settings.health.footer", bundle: .module))
+            // Automatischer Import von Fremd-App-Workouts (Adidas Running,
+            // Strava, ...) aus Apple Health. Eigener Toggle statt an den
+            // healthKitStatusRow-State gekoppelt, siehe Kommentar an der
+            // AppStorage-Deklaration oben.
+            DeltiqControlRow(
+                icon: "figure.run.circle",
+                label: String(localized: "settings.health.workoutImport", bundle: .module),
+                showsDivider: false
+            ) {
+                Toggle(isOn: $externalWorkoutImportEnabled) { EmptyView() }
+                    .tint(Color.deltiqOrange)
+                    .disabled(!healthKit.isAvailable)
+                    .onChange(of: externalWorkoutImportEnabled) { _, enabled in
+                        guard enabled else { return }
+                        Task {
+                            await healthKit.requestWorkoutReadAuthorization()
+                            await ExternalWorkoutImportService.syncExternalWorkouts(
+                                healthKit: healthKit,
+                                context: modelContext
+                            )
+                        }
+                    }
+            }
+            hintRow(
+                [
+                    String(localized: "settings.health.footer", bundle: .module),
+                    String(localized: "settings.health.workoutImport.footer", bundle: .module)
+                ].joined(separator: "\n")
+            )
         }
     }
 

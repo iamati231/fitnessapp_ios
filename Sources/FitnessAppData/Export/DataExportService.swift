@@ -504,7 +504,8 @@ public enum DataExportService {
             "completed_minute_count",
             "circuit_rounds_completed", "circuit_rest_end_date_utc",
             "circuit_current_round_checked_raw",
-            "completed_target"
+            "completed_target",
+            "import_source_name", "healthkit_sample_uuid"
         ])
         for s in items {
             w.appendRow([
@@ -533,7 +534,9 @@ public enum DataExportService {
                 s.circuitRoundsCompleted.map(String.init) ?? "",
                 s.circuitRestEndDate.map { CSVWriter.iso8601($0) } ?? "",
                 s.circuitCurrentRoundCheckedRaw ?? "",
-                CSVWriter.bool(s.completedTarget)
+                CSVWriter.bool(s.completedTarget),
+                s.importSourceName ?? "",
+                s.healthKitSampleUUID ?? ""
             ])
         }
         return w.data()

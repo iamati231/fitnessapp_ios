@@ -70,6 +70,24 @@ public actor HealthKitService {
         }
     }
 
+    /// Separate, narrowly-scoped authorization request for reading OTHER apps'
+    /// workouts (e.g. Adidas Running, Strava) — deliberately kept out of the
+    /// general `requestAuthorization()` `toRead` set. That method is triggered
+    /// from six existing UI entry points (onboarding, measurement, dashboard
+    /// hero-cards, settings, profile editor) that have nothing to do with
+    /// workout import; folding `workoutType` into it would re-prompt every
+    /// already-connected user the next time they hit ANY of those, just for
+    /// re-asking a permission they never wanted. Calling `requestAuthorization`
+    /// again here with a disjoint `read` set is a valid incremental HealthKit
+    /// request — types already granted from the first call aren't re-asked.
+    public func requestWorkoutReadAuthorization() async throws {
+        do {
+            try await store.requestAuthorization(toShare: [], read: [HKObjectType.workoutType()])
+        } catch {
+            throw HealthKitError.authorizationFailed(reason: error.localizedDescription)
+        }
+    }
+
     /// Approximate status — HealthKit only tells us about WRITE permissions for
     /// privacy, so we use weight-write-status as the proxy for "is the connection
     /// set up". This matches the practical user mental model.
@@ -172,6 +190,64 @@ public actor HealthKitService {
             return try store.biologicalSex().biologicalSex
         } catch {
             return .notSet
+        }
+    }
+
+    /// Pulls running/cycling workouts written by OTHER apps (e.g. Adidas
+    /// Running) since `since` (or all-time when `nil`). Excludes this app's
+    /// own written workouts by source bundle identifier — without that
+    /// filter, every workout we push via `saveStrengthTrainingWorkout`/
+    /// `saveRunningWorkout` would loop straight back in as a "new external"
+    /// workout on the next sync.
+    ///
+    /// Read authorization is invisible to us by design (see
+    /// `requestWorkoutReadAuthorization`) — if the user denied it, this
+    /// simply returns an empty array, indistinguishable from "no matching
+    /// workouts exist yet".
+    public func fetchExternalWorkouts(since: Date?) async throws -> [ExternalWorkoutSample] {
+        var predicates = [
+            NSCompoundPredicate(orPredicateWithSubpredicates: [
+                HKQuery.predicateForWorkouts(with: .running),
+                HKQuery.predicateForWorkouts(with: .cycling)
+            ])
+        ]
+        if let since {
+            predicates.append(HKQuery.predicateForSamples(withStart: since, end: nil, options: .strictStartDate))
+        }
+        let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+        let ownBundleID = Bundle.main.bundleIdentifier
+
+        return try await withCheckedThrowingContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: HKObjectType.workoutType(),
+                predicate: predicate,
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]
+            ) { _, samples, error in
+                if let error {
+                    continuation.resume(throwing: HealthKitError.queryFailed(
+                        reason: error.localizedDescription))
+                    return
+                }
+                let workouts = (samples as? [HKWorkout]) ?? []
+                let externals: [ExternalWorkoutSample] = workouts.compactMap { workout in
+                    let bundleID = workout.sourceRevision.source.bundleIdentifier
+                    guard bundleID != ownBundleID,
+                          let activity = ExternalWorkoutActivityType(hk: workout.workoutActivityType)
+                    else { return nil }
+                    return ExternalWorkoutSample(
+                        hkUUID: workout.uuid.uuidString,
+                        activityType: activity,
+                        startDate: workout.startDate,
+                        endDate: workout.endDate,
+                        distanceKm: workout.totalDistance?.doubleValue(for: .meterUnit(with: .kilo)),
+                        sourceName: workout.sourceRevision.source.name,
+                        sourceBundleIdentifier: bundleID
+                    )
+                }
+                continuation.resume(returning: externals)
+            }
+            store.execute(query)
         }
     }
 
@@ -345,6 +421,16 @@ public actor HealthKitService {
             try await store.save(sample)
         } catch {
             throw HealthKitError.saveFailed(reason: error.localizedDescription)
+        }
+    }
+}
+
+private extension ExternalWorkoutActivityType {
+    init?(hk: HKWorkoutActivityType) {
+        switch hk {
+        case .running: self = .running
+        case .cycling: self = .cycling
+        default: return nil
         }
     }
 }

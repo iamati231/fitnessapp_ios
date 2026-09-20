@@ -37362,5 +37362,52 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Kas Dayanıklılığı" } }
       }
     }
+,
+  "settings.health.workoutImport" : {
+    "extractionState" : "manual",
+    "localizations" : {
+      "de" : {
+        "stringUnit" : {
+          "state" : "translated",
+          "value" : "Workout-Import (Adidas Running, Strava, …)"
+        }
+      },
+      "en" : {
+        "stringUnit" : {
+          "state" : "translated",
+          "value" : "Workout Import (Adidas Running, Strava, …)"
+        }
+      },
+      "tr" : {
+        "stringUnit" : {
+          "state" : "translated",
+          "value" : "Antrenman İçe Aktarma (Adidas Running, Strava, …)"
+        }
+      }
+    }
+  },
+  "settings.health.workoutImport.footer" : {
+    "extractionState" : "manual",
+    "localizations" : {
+      "de" : {
+        "stringUnit" : {
+          "state" : "translated",
+          "value" : "Läufe und Radfahrten aus anderen Apps (z.B. Adidas Running, Strava) werden automatisch als Trainingseinheiten übernommen, sobald sie in Apple Health erscheinen."
+        }
+      },
+      "en" : {
+        "stringUnit" : {
+          "state" : "translated",
+          "value" : "Runs and rides from other apps (e.g. Adidas Running, Strava) are automatically added as workouts once they appear in Apple Health."
+        }
+      },
+      "tr" : {
+        "stringUnit" : {
+          "state" : "translated",
+          "value" : "Diğer uygulamalardan (örn. Adidas Running, Strava) koşular ve bisiklet turları, Apple Health'te göründükten sonra otomatik olarak antrenman olarak eklenir."
+        }
+      }
+    }
+  }
   }
 }

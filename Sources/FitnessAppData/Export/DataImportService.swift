@@ -1137,7 +1137,9 @@ public enum DataImportService {
                 circuitRoundsCompleted: row.int("circuit_rounds_completed"),
                 circuitRestEndDate: row.date("circuit_rest_end_date_utc"),
                 circuitCurrentRoundCheckedRaw: row.optionalString("circuit_current_round_checked_raw"),
-                completedTarget: row.bool("completed_target") ?? false
+                completedTarget: row.bool("completed_target") ?? false,
+                importSourceName: row.optionalString("import_source_name"),
+                healthKitSampleUUID: row.optionalString("healthkit_sample_uuid")
             )
             if let feeling = row.int("session_feeling") {
                 s.sessionFeeling = feeling

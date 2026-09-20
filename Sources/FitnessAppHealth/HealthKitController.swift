@@ -62,6 +62,23 @@ public final class HealthKitController {
         #endif
     }
 
+    /// Narrow, separate request just for reading other apps' workouts (e.g.
+    /// Adidas Running). Kept out of `requestAuthorization()` on purpose — see
+    /// `HealthKitService.requestWorkoutReadAuthorization`. Errors land in
+    /// `lastError`; there is no status to reflect afterwards, since HealthKit
+    /// never discloses read-grant/deny.
+    public func requestWorkoutReadAuthorization() async {
+        #if canImport(HealthKit)
+        guard let service else { return }
+        do {
+            try await service.requestWorkoutReadAuthorization()
+            lastError = nil
+        } catch {
+            lastError = error
+        }
+        #endif
+    }
+
     // MARK: Reads
 
     /// Latest body-mass sample, in kg. Returns `nil` when HealthKit isn't authorized
@@ -166,6 +183,26 @@ public final class HealthKitController {
         )
         #else
         return .empty
+        #endif
+    }
+
+    /// Pulls running/cycling workouts written by OTHER apps since `since`
+    /// (all-time when `nil`). Empty on any failure — same nil/empty-on-failure
+    /// contract as the other reads, errors land in `lastError`. Does NOT gate
+    /// on `authorizationStatus` (that only reflects the WRITE-side status —
+    /// see `HealthKitAuthorizationStatus` — and would incorrectly block this
+    /// read even when workout-read was separately granted).
+    public func fetchExternalWorkouts(since: Date?) async -> [ExternalWorkoutSample] {
+        #if canImport(HealthKit)
+        guard let service else { return [] }
+        do {
+            return try await service.fetchExternalWorkouts(since: since)
+        } catch {
+            lastError = error
+            return []
+        }
+        #else
+        return []
         #endif
     }
 

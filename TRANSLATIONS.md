@@ -1808,6 +1808,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.health.notSetup` | Nicht eingerichtet | Not set up | Kurulmadı |
 | `settings.health.openIOSSettings` | In iOS-Einstellungen öffnen | Open iOS Settings | iOS Ayarlarını Aç |
 | `settings.health.unavailable` | Nicht verfügbar | Not available | Kullanılamıyor |
+| `settings.health.workoutImport` | Workout-Import (Adidas Running, Strava, …) | Workout Import (Adidas Running, Strava, …) | Antrenman İçe Aktarma (Adidas Running, Strava, …) |
+| `settings.health.workoutImport.footer` | Läufe und Radfahrten aus anderen Apps (z.B. Adidas Running, Strava) werden automatisch als Trainingseinheiten übernommen, sobald sie in Apple Health erscheinen. | Runs and rides from other apps (e.g. Adidas Running, Strava) are automatically added as workouts once they appear in Apple Health. | Diğer uygulamalardan (örn. Adidas Running, Strava) koşular ve bisiklet turları, Apple Health'te göründükten sonra otomatik olarak antrenman olarak eklenir. |
 | `settings.preferences.exerciseLibrary` | Übungen | Exercises | Hareketler |
 | `settings.preferences.gear` | Ausrüstung & Schuhe | Gear & Shoes | Ekipman & Ayakkabı |
 | `settings.preferences.units.imperial` | Imperial | Imperial | İmperyal |

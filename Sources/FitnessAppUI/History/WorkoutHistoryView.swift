@@ -162,6 +162,12 @@ struct HistorySessionRow: View {
                         if isEarlySaveTimedFormat {
                             DeltiqPill(String(localized: "history.early.badge", bundle: .module), style: .neutral)
                         }
+                        // Zeigt, dass diese Session automatisch aus einem
+                        // externen HealthKit-Workout importiert wurde (z.B.
+                        // Adidas Running) statt nativ in der App erfasst.
+                        if let source = session.importSourceName {
+                            DeltiqPill(source, style: .neutral)
+                        }
                     }
                     statsLine
                 }

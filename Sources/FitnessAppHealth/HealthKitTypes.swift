@@ -41,6 +41,47 @@ public enum BiologicalSex: Sendable, Equatable {
     case notSet
 }
 
+/// Cardio activity types this app can pull in from other apps' HealthKit
+/// workouts. Deliberately narrow (no strength training) — HealthKit gives
+/// third-party workouts no set/rep breakdown, only duration + distance,
+/// which only maps cleanly onto a single cardio `ExerciseLog`.
+public enum ExternalWorkoutActivityType: String, Sendable, Equatable, CaseIterable {
+    case running
+    case cycling
+}
+
+/// One workout read back from Apple Health, written there by another app
+/// (e.g. Adidas Running, Strava). `sourceBundleIdentifier` is what callers
+/// use to exclude this app's own written workouts from re-import — see
+/// `HealthKitService.fetchExternalWorkouts`.
+public struct ExternalWorkoutSample: Sendable, Equatable {
+    public let hkUUID: String
+    public let activityType: ExternalWorkoutActivityType
+    public let startDate: Date
+    public let endDate: Date
+    public let distanceKm: Double?
+    public let sourceName: String
+    public let sourceBundleIdentifier: String
+
+    public init(
+        hkUUID: String,
+        activityType: ExternalWorkoutActivityType,
+        startDate: Date,
+        endDate: Date,
+        distanceKm: Double?,
+        sourceName: String,
+        sourceBundleIdentifier: String
+    ) {
+        self.hkUUID = hkUUID
+        self.activityType = activityType
+        self.startDate = startDate
+        self.endDate = endDate
+        self.distanceKm = distanceKm
+        self.sourceName = sourceName
+        self.sourceBundleIdentifier = sourceBundleIdentifier
+    }
+}
+
 /// Bundle of values pulled from the Apple Health profile during onboarding.
 /// All fields optional — Apple Health doesn't guarantee any particular
 /// characteristic has been set by the user.

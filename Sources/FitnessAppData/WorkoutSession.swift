@@ -112,6 +112,17 @@ public final class WorkoutSession {
     /// als "nicht verifiziert vollstaendig" statt faelschlich als komplett.
     public var completedTarget: Bool = false
 
+    /// Name der Quell-App, wenn diese Session automatisch aus einem externen
+    /// HealthKit-Workout importiert wurde (z.B. "Adidas Running"). `nil` fuer
+    /// jede nativ in der App erfasste Session — das ist der einzige Provenienz-
+    /// Marker, den es gibt (siehe `isAdHoc` fuer "kein Plan", was etwas anderes
+    /// ist). Wird als Badge in der History angezeigt.
+    public var importSourceName: String?
+    /// `HKWorkout.uuid` des Quell-Samples, wenn importiert. Dient ausschliesslich
+    /// der Re-Sync-Idempotenz (verhindert, dass derselbe externe Workout bei
+    /// einem spaeteren Sync ein zweites Mal importiert wird) — kein UI-Feld.
+    public var healthKitSampleUUID: String?
+
     /// DEL-057: Vom User auf der Finish-Half-Sheet gewaehltes Session-Gefuehl.
     /// 1 = Grossartig, 2 = Gut, 3 = Okay, 4 = Sehr schwer, 5 = Zerstoert.
     /// Wird vom `ProgressionApplicator` ausgewertet: bei 4/5 wird jede
@@ -156,7 +167,9 @@ public final class WorkoutSession {
         circuitRoundsCompleted: Int? = nil,
         circuitRestEndDate: Date? = nil,
         circuitCurrentRoundCheckedRaw: String? = nil,
-        completedTarget: Bool = false
+        completedTarget: Bool = false,
+        importSourceName: String? = nil,
+        healthKitSampleUUID: String? = nil
     ) {
         self.startTime = startTime
         self.endTime = endTime
@@ -181,6 +194,8 @@ public final class WorkoutSession {
         self.circuitRestEndDate = circuitRestEndDate
         self.circuitCurrentRoundCheckedRaw = circuitCurrentRoundCheckedRaw
         self.completedTarget = completedTarget
+        self.importSourceName = importSourceName
+        self.healthKitSampleUUID = healthKitSampleUUID
     }
 
     /// True when this is a finished, non-rest-day session — i.e., a real

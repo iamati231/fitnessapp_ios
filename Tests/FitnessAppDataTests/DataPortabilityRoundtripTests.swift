@@ -488,6 +488,38 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(importedSession?.circuitCurrentRoundCheckedRaw, "0,2")
     }
 
+    /// HealthKit-Import: `importSourceName`/`healthKitSampleUUID` sind die
+    /// einzigen Provenienz-Marker fuer eine automatisch aus Apple Health
+    /// importierte Session (z.B. Adidas Running) — ohne Roundtrip-Schutz
+    /// wuerde ein Backup/Restore diese Herkunft stillschweigend verlieren,
+    /// und die Session saehe danach wie eine nativ erfasste aus.
+    func testHealthKitImportProvenanceSurvivesRoundtrip() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let session = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_760_500_000),
+            endTime: Date(timeIntervalSince1970: 1_760_501_800),
+            isCompleted: true, isAdHoc: true,
+            importSourceName: "Adidas Running",
+            healthKitSampleUUID: "3F2504E0-4F89-11D3-9A0C-0305E82C3301"
+        )
+        ctx.insert(session)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let importedSession = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
+        XCTAssertEqual(importedSession?.importSourceName, "Adidas Running")
+        XCTAssertEqual(importedSession?.healthKitSampleUUID, "3F2504E0-4F89-11D3-9A0C-0305E82C3301")
+    }
+
     /// Bugfix (Nutzer-Feedback, Auf-Zeit-Resume): `forTimeCheckedRoundsRaw`
     /// nutzt bewusst den Platzhalter "-" statt eines leeren Strings fuer
     /// "gestartet, noch nichts abgehakt" - ein echter leerer String wuerde
