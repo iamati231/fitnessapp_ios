@@ -13,17 +13,24 @@ import FitnessAppHealth
 ///    schon in Health, wie viele sind nicht exportierbar.
 /// 2. `execute`: schreibt die gewaehlten Kategorien nacheinander.
 ///
-/// Idempotenz: Health ist die Wahrheit, `WorkoutSession.healthKitExportedAt`
-/// nur ein lokaler Cache. Ein verlorener Marker (Reset, Restore) fuehrt beim
-/// naechsten Lauf ueber den Abgleich wieder zu "bereits in Health", nicht zu
-/// Doppelten — solange die Abfrage die eigenen Workouts sieht.
+/// Idempotenz: `WorkoutSession.healthKitExportedAt` ("behandelt") ist
+/// maßgeblich — eine markierte Session wird nie wieder angefasst, auch wenn der
+/// Eintrag in Health inzwischen geloescht wurde (bewusst: ein Doppel in Health
+/// ist schwerer zu beheben als ein fehlender Eintrag). Der Marker liegt nur
+/// lokal; geht er verloren (Reset, Restore), fuehrt der naechste Lauf ueber den
+/// Abgleich mit Health wieder zu "bereits in Health", nicht zu Doppelten —
+/// solange die Abfrage die eigenen Workouts sieht. Live nach dem Beenden
+/// geschriebene Trainings setzen den Marker nach bestaetigtem Schreiben
+/// (`HealthWorkoutWriter.pushLive`).
 ///
 /// Schutzmassnahmen:
 /// - Die Abfrage der Health-Workouts WIRFT bei Fehlern (fail-closed): ein
 ///   Doppel in Health ist schwerer zu beheben als ein fehlender Eintrag.
 /// - Sessions werden vor der Schleife als WERTE erfasst (`PlannedWorkout`); in
 ///   der Schleife wird nur ueber den Start-Zeitpunkt neu nachgeschlagen, ob die
-///   Session noch existiert (sie kann in der Zwischenzeit geloescht werden).
+///   Session noch existiert und noch nicht behandelt ist (sie kann in der
+///   Zwischenzeit geloescht oder bereits exportiert worden sein) — sonst wird
+///   sie uebersprungen.
 /// - Fehlerklassen: Schreibrecht weg oder gesperrtes Geraet stoppen den Lauf,
 ///   ein von Health abgelehntes Training zaehlt als "nicht exportierbar" und
 ///   der Lauf geht weiter, nur unklassifizierte Fehler in Folge stoppen ihn.
@@ -133,22 +140,34 @@ enum WorkoutHealthExportService {
         preparation.visibleWorkouts = windows.count
         preparation.visibleOwnWorkouts = windows.filter { $0.isOwnSource }.count
 
-        // Neueste zuerst; die Fensterliste waechst um jedes geplante Training,
-        // sonst rutschten zwei sich ueberlappende Sessions beide durch.
-        var existing: [(start: Date, end: Date)] = windows.map {
+        // Neueste zuerst. Gegen Health wird NUR mit den echten Health-Fenstern
+        // abgeglichen: nur das heisst "bereits in Health" (und wird als behandelt
+        // markiert). Zwei sich ueberlappende Sessions rutschen trotzdem nicht
+        // beide durch — die zweite wird gegen die schon geplanten geprueft, dann
+        // aber WEDER geschrieben NOCH markiert (der naechste Lauf entscheidet
+        // erneut, wenn die erste inzwischen in Health steht).
+        let healthWindows: [(start: Date, end: Date)] = windows.map {
             (start: $0.startDate, end: $0.endDate)
         }
+        var planned: [(start: Date, end: Date)] = []
         for item in eligible {
             let decision = HealthWorkoutPlanner.decide(
                 item.candidate,
                 enabledCategories: allCategories,
-                existingWindows: existing,
+                existingWindows: healthWindows,
                 now: now
             )
             switch decision {
             case .write(let plan):
+                if ExternalWorkoutDedup.overlapsExisting(
+                    sampleStart: plan.start,
+                    sampleEnd: plan.end,
+                    existingWindows: planned
+                ) {
+                    continue
+                }
                 preparation.toWrite.append(PlannedWorkout(startTime: item.candidate.startTime, plan: plan))
-                existing.append((start: plan.start, end: plan.end))
+                planned.append((start: plan.start, end: plan.end))
             case .skip(.alreadyInHealth):
                 preparation.alreadyInHealth.append(item.candidate.startTime)
             case .skip:
@@ -190,6 +209,14 @@ enum WorkoutHealthExportService {
             if Task.isCancelled {
                 outcome.wasCancelled = true
                 break
+            }
+
+            // Die Session kann seit der Vorschau geloescht (oder anderweitig
+            // behandelt) worden sein: dann nichts schreiben.
+            guard sessionNeedsExport(startTime: item.startTime, in: context) else {
+                outcome.processed = index + 1
+                progress(outcome.processed, queue.count)
+                continue
             }
 
             let draft = HealthWorkoutWriter.draft(from: item.plan)
@@ -273,15 +300,30 @@ enum WorkoutHealthExportService {
         }
     }
 
-    /// Setzt den Marker, falls die Session noch existiert (sie kann waehrend der
-    /// Schleife geloescht worden sein; dann passiert nichts).
-    private static func markExported(startTime: Date, in context: ModelContext) {
-        var descriptor = FetchDescriptor<WorkoutSession>(
+    /// Existiert die Session noch, und ist sie noch nicht als behandelt markiert?
+    /// (Mehrere Sessions mit identischem Start — z.B. aus einem Import — gelten
+    /// als eine: es wird einmal geschrieben und alle markiert.)
+    private static func sessionNeedsExport(startTime: Date, in context: ModelContext) -> Bool {
+        let descriptor = FetchDescriptor<WorkoutSession>(
             predicate: #Predicate<WorkoutSession> { $0.startTime == startTime }
         )
-        descriptor.fetchLimit = 1
-        guard let session = (try? context.fetch(descriptor))?.first else { return }
-        session.healthKitExportedAt = Date()
+        guard let sessions = try? context.fetch(descriptor), !sessions.isEmpty else { return false }
+        return sessions.contains { $0.healthKitExportedAt == nil }
+    }
+
+    /// Setzt den Marker, falls die Session noch existiert (sie kann waehrend der
+    /// Schleife geloescht worden sein; dann passiert nichts). Auch vom Live-Pfad
+    /// (`HealthWorkoutWriter.pushLive`) nach bestaetigtem Schreiben genutzt;
+    /// speichern muss der Aufrufer.
+    static func markExported(startTime: Date, in context: ModelContext) {
+        let descriptor = FetchDescriptor<WorkoutSession>(
+            predicate: #Predicate<WorkoutSession> { $0.startTime == startTime }
+        )
+        guard let sessions = try? context.fetch(descriptor) else { return }
+        let stamp = Date()
+        for session in sessions where session.healthKitExportedAt == nil {
+            session.healthKitExportedAt = stamp
+        }
     }
 }
 #endif

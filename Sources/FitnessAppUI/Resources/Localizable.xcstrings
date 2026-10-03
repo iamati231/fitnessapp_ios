@@ -20009,7 +20009,7 @@
       "extractionState": "manual",
       "localizations": {
         "de": { "stringUnit": { "state": "translated", "value": "Nicht freigegeben" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Not allowed yet" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Not allowed" } },
         "tr": { "stringUnit": { "state": "translated", "value": "İzin verilmedi" } }
       }
     },
@@ -20112,9 +20112,9 @@
     "settings.healthWrite.accessNoDialog": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Apple hat keine Abfrage gezeigt. Erlaube „Trainings“ in der Health-App unter Profil → Apps → Deltiq." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Apple showed no prompt. Allow “Workouts” in the Health app under Profile → Apps → Deltiq." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Apple bir izin penceresi göstermedi. Health uygulamasında Profil → Uygulamalar → Deltiq altında „Antrenmanlar“a izin ver." } }
+        "de": { "stringUnit": { "state": "translated", "value": "Keine Freigabe erteilt. Tippe erneut auf „Zugriff erlauben“ oder erlaube „Trainings“ in der Health-App unter Profil → Apps → Deltiq." } },
+        "en": { "stringUnit": { "state": "translated", "value": "No access granted. Tap “Allow access” again, or allow “Workouts” in the Health app under Profile → Apps → Deltiq." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "İzin verilmedi. Tekrar „Erişime izin ver“e dokun veya Health uygulamasında Profil → Uygulamalar → Deltiq altında „Antrenmanlar“a izin ver." } }
       }
     },
     "settings.healthWrite.accessDeniedLabel": {
@@ -20152,9 +20152,9 @@
     "settings.healthWrite.strengthFooter": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Auch AMRAP, EMOM, Auf Zeit und Zirkel. Trägst du dabei eine Apple Watch, nimmt sie das Training schon auf – dann lass das aus, sonst steht es doppelt in Health." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Includes AMRAP, EMOM, For Time and circuits. If you wear an Apple Watch while training it already records the workout – turn this off, or it appears twice in Health." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "AMRAP, EMOM, Süreye Karşı ve Devre dahil. Antrenman sırasında Apple Watch takıyorsan antrenmanı zaten o kaydeder – bunu kapat, yoksa Health'te iki kez görünür." } }
+        "de": { "stringUnit": { "state": "translated", "value": "Auch AMRAP, EMOM, Auf Zeit und Zirkel – außer reinen Lauf- und Rad-Tagen, die zählen zu Cardio. Trägst du dabei eine Apple Watch, nimmt sie das Training schon auf – dann lass das aus, sonst steht es doppelt in Health." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Includes AMRAP, EMOM, For Time and circuits – except pure running or cycling days, which count as cardio. If you wear an Apple Watch while training it already records the workout – turn this off, or it appears twice in Health." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "AMRAP, EMOM, Süreye Karşı ve Devre dahil – yalnızca koşu veya bisiklet günleri hariç, onlar kardiyoya sayılır. Antrenman sırasında Apple Watch takıyorsan antrenmanı zaten o kaydeder – bunu kapat, yoksa Health'te iki kez görünür." } }
       }
     },
     "settings.healthWrite.cardioLabel": {
@@ -20168,9 +20168,17 @@
     "settings.healthWrite.cardioFooter": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Laufen, Radfahren, Rudern und mehr, die du in Deltiq selbst erfasst. Schreibt schon eine andere App (z. B. Adidas Running) deine Läufe, lass das aus. Aus anderen Apps übernommene Einheiten schickt Deltiq nie zurück. Die Distanz kommt nur mit der zusätzlichen Freigabe „Geh- und Laufdistanz“; ohne sie wird das Training ohne Distanz gespeichert." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Running, cycling, rowing and more that you record in Deltiq yourself. If another app (e.g. Adidas Running) already writes your runs, leave this off. Deltiq never sends workouts taken over from other apps back. The distance is only included with the additional “Walking + Running Distance” permission; without it the workout is saved without distance." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Deltiq'te kendin kaydettiğin koşu, bisiklet, kürek ve diğer kardiyo antrenmanları. Koşularını zaten başka bir uygulama (örn. Adidas Running) yazıyorsa bunu kapalı bırak. Deltiq, diğer uygulamalardan alınan antrenmanları asla geri göndermez. Mesafe yalnızca ek „Yürüyüş + koşu mesafesi“ izniyle eklenir; izin yoksa antrenman mesafesiz kaydedilir." } }
+        "de": { "stringUnit": { "state": "translated", "value": "Laufen, Radfahren, Rudern und mehr, die du in Deltiq selbst erfasst – auch reine Lauf- und Rad-Tage mit Zeitformat. Schreibt schon eine andere App (z. B. Adidas Running) deine Läufe, lass das aus. Aus anderen Apps übernommene Einheiten schickt Deltiq nie zurück. Die Distanz kommt nur mit der zusätzlichen Freigabe „Geh- und Laufdistanz“; ohne sie wird das Training ohne Distanz gespeichert." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Running, cycling, rowing and more that you record in Deltiq yourself – including pure running or cycling days with a time format. If another app (e.g. Adidas Running) already writes your runs, leave this off. Deltiq never sends workouts taken over from other apps back. The distance is only included with the additional “Walking + Running Distance” permission; without it the workout is saved without distance." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Deltiq'te kendin kaydettiğin koşu, bisiklet, kürek ve diğer kardiyo antrenmanları – zaman formatlı saf koşu veya bisiklet günleri dahil. Koşularını zaten başka bir uygulama (örn. Adidas Running) yazıyorsa bunu kapalı bırak. Deltiq, diğer uygulamalardan alınan antrenmanları asla geri göndermez. Mesafe yalnızca ek „Yürüyüş + koşu mesafesi“ izniyle eklenir; izin yoksa antrenman mesafesiz kaydedilir." } }
+      }
+    },
+    "settings.healthWrite.distanceButton": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Geh- und Laufdistanz erlauben" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Allow walking + running distance" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yürüyüş + koşu mesafesine izin ver" } }
       }
     },
     "settings.healthWrite.distanceMissing": {
@@ -20256,9 +20264,9 @@
     "settings.healthWrite.previewVisible": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "In Health sichtbar: %1$lld Trainings, davon %2$lld von Deltiq" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Visible in Health: %1$lld workouts, %2$lld of them from Deltiq" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Health'te görünen: %1$lld antrenman, bunlardan %2$lld Deltiq'ten" } }
+        "de": { "stringUnit": { "state": "translated", "value": "In Health sichtbar: %1$lld (davon von Deltiq: %2$lld)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Visible in Health: %1$lld (from Deltiq: %2$lld)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Health'te görünen: %1$lld (Deltiq'ten: %2$lld)" } }
       }
     },
     "settings.healthWrite.previewBlindWarning": {
@@ -20376,9 +20384,9 @@
     "settings.healthWrite.resultWithoutDistance": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "%lld Läufe ohne Distanz gespeichert – die Freigabe „Geh- und Laufdistanz“ fehlt oder wurde abgelehnt." } },
-        "en": { "stringUnit": { "state": "translated", "value": "%lld runs saved without distance – the “Walking + Running Distance” permission is missing or was declined." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "%lld koşu mesafesiz kaydedildi – „Yürüyüş + koşu mesafesi“ izni yok veya reddedildi." } }
+        "de": { "stringUnit": { "state": "translated", "value": "Ohne Distanz gespeichert: %lld – die Freigabe „Geh- und Laufdistanz“ fehlt oder wurde abgelehnt." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Saved without distance: %lld – the “Walking + Running Distance” permission is missing or was declined." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Mesafesiz kaydedilen: %lld – „Yürüyüş + koşu mesafesi“ izni yok veya reddedildi." } }
       }
     },
     "settings.healthWrite.resultCancelled": {

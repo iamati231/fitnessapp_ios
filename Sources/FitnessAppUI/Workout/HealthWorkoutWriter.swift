@@ -91,10 +91,16 @@ enum HealthWorkoutWriter {
     ///
     /// Best-effort und still, wie bisher: Der Aufrufer (Abschluss-Flow,
     /// Navigation zur Zusammenfassung) wird nie blockiert. Der Draft wird
-    /// SYNCHRON als Wert gebaut; der `Task` fasst die Session nicht mehr an.
-    /// Es wird KEIN Export-Marker gesetzt: Der Export erkennt live
-    /// geschriebene Trainings am Abgleich mit Health.
-    static func pushLive(session: WorkoutSession, healthKit: HealthKitController) {
+    /// SYNCHRON als Wert gebaut; der `Task` fasst die Session nicht mehr an
+    /// (nur ueber den Start-Zeitpunkt wird sie fuer den Marker neu gesucht).
+    ///
+    /// Nach BESTAETIGTEM Schreiben (`.written`) bekommt die Session den
+    /// Export-Marker: Eine spaeter im Verlauf geaenderte Dauer oder Startzeit
+    /// fuehrt dann beim Export frueherer Trainings nicht zu einem zweiten Eintrag
+    /// in Health (der alte bleibt, wie er live geschrieben wurde). Bei
+    /// `.unverified`, Fehlern oder fehlender Berechtigung bleibt der Marker aus —
+    /// der Export gleicht solche Trainings mit Health ab.
+    static func pushLive(session: WorkoutSession, healthKit: HealthKitController, context: ModelContext) {
         let snapshot = Self.candidate(for: session)
         let prefs = HealthWritePreferences.load()
         let decision = HealthWorkoutPlanner.decide(
@@ -104,8 +110,12 @@ enum HealthWorkoutWriter {
         )
         guard case .write(let plan) = decision else { return }
         let healthDraft = Self.draft(from: plan)
+        let startTime = snapshot.startTime
         Task {
-            _ = try? await healthKit.saveWorkout(healthDraft)
+            let outcome = try? await healthKit.saveWorkout(healthDraft)
+            guard case .written? = outcome else { return }
+            WorkoutHealthExportService.markExported(startTime: startTime, in: context)
+            try? context.save()
         }
     }
 }

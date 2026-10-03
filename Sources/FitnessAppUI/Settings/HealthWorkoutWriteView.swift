@@ -41,8 +41,9 @@ public struct HealthWorkoutWriteView: View {
     private var cardioEnabled: Bool = HealthWritePreferences.defaultCardioEnabled
 
     /// Die Anfrage lief, der Status ist aber unveraendert `.notDetermined`:
-    /// iOS hat keinen Dialog gezeigt (z.B. weil der Typ schon anderweitig
-    /// entschieden wurde). Dann hilft nur der Hinweis auf die Health-App.
+    /// Der Dialog wurde nicht beantwortet (abgebrochen) oder iOS hat ihn nicht
+    /// gezeigt. Der Hinweistext deckt beides ab: erneut tippen oder in der
+    /// Health-App erlauben.
     @State private var requestShowedNoDialog = false
 
     @State private var exportPhase: ExportPhase = .idle
@@ -102,6 +103,7 @@ public struct HealthWorkoutWriteView: View {
         }
         .onDisappear {
             exportTask?.cancel()
+            discardPreview()
             setIdleTimer(disabled: false)
         }
         .confirmationDialog(
@@ -251,16 +253,45 @@ public struct HealthWorkoutWriteView: View {
                     }
             }
             hintRow(String(localized: "settings.healthWrite.cardioFooter", bundle: .module))
-            if cardioEnabled && distanceIsMissing {
+            if cardioEnabled && distanceDenied {
                 hintRow(String(localized: "settings.healthWrite.distanceMissing", bundle: .module))
+            }
+            if cardioEnabled && distanceUndecided {
+                Button {
+                    requestDistance()
+                } label: {
+                    Label {
+                        Text("settings.healthWrite.distanceButton", bundle: .module)
+                    } icon: {
+                        Image(systemName: "figure.walk")
+                    }
+                }
+                .buttonStyle(.plain)
+                .deltiqSecondaryButtonStyle()
+                .padding(14)
             }
         }
     }
 
-    /// Cardio ist an, Trainings sind freigegeben, die Distanz aber nicht.
-    private var distanceIsMissing: Bool {
+    /// Trainings sind freigegeben, die Distanz wurde verweigert: nur die
+    /// Health-App kann das noch aendern.
+    private var distanceDenied: Bool {
         let authorization = healthKit.workoutWriteAuthorization
-        return authorization.workout == .sharingAuthorized && authorization.distance != .sharingAuthorized
+        return authorization.workout == .sharingAuthorized && authorization.distance == .sharingDenied
+    }
+
+    /// Trainings sind freigegeben, die Distanz wurde nie angefragt (z.B. weil
+    /// Trainings ueber Onboarding/Messung statt ueber diesen Bildschirm
+    /// freigegeben wurden): Deltiq kann sie selbst anfragen.
+    private var distanceUndecided: Bool {
+        let authorization = healthKit.workoutWriteAuthorization
+        return authorization.workout == .sharingAuthorized && authorization.distance == .notDetermined
+    }
+
+    private func requestDistance() {
+        Task { @MainActor in
+            await healthKit.requestWorkoutWriteAuthorization(includeDistance: true)
+        }
     }
 
     /// Einschalten von Cardio fragt die Distanz-Freigabe nach - aber nur, wenn
@@ -343,29 +374,34 @@ public struct HealthWorkoutWriteView: View {
         let strengthCount = preparation.count(.strength)
         let cardioCount = preparation.count(.cardio)
         let selectedCount = (exportStrength ? strengthCount : 0) + (exportCardio ? cardioCount : 0)
+        let strengthToggleLabel = String(
+            format: String(localized: "settings.healthWrite.previewStrengthToggle", bundle: .module),
+            strengthCount
+        )
+        let cardioToggleLabel = String(
+            format: String(localized: "settings.healthWrite.previewCardioToggle", bundle: .module),
+            cardioCount
+        )
 
         DeltiqControlRow(
             icon: "dumbbell",
-            label: String(
-                format: String(localized: "settings.healthWrite.previewStrengthToggle", bundle: .module),
-                strengthCount
-            )
+            label: strengthToggleLabel
         ) {
             Toggle(isOn: $exportStrength) { EmptyView() }
                 .tint(Color.deltiqOrange)
-                .accessibilityLabel(Text("settings.healthWrite.strengthLabel", bundle: .module))
+                .accessibilityLabel(Text(strengthToggleLabel))
         }
         DeltiqControlRow(
             icon: "figure.run",
-            label: String(
-                format: String(localized: "settings.healthWrite.previewCardioToggle", bundle: .module),
-                cardioCount
-            ),
+            label: cardioToggleLabel,
             showsDivider: false
         ) {
             Toggle(isOn: $exportCardio) { EmptyView() }
                 .tint(Color.deltiqOrange)
-                .accessibilityLabel(Text("settings.healthWrite.cardioLabel", bundle: .module))
+                .accessibilityLabel(Text(cardioToggleLabel))
+        }
+        if exportCardio && cardioCount > 0 && distanceDenied {
+            hintRow(String(localized: "settings.healthWrite.distanceMissing", bundle: .module))
         }
 
         VStack(alignment: .leading, spacing: 4) {
@@ -605,10 +641,20 @@ public struct HealthWorkoutWriteView: View {
         if exportStrength { categories.insert(.strength) }
         if exportCardio { categories.insert(.cardio) }
         let total = preparation.toWrite.filter { categories.contains($0.plan.category) }.count
+        // Laeufe/Spaziergaenge mit km im Export? Dann vor dem Schreiben die
+        // Distanz-Freigabe anfragen (nur, wenn sie noch unentschieden ist): ein
+        // spaeter nachgeholtes Distanz-Sample waere nicht mehr moeglich, weil
+        // die Trainings danach als behandelt gelten.
+        let needsDistance = preparation.toWrite.contains {
+            categories.contains($0.plan.category) && $0.plan.distanceKm != nil
+        }
 
         exportPhase = .exporting(done: 0, total: total)
         setIdleTimer(disabled: true)
         exportTask = Task { @MainActor in
+            if needsDistance && distanceUndecided {
+                await healthKit.requestWorkoutWriteAuthorization(includeDistance: true)
+            }
             let outcome = await WorkoutHealthExportService.execute(
                 preparation,
                 categories: categories,
@@ -626,8 +672,10 @@ public struct HealthWorkoutWriteView: View {
 
     /// In den Hintergrund (Sperre, App-Wechsel): den Export beenden; das
     /// laufende Training wird noch fertig geschrieben, der Rest folgt beim
-    /// naechsten Lauf. Bei Rueckkehr den Status auffrischen (z.B. nach
-    /// Aenderungen in der Health-App).
+    /// naechsten Lauf. Eine offene Vorschau wird verworfen — sie haelt den
+    /// Abgleich mit Health von VOR dem Wechsel (z.B. vor einer Leseerlaubnis in
+    /// der Health-App) und muss neu geprueft werden. Bei Rueckkehr den Status
+    /// auffrischen (z.B. nach Aenderungen in der Health-App).
     private func handleScenePhase(_ phase: ScenePhase) {
         switch phase {
         case .active:
@@ -636,8 +684,17 @@ public struct HealthWorkoutWriteView: View {
             }
         case .background:
             exportTask?.cancel()
+            discardPreview()
         default:
             break
+        }
+    }
+
+    /// Verwirft eine noch nicht bestaetigte Vorschau (Zurueck auf "Pruefen").
+    private func discardPreview() {
+        if case .ready = exportPhase {
+            exportPhase = .idle
+            showConfirm = false
         }
     }
 

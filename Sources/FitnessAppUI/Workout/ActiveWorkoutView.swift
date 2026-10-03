@@ -977,7 +977,7 @@ public struct ActiveWorkoutView: View {
         // Distanz bleibt Cardio, Radfahren ist kein Laufen, Laufband ist
         // indoor. Der Draft wird SYNCHRON als Wert gebaut (session.* mutiert
         // spaeter), danach wird die Session nicht mehr angefasst.
-        HealthWorkoutWriter.pushLive(session: session, healthKit: healthKit)
+        HealthWorkoutWriter.pushLive(session: session, healthKit: healthKit, context: modelContext)
 
         // Clear any running rest timer (in-app + Live Activity). Branching:
         //   - PRs detected + Celebrations on → push final state with trophy

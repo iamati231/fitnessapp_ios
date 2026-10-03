@@ -79,7 +79,7 @@ func finishTimedSession(
     // ActiveWorkoutView.finishWorkout). Kein Set-/Volumen-Logging bei
     // Zeitformaten - Dauer ist das aussagekraeftige Signal; ein Zeitformat-Tag
     // aus reinen Cardio-Uebungen (Lauf-/Rad-Intervall) zaehlt als Cardio.
-    HealthWorkoutWriter.pushLive(session: session, healthKit: healthKit)
+    HealthWorkoutWriter.pushLive(session: session, healthKit: healthKit, context: modelContext)
     if let celebration {
         Task {
             await prNotifications.scheduleCelebration(title: celebration.title, body: celebration.body)
