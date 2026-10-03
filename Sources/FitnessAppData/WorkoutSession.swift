@@ -123,6 +123,16 @@ public final class WorkoutSession {
     /// einem spaeteren Sync ein zweites Mal importiert wird) — kein UI-Feld.
     public var healthKitSampleUUID: String?
 
+    /// Zeitpunkt, zu dem der Export nach Apple Health dieses Training als
+    /// "behandelt" markiert hat: nach Health geschrieben ODER dort schon
+    /// vorhanden (eigene Live-Writes, andere App). Reiner lokaler Cache — die
+    /// Wahrheit liegt in Apple Health, der Abgleich dort faengt einen
+    /// verlorenen Marker ab (Reset, Backup-Restore). Deshalb bewusst NICHT in
+    /// `workouts.csv` und nicht portabel. Nicht dasselbe wie
+    /// `healthKitSampleUUID` (= importiert AUS Health). `nil` fuer jede
+    /// Bestands-Session (Lightweight-Migration).
+    public var healthKitExportedAt: Date?
+
     /// DEL-057: Vom User auf der Finish-Half-Sheet gewaehltes Session-Gefuehl.
     /// 1 = Grossartig, 2 = Gut, 3 = Okay, 4 = Sehr schwer, 5 = Zerstoert.
     /// Wird vom `ProgressionApplicator` ausgewertet: bei 4/5 wird jede
@@ -169,7 +179,8 @@ public final class WorkoutSession {
         circuitCurrentRoundCheckedRaw: String? = nil,
         completedTarget: Bool = false,
         importSourceName: String? = nil,
-        healthKitSampleUUID: String? = nil
+        healthKitSampleUUID: String? = nil,
+        healthKitExportedAt: Date? = nil
     ) {
         self.startTime = startTime
         self.endTime = endTime
@@ -196,6 +207,7 @@ public final class WorkoutSession {
         self.completedTarget = completedTarget
         self.importSourceName = importSourceName
         self.healthKitSampleUUID = healthKitSampleUUID
+        self.healthKitExportedAt = healthKitExportedAt
     }
 
     /// True when this is a finished, non-rest-day session — i.e., a real

@@ -130,5 +130,15 @@ final class SettingsPortabilityTests: XCTestCase {
             XCTAssertTrue(portable.contains(key), "\(key) fehlt in SettingsPortability.whitelist")
         }
     }
+
+    /// Die Schalter fuer das Schreiben nach Apple Health (Kraft/Cardio) sind
+    /// bewusst NICHT portabel: Die Berechtigung ist geraetegebunden, ein
+    /// importiertes "an" auf einem Geraet ohne Freigabe waere ein
+    /// inkonsistenter Zustand (wie beim Workout-Import-Schalter).
+    func testHealthWritePreferenceKeysAreNotPortable() {
+        let portable = Set(SettingsPortability.whitelist.map { $0.key })
+        XCTAssertFalse(portable.contains(HealthWritePreferences.strengthEnabledKey))
+        XCTAssertFalse(portable.contains(HealthWritePreferences.cardioEnabledKey))
+    }
 }
 #endif

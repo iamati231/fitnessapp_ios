@@ -520,6 +520,41 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(importedSession?.healthKitSampleUUID, "3F2504E0-4F89-11D3-9A0C-0305E82C3301")
     }
 
+    /// `healthKitExportedAt` ist ein lokaler Cache ("fuer Apple Health
+    /// behandelt"), die Wahrheit liegt in Apple Health — er reist bewusst NICHT
+    /// durch Backup/Restore: nach einem Restore gleicht der Export wieder mit
+    /// Health ab (kein Doppel, solange die eigenen Workouts dort sichtbar sind).
+    /// Ein Marker aus einem fremden Backup koennte ausserdem zu einem anderen
+    /// Health-Konto gehoeren. Der Test haelt fest, dass die Spalte nicht
+    /// versehentlich in workouts.csv landet.
+    func testHealthKitExportMarkerIsNotPartOfTheBackup() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let session = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_760_600_000),
+            endTime: Date(timeIntervalSince1970: 1_760_603_000),
+            durationMinutes: 50, exerciseCount: 1, totalSets: 3, totalVolumeKg: 900,
+            isCompleted: true,
+            healthKitExportedAt: Date(timeIntervalSince1970: 1_760_700_000)
+        )
+        ctx.insert(session)
+        try ctx.save()
+        XCTAssertNotNil(session.healthKitExportedAt)
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let importedSession = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
+        XCTAssertNotNil(importedSession, "die Session selbst muss ankommen")
+        XCTAssertNil(importedSession?.healthKitExportedAt)
+    }
+
     /// Bugfix (Nutzer-Feedback, Auf-Zeit-Resume): `forTimeCheckedRoundsRaw`
     /// nutzt bewusst den Platzhalter "-" statt eines leeren Strings fuer
     /// "gestartet, noch nichts abgehakt" - ein echter leerer String wuerde
