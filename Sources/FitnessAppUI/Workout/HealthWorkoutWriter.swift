@@ -111,6 +111,19 @@ enum HealthWorkoutWriter {
         return names
     }
 
+    /// Die Beschriftungen der eigenen Felder in Health in der aktuellen
+    /// App-Sprache: Health zeigt sie als Schluessel woertlich an, daher kurze Texte
+    /// statt eines Paketnamens.
+    static func metadataLabels() -> HealthWorkoutMetadataLabels {
+        HealthWorkoutMetadataLabels(
+            exercises: String(localized: "settings.healthWrite.meta.exercises", bundle: .module),
+            sets: String(localized: "settings.healthWrite.meta.sets", bundle: .module),
+            volumeKg: String(localized: "settings.healthWrite.meta.volume", bundle: .module),
+            distanceKm: String(localized: "settings.healthWrite.meta.distance", bundle: .module),
+            averagePace: String(localized: "settings.healthWrite.meta.pace", bundle: .module)
+        )
+    }
+
     static func kind(for activity: HealthWorkoutActivity) -> HealthWorkoutKind {
         switch activity {
         case .strength:    return .strengthTraining
@@ -132,7 +145,8 @@ enum HealthWorkoutWriter {
             averagePaceMinPerKm: plan.averagePaceMinPerKm,
             totalSets: plan.totalSets,
             totalVolumeKg: plan.totalVolumeKg,
-            exerciseNames: plan.exerciseNames
+            exerciseNames: plan.exerciseNames,
+            metadataLabels: metadataLabels()
         )
     }
 

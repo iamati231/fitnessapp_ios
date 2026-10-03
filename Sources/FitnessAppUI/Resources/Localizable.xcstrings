@@ -20261,6 +20261,46 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Health ile yeniden eşleştir" } }
       }
     },
+    "settings.healthWrite.meta.exercises": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Übungen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Exercises" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Egzersizler" } }
+      }
+    },
+    "settings.healthWrite.meta.sets": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Sätze" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Sets" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Setler" } }
+      }
+    },
+    "settings.healthWrite.meta.volume": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Volumen (kg)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Volume (kg)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hacim (kg)" } }
+      }
+    },
+    "settings.healthWrite.meta.distance": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Distanz (km)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Distance (km)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Mesafe (km)" } }
+      }
+    },
+    "settings.healthWrite.meta.pace": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ø Pace (min/km)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Avg. pace (min/km)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ort. tempo (dk/km)" } }
+      }
+    },
     "settings.healthWrite.exportChecking": {
       "extractionState": "manual",
       "localizations": {

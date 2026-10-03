@@ -7,6 +7,7 @@ import XCTest
 final class WorkoutMetadataTests: XCTestCase {
 
     private let start = Date(timeIntervalSinceReferenceDate: 700_000_000)
+    private let labels = HealthWorkoutMetadataLabels.default
 
     private func draft(
         kind: HealthWorkoutKind = .strengthTraining,
@@ -34,12 +35,12 @@ final class WorkoutMetadataTests: XCTestCase {
     /// Der Fall aus Health: 4,51 km in 25:56 ergaben 5.750184774575019.
     func testPaceIsRoundedToTwoDecimals() {
         let metadata = draft(kind: .running, pace: 5.750184774575019).customMetadata
-        XCTAssertEqual(metadata[HealthWorkoutDraft.MetadataKey.averagePaceMinPerKm] as? Double, 5.75)
+        XCTAssertEqual(metadata[labels.averagePace] as? Double, 5.75)
     }
 
     func testPaceRoundingKeepsTwoSignificantDecimals() {
         func rounded(_ pace: Double) -> Double? {
-            draft(kind: .running, pace: pace).customMetadata[HealthWorkoutDraft.MetadataKey.averagePaceMinPerKm] as? Double
+            draft(kind: .running, pace: pace).customMetadata[labels.averagePace] as? Double
         }
         XCTAssertEqual(rounded(6.0), 6.0)
         XCTAssertEqual(rounded(5.7691), 5.77)
@@ -51,8 +52,8 @@ final class WorkoutMetadataTests: XCTestCase {
     /// stuende genau das.
     func testDistanceAndVolumeLoseTheFloatingPointNoise() {
         let metadata = draft(distance: 1.1 + 2.2, volume: 0.1 + 0.2 + 3400.95).customMetadata
-        XCTAssertEqual(metadata[HealthWorkoutDraft.MetadataKey.totalDistanceKm] as? Double, 3.3)
-        XCTAssertEqual(metadata[HealthWorkoutDraft.MetadataKey.totalVolumeKg] as? Double, 3401.25)
+        XCTAssertEqual(metadata[labels.distanceKm] as? Double, 3.3)
+        XCTAssertEqual(metadata[labels.volumeKg] as? Double, 3401.25)
     }
 
     /// Ein Zeitformat hat keine Saetze und kein Volumen: kein "0" in Health.
@@ -69,15 +70,80 @@ final class WorkoutMetadataTests: XCTestCase {
 
     func testSetsAndVolumeAreWrittenWhenSomethingWasLogged() {
         let metadata = draft(sets: 14, volume: 3401.25).customMetadata
-        XCTAssertEqual(metadata[HealthWorkoutDraft.MetadataKey.totalSets] as? Int, 14)
-        XCTAssertEqual(metadata[HealthWorkoutDraft.MetadataKey.totalVolumeKg] as? Double, 3401.25)
+        XCTAssertEqual(metadata[labels.sets] as? Int, 14)
+        XCTAssertEqual(metadata[labels.volumeKg] as? Double, 3401.25)
     }
 
-    /// Die Uebungsliste gehoert nicht zu den Zahlen: Sie wird getrennt geschrieben
-    /// (optional - lehnt HealthKit sie ab, entsteht das Workout ohne sie).
-    func testTheExerciseListIsNotPartOfTheNumericMetadata() {
-        let metadata = draft(sets: 3, volume: 900, names: ["Bankdrücken"]).customMetadata
-        XCTAssertNil(metadata[HealthWorkoutDraft.MetadataKey.exercises])
+    /// Die Uebungsliste steht unter ihrer Beschriftung bei den uebrigen Feldern.
+    func testTheExerciseListIsPartOfTheCustomMetadata() {
+        let metadata = draft(sets: 3, volume: 900, names: ["Bankdrücken", "Kniebeuge"]).customMetadata
+        XCTAssertEqual(metadata[labels.exercises] as? String, "Bankdrücken, Kniebeuge")
+        XCTAssertEqual(metadata[labels.sets] as? Int, 3)
+    }
+
+    func testWithoutNamesThereIsNoExerciseEntry() {
+        XCTAssertNil(draft(sets: 3, volume: 900).customMetadata[labels.exercises])
+    }
+
+    // MARK: - Beschriftungen
+
+    /// Health zeigt den Schluessel woertlich an: kurze, lesbare Texte statt eines
+    /// Paketnamens wie `com.atamya.FitnessApp.TotalSets`.
+    func testTheKeysAreShortReadableTextsNotAPackageName() {
+        let full = draft(
+            kind: .running, distance: 4.51, pace: 5.75, sets: 3, volume: 900, names: ["Liegestütze"]
+        ).customMetadata
+        XCTAssertEqual(Set(full.keys), [
+            labels.sets, labels.volumeKg, labels.distanceKm, labels.averagePace, labels.exercises
+        ])
+        for key in full.keys {
+            XCTAssertFalse(key.contains("com.atamya"), key)
+            XCTAssertLessThanOrEqual(key.count, 24, key)
+        }
+    }
+
+    func testTheDefaultLabelsAreEnglish() {
+        XCTAssertEqual(labels.exercises, "Exercises")
+        XCTAssertEqual(labels.sets, "Sets")
+        XCTAssertEqual(labels.volumeKg, "Volume (kg)")
+        XCTAssertEqual(labels.distanceKm, "Distance (km)")
+        XCTAssertEqual(labels.averagePace, "Avg. pace (min/km)")
+    }
+
+    /// Die UI-Schicht reicht die Beschriftungen in der App-Sprache durch.
+    func testGivenLabelsAreUsedAsKeys() {
+        let german = HealthWorkoutMetadataLabels(
+            exercises: "Übungen", sets: "Sätze", volumeKg: "Volumen (kg)",
+            distanceKm: "Distanz (km)", averagePace: "Ø Pace (min/km)"
+        )
+        let metadata = HealthWorkoutDraft(
+            kind: .strengthTraining, startDate: start, endDate: start.addingTimeInterval(600),
+            isIndoor: true, totalSets: 3, totalVolumeKg: 900, exerciseNames: ["Liegestütze"],
+            metadataLabels: german
+        ).customMetadata
+        XCTAssertEqual(metadata["Übungen"] as? String, "Liegestütze")
+        XCTAssertEqual(metadata["Sätze"] as? Int, 3)
+        XCTAssertEqual(metadata["Volumen (kg)"] as? Double, 900)
+        XCTAssertNil(metadata[labels.sets])
+    }
+
+    /// Leer oder im reservierten "HK"-Namensraum von Apple ist kein brauchbarer
+    /// Schluessel: dann gilt die englische Vorgabe.
+    func testBlankOrReservedLabelsFallBackToTheDefaults() {
+        let broken = HealthWorkoutMetadataLabels(
+            exercises: "  ", sets: "HKSets", volumeKg: " Volumen ",
+            distanceKm: "", averagePace: "HKAveragePace"
+        )
+        let metadata = HealthWorkoutDraft(
+            kind: .running, startDate: start, endDate: start.addingTimeInterval(600),
+            isIndoor: false, totalDistanceKm: 5, averagePaceMinPerKm: 6, totalSets: 2,
+            totalVolumeKg: 100, exerciseNames: ["Dips"], metadataLabels: broken
+        ).customMetadata
+        XCTAssertEqual(metadata[labels.exercises] as? String, "Dips")
+        XCTAssertEqual(metadata[labels.sets] as? Int, 2)
+        XCTAssertEqual(metadata["Volumen"] as? Double, 100, "Leerraum am Rand wird entfernt")
+        XCTAssertEqual(metadata[labels.distanceKm] as? Double, 5)
+        XCTAssertEqual(metadata[labels.averagePace] as? Double, 6)
     }
 
     // MARK: - Uebungsliste

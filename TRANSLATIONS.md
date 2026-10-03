@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1800 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1805 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1800 / 1800** (100%) | 0 |
-| 🇬🇧 English (EN) | **1800 / 1800** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1800 / 1800** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1805 / 1805** (100%) | 0 |
+| 🇬🇧 English (EN) | **1805 / 1805** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1805 / 1805** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1712,7 +1712,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (195 Keys)
+## `settings.*`  (200 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1834,6 +1834,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.healthWrite.exportingHint` | Lass Deltiq geöffnet und das Gerät entsperrt. | Keep Deltiq open and the device unlocked. | Deltiq'i açık ve cihazı kilitsiz bırak. |
 | `settings.healthWrite.introBody` | Deltiq kann abgeschlossene Trainings in Apple Health speichern: Start, Dauer und Art, bei Krafttraining mit den Namen der Übungen, bei Läufen auf Wunsch auch die Distanz. Kalorien und Puls schreibt Deltiq nicht. Apple kennt nur „Trainings“ als Ganzes – was Deltiq davon schreibt, stellst du hier ein. | Deltiq can save completed workouts to Apple Health: start, duration and type – with the names of the exercises for strength training and, if you like, the distance for runs. Deltiq does not write calories or heart rate. Apple only knows “Workouts” as a whole – what Deltiq writes of them is up to you here. | Deltiq, tamamlanan antrenmanları Apple Health'e kaydedebilir: başlangıç, süre ve tür; kuvvet antrenmanında egzersizlerin adlarıyla birlikte, istersen koşularda mesafe de. Deltiq kalori ve nabız yazmaz. Apple yalnızca „Antrenmanlar“ı bütün olarak tanır – Deltiq'in bunlardan neyi yazacağını burada sen belirlersin. |
 | `settings.healthWrite.introHeader` | Trainings speichern | Save workouts | Antrenmanları kaydet |
+| `settings.healthWrite.meta.distance` | Distanz (km) | Distance (km) | Mesafe (km) |
+| `settings.healthWrite.meta.exercises` | Übungen | Exercises | Egzersizler |
+| `settings.healthWrite.meta.pace` | Ø Pace (min/km) | Avg. pace (min/km) | Ort. tempo (dk/km) |
+| `settings.healthWrite.meta.sets` | Sätze | Sets | Setler |
+| `settings.healthWrite.meta.volume` | Volumen (kg) | Volume (kg) | Hacim (kg) |
 | `settings.healthWrite.openHealthApp` | Health-App öffnen | Open Health app | Health uygulamasını aç |
 | `settings.healthWrite.previewAlready` | Schon in Health erkannt: %lld | Already detected in Health: %lld | Health'te zaten algılanan: %lld |
 | `settings.healthWrite.previewBlindWarning` | Trainings anderer Apps oder einer Uhr erkennt Deltiq nur, wenn Deltiq Trainings lesen darf – ob das erlaubt ist, verrät Apple nicht. Sonst können Doppelte entstehen. | Deltiq only recognises workouts from other apps or a watch if it is allowed to read workouts – Apple does not reveal whether that is the case. Otherwise duplicates can appear. | Deltiq, diğer uygulamaların veya bir saatin antrenmanlarını yalnızca antrenmanları okuyabiliyorsa tanır – bunun açık olup olmadığını Apple söylemez. Aksi halde yinelenenler oluşabilir. |

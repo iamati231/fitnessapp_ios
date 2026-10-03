@@ -2,45 +2,44 @@ import Foundation
 
 /// The app's own metadata of a workout written to Apple Health, as plain values.
 ///
-/// Health's detail screen shows custom metadata RAW: a number is printed with all
-/// its digits (`5.750184774575019`), a text as it is. So the numbers are rounded
-/// to what they mean, and the exercises are one readable text. Pure and without
-/// HealthKit, so it is tested on every platform.
+/// Health's detail screen shows custom metadata RAW: the KEY as the label (so the
+/// keys are short readable texts, see `HealthWorkoutMetadataLabels`), a number
+/// with all its digits (`5.750184774575019`), a text as it is. So the numbers are
+/// rounded to what they mean, and the exercises are one readable text. Pure and
+/// without HealthKit, so it is tested on every platform.
 extension HealthWorkoutDraft {
 
-    /// Bundle-prefixed keys keep our specifics apart from Apple's reserved namespace.
-    public enum MetadataKey {
-        public static let totalSets = "com.atamya.FitnessApp.TotalSets"
-        public static let totalVolumeKg = "com.atamya.FitnessApp.TotalVolumeKg"
-        public static let totalDistanceKm = "com.atamya.FitnessApp.TotalDistanceKm"
-        public static let averagePaceMinPerKm = "com.atamya.FitnessApp.AveragePaceMinPerKm"
-        public static let exercises = "com.atamya.FitnessApp.Exercises"
-    }
-
     /// Longest exercise list in UTF-8 bytes. Conservative on purpose: HealthKit
-    /// documents no limit for metadata text, and the list is optional anyway
-    /// (`HealthKitService.saveWorkout` writes the workout without it if HealthKit
-    /// rejects it).
+    /// documents no limit for metadata text.
     public static let maximumExerciseListBytes = 240
 
-    /// The numeric entries (not the exercise list, not the indoor flag):
+    /// All custom entries (not the indoor flag, which is HealthKit's own key),
+    /// keyed by the labels:
     /// - sets and volume only when something was logged (a time-format workout
     ///   has no sets — "0 sets" would be noise),
     /// - volume to two decimals, distance to three (metres), pace to two
-    ///   (5.750184774575019 → 5.75 min/km, i.e. 5:45 /km).
+    ///   (5.750184774575019 → 5.75 min/km, i.e. 5:45 /km),
+    /// - the exercise list as one text (`exerciseListText`).
+    ///
+    /// They are a bonus: if HealthKit rejects the workout with them,
+    /// `HealthKitService.saveWorkout` writes it once more without them.
     public var customMetadata: [String: Any] {
+        let labels = metadataLabels.sanitized
         var metadata: [String: Any] = [:]
         if let sets = totalSets, sets > 0 {
-            metadata[MetadataKey.totalSets] = sets
+            metadata[labels.sets] = sets
         }
         if let volume = Self.rounded(totalVolumeKg, decimals: 2) {
-            metadata[MetadataKey.totalVolumeKg] = volume
+            metadata[labels.volumeKg] = volume
         }
         if let km = Self.rounded(totalDistanceKm, decimals: 3) {
-            metadata[MetadataKey.totalDistanceKm] = km
+            metadata[labels.distanceKm] = km
         }
         if let pace = Self.rounded(averagePaceMinPerKm, decimals: 2) {
-            metadata[MetadataKey.averagePaceMinPerKm] = pace
+            metadata[labels.averagePace] = pace
+        }
+        if let exerciseList = exerciseListText {
+            metadata[labels.exercises] = exerciseList
         }
         return metadata
     }

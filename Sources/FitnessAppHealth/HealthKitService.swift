@@ -456,30 +456,36 @@ public actor HealthKitService {
     ///   in the metadata). `distanceAttached` in the result tells which.
     /// - `finishWorkout()` returning `nil` is reported as `.unverified`, not as
     ///   success (see `HealthWorkoutWriteOutcome`).
-    /// - Metadata goes into a single `addMetadata` call (see
-    ///   `HealthWorkoutDraft.customMetadata`). Bundle-prefixed keys keep our
-    ///   specifics apart from Apple's reserved namespace.
-    /// - The exercise list of a strength workout is a bonus like the distance
-    ///   sample: HealthKit documents no limit for metadata text, so if the save
-    ///   fails (`mayBeCausedByOptionalMetadata`) the workout is written once more
-    ///   WITHOUT the list. Safe because a strength workout adds no sample before
-    ///   the failure (the retry is skipped for drafts with a distance sample), and
-    ///   a failed attempt is discarded.
+    /// - Metadata goes into a single `addMetadata` call: the indoor flag plus the
+    ///   app's own entries (`HealthWorkoutDraft.customMetadata`), which Health
+    ///   shows under short readable keys (`HealthWorkoutMetadataLabels`).
+    /// - Those own entries are a bonus like the distance sample: HealthKit
+    ///   documents neither limits for metadata text nor rules for custom keys, so
+    ///   if the save fails (`mayBeCausedByOptionalMetadata`) the workout is
+    ///   written once more WITHOUT them. Safe because the retry only happens
+    ///   when no sample was added before the failure, and a failed attempt is
+    ///   discarded.
     public func saveWorkout(_ draft: HealthWorkoutDraft) async throws -> HealthWorkoutWriteOutcome {
+        var addedSample = false
         do {
-            return try await writeWorkout(draft, withExerciseList: true)
+            return try await writeWorkout(draft, withCustomMetadata: true, addedSample: &addedSample)
         } catch let error as HealthKitError {
             guard error.mayBeCausedByOptionalMetadata,
-                  draft.exerciseListText != nil,
-                  draft.sampleDistanceKm == nil
+                  !addedSample,
+                  !draft.customMetadata.isEmpty
             else { throw error }
-            return try await writeWorkout(draft, withExerciseList: false)
+            var addedSampleOnRetry = false
+            return try await writeWorkout(draft, withCustomMetadata: false, addedSample: &addedSampleOnRetry)
         }
     }
 
+    /// - Parameter addedSample: set to `true` as soon as a sample is handed to the
+    ///   builder (it is stored at once and survives `discardWorkout()`), so the
+    ///   caller knows a retry could duplicate it.
     private func writeWorkout(
         _ draft: HealthWorkoutDraft,
-        withExerciseList: Bool
+        withCustomMetadata: Bool,
+        addedSample: inout Bool
     ) async throws -> HealthWorkoutWriteOutcome {
         let workoutType = HKObjectType.workoutType()
         guard store.authorizationStatus(for: workoutType) == .sharingAuthorized else {
@@ -501,14 +507,11 @@ public actor HealthKitService {
             device: nil
         )
 
-        // The numbers (rounded for Health's raw display) come from the draft; the
-        // indoor flag is HealthKit's own key.
-        var metadata = draft.customMetadata
+        // The app's own entries (rounded and labelled for Health's raw display)
+        // come from the draft; the indoor flag is HealthKit's own key.
+        var metadata: [String: Any] = withCustomMetadata ? draft.customMetadata : [:]
         if let indoor = draft.isIndoor {
             metadata[HKMetadataKeyIndoorWorkout] = indoor
-        }
-        if withExerciseList, let exerciseList = draft.exerciseListText {
-            metadata[HealthWorkoutDraft.MetadataKey.exercises] = exerciseList
         }
 
         var distanceAttached = false
@@ -530,6 +533,7 @@ public actor HealthKitService {
                     end: draft.endDate
                 )
                 do {
+                    addedSample = true
                     try await builder.addSamples([sample])
                     distanceAttached = true
                 } catch {

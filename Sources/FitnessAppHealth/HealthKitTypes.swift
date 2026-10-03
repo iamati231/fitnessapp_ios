@@ -143,6 +143,54 @@ public enum HealthWorkoutKind: String, Sendable, Equatable {
     case mixedCardio
 }
 
+/// The labels of the app's own metadata entries in Apple Health.
+///
+/// Health's detail screen shows a custom entry under its KEY, verbatim — a
+/// reverse-DNS key like `com.atamya.FitnessApp.TotalSets` would be printed in full.
+/// So the keys are short, readable texts. The UI layer passes them in the app's
+/// language (this module does not know the string catalog); the defaults are
+/// English.
+public struct HealthWorkoutMetadataLabels: Sendable, Equatable {
+    public var exercises: String
+    public var sets: String
+    public var volumeKg: String
+    public var distanceKm: String
+    public var averagePace: String
+
+    public init(exercises: String, sets: String, volumeKg: String, distanceKm: String, averagePace: String) {
+        self.exercises = exercises
+        self.sets = sets
+        self.volumeKg = volumeKg
+        self.distanceKm = distanceKm
+        self.averagePace = averagePace
+    }
+
+    public static let `default` = HealthWorkoutMetadataLabels(
+        exercises: "Exercises",
+        sets: "Sets",
+        volumeKg: "Volume (kg)",
+        distanceKm: "Distance (km)",
+        averagePace: "Avg. pace (min/km)"
+    )
+
+    /// Every label usable as a metadata key: not blank and not in Apple's reserved
+    /// "HK" namespace; otherwise the English default.
+    var sanitized: HealthWorkoutMetadataLabels {
+        func usable(_ label: String, _ fallback: String) -> String {
+            let trimmed = label.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty || trimmed.hasPrefix("HK") ? fallback : trimmed
+        }
+        let fallback = Self.default
+        return HealthWorkoutMetadataLabels(
+            exercises: usable(exercises, fallback.exercises),
+            sets: usable(sets, fallback.sets),
+            volumeKg: usable(volumeKg, fallback.volumeKg),
+            distanceKm: usable(distanceKm, fallback.distanceKm),
+            averagePace: usable(averagePace, fallback.averagePace)
+        )
+    }
+}
+
 /// A finished workout to write to Apple Health, as plain values.
 public struct HealthWorkoutDraft: Sendable, Equatable {
     public let kind: HealthWorkoutKind
@@ -162,6 +210,8 @@ public struct HealthWorkoutDraft: Sendable, Equatable {
     /// done — names only, no sets, reps or weights. Written as one text entry in
     /// the workout's metadata (see `HealthWorkoutDraft.exerciseListText`).
     public let exerciseNames: [String]
+    /// How the app's own entries are labelled in Health (see the type).
+    public let metadataLabels: HealthWorkoutMetadataLabels
 
     public init(
         kind: HealthWorkoutKind,
@@ -173,7 +223,8 @@ public struct HealthWorkoutDraft: Sendable, Equatable {
         averagePaceMinPerKm: Double? = nil,
         totalSets: Int? = nil,
         totalVolumeKg: Double? = nil,
-        exerciseNames: [String] = []
+        exerciseNames: [String] = [],
+        metadataLabels: HealthWorkoutMetadataLabels = .default
     ) {
         self.kind = kind
         self.startDate = startDate
@@ -185,6 +236,7 @@ public struct HealthWorkoutDraft: Sendable, Equatable {
         self.totalSets = totalSets
         self.totalVolumeKg = totalVolumeKg
         self.exerciseNames = exerciseNames
+        self.metadataLabels = metadataLabels
     }
 }
 
