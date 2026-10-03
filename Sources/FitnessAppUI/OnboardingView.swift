@@ -404,6 +404,17 @@ public struct OnboardingView: View {
                         // RootView.@Query<UserBodyProfile> ist nach dem
                         // Profil-Insert nicht mehr leer → MainTabView.
                         await MainActor.run { backupImportRunning = false }
+
+                        // Die importierten Erinnerungs-Schalter (settings.csv)
+                        // wirksam machen: wie am Ende des normalen Onboardings
+                        // erst die Berechtigung klaeren, dann planen. Auf einem
+                        // frisch installierten Geraet existieren die geplanten
+                        // Benachrichtigungen des alten nicht mehr.
+                        let reminders = ReminderPreferences.load()
+                        if reminders.waterEnabled || reminders.measurementEnabled {
+                            await prNotifications.requestAuthorization()
+                        }
+                        await ReminderPreferencesApplier.applyStoredSchedules()
                     } catch {
                         await MainActor.run {
                             backupImportRunning = false
@@ -1282,7 +1293,15 @@ public struct OnboardingView: View {
         UserDefaults.standard.set(enableMeasurementReminder, forKey: "pref_measurement_reminder")
 
         if enableWaterReminder || enableMeasurementReminder {
-            Task { await prNotifications.requestAuthorization() }
+            Task {
+                await prNotifications.requestAuthorization()
+                // Bugfix: Die Schalter wurden nur gespeichert, geplant wurde
+                // nichts — Erinnerungen kamen erst, wenn der Nutzer in den
+                // Einstellungen einen Schalter aus- und wieder anmachte. Erst
+                // NACH der Berechtigungsabfrage planen (ohne Erlaubnis ist der
+                // Scheduler ein No-Op).
+                await ReminderPreferencesApplier.applyStoredSchedules()
+            }
         }
 
         // RootView's @Query auf [UserBodyProfile] beobachtet die Insert

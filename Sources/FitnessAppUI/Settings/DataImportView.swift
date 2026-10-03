@@ -769,24 +769,10 @@ public struct DataImportView: View {
     /// System an (Wasser + Messung). Liest direkt aus UserDefaults — die
     /// settings.csv-Werte sind zu diesem Zeitpunkt bereits geschrieben.
     private func rescheduleImportedReminders() async {
-        let defaults = UserDefaults.standard
-        if defaults.bool(forKey: "pref_water_reminder") {
-            let hours = max(1, defaults.integer(forKey: "pref_water_reminder_hours"))
-            await ReminderScheduler.scheduleWaterReminders(everyHours: hours)
-        } else {
-            await ReminderScheduler.cancelWaterReminders()
-        }
-        if defaults.bool(forKey: "pref_measurement_reminder") {
-            let weekday = defaults.integer(forKey: "pref_measurement_reminder_weekday")
-            let hour = defaults.integer(forKey: "pref_measurement_reminder_hour")
-            await ReminderScheduler.scheduleMeasurementReminder(
-                weekday: (1...7).contains(weekday) ? weekday : 1,
-                hour: (0...23).contains(hour) ? hour : 8,
-                minute: 0
-            )
-        } else {
-            await ReminderScheduler.cancelMeasurementReminder()
-        }
+        // Gemeinsame Logik (inkl. Vorgabewerte fuer fehlende Keys) liegt in
+        // `ReminderPreferencesApplier` — dieselbe wird nach dem Onboarding
+        // und bei jedem App-Start benutzt.
+        await ReminderPreferencesApplier.applyStoredSchedules()
     }
 
     private func prepareAndShareErrorsCSV(result: DataImportResult) {

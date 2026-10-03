@@ -138,6 +138,16 @@ public struct RootView: View {
                     context: modelContext
                 )
             }
+
+            // Erinnerungen gegen die gespeicherten Schalter abgleichen: Die
+            // geplanten Benachrichtigungen liegen im System und gehen bei
+            // Neuinstallation oder Geraete-Wiederherstellung verloren, die
+            // Schalter in UserDefaults dagegen nicht (bzw. kommen aus dem
+            // Backup zurueck). Ohne Profil laeuft noch das Onboarding, dort
+            // wird erst nach der Berechtigungsabfrage geplant.
+            if !profiles.isEmpty {
+                await ReminderPreferencesApplier.applyStoredSchedules()
+            }
         }
     }
 

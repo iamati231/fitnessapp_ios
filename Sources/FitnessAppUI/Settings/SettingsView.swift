@@ -511,9 +511,11 @@ public struct SettingsView: View {
     }
 
     /// Wendet alle Reminder-Praeferenzen via ReminderScheduler auf das System
-    /// an. Triggert bei jedem Toggle/Picker-Wechsel UND beim SettingsView-
-    /// `.task` (damit ein Reset oder ein cold-start die Schedules wieder
-    /// herstellt).
+    /// an. Triggert bei jedem Toggle/Picker-Wechsel. Cold-Start, Onboarding und
+    /// Imports gleichen die Schedules ueber `ReminderPreferencesApplier` ab
+    /// (RootView, OnboardingView, DataImportView) — das hier frueher genannte
+    /// SettingsView-`.task` gab es nie, weshalb Erinnerungen nach dem
+    /// Onboarding nicht geplant wurden.
     ///
     /// Spam-Schutz lebt im ReminderScheduler — pre-cancel der alten Schedules
     /// vor dem add.
