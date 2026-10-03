@@ -316,6 +316,11 @@ public struct BackupListView: View {
                 format: String(localized: "backups.restore.done", bundle: .module),
                 result.totalImported, result.totalSkipped
             )
+            // Die wiederhergestellten Erinnerungs-Schalter (settings.csv) sind
+            // jetzt in UserDefaults, die geplanten Benachrichtigungen im System
+            // aber noch die alten - gleich abgleichen statt erst beim naechsten
+            // Kaltstart.
+            Task { await ReminderPreferencesApplier.applyStoredSchedules() }
             reload()
         } catch {
             errorMessage = error.localizedDescription

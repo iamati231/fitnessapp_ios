@@ -10,9 +10,10 @@ import FitnessAppActivities
 ///
 /// Aufgerufen wird er an jeder Stelle, an der die Schalter gespeichert, die
 /// Benachrichtigungen im System aber noch nicht (oder nicht mehr) vorhanden
-/// sein koennen: nach dem Onboarding, nach einem Backup-Import, nach einem
-/// Settings-Import und bei jedem App-Start (Neuinstallation und
-/// Geraete-Wiederherstellung nehmen die geplanten Benachrichtigungen mit).
+/// sein koennen: am Ende des Onboardings, nach einem Backup-Import im
+/// Onboarding, nach dem Daten-Import und der Backup-Wiederherstellung in den
+/// Einstellungen sowie bei jedem App-Start (eine Geraete-Wiederherstellung
+/// bringt die Schalter zurueck, nicht aber die geplanten Benachrichtigungen).
 enum ReminderPreferencesApplier {
 
     static func applyStoredSchedules() async {

@@ -6,10 +6,9 @@ import Foundation
 ///
 /// Warum das ein eigener Typ ist: Die Schalter stehen in `UserDefaults`, die
 /// eigentlichen Benachrichtigungen aber im System — und die wurden nie
-/// geplant (Ende des Onboardings, Backup-Import im Onboarding) oder gehen
-/// verloren (Neuinstallation, Geraete-Wiederherstellung). Wer die Planung aus
-/// den gespeicherten Werten ableitet, kann sie an jeder dieser Stellen erneut
-/// anstossen.
+/// geplant (Ende des Onboardings, Backup-Import) oder gehen verloren
+/// (Geraete-Wiederherstellung). Wer die Planung aus den gespeicherten Werten
+/// ableitet, kann sie an jeder dieser Stellen erneut anstossen.
 ///
 /// `UserDefaults.bool(forKey:)` allein taugt dafuer nicht: Es liefert `false`
 /// fuer einen fehlenden Key, die Oberflaeche zeigt dort aber den Schalter AN

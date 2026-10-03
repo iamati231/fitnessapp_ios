@@ -740,10 +740,9 @@ public struct DataImportView: View {
                     }
                 )
                 // DEL-209: Importierte Reminder-Präferenzen sofort beim
-                // System anmelden — sonst greifen sie erst, wenn der User
-                // zufällig die Settings öffnet (deren .task re-schedulet).
-                // Spiegelt SettingsView.rescheduleReminders; der Scheduler
-                // prüft die Notification-Permission selbst.
+                // System anmelden — sonst greifen sie erst beim naechsten
+                // App-Start (RootView gleicht dann ab). Der Scheduler prüft
+                // die Notification-Permission selbst.
                 await rescheduleImportedReminders()
                 await MainActor.run {
                     self.phase = .finished(result: result)

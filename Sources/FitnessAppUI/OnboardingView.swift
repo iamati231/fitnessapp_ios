@@ -395,7 +395,7 @@ public struct OnboardingView: View {
                         // FK-/Snapshot-Lookups greifen — RootView seedet beim
                         // Launch, hier defensiv nochmal anstoßen.
                         LibrarySeeder.seedIfNeeded(in: ctx)
-                        _ = try DataImportService.performImport(
+                        let importResult = try DataImportService.performImport(
                             zipData: zipData,
                             context: ctx,
                             strategy: .appendOnly
@@ -409,7 +409,12 @@ public struct OnboardingView: View {
                         // wirksam machen: wie am Ende des normalen Onboardings
                         // erst die Berechtigung klaeren, dann planen. Auf einem
                         // frisch installierten Geraet existieren die geplanten
-                        // Benachrichtigungen des alten nicht mehr.
+                        // Benachrichtigungen des alten nicht mehr. Nur wenn das
+                        // Backup ein Profil mitgebracht hat - sonst bleibt der
+                        // Nutzer im Onboarding, und `finishOnboarding` plant
+                        // nach seiner eigenen Auswahl (ein Berechtigungsdialog
+                        // mitten in Schritt 1 waere dort fehl am Platz).
+                        guard (importResult.imported["profile.csv"] ?? 0) > 0 else { return }
                         let reminders = ReminderPreferences.load()
                         if reminders.waterEnabled || reminders.measurementEnabled {
                             await prNotifications.requestAuthorization()
@@ -1289,19 +1294,24 @@ public struct OnboardingView: View {
 
         // 4) Notification-Präferenzen persistieren. Permission wird angefordert,
         //    wenn mindestens einer der Toggles aktiv ist.
-        UserDefaults.standard.set(enableWaterReminder, forKey: "pref_water_reminder")
-        UserDefaults.standard.set(enableMeasurementReminder, forKey: "pref_measurement_reminder")
+        UserDefaults.standard.set(enableWaterReminder, forKey: ReminderPreferences.waterEnabledKey)
+        UserDefaults.standard.set(enableMeasurementReminder, forKey: ReminderPreferences.measurementEnabledKey)
 
-        if enableWaterReminder || enableMeasurementReminder {
-            Task {
+        // Vor dem Task lesen: @State-Werte nicht aus der Task-Closure heraus anfassen.
+        let asksForNotifications = enableWaterReminder || enableMeasurementReminder
+        Task {
+            if asksForNotifications {
                 await prNotifications.requestAuthorization()
-                // Bugfix: Die Schalter wurden nur gespeichert, geplant wurde
-                // nichts — Erinnerungen kamen erst, wenn der Nutzer in den
-                // Einstellungen einen Schalter aus- und wieder anmachte. Erst
-                // NACH der Berechtigungsabfrage planen (ohne Erlaubnis ist der
-                // Scheduler ein No-Op).
-                await ReminderPreferencesApplier.applyStoredSchedules()
             }
+            // Bugfix: Die Schalter wurden nur gespeichert, geplant wurde
+            // nichts — Erinnerungen kamen erst, wenn der Nutzer in den
+            // Einstellungen einen Schalter aus- und wieder anmachte. Erst
+            // NACH der Berechtigungsabfrage planen (ohne Erlaubnis ist der
+            // Scheduler ein No-Op). Immer abgleichen, auch wenn beide Schalter
+            // aus sind: Nach "App zuruecksetzen" bleiben Einstellungen UND
+            // geplante Benachrichtigungen im System stehen, die dann hier
+            // abgeraeumt werden muessen.
+            await ReminderPreferencesApplier.applyStoredSchedules()
         }
 
         // RootView's @Query auf [UserBodyProfile] beobachtet die Insert

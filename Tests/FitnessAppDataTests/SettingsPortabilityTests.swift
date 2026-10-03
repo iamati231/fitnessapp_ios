@@ -1,6 +1,7 @@
 #if canImport(SwiftData)
 import XCTest
 @testable import FitnessAppData
+import FitnessAppCore
 
 /// DEL-209: Whitelist-Settings-Portabilität. Nutzt eine isolierte
 /// UserDefaults-Suite, damit Tests den echten App-State nicht anfassen.
@@ -110,6 +111,24 @@ final class SettingsPortabilityTests: XCTestCase {
         ], to: defaults)
         XCTAssertEqual(result.applied, 0)
         XCTAssertEqual(result.skipped, 2)
+    }
+
+    /// Die Erinnerungs-Planung (Core: `ReminderPreferences`) liest dieselben
+    /// fuenf Keys, die der Export/Import mitnimmt. Driften die Listen
+    /// auseinander, plant ein Import andere Werte, als die settings.csv
+    /// mitbringt - oder liest Schalter, die gar nicht portabel sind.
+    func testReminderPreferenceKeysAreAllPortable() {
+        let portable = Set(SettingsPortability.whitelist.map { $0.key })
+        let reminderKeys = [
+            ReminderPreferences.waterEnabledKey,
+            ReminderPreferences.waterIntervalHoursKey,
+            ReminderPreferences.measurementEnabledKey,
+            ReminderPreferences.measurementWeekdayKey,
+            ReminderPreferences.measurementHourKey,
+        ]
+        for key in reminderKeys {
+            XCTAssertTrue(portable.contains(key), "\(key) fehlt in SettingsPortability.whitelist")
+        }
     }
 }
 #endif

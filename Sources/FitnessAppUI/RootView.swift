@@ -127,6 +127,17 @@ public struct RootView: View {
             // Werte aus ihrem Custom-Template nachgezogen. Idempotent.
             LibrarySeeder.backfillCustomExerciseMetadataIfNeeded(in: modelContext)
 
+            // Erinnerungen gegen die gespeicherten Schalter abgleichen: Die
+            // geplanten Benachrichtigungen liegen im System und gehen z.B. bei
+            // einer Geraete-Wiederherstellung verloren, die Schalter in
+            // UserDefaults dagegen nicht. Ohne Profil laeuft noch das
+            // Onboarding, dort wird erst nach der Berechtigungsabfrage
+            // geplant. Bewusst VOR dem HealthKit-Sync: der Abgleich ist billig
+            // und soll nicht hinter einer potenziell langen Abfrage warten.
+            if !profiles.isEmpty {
+                await ReminderPreferencesApplier.applyStoredSchedules()
+            }
+
             // Auto-Sync externer HealthKit-Workouts (z.B. Adidas Running) —
             // nur wenn der User das in Settings explizit aktiviert hat. Nach
             // den Library-Backfills oben, damit die "Freier Lauf"/"Radfahren
@@ -137,16 +148,6 @@ public struct RootView: View {
                     healthKit: healthKit,
                     context: modelContext
                 )
-            }
-
-            // Erinnerungen gegen die gespeicherten Schalter abgleichen: Die
-            // geplanten Benachrichtigungen liegen im System und gehen bei
-            // Neuinstallation oder Geraete-Wiederherstellung verloren, die
-            // Schalter in UserDefaults dagegen nicht (bzw. kommen aus dem
-            // Backup zurueck). Ohne Profil laeuft noch das Onboarding, dort
-            // wird erst nach der Berechtigungsabfrage geplant.
-            if !profiles.isEmpty {
-                await ReminderPreferencesApplier.applyStoredSchedules()
             }
         }
     }
