@@ -67,6 +67,12 @@ enum WorkoutHealthExportService {
             toWrite.filter { $0.plan.category == category }.count
         }
 
+        /// Enthaelt der Export Laeufe/Spaziergaenge mit Distanz-Sample? (Nur
+        /// diese brauchen die Distanz-Freigabe.)
+        var exportsDistance: Bool {
+            toWrite.contains { $0.plan.distanceKm != nil }
+        }
+
         var isEmpty: Bool { toWrite.isEmpty && alreadyInHealth.isEmpty && notExportable == 0 }
     }
 
@@ -118,62 +124,40 @@ enum WorkoutHealthExportService {
         let sessions = try context.fetch(descriptor)
 
         var preparation = Preparation()
-        var eligible: [(candidate: HealthWorkoutCandidate, plan: HealthWorkoutPlan)] = []
+        var eligible: [HealthWorkoutCandidate] = []
         for session in sessions {
             let candidate = HealthWorkoutWriter.candidate(for: session)
             switch HealthWorkoutPlanner.decide(candidate, enabledCategories: allCategories, now: now) {
-            case .write(let plan):
-                eligible.append((candidate: candidate, plan: plan))
+            case .write:
+                eligible.append(candidate)
             case .skip(let reason):
                 if reason.isNotExportable { preparation.notExportable += 1 }
             }
         }
-        guard !eligible.isEmpty else { return preparation }
+        guard let range = HealthWorkoutPlanner.queryRange(for: eligible) else { return preparation }
 
-        // Eine Abfrage ueber den ganzen betroffenen Zeitraum (+/- 1 Tag).
-        let earliest = eligible.map { $0.plan.start }.min() ?? now
-        let latest = eligible.map { $0.plan.end }.max() ?? now
-        let windows = try await healthKit.fetchWorkoutWindows(
-            from: earliest.addingTimeInterval(-24 * 3600),
-            to: latest.addingTimeInterval(24 * 3600)
-        )
+        // Eine Abfrage ueber den ganzen betroffenen Zeitraum; der Planer nennt
+        // ihn inklusive der Fenster, die er beim Abgleich zusaetzlich prueft.
+        let windows = try await healthKit.fetchWorkoutWindows(from: range.start, to: range.end)
         preparation.visibleWorkouts = windows.count
         preparation.visibleOwnWorkouts = windows.filter { $0.isOwnSource }.count
 
-        // Neueste zuerst. Gegen Health wird NUR mit den echten Health-Fenstern
-        // abgeglichen: nur das heisst "bereits in Health" (und wird als behandelt
-        // markiert). Zwei sich ueberlappende Sessions rutschen trotzdem nicht
-        // beide durch — die zweite wird gegen die schon geplanten geprueft, dann
-        // aber WEDER geschrieben NOCH markiert (der naechste Lauf entscheidet
-        // erneut, wenn die erste inzwischen in Health steht).
-        let healthWindows: [(start: Date, end: Date)] = windows.map {
-            (start: $0.startDate, end: $0.endDate)
+        // Die Auswahl (neueste zuerst) lebt in Core und ist dort getestet: "schon
+        // in Health" heisst NUR Ueberlappung mit einem echten Health-Workout (und
+        // wird als behandelt markiert); eine Session, die nur eine andere geplante
+        // ueberlappt, wird weder geschrieben noch markiert.
+        let selection = HealthWorkoutPlanner.selectForExport(
+            eligible,
+            enabledCategories: allCategories,
+            healthWindows: windows.map { (start: $0.startDate, end: $0.endDate) },
+            ownWindows: windows.filter { $0.isOwnSource }.map { (start: $0.startDate, end: $0.endDate) },
+            now: now
+        )
+        preparation.toWrite = selection.toWrite.map {
+            PlannedWorkout(startTime: eligible[$0.index].startTime, plan: $0.plan)
         }
-        var planned: [(start: Date, end: Date)] = []
-        for item in eligible {
-            let decision = HealthWorkoutPlanner.decide(
-                item.candidate,
-                enabledCategories: allCategories,
-                existingWindows: healthWindows,
-                now: now
-            )
-            switch decision {
-            case .write(let plan):
-                if ExternalWorkoutDedup.overlapsExisting(
-                    sampleStart: plan.start,
-                    sampleEnd: plan.end,
-                    existingWindows: planned
-                ) {
-                    continue
-                }
-                preparation.toWrite.append(PlannedWorkout(startTime: item.candidate.startTime, plan: plan))
-                planned.append((start: plan.start, end: plan.end))
-            case .skip(.alreadyInHealth):
-                preparation.alreadyInHealth.append(item.candidate.startTime)
-            case .skip:
-                break
-            }
-        }
+        preparation.alreadyInHealth = selection.alreadyInHealth.map { eligible[$0].startTime }
+        preparation.notExportable += selection.notExportable
         return preparation
     }
 

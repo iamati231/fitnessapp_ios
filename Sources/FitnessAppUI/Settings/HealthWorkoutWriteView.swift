@@ -400,7 +400,7 @@ public struct HealthWorkoutWriteView: View {
                 .tint(Color.deltiqOrange)
                 .accessibilityLabel(Text(cardioToggleLabel))
         }
-        if exportCardio && cardioCount > 0 && distanceDenied {
+        if exportCardio && preparation.exportsDistance && distanceDenied {
             hintRow(String(localized: "settings.healthWrite.distanceMissing", bundle: .module))
         }
 

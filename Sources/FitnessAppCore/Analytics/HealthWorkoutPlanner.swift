@@ -184,6 +184,30 @@ public enum HealthWorkoutDecision: Sendable, Equatable {
     case skip(HealthWorkoutSkipReason)
 }
 
+/// Ergebnis von `HealthWorkoutPlanner.selectForExport`. Indizes beziehen sich
+/// auf die uebergebene Kandidatenliste.
+public struct HealthExportSelection: Sendable, Equatable {
+    public struct Planned: Sendable, Equatable {
+        public let index: Int
+        public let plan: HealthWorkoutPlan
+        public init(index: Int, plan: HealthWorkoutPlan) {
+            self.index = index
+            self.plan = plan
+        }
+    }
+
+    /// In der Reihenfolge der Kandidaten.
+    public var toWrite: [Planned] = []
+    /// Ueberlappen ein echtes Health-Workout.
+    public var alreadyInHealth: [Int] = []
+    /// Zu kurz/lang, in der Zukunft oder ohne Inhalt.
+    public var notExportable = 0
+    /// Ueberlappen nur eine andere geplante Session: weder schreiben noch markieren.
+    public var deferred = 0
+
+    public init() {}
+}
+
 // MARK: - Planer
 
 /// Die EINE Entscheidungsfunktion fuer "Wird dieses Training nach Apple
@@ -202,10 +226,14 @@ public enum HealthWorkoutDecision: Sendable, Equatable {
 ///    — ueberlappt mehr als die Haelfte der SESSION-Dauer mit einem sichtbaren
 ///    Workout (eigener oder fremder Quelle), steht sie schon in Health. Ein
 ///    kurzes Fremd-Workout in einer langen Session blockiert sie damit nicht.
-///    Geprueft wird das Fenster, das geschrieben wuerde, UND das urspruenglich
-///    aufgezeichnete (`recordedWindows`): Hat der Nutzer Beginn oder Dauer nach
-///    dem Beenden im Verlauf geaendert, steht in Health noch das alte Fenster
-///    (so wurde es live geschrieben) — sonst entstuende ein Doppel.
+///    Geprueft wird das Fenster, das geschrieben wuerde, gegen ALLE sichtbaren
+///    Workouts (`existingWindows`) — und die vermutlich urspruenglich
+///    aufgezeichneten Fenster (`recordedWindows`) NUR gegen Deltiqs eigene
+///    (`ownWindows`): Hat der Nutzer Beginn oder Dauer nach dem Beenden im
+///    Verlauf geaendert, steht in Health noch das alte, live geschriebene Fenster
+///    — sonst entstuende ein Doppel. Die Vermutung darf kein fremdes Workout
+///    treffen, sonst wuerde eine unbeteiligte Session dauerhaft als "schon in
+///    Health" gelten.
 public enum HealthWorkoutPlanner {
 
     public static let minimumDurationSeconds: TimeInterval = 60
@@ -235,6 +263,7 @@ public enum HealthWorkoutPlanner {
         _ candidate: HealthWorkoutCandidate,
         enabledCategories: Set<HealthWorkoutCategory>,
         existingWindows: [(start: Date, end: Date)] = [],
+        ownWindows: [(start: Date, end: Date)] = [],
         now: Date
     ) -> HealthWorkoutDecision {
         if !candidate.isCompleted { return .skip(.notCompleted) }
@@ -267,7 +296,7 @@ public enum HealthWorkoutPlanner {
             if ExternalWorkoutDedup.overlapsExisting(
                 sampleStart: recorded.start,
                 sampleEnd: recorded.end,
-                existingWindows: existingWindows
+                existingWindows: ownWindows
             ) {
                 return .skip(.alreadyInHealth)
             }
@@ -282,8 +311,9 @@ public enum HealthWorkoutPlanner {
     /// - nur die Dauer geaendert: `[startTime, endTime]`
     /// - nur der Beginn geaendert: `[endTime - durationMinutes, endTime]`
     /// Beides nur, wenn es vom effektiven Fenster abweicht (sonst dieselbe
-    /// Pruefung). Sind beide Werte geaendert, laesst sich das Original nicht
-    /// mehr herleiten; dann bleibt nur die Ueberlappung des effektiven Fensters.
+    /// Pruefung). Welche der beiden Vermutungen stimmt, ist nicht erkennbar (und
+    /// bei gleichzeitig geaenderten Werten stimmt keine) — deshalb werden beide
+    /// ausschliesslich gegen eigene Health-Workouts geprueft (`decide`).
     static func recordedWindows(
         of candidate: HealthWorkoutCandidate,
         effective: (start: Date, end: Date)
@@ -300,6 +330,82 @@ public enum HealthWorkoutPlanner {
             }
         }
         return windows
+    }
+
+    // MARK: Export-Auswahl
+
+    /// Rand um den Export-Zeitraum bei der Abfrage der Health-Workouts.
+    public static let queryMarginSeconds: TimeInterval = 24 * 3600
+
+    /// Zeitraum, in dem Health-Workouts abgefragt werden muessen, damit
+    /// `decide`/`selectForExport` fuer alle Kandidaten ein vollstaendiges Bild
+    /// haben: alle Fenster, die geprueft werden (effektives UND die
+    /// vermuteten urspruenglichen), plus Rand. `nil` ohne Kandidaten.
+    public static func queryRange(
+        for candidates: [HealthWorkoutCandidate]
+    ) -> (start: Date, end: Date)? {
+        var earliest: Date?
+        var latest: Date?
+        for candidate in candidates {
+            let effective = effectiveWindow(
+                startTime: candidate.startTime,
+                endTime: candidate.endTime,
+                durationMinutes: candidate.durationMinutes
+            )
+            for window in [effective] + recordedWindows(of: candidate, effective: effective) {
+                earliest = min(earliest ?? window.start, window.start)
+                latest = max(latest ?? window.end, window.end)
+            }
+        }
+        guard let earliest, let latest else { return nil }
+        return (
+            start: earliest.addingTimeInterval(-queryMarginSeconds),
+            end: latest.addingTimeInterval(queryMarginSeconds)
+        )
+    }
+
+    /// Entscheidet fuer den Export ALLE Kandidaten (Reihenfolge = Prioritaet,
+    /// neueste zuerst) und beantwortet dabei, was als "schon in Health" gilt:
+    /// NUR eine Ueberlappung mit echten Health-Workouts. Eine Session, die nur
+    /// eine ebenfalls GEPLANTE ueberlappt, wird weder geschrieben noch als
+    /// "schon in Health" gemeldet (`deferred`): Ob die andere je geschrieben wird
+    /// (Kategorie abgewaehlt, Abbruch, Fehler), steht noch nicht fest.
+    public static func selectForExport(
+        _ candidates: [HealthWorkoutCandidate],
+        enabledCategories: Set<HealthWorkoutCategory>,
+        healthWindows: [(start: Date, end: Date)],
+        ownWindows: [(start: Date, end: Date)],
+        now: Date
+    ) -> HealthExportSelection {
+        var selection = HealthExportSelection()
+        var planned: [(start: Date, end: Date)] = []
+        for (index, candidate) in candidates.enumerated() {
+            let decision = decide(
+                candidate,
+                enabledCategories: enabledCategories,
+                existingWindows: healthWindows,
+                ownWindows: ownWindows,
+                now: now
+            )
+            switch decision {
+            case .write(let plan):
+                if ExternalWorkoutDedup.overlapsExisting(
+                    sampleStart: plan.start,
+                    sampleEnd: plan.end,
+                    existingWindows: planned
+                ) {
+                    selection.deferred += 1
+                    continue
+                }
+                selection.toWrite.append(HealthExportSelection.Planned(index: index, plan: plan))
+                planned.append((start: plan.start, end: plan.end))
+            case .skip(.alreadyInHealth):
+                selection.alreadyInHealth.append(index)
+            case .skip(let reason):
+                if reason.isNotExportable { selection.notExportable += 1 }
+            }
+        }
+        return selection
     }
 
     // MARK: Klassifikation
@@ -398,7 +504,8 @@ public enum HealthWorkoutPlanner {
         let isCardioSession: Bool
         if candidate.hasTimeFormat {
             // Zeitformate haben nie Logs: nur der (noch vorhandene) Tag verraet,
-            // ob es ein Lauf-/Rad-Intervall-Tag war.
+            // ob er ausschliesslich aus Cardio-Uebungen bestand (Lauf-/Rad-
+            // Intervall, Rudern, ...).
             isCardioSession = candidate.dayIsAllCardio == true
         } else if cardioLogs.isEmpty {
             isCardioSession = false
@@ -447,11 +554,15 @@ public enum HealthWorkoutPlanner {
         // Gewinner: groesste Gesamtdauer. Die Dauer zaehlt aber nur, wenn sie fuer
         // ALLE Gruppen mit Distanz vorliegt; sonst (z.B. ein Einlaufen nur mit
         // Dauer neben einem Lauf nur mit km) waere sie nicht vergleichbar, und die
-        // groesste Distanz entscheidet. Gleichstand entscheidet die feste
-        // Prioritaetsreihenfolge — Live-Pfad und Export kommen so immer zum
-        // selben Ergebnis.
+        // groesste Distanz entscheidet. Es sei denn, eine Gruppe fuellt mit ihrer
+        // Dauer allein mindestens die Haelfte der Session: Dann ist sie die
+        // Haupt-Aktivitaet (60 min Rad plus ein 0,3-km-Spaziergang ohne Dauer ist
+        // Radfahren). Gleichstand entscheidet die feste Prioritaetsreihenfolge —
+        // Live-Pfad und Export kommen so immer zum selben Ergebnis.
+        let sessionSeconds = window.end.timeIntervalSince(window.start)
         let durationIsComparable = stats.values.contains { $0.seconds > 0 }
-            && stats.values.allSatisfy { $0.seconds > 0 || $0.distanceKm == 0 }
+            && (stats.values.allSatisfy { $0.seconds > 0 || $0.distanceKm == 0 }
+                || stats.values.contains { Double($0.seconds) >= sessionSeconds * 0.5 })
         var winner: Group?
         var best = -1.0
         for group in Group.allCases {

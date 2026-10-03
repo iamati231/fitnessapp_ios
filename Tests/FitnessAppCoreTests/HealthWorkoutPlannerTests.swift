@@ -59,10 +59,12 @@ final class HealthWorkoutPlannerTests: XCTestCase {
     private func decide(
         _ c: HealthWorkoutCandidate,
         enabled: Set<HealthWorkoutCategory>? = nil,
-        windows: [(start: Date, end: Date)] = []
+        windows: [(start: Date, end: Date)] = [],
+        own: [(start: Date, end: Date)] = []
     ) -> HealthWorkoutDecision {
         HealthWorkoutPlanner.decide(
-            c, enabledCategories: enabled ?? both, existingWindows: windows, now: now
+            c, enabledCategories: enabled ?? both,
+            existingWindows: windows, ownWindows: own, now: now
         )
     }
 
@@ -485,6 +487,24 @@ final class HealthWorkoutPlannerTests: XCTestCase {
         XCTAssertEqual(q?.averagePaceMinPerKm ?? 0, 3.75, accuracy: 0.0001)
     }
 
+    /// Die Haupt-Aktivitaet gewinnt, auch wenn daneben ein winziger Log nur mit
+    /// Distanz steht: 60 min Rad (nur Dauer) plus 0,3 km Spaziergang bleibt Rad.
+    func testMainActivityByTimeWinsOverATinyDistanceOnlyLog() {
+        let bikePlusWalk = candidate(minutes: 62, logs: [
+            cardioLog("Radfahren (outdoor)", seconds: 3600),
+            cardioLog("Gehen / Einlaufen", km: 0.3),
+        ])
+        let p = plan(decide(bikePlusWalk))
+        XCTAssertEqual(p?.activity, .cycling)
+        XCTAssertNil(p?.distanceKm)
+
+        let bikePlusRun = candidate(minutes: 65, logs: [
+            cardioLog("Radfahren (outdoor)", seconds: 3600),
+            cardioLog("Freier Lauf", km: 5),
+        ])
+        XCTAssertEqual(plan(decide(bikePlusRun))?.activity, .cycling)
+    }
+
     // MARK: - Mischtage
 
     func testMixedDayIsCardioFromHalfOfTheSessionOnward() {
@@ -574,10 +594,8 @@ final class HealthWorkoutPlannerTests: XCTestCase {
         let edited = HealthWorkoutCandidate(
             startTime: start, endTime: minutes(10), durationMinutes: 60, logs: [strengthLog()]
         )
-        XCTAssertEqual(
-            decide(edited, windows: [(start: start, end: minutes(10))]),
-            .skip(.alreadyInHealth)
-        )
+        let live = [(start: start, end: minutes(10))]
+        XCTAssertEqual(decide(edited, windows: live, own: live), .skip(.alreadyInHealth))
     }
 
     /// Live geschrieben, danach um einen Tag zurueckdatiert: das alte Ende ist
@@ -589,10 +607,31 @@ final class HealthWorkoutPlannerTests: XCTestCase {
             durationMinutes: 60,
             logs: [strengthLog()]
         )
-        XCTAssertEqual(
-            decide(backdated, windows: [(start: start, end: minutes(60))]),
-            .skip(.alreadyInHealth)
+        let live = [(start: start, end: minutes(60))]
+        XCTAssertEqual(decide(backdated, windows: live, own: live), .skip(.alreadyInHealth))
+    }
+
+    /// Die vermuteten urspruenglichen Fenster gelten NUR gegen Deltiqs eigene
+    /// Workouts: Ein fremdes Workout dort (z.B. ein Lauf direkt vor der Session)
+    /// darf eine unbeteiligte Session nicht dauerhaft als "schon in Health"
+    /// markieren lassen.
+    func testRecordedWindowsNeverMatchForeignWorkouts() {
+        // Dauer von 30 auf 90 min geaendert, endTime veraltet (start + 30): Die
+        // Vermutung [endTime - 90 min, endTime] reicht 60 min vor den Start und
+        // laege zu 2/3 in einem fremden Workout davor.
+        let edited = HealthWorkoutCandidate(
+            startTime: minutes(60), endTime: minutes(90), durationMinutes: 90, logs: [strengthLog()]
         )
+        let foreign = [(start: minutes(0), end: minutes(60))]
+        XCTAssertNotNil(plan(decide(edited, windows: foreign, own: [])))
+
+        // endTime == startTime bei Dauer > 0 (z.B. nachgetragen): die abgeleitete
+        // Vermutung liegt komplett vor der Session.
+        let logged = HealthWorkoutCandidate(
+            startTime: minutes(60), endTime: minutes(60), durationMinutes: 30, logs: [strengthLog()]
+        )
+        let before = [(start: minutes(10), end: minutes(60))]
+        XCTAssertNotNil(plan(decide(logged, windows: before, own: [])))
     }
 
     /// Ohne Workout im urspruenglichen Zeitraum bleibt auch eine bearbeitete
@@ -601,10 +640,11 @@ final class HealthWorkoutPlannerTests: XCTestCase {
         let edited = HealthWorkoutCandidate(
             startTime: start, endTime: minutes(10), durationMinutes: 60, logs: [strengthLog()]
         )
-        XCTAssertNotNil(plan(decide(
-            edited,
-            windows: [(start: start.addingTimeInterval(-3 * 24 * 3600), end: start.addingTimeInterval(-3 * 24 * 3600 + 3600))]
-        )))
+        let farAway = [(
+            start: start.addingTimeInterval(-3 * 24 * 3600),
+            end: start.addingTimeInterval(-3 * 24 * 3600 + 3600)
+        )]
+        XCTAssertNotNil(plan(decide(edited, windows: farAway, own: farAway)))
     }
 
     // MARK: - Bibliothek
@@ -659,5 +699,109 @@ final class HealthWorkoutPlannerTests: XCTestCase {
             XCTAssertEqual(p?.activity, want.activity, "\(spec.name): Art")
             XCTAssertEqual(p?.isIndoor, want.indoor, "\(spec.name): Ort")
         }
+    }
+
+    // MARK: - Export-Auswahl
+
+    private func c(
+        _ name: String,
+        start s: Double,
+        minutes m: Int,
+        logs: [HealthWorkoutLogInput]? = nil
+    ) -> HealthWorkoutCandidate {
+        HealthWorkoutCandidate(
+            startTime: minutes(s),
+            endTime: minutes(s + Double(m)),
+            durationMinutes: m,
+            logs: logs ?? [strengthLog(name)]
+        )
+    }
+
+    private func select(
+        _ candidates: [HealthWorkoutCandidate],
+        enabled: Set<HealthWorkoutCategory>? = nil,
+        health: [(start: Date, end: Date)] = [],
+        own: [(start: Date, end: Date)] = []
+    ) -> HealthExportSelection {
+        HealthWorkoutPlanner.selectForExport(
+            candidates, enabledCategories: enabled ?? both,
+            healthWindows: health, ownWindows: own, now: now
+        )
+    }
+
+    /// Die zweite von zwei sich ueberlappenden Sessions wird weder geschrieben
+    /// noch als "schon in Health" gemeldet (sonst bekaeme sie einen Marker, obwohl
+    /// die erste vielleicht nie geschrieben wird).
+    func testSelectionDefersASessionThatOnlyOverlapsAPlannedOne() {
+        let newer = c("A", start: 0, minutes: 60)
+        let older = c("B", start: 10, minutes: 60)
+        let result = select([newer, older])
+        XCTAssertEqual(result.toWrite.map(\.index), [0])
+        XCTAssertEqual(result.alreadyInHealth, [])
+        XCTAssertEqual(result.deferred, 1)
+    }
+
+    func testSelectionTreatsIdenticalStartsAsOneWorkout() {
+        let result = select([c("A", start: 0, minutes: 45), c("B", start: 0, minutes: 45)])
+        XCTAssertEqual(result.toWrite.map(\.index), [0])
+        XCTAssertEqual(result.deferred, 1)
+    }
+
+    func testSelectionReportsOnlyRealHealthOverlapsAsAlreadyInHealth() {
+        let covered = c("A", start: 0, minutes: 45)
+        let free = c("B", start: 200, minutes: 45)
+        let result = select([covered, free], health: [(start: minutes(1), end: minutes(46))])
+        XCTAssertEqual(result.alreadyInHealth, [0])
+        XCTAssertEqual(result.toWrite.map(\.index), [1])
+        XCTAssertEqual(result.deferred, 0)
+    }
+
+    func testSelectionCountsNotExportableAndKeepsAdjacentSessions() {
+        let short = c("A", start: 0, minutes: 0)
+        let first = c("B", start: 100, minutes: 45)
+        let adjacent = c("C", start: 145, minutes: 45)
+        let result = select([short, first, adjacent])
+        XCTAssertEqual(result.notExportable, 1)
+        XCTAssertEqual(result.toWrite.map(\.index), [1, 2])
+    }
+
+    func testSelectionPassesOwnWindowsToTheRecordedWindowCheck() {
+        let edited = HealthWorkoutCandidate(
+            startTime: start, endTime: minutes(10), durationMinutes: 60, logs: [strengthLog()]
+        )
+        let live = [(start: start, end: minutes(10))]
+        XCTAssertEqual(select([edited], health: live, own: live).alreadyInHealth, [0])
+        XCTAssertEqual(select([edited], health: live, own: []).toWrite.map(\.index), [0])
+    }
+
+    // MARK: - Abfragezeitraum
+
+    func testQueryRangeIsNilWithoutCandidates() {
+        XCTAssertNil(HealthWorkoutPlanner.queryRange(for: []))
+    }
+
+    func testQueryRangeCoversEffectiveAndRecordedWindows() {
+        // Am 28.9. liegt der bearbeitete Beginn, das alte Ende am 1.10.: Das
+        // vermutete Original-Fenster liegt Tage hinter dem effektiven.
+        let day: TimeInterval = 24 * 3600
+        let edited = HealthWorkoutCandidate(
+            startTime: start.addingTimeInterval(-3 * day),
+            endTime: start.addingTimeInterval(60 * 60),
+            durationMinutes: 60,
+            logs: [strengthLog()]
+        )
+        let range = HealthWorkoutPlanner.queryRange(for: [edited])
+        let margin = HealthWorkoutPlanner.queryMarginSeconds
+        XCTAssertEqual(range?.start, start.addingTimeInterval(-3 * day - margin))
+        XCTAssertEqual(range?.end, start.addingTimeInterval(60 * 60 + margin))
+    }
+
+    func testQueryRangeSpansAllCandidatesWithMargin() {
+        let early = c("A", start: 0, minutes: 30)
+        let late = c("B", start: 5 * 24 * 60, minutes: 30)
+        let range = HealthWorkoutPlanner.queryRange(for: [early, late])
+        let margin = HealthWorkoutPlanner.queryMarginSeconds
+        XCTAssertEqual(range?.start, start.addingTimeInterval(-margin))
+        XCTAssertEqual(range?.end, minutes(5 * 24 * 60 + 30).addingTimeInterval(margin))
     }
 }
