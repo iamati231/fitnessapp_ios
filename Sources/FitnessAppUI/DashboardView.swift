@@ -20,6 +20,9 @@ public struct DashboardView: View {
     /// nicht vorhanden (extrem unwahrscheinlich), bleiben die HK-Cards
     /// auf "—" stehen.
     @Environment(HealthKitController.self) private var healthKit
+    /// Fuer den Auto-Ablauf der Deload-Woche beim Fortsetzen der App
+    /// (siehe `.onChange(of: scenePhase)` unten).
+    @Environment(\.scenePhase) private var scenePhase
 
     /// Reverse-chronological so `.first` is the latest measurement.
     @Query(sort: \BodyMeasurement.date, order: .reverse)
@@ -249,6 +252,13 @@ public struct DashboardView: View {
         // Pfad: App nach einer Woche wieder öffnen.
         .task {
             autoEndDeloadIfExpired()
+        }
+        // `.task` laeuft nur, wenn das Dashboard erscheint - die App bleibt aber
+        // oft tagelang im Speicher und wird nur fortgesetzt. Ohne diesen Hook
+        // blieben Banner und halbierte Gewichte nach Ablauf stehen, bis die App
+        // neu gestartet oder der Tab gewechselt wird.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { autoEndDeloadIfExpired() }
         }
         // DEL-239: Rueckfrage nach langer Pause. `sheet(item:)`, damit das
         // Assessment beim Praesentieren feststeht. Die Entscheidung laeuft
@@ -1169,7 +1179,11 @@ public struct DashboardView: View {
     /// Beendet die Deload-Woche (manuell oder via Auto-Expiry):
     /// Original-Gewichte zurück, Flag löschen.
     private func endDeload() {
-        _ = try? DeloadManager.endDeload(in: modelContext)
+        // Den Timer nur nach erfolgreicher Rueckstellung loeschen: Da der
+        // Auto-Ablauf jetzt wirklich laeuft, wuerde ein fehlgeschlagener Save
+        // sonst Snapshots ohne Timer zuruecklassen (Banner "bis 1970", und der
+        // Auto-Ablauf versucht es nie wieder).
+        guard (try? DeloadManager.endDeload(in: modelContext)) != nil else { return }
         deloadUntil = 0
     }
 
