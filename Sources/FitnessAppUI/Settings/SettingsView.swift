@@ -59,6 +59,15 @@ public struct SettingsView: View {
     /// Permission-Dialog sehen.
     @AppStorage("pref_healthkit_workout_import") private var externalWorkoutImportEnabled: Bool = false
 
+    /// Kraft-/Cardio-Schalter des Schreibens nach Apple Health (Vorgaben aus
+    /// Core). Hier nur fuer den Wert der Zeile "Trainings in Health" gelesen —
+    /// bearbeitet wird in `HealthWorkoutWriteView`; als `@AppStorage`, damit die
+    /// Zeile nach der Rueckkehr sofort den neuen Stand zeigt.
+    @AppStorage(HealthWritePreferences.strengthEnabledKey)
+    private var healthWriteStrengthEnabled: Bool = HealthWritePreferences.defaultStrengthEnabled
+    @AppStorage(HealthWritePreferences.cardioEnabledKey)
+    private var healthWriteCardioEnabled: Bool = HealthWritePreferences.defaultCardioEnabled
+
     /// DEL-092: Globaler Opt-out fuer Warmup-/Cooldown-Uebungen im
     /// Active-Workout-Flow. Default `true` — wer schnell ohne Mobility
     /// trainieren will, kann es einmalig abschalten.
@@ -567,7 +576,7 @@ public struct SettingsView: View {
             DeltiqControlRow(
                 icon: "figure.run.circle",
                 label: String(localized: "settings.health.workoutImport", bundle: .module),
-                showsDivider: false
+                showsDivider: healthKit.isAvailable
             ) {
                 Toggle(isOn: $externalWorkoutImportEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
@@ -583,12 +592,47 @@ public struct SettingsView: View {
                         }
                     }
             }
+            // Trainings nach Apple Health schreiben + frueheren Verlauf
+            // exportieren. Eigene Zeile statt Teil des Verbinden-Flows:
+            // Bestandsnutzer sehen "Verbinden" nie wieder und koennen die
+            // Trainings-Freigabe nur hier nachholen.
+            if healthKit.isAvailable {
+                NavigationLink {
+                    HealthWorkoutWriteView()
+                } label: {
+                    DeltiqRow(
+                        icon: "heart.text.square",
+                        label: String(localized: "settings.healthWrite.row", bundle: .module),
+                        value: healthWriteValue,
+                        showsChevron: true,
+                        showsDivider: false
+                    )
+                }
+            }
             hintRow(
                 [
                     String(localized: "settings.health.footer", bundle: .module),
                     String(localized: "settings.health.workoutImport.footer", bundle: .module)
                 ].joined(separator: "\n")
             )
+        }
+    }
+
+    /// Zustand der Zeile "Trainings in Health": nicht freigegeben / aus /
+    /// Kraft / Kraft + Cardio.
+    private var healthWriteValue: String {
+        guard healthKit.workoutWriteAuthorization.workout == .sharingAuthorized else {
+            return String(localized: "settings.healthWrite.valueNoAccess", bundle: .module)
+        }
+        switch (healthWriteStrengthEnabled, healthWriteCardioEnabled) {
+        case (true, true):
+            return String(localized: "settings.healthWrite.valueBoth", bundle: .module)
+        case (true, false):
+            return String(localized: "settings.healthWrite.valueStrength", bundle: .module)
+        case (false, true):
+            return String(localized: "settings.healthWrite.valueCardio", bundle: .module)
+        case (false, false):
+            return String(localized: "settings.healthWrite.valueOff", bundle: .module)
         }
     }
 

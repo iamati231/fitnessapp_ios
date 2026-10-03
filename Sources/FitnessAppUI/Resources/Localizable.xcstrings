@@ -19997,6 +19997,462 @@
         }
       }
     },
+    "settings.healthWrite.row": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Trainings in Health" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Workouts in Health" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Health'te antrenmanlar" } }
+      }
+    },
+    "settings.healthWrite.valueNoAccess": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nicht freigegeben" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Not allowed yet" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "İzin verilmedi" } }
+      }
+    },
+    "settings.healthWrite.valueOff": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Aus" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Off" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kapalı" } }
+      }
+    },
+    "settings.healthWrite.valueStrength": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kraft" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Strength" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kuvvet" } }
+      }
+    },
+    "settings.healthWrite.valueCardio": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Cardio" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cardio" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kardiyo" } }
+      }
+    },
+    "settings.healthWrite.valueBoth": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kraft + Cardio" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Strength + cardio" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kuvvet + kardiyo" } }
+      }
+    },
+    "settings.healthWrite.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Trainings in Health" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Workouts in Health" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Health'te Antrenmanlar" } }
+      }
+    },
+    "settings.healthWrite.introHeader": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Trainings speichern" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Save workouts" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Antrenmanları kaydet" } }
+      }
+    },
+    "settings.healthWrite.introBody": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Deltiq kann abgeschlossene Trainings in Apple Health speichern: Start, Dauer und Art, bei Läufen auf Wunsch auch die Distanz. Kalorien und Puls schreibt Deltiq nicht. Apple kennt nur „Trainings“ als Ganzes – was Deltiq davon schreibt, stellst du hier ein." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Deltiq can save completed workouts to Apple Health: start, duration and type – and, if you like, the distance for runs. Deltiq does not write calories or heart rate. Apple only knows “Workouts” as a whole – what Deltiq writes of them is up to you here." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Deltiq, tamamlanan antrenmanları Apple Health'e kaydedebilir: başlangıç, süre ve tür; istersen koşularda mesafe de. Deltiq kalori ve nabız yazmaz. Apple yalnızca „Antrenmanlar“ı bütün olarak tanır – Deltiq'in bunlardan neyi yazacağını burada sen belirlersin." } }
+      }
+    },
+    "settings.healthWrite.accessHeader": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Zugriff" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Access" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Erişim" } }
+      }
+    },
+    "settings.healthWrite.accessGranted": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Zugriff erlaubt" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Access allowed" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Erişime izin verildi" } }
+      }
+    },
+    "settings.healthWrite.accessNone": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Noch nicht freigegeben" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Not allowed yet" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Henüz izin verilmedi" } }
+      }
+    },
+    "settings.healthWrite.accessButton": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Zugriff erlauben" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Allow access" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Erişime izin ver" } }
+      }
+    },
+    "settings.healthWrite.accessHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Apple fragt einmal nach. Du kannst den Zugriff jederzeit in Health widerrufen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Apple asks once. You can withdraw access in Health at any time." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Apple bir kez sorar. Erişimi istediğin zaman Health'ten geri alabilirsin." } }
+      }
+    },
+    "settings.healthWrite.accessNoDialog": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Apple hat keine Abfrage gezeigt. Erlaube „Trainings“ in der Health-App unter Profil → Apps → Deltiq." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Apple showed no prompt. Allow “Workouts” in the Health app under Profile → Apps → Deltiq." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Apple bir izin penceresi göstermedi. Health uygulamasında Profil → Uygulamalar → Deltiq altında „Antrenmanlar“a izin ver." } }
+      }
+    },
+    "settings.healthWrite.accessDeniedLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Zugriff verweigert" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Access denied" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Erişim reddedildi" } }
+      }
+    },
+    "settings.healthWrite.accessDenied": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Erlaube „Trainings“ in der Health-App unter Profil → Apps → Deltiq. Danach zeigt Deltiq hier den neuen Stand." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Allow “Workouts” in the Health app under Profile → Apps → Deltiq. Deltiq then shows the new state here." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Health uygulamasında Profil → Uygulamalar → Deltiq altında „Antrenmanlar“a izin ver. Deltiq yeni durumu burada gösterir." } }
+      }
+    },
+    "settings.healthWrite.switchesHeader": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Was Deltiq schreibt" } },
+        "en": { "stringUnit": { "state": "translated", "value": "What Deltiq writes" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Deltiq neyi yazar" } }
+      }
+    },
+    "settings.healthWrite.strengthLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Krafttraining schreiben" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Write strength workouts" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kuvvet antrenmanlarını yaz" } }
+      }
+    },
+    "settings.healthWrite.strengthFooter": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Auch AMRAP, EMOM, Auf Zeit und Zirkel. Trägst du dabei eine Apple Watch, nimmt sie das Training schon auf – dann lass das aus, sonst steht es doppelt in Health." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Includes AMRAP, EMOM, For Time and circuits. If you wear an Apple Watch while training it already records the workout – turn this off, or it appears twice in Health." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "AMRAP, EMOM, Süreye Karşı ve Devre dahil. Antrenman sırasında Apple Watch takıyorsan antrenmanı zaten o kaydeder – bunu kapat, yoksa Health'te iki kez görünür." } }
+      }
+    },
+    "settings.healthWrite.cardioLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Cardio schreiben" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Write cardio" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kardiyoyu yaz" } }
+      }
+    },
+    "settings.healthWrite.cardioFooter": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Laufen, Radfahren, Rudern und mehr, die du in Deltiq selbst erfasst. Schreibt schon eine andere App (z. B. Adidas Running) deine Läufe, lass das aus. Aus anderen Apps übernommene Einheiten schickt Deltiq nie zurück. Die Distanz kommt nur mit der zusätzlichen Freigabe „Geh- und Laufdistanz“; ohne sie wird das Training ohne Distanz gespeichert." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Running, cycling, rowing and more that you record in Deltiq yourself. If another app (e.g. Adidas Running) already writes your runs, leave this off. Deltiq never sends workouts taken over from other apps back. The distance is only included with the additional “Walking + Running Distance” permission; without it the workout is saved without distance." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Deltiq'te kendin kaydettiğin koşu, bisiklet, kürek ve diğer kardiyo antrenmanları. Koşularını zaten başka bir uygulama (örn. Adidas Running) yazıyorsa bunu kapalı bırak. Deltiq, diğer uygulamalardan alınan antrenmanları asla geri göndermez. Mesafe yalnızca ek „Yürüyüş + koşu mesafesi“ izniyle eklenir; izin yoksa antrenman mesafesiz kaydedilir." } }
+      }
+    },
+    "settings.healthWrite.distanceMissing": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "„Geh- und Laufdistanz“ ist nicht freigegeben – Läufe werden ohne Distanz gespeichert. Erlaube sie in der Health-App unter Profil → Apps → Deltiq." } },
+        "en": { "stringUnit": { "state": "translated", "value": "“Walking + Running Distance” is not allowed – runs are saved without distance. Allow it in the Health app under Profile → Apps → Deltiq." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "„Yürüyüş + koşu mesafesi“ için izin yok – koşular mesafesiz kaydedilir. Health uygulamasında Profil → Uygulamalar → Deltiq altından izin ver." } }
+      }
+    },
+    "settings.healthWrite.exportHeader": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Frühere Trainings" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Past workouts" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Geçmiş antrenmanlar" } }
+      }
+    },
+    "settings.healthWrite.exportIntro": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schreibt Trainings, die du vor dem Einschalten gespeichert hast, nachträglich nach Health. Was schon in Health steht, wird erkannt und übersprungen – du kannst den Export gefahrlos wiederholen. Aus anderen Apps importierte Einheiten werden nie zurückgeschrieben." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Writes workouts you saved before turning this on to Health afterwards. What is already in Health is detected and skipped – you can safely repeat the export. Workouts imported from other apps are never written back." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bunu açmadan önce kaydettiğin antrenmanları sonradan Health'e yazar. Health'te zaten olanlar algılanıp atlanır – dışa aktarmayı güvenle tekrarlayabilirsin. Diğer uygulamalardan içe aktarılan antrenmanlar asla geri yazılmaz." } }
+      }
+    },
+    "settings.healthWrite.exportNeedsAccess": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Erlaube zuerst oben den Zugriff." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Allow access above first." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Önce yukarıdan erişime izin ver." } }
+      }
+    },
+    "settings.healthWrite.exportCheck": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Trainings prüfen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Check workouts" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Antrenmanları kontrol et" } }
+      }
+    },
+    "settings.healthWrite.exportChecking": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Prüfe Health …" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Checking Health …" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Health kontrol ediliyor …" } }
+      }
+    },
+    "settings.healthWrite.previewStrengthToggle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Krafttraining exportieren (%lld)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Export strength workouts (%lld)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kuvvet antrenmanlarını aktar (%lld)" } }
+      }
+    },
+    "settings.healthWrite.previewCardioToggle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Cardio exportieren (%lld)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Export cardio (%lld)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kardiyoyu aktar (%lld)" } }
+      }
+    },
+    "settings.healthWrite.previewAlready": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schon in Health erkannt: %lld" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Already detected in Health: %lld" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Health'te zaten algılanan: %lld" } }
+      }
+    },
+    "settings.healthWrite.previewNotExportable": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nicht exportierbar (zu kurz, zu lang oder leer): %lld" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Not exportable (too short, too long or empty): %lld" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Aktarılamaz (çok kısa, çok uzun veya boş): %lld" } }
+      }
+    },
+    "settings.healthWrite.previewVisible": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "In Health sichtbar: %1$lld Trainings, davon %2$lld von Deltiq" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Visible in Health: %1$lld workouts, %2$lld of them from Deltiq" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Health'te görünen: %1$lld antrenman, bunlardan %2$lld Deltiq'ten" } }
+      }
+    },
+    "settings.healthWrite.previewBlindWarning": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Trainings anderer Apps oder einer Uhr erkennt Deltiq nur, wenn Deltiq Trainings lesen darf – ob das erlaubt ist, verrät Apple nicht. Sonst können Doppelte entstehen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Deltiq only recognises workouts from other apps or a watch if it is allowed to read workouts – Apple does not reveal whether that is the case. Otherwise duplicates can appear." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Deltiq, diğer uygulamaların veya bir saatin antrenmanlarını yalnızca antrenmanları okuyabiliyorsa tanır – bunun açık olup olmadığını Apple söylemez. Aksi halde yinelenenler oluşabilir." } }
+      }
+    },
+    "settings.healthWrite.previewNothing": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nichts zu exportieren." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Nothing to export." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Aktarılacak bir şey yok." } }
+      }
+    },
+    "settings.healthWrite.exportStart.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "1 Training nach Health schreiben" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Write 1 workout to Health" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "1 antrenmanı Health'e yaz" } }
+      }
+    },
+    "settings.healthWrite.exportStart.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%lld Trainings nach Health schreiben" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Write %lld workouts to Health" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld antrenmanı Health'e yaz" } }
+      }
+    },
+    "settings.healthWrite.confirmTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Trainings nach Health schreiben?" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Write workouts to Health?" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Antrenmanlar Health'e yazılsın mı?" } }
+      }
+    },
+    "settings.healthWrite.confirmMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Für jedes Training entsteht ein Eintrag mit Start, Dauer und Art – ohne Kalorien und Puls. In Deltiq lässt sich das nicht rückgängig machen, nur in Health. Health kann die Trainings bei Trainingsminuten und Stehen vergangener Tage mitrechnen; mit einer Apple Watch kann das doppelt zählen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Each workout becomes an entry with start, duration and type – without calories and heart rate. This cannot be undone in Deltiq, only in Health. Health may count the workouts towards exercise minutes and stand hours of past days; with an Apple Watch this can count twice." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Her antrenman için başlangıç, süre ve türü içeren bir kayıt oluşur – kalori ve nabız olmadan. Bu, Deltiq'te geri alınamaz, yalnızca Health'te. Health antrenmanları geçmiş günlerin egzersiz dakikalarına ve ayakta kalma saatlerine katabilir; Apple Watch ile bu iki kez sayılabilir." } }
+      }
+    },
+    "settings.healthWrite.confirmAction": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ja, jetzt schreiben" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Yes, write now" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Evet, şimdi yaz" } }
+      }
+    },
+    "settings.healthWrite.exporting": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schreibe Trainings …" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Writing workouts …" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Antrenmanlar yazılıyor …" } }
+      }
+    },
+    "settings.healthWrite.exportingHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Lass Deltiq geöffnet und das Gerät entsperrt." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Keep Deltiq open and the device unlocked." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Deltiq'i açık ve cihazı kilitsiz bırak." } }
+      }
+    },
+    "settings.healthWrite.resultWritten": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Geschrieben" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Written" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yazıldı" } }
+      }
+    },
+    "settings.healthWrite.resultAlready": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schon in Health" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Already in Health" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Zaten Health'te" } }
+      }
+    },
+    "settings.healthWrite.resultNotExportable": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nicht exportierbar" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Not exportable" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Aktarılamadı" } }
+      }
+    },
+    "settings.healthWrite.resultUnverified": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nicht bestätigt (Gerät gesperrt?)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Not confirmed (device locked?)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Doğrulanmadı (cihaz kilitli mi?)" } }
+      }
+    },
+    "settings.healthWrite.resultFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Fehlgeschlagen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Failed" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Başarısız" } }
+      }
+    },
+    "settings.healthWrite.resultWithoutDistance": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%lld Läufe ohne Distanz gespeichert – die Freigabe „Geh- und Laufdistanz“ fehlt oder wurde abgelehnt." } },
+        "en": { "stringUnit": { "state": "translated", "value": "%lld runs saved without distance – the “Walking + Running Distance” permission is missing or was declined." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld koşu mesafesiz kaydedildi – „Yürüyüş + koşu mesafesi“ izni yok veya reddedildi." } }
+      }
+    },
+    "settings.healthWrite.resultCancelled": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Abgebrochen. %1$lld von %2$lld bearbeitet – beim nächsten Export geht es dort weiter." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cancelled. %1$lld of %2$lld processed – the next export continues from there." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "İptal edildi. %1$lld / %2$lld işlendi – bir sonraki dışa aktarma kaldığı yerden devam eder." } }
+      }
+    },
+    "settings.healthWrite.resultDone": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Fertig" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Done" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bitti" } }
+      }
+    },
+    "settings.healthWrite.exportRetry": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Erneut versuchen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Try again" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tekrar dene" } }
+      }
+    },
+    "settings.healthWrite.errorLocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Health ließ sich nicht abfragen (Gerät gesperrt?). Es wurde nichts geschrieben." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Health could not be queried (device locked?). Nothing was written." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Health sorgulanamadı (cihaz kilitli mi?). Hiçbir şey yazılmadı." } }
+      }
+    },
+    "settings.healthWrite.errorGeneric": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Die Abfrage von Health ist fehlgeschlagen. Es wurde nichts geschrieben." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Querying Health failed. Nothing was written." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Health sorgusu başarısız oldu. Hiçbir şey yazılmadı." } }
+      }
+    },
+    "settings.healthWrite.errorStoreFallback": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Der Export ist gesperrt, solange die App auf einem Ersatz-Datenspeicher läuft." } },
+        "en": { "stringUnit": { "state": "translated", "value": "The export is locked while the app runs on a fallback data store." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Uygulama yedek bir veri deposunda çalıştığı sürece dışa aktarma kilitlidir." } }
+      }
+    },
+    "settings.healthWrite.stopNotAuthorized": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Gestoppt: Der Zugriff auf Trainings wurde entzogen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Stopped: access to workouts was withdrawn." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Durduruldu: Antrenmanlara erişim geri alındı." } }
+      }
+    },
+    "settings.healthWrite.stopDeviceLocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Gestoppt: Health war nicht lesbar (Gerät gesperrt?). Entsperre das Gerät und starte den Export erneut." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Stopped: Health was not readable (device locked?). Unlock the device and start the export again." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Durduruldu: Health okunamadı (cihaz kilitli mi?). Cihazın kilidini aç ve dışa aktarmayı yeniden başlat." } }
+      }
+    },
+    "settings.healthWrite.stopTooManyFailures": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Gestoppt: Health hat mehrere Trainings in Folge abgelehnt. Prüfe den Zugriff und starte erneut." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Stopped: Health rejected several workouts in a row. Check access and start again." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Durduruldu: Health üst üste birkaç antrenmanı reddetti. Erişimi kontrol et ve yeniden başlat." } }
+      }
+    },
     "settings.health.notSetup": {
       "extractionState": "manual",
       "localizations": {

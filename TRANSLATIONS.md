@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1738 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1795 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1738 / 1738** (100%) | 0 |
-| 🇬🇧 English (EN) | **1738 / 1738** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1738 / 1738** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1795 / 1795** (100%) | 0 |
+| 🇬🇧 English (EN) | **1795 / 1795** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1795 / 1795** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1712,7 +1712,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (133 Keys)
+## `settings.*`  (190 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1804,6 +1804,63 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.health.unavailable` | Nicht verfügbar | Not available | Kullanılamıyor |
 | `settings.health.workoutImport` | Workout-Import (Adidas Running, Strava, …) | Workout Import (Adidas Running, Strava, …) | Antrenman İçe Aktarma (Adidas Running, Strava, …) |
 | `settings.health.workoutImport.footer` | Läufe und Radfahrten aus anderen Apps (z.B. Adidas Running, Strava) werden automatisch als Trainingseinheiten übernommen, sobald sie in Apple Health erscheinen. | Runs and rides from other apps (e.g. Adidas Running, Strava) are automatically added as workouts once they appear in Apple Health. | Diğer uygulamalardan (örn. Adidas Running, Strava) koşular ve bisiklet turları, Apple Health'te göründükten sonra otomatik olarak antrenman olarak eklenir. |
+| `settings.healthWrite.accessButton` | Zugriff erlauben | Allow access | Erişime izin ver |
+| `settings.healthWrite.accessDenied` | Erlaube „Trainings“ in der Health-App unter Profil → Apps → Deltiq. Danach zeigt Deltiq hier den neuen Stand. | Allow “Workouts” in the Health app under Profile → Apps → Deltiq. Deltiq then shows the new state here. | Health uygulamasında Profil → Uygulamalar → Deltiq altında „Antrenmanlar“a izin ver. Deltiq yeni durumu burada gösterir. |
+| `settings.healthWrite.accessDeniedLabel` | Zugriff verweigert | Access denied | Erişim reddedildi |
+| `settings.healthWrite.accessGranted` | Zugriff erlaubt | Access allowed | Erişime izin verildi |
+| `settings.healthWrite.accessHeader` | Zugriff | Access | Erişim |
+| `settings.healthWrite.accessHint` | Apple fragt einmal nach. Du kannst den Zugriff jederzeit in Health widerrufen. | Apple asks once. You can withdraw access in Health at any time. | Apple bir kez sorar. Erişimi istediğin zaman Health'ten geri alabilirsin. |
+| `settings.healthWrite.accessNoDialog` | Apple hat keine Abfrage gezeigt. Erlaube „Trainings“ in der Health-App unter Profil → Apps → Deltiq. | Apple showed no prompt. Allow “Workouts” in the Health app under Profile → Apps → Deltiq. | Apple bir izin penceresi göstermedi. Health uygulamasında Profil → Uygulamalar → Deltiq altında „Antrenmanlar“a izin ver. |
+| `settings.healthWrite.accessNone` | Noch nicht freigegeben | Not allowed yet | Henüz izin verilmedi |
+| `settings.healthWrite.cardioFooter` | Laufen, Radfahren, Rudern und mehr, die du in Deltiq selbst erfasst. Schreibt schon eine andere App (z. B. Adidas Running) deine Läufe, lass das aus. Aus anderen Apps übernommene Einheiten schickt Deltiq nie zurück. Die Distanz kommt nur mit der zusätzlichen Freigabe „Geh- und Laufdistanz“; ohne sie wird das Training ohne Distanz gespeichert. | Running, cycling, rowing and more that you record in Deltiq yourself. If another app (e.g. Adidas Running) already writes your runs, leave this off. Deltiq never sends workouts taken over from other apps back. The distance is only included with the additional “Walking + Running Distance” permission; without it the workout is saved without distance. | Deltiq'te kendin kaydettiğin koşu, bisiklet, kürek ve diğer kardiyo antrenmanları. Koşularını zaten başka bir uygulama (örn. Adidas Running) yazıyorsa bunu kapalı bırak. Deltiq, diğer uygulamalardan alınan antrenmanları asla geri göndermez. Mesafe yalnızca ek „Yürüyüş + koşu mesafesi“ izniyle eklenir; izin yoksa antrenman mesafesiz kaydedilir. |
+| `settings.healthWrite.cardioLabel` | Cardio schreiben | Write cardio | Kardiyoyu yaz |
+| `settings.healthWrite.confirmAction` | Ja, jetzt schreiben | Yes, write now | Evet, şimdi yaz |
+| `settings.healthWrite.confirmMessage` | Für jedes Training entsteht ein Eintrag mit Start, Dauer und Art – ohne Kalorien und Puls. In Deltiq lässt sich das nicht rückgängig machen, nur in Health. Health kann die Trainings bei Trainingsminuten und Stehen vergangener Tage mitrechnen; mit einer Apple Watch kann das doppelt zählen. | Each workout becomes an entry with start, duration and type – without calories and heart rate. This cannot be undone in Deltiq, only in Health. Health may count the workouts towards exercise minutes and stand hours of past days; with an Apple Watch this can count twice. | Her antrenman için başlangıç, süre ve türü içeren bir kayıt oluşur – kalori ve nabız olmadan. Bu, Deltiq'te geri alınamaz, yalnızca Health'te. Health antrenmanları geçmiş günlerin egzersiz dakikalarına ve ayakta kalma saatlerine katabilir; Apple Watch ile bu iki kez sayılabilir. |
+| `settings.healthWrite.confirmTitle` | Trainings nach Health schreiben? | Write workouts to Health? | Antrenmanlar Health'e yazılsın mı? |
+| `settings.healthWrite.distanceMissing` | „Geh- und Laufdistanz“ ist nicht freigegeben – Läufe werden ohne Distanz gespeichert. Erlaube sie in der Health-App unter Profil → Apps → Deltiq. | “Walking + Running Distance” is not allowed – runs are saved without distance. Allow it in the Health app under Profile → Apps → Deltiq. | „Yürüyüş + koşu mesafesi“ için izin yok – koşular mesafesiz kaydedilir. Health uygulamasında Profil → Uygulamalar → Deltiq altından izin ver. |
+| `settings.healthWrite.errorGeneric` | Die Abfrage von Health ist fehlgeschlagen. Es wurde nichts geschrieben. | Querying Health failed. Nothing was written. | Health sorgusu başarısız oldu. Hiçbir şey yazılmadı. |
+| `settings.healthWrite.errorLocked` | Health ließ sich nicht abfragen (Gerät gesperrt?). Es wurde nichts geschrieben. | Health could not be queried (device locked?). Nothing was written. | Health sorgulanamadı (cihaz kilitli mi?). Hiçbir şey yazılmadı. |
+| `settings.healthWrite.errorStoreFallback` | Der Export ist gesperrt, solange die App auf einem Ersatz-Datenspeicher läuft. | The export is locked while the app runs on a fallback data store. | Uygulama yedek bir veri deposunda çalıştığı sürece dışa aktarma kilitlidir. |
+| `settings.healthWrite.exportCheck` | Trainings prüfen | Check workouts | Antrenmanları kontrol et |
+| `settings.healthWrite.exportChecking` | Prüfe Health … | Checking Health … | Health kontrol ediliyor … |
+| `settings.healthWrite.exportHeader` | Frühere Trainings | Past workouts | Geçmiş antrenmanlar |
+| `settings.healthWrite.exportIntro` | Schreibt Trainings, die du vor dem Einschalten gespeichert hast, nachträglich nach Health. Was schon in Health steht, wird erkannt und übersprungen – du kannst den Export gefahrlos wiederholen. Aus anderen Apps importierte Einheiten werden nie zurückgeschrieben. | Writes workouts you saved before turning this on to Health afterwards. What is already in Health is detected and skipped – you can safely repeat the export. Workouts imported from other apps are never written back. | Bunu açmadan önce kaydettiğin antrenmanları sonradan Health'e yazar. Health'te zaten olanlar algılanıp atlanır – dışa aktarmayı güvenle tekrarlayabilirsin. Diğer uygulamalardan içe aktarılan antrenmanlar asla geri yazılmaz. |
+| `settings.healthWrite.exportNeedsAccess` | Erlaube zuerst oben den Zugriff. | Allow access above first. | Önce yukarıdan erişime izin ver. |
+| `settings.healthWrite.exportRetry` | Erneut versuchen | Try again | Tekrar dene |
+| `settings.healthWrite.exportStart.one` | 1 Training nach Health schreiben | Write 1 workout to Health | 1 antrenmanı Health'e yaz |
+| `settings.healthWrite.exportStart.other` | %lld Trainings nach Health schreiben | Write %lld workouts to Health | %lld antrenmanı Health'e yaz |
+| `settings.healthWrite.exporting` | Schreibe Trainings … | Writing workouts … | Antrenmanlar yazılıyor … |
+| `settings.healthWrite.exportingHint` | Lass Deltiq geöffnet und das Gerät entsperrt. | Keep Deltiq open and the device unlocked. | Deltiq'i açık ve cihazı kilitsiz bırak. |
+| `settings.healthWrite.introBody` | Deltiq kann abgeschlossene Trainings in Apple Health speichern: Start, Dauer und Art, bei Läufen auf Wunsch auch die Distanz. Kalorien und Puls schreibt Deltiq nicht. Apple kennt nur „Trainings“ als Ganzes – was Deltiq davon schreibt, stellst du hier ein. | Deltiq can save completed workouts to Apple Health: start, duration and type – and, if you like, the distance for runs. Deltiq does not write calories or heart rate. Apple only knows “Workouts” as a whole – what Deltiq writes of them is up to you here. | Deltiq, tamamlanan antrenmanları Apple Health'e kaydedebilir: başlangıç, süre ve tür; istersen koşularda mesafe de. Deltiq kalori ve nabız yazmaz. Apple yalnızca „Antrenmanlar“ı bütün olarak tanır – Deltiq'in bunlardan neyi yazacağını burada sen belirlersin. |
+| `settings.healthWrite.introHeader` | Trainings speichern | Save workouts | Antrenmanları kaydet |
+| `settings.healthWrite.previewAlready` | Schon in Health erkannt: %lld | Already detected in Health: %lld | Health'te zaten algılanan: %lld |
+| `settings.healthWrite.previewBlindWarning` | Trainings anderer Apps oder einer Uhr erkennt Deltiq nur, wenn Deltiq Trainings lesen darf – ob das erlaubt ist, verrät Apple nicht. Sonst können Doppelte entstehen. | Deltiq only recognises workouts from other apps or a watch if it is allowed to read workouts – Apple does not reveal whether that is the case. Otherwise duplicates can appear. | Deltiq, diğer uygulamaların veya bir saatin antrenmanlarını yalnızca antrenmanları okuyabiliyorsa tanır – bunun açık olup olmadığını Apple söylemez. Aksi halde yinelenenler oluşabilir. |
+| `settings.healthWrite.previewCardioToggle` | Cardio exportieren (%lld) | Export cardio (%lld) | Kardiyoyu aktar (%lld) |
+| `settings.healthWrite.previewNotExportable` | Nicht exportierbar (zu kurz, zu lang oder leer): %lld | Not exportable (too short, too long or empty): %lld | Aktarılamaz (çok kısa, çok uzun veya boş): %lld |
+| `settings.healthWrite.previewNothing` | Nichts zu exportieren. | Nothing to export. | Aktarılacak bir şey yok. |
+| `settings.healthWrite.previewStrengthToggle` | Krafttraining exportieren (%lld) | Export strength workouts (%lld) | Kuvvet antrenmanlarını aktar (%lld) |
+| `settings.healthWrite.previewVisible` | In Health sichtbar: %1$lld Trainings, davon %2$lld von Deltiq | Visible in Health: %1$lld workouts, %2$lld of them from Deltiq | Health'te görünen: %1$lld antrenman, bunlardan %2$lld Deltiq'ten |
+| `settings.healthWrite.resultAlready` | Schon in Health | Already in Health | Zaten Health'te |
+| `settings.healthWrite.resultCancelled` | Abgebrochen. %1$lld von %2$lld bearbeitet – beim nächsten Export geht es dort weiter. | Cancelled. %1$lld of %2$lld processed – the next export continues from there. | İptal edildi. %1$lld / %2$lld işlendi – bir sonraki dışa aktarma kaldığı yerden devam eder. |
+| `settings.healthWrite.resultDone` | Fertig | Done | Bitti |
+| `settings.healthWrite.resultFailed` | Fehlgeschlagen | Failed | Başarısız |
+| `settings.healthWrite.resultNotExportable` | Nicht exportierbar | Not exportable | Aktarılamadı |
+| `settings.healthWrite.resultUnverified` | Nicht bestätigt (Gerät gesperrt?) | Not confirmed (device locked?) | Doğrulanmadı (cihaz kilitli mi?) |
+| `settings.healthWrite.resultWithoutDistance` | %lld Läufe ohne Distanz gespeichert – die Freigabe „Geh- und Laufdistanz“ fehlt oder wurde abgelehnt. | %lld runs saved without distance – the “Walking + Running Distance” permission is missing or was declined. | %lld koşu mesafesiz kaydedildi – „Yürüyüş + koşu mesafesi“ izni yok veya reddedildi. |
+| `settings.healthWrite.resultWritten` | Geschrieben | Written | Yazıldı |
+| `settings.healthWrite.row` | Trainings in Health | Workouts in Health | Health'te antrenmanlar |
+| `settings.healthWrite.stopDeviceLocked` | Gestoppt: Health war nicht lesbar (Gerät gesperrt?). Entsperre das Gerät und starte den Export erneut. | Stopped: Health was not readable (device locked?). Unlock the device and start the export again. | Durduruldu: Health okunamadı (cihaz kilitli mi?). Cihazın kilidini aç ve dışa aktarmayı yeniden başlat. |
+| `settings.healthWrite.stopNotAuthorized` | Gestoppt: Der Zugriff auf Trainings wurde entzogen. | Stopped: access to workouts was withdrawn. | Durduruldu: Antrenmanlara erişim geri alındı. |
+| `settings.healthWrite.stopTooManyFailures` | Gestoppt: Health hat mehrere Trainings in Folge abgelehnt. Prüfe den Zugriff und starte erneut. | Stopped: Health rejected several workouts in a row. Check access and start again. | Durduruldu: Health üst üste birkaç antrenmanı reddetti. Erişimi kontrol et ve yeniden başlat. |
+| `settings.healthWrite.strengthFooter` | Auch AMRAP, EMOM, Auf Zeit und Zirkel. Trägst du dabei eine Apple Watch, nimmt sie das Training schon auf – dann lass das aus, sonst steht es doppelt in Health. | Includes AMRAP, EMOM, For Time and circuits. If you wear an Apple Watch while training it already records the workout – turn this off, or it appears twice in Health. | AMRAP, EMOM, Süreye Karşı ve Devre dahil. Antrenman sırasında Apple Watch takıyorsan antrenmanı zaten o kaydeder – bunu kapat, yoksa Health'te iki kez görünür. |
+| `settings.healthWrite.strengthLabel` | Krafttraining schreiben | Write strength workouts | Kuvvet antrenmanlarını yaz |
+| `settings.healthWrite.switchesHeader` | Was Deltiq schreibt | What Deltiq writes | Deltiq neyi yazar |
+| `settings.healthWrite.title` | Trainings in Health | Workouts in Health | Health'te Antrenmanlar |
+| `settings.healthWrite.valueBoth` | Kraft + Cardio | Strength + cardio | Kuvvet + kardiyo |
+| `settings.healthWrite.valueCardio` | Cardio | Cardio | Kardiyo |
+| `settings.healthWrite.valueNoAccess` | Nicht freigegeben | Not allowed yet | İzin verilmedi |
+| `settings.healthWrite.valueOff` | Aus | Off | Kapalı |
+| `settings.healthWrite.valueStrength` | Kraft | Strength | Kuvvet |
 | `settings.preferences.exerciseLibrary` | Übungen | Exercises | Hareketler |
 | `settings.preferences.gear` | Ausrüstung & Schuhe | Gear & Shoes | Ekipman & Ayakkabı |
 | `settings.preferences.units.imperial` | Imperial | Imperial | İmperyal |
