@@ -342,7 +342,9 @@ public actor HealthKitService {
     ///
     /// Diese Methode schreibt das Workout als `.running` und haengt
     /// zusaetzlich ein `distanceWalkingRunning`-Quantity-Sample an, damit
-    /// die Gesamt-Kilometer in den Trainings-Statistiken erscheinen.
+    /// die Gesamt-Kilometer in den Trainings-Statistiken erscheinen — sofern
+    /// der Nutzer diesen Typ freigegeben hat und HealthKit das Sample
+    /// annimmt; das Workout selbst haengt davon nicht ab.
     ///
     /// **Custom metadata**: bundle-prefixed Keys (`TotalDistanceKm`,
     /// `AveragePaceMinPerKm`) bleiben fuer eventuelle App-zu-App-Reads
@@ -396,7 +398,13 @@ public actor HealthKitService {
                     start: startDate,
                     end: endDate
                 )
-                try await builder.addSamples([distanceSample])
+                do {
+                    try await builder.addSamples([distanceSample])
+                } catch {
+                    // Die Distanz ist Beiwerk: lehnt HealthKit das Sample aus
+                    // irgendeinem Grund ab, bleibt das Workout trotzdem
+                    // erhalten (Kilometer stehen weiter in den Metadaten).
+                }
             }
 
             try await builder.endCollection(at: endDate)

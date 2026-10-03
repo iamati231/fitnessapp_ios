@@ -274,9 +274,10 @@ public final class HealthKitController {
     }
 
     /// DEL-063: Best-effort push einer Cardio-Session (Hybrid-Lauftag) als
-    /// `.running` mit angehaengtem Distanz-Sample. Wenn der User Apple
-    /// Health nicht autorisiert hat, ist das ein No-Op — Caller-Flow wird
-    /// nicht blockiert.
+    /// `.running`, mit angehaengtem Distanz-Sample wenn der User dessen
+    /// Typ freigegeben hat (sonst ohne). Wenn der User Apple Health nicht
+    /// autorisiert hat, ist das ein No-Op — Caller-Flow wird nicht
+    /// blockiert.
     public func saveRunningWorkout(
         startDate: Date,
         endDate: Date,
