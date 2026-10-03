@@ -14,17 +14,15 @@ import Foundation
 /// 25 Minuten, nicht 26.
 public enum ExternalWorkoutDuration {
 
-    /// Um so viel darf die aktive Dauer Beginn bis Ende ueberschreiten
-    /// (Sekundenrundung der Quell-App), ohne unplausibel zu werden.
-    public static let toleranceSeconds: TimeInterval = 1
-
     /// Die Laufzeit in ganzen Sekunden (abgerundet): die aktive Dauer der Quelle,
-    /// wenn sie plausibel ist (> 0 und nicht laenger als Beginn bis Ende), sonst
-    /// Beginn bis Ende.
+    /// wenn sie plausibel ist (mindestens eine Sekunde und kuerzer als Beginn bis
+    /// Ende), sonst Beginn bis Ende. Eine aktive Dauer, die Beginn bis Ende
+    /// erreicht oder ueberschreitet, aendert nichts: Laenger als das Fenster kann
+    /// ein Training nicht gedauert haben.
     public static func seconds(start: Date, end: Date, activeSeconds: TimeInterval?) -> Int {
         let span = max(0, end.timeIntervalSince(start))
-        if let active = activeSeconds, active.isFinite, active > 0, active <= span + toleranceSeconds {
-            return Int(min(active, span))
+        if let active = activeSeconds, active.isFinite, active >= 1, active < span {
+            return Int(active)
         }
         return Int(span)
     }
@@ -33,6 +31,21 @@ public enum ExternalWorkoutDuration {
     /// Ende, auf die naechste Sekunde GERUNDET.
     public static func legacySeconds(start: Date, end: Date) -> Int {
         max(0, Int(end.timeIntervalSince(start).rounded()))
+    }
+
+    /// Billige Vorpruefung OHNE den Satz: Koennte die Einheit noch vom frueheren
+    /// Import stammen (Minuten wie damals) und eine andere Laufzeit bekommen?
+    /// Verhindert, dass bei jedem Sync fuer jede importierte Einheit die Saetze
+    /// geladen werden.
+    public static func mayNeedCorrection(
+        storedMinutes: Int,
+        start: Date,
+        end: Date,
+        activeSeconds: TimeInterval?
+    ) -> Bool {
+        let legacy = legacySeconds(start: start, end: end)
+        return storedMinutes == legacy / 60
+            && seconds(start: start, end: end, activeSeconds: activeSeconds) != legacy
     }
 
     /// Die richtige Laufzeit fuer eine BEREITS importierte Einheit — aber nur,

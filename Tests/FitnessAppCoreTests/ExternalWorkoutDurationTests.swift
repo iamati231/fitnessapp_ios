@@ -37,9 +37,9 @@ final class ExternalWorkoutDurationTests: XCTestCase {
         XCTAssertEqual(seconds(span: 1800, active: 1800), 1800)
     }
 
-    /// Die Quelle rundet auf ganze Sekunden: eine aktive Dauer knapp ueber Beginn
-    /// bis Ende wird auf Beginn bis Ende begrenzt.
-    func testAnActiveDurationSlightlyAboveTheSpanIsClampedToTheSpan() {
+    /// Laenger als das Fenster kann ein Training nicht gedauert haben (die Quelle
+    /// rundet auch auf ganze Sekunden): Es gilt Beginn bis Ende.
+    func testAnActiveDurationAboveTheSpanIsCappedAtTheSpan() {
         XCTAssertEqual(seconds(span: 1800, active: 1800.5), 1800)
         XCTAssertEqual(seconds(span: 1800, active: 1801), 1800)
     }
@@ -47,6 +47,7 @@ final class ExternalWorkoutDurationTests: XCTestCase {
     func testImplausibleActiveDurationsFallBackToTheSpan() {
         XCTAssertEqual(seconds(span: 1800, active: 5000), 1800, "laenger als Beginn bis Ende")
         XCTAssertEqual(seconds(span: 1800, active: 0), 1800)
+        XCTAssertEqual(seconds(span: 1800, active: 0.5), 1800, "unter einer Sekunde ist keine Laufzeit")
         XCTAssertEqual(seconds(span: 1800, active: -5), 1800)
         XCTAssertEqual(seconds(span: 1800, active: .nan), 1800)
         XCTAssertEqual(seconds(span: 1800, active: .infinity), 1800)
@@ -63,6 +64,28 @@ final class ExternalWorkoutDurationTests: XCTestCase {
         XCTAssertEqual(ExternalWorkoutDuration.legacySeconds(start: start, end: end(1556.6)), 1557)
         XCTAssertEqual(ExternalWorkoutDuration.legacySeconds(start: start, end: end(1556.4)), 1556)
         XCTAssertEqual(ExternalWorkoutDuration.legacySeconds(start: start, end: end(-3)), 0)
+    }
+
+    // MARK: - mayNeedCorrection (Vorpruefung ohne Satz)
+
+    private func mayNeedCorrection(storedMinutes: Int, span: Double, active: TimeInterval?) -> Bool {
+        ExternalWorkoutDuration.mayNeedCorrection(
+            storedMinutes: storedMinutes, start: start, end: end(span), activeSeconds: active
+        )
+    }
+
+    func testMayNeedCorrectionWhenTheActiveTimeDiffersAndTheMinutesAreUntouched() {
+        XCTAssertTrue(mayNeedCorrection(storedMinutes: 30, span: 1800, active: 1556.9))
+        XCTAssertTrue(mayNeedCorrection(storedMinutes: 26, span: 25 * 60 + 59.6, active: nil))
+    }
+
+    func testMayNotNeedCorrectionWithoutADifference() {
+        XCTAssertFalse(mayNeedCorrection(storedMinutes: 30, span: 1800, active: nil))
+        XCTAssertFalse(mayNeedCorrection(storedMinutes: 30, span: 1800, active: 1800))
+    }
+
+    func testMayNotNeedCorrectionWhenTheMinutesWereEdited() {
+        XCTAssertFalse(mayNeedCorrection(storedMinutes: 25, span: 1800, active: 1556.9))
     }
 
     // MARK: - correctedSeconds (bereits importierte Einheiten)

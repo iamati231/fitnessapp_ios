@@ -80,6 +80,14 @@ public enum ExternalWorkoutImportService {
     /// (`ExternalWorkoutDuration.correctedSeconds`); Beginn und Ende der Einheit
     /// bleiben immer.
     private static func correctDuration(of session: WorkoutSession, from sample: ExternalWorkoutSample) {
+        // Billige Vorpruefung zuerst: Die Saetze (eine Abfrage je Einheit) werden nur
+        // geladen, wenn sich ueberhaupt etwas aendern koennte.
+        guard ExternalWorkoutDuration.mayNeedCorrection(
+            storedMinutes: session.durationMinutes,
+            start: session.startTime,
+            end: session.endTime,
+            activeSeconds: sample.activeDurationSeconds
+        ) else { return }
         // Nur die vom Import angelegte Einheit: genau ein Cardio-Eintrag mit Zeit.
         guard session.logs.count == 1,
               let log = session.logs.first,
