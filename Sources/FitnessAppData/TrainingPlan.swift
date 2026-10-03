@@ -34,9 +34,10 @@ public final class TrainingPlan {
     /// DEL-053: Globaler User-Override der RIR-Schwelle fuer
     /// Smart-Progression in DIESEM Plan. Nil = Default-Logik
     /// (`ProgressionEvaluator.defaultRIRForCompound/Isolation`). Non-nil =
-    /// alle Uebungen progressen erst, wenn `lastSet.rir <= override`.
-    /// Beispiel: `override = 2` zwingt sowohl Compounds als auch Isolation
-    /// auf RIR<=2 — strenger Modus.
+    /// alle Uebungen progressen erst, wenn der letzte Satz mindestens
+    /// `override` Wiederholungen in Reserve hatte (`lastSet.rir >= override`).
+    /// Beispiel: `override = 3` verlangt sowohl bei Compounds als auch bei
+    /// Isolation RIR>=3 — strenger Modus.
     public var progressionTargetRIROverride: Float?
 
     /// DEL-123: i18n-Lookup-Key fuer den Plan-Namen.

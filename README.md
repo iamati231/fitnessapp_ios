@@ -545,7 +545,7 @@ fitnessapp_ios/
 |-- Package.swift                # Swift Package (iOS 17+, macOS 14+), Abhängigkeit: ZIPFoundation
 |-- codemagic.yaml               # CI: swift-package, ios-app, testflight
 |-- App/
-|   |-- FitnessApp/              # App-Einstieg, AppDelegate, Info.plist, Entitlements, Assets
+|   |-- FitnessApp/              # App-Einstieg, AppDelegate, Info.plist (+ InfoPlist.xcstrings), Entitlements, Assets
 |   `-- FitnessAppWidgets/       # Wasser-Widget + Rest-Timer-Live-Activity
 |-- Sources/
 |   |-- FitnessAppCore/          # reine Logik (nur Foundation): Analytics, Programs (Vorlagen,
@@ -556,8 +556,8 @@ fitnessapp_ios/
 |   |-- FitnessAppActivities/    # ActivityKit, Erinnerungen, Deep-Links, Notification-Routing
 |   `-- FitnessAppUI/            # alle SwiftUI-Views, Theme, Lokalisierung (Localizable.xcstrings)
 |-- Tests/
-|   |-- FitnessAppCoreTests/     # Rechner, Analytik, Plan-Generator, CSV, Backup (ca. 526 Tests)
-|   `-- FitnessAppDataTests/     # SwiftData in-memory, Export/Import-Roundtrip (ca. 56 Tests)
+|   |-- FitnessAppCoreTests/     # Rechner, Analytik, Plan-Generator, CSV, Backup (ca. 545 Tests)
+|   `-- FitnessAppDataTests/     # SwiftData in-memory, Export/Import-Roundtrip (ca. 60 Tests)
 `-- .scripts/                    # Python-Werkzeuge für den String-Katalog
 ```
 
@@ -620,7 +620,7 @@ Ausführlich in [`CONTRIBUTING.md`](./CONTRIBUTING.md). Kurzfassung:
 | [`TestFlightSetup.md`](./TestFlightSetup.md) | TestFlight-Einrichtung Schritt für Schritt | App-Name/IDs und einzelne Schritte nicht mehr aktuell |
 | [`XcodeSetup.md`](./XcodeSetup.md) | manuelle Xcode-Einbindung | veraltet (heute XcodeGen) |
 | [`WidgetSetup.md`](./WidgetSetup.md) | Widget/Live-Activity-Einrichtung | teilweise veraltet |
-| [`TRANSLATIONS.md`](./TRANSLATIONS.md) | Übersetzungstabelle je Key | Kopfzeile mit den Zählern ist veraltet, die Tabelle ist aktuell |
+| [`TRANSLATIONS.md`](./TRANSLATIONS.md) | Übersetzungstabelle je Key | Kopfzeile und Tabelle sind aktuell (per `.scripts/generate_translations_md.py` erzeugt) |
 
 ---
 

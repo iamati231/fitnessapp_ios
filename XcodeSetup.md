@@ -86,9 +86,7 @@ Sobald die App startet:
 
 1. **Im App-Target die HealthKit-Capability aktivieren**:
    - Project Settings → Signing & Capabilities → **+ Capability** → **HealthKit**
-2. **Info.plist:** zwei Keys hinzufuegen (sonst crasht der Permission-Flow):
-   - `NSHealthShareUsageDescription`: "Liest dein Gewicht und deinen Koerperfett-Anteil aus Apple Health, damit du Werte nicht doppelt eintragen musst."
-   - `NSHealthUpdateUsageDescription`: "Schreibt jede neue Messung zurueck nach Apple Health, damit deine Daten in einer Quelle leben."
+2. **Info.plist:** zwei Keys hinzufuegen (sonst crasht der Permission-Flow): `NSHealthShareUsageDescription` und `NSHealthUpdateUsageDescription`. Die Texte (englischer Fallback in `App/FitnessApp/Info.plist`, DE/EN/TR in `App/FitnessApp/InfoPlist.xcstrings`) muessen nennen, was `HealthKitService` tatsaechlich liest und schreibt.
 3. **HealthKit-Service** kommt als neues Package-Target `FitnessAppHealth` — wird beim naechsten Schritt zusammen mit dem Permission-Flow gebaut.
 
 ## Troubleshooting

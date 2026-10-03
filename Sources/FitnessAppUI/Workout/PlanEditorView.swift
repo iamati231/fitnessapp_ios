@@ -462,9 +462,11 @@ public struct PlanEditorView: View {
             .listRowBackground(Color.Deltiq.surface)
 
             // DEL-053 — globaler Plan-Override fuer die RIR-Schwelle der
-            // Smart-Progression. Auto = pro-Uebung-Default (Compound: RIR<=3,
-            // Isolation: RIR<=1). User kann den Override hier auf einen
-            // strengeren Wert setzen, z.B. RIR<=2 fuer alle Uebungen.
+            // Smart-Progression: der letzte Satz muss mindestens so viele
+            // Wiederholungen in Reserve gehabt haben (`lastSet.rir >=
+            // Schwelle`). Auto = pro-Uebung-Default (Compound: RIR>=2,
+            // Isolation: RIR>=1). User kann den Override hier auf einen
+            // strengeren Wert setzen, z.B. RIR>=3 fuer alle Uebungen.
             Picker(selection: progressionRIRBinding) {
                 Text("planEditor.progressRIR.auto", bundle: .module).tag(Optional<Float>.none)
                 Text("planEditor.progressRIR.rir0", bundle: .module).tag(Optional<Float>.some(0))

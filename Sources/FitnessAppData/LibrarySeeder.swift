@@ -7,8 +7,10 @@ import FitnessAppCore
 /// `ExerciseLibraryData`. Idempotent: skips if any template already exists.
 ///
 /// Called from `RootView.task` on every app launch (cheap — one fetch-count
-/// query). New users get the full library on first start; existing users with
-/// hand-added custom templates aren't disturbed.
+/// query), from the onboarding as a safety net and right after "App
+/// zuruecksetzen" (which deletes all templates). New users get the full
+/// library on first start; existing users with hand-added custom templates
+/// aren't disturbed.
 @MainActor
 public enum LibrarySeeder {
 

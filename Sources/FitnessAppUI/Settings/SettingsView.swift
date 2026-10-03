@@ -818,7 +818,10 @@ public struct SettingsView: View {
                 // Die System-Uebungsbibliothek gehoert zum frischen Zustand:
                 // RootView seedet sie nur beim App-START, ohne das blieben
                 // Bibliothek und Uebungs-Picker bis zum naechsten Neustart
-                // leer (auch im Onboarding direkt nach dem Reset).
+                // leer (auch im Onboarding direkt nach dem Reset). `try?`
+                // mit Absicht: Das Zuruecksetzen selbst ist gelungen, und
+                // scheitert nur das Speichern der Bibliothek, seedet
+                // RootView.task sie beim naechsten Start nach.
                 _ = LibrarySeeder.seedIfNeeded(in: self.modelContext)
                 try? self.modelContext.save()
             } catch {
