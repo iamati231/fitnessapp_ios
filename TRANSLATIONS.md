@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1798 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1797 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1798 / 1798** (100%) | 0 |
-| 🇬🇧 English (EN) | **1798 / 1798** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1798 / 1798** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1797 / 1797** (100%) | 0 |
+| 🇬🇧 English (EN) | **1797 / 1797** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1797 / 1797** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1712,7 +1712,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (193 Keys)
+## `settings.*`  (192 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1800,11 +1800,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.health.footer` | Bei aktivierter Verbindung wird im Messwerte-Formular das letzte Waagen-Gewicht vorausgefüllt. Beim Speichern werden Gewicht, KFA und Magere Masse zurück nach Apple Health geschrieben. | When connected, the measurement form prefills your last scale weight. Saving writes weight, body fat %, and lean mass back to Apple Health. | Bağlıyken ölçüm formu son tartı kilonu önceden doldurur. Kaydetme; kilo, yağ oranı ve yağsız kütleyi Apple Health'e yazar. |
 | `settings.health.lastSync` | Letzter Sync | Last Sync | Son Senkronizasyon |
 | `settings.health.notSetup` | Nicht eingerichtet | Not set up | Kurulmadı |
-| `settings.health.openIOSSettings` | In iOS-Einstellungen öffnen | Open iOS Settings | iOS Ayarlarını Aç |
 | `settings.health.unavailable` | Nicht verfügbar | Not available | Kullanılamıyor |
 | `settings.health.workoutImport` | Workout-Import (Adidas Running, Strava, …) | Workout Import (Adidas Running, Strava, …) | Antrenman İçe Aktarma (Adidas Running, Strava, …) |
 | `settings.health.workoutImport.footer` | Läufe und Radfahrten aus anderen Apps (z.B. Adidas Running, Strava) werden automatisch als Trainingseinheiten übernommen, sobald sie in Apple Health erscheinen. | Runs and rides from other apps (e.g. Adidas Running, Strava) are automatically added as workouts once they appear in Apple Health. | Diğer uygulamalardan (örn. Adidas Running, Strava) koşular ve bisiklet turları, Apple Health'te göründükten sonra otomatik olarak antrenman olarak eklenir. |
-| `settings.healthWrite.accessBlocked` | Fehlt dort der Schalter „Trainings“, kann iOS die Frage nicht noch einmal stellen: Sie gilt als beantwortet, zum Beispiel weil „Trainings“ zuerst nur zum Lesen angefragt wurde (Workout-Import). Dann hilft nur, Deltiq zu löschen und neu zu installieren. Sichere vorher deine Daten mit „Daten exportieren (CSV)“ und lege die ZIP-Datei außerhalb von Deltiq ab, etwa in iCloud Drive. | If the “Workouts” switch is missing there, iOS can no longer ask: the question counts as answered, for example because “Workouts” was first requested for reading only (workout import). Then the only way is to delete and reinstall Deltiq. Back up your data first with “Export data (CSV)” and save the ZIP file outside Deltiq, for example in iCloud Drive. | Orada „Antrenmanlar“ anahtarı yoksa iOS soruyu bir daha soramaz: Soru yanıtlanmış sayılır, örneğin „Antrenmanlar“ önce yalnızca okuma için istendiği için (antrenman içe aktarma). Çözüm yalnızca Deltiq'i silip yeniden yüklemektir. Öncesinde verilerini „Verileri dışa aktar (CSV)“ ile yedekle ve ZIP dosyasını Deltiq dışında, örneğin iCloud Drive'da sakla. |
+| `settings.healthWrite.accessBlocked` | Fehlt dort der Schalter „Trainings“, kann iOS die Frage nicht noch einmal stellen: Sie gilt als beantwortet, zum Beispiel weil „Trainings“ zuerst nur zum Lesen angefragt wurde (Workout-Import). Dann hilft voraussichtlich nur, Deltiq zu löschen und neu zu installieren. Sichere vorher deine Daten mit „Daten exportieren (CSV)“ und lege die ZIP-Datei außerhalb von Deltiq ab, etwa in iCloud Drive. | If the “Workouts” switch is missing there, iOS can no longer ask: the question counts as answered, for example because “Workouts” was first requested for reading only (workout import). Then it will most likely only be fixed by deleting and reinstalling Deltiq. Back up your data first with “Export data (CSV)” and save the ZIP file outside Deltiq, for example in iCloud Drive. | Orada „Antrenmanlar“ anahtarı yoksa iOS soruyu bir daha soramaz: Soru yanıtlanmış sayılır, örneğin „Antrenmanlar“ önce yalnızca okuma için istendiği için (antrenman içe aktarma). Bunun çözümü büyük olasılıkla yalnızca Deltiq'i silip yeniden yüklemektir. Öncesinde verilerini „Verileri dışa aktar (CSV)“ ile yedekle ve ZIP dosyasını Deltiq dışında, örneğin iCloud Drive'da sakla. |
 | `settings.healthWrite.accessButton` | Zugriff erlauben | Allow access | Erişime izin ver |
 | `settings.healthWrite.accessDenied` | Öffne die Health-App → Profil → Apps → Deltiq und schalte unter „darf Daten schreiben“ den Schalter „Trainings“ ein. Danach zeigt Deltiq hier den neuen Stand. | Open the Health app → Profile → Apps → Deltiq and turn on “Workouts” among the data Deltiq may write. Deltiq then shows the new state here. | Health uygulamasını aç → Profil → Uygulamalar → Deltiq ve Deltiq'in yazabileceği veriler arasında „Antrenmanlar“ı aç. Deltiq yeni durumu burada gösterir. |
 | `settings.healthWrite.accessDeniedLabel` | Zugriff nicht erteilt | Access not granted | Erişim verilmedi |

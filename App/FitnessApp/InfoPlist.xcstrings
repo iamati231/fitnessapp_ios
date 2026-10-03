@@ -3,7 +3,7 @@
   "version": "1.0",
   "strings": {
     "NSHealthShareUsageDescription": {
-      "comment": "Apple-Health-Berechtigungsdialog: Lesezugriff. Muss die tatsaechlich gelesenen Daten nennen (HealthKitService.requestAuthorization + requestWorkoutReadAuthorization).",
+      "comment": "Apple-Health-Berechtigungsdialog: Lesezugriff. Muss die tatsaechlich gelesenen Daten nennen (HealthKitService.requestAuthorization, toRead, + requestWorkoutReadAuthorization; der Typ Trainings wird dort und in requestWorkoutWriteAuthorization(includeDistance:) immer zusammen mit dem Schreiben angefragt).",
       "extractionState": "manual",
       "localizations": {
         "de": { "stringUnit": { "state": "translated", "value": "Deltiq liest Gewicht, Körperfett, Magermasse, Größe, Geburtsdatum, Geschlecht, Ruhepuls und Schritte aus Apple Health, damit du Werte nicht doppelt eintragen musst und Profil und Dashboard aktuell bleiben. Außerdem liest Deltiq Trainings anderer Apps – zum Import, wenn du den Workout-Import einschaltest, und um beim Export früherer Trainings Doppelte zu vermeiden." } },

@@ -5,12 +5,13 @@ import Foundation
 /// aus dem Ticket, diese Runde bewusst NUR mit In-App-Daten
 /// (`ExerciseLog.distanceKm`/`.durationSeconds` via `resolvedIsCardio`).
 /// Der Ticket-Vorschlag, stattdessen HealthKit-Workout-Historie zu lesen,
-/// wurde zurueckgestellt: `HKObjectType.workoutType()` steht in
-/// `HealthKitService.requestAuthorization()` aktuell NUR in `toShare`, nie
-/// in `toRead` - eine neue Lese-Autorisierung wuerde bei JEDEM bereits
-/// verbundenen Bestandsnutzer einen neuen iOS-Permission-Dialog ausloesen,
-/// auch bei Usern, die Cardio-Coaching nie aktivieren. HealthKit-Historie
-/// kann ein spaeteres Ticket nachziehen.
+/// wurde zurueckgestellt: Das Lesen von `HKObjectType.workoutType()` dient
+/// bisher nur dem Workout-Import und dem Abgleich beim Export (siehe
+/// `HealthKitService.requestAuthorization()`, wo der Typ seit der
+/// Trainings-Freigabe in `toShare` UND `toRead` steht). Eine Baseline aus der
+/// HealthKit-Historie braucht eine eigene Produktentscheidung - und fuer
+/// Bestandsnutzer, die den Typ nur zum Schreiben freigegeben haben, laesst sich
+/// das Lesen nicht mehr nachfragen. Kann ein spaeteres Ticket nachziehen.
 ///
 /// Pure functions — `ProfileEditorView` aggregiert die Rohdaten (geloggte
 /// Cardio-Distanzen/-Dauern der letzten `weeklyVolumeWindowDays` bzw.

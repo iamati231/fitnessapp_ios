@@ -20120,9 +20120,9 @@
     "settings.healthWrite.accessBlocked": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Fehlt dort der Schalter „Trainings“, kann iOS die Frage nicht noch einmal stellen: Sie gilt als beantwortet, zum Beispiel weil „Trainings“ zuerst nur zum Lesen angefragt wurde (Workout-Import). Dann hilft nur, Deltiq zu löschen und neu zu installieren. Sichere vorher deine Daten mit „Daten exportieren (CSV)“ und lege die ZIP-Datei außerhalb von Deltiq ab, etwa in iCloud Drive." } },
-        "en": { "stringUnit": { "state": "translated", "value": "If the “Workouts” switch is missing there, iOS can no longer ask: the question counts as answered, for example because “Workouts” was first requested for reading only (workout import). Then the only way is to delete and reinstall Deltiq. Back up your data first with “Export data (CSV)” and save the ZIP file outside Deltiq, for example in iCloud Drive." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Orada „Antrenmanlar“ anahtarı yoksa iOS soruyu bir daha soramaz: Soru yanıtlanmış sayılır, örneğin „Antrenmanlar“ önce yalnızca okuma için istendiği için (antrenman içe aktarma). Çözüm yalnızca Deltiq'i silip yeniden yüklemektir. Öncesinde verilerini „Verileri dışa aktar (CSV)“ ile yedekle ve ZIP dosyasını Deltiq dışında, örneğin iCloud Drive'da sakla." } }
+        "de": { "stringUnit": { "state": "translated", "value": "Fehlt dort der Schalter „Trainings“, kann iOS die Frage nicht noch einmal stellen: Sie gilt als beantwortet, zum Beispiel weil „Trainings“ zuerst nur zum Lesen angefragt wurde (Workout-Import). Dann hilft voraussichtlich nur, Deltiq zu löschen und neu zu installieren. Sichere vorher deine Daten mit „Daten exportieren (CSV)“ und lege die ZIP-Datei außerhalb von Deltiq ab, etwa in iCloud Drive." } },
+        "en": { "stringUnit": { "state": "translated", "value": "If the “Workouts” switch is missing there, iOS can no longer ask: the question counts as answered, for example because “Workouts” was first requested for reading only (workout import). Then it will most likely only be fixed by deleting and reinstalling Deltiq. Back up your data first with “Export data (CSV)” and save the ZIP file outside Deltiq, for example in iCloud Drive." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Orada „Antrenmanlar“ anahtarı yoksa iOS soruyu bir daha soramaz: Soru yanıtlanmış sayılır, örneğin „Antrenmanlar“ önce yalnızca okuma için istendiği için (antrenman içe aktarma). Bunun çözümü büyük olasılıkla yalnızca Deltiq'i silip yeniden yüklemektir. Öncesinde verilerini „Verileri dışa aktar (CSV)“ ile yedekle ve ZIP dosyasını Deltiq dışında, örneğin iCloud Drive'da sakla." } }
       }
     },
     "settings.healthWrite.openHealthApp": {
@@ -20565,29 +20565,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kullanılamıyor"
-          }
-        }
-      }
-    },
-    "settings.health.openIOSSettings": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "In iOS-Einstellungen öffnen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open iOS Settings"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "iOS Ayarlarını Aç"
           }
         }
       }

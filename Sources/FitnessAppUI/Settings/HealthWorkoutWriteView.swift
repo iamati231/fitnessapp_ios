@@ -183,6 +183,7 @@ public struct HealthWorkoutWriteView: View {
             .padding(14)
             if requestShowedNoDialog {
                 hintRow(String(localized: "settings.healthWrite.accessNoDialog", bundle: .module))
+                openHealthAppButton
                 diagnosticRow
             } else {
                 hintRow(String(localized: "settings.healthWrite.accessHint", bundle: .module))

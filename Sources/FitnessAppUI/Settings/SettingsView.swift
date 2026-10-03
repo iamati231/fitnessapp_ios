@@ -53,10 +53,11 @@ public struct SettingsView: View {
 
     /// Automatischer Import von Lauf-/Rad-Workouts, die eine ANDERE App
     /// (z.B. Adidas Running) nach Apple Health geschrieben hat. Bewusst ein
-    /// eigener Toggle statt an `healthKit.authorizationStatus` gekoppelt —
-    /// dieser Read-Zugriff wird separat angefragt (`requestWorkoutReadAuthorization`),
-    /// damit Bestandsnutzer, die diesen Toggle nie anfassen, nie einen neuen
-    /// Permission-Dialog sehen.
+    /// eigener Toggle statt an `healthKit.authorizationStatus` gekoppelt. Der
+    /// Zugriff wird ueber `requestWorkoutReadAuthorization` angefragt: "Trainings"
+    /// immer fuer Schreiben UND Lesen zusammen und nur, wenn iOS ueberhaupt noch
+    /// fragen wuerde (sonst kein Dialog und keine Aenderung einer vorhandenen
+    /// Freigabe).
     @AppStorage("pref_healthkit_workout_import") private var externalWorkoutImportEnabled: Bool = false
 
     /// Kraft-/Cardio-Schalter des Schreibens nach Apple Health (Vorgaben aus
@@ -558,7 +559,7 @@ public struct SettingsView: View {
         DeltiqSection(String(localized: "profile.section.health", bundle: .module).uppercased()) {
             healthKitStatusRow
             if healthKit.authorizationStatus == .sharingDenied {
-                openIOSSettingsButton
+                openHealthAppButton
             }
             if let lastSync = healthKit.lastSyncDate {
                 DeltiqControlRow(
@@ -671,15 +672,15 @@ public struct SettingsView: View {
         }
     }
 
+    /// Die Health-Berechtigungen einer App stehen in der Health-App (Profil →
+    /// Apps → Deltiq), nicht auf der iOS-Einstellungsseite von Deltiq.
     @ViewBuilder
-    private var openIOSSettingsButton: some View {
+    private var openHealthAppButton: some View {
         #if os(iOS)
         Button {
-            if let url = URL(string: UIApplication.openSettingsURLString) {
-                UIApplication.shared.open(url)
-            }
+            HealthAppLink.open()
         } label: {
-            DeltiqRow(icon: "gear", label: String(localized: "settings.health.openIOSSettings", bundle: .module), showsDivider: false)
+            DeltiqRow(icon: "heart.text.square", label: String(localized: "settings.healthWrite.openHealthApp", bundle: .module), showsDivider: false)
         }
         .buttonStyle(.plain)
         #endif
