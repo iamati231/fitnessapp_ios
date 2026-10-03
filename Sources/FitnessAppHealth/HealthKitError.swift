@@ -18,6 +18,19 @@ public enum HealthKitError: Error, Sendable, LocalizedError {
     /// same workout will not help.
     case invalidWorkout(reason: String)
 
+    /// Could leaving out the OPTIONAL metadata of a workout (the exercise list)
+    /// help? Only a rejection of this workout or a generic save failure: a missing
+    /// permission or a locked device fail the same way without the list.
+    public var mayBeCausedByOptionalMetadata: Bool {
+        switch self {
+        case .invalidWorkout, .saveFailed:
+            return true
+        case .unavailable, .authorizationFailed, .queryFailed, .invalidValue,
+             .writeNotAuthorized, .databaseInaccessible:
+            return false
+        }
+    }
+
     public var errorDescription: String? {
         switch self {
         case .unavailable:

@@ -89,8 +89,13 @@ extension HealthWorkoutDraft {
             shown.append(name)
         }
         if shown.isEmpty {
-            // Not even the first name fits.
-            return leadingText(of: unique[0], withinBytes: maximumBytes - "…".utf8.count) + "…"
+            // Not even the first name fits: cut it, and still say how many others
+            // there are (if the limit leaves room for that).
+            var suffix = unique.count > 1 ? " +\(unique.count - 1)" : ""
+            let ellipsis = "…"
+            if maximumBytes - ellipsis.utf8.count - suffix.utf8.count < 0 { suffix = "" }
+            let room = max(0, maximumBytes - ellipsis.utf8.count - suffix.utf8.count)
+            return leadingText(of: unique[0], withinBytes: room) + ellipsis + suffix
         }
         let omitted = unique.count - shown.count
         return shown.joined(separator: ", ") + (omitted > 0 ? " +\(omitted)" : "")

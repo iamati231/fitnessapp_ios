@@ -135,6 +135,46 @@ final class WorkoutMetadataTests: XCTestCase {
         XCTAssertLessThanOrEqual(text?.utf8.count ?? .max, 10)
     }
 
+    /// Auch wenn schon der erste Name allein nicht passt, sagt die Liste, wie viele
+    /// weitere es gibt.
+    func testATooLongFirstNameStillCountsTheOthers() {
+        let text = HealthWorkoutDraft.exerciseListText(
+            for: ["Übungsname mit sehr vielen Umlauten äöü", "Zweite"], maximumBytes: 12
+        )
+        XCTAssertEqual(text, "Übung… +1")
+        XCTAssertLessThanOrEqual(text?.utf8.count ?? .max, 12)
+    }
+
+    /// Bei einem winzigen Limit entfaellt der Hinweis zugunsten des Limits.
+    func testATinyLimitDropsTheCountInsteadOfExceedingTheLimit() {
+        let text = HealthWorkoutDraft.exerciseListText(for: ["Übung", "Zweite"], maximumBytes: 4)
+        XCTAssertEqual(text, "…")
+    }
+
+    func testTheLimitHoldsForEverySmallLimitFromThreeBytes() {
+        let names = ["Übungsname mit sehr vielen Umlauten äöü", "Zweite Übung", "Dritte", "日本語の名前", "Dips"]
+        for limit in 3...60 {
+            let text = HealthWorkoutDraft.exerciseListText(for: names, maximumBytes: limit)
+            XCTAssertLessThanOrEqual(text?.utf8.count ?? .max, limit, "Limit \(limit)")
+        }
+    }
+
+    // MARK: - Rueckfall ohne Liste
+
+    /// Nur eine Ablehnung dieses Trainings bzw. ein allgemeiner Speicherfehler kann
+    /// an der optionalen Uebungsliste liegen — nicht eine fehlende Berechtigung oder
+    /// ein gesperrtes Geraet (sie scheitern ohne Liste genauso).
+    func testOnlyARejectedWorkoutOrAGenericSaveFailureMayBeCausedByTheList() {
+        XCTAssertTrue(HealthKitError.invalidWorkout(reason: "x").mayBeCausedByOptionalMetadata)
+        XCTAssertTrue(HealthKitError.saveFailed(reason: "x").mayBeCausedByOptionalMetadata)
+        XCTAssertFalse(HealthKitError.writeNotAuthorized.mayBeCausedByOptionalMetadata)
+        XCTAssertFalse(HealthKitError.databaseInaccessible.mayBeCausedByOptionalMetadata)
+        XCTAssertFalse(HealthKitError.unavailable.mayBeCausedByOptionalMetadata)
+        XCTAssertFalse(HealthKitError.queryFailed(reason: "x").mayBeCausedByOptionalMetadata)
+        XCTAssertFalse(HealthKitError.authorizationFailed(reason: "x").mayBeCausedByOptionalMetadata)
+        XCTAssertFalse(HealthKitError.invalidValue(reason: "x").mayBeCausedByOptionalMetadata)
+    }
+
     func testTheDefaultLimitIsUsed() {
         let names = (1...100).map { "Übung \($0)" }
         let text = HealthWorkoutDraft.exerciseListText(for: names)
