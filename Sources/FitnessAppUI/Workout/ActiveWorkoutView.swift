@@ -222,7 +222,7 @@ public struct ActiveWorkoutView: View {
         // Action gevetoed.
         .sheet(isPresented: $showingFinishConfirm) {
             FinishWorkoutSheet(
-                durationText: formattedDuration,
+                durationText: finishSheetDurationText,
                 setsCount: loggedSetsCount,
                 volumeText: formatVolume(),
                 // DEL-137: Session-Category + adaptive Distanz/Pace-Texte
@@ -818,7 +818,10 @@ public struct ActiveWorkoutView: View {
     private var formattedDuration: String { formattedDuration(at: Date()) }
 
     private func formattedDuration(at now: Date) -> String {
-        let elapsed = max(0, Int(now.timeIntervalSince(session.startTime)))
+        formatElapsed(max(0, Int(now.timeIntervalSince(session.startTime))))
+    }
+
+    private func formatElapsed(_ elapsed: Int) -> String {
         let h = elapsed / 3600
         let m = (elapsed % 3600) / 60
         let s = elapsed % 60
@@ -826,6 +829,18 @@ public struct ActiveWorkoutView: View {
             return String(format: "%d:%02d:%02d", h, m, s)
         }
         return String(format: "%d:%02d", m, s)
+    }
+
+    /// Dauer im Beenden-Sheet: dieselbe Regel wie `finalizeTiming` beim Speichern
+    /// (live = Wanduhr; nachgetragen = eingetragene Cardio-Zeit bzw. Schaetzung
+    /// aus den Saetzen) — sonst stuende hier "0:45" und danach "26 Min".
+    private var finishSheetDurationText: String {
+        let elapsed = max(0, Int(Date().timeIntervalSince(session.startTime)))
+        let estimate = SessionDurationEstimator.estimate(
+            wallClockSeconds: elapsed,
+            logs: session.durationLogInputs
+        )
+        return formatElapsed(estimate.isCorrected ? estimate.minutes * 60 : elapsed)
     }
 
     private var loggedSetsCount: Int {
@@ -944,10 +959,11 @@ public struct ActiveWorkoutView: View {
         // Checkmarks auf WorkoutSummaryView, der gleich erscheint.
         DeltiqHaptics.notify(.success)
 
-        let endTime = Date()
-
-        session.endTime = endTime
-        session.durationMinutes = max(0, Int(endTime.timeIntervalSince(session.startTime) / 60))
+        // Ende und Dauer: live aufgezeichnet = Wanduhr; nachgetragen (z.B. ein Lauf,
+        // der erst nach dem Laufen eingetragen wird) = eingetragene Cardio-Zeit
+        // bzw. eine Schaetzung aus den Saetzen, dann mit zurueckgesetztem Beginn.
+        // MUSS vor dem Health-Push unten stehen, der Beginn und Dauer liest.
+        session.finalizeTiming(endingAt: Date())
         // DEL-221: Aggregate ueber den einen Schreiber (recomputeTotals).
         // DEL-092: exerciseCount zaehlt das, was der User tatsaechlich gemacht
         // hat — wenn Warmups versteckt waren, fliessen sie nicht in die

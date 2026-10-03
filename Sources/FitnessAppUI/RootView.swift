@@ -126,6 +126,9 @@ public struct RootView: View {
             // Custom-Uebungen ohne Muskel/Equipment-Override bekommen die
             // Werte aus ihrem Custom-Template nachgezogen. Idempotent.
             LibrarySeeder.backfillCustomExerciseMetadataIfNeeded(in: modelContext)
+            // Nachgetragene Laeufe mit der Wanduhr-Dauer von ein, zwei Minuten
+            // bekommen die eingetragene Laufzeit. Einmalig, nur die Dauer.
+            SessionDurationRepair.runIfNeeded(in: modelContext)
 
             // Erinnerungen gegen die gespeicherten Schalter abgleichen: Die
             // geplanten Benachrichtigungen liegen im System und gehen z.B. bei

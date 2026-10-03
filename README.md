@@ -269,6 +269,8 @@ Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorla
 
 **Beenden:** „Training speichern“ → Sheet *Training beenden* mit Dauer, Sätzen/Volumen (Cardio: Distanz, Ø-Pace), „Wie hat sich das Training angefühlt?“ (1 Großartig, 2 Gut, 3 Okay, 4 Sehr schwer, 5 Zerstört / Am Limit; ab 4 gibt es im nächsten Training kein Gewichts-Plus) und – bei Cardio – „Verwendete Ausrüstung“. „Verwerfen“ löscht die Session samt Sätzen nach Rückfrage.
 
+**Dauer:** Läuft das Training live mit, zählt die Zeit zwischen Start und Beenden. Trägst du ein Training erst danach ein (z. B. einen Lauf als spontanes Training nach dem Laufen), würde diese Zeit nur das Eintragen messen. Deshalb gilt bei **Cardio** die eingetragene Zeit der Sätze (4,51 km in 25:56 ergeben 26 Min), sobald sie länger ist als die Zeit zwischen Start und Beenden (plus 1 Minute Spielraum). Bei **Krafttraining** schätzt Deltiq die Dauer aus der Satzzahl (je Satz 45 s plus die Pause der Übung, Vorgabe 90 s), wenn die Zeit zwischen Start und Beenden unter 30 s je Satz liegt – ab 3 Sätzen; Beispiel: 12 Sätze in 3 Minuten eingetippt ergeben etwa 27 Min. Bei einem Mischtag zählen Cardio-Zeit und der geschätzte Kraftanteil zusammen. In diesen Fällen wird der Beginn so zurückgesetzt, dass das Training mit dem Beenden endet; Beenden-Sheet, Zusammenfassung, Verlauf und Apple Health zeigen dieselbe Dauer. Geschätzte Kraft-Dauern sind nicht gekennzeichnet; im Verlauf lässt sich die Dauer jederzeit ändern. Einmalig beim ersten Start nach dem Update werden bestehende Läufe repariert, deren gespeicherte Dauer kürzer ist als die eingetragene Laufzeit (nur die Dauer; Kraft wird bei bestehenden Einheiten nicht geschätzt).
+
 ### 5.4 Auswertung
 
 **Zusammenfassung** (direkt nach dem Training): Hero-Zahl (Volumen, Distanz oder Minuten bzw. das Zeitformat-Ergebnis), *Erfolge* („Dein N. Training diese Woche“ ab 3, „Stärkstes/Längstes Training der Woche“, „Längste Distanz der Woche“), *Persönliche Rekorde*, *Smart-Progression*, Kennzahlen, Ausrüstung, Notiz, Sätze je Übung. Vorzeitig gespeicherte Zeitformate sind markiert und zählen nicht als Bestleistung. Danach: „Speichern & zum Dashboard“.
@@ -459,6 +461,9 @@ Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder
 - [ ] Superset, Haltesatz, Cardio-Übung mit Pace, Warm-up-Anzeige, Aufwärm-Sätze
 - [ ] Unterbrechen und Fortsetzen: Zurück-Pfeil, App aus dem App-Switcher beenden, Banner/Kachel, Dialog bei zweitem Start, Verwerfen
 - [ ] Spontanes Training in allen fünf Varianten
+- [ ] Lauf nachtragen: Spontanes Training → *Freier Lauf* → km und Zeit (z. B. 25:56) eintragen → sofort beenden: Beenden-Sheet und Zusammenfassung zeigen 26 Min (nicht 1), Ø-Pace stimmt; derselbe Lauf live mit Wartezeit beendet behält die Wanduhr
+- [ ] Krafttraining nachtragen: 10 Sätze in 1–2 Minuten eintippen und beenden: Dauer etwa 20–25 Min; live trainiert bleibt die echte Dauer
+- [ ] Einmalige Reparatur: ein früher nachgetragener Lauf mit 1–2 Min im Verlauf zeigt nach dem ersten Start des neuen Builds die eingetragene Laufzeit
 - [ ] Zeitformate AMRAP, EMOM, Auf Zeit, Zirkel (beide Modi) mit Vorlauf 0/5/10/15 s; Gerät sperren; vorzeitig speichern
 - [ ] Zusammenfassung: Erfolge, Rekorde, Progression, Notiz, Gerät zuordnen
 - [ ] Verlauf: Training bearbeiten und löschen; Trophy Room „Aus History neu berechnen“
@@ -579,7 +584,7 @@ fitnessapp_ios/
 |   |-- FitnessAppActivities/    # ActivityKit, Erinnerungen, Deep-Links, Notification-Routing
 |   `-- FitnessAppUI/            # alle SwiftUI-Views, Theme, Lokalisierung (Localizable.xcstrings)
 |-- Tests/
-|   |-- FitnessAppCoreTests/     # Rechner, Analytik, Plan-Generator, CSV, Backup (ca. 600 Tests)
+|   |-- FitnessAppCoreTests/     # Rechner, Analytik, Plan-Generator, CSV, Backup (ca. 630 Tests)
 |   |-- FitnessAppDataTests/     # SwiftData in-memory, Export/Import-Roundtrip (ca. 60 Tests)
 |   `-- FitnessAppHealthTests/   # Zustandslogik der Health-Berechtigungen (ca. 10 Tests)
 `-- .scripts/                    # Python-Werkzeuge für den String-Katalog
