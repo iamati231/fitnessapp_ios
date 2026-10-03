@@ -1176,8 +1176,15 @@ public struct DashboardView: View {
     /// Auto-Restore beim Dashboard-Erscheinen: Deload abgelaufen → Gewichte
     /// zurückschreiben. Wird in `.task` der View aufgerufen — der typische
     /// "App nach einer Woche wieder öffnen"-Pfad.
+    ///
+    /// Bugfix: Der Ablauf haengt NUR am Timer (`DeloadAdvisor.hasExpired`).
+    /// Vorher stand hier `!isDeloadActive`, und `isDeloadActive` ist seit
+    /// DEL-238 auch ueber die Daten wahr (gesicherte Originalgewichte) — also
+    /// nach Ablauf weiterhin, solange die Gewichte nicht zurueckgestellt
+    /// waren. Der Auto-Ablauf konnte damit nie greifen; Banner und halbierte
+    /// Gewichte blieben bis zum manuellen Beenden.
     private func autoEndDeloadIfExpired() {
-        guard deloadUntil > 0, !isDeloadActive else { return }
+        guard DeloadAdvisor.hasExpired(untilTimestamp: deloadUntil, now: Date()) else { return }
         endDeload()
     }
 
@@ -1355,7 +1362,7 @@ public struct DashboardView: View {
         // Praktisch nie gleichzeitig mit reEntry (Deload braucht hohe
         // RECENT-Aktivität, reEntry Inaktivität).
         if shouldRecommendDeload { return .deloadRecommended }
-        if daysSinceLastRealSession >= 5 { return .reEntry }
+        if let days = daysSinceLastRealSession, days >= 5 { return .reEntry }
         // DEL-198: Volumen-Rekord schlägt die generischen Post-Workout-
         // Komplimente — "beste Woche ever" ist die stärkere Nachricht.
         if hadVolumeRecordWeek { return .volumeRecord }
@@ -1619,15 +1626,20 @@ public struct DashboardView: View {
         return completedSessions.filter { $0.isRealWorkout && $0.startTime >= cutoff }.count
     }
 
-    /// Tage seit der juengsten realen Session. `Int.max` wenn nie trainiert
+    /// Tage seit der juengsten realen Session. `nil` wenn nie trainiert
     /// → triggert reEntry nicht (keine Daten = kein Hinweis).
-    private var daysSinceLastRealSession: Int {
+    ///
+    /// Bugfix: Vorher `Int.max` als Sentinel — und `Int.max >= 5` ist wahr,
+    /// d.h. der Wiedereinstiegs-Hinweis erschien gerade bei Nutzern, die noch
+    /// nie trainiert haben, also das Gegenteil von dem, was dieser Kommentar
+    /// versprach. Ein Optional macht "keine Daten" unmissverstaendlich.
+    private var daysSinceLastRealSession: Int? {
         let realSessions = completedSessions.filter(\.isRealWorkout)
-        guard let latest = realSessions.map(\.endTime).max() else { return Int.max }
+        guard let latest = realSessions.map(\.endTime).max() else { return nil }
         let cal = Calendar.current
         let start = cal.startOfDay(for: latest)
         let today = cal.startOfDay(for: Date())
-        return cal.dateComponents([.day], from: start, to: today).day ?? Int.max
+        return cal.dateComponents([.day], from: start, to: today).day
     }
 
     /// True wenn der heutige Plan-Eintrag ein Trainings-Tag ist (kein Rest).

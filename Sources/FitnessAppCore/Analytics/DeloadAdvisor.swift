@@ -56,6 +56,24 @@ public enum DeloadAdvisor {
         return w3 >= w1 * minimumRampFactor
     }
 
+    // MARK: - Ablauf der Deload-Woche
+
+    /// Ist die per Timer festgelegte Deload-Woche abgelaufen?
+    ///
+    /// - Parameter untilTimestamp: Unix-Timestamp aus `deload_until`. `0`
+    ///   heisst "kein Timer" (z.B. nach Neuinstallation oder Restore) und gilt
+    ///   nie als abgelaufen — ohne Enddatum gibt es nichts, was man automatisch
+    ///   beenden koennte; der Nutzer beendet dann manuell.
+    ///
+    /// Bewusst NUR am Timer festgemacht, nicht daran, ob noch gesicherte
+    /// Originalgewichte existieren: DEL-238 laesst das Banner zusaetzlich aus
+    /// den DATEN erscheinen (Timer verloren), und diese Bedingung bleibt nach
+    /// Ablauf wahr, solange die Gewichte nicht zurueckgestellt sind. Wer den
+    /// Auto-Ablauf davon abhaengig macht, beendet nie.
+    public static func hasExpired(untilTimestamp: Double, now: Date) -> Bool {
+        untilTimestamp > 0 && untilTimestamp <= now.timeIntervalSince1970
+    }
+
     // MARK: - DEL-236: Nur Krafttraining zaehlt
 
     /// Kraft-Anteil der CNS-Last einer Session — Cardio-Saetze fliegen raus.
