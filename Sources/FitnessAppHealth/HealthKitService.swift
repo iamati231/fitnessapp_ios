@@ -464,7 +464,10 @@ public actor HealthKitService {
     ///   if the save fails (`mayBeCausedByOptionalMetadata`) the workout is
     ///   written once more WITHOUT them. Safe because the retry only happens
     ///   when no sample was added before the failure, and a failed attempt is
-    ///   discarded.
+    ///   discarded — except after `finishWorkout()` itself failed: HealthKit
+    ///   documents nothing for that case, so a duplicate workout is conceivable
+    ///   there (very unlikely; and the retry is what rescues a rejection that only
+    ///   comes when saving).
     public func saveWorkout(_ draft: HealthWorkoutDraft) async throws -> HealthWorkoutWriteOutcome {
         var addedSample = false
         do {

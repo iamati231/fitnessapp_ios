@@ -129,8 +129,8 @@ public struct HealthWorkoutPlan: Sendable, Equatable {
     /// Ruder-Distanz bekommt kein Sample (eigener Health-Typ / Berechtigung).
     public var distanceKm: Double?
     public var averagePaceMinPerKm: Double?
-    /// Gesamtstrecke aller Cardio-Logs, jede Modalitaet — nur fuer die
-    /// Metadaten des Workouts (`TotalDistanceKm`), nie als Sample.
+    /// Gesamtstrecke aller Cardio-Logs, jede Modalitaet — nur fuer das Zusatzfeld
+    /// "Distanz (km)" des Workouts, nie als Sample.
     public var totalDistanceKm: Double?
     /// Nur Krafttraining; `nil`, wenn nichts geloggt wurde (Zeitformate haben
     /// keine Saetze: dort stuende sonst "0 Saetze" in Health).

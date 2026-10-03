@@ -18,9 +18,10 @@ public enum HealthKitError: Error, Sendable, LocalizedError {
     /// same workout will not help.
     case invalidWorkout(reason: String)
 
-    /// Could leaving out the OPTIONAL metadata of a workout (the exercise list)
-    /// help? Only a rejection of this workout or a generic save failure: a missing
-    /// permission or a locked device fail the same way without the list.
+    /// Could leaving out the OPTIONAL custom metadata of a workout (the numbers
+    /// and the exercise list, `HealthWorkoutDraft.customMetadata`) help? Only a
+    /// rejection of this workout or a generic save failure: a missing permission
+    /// or a locked device fail the same way without it.
     public var mayBeCausedByOptionalMetadata: Bool {
         switch self {
         case .invalidWorkout, .saveFailed:

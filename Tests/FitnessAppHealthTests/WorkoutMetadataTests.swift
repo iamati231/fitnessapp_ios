@@ -228,9 +228,10 @@ final class WorkoutMetadataTests: XCTestCase {
     // MARK: - Rueckfall ohne Liste
 
     /// Nur eine Ablehnung dieses Trainings bzw. ein allgemeiner Speicherfehler kann
-    /// an der optionalen Uebungsliste liegen — nicht eine fehlende Berechtigung oder
-    /// ein gesperrtes Geraet (sie scheitern ohne Liste genauso).
-    func testOnlyARejectedWorkoutOrAGenericSaveFailureMayBeCausedByTheList() {
+    /// an den optionalen Zusatzfeldern (Zahlen, Uebungsliste) liegen — nicht eine
+    /// fehlende Berechtigung oder ein gesperrtes Geraet (sie scheitern ohne die
+    /// Zusatzfelder genauso).
+    func testOnlyARejectedWorkoutOrAGenericSaveFailureMayBeCausedByTheCustomMetadata() {
         XCTAssertTrue(HealthKitError.invalidWorkout(reason: "x").mayBeCausedByOptionalMetadata)
         XCTAssertTrue(HealthKitError.saveFailed(reason: "x").mayBeCausedByOptionalMetadata)
         XCTAssertFalse(HealthKitError.writeNotAuthorized.mayBeCausedByOptionalMetadata)
