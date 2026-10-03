@@ -43,7 +43,7 @@ Entstanden ist das Projekt als iOS-Port einer Android-Fitness-App. Die Berechnun
 | 186 | Übungen in der System-Bibliothek, dazu eigene Übungen |
 | 4 | Zeitformate: AMRAP, EMOM, Auf Zeit, Zirkel |
 | 12 | Dashboard-Widgets (frei ein-/ausblendbar und sortierbar) |
-| 3 | Sprachen mit 1747 Texten (DE, EN, TR jeweils vollständig) |
+| 3 | Sprachen mit 1738 Texten (DE, EN, TR jeweils vollständig) |
 
 **Was die App kann**
 
@@ -181,7 +181,7 @@ Möglich im Onboarding, in der Messung, über die gesperrten Dashboard-Karten (R
 
 **Plan-Liste** (Tab *Plan*)
 
-- „+“-Menü: *Aus Template anlegen*, *Plan bauen*, *Leerer Plan* (Vorgabe „Neuer Plan“, 12 Wochen, Gym).
+- „+“-Menü: *Aus Template anlegen*, *Plan bauen*, *Leerer Plan* (Vorgabename „Neuer Plan“ / „New Plan“ / „Yeni Plan“ je nach Sprache, 12 Wochen, Gym).
 - Der aktive Plan steht oben; jede Zeile zeigt Name, Pille „AKTIV“ und „N Tage • N Wochen • Trainingsort“ (Ruhetage zählen als Tage – Vorlagen-Pläne zeigen deshalb „7 Tage“).
 - Wischen nach rechts: **Duplizieren** („… (Kopie)“, inaktiv, tiefe Kopie inkl. Zeitformat-/Zirkel-Parametern, Supersätzen und RIR-Vorgaben). Wischen nach links: **Löschen** (ohne Rückfrage; die Trainingshistorie bleibt erhalten).
 - Ein Banner weist auf eine offene Session hin; bei aktivem Lauf-Coaching erscheint die Machbarkeitskarte.
@@ -211,7 +211,7 @@ Möglich im Onboarding, in der Messung, über die gesperrten Dashboard-Karten (R
 | 19 | Kettlebell Fortgeschritten | 3 | Home-Gym | Exp. | Heavy Pull (EMOM Snatch), Heavy Push & Squat, Metabolic Conditioning (AMRAP 20) |
 | 20 | Kettlebell Komplexe | 5 | Home-Gym | Fortg., Exp. | 5 Komplexe: Ganzkörper (Zirkel 5×, 90 s), Schulter & Core (10×, bis zur Ausbelastung), Explosivität, Seated Control (AMRAP 15), Kraftausdauer |
 
-**Plan-Editor:** Name; Liste der Trainingstage (Mo→So, mit „N Übungen • Normal/Leicht/Schwer“); „+“ → *Trainingstag* oder *Ruhetag*; Umsortieren per ↑↓-Symbol (die vorhandenen Wochentage rotieren mit), Löschen per Wischen. Einstellungen: Wochen (1–52, nur Anzeige), Trainingsort, *Als aktiven Plan setzen*, *Progressions-Ziel-RIR* (Auto, ≤0, ≤1, ≤2, ≤3). Bei Plänen aus „Plan bauen“ gibt es zusätzlich **Neu rechnen**. Ein **Wechsel des Trainingsorts** führt durch Rückfragen (auch für andere aktive Pläne?) und tauscht passende Übungen automatisch aus; ersetzte Übungen werden archiviert und lassen sich wiederherstellen.
+**Plan-Editor:** Name; Liste der Trainingstage (Mo→So, mit „N Übungen • Normal/Leicht/Schwer“); „+“ → *Trainingstag* oder *Ruhetag*; Umsortieren per ↑↓-Symbol (die vorhandenen Wochentage rotieren mit), Löschen per Wischen. Einstellungen: Wochen (1–52, nur Anzeige), Trainingsort, *Als aktiven Plan setzen*, *Progressions-Ziel-RIR* (Auto oder RIR ≥ 0/1/2/3 im letzten Satz, siehe [5.5](#55-progression-deload-und-lauf-coaching)). Bei Plänen aus „Plan bauen“ gibt es zusätzlich **Neu rechnen**. Ein **Wechsel des Trainingsorts** führt durch Rückfragen (auch für andere aktive Pläne?) und tauscht passende Übungen automatisch aus; ersetzte Übungen werden archiviert und lassen sich wiederherstellen.
 
 **Tag-Editor**
 
@@ -281,7 +281,7 @@ Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorla
 
 **Smart Progression** (pro Übung, Vorgabe an): Nach dem Training erhöht Deltiq das Zielgewicht um das Inkrement (1,25/2,5/5 kg, Vorgabe 2,5), wenn **alle** geplanten Sätze geloggt wurden, jeder Satz die obere Wiederholungsgrenze erreicht hat und der **letzte Satz** noch RIR ≥ 2 (Grundübung) bzw. ≥ 1 (Isolation) hatte; der Plan-Wert *Progressions-Ziel-RIR* ersetzt diese Schwelle. Liegt ein Satz unter der unteren Grenze bei RIR ≤ 0, sinkt das Ziel um ein Inkrement; sonst bleibt es. Ein Session-Gefühl von 4 oder 5 verhindert jede Erhöhung. Angezeigt wird nur eine Änderung („Ziel erreicht – nächstes Mal mehr“, „Neues Ziel: x kg“). Cardio, zeitbasierte und Warm-up-Übungen sind ausgenommen.
 
-**Deload-Woche:** Empfohlen, wenn die Kraft-Belastung über die letzten drei vollen Wochen strikt steigt (Woche 3 ≥ 120 % von Woche 1) **und** in 14 Tagen mindestens zwei Kraft-Einheiten mit Gefühl 4/5 vorkamen. „Deload-Woche starten“ halbiert die Arbeitsgewichte des aktiven Plans (auf 2,5 kg gerundet); vorgesehen sind 7 Tage, ein Banner „Deload-Woche aktiv bis …“ ersetzt die Coaching-Karte. Nach Ablauf der 7 Tage werden die Originalgewichte beim nächsten Öffnen der App bzw. des Dashboards automatisch zurückgesetzt; vorher geht das jederzeit über „Deload beenden & Gewichte zurücksetzen“ (Banner) oder *Einstellungen → Trainings-Verhalten → „Gesenkte Gewichte zurücksetzen (N Übungen)“*. Der Schalter *Deload-Vorschläge* (Vorgabe an) steuert nur die Vorschläge.
+**Deload-Woche:** Empfohlen, wenn die Kraft-Belastung über die letzten drei vollen Wochen strikt steigt (Woche 3 ≥ 120 % von Woche 1) **und** in 14 Tagen mindestens zwei Kraft-Einheiten mit Gefühl 4/5 vorkamen. „Deload-Woche starten“ halbiert die Arbeitsgewichte des aktiven Plans (auf 2,5 kg gerundet); vorgesehen sind 7 Tage, ein Banner „Deload-Woche aktiv bis …“ ersetzt die Coaching-Karte (fehlt der Timer, steht die Meldung ohne Datum). Nach Ablauf der 7 Tage werden die Originalgewichte beim nächsten Öffnen der App bzw. des Dashboards automatisch zurückgesetzt; vorher geht das jederzeit über „Deload beenden & Gewichte zurücksetzen“ (Banner) oder *Einstellungen → Trainings-Verhalten → „Gesenkte Gewichte zurücksetzen (N Übungen)“*. Der Schalter *Deload-Vorschläge* (Vorgabe an) steuert nur die Vorschläge.
 
 **Wiedereinstieg („Willkommen zurück“):** Vor dem Start eines Sätze-Trainings (nicht bei Zeitformaten, und nur bei aktivem Schalter *Deload-Vorschläge*) erscheint ein Sheet, wenn die letzte Krafteinheit ≥ 14 Tage her ist (individuell max(14, 2,5 × typischer Abstand)), mindestens 3 Kraft-Einheiten vorliegen und kein Deload läuft. Empfohlene Reduktion: 14–20 Tage −5 %, 21–29 −10 %, 30–59 −15 %, 60–89 −20 %, 90–179 −25 %, ab 180 Tagen nur ein Hinweis. Wählbar sind 5–30 % in 5er-Schritten mit Vorschau (alt → neu); „Gewichte senken“ oder „Nein, volle Last“.
 
@@ -332,11 +332,11 @@ Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorla
 | **Über** | Version `x.y.z (Build)` und Bundle-ID |
 | **Daten-Management** | **App zurücksetzen** |
 
-**Profil bearbeiten** (speichert automatisch): *Person* (Geschlecht, Geburtsdatum), *Körpermasse* (Größe), *Ziel & Training* (Zielgewicht, Trainingsort – ein Wechsel bietet an, die Pläne anzupassen), *Cardio- & Lauf-Ziele* (siehe [5.5](#55-progression-deload-und-lauf-coaching)), *Wochenziel* (1–7, Vorgabe 1), *Equipment-Präferenzen* (7 Schalter), *Coach* (Trainingsziel, Coaching-Stil), *Apple Health* („Aus Apple Health übernehmen“: Geburtsdatum, Geschlecht, Größe).
+**Profil bearbeiten** (speichert automatisch): *Person* (Geschlecht, Geburtsdatum), *Körpermasse* (Größe), *Ziel & Training* (Zielgewicht, Trainingsort – ein Wechsel bietet an, die Pläne anzupassen), *Cardio- & Lauf-Ziele* (siehe [5.5](#55-progression-deload-und-lauf-coaching)), *Wochenziel* (1–7, Vorgabe 1), *Equipment-Präferenzen* (7 Schalter), *Coach* (Trainingsziel, Coaching-Stil), *Apple Health* („Aus Apple Health übernehmen“: Geburtsdatum, Geschlecht, Größe – ersetzt die aktuellen Werte, soweit Health sie liefert).
 
 **Ausrüstung & Schuhe (Gear-Tracker):** Laufschuhe und Fahrräder mit Name, Typ, *Max. km* (Vorgabe 800) und „Bisherigen km“. Beim Beenden eines Trainings mit Cardio wählst du die verwendete Ausrüstung; ihre Kilometer werden gutgeschrieben (nachträglich im Verlauf umbuchbar, beim Löschen von Einheiten rückgebucht). Ab Erreichen von „Max. km“ färbt sich der Eintrag rot („Schuh erneuern – Dämpfung erschöpft“).
 
-**App zurücksetzen:** löscht nach Rückfrage alle App-Daten (Profil, Messungen, Pläne, Einheiten, Rekorde, Wasser, Ausrüstung, Übungsvorlagen) und startet das Onboarding neu. Apple-Health-Daten, Einstellungen (Erscheinungsbild, Timer, Erinnerungen, Workout-Import) und Backup-Dateien bleiben bestehen; vorher wird **kein** Backup angelegt.
+**App zurücksetzen:** löscht nach Rückfrage alle App-Daten (Profil, Messungen, Pläne, Einheiten, Rekorde, Wasser, Ausrüstung, Übungsvorlagen) und startet das Onboarding neu; die System-Übungsbibliothek wird dabei sofort neu angelegt. Apple-Health-Daten, Einstellungen (Erscheinungsbild, Timer, Erinnerungen, Workout-Import) und Backup-Dateien bleiben bestehen; vorher wird **kein** Backup angelegt.
 
 ### 5.9 Apple Health
 
@@ -344,12 +344,12 @@ Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorla
 |---|---|---|
 | Lesen | Körpergewicht, Körperfett, Magermasse, Größe, Geburtsdatum, biologisches Geschlecht, Ruhepuls, Schritte | Onboarding, Messung (Gewicht-Vorbefüllung), Profil, Dashboard-Hero-Karten |
 | Schreiben | Körpergewicht, Körperfett, Magermasse | beim Speichern einer *neuen* Messung |
-| Schreiben | Workouts | beim Beenden eines Trainings: Kraft/Zeitformate als *Krafttraining* (indoor, ohne Kalorien, mit Sätzen/Volumen als Metadaten); reine Cardio-Einheit mit Distanz als *Laufen* (outdoor) mit Distanz-Sample |
+| Schreiben | Workouts | beim Beenden eines Trainings: Kraft/Zeitformate als *Krafttraining* (indoor, ohne Kalorien, mit Sätzen/Volumen als Metadaten); reine Cardio-Einheit mit Distanz als *Laufen* (outdoor), die Distanz als Sample „Gehen + Laufen“ (nur mit Freigabe dieses Typs, sonst nur in den Metadaten) |
 | Lesen (separater Schalter) | Läufe und Radfahrten **anderer Apps** | *Einstellungen → Apple Health → Workout-Import* |
 
 **Workout-Import (Adidas Running, Strava, …):** Der Schalter fragt nur den Lesezugriff auf Workouts an (zweiter iOS-Dialog) und startet sofort einen Sync – danach bei jedem App-Start. Importiert werden ausschließlich **Laufen und Radfahren** anderer Apps (nicht die von Deltiq selbst nach Health geschriebenen); jedes Workout wird zu einer abgeschlossenen spontanen Einheit mit einem Cardio-Eintrag („Freier Lauf“ / „Radfahren (outdoor)“, Dauer, ggf. Distanz) und im Verlauf mit dem Namen der Quell-App gekennzeichnet. Duplikate werden übersprungen (gleiche Health-ID oder mehr als die Hälfte der Dauer überlappt mit einer vorhandenen Einheit). Der erste Sync holt alle historischen Läufe/Radfahrten.
 
-**Hinweise:** Die App sieht nur den Schreibstatus für Körpergewicht – den Lesestatus gibt Apple nicht preis. Wird der Zugriff verweigert, funktioniert alles manuell weiter (*Mehr → Apple Health → „In iOS-Einstellungen öffnen“*).
+**Hinweise:** Die App sieht nur den Schreibstatus für Körpergewicht – den Lesestatus gibt Apple nicht preis. Wird der Zugriff verweigert, funktioniert alles manuell weiter (*Mehr → Apple Health → „In iOS-Einstellungen öffnen“*). Wer Apple Health verbunden hat, bevor die Distanz-Freigabe zum Dialog gehörte (frühe Test-Builds), wird nicht erneut gefragt – seine Läufe landen ohne Distanz-Sample in Health.
 
 ### 5.10 Daten sichern
 
@@ -381,7 +381,7 @@ Die Erinnerungen werden nach dem Onboarding, nach Imports und Backup-Wiederherst
 
 ### 5.12 Sprache, Design und Datenschutz
 
-- **Sprachen:** Deutsch, Englisch, Türkisch – die App folgt der iOS-Systemsprache (kein In-App-Wechsel). Der Katalog enthält 1747 Texte, alle in drei Sprachen vollständig. Nur auf Deutsch (nicht lokalisiert): Wasser-/Mess-Erinnerungstexte, Widget und Live Activity, die HealthKit-Berechtigungstexte, einige Hinweis- und Fehlermeldungen.
+- **Sprachen:** Deutsch, Englisch, Türkisch – die App folgt der iOS-Systemsprache (kein In-App-Wechsel). Der Katalog enthält 1738 Texte, alle in drei Sprachen vollständig; die Texte der Apple-Health-Berechtigungsdialoge stehen getrennt in `App/FitnessApp/InfoPlist.xcstrings` (ebenfalls DE/EN/TR). Nur auf Deutsch (nicht lokalisiert): Wasser-/Mess-Erinnerungstexte, Widget und Live Activity, einige Hinweis- und Fehlermeldungen.
 - **Design:** Akzentfarbe Orange; Erscheinungsbild System, Hell oder Dunkel.
 - **Datenschutz:** alle Daten bleiben lokal. Die App fragt **keinen** Zugriff auf Kamera, Fotos, Standort oder Mikrofon an und nutzt kein Netzwerk. Berechtigungen im Überblick: [6.2](#62-voraussetzungen-und-berechtigungen).
 
@@ -407,7 +407,7 @@ Hinweise: Für *interne* Tester verlangt Apple einen Eintrag im App-Store-Connec
 | Berechtigung | Wann | Wofür |
 |---|---|---|
 | Mitteilungen | Ende des Onboardings und nach einem Backup-Import im Onboarding (jeweils wenn eine Erinnerung an ist), beim Ändern eines Erinnerungs-Schalters, bei der ersten PR-Feier | Wasser-/Mess-Erinnerungen, „Pause vorbei!“, EMOM-Signale, PR-Meldung. Ohne Erlaubnis werden Erinnerungen still nicht geplant. |
-| Apple Health – Standard | Onboarding, Messung, Dashboard-Karten, Profil, Einstellungen | Lesen: Gewicht, Körperfett, Magermasse, Größe, Geburtsdatum, Geschlecht, Ruhepuls, Schritte · Schreiben: Gewicht, Körperfett, Magermasse, Workouts |
+| Apple Health – Standard | Onboarding, Messung, Dashboard-Karten, Profil, Einstellungen | Lesen: Gewicht, Körperfett, Magermasse, Größe, Geburtsdatum, Geschlecht, Ruhepuls, Schritte · Schreiben: Gewicht, Körperfett, Magermasse, Workouts samt Laufdistanz |
 | Apple Health – Workouts lesen | nur beim Einschalten von *Workout-Import* | Läufe/Radfahrten anderer Apps importieren |
 | Live Activities | in den iOS-Einstellungen | Pausen-Timer auf Sperrbildschirm/Dynamic Island |
 
@@ -434,7 +434,8 @@ Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder
 - [ ] Vorlage übernehmen: Plan aktiv, andere inaktiv, „7 Tage“ in der Liste
 - [ ] „Plan bauen“: verschiedene Arten und Erfahrungsstufen, Summe 7 Tage, *Neu rechnen*, feste Wochentage, Laufen mit Zeitformat; Plan übernehmen, eine Übung ändern, erneut *Neu rechnen*
 - [ ] Tag-Editor: alle fünf Strukturen, Parameter ändern, Tagesanalyse, Supersätze verbinden/trennen/umsortieren
-- [ ] Übungs-Editor: Kraft, Cardio, zeitbasiert, Smart-Progression
+- [ ] Übungs-Editor: Kraft, Cardio, zeitbasiert, Smart-Progression; die Hilfetexte und das *Progressions-Ziel-RIR* im Plan-Editor nennen „RIR ≥ …“
+- [ ] Leeren Plan anlegen (Systemsprache EN/TR): Name „New Plan“ / „Yeni Plan“, auch nach einem App-Neustart, solange er nicht umbenannt wird
 - [ ] Trainingsort mit mehreren Plänen wechseln (Dialogkette, Toast, Übungen wiederherstellen)
 - [ ] Übungsbibliothek: Suche, Filter, eigene Übung anlegen/umbenennen/löschen, Verlauf einer Übung
 
@@ -455,7 +456,8 @@ Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder
 **Messung und Werkzeuge**
 - [ ] Messung für Mann und Frau speichern, bearbeiten, löschen; kg/lbs umschalten und prüfen, was sich ändert
 - [ ] Zehntelwerte (64,1 / 64,6 / 65,1 kg) speichern → Anzeige „64,10“ usw., nicht „64,09“
-- [ ] Apple Health: alles erlauben · alles verweigern · nur Schreiben/nur Lesen verweigern
+- [ ] Apple Health: alles erlauben · alles verweigern · nur Schreiben/nur Lesen verweigern; der iOS-Dialog erscheint in der Systemsprache (DE/EN/TR)
+- [ ] Reine Cardio-Einheit mit Distanz beenden (nach frischem Verbinden mit Freigabe „Distanz (Gehen + Laufen)“) → *Laufen*-Workout mit Distanz in Apple Health
 - [ ] Hantel-, 1RM-, Kalorien-Rechner mit den Referenzwerten unten
 - [ ] Wasser: Schnell-Einträge, Tagesziel, Widget (+250 ml, danach Eintrag in der App prüfen), Erinnerung antippen → richtiger Tab
 
@@ -463,7 +465,7 @@ Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder
 - [ ] Frisch installieren, Onboarding mit eingeschalteten Erinnerungen abschließen, nichts weiter anfassen → Erinnerungen kommen (Vorgabe: Wasser alle 3 Stunden um 08, 11, 14, 17 und 20 Uhr; dazu sonntags 08:00 die Mess-Erinnerung)
 - [ ] Training loggen → App in den Hintergrund → Backup in der Dateien-App prüfen
 - [ ] Export-ZIP öffnen (12 CSV + `meta.json`); dieselbe ZIP erneut *Anhängen* (Workouts/Rekorde „übersprungen“, Pläne doppelt); *Ersetzen*; Wiederherstellen
-- [ ] Zurücksetzen → Onboarding; Backups bleiben
+- [ ] Zurücksetzen → Onboarding; Backups bleiben; die Übungsbibliothek ist sofort gefüllt (z. B. im Übungs-Picker, ohne Neustart)
 - [ ] Workout-Import: Lauf in Apple Health (von anderer App) → Schalter an → Einheit mit Quell-Badge; zweiter Sync erzeugt keine Duplikate
 - [ ] Sprachen DE/EN/TR umschalten (iOS-Einstellungen) und nicht übersetzte Texte melden
 
@@ -486,6 +488,8 @@ Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder
 - **Löschen ohne Rückfrage:** Plan (Wischen), Trainingstag, Übung im Tag-Editor, Messung, Ausrüstung, Wasser-Eintrag, „Heute zurücksetzen“.
 - **Messungen:** In der Liste erscheinen nur die 12 jüngsten (ältere bleiben gespeichert, sind aber nicht bearbeitbar). Es gibt keine Plausibilitätsgrenzen bei der Eingabe.
 - **Workout-Import:** nur Laufen/Radfahren, nur beim App-Start (kein Hintergrund-Sync); eine gelöschte importierte Einheit kommt beim nächsten Start zurück.
+- **Import:** Auch im Modus *Anhängen* werden Profil und portable Einstellungen mit den Werten aus der Datei überschrieben, und Pläne werden nie dedupliziert (ein erneuter Import derselben ZIP verdoppelt sie); der Bestätigungsdialog weist darauf hin.
+- **Deload ohne Timer:** Fehlt der Deload-Timer, obwohl noch gesicherte Originalgewichte existieren (Randfall), erkennt die App den Deload an den Gewichten, zeigt das Banner ohne Enddatum und beendet ihn nicht automatisch – hier hilft „Deload beenden“.
 - **Plan-Sessions:** Übungen lassen sich im laufenden Plan-Training weder hinzufügen noch tauschen (nur im spontanen Training); nachtragen geht über Verlauf → Bearbeiten. Der Pausen-Timer wird nach einem Wiedereintritt nicht wiederhergestellt.
 - **Backups:** unverschlüsselt und nur lokal (sie liegen im Geräte-Backup, ein iCloud-Drive-Container existiert nicht).
 - **Coaching:** Die Nachrichtentypen *Neuer Rekord*, *Plateau* und *Junk Miles* sind angelegt, aber nicht aktiv; der Maximalpuls im Profil wird nur gespeichert.
@@ -495,16 +499,11 @@ Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder
 
 Die folgenden Punkte stammen aus einer Code-Analyse und wurden **nicht** durchgängig auf dem Gerät bestätigt. Wer sie nachstellen kann, hilft uns besonders:
 
-1. **Import-Hinweis vs. Verhalten.** Die App verspricht „Bestehende Daten bleiben unangetastet“, überschreibt aber auch im Modus *Anhängen* das Profil und die portablen Einstellungen; ein erneuter Import derselben ZIP verdoppelt Pläne.
-2. **Health-Pull im Profil** überschreibt manuelle Werte, obwohl der Hinweis das Gegenteil sagt.
-3. **Smart-Progression-Texte.** Hilfetexte nennen „RIR ≤ 3 / ≤ 1“ bzw. „RIR ≤ x“, die Regel prüft jedoch „letzter Satz RIR ≥ 2 / ≥ 1“ (siehe [5.5](#55-progression-deload-und-lauf-coaching)).
-4. **Plan bauen:** Der Schritt „Ausrüstung“ beeinflusst die Übungsauswahl nicht (nur die Trainingsart); *Langhantel + Anfänger* liefert nur eine Übung; zeitbasierte Übungen (z. B. Plank, Burpees) bekommen in generierten Plänen die Standard-Wiederholungsspanne als Sekunden (8–12 s); der Plan ist immer „Gym“ und heißt „Individueller Plan“.
-5. **Training:** „Direkt starten“ bei einem Tag ohne Übungen reagiert nicht und gibt keinen Hinweis; die Benachrichtigung nach dem letzten Satz kann „Satz n+1 von n“ nennen.
-6. **Nach „App zurücksetzen“** ist die Übungsbibliothek ggf. leer, bis die App neu gestartet wurde (die Bibliothek wird beim Start neu angelegt).
-7. **Nicht lokalisierte Texte:** u. a. „Neuer Plan“, „Individueller Plan“, „Smart-Progression“, „Inkrement“, „WARM-UP“, „Diesen Plan übernehmen“, einige Toasts und Zeilen im Rekord-Screen erscheinen auch in EN/TR auf Deutsch.
-8. **Apple Health:** Die iOS-Berechtigungstexte nennen nur Gewicht und Körperfett (nicht Größe, Puls, Schritte, Workouts). Ob die Distanz eines nach Health geschriebenen Laufs ohne eigene Freigabe gespeichert wird, ist ungeklärt; für „zeitkritische“ Benachrichtigungen fehlt laut Code das passende Entitlement.
-9. **Dashboard-Zugang:** Sind die Karten „Rekorde“ und „Trainingsverlauf“ ausgeblendet, fehlt der direkte Zugang zu Trophy Room und Verlauf.
-10. **Deload ohne Timer.** Fehlt der Deload-Timer, obwohl noch gesicherte Originalgewichte existieren (Randfall), erkennt die App den Deload an den Gewichten, zeigt als Ende aber „1970“ und beendet ihn nicht automatisch – hier hilft „Deload beenden“.
+1. **Plan bauen:** Der Schritt „Ausrüstung“ beeinflusst die Übungsauswahl nicht (nur die Trainingsart); *Langhantel + Anfänger* liefert nur eine Übung; zeitbasierte Übungen (z. B. Plank, Burpees) bekommen in generierten Plänen die Standard-Wiederholungsspanne als Sekunden (8–12 s); der Plan ist immer „Gym“ und heißt „Individueller Plan“.
+2. **Training:** „Direkt starten“ bei einem Tag ohne Übungen reagiert nicht und gibt keinen Hinweis; die Benachrichtigung nach dem letzten Satz kann „Satz n+1 von n“ nennen.
+3. **Nicht lokalisierte Texte:** u. a. „Individueller Plan“, „Smart-Progression“, „Inkrement“, „WARM-UP“, „Diesen Plan übernehmen“, einige Toasts und Zeilen im Rekord-Screen erscheinen auch in EN/TR auf Deutsch.
+4. **Apple Health und Benachrichtigungen:** Ob ein Lauf mit Distanz samt Distanz-Sample in Apple Health ankommt (neue Freigabe „Distanz (Gehen + Laufen)“ im Health-Dialog), ist auf dem Gerät noch nicht bestätigt; für „zeitkritische“ Benachrichtigungen fehlt laut Code das passende Entitlement.
+5. **Dashboard-Zugang:** Sind die Karten „Rekorde“ und „Trainingsverlauf“ ausgeblendet, fehlt der direkte Zugang zu Trophy Room und Verlauf.
 
 ### 6.6 Feedback geben
 
@@ -607,7 +606,7 @@ Einrichtung des TestFlight-Flows: [`TestFlightSetup.md`](./TestFlightSetup.md). 
 
 Ausführlich in [`CONTRIBUTING.md`](./CONTRIBUTING.md). Kurzfassung:
 
-- **String-Katalog** (`Sources/FitnessAppUI/Resources/Localizable.xcstrings`) ist die einzige Quelle; DE, EN und TR immer vollständig. Keys: `domain.subdomain.purpose` mit camelCase-Suffix (keine Parent-Leaf-Kollisionen); Plural über `.one`/`.other`-Keys statt `variations`; mehrere Format-Argumente positional (`%1$@`).
+- **String-Katalog** (`Sources/FitnessAppUI/Resources/Localizable.xcstrings`) ist die einzige Quelle für App-Texte; DE, EN und TR immer vollständig (Ausnahme: die Berechtigungstexte in `App/FitnessApp/InfoPlist.xcstrings`, Fallback = englischer Info.plist-Wert). Keys: `domain.subdomain.purpose` mit camelCase-Suffix (keine Parent-Leaf-Kollisionen); Plural über `.one`/`.other`-Keys statt `variations`; mehrere Format-Argumente positional (`%1$@`).
 - Nach Refactors `python .scripts/dead_catalog_v3.py` (Ziel `UNUSED: 0`) und `python .scripts/generate_translations_md.py` – im selben Commit wie die Änderung.
 - Neue Binärformate zuerst in `.gitattributes` eintragen.
 - Commit-Prefix `DEL-…` oder `UX-…` mit kurzer Beschreibung.
@@ -630,7 +629,7 @@ Ausführlich in [`CONTRIBUTING.md`](./CONTRIBUTING.md). Kurzfassung:
 - **Widgets:** weitere Home-Screen-Widgets („Nächstes Training“, „Letzte Messung“) sind nur als Idee im Widget-Bundle vermerkt.
 - **Release:** Public-Release-Workflow und Datenschutz-Manifest (`PrivacyInfo.xcprivacy`) fehlen noch.
 - **Einheiten:** durchgängige lbs-/in-Unterstützung (Eingaben, Volumen, Rekorde, Messung).
-- **Lokalisierung:** Widget, Live Activity, Erinnerungen, Berechtigungstexte und einzelne Meldungen in DE/EN/TR.
+- **Lokalisierung:** Widget, Live Activity, Erinnerungen und einzelne Meldungen in DE/EN/TR.
 - **Health:** Retro-Sync des Cardio-Baselines aus der HealthKit-Historie (bewusst zurückgestellt, damit Bestandsnutzer keinen neuen Berechtigungsdialog sehen); Workout-Import ohne Hintergrund-Sync.
 - **Coaching:** Auslöser für *Neuer Rekord*, *Plateau* und *Junk Miles*; Wiedereinstieg passt bisher nur Gewichte an (nicht Volumen/RIR); Maximalpuls hat noch keinen Verbraucher.
 - **Ausrüstung:** eigenes Feld für Basis-Kilometer (Schemaänderung zurückgestellt).
