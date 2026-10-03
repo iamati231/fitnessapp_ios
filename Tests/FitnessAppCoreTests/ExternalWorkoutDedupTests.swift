@@ -65,4 +65,43 @@ final class ExternalWorkoutDedupTests: XCTestCase {
             ]
         ))
     }
+
+    // MARK: - Export-Richtung (Deltiq-Session als Sample, Health-Workouts als Fenster)
+    //
+    // Beim Export frueherer Trainings nach Apple Health sind die Rollen
+    // vertauscht: das Sample ist die Deltiq-Session, die Fenster sind die in
+    // Health sichtbaren Workouts. Normiert wird auf die Dauer der SESSION.
+
+    /// Ein kurzes Fremd-Workout (z.B. 10-min-Walk einer Uhr) innerhalb einer
+    /// langen Session blockiert sie nicht.
+    func testShortExistingWorkoutInsideALongSampleIsNoDuplicate() {
+        XCTAssertFalse(ExternalWorkoutDedup.overlapsExisting(
+            sampleStart: base, sampleEnd: minutes(70),
+            existingWindows: [(start: minutes(20), end: minutes(30))]
+        ))
+    }
+
+    /// Eine Session innerhalb eines laengeren Fremd-Workouts ist abgedeckt.
+    func testSampleInsideALongerExistingWorkoutIsADuplicate() {
+        XCTAssertTrue(ExternalWorkoutDedup.overlapsExisting(
+            sampleStart: minutes(30), sampleEnd: minutes(60),
+            existingWindows: [(start: base, end: minutes(180))]
+        ))
+    }
+
+    /// Direkt aneinandergrenzende Workouts (Ende == Start) ueberlappen nicht.
+    func testAdjacentWindowsAreNoDuplicate() {
+        XCTAssertFalse(ExternalWorkoutDedup.overlapsExisting(
+            sampleStart: minutes(30), sampleEnd: minutes(60),
+            existingWindows: [(start: base, end: minutes(30)), (start: minutes(60), end: minutes(90))]
+        ))
+    }
+
+    /// Genau die Haelfte reicht NICHT (strikt "mehr als die Haelfte").
+    func testExactlyHalfOverlapIsNoDuplicate() {
+        XCTAssertFalse(ExternalWorkoutDedup.overlapsExisting(
+            sampleStart: base, sampleEnd: minutes(40),
+            existingWindows: [(start: minutes(20), end: minutes(80))]
+        ))
+    }
 }
