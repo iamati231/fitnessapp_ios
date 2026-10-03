@@ -347,7 +347,8 @@ public actor HealthKitService {
                         endDate: workout.endDate,
                         distanceKm: workout.totalDistance?.doubleValue(for: .meterUnit(with: .kilo)),
                         sourceName: workout.sourceRevision.source.name,
-                        sourceBundleIdentifier: bundleID
+                        sourceBundleIdentifier: bundleID,
+                        activeDurationSeconds: workout.duration
                     )
                 }
                 continuation.resume(returning: externals)

@@ -38,6 +38,12 @@ public enum ExternalWorkoutImportService {
         ))) ?? []
 
         var knownUUIDs = Set(existing.compactMap(\.healthKitSampleUUID))
+        var sessionsByUUID: [String: WorkoutSession] = [:]
+        for session in existing {
+            if let uuid = session.healthKitSampleUUID, sessionsByUUID[uuid] == nil {
+                sessionsByUUID[uuid] = session
+            }
+        }
         // `var`, nicht `let`: muss um jede in DIESEM Sync-Lauf neu eingefuegte
         // Session wachsen. Sonst wuerden zwei verschiedene HK-Samples fuer
         // dasselbe reale Event (z.B. ein Lauf, den sowohl Adidas Running ALS
@@ -48,7 +54,12 @@ public enum ExternalWorkoutImportService {
         var existingWindows = existing.map { (start: $0.startTime, end: $0.endTime) }
 
         for sample in samples {
-            guard !knownUUIDs.contains(sample.hkUUID) else { continue }
+            guard !knownUUIDs.contains(sample.hkUUID) else {
+                if let session = sessionsByUUID[sample.hkUUID] {
+                    correctDuration(of: session, from: sample)
+                }
+                continue
+            }
             let overlaps = ExternalWorkoutDedup.overlapsExisting(
                 sampleStart: sample.startDate,
                 sampleEnd: sample.endDate,
@@ -61,6 +72,28 @@ public enum ExternalWorkoutImportService {
         }
 
         try? context.save()
+    }
+
+    /// Bereits importierte, noch UNVERAENDERTE Einheit auf die richtige Laufzeit
+    /// bringen: Fruehere Versionen speicherten Beginn bis Ende (mit Pausen, auf die
+    /// naechste Sekunde gerundet). Eine im Verlauf geaenderte Dauer bleibt
+    /// (`ExternalWorkoutDuration.correctedSeconds`); Beginn und Ende der Einheit
+    /// bleiben immer.
+    private static func correctDuration(of session: WorkoutSession, from sample: ExternalWorkoutSample) {
+        // Nur die vom Import angelegte Einheit: genau ein Cardio-Eintrag mit Zeit.
+        guard session.logs.count == 1,
+              let log = session.logs.first,
+              let stored = log.durationSeconds,
+              let corrected = ExternalWorkoutDuration.correctedSeconds(
+                  storedSeconds: stored,
+                  storedMinutes: session.durationMinutes,
+                  start: session.startTime,
+                  end: session.endTime,
+                  activeSeconds: sample.activeDurationSeconds
+              )
+        else { return }
+        log.durationSeconds = corrected
+        session.durationMinutes = corrected / 60
     }
 
     /// Name der Bibliotheks-Vorlage je Aktivitaet — exakt die bestehenden
@@ -99,7 +132,13 @@ public enum ExternalWorkoutImportService {
         )
         context.insert(exercise)
 
-        let durationSeconds = max(0, Int(sample.endDate.timeIntervalSince(sample.startDate).rounded()))
+        // Die Laufzeit der Quell-App (aktive Zeit ohne Pausen), abgerundet; Beginn
+        // und Ende bleiben die des Health-Eintrags.
+        let durationSeconds = ExternalWorkoutDuration.seconds(
+            start: sample.startDate,
+            end: sample.endDate,
+            activeSeconds: sample.activeDurationSeconds
+        )
         let session = WorkoutSession(
             startTime: sample.startDate,
             endTime: sample.endDate,

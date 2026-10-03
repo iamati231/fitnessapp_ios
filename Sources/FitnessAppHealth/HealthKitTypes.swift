@@ -254,6 +254,10 @@ public struct ExternalWorkoutSample: Sendable, Equatable {
     public let distanceKm: Double?
     public let sourceName: String
     public let sourceBundleIdentifier: String
+    /// `HKWorkout.duration`: die AKTIVE Zeit des Workouts — ohne Pausen bzw. die
+    /// Dauer, die die Quell-App angibt. Kann kuerzer sein als `startDate` bis
+    /// `endDate`; das ist die Laufzeit, die auch die Quell-App zeigt.
+    public let activeDurationSeconds: TimeInterval?
 
     public init(
         hkUUID: String,
@@ -262,7 +266,8 @@ public struct ExternalWorkoutSample: Sendable, Equatable {
         endDate: Date,
         distanceKm: Double?,
         sourceName: String,
-        sourceBundleIdentifier: String
+        sourceBundleIdentifier: String,
+        activeDurationSeconds: TimeInterval? = nil
     ) {
         self.hkUUID = hkUUID
         self.activityType = activityType
@@ -271,6 +276,7 @@ public struct ExternalWorkoutSample: Sendable, Equatable {
         self.distanceKm = distanceKm
         self.sourceName = sourceName
         self.sourceBundleIdentifier = sourceBundleIdentifier
+        self.activeDurationSeconds = activeDurationSeconds
     }
 }
 
