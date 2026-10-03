@@ -114,4 +114,15 @@ public final class TrainingPlan {
         self.generationSourceRaw = generationSource.rawValue
     }
 }
+
+extension TrainingPlan {
+    /// System-Name und Katalog-Schluessel eines vom Nutzer frisch angelegten,
+    /// leeren Plans ("Neuer Plan" / "New Plan" / "Yeni Plan"). Beide Seiten
+    /// muessen dasselbe Paar kennen: `PlansListView.createNewPlan` legt den
+    /// Plan damit an, `LibrarySeeder.backfillCustomNamesIfNeeded` darf ihn
+    /// nicht als Nutzer-Umbenennung werten (sonst friert der deutsche Name
+    /// beim naechsten App-Start als `customName` fest).
+    public static let blankPlanName = "Neuer Plan"
+    public static let blankPlanLocalizationKey = "plans.new"
+}
 #endif

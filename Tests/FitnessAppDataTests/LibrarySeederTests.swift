@@ -123,5 +123,51 @@ final class LibrarySeederTests: XCTestCase {
         XCTAssertEqual(customTemplates.count, 1)
         XCTAssertEqual(customTemplates.first?.name, "Meine eigene Uebung")
     }
+
+    // MARK: - backfillCustomNamesIfNeeded (Plaene)
+
+    /// Der frisch angelegte Leer-Plan ("Neuer Plan" + Katalog-Schluessel) ist
+    /// kein Nutzer-Name. Ohne die Ausnahme im Backfill wuerde sein deutscher
+    /// Name beim naechsten App-Start als `customName` festgeschrieben, und
+    /// "New Plan"/"Yeni Plan" waere nie zu sehen.
+    func testBackfillCustomNamesKeepsFreshBlankPlanUnnamed() {
+        let plan = TrainingPlan(
+            name: TrainingPlan.blankPlanName,
+            localizationKey: TrainingPlan.blankPlanLocalizationKey
+        )
+        context.insert(plan)
+
+        let updated = LibrarySeeder.backfillCustomNamesIfNeeded(in: context)
+
+        XCTAssertEqual(updated, 0)
+        XCTAssertNil(plan.customName)
+    }
+
+    /// Ein umbenannter Plan (Nutzer-Name im `name`-Feld, wie vor DEL-125)
+    /// wird weiterhin als `customName` gesichert - auch wenn er noch den
+    /// Katalog-Schluessel des Leer-Plans traegt.
+    func testBackfillCustomNamesStillSecuresRenamedBlankPlan() {
+        let plan = TrainingPlan(
+            name: "Mein Push-Plan",
+            localizationKey: TrainingPlan.blankPlanLocalizationKey
+        )
+        context.insert(plan)
+
+        let updated = LibrarySeeder.backfillCustomNamesIfNeeded(in: context)
+
+        XCTAssertEqual(updated, 1)
+        XCTAssertEqual(plan.customName, "Mein Push-Plan")
+    }
+
+    /// Plaene ohne Schluessel (vor dieser Aenderung angelegt) behalten ihr
+    /// bisheriges Verhalten: der Name gilt als Nutzer-Name.
+    func testBackfillCustomNamesTreatsKeylessBlankPlanAsUserName() {
+        let plan = TrainingPlan(name: TrainingPlan.blankPlanName)
+        context.insert(plan)
+
+        _ = LibrarySeeder.backfillCustomNamesIfNeeded(in: context)
+
+        XCTAssertEqual(plan.customName, TrainingPlan.blankPlanName)
+    }
 }
 #endif

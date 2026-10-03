@@ -425,10 +425,13 @@ public struct PlansListView: View {
 
     private func createNewPlan() {
         let plan = TrainingPlan(
-            name: "Neuer Plan",
+            name: TrainingPlan.blankPlanName,
             weeks: 12,
             isActive: plans.isEmpty,                       // first plan is active by default
-            targetEnvironment: .gym
+            targetEnvironment: .gym,
+            // `name` bleibt der deutsche System-Name (Namens-Lookups), die
+            // Anzeige kommt ueber den Katalog: "New Plan" / "Yeni Plan".
+            localizationKey: TrainingPlan.blankPlanLocalizationKey
         )
         modelContext.insert(plan)
         navigation.workoutPath.append(plan)

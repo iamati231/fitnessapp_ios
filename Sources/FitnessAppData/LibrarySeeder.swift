@@ -271,7 +271,13 @@ public enum LibrarySeeder {
         for plan in pendingPlans {
             let isSystemDefault: Bool = {
                 guard let template = templatesByID[plan.programType] else {
-                    return false   // Custom-Plan ohne Template-Origin
+                    // Custom-Plan ohne Template-Origin: nur der noch
+                    // unbenannte Leer-Plan traegt einen System-Namen. Ohne
+                    // diese Ausnahme wuerde sein deutscher Name beim naechsten
+                    // Start als `customName` festgeschrieben und der
+                    // Katalog-Schluessel waere wirkungslos.
+                    return plan.localizationKey == TrainingPlan.blankPlanLocalizationKey
+                        && plan.name == TrainingPlan.blankPlanName
                 }
                 return plan.name == template.name
             }()
