@@ -281,7 +281,7 @@ Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorla
 
 **Smart Progression** (pro Übung, Vorgabe an): Nach dem Training erhöht Deltiq das Zielgewicht um das Inkrement (1,25/2,5/5 kg, Vorgabe 2,5), wenn **alle** geplanten Sätze geloggt wurden, jeder Satz die obere Wiederholungsgrenze erreicht hat und der **letzte Satz** noch RIR ≥ 2 (Grundübung) bzw. ≥ 1 (Isolation) hatte; der Plan-Wert *Progressions-Ziel-RIR* ersetzt diese Schwelle. Liegt ein Satz unter der unteren Grenze bei RIR ≤ 0, sinkt das Ziel um ein Inkrement; sonst bleibt es. Ein Session-Gefühl von 4 oder 5 verhindert jede Erhöhung. Angezeigt wird nur eine Änderung („Ziel erreicht – nächstes Mal mehr“, „Neues Ziel: x kg“). Cardio, zeitbasierte und Warm-up-Übungen sind ausgenommen.
 
-**Deload-Woche:** Empfohlen, wenn die Kraft-Belastung über die letzten drei vollen Wochen strikt steigt (Woche 3 ≥ 120 % von Woche 1) **und** in 14 Tagen mindestens zwei Kraft-Einheiten mit Gefühl 4/5 vorkamen. „Deload-Woche starten“ halbiert die Arbeitsgewichte des aktiven Plans (auf 2,5 kg gerundet); vorgesehen sind 7 Tage, ein Banner „Deload-Woche aktiv bis …“ ersetzt die Coaching-Karte. Nach Ablauf der 7 Tage werden die Originalgewichte beim nächsten Öffnen des Dashboards automatisch zurückgesetzt; vorher geht das jederzeit über „Deload beenden & Gewichte zurücksetzen“ (Banner) oder *Einstellungen → Trainings-Verhalten → „Gesenkte Gewichte zurücksetzen (N Übungen)“*. Der Schalter *Deload-Vorschläge* (Vorgabe an) steuert nur die Vorschläge.
+**Deload-Woche:** Empfohlen, wenn die Kraft-Belastung über die letzten drei vollen Wochen strikt steigt (Woche 3 ≥ 120 % von Woche 1) **und** in 14 Tagen mindestens zwei Kraft-Einheiten mit Gefühl 4/5 vorkamen. „Deload-Woche starten“ halbiert die Arbeitsgewichte des aktiven Plans (auf 2,5 kg gerundet); vorgesehen sind 7 Tage, ein Banner „Deload-Woche aktiv bis …“ ersetzt die Coaching-Karte. Nach Ablauf der 7 Tage werden die Originalgewichte beim nächsten Öffnen der App bzw. des Dashboards automatisch zurückgesetzt; vorher geht das jederzeit über „Deload beenden & Gewichte zurücksetzen“ (Banner) oder *Einstellungen → Trainings-Verhalten → „Gesenkte Gewichte zurücksetzen (N Übungen)“*. Der Schalter *Deload-Vorschläge* (Vorgabe an) steuert nur die Vorschläge.
 
 **Wiedereinstieg („Willkommen zurück“):** Vor dem Start eines Sätze-Trainings (nicht bei Zeitformaten, und nur bei aktivem Schalter *Deload-Vorschläge*) erscheint ein Sheet, wenn die letzte Krafteinheit ≥ 14 Tage her ist (individuell max(14, 2,5 × typischer Abstand)), mindestens 3 Kraft-Einheiten vorliegen und kein Deload läuft. Empfohlene Reduktion: 14–20 Tage −5 %, 21–29 −10 %, 30–59 −15 %, 60–89 −20 %, 90–179 −25 %, ab 180 Tagen nur ein Hinweis. Wählbar sind 5–30 % in 5er-Schritten mit Vorschau (alt → neu); „Gewichte senken“ oder „Nein, volle Last“.
 
@@ -375,7 +375,7 @@ Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorla
 | EMOM-Minutensignale | während eines EMOM im Hintergrund (nur mit Ton an) |
 | PR-Feier | ca. 1 s nach einem Training mit Rekord (bei aktivem *PR-Feiern*) |
 
-Die Erinnerungen werden nach dem Onboarding, nach Imports und bei jedem App-Start gegen deine Schalter abgeglichen (auch nach Neuinstallation oder Geräte-Wiederherstellung); ohne Benachrichtigungs-Erlaubnis bleiben sie ungeplant. Antippen der Wasser-Erinnerung öffnet *Werkzeuge → Wasser*, der Mess-Erinnerung den Messung-Tab.
+Die Erinnerungen werden nach dem Onboarding, nach Imports und Backup-Wiederherstellungen sowie bei jedem App-Start gegen deine Schalter abgeglichen (z. B. nach einer Geräte-Wiederherstellung); ohne Benachrichtigungs-Erlaubnis bleiben sie ungeplant. Antippen der Wasser-Erinnerung öffnet *Werkzeuge → Wasser*, der Mess-Erinnerung den Messung-Tab.
 
 **Deep-Links** (Schema `fitnessapp`): `fitnessapp://workout/active` öffnet den Plan-Tab mit der laufenden Session (Tap auf die Live Activity), `fitnessapp://dashboard` das Dashboard.
 
@@ -406,7 +406,7 @@ Hinweise: Für *interne* Tester verlangt Apple einen Eintrag im App-Store-Connec
 
 | Berechtigung | Wann | Wofür |
 |---|---|---|
-| Mitteilungen | Ende des Onboardings (wenn eine Erinnerung an ist), beim Ändern eines Erinnerungs-Schalters, bei der ersten PR-Feier | Wasser-/Mess-Erinnerungen, „Pause vorbei!“, EMOM-Signale, PR-Meldung. Ohne Erlaubnis werden Erinnerungen still nicht geplant. |
+| Mitteilungen | Ende des Onboardings und nach einem Backup-Import im Onboarding (jeweils wenn eine Erinnerung an ist), beim Ändern eines Erinnerungs-Schalters, bei der ersten PR-Feier | Wasser-/Mess-Erinnerungen, „Pause vorbei!“, EMOM-Signale, PR-Meldung. Ohne Erlaubnis werden Erinnerungen still nicht geplant. |
 | Apple Health – Standard | Onboarding, Messung, Dashboard-Karten, Profil, Einstellungen | Lesen: Gewicht, Körperfett, Magermasse, Größe, Geburtsdatum, Geschlecht, Ruhepuls, Schritte · Schreiben: Gewicht, Körperfett, Magermasse, Workouts |
 | Apple Health – Workouts lesen | nur beim Einschalten von *Workout-Import* | Läufe/Radfahrten anderer Apps importieren |
 | Live Activities | in den iOS-Einstellungen | Pausen-Timer auf Sperrbildschirm/Dynamic Island |
@@ -424,6 +424,7 @@ Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder
 - [ ] Leeres Dashboard → erstes Training → Karten füllen sich
 - [ ] Hero-Karten wechseln; Widgets aus-/einblenden und umsortieren
 - [ ] Drei Messungen anlegen → Gewichts-Prognose; Trainingskalender und Wochenserie
+- [ ] Hero-Karte „Gewicht“: Wochen-Delta bei 100-g-Schritten (z. B. 70,2 → 70,3 kg nach einer Woche) zeigt „+0,1 kg / Wo.“, nicht „+0,0“
 - [ ] Coach-Ton ändern und Hinweistexte vergleichen
 - [ ] Einheiten im Verlauf **rückdatieren** (Datum ist bearbeitbar), um Deload-, Wiedereinstiegs- und Serien-Logik zu testen
 - [ ] Neuer Nutzer ohne Training: Der Hinweis „Wiedereinstieg“ erscheint nicht
@@ -447,7 +448,7 @@ Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder
 - [ ] Zusammenfassung: Erfolge, Rekorde, Progression, Notiz, Gerät zuordnen
 - [ ] Verlauf: Training bearbeiten und löschen; Trophy Room „Aus History neu berechnen“
 - [ ] Progression: obere Grenze + RIR ≥ 2 → „Neues Ziel“; Gefühl 4/5 → keine Erhöhung; unter der Untergrenze bei RIR 0 → Senkung
-- [ ] Deload starten und manuell beenden; nach Ablauf der 7 Tage (z. B. Gerätedatum um 8 Tage vorstellen) das Dashboard öffnen → Gewichte sind automatisch zurückgesetzt, Banner weg
+- [ ] Deload starten und manuell beenden; nach Ablauf der 7 Tage (z. B. Gerätedatum um 8 Tage vorstellen) die App erneut in den Vordergrund holen → Gewichte sind automatisch zurückgesetzt, Banner weg
 - [ ] „Willkommen zurück“ (≥ 14 Tage Pause, ≥ 3 Kraft-Einheiten)
 - [ ] Lauf-Coaching: Profil → Ziel, Datum, Volumen → Machbarkeitskarte (alle drei Reaktionen); Retro-Sync
 
@@ -459,7 +460,7 @@ Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder
 - [ ] Wasser: Schnell-Einträge, Tagesziel, Widget (+250 ml, danach Eintrag in der App prüfen), Erinnerung antippen → richtiger Tab
 
 **Daten und Einstellungen**
-- [ ] Frisch installieren, Onboarding mit eingeschalteten Erinnerungen abschließen, nichts weiter anfassen → Wasser-Erinnerungen kommen (08:00–20:00 im gewählten Abstand)
+- [ ] Frisch installieren, Onboarding mit eingeschalteten Erinnerungen abschließen, nichts weiter anfassen → Erinnerungen kommen (Vorgabe: Wasser alle 3 Stunden um 08, 11, 14, 17 und 20 Uhr; dazu sonntags 08:00 die Mess-Erinnerung)
 - [ ] Training loggen → App in den Hintergrund → Backup in der Dateien-App prüfen
 - [ ] Export-ZIP öffnen (12 CSV + `meta.json`); dieselbe ZIP erneut *Anhängen* (Workouts/Rekorde „übersprungen“, Pläne doppelt); *Ersetzen*; Wiederherstellen
 - [ ] Zurücksetzen → Onboarding; Backups bleiben
@@ -503,7 +504,7 @@ Die folgenden Punkte stammen aus einer Code-Analyse und wurden **nicht** durchg�
 7. **Nicht lokalisierte Texte:** u. a. „Neuer Plan“, „Individueller Plan“, „Smart-Progression“, „Inkrement“, „WARM-UP“, „Diesen Plan übernehmen“, einige Toasts und Zeilen im Rekord-Screen erscheinen auch in EN/TR auf Deutsch.
 8. **Apple Health:** Die iOS-Berechtigungstexte nennen nur Gewicht und Körperfett (nicht Größe, Puls, Schritte, Workouts). Ob die Distanz eines nach Health geschriebenen Laufs ohne eigene Freigabe gespeichert wird, ist ungeklärt; für „zeitkritische“ Benachrichtigungen fehlt laut Code das passende Entitlement.
 9. **Dashboard-Zugang:** Sind die Karten „Rekorde“ und „Trainingsverlauf“ ausgeblendet, fehlt der direkte Zugang zu Trophy Room und Verlauf.
-10. **Deload nach Neuinstallation oder Wiederherstellung.** Geht der Deload-Timer verloren (Neuinstallation, Backup-Wiederherstellung während einer Deload-Woche), erkennt die App den Deload noch an den gesicherten Gewichten, zeigt als Ende aber „1970“ und beendet ihn nicht automatisch – hier hilft „Deload beenden“.
+10. **Deload ohne Timer.** Fehlt der Deload-Timer, obwohl noch gesicherte Originalgewichte existieren (Randfall), erkennt die App den Deload an den Gewichten, zeigt als Ende aber „1970“ und beendet ihn nicht automatisch – hier hilft „Deload beenden“.
 
 ### 6.6 Feedback geben
 
