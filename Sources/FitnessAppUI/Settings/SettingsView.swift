@@ -815,6 +815,12 @@ public struct SettingsView: View {
                 try self.deleteAll(of: Gear.self)
                 try self.deleteAll(of: UserBodyProfile.self)
                 try self.modelContext.save()
+                // Die System-Uebungsbibliothek gehoert zum frischen Zustand:
+                // RootView seedet sie nur beim App-START, ohne das blieben
+                // Bibliothek und Uebungs-Picker bis zum naechsten Neustart
+                // leer (auch im Onboarding direkt nach dem Reset).
+                _ = LibrarySeeder.seedIfNeeded(in: self.modelContext)
+                try? self.modelContext.save()
             } catch {
                 self.resetErrorMessage = error.localizedDescription
             }
