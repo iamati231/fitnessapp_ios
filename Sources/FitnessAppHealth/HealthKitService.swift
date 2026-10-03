@@ -261,8 +261,8 @@ public actor HealthKitService {
     /// Pulls running/cycling workouts written by OTHER apps (e.g. Adidas
     /// Running) since `since` (or all-time when `nil`). Excludes this app's
     /// own written workouts by source bundle identifier — without that
-    /// filter, every workout we push via `saveStrengthTrainingWorkout`/
-    /// `saveRunningWorkout` would loop straight back in as a "new external"
+    /// filter, every workout we push via `saveWorkout` would loop straight
+    /// back in as a "new external"
     /// workout on the next sync.
     ///
     /// Read authorization is invisible to us by design (see
@@ -393,132 +393,6 @@ public actor HealthKitService {
         let q = HKQuantity(unit: .gramUnit(with: .kilo), doubleValue: kg)
         let sample = HKQuantitySample(type: Self.leanMassType, quantity: q, start: date, end: date)
         try await persist(sample)
-    }
-
-    /// Pushes a finished strength-training workout to Apple Health. The user's
-    /// Activity rings (Move + Exercise) and the Fitness app's "Workouts" list
-    /// pick this up — same surface as an Apple-Watch-recorded workout.
-    ///
-    /// **No `totalEnergyBurned`** by design: without live heart-rate samples we
-    /// can't estimate calories accurately, and shipping a fabricated number
-    /// would corrupt the user's energy data. Apple Health falls back to a
-    /// conservative estimate from background pulse data, which is the right
-    /// behavior.
-    ///
-    /// **Custom metadata** uses bundle-prefixed keys so other apps that read
-    /// our workouts (rare, but possible) can find our specifics without
-    /// colliding with Apple's reserved namespace.
-    public func saveStrengthTrainingWorkout(
-        startDate: Date,
-        endDate: Date,
-        totalSets: Int,
-        totalVolumeKg: Double
-    ) async throws {
-        let configuration = HKWorkoutConfiguration()
-        configuration.activityType = .traditionalStrengthTraining
-        configuration.locationType = .indoor
-
-        let builder = HKWorkoutBuilder(
-            healthStore: store,
-            configuration: configuration,
-            device: nil
-        )
-
-        // HKMetadataKeyIndoorWorkout is Apple's standard flag — the Fitness
-        // app uses it to skip GPS-route rendering. The bundle-prefixed keys
-        // are our own.
-        let metadata: [String: Any] = [
-            HKMetadataKeyIndoorWorkout: true,
-            "com.atamya.FitnessApp.TotalSets": totalSets,
-            "com.atamya.FitnessApp.TotalVolumeKg": totalVolumeKg
-        ]
-
-        do {
-            try await builder.beginCollection(at: startDate)
-            try await builder.addMetadata(metadata)
-            try await builder.endCollection(at: endDate)
-            _ = try await builder.finishWorkout()
-        } catch {
-            throw HealthKitError.saveFailed(reason: error.localizedDescription)
-        }
-    }
-
-    /// DEL-063: Cardio-Sessions (z.B. Hybrid-Lauftage) duerfen nicht als
-    /// `.traditionalStrengthTraining` in Apple Health landen — die Fitness-
-    /// App wertet sie sonst falsch fuer den Bewegungs-Ring aus.
-    ///
-    /// Diese Methode schreibt das Workout als `.running` und haengt
-    /// zusaetzlich ein `distanceWalkingRunning`-Quantity-Sample an, damit
-    /// die Gesamt-Kilometer in den Trainings-Statistiken erscheinen — sofern
-    /// der Nutzer diesen Typ freigegeben hat und HealthKit das Sample
-    /// annimmt; das Workout selbst haengt davon nicht ab.
-    ///
-    /// **Custom metadata**: bundle-prefixed Keys (`TotalDistanceKm`,
-    /// `AveragePaceMinPerKm`) bleiben fuer eventuelle App-zu-App-Reads
-    /// erhalten.
-    public func saveRunningWorkout(
-        startDate: Date,
-        endDate: Date,
-        totalDistanceKm: Double,
-        averagePaceMinPerKm: Double?
-    ) async throws {
-        let configuration = HKWorkoutConfiguration()
-        configuration.activityType = .running
-        configuration.locationType = .outdoor
-
-        let builder = HKWorkoutBuilder(
-            healthStore: store,
-            configuration: configuration,
-            device: nil
-        )
-
-        var metadata: [String: Any] = [
-            "com.atamya.FitnessApp.TotalDistanceKm": totalDistanceKm
-        ]
-        if let pace = averagePaceMinPerKm, pace > 0 {
-            metadata["com.atamya.FitnessApp.AveragePaceMinPerKm"] = pace
-        }
-
-        do {
-            try await builder.beginCollection(at: startDate)
-            try await builder.addMetadata(metadata)
-
-            // Distanz-Sample anhaengen, damit die Apple-Health-UI die
-            // Kilometer sauber zaehlt und die Fitness-Bewegungs-Ringe
-            // korrekt aufgeladen werden. Nur mit Schreibfreigabe fuer den
-            // Typ: Nutzer, die Apple Health verbunden haben, bevor die
-            // Distanz zu `requestAuthorization` gehoerte, wuerden sonst das
-            // GANZE Workout verlieren (der Builder lehnt Samples ohne
-            // Schreibrecht ab). Ohne Freigabe landet das Workout ohne
-            // Distanz-Sample in Health; die Kilometer stehen weiter in den
-            // Metadaten.
-            if totalDistanceKm > 0,
-               store.authorizationStatus(for: Self.distanceType) == .sharingAuthorized {
-                let distanceMeters = totalDistanceKm * 1000.0
-                let distanceQuantity = HKQuantity(
-                    unit: HKUnit.meter(),
-                    doubleValue: distanceMeters
-                )
-                let distanceSample = HKQuantitySample(
-                    type: Self.distanceType,
-                    quantity: distanceQuantity,
-                    start: startDate,
-                    end: endDate
-                )
-                do {
-                    try await builder.addSamples([distanceSample])
-                } catch {
-                    // Die Distanz ist Beiwerk: lehnt HealthKit das Sample aus
-                    // irgendeinem Grund ab, bleibt das Workout trotzdem
-                    // erhalten (Kilometer stehen weiter in den Metadaten).
-                }
-            }
-
-            try await builder.endCollection(at: endDate)
-            _ = try await builder.finishWorkout()
-        } catch {
-            throw HealthKitError.saveFailed(reason: error.localizedDescription)
-        }
     }
 
     /// Writes one finished workout (strength, running, walking, cycling or

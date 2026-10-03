@@ -75,12 +75,13 @@ func finishTimedSession(
         ? PRCelebration.make(from: detectedPR.map { [$0] } ?? [], tone: tone)
         : nil
 
-    let workoutStart = session.startTime
-    Task {
-        // Kein Set-/Volumen-Logging bei Zeitformaten - Dauer ist das
-        // aussagekraeftige Signal fuer Apple Health.
-        await healthKit.saveWorkout(startDate: workoutStart, endDate: endTime, totalSets: 0, totalVolumeKg: 0)
-        if let celebration {
+    // Nach Apple Health schreiben (Schalter + Klassifikation wie in
+    // ActiveWorkoutView.finishWorkout). Kein Set-/Volumen-Logging bei
+    // Zeitformaten - Dauer ist das aussagekraeftige Signal; ein Zeitformat-Tag
+    // aus reinen Cardio-Uebungen (Lauf-/Rad-Intervall) zaehlt als Cardio.
+    HealthWorkoutWriter.pushLive(session: session, healthKit: healthKit)
+    if let celebration {
+        Task {
             await prNotifications.scheduleCelebration(title: celebration.title, body: celebration.body)
         }
     }

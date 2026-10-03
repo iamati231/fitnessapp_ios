@@ -534,26 +534,13 @@ public struct ActiveWorkoutView: View {
         return exercises[currentPageIndex].isCardio
     }
 
-    /// DEL-071 + DEL-063: Session-Level-Detection fuer den HealthKit-Push.
-    /// Hier brauchen wir die kategorische Antwort "ist das Workout
-    /// ueberwiegend Cardio?" — und konservativ heisst das `allSatisfy`,
-    /// damit ein Mix-Day NICHT als `.running` in Apple Health landet.
-    private var isPureCardioSessionForHealthKit: Bool {
-        // DEL-092: respektiert Warmup-Filter — HealthKit-Categorization soll
-        // das tracken, was der User tatsaechlich macht.
-        guard let day = session.day else { return false }
-        let exercises = orderedExercises(in: day)
-        guard !exercises.isEmpty else { return false }
-        return exercises.allSatisfy { $0.isCardio }
-    }
-
     /// DEL-158: True wenn die Session MINDESTENS eine Cardio-Uebung mit
     /// geloggter Distanz oder Dauer enthaelt — unabhaengig davon, ob das
     /// Workout rein Cardio oder gemischt (Kraft + Cardio) war. Steuert die
     /// Sichtbarkeit des Gear-Pickers + die Distanz-Buchung. Bewusst getrennt
-    /// von `isPureCardioSessionForHealthKit`: ein Mix-Day soll NICHT als
-    /// `.running` in Apple Health landen, aber sehr wohl Laufschuhe zuordnen
-    /// koennen.
+    /// von der Health-Klassifikation (`HealthWorkoutPlanner`): ein Mix-Day mit
+    /// wenig Cardio soll als Krafttraining in Apple Health landen, aber sehr
+    /// wohl Laufschuhe zuordnen koennen.
     private var sessionHasLoggedCardio: Bool {
         session.logs.contains { log in
             log.resolvedIsCardio
@@ -984,40 +971,13 @@ public struct ActiveWorkoutView: View {
         // (read-only) berechnet, daher hier Discard.
         _ = ProgressionApplicator.apply(to: session, in: modelContext)
 
-        // DEL-063: Push to Apple Health with the correct activity type.
-        //   * Pure Cardio-Session (Hybrid Easy/Long/Intervall-Run) →
-        //     `.running` + distance-sample, sodass Fitness-Ringe + Lauf-
-        //     Statistiken stimmig sind.
-        //   * Strength / Mixed → `.traditionalStrengthTraining` wie bisher.
-        // Snapshot der relevanten Werte JETZT, weil session.* spaeter mutiert.
-        let workoutStart = session.startTime
-        let workoutEnd = endTime
-        let workoutSets = session.totalSets
-        let workoutVolume = session.totalVolumeKg
-        let pushAsCardio = isPureCardioSessionForHealthKit
-        let cardioTotalKm = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
-        let cardioTotalSec = session.logs.compactMap(\.durationSeconds).reduce(0, +)
-        let cardioPace = PaceCalculator.minutesPerKm(
-            distanceKm: cardioTotalKm,
-            durationSeconds: cardioTotalSec
-        )
-        Task {
-            if pushAsCardio, cardioTotalKm > 0 {
-                await healthKit.saveRunningWorkout(
-                    startDate: workoutStart,
-                    endDate: workoutEnd,
-                    totalDistanceKm: cardioTotalKm,
-                    averagePaceMinPerKm: cardioPace
-                )
-            } else {
-                await healthKit.saveWorkout(
-                    startDate: workoutStart,
-                    endDate: workoutEnd,
-                    totalSets: workoutSets,
-                    totalVolumeKg: workoutVolume
-                )
-            }
-        }
+        // Nach Apple Health schreiben — gemaess den Schaltern (Einstellungen →
+        // Apple Health → Trainings in Health: Krafttraining / Cardio) und der
+        // log-basierten Klassifikation (`HealthWorkoutPlanner`): Cardio ohne
+        // Distanz bleibt Cardio, Radfahren ist kein Laufen, Laufband ist
+        // indoor. Der Draft wird SYNCHRON als Wert gebaut (session.* mutiert
+        // spaeter), danach wird die Session nicht mehr angefasst.
+        HealthWorkoutWriter.pushLive(session: session, healthKit: healthKit)
 
         // Clear any running rest timer (in-app + Live Activity). Branching:
         //   - PRs detected + Celebrations on → push final state with trophy
