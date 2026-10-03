@@ -78,11 +78,12 @@ final class SessionTimingTests: XCTestCase {
         let estimate = session.finalizeTiming(endingAt: end)
 
         XCTAssertEqual(estimate.basis, .loggedCardioTime)
-        XCTAssertEqual(session.durationMinutes, 26)
+        // Abgerundet wie ueberall (nie 26), der Beginn aber sekundengenau.
+        XCTAssertEqual(session.durationMinutes, 25)
         XCTAssertEqual(session.endTime, end)
-        XCTAssertEqual(session.startTime, end.addingTimeInterval(-26 * 60))
+        XCTAssertEqual(session.startTime, end.addingTimeInterval(-Double(25 * 60 + 56)))
         // Beginn, Ende und Dauer passen zusammen.
-        XCTAssertEqual(session.endTime.timeIntervalSince(session.startTime), 26 * 60, accuracy: 0.001)
+        XCTAssertEqual(session.endTime.timeIntervalSince(session.startTime), Double(25 * 60 + 56), accuracy: 0.001)
     }
 
     func testLiveRunKeepsTheWallClockAndTheStart() {
@@ -147,7 +148,7 @@ final class SessionTimingTests: XCTestCase {
 
         XCTAssertTrue(session.repairShortDuration())
 
-        XCTAssertEqual(session.durationMinutes, 26)
+        XCTAssertEqual(session.durationMinutes, 25)
         XCTAssertEqual(session.startTime, start)
         XCTAssertEqual(session.endTime, start.addingTimeInterval(60))
         // Zweiter Lauf: nichts mehr zu tun.

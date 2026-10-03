@@ -16,13 +16,19 @@ public struct SessionDurationEstimate: Sendable, Equatable {
         case estimatedFromSets
     }
 
-    public let minutes: Int
+    /// Die Sekunden, die das Training als gedauert gilt (bei `.measured` die Wanduhr).
+    public let seconds: Int
     public let basis: Basis
 
-    public init(minutes: Int, basis: Basis) {
-        self.minutes = minutes
+    public init(seconds: Int, basis: Basis) {
+        self.seconds = seconds
         self.basis = basis
     }
+
+    /// Ganze Minuten, ABGERUNDET wie ueberall in der App (`durationMinutes`):
+    /// 25:56 sind 25 Min, nie 26. Die genauen Sekunden bleiben in `seconds`, damit
+    /// Beginn und Ende (und der Health-Eintrag) die Zeit exakt halten.
+    public var minutes: Int { seconds / 60 }
 
     /// Weicht die Dauer von der gemessenen Wanduhr ab?
     public var isCorrected: Bool { basis != .measured }
@@ -76,7 +82,7 @@ public enum SessionDurationEstimator {
     /// - Parameter wallClockSeconds: Sekunden zwischen Start und Beenden.
     public static func estimate(wallClockSeconds: Int, logs: [LogInput]) -> SessionDurationEstimate {
         let wall = max(0, wallClockSeconds)
-        let measured = SessionDurationEstimate(minutes: wall / 60, basis: .measured)
+        let measured = SessionDurationEstimate(seconds: wall, basis: .measured)
 
         let cardioSeconds = loggedCardioSeconds(in: logs)
         let strengthLogs = logs.filter { !$0.isCardio }
@@ -86,10 +92,11 @@ public enum SessionDurationEstimator {
             && wall < strengthLogs.count * minimumLiveSecondsPerSet
         guard cardioIsRetro || strengthIsRetro else { return measured }
 
+        // Exakte Sekunden, nicht auf Minuten gerundet; nie unter der Wanduhr.
         let content = cardioSeconds + estimatedStrengthSeconds(for: strengthLogs)
-        let minutes = min(max((max(wall, content) + 30) / 60, wall / 60), maximumMinutes)
+        let seconds = min(max(wall, content), max(maximumMinutes * 60, wall))
         return SessionDurationEstimate(
-            minutes: minutes,
+            seconds: seconds,
             basis: strengthLogs.isEmpty ? .loggedCardioTime : .estimatedFromSets
         )
     }
@@ -102,7 +109,7 @@ public enum SessionDurationEstimator {
     public static func repairedMinutes(storedMinutes: Int, logs: [LogInput]) -> Int? {
         let cardioSeconds = loggedCardioSeconds(in: logs)
         guard cardioSeconds > max(storedMinutes, 0) * 60 + cardioToleranceSeconds else { return nil }
-        let minutes = min((cardioSeconds + 30) / 60, maximumMinutes)
+        let minutes = min(cardioSeconds / 60, maximumMinutes)
         return minutes > storedMinutes ? minutes : nil
     }
 

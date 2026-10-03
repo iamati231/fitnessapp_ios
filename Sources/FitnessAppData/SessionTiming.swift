@@ -30,7 +30,9 @@ public extension WorkoutSession {
     /// Training mit dem Beenden aufhoert: Ende, Beginn und Dauer passen zusammen
     /// (Health-Export, Abgleich mit Importen und "in der Zukunft"-Pruefung
     /// brauchen genau das), und das Training liegt dort, wo es vermutlich lief —
-    /// kurz vor dem Eintragen.
+    /// kurz vor dem Eintragen. `durationMinutes` ist wie ueberall abgerundet
+    /// (25:56 sind 25 Min); der Beginn liegt auf die SEKUNDE genau (Ende minus 25:56),
+    /// damit der Health-Eintrag die genaue Zeit bekommt.
     @discardableResult
     func finalizeTiming(endingAt end: Date) -> SessionDurationEstimate {
         let wallClockSeconds = max(0, Int(end.timeIntervalSince(startTime)))
@@ -41,7 +43,7 @@ public extension WorkoutSession {
         endTime = end
         durationMinutes = estimate.minutes
         if estimate.isCorrected {
-            startTime = end.addingTimeInterval(-Double(estimate.minutes) * 60)
+            startTime = end.addingTimeInterval(-Double(estimate.seconds))
         }
         return estimate
     }

@@ -20,12 +20,22 @@ final class SessionDurationEstimatorTests: XCTestCase {
     // MARK: - Cardio: die eingetragene Zeit
 
     /// Der Fall aus dem Screenshot: Lauf nachgetragen (4,51 km in 25:56), Start und
-    /// Beenden nur eine Minute auseinander.
+    /// Beenden nur eine Minute auseinander. Die Minuten werden wie ueberall
+    /// ABGERUNDET (nie 26), die Sekunden bleiben genau.
     func testRetroLoggedRunTakesTheLoggedTime() {
         let result = estimate(wall: 60, [run(25 * 60 + 56)])
-        XCTAssertEqual(result.minutes, 26)
+        XCTAssertEqual(result.seconds, 25 * 60 + 56)
+        XCTAssertEqual(result.minutes, 25)
         XCTAssertEqual(result.basis, .loggedCardioTime)
         XCTAssertTrue(result.isCorrected)
+    }
+
+    /// Nie aufrunden: 32:53 sind 32 Min, 18:57 sind 18 Min — wie die Wanduhr-Dauer.
+    func testMinutesAreAlwaysFlooredNeverRoundedUp() {
+        XCTAssertEqual(estimate(wall: 60, [run(32 * 60 + 53)]).minutes, 32)
+        XCTAssertEqual(estimate(wall: 60, [run(18 * 60 + 57)]).minutes, 18)
+        XCTAssertEqual(estimate(wall: 60, [run(19 * 60)]).minutes, 19)
+        XCTAssertEqual(estimate(wall: 60, [run(19 * 60 + 59)]).seconds, 19 * 60 + 59)
     }
 
     func testLiveRunKeepsTheWallClock() {
@@ -42,12 +52,15 @@ final class SessionDurationEstimatorTests: XCTestCase {
         // 76 s: nicht mehr.
         let beyond = estimate(wall: 1480, [run(1556)])
         XCTAssertEqual(beyond.basis, .loggedCardioTime)
-        XCTAssertEqual(beyond.minutes, 26)
+        XCTAssertEqual(beyond.minutes, 25)
+        XCTAssertEqual(beyond.seconds, 1556)
     }
 
     func testSeveralCardioSetsAreSummed() {
-        // 5 min Einlaufen + 25:56 Lauf.
-        XCTAssertEqual(estimate(wall: 120, [run(300), run(1556)]).minutes, 31)
+        // 5 min Einlaufen + 25:56 Lauf = 30:56.
+        let result = estimate(wall: 120, [run(300), run(1556)])
+        XCTAssertEqual(result.seconds, 1856)
+        XCTAssertEqual(result.minutes, 30)
     }
 
     func testCardioWithoutAnyTimeIsMeasured() {
@@ -60,6 +73,7 @@ final class SessionDurationEstimatorTests: XCTestCase {
     func testRetroLoggedStrengthIsEstimatedFromTheSets() {
         // 12 Sätze in 3 Minuten eingetippt; je Satz 45 s + 90 s Standardpause.
         let result = estimate(wall: 180, lifts(12))
+        XCTAssertEqual(result.seconds, 1620)
         XCTAssertEqual(result.minutes, 27)
         XCTAssertEqual(result.basis, .estimatedFromSets)
     }
@@ -94,17 +108,17 @@ final class SessionDurationEstimatorTests: XCTestCase {
     // MARK: - Mischtage
 
     func testRetroMixedSessionSumsCardioAndTheStrengthEstimate() {
-        // 6 Kraft-Sätze (6 x 135 s = 810 s) + 20 min Cardio = 2010 s -> 34 min.
+        // 6 Kraft-Sätze (6 x 135 s = 810 s) + 20 min Cardio = 2010 s -> 33 min (abgerundet).
         let result = estimate(wall: 120, lifts(6) + [run(1200)])
-        XCTAssertEqual(result.minutes, 34)
+        XCTAssertEqual(result.minutes, 33)
         XCTAssertEqual(result.basis, .estimatedFromSets)
     }
 
     func testLiveStrengthWithALongerRetroLoggedRunAddsUp() {
         // 40 min live trainiert, danach einen 45-min-Lauf nachgetragen: die Wanduhr
-        // kann den Lauf nicht enthalten -> Cardio 45 min + 10 Sätze (1350 s) = 68 min.
+        // kann den Lauf nicht enthalten -> Cardio 45 min + 10 Sätze (1350 s) = 4050 s -> 67 min.
         let result = estimate(wall: 40 * 60, lifts(10) + [run(45 * 60)])
-        XCTAssertEqual(result.minutes, 68)
+        XCTAssertEqual(result.minutes, 67)
     }
 
     func testLiveMixedSessionKeepsTheWallClock() {
@@ -133,9 +147,10 @@ final class SessionDurationEstimatorTests: XCTestCase {
     // MARK: - Reparatur bestehender Trainings
 
     func testRepairRaisesAShortStoredDurationToTheLoggedCardioTime() {
-        XCTAssertEqual(SessionDurationEstimator.repairedMinutes(storedMinutes: 1, logs: [run(1556)]), 26)
-        XCTAssertEqual(SessionDurationEstimator.repairedMinutes(storedMinutes: 0, logs: [run(1556)]), 26)
-        XCTAssertEqual(SessionDurationEstimator.repairedMinutes(storedMinutes: 20, logs: [run(1556)]), 26)
+        // 25:56 -> 25 Min (abgerundet, wie ueberall).
+        XCTAssertEqual(SessionDurationEstimator.repairedMinutes(storedMinutes: 1, logs: [run(1556)]), 25)
+        XCTAssertEqual(SessionDurationEstimator.repairedMinutes(storedMinutes: 0, logs: [run(1556)]), 25)
+        XCTAssertEqual(SessionDurationEstimator.repairedMinutes(storedMinutes: 20, logs: [run(1556)]), 25)
     }
 
     func testRepairLeavesPlausibleDurationsAlone() {

@@ -837,7 +837,7 @@ public struct ActiveWorkoutView: View {
             wallClockSeconds: elapsed,
             logs: session.durationLogInputs
         )
-        return formatElapsed(estimate.isCorrected ? estimate.minutes * 60 : elapsed)
+        return formatElapsed(estimate.isCorrected ? estimate.seconds : elapsed)
     }
 
     private var loggedSetsCount: Int {
