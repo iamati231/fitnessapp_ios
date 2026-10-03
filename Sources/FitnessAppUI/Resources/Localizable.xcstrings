@@ -29084,19 +29084,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pick a Deltiq export ZIP (created on this or another device) and we'll merge the data into your library. The import is safe: nothing already in your app gets touched."
+            "value": "Pick a Deltiq export ZIP (created on this or another device) and we'll merge the data into your library. Existing workouts, records, measurements and plans stay untouched; your profile and app settings are taken from the archive."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wähle ein Deltiq-Export-ZIP (auf diesem oder einem anderen Gerät erstellt) und wir spielen die Daten in deine Bibliothek ein. Der Import ist sicher: nichts, was bereits in der App ist, wird angefasst."
+            "value": "Wähle ein Deltiq-Export-ZIP (auf diesem oder einem anderen Gerät erstellt) und wir spielen die Daten in deine Bibliothek ein. Bestehende Workouts, Rekorde, Messungen und Pläne bleiben unangetastet; Profil und App-Einstellungen werden aus dem Archiv übernommen."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bir Deltiq dışa aktarma ZIP'i seç (bu veya başka bir cihazda oluşturulmuş) ve verileri kütüphanene birleştirelim. İçe aktarma güvenlidir: uygulamada zaten bulunan hiçbir şey değişmez."
+            "value": "Bir Deltiq dışa aktarma ZIP'i seç (bu veya başka bir cihazda oluşturulmuş) ve verileri kütüphanene birleştirelim. Mevcut antrenmanların, rekorların, ölçümlerin ve planların değişmez; profil ve uygulama ayarların arşivden alınır."
           }
         }
       }
@@ -29590,19 +29590,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Only missing entries are added. Your existing data is preserved."
+            "value": "Only missing entries are added (plans always as new plans). Your existing workouts, records and measurements are preserved; profile and settings are taken from the archive."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nur fehlende Einträge werden hinzugefügt. Deine bestehenden Daten bleiben erhalten."
+            "value": "Nur fehlende Einträge werden hinzugefügt (Pläne immer als neue Pläne). Bestehende Workouts, Rekorde und Messungen bleiben erhalten; Profil und Einstellungen werden aus dem Archiv übernommen."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yalnızca eksik kayıtlar eklenir. Mevcut verilerin korunur."
+            "value": "Yalnızca eksik kayıtlar eklenir (planlar her zaman yeni plan olarak). Mevcut antrenmanların, rekorların ve ölçümlerin korunur; profil ve ayarlar arşivden alınır."
           }
         }
       }

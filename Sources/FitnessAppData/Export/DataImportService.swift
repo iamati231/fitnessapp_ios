@@ -5,10 +5,14 @@
 // und merged die Daten in den aktiven SwiftData-Container.
 //
 // **Konflikt-Strategie**: Append-only mit Duplikat-Erkennung. Wir löschen
-// niemals bestehende Daten — der User behält jede Trainings-Session, jeden
-// PR, jedes Profil. Doppelte Zeilen (gleicher natürlicher Schlüssel) werden
-// übersprungen, nicht überschrieben:
-//   - UserBodyProfile: existiert → skip ganzer Import-Block (Singleton)
+// im Modus `appendOnly` niemals bestehende Daten — der User behält jede
+// Trainings-Session und jeden PR. Doppelte Zeilen (gleicher natürlicher
+// Schlüssel) werden übersprungen, nicht überschrieben. Ausnahmen sind die
+// Singletons, die ein Restore bewusst zurückbringen soll:
+//   - UserBodyProfile: existiert → wird IN-PLACE mit den Backup-Werten
+//     überschrieben (DEL-191, siehe `importProfile`)
+//   - App-Einstellungen (settings.csv): Whitelist-Keys überschreiben die
+//     aktuellen Werte (`SettingsPortability.apply`)
 //   - BodyMeasurement: skip wenn `date` + `weightKg` matchen
 //   - WaterEntry: skip wenn `date` + `amountMl` matchen
 //   - Gear: skip wenn `name` + `type` matchen
@@ -34,8 +38,11 @@ import ZIPFoundation
 /// Welche Strategie der ImportService beim Mergen anwendet.
 public enum DataImportStrategy: String, Sendable, CaseIterable {
     /// Default. Fügt fehlende Zeilen hinzu, erkennt Duplikate über
-    /// natürliche Schlüssel (date+name etc.) und überspringt sie — nichts
-    /// Bestehendes wird je angetastet. Sicher für jedes Szenario.
+    /// natürliche Schlüssel (date+name etc.) und überspringt sie — keine
+    /// bestehenden Workouts, Rekorde, Messungen oder Pläne werden gelöscht
+    /// oder verändert. Ausnahmen: Profil und App-Einstellungen werden mit den
+    /// Werten aus dem Archiv überschrieben, und Pläne werden immer als neue
+    /// Pläne angelegt.
     case appendOnly
 
     /// Destruktiv. Löscht ALLE User-Daten (Profile, Workouts, Logs, Maße,
