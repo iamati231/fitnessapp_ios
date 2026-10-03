@@ -12,7 +12,10 @@ werden.
 - **Build-System**: `xcodegen generate` (via `project.yml`), dann
   `xcodebuild`. Keine committed `.xcodeproj` — wird auf CI generiert.
 - **Localization**: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
-  als kanonische Single-Source. DE + EN + TR jeweils komplett.
+  als kanonische Single-Source. DE + EN + TR jeweils komplett. Die
+  System-Berechtigungstexte (Apple Health) stehen getrennt in
+  `App/FitnessApp/InfoPlist.xcstrings`; der Info.plist-Wert ist nur der
+  englische Fallback.
 - **iOS-Deployment-Target**: 17.0 (SwiftData, `@Observable`, neuer
   `.task`-Modifier).
 

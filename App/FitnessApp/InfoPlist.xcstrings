@@ -1,0 +1,24 @@
+{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "NSHealthShareUsageDescription": {
+      "comment": "Apple-Health-Berechtigungsdialog: Lesezugriff. Muss die tatsaechlich gelesenen Daten nennen (HealthKitService.requestAuthorization + requestWorkoutReadAuthorization).",
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Deltiq liest Gewicht, Körperfett, Magermasse, Größe, Geburtsdatum, Geschlecht, Ruhepuls und Schritte aus Apple Health, damit du Werte nicht doppelt eintragen musst und Profil und Dashboard aktuell bleiben. Wenn du den Workout-Import einschaltest, liest die App außerdem Workouts anderer Apps." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Deltiq reads your weight, body fat, lean mass, height, date of birth, sex, resting heart rate and steps from Apple Health, so you don't have to enter values twice and your profile and dashboard stay up to date. If you turn on workout import, the app also reads workouts recorded by other apps." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Deltiq; değerleri iki kez girmek zorunda kalmaman ve profilin ile panelin güncel kalması için Apple Health'ten kilonu, yağ oranını, yağsız kütleni, boyunu, doğum tarihini, cinsiyetini, dinlenme nabzını ve adımlarını okur. Antrenman içe aktarmayı açarsan uygulama diğer uygulamalarda kaydedilen antrenmanları da okur." } }
+      }
+    },
+    "NSHealthUpdateUsageDescription": {
+      "comment": "Apple-Health-Berechtigungsdialog: Schreibzugriff. Muss die tatsaechlich geschriebenen Daten nennen (HealthKitService.requestAuthorization, toShare).",
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Deltiq schreibt deine Messungen (Gewicht, Körperfett, Magermasse) und abgeschlossene Workouts samt Laufdistanz nach Apple Health, damit deine Daten in einer Quelle leben." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Deltiq writes your measurements (weight, body fat, lean mass) and completed workouts, including running distance, to Apple Health, so your data lives in one place." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Deltiq; ölçümlerini (kilo, yağ oranı, yağsız kütle) ve tamamlanan antrenmanlarını koşu mesafesiyle birlikte, verilerin tek bir yerde durması için Apple Health'e yazar." } }
+      }
+    }
+  }
+}

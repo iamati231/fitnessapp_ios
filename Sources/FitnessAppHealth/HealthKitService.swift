@@ -28,6 +28,11 @@ public actor HealthKitService {
     private static let restingHRType  = HKQuantityType(.restingHeartRate)
     private static let stepCountType  = HKQuantityType(.stepCount)
 
+    /// Wird nur geschrieben: `saveRunningWorkout` haengt dem Lauf-Workout ein
+    /// Distanz-Sample an, und `HKWorkoutBuilder.addSamples` verlangt dafuer die
+    /// Schreibberechtigung des Sample-Typs.
+    private static let distanceType = HKQuantityType(.distanceWalkingRunning)
+
     // MARK: Lifecycle
 
     public static var isHealthDataAvailable: Bool {
@@ -44,15 +49,18 @@ public actor HealthKitService {
     // MARK: Authorization
 
     public func requestAuthorization() async throws {
-        // workoutType is *only* a write target — HealthKit never lets us read
-        // workouts from other apps anyway, so leaving it out of toRead matches
-        // reality.
+        // workoutType (+ distance) are write targets here: we push our own
+        // finished workouts. Reading OTHER apps' workouts (Workout-Import) is
+        // deliberately not part of this request — it has its own narrow
+        // `requestWorkoutReadAuthorization()` below, so that the six entry
+        // points sharing this method never re-prompt for it.
         //
         // Characteristic types (dateOfBirth, biologicalSex) are read-only by
         // design; they're set in the user's Health profile and we can pre-fill
         // them into onboarding.
         let toShare: Set<HKSampleType> = [
             Self.weightType, Self.bodyFatType, Self.leanMassType,
+            Self.distanceType,
             HKObjectType.workoutType()
         ]
         let toRead:  Set<HKObjectType> = [
@@ -368,15 +376,22 @@ public actor HealthKitService {
 
             // Distanz-Sample anhaengen, damit die Apple-Health-UI die
             // Kilometer sauber zaehlt und die Fitness-Bewegungs-Ringe
-            // korrekt aufgeladen werden.
-            if totalDistanceKm > 0 {
+            // korrekt aufgeladen werden. Nur mit Schreibfreigabe fuer den
+            // Typ: Nutzer, die Apple Health verbunden haben, bevor die
+            // Distanz zu `requestAuthorization` gehoerte, wuerden sonst das
+            // GANZE Workout verlieren (der Builder lehnt Samples ohne
+            // Schreibrecht ab). Ohne Freigabe landet das Workout ohne
+            // Distanz-Sample in Health; die Kilometer stehen weiter in den
+            // Metadaten.
+            if totalDistanceKm > 0,
+               store.authorizationStatus(for: Self.distanceType) == .sharingAuthorized {
                 let distanceMeters = totalDistanceKm * 1000.0
                 let distanceQuantity = HKQuantity(
                     unit: HKUnit.meter(),
                     doubleValue: distanceMeters
                 )
                 let distanceSample = HKQuantitySample(
-                    type: HKQuantityType(.distanceWalkingRunning),
+                    type: Self.distanceType,
                     quantity: distanceQuantity,
                     start: startDate,
                     end: endDate
