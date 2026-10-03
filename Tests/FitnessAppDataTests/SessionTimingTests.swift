@@ -52,6 +52,7 @@ final class SessionTimingTests: XCTestCase {
         log.exerciseNameSnapshot = "Freier Lauf"
         log.exerciseIsCardioSnapshot = true
         context.insert(log)
+        try? context.save()
     }
 
     private func addLifts(to session: WorkoutSession, count: Int) {
@@ -62,6 +63,7 @@ final class SessionTimingTests: XCTestCase {
             log.exerciseNameSnapshot = "Bankdruecken"
             context.insert(log)
         }
+        try? context.save()
     }
 
     // MARK: - finalizeTiming
@@ -127,6 +129,7 @@ final class SessionTimingTests: XCTestCase {
                 date: start, setIndex: index, weight: 0, reps: 0, rir: 0, session: session
             ))
         }
+        try? context.save()
 
         let estimate = session.finalizeTiming(endingAt: start.addingTimeInterval(30))
 

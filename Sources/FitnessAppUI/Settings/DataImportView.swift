@@ -739,6 +739,9 @@ public struct DataImportView: View {
                         }
                     }
                 )
+                // Nachgetragene Laeufe aus einer Sicherung vor dem Dauer-Fix
+                // (1-2 Min statt der eingetragenen Laufzeit) nachziehen.
+                SessionDurationRepair.repairAfterImport(in: ctx)
                 // DEL-209: Importierte Reminder-Präferenzen sofort beim
                 // System anmelden — sonst greifen sie erst beim naechsten
                 // App-Start (RootView gleicht dann ab). Der Scheduler prüft

@@ -811,12 +811,9 @@ public struct ActiveWorkoutView: View {
         return visible.sorted { $0.orderIndex < $1.orderIndex }
     }
 
-    /// Snapshot-Aufrufstellen (z.B. `FinishWorkoutSheet`s `durationText`)
-    /// nutzen weiterhin diese Date()-basierte Form; die live-tickende
-    /// Kopfzone nutzt `formattedDuration(at:)` mit `context.date` aus der
-    /// `TimelineView` in `body`.
-    private var formattedDuration: String { formattedDuration(at: Date()) }
-
+    /// Verstrichene Zeit der live-tickenden Kopfzone (`context.date` aus der
+    /// `TimelineView` in `body`). Das Beenden-Sheet nutzt stattdessen
+    /// `finishSheetDurationText` (Dauer nach der Nachtrags-Regel).
     private func formattedDuration(at now: Date) -> String {
         formatElapsed(max(0, Int(now.timeIntervalSince(session.startTime))))
     }

@@ -312,6 +312,9 @@ public struct BackupListView: View {
                 context: modelContext,
                 strategy: .replace
             )
+            // Nachgetragene Laeufe aus einer Sicherung vor dem Dauer-Fix
+            // (1-2 Min statt der eingetragenen Laufzeit) nachziehen.
+            SessionDurationRepair.repairAfterImport(in: modelContext)
             resultMessage = String(
                 format: String(localized: "backups.restore.done", bundle: .module),
                 result.totalImported, result.totalSkipped

@@ -400,6 +400,9 @@ public struct OnboardingView: View {
                             context: ctx,
                             strategy: .appendOnly
                         )
+                        // Nachgetragene Laeufe aus einer Sicherung vor dem Dauer-Fix
+                        // (1-2 Min statt der eingetragenen Laufzeit) nachziehen.
+                        SessionDurationRepair.repairAfterImport(in: ctx)
                         // Kein expliziter Navigations-Schritt nötig:
                         // RootView.@Query<UserBodyProfile> ist nach dem
                         // Profil-Insert nicht mehr leer → MainTabView.
