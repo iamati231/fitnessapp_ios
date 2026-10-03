@@ -146,6 +146,29 @@ final class HealthWorkoutPlannerTests: XCTestCase {
         XCTAssertEqual(negative.end, minutes(20), "Ende vor Start ist inkonsistent")
     }
 
+    /// `durationMinutes` ist abgerundet (`floor`); das Ende passt bis 59 s
+    /// darueber. Eine Rundung (oder Toleranz) wuerde diese Grenzen verschieben.
+    func testEffectiveWindowTruncationBoundaries() {
+        func end(of window: (start: Date, end: Date)) -> Date { window.end }
+        let atEnd = start.addingTimeInterval(45 * 60 + 59)
+        XCTAssertEqual(
+            end(of: HealthWorkoutPlanner.effectiveWindow(startTime: start, endTime: atEnd, durationMinutes: 45)),
+            atEnd, "45:59 gehoert noch zu 45 Minuten"
+        )
+        XCTAssertEqual(
+            end(of: HealthWorkoutPlanner.effectiveWindow(
+                startTime: start, endTime: start.addingTimeInterval(46 * 60), durationMinutes: 45
+            )),
+            minutes(45), "46:00 waere 46 Minuten: inkonsistent"
+        )
+        XCTAssertEqual(
+            end(of: HealthWorkoutPlanner.effectiveWindow(
+                startTime: start, endTime: start.addingTimeInterval(44 * 60 + 59), durationMinutes: 45
+            )),
+            minutes(45), "44:59 waere 44 Minuten: inkonsistent"
+        )
+    }
+
     func testDurationBounds() {
         // 59 s: zu kurz
         let tooShort = HealthWorkoutCandidate(
@@ -186,6 +209,22 @@ final class HealthWorkoutPlannerTests: XCTestCase {
             durationMinutes: 30, logs: [strengthLog()]
         )
         XCTAssertEqual(decide(startsLater), .skip(.inFuture))
+    }
+
+    /// Reihenfolge laut Doku: Eligibility -> Inhalt -> Zeitfenster -> Kategorie.
+    func testSkipReasonsAreCheckedInTheDocumentedOrder() {
+        // Zu kurz schlaegt "Kategorie aus".
+        let shortRun = candidate(minutes: 0, logs: [cardioLog("Freier Lauf", km: 1, seconds: 30)])
+        XCTAssertEqual(decide(shortRun, enabled: [.strength]), .skip(.tooShort))
+        // Kein Inhalt schlaegt "zu kurz".
+        XCTAssertEqual(decide(candidate(minutes: 0)), .skip(.noContent))
+        // Marker schlaegt Inhalt.
+        XCTAssertEqual(decide(candidate(hasExportMarker: true)), .skip(.alreadyExported))
+        // Import schlaegt Marker.
+        XCTAssertEqual(
+            decide(candidate(logs: [strengthLog()], isImported: true, hasExportMarker: true)),
+            .skip(.imported)
+        )
     }
 
     // MARK: - Kraft
@@ -377,6 +416,75 @@ final class HealthWorkoutPlannerTests: XCTestCase {
         XCTAssertNil(p?.distanceKm)
     }
 
+    func testWalkingOnlySessionHasDistanceAndPace() {
+        let c = candidate(minutes: 30, logs: [cardioLog("Gehen / Einlaufen", km: 3, seconds: 1800)])
+        let p = plan(decide(c))
+        XCTAssertEqual(p?.activity, .walking)
+        XCTAssertEqual(p?.distanceKm, 3)
+        XCTAssertEqual(p?.averagePaceMinPerKm ?? 0, 10.0, accuracy: 0.0001)
+    }
+
+    /// Das Geraet "Laufband" gewinnt auch gegen einen Rad-Namen.
+    func testTreadmillEquipmentOverridesACyclingName() {
+        let p = plan(decide(candidate(logs: [
+            cardioLog("Radfahren (outdoor)", seconds: 900, equipment: .treadmill)
+        ])))
+        XCTAssertEqual(p?.activity, .running)
+        XCTAssertEqual(p?.isIndoor, true)
+    }
+
+    /// Ein Zeitformat folgt allein dem Tages-Flag; vorhandene Cardio-Logs
+    /// aendern daran nichts.
+    func testTimeFormatFollowsTheDayFlagEvenWithCardioLogs() {
+        let logs = [cardioLog("Freier Lauf", km: 2, seconds: 600)]
+        XCTAssertEqual(
+            plan(decide(candidate(logs: logs, hasTimeFormat: true, dayIsAllCardio: false)))?.activity,
+            .strength
+        )
+        XCTAssertEqual(
+            plan(decide(candidate(logs: logs, hasTimeFormat: true, dayIsAllCardio: true)))?.category,
+            .cardio
+        )
+    }
+
+    // MARK: - Cardio: teilweise gefuellte Logs
+
+    /// Ein Einlaufen nur mit Dauer neben einem Lauf nur mit km: die Dauer ist
+    /// nicht vergleichbar, die Distanz entscheidet — und es entsteht keine
+    /// Pace aus Zeit und Strecke verschiedener Logs.
+    func testDurationOnlyWalkNextToDistanceOnlyRunDecidesByDistance() {
+        let c = candidate(minutes: 40, logs: [
+            cardioLog("Gehen / Einlaufen", seconds: 300),
+            cardioLog("Easy Run", km: 8),
+        ])
+        let p = plan(decide(c))
+        XCTAssertEqual(p?.activity, .running)
+        XCTAssertEqual(p?.distanceKm, 8)
+        XCTAssertNil(p?.averagePaceMinPerKm, "kein Log hat km UND Dauer")
+    }
+
+    func testPaceComesOnlyFromLogsWithDistanceAndDuration() {
+        // Einlaufen ohne km zaehlt nicht in die Pace: 30 min / 5 km = 6,0.
+        let c = candidate(minutes: 35, logs: [
+            cardioLog("Gehen / Einlaufen", seconds: 300),
+            cardioLog("Freier Lauf", km: 5, seconds: 1800),
+        ])
+        let p = plan(decide(c))
+        XCTAssertEqual(p?.activity, .running)
+        XCTAssertEqual(p?.averagePaceMinPerKm ?? 0, 6.0, accuracy: 0.0001)
+        XCTAssertEqual(p?.distanceKm, 5)
+
+        // Drei Intervalle a 0,4 km, nur zwei mit Dauer: 180 s / 0,8 km = 3,75.
+        let intervals = candidate(minutes: 20, logs: [
+            cardioLog("Intervalle", km: 0.4, seconds: 90),
+            cardioLog("Intervalle", km: 0.4, seconds: 90),
+            cardioLog("Intervalle", km: 0.4),
+        ])
+        let q = plan(decide(intervals))
+        XCTAssertEqual(q?.distanceKm ?? 0, 1.2, accuracy: 0.0001)
+        XCTAssertEqual(q?.averagePaceMinPerKm ?? 0, 3.75, accuracy: 0.0001)
+    }
+
     // MARK: - Mischtage
 
     func testMixedDayIsCardioFromHalfOfTheSessionOnward() {
@@ -458,6 +566,47 @@ final class HealthWorkoutPlannerTests: XCTestCase {
         )
     }
 
+    // MARK: - Abgleich: nach dem Beenden im Verlauf bearbeitete Sessions
+
+    /// Live geschrieben (10 min), danach im Verlauf auf 60 min verlaengert:
+    /// `endTime` bleibt das alte Ende; das alte Health-Fenster wird erkannt.
+    func testSessionWithEditedDurationIsRecognisedByItsRecordedWindow() {
+        let edited = HealthWorkoutCandidate(
+            startTime: start, endTime: minutes(10), durationMinutes: 60, logs: [strengthLog()]
+        )
+        XCTAssertEqual(
+            decide(edited, windows: [(start: start, end: minutes(10))]),
+            .skip(.alreadyInHealth)
+        )
+    }
+
+    /// Live geschrieben, danach um einen Tag zurueckdatiert: das alte Ende ist
+    /// noch da, der alte Beginn ergibt sich aus `endTime - durationMinutes`.
+    func testSessionWithEditedStartIsRecognisedByItsRecordedWindow() {
+        let backdated = HealthWorkoutCandidate(
+            startTime: start.addingTimeInterval(-24 * 3600),
+            endTime: minutes(60),
+            durationMinutes: 60,
+            logs: [strengthLog()]
+        )
+        XCTAssertEqual(
+            decide(backdated, windows: [(start: start, end: minutes(60))]),
+            .skip(.alreadyInHealth)
+        )
+    }
+
+    /// Ohne Workout im urspruenglichen Zeitraum bleibt auch eine bearbeitete
+    /// Session exportierbar (kein Pauschal-Skip).
+    func testEditedSessionWithoutAWorkoutInItsRecordedWindowIsWritten() {
+        let edited = HealthWorkoutCandidate(
+            startTime: start, endTime: minutes(10), durationMinutes: 60, logs: [strengthLog()]
+        )
+        XCTAssertNotNil(plan(decide(
+            edited,
+            windows: [(start: start.addingTimeInterval(-3 * 24 * 3600), end: start.addingTimeInterval(-3 * 24 * 3600 + 3600))]
+        )))
+    }
+
     // MARK: - Bibliothek
 
     /// Ein neuer Cardio-Eintrag in `ExerciseLibraryData` ohne Zeile in der
@@ -477,5 +626,38 @@ final class HealthWorkoutPlannerTests: XCTestCase {
     func testUnknownNameHasNoExplicitMapping() {
         XCTAssertFalse(HealthWorkoutPlanner.hasExplicitModality(forExerciseName: "Mein eigenes Cardio"))
         XCTAssertFalse(HealthWorkoutPlanner.hasExplicitModality(forExerciseName: "Kniebeuge"))
+    }
+
+    /// Alle 14 Bibliotheks-Cardio-Eintraege mit ihrer erwarteten Art und
+    /// ihrem Ort (nur Dauer geloggt, kein Geraet) — pinnt die Zuordnung, nicht
+    /// nur ihre Existenz.
+    func testLibraryCardioExercisesMapToTheExpectedActivityAndLocation() {
+        let expected: [String: (activity: HealthWorkoutActivity, indoor: Bool?)] = [
+            "exercise.name.run":             (.running, false),
+            "exercise.name.easyRun":         (.running, false),
+            "exercise.name.longRun":         (.running, false),
+            "exercise.name.intervals":       (.running, nil),
+            "exercise.name.runInterval":     (.running, nil),
+            "exercise.name.treadmill":       (.running, true),
+            "exercise.name.warmupWalk":      (.walking, nil),
+            "exercise.name.cycling":         (.cycling, false),
+            "exercise.name.cyclingInterval": (.cycling, nil),
+            "exercise.name.stationaryBike":  (.cycling, true),
+            "exercise.name.rowingMachine":   (.mixedCardio, true),
+            "exercise.name.elliptical":      (.mixedCardio, true),
+            "exercise.name.stairStepper":    (.mixedCardio, true),
+            "exercise.name.swimming":        (.mixedCardio, nil),
+        ]
+        let cardioSpecs = ExerciseLibraryData.all.filter { $0.isCardio }
+        XCTAssertEqual(
+            Set(cardioSpecs.compactMap { $0.localizationKey }), Set(expected.keys),
+            "Neue oder entfernte Cardio-Eintraege: Zuordnung in diesem Test und im Planer pruefen"
+        )
+        for spec in cardioSpecs {
+            guard let key = spec.localizationKey, let want = expected[key] else { continue }
+            let p = plan(decide(candidate(logs: [cardioLog(spec.name, seconds: 900)])))
+            XCTAssertEqual(p?.activity, want.activity, "\(spec.name): Art")
+            XCTAssertEqual(p?.isIndoor, want.indoor, "\(spec.name): Ort")
+        }
     }
 }

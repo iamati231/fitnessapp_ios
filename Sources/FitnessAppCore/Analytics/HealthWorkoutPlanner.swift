@@ -202,6 +202,10 @@ public enum HealthWorkoutDecision: Sendable, Equatable {
 ///    — ueberlappt mehr als die Haelfte der SESSION-Dauer mit einem sichtbaren
 ///    Workout (eigener oder fremder Quelle), steht sie schon in Health. Ein
 ///    kurzes Fremd-Workout in einer langen Session blockiert sie damit nicht.
+///    Geprueft wird das Fenster, das geschrieben wuerde, UND das urspruenglich
+///    aufgezeichnete (`recordedWindows`): Hat der Nutzer Beginn oder Dauer nach
+///    dem Beenden im Verlauf geaendert, steht in Health noch das alte Fenster
+///    (so wurde es live geschrieben) — sonst entstuende ein Doppel.
 public enum HealthWorkoutPlanner {
 
     public static let minimumDurationSeconds: TimeInterval = 60
@@ -259,7 +263,43 @@ public enum HealthWorkoutPlanner {
         ) {
             return .skip(.alreadyInHealth)
         }
+        for recorded in recordedWindows(of: candidate, effective: window) {
+            if ExternalWorkoutDedup.overlapsExisting(
+                sampleStart: recorded.start,
+                sampleEnd: recorded.end,
+                existingWindows: existingWindows
+            ) {
+                return .skip(.alreadyInHealth)
+            }
+        }
         return .write(plan)
+    }
+
+    /// Fenster, unter denen die Session schon (live) nach Health geschrieben
+    /// worden sein kann, bevor Beginn oder Dauer im Verlauf geaendert wurden.
+    /// Der History-Editor aendert nie `endTime`; es bleibt also das Ende der
+    /// urspruenglichen Aufzeichnung:
+    /// - nur die Dauer geaendert: `[startTime, endTime]`
+    /// - nur der Beginn geaendert: `[endTime - durationMinutes, endTime]`
+    /// Beides nur, wenn es vom effektiven Fenster abweicht (sonst dieselbe
+    /// Pruefung). Sind beide Werte geaendert, laesst sich das Original nicht
+    /// mehr herleiten; dann bleibt nur die Ueberlappung des effektiven Fensters.
+    static func recordedWindows(
+        of candidate: HealthWorkoutCandidate,
+        effective: (start: Date, end: Date)
+    ) -> [(start: Date, end: Date)] {
+        var windows: [(start: Date, end: Date)] = []
+        let end = candidate.endTime
+        if end > candidate.startTime, end != effective.end {
+            windows.append((start: candidate.startTime, end: end))
+        }
+        if candidate.durationMinutes > 0 {
+            let derivedStart = end.addingTimeInterval(-Double(candidate.durationMinutes) * 60)
+            if derivedStart != effective.start || end != effective.end {
+                windows.append((start: derivedStart, end: end))
+            }
+        }
+        return windows
     }
 
     // MARK: Klassifikation
@@ -281,6 +321,11 @@ public enum HealthWorkoutPlanner {
     private struct Stats {
         var seconds = 0
         var distanceKm = 0.0
+        /// Nur Logs mit Distanz UND Dauer: Grundlage der Pace. Distanz und Zeit
+        /// duerfen nicht aus verschiedenen Logs gemischt werden (ein Log nur mit
+        /// km, ein anderes nur mit Dauer ergaebe sonst eine erfundene Pace).
+        var pairedKm = 0.0
+        var pairedSeconds = 0
         var indoorVotes: [Bool] = []
     }
 
@@ -386,23 +431,32 @@ public enum HealthWorkoutPlanner {
         for log in cardioLogs {
             let logModality = Self.modality(for: log)
             var entry = stats[logModality.group] ?? Stats()
-            entry.seconds += max(log.durationSeconds ?? 0, 0)
+            let seconds = max(log.durationSeconds ?? 0, 0)
+            entry.seconds += seconds
             if let distance = log.distanceKm, distance.isFinite, distance > 0 {
                 entry.distanceKm += distance
+                if seconds > 0 {
+                    entry.pairedKm += distance
+                    entry.pairedSeconds += seconds
+                }
             }
             if let indoor = logModality.indoor { entry.indoorVotes.append(indoor) }
             stats[logModality.group] = entry
         }
 
-        // Gewinner: groesste Gesamtdauer; hat KEIN Log eine Dauer, die groesste
-        // Distanz. Gleichstand entscheidet die feste Prioritaetsreihenfolge —
-        // Live-Pfad und Export kommen so immer zum selben Ergebnis.
-        let anyDuration = stats.values.contains { $0.seconds > 0 }
+        // Gewinner: groesste Gesamtdauer. Die Dauer zaehlt aber nur, wenn sie fuer
+        // ALLE Gruppen mit Distanz vorliegt; sonst (z.B. ein Einlaufen nur mit
+        // Dauer neben einem Lauf nur mit km) waere sie nicht vergleichbar, und die
+        // groesste Distanz entscheidet. Gleichstand entscheidet die feste
+        // Prioritaetsreihenfolge — Live-Pfad und Export kommen so immer zum
+        // selben Ergebnis.
+        let durationIsComparable = stats.values.contains { $0.seconds > 0 }
+            && stats.values.allSatisfy { $0.seconds > 0 || $0.distanceKm == 0 }
         var winner: Group?
         var best = -1.0
         for group in Group.allCases {
             guard let entry = stats[group] else { continue }
-            let score = anyDuration ? Double(entry.seconds) : entry.distanceKm
+            let score = durationIsComparable ? Double(entry.seconds) : entry.distanceKm
             if score > best {
                 best = score
                 winner = group
@@ -431,10 +485,12 @@ public enum HealthWorkoutPlanner {
         if activity == .running || activity == .walking {
             let walkRun = [Group.running, Group.walking].compactMap { stats[$0] }
             let km = walkRun.reduce(0.0) { $0 + $1.distanceKm }
-            let seconds = walkRun.reduce(0) { $0 + $1.seconds }
             if km > 0 {
                 distanceKm = km
-                pace = PaceCalculator.minutesPerKm(distanceKm: km, durationSeconds: seconds)
+                pace = PaceCalculator.minutesPerKm(
+                    distanceKm: walkRun.reduce(0.0) { $0 + $1.pairedKm },
+                    durationSeconds: walkRun.reduce(0) { $0 + $1.pairedSeconds }
+                )
             }
         }
 
