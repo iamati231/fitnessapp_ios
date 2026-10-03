@@ -90,7 +90,13 @@ public enum SessionDurationEstimator {
         let cardioIsRetro = cardioSeconds > wall + cardioToleranceSeconds
         let strengthIsRetro = strengthLogs.count >= minimumSetsForEstimate
             && wall < strengthLogs.count * minimumLiveSecondsPerSet
-        guard cardioIsRetro || strengthIsRetro else { return measured }
+        // Reines Cardio: Die eingetragene Zeit IST die Dauer, sobald sie die
+        // Wanduhr ueberschreitet — auch knapp (Start einige Sekunden nach dem
+        // Loslaufen). Sonst stuende neben dem Satz "32:53" eine Dauer von "32:41".
+        // Bei Mischtagen bleibt die Toleranz: dort kann die Cardio-Zeit Teil einer
+        // laengeren Wanduhr sein.
+        let pureCardioExceedsWall = strengthLogs.isEmpty && cardioSeconds > wall
+        guard cardioIsRetro || strengthIsRetro || pureCardioExceedsWall else { return measured }
 
         // Exakte Sekunden, nicht auf Minuten gerundet; nie unter der Wanduhr.
         let content = cardioSeconds + estimatedStrengthSeconds(for: strengthLogs)
@@ -111,6 +117,15 @@ public enum SessionDurationEstimator {
         guard cardioSeconds > max(storedMinutes, 0) * 60 + cardioToleranceSeconds else { return nil }
         let minutes = min(cardioSeconds / 60, maximumMinutes)
         return minutes > storedMinutes ? minutes : nil
+    }
+
+    /// Die Dauer auf die Sekunde, wenn Beginn und Ende zur gespeicherten Dauer
+    /// passen (`durationMinutes` ist deren abgerundete Minutenzahl). Passen sie
+    /// nicht — die Dauer wurde im Verlauf geaendert, oder das Ende ist veraltet —,
+    /// ist nur die Minutenzahl verlaesslich: `nil`.
+    public static func exactSeconds(startToEndSeconds: Int, storedMinutes: Int) -> Int? {
+        guard startToEndSeconds > 0, startToEndSeconds / 60 == storedMinutes else { return nil }
+        return startToEndSeconds
     }
 
     // MARK: Hilfen

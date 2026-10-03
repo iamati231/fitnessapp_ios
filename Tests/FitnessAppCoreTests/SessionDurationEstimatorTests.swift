@@ -45,15 +45,27 @@ final class SessionDurationEstimatorTests: XCTestCase {
         XCTAssertFalse(result.isCorrected)
     }
 
-    func testSmallDifferenceWithinToleranceStaysMeasured() {
-        // 56 s Unterschied <= 60 s Toleranz: Start kurz nach dem Loslaufen.
-        XCTAssertEqual(estimate(wall: 1500, [run(1556)]).basis, .measured)
-        XCTAssertEqual(estimate(wall: 1500, [run(1556)]).minutes, 25)
-        // 76 s: nicht mehr.
-        let beyond = estimate(wall: 1480, [run(1556)])
-        XCTAssertEqual(beyond.basis, .loggedCardioTime)
-        XCTAssertEqual(beyond.minutes, 25)
-        XCTAssertEqual(beyond.seconds, 1556)
+    /// Reines Cardio: Die eingetragene Zeit ist die Dauer, sobald sie die Wanduhr
+    /// ueberschreitet — auch knapp, damit neben dem Satz "32:53" nicht "32:41" steht.
+    func testPureCardioUsesTheLoggedTimeEvenWhenItOnlyBarelyExceedsTheWallClock() {
+        let barely = estimate(wall: 32 * 60 + 41, [run(32 * 60 + 53)])
+        XCTAssertEqual(barely.basis, .loggedCardioTime)
+        XCTAssertEqual(barely.seconds, 32 * 60 + 53)
+        XCTAssertEqual(barely.minutes, 32)
+        XCTAssertEqual(estimate(wall: 1500, [run(1556)]).seconds, 1556)
+        // Gleich lang oder laenger als die Cardio-Zeit: Wanduhr.
+        XCTAssertEqual(estimate(wall: 1556, [run(1556)]).basis, .measured)
+        XCTAssertEqual(estimate(wall: 1700, [run(1556)]).seconds, 1700)
+    }
+
+    /// Bei Mischtagen bleibt die Toleranz: Die Cardio-Zeit kann Teil einer
+    /// laengeren Wanduhr sein.
+    func testMixedSessionKeepsTheToleranceForCardio() {
+        let logs = lifts(8) + [run(1556)]
+        XCTAssertEqual(estimate(wall: 1500 + 600, logs).basis, .measured)
+        // Wanduhr 25:00 mit 8 Saetzen: Cardio 56 s darueber, innerhalb der Toleranz.
+        XCTAssertEqual(estimate(wall: 1500, logs).basis, .measured)
+        XCTAssertEqual(estimate(wall: 1480, logs).basis, .estimatedFromSets)
     }
 
     func testSeveralCardioSetsAreSummed() {
@@ -176,5 +188,21 @@ final class SessionDurationEstimatorTests: XCTestCase {
         )
         // Bereits über der Obergrenze gespeichert: nichts tun.
         XCTAssertNil(SessionDurationEstimator.repairedMinutes(storedMinutes: 700, logs: [run(20 * 3600)]))
+    }
+
+    // MARK: - Genaue Dauer
+
+    func testExactSecondsWhenStartAndEndMatchTheStoredMinutes() {
+        XCTAssertEqual(SessionDurationEstimator.exactSeconds(startToEndSeconds: 1556, storedMinutes: 25), 1556)
+        XCTAssertEqual(SessionDurationEstimator.exactSeconds(startToEndSeconds: 1137, storedMinutes: 18), 1137)
+        XCTAssertEqual(SessionDurationEstimator.exactSeconds(startToEndSeconds: 3903, storedMinutes: 65), 3903)
+    }
+
+    /// Im Verlauf geaenderte Dauer oder veraltetes Ende: nur die Minuten stimmen.
+    func testNoExactSecondsWhenTheTimesDoNotMatchTheStoredMinutes() {
+        XCTAssertNil(SessionDurationEstimator.exactSeconds(startToEndSeconds: 1556, storedMinutes: 30))
+        XCTAssertNil(SessionDurationEstimator.exactSeconds(startToEndSeconds: 60, storedMinutes: 26))
+        XCTAssertNil(SessionDurationEstimator.exactSeconds(startToEndSeconds: 0, storedMinutes: 0))
+        XCTAssertNil(SessionDurationEstimator.exactSeconds(startToEndSeconds: -5, storedMinutes: 0))
     }
 }

@@ -259,6 +259,13 @@ struct HistorySessionRow: View {
         return formatter.string(from: session.startTime)
     }
 
+    /// "25:56" auf die Sekunde, solange Beginn und Ende zur Dauer passen; sonst
+    /// die Minuten ("26 min").
+    private var durationText: String {
+        session.exactDurationText
+            ?? "\(session.durationMinutes) \(String(localized: "unit.minutes.short", bundle: .module))"
+    }
+
     /// DEL-063 + DEL-081: Drei-State-Stats-Zeile via `SessionCategory`.
     ///   * pureStrength → Dauer · Saetze · Volumen-kg
     ///   * pureCardio   → Dauer · Distanz · Ø-Pace
@@ -273,7 +280,7 @@ struct HistorySessionRow: View {
         if let format = session.timeFormatSnapshot {
             HStack(spacing: 6) {
                 Image(systemName: "clock")
-                Text("\(session.durationMinutes) \(String(localized: "unit.minutes.short", bundle: .module))")
+                Text(durationText)
                 Text("•")
                 Image(systemName: timedFormatIcon(format))
                 Text(timedFormatValueText(format))
@@ -292,7 +299,7 @@ struct HistorySessionRow: View {
         case .pureCardio:
             HStack(spacing: 6) {
                 Image(systemName: "clock")
-                Text("\(session.durationMinutes) \(String(localized: "unit.minutes.short", bundle: .module))")
+                Text(durationText)
                 Text("•")
                 Image(systemName: "figure.run")
                 Text(totalDistanceText)
@@ -307,7 +314,7 @@ struct HistorySessionRow: View {
         case .mixed:
             HStack(spacing: 6) {
                 Image(systemName: "clock")
-                Text("\(session.durationMinutes) \(String(localized: "unit.minutes.short", bundle: .module))")
+                Text(durationText)
                 Text("•")
                 Image(systemName: "scalemass")
                 Text("\(session.totalVolumeKg.truncated(to: 0).formattedTwoDecimals) kg")
@@ -322,7 +329,7 @@ struct HistorySessionRow: View {
         case .pureStrength:
             HStack(spacing: 6) {
                 Image(systemName: "clock")
-                Text("\(session.durationMinutes) \(String(localized: "unit.minutes.short", bundle: .module))")
+                Text(durationText)
                 Text("•")
                 Image(systemName: "list.number")
                 Text("\(session.totalSets)")

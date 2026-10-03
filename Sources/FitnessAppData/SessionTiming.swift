@@ -20,6 +20,21 @@ public extension WorkoutSession {
         }
     }
 
+    /// Die Dauer auf die Sekunde, wenn Beginn und Ende zur gespeicherten Dauer
+    /// passen (siehe `SessionDurationEstimator.exactSeconds`); `nil` nach einer im
+    /// Verlauf geaenderten Dauer oder bei veraltetem Ende.
+    var exactDurationSeconds: Int? {
+        SessionDurationEstimator.exactSeconds(
+            startToEndSeconds: Int(endTime.timeIntervalSince(startTime)),
+            storedMinutes: durationMinutes
+        )
+    }
+
+    /// "25:56" bzw. "1:05:03" — oder `nil`, wenn nur die Minuten verlaesslich sind.
+    var exactDurationText: String? {
+        exactDurationSeconds.map { PaceCalculator.formatDuration($0) }
+    }
+
     /// Beenden einer Session: setzt Ende und Dauer.
     ///
     /// Lief das Training live mit, ist die Dauer die Wanduhr zwischen Start und

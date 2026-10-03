@@ -139,6 +139,48 @@ final class SessionTimingTests: XCTestCase {
         XCTAssertEqual(session.startTime, start)
     }
 
+    // MARK: - Genaue Dauer
+
+    func testExactDurationTextShowsTheSecondsWhenStartAndEndMatch() {
+        let session = makeSession()
+        addRun(to: session, seconds: 25 * 60 + 56, km: 4.51)
+        session.finalizeTiming(endingAt: start.addingTimeInterval(60))
+
+        XCTAssertEqual(session.exactDurationSeconds, 25 * 60 + 56)
+        XCTAssertEqual(session.exactDurationText, "25:56")
+    }
+
+    /// Live gelaufen, Start einige Sekunden nach dem Loslaufen: Die Dauer ist die
+    /// eingetragene Laufzeit, nicht die etwas kuerzere Wanduhr.
+    func testBarelyShorterWallClockStillShowsTheLoggedRunTime() {
+        let session = makeSession()
+        addRun(to: session, seconds: 32 * 60 + 53, km: 5.03)
+        session.finalizeTiming(endingAt: start.addingTimeInterval(32 * 60 + 41))
+
+        XCTAssertEqual(session.durationMinutes, 32)
+        XCTAssertEqual(session.exactDurationText, "32:53")
+    }
+
+    func testLiveSessionShowsItsWallClockToTheSecond() {
+        let session = makeSession()
+        addLifts(to: session, count: 12)
+        session.finalizeTiming(endingAt: start.addingTimeInterval(40 * 60 + 7))
+
+        XCTAssertEqual(session.exactDurationText, "40:07")
+    }
+
+    /// Nach einer im Verlauf geaenderten Dauer passen Beginn und Ende nicht mehr:
+    /// nur die Minuten sind verlaesslich.
+    func testNoExactDurationAfterTheDurationWasEditedInTheHistory() {
+        let session = makeSession()
+        addLifts(to: session, count: 12)
+        session.finalizeTiming(endingAt: start.addingTimeInterval(40 * 60 + 7))
+        session.durationMinutes = 45
+
+        XCTAssertNil(session.exactDurationSeconds)
+        XCTAssertNil(session.exactDurationText)
+    }
+
     // MARK: - repairShortDuration
 
     func testRepairRaisesAShortStoredDurationAndLeavesTheTimesAlone() {

@@ -1663,6 +1663,9 @@ public struct WorkoutSummaryView: View {
     }
 
     private var formattedDuration: String {
+        // Genau auf die Sekunde ("25:56"), solange Beginn und Ende zur Dauer
+        // passen; nach einer im Verlauf geaenderten Dauer nur die Minuten.
+        if let exact = session.exactDurationText { return exact }
         let mins = session.durationMinutes
         if mins >= 60 {
             return "\(mins / 60)h \(mins % 60)m"
