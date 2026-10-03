@@ -20,13 +20,15 @@ public extension WorkoutSession {
         }
     }
 
-    /// Die Dauer auf die Sekunde, wenn Beginn und Ende zur gespeicherten Dauer
-    /// passen (siehe `SessionDurationEstimator.exactSeconds`); `nil` nach einer im
-    /// Verlauf geaenderten Dauer oder bei veraltetem Ende.
+    /// Die Dauer auf die Sekunde fuer die Anzeige (siehe
+    /// `SessionDurationEstimator.displaySeconds`): bei einem einzelnen Lauf seine
+    /// eingetragene Zeit, sonst Ende minus Beginn, solange sie zur gespeicherten
+    /// Minutenzahl passt; `nil` nach einer im Verlauf geaenderten Dauer.
     var exactDurationSeconds: Int? {
-        SessionDurationEstimator.exactSeconds(
+        SessionDurationEstimator.displaySeconds(
             startToEndSeconds: Int(endTime.timeIntervalSince(startTime)),
-            storedMinutes: durationMinutes
+            storedMinutes: durationMinutes,
+            logs: durationLogInputs
         )
     }
 
@@ -63,13 +65,15 @@ public extension WorkoutSession {
         return estimate
     }
 
-    /// Bestehende, abgeschlossene Session: hebt eine kuerzere gespeicherte Dauer
-    /// auf die eingetragene Cardio-Zeit an (nur der sichere Fall, siehe
-    /// `SessionDurationEstimator.repairedMinutes`). Beginn und Ende bleiben
-    /// unveraendert — wie nach einer Dauer-Aenderung im Verlauf.
+    /// Bestehende, abgeschlossene Session: setzt die gespeicherte Dauer auf die
+    /// eingetragene Cardio-Zeit (siehe `SessionDurationEstimator.repairedMinutes`):
+    /// bei einem einzelnen Lauf in beide Richtungen, bei mehreren Cardio-Saetzen
+    /// nur, wenn die Dauer kuerzer ist. Beginn und Ende bleiben unveraendert —
+    /// wie nach einer Dauer-Aenderung im Verlauf; ein zurueckdatierter Beginn
+    /// bleibt so erhalten.
     /// - Returns: `true`, wenn die Dauer geaendert wurde.
     @discardableResult
-    func repairShortDuration() -> Bool {
+    func repairDuration() -> Bool {
         guard let minutes = SessionDurationEstimator.repairedMinutes(
             storedMinutes: durationMinutes,
             logs: durationLogInputs

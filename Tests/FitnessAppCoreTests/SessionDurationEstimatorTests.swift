@@ -38,11 +38,24 @@ final class SessionDurationEstimatorTests: XCTestCase {
         XCTAssertEqual(estimate(wall: 60, [run(19 * 60 + 59)]).seconds, 19 * 60 + 59)
     }
 
-    func testLiveRunKeepsTheWallClock() {
+    /// Ein einzelner Lauf ist das ganze Training: Seine eingetragene Zeit ist die
+    /// Dauer — auch wenn die Wanduhr laenger war (Start vor dem Loslaufen).
+    func testSingleRunTakesItsLoggedTimeEvenWhenTheWallClockIsLonger() {
         let result = estimate(wall: 27 * 60 + 10, [run(25 * 60 + 56)])
-        XCTAssertEqual(result.minutes, 27)
+        XCTAssertEqual(result.seconds, 25 * 60 + 56)
+        XCTAssertEqual(result.minutes, 25)
+        XCTAssertEqual(result.basis, .loggedCardioTime)
+        XCTAssertTrue(result.isCorrected)
+        // Offen gelassenes Training: 3 h Wanduhr, 30 min Lauf.
+        XCTAssertEqual(estimate(wall: 3 * 3600, [run(30 * 60)]).minutes, 30)
+    }
+
+    /// Mehrere Cardio-Saetze (z.B. Intervalle mit Pausen) behalten die Wanduhr,
+    /// solange sie nicht kuerzer ist als die Summe.
+    func testSeveralCardioSetsKeepALongerWallClock() {
+        let result = estimate(wall: 40 * 60, [run(300), run(1556)])
         XCTAssertEqual(result.basis, .measured)
-        XCTAssertFalse(result.isCorrected)
+        XCTAssertEqual(result.minutes, 40)
     }
 
     /// Reines Cardio: Die eingetragene Zeit ist die Dauer, sobald sie die Wanduhr
@@ -53,9 +66,11 @@ final class SessionDurationEstimatorTests: XCTestCase {
         XCTAssertEqual(barely.seconds, 32 * 60 + 53)
         XCTAssertEqual(barely.minutes, 32)
         XCTAssertEqual(estimate(wall: 1500, [run(1556)]).seconds, 1556)
-        // Gleich lang oder laenger als die Cardio-Zeit: Wanduhr.
-        XCTAssertEqual(estimate(wall: 1556, [run(1556)]).basis, .measured)
-        XCTAssertEqual(estimate(wall: 1700, [run(1556)]).seconds, 1700)
+        // Mehrere Cardio-Saetze, Wanduhr gleich lang oder laenger als die Summe: Wanduhr.
+        XCTAssertEqual(estimate(wall: 1856, [run(300), run(1556)]).basis, .measured)
+        XCTAssertEqual(estimate(wall: 2000, [run(300), run(1556)]).seconds, 2000)
+        // Barely-Fall mit zwei Saetzen: die Summe ueberschreitet die Wanduhr.
+        XCTAssertEqual(estimate(wall: 1800, [run(300), run(1556)]).seconds, 1856)
     }
 
     /// Bei Mischtagen bleibt die Toleranz: Die Cardio-Zeit kann Teil einer
@@ -165,11 +180,13 @@ final class SessionDurationEstimatorTests: XCTestCase {
         XCTAssertEqual(SessionDurationEstimator.repairedMinutes(storedMinutes: 20, logs: [run(1556)]), 25)
     }
 
-    func testRepairLeavesPlausibleDurationsAlone() {
-        XCTAssertNil(SessionDurationEstimator.repairedMinutes(storedMinutes: 26, logs: [run(1556)]))
-        XCTAssertNil(SessionDurationEstimator.repairedMinutes(storedMinutes: 45, logs: [run(1556)]))
-        // Innerhalb der Toleranz.
-        XCTAssertNil(SessionDurationEstimator.repairedMinutes(storedMinutes: 25, logs: [run(1556)]))
+    /// Mehrere Cardio-Saetze: Eine plausible (laengere) Dauer wird nie gekuerzt.
+    func testRepairLeavesPlausibleDurationsOfSeveralSetsAlone() {
+        let logs = [run(300), run(1556)]
+        XCTAssertNil(SessionDurationEstimator.repairedMinutes(storedMinutes: 31, logs: logs))
+        XCTAssertNil(SessionDurationEstimator.repairedMinutes(storedMinutes: 45, logs: logs))
+        // Innerhalb der Toleranz (Summe 30:56, gespeichert 30).
+        XCTAssertNil(SessionDurationEstimator.repairedMinutes(storedMinutes: 30, logs: logs))
     }
 
     /// Kraft wird bei bestehenden Daten nie geschätzt, nur gemessene Cardio-Zeit zählt.
@@ -181,13 +198,13 @@ final class SessionDurationEstimatorTests: XCTestCase {
         XCTAssertEqual(SessionDurationEstimator.repairedMinutes(storedMinutes: 2, logs: lifts(12) + [run(1200)]), 20)
     }
 
-    func testRepairIsCappedAndNeverLowersTheStoredValue() {
+    func testRepairIsCappedAndNeverLowersTheStoredValueOfSeveralSets() {
         XCTAssertEqual(
             SessionDurationEstimator.repairedMinutes(storedMinutes: 1, logs: [run(20 * 3600)]),
             SessionDurationEstimator.maximumMinutes
         )
-        // Bereits über der Obergrenze gespeichert: nichts tun.
-        XCTAssertNil(SessionDurationEstimator.repairedMinutes(storedMinutes: 700, logs: [run(20 * 3600)]))
+        // Mehrere Saetze, bereits ueber der Obergrenze gespeichert: nichts tun.
+        XCTAssertNil(SessionDurationEstimator.repairedMinutes(storedMinutes: 700, logs: [run(20 * 3600), run(60)]))
     }
 
     // MARK: - Genaue Dauer
@@ -204,5 +221,59 @@ final class SessionDurationEstimatorTests: XCTestCase {
         XCTAssertNil(SessionDurationEstimator.exactSeconds(startToEndSeconds: 60, storedMinutes: 26))
         XCTAssertNil(SessionDurationEstimator.exactSeconds(startToEndSeconds: 0, storedMinutes: 0))
         XCTAssertNil(SessionDurationEstimator.exactSeconds(startToEndSeconds: -5, storedMinutes: 0))
+    }
+
+    // MARK: - Einzelner Lauf: Anzeige und Reparatur auch bei alten Einheiten
+
+    func testSingleRunSecondsNeedsExactlyOneCardioSetWithATime() {
+        XCTAssertEqual(SessionDurationEstimator.singleRunSeconds(in: [run(1556)]), 1556)
+        XCTAssertNil(SessionDurationEstimator.singleRunSeconds(in: [run(nil)]))
+        XCTAssertNil(SessionDurationEstimator.singleRunSeconds(in: [run(0)]))
+        XCTAssertNil(SessionDurationEstimator.singleRunSeconds(in: [run(300), run(1556)]))
+        XCTAssertNil(SessionDurationEstimator.singleRunSeconds(in: lifts(1)))
+        XCTAssertNil(SessionDurationEstimator.singleRunSeconds(in: lifts(3) + [run(1556)]))
+        XCTAssertNil(SessionDurationEstimator.singleRunSeconds(in: []))
+    }
+
+    /// Alte Einheit: Wanduhr 1 Min gespeichert, Lauf 25:56. Die Anzeige zeigt die
+    /// Laufzeit, sobald die gespeicherten Minuten dazu passen (Reparatur), ohne
+    /// Beginn und Ende anzufassen.
+    func testDisplaySecondsUsesTheRunTimeWhenTheStoredMinutesMatch() {
+        XCTAssertEqual(
+            SessionDurationEstimator.displaySeconds(startToEndSeconds: 60, storedMinutes: 25, logs: [run(1556)]),
+            1556
+        )
+    }
+
+    /// Wurde die Dauer im Verlauf geaendert, gilt die Aenderung: keine Sekunden.
+    func testDisplaySecondsHonoursAManuallyEditedDuration() {
+        XCTAssertNil(
+            SessionDurationEstimator.displaySeconds(startToEndSeconds: 60, storedMinutes: 30, logs: [run(1556)])
+        )
+    }
+
+    func testDisplaySecondsFallsBackToStartAndEndWithoutASingleRun() {
+        XCTAssertEqual(
+            SessionDurationEstimator.displaySeconds(startToEndSeconds: 2407, storedMinutes: 40, logs: lifts(12)),
+            2407
+        )
+        XCTAssertNil(
+            SessionDurationEstimator.displaySeconds(startToEndSeconds: 2407, storedMinutes: 45, logs: lifts(12))
+        )
+    }
+
+    /// Reparatur eines einzelnen Laufs geht in beide Richtungen.
+    func testRepairSetsASingleRunToItsRunTimeInBothDirections() {
+        // Zu kurz (nachgetragen) und aufgerundet vom frueheren Build (26).
+        XCTAssertEqual(SessionDurationEstimator.repairedMinutes(storedMinutes: 1, logs: [run(1556)]), 25)
+        XCTAssertEqual(SessionDurationEstimator.repairedMinutes(storedMinutes: 26, logs: [run(1556)]), 25)
+        // Zu lang (Wanduhr laenger als der Lauf, offen gelassenes Training).
+        XCTAssertEqual(SessionDurationEstimator.repairedMinutes(storedMinutes: 33, logs: [run(1556)]), 25)
+        XCTAssertEqual(SessionDurationEstimator.repairedMinutes(storedMinutes: 1440, logs: [run(30 * 60)]), 30)
+        // Schon richtig.
+        XCTAssertNil(SessionDurationEstimator.repairedMinutes(storedMinutes: 25, logs: [run(1556)]))
+        // Mehrere Cardio-Saetze: nur der sichere Fall (zu kurz), nie kuerzen.
+        XCTAssertNil(SessionDurationEstimator.repairedMinutes(storedMinutes: 40, logs: [run(300), run(1556)]))
+        XCTAssertEqual(SessionDurationEstimator.repairedMinutes(storedMinutes: 2, logs: [run(300), run(1556)]), 30)
     }
 }

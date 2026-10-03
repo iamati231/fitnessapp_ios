@@ -44,6 +44,9 @@ public struct SessionDurationEstimate: Sendable, Equatable {
 ///   `minimumLiveSecondsPerSet` je Satz, ist sie ebenfalls das Eintragen und nicht
 ///   das Trainieren; dann gilt eine Schätzung aus der Satzzahl (Satzdauer plus
 ///   Pause der jeweiligen Übung).
+/// - **Ein einzelner Lauf** (genau ein Cardio-Satz mit Zeit, sonst nichts) ist das
+///   ganze Training: Seine eingetragene Zeit IST die Dauer — auch wenn die Wanduhr
+///   länger war (Start vor dem Loslaufen, Training offen gelassen).
 /// - Alles andere (live aufgezeichnet) behält die Wanduhr unverändert.
 public enum SessionDurationEstimator {
 
@@ -84,6 +87,11 @@ public enum SessionDurationEstimator {
         let wall = max(0, wallClockSeconds)
         let measured = SessionDurationEstimate(seconds: wall, basis: .measured)
 
+        // Ein einzelner Lauf: die eingetragene Zeit ist die Dauer.
+        if let run = singleRunSeconds(in: logs) {
+            return SessionDurationEstimate(seconds: min(run, maximumMinutes * 60), basis: .loggedCardioTime)
+        }
+
         let cardioSeconds = loggedCardioSeconds(in: logs)
         let strengthLogs = logs.filter { !$0.isCardio }
 
@@ -113,6 +121,12 @@ public enum SessionDurationEstimator {
     /// Dauer. Kraftanteile werden bei bestehenden Daten NICHT geschätzt.
     /// - Returns: die neue Dauer in Minuten oder `nil`, wenn nichts zu korrigieren ist.
     public static func repairedMinutes(storedMinutes: Int, logs: [LogInput]) -> Int? {
+        // Ein einzelner Lauf: die Laufzeit ist die Dauer — in BEIDE Richtungen
+        // (eine zu kurze Wanduhr ebenso wie ein offen gelassenes Training).
+        if let run = singleRunSeconds(in: logs) {
+            let minutes = min(run / 60, maximumMinutes)
+            return minutes != storedMinutes ? minutes : nil
+        }
         let cardioSeconds = loggedCardioSeconds(in: logs)
         guard cardioSeconds > max(storedMinutes, 0) * 60 + cardioToleranceSeconds else { return nil }
         let minutes = min(cardioSeconds / 60, maximumMinutes)
@@ -126,6 +140,25 @@ public enum SessionDurationEstimator {
     public static func exactSeconds(startToEndSeconds: Int, storedMinutes: Int) -> Int? {
         guard startToEndSeconds > 0, startToEndSeconds / 60 == storedMinutes else { return nil }
         return startToEndSeconds
+    }
+
+    /// Die Dauer fuer die ANZEIGE auf die Sekunde: bei einem einzelnen Lauf seine
+    /// eingetragene Zeit, solange die gespeicherte Minutenzahl dazu passt (wurde
+    /// die Dauer im Verlauf geaendert, gilt die Aenderung); sonst
+    /// `exactSeconds` (Beginn und Ende). Aendert weder Beginn noch Ende — bei alten
+    /// Einheiten bleibt so das Datum (Rueckdatieren) unberuehrt.
+    public static func displaySeconds(startToEndSeconds: Int, storedMinutes: Int, logs: [LogInput]) -> Int? {
+        if let run = singleRunSeconds(in: logs), run / 60 == storedMinutes { return run }
+        return exactSeconds(startToEndSeconds: startToEndSeconds, storedMinutes: storedMinutes)
+    }
+
+    /// Die Zeit des Laufs, wenn das Training aus GENAU EINEM Cardio-Satz mit Zeit
+    /// besteht (kein Kraft-Satz, kein weiterer Cardio-Satz).
+    public static func singleRunSeconds(in logs: [LogInput]) -> Int? {
+        guard logs.count == 1, let log = logs.first, log.isCardio,
+              let seconds = log.durationSeconds, seconds > 0
+        else { return nil }
+        return seconds
     }
 
     // MARK: Hilfen

@@ -5,7 +5,7 @@ import SwiftData
 import FitnessAppCore
 
 /// Die Anbindung von `SessionDurationEstimator` an die SwiftData-Session:
-/// `finalizeTiming` (Beenden) und `repairShortDuration` (bestehende Laeufe). Die
+/// `finalizeTiming` (Beenden) und `repairDuration` (bestehende Laeufe). Die
 /// Regel selbst ist in `SessionDurationEstimatorTests` (Core) abgedeckt.
 @available(iOS 17.0, macOS 14.0, *)
 @MainActor
@@ -86,17 +86,34 @@ final class SessionTimingTests: XCTestCase {
         XCTAssertEqual(session.endTime.timeIntervalSince(session.startTime), Double(25 * 60 + 56), accuracy: 0.001)
     }
 
-    func testLiveRunKeepsTheWallClockAndTheStart() {
+    /// Ein einzelner Lauf ist das ganze Training: Auch wenn die Wanduhr laenger war
+    /// (Training vor dem Loslaufen gestartet), ist die eingetragene Zeit die Dauer.
+    func testSingleRunTakesItsRunTimeEvenWhenTheWallClockIsLonger() {
         let session = makeSession()
         addRun(to: session, seconds: 25 * 60 + 56, km: 4.51)
         let end = start.addingTimeInterval(27 * 60 + 10)
 
         let estimate = session.finalizeTiming(endingAt: end)
 
-        XCTAssertEqual(estimate.basis, .measured)
-        XCTAssertEqual(session.durationMinutes, 27)
-        XCTAssertEqual(session.startTime, start)
+        XCTAssertEqual(estimate.basis, .loggedCardioTime)
+        XCTAssertEqual(session.durationMinutes, 25)
         XCTAssertEqual(session.endTime, end)
+        XCTAssertEqual(session.startTime, end.addingTimeInterval(-Double(25 * 60 + 56)))
+        XCTAssertEqual(session.exactDurationText, "25:56")
+    }
+
+    /// Mehrere Cardio-Saetze (z.B. Intervalle mit Pausen) behalten die Wanduhr.
+    func testSeveralCardioSetsKeepALongerWallClockAndTheStart() {
+        let session = makeSession()
+        addRun(to: session, seconds: 300, km: 0.5)
+        addRun(to: session, seconds: 25 * 60 + 56, km: 4.51)
+        let end = start.addingTimeInterval(40 * 60)
+
+        let estimate = session.finalizeTiming(endingAt: end)
+
+        XCTAssertEqual(estimate.basis, .measured)
+        XCTAssertEqual(session.durationMinutes, 40)
+        XCTAssertEqual(session.startTime, start)
     }
 
     func testRetroLoggedStrengthIsEstimatedFromTheSets() {
@@ -181,32 +198,61 @@ final class SessionTimingTests: XCTestCase {
         XCTAssertNil(session.exactDurationText)
     }
 
-    // MARK: - repairShortDuration
+    // MARK: - repairDuration (bestehende Einheiten)
 
-    func testRepairRaisesAShortStoredDurationAndLeavesTheTimesAlone() {
+    /// Alter nachgetragener Lauf: 1 Min gespeichert, Beginn und Ende bleiben
+    /// (Rueckdatieren!), die Dauer wird die Laufzeit, die Anzeige genau.
+    func testRepairSetsAnOldRunToItsRunTimeAndLeavesTheTimesAlone() {
         let session = makeSession(durationMinutes: 1)
         session.endTime = start.addingTimeInterval(60)
         addRun(to: session, seconds: 25 * 60 + 56, km: 4.51)
 
-        XCTAssertTrue(session.repairShortDuration())
+        XCTAssertTrue(session.repairDuration())
 
         XCTAssertEqual(session.durationMinutes, 25)
         XCTAssertEqual(session.startTime, start)
         XCTAssertEqual(session.endTime, start.addingTimeInterval(60))
+        // Die Anzeige nimmt die Laufzeit, obwohl Beginn und Ende 1 Min auseinanderliegen.
+        XCTAssertEqual(session.exactDurationText, "25:56")
         // Zweiter Lauf: nichts mehr zu tun.
-        XCTAssertFalse(session.repairShortDuration())
+        XCTAssertFalse(session.repairDuration())
     }
 
-    func testRepairNeverTouchesStrengthOrPlausibleDurations() {
+    /// Alter Lauf, bei dem das Training vor dem Loslaufen gestartet wurde: die
+    /// gespeicherte Wanduhr ist laenger als der Lauf und wird gekuerzt.
+    func testRepairShortensAnOldRunWhoseWallClockWasLonger() {
+        let session = makeSession(durationMinutes: 33)
+        session.endTime = start.addingTimeInterval(33 * 60 + 12)
+        addRun(to: session, seconds: 25 * 60 + 56, km: 4.51)
+
+        XCTAssertTrue(session.repairDuration())
+
+        XCTAssertEqual(session.durationMinutes, 25)
+        XCTAssertEqual(session.exactDurationText, "25:56")
+    }
+
+    /// Eine im Verlauf geaenderte Dauer (die nicht zur Laufzeit passt) zeigt keine
+    /// Sekunden; die Reparatur liefe nur einmalig beim Update.
+    func testAManuallyEditedDurationShowsOnlyMinutes() {
+        let session = makeSession(durationMinutes: 30)
+        session.endTime = start.addingTimeInterval(60)
+        addRun(to: session, seconds: 25 * 60 + 56, km: 4.51)
+
+        XCTAssertNil(session.exactDurationText)
+    }
+
+    func testRepairNeverTouchesStrengthOrLongerSeveralSetSessions() {
         let strength = makeSession(durationMinutes: 2)
         addLifts(to: strength, count: 12)
-        XCTAssertFalse(strength.repairShortDuration())
+        XCTAssertFalse(strength.repairDuration())
         XCTAssertEqual(strength.durationMinutes, 2)
 
-        let longRun = makeSession(durationMinutes: 45)
-        addRun(to: longRun, seconds: 25 * 60 + 56, km: 4.51)
-        XCTAssertFalse(longRun.repairShortDuration())
-        XCTAssertEqual(longRun.durationMinutes, 45)
+        // Mehrere Cardio-Saetze mit plausibler (laengerer) Dauer.
+        let intervals = makeSession(durationMinutes: 45)
+        addRun(to: intervals, seconds: 300, km: 0.5)
+        addRun(to: intervals, seconds: 25 * 60 + 56, km: 4.51)
+        XCTAssertFalse(intervals.repairDuration())
+        XCTAssertEqual(intervals.durationMinutes, 45)
     }
 }
 #endif
