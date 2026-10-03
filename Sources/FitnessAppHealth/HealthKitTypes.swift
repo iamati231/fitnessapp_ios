@@ -16,6 +16,105 @@ public enum HealthKitAuthorizationStatus: Sendable, Equatable {
     case sharingAuthorized
 }
 
+/// Write-side authorization for the two types the workout feature needs:
+/// the Trainings (workout) type and the walking/running distance type.
+/// A separate struct instead of a new case on `HealthKitAuthorizationStatus`:
+/// four views switch exhaustively over that enum.
+///
+/// HealthKit has ONE write permission for workouts ("Trainings"); whether
+/// strength and/or cardio is written is an app-level choice
+/// (`HealthWritePreferences` in Core). The distance type is only requested
+/// once the user turns cardio writing on.
+public struct WorkoutWriteAuthorization: Sendable, Equatable {
+    public let workout: HealthKitAuthorizationStatus
+    public let distance: HealthKitAuthorizationStatus
+
+    public init(workout: HealthKitAuthorizationStatus, distance: HealthKitAuthorizationStatus) {
+        self.workout = workout
+        self.distance = distance
+    }
+
+    public static let unavailable = WorkoutWriteAuthorization(workout: .unavailable, distance: .unavailable)
+
+    public var canWriteWorkouts: Bool { workout == .sharingAuthorized }
+}
+
+/// Activity kinds the app writes to Apple Health. Mirrors
+/// `HealthWorkoutActivity` in Core — `FitnessAppHealth` deliberately does not
+/// depend on Core, so the UI layer maps between the two.
+public enum HealthWorkoutKind: String, Sendable, Equatable {
+    case strengthTraining
+    case running
+    case walking
+    case cycling
+    case mixedCardio
+}
+
+/// A finished workout to write to Apple Health, as plain values.
+public struct HealthWorkoutDraft: Sendable, Equatable {
+    public let kind: HealthWorkoutKind
+    public let startDate: Date
+    public let endDate: Date
+    /// `nil` = unknown: neither location type nor indoor flag is set.
+    public let isIndoor: Bool?
+    /// Walking/running distance for the HealthKit distance SAMPLE
+    /// (`running`/`walking` only; needs the distance write permission).
+    public let sampleDistanceKm: Double?
+    /// Total distance for the workout METADATA only (any cardio kind).
+    public let totalDistanceKm: Double?
+    public let averagePaceMinPerKm: Double?
+    public let totalSets: Int?
+    public let totalVolumeKg: Double?
+
+    public init(
+        kind: HealthWorkoutKind,
+        startDate: Date,
+        endDate: Date,
+        isIndoor: Bool?,
+        sampleDistanceKm: Double? = nil,
+        totalDistanceKm: Double? = nil,
+        averagePaceMinPerKm: Double? = nil,
+        totalSets: Int? = nil,
+        totalVolumeKg: Double? = nil
+    ) {
+        self.kind = kind
+        self.startDate = startDate
+        self.endDate = endDate
+        self.isIndoor = isIndoor
+        self.sampleDistanceKm = sampleDistanceKm
+        self.totalDistanceKm = totalDistanceKm
+        self.averagePaceMinPerKm = averagePaceMinPerKm
+        self.totalSets = totalSets
+        self.totalVolumeKg = totalVolumeKg
+    }
+}
+
+/// Result of writing one workout. `unverified` = `finishWorkout()` returned
+/// `nil` without an error, which HealthKit documents for a locked device
+/// (the workout is saved but not readable) and which has also been reported
+/// on unlocked devices without a workout appearing — so it is NOT counted as
+/// a confirmed success.
+public enum HealthWorkoutWriteOutcome: Sendable, Equatable {
+    case written(distanceAttached: Bool)
+    case unverified(distanceAttached: Bool)
+}
+
+/// The time window of a workout that is visible in Apple Health (own or
+/// another app's). Used to avoid duplicates when exporting past workouts.
+public struct HealthWorkoutWindow: Sendable, Equatable {
+    public let startDate: Date
+    public let endDate: Date
+    public let sourceName: String
+    public let isOwnSource: Bool
+
+    public init(startDate: Date, endDate: Date, sourceName: String, isOwnSource: Bool) {
+        self.startDate = startDate
+        self.endDate = endDate
+        self.sourceName = sourceName
+        self.isOwnSource = isOwnSource
+    }
+}
+
 /// One weight reading pulled from HealthKit. Source name comes from the writing
 /// app/device (e.g. "Withings Body+", "iPhone", "Apple Watch") so the UI can show
 /// where the value originated.

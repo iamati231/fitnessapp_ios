@@ -16,6 +16,10 @@ import Observation
 public final class HealthKitController {
 
     public private(set) var authorizationStatus: HealthKitAuthorizationStatus = .unavailable
+    /// Write status of the Trainings type + distance type (see
+    /// `WorkoutWriteAuthorization`). UI display only — the actual write gate
+    /// reads the status fresh inside `HealthKitService.saveWorkout`.
+    public private(set) var workoutWriteAuthorization: WorkoutWriteAuthorization = .unavailable
     public private(set) var isAvailable: Bool = false
     public private(set) var lastSyncDate: Date?
     public private(set) var lastError: (any Error)?
@@ -30,6 +34,9 @@ public final class HealthKitController {
             self.service = s
             self.isAvailable = true
             self.authorizationStatus = .notDetermined
+            self.workoutWriteAuthorization = WorkoutWriteAuthorization(
+                workout: .notDetermined, distance: .notDetermined
+            )
         } else {
             self.service = nil
         }
@@ -42,10 +49,19 @@ public final class HealthKitController {
     /// — view code can run this on `.task` without worrying about cost.
     public func refreshAuthorizationStatus() async {
         #if canImport(HealthKit)
-        guard let service else { return }
-        authorizationStatus = await service.currentAuthorizationStatus()
+        await refreshAllStatuses()
         #endif
     }
+
+    #if canImport(HealthKit)
+    /// Weight proxy + workout/distance write status in one go, so a request
+    /// from any entry point leaves every status row current.
+    private func refreshAllStatuses() async {
+        guard let service else { return }
+        authorizationStatus = await service.currentAuthorizationStatus()
+        workoutWriteAuthorization = await service.currentWorkoutWriteAuthorization()
+    }
+    #endif
 
     /// Triggers the native HealthKit permission sheet. After the user responds,
     /// `authorizationStatus` reflects the new state.
@@ -54,11 +70,35 @@ public final class HealthKitController {
         guard let service else { return }
         do {
             try await service.requestAuthorization()
-            authorizationStatus = await service.currentAuthorizationStatus()
             lastError = nil
         } catch {
             lastError = error
         }
+        await refreshAllStatuses()
+        #endif
+    }
+
+    /// User-initiated, incremental request for the Trainings write permission
+    /// (+ walking/running distance when `includeDistance`). Needed because the
+    /// connect rows only show while the weight status is `.notDetermined`, so
+    /// users who connected Apple Health before workouts joined the request
+    /// would never see that dialog. Always re-reads the status afterwards (a
+    /// returning request says nothing about what the user granted); when
+    /// nothing is left to ask, no sheet appears and the status is unchanged.
+    @discardableResult
+    public func requestWorkoutWriteAuthorization(includeDistance: Bool) async -> WorkoutWriteAuthorization {
+        #if canImport(HealthKit)
+        guard let service else { return workoutWriteAuthorization }
+        do {
+            try await service.requestWorkoutWriteAuthorization(includeDistance: includeDistance)
+            lastError = nil
+        } catch {
+            lastError = error
+        }
+        await refreshAllStatuses()
+        return workoutWriteAuthorization
+        #else
+        return workoutWriteAuthorization
         #endif
     }
 
@@ -76,6 +116,7 @@ public final class HealthKitController {
         } catch {
             lastError = error
         }
+        await refreshAllStatuses()
         #endif
     }
 
@@ -243,6 +284,44 @@ public final class HealthKitController {
             lastSyncDate = Date()
             lastError = nil
         }
+        #endif
+    }
+
+    /// Time windows of all workouts visible to this app in `[start, end]` (own
+    /// and, with the read permission, other apps'). THROWS instead of
+    /// returning `[]` on failure: the history export must not mistake a failed
+    /// query (locked device) for "nothing there" and write duplicates. Which
+    /// workouts are visible depends on permissions HealthKit does not disclose
+    /// — see `HealthKitService.fetchWorkoutWindows`.
+    public func fetchWorkoutWindows(from start: Date, to end: Date) async throws -> [HealthWorkoutWindow] {
+        #if canImport(HealthKit)
+        guard let service else { return [] }
+        return try await service.fetchWorkoutWindows(from: start, to: end)
+        #else
+        return []
+        #endif
+    }
+
+    /// Writes one finished workout. Throws (`HealthKitError`) so the caller can
+    /// tell a missing permission, a locked device and a rejected workout
+    /// apart; `lastError`/`lastSyncDate` are kept up to date as before. The
+    /// write gate is the Trainings permission read fresh in the service — NOT
+    /// the weight proxy `authorizationStatus`.
+    @discardableResult
+    public func saveWorkout(_ draft: HealthWorkoutDraft) async throws -> HealthWorkoutWriteOutcome {
+        #if canImport(HealthKit)
+        guard let service else { throw HealthKitError.unavailable }
+        do {
+            let outcome = try await service.saveWorkout(draft)
+            lastSyncDate = Date()
+            lastError = nil
+            return outcome
+        } catch {
+            lastError = error
+            throw error
+        }
+        #else
+        throw HealthKitError.unavailable
         #endif
     }
 

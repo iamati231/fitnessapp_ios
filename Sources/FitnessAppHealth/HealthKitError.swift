@@ -9,6 +9,14 @@ public enum HealthKitError: Error, Sendable, LocalizedError {
     case queryFailed(reason: String)
     case saveFailed(reason: String)
     case invalidValue(reason: String)
+    /// Write permission for the workout type is missing (never asked or
+    /// denied), checked fresh at write time.
+    case writeNotAuthorized
+    /// HealthKit's database is not accessible (typically: device locked).
+    case databaseInaccessible
+    /// HealthKit rejected THIS workout (e.g. invalid dates); retrying the
+    /// same workout will not help.
+    case invalidWorkout(reason: String)
 
     public var errorDescription: String? {
         switch self {
@@ -22,6 +30,12 @@ public enum HealthKitError: Error, Sendable, LocalizedError {
             return "HealthKit-Speichern fehlgeschlagen: \(reason)"
         case .invalidValue(let reason):
             return "Ungültiger Health-Wert: \(reason)"
+        case .writeNotAuthorized:
+            return "Apple Health: Schreibzugriff für Trainings fehlt."
+        case .databaseInaccessible:
+            return "Apple Health ist gerade nicht lesbar (Gerät gesperrt?)."
+        case .invalidWorkout(let reason):
+            return "Apple Health hat das Training abgelehnt: \(reason)"
         }
     }
 }

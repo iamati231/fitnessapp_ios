@@ -110,10 +110,13 @@ public struct HealthWorkoutPlan: Sendable, Equatable {
     /// `true` = drinnen, `false` = draussen, `nil` = unbekannt (dann setzt der
     /// Writer weder Ort noch Indoor-Flag).
     public var isIndoor: Bool?
-    /// Nur Laufen/Gehen (`distanceWalkingRunning`); Rad-/Ruder-Distanz bleibt
-    /// ausserhalb von Health.
+    /// Distanz-SAMPLE: nur Laufen/Gehen (`distanceWalkingRunning`); Rad-/
+    /// Ruder-Distanz bekommt kein Sample (eigener Health-Typ / Berechtigung).
     public var distanceKm: Double?
     public var averagePaceMinPerKm: Double?
+    /// Gesamtstrecke aller Cardio-Logs, jede Modalitaet — nur fuer die
+    /// Metadaten des Workouts (`TotalDistanceKm`), nie als Sample.
+    public var totalDistanceKm: Double?
     /// Nur Krafttraining.
     public var totalSets: Int?
     public var totalVolumeKg: Double?
@@ -127,6 +130,7 @@ public struct HealthWorkoutPlan: Sendable, Equatable {
         isIndoor: Bool?,
         distanceKm: Double? = nil,
         averagePaceMinPerKm: Double? = nil,
+        totalDistanceKm: Double? = nil,
         totalSets: Int? = nil,
         totalVolumeKg: Double? = nil
     ) {
@@ -136,6 +140,7 @@ public struct HealthWorkoutPlan: Sendable, Equatable {
         self.isIndoor = isIndoor
         self.distanceKm = distanceKm
         self.averagePaceMinPerKm = averagePaceMinPerKm
+        self.totalDistanceKm = totalDistanceKm
         self.totalSets = totalSets
         self.totalVolumeKg = totalVolumeKg
     }
@@ -433,13 +438,16 @@ public enum HealthWorkoutPlanner {
             }
         }
 
+        let totalKm = stats.values.reduce(0.0) { $0 + $1.distanceKm }
+
         return HealthWorkoutPlan(
             activity: activity,
             start: window.start,
             end: window.end,
             isIndoor: isIndoor,
             distanceKm: distanceKm,
-            averagePaceMinPerKm: pace
+            averagePaceMinPerKm: pace,
+            totalDistanceKm: totalKm > 0 ? totalKm : nil
         )
     }
 }

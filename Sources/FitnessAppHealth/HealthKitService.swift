@@ -28,9 +28,12 @@ public actor HealthKitService {
     private static let restingHRType  = HKQuantityType(.restingHeartRate)
     private static let stepCountType  = HKQuantityType(.stepCount)
 
-    /// Wird nur geschrieben: `saveRunningWorkout` haengt dem Lauf-Workout ein
+    /// Wird nur geschrieben: `saveWorkout` haengt einem Lauf-/Geh-Workout ein
     /// Distanz-Sample an, und `HKWorkoutBuilder.addSamples` verlangt dafuer die
-    /// Schreibberechtigung des Sample-Typs.
+    /// Schreibberechtigung des Sample-Typs. NICHT Teil von
+    /// `requestAuthorization()`: die Freigabe wird erst angefragt, wenn der
+    /// Nutzer das Schreiben von Cardio einschaltet
+    /// (`requestWorkoutWriteAuthorization(includeDistance:)`).
     private static let distanceType = HKQuantityType(.distanceWalkingRunning)
 
     // MARK: Lifecycle
@@ -49,18 +52,22 @@ public actor HealthKitService {
     // MARK: Authorization
 
     public func requestAuthorization() async throws {
-        // workoutType (+ distance) are write targets here: we push our own
-        // finished workouts. Reading OTHER apps' workouts (Workout-Import) is
-        // deliberately not part of this request — it has its own narrow
-        // `requestWorkoutReadAuthorization()` below, so that the six entry
-        // points sharing this method never re-prompt for it.
+        // workoutType is a write target here: we push our own finished
+        // workouts (Krafttraining is on by default). The walking/running
+        // DISTANCE type is deliberately NOT part of this request — cardio
+        // writing is opt-in, and its distance permission is asked
+        // incrementally when the user turns it on
+        // (`requestWorkoutWriteAuthorization(includeDistance:)`).
+        // Reading OTHER apps' workouts (Workout-Import) is deliberately not
+        // part of this request either — it has its own narrow
+        // `requestWorkoutReadAuthorization()` below, so that the entry points
+        // sharing this method never re-prompt for it.
         //
         // Characteristic types (dateOfBirth, biologicalSex) are read-only by
         // design; they're set in the user's Health profile and we can pre-fill
         // them into onboarding.
         let toShare: Set<HKSampleType> = [
             Self.weightType, Self.bodyFatType, Self.leanMassType,
-            Self.distanceType,
             HKObjectType.workoutType()
         ]
         let toRead:  Set<HKObjectType> = [
@@ -96,11 +103,61 @@ public actor HealthKitService {
         }
     }
 
+    /// Incremental, user-initiated request for the WRITE permission of the
+    /// Trainings type (and, when `includeDistance` is set, the walking/running
+    /// distance type). Users who connected Apple Health before a type joined
+    /// `requestAuthorization()` are never shown that dialog again by the
+    /// connect rows (they only appear while the weight status is
+    /// `.notDetermined`), so this is the way to ask for it later.
+    ///
+    /// Only types that are still `.notDetermined` go into the request: HealthKit
+    /// shows the sheet when at least one requested type is undecided, and
+    /// listing already decided types again would read like nagging. The
+    /// distance type is skipped while the workout type is denied (a distance
+    /// without a workout is worthless). With nothing left to ask this does
+    /// nothing — callers re-read `currentWorkoutWriteAuthorization()`, because
+    /// a returning request says nothing about what the user granted.
+    public func requestWorkoutWriteAuthorization(includeDistance: Bool) async throws {
+        let workoutType = HKObjectType.workoutType()
+        let workoutStatus = store.authorizationStatus(for: workoutType)
+
+        var toShare: Set<HKSampleType> = []
+        if workoutStatus == .notDetermined {
+            toShare.insert(workoutType)
+        }
+        if includeDistance,
+           workoutStatus != .sharingDenied,
+           store.authorizationStatus(for: Self.distanceType) == .notDetermined {
+            toShare.insert(Self.distanceType)
+        }
+        guard !toShare.isEmpty else { return }
+
+        do {
+            try await store.requestAuthorization(toShare: toShare, read: [])
+        } catch {
+            throw HealthKitError.authorizationFailed(reason: error.localizedDescription)
+        }
+    }
+
     /// Approximate status — HealthKit only tells us about WRITE permissions for
     /// privacy, so we use weight-write-status as the proxy for "is the connection
     /// set up". This matches the practical user mental model.
     public func currentAuthorizationStatus() -> HealthKitAuthorizationStatus {
-        switch store.authorizationStatus(for: Self.weightType) {
+        Self.map(store.authorizationStatus(for: Self.weightType))
+    }
+
+    /// Write status of the Trainings type and the distance type, read fresh
+    /// from HealthKit (no cache). The workout live gate and the export read
+    /// this at write time.
+    public func currentWorkoutWriteAuthorization() -> WorkoutWriteAuthorization {
+        WorkoutWriteAuthorization(
+            workout: Self.map(store.authorizationStatus(for: HKObjectType.workoutType())),
+            distance: Self.map(store.authorizationStatus(for: Self.distanceType))
+        )
+    }
+
+    private static func map(_ status: HKAuthorizationStatus) -> HealthKitAuthorizationStatus {
+        switch status {
         case .notDetermined:     return .notDetermined
         case .sharingDenied:     return .sharingDenied
         case .sharingAuthorized: return .sharingAuthorized
@@ -259,6 +316,56 @@ public actor HealthKitService {
         }
     }
 
+    /// Time windows of ALL workouts HealthKit shows this app between `start`
+    /// and `end` — own and other apps', any activity type. The history export
+    /// compares its candidates against these to avoid duplicates.
+    ///
+    /// What is visible depends on the permissions: with write access only the
+    /// workouts this app wrote itself; other apps' workouts need the READ
+    /// permission (`requestWorkoutReadAuthorization`) — and HealthKit never
+    /// reveals whether that was granted: without it the result is simply
+    /// shorter, not an error. Callers must not read an empty result as
+    /// "nothing else exists".
+    ///
+    /// Throws `HealthKitError.databaseInaccessible` while the device is locked
+    /// (queries fail then, writes are cached) and `.queryFailed` otherwise.
+    public func fetchWorkoutWindows(from start: Date, to end: Date) async throws -> [HealthWorkoutWindow] {
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
+        let ownBundleID = Bundle.main.bundleIdentifier
+
+        return try await withCheckedThrowingContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: HKObjectType.workoutType(),
+                predicate: predicate,
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]
+            ) { _, samples, error in
+                if let error {
+                    continuation.resume(throwing: Self.mapQueryError(error))
+                    return
+                }
+                let workouts = (samples as? [HKWorkout]) ?? []
+                let windows: [HealthWorkoutWindow] = workouts.map { workout in
+                    HealthWorkoutWindow(
+                        startDate: workout.startDate,
+                        endDate: workout.endDate,
+                        sourceName: workout.sourceRevision.source.name,
+                        isOwnSource: workout.sourceRevision.source.bundleIdentifier == ownBundleID
+                    )
+                }
+                continuation.resume(returning: windows)
+            }
+            store.execute(query)
+        }
+    }
+
+    private static func mapQueryError(_ error: Error) -> HealthKitError {
+        if (error as? HKError)?.code == .errorDatabaseInaccessible {
+            return .databaseInaccessible
+        }
+        return .queryFailed(reason: error.localizedDescription)
+    }
+
     // MARK: Writes
 
     public func saveWeight(_ kg: Double, on date: Date) async throws {
@@ -412,6 +519,137 @@ public actor HealthKitService {
         } catch {
             throw HealthKitError.saveFailed(reason: error.localizedDescription)
         }
+    }
+
+    /// Writes one finished workout (strength, running, walking, cycling or
+    /// generic cardio) to Apple Health with `HKWorkoutBuilder`, also for
+    /// workouts in the past.
+    ///
+    /// - The Trainings write permission is read fresh from HealthKit BEFORE
+    ///   anything is started (no cache): without it nothing is written and
+    ///   `HealthKitError.writeNotAuthorized` is thrown. Because
+    ///   `addSamples` stores samples immediately and `discardWorkout()` does not
+    ///   remove them, starting without the permission could otherwise leave an
+    ///   orphaned distance sample behind.
+    /// - Energy and heart rate are deliberately NOT written — without sensors
+    ///   they would be invented values (App Review 5.1.3(ii)). Consequently the
+    ///   Move ring is not filled by these workouts; Health lists them as
+    ///   workouts.
+    /// - The distance SAMPLE (`distanceWalkingRunning`) is only attached for
+    ///   running/walking and only when that type is authorized; if HealthKit
+    ///   rejects it the workout is kept without distance (the kilometres stay
+    ///   in the metadata). `distanceAttached` in the result tells which.
+    /// - `finishWorkout()` returning `nil` is reported as `.unverified`, not as
+    ///   success (see `HealthWorkoutWriteOutcome`).
+    /// - Metadata goes into a single `addMetadata` call. Bundle-prefixed keys
+    ///   keep our specifics apart from Apple's reserved namespace.
+    public func saveWorkout(_ draft: HealthWorkoutDraft) async throws -> HealthWorkoutWriteOutcome {
+        let workoutType = HKObjectType.workoutType()
+        guard store.authorizationStatus(for: workoutType) == .sharingAuthorized else {
+            throw HealthKitError.writeNotAuthorized
+        }
+        guard draft.endDate > draft.startDate else {
+            throw HealthKitError.invalidWorkout(reason: "end date is not after start date")
+        }
+
+        let configuration = HKWorkoutConfiguration()
+        configuration.activityType = Self.activityType(for: draft.kind)
+        if let indoor = draft.isIndoor {
+            configuration.locationType = indoor ? .indoor : .outdoor
+        }
+
+        let builder = HKWorkoutBuilder(
+            healthStore: store,
+            configuration: configuration,
+            device: nil
+        )
+
+        var metadata: [String: Any] = [:]
+        if let indoor = draft.isIndoor {
+            metadata[HKMetadataKeyIndoorWorkout] = indoor
+        }
+        if let sets = draft.totalSets {
+            metadata["com.atamya.FitnessApp.TotalSets"] = sets
+        }
+        if let volume = draft.totalVolumeKg, volume.isFinite {
+            metadata["com.atamya.FitnessApp.TotalVolumeKg"] = volume
+        }
+        if let km = draft.totalDistanceKm, km.isFinite, km > 0 {
+            metadata["com.atamya.FitnessApp.TotalDistanceKm"] = km
+        }
+        if let pace = draft.averagePaceMinPerKm, pace.isFinite, pace > 0 {
+            metadata["com.atamya.FitnessApp.AveragePaceMinPerKm"] = pace
+        }
+
+        var distanceAttached = false
+        var finishCalled = false
+        do {
+            try await builder.beginCollection(at: draft.startDate)
+            if !metadata.isEmpty {
+                try await builder.addMetadata(metadata)
+            }
+
+            if let km = draft.sampleDistanceKm, km.isFinite, km > 0,
+               draft.kind == .running || draft.kind == .walking,
+               store.authorizationStatus(for: Self.distanceType) == .sharingAuthorized {
+                let quantity = HKQuantity(unit: HKUnit.meter(), doubleValue: km * 1000.0)
+                let sample = HKQuantitySample(
+                    type: Self.distanceType,
+                    quantity: quantity,
+                    start: draft.startDate,
+                    end: draft.endDate
+                )
+                do {
+                    try await builder.addSamples([sample])
+                    distanceAttached = true
+                } catch {
+                    // Die Distanz ist Beiwerk: lehnt HealthKit das Sample ab,
+                    // bleibt das Workout erhalten (Kilometer in den Metadaten).
+                }
+            }
+
+            try await builder.endCollection(at: draft.endDate)
+            finishCalled = true
+            let workout = try await builder.finishWorkout()
+            return workout == nil
+                ? .unverified(distanceAttached: distanceAttached)
+                : .written(distanceAttached: distanceAttached)
+        } catch {
+            // Nach finishWorkout ist der Builder fertig; nur davor verwerfen.
+            if !finishCalled {
+                builder.discardWorkout()
+            }
+            throw Self.mapSaveError(error)
+        }
+    }
+
+    private static func activityType(for kind: HealthWorkoutKind) -> HKWorkoutActivityType {
+        switch kind {
+        case .strengthTraining: return .traditionalStrengthTraining
+        case .running:          return .running
+        case .walking:          return .walking
+        case .cycling:          return .cycling
+        case .mixedCardio:      return .mixedCardio
+        }
+    }
+
+    private static func mapSaveError(_ error: Error) -> HealthKitError {
+        if let healthError = error as? HealthKitError {
+            return healthError
+        }
+        if let hkError = error as? HKError {
+            switch hkError.code {
+            case .errorAuthorizationDenied, .errorAuthorizationNotDetermined:
+                return .writeNotAuthorized
+            case .errorDatabaseInaccessible:
+                return .databaseInaccessible
+            case .errorInvalidArgument:
+                return .invalidWorkout(reason: hkError.localizedDescription)
+            default:
+                break
+            }
+        }
+        return .saveFailed(reason: error.localizedDescription)
     }
 
     // MARK: Internals

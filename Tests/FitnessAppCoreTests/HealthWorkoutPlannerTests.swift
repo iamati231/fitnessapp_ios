@@ -220,6 +220,7 @@ final class HealthWorkoutPlannerTests: XCTestCase {
         XCTAssertEqual(p?.category, .cardio)
         XCTAssertEqual(p?.isIndoor, false)
         XCTAssertEqual(p?.distanceKm, 5)
+        XCTAssertEqual(p?.totalDistanceKm, 5)
         XCTAssertEqual(p?.averagePaceMinPerKm ?? 0, 6.0, accuracy: 0.0001)
         XCTAssertNil(p?.totalSets)
     }
@@ -239,7 +240,8 @@ final class HealthWorkoutPlannerTests: XCTestCase {
         let outdoor = plan(decide(candidate(logs: [cardioLog("Radfahren (outdoor)", km: 20, seconds: 2400)])))
         XCTAssertEqual(outdoor?.activity, .cycling)
         XCTAssertEqual(outdoor?.isIndoor, false)
-        XCTAssertNil(outdoor?.distanceKm, "Rad-Distanz hat einen eigenen Health-Typ und wird nicht geschrieben")
+        XCTAssertNil(outdoor?.distanceKm, "Rad-Distanz hat einen eigenen Health-Typ und wird nicht als Sample geschrieben")
+        XCTAssertEqual(outdoor?.totalDistanceKm, 20, "die Strecke bleibt in den Metadaten")
 
         let ergometer = plan(decide(candidate(logs: [cardioLog("Fahrradergometer", seconds: 1800)])))
         XCTAssertEqual(ergometer?.activity, .cycling)
@@ -360,6 +362,7 @@ final class HealthWorkoutPlannerTests: XCTestCase {
         let p = plan(decide(c))
         XCTAssertEqual(p?.activity, .running)
         XCTAssertEqual(p?.distanceKm, 5)
+        XCTAssertEqual(p?.totalDistanceKm, 5)
         // 2400 s = 40 min fuer 5 km -> 8,0 min/km
         XCTAssertEqual(p?.averagePaceMinPerKm ?? 0, 8.0, accuracy: 0.0001)
     }
