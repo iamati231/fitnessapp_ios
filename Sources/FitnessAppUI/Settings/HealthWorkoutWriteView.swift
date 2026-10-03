@@ -605,6 +605,13 @@ public struct HealthWorkoutWriteView: View {
                     healthKit: healthKit,
                     context: modelContext
                 )
+                // In den Hintergrund gewechselt oder den Bildschirm verlassen,
+                // waehrend geprueft wurde: kein veraltetes Ergebnis anzeigen.
+                if Task.isCancelled {
+                    exportPhase = .idle
+                    exportTask = nil
+                    return
+                }
                 exportStrength = strengthEnabled
                 exportCardio = cardioEnabled
                 if preparation.toWrite.isEmpty {
