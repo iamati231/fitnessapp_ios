@@ -16,10 +16,26 @@ extension Double {
     /// flooring would grow the MAGNITUDE (-2.34 -> -2.4), i.e. overstate
     /// rather than avoid overstating - the opposite of this function's
     /// documented purpose.
+    ///
+    /// Bugfix (Zehntelwerte): Dezimalwerte wie 64.1 sind binaer nicht exakt
+    /// darstellbar - `64.1 * 100` ergibt 6409.999999999999 und wurde zu 64.09
+    /// abgeschnitten, obwohl genau 64.1 gemeint ist (betraf rund 8 % aller
+    /// Zehntel-kg-Werte zwischen 50 und 150 und rund 6 % aller Hundertstel).
+    /// Liegt das Produkt nur im Rundungsrauschen - wenige ULP, also der
+    /// Darstellungsfehler der Dezimaleingabe plus eine Multiplikation (zusammen
+    /// hoechstens ~1,3 ULP, hier mit 8 ULP grosszuegig bemessen) - neben einer
+    /// ganzen Zahl, ist genau diese gemeint. Echte Ueberschuss-Stellen
+    /// (15.869 -> 15.86, 15.8599999999 -> 15.85) liegen um Groessenordnungen
+    /// darueber und werden weiterhin abgeschnitten, nie aufgerundet.
     public func truncated(to decimals: Int) -> Double {
         precondition(decimals >= 0, "decimals must be non-negative")
         let factor = pow(10.0, Double(decimals))
-        return (self * factor).rounded(.towardZero) / factor
+        let scaled = self * factor
+        let nearest = scaled.rounded()
+        if abs(scaled - nearest) <= 8 * scaled.ulp {
+            return nearest / factor
+        }
+        return scaled.rounded(.towardZero) / factor
     }
 
     /// Formats to a fixed number of decimals, locale-aware via `Locale.current`.
