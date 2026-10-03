@@ -464,7 +464,7 @@ Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder
 - [ ] Lauf nachtragen: Spontanes Training → *Freier Lauf* → km und Zeit (z. B. 25:56) eintragen → sofort beenden: Beenden-Sheet und Zusammenfassung zeigen „25:56“ (nicht „1 Min“), Ø-Pace stimmt; im Verlauf steht in der Zeile dieselbe Dauer; danach die Dauer im Verlauf bearbeiten → nur noch Minuten; derselbe Lauf live mit Wartezeit beendet behält die Wanduhr
 - [ ] Krafttraining nachtragen: 10 Sätze in 1–2 Minuten eintippen und beenden: Dauer etwa 20–25 Min; live trainiert bleibt die echte Dauer
 - [ ] Einmalige Reparatur: ein früher nachgetragener Lauf mit 1–2 Min im Verlauf zeigt nach dem ersten Start des neuen Builds die eingetragene Laufzeit (z. B. „25:56“, Verlauf „25 Min“); ein früher live gelaufener Einzel-Lauf mit längerer Wanduhr zeigt ebenfalls die Laufzeit; Datum und Uhrzeit der Einheit bleiben unverändert; ein Training mit Kraft- und Cardio-Sätzen behält seine Dauer
-- [ ] Einzel-Lauf nachträglich ändern: Dauer im Verlauf auf einen anderen Wert stellen → die Änderung gilt (nur Minuten), die Reparatur setzt sie nicht erneut zurück
+- [ ] Einzel-Lauf nachträglich ändern: Dauer im Verlauf auf einen anderen Wert stellen → die Änderung gilt (nur Minuten), die Reparatur beim App-Start setzt sie nicht erneut zurück (nach einem CSV-Import oder Backup-Restore wird ein Einzel-Lauf dagegen wieder auf seine Laufzeit gesetzt)
 - [ ] Zeitformate AMRAP, EMOM, Auf Zeit, Zirkel (beide Modi) mit Vorlauf 0/5/10/15 s; Gerät sperren; vorzeitig speichern
 - [ ] Zusammenfassung: Erfolge, Rekorde, Progression, Notiz, Gerät zuordnen
 - [ ] Verlauf: Training bearbeiten und löschen; Trophy Room „Aus History neu berechnen“

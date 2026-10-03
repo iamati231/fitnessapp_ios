@@ -232,7 +232,9 @@ final class SessionTimingTests: XCTestCase {
     }
 
     /// Eine im Verlauf geaenderte Dauer (die nicht zur Laufzeit passt) zeigt keine
-    /// Sekunden; die Reparatur liefe nur einmalig beim Update.
+    /// Sekunden. Die Reparatur beim App-Start laeuft nur einmalig; nach einem Import
+    /// oder Restore (`repairAfterImport`) wird ein Einzel-Lauf wieder auf seine
+    /// Laufzeit gesetzt.
     func testAManuallyEditedDurationShowsOnlyMinutes() {
         let session = makeSession(durationMinutes: 30)
         session.endTime = start.addingTimeInterval(60)

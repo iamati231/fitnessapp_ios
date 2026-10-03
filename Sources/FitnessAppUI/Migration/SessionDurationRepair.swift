@@ -48,6 +48,9 @@ public enum SessionDurationRepair {
         return repaired
     }
 
+    /// Ohne Schluessel, weil der Import neue (alte) Daten bringt. Folge: Eine im
+    /// Verlauf von Hand geaenderte Dauer eines Einzel-Laufs wird dabei wieder auf
+    /// dessen Laufzeit gesetzt.
     /// - Returns: Anzahl der angepassten Sessions.
     @discardableResult
     public static func repairAfterImport(in context: ModelContext) -> Int {
