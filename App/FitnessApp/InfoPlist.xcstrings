@@ -12,12 +12,12 @@
       }
     },
     "NSHealthUpdateUsageDescription": {
-      "comment": "Apple-Health-Berechtigungsdialog: Schreibzugriff. Muss die tatsaechlich geschriebenen Daten nennen (HealthKitService.requestAuthorization, toShare).",
+      "comment": "Apple-Health-Berechtigungsdialog: Schreibzugriff. Muss die tatsaechlich geschriebenen Daten nennen (HealthKitService.requestAuthorization, toShare, sowie requestWorkoutWriteAuthorization(includeDistance:) fuer die Distanz).",
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Deltiq schreibt deine Messungen (Gewicht, Körperfett, Magermasse) und – wenn du es einschaltest – abgeschlossene Trainings nach Apple Health, auf Wunsch mit Geh- und Laufdistanz und auch frühere Trainings, damit deine Daten in einer Quelle leben." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Deltiq writes your measurements (weight, body fat, lean mass) and – if you turn it on – your completed workouts to Apple Health, optionally with walking and running distance and including past workouts, so your data lives in one place." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Deltiq; ölçümlerini (kilo, yağ oranı, yağsız kütle) ve – açarsan – tamamlanan antrenmanlarını, istersen yürüyüş ve koşu mesafesiyle ve geçmiş antrenmanlar da dahil, verilerin tek bir yerde durması için Apple Health'e yazar." } }
+        "de": { "stringUnit": { "state": "translated", "value": "Deltiq schreibt deine Messungen (Gewicht, Körperfett, Magermasse) und deine abgeschlossenen Trainings nach Apple Health: Krafttraining standardmäßig, Cardio nur auf Wunsch, beides in den Einstellungen abschaltbar. Auf Wunsch auch mit Geh- und Laufdistanz und für frühere Trainings. So leben deine Daten in einer Quelle." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Deltiq writes your measurements (weight, body fat, lean mass) and your completed workouts to Apple Health: strength training by default, cardio only if you turn it on, and both can be switched off in Settings. Optionally with walking and running distance and for past workouts. That way your data lives in one place." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Deltiq; ölçümlerini (kilo, yağ oranı, yağsız kütle) ve tamamlanan antrenmanlarını Apple Health'e yazar: kuvvet antrenmanı varsayılan olarak, kardiyo yalnızca sen açarsan; ikisi de Ayarlar'dan kapatılabilir. İstersen yürüyüş ve koşu mesafesiyle ve geçmiş antrenmanlar için de. Böylece verilerin tek bir yerde durur." } }
       }
     }
   }

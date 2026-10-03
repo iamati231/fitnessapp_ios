@@ -18,8 +18,9 @@ import Foundation
 /// Schalter.
 public struct HealthWritePreferences: Equatable, Sendable {
 
-    /// Krafttraining (inkl. Zeitformate AMRAP/EMOM/Auf Zeit/Zirkel). An:
-    /// Die Freigabe selbst ist das Opt-in.
+    /// Krafttraining (inkl. Zeitformate AMRAP/EMOM/Auf Zeit/Zirkel; ein Zeitformat-
+    /// Tag nur aus Lauf-/Rad-Intervallen zaehlt zu Cardio). An: Die Freigabe
+    /// selbst ist das Opt-in.
     public static let defaultStrengthEnabled = true
     /// Cardio (Laufen, Radfahren, ...). Aus: Wer Laeufe schon von einer
     /// anderen App (z.B. Adidas Running) nach Health bekommt, soll sie nicht

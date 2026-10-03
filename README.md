@@ -43,7 +43,7 @@ Entstanden ist das Projekt als iOS-Port einer Android-Fitness-App. Die Berechnun
 | 186 | Übungen in der System-Bibliothek, dazu eigene Übungen |
 | 4 | Zeitformate: AMRAP, EMOM, Auf Zeit, Zirkel |
 | 12 | Dashboard-Widgets (frei ein-/ausblendbar und sortierbar) |
-| 3 | Sprachen mit 1795 Texten (DE, EN, TR jeweils vollständig) |
+| 3 | Sprachen mit 1796 Texten (DE, EN, TR jeweils vollständig) |
 
 **Was die App kann**
 
@@ -344,19 +344,19 @@ Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorla
 |---|---|---|
 | Lesen | Körpergewicht, Körperfett, Magermasse, Größe, Geburtsdatum, biologisches Geschlecht, Ruhepuls, Schritte | Onboarding, Messung (Gewicht-Vorbefüllung), Profil, Dashboard-Hero-Karten |
 | Schreiben | Körpergewicht, Körperfett, Magermasse | beim Speichern einer *neuen* Messung |
-| Schreiben (Freigabe „Trainings“, nicht beim Verbinden) | Trainings | beim Beenden eines Trainings und rückwirkend über den Export, je nach Schaltern (*Krafttraining* an, *Cardio* aus), siehe unten |
-| Schreiben (Zusatzfreigabe) | Geh- und Laufdistanz | nur bei Läufen/Spaziergängen und nur, wenn zusätzlich freigegeben |
+| Schreiben (Freigabe „Trainings“, auch im Verbinden-Dialog) | Trainings | beim Beenden eines Trainings und rückwirkend über den Export, je nach Schaltern (*Krafttraining* an, *Cardio* aus), siehe unten |
+| Schreiben (Zusatzfreigabe) | Geh- und Laufdistanz | nur bei Läufen/Spaziergängen und nur, wenn zusätzlich freigegeben; wird beim Einschalten von *Cardio schreiben* und vor einem Export mit Läufen angefragt |
 | Lesen (separater Schalter) | Läufe und Radfahrten **anderer Apps** | *Einstellungen → Apple Health → Workout-Import* |
 | Lesen (für den Export-Abgleich) | Trainings anderer Apps und der Uhr | nur um Doppelte zu vermeiden; wird beim Prüfen des Exports angefragt |
 
 **Trainings in Health** (*Mehr → Einstellungen → Apple Health → Trainings in Health*): Der Bildschirm fasst alles zum Schreiben zusammen.
 
-- **Zugriff:** Apple kennt nur eine Freigabe „Trainings“ für alles. Wer Apple Health schon früher verbunden hat, wurde dafür nie gefragt – dort gibt es jetzt die Schaltfläche „Zugriff erlauben“. Hat iOS die Frage schon einmal entschieden, zeigt Deltiq stattdessen den Weg über die Health-App (*Profil → Apps → Deltiq*).
-- **Krafttraining schreiben** (Vorgabe: an): Kraft-Einheiten und die Zeitformate AMRAP, EMOM, Auf Zeit und Zirkel werden als *Krafttraining* gespeichert (indoor, mit Sätzen und Volumen als Metadaten).
+- **Zugriff:** Apple kennt nur eine Freigabe „Trainings“ für alles; sie gehört auch zum normalen Verbinden-Dialog (Onboarding, Messung, Dashboard, Profil). Wer Apple Health schon früher verbunden hat, wurde dafür nie gefragt – dort gibt es jetzt die Schaltfläche „Zugriff erlauben“. Hat iOS die Frage schon einmal entschieden, zeigt Deltiq stattdessen den Weg über die Health-App (*Profil → Apps → Deltiq*). Sobald „Trainings“ erlaubt ist, schreibt Deltiq Krafttraining nach jedem beendeten Training (Schalter an), solange du es nicht abschaltest.
+- **Krafttraining schreiben** (Vorgabe: an): Kraft-Einheiten und die Zeitformate AMRAP, EMOM, Auf Zeit und Zirkel werden als *Krafttraining* gespeichert (indoor, mit Sätzen und Volumen als Metadaten). Ein Zeitformat-Tag nur aus Lauf-/Rad-Intervallen zählt zu *Cardio* (als gemischtes Cardio ohne Distanz).
 - **Cardio schreiben** (Vorgabe: aus): Laufen, Radfahren, Gehen und gemischtes Cardio, die du in Deltiq selbst erfasst. Aus bleibt es für alle, deren Läufe schon eine andere App (z. B. Adidas Running) nach Health schreibt. Die Art wird aus den Einträgen abgeleitet (Ausrüstung vor Namen; Laufband = indoor), eine Distanz bekommen nur Laufen und Gehen.
 - Geschrieben werden nur Start, Dauer und Art – **keine Kalorien und kein Puls** (Deltiq erfindet keine Gesundheitsdaten). Aus anderen Apps importierte Einheiten werden **nie** zurückgeschrieben. Trainings unter einer Minute, über sechs Stunden, in der Zukunft oder ohne Einträge werden nicht geschrieben.
-- **Frühere Trainings:** „Trainings prüfen“ zeigt zuerst eine Vorschau (wie viele würden geschrieben, wie viele stehen schon in Health, wie viele sind nicht exportierbar); erst nach der Bestätigung wird geschrieben, neueste zuerst, mit Fortschritt und Abbruch. Der Export ist wiederholbar: Was in Health schon steht, wird erkannt und übersprungen. Der Abgleich sieht fremde Trainings nur mit Leseerlaubnis – ohne sie warnt der Bildschirm vor möglichen Doppelten.
-- Der Export-Merker liegt nur auf dem Gerät und gehört nicht zum CSV-Export; ein verlorener Merker führt über den Abgleich mit Health nicht zu Doppelten.
+- **Frühere Trainings:** „Trainings prüfen“ zeigt zuerst eine Vorschau (wie viele würden geschrieben, wie viele stehen schon in Health, wie viele sind nicht exportierbar); erst nach der Bestätigung wird geschrieben, neueste zuerst, mit Fortschritt und Abbruch. Die Vorschau verfällt, wenn du die App verlässt oder den Bildschirm schließt. Enthält der Export Läufe mit Distanz, fragt Deltiq vor dem Schreiben die Distanz-Freigabe an (nur, wenn sie noch offen ist) – später lässt sich kein Distanz-Sample mehr nachtragen, weil die Trainings dann als behandelt gelten. Der Export ist wiederholbar: Was in Health schon steht, wird erkannt und übersprungen. Der Abgleich sieht fremde Trainings nur mit Leseerlaubnis – ohne sie warnt der Bildschirm vor möglichen Doppelten.
+- Der Export-Merker („behandelt“) liegt nur auf dem Gerät und gehört nicht zum CSV-Export. Er ist maßgeblich: Ein markiertes Training wird nie wieder exportiert, auch wenn du den Eintrag später in Health löschst. Ein verlorener Merker (Zurücksetzen, Backup-Wiederherstellung) führt über den Abgleich mit Health nicht zu Doppelten. Direkt nach dem Beenden geschriebene Trainings bekommen den Merker sofort; ändert man Beginn oder Dauer danach im Verlauf, bleibt der alte Health-Eintrag bestehen und es entsteht kein zweiter.
 
 **Workout-Import (Adidas Running, Strava, …):** Der Schalter fragt nur den Lesezugriff auf Workouts an (zweiter iOS-Dialog) und startet sofort einen Sync – danach bei jedem App-Start. Importiert werden ausschließlich **Laufen und Radfahren** anderer Apps (nicht die von Deltiq selbst nach Health geschriebenen); jedes Workout wird zu einer abgeschlossenen spontanen Einheit mit einem Cardio-Eintrag („Freier Lauf“ / „Radfahren (outdoor)“, Dauer, ggf. Distanz) und im Verlauf mit dem Namen der Quell-App gekennzeichnet. Duplikate werden übersprungen (gleiche Health-ID oder mehr als die Hälfte der Dauer überlappt mit einer vorhandenen Einheit). Der erste Sync holt alle historischen Läufe/Radfahrten.
 
@@ -392,7 +392,7 @@ Die Erinnerungen werden nach dem Onboarding, nach Imports und Backup-Wiederherst
 
 ### 5.12 Sprache, Design und Datenschutz
 
-- **Sprachen:** Deutsch, Englisch, Türkisch – die App folgt der iOS-Systemsprache (kein In-App-Wechsel). Der Katalog enthält 1795 Texte, alle in drei Sprachen vollständig; die Texte der Apple-Health-Berechtigungsdialoge stehen getrennt in `App/FitnessApp/InfoPlist.xcstrings` (ebenfalls DE/EN/TR). Nur auf Deutsch (nicht lokalisiert): Wasser-/Mess-Erinnerungstexte, Widget und Live Activity, einige Hinweis- und Fehlermeldungen.
+- **Sprachen:** Deutsch, Englisch, Türkisch – die App folgt der iOS-Systemsprache (kein In-App-Wechsel). Der Katalog enthält 1796 Texte, alle in drei Sprachen vollständig; die Texte der Apple-Health-Berechtigungsdialoge stehen getrennt in `App/FitnessApp/InfoPlist.xcstrings` (ebenfalls DE/EN/TR). Nur auf Deutsch (nicht lokalisiert): Wasser-/Mess-Erinnerungstexte, Widget und Live Activity, einige Hinweis- und Fehlermeldungen.
 - **Design:** Akzentfarbe Orange; Erscheinungsbild System, Hell oder Dunkel.
 - **Datenschutz:** alle Daten bleiben lokal. Die App fragt **keinen** Zugriff auf Kamera, Fotos, Standort oder Mikrofon an und nutzt kein Netzwerk. Berechtigungen im Überblick: [6.2](#62-voraussetzungen-und-berechtigungen).
 
@@ -418,8 +418,8 @@ Hinweise: Für *interne* Tester verlangt Apple einen Eintrag im App-Store-Connec
 | Berechtigung | Wann | Wofür |
 |---|---|---|
 | Mitteilungen | Ende des Onboardings und nach einem Backup-Import im Onboarding (jeweils wenn eine Erinnerung an ist), beim Ändern eines Erinnerungs-Schalters, bei der ersten PR-Feier | Wasser-/Mess-Erinnerungen, „Pause vorbei!“, EMOM-Signale, PR-Meldung. Ohne Erlaubnis werden Erinnerungen still nicht geplant. |
-| Apple Health – Standard | Onboarding, Messung, Dashboard-Karten, Profil, Einstellungen | Lesen: Gewicht, Körperfett, Magermasse, Größe, Geburtsdatum, Geschlecht, Ruhepuls, Schritte · Schreiben: Gewicht, Körperfett, Magermasse |
-| Apple Health – Trainings schreiben | Einstellungen → Trainings in Health („Zugriff erlauben“); zusätzlich Geh- und Laufdistanz beim Einschalten von *Cardio schreiben* | Trainings (und optional Laufdistanz) nach Health schreiben, auch rückwirkend |
+| Apple Health – Standard | Onboarding, Messung, Dashboard-Karten, Profil, Einstellungen | Lesen: Gewicht, Körperfett, Magermasse, Größe, Geburtsdatum, Geschlecht, Ruhepuls, Schritte · Schreiben: Gewicht, Körperfett, Magermasse, Trainings |
+| Apple Health – Trainings schreiben (nachholen) | Einstellungen → Trainings in Health („Zugriff erlauben“) für alle, die Health vor dieser Freigabe verbunden hatten; Geh- und Laufdistanz zusätzlich beim Einschalten von *Cardio schreiben* oder vor einem Export mit Läufen | Trainings (und optional Laufdistanz) nach Health schreiben, auch rückwirkend |
 | Apple Health – Workouts lesen | beim Einschalten von *Workout-Import* und beim Prüfen des Exports | Läufe/Radfahrten anderer Apps importieren; Doppelte beim Export vermeiden |
 | Live Activities | in den iOS-Einstellungen | Pausen-Timer auf Sperrbildschirm/Dynamic Island |
 
@@ -474,6 +474,8 @@ Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder
 - [ ] Zugriff in Health entziehen → Bildschirm zeigt den Hinweis; Training beenden bricht nichts ab
 - [ ] *Cardio schreiben* an, ohne Distanz-Freigabe: Lauf beenden → Eintrag ohne Distanz; mit Freigabe → *Laufen* mit Distanz; Laufband = indoor, Radfahren = *Radfahren*
 - [ ] Training mit gesperrtem Gerät beenden (sofort sperren) → später prüfen, ob es in Health steht
+- [ ] Export früherer Trainings mit Läufen ohne Distanz-Freigabe (*Cardio schreiben* aus): in der Vorschau Cardio zuschalten, bestätigen → die Distanz-Abfrage erscheint vor dem Schreiben; bei Ablehnung steht „ohne Distanz gespeichert“ im Ergebnis
+- [ ] Training beenden, danach im Verlauf die Dauer deutlich verlängern (oder den Beginn um einen Tag zurücksetzen) → Export prüfen: kein zweiter Health-Eintrag
 - [ ] Export früherer Trainings: „Trainings prüfen“ → Vorschau stimmt (live geschriebene Einheiten als „Schon in Health“), schreiben, Ergebnis; Export direkt wiederholen → nichts Neues, keine Doppelten; Abbrechen mitten drin → beim nächsten Mal geht es weiter
 - [ ] Export mit Trainings einer anderen App/Uhr im selben Zeitraum: mit Leseerlaubnis keine Doppelten; ohne Leseerlaubnis erscheint die Warnung
 - [ ] Hantel-, 1RM-, Kalorien-Rechner mit den Referenzwerten unten
@@ -574,7 +576,7 @@ fitnessapp_ios/
 |   |-- FitnessAppActivities/    # ActivityKit, Erinnerungen, Deep-Links, Notification-Routing
 |   `-- FitnessAppUI/            # alle SwiftUI-Views, Theme, Lokalisierung (Localizable.xcstrings)
 |-- Tests/
-|   |-- FitnessAppCoreTests/     # Rechner, Analytik, Plan-Generator, CSV, Backup (ca. 590 Tests)
+|   |-- FitnessAppCoreTests/     # Rechner, Analytik, Plan-Generator, CSV, Backup (ca. 600 Tests)
 |   `-- FitnessAppDataTests/     # SwiftData in-memory, Export/Import-Roundtrip (ca. 60 Tests)
 `-- .scripts/                    # Python-Werkzeuge für den String-Katalog
 ```
