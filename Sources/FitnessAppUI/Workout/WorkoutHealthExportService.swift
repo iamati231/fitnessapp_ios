@@ -16,7 +16,10 @@ import FitnessAppHealth
 /// Idempotenz: `WorkoutSession.healthKitExportedAt` ("behandelt") ist
 /// maßgeblich — eine markierte Session wird nie wieder angefasst, auch wenn der
 /// Eintrag in Health inzwischen geloescht wurde (bewusst: ein Doppel in Health
-/// ist schwerer zu beheben als ein fehlender Eintrag). Der Marker liegt nur
+/// ist schwerer zu beheben als ein fehlender Eintrag). Wer in Health geloescht
+/// hat und neu senden will, setzt den Marker ausdruecklich zurueck
+/// (`HealthExportMarker.reset`, Knopf "Neu mit Health abgleichen"); danach
+/// entscheidet allein der Abgleich mit Health. Der Marker liegt nur
 /// lokal; geht er verloren (Reset, Restore), fuehrt der naechste Lauf ueber den
 /// Abgleich mit Health wieder zu "bereits in Health", nicht zu Doppelten —
 /// solange die Abfrage die eigenen Workouts sieht. Live nach dem Beenden

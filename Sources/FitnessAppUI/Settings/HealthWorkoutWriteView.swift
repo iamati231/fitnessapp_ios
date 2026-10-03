@@ -13,7 +13,11 @@
 //      der Nutzer hier ein. Der Cardio-Schalter fragt zusaetzlich die
 //      Distanz-Freigabe an.
 //   4. Fruehere Trainings: Pruefen (Dry-Run) -> Auswahl + Zahlen -> Bestaetigung
-//      -> Schreiben mit Fortschritt/Abbrechen -> Ergebnis.
+//      -> Schreiben mit Fortschritt/Abbrechen -> Ergebnis. Was Deltiq schon
+//      gesendet hat, merkt es sich lokal (`HealthExportMarker`) — auch wenn der
+//      Nutzer es in Health loescht. Dafuer gibt es "Neu mit Health abgleichen":
+//      vergisst den Marker und prueft alles neu (ohne diesen Ausweg waere
+//      "Nichts zu exportieren" eine Sackgasse).
 //
 // Die Logik (Planung, Abgleich, Schreib-Schleife) lebt in
 // `WorkoutHealthExportService`; die Entscheidungen in Core
@@ -53,6 +57,8 @@ public struct HealthWorkoutWriteView: View {
     @State private var exportStrength = HealthWritePreferences.defaultStrengthEnabled
     @State private var exportCardio = HealthWritePreferences.defaultCardioEnabled
     @State private var showConfirm = false
+    /// Trainings, die als "schon an Health gesendet" gelten (lokaler Marker).
+    @State private var markedCount = 0
 
     private enum ExportPhase {
         case idle
@@ -99,6 +105,9 @@ public struct HealthWorkoutWriteView: View {
         .deltiqSwipeBackEnabled()
         .task {
             await healthKit.refreshAuthorizationStatus()
+        }
+        .onAppear {
+            refreshMarkedCount()
         }
         .onChange(of: scenePhase) { _, phase in
             handleScenePhase(phase)
@@ -363,6 +372,30 @@ public struct HealthWorkoutWriteView: View {
         VStack(alignment: .leading, spacing: 0) {
             bodyText(String(localized: "settings.healthWrite.exportIntro", bundle: .module))
             checkButton
+            resetBlock
+        }
+    }
+
+    /// Ausweg aus "Nichts zu exportieren": Hat der Nutzer Eintraege in Health
+    /// geloescht, gelten sie in Deltiq weiter als gesendet. Der Neu-Abgleich
+    /// vergisst das und prueft alles neu — was in Health noch steht, wird nicht
+    /// doppelt geschrieben. Nur sichtbar, wenn es etwas zu vergessen gibt.
+    @ViewBuilder
+    private var resetBlock: some View {
+        if markedCount > 0 {
+            hintRow(pluralized("settings.healthWrite.resetInfo", count: markedCount))
+            Button {
+                startCheck(resetMarkers: true)
+            } label: {
+                Label {
+                    Text("settings.healthWrite.resetButton", bundle: .module)
+                } icon: {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                }
+            }
+            .buttonStyle(.plain)
+            .deltiqSecondaryButtonStyle()
+            .padding(14)
         }
     }
 
@@ -566,6 +599,12 @@ public struct HealthWorkoutWriteView: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
 
+        // Nichts passiert, aber Trainings gelten als gesendet: hier landet, wer
+        // seine Eintraege in Health geloescht hat.
+        if handled == 0 && !outcome.wasCancelled && outcome.stopReason == nil {
+            resetBlock
+        }
+
         Button {
             exportPhase = .idle
         } label: {
@@ -617,10 +656,16 @@ public struct HealthWorkoutWriteView: View {
 
     /// Phase 1: Lese-Freigabe fuer den Abgleich anfragen (Sheet nur, falls noch
     /// unentschieden), dann planen und mit Health abgleichen. Schreibt nichts.
-    private func startCheck() {
+    /// - Parameter resetMarkers: vorher vergessen, was schon gesendet wurde
+    ///   ("Neu mit Health abgleichen"); der Abgleich entscheidet dann allein.
+    private func startCheck(resetMarkers: Bool = false) {
         if case .fellBackAfterGroupStoreFailure = SharedStore.health {
             exportPhase = .failed(.storeFallback)
             return
+        }
+        if resetMarkers {
+            HealthExportMarker.reset(in: modelContext)
+            refreshMarkedCount()
         }
         exportPhase = .checking
         exportTask = Task { @MainActor in
@@ -662,6 +707,8 @@ public struct HealthWorkoutWriteView: View {
             } catch {
                 exportPhase = .failed(.generic)
             }
+            // `execute` markiert in Health erkannte Trainings als behandelt.
+            refreshMarkedCount()
             exportTask = nil
         }
     }
@@ -697,9 +744,14 @@ public struct HealthWorkoutWriteView: View {
                 }
             )
             exportPhase = .finished(outcome)
+            refreshMarkedCount()
             exportTask = nil
             setIdleTimer(disabled: false)
         }
+    }
+
+    private func refreshMarkedCount() {
+        markedCount = HealthExportMarker.markedCount(in: modelContext)
     }
 
     /// In den Hintergrund (Sperre, App-Wechsel): den Export beenden; das

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1797 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1800 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1797 / 1797** (100%) | 0 |
-| 🇬🇧 English (EN) | **1797 / 1797** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1797 / 1797** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1800 / 1800** (100%) | 0 |
+| 🇬🇧 English (EN) | **1800 / 1800** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1800 / 1800** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1712,7 +1712,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (192 Keys)
+## `settings.*`  (195 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1842,6 +1842,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.healthWrite.previewNothing` | Nichts zu exportieren. | Nothing to export. | Aktarılacak bir şey yok. |
 | `settings.healthWrite.previewStrengthToggle` | Krafttraining exportieren (%lld) | Export strength workouts (%lld) | Kuvvet antrenmanlarını aktar (%lld) |
 | `settings.healthWrite.previewVisible` | In Health sichtbar: %1$lld (davon von Deltiq: %2$lld) | Visible in Health: %1$lld (from Deltiq: %2$lld) | Health'te görünen: %1$lld (Deltiq'ten: %2$lld) |
+| `settings.healthWrite.resetButton` | Neu mit Health abgleichen | Re-check with Health | Health ile yeniden eşleştir |
+| `settings.healthWrite.resetInfo.one` | 1 Training gilt als schon an Health gesendet – auch wenn du es dort inzwischen gelöscht hast. „Neu mit Health abgleichen“ lässt Deltiq das vergessen und prüft alles neu: Was in Health noch steht, wird nicht doppelt geschrieben, was fehlt, kannst du erneut senden. | 1 workout counts as already sent to Health – even if you have since deleted it there. “Re-check with Health” makes Deltiq forget that and check everything again: what is still in Health is not written twice, and what is missing can be sent again. | 1 antrenman Health'e zaten gönderilmiş sayılıyor – sonradan orada silmiş olsan bile. „Health ile yeniden eşleştir“ Deltiq'in bunu unutmasını sağlar ve her şeyi yeniden kontrol eder: Health'te hâlâ duranlar iki kez yazılmaz, eksik olanları yeniden gönderebilirsin. |
+| `settings.healthWrite.resetInfo.other` | %lld Trainings gelten als schon an Health gesendet – auch wenn du sie dort inzwischen gelöscht hast. „Neu mit Health abgleichen“ lässt Deltiq das vergessen und prüft alles neu: Was in Health noch steht, wird nicht doppelt geschrieben, was fehlt, kannst du erneut senden. | %lld workouts count as already sent to Health – even if you have since deleted them there. “Re-check with Health” makes Deltiq forget that and check everything again: what is still in Health is not written twice, and what is missing can be sent again. | %lld antrenman Health'e zaten gönderilmiş sayılıyor – sonradan orada silmiş olsan bile. „Health ile yeniden eşleştir“ Deltiq'in bunu unutmasını sağlar ve her şeyi yeniden kontrol eder: Health'te hâlâ duranlar iki kez yazılmaz, eksik olanları yeniden gönderebilirsin. |
 | `settings.healthWrite.resultAlready` | Schon in Health | Already in Health | Zaten Health'te |
 | `settings.healthWrite.resultCancelled` | Abgebrochen. %1$lld von %2$lld bearbeitet – beim nächsten Export geht es dort weiter. | Cancelled. %1$lld of %2$lld processed – the next export continues from there. | İptal edildi. %1$lld / %2$lld işlendi – bir sonraki dışa aktarma kaldığı yerden devam eder. |
 | `settings.healthWrite.resultDone` | Fertig | Done | Bitti |

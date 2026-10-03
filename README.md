@@ -43,7 +43,7 @@ Entstanden ist das Projekt als iOS-Port einer Android-Fitness-App. Die Berechnun
 | 186 | Übungen in der System-Bibliothek, dazu eigene Übungen |
 | 4 | Zeitformate: AMRAP, EMOM, Auf Zeit, Zirkel |
 | 12 | Dashboard-Widgets (frei ein-/ausblendbar und sortierbar) |
-| 3 | Sprachen mit 1797 Texten (DE, EN, TR jeweils vollständig) |
+| 3 | Sprachen mit 1800 Texten (DE, EN, TR jeweils vollständig) |
 
 **Was die App kann**
 
@@ -358,7 +358,7 @@ Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorla
 - **Cardio schreiben** (Vorgabe: aus): Laufen, Radfahren, Gehen und gemischtes Cardio, die du in Deltiq selbst erfasst. Aus bleibt es für alle, deren Läufe schon eine andere App (z. B. Adidas Running) nach Health schreibt. Die Art wird aus den Einträgen abgeleitet (Ausrüstung vor Namen; Laufband = indoor), eine Distanz bekommen nur Laufen und Gehen.
 - Geschrieben werden nur Start, Dauer und Art – **keine Kalorien und kein Puls** (Deltiq erfindet keine Gesundheitsdaten). Die Dauer ist die der Einheit in Deltiq; bei nachgetragenem Krafttraining ist sie eine Schätzung aus der Satzzahl (siehe [5.3](#53-training-durchführen)) und geht so nach Health – ohne Kennzeichnung. Aus anderen Apps importierte Einheiten werden **nie** zurückgeschrieben. Trainings unter einer Minute, über sechs Stunden, in der Zukunft oder ohne Einträge werden nicht geschrieben.
 - **Frühere Trainings:** „Trainings prüfen“ zeigt zuerst eine Vorschau (wie viele würden geschrieben, wie viele stehen schon in Health, wie viele sind nicht exportierbar); erst nach der Bestätigung wird geschrieben, neueste zuerst, mit Fortschritt und Abbruch. Die Vorschau verfällt, wenn du die App verlässt oder den Bildschirm schließt. Enthält der Export Läufe mit Distanz, fragt Deltiq vor dem Schreiben die Distanz-Freigabe an (nur, wenn sie noch offen ist) – später lässt sich kein Distanz-Sample mehr nachtragen, weil die Trainings dann als behandelt gelten. Der Export ist wiederholbar: Was in Health schon steht, wird erkannt und übersprungen. Der Abgleich sieht fremde Trainings nur mit Leseerlaubnis – ohne sie warnt der Bildschirm vor möglichen Doppelten.
-- Der Export-Merker („behandelt“) liegt nur auf dem Gerät und gehört nicht zum CSV-Export. Er ist maßgeblich: Ein markiertes Training wird nie wieder exportiert, auch wenn du den Eintrag später in Health löschst. Ein verlorener Merker (Zurücksetzen, Backup-Wiederherstellung) führt über den Abgleich mit Health nicht zu Doppelten. Direkt nach dem Beenden geschriebene Trainings bekommen den Merker sofort; ändert man Beginn oder Dauer danach im Verlauf, bleibt der alte Health-Eintrag bestehen und es entsteht kein zweiter.
+- Der Export-Merker („behandelt“) liegt nur auf dem Gerät und gehört nicht zum CSV-Export. Er ist maßgeblich: Ein markiertes Training wird nie wieder exportiert, auch wenn du den Eintrag später in Health löschst – dann meldet der Bildschirm „Nichts zu exportieren“. Den Ausweg bietet **„Neu mit Health abgleichen“** (sichtbar, solange Trainings als gesendet gelten; dazu steht dort, wie viele): Deltiq vergisst den Merker und prüft alle Trainings neu – was in Health noch steht, wird nicht doppelt geschrieben, was fehlt, zeigt die Vorschau zum erneuten Senden (geschrieben wird erst nach der Bestätigung). Ein verlorener Merker (Zurücksetzen, Backup-Wiederherstellung) führt über den Abgleich mit Health nicht zu Doppelten. Direkt nach dem Beenden geschriebene Trainings bekommen den Merker sofort; ändert man Beginn oder Dauer danach im Verlauf, bleibt der alte Health-Eintrag bestehen und es entsteht kein zweiter.
 
 **Workout-Import (Adidas Running, Strava, …):** Der Schalter braucht den Lesezugriff auf „Trainings“. Kam er nicht schon mit dem Verbinden-Dialog, erscheint beim Einschalten der Dialog (Schreiben und Lesen von „Trainings“ zusammen); sonst gibt es keinen weiteren Dialog. Danach startet sofort ein Sync – danach bei jedem App-Start. Importiert werden ausschließlich **Laufen und Radfahren** anderer Apps (nicht die von Deltiq selbst nach Health geschriebenen); jedes Workout wird zu einer abgeschlossenen spontanen Einheit mit einem Cardio-Eintrag („Freier Lauf“ / „Radfahren (outdoor)“, Dauer, ggf. Distanz) und im Verlauf mit dem Namen der Quell-App gekennzeichnet. Duplikate werden übersprungen (gleiche Health-ID oder mehr als die Hälfte der Dauer überlappt mit einer vorhandenen Einheit). Der erste Sync holt alle historischen Läufe/Radfahrten.
 
@@ -396,7 +396,7 @@ Die Erinnerungen werden nach dem Onboarding, nach Imports und Backup-Wiederherst
 
 ### 5.12 Sprache, Design und Datenschutz
 
-- **Sprachen:** Deutsch, Englisch, Türkisch – die App folgt der iOS-Systemsprache (kein In-App-Wechsel). Der Katalog enthält 1797 Texte, alle in drei Sprachen vollständig; die Texte der Apple-Health-Berechtigungsdialoge stehen getrennt in `App/FitnessApp/InfoPlist.xcstrings` (ebenfalls DE/EN/TR). Nur auf Deutsch (nicht lokalisiert): Wasser-/Mess-Erinnerungstexte, Widget und Live Activity, einige Hinweis- und Fehlermeldungen.
+- **Sprachen:** Deutsch, Englisch, Türkisch – die App folgt der iOS-Systemsprache (kein In-App-Wechsel). Der Katalog enthält 1800 Texte, alle in drei Sprachen vollständig; die Texte der Apple-Health-Berechtigungsdialoge stehen getrennt in `App/FitnessApp/InfoPlist.xcstrings` (ebenfalls DE/EN/TR). Nur auf Deutsch (nicht lokalisiert): Wasser-/Mess-Erinnerungstexte, Widget und Live Activity, einige Hinweis- und Fehlermeldungen.
 - **Design:** Akzentfarbe Orange; Erscheinungsbild System, Hell oder Dunkel.
 - **Datenschutz:** alle Daten bleiben lokal. Die App fragt **keinen** Zugriff auf Kamera, Fotos, Standort oder Mikrofon an und nutzt kein Netzwerk. Berechtigungen im Überblick: [6.2](#62-voraussetzungen-und-berechtigungen).
 
@@ -486,6 +486,7 @@ Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder
 - [ ] Export früherer Trainings mit Läufen ohne Distanz-Freigabe (*Cardio schreiben* aus): in der Vorschau Cardio zuschalten, bestätigen → die Distanz-Abfrage erscheint vor dem Schreiben; bei Ablehnung steht „ohne Distanz gespeichert“ im Ergebnis
 - [ ] Training beenden, danach im Verlauf die Dauer deutlich verlängern (oder den Beginn um einen Tag zurücksetzen) → Export prüfen: kein zweiter Health-Eintrag
 - [ ] Export früherer Trainings: „Trainings prüfen“ → Vorschau stimmt (direkt beim Beenden bestätigt geschriebene Einheiten tragen schon den Merker und erscheinen gar nicht; „Schon in Health erkannt“ zählt Trainings ohne Merker, die in Health stehen, z. B. von anderer App/Uhr), schreiben, Ergebnis; Export direkt wiederholen → nichts Neues, keine Doppelten; Abbrechen mitten drin → beim nächsten Mal geht es weiter
+- [ ] Alles in Health löschen (Health → Profil → Apps → Deltiq → „Alle Daten löschen“, oder nur einzelne Trainings), danach „Trainings prüfen“ → „Nichts zu exportieren“, darunter „N Trainings gelten als schon an Health gesendet …“ und „Neu mit Health abgleichen“; antippen → Vorschau mit den fehlenden Trainings, schreiben → sie stehen wieder in Health; ohne vorheriges Löschen in Health → alle „Schon in Health“, nichts doppelt (Leseerlaubnis vorausgesetzt); aus Health importierte Einheiten (Adidas Running …) werden nicht mitgezählt und nie zurückgeschrieben
 - [ ] Export mit Trainings einer anderen App/Uhr im selben Zeitraum: mit Leseerlaubnis keine Doppelten; ohne Leseerlaubnis erscheint die Warnung
 - [ ] Hantel-, 1RM-, Kalorien-Rechner mit den Referenzwerten unten
 - [ ] Wasser: Schnell-Einträge, Tagesziel, Widget (+250 ml, danach Eintrag in der App prüfen), Erinnerung antippen → richtiger Tab
@@ -586,7 +587,7 @@ fitnessapp_ios/
 |   `-- FitnessAppUI/            # alle SwiftUI-Views, Theme, Lokalisierung (Localizable.xcstrings)
 |-- Tests/
 |   |-- FitnessAppCoreTests/     # Rechner, Analytik, Plan-Generator, CSV, Backup (ca. 630 Tests)
-|   |-- FitnessAppDataTests/     # SwiftData in-memory, Export/Import-Roundtrip (ca. 70 Tests)
+|   |-- FitnessAppDataTests/     # SwiftData in-memory, Export/Import-Roundtrip (ca. 80 Tests)
 |   `-- FitnessAppHealthTests/   # Zustandslogik der Health-Berechtigungen (ca. 10 Tests)
 `-- .scripts/                    # Python-Werkzeuge für den String-Katalog
 ```

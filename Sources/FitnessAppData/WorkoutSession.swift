@@ -128,9 +128,10 @@ public final class WorkoutSession {
     /// vorhanden (eigene Live-Writes, andere App). Maßgeblich: Eine markierte
     /// Session wird nie wieder exportiert, auch wenn ihr Eintrag in Health
     /// spaeter geloescht wird (ein Doppel in Health ist schwerer zu beheben als
-    /// ein fehlender Eintrag). Nur lokal — geht der Marker verloren (Reset,
-    /// Backup-Restore), faengt der Abgleich mit Health das ab. Deshalb bewusst
-    /// NICHT in `workouts.csv` und nicht portabel. Nicht dasselbe wie
+    /// ein fehlender Eintrag) — ausser der Nutzer setzt den Marker ausdruecklich
+    /// zurueck (`HealthExportMarker.reset`). Nur lokal — geht der Marker
+    /// verloren (Reset, Backup-Restore), faengt der Abgleich mit Health das ab.
+    /// Deshalb bewusst NICHT in `workouts.csv` und nicht portabel. Nicht dasselbe wie
     /// `healthKitSampleUUID` (= importiert AUS Health). `nil` fuer jede
     /// Bestands-Session (Lightweight-Migration).
     public var healthKitExportedAt: Date?
