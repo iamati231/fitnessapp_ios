@@ -20240,17 +20240,17 @@
     "settings.healthWrite.resetInfo.one": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "1 Training gilt als schon an Health gesendet – auch wenn du es dort inzwischen gelöscht hast. „Neu mit Health abgleichen“ lässt Deltiq das vergessen und prüft alles neu: Was in Health noch steht, wird nicht doppelt geschrieben, was fehlt, kannst du erneut senden." } },
-        "en": { "stringUnit": { "state": "translated", "value": "1 workout counts as already sent to Health – even if you have since deleted it there. “Re-check with Health” makes Deltiq forget that and check everything again: what is still in Health is not written twice, and what is missing can be sent again." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "1 antrenman Health'e zaten gönderilmiş sayılıyor – sonradan orada silmiş olsan bile. „Health ile yeniden eşleştir“ Deltiq'in bunu unutmasını sağlar ve her şeyi yeniden kontrol eder: Health'te hâlâ duranlar iki kez yazılmaz, eksik olanları yeniden gönderebilirsin." } }
+        "de": { "stringUnit": { "state": "translated", "value": "1 Training gilt als schon an Health gesendet – auch wenn du es dort inzwischen gelöscht hast. „Neu mit Health abgleichen“ lässt Deltiq das vergessen und prüft alles neu: Was Deltiq in Health noch findet, wird nicht doppelt geschrieben, was fehlt, kannst du erneut senden." } },
+        "en": { "stringUnit": { "state": "translated", "value": "1 workout counts as already sent to Health – even if you have since deleted it there. “Re-check with Health” makes Deltiq forget that and check everything again: what Deltiq still finds in Health is not written twice, and what is missing can be sent again." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "1 antrenman Health'e zaten gönderilmiş sayılıyor – sonradan orada silmiş olsan bile. „Health ile yeniden eşleştir“ Deltiq'in bunu unutmasını sağlar ve her şeyi yeniden kontrol eder: Deltiq'in Health'te hâlâ bulduğu kayıtlar iki kez yazılmaz, eksik olanları yeniden gönderebilirsin." } }
       }
     },
     "settings.healthWrite.resetInfo.other": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "%lld Trainings gelten als schon an Health gesendet – auch wenn du sie dort inzwischen gelöscht hast. „Neu mit Health abgleichen“ lässt Deltiq das vergessen und prüft alles neu: Was in Health noch steht, wird nicht doppelt geschrieben, was fehlt, kannst du erneut senden." } },
-        "en": { "stringUnit": { "state": "translated", "value": "%lld workouts count as already sent to Health – even if you have since deleted them there. “Re-check with Health” makes Deltiq forget that and check everything again: what is still in Health is not written twice, and what is missing can be sent again." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "%lld antrenman Health'e zaten gönderilmiş sayılıyor – sonradan orada silmiş olsan bile. „Health ile yeniden eşleştir“ Deltiq'in bunu unutmasını sağlar ve her şeyi yeniden kontrol eder: Health'te hâlâ duranlar iki kez yazılmaz, eksik olanları yeniden gönderebilirsin." } }
+        "de": { "stringUnit": { "state": "translated", "value": "%lld Trainings gelten als schon an Health gesendet – auch wenn du sie dort inzwischen gelöscht hast. „Neu mit Health abgleichen“ lässt Deltiq das vergessen und prüft alles neu: Was Deltiq in Health noch findet, wird nicht doppelt geschrieben, was fehlt, kannst du erneut senden." } },
+        "en": { "stringUnit": { "state": "translated", "value": "%lld workouts count as already sent to Health – even if you have since deleted them there. “Re-check with Health” makes Deltiq forget that and check everything again: what Deltiq still finds in Health is not written twice, and what is missing can be sent again." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld antrenman Health'e zaten gönderilmiş sayılıyor – sonradan orada silmiş olsan bile. „Health ile yeniden eşleştir“ Deltiq'in bunu unutmasını sağlar ve her şeyi yeniden kontrol eder: Deltiq'in Health'te hâlâ bulduğu kayıtlar iki kez yazılmaz, eksik olanları yeniden gönderebilirsin." } }
       }
     },
     "settings.healthWrite.resetButton": {
