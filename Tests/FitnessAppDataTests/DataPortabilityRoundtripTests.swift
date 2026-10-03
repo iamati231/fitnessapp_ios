@@ -520,10 +520,11 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(importedSession?.healthKitSampleUUID, "3F2504E0-4F89-11D3-9A0C-0305E82C3301")
     }
 
-    /// `healthKitExportedAt` ist ein lokaler Cache ("fuer Apple Health
-    /// behandelt"), die Wahrheit liegt in Apple Health — er reist bewusst NICHT
-    /// durch Backup/Restore: nach einem Restore gleicht der Export wieder mit
-    /// Health ab (kein Doppel, solange die eigenen Workouts dort sichtbar sind).
+    /// `healthKitExportedAt` ist der lokale "behandelt"-Merker und massgeblich:
+    /// Ein markiertes Training wird nie wieder exportiert, auch wenn sein Eintrag
+    /// in Health geloescht wird. Er reist bewusst NICHT durch Backup/Restore:
+    /// nach einem Restore gleicht der Export wieder mit Health ab (kein Doppel,
+    /// solange die eigenen Workouts dort sichtbar sind).
     /// Ein Marker aus einem fremden Backup koennte ausserdem zu einem anderen
     /// Health-Konto gehoeren. Der Test haelt fest, dass die Spalte nicht
     /// versehentlich in workouts.csv landet.

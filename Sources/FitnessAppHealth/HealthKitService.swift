@@ -31,9 +31,11 @@ public actor HealthKitService {
     /// Wird nur geschrieben: `saveWorkout` haengt einem Lauf-/Geh-Workout ein
     /// Distanz-Sample an, und `HKWorkoutBuilder.addSamples` verlangt dafuer die
     /// Schreibberechtigung des Sample-Typs. NICHT Teil von
-    /// `requestAuthorization()`: die Freigabe wird erst angefragt, wenn der
-    /// Nutzer das Schreiben von Cardio einschaltet
-    /// (`requestWorkoutWriteAuthorization(includeDistance:)`).
+    /// `requestAuthorization()`: die Freigabe wird schrittweise angefragt
+    /// (`requestWorkoutWriteAuthorization(includeDistance:)`) — beim Einschalten
+    /// von Cardio, ueber die Schaltflaeche "Geh- und Laufdistanz erlauben" und vor
+    /// einem Export frueherer Laeufe mit km (jeweils nur, solange sie noch
+    /// unentschieden ist).
     private static let distanceType = HKQuantityType(.distanceWalkingRunning)
 
     // MARK: Lifecycle
@@ -56,8 +58,9 @@ public actor HealthKitService {
         // workouts (Krafttraining is on by default). The walking/running
         // DISTANCE type is deliberately NOT part of this request — cardio
         // writing is opt-in, and its distance permission is asked
-        // incrementally when the user turns it on
-        // (`requestWorkoutWriteAuthorization(includeDistance:)`).
+        // incrementally (`requestWorkoutWriteAuthorization(includeDistance:)`):
+        // when the user turns cardio on, via the in-app distance button, or
+        // before an export of past runs with km.
         // Reading OTHER apps' workouts (Workout-Import) is deliberately not
         // part of this request either — it has its own narrow
         // `requestWorkoutReadAuthorization()` below, so that the entry points

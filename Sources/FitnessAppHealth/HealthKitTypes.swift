@@ -23,8 +23,9 @@ public enum HealthKitAuthorizationStatus: Sendable, Equatable {
 ///
 /// HealthKit has ONE write permission for workouts ("Trainings"); whether
 /// strength and/or cardio is written is an app-level choice
-/// (`HealthWritePreferences` in Core). The distance type is only requested
-/// once the user turns cardio writing on.
+/// (`HealthWritePreferences` in Core). The distance type is requested
+/// incrementally (cardio switch turned on, in-app distance button, or before
+/// exporting past runs with km), never as part of the initial connect.
 public struct WorkoutWriteAuthorization: Sendable, Equatable {
     public let workout: HealthKitAuthorizationStatus
     public let distance: HealthKitAuthorizationStatus
