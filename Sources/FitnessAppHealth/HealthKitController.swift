@@ -84,7 +84,8 @@ public final class HealthKitController {
     /// users who connected Apple Health before workouts joined the request
     /// would never see that dialog. Always re-reads the status afterwards (a
     /// returning request says nothing about what the user granted); when
-    /// nothing is left to ask, no sheet appears and the status is unchanged.
+    /// nothing is left to ask — including a Trainings type iOS already counts
+    /// as asked — no sheet appears and the status is unchanged.
     @discardableResult
     public func requestWorkoutWriteAuthorization(includeDistance: Bool) async -> WorkoutWriteAuthorization {
         #if canImport(HealthKit)
@@ -102,11 +103,13 @@ public final class HealthKitController {
         #endif
     }
 
-    /// Narrow, separate request just for reading other apps' workouts (e.g.
-    /// Adidas Running). Kept out of `requestAuthorization()` on purpose — see
+    /// Request for reading other apps' workouts (e.g. Adidas Running). The
+    /// Trainings type is always requested for write AND read together, and only
+    /// while iOS would still show a sheet — see
     /// `HealthKitService.requestWorkoutReadAuthorization`. Errors land in
-    /// `lastError`; there is no status to reflect afterwards, since HealthKit
-    /// never discloses read-grant/deny.
+    /// `lastError`; the write-side status is re-read afterwards, but there is
+    /// nothing to reflect for reading, since HealthKit never discloses
+    /// read-grant/deny.
     public func requestWorkoutReadAuthorization() async {
         #if canImport(HealthKit)
         guard let service else { return }

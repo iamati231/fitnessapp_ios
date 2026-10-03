@@ -61,10 +61,14 @@ public actor HealthKitService {
         // incrementally (`requestWorkoutWriteAuthorization(includeDistance:)`):
         // when the user turns cardio on, via the in-app distance button, or
         // before an export of past runs with km.
-        // Reading OTHER apps' workouts (Workout-Import) is deliberately not
-        // part of this request either — it has its own narrow
-        // `requestWorkoutReadAuthorization()` below, so that the entry points
-        // sharing this method never re-prompt for it.
+        // workoutType is ALSO in `toRead` (reading other apps' workouts for the
+        // Workout-Import and for the duplicate check of the export). iOS tracks
+        // "was the user asked?" per TYPE, not per access mode: a type first
+        // requested for one mode only can never get the other mode through a
+        // sheet later (no sheet appears, the Health app has no switch for it).
+        // So workoutType is ALWAYS requested for write AND read together — here,
+        // in `requestWorkoutReadAuthorization()` and in
+        // `requestWorkoutWriteAuthorization(includeDistance:)`.
         //
         // Characteristic types (dateOfBirth, biologicalSex) are read-only by
         // design; they're set in the user's Health profile and we can pre-fill
@@ -75,6 +79,7 @@ public actor HealthKitService {
         ]
         let toRead:  Set<HKObjectType> = [
             Self.weightType, Self.bodyFatType, Self.leanMassType,
+            HKObjectType.workoutType(),
             Self.heightType, Self.dobType, Self.sexType,
             // DEL-132 (Phase 3): Hero-Metric Read-Permissions.
             // restingHR + steps werden nicht zurueckgeschrieben, daher
@@ -88,21 +93,46 @@ public actor HealthKitService {
         }
     }
 
-    /// Separate, narrowly-scoped authorization request for reading OTHER apps'
-    /// workouts (e.g. Adidas Running, Strava) — deliberately kept out of the
-    /// general `requestAuthorization()` `toRead` set. That method is triggered
-    /// from six existing UI entry points (onboarding, measurement, dashboard
-    /// hero-cards, settings, profile editor) that have nothing to do with
-    /// workout import; folding `workoutType` into it would re-prompt every
-    /// already-connected user the next time they hit ANY of those, just for
-    /// re-asking a permission they never wanted. Calling `requestAuthorization`
-    /// again here with a disjoint `read` set is a valid incremental HealthKit
-    /// request — types already granted from the first call aren't re-asked.
+    /// Authorization request for reading OTHER apps' workouts (e.g. Adidas
+    /// Running, Strava) — used by the Workout-Import toggle and the export's
+    /// duplicate check.
+    ///
+    /// The Trainings type is requested for WRITE and READ together, never for
+    /// reading alone: a read-only request marks the type as "asked", after which
+    /// iOS reports its write status as denied, shows no sheet for the write
+    /// permission any more, and lists no write switch in the Health app. (That is
+    /// exactly what happened to users who turned the import on before allowing
+    /// Trainings to be written.)
+    ///
+    /// iOS is asked only when `statusForAuthorizationRequest` says it would show
+    /// a sheet; otherwise the call is skipped, so an existing permission record
+    /// is never touched. There is no status to read back afterwards — HealthKit
+    /// never discloses read grant/deny.
     public func requestWorkoutReadAuthorization() async throws {
+        guard await workoutRequestStatus() != .unnecessary else { return }
+        let workoutType = HKObjectType.workoutType()
         do {
-            try await store.requestAuthorization(toShare: [], read: [HKObjectType.workoutType()])
+            try await store.requestAuthorization(toShare: [workoutType], read: [workoutType])
         } catch {
             throw HealthKitError.authorizationFailed(reason: error.localizedDescription)
+        }
+    }
+
+    /// Would a request for the Trainings type (write + read together) show the
+    /// sheet right now? `.unknown` when the query fails.
+    public func workoutRequestStatus() async -> HealthKitRequestStatus {
+        let workoutType = HKObjectType.workoutType()
+        do {
+            let status = try await store.statusForAuthorizationRequest(
+                toShare: [workoutType], read: [workoutType]
+            )
+            switch status {
+            case .shouldRequest: return .shouldRequest
+            case .unnecessary:   return .unnecessary
+            default:             return .unknown
+            }
+        } catch {
+            return .unknown
         }
     }
 
@@ -113,30 +143,36 @@ public actor HealthKitService {
     /// connect rows (they only appear while the weight status is
     /// `.notDetermined`), so this is the way to ask for it later.
     ///
-    /// Only types that are still `.notDetermined` go into the request: HealthKit
-    /// shows the sheet when at least one requested type is undecided, and
-    /// listing already decided types again would read like nagging. The
-    /// distance type is skipped while the workout type is denied (a distance
-    /// without a workout is worthless). With nothing left to ask this does
-    /// nothing — callers re-read `currentWorkoutWriteAuthorization()`, because
-    /// a returning request says nothing about what the user granted.
+    /// The Trainings type goes into the request (write AND read, see
+    /// `requestWorkoutReadAuthorization`) only while iOS would still show a
+    /// sheet for it (`WorkoutWriteAuthorization.canRequestWorkout`). A "denied"
+    /// status alone is NOT a reason to skip: it is also what iOS reports for a
+    /// type that was only requested for reading. The distance type needs the
+    /// Trainings permission to be of any use, so it is requested only while that
+    /// is granted or still askable, and only while it is `.notDetermined`.
+    /// With nothing left to ask this does nothing — callers re-read the status,
+    /// because a returning request says nothing about what the user granted.
     public func requestWorkoutWriteAuthorization(includeDistance: Bool) async throws {
         let workoutType = HKObjectType.workoutType()
-        let workoutStatus = store.authorizationStatus(for: workoutType)
+        let workoutStatus = Self.map(store.authorizationStatus(for: workoutType))
+        let requestStatus = await workoutRequestStatus()
+        let askWorkout = WorkoutWriteAuthorization.canRequestWorkout(status: workoutStatus, request: requestStatus)
 
         var toShare: Set<HKSampleType> = []
-        if workoutStatus == .notDetermined {
+        var toRead: Set<HKObjectType> = []
+        if askWorkout {
             toShare.insert(workoutType)
+            toRead.insert(workoutType)
         }
         if includeDistance,
-           workoutStatus != .sharingDenied,
+           askWorkout || workoutStatus == .sharingAuthorized,
            store.authorizationStatus(for: Self.distanceType) == .notDetermined {
             toShare.insert(Self.distanceType)
         }
         guard !toShare.isEmpty else { return }
 
         do {
-            try await store.requestAuthorization(toShare: toShare, read: [])
+            try await store.requestAuthorization(toShare: toShare, read: toRead)
         } catch {
             throw HealthKitError.authorizationFailed(reason: error.localizedDescription)
         }
@@ -152,10 +188,11 @@ public actor HealthKitService {
     /// Write status of the Trainings type and the distance type, read fresh
     /// from HealthKit (no cache). The workout live gate and the export read
     /// this at write time.
-    public func currentWorkoutWriteAuthorization() -> WorkoutWriteAuthorization {
+    public func currentWorkoutWriteAuthorization() async -> WorkoutWriteAuthorization {
         WorkoutWriteAuthorization(
             workout: Self.map(store.authorizationStatus(for: HKObjectType.workoutType())),
-            distance: Self.map(store.authorizationStatus(for: Self.distanceType))
+            distance: Self.map(store.authorizationStatus(for: Self.distanceType)),
+            workoutRequest: await workoutRequestStatus()
         )
     }
 

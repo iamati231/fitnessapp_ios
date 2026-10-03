@@ -351,7 +351,7 @@ Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorla
 
 **Trainings in Health** (*Mehr → Einstellungen → Apple Health → Trainings in Health*): Der Bildschirm fasst alles zum Schreiben zusammen.
 
-- **Zugriff:** Apple kennt nur eine Freigabe „Trainings“ für alles; sie gehört auch zum normalen Verbinden-Dialog (Onboarding, Messung, Dashboard, Profil). Wer Apple Health schon früher verbunden hat, wurde dafür nie gefragt – dort gibt es jetzt die Schaltfläche „Zugriff erlauben“. Hat iOS die Frage schon einmal entschieden, zeigt Deltiq stattdessen den Weg über die Health-App (*Profil → Apps → Deltiq*). Sobald „Trainings“ erlaubt ist, schreibt Deltiq Krafttraining nach jedem beendeten Training (Schalter an), solange du es nicht abschaltest.
+- **Zugriff:** Apple kennt nur eine Freigabe „Trainings“ für alles; sie gehört auch zum normalen Verbinden-Dialog (Onboarding, Messung, Dashboard, Profil). Wer Apple Health schon früher verbunden hat, wurde dafür nie gefragt – dort gibt es jetzt die Schaltfläche „Zugriff erlauben“. Fragt iOS nicht mehr (die Frage gilt als beantwortet), erklärt der Bildschirm den Weg über die Health-App (*Profil → Apps → Deltiq → „darf Daten schreiben“*) und öffnet sie mit „Health-App öffnen“. Sobald „Trainings“ erlaubt ist, schreibt Deltiq Krafttraining nach jedem beendeten Training (Schalter an), solange du es nicht abschaltest.
 - **Krafttraining schreiben** (Vorgabe: an): Kraft-Einheiten und die Zeitformate AMRAP, EMOM, Auf Zeit und Zirkel werden als *Krafttraining* gespeichert (indoor, mit Sätzen und Volumen als Metadaten). Ein Zeitformat-Tag, der nur aus Cardio-Übungen besteht (z. B. Lauf-/Rad-Intervalle, Rudern), zählt zu *Cardio* (als gemischtes Cardio ohne Distanz).
 - **Cardio schreiben** (Vorgabe: aus): Laufen, Radfahren, Gehen und gemischtes Cardio, die du in Deltiq selbst erfasst. Aus bleibt es für alle, deren Läufe schon eine andere App (z. B. Adidas Running) nach Health schreibt. Die Art wird aus den Einträgen abgeleitet (Ausrüstung vor Namen; Laufband = indoor), eine Distanz bekommen nur Laufen und Gehen.
 - Geschrieben werden nur Start, Dauer und Art – **keine Kalorien und kein Puls** (Deltiq erfindet keine Gesundheitsdaten). Aus anderen Apps importierte Einheiten werden **nie** zurückgeschrieben. Trainings unter einer Minute, über sechs Stunden, in der Zukunft oder ohne Einträge werden nicht geschrieben.
@@ -361,6 +361,8 @@ Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorla
 **Workout-Import (Adidas Running, Strava, …):** Der Schalter fragt nur den Lesezugriff auf Workouts an (zweiter iOS-Dialog) und startet sofort einen Sync – danach bei jedem App-Start. Importiert werden ausschließlich **Laufen und Radfahren** anderer Apps (nicht die von Deltiq selbst nach Health geschriebenen); jedes Workout wird zu einer abgeschlossenen spontanen Einheit mit einem Cardio-Eintrag („Freier Lauf“ / „Radfahren (outdoor)“, Dauer, ggf. Distanz) und im Verlauf mit dem Namen der Quell-App gekennzeichnet. Duplikate werden übersprungen (gleiche Health-ID oder mehr als die Hälfte der Dauer überlappt mit einer vorhandenen Einheit). Der erste Sync holt alle historischen Läufe/Radfahrten.
 
 **Hinweise:** Die App sieht nur den Schreibstatus – den Lesestatus gibt Apple nicht preis. Wird der Zugriff verweigert, funktioniert alles manuell weiter (*Mehr → Apple Health → „In iOS-Einstellungen öffnen“*). Die Distanz-Freigabe wird beim „Zugriff erlauben“ (bei eingeschaltetem Cardio), beim Einschalten von *Cardio schreiben*, über die Schaltfläche „Geh- und Laufdistanz erlauben“ und vor einem Export mit Läufen angefragt (die beiden letzten nur, solange sie noch offen ist); fehlt oder verweigert sie, entsteht der Lauf ohne Distanz (und gilt danach als behandelt).
+
+**Gesperrte Trainings-Freigabe:** iOS führt „Trainings“ als *einen* Typ und merkt sich nur, *dass* gefragt wurde, nicht für welchen Zugriff. Wurde der Typ zuerst nur zum Lesen angefragt (frühere Builds beim Einschalten des Workout-Imports), meldet iOS das Schreiben als „verweigert“, zeigt keinen Dialog mehr und listet in der Health-App keinen Schalter „Trainings“ unter „darf Daten schreiben“. Deltiq erkennt das über den Anfrage-Status (`statusForAuthorizationRequest`): Meldet iOS „Anfrage nötig“, erscheint „Zugriff erlauben“; sonst zeigt der Bildschirm eine Anleitung (Health-App prüfen, fehlt der Schalter: Deltiq löschen und neu installieren – vorher *Daten exportieren (CSV)* und die ZIP-Datei außerhalb von Deltiq sichern) und eine technische Zeile (`workout=… request=…`) für Rückmeldungen. Damit das nicht mehr passiert, fragt Deltiq „Trainings“ jetzt immer für Schreiben **und** Lesen zusammen an (Verbinden-Dialog, Workout-Import, „Zugriff erlauben“) und nur, wenn iOS überhaupt noch fragen würde.
 
 ### 5.10 Daten sichern
 
@@ -469,6 +471,7 @@ Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder
 - [ ] Messung für Mann und Frau speichern, bearbeiten, löschen; kg/lbs umschalten und prüfen, was sich ändert
 - [ ] Zehntelwerte (64,1 / 64,6 / 65,1 kg) speichern → Anzeige „64,10“ usw., nicht „64,09“
 - [ ] Apple Health: alles erlauben · alles verweigern · nur Schreiben/nur Lesen verweigern; der iOS-Dialog erscheint in der Systemsprache (DE/EN/TR)
+- [ ] Trainings in Health bei Nutzern, die den Workout-Import schon vor der Trainings-Freigabe eingeschaltet haben („Trainings“ nur lesend freigegeben): Bildschirm zeigt die Anleitung samt „Health-App öffnen“ und der technischen Zeile (`workout=denied · request=…`); „Health-App öffnen“ öffnet die Health-App; nach Löschen und Neuinstallation zeigt „Zugriff erlauben“ einen Dialog mit Schreiben **und** Lesen für „Trainings“
 - [ ] Trainings in Health: Bestandsnutzer (Health schon früher verbunden) → Einstellungen → Trainings in Health → „Zugriff erlauben“ zeigt den iOS-Dialog; danach „Zugriff erlaubt“
 - [ ] Krafttraining beenden (Schalter an) → Eintrag *Krafttraining* in Health/Fitness, ohne Kalorien; mit Schalter aus → kein Eintrag
 - [ ] Zugriff in Health entziehen → Bildschirm zeigt den Hinweis; Training beenden bricht nichts ab
@@ -522,7 +525,7 @@ Die folgenden Punkte stammen aus einer Code-Analyse und wurden **nicht** durchg�
 1. **Plan bauen:** Der Schritt „Ausrüstung“ beeinflusst die Übungsauswahl nicht (nur die Trainingsart); *Langhantel + Anfänger* liefert nur eine Übung; zeitbasierte Übungen (z. B. Plank, Burpees) bekommen in generierten Plänen die Standard-Wiederholungsspanne als Sekunden (8–12 s); der Plan ist immer „Gym“ und heißt „Individueller Plan“.
 2. **Training:** „Direkt starten“ bei einem Tag ohne Übungen reagiert nicht und gibt keinen Hinweis; die Benachrichtigung nach dem letzten Satz kann „Satz n+1 von n“ nennen.
 3. **Nicht lokalisierte Texte:** u. a. „Individueller Plan“, „Smart-Progression“, „Inkrement“, „WARM-UP“, „Diesen Plan übernehmen“, einige Toasts und Zeilen im Rekord-Screen erscheinen auch in EN/TR auf Deutsch.
-4. **Apple Health und Benachrichtigungen:** Ob Trainings samt Distanz-Sample (Zusatzfreigabe „Geh- und Laufdistanz“) in Apple Health ankommen, ob der Abgleich beim Export fremde Trainings sicher erkennt und ob `finishWorkout()` bei gesperrtem Gerät ein Training zuverlässig ablegt, ist auf dem Gerät noch nicht bestätigt; für „zeitkritische“ Benachrichtigungen fehlt laut Code das passende Entitlement.
+4. **Apple Health und Benachrichtigungen:** Ob Trainings samt Distanz-Sample (Zusatzfreigabe „Geh- und Laufdistanz“) in Apple Health ankommen, ob der Abgleich beim Export fremde Trainings sicher erkennt, ob `finishWorkout()` bei gesperrtem Gerät ein Training zuverlässig ablegt und ob eine Neuinstallation die gesperrte Trainings-Freigabe (siehe „Gesperrte Trainings-Freigabe“ in [5.9](#59-apple-health)) wirklich zurücksetzt, ist auf dem Gerät noch nicht bestätigt (bestätigt ist nur der gesperrte Zustand selbst: „verweigert“, kein Dialog, kein Schalter in der Health-App); für „zeitkritische“ Benachrichtigungen fehlt laut Code das passende Entitlement.
 5. **Dashboard-Zugang:** Sind die Karten „Rekorde“ und „Trainingsverlauf“ ausgeblendet, fehlt der direkte Zugang zu Trophy Room und Verlauf.
 
 ### 6.6 Feedback geben
@@ -577,7 +580,8 @@ fitnessapp_ios/
 |   `-- FitnessAppUI/            # alle SwiftUI-Views, Theme, Lokalisierung (Localizable.xcstrings)
 |-- Tests/
 |   |-- FitnessAppCoreTests/     # Rechner, Analytik, Plan-Generator, CSV, Backup (ca. 600 Tests)
-|   `-- FitnessAppDataTests/     # SwiftData in-memory, Export/Import-Roundtrip (ca. 60 Tests)
+|   |-- FitnessAppDataTests/     # SwiftData in-memory, Export/Import-Roundtrip (ca. 60 Tests)
+|   `-- FitnessAppHealthTests/   # Zustandslogik der Health-Berechtigungen (ca. 10 Tests)
 `-- .scripts/                    # Python-Werkzeuge für den String-Katalog
 ```
 
@@ -595,7 +599,7 @@ Modul-Abhängigkeiten: `FitnessAppData → FitnessAppCore`; `FitnessAppUI` häng
 ### 8.3 Bauen und Testen
 
 ```bash
-swift test                       # Core-Tests überall; Data-Tests nur mit SwiftData (macOS)
+swift test                       # Core- und Health-Tests überall; Data-Tests nur mit SwiftData (macOS)
 swift test --parallel            # wie in der CI
 
 # App-Target (macOS mit Xcode):
@@ -607,7 +611,7 @@ xcodebuild -project FitnessApp.xcodeproj -scheme FitnessApp \
 
 - `DEVELOPMENT_TEAM` ist leer – das ergibt Simulator-Builds ohne Signing; Signing und Versionsnummern setzt die CI.
 - `STRING_CATALOG_GENERATE_SYMBOLS: NO` ist in `project.yml` gesetzt, weil der Symbol-Generator von Xcode 26.4.1 am Katalog scheitert.
-- Es gibt keine UI-, Health- oder Activities-Tests; Logik, die testbar sein soll, gehört nach `FitnessAppCore`.
+- Es gibt keine UI- oder Activities-Tests; Logik, die testbar sein soll, gehört nach `FitnessAppCore`. Für Health gibt es nur Tests der plattformneutralen Zustandslogik (`FitnessAppHealthTests`); das Verhalten von HealthKit selbst lässt sich nur auf dem Gerät prüfen.
 - Entwickelt wird ohne lokalen Mac (Windows + Codemagic); `swift test` läuft auf macOS und Linux (auf Linux nur der Core-Teil).
 
 ### 8.4 CI und Release

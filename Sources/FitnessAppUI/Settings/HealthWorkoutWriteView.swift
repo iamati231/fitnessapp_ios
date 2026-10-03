@@ -5,7 +5,9 @@
 //   2. Zugriff: Zustand der Trainings-Schreibberechtigung. Bestandsnutzer, die
 //      Apple Health vor Ergaenzung dieses Typs verbunden haben, sehen den
 //      Dialog sonst nie wieder - hier kann er nutzer-ausgeloest nachgeholt
-//      werden.
+//      werden. Ob iOS den Dialog ueberhaupt noch zeigt, sagt nicht der
+//      Schreibstatus ("verweigert" meldet iOS auch fuer einen Typ, der nur zum
+//      Lesen angefragt wurde), sondern `WorkoutWriteAuthorization.workoutAccess`.
 //   3. Schalter: Krafttraining (Vorgabe an) / Cardio (Vorgabe aus). Apple kennt
 //      nur EINE Berechtigung "Trainings"; was davon geschrieben wird, stellt
 //      der Nutzer hier ein. Der Cardio-Schalter fragt zusaetzlich die
@@ -40,10 +42,10 @@ public struct HealthWorkoutWriteView: View {
     @AppStorage(HealthWritePreferences.cardioEnabledKey)
     private var cardioEnabled: Bool = HealthWritePreferences.defaultCardioEnabled
 
-    /// Die Anfrage lief, der Status ist aber unveraendert `.notDetermined`:
-    /// Der Dialog wurde nicht beantwortet (abgebrochen) oder iOS hat ihn nicht
-    /// gezeigt. Der Hinweistext deckt beides ab: erneut tippen oder in der
-    /// Health-App erlauben.
+    /// Die Anfrage lief, iOS fragt aber weiterhin nach (Zustand `.canRequest`
+    /// unveraendert): Der Dialog wurde nicht beantwortet (abgebrochen) oder iOS
+    /// hat ihn nicht gezeigt. Der Hinweistext deckt beides ab: erneut tippen oder
+    /// in der Health-App erlauben.
     @State private var requestShowedNoDialog = false
 
     @State private var exportPhase: ExportPhase = .idle
@@ -149,8 +151,8 @@ public struct HealthWorkoutWriteView: View {
 
     @ViewBuilder
     private var accessContent: some View {
-        switch healthKit.workoutWriteAuthorization.workout {
-        case .sharingAuthorized:
+        switch healthKit.workoutWriteAuthorization.workoutAccess {
+        case .granted:
             DeltiqControlRow(
                 icon: "checkmark.circle",
                 label: String(localized: "settings.healthWrite.accessGranted", bundle: .module),
@@ -159,7 +161,7 @@ public struct HealthWorkoutWriteView: View {
                 Image(systemName: "checkmark")
                     .foregroundStyle(Color.Deltiq.success)
             }
-        case .notDetermined:
+        case .canRequest:
             DeltiqControlRow(
                 icon: "heart",
                 label: String(localized: "settings.healthWrite.accessNone", bundle: .module),
@@ -181,10 +183,20 @@ public struct HealthWorkoutWriteView: View {
             .padding(14)
             if requestShowedNoDialog {
                 hintRow(String(localized: "settings.healthWrite.accessNoDialog", bundle: .module))
+                diagnosticRow
             } else {
                 hintRow(String(localized: "settings.healthWrite.accessHint", bundle: .module))
+                if healthKit.workoutWriteAuthorization.workout == .sharingDenied {
+                    // "Verweigert", aber iOS fragt noch: ungewoehnlich, fuer
+                    // Rueckmeldungen aus TestFlight festhalten.
+                    diagnosticRow
+                }
             }
-        case .sharingDenied:
+        case .blocked:
+            // iOS fragt nicht mehr: entweder hat der Nutzer abgelehnt (dann gibt es
+            // in der Health-App einen ausgeschalteten Schalter), oder der Typ wurde
+            // nur zum Lesen angefragt und gilt als beantwortet (dann fehlt der
+            // Schalter). Beides laesst sich von hier aus nicht unterscheiden.
             DeltiqControlRow(
                 icon: "heart.slash",
                 label: String(localized: "settings.healthWrite.accessDeniedLabel", bundle: .module),
@@ -193,23 +205,23 @@ public struct HealthWorkoutWriteView: View {
                 EmptyView()
             }
             hintRow(String(localized: "settings.healthWrite.accessDenied", bundle: .module))
-            openIOSSettingsButton
+            hintRow(String(localized: "settings.healthWrite.accessBlocked", bundle: .module))
+            openHealthAppButton
+            diagnosticRow
         case .unavailable:
             EmptyView()
         }
     }
 
     @ViewBuilder
-    private var openIOSSettingsButton: some View {
+    private var openHealthAppButton: some View {
         #if os(iOS)
         Button {
-            if let url = URL(string: UIApplication.openSettingsURLString) {
-                UIApplication.shared.open(url)
-            }
+            HealthAppLink.open()
         } label: {
             DeltiqRow(
-                icon: "gear",
-                label: String(localized: "settings.health.openIOSSettings", bundle: .module),
+                icon: "heart.text.square",
+                label: String(localized: "settings.healthWrite.openHealthApp", bundle: .module),
                 showsDivider: false
             )
         }
@@ -217,11 +229,23 @@ public struct HealthWorkoutWriteView: View {
         #endif
     }
 
+    /// Technischer Zustand fuer Rueckmeldungen aus TestFlight (nicht lokalisiert).
+    private var diagnosticRow: some View {
+        Text(verbatim: healthKit.workoutWriteAuthorization.diagnosticDescription)
+            .font(.system(size: 10, design: .monospaced))
+            .foregroundStyle(Color.Deltiq.textSecondary.opacity(0.7))
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 14)
+            .padding(.bottom, 8)
+    }
+
     private func requestAccess() {
         Task { @MainActor in
-            let before = healthKit.workoutWriteAuthorization.workout
+            let before = healthKit.workoutWriteAuthorization
             let after = await healthKit.requestWorkoutWriteAuthorization(includeDistance: cardioEnabled)
-            requestShowedNoDialog = (before == .notDetermined && after.workout == .notDetermined)
+            // Weder Status noch Anfrage-Zustand haben sich geaendert und iOS
+            // fragt weiter nach: kein Dialog (oder abgebrochen).
+            requestShowedNoDialog = (before == after && after.workoutAccess == .canRequest)
         }
     }
 

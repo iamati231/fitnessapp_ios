@@ -14,6 +14,46 @@ public enum HealthKitAuthorizationStatus: Sendable, Equatable {
     case notDetermined
     case sharingDenied
     case sharingAuthorized
+
+    /// Short English name for diagnostics.
+    public var diagnosticName: String {
+        switch self {
+        case .unavailable:       return "unavailable"
+        case .notDetermined:     return "notDetermined"
+        case .sharingDenied:     return "denied"
+        case .sharingAuthorized: return "authorized"
+        }
+    }
+}
+
+/// Would asking again show the permission sheet? Mirrors
+/// `HKAuthorizationRequestStatus`: `.shouldRequest` = at least one of the
+/// requested types was never asked about, `.unnecessary` = every type counts as
+/// already asked (iOS then shows no sheet), `.unknown` = the query failed.
+public enum HealthKitRequestStatus: Sendable, Equatable {
+    case unknown
+    case shouldRequest
+    case unnecessary
+
+    /// Short English name for diagnostics.
+    public var diagnosticName: String {
+        switch self {
+        case .unknown:       return "unknown"
+        case .shouldRequest: return "shouldRequest"
+        case .unnecessary:   return "unnecessary"
+        }
+    }
+}
+
+/// How the Trainings screen presents the Trainings write permission.
+public enum WorkoutAccessState: Sendable, Equatable {
+    case unavailable
+    case granted
+    /// iOS can still show the permission sheet for the Trainings type.
+    case canRequest
+    /// iOS shows no sheet any more (the type counts as answered). The user has
+    /// to switch it on in the Health app — if the switch exists there at all.
+    case blocked
 }
 
 /// Write-side authorization for the two types the workout feature needs:
@@ -26,18 +66,70 @@ public enum HealthKitAuthorizationStatus: Sendable, Equatable {
 /// (`HealthWritePreferences` in Core). The distance type is requested
 /// incrementally (cardio switch turned on, in-app distance button, or before
 /// exporting past runs with km), never as part of the initial connect.
+///
+/// `workoutRequest` exists because `workout == .sharingDenied` is ambiguous:
+/// HealthKit reports it both after the user said "Don't Allow" AND for a type
+/// that was only ever requested for READING (the Workout-Import does exactly
+/// that). iOS tracks "was asked" per TYPE, not per access mode, so in the
+/// second case no sheet will ever appear and the Health app has no switch to
+/// flip. Only `HKHealthStore.statusForAuthorizationRequest` tells the two apart.
 public struct WorkoutWriteAuthorization: Sendable, Equatable {
     public let workout: HealthKitAuthorizationStatus
     public let distance: HealthKitAuthorizationStatus
+    /// Would a request for the Trainings type (write + read together) show the
+    /// sheet? `.unknown` when it was not (or could not be) determined.
+    public let workoutRequest: HealthKitRequestStatus
 
-    public init(workout: HealthKitAuthorizationStatus, distance: HealthKitAuthorizationStatus) {
+    public init(
+        workout: HealthKitAuthorizationStatus,
+        distance: HealthKitAuthorizationStatus,
+        workoutRequest: HealthKitRequestStatus = .unknown
+    ) {
         self.workout = workout
         self.distance = distance
+        self.workoutRequest = workoutRequest
     }
 
     public static let unavailable = WorkoutWriteAuthorization(workout: .unavailable, distance: .unavailable)
 
     public var canWriteWorkouts: Bool { workout == .sharingAuthorized }
+
+    /// Single decision for both the screen and the service request: may we ask
+    /// iOS for the Trainings permission right now?
+    public static func canRequestWorkout(
+        status: HealthKitAuthorizationStatus,
+        request: HealthKitRequestStatus
+    ) -> Bool {
+        switch status {
+        case .notDetermined:
+            // Never asked for writing. Even a contradictory `.unnecessary` is
+            // tried once; the screen then reports a request without a sheet.
+            return true
+        case .sharingDenied:
+            // "Denied" is no proof that the user said no (see the type's note).
+            // Only a definite "unnecessary" rules the sheet out; if the query
+            // failed (`.unknown`) a harmless attempt is better than a dead end.
+            return request != .unnecessary
+        case .sharingAuthorized, .unavailable:
+            return false
+        }
+    }
+
+    /// Compact technical state for support and TestFlight feedback (not localized).
+    public var diagnosticDescription: String {
+        "workout=\(workout.diagnosticName) · request=\(workoutRequest.diagnosticName) · distance=\(distance.diagnosticName)"
+    }
+
+    public var workoutAccess: WorkoutAccessState {
+        switch workout {
+        case .unavailable:
+            return .unavailable
+        case .sharingAuthorized:
+            return .granted
+        case .notDetermined, .sharingDenied:
+            return Self.canRequestWorkout(status: workout, request: workoutRequest) ? .canRequest : .blocked
+        }
+    }
 }
 
 /// Activity kinds the app writes to Apple Health. Mirrors

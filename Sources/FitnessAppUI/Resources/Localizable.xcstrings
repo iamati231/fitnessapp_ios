@@ -20104,9 +20104,9 @@
     "settings.healthWrite.accessHint": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Apple fragt einmal nach. Du kannst den Zugriff jederzeit in Health widerrufen." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Apple asks once. You can withdraw access in Health at any time." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Apple bir kez sorar. Erişimi istediğin zaman Health'ten geri alabilirsin." } }
+        "de": { "stringUnit": { "state": "translated", "value": "Apple fragt einmal nach – für das Schreiben und das Lesen von „Trainings“. Das Lesen braucht Deltiq für den Workout-Import und den Abgleich beim Export. Du kannst den Zugriff jederzeit in Health widerrufen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Apple asks once – for writing and reading “Workouts”. Deltiq needs reading for the workout import and the check during export. You can withdraw access in Health at any time." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Apple bir kez sorar – „Antrenmanlar“ı yazma ve okuma için. Okuma, antrenman içe aktarma ve dışa aktarırken yapılan karşılaştırma için gerekir. Erişimi istediğin zaman Health'ten geri alabilirsin." } }
       }
     },
     "settings.healthWrite.accessNoDialog": {
@@ -20117,20 +20117,36 @@
         "tr": { "stringUnit": { "state": "translated", "value": "İzin verilmedi. Tekrar „Erişime izin ver“e dokun veya Health uygulamasında Profil → Uygulamalar → Deltiq altında „Antrenmanlar“a izin ver." } }
       }
     },
+    "settings.healthWrite.accessBlocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Fehlt dort der Schalter „Trainings“, kann iOS die Frage nicht noch einmal stellen: Sie gilt als beantwortet, zum Beispiel weil „Trainings“ zuerst nur zum Lesen angefragt wurde (Workout-Import). Dann hilft nur, Deltiq zu löschen und neu zu installieren. Sichere vorher deine Daten mit „Daten exportieren (CSV)“ und lege die ZIP-Datei außerhalb von Deltiq ab, etwa in iCloud Drive." } },
+        "en": { "stringUnit": { "state": "translated", "value": "If the “Workouts” switch is missing there, iOS can no longer ask: the question counts as answered, for example because “Workouts” was first requested for reading only (workout import). Then the only way is to delete and reinstall Deltiq. Back up your data first with “Export data (CSV)” and save the ZIP file outside Deltiq, for example in iCloud Drive." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Orada „Antrenmanlar“ anahtarı yoksa iOS soruyu bir daha soramaz: Soru yanıtlanmış sayılır, örneğin „Antrenmanlar“ önce yalnızca okuma için istendiği için (antrenman içe aktarma). Çözüm yalnızca Deltiq'i silip yeniden yüklemektir. Öncesinde verilerini „Verileri dışa aktar (CSV)“ ile yedekle ve ZIP dosyasını Deltiq dışında, örneğin iCloud Drive'da sakla." } }
+      }
+    },
+    "settings.healthWrite.openHealthApp": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Health-App öffnen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Open Health app" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Health uygulamasını aç" } }
+      }
+    },
     "settings.healthWrite.accessDeniedLabel": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Zugriff verweigert" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Access denied" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Erişim reddedildi" } }
+        "de": { "stringUnit": { "state": "translated", "value": "Zugriff nicht erteilt" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Access not granted" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Erişim verilmedi" } }
       }
     },
     "settings.healthWrite.accessDenied": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Erlaube „Trainings“ in der Health-App unter Profil → Apps → Deltiq. Danach zeigt Deltiq hier den neuen Stand." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Allow “Workouts” in the Health app under Profile → Apps → Deltiq. Deltiq then shows the new state here." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Health uygulamasında Profil → Uygulamalar → Deltiq altında „Antrenmanlar“a izin ver. Deltiq yeni durumu burada gösterir." } }
+        "de": { "stringUnit": { "state": "translated", "value": "Öffne die Health-App → Profil → Apps → Deltiq und schalte unter „darf Daten schreiben“ den Schalter „Trainings“ ein. Danach zeigt Deltiq hier den neuen Stand." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Open the Health app → Profile → Apps → Deltiq and turn on “Workouts” among the data Deltiq may write. Deltiq then shows the new state here." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Health uygulamasını aç → Profil → Uygulamalar → Deltiq ve Deltiq'in yazabileceği veriler arasında „Antrenmanlar“ı aç. Deltiq yeni durumu burada gösterir." } }
       }
     },
     "settings.healthWrite.switchesHeader": {

@@ -56,6 +56,13 @@ let package = Package(
             path: "Tests/FitnessAppCoreTests"
         ),
         .testTarget(
+            // Zustandslogik der Health-Berechtigungen (plattformneutrale Typen). Der
+            // HealthKit-Teil selbst laesst sich nur auf dem Geraet pruefen.
+            name: "FitnessAppHealthTests",
+            dependencies: ["FitnessAppHealth"],
+            path: "Tests/FitnessAppHealthTests"
+        ),
+        .testTarget(
             // Integration tests for SwiftData-backed sync logic (PersonalRecordSync etc).
             // All test bodies are #if canImport(SwiftData)-gated so the file compiles
             // empty on Windows where SwiftData isn't available; on Codemagic-Mac the
