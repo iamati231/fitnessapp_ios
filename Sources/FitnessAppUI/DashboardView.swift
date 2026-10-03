@@ -1202,6 +1202,21 @@ public struct DashboardView: View {
         endDeload()
     }
 
+    /// Banner-Text: mit Enddatum, solange ein Timer laeuft. Fehlt der Timer
+    /// (`deloadUntil <= 0`; der Deload wird dann nur noch an den gesicherten
+    /// Gewichten erkannt), gibt es kein Datum, das man nennen koennte — dort
+    /// stand frueher "bis 1. Jan. 1970".
+    private var deloadBannerText: String {
+        guard deloadUntil > 0 else {
+            return String(localized: "dashboard.deload.activeBannerNoDate", bundle: .module)
+        }
+        return String(
+            format: String(localized: "dashboard.deload.activeBanner", bundle: .module),
+            Date(timeIntervalSince1970: deloadUntil)
+                .formatted(date: .abbreviated, time: .omitted)
+        )
+    }
+
     private var deloadActiveBanner: some View {
         // Signature-Geruest 1.7: Teal war Sonderfarbe fuer den Deload-
         // Hinweis, verletzt aber "alles Interaktive/Aktive ist Orange" —
@@ -1214,11 +1229,7 @@ public struct DashboardView: View {
                     .foregroundStyle(Color.deltiqOrange)
                     .font(.title3)
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(String(
-                        format: String(localized: "dashboard.deload.activeBanner", bundle: .module),
-                        Date(timeIntervalSince1970: deloadUntil)
-                            .formatted(date: .abbreviated, time: .omitted)
-                    ))
+                    Text(deloadBannerText)
                     .font(.subheadline)
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
