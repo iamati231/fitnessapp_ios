@@ -162,12 +162,20 @@ public enum BodyCalculations {
     /// Six-day threshold (rather than strict 7) is intentional — users don't
     /// measure on the dot. Any reasonably-spaced "last week" sample counts.
     /// Used by `DashboardView`'s "+0.40 kg / Wo." badge.
+    ///
+    /// Bugfix: Das Ergebnis wird auf sechs Nachkommastellen gerundet. Die
+    /// Subtraktion zweier Dezimalgewichte hinterlaesst Rauschen von mehreren
+    /// hundert ULP des (kleinen) Ergebnisses - 70.3 - 70.2 ist in Gleitkomma
+    /// 0.09999999999999432 -, und die Anzeige (`truncated(to: 1)`) schnitt das
+    /// zu "0,0" statt "0,1" ab (rund 26 % aller Wochen-Deltas bei 100-g-
+    /// Aufloesung). Sechs Stellen liegen weit ueber dem Rauschen (~1e-14) und
+    /// weit unter jeder echten Waagen-Aufloesung.
     public static func weeklyWeightDelta(measurements: [some WeightSample]) -> Double? {
         let sorted = measurements.sorted { $0.date > $1.date }
         guard let latest = sorted.first else { return nil }
         let cutoff = latest.date.addingTimeInterval(-6 * 24 * 3600)
         guard let weekAgo = sorted.first(where: { $0.date <= cutoff }) else { return nil }
-        return latest.weightKg - weekAgo.weightKg
+        return ((latest.weightKg - weekAgo.weightKg) * 1_000_000).rounded() / 1_000_000
     }
 
     /// True when recent measurements show a >2 kg standard deviation — signals the

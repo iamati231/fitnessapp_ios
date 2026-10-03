@@ -253,6 +253,38 @@ final class BodyCalculationsTests: XCTestCase {
         )
     }
 
+    /// Subtraktionsrauschen: 70.3 - 70.2 ist in Gleitkomma 0.09999999999999432
+    /// und wurde in der Anzeige (`truncated(to: 1)`) zu 0.0 statt 0.1.
+    func testWeeklyDeltaIsFreeOfSubtractionNoise() {
+        let now = Date(timeIntervalSinceReferenceDate: 0)
+        let week: TimeInterval = 7 * 24 * 3600
+        let samples: [StubSample] = [
+            StubSample(date: now,                          weightKg: 70.3),
+            StubSample(date: now.addingTimeInterval(-week), weightKg: 70.2)
+        ]
+        let delta = BodyCalculations.weeklyWeightDelta(measurements: samples)!
+        XCTAssertEqual(delta, 0.1, accuracy: 1e-12)
+        XCTAssertEqual(delta.truncated(to: 1), 0.1, accuracy: 1e-12)
+    }
+
+    func testWeeklyDeltaDisplaysEveryHundredGramStepExactly() {
+        let now = Date(timeIntervalSinceReferenceDate: 0)
+        let week: TimeInterval = 7 * 24 * 3600
+        for baseTenths in 500...1500 {
+            for deltaTenths in 1...30 {
+                let samples: [StubSample] = [
+                    StubSample(date: now, weightKg: Double(baseTenths + deltaTenths) / 10.0),
+                    StubSample(date: now.addingTimeInterval(-week), weightKg: Double(baseTenths) / 10.0)
+                ]
+                let delta = BodyCalculations.weeklyWeightDelta(measurements: samples)!
+                XCTAssertEqual(
+                    delta.truncated(to: 1), Double(deltaTenths) / 10.0, accuracy: 1e-9,
+                    "\(Double(baseTenths + deltaTenths) / 10.0) - \(Double(baseTenths) / 10.0)"
+                )
+            }
+        }
+    }
+
     func testIsTrendUnreliableFalseForStableProgression() {
         let now = Date()
         let week: TimeInterval = 7 * 24 * 3600
