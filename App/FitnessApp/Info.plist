@@ -73,9 +73,9 @@
          file. Keep both in sync with what HealthKitService really reads and
          writes (requestAuthorization / requestWorkoutReadAuthorization). -->
     <key>NSHealthShareUsageDescription</key>
-    <string>Deltiq reads your weight, body fat, lean mass, height, date of birth, sex, resting heart rate and steps from Apple Health, so you don't have to enter values twice and your profile and dashboard stay up to date. If you turn on workout import, the app also reads workouts recorded by other apps.</string>
+    <string>Deltiq reads your weight, body fat, lean mass, height, date of birth, sex, resting heart rate and steps from Apple Health, so you don't have to enter values twice and your profile and dashboard stay up to date. Deltiq also reads workouts recorded by other apps – to import them if you turn on workout import, and to avoid duplicates when you export past workouts.</string>
     <key>NSHealthUpdateUsageDescription</key>
-    <string>Deltiq writes your measurements (weight, body fat, lean mass) and completed workouts, including running distance, to Apple Health, so your data lives in one place.</string>
+    <string>Deltiq writes your measurements (weight, body fat, lean mass) and – if you turn it on – your completed workouts to Apple Health, optionally with walking and running distance and including past workouts, so your data lives in one place.</string>
 
     <!-- Custom URL scheme for Live Activity / Widget deep-links. -->
     <key>CFBundleURLTypes</key>
