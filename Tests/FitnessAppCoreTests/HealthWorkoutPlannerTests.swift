@@ -171,6 +171,89 @@ final class HealthWorkoutPlannerTests: XCTestCase {
         )
     }
 
+    // MARK: - Genaue Dauer
+
+    /// Alter Einzel-Lauf: Die Dauer wurde nachtraeglich auf die Laufzeit gesetzt,
+    /// Beginn und Ende (1 Min auseinander) blieben. Health bekommt die Laufzeit
+    /// auf die Sekunde, nicht 25:00 und nicht die Minute zwischen Beginn und Ende.
+    func testEffectiveWindowUsesTheExactDurationWhenStartAndEndDoNotMatch() {
+        let window = HealthWorkoutPlanner.effectiveWindow(
+            startTime: start, endTime: start.addingTimeInterval(60),
+            durationMinutes: 25, exactDurationSeconds: 25 * 60 + 56
+        )
+        XCTAssertEqual(window.start, start)
+        XCTAssertEqual(window.end, start.addingTimeInterval(25 * 60 + 56))
+    }
+
+    /// Eine im Verlauf geaenderte Dauer (30 statt 25 Min) passt nicht mehr zur
+    /// genauen Laufzeit: Es gelten die geaenderten Minuten.
+    func testEffectiveWindowIgnoresAnExactDurationThatDoesNotMatchTheMinutes() {
+        let window = HealthWorkoutPlanner.effectiveWindow(
+            startTime: start, endTime: start.addingTimeInterval(60),
+            durationMinutes: 30, exactDurationSeconds: 25 * 60 + 56
+        )
+        XCTAssertEqual(window.end, minutes(30))
+    }
+
+    /// Drueckt `[start, end]` die Sekunden schon aus, bleibt das Ende, wie es ist
+    /// (auch mit Sekundenbruchteil) — wichtig fuer den Abgleich mit dem live
+    /// geschriebenen Fenster.
+    func testEffectiveWindowKeepsTheEndWhenStartAndEndAlreadyExpressTheExactDuration() {
+        let end = start.addingTimeInterval(25 * 60 + 56.4)
+        let window = HealthWorkoutPlanner.effectiveWindow(
+            startTime: start, endTime: end,
+            durationMinutes: 25, exactDurationSeconds: 25 * 60 + 56
+        )
+        XCTAssertEqual(window.end, end)
+    }
+
+    /// Live gelaufen, Training einige Sekunden nach dem Loslaufen gestartet:
+    /// Wanduhr 32:41 und Laufzeit 32:53 sind beide "32 Min" - die Laufzeit gilt.
+    func testEffectiveWindowPrefersTheExactDurationOverASlightlyShorterWallClock() {
+        let window = HealthWorkoutPlanner.effectiveWindow(
+            startTime: start, endTime: start.addingTimeInterval(32 * 60 + 41),
+            durationMinutes: 32, exactDurationSeconds: 32 * 60 + 53
+        )
+        XCTAssertEqual(window.end, start.addingTimeInterval(32 * 60 + 53))
+    }
+
+    func testEffectiveWindowWithoutAnExactDurationBehavesAsBefore() {
+        let window = HealthWorkoutPlanner.effectiveWindow(
+            startTime: start, endTime: start.addingTimeInterval(60),
+            durationMinutes: 25, exactDurationSeconds: nil
+        )
+        XCTAssertEqual(window.end, minutes(25))
+    }
+
+    func testPlanForAnOldSingleRunUsesTheRunTime() {
+        let c = HealthWorkoutCandidate(
+            startTime: start, endTime: start.addingTimeInterval(60), durationMinutes: 25,
+            logs: [cardioLog("Freier Lauf", km: 4.51, seconds: 25 * 60 + 56)],
+            exactDurationSeconds: 25 * 60 + 56
+        )
+        let p = plan(decide(c))
+        XCTAssertEqual(p?.activity, .running)
+        XCTAssertEqual(p?.start, start)
+        XCTAssertEqual(p?.end, start.addingTimeInterval(25 * 60 + 56))
+    }
+
+    /// Die Abfrage der Health-Workouts muss das geschriebene (genaue) Fenster
+    /// einschliessen.
+    func testQueryRangeCoversTheExactWindow() {
+        let c = HealthWorkoutCandidate(
+            startTime: start, endTime: start.addingTimeInterval(60), durationMinutes: 25,
+            logs: [cardioLog("Freier Lauf", km: 4.51, seconds: 25 * 60 + 56)],
+            exactDurationSeconds: 25 * 60 + 56
+        )
+        let range = HealthWorkoutPlanner.queryRange(for: [c])
+        XCTAssertNotNil(range)
+        XCTAssertLessThanOrEqual(range!.start, start)
+        XCTAssertGreaterThanOrEqual(
+            range!.end,
+            start.addingTimeInterval(25 * 60 + 56 + HealthWorkoutPlanner.queryMarginSeconds)
+        )
+    }
+
     func testDurationBounds() {
         // 59 s: zu kurz
         let tooShort = HealthWorkoutCandidate(

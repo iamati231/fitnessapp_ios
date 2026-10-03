@@ -57,7 +57,8 @@ enum HealthWorkoutWriter {
             dayIsAllCardio: dayIsAllCardio,
             logs: logs,
             totalSets: session.totalSets,
-            totalVolumeKg: session.totalVolumeKg
+            totalVolumeKg: session.totalVolumeKg,
+            exactDurationSeconds: session.exactDurationSeconds
         )
     }
 

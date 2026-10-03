@@ -72,6 +72,12 @@ public struct HealthWorkoutCandidate: Sendable, Equatable {
     public var logs: [HealthWorkoutLogInput]
     public var totalSets: Int
     public var totalVolumeKg: Double
+    /// Die Dauer auf die Sekunde, wenn die App sie kennt — z. B. die Laufzeit
+    /// eines einzelnen Laufs, dessen gespeicherte Dauer nachtraeglich korrigiert
+    /// wurde, waehrend Beginn und Ende blieben. `nil`: nur die Minuten sind
+    /// verlaesslich. Gilt nur, solange sie zu `durationMinutes` passt (siehe
+    /// `HealthWorkoutPlanner.effectiveWindow`).
+    public var exactDurationSeconds: Int?
 
     public init(
         startTime: Date,
@@ -85,7 +91,8 @@ public struct HealthWorkoutCandidate: Sendable, Equatable {
         dayIsAllCardio: Bool? = nil,
         logs: [HealthWorkoutLogInput] = [],
         totalSets: Int = 0,
-        totalVolumeKg: Double = 0
+        totalVolumeKg: Double = 0,
+        exactDurationSeconds: Int? = nil
     ) {
         self.startTime = startTime
         self.endTime = endTime
@@ -99,6 +106,7 @@ public struct HealthWorkoutCandidate: Sendable, Equatable {
         self.logs = logs
         self.totalSets = totalSets
         self.totalVolumeKg = totalVolumeKg
+        self.exactDurationSeconds = exactDurationSeconds
     }
 }
 
@@ -248,13 +256,25 @@ public enum HealthWorkoutPlanner {
     /// `durationMinutes` dazu passt, sonst `[start, start + durationMinutes]`.
     /// Der History-Editor aendert nur `startTime` und `durationMinutes`, nie
     /// `endTime` — nach einem Edit ist `endTime` veraltet.
+    ///
+    /// Kennt die App die Dauer auf die Sekunde (`exactDurationSeconds`, z. B. die
+    /// Laufzeit eines einzelnen Laufs), gilt `[start, start + exact]`, solange sie
+    /// zu den gespeicherten Minuten passt: Sonst bekaeme ein alter Lauf mit 25:56
+    /// in Health nur 25:00 oder, bei einer veralteten Endzeit, nur die Minuten.
+    /// Drueckt `[start, end]` die Sekunden schon exakt aus, bleibt das Ende
+    /// unveraendert (keine Abschneidung von Bruchteilen).
     public static func effectiveWindow(
         startTime: Date,
         endTime: Date,
-        durationMinutes: Int
+        durationMinutes: Int,
+        exactDurationSeconds: Int? = nil
     ) -> (start: Date, end: Date) {
         let measured = endTime.timeIntervalSince(startTime)
         let consistent = measured >= 0 && Int(measured) / 60 == durationMinutes
+        if let exact = exactDurationSeconds, exact > 0, exact / 60 == durationMinutes,
+           !(consistent && Int(measured) == exact) {
+            return (startTime, startTime.addingTimeInterval(Double(exact)))
+        }
         if consistent { return (startTime, endTime) }
         return (startTime, startTime.addingTimeInterval(Double(max(durationMinutes, 0)) * 60))
     }
@@ -275,7 +295,8 @@ public enum HealthWorkoutPlanner {
         let window = effectiveWindow(
             startTime: candidate.startTime,
             endTime: candidate.endTime,
-            durationMinutes: candidate.durationMinutes
+            durationMinutes: candidate.durationMinutes,
+            exactDurationSeconds: candidate.exactDurationSeconds
         )
         let duration = window.end.timeIntervalSince(window.start)
         if duration < minimumDurationSeconds { return .skip(.tooShort) }
@@ -350,7 +371,8 @@ public enum HealthWorkoutPlanner {
             let effective = effectiveWindow(
                 startTime: candidate.startTime,
                 endTime: candidate.endTime,
-                durationMinutes: candidate.durationMinutes
+                durationMinutes: candidate.durationMinutes,
+                exactDurationSeconds: candidate.exactDurationSeconds
             )
             for window in [effective] + recordedWindows(of: candidate, effective: effective) {
                 earliest = min(earliest ?? window.start, window.start)
