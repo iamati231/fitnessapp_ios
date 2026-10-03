@@ -38,7 +38,8 @@ final class HealthWorkoutPlannerTests: XCTestCase {
         isImported: Bool = false,
         hasExportMarker: Bool = false,
         totalSets: Int = 0,
-        totalVolumeKg: Double = 0
+        totalVolumeKg: Double = 0,
+        exerciseNames: [String] = []
     ) -> HealthWorkoutCandidate {
         HealthWorkoutCandidate(
             startTime: start,
@@ -52,7 +53,8 @@ final class HealthWorkoutPlannerTests: XCTestCase {
             dayIsAllCardio: dayIsAllCardio,
             logs: logs,
             totalSets: totalSets,
-            totalVolumeKg: totalVolumeKg
+            totalVolumeKg: totalVolumeKg,
+            exerciseNames: exerciseNames
         )
     }
 
@@ -323,6 +325,37 @@ final class HealthWorkoutPlannerTests: XCTestCase {
         XCTAssertEqual(p?.totalSets, 12)
         XCTAssertEqual(p?.totalVolumeKg, 4200)
         XCTAssertNil(p?.distanceKm)
+    }
+
+    /// Die Uebungsnamen (nur Namen, ohne Details) gehen in den Plan eines
+    /// Krafttrainings — in der uebergebenen Reihenfolge.
+    func testStrengthPlanCarriesTheExerciseNames() {
+        let names = ["Bankdrücken", "Kniebeuge", "Rudern"]
+        let c = candidate(logs: [strengthLog()], totalSets: 9, totalVolumeKg: 2700, exerciseNames: names)
+        XCTAssertEqual(plan(decide(c))?.exerciseNames, names)
+    }
+
+    /// Ein Zeitformat (AMRAP, EMOM ...) hat keine Saetze: Health bekommt weder
+    /// "0 Saetze" noch "0 kg", wohl aber die Uebungen des Tages.
+    func testTimeFormatSessionHasNoZeroSetsOrVolumeButItsExercises() {
+        let names = ["Burpees", "Kettlebell Swing"]
+        let c = candidate(hasTimeFormat: true, dayIsAllCardio: false, exerciseNames: names)
+        let p = plan(decide(c))
+        XCTAssertEqual(p?.activity, .strength)
+        XCTAssertNil(p?.totalSets)
+        XCTAssertNil(p?.totalVolumeKg)
+        XCTAssertEqual(p?.exerciseNames, names)
+    }
+
+    /// Cardio-Plaene (Laufen ...) tragen keine Uebungsliste: Die Art sagt alles.
+    func testCardioPlanHasNoExerciseNames() {
+        let c = candidate(
+            minutes: 30,
+            logs: [cardioLog("Freier Lauf", km: 5, seconds: 1800)],
+            exerciseNames: ["Freier Lauf"]
+        )
+        XCTAssertEqual(plan(decide(c))?.activity, .running)
+        XCTAssertEqual(plan(decide(c))?.exerciseNames, [])
     }
 
     func testTimeFormatSessionIsStrengthUnlessTheDayIsAllCardio() {

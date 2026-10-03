@@ -20064,9 +20064,9 @@
     "settings.healthWrite.introBody": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Deltiq kann abgeschlossene Trainings in Apple Health speichern: Start, Dauer und Art, bei Läufen auf Wunsch auch die Distanz. Kalorien und Puls schreibt Deltiq nicht. Apple kennt nur „Trainings“ als Ganzes – was Deltiq davon schreibt, stellst du hier ein." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Deltiq can save completed workouts to Apple Health: start, duration and type – and, if you like, the distance for runs. Deltiq does not write calories or heart rate. Apple only knows “Workouts” as a whole – what Deltiq writes of them is up to you here." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Deltiq, tamamlanan antrenmanları Apple Health'e kaydedebilir: başlangıç, süre ve tür; istersen koşularda mesafe de. Deltiq kalori ve nabız yazmaz. Apple yalnızca „Antrenmanlar“ı bütün olarak tanır – Deltiq'in bunlardan neyi yazacağını burada sen belirlersin." } }
+        "de": { "stringUnit": { "state": "translated", "value": "Deltiq kann abgeschlossene Trainings in Apple Health speichern: Start, Dauer und Art, bei Krafttraining mit den Namen der Übungen, bei Läufen auf Wunsch auch die Distanz. Kalorien und Puls schreibt Deltiq nicht. Apple kennt nur „Trainings“ als Ganzes – was Deltiq davon schreibt, stellst du hier ein." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Deltiq can save completed workouts to Apple Health: start, duration and type – with the names of the exercises for strength training and, if you like, the distance for runs. Deltiq does not write calories or heart rate. Apple only knows “Workouts” as a whole – what Deltiq writes of them is up to you here." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Deltiq, tamamlanan antrenmanları Apple Health'e kaydedebilir: başlangıç, süre ve tür; kuvvet antrenmanında egzersizlerin adlarıyla birlikte, istersen koşularda mesafe de. Deltiq kalori ve nabız yazmaz. Apple yalnızca „Antrenmanlar“ı bütün olarak tanır – Deltiq'in bunlardan neyi yazacağını burada sen belirlersin." } }
       }
     },
     "settings.healthWrite.accessHeader": {
@@ -20352,9 +20352,9 @@
     "settings.healthWrite.confirmMessage": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Für jedes Training entsteht ein Eintrag mit Start, Dauer und Art – ohne Kalorien und Puls. In Deltiq lässt sich das nicht rückgängig machen, nur in Health. Health kann die Trainings bei Trainingsminuten und Stehen vergangener Tage mitrechnen; mit einer Apple Watch kann das doppelt zählen." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Each workout becomes an entry with start, duration and type – without calories and heart rate. This cannot be undone in Deltiq, only in Health. Health may count the workouts towards exercise minutes and stand hours of past days; with an Apple Watch this can count twice." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Her antrenman için başlangıç, süre ve türü içeren bir kayıt oluşur – kalori ve nabız olmadan. Bu, Deltiq'te geri alınamaz, yalnızca Health'te. Health antrenmanları geçmiş günlerin egzersiz dakikalarına ve ayakta kalma saatlerine katabilir; Apple Watch ile bu iki kez sayılabilir." } }
+        "de": { "stringUnit": { "state": "translated", "value": "Für jedes Training entsteht ein Eintrag mit Start, Dauer und Art, bei Krafttraining mit den Namen der Übungen – ohne Kalorien und Puls. In Deltiq lässt sich das nicht rückgängig machen, nur in Health. Health kann die Trainings bei Trainingsminuten und Stehen vergangener Tage mitrechnen; mit einer Apple Watch kann das doppelt zählen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Each workout becomes an entry with start, duration and type, with the names of the exercises for strength training – without calories and heart rate. This cannot be undone in Deltiq, only in Health. Health may count the workouts towards exercise minutes and stand hours of past days; with an Apple Watch this can count twice." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Her antrenman için başlangıç, süre ve türü içeren, kuvvet antrenmanında ayrıca egzersizlerin adlarını taşıyan bir kayıt oluşur – kalori ve nabız olmadan. Bu, Deltiq'te geri alınamaz, yalnızca Health'te. Health antrenmanları geçmiş günlerin egzersiz dakikalarına ve ayakta kalma saatlerine katabilir; Apple Watch ile bu iki kez sayılabilir." } }
       }
     },
     "settings.healthWrite.confirmAction": {

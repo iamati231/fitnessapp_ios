@@ -158,6 +158,10 @@ public struct HealthWorkoutDraft: Sendable, Equatable {
     public let averagePaceMinPerKm: Double?
     public let totalSets: Int?
     public let totalVolumeKg: Double?
+    /// Names of the exercises (strength training only), in the order they were
+    /// done — names only, no sets, reps or weights. Written as one text entry in
+    /// the workout's metadata (see `HealthWorkoutDraft.exerciseListText`).
+    public let exerciseNames: [String]
 
     public init(
         kind: HealthWorkoutKind,
@@ -168,7 +172,8 @@ public struct HealthWorkoutDraft: Sendable, Equatable {
         totalDistanceKm: Double? = nil,
         averagePaceMinPerKm: Double? = nil,
         totalSets: Int? = nil,
-        totalVolumeKg: Double? = nil
+        totalVolumeKg: Double? = nil,
+        exerciseNames: [String] = []
     ) {
         self.kind = kind
         self.startDate = startDate
@@ -179,6 +184,7 @@ public struct HealthWorkoutDraft: Sendable, Equatable {
         self.averagePaceMinPerKm = averagePaceMinPerKm
         self.totalSets = totalSets
         self.totalVolumeKg = totalVolumeKg
+        self.exerciseNames = exerciseNames
     }
 }
 

@@ -456,8 +456,10 @@ public actor HealthKitService {
     ///   in the metadata). `distanceAttached` in the result tells which.
     /// - `finishWorkout()` returning `nil` is reported as `.unverified`, not as
     ///   success (see `HealthWorkoutWriteOutcome`).
-    /// - Metadata goes into a single `addMetadata` call. Bundle-prefixed keys
-    ///   keep our specifics apart from Apple's reserved namespace.
+    /// - Metadata goes into a single `addMetadata` call (see
+    ///   `HealthWorkoutDraft.customMetadata`; the exercise list of a strength
+    ///   workout is optional, see `addMetadata`). Bundle-prefixed keys keep our
+    ///   specifics apart from Apple's reserved namespace.
     public func saveWorkout(_ draft: HealthWorkoutDraft) async throws -> HealthWorkoutWriteOutcome {
         let workoutType = HKObjectType.workoutType()
         guard store.authorizationStatus(for: workoutType) == .sharingAuthorized else {
@@ -479,30 +481,18 @@ public actor HealthKitService {
             device: nil
         )
 
-        var metadata: [String: Any] = [:]
+        // The numbers (rounded for Health's raw display) come from the draft; the
+        // indoor flag is HealthKit's own key.
+        var metadata = draft.customMetadata
         if let indoor = draft.isIndoor {
             metadata[HKMetadataKeyIndoorWorkout] = indoor
-        }
-        if let sets = draft.totalSets {
-            metadata["com.atamya.FitnessApp.TotalSets"] = sets
-        }
-        if let volume = draft.totalVolumeKg, volume.isFinite {
-            metadata["com.atamya.FitnessApp.TotalVolumeKg"] = volume
-        }
-        if let km = draft.totalDistanceKm, km.isFinite, km > 0 {
-            metadata["com.atamya.FitnessApp.TotalDistanceKm"] = km
-        }
-        if let pace = draft.averagePaceMinPerKm, pace.isFinite, pace > 0 {
-            metadata["com.atamya.FitnessApp.AveragePaceMinPerKm"] = pace
         }
 
         var distanceAttached = false
         var finishCalled = false
         do {
             try await builder.beginCollection(at: draft.startDate)
-            if !metadata.isEmpty {
-                try await builder.addMetadata(metadata)
-            }
+            try await addMetadata(metadata, exerciseList: draft.exerciseListText, to: builder)
 
             if let km = draft.sampleDistanceKm, km.isFinite, km > 0,
                draft.kind == .running || draft.kind == .walking,
@@ -535,6 +525,33 @@ public actor HealthKitService {
                 builder.discardWorkout()
             }
             throw Self.mapSaveError(error)
+        }
+    }
+
+    /// One `addMetadata` call. The exercise list is a bonus like the distance
+    /// sample: if HealthKit rejects it (e.g. because of its length), the workout is
+    /// written without it instead of failing. A rejected call leaves the builder
+    /// unchanged, so the second call starts clean; any other error (locked device,
+    /// no permission) fails the second call as well and is thrown by the caller.
+    private func addMetadata(
+        _ metadata: [String: Any],
+        exerciseList: String?,
+        to builder: HKWorkoutBuilder
+    ) async throws {
+        guard let exerciseList else {
+            if !metadata.isEmpty {
+                try await builder.addMetadata(metadata)
+            }
+            return
+        }
+        var withList = metadata
+        withList[HealthWorkoutDraft.MetadataKey.exercises] = exerciseList
+        do {
+            try await builder.addMetadata(withList)
+        } catch {
+            if !metadata.isEmpty {
+                try await builder.addMetadata(metadata)
+            }
         }
     }
 

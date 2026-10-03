@@ -78,6 +78,11 @@ public struct HealthWorkoutCandidate: Sendable, Equatable {
     /// verlaesslich. Gilt nur, solange sie zu `durationMinutes` passt (siehe
     /// `HealthWorkoutPlanner.effectiveWindow`).
     public var exactDurationSeconds: Int?
+    /// Namen der Uebungen in der Reihenfolge, in der sie gemacht wurden (schon
+    /// lokalisiert, ohne Saetze/Wiederholungen/Gewichte): Aus den geloggten
+    /// Saetzen, bei Zeitformaten aus dem Tag. Nur fuer die Liste im Health-Eintrag
+    /// eines Krafttrainings.
+    public var exerciseNames: [String]
 
     public init(
         startTime: Date,
@@ -92,7 +97,8 @@ public struct HealthWorkoutCandidate: Sendable, Equatable {
         logs: [HealthWorkoutLogInput] = [],
         totalSets: Int = 0,
         totalVolumeKg: Double = 0,
-        exactDurationSeconds: Int? = nil
+        exactDurationSeconds: Int? = nil,
+        exerciseNames: [String] = []
     ) {
         self.startTime = startTime
         self.endTime = endTime
@@ -107,6 +113,7 @@ public struct HealthWorkoutCandidate: Sendable, Equatable {
         self.totalSets = totalSets
         self.totalVolumeKg = totalVolumeKg
         self.exactDurationSeconds = exactDurationSeconds
+        self.exerciseNames = exerciseNames
     }
 }
 
@@ -125,9 +132,12 @@ public struct HealthWorkoutPlan: Sendable, Equatable {
     /// Gesamtstrecke aller Cardio-Logs, jede Modalitaet — nur fuer die
     /// Metadaten des Workouts (`TotalDistanceKm`), nie als Sample.
     public var totalDistanceKm: Double?
-    /// Nur Krafttraining.
+    /// Nur Krafttraining; `nil`, wenn nichts geloggt wurde (Zeitformate haben
+    /// keine Saetze: dort stuende sonst "0 Saetze" in Health).
     public var totalSets: Int?
     public var totalVolumeKg: Double?
+    /// Nur Krafttraining: die Uebungsnamen (siehe `HealthWorkoutCandidate`).
+    public var exerciseNames: [String]
 
     public var category: HealthWorkoutCategory { activity.category }
 
@@ -140,7 +150,8 @@ public struct HealthWorkoutPlan: Sendable, Equatable {
         averagePaceMinPerKm: Double? = nil,
         totalDistanceKm: Double? = nil,
         totalSets: Int? = nil,
-        totalVolumeKg: Double? = nil
+        totalVolumeKg: Double? = nil,
+        exerciseNames: [String] = []
     ) {
         self.activity = activity
         self.start = start
@@ -151,6 +162,7 @@ public struct HealthWorkoutPlan: Sendable, Equatable {
         self.totalDistanceKm = totalDistanceKm
         self.totalSets = totalSets
         self.totalVolumeKg = totalVolumeKg
+        self.exerciseNames = exerciseNames
     }
 }
 
@@ -545,8 +557,9 @@ public enum HealthWorkoutPlanner {
                 start: window.start,
                 end: window.end,
                 isIndoor: true,
-                totalSets: candidate.totalSets,
-                totalVolumeKg: candidate.totalVolumeKg
+                totalSets: candidate.totalSets > 0 ? candidate.totalSets : nil,
+                totalVolumeKg: candidate.totalVolumeKg > 0 ? candidate.totalVolumeKg : nil,
+                exerciseNames: candidate.exerciseNames
             )
         }
         return makeCardioPlan(cardioLogs: cardioLogs, window: window)

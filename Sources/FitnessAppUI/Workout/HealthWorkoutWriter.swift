@@ -58,8 +58,57 @@ enum HealthWorkoutWriter {
             logs: logs,
             totalSets: session.totalSets,
             totalVolumeKg: session.totalVolumeKg,
-            exactDurationSeconds: session.exactDurationSeconds
+            exactDurationSeconds: session.exactDurationSeconds,
+            exerciseNames: exerciseNames(for: session)
         )
+    }
+
+    /// Namen der Uebungen eines Trainings in der Reihenfolge, in der sie gemacht
+    /// wurden — fuer die Liste im Health-Eintrag eines Krafttrainings, ohne Saetze,
+    /// Wiederholungen und Gewichte. SYNCHRON wie `candidate(for:)`.
+    ///
+    /// - Mit Saetzen: die Uebungen der geloggten Saetze. Reihenfolge nach dem
+    ///   Zeitpunkt des Satzes, dann nach der Plan-Reihenfolge (nachgetragene Saetze
+    ///   tragen oft denselben Zeitstempel), dann nach der Satznummer. Eine noch
+    ///   vorhandene Uebung liefert ihren Anzeigenamen (auch einen selbst
+    ///   vergebenen), sonst wird der gespeicherte Name in die aktuelle Sprache
+    ///   aufgeloest.
+    /// - Zeitformate (AMRAP, EMOM, Auf Zeit, Zirkel) haben nie Saetze: dann die
+    ///   Arbeits-Uebungen des Tages, falls er noch existiert.
+    static func exerciseNames(for session: WorkoutSession) -> [String] {
+        var names: [String] = []
+        var seen = Set<String>()
+        func add(_ name: String?) {
+            guard let name = name?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !name.isEmpty, seen.insert(name).inserted
+            else { return }
+            names.append(name)
+        }
+
+        let logs = session.loggedSets
+        if !logs.isEmpty {
+            let ordered = logs.sorted { lhs, rhs in
+                if lhs.date != rhs.date { return lhs.date < rhs.date }
+                let lhsOrder = lhs.exercise?.orderIndex ?? Int.max
+                let rhsOrder = rhs.exercise?.orderIndex ?? Int.max
+                if lhsOrder != rhsOrder { return lhsOrder < rhsOrder }
+                return lhs.setIndex < rhs.setIndex
+            }
+            for log in ordered {
+                add(log.exercise?.displayName
+                    ?? log.resolvedExerciseName.map { Exercise.resolvedDisplayName(forStoredName: $0) })
+            }
+            return names
+        }
+
+        if let day = session.day {
+            let active = day.activeExercises
+            let working = active.filter { $0.role == .workingSet }
+            for exercise in (working.isEmpty ? active : working).sorted(by: { $0.orderIndex < $1.orderIndex }) {
+                add(exercise.displayName)
+            }
+        }
+        return names
     }
 
     static func kind(for activity: HealthWorkoutActivity) -> HealthWorkoutKind {
@@ -82,7 +131,8 @@ enum HealthWorkoutWriter {
             totalDistanceKm: plan.totalDistanceKm,
             averagePaceMinPerKm: plan.averagePaceMinPerKm,
             totalSets: plan.totalSets,
-            totalVolumeKg: plan.totalVolumeKg
+            totalVolumeKg: plan.totalVolumeKg,
+            exerciseNames: plan.exerciseNames
         )
     }
 
