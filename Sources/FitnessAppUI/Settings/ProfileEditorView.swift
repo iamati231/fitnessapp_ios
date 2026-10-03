@@ -406,9 +406,10 @@ public struct ProfileEditorView: View {
         let snapshot = await healthKit.loadOnboardingSnapshot()
         var filled: Set<String> = []
 
-        // Conservative: nur ersetzen, wenn der existierende Wert "default-haft"
-        // aussieht (zB Geburtsdatum vor 1900 oder Höhe == 0). Andernfalls
-        // koennte ein versehentlicher Pull die Manuelle-Eingabe ueberschreiben.
+        // Der Pull ist eine explizite Nutzer-Aktion ("Aus Apple Health
+        // uebernehmen") und ersetzt die aktuellen Werte - nur, was Health
+        // tatsaechlich liefert (nicht gesetzte Felder bleiben unberuehrt).
+        // `profile.health.footer` beschreibt genau das.
         if let dob = snapshot.dateOfBirth {
             profile.birthDate = dob
             filled.insert("Geburtsdatum")

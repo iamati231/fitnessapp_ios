@@ -640,29 +640,6 @@
         }
       }
     },
-    "library.newExercise": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Neue Übung"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "New exercise"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Yeni hareket"
-          }
-        }
-      }
-    },
     "library.readOnlyFooter": {
       "extractionState": "manual",
       "localizations": {
@@ -5694,29 +5671,6 @@
         }
       }
     },
-    "measurement.action.edit": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bearbeiten"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Edit"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Düzenle"
-          }
-        }
-      }
-    },
     "measurement.action.done": {
       "extractionState": "manual",
       "localizations": {
@@ -6035,29 +5989,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Önce onboarding'de profilini oluştur — sonra ölçümleri hesaplayabiliriz."
-          }
-        }
-      }
-    },
-    "dashboard.newMeasurement": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Neue Messung"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "New Measurement"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Yeni Ölçüm"
           }
         }
       }
@@ -14084,19 +14015,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Compound: Wenn du in allen Sätzen die obere Rep-Grenze schaffst UND der letzte Satz bei RIR ≤ 3 war, steigt das Gewicht beim nächsten Mal automatisch um den eingestellten Inkrement."
+            "value": "Compound: Wenn du in allen Sätzen die obere Rep-Grenze schaffst UND im letzten Satz noch mindestens 2 Wiederholungen übrig hattest (RIR ≥ 2), steigt das Gewicht beim nächsten Mal automatisch um das eingestellte Inkrement."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Compound: When you hit the upper rep limit in every set AND the last set was at RIR ≤ 3, the weight automatically increases by your set increment next time."
+            "value": "Compound: When you hit the upper rep limit in every set AND still had at least 2 reps in reserve in the last set (RIR ≥ 2), the weight automatically increases by your set increment next time."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bileşik: Tüm setlerde üst tekrar sınırına ulaşırsan VE son set RIR ≤ 3 ise, ağırlık bir sonraki sefer ayarladığın artış kadar otomatik yükselir."
+            "value": "Bileşik: Tüm setlerde üst tekrar sınırına ulaşırsan VE son sette en az 2 tekrar daha yapabilecek durumdaysan (RIR ≥ 2), ağırlık bir sonraki sefer ayarladığın artış kadar otomatik yükselir."
           }
         }
       }
@@ -14107,19 +14038,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Isolation: Wenn du in allen Sätzen die obere Rep-Grenze schaffst UND der letzte Satz bei RIR ≤ 1 war (also nah am Versagen), steigt das Gewicht beim nächsten Mal um den eingestellten Inkrement."
+            "value": "Isolation: Wenn du in allen Sätzen die obere Rep-Grenze schaffst UND im letzten Satz noch mindestens 1 Wiederholung übrig hattest (RIR ≥ 1), steigt das Gewicht beim nächsten Mal um das eingestellte Inkrement."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Isolation: When you hit the upper rep limit in every set AND the last set was at RIR ≤ 1 (close to failure), the weight increases by your set increment next time."
+            "value": "Isolation: When you hit the upper rep limit in every set AND still had at least 1 rep in reserve in the last set (RIR ≥ 1), the weight increases by your set increment next time."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "İzolasyon: Tüm setlerde üst tekrar sınırına ulaşırsan VE son set RIR ≤ 1 ise (yani yetmezliğe yakın), ağırlık bir sonraki sefer ayarladığın artış kadar yükselir."
+            "value": "İzolasyon: Tüm setlerde üst tekrar sınırına ulaşırsan VE son sette en az 1 tekrar daha yapabilecek durumdaysan (RIR ≥ 1), ağırlık bir sonraki sefer ayarladığın artış kadar yükselir."
           }
         }
       }
@@ -17266,19 +17197,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pre-fill von Geburtsdatum, Geschlecht und Größe aus dem Apple-Health-Profil. Manuelle Eingaben werden NICHT überschrieben, wenn sie schon plausible Werte haben."
+            "value": "Übernimmt Geburtsdatum, Geschlecht und Größe aus dem Apple-Health-Profil und ersetzt damit die aktuellen Werte."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pre-fills date of birth, sex, and height from Apple Health. Manual entries are NOT overwritten if they already have plausible values."
+            "value": "Takes date of birth, sex, and height from your Apple Health profile and replaces the current values."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Health profilinden doğum tarihi, cinsiyet ve boyu önceden doldurur. Manuel girişler makul değer içeriyorsa ÜZERİNE YAZILMAZ."
+            "value": "Doğum tarihi, cinsiyet ve boyu Apple Health profilinden alır ve mevcut değerlerin yerine geçirir."
           }
         }
       }
@@ -20411,29 +20342,6 @@
         }
       }
     },
-    "calc.index.footer": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alle Rechner nutzen die gleiche Domain-Logik (FitnessAppCore) wie der Rest der App — Werte sind 1:1 mit Dashboard und MeasurementView."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "All calculators use the same domain logic (FitnessAppCore) as the rest of the app — values match dashboard and measurement view 1:1."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tüm hesaplayıcılar uygulamanın geri kalanıyla aynı domain mantığını (FitnessAppCore) kullanır — değerler panel ve ölçüm görünümü ile birebir eşleşir."
-          }
-        }
-      }
-    },
     "calc.index.unitContext": {
       "extractionState": "manual",
       "localizations": {
@@ -21465,29 +21373,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hızlı Ekle"
-          }
-        }
-      }
-    },
-    "water.empty": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trag deinen ersten Schluck mit den Buttons oben ein."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Log your first sip with the buttons above."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "İlk yudumu yukarıdaki butonlarla kaydet."
           }
         }
       }
@@ -22864,19 +22749,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "RIR ≤ 0 (zum Versagen)"
+            "value": "RIR ≥ 0 (auch bis zum Versagen)"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "RIR ≤ 0 (to failure)"
+            "value": "RIR ≥ 0 (even to failure)"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "RIR ≤ 0 (yenilgiye)"
+            "value": "RIR ≥ 0 (yetmezlik dahil)"
           }
         }
       }
@@ -22887,19 +22772,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "RIR ≤ 1"
+            "value": "RIR ≥ 1"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "RIR ≤ 1"
+            "value": "RIR ≥ 1"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "RIR ≤ 1"
+            "value": "RIR ≥ 1"
           }
         }
       }
@@ -22910,19 +22795,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "RIR ≤ 2"
+            "value": "RIR ≥ 2"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "RIR ≤ 2"
+            "value": "RIR ≥ 2"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "RIR ≤ 2"
+            "value": "RIR ≥ 2"
           }
         }
       }
@@ -22933,19 +22818,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "RIR ≤ 3"
+            "value": "RIR ≥ 3"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "RIR ≤ 3"
+            "value": "RIR ≥ 3"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "RIR ≤ 3"
+            "value": "RIR ≥ 3"
           }
         }
       }
@@ -24725,29 +24610,6 @@
         }
       }
     },
-    "active.stats.distanceKm": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Distanz km"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Distance km"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mesafe km"
-          }
-        }
-      }
-    },
     "active.stats.avgPace": {
       "extractionState": "manual",
       "localizations": {
@@ -24767,29 +24629,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "⌀ Tempo"
-          }
-        }
-      }
-    },
-    "active.stats.volumeKg": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Volumen kg"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Volume kg"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hacim kg"
           }
         }
       }
@@ -25451,52 +25290,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tarih + süre burada üzerine yazılır. Set değerlerini aşağıda doğrudan her sette düzenle."
-          }
-        }
-      }
-    },
-    "summary.toolbar.edit": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bearbeiten"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Edit"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Düzenle"
-          }
-        }
-      }
-    },
-    "summary.toolbar.done": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fertig"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Done"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tamam"
           }
         }
       }
@@ -27619,29 +27412,6 @@
         }
       }
     },
-    "picker.exercise.filter.button.a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Filter öffnen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open filters"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Filtreleri aç"
-          }
-        }
-      }
-    },
     "picker.exercise.filter.title": {
       "extractionState": "manual",
       "localizations": {
@@ -29383,19 +29153,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Append-only — your existing workouts, records and plans stay untouched."
+            "value": "Append-only — your existing workouts, records and plans stay untouched; profile and settings are taken from the archive."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Append-only — deine bestehenden Workouts, Rekorde und Pläne bleiben unangetastet."
+            "value": "Append-only — deine bestehenden Workouts, Rekorde und Pläne bleiben unangetastet; Profil und Einstellungen werden aus dem Archiv übernommen."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yalnızca ekleme — mevcut antrenmanların, rekorların ve planların değişmez."
+            "value": "Yalnızca ekleme — mevcut antrenmanların, rekorların ve planların değişmez; profil ve ayarlar arşivden alınır."
           }
         }
       }
@@ -29567,19 +29337,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Existing data stays untouched. Only missing rows from the archive will be added. Duplicates are detected and skipped."
+            "value": "Existing workouts, records, measurements and plans stay untouched. Missing rows from the archive are added, duplicates are detected and skipped – only plans are always added as new plans. Your profile and app settings are overwritten with the values from the archive."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bestehende Daten bleiben unangetastet. Nur fehlende Zeilen aus dem Archiv werden ergänzt. Duplikate werden erkannt und übersprungen."
+            "value": "Bestehende Workouts, Rekorde, Messungen und Pläne bleiben unangetastet. Fehlende Zeilen aus dem Archiv werden ergänzt, Duplikate erkannt und übersprungen – nur Pläne werden immer als neue Pläne angelegt. Profil und App-Einstellungen werden mit den Werten aus dem Archiv überschrieben."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mevcut veriler değişmez. Yalnızca arşivdeki eksik satırlar eklenir. Yinelenen kayıtlar algılanır ve atlanır."
+            "value": "Mevcut antrenmanların, rekorların, ölçümlerin ve planların değişmez. Arşivdeki eksik satırlar eklenir, yinelenen kayıtlar algılanır ve atlanır; yalnızca planlar her zaman yeni plan olarak eklenir. Profilin ve uygulama ayarların arşivdeki değerlerle değiştirilir."
           }
         }
       }
@@ -32202,6 +31972,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deload haftası %@ tarihine kadar aktif — çalışma ağırlıkları ~%%50 azaltıldı. Hareketleri çalış, kendini ezme."
+          }
+        }
+      }
+    },
+    "dashboard.deload.activeBannerNoDate": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload-Woche aktiv — Arbeitsgewichte halbiert. Trainiere die Bewegungen, lass das Schleifen weg."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload week active — working weights halved. Train the movements, skip the grind."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload haftası aktif — çalışma ağırlıkları yarıya indirildi. Hareketleri çalış, kendini ezme."
           }
         }
       }

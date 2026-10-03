@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1747 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1738 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1747 / 1747** (100%) | 0 |
-| 🇬🇧 English (EN) | **1747 / 1747** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1747 / 1747** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1738 / 1738** (100%) | 0 |
+| 🇬🇧 English (EN) | **1738 / 1738** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1738 / 1738** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -20,7 +20,7 @@ Quelle: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
 Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind separat aufgelistet — die haben one/other-Varianten.
 
 
-## `active.*`  (49 Keys)
+## `active.*`  (47 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -66,10 +66,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `active.set.rir.subtitle` | Wiederholungen in Reserve | Reps in Reserve | Yedek tekrar |
 | `active.stats.avgPace` | ⌀ Pace | ⌀ Pace | ⌀ Tempo |
 | `active.stats.distance` | Distanz | Distance | Mesafe |
-| `active.stats.distanceKm` | Distanz km | Distance km | Mesafe km |
 | `active.stats.duration` | Dauer | Duration | Süre |
 | `active.stats.sets` | Sätze | Sets | Set |
-| `active.stats.volumeKg` | Volumen kg | Volume kg | Hacim kg |
 | `active.summary.duration` | Dauer | Duration | Süre |
 | `active.summary.sets` | Sätze | Sets | Set |
 | `active.summary.volume` | Volumen | Volume | Hacim |
@@ -121,11 +119,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `barbell.loading.type.standard` | Langhantel | Barbell | Halter |
 | `barbell.loading.type.trapBar` | Trap | Trap | Trap |
 
-## `calc.*`  (60 Keys)
+## `calc.*`  (59 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
-| `calc.index.footer` | Alle Rechner nutzen die gleiche Domain-Logik (FitnessAppCore) wie der Rest der App — Werte sind 1:1 mit Dashboard und MeasurementView. | All calculators use the same domain logic (FitnessAppCore) as the rest of the app — values match dashboard and measurement view 1:1. | Tüm hesaplayıcılar uygulamanın geri kalanıyla aynı domain mantığını (FitnessAppCore) kullanır — değerler panel ve ölçüm görünümü ile birebir eşleşir. |
 | `calc.index.oneRm.subtitle` | Epley, Brzycki und Mittelwert | Epley, Brzycki and average | Epley, Brzycki ve ortalama |
 | `calc.index.oneRm.title` | 1RM-Rechner | 1RM Calculator | 1RM Hesaplayıcı |
 | `calc.index.plate.subtitle` | Scheiben für dein Zielgewicht | Plates for your target weight | Hedef ağırlığın için plakalar |
@@ -523,6 +520,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.compoundChart.title` | Compound-Lift-Trend | Compound Lift Trend | Temel Hareket Trendi |
 | `dashboard.compoundChart.today` | Heute | Today | Bugün |
 | `dashboard.deload.activeBanner` | Deload-Woche aktiv bis %@ — Arbeitsgewichte um ~50%% reduziert. Trainiere die Bewegungen, lass das Schleifen weg. | Deload week active until %@ — working weights reduced by ~50%%. Train the movements, skip the grind. | Deload haftası %@ tarihine kadar aktif — çalışma ağırlıkları ~%%50 azaltıldı. Hareketleri çalış, kendini ezme. |
+| `dashboard.deload.activeBannerNoDate` | Deload-Woche aktiv — Arbeitsgewichte halbiert. Trainiere die Bewegungen, lass das Schleifen weg. | Deload week active — working weights halved. Train the movements, skip the grind. | Deload haftası aktif — çalışma ağırlıkları yarıya indirildi. Hareketleri çalış, kendini ezme. |
 | `dashboard.deload.applyButton` | Deload-Woche starten | Start deload week | Deload haftasını başlat |
 | `dashboard.deload.endButton` | Deload beenden & Gewichte zurücksetzen | End deload & restore weights | Deload'u bitir ve ağırlıkları geri yükle |
 | `dashboard.empty.cta.addMeasurement` | Messung hinzufügen | Add measurement | Ölçüm ekle |
@@ -546,7 +544,6 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.history.emptyDescription` | Starte dein erstes Training, um Verlauf und Fortschritt zu sehen. | Start your first workout to see history and progress. | Geçmiş ve ilerlemeyi görmek için ilk antrenmanına başla. |
 | `dashboard.history.emptyTitle` | Noch kein Training gespeichert | No workout saved yet | Henüz kayıtlı antrenman yok |
 | `dashboard.history.title` | Trainingsverlauf | Workout History | Antrenman Geçmişi |
-| `dashboard.newMeasurement` | Neue Messung | New Measurement | Yeni Ölçüm |
 | `dashboard.openSession.cancel` | Abbrechen | Cancel | İptal |
 | `dashboard.openSession.dayName.unknown` | Unbekannt | Unknown | Bilinmiyor |
 | `dashboard.openSession.discardAndStart` | Altes verwerfen & Neu starten | Discard old & start new | Eskiyi sil ve yeni başlat |
@@ -755,8 +752,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `editor.exercise.section.suggestedWeight` | Vorgeschlagenes Gewicht (optional) | Suggested Weight (optional) | Önerilen Ağırlık (opsiyonel) |
 | `editor.exercise.sets` | Sätze | Sets | Set |
 | `editor.exercise.smartOff` | Aus = das Gewicht wird nie automatisch geändert. Du behältst die volle Kontrolle. | Off = weight never auto-adjusts. You stay in full control. | Kapalı = ağırlık asla otomatik değişmez. Kontrol sende. |
-| `editor.exercise.smartProgressionFooterCompound` | Compound: Wenn du in allen Sätzen die obere Rep-Grenze schaffst UND der letzte Satz bei RIR ≤ 3 war, steigt das Gewicht beim nächsten Mal automatisch um den eingestellten Inkrement. | Compound: When you hit the upper rep limit in every set AND the last set was at RIR ≤ 3, the weight automatically increases by your set increment next time. | Bileşik: Tüm setlerde üst tekrar sınırına ulaşırsan VE son set RIR ≤ 3 ise, ağırlık bir sonraki sefer ayarladığın artış kadar otomatik yükselir. |
-| `editor.exercise.smartProgressionFooterIsolation` | Isolation: Wenn du in allen Sätzen die obere Rep-Grenze schaffst UND der letzte Satz bei RIR ≤ 1 war (also nah am Versagen), steigt das Gewicht beim nächsten Mal um den eingestellten Inkrement. | Isolation: When you hit the upper rep limit in every set AND the last set was at RIR ≤ 1 (close to failure), the weight increases by your set increment next time. | İzolasyon: Tüm setlerde üst tekrar sınırına ulaşırsan VE son set RIR ≤ 1 ise (yani yetmezliğe yakın), ağırlık bir sonraki sefer ayarladığın artış kadar yükselir. |
+| `editor.exercise.smartProgressionFooterCompound` | Compound: Wenn du in allen Sätzen die obere Rep-Grenze schaffst UND im letzten Satz noch mindestens 2 Wiederholungen übrig hattest (RIR ≥ 2), steigt das Gewicht beim nächsten Mal automatisch um das eingestellte Inkrement. | Compound: When you hit the upper rep limit in every set AND still had at least 2 reps in reserve in the last set (RIR ≥ 2), the weight automatically increases by your set increment next time. | Bileşik: Tüm setlerde üst tekrar sınırına ulaşırsan VE son sette en az 2 tekrar daha yapabilecek durumdaysan (RIR ≥ 2), ağırlık bir sonraki sefer ayarladığın artış kadar otomatik yükselir. |
+| `editor.exercise.smartProgressionFooterIsolation` | Isolation: Wenn du in allen Sätzen die obere Rep-Grenze schaffst UND im letzten Satz noch mindestens 1 Wiederholung übrig hattest (RIR ≥ 1), steigt das Gewicht beim nächsten Mal um das eingestellte Inkrement. | Isolation: When you hit the upper rep limit in every set AND still had at least 1 rep in reserve in the last set (RIR ≥ 1), the weight increases by your set increment next time. | İzolasyon: Tüm setlerde üst tekrar sınırına ulaşırsan VE son sette en az 1 tekrar daha yapabilecek durumdaysan (RIR ≥ 1), ağırlık bir sonraki sefer ayarladığın artış kadar yükselir. |
 | `editor.exercise.templateLocked` | Template-Übung — Name und Cardio/Zeit-Flags sind festgelegt. | Template exercise — name and cardio/time flags are fixed. | Şablon hareket — ad ve kardiyo/süre bayrakları sabit. |
 | `editor.exercise.toggle.cardio` | Cardio | Cardio | Kardiyo |
 | `editor.exercise.toggle.compoundLift` | Compound-Lift | Compound Lift | Bileşik Hareket |
@@ -1093,23 +1090,21 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `import.preview.title` | Inhalt der Datei | File contents | Dosya içeriği |
 | `import.preview.unreadable` | Diese Datei konnte nicht gelesen werden — sie ist kein gültiges Deltiq-Backup. | This file could not be read — it isn't a valid Deltiq backup. | Bu dosya okunamadı — geçerli bir Deltiq yedeği değil. |
 
-## `library.*`  (5 Keys)
+## `library.*`  (4 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
-| `library.newExercise` | Neue Übung | New exercise | Yeni hareket |
 | `library.readOnlyFooter` | System-Übung — die Basis-Vorlagen der App sind nicht bearbeitbar. | System exercise — the app's base templates can't be edited. | Sistem hareketi — uygulamanın temel şablonları düzenlenemez. |
 | `library.row.history` | Verlauf | History | Geçmiş |
 | `library.searchPlaceholder` | Übung suchen | Search exercise | Hareket ara |
 | `library.title` | Übungsbibliothek | Exercise Library | Hareket Kütüphanesi |
 
-## `measurement.*`  (84 Keys)
+## `measurement.*`  (83 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `measurement.action.delete` | Messung löschen | Delete Measurement | Ölçümü Sil |
 | `measurement.action.done` | Fertig | Done | Tamam |
-| `measurement.action.edit` | Bearbeiten | Edit | Düzenle |
 | `measurement.action.save` | Messung speichern | Save Measurement | Ölçümü Kaydet |
 | `measurement.action.saveEdit` | Änderungen speichern | Save Changes | Değişiklikleri Kaydet |
 | `measurement.context.last` | Letzte: %@ | Last: %@ | Son: %@ |
@@ -1284,12 +1279,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.weeklyGoal.subtitle` | Wie oft willst du pro Woche trainieren? Dein Kalender-Streak zählt gegen dieses Ziel — wähle, was du wirklich durchhalten kannst. | How often do you want to train per week? Your calendar streak counts against this — pick what you can actually sustain. | Haftada kaç kez antrenman yapmak istiyorsun? Takvim serin bu hedefe göre sayılır — gerçekten sürdürebileceğini seç. |
 | `onboarding.weeklyGoal.title` | Dein Wochenziel | Your weekly goal | Haftalık hedefin |
 
-## `picker.*`  (13 Keys)
+## `picker.*`  (12 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `picker.exercise.customBadge` | Custom | Custom | Özel |
-| `picker.exercise.filter.button.a11y` | Filter öffnen | Open filters | Filtreleri aç |
 | `picker.exercise.filter.reset` | Filter zurücksetzen | Reset filters | Filtreleri sıfırla |
 | `picker.exercise.filter.section.equipment` | Gerät | Equipment | Ekipman |
 | `picker.exercise.filter.section.muscle` | Muskelgruppe | Muscle Group | Kas Grubu |
@@ -1520,10 +1514,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planEditor.globalSync.title` | Auch andere Pläne anpassen? | Adjust Other Plans Too? | Diğer Planlar da Ayarlansın mı? |
 | `planEditor.progressRIR.auto` | Auto (pro Übung) | Auto (per exercise) | Otomatik (hareket başına) |
 | `planEditor.progressRIR.label` | Progressions-Ziel-RIR | Progression Target RIR | İlerleme Hedef RIR |
-| `planEditor.progressRIR.rir0` | RIR ≤ 0 (zum Versagen) | RIR ≤ 0 (to failure) | RIR ≤ 0 (yenilgiye) |
-| `planEditor.progressRIR.rir1` | RIR ≤ 1 | RIR ≤ 1 | RIR ≤ 1 |
-| `planEditor.progressRIR.rir2` | RIR ≤ 2 | RIR ≤ 2 | RIR ≤ 2 |
-| `planEditor.progressRIR.rir3` | RIR ≤ 3 | RIR ≤ 3 | RIR ≤ 3 |
+| `planEditor.progressRIR.rir0` | RIR ≥ 0 (auch bis zum Versagen) | RIR ≥ 0 (even to failure) | RIR ≥ 0 (yetmezlik dahil) |
+| `planEditor.progressRIR.rir1` | RIR ≥ 1 | RIR ≥ 1 | RIR ≥ 1 |
+| `planEditor.progressRIR.rir2` | RIR ≥ 2 | RIR ≥ 2 | RIR ≥ 2 |
+| `planEditor.progressRIR.rir3` | RIR ≥ 3 | RIR ≥ 3 | RIR ≥ 3 |
 | `planEditor.section.info` | Plan-Info | Plan Info | Plan Bilgisi |
 | `planEditor.section.settings` | Einstellungen | Settings | Ayarlar |
 | `planEditor.section.trainingDays` | Trainings-Tage | Training Days | Antrenman Günleri |
@@ -1624,7 +1618,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.goal.footer` | Das Zielgewicht erscheint als grüne Linie im Dashboard-Trend-Chart. Trainingsort filtert später Plan-Empfehlungen. | Goal weight shows as a green line in the dashboard trend chart. Training location filters plan recommendations. | Hedef kilo, panel trend grafiğinde yeşil çizgi olarak görünür. Antrenman yeri plan önerilerini filtreler. |
 | `profile.goal.weightPlaceholder` | z.B. 75 | e.g. 75 | örn. 75 |
 | `profile.health.denied` | Berechtigung verweigert. Aktiviere sie in iOS-Einstellungen → Datenschutz → Apple Health → Deltiq. | Permission denied. Enable it in iOS Settings → Privacy → Apple Health → Deltiq. | İzin reddedildi. iOS Ayarlar → Gizlilik → Apple Health → Deltiq'ten etkinleştir. |
-| `profile.health.footer` | Pre-fill von Geburtsdatum, Geschlecht und Größe aus dem Apple-Health-Profil. Manuelle Eingaben werden NICHT überschrieben, wenn sie schon plausible Werte haben. | Pre-fills date of birth, sex, and height from Apple Health. Manual entries are NOT overwritten if they already have plausible values. | Apple Health profilinden doğum tarihi, cinsiyet ve boyu önceden doldurur. Manuel girişler makul değer içeriyorsa ÜZERİNE YAZILMAZ. |
+| `profile.health.footer` | Übernimmt Geburtsdatum, Geschlecht und Größe aus dem Apple-Health-Profil und ersetzt damit die aktuellen Werte. | Takes date of birth, sex, and height from your Apple Health profile and replaces the current values. | Doğum tarihi, cinsiyet ve boyu Apple Health profilinden alır ve mevcut değerlerin yerine geçirir. |
 | `profile.health.pull` | Aus Apple Health übernehmen | Import from Apple Health | Apple Health'ten Al |
 | `profile.health.pulled` | Aus Apple Health übernommen: %@ | Imported from Apple Health: %@ | Apple Health'ten alındı: %@ |
 | `profile.person.footer` | Sex steuert die Navy/Deurenberg-Formeln; das Alter geht in Mifflin-St-Jeor-BMR und Deurenberg ein. | Sex drives the Navy/Deurenberg formulas; age feeds into Mifflin-St-Jeor BMR and Deurenberg. | Cinsiyet Navy/Deurenberg formüllerini etkiler; yaş Mifflin-St-Jeor BMR ve Deurenberg'e dahil olur. |
@@ -1757,7 +1751,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.dataImport.action.start` | Import starten | Start import | İçe aktarmayı başlat |
 | `settings.dataImport.action.startReplace` | Daten löschen und einspielen | Delete data and restore | Verileri sil ve geri yükle |
 | `settings.dataImport.confirm.action` | Ja, jetzt importieren | Yes, import now | Evet, şimdi içe aktar |
-| `settings.dataImport.confirm.message` | Bestehende Daten bleiben unangetastet. Nur fehlende Zeilen aus dem Archiv werden ergänzt. Duplikate werden erkannt und übersprungen. | Existing data stays untouched. Only missing rows from the archive will be added. Duplicates are detected and skipped. | Mevcut veriler değişmez. Yalnızca arşivdeki eksik satırlar eklenir. Yinelenen kayıtlar algılanır ve atlanır. |
+| `settings.dataImport.confirm.message` | Bestehende Workouts, Rekorde, Messungen und Pläne bleiben unangetastet. Fehlende Zeilen aus dem Archiv werden ergänzt, Duplikate erkannt und übersprungen – nur Pläne werden immer als neue Pläne angelegt. Profil und App-Einstellungen werden mit den Werten aus dem Archiv überschrieben. | Existing workouts, records, measurements and plans stay untouched. Missing rows from the archive are added, duplicates are detected and skipped – only plans are always added as new plans. Your profile and app settings are overwritten with the values from the archive. | Mevcut antrenmanların, rekorların, ölçümlerin ve planların değişmez. Arşivdeki eksik satırlar eklenir, yinelenen kayıtlar algılanır ve atlanır; yalnızca planlar her zaman yeni plan olarak eklenir. Profilin ve uygulama ayarların arşivdeki değerlerle değiştirilir. |
 | `settings.dataImport.confirm.title` | Daten importieren? | Import data? | Verileri içe aktar? |
 | `settings.dataImport.importing` | Lese Archiv und füge Daten ein… | Reading archive and merging data… | Arşiv okunuyor ve veriler birleştiriliyor… |
 | `settings.dataImport.importing.header` | Import läuft | Import in progress | İçe aktarma sürüyor |
@@ -1787,7 +1781,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.dataImport.result.header` | Import abgeschlossen | Import complete | İçe aktarma tamamlandı |
 | `settings.dataImport.result.imported` | Importiert | Imported | İçe aktarıldı |
 | `settings.dataImport.result.skipped` | Übersprungen (Duplikate) | Skipped (duplicates) | Atlandı (yinelenen) |
-| `settings.dataImport.strategy.appendOnly` | Append-only — deine bestehenden Workouts, Rekorde und Pläne bleiben unangetastet. | Append-only — your existing workouts, records and plans stay untouched. | Yalnızca ekleme — mevcut antrenmanların, rekorların ve planların değişmez. |
+| `settings.dataImport.strategy.appendOnly` | Append-only — deine bestehenden Workouts, Rekorde und Pläne bleiben unangetastet; Profil und Einstellungen werden aus dem Archiv übernommen. | Append-only — your existing workouts, records and plans stay untouched; profile and settings are taken from the archive. | Yalnızca ekleme — mevcut antrenmanların, rekorların ve planların değişmez; profil ve ayarlar arşivden alınır. |
 | `settings.dataImport.strategy.duplicates` | Duplikate (gleiches Workout/Maß/PR) werden anhand des Zeitstempels erkannt und übersprungen. | Duplicates (same workout/measurement/PR) are detected by timestamp and skipped. | Yinelenen kayıtlar (aynı antrenman/ölçüm/PR) zaman damgasına göre algılanır ve atlanır. |
 | `settings.dataImport.strategy.errorsLog` | Fehlerhafte Zeilen werden in einem Fehlerprotokoll gesammelt, das du teilen kannst. | Broken rows are collected into an errors report you can share. | Bozuk satırlar, paylaşabileceğin bir hata raporunda toplanır. |
 | `settings.dataImport.strategy.header` | Wie der Import arbeitet | How the import works | İçe aktarma nasıl çalışır |
@@ -1863,7 +1857,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `sex.female` | Weiblich | Female | Kadın |
 | `sex.male` | Männlich | Male | Erkek |
 
-## `summary.*`  (70 Keys)
+## `summary.*`  (68 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1935,8 +1929,6 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.stat.exercises` | Übungen | Exercises | Egzersizler |
 | `summary.stat.minuteTarget` | Minuten-Ziel | Minute target | Dakika hedefi |
 | `summary.title` | Zusammenfassung | Summary | Özet |
-| `summary.toolbar.done` | Fertig | Done | Tamam |
-| `summary.toolbar.edit` | Bearbeiten | Edit | Düzenle |
 
 ## `tab.*`  (5 Keys)
 
@@ -2037,11 +2029,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `warmup.ramp.emptyBar` | Leere Stange | Empty bar | Boş bar |
 | `warmup.ramp.title` | Aufwärm-Sätze | Warm-up sets | Isınma setleri |
 
-## `water.*`  (12 Keys)
+## `water.*`  (11 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
-| `water.empty` | Trag deinen ersten Schluck mit den Buttons oben ein. | Log your first sip with the buttons above. | İlk yudumu yukarıdaki butonlarla kaydet. |
 | `water.goalReached` | Tagesziel erreicht | Daily goal reached | Günlük hedef ulaşıldı |
 | `water.heroFooter` | Tagesziel = Gewicht × 35 ml. Quelle: %@. | Daily goal = weight × 35 ml. Source: %@. | Günlük hedef = kilo × 35 ml. Kaynak: %@. |
 | `water.ofTotal` | ml von %lld | ml of %lld | ml / %lld |
