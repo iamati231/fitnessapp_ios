@@ -592,7 +592,8 @@ fitnessapp_ios/
 |   |-- FitnessAppCoreTests/     # Rechner, Analytik, Plan-Generator, CSV, Backup (ca. 670 Tests)
 |   |-- FitnessAppDataTests/     # SwiftData in-memory, Export/Import-Roundtrip (ca. 80 Tests)
 |   `-- FitnessAppHealthTests/   # Zustandslogik der Health-Berechtigungen, Health-Metadaten (ca. 35 Tests)
-`-- .scripts/                    # Python-Werkzeuge für den String-Katalog
+|-- .claude/                     # Claude-Code-Subagents (14 Agents aus „agency-agents“, MIT) + Herkunftshinweis
+`-- .scripts/                    # Python-Werkzeuge für den String-Katalog, Kopierskript für die Agents
 ```
 
 Modul-Abhängigkeiten: `FitnessAppData → FitnessAppCore`; `FitnessAppUI` hängt von allen vier anderen ab; `FitnessAppHealth` und `FitnessAppActivities` sind eigenständig. Alle SwiftUI-/SwiftData-Dateien sind mit `#if canImport(...)` gekapselt, damit `FitnessAppCore` überall kompiliert.
@@ -655,6 +656,10 @@ Ausführlich in [`CONTRIBUTING.md`](./CONTRIBUTING.md). Kurzfassung:
 | [`XcodeSetup.md`](./XcodeSetup.md) | manuelle Xcode-Einbindung | veraltet (heute XcodeGen) |
 | [`WidgetSetup.md`](./WidgetSetup.md) | Widget/Live-Activity-Einrichtung | teilweise veraltet |
 | [`TRANSLATIONS.md`](./TRANSLATIONS.md) | Übersetzungstabelle je Key | Kopfzeile und Tabelle sind aktuell (per `.scripts/generate_translations_md.py` erzeugt) |
+
+### 8.7 Claude-Code-Agents
+
+Unter `.claude/agents/` liegen 14 Subagents aus [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents) (MIT) – eine Auswahl, die zu einer iOS-App passt: Mobile App Builder, Mobile Release Engineer, Code Reviewer, Privacy Engineer, Software Architect, Technical Writer, UI Designer, UX Researcher, Accessibility Auditor, Test Results Analyzer, Feedback Synthesizer, Sprint Prioritizer, Legal Compliance Checker und App Store Optimizer. Claude Code lädt sie beim Start einer Sitzung im Projektordner (`/agents` listet sie); man ruft sie, indem man sie beim Namen nennt („Lass den Privacy Engineer prüfen …“). Die Dateien sind unveränderte Kopien; Herkunft, Stand, Auswahlgründe, die Rechte der Agents und das Aktualisieren mit `.scripts/sync_agency_agents.sh` stehen in [`.claude/agency-agents-NOTICE.md`](./.claude/agency-agents-NOTICE.md). Die App selbst berührt das nicht: Die Dateien gehören weder zum Swift Package noch zum Xcode-Projekt.
 
 ---
 
