@@ -1,4 +1,5 @@
 import Foundation
+import FitnessAppCore
 #if canImport(UserNotifications)
 import UserNotifications
 #endif
@@ -192,14 +193,20 @@ public enum ReminderScheduler {
     /// der AppDelegate unterdrueckt sie im Vordergrund (kein Doppel-Feedback,
     /// gleiche Logik wie beim Rest-Timer).
     ///
+    /// Die Signale haengen am START des Laufs, nicht an "jetzt" (`EMOMSignalSchedule`):
+    /// Wer mitten im Lauf neu plant (Tab-Rueckkehr, "Training fortsetzen"), gibt die
+    /// schon verstrichene Zeit mit - sonst verschoeben sich alle Signale um sie.
+    ///
     /// - Parameters:
     ///   - totalMinutes: Gesamtzahl EMOM-Minuten (== Rundenanzahl).
+    ///   - elapsedSeconds: Seit dem Start verstrichene Sekunden (0 beim Start).
     ///   - minuteTitle: Titel fuer jeden Minutenwechsel VOR der letzten Minute.
     ///   - minuteBodyFormat: lokalisiertes Format mit einem `%lld`-Platzhalter
     ///     fuer die kommende Minutennummer (z.B. "Minute %lld beginnt").
     ///   - finishTitle/finishBody: Text fuer den letzten Trigger (EMOM komplett).
     public static func scheduleEMOMSignals(
         totalMinutes: Int,
+        elapsedSeconds: Int = 0,
         minuteTitle: String,
         minuteBodyFormat: String,
         finishTitle: String,
@@ -210,20 +217,19 @@ public enum ReminderScheduler {
         await cancelEMOMSignals()
 
         let center = UNUserNotificationCenter.current()
-        for minute in 1...totalMinutes {
-            let isFinal = minute == totalMinutes
+        for signal in EMOMSignalSchedule.signals(totalMinutes: totalMinutes, elapsedSeconds: elapsedSeconds) {
             let content = UNMutableNotificationContent()
-            content.title = isFinal ? finishTitle : minuteTitle
-            content.body = isFinal ? finishBody : String(format: minuteBodyFormat, minute + 1)
+            content.title = signal.isFinal ? finishTitle : minuteTitle
+            content.body = signal.isFinal ? finishBody : String(format: minuteBodyFormat, signal.minute + 1)
             content.sound = .default
             content.interruptionLevel = .timeSensitive
 
             let trigger = UNTimeIntervalNotificationTrigger(
-                timeInterval: TimeInterval(minute * 60),
+                timeInterval: TimeInterval(signal.delaySeconds),
                 repeats: false
             )
             let request = UNNotificationRequest(
-                identifier: "\(emomIdentifierPrefix)\(String(format: "%02d", minute))",
+                identifier: "\(emomIdentifierPrefix)\(String(format: "%02d", signal.minute))",
                 content: content,
                 trigger: trigger
             )

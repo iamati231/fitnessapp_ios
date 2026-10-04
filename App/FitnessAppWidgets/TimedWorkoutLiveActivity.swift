@@ -19,6 +19,13 @@ import FitnessAppCore
 /// kommen fertig uebersetzt aus der App (`TimedWorkoutLiveTexts`): Dieses Target
 /// hat keinen String-Katalog.
 ///
+/// **Hoehe:** iOS kuerzt eine Live Activity auf dem Sperrbildschirm ab 160 pt. Das
+/// Layout bleibt deshalb flach: Format, Tagesname und Zustand teilen sich EINE
+/// Kopfzeile, der Zaehler steht neben der Uhr, der Fortschrittsbalken hat keine
+/// eigenen Beschriftungen (die Standardform des Balkens haengt sonst einen zweiten,
+/// selbst zaehlenden Text darunter) - rund 110 pt, beim EMOM mit den Uebungen unter
+/// 160 pt.
+///
 /// **Veraltet:** Bleibt das Update aus (App beendet, Hintergrund-Audio aus),
 /// markiert iOS den Inhalt zum `staleDate` als veraltet (`context.isStale`). Dann
 /// zeigt das Widget nur noch, was das System allein richtig weiterzaehlt: die
@@ -138,8 +145,12 @@ private struct TimedProgressBar: View {
         if !TimedLook.isOutdated(context),
            context.state.content.phase != .finished,
            let range = context.state.content.clock.countdownRange {
-            ProgressView(timerInterval: range, countsDown: true)
-                .tint(TimedLook.accent(context))
+            ProgressView(timerInterval: range, countsDown: true) {
+                EmptyView()
+            } currentValueLabel: {
+                EmptyView()
+            }
+            .tint(TimedLook.accent(context))
         }
     }
 }
@@ -153,9 +164,14 @@ private struct TimedLockScreenView: View {
         let texts = context.state.texts
         let accent = TimedLook.accent(context)
         let outdated = TimedLook.isOutdated(context)
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
+        VStack(alignment: .leading, spacing: 6) {
+            // Kopfzeile: Format, Tagesname, Zustand - in einer Zeile spart es Hoehe.
+            HStack(spacing: 8) {
                 TimedFormatLabel(context: context)
+                Text(context.attributes.dayName)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
                 Spacer()
                 if !outdated {
                     Text(texts.phase)
@@ -164,27 +180,29 @@ private struct TimedLockScreenView: View {
                 }
             }
 
-            Text(context.attributes.dayName)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-
-            TimedClockText(context: context)
-                .font(.system(size: 44, weight: .bold, design: .monospaced))
-                .foregroundStyle(accent)
-                .monospacedDigit()
-                .frame(maxWidth: .infinity, alignment: .leading)
+            // Uhr links, der Zaehler (Runden / Minute / Kaesten) rechts daneben.
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                TimedClockText(context: context)
+                    .font(.system(size: 36, weight: .bold, design: .monospaced))
+                    .foregroundStyle(accent)
+                    .monospacedDigit()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if !outdated {
+                    Text(texts.status)
+                        .font(.headline)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+            }
 
             TimedProgressBar(context: context)
 
             if !outdated {
-                Text(texts.status)
-                    .font(.headline)
-                    .lineLimit(1)
                 TimedExerciseLines(context: context)
             }
         }
-        .padding()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .activityBackgroundTint(Color.black.opacity(0.85))
         .activitySystemActionForegroundColor(.white)
     }
@@ -212,7 +230,7 @@ private struct TimedExerciseLines: View {
         if content.phase == .running, let current = content.currentExercise {
             VStack(alignment: .leading, spacing: 2) {
                 Text(current)
-                    .font(.title3.weight(.semibold))
+                    .font(.headline)
                     .lineLimit(1)
                 if let next = content.nextExercise {
                     Text(verbatim: "\(context.state.texts.nextLabel): \(next)")

@@ -89,6 +89,11 @@ final class BackgroundAudioKeepAlive {
             player = Self.makeSilentPlayer()
         }
         isRunning = player?.play() ?? false
+        if !isRunning {
+            // Schlug `play()` fehl, ist der Player unbrauchbar (z.B. nach einer
+            // Unterbrechung): Der naechste Versuch baut einen frischen.
+            player = nil
+        }
         #else
         isRunning = false
         #endif

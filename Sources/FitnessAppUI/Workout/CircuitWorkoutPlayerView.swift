@@ -59,10 +59,12 @@ struct CircuitPlayerView: View {
     @State private var prerollRemaining: Int
     private let prerollTotal: Int
     @State private var tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    /// Token des Hintergrund-Laufs (stilles Audio + Live Activity), siehe
-    /// `TimedWorkoutBackground`. `nil`, solange die Uhr nicht laeuft (Vorlauf)
-    /// und nach dem Verlassen des Players.
-    @State private var backgroundToken: Int?
+    /// Hintergrund-Lauf (stilles Audio + Live Activity), siehe
+    /// `TimedWorkoutBackground`. Haengt an der Lebensdauer des Players: Wird er
+    /// zerstoert, waehrend er nicht sichtbar ist (anderer Tab, dann App-Reset oder
+    /// "Verwerfen & starten"), ruft kein `onDisappear` mehr `end()` - der Deinit des
+    /// Handles raeumt dann auf.
+    @State private var background = TimedWorkoutBackgroundRun()
 
     /// Bugfix (Nutzer-Feedback): siehe ausfuehrliche Begruendung bei
     /// `AMRAPPlayerView.init` - "Training fortsetzen" erzeugt eine
@@ -167,6 +169,7 @@ struct CircuitPlayerView: View {
         .onAppear {
             if prerollRemaining > 0 {
                 playPrerollTone(remaining: prerollRemaining, enabled: timerSoundEnabled)
+                background.beginPreroll(soundEnabled: timerSoundEnabled)
             } else {
                 startBackground()
             }
@@ -179,7 +182,7 @@ struct CircuitPlayerView: View {
         // ueberdeckt den Player) und Pop passieren dagegen immer auf dem Plan-Tab.
         .onDisappear {
             guard navigation.selectedTab == .plan else { return }
-            endBackground()
+            background.end()
         }
         .onReceive(tick) { _ in
             if prerollRemaining > 0 {
@@ -215,7 +218,7 @@ struct CircuitPlayerView: View {
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
             checkRestElapsed()
-            syncBackground()
+            syncBackground(resend: true)
         }
         .safeAreaInset(edge: .bottom) {
             if prerollRemaining > 0 {
@@ -394,7 +397,7 @@ struct CircuitPlayerView: View {
     /// Wiederaufnehmen ("Training fortsetzen") wieder aufnehmen - erst, wenn die Uhr
     /// laeuft: `session.startTime` ist erst nach dem Vorlauf der Anker.
     private func startBackground() {
-        backgroundToken = TimedWorkoutBackground.shared.begin(
+        background.begin(
             sessionKey: session.backgroundSessionKey,
             format: .circuit,
             dayName: session.displayDayName,
@@ -406,9 +409,8 @@ struct CircuitPlayerView: View {
     /// Billig genug fuer jeden Tick: `TimedLiveContent` aendert sich nur beim
     /// Wechsel zwischen Arbeit und Pause und beim Rundenwechsel (die Uhren zaehlt
     /// das System selbst).
-    private func syncBackground() {
-        guard let backgroundToken else { return }
-        TimedWorkoutBackground.shared.sync(
+    private func syncBackground(resend: Bool = false) {
+        background.sync(
             TimedLiveContent.circuit(
                 anchor: session.startTime,
                 restEnd: restEndDate,
@@ -418,14 +420,8 @@ struct CircuitPlayerView: View {
                 isFinished: isFinished,
                 now: Date()
             ),
-            token: backgroundToken
+            resend: resend
         )
-    }
-
-    private func endBackground() {
-        guard let backgroundToken else { return }
-        TimedWorkoutBackground.shared.end(token: backgroundToken)
-        self.backgroundToken = nil
     }
 
     /// Anders als bei AMRAP/EMOM/Auf-Zeit ist die ARBEITSPHASE selbst nicht

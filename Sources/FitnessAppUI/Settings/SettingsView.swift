@@ -814,6 +814,11 @@ public struct SettingsView: View {
         // beruehren.
         isResetting = true
 
+        // Ein laufender Zeitformat-Lauf (stilles Hintergrund-Audio + Live Activity)
+        // hat danach keinen Player mehr, der ihn beendete - nach einem Tab-Wechsel
+        // kam bei dessen Abbau auch kein `onDisappear` mehr. Hier explizit beenden.
+        TimedWorkoutBackground.shared.endAll()
+
         // 1) Navigation-State sofort zuruecksetzen — entfernt @Bindable-
         //    References auf gleich-zu-loeschende UserBodyProfile/Plan/Day.
         // Bugfix (Audit): `toolsPath` fehlte hier - ohne Reset konnte der

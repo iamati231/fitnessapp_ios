@@ -9,7 +9,9 @@ import FitnessAppActivities
 /// (`BackgroundAudioKeepAlive`, haelt die Uhr- und Ton-Logik der Player am Leben)
 /// und die Live Activity (`TimedWorkoutActivityController`).
 ///
-/// Ablauf aus Sicht eines Players:
+/// Ablauf aus Sicht eines Players (ueber `TimedWorkoutBackgroundRun`):
+///   0. Der Vorlauf beginnt -> `beginPreroll(...)`: Er laeuft ebenfalls vom
+///      Sekundentakt der App; nur das stille Audio, noch keine Live Activity.
 ///   1. Die Uhr laeuft (nach dem Vorlauf, auch beim Wiederaufnehmen) ->
 ///      `begin(...)`: Lauf anmelden, Token merken.
 ///   2. Jeder Tick und jeder Zustandswechsel -> `sync(_:token:)`. Das ist
@@ -32,6 +34,9 @@ final class TimedWorkoutBackground {
     /// `UserDefaults`-/`@AppStorage`-Schluessel des Schalters in den Einstellungen
     /// ("Im Hintergrund weiterlaufen"). Standard: an.
     static let audioPreferenceKey = "pref_timer_background_audio"
+
+    /// Wartezeit von `endOrphans()` in Sekunden.
+    private static let orphanGraceSeconds = 3
 
     private struct Run {
         let sessionKey: String
@@ -63,6 +68,24 @@ final class TimedWorkoutBackground {
         UserDefaults.standard.object(forKey: audioPreferenceKey) as? Bool ?? true
     }
 
+    /// Der Vorlauf (5-15 s) laeuft ebenfalls vom Sekundentakt der App: Wird der
+    /// Bildschirm waehrenddessen gesperrt, bliebe er sonst stehen, und das GO kaeme
+    /// erst nach dem Entsperren. Nur das stille Audio - die Live Activity gibt es
+    /// erst mit der Uhr (`begin`), die als neues Token den Vorlauf abloest.
+    func beginPreroll(soundEnabled: Bool) -> Int {
+        lastToken += 1
+        activeToken = lastToken
+        run = nil
+        lastSent = nil
+        audioWanted = soundEnabled && Self.audioPreferenceEnabled()
+        if audioWanted {
+            audio.start()
+        } else {
+            audio.stop()
+        }
+        return lastToken
+    }
+
     /// Die Uhr eines Laufs laeuft. `soundEnabled` ist der Schalter "Ton abspielen":
     /// Ohne hoerbare Signale gibt es keinen Grund fuer Hintergrund-Audio. Das Audio
     /// startet erst mit dem ersten `sync` - nur wenn dann ein Signal anstehen kann.
@@ -84,14 +107,24 @@ final class TimedWorkoutBackground {
     }
 
     /// Meldet den aktuellen Stand. Veraltete Token (ein ueberholter Player) werden
-    /// ignoriert.
-    func sync(_ content: TimedLiveContent, token: Int) {
+    /// ignoriert. `resend` sendet den Inhalt auch dann, wenn er sich nicht geaendert
+    /// hat: beim Zurueckkehren in den Vordergrund, wo eine Live Activity, deren
+    /// Anlegen im Hintergrund scheiterte (ActivityKit startet nur im Vordergrund),
+    /// nachgeholt werden kann - ohne das schluckt der Vergleich unten den Inhalt.
+    func sync(_ content: TimedLiveContent, token: Int, resend: Bool = false) {
         guard token == activeToken, let run else { return }
         if audioWanted {
             if content.needsAudioInBackground {
                 // Billig: haelt den Player am Laufen und stellt ihn nach einer
                 // Unterbrechung wieder her.
+                let wasRunning = audio.isRunning
                 audio.start()
+                if !wasRunning, audio.isRunning, run.format == .emom {
+                    // Das Audio sprang erst nach dem Start an (z.B. Anruf beendet): Die
+                    // als Rueckfall geplanten EMOM-Benachrichtigungen klaengen jetzt
+                    // zusaetzlich zu den Toenen der App.
+                    Task { await ReminderScheduler.cancelEMOMSignals() }
+                }
             } else {
                 // Nichts, was ein Ton ankuendigen muesste (Ende erreicht, Auf Zeit ohne
                 // Limit, Zirkel-Arbeitsphase): Das stille Audio muss nicht laufen. Der
@@ -103,7 +136,7 @@ final class TimedWorkoutBackground {
         }
         // Nur bei geaendertem Inhalt uebersetzen und senden - der Normalfall (jede
         // Sekunde) bleibt billig.
-        guard content != lastSent else { return }
+        guard resend || content != lastSent else { return }
         lastSent = content
         activities.apply(
             sessionKey: run.sessionKey,
@@ -118,21 +151,43 @@ final class TimedWorkoutBackground {
     /// Der Player verschwindet: Audio aus, Live Activity weg.
     func end(token: Int) {
         guard token == activeToken else { return }
+        tearDown()
+    }
+
+    /// Beendet den laufenden Lauf, egal wem er gehoert: App-Reset ("Alle Daten
+    /// loeschen") - dort ist kein Player mehr da, der `end` riefe.
+    func endAll() {
+        tearDown()
+    }
+
+    private func tearDown() {
+        let wasEMOM = run?.format == .emom
         activeToken = nil
         run = nil
         lastSent = nil
         audioWanted = false
         audio.stop()
         activities.end()
+        if wasEMOM {
+            // Die als Rueckfall geplanten EMOM-Benachrichtigungen gehoeren zum Lauf.
+            // Hier statt im Player: Das Token schuetzt einen neueren Lauf davor, dass
+            // der Abgang eines alten Players dessen frisch geplante Signale loescht.
+            Task { await ReminderScheduler.cancelEMOMSignals() }
+        }
     }
 
     /// Nach einem App-Start: Eine Live Activity eines frueheren Prozesses (App
     /// beendet, waehrend ein Lauf lief) hat keinen Player mehr, der sie fuehrt.
-    /// Laeuft schon ein neuer Lauf (z.B. per Tipp auf die Live Activity gestartet),
-    /// bleibt er unberuehrt.
+    /// Das Aufraeumen wartet einen Moment: Der Tipp auf die Live Activity, der die App
+    /// kalt startet, oeffnet das Training und startet damit einen neuen Lauf - die
+    /// Reihenfolge mit diesem Aufruf ist nicht festgelegt. Laeuft nach der Frist schon
+    /// ein Lauf, bleibt er (und seine Live Activity) unberuehrt.
     func endOrphans() {
-        guard activeToken == nil else { return }
-        activities.end()
+        Task { [self] in
+            try? await Task.sleep(for: .seconds(Self.orphanGraceSeconds))
+            guard activeToken == nil else { return }
+            activities.end()
+        }
     }
 
     // MARK: - Texte
@@ -176,6 +231,53 @@ final class TimedWorkoutBackground {
             ? String(localized: "timedWorkout.emom.nextMinute", bundle: .module)
             : ""
         return TimedWorkoutLiveTexts(phase: phase, status: status, nextLabel: nextLabel)
+    }
+}
+
+/// Haengt den Hintergrund-Lauf eines Players an dessen LEBENSDAUER: Liegt es als
+/// `@State` im Player, ruft der Deinit `end`, sobald SwiftUI den Zustand freigibt.
+///
+/// Noetig, weil `onDisappear` allein nicht reicht: Bei einem Tab-Wechsel bleibt der
+/// Lauf absichtlich bestehen (der Player lebt ja weiter). Wird der Player dann
+/// zerstoert, waehrend er nicht sichtbar ist - "Alle Daten loeschen", "Verwerfen &
+/// starten" auf dem Dashboard -, kommt kein `onDisappear` mehr, und das stille Audio
+/// spielte bis zum Prozessende weiter. Das Token schuetzt wie immer einen neueren
+/// Lauf: Ein `end` mit altem Token ist wirkungslos.
+@available(iOS 17.0, macOS 14.0, *)
+final class TimedWorkoutBackgroundRun {
+
+    private(set) var token: Int?
+
+    @MainActor
+    func beginPreroll(soundEnabled: Bool) {
+        token = TimedWorkoutBackground.shared.beginPreroll(soundEnabled: soundEnabled)
+    }
+
+    @MainActor
+    func begin(sessionKey: String, format: WorkoutTimeFormat, dayName: String, soundEnabled: Bool) {
+        token = TimedWorkoutBackground.shared.begin(
+            sessionKey: sessionKey, format: format, dayName: dayName, soundEnabled: soundEnabled
+        )
+    }
+
+    @MainActor
+    func sync(_ content: TimedLiveContent, resend: Bool = false) {
+        guard let token else { return }
+        TimedWorkoutBackground.shared.sync(content, token: token, resend: resend)
+    }
+
+    @MainActor
+    func end() {
+        guard let token else { return }
+        self.token = nil
+        TimedWorkoutBackground.shared.end(token: token)
+    }
+
+    deinit {
+        guard let token else { return }
+        Task { @MainActor in
+            TimedWorkoutBackground.shared.end(token: token)
+        }
     }
 }
 
