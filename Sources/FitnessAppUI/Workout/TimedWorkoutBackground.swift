@@ -11,11 +11,13 @@ import FitnessAppActivities
 ///
 /// Ablauf aus Sicht eines Players:
 ///   1. Die Uhr laeuft (nach dem Vorlauf, auch beim Wiederaufnehmen) ->
-///      `begin(...)`: Audio starten, Token merken.
+///      `begin(...)`: Lauf anmelden, Token merken.
 ///   2. Jeder Tick und jeder Zustandswechsel -> `sync(_:token:)`. Das ist
 ///      absichtlich billig und darf jede Sekunde gerufen werden: Der Inhalt
 ///      (`TimedLiveContent`) aendert sich nur bei echten Zustandswechseln, nur
-///      dann geht ein Update an die Live Activity.
+///      dann geht ein Update an die Live Activity. Das stille Audio laeuft nur,
+///      solange ein hoerbares Signal anstehen kann
+///      (`TimedLiveContent.needsAudioInBackground`).
 ///   3. Der Player verschwindet (gespeichert, verworfen, zurueck) -> `end(token:)`.
 ///
 /// **Token:** "Training fortsetzen" haengt einen NEUEN Player an den Pfad, waehrend
@@ -31,25 +33,11 @@ final class TimedWorkoutBackground {
     /// ("Im Hintergrund weiterlaufen"). Standard: an.
     static let audioPreferenceKey = "pref_timer_background_audio"
 
-    /// Ergebnis von `begin`.
-    struct Started {
-        let token: Int
-        /// `true`, wenn das Hintergrund-Audio laeuft - dann spielt die App die Signale
-        /// selbst, und der EMOM plant keine Benachrichtigungen dazu (sonst klaenge
-        /// jeder Minutenwechsel doppelt).
-        let audioRunning: Bool
-    }
-
     private struct Run {
         let sessionKey: String
         let format: WorkoutTimeFormat
         let formatName: String
         let dayName: String
-    }
-
-    private struct Sent: Equatable {
-        let content: TimedLiveContent
-        let texts: TimedWorkoutLiveTexts
     }
 
     private let activities = TimedWorkoutActivityController()
@@ -58,9 +46,14 @@ final class TimedWorkoutBackground {
     private var lastToken = 0
     private var activeToken: Int?
     private var run: Run?
-    private var lastSent: Sent?
-    /// Soll fuer den laufenden Lauf Hintergrund-Audio laufen (Schalter + Ton an)?
+    private var lastSent: TimedLiveContent?
+    /// Darf fuer den laufenden Lauf Hintergrund-Audio laufen (Schalter + Ton an)?
     private var audioWanted = false
+
+    /// `true`, wenn das stille Hintergrund-Audio gerade laeuft - dann spielt die App
+    /// die Signale selbst, und der EMOM plant keine Benachrichtigungen dazu (sonst
+    /// klaenge jeder Minutenwechsel doppelt).
+    var isAudioRunning: Bool { audio.isRunning }
 
     private init() {}
 
@@ -71,9 +64,9 @@ final class TimedWorkoutBackground {
     }
 
     /// Die Uhr eines Laufs laeuft. `soundEnabled` ist der Schalter "Ton abspielen":
-    /// Ohne hoerbare Signale gibt es keinen Grund fuer Hintergrund-Audio.
-    @discardableResult
-    func begin(sessionKey: String, format: WorkoutTimeFormat, dayName: String, soundEnabled: Bool) -> Started {
+    /// Ohne hoerbare Signale gibt es keinen Grund fuer Hintergrund-Audio. Das Audio
+    /// startet erst mit dem ersten `sync` - nur wenn dann ein Signal anstehen kann.
+    func begin(sessionKey: String, format: WorkoutTimeFormat, dayName: String, soundEnabled: Bool) -> Int {
         lastToken += 1
         activeToken = lastToken
         run = Run(
@@ -84,14 +77,10 @@ final class TimedWorkoutBackground {
         )
         lastSent = nil
         audioWanted = soundEnabled && Self.audioPreferenceEnabled()
-        let audioRunning: Bool
-        if audioWanted {
-            audioRunning = audio.start()
-        } else {
+        if !audioWanted {
             audio.stop()
-            audioRunning = false
         }
-        return Started(token: lastToken, audioRunning: audioRunning)
+        return lastToken
     }
 
     /// Meldet den aktuellen Stand. Veraltete Token (ein ueberholter Player) werden
@@ -99,29 +88,30 @@ final class TimedWorkoutBackground {
     func sync(_ content: TimedLiveContent, token: Int) {
         guard token == activeToken, let run else { return }
         if audioWanted {
-            if content.phase == .finished {
-                // Zeit abgelaufen bzw. Pensum geschafft: nichts mehr zu signalisieren,
-                // das stille Audio muss nicht weiterlaufen (der Endton selbst spielt auf
-                // einem eigenen Player zu Ende). Nimmt der Player den Lauf wieder auf
-                // (Auf Zeit: ein Haekchen zurueck), startet es hier wieder.
-                audio.stop()
-            } else {
+            if content.needsAudioInBackground {
                 // Billig: haelt den Player am Laufen und stellt ihn nach einer
                 // Unterbrechung wieder her.
                 audio.start()
+            } else {
+                // Nichts, was ein Ton ankuendigen muesste (Ende erreicht, Auf Zeit ohne
+                // Limit, Zirkel-Arbeitsphase): Das stille Audio muss nicht laufen. Der
+                // Endton selbst spielt auf einem eigenen Player zu Ende. Beginnt wieder
+                // eine Lage mit Signalen (Zirkel-Pause, Auf Zeit: ein Haekchen zurueck),
+                // startet es hier erneut - dann ist die App im Vordergrund.
+                audio.stop()
             }
         }
-        let texts = Self.texts(for: run.format, content: content)
-        let sent = Sent(content: content, texts: texts)
-        guard sent != lastSent else { return }
-        lastSent = sent
+        // Nur bei geaendertem Inhalt uebersetzen und senden - der Normalfall (jede
+        // Sekunde) bleibt billig.
+        guard content != lastSent else { return }
+        lastSent = content
         activities.apply(
             sessionKey: run.sessionKey,
             format: run.format,
             formatName: run.formatName,
             dayName: run.dayName,
             content: content,
-            texts: texts
+            texts: Self.texts(for: run.format, content: content)
         )
     }
 

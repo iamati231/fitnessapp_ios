@@ -46,9 +46,10 @@
          (kurze Piepser vor dem Wechsel, langer Ton beim Wechsel/Ende) muessen bei
          gesperrtem Bildschirm oder in einer anderen App erklingen. Dafuer spielt die
          App waehrend eines Laufs unhoerbares Audio ab (BackgroundAudioKeepAlive), das
-         sie am Leben haelt - nur solange ein Lauf laeuft und der Nutzer es nicht in
-         den Einstellungen ausgeschaltet hat. Audio-Session: .playback mit
-         .mixWithOthers (Musik anderer Apps laeuft weiter). -->
+         sie am Leben haelt - nur solange ein Signal anstehen kann (AMRAP, EMOM, Auf
+         Zeit mit Limit, Zirkel-Pause) und der Nutzer es nicht in den Einstellungen
+         ausgeschaltet hat. Audio-Session: .playback mit .mixWithOthers (Musik
+         anderer Apps laeuft weiter). -->
     <key>UIBackgroundModes</key>
     <array>
         <string>audio</string>

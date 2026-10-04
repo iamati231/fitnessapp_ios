@@ -701,13 +701,12 @@ private struct AMRAPPlayerView: View {
     /// Wiederaufnehmen ("Training fortsetzen") wieder aufnehmen - erst, wenn die Uhr
     /// laeuft: `session.startTime` ist erst nach dem Vorlauf der Anker.
     private func startBackground() {
-        let started = TimedWorkoutBackground.shared.begin(
+        backgroundToken = TimedWorkoutBackground.shared.begin(
             sessionKey: session.backgroundSessionKey,
             format: .amrap,
             dayName: session.displayDayName,
             soundEnabled: timerSoundEnabled
         )
-        backgroundToken = started.token
         syncBackground()
     }
 
@@ -1306,15 +1305,14 @@ private struct EMOMPlayerView: View {
     /// ob das Hintergrund-Audio laeuft (siehe `scheduleBackgroundSignals`).
     @discardableResult
     private func startBackground() -> Bool {
-        let started = TimedWorkoutBackground.shared.begin(
+        backgroundToken = TimedWorkoutBackground.shared.begin(
             sessionKey: session.backgroundSessionKey,
             format: .emom,
             dayName: session.displayDayName,
             soundEnabled: timerSoundEnabled
         )
-        backgroundToken = started.token
         syncBackground()
-        return started.audioRunning
+        return TimedWorkoutBackground.shared.isAudioRunning
     }
 
     /// Billig genug fuer jeden Tick: `TimedLiveContent` ist innerhalb einer Minute
@@ -1834,13 +1832,12 @@ private struct ForTimePlayerView: View {
     /// Wiederaufnehmen ("Training fortsetzen") wieder aufnehmen - erst, wenn die Uhr
     /// laeuft: `session.startTime` ist erst nach dem Vorlauf der Anker.
     private func startBackground() {
-        let started = TimedWorkoutBackground.shared.begin(
+        backgroundToken = TimedWorkoutBackground.shared.begin(
             sessionKey: session.backgroundSessionKey,
             format: .forTime,
             dayName: session.displayDayName,
             soundEnabled: timerSoundEnabled
         )
-        backgroundToken = started.token
         syncBackground()
     }
 

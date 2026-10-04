@@ -4,8 +4,9 @@ import AVFoundation
 import Foundation
 
 /// Haelt die App bei gesperrtem Bildschirm oder in einer anderen App am Laufen,
-/// solange ein Zeitformat-Lauf (AMRAP, EMOM, Auf Zeit, Zirkel) laeuft - damit die
-/// Signaltoene ueberhaupt erklingen und die Live Activity aktuell bleibt.
+/// solange ein Zeitformat-Lauf (AMRAP, EMOM, Auf Zeit, Zirkel) ein hoerbares Signal
+/// erwartet (`TimedLiveContent.needsAudioInBackground`) - damit die Signaltoene
+/// ueberhaupt erklingen und die Live Activity aktuell bleibt.
 ///
 /// **Warum so:** iOS haelt eine App im Hintergrund an, sobald sie nichts "tut".
 /// Mit dem Hintergrundmodus `audio` (Info.plist, `UIBackgroundModes`) und einer
@@ -17,8 +18,8 @@ import Foundation
 ///
 /// **Rechtfertigung (App Review 2.5.4):** Hintergrund-Audio gibt es nur fuer
 /// hoerbare Signale - die Intervalltoene (kurze Piepser vor dem Wechsel, langer Ton
-/// beim Wechsel/Ende) sind genau das. Laeuft nur, solange ein Lauf laeuft und der
-/// Nutzer es nicht ausgeschaltet hat (`TimedWorkoutBackground`).
+/// beim Wechsel/Ende) sind genau das. Laeuft nur, solange ein Signal anstehen kann
+/// und der Nutzer es nicht ausgeschaltet hat (`TimedWorkoutBackground`).
 ///
 /// Dieselbe Session-Kategorie wie `TimerSoundPlayer` (`.playback` +
 /// `.mixWithOthers`): Spotify/Apple Music laufen weiter, der Stumm-Schalter
