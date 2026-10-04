@@ -59,6 +59,10 @@ struct CircuitPlayerView: View {
     @State private var prerollRemaining: Int
     private let prerollTotal: Int
     @State private var tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    /// Token des Hintergrund-Laufs (stilles Audio + Live Activity), siehe
+    /// `TimedWorkoutBackground`. `nil`, solange die Uhr nicht laeuft (Vorlauf)
+    /// und nach dem Verlassen des Players.
+    @State private var backgroundToken: Int?
 
     /// Bugfix (Nutzer-Feedback): siehe ausfuehrliche Begruendung bei
     /// `AMRAPPlayerView.init` - "Training fortsetzen" erzeugt eine
@@ -163,7 +167,19 @@ struct CircuitPlayerView: View {
         .onAppear {
             if prerollRemaining > 0 {
                 playPrerollTone(remaining: prerollRemaining, enabled: timerSoundEnabled)
+            } else {
+                startBackground()
             }
+        }
+        // Muss in JEDEM Ausstiegspfad laufen (Speichern, Verwerfen, Zurueck-Chevron):
+        // sonst laeuft das stille Audio weiter und die Live Activity bleibt stehen.
+        // Ausnahme Tab-Wechsel: Der Player lebt dann weiter (Uhr, Toene, Zaehlung) und
+        // der Lauf geht unveraendert weiter - Plan ist der Tab des Workout-Stapels, ein
+        // anderer Tab bedeutet "weggeschaltet", nicht "verlassen". Speichern (Summary
+        // ueberdeckt den Player) und Pop passieren dagegen immer auf dem Plan-Tab.
+        .onDisappear {
+            guard navigation.selectedTab == .plan else { return }
+            endBackground()
         }
         .onReceive(tick) { _ in
             if prerollRemaining > 0 {
@@ -191,6 +207,7 @@ struct CircuitPlayerView: View {
                 TimerSoundPlayer.shared.playShort()
             }
             checkRestElapsed()
+            syncBackground()
         }
         // Nutzer-Feedback: sofortige Pruefung beim Ruecksprung aus dem
         // Hintergrund statt bis zum naechsten Tick zu warten - gleiches
@@ -198,6 +215,7 @@ struct CircuitPlayerView: View {
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
             checkRestElapsed()
+            syncBackground()
         }
         .safeAreaInset(edge: .bottom) {
             if prerollRemaining > 0 {
@@ -369,6 +387,46 @@ struct CircuitPlayerView: View {
         session.startTime = Date()
         session.circuitRoundsCompleted = 0
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
+        startBackground()
+    }
+
+    /// Hintergrund-Lauf (stilles Audio + Live Activity) starten bzw. beim
+    /// Wiederaufnehmen ("Training fortsetzen") wieder aufnehmen - erst, wenn die Uhr
+    /// laeuft: `session.startTime` ist erst nach dem Vorlauf der Anker.
+    private func startBackground() {
+        let started = TimedWorkoutBackground.shared.begin(
+            sessionKey: session.backgroundSessionKey,
+            format: .circuit,
+            dayName: session.displayDayName,
+            soundEnabled: timerSoundEnabled
+        )
+        backgroundToken = started.token
+        syncBackground()
+    }
+
+    /// Billig genug fuer jeden Tick: `TimedLiveContent` aendert sich nur beim
+    /// Wechsel zwischen Arbeit und Pause und beim Rundenwechsel (die Uhren zaehlt
+    /// das System selbst).
+    private func syncBackground() {
+        guard let backgroundToken else { return }
+        TimedWorkoutBackground.shared.sync(
+            TimedLiveContent.circuit(
+                anchor: session.startTime,
+                restEnd: restEndDate,
+                restSeconds: restSeconds,
+                roundsCompleted: roundsCompleted,
+                totalRounds: totalRounds,
+                isFinished: isFinished,
+                now: Date()
+            ),
+            token: backgroundToken
+        )
+    }
+
+    private func endBackground() {
+        guard let backgroundToken else { return }
+        TimedWorkoutBackground.shared.end(token: backgroundToken)
+        self.backgroundToken = nil
     }
 
     /// Anders als bei AMRAP/EMOM/Auf-Zeit ist die ARBEITSPHASE selbst nicht
@@ -425,6 +483,7 @@ struct CircuitPlayerView: View {
         if timerSoundEnabled {
             TimerSoundPlayer.shared.playLong()
         }
+        syncBackground()
     }
 
     private func endRest() {
@@ -434,6 +493,7 @@ struct CircuitPlayerView: View {
         if timerSoundEnabled {
             TimerSoundPlayer.shared.playLong()
         }
+        syncBackground()
     }
 
     /// Wanduhr-Ablesung der laufenden Pause, `nil` wenn gerade keine Pause

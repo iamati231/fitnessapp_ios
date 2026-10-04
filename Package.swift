@@ -40,7 +40,10 @@ let package = Package(
             path: "Sources/FitnessAppHealth"
         ),
         .target(
+            // Haengt von Core ab, weil die Live Activity der Zeitformate
+            // `TimedLiveContent` (reine Logik, auf Linux testbar) als Inhalt traegt.
             name: "FitnessAppActivities",
+            dependencies: ["FitnessAppCore"],
             path: "Sources/FitnessAppActivities"
         ),
         .target(

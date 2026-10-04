@@ -359,6 +359,10 @@ private struct AMRAPPlayerView: View {
     /// abgespielt wird.
     @State private var hasFiredLastMinuteWarning = false
     @State private var showingDiscardConfirm = false
+    /// Token des Hintergrund-Laufs (stilles Audio + Live Activity), siehe
+    /// `TimedWorkoutBackground`. `nil`, solange die Uhr nicht laeuft (Vorlauf)
+    /// und nach dem Verlassen des Players.
+    @State private var backgroundToken: Int?
     /// README 2.15/23b-23c: Vorlauf-Countdown vor dem eigentlichen Lauf -
     /// `prerollTotal` ist die Einstellung zum Mount-Zeitpunkt (unveraenderlich
     /// waehrend die View lebt), `prerollRemaining` zaehlt runter. 0
@@ -562,7 +566,19 @@ private struct AMRAPPlayerView: View {
         .onAppear {
             if prerollRemaining > 0 {
                 playPrerollTone(remaining: prerollRemaining, enabled: timerSoundEnabled)
+            } else {
+                startBackground()
             }
+        }
+        // Muss in JEDEM Ausstiegspfad laufen (Speichern, Verwerfen, Zurueck-Chevron):
+        // sonst laeuft das stille Audio weiter und die Live Activity bleibt stehen.
+        // Ausnahme Tab-Wechsel: Der Player lebt dann weiter (Uhr, Toene, Zaehlung) und
+        // der Lauf geht unveraendert weiter - Plan ist der Tab des Workout-Stapels, ein
+        // anderer Tab bedeutet "weggeschaltet", nicht "verlassen". Speichern (Summary
+        // ueberdeckt den Player) und Pop passieren dagegen immer auf dem Plan-Tab.
+        .onDisappear {
+            guard navigation.selectedTab == .plan else { return }
+            endBackground()
         }
         .onReceive(tick) { _ in
             if prerollRemaining > 0 {
@@ -582,6 +598,7 @@ private struct AMRAPPlayerView: View {
             guard !isFinished else { return }
             checkLastMinuteWarning()
             checkCapReached()
+            syncBackground()
         }
         // Nutzer-Feedback: sobald die App wieder aktiv wird, sofort pruefen
         // statt bis zum naechsten Tick zu warten - `elapsedSeconds` selbst
@@ -591,6 +608,7 @@ private struct AMRAPPlayerView: View {
             guard newPhase == .active else { return }
             checkLastMinuteWarning()
             checkCapReached()
+            syncBackground()
         }
         .safeAreaInset(edge: .bottom) {
             if prerollRemaining > 0 {
@@ -676,6 +694,42 @@ private struct AMRAPPlayerView: View {
         session.startTime = Date()
         session.roundsCompleted = 0
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
+        startBackground()
+    }
+
+    /// Hintergrund-Lauf (stilles Audio + Live Activity) starten bzw. beim
+    /// Wiederaufnehmen ("Training fortsetzen") wieder aufnehmen - erst, wenn die Uhr
+    /// laeuft: `session.startTime` ist erst nach dem Vorlauf der Anker.
+    private func startBackground() {
+        let started = TimedWorkoutBackground.shared.begin(
+            sessionKey: session.backgroundSessionKey,
+            format: .amrap,
+            dayName: session.displayDayName,
+            soundEnabled: timerSoundEnabled
+        )
+        backgroundToken = started.token
+        syncBackground()
+    }
+
+    /// Billig genug fuer jeden Tick: `TimedLiveContent` ist bei unveraendertem
+    /// Zustand gleich, dann geht nichts an die Live Activity.
+    private func syncBackground() {
+        guard let backgroundToken else { return }
+        TimedWorkoutBackground.shared.sync(
+            TimedLiveContent.amrap(
+                anchor: session.startTime,
+                capSeconds: capSeconds,
+                roundsCompleted: roundsCompleted,
+                now: Date()
+            ),
+            token: backgroundToken
+        )
+    }
+
+    private func endBackground() {
+        guard let backgroundToken else { return }
+        TimedWorkoutBackground.shared.end(token: backgroundToken)
+        self.backgroundToken = nil
     }
 
     /// Nutzer-Feedback: `elapsedSeconds` ist Wanduhr-basiert, prueft sich
@@ -696,6 +750,10 @@ private struct AMRAPPlayerView: View {
         isFinished = true
         partialRepsExerciseID = exercises.first?.persistentModelID
         DeltiqHaptics.notify(.success)
+        // Das Signal bei gesperrtem Bildschirm: ohne den Ton kaeme die App
+        // ueber das Ende nur per Haptik (im Hintergrund wirkungslos) davon.
+        playTimeUpTone(overshootSeconds: elapsedSeconds - capSeconds, enabled: timerSoundEnabled)
+        syncBackground()
     }
 
     /// Feature (Nutzerwunsch): akustischer + haptischer Hinweis beim Eintritt
@@ -732,6 +790,7 @@ private struct AMRAPPlayerView: View {
         roundsCompleted += 1
         session.roundsCompleted = roundsCompleted
         DeltiqHaptics.notify(.success)
+        syncBackground()
     }
 
     private var roundBar: some View {
@@ -899,6 +958,10 @@ private struct EMOMPlayerView: View {
     /// Notification bereits abgespielt hat. Ohne dieses Flag wuerde der
     /// lange Ton beim Zurueckkehren ein zweites Mal ausgeloest.
     @State private var wasBackgroundedSinceLastResync = false
+    /// Token des Hintergrund-Laufs (stilles Audio + Live Activity), siehe
+    /// `TimedWorkoutBackground`. `nil`, solange die Uhr nicht laeuft (Vorlauf)
+    /// und nach dem Verlassen des Players.
+    @State private var backgroundToken: Int?
     /// README 2.15/23b-23c: Vorlauf-Countdown vor der ersten Minute -
     /// `prerollTotal` ist die Einstellung zum Mount-Zeitpunkt (unveraenderlich
     /// waehrend die View lebt), `prerollRemaining` zaehlt runter. 0
@@ -1102,14 +1165,21 @@ private struct EMOMPlayerView: View {
             if prerollRemaining > 0 {
                 playPrerollTone(remaining: prerollRemaining, enabled: timerSoundEnabled)
             } else {
-                scheduleBackgroundSignals()
+                scheduleBackgroundSignals(audioRunning: startBackground())
             }
         }
         .onDisappear {
             // Muss in JEDEM Ausstiegspfad laufen (Finish, Discard, Zurueck-
             // Chevron) - sonst poppen spaeter Banner fuer eine laengst
-            // verlassene Session auf.
+            // verlassene Session auf (und das stille Audio liefe weiter).
             Task { await ReminderScheduler.cancelEMOMSignals() }
+            // Ausnahme Tab-Wechsel: Der Player lebt dann weiter (Uhr, Toene, Zaehlung)
+            // und der Hintergrund-Lauf geht unveraendert weiter - Plan ist der Tab des
+            // Workout-Stapels, ein anderer Tab bedeutet "weggeschaltet", nicht
+            // "verlassen". Speichern (Summary ueberdeckt den Player) und Pop passieren
+            // dagegen immer auf dem Plan-Tab.
+            guard navigation.selectedTab == .plan else { return }
+            endBackground()
         }
         .onReceive(tick) { _ in
             if prerollRemaining > 0 {
@@ -1132,6 +1202,7 @@ private struct EMOMPlayerView: View {
                 TimerSoundPlayer.shared.playShort()
             }
             resyncMinuteState()
+            syncBackground()
         }
         // Nutzer-Feedback: sofortige Pruefung beim Ruecksprung aus dem
         // Hintergrund statt bis zum naechsten Tick zu warten - gleiches
@@ -1147,6 +1218,7 @@ private struct EMOMPlayerView: View {
             }
             guard newPhase == .active else { return }
             resyncMinuteState()
+            syncBackground()
         }
         .safeAreaInset(edge: .bottom) {
             if prerollRemaining > 0 {
@@ -1225,7 +1297,45 @@ private struct EMOMPlayerView: View {
         session.startTime = Date()
         session.completedMinuteCount = 0
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
-        scheduleBackgroundSignals()
+        scheduleBackgroundSignals(audioRunning: startBackground())
+    }
+
+    /// Hintergrund-Lauf (stilles Audio + Live Activity) starten bzw. beim
+    /// Wiederaufnehmen ("Training fortsetzen") wieder aufnehmen - erst, wenn die Uhr
+    /// laeuft: `session.startTime` ist erst nach dem Vorlauf der Anker. Gibt zurueck,
+    /// ob das Hintergrund-Audio laeuft (siehe `scheduleBackgroundSignals`).
+    @discardableResult
+    private func startBackground() -> Bool {
+        let started = TimedWorkoutBackground.shared.begin(
+            sessionKey: session.backgroundSessionKey,
+            format: .emom,
+            dayName: session.displayDayName,
+            soundEnabled: timerSoundEnabled
+        )
+        backgroundToken = started.token
+        syncBackground()
+        return started.audioRunning
+    }
+
+    /// Billig genug fuer jeden Tick: `TimedLiveContent` ist innerhalb einer Minute
+    /// gleich, nur der Minutenwechsel schickt ein Update an die Live Activity.
+    private func syncBackground() {
+        guard let backgroundToken else { return }
+        TimedWorkoutBackground.shared.sync(
+            TimedLiveContent.emom(
+                anchor: session.startTime,
+                totalMinutes: totalMinutes,
+                exerciseNames: exercises.map(\.displayName),
+                now: Date()
+            ),
+            token: backgroundToken
+        )
+    }
+
+    private func endBackground() {
+        guard let backgroundToken else { return }
+        TimedWorkoutBackground.shared.end(token: backgroundToken)
+        self.backgroundToken = nil
     }
 
     /// README 2.9 Phase 4: Alle Minutentrigger im Voraus planen, nicht erst
@@ -1238,8 +1348,12 @@ private struct EMOMPlayerView: View {
     /// (`finishPreroll`) - nie beides, da sich die beiden Aufrufstellen
     /// gegenseitig ausschliessen (`prerollRemaining == 0` beim Mount
     /// bedeutet, dass der Vorlauf-Zweig in `onReceive` nie greift).
-    private func scheduleBackgroundSignals() {
-        guard timerSoundEnabled else { return }
+    /// Laeuft das Hintergrund-Audio (`audioRunning`, Einstellung "Im Hintergrund
+    /// weiterlaufen"), spielt die App die Toene selbst weiter - Benachrichtigungen
+    /// kaemen dann zusaetzlich und jeder Minutenwechsel klaenge doppelt. Sie bleiben
+    /// der Rueckfall fuer ausgeschaltetes oder nicht startbares Hintergrund-Audio.
+    private func scheduleBackgroundSignals(audioRunning: Bool) {
+        guard timerSoundEnabled, !audioRunning else { return }
         Task {
             await ReminderScheduler.scheduleEMOMSignals(
                 totalMinutes: totalMinutes,
@@ -1281,6 +1395,10 @@ private struct EMOMPlayerView: View {
             completedMinutes = Set(1...totalMinutes)
             session.completedMinuteCount = totalMinutes
             DeltiqHaptics.notify(.success)
+            // Ende des Laufs hoerbar machen (bei gesperrtem Bildschirm das einzige
+            // Signal) und die Live Activity auf "Geschafft" stellen.
+            playTimeUpTone(overshootSeconds: totalElapsedSeconds - totalMinutes * 60, enabled: timerSoundEnabled)
+            syncBackground()
             return
         }
         guard currentMinute != lastKnownMinute else { return }
@@ -1376,6 +1494,10 @@ private struct ForTimePlayerView: View {
     /// geloescht.
     @State private var finishedElapsedSeconds: Int?
     @State private var showingDiscardConfirm = false
+    /// Token des Hintergrund-Laufs (stilles Audio + Live Activity), siehe
+    /// `TimedWorkoutBackground`. `nil`, solange die Uhr nicht laeuft (Vorlauf)
+    /// und nach dem Verlassen des Players.
+    @State private var backgroundToken: Int?
     /// README 2.15/23b-23c: Vorlauf-Countdown vor dem eigentlichen Lauf -
     /// `prerollTotal` ist die Einstellung zum Mount-Zeitpunkt (unveraenderlich
     /// waehrend die View lebt), `prerollRemaining` zaehlt runter. 0
@@ -1579,7 +1701,19 @@ private struct ForTimePlayerView: View {
         .onAppear {
             if prerollRemaining > 0 {
                 playPrerollTone(remaining: prerollRemaining, enabled: timerSoundEnabled)
+            } else {
+                startBackground()
             }
+        }
+        // Muss in JEDEM Ausstiegspfad laufen (Speichern, Verwerfen, Zurueck-Chevron):
+        // sonst laeuft das stille Audio weiter und die Live Activity bleibt stehen.
+        // Ausnahme Tab-Wechsel: Der Player lebt dann weiter (Uhr, Toene, Zaehlung) und
+        // der Lauf geht unveraendert weiter - Plan ist der Tab des Workout-Stapels, ein
+        // anderer Tab bedeutet "weggeschaltet", nicht "verlassen". Speichern (Summary
+        // ueberdeckt den Player) und Pop passieren dagegen immer auf dem Plan-Tab.
+        .onDisappear {
+            guard navigation.selectedTab == .plan else { return }
+            endBackground()
         }
         .onReceive(tick) { _ in
             if prerollRemaining > 0 {
@@ -1596,6 +1730,7 @@ private struct ForTimePlayerView: View {
             // (siehe `body`).
             guard !isFinished else { return }
             checkCapReached()
+            syncBackground()
         }
         // Nutzer-Feedback: sofortige Pruefung beim Ruecksprung aus dem
         // Hintergrund statt bis zum naechsten Tick zu warten - gleiches
@@ -1603,6 +1738,7 @@ private struct ForTimePlayerView: View {
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
             checkCapReached()
+            syncBackground()
         }
         // Nachtrag 6. August, abends (README 2.9/18e): stand bisher komplett
         // in `if isFinished` - waehrend des Laufs gab es dadurch als einziges
@@ -1691,6 +1827,45 @@ private struct ForTimePlayerView: View {
         session.startTime = Date()
         session.forTimeCheckedRoundsRaw = Self.encodeCheckedRounds(checkedRounds, exercises: exercises)
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
+        startBackground()
+    }
+
+    /// Hintergrund-Lauf (stilles Audio + Live Activity) starten bzw. beim
+    /// Wiederaufnehmen ("Training fortsetzen") wieder aufnehmen - erst, wenn die Uhr
+    /// laeuft: `session.startTime` ist erst nach dem Vorlauf der Anker.
+    private func startBackground() {
+        let started = TimedWorkoutBackground.shared.begin(
+            sessionKey: session.backgroundSessionKey,
+            format: .forTime,
+            dayName: session.displayDayName,
+            soundEnabled: timerSoundEnabled
+        )
+        backgroundToken = started.token
+        syncBackground()
+    }
+
+    /// Billig genug fuer jeden Tick: `TimedLiveContent` ist bei unveraendertem
+    /// Zustand gleich (die Uhr zaehlt das System selbst), dann geht nichts an die
+    /// Live Activity.
+    private func syncBackground() {
+        guard let backgroundToken else { return }
+        TimedWorkoutBackground.shared.sync(
+            TimedLiveContent.forTime(
+                anchor: session.startTime,
+                capSeconds: capSeconds,
+                checkedBoxes: checkedBoxes,
+                totalBoxes: totalBoxes,
+                finishedElapsedSeconds: finishedElapsedSeconds,
+                now: Date()
+            ),
+            token: backgroundToken
+        )
+    }
+
+    private func endBackground() {
+        guard let backgroundToken else { return }
+        TimedWorkoutBackground.shared.end(token: backgroundToken)
+        self.backgroundToken = nil
     }
 
     /// Nutzer-Feedback: `elapsedSeconds` ist Wanduhr-basiert, prueft sich
@@ -1706,6 +1881,10 @@ private struct ForTimePlayerView: View {
         // koennten sonst leicht darueber liegen).
         finishedElapsedSeconds = capSeconds
         DeltiqHaptics.notify(.success)
+        // Das Signal bei gesperrtem Bildschirm: Haptik allein wirkt im
+        // Hintergrund nicht.
+        playTimeUpTone(overshootSeconds: elapsedSeconds - capSeconds, enabled: timerSoundEnabled)
+        syncBackground()
     }
 
     private var isLastBoxRemainingHintVisible: Bool {
@@ -1784,6 +1963,7 @@ private struct ForTimePlayerView: View {
             isFinished = false
             finishedElapsedSeconds = nil
         }
+        syncBackground()
     }
 
     private var finishBar: some View {

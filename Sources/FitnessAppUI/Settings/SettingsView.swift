@@ -34,6 +34,12 @@ public struct SettingsView: View {
     @AppStorage("pref_appearance") private var appearanceRaw: String = "system"   // system|light|dark
     @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
     @AppStorage("pref_timer_haptics") private var timerHapticsEnabled: Bool = true
+    /// Zeitformat-Laeufe (AMRAP/EMOM/Auf Zeit/Zirkel) bei gesperrtem Bildschirm oder
+    /// in einer anderen App weiterlaufen lassen: stilles Hintergrund-Audio haelt die
+    /// App am Leben, damit Signaltoene erklingen und die Live Activity aktuell
+    /// bleibt (siehe `BackgroundAudioKeepAlive`). Gelesen ueber
+    /// `TimedWorkoutBackground.audioPreferenceEnabled()`, Standard: an.
+    @AppStorage("pref_timer_background_audio") private var timerBackgroundAudioEnabled: Bool = true
     /// README 2.15/23b-23c: Laenge der Vorlauf-Phase vor AMRAP/EMOM/Auf-Zeit-
     /// Laeufen, global fuer alle drei Player (kein Pro-Tag-Override - die
     /// gleiche Begruendung wie bei den anderen Timer-Feedback-Prefs hier:
@@ -322,6 +328,11 @@ public struct SettingsView: View {
             }
             DeltiqControlRow(icon: "iphone.radiowaves.left.and.right", label: String(localized: "settings.timer.haptics", bundle: .module)) {
                 Toggle(isOn: $timerHapticsEnabled) { EmptyView() }
+                    .tint(Color.deltiqOrange)
+            }
+            // Zeitformate im Hintergrund: Ton + Live Activity bei gesperrtem Bildschirm.
+            DeltiqControlRow(icon: "lock.fill", label: String(localized: "settings.timer.backgroundAudio", bundle: .module)) {
+                Toggle(isOn: $timerBackgroundAudioEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
             }
             // DEL-078: PR-Celebrations on/off. Separat vom Timer-Feedback.

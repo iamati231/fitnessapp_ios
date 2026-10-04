@@ -43,7 +43,7 @@ Entstanden ist das Projekt als iOS-Port einer Android-Fitness-App. Die Berechnun
 | 186 | Übungen in der System-Bibliothek, dazu eigene Übungen |
 | 4 | Zeitformate: AMRAP, EMOM, Auf Zeit, Zirkel |
 | 12 | Dashboard-Widgets (frei ein-/ausblendbar und sortierbar) |
-| 3 | Sprachen mit 1805 Texten (DE, EN, TR jeweils vollständig) |
+| 3 | Sprachen mit 1806 Texten (DE, EN, TR jeweils vollständig) |
 
 **Was die App kann**
 
@@ -260,12 +260,14 @@ Härte und Reihenfolge werden so verteilt, dass harte und leichte Einheiten abwe
 
 | Format | Parameter | Ablauf | Signale | Ergebnis |
 |---|---|---|---|---|
-| **AMRAP** | Dauer 5–60 Min. (Vorgabe 15) | Countdown; „+1 Runde“ zählt Runden | ab 60 s Rest langer Ton und Haptik | Runden + Wiederholungen der angebrochenen Runde (Stepper nach Ablauf) |
-| **EMOM** | Dauer 5–60 Min. (Vorgabe 12) | Ring 60 → 0 je Minute, Übungen rotieren; „Minute geschafft“ | kurzer Piep 0:10–0:01, langer Ton beim Minutenwechsel; Benachrichtigungen im Hintergrund | geschaffte Minuten |
-| **Auf Zeit** | Zeitlimit: kein Limit oder 5–60 Min. | Stoppuhr; je Übung ein Kreis pro Runde; das letzte Häkchen stoppt die Uhr | – | Zeit (bei Limit: Limit) |
+| **AMRAP** | Dauer 5–60 Min. (Vorgabe 15) | Countdown; „+1 Runde“ zählt Runden | ab 60 s Rest langer Ton und Haptik; langer Ton beim Ablauf | Runden + Wiederholungen der angebrochenen Runde (Stepper nach Ablauf) |
+| **EMOM** | Dauer 5–60 Min. (Vorgabe 12) | Ring 60 → 0 je Minute, Übungen rotieren; „Minute geschafft“ | kurzer Piep 0:10–0:01, langer Ton beim Minutenwechsel und zum Ende | geschaffte Minuten |
+| **Auf Zeit** | Zeitlimit: kein Limit oder 5–60 Min. | Stoppuhr; je Übung ein Kreis pro Runde; das letzte Häkchen stoppt die Uhr | bei gesetztem Limit langer Ton beim Ablauf | Zeit (bei Limit: Limit) |
 | **Zirkel** | Runden 1–20 (Vorgabe 5), Pause 10–300 s (Vorgabe 90), Modus | ungezeitete Arbeitsphase; Runde endet automatisch (*Feste Wiederholungen*, Übungen abhaken) oder per „Runde beenden“ (*Bis zur Ausbelastung*); dann Pausen-Countdown | Pause: Startton + Haptik, Piep bei 60 s/30 s, 10…1 jede Sekunde, Endton | geschaffte Runden |
 
-Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorlauf vor dem Start*: Aus/5/10/15 s, Vorgabe 10) mit „Jetzt starten“; Menü „…“ → *Speichern* (sofort, gilt als vorzeitig) oder *Verwerfen*; der Zurück-Pfeil lässt die Session offen, „Training fortsetzen“ stellt den Stand wieder her. Die Töne spielen auch bei aktivem Stumm-Schalter, mischen sich aber mit Musik. Zeitformate haben keine Pausen-Leiste und keine Live Activity.
+Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorlauf vor dem Start*: Aus/5/10/15 s, Vorgabe 10) mit „Jetzt starten“; Menü „…“ → *Speichern* (sofort, gilt als vorzeitig) oder *Verwerfen*; der Zurück-Pfeil lässt die Session offen, „Training fortsetzen“ stellt den Stand wieder her. Die Töne spielen auch bei aktivem Stumm-Schalter, mischen sich aber mit Musik. Zeitformate haben keine Pausen-Leiste.
+
+**Im Hintergrund:** Solange ein Lauf läuft und *Einstellungen → Pausen-Timer-Feedback → Im Hintergrund weiterlaufen* (Vorgabe: an) sowie *Ton abspielen* an sind, hält sich die App mit unhörbarem Audio am Leben (Hintergrundmodus „Audio“, Audio-Session `.playback` mit `.mixWithOthers`). Dann laufen Uhr, Piepser, Töne und Minutenwechsel bei gesperrtem Bildschirm oder in einer anderen App unverändert weiter, Musik anderer Apps läuft mit, und die Live Activity der Zeitformate (5.11) bleibt aktuell. Der EMOM plant in diesem Fall keine Benachrichtigungen (sonst klänge jeder Minutenwechsel doppelt). Ist der Schalter oder *Ton abspielen* aus, gilt der frühere Stand: AMRAP, Auf Zeit und Zirkel geben im Hintergrund keine Signale, der EMOM sendet seine Signale als Benachrichtigung (nur mit Ton an); die Uhren der Live Activity zählt dann das System weiter, Zähler (Minute, Runde) bleiben stehen. Läuft die Zeit ab (AMRAP, EMOM, Auf Zeit mit Limit), stoppt das stille Audio nach dem Endton von selbst. Speichern, Verwerfen und der Zurück-Pfeil beenden Audio und Live Activity, ein Wechsel auf einen anderen Tab der App nicht; „Training fortsetzen“ startet beides wieder.
 
 **Beenden:** „Training speichern“ → Sheet *Training beenden* mit Dauer, Sätzen/Volumen (Cardio: Distanz, Ø-Pace), „Wie hat sich das Training angefühlt?“ (1 Großartig, 2 Gut, 3 Okay, 4 Sehr schwer, 5 Zerstört / Am Limit; ab 4 gibt es im nächsten Training kein Gewichts-Plus) und – bei Cardio – „Verwendete Ausrüstung“. „Verwerfen“ löscht die Session samt Sätzen nach Rückfrage.
 
@@ -326,7 +328,7 @@ Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorla
 | **Profil & Ziele** | Zeile mit Geschlecht/Alter/Größe/Ziel → **Profil bearbeiten** (siehe unten) |
 | **Präferenzen** | *Einheiten* (Metrisch/Imperial); *Übungen* (Bibliothek); *Ausrüstung & Schuhe* (Gear); *Dashboard anpassen* |
 | **Erscheinungsbild** | System · Hell · Dunkel (System) |
-| **Pausen-Timer-Feedback** | Ton abspielen (an), Vibrieren (an), PR-Feiern (an), Vorlauf vor dem Start: Aus/5/10/15 s (10) |
+| **Pausen-Timer-Feedback** | Ton abspielen (an), Vibrieren (an), Im Hintergrund weiterlaufen (an; Zeitformate bei gesperrtem Bildschirm), PR-Feiern (an), Vorlauf vor dem Start: Aus/5/10/15 s (10) |
 | **Trainings-Verhalten** | Warmup & Cooldown anzeigen (an), RIR-Hilfstexte anzeigen (an), Deload-Vorschläge (an), „Gesenkte Gewichte zurücksetzen (N Übungen)“ |
 | **Erinnerungen** | Wasser erinnern (an) + Häufigkeit: jede Stunde / alle 2 / 3 (Vorgabe) / 4 Stunden; Messung erinnern (an) + Wochentag (Sonntag) + Uhrzeit 6–22 Uhr (8 Uhr) |
 | **Apple Health** | Status/Verbinden, „Letzter Sync“, **Trainings in Health** (eigener Bildschirm, siehe [5.9](#59-apple-health)), **Workout-Import** (aus) |
@@ -379,7 +381,9 @@ Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorla
 
 **Wasser-Widget** (Home-Screen, klein und mittel, interaktiv): Ring mit Tagesziel; klein „+250 ml“, mittel „+250 ml“, „+500 ml“, „+1 L“. Taps schreiben direkt in die gemeinsame Datenbank (App Group). Funktioniert nur in signierten Builds (z. B. TestFlight); ohne App-Group-Store steht „App einmal öffnen, um das Widget zu aktivieren.“
 
-**Rest-Timer-Live-Activity:** Sperrbildschirm und Dynamic Island (kompakt, erweitert, minimal) zeigen Übung, „Satz n / m“ und den Pausen-Countdown; nach Ablauf 8 Sekunden „Pause vorbei“. Nach einem Training mit Rekord (und aktivem *PR-Feiern*) erscheint 8 Sekunden lang eine Trophäen-Meldung. Voraussetzung: Live Activities sind in iOS erlaubt. Nur das Sätze-Training nutzt die Live Activity.
+**Rest-Timer-Live-Activity:** Sperrbildschirm und Dynamic Island (kompakt, erweitert, minimal) zeigen Übung, „Satz n / m“ und den Pausen-Countdown; nach Ablauf 8 Sekunden „Pause vorbei“. Nach einem Training mit Rekord (und aktivem *PR-Feiern*) erscheint 8 Sekunden lang eine Trophäen-Meldung. Voraussetzung: Live Activities sind in iOS erlaubt. Diese Live Activity gehört zum Sätze-Training; die Zeitformate haben eine eigene (nächster Absatz).
+
+**Zeitformat-Live-Activity:** läuft bei AMRAP, EMOM, Auf Zeit und Zirkel, sobald die Uhr läuft (nicht im Vorlauf). Sperrbildschirm: Format und Tagesname, Zustand („LÄUFT“, „PAUSE“, „Geschafft!“), große Uhr, Fortschrittsbalken und der Stand – AMRAP: Countdown und „n Runden“; EMOM: Countdown der laufenden Minute, „Minute n / m“, die Übung der Minute und „Nächste Minute: …“; Auf Zeit: hochzählende Stoppuhr und „n / m erledigt“ (stehende Zeit nach dem letzten Häkchen oder am Limit); Zirkel: Pausen-Countdown bzw. Trainingszeit und „RUNDE n/m“. Dynamic Island: kompakt Symbol + Uhr (nach dem Ende ein Haken), erweitert Format, Stand, Uhr und beim EMOM die Übung. Die Uhren zählt das System selbst (kein Update pro Sekunde); Minuten-, Runden- und Phasenwechsel schickt die App. Bleibt ein Update aus (App beendet, kein Hintergrund-Audio), erkennt iOS den Inhalt als veraltet, und die Anzeige fällt auf die Gesamtzeit des Laufs zurück. Nach dem Ende im Hintergrund bleibt „Geschafft!“ bis zu 10 Minuten stehen; Speichern oder Verwerfen entfernt sie sofort. Wegwischen wird respektiert (sie kommt nicht bei jedem Tipp zurück), ein Neustart der App räumt Reste eines beendeten Laufs ab, ein Tipp öffnet das laufende Training. Die Texte folgen der App-Sprache.
 
 **Lokale Benachrichtigungen:**
 
@@ -388,7 +392,7 @@ Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorla
 | Wasser-Erinnerung | täglich 08:00–20:00 Uhr alle 1/2/3/4 Stunden |
 | Mess-Erinnerung | wöchentlich zu Wochentag und Uhrzeit deiner Wahl |
 | „Pause vorbei!“ | nach dem Pausen-Timer im Hintergrund (nur mit Ton oder Vibrieren an) |
-| EMOM-Minutensignale | während eines EMOM im Hintergrund (nur mit Ton an) |
+| EMOM-Minutensignale | während eines EMOM im Hintergrund (nur mit Ton an und ohne *Im Hintergrund weiterlaufen*) |
 | PR-Feier | ca. 1 s nach einem Training mit Rekord (bei aktivem *PR-Feiern*) |
 
 Die Erinnerungen werden nach dem Onboarding, nach Imports und Backup-Wiederherstellungen sowie bei jedem App-Start gegen deine Schalter abgeglichen (z. B. nach einer Geräte-Wiederherstellung); ohne Benachrichtigungs-Erlaubnis bleiben sie ungeplant. Antippen der Wasser-Erinnerung öffnet *Werkzeuge → Wasser*, der Mess-Erinnerung den Messung-Tab.
@@ -397,7 +401,7 @@ Die Erinnerungen werden nach dem Onboarding, nach Imports und Backup-Wiederherst
 
 ### 5.12 Sprache, Design und Datenschutz
 
-- **Sprachen:** Deutsch, Englisch, Türkisch – die App folgt der iOS-Systemsprache (kein In-App-Wechsel). Der Katalog enthält 1805 Texte, alle in drei Sprachen vollständig; die Texte der Apple-Health-Berechtigungsdialoge stehen getrennt in `App/FitnessApp/InfoPlist.xcstrings` (ebenfalls DE/EN/TR). Nur auf Deutsch (nicht lokalisiert): Wasser-/Mess-Erinnerungstexte, Widget und Live Activity, einige Hinweis- und Fehlermeldungen.
+- **Sprachen:** Deutsch, Englisch, Türkisch – die App folgt der iOS-Systemsprache (kein In-App-Wechsel). Der Katalog enthält 1806 Texte, alle in drei Sprachen vollständig; die Texte der Apple-Health-Berechtigungsdialoge stehen getrennt in `App/FitnessApp/InfoPlist.xcstrings` (ebenfalls DE/EN/TR). Nur auf Deutsch (nicht lokalisiert): Wasser-/Mess-Erinnerungstexte, Widget und Rest-Timer-Live-Activity (die Live Activity der Zeitformate folgt der App-Sprache), einige Hinweis- und Fehlermeldungen.
 - **Design:** Akzentfarbe Orange; Erscheinungsbild System, Hell oder Dunkel.
 - **Datenschutz:** alle Daten bleiben lokal. Die App fragt **keinen** Zugriff auf Kamera, Fotos, Standort oder Mikrofon an und nutzt kein Netzwerk. Berechtigungen im Überblick: [6.2](#62-voraussetzungen-und-berechtigungen).
 
@@ -467,6 +471,10 @@ Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder
 - [ ] Einmalige Reparatur: ein früher nachgetragener Lauf mit 1–2 Min im Verlauf zeigt nach dem ersten Start des neuen Builds die eingetragene Laufzeit (z. B. „25:56“, Verlauf „25 Min“); ein früher live gelaufener Einzel-Lauf mit längerer Wanduhr zeigt ebenfalls die Laufzeit; Datum und Uhrzeit der Einheit bleiben unverändert; ein Training mit Kraft- und Cardio-Sätzen behält seine Dauer
 - [ ] Einzel-Lauf nachträglich ändern: Dauer im Verlauf auf einen anderen Wert stellen → die Änderung gilt (nur Minuten), die Reparatur beim App-Start setzt sie nicht erneut zurück (nach einem CSV-Import oder Backup-Restore wird ein Einzel-Lauf dagegen wieder auf seine Laufzeit gesetzt)
 - [ ] Zeitformate AMRAP, EMOM, Auf Zeit, Zirkel (beide Modi) mit Vorlauf 0/5/10/15 s; Gerät sperren; vorzeitig speichern
+- [ ] Zeitformate im Hintergrund (*Im Hintergrund weiterlaufen* an): jedes Format starten → Gerät sperren bzw. eine andere App öffnen: Signaltöne kommen pünktlich (EMOM: Piepser 0:10–0:01, langer Ton zum Minutenwechsel und zum Ende; AMRAP/Auf Zeit mit Limit: Ton beim Ablauf; Zirkel: Pausentöne), Live Activity zeigt Uhr und Stand (EMOM: Minute und Übung wechseln mit; AMRAP: „+1 Runde“ ist nach dem Zurückkehren eingerechnet), Tipp auf die Live Activity öffnet das laufende Training, Musik einer anderen App läuft weiter, Speichern/Verwerfen/Zurück-Pfeil beendet Audio und Live Activity
+- [ ] Unterbrechung: während eines Laufs anrufen lassen oder Siri benutzen → nach dem Auflegen kommen die Signale wieder; Kopfhörer abziehen/anstecken → Signale laufen weiter
+- [ ] *Im Hintergrund weiterlaufen* aus (oder *Ton abspielen* aus): kein stilles Audio; EMOM sendet Benachrichtigungen (nur mit Ton an), die Live Activity zählt ihre Uhr weiter
+- [ ] App im App-Switcher beenden, während ein Lauf läuft: die Live Activity steht still bzw. wird veraltet dargestellt und verschwindet nach dem nächsten App-Start; „Training fortsetzen“ legt sie neu an; eine weggewischte Live Activity kommt bei „+1 Runde“ nicht zurück
 - [ ] Zusammenfassung: Erfolge, Rekorde, Progression, Notiz, Gerät zuordnen
 - [ ] Verlauf: Training bearbeiten und löschen; Trophy Room „Aus History neu berechnen“
 - [ ] Progression: obere Grenze + RIR ≥ 2 → „Neues Ziel“; Gefühl 4/5 → keine Erhöhung; unter der Untergrenze bei RIR 0 → Senkung
@@ -515,9 +523,9 @@ Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder
 
 ### 6.4 Bekannte Einschränkungen
 
-- **Timer im Hintergrund:** Es gibt kein Hintergrund-Audio. AMRAP, Auf Zeit und Zirkel geben im Hintergrund keine Signale; Pausen- und EMOM-Signale laufen über Benachrichtigungen (Erlaubnis nötig). Zeitformate haben weder Pausen-Leiste noch Live Activity.
+- **Timer im Hintergrund:** Zeitformat-Läufe laufen nur im Hintergrund weiter, solange *Im Hintergrund weiterlaufen* und *Ton abspielen* an sind; die App spielt dann unhörbares Audio ab (etwas mehr Akku). Die Töne kommen aus dem Sekundentakt der App und können um bis zu eine Sekunde von der genauen Zeit abweichen; Anrufe unterbrechen sie, danach geht es weiter. Wird die App im App-Switcher beendet, endet alles. Ohne Hintergrund-Audio geben AMRAP, Auf Zeit und Zirkel im Hintergrund keine Signale; Pausen- (Sätze-Training) und EMOM-Signale laufen dann über Benachrichtigungen (Erlaubnis nötig), und die Zähler der Live Activity bleiben stehen.
 - **Einheiten:** „Imperial“ wirkt nur teilweise (u. a. Hantel- und 1RM-Rechner, Hantel-Aufladung, Aufwärm-Rampe, Profil-Untertitel). Messung, Dashboard, Kalorien-Rechner, Profil-Editor, Wasser, Satz-Eingabe, Volumen und Rekorde bleiben kg/cm.
-- **Widgets:** nur ein Widget (Wasser). Widget, Live Activity und Erinnerungen sind nur deutsch.
+- **Widgets:** nur ein Widget (Wasser). Widget, Rest-Timer-Live-Activity und Erinnerungen sind nur deutsch.
 - **Löschen ohne Rückfrage:** Plan (Wischen), Trainingstag, Übung im Tag-Editor, Messung, Ausrüstung, Wasser-Eintrag, „Heute zurücksetzen“.
 - **Messungen:** In der Liste erscheinen nur die 12 jüngsten (ältere bleiben gespeichert, sind aber nicht bearbeitbar). Es gibt keine Plausibilitätsgrenzen bei der Eingabe.
 - **Workout-Import:** nur Laufen/Radfahren, nur beim App-Start (kein Hintergrund-Sync); eine gelöschte importierte Einheit kommt beim nächsten Start zurück.
@@ -579,24 +587,24 @@ fitnessapp_ios/
 |-- codemagic.yaml               # CI: swift-package, ios-app, testflight
 |-- App/
 |   |-- FitnessApp/              # App-Einstieg, AppDelegate, Info.plist (+ InfoPlist.xcstrings), Entitlements, Assets
-|   `-- FitnessAppWidgets/       # Wasser-Widget + Rest-Timer-Live-Activity
+|   `-- FitnessAppWidgets/       # Wasser-Widget + Live Activities (Rest-Timer, Zeitformate)
 |-- Sources/
 |   |-- FitnessAppCore/          # reine Logik (nur Foundation): Analytics, Programs (Vorlagen,
 |   |                            #   Bibliothek, Plan-Generator), Records, BodyComposition,
 |   |                            #   Exercises, Progression, Nutrition, Coaching, DataPortability
 |   |-- FitnessAppData/          # SwiftData-Modelle, Export/Import/Backup, SharedStore (App Group)
 |   |-- FitnessAppHealth/        # HealthKit-Service + plattformneutraler Controller
-|   |-- FitnessAppActivities/    # ActivityKit, Erinnerungen, Deep-Links, Notification-Routing
+|   |-- FitnessAppActivities/    # ActivityKit (Rest-Timer, Zeitformate), Erinnerungen, Deep-Links, Notification-Routing
 |   `-- FitnessAppUI/            # alle SwiftUI-Views, Theme, Lokalisierung (Localizable.xcstrings)
 |-- Tests/
-|   |-- FitnessAppCoreTests/     # Rechner, Analytik, Plan-Generator, CSV, Backup (ca. 670 Tests)
+|   |-- FitnessAppCoreTests/     # Rechner, Analytik, Plan-Generator, CSV, Backup (ca. 700 Tests)
 |   |-- FitnessAppDataTests/     # SwiftData in-memory, Export/Import-Roundtrip (ca. 80 Tests)
 |   `-- FitnessAppHealthTests/   # Zustandslogik der Health-Berechtigungen, Health-Metadaten (ca. 35 Tests)
 |-- .claude/                     # Claude-Code-Subagents (14 Agents aus „agency-agents“, MIT) + Herkunftshinweis
 `-- .scripts/                    # Python-Werkzeuge für den String-Katalog, Kopierskript für die Agents
 ```
 
-Modul-Abhängigkeiten: `FitnessAppData → FitnessAppCore`; `FitnessAppUI` hängt von allen vier anderen ab; `FitnessAppHealth` und `FitnessAppActivities` sind eigenständig. Alle SwiftUI-/SwiftData-Dateien sind mit `#if canImport(...)` gekapselt, damit `FitnessAppCore` überall kompiliert.
+Modul-Abhängigkeiten: `FitnessAppData → FitnessAppCore`; `FitnessAppActivities → FitnessAppCore` (die Live Activity der Zeitformate trägt `TimedLiveContent`); `FitnessAppUI` hängt von allen vier anderen ab; `FitnessAppHealth` ist eigenständig. Alle SwiftUI-/SwiftData-Dateien sind mit `#if canImport(...)` gekapselt, damit `FitnessAppCore` überall kompiliert.
 
 ### 8.2 Architektur-Invarianten
 
@@ -666,9 +674,9 @@ Unter `.claude/agents/` liegen 14 Subagents aus [msitarzewski/agency-agents](htt
 ## 9. Offene Punkte
 
 - **Widgets:** weitere Home-Screen-Widgets („Nächstes Training“, „Letzte Messung“) sind nur als Idee im Widget-Bundle vermerkt.
-- **Release:** Public-Release-Workflow und Datenschutz-Manifest (`PrivacyInfo.xcprivacy`) fehlen noch.
+- **Release:** Public-Release-Workflow und Datenschutz-Manifest (`PrivacyInfo.xcprivacy`) fehlen noch. Für die Einreichung braucht der Hintergrundmodus *Audio* (Zeitformate) eine Begründung für App Review (Richtlinie 2.5.4): hörbare Intervall-Signaltöne bei gesperrtem Bildschirm, nur während eines Laufs.
 - **Einheiten:** durchgängige lbs-/in-Unterstützung (Eingaben, Volumen, Rekorde, Messung).
-- **Lokalisierung:** Widget, Live Activity, Erinnerungen und einzelne Meldungen in DE/EN/TR.
+- **Lokalisierung:** Widget, Rest-Timer-Live-Activity, Erinnerungen und einzelne Meldungen in DE/EN/TR.
 - **Health:** Retro-Sync des Cardio-Baselines aus der HealthKit-Historie (bewusst zurückgestellt, damit Bestandsnutzer keinen neuen Berechtigungsdialog sehen); Workout-Import ohne Hintergrund-Sync; Trainings in Health ohne Kalorien/Puls und ohne automatischen Hintergrund-Export.
 - **Coaching:** Auslöser für *Neuer Rekord*, *Plateau* und *Junk Miles*; Wiedereinstieg passt bisher nur Gewichte an (nicht Volumen/RIR); Maximalpuls hat noch keinen Verbraucher.
 - **Ausrüstung:** eigenes Feld für Basis-Kilometer (Schemaänderung zurückgestellt).

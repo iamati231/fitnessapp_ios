@@ -19468,6 +19468,29 @@
         }
       }
     },
+    "settings.timer.backgroundAudio": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Im Hintergrund weiterlaufen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep running in background"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arka planda çalışmaya devam et"
+          }
+        }
+      }
+    },
     "settings.timer.prCelebrations": {
       "extractionState": "manual",
       "localizations": {
@@ -19612,19 +19635,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wird beim Ablauf des Pausen-Timers ausgelöst. Vibrations-Toggle hat auf iPads keine Wirkung. 'PR-Feiern' steuert Save-Screen-Popups, Live-Activity-Headline und lokale Benachrichtigungen — die Bestleistungen werden trotzdem im Trophy-Room gespeichert. 'Vorlauf vor dem Start' zeigt vor AMRAP/EMOM/Auf-Zeit-Läufen einen Countdown, bevor die Uhr wirklich startet."
+            "value": "Wird beim Ablauf des Pausen-Timers ausgelöst. Vibrations-Toggle hat auf iPads keine Wirkung. 'PR-Feiern' steuert Save-Screen-Popups, Live-Activity-Headline und lokale Benachrichtigungen — die Bestleistungen werden trotzdem im Trophy-Room gespeichert. 'Vorlauf vor dem Start' zeigt vor AMRAP/EMOM/Auf-Zeit-Läufen einen Countdown, bevor die Uhr wirklich startet. 'Im Hintergrund weiterlaufen' hält Zeitformat-Läufe (AMRAP, EMOM, Auf Zeit, Zirkel) bei gesperrtem Bildschirm oder in einer anderen App am Laufen: Die Signaltöne bleiben hörbar (die App spielt dafür unhörbar Audio ab) und die Live Activity bleibt aktuell. Das kostet etwas Akku."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fires when the rest timer ends. Vibration has no effect on iPads. 'Celebrate PRs' drives save-screen popups, Live Activity headlines, and local notifications — PRs are saved to the Trophy Room either way. 'Lead-in before start' shows a countdown before AMRAP/EMOM/For-Time runs, before the clock actually starts."
+            "value": "Fires when the rest timer ends. Vibration has no effect on iPads. 'Celebrate PRs' drives save-screen popups, Live Activity headlines, and local notifications — PRs are saved to the Trophy Room either way. 'Lead-in before start' shows a countdown before AMRAP/EMOM/For-Time runs, before the clock actually starts. 'Keep running in background' keeps time-format runs (AMRAP, EMOM, For Time, Circuit) going with a locked screen or in another app: the signal tones stay audible (the app plays inaudible audio to do so) and the Live Activity stays up to date. It costs a little battery."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mola zamanlayıcısı bittiğinde tetiklenir. Titreşim iPad'lerde etkisizdir. 'PR'ı Kutla' kaydetme ekranı pencerelerini, Live Activity başlıklarını ve yerel bildirimleri yönlendirir — PR'lar her durumda Kupa Odası'na kaydedilir. 'Başlamadan önce geri sayım', AMRAP/EMOM/Süreye Karşı koşularından önce saat gerçekten başlamadan bir geri sayım gösterir."
+            "value": "Mola zamanlayıcısı bittiğinde tetiklenir. Titreşim iPad'lerde etkisizdir. 'PR'ı Kutla' kaydetme ekranı pencerelerini, Live Activity başlıklarını ve yerel bildirimleri yönlendirir — PR'lar her durumda Kupa Odası'na kaydedilir. 'Başlamadan önce geri sayım', AMRAP/EMOM/Süreye Karşı koşularından önce saat gerçekten başlamadan bir geri sayım gösterir. 'Arka planda çalışmaya devam et', zaman formatı antrenmanlarının (AMRAP, EMOM, Süreye Karşı, Devre) ekran kilitliyken veya başka bir uygulamadayken de sürmesini sağlar: sinyal sesleri duyulur kalır (uygulama bunun için duyulmayan bir ses çalar) ve Live Activity güncel kalır. Biraz pil harcar."
           }
         }
       }

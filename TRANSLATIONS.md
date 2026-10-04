@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1805 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1806 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1805 / 1805** (100%) | 0 |
-| 🇬🇧 English (EN) | **1805 / 1805** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1805 / 1805** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1806 / 1806** (100%) | 0 |
+| 🇬🇧 English (EN) | **1806 / 1806** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1806 / 1806** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1712,7 +1712,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (200 Keys)
+## `settings.*`  (201 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1899,7 +1899,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.section.preferences` | Präferenzen | Preferences | Tercihler |
 | `settings.section.privacy` | Datenschutz | Privacy | Gizlilik |
 | `settings.section.profile_goals` | Profil & Ziele | Profile & Goals | Profil & Hedefler |
-| `settings.timer.footer` | Wird beim Ablauf des Pausen-Timers ausgelöst. Vibrations-Toggle hat auf iPads keine Wirkung. 'PR-Feiern' steuert Save-Screen-Popups, Live-Activity-Headline und lokale Benachrichtigungen — die Bestleistungen werden trotzdem im Trophy-Room gespeichert. 'Vorlauf vor dem Start' zeigt vor AMRAP/EMOM/Auf-Zeit-Läufen einen Countdown, bevor die Uhr wirklich startet. | Fires when the rest timer ends. Vibration has no effect on iPads. 'Celebrate PRs' drives save-screen popups, Live Activity headlines, and local notifications — PRs are saved to the Trophy Room either way. 'Lead-in before start' shows a countdown before AMRAP/EMOM/For-Time runs, before the clock actually starts. | Mola zamanlayıcısı bittiğinde tetiklenir. Titreşim iPad'lerde etkisizdir. 'PR'ı Kutla' kaydetme ekranı pencerelerini, Live Activity başlıklarını ve yerel bildirimleri yönlendirir — PR'lar her durumda Kupa Odası'na kaydedilir. 'Başlamadan önce geri sayım', AMRAP/EMOM/Süreye Karşı koşularından önce saat gerçekten başlamadan bir geri sayım gösterir. |
+| `settings.timer.backgroundAudio` | Im Hintergrund weiterlaufen | Keep running in background | Arka planda çalışmaya devam et |
+| `settings.timer.footer` | Wird beim Ablauf des Pausen-Timers ausgelöst. Vibrations-Toggle hat auf iPads keine Wirkung. 'PR-Feiern' steuert Save-Screen-Popups, Live-Activity-Headline und lokale Benachrichtigungen — die Bestleistungen werden trotzdem im Trophy-Room gespeichert. 'Vorlauf vor dem Start' zeigt vor AMRAP/EMOM/Auf-Zeit-Läufen einen Countdown, bevor die Uhr wirklich startet. 'Im Hintergrund weiterlaufen' hält Zeitformat-Läufe (AMRAP, EMOM, Auf Zeit, Zirkel) bei gesperrtem Bildschirm oder in einer anderen App am Laufen: Die Signaltöne bleiben hörbar (die App spielt dafür unhörbar Audio ab) und die Live Activity bleibt aktuell. Das kostet etwas Akku. | Fires when the rest timer ends. Vibration has no effect on iPads. 'Celebrate PRs' drives save-screen popups, Live Activity headlines, and local notifications — PRs are saved to the Trophy Room either way. 'Lead-in before start' shows a countdown before AMRAP/EMOM/For-Time runs, before the clock actually starts. 'Keep running in background' keeps time-format runs (AMRAP, EMOM, For Time, Circuit) going with a locked screen or in another app: the signal tones stay audible (the app plays inaudible audio to do so) and the Live Activity stays up to date. It costs a little battery. | Mola zamanlayıcısı bittiğinde tetiklenir. Titreşim iPad'lerde etkisizdir. 'PR'ı Kutla' kaydetme ekranı pencerelerini, Live Activity başlıklarını ve yerel bildirimleri yönlendirir — PR'lar her durumda Kupa Odası'na kaydedilir. 'Başlamadan önce geri sayım', AMRAP/EMOM/Süreye Karşı koşularından önce saat gerçekten başlamadan bir geri sayım gösterir. 'Arka planda çalışmaya devam et', zaman formatı antrenmanlarının (AMRAP, EMOM, Süreye Karşı, Devre) ekran kilitliyken veya başka bir uygulamadayken de sürmesini sağlar: sinyal sesleri duyulur kalır (uygulama bunun için duyulmayan bir ses çalar) ve Live Activity güncel kalır. Biraz pil harcar. |
 | `settings.timer.haptics` | Vibrieren | Vibrate | Titret |
 | `settings.timer.prCelebrations` | PR-Feiern | Celebrate PRs | PR'ı Kutla |
 | `settings.timer.preroll` | Vorlauf vor dem Start | Lead-in before start | Başlamadan önce geri sayım |

@@ -83,6 +83,12 @@ public struct RootView: View {
             // dann auf der ProgressView haengen. Defensive reset.
             if isResetting { isResetting = false }
 
+            // Eine Live Activity, die ein frueherer Prozess zurueckgelassen hat (App
+            // waehrend eines AMRAP/EMOM/Auf-Zeit/Zirkel-Laufs beendet), hat keinen
+            // Player mehr, der sie fuehrt - wegraeumen. Ein schon laufender Lauf (z.B.
+            // per Tipp auf die Live Activity geoeffnet) bleibt unberuehrt.
+            TimedWorkoutBackground.shared.endOrphans()
+
             // Refresh per-launch availability for native integrations. Both checks
             // are cheap; both are no-ops when their frameworks aren't present.
             await healthKit.refreshAuthorizationStatus()
