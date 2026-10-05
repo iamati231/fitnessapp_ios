@@ -75,6 +75,13 @@ final class TimedWorkoutBackground {
     func beginPreroll(soundEnabled: Bool) -> Int {
         lastToken += 1
         activeToken = lastToken
+        if run?.format == .emom {
+            // Loest einen EMOM mit Rueckfall-Benachrichtigungen ab (z.B. "Verwerfen &
+            // starten" auf dem Dashboard): Der Abgang des alten Players kommt dann mit
+            // veraltetem Token an und raeumt sie nicht ab. Der neue Lauf plant seine
+            // Signale erst nach dem Vorlauf - ein Cancel hier konkurriert mit nichts.
+            Task { await ReminderScheduler.cancelEMOMSignals() }
+        }
         run = nil
         lastSent = nil
         audioWanted = soundEnabled && Self.audioPreferenceEnabled()
@@ -92,12 +99,19 @@ final class TimedWorkoutBackground {
     func begin(sessionKey: String, format: WorkoutTimeFormat, dayName: String, soundEnabled: Bool) -> Int {
         lastToken += 1
         activeToken = lastToken
+        let replacedEMOM = run?.format == .emom
         run = Run(
             sessionKey: sessionKey,
             format: format,
             formatName: timedFormatDisplayName(format),
             dayName: dayName
         )
+        if replacedEMOM, format != .emom {
+            // Wie in `beginPreroll`. Ein neuer EMOM plant seine Signale selbst (ein
+            // Cancel hier konkurrierte mit dessen Planung, denn die Kennungen sind je
+            // Minute fest).
+            Task { await ReminderScheduler.cancelEMOMSignals() }
+        }
         lastSent = nil
         audioWanted = soundEnabled && Self.audioPreferenceEnabled()
         if !audioWanted {

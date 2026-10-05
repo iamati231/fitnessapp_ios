@@ -1342,7 +1342,9 @@ private struct EMOMPlayerView: View {
     /// Vorlauf eingestellt) oder beim Uebergang aus dem Vorlauf
     /// (`finishPreroll`) - nie beides, da sich die beiden Aufrufstellen
     /// gegenseitig ausschliessen (`prerollRemaining == 0` beim Mount
-    /// bedeutet, dass der Vorlauf-Zweig in `onReceive` nie greift).
+    /// bedeutet, dass der Vorlauf-Zweig in `onReceive` nie greift). Der Mount
+    /// kommt allerdings auch bei jeder Rueckkehr auf den Tab: dann plant dieser Aufruf
+    /// mitten im Lauf neu - siehe `elapsedSeconds` unten.
     /// Laeuft das Hintergrund-Audio (`audioRunning`, Einstellung "Im Hintergrund
     /// weiterlaufen"), spielt die App die Toene selbst weiter - Benachrichtigungen
     /// kaemen dann zusaetzlich und jeder Minutenwechsel klaenge doppelt. Sie bleiben
@@ -1407,7 +1409,11 @@ private struct EMOMPlayerView: View {
             return
         }
         guard currentMinute != lastKnownMinute else { return }
-        if currentMinute == lastKnownMinute + 1, timerSoundEnabled, !wasBackgroundedSinceLastResync {
+        // `secondsIntoMinute <= 2`: nur ein LIVE erlebter Uebergang bekommt den Ton. Kehrt
+        // die App erst spaeter zurueck (Hintergrund-Audio durch einen Anruf unterbrochen,
+        // App angehalten), waere ein verspaeteter Ton falsch - dann bleibt es still.
+        if currentMinute == lastKnownMinute + 1, timerSoundEnabled, !wasBackgroundedSinceLastResync,
+           secondsIntoMinute <= 2 {
             TimerSoundPlayer.shared.playLong()
         }
         lastKnownMinute = currentMinute

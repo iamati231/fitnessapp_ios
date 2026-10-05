@@ -23,8 +23,10 @@ import FitnessAppCore
 /// Layout bleibt deshalb flach: Format, Tagesname und Zustand teilen sich EINE
 /// Kopfzeile, der Zaehler steht neben der Uhr, der Fortschrittsbalken hat keine
 /// eigenen Beschriftungen (die Standardform des Balkens haengt sonst einen zweiten,
-/// selbst zaehlenden Text darunter) - rund 110 pt, beim EMOM mit den Uebungen unter
-/// 160 pt.
+/// selbst zaehlenden Text darunter) - rund 105 pt, beim EMOM mit den Uebungen rund
+/// 140 pt. Die Schriftgroesse (Dynamic Type) ist nach oben begrenzt: Noch groessere
+/// Stufen schoeben den EMOM ueber die Grenze, und abgeschnitten wird dann gerade die
+/// Uebung der naechsten Minute.
 ///
 /// **Veraltet:** Bleibt das Update aus (App beendet, Hintergrund-Audio aus),
 /// markiert iOS den Inhalt zum `staleDate` als veraltet (`context.isStale`). Dann
@@ -164,10 +166,13 @@ private struct TimedLockScreenView: View {
         let texts = context.state.texts
         let accent = TimedLook.accent(context)
         let outdated = TimedLook.isOutdated(context)
-        VStack(alignment: .leading, spacing: 6) {
-            // Kopfzeile: Format, Tagesname, Zustand - in einer Zeile spart es Hoehe.
+        VStack(alignment: .leading, spacing: 4) {
+            // Kopfzeile: Format, Tagesname, Zustand - in einer Zeile spart es Hoehe. Bei
+            // knappem Platz kuerzt sich der Tagesname zuerst (Format und Zustand haben
+            // Vorrang).
             HStack(spacing: 8) {
                 TimedFormatLabel(context: context)
+                    .layoutPriority(1)
                 Text(context.attributes.dayName)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -177,6 +182,7 @@ private struct TimedLockScreenView: View {
                     Text(texts.phase)
                         .font(.caption.weight(.bold))
                         .foregroundStyle(accent)
+                        .layoutPriority(1)
                 }
             }
 
@@ -202,7 +208,8 @@ private struct TimedLockScreenView: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, 10)
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
         .activityBackgroundTint(Color.black.opacity(0.85))
         .activitySystemActionForegroundColor(.white)
     }

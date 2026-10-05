@@ -748,6 +748,11 @@ public struct DataImportView: View {
                 // die Notification-Permission selbst.
                 await rescheduleImportedReminders()
                 await MainActor.run {
+                    // Ersetzen loescht alle Trainings: Ein noch laufender Zeitformat-Lauf
+                    // (stilles Hintergrund-Audio + Live Activity) hat danach keine Session.
+                    if strategy == .replace {
+                        TimedWorkoutBackground.shared.endAll()
+                    }
                     self.phase = .finished(result: result)
                     self.importProgress = nil
                     // DEL-216: Import kann heutige Wasser-Einträge geändert

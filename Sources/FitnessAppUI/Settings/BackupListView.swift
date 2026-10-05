@@ -315,6 +315,9 @@ public struct BackupListView: View {
             // Nachgetragene Laeufe aus einer Sicherung vor dem Dauer-Fix
             // (1-2 Min statt der eingetragenen Laufzeit) nachziehen.
             SessionDurationRepair.repairAfterImport(in: modelContext)
+            // Das Ersetzen hat alle Trainings geloescht: Ein noch laufender Zeitformat-
+            // Lauf (stilles Hintergrund-Audio + Live Activity) hat keine Session mehr.
+            TimedWorkoutBackground.shared.endAll()
             resultMessage = String(
                 format: String(localized: "backups.restore.done", bundle: .module),
                 result.totalImported, result.totalSkipped

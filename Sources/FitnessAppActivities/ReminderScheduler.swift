@@ -245,10 +245,16 @@ public enum ReminderScheduler {
     public static func cancelEMOMSignals() async {
         #if canImport(UserNotifications)
         let center = UNUserNotificationCenter.current()
+        // Geplante UND schon zugestellte getrennt abfragen: Eine zugestellte
+        // Benachrichtigung steht nicht mehr in der Liste der geplanten, ihre Kennung
+        // laesst sich daraus also nicht ableiten - die Banner blieben sonst in der
+        // Mitteilungszentrale liegen.
         let pending = await center.pendingNotificationRequests()
-        let ids = pending.map(\.identifier).filter { $0.hasPrefix(emomIdentifierPrefix) }
-        center.removePendingNotificationRequests(withIdentifiers: ids)
-        center.removeDeliveredNotifications(withIdentifiers: ids)
+        let delivered = await center.deliveredNotifications()
+        let pendingIDs = pending.map(\.identifier).filter { $0.hasPrefix(emomIdentifierPrefix) }
+        let deliveredIDs = delivered.map(\.request.identifier).filter { $0.hasPrefix(emomIdentifierPrefix) }
+        center.removePendingNotificationRequests(withIdentifiers: pendingIDs)
+        center.removeDeliveredNotifications(withIdentifiers: deliveredIDs)
         #endif
     }
 
