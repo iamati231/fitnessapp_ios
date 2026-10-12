@@ -10,6 +10,46 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Animasyon: %@" } }
       }
     },
+    "settings.about.exerciseMediaCredit": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Übungs-GIFs" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Exercise GIFs" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Egzersiz GIF'leri" } }
+      }
+    },
+    "settings.credits.exerciseMedia.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Übungs-GIFs" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Exercise GIFs" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Egzersiz GIF'leri" } }
+      }
+    },
+    "settings.credits.exerciseMedia.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Die animierten Übungs-GIFs stammen aus einem offenen Datensatz. Die Bildrechte liegen bei Gym visual und werden mit deren Erlaubnis gezeigt." } },
+        "en": { "stringUnit": { "state": "translated", "value": "The animated exercise GIFs come from an open dataset. Image rights belong to Gym visual and are shown with their permission." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Animasyonlu egzersiz GIF'leri açık bir veri setinden alınmıştır. Görsel hakları Gym visual'a aittir ve izinleriyle gösterilmektedir." } }
+      }
+    },
+    "settings.credits.exerciseMedia.attribution": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "© Gym visual — https://gymvisual.com/" } },
+        "en": { "stringUnit": { "state": "translated", "value": "© Gym visual — https://gymvisual.com/" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "© Gym visual — https://gymvisual.com/" } }
+      }
+    },
+    "settings.credits.exerciseMedia.sources": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Quelle: github.com/hasaneyldrm/exercises-dataset (Daten, MIT-Lizenz) und github.com/arvids-unavailable/openGym (Bilddateien). Volle Bedingungen: gymvisual.com/content/3-terms-and-conditions-of-use" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Source: github.com/hasaneyldrm/exercises-dataset (data, MIT license) and github.com/arvids-unavailable/openGym (image files). Full terms: gymvisual.com/content/3-terms-and-conditions-of-use" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kaynak: github.com/hasaneyldrm/exercises-dataset (veri, MIT lisansı) ve github.com/arvids-unavailable/openGym (görsel dosyaları). Tam koşullar: gymvisual.com/content/3-terms-and-conditions-of-use" } }
+      }
+    },
     "timedWorkout.amrap.addRound": {
       "extractionState": "manual",
       "localizations": {

@@ -748,10 +748,20 @@ public struct SettingsView: View {
                     .font(.system(size: 13))
                     .foregroundStyle(Color.Deltiq.textSecondary)
             }
-            DeltiqControlRow(label: String(localized: "settings.about.bundle", bundle: .module), showsDivider: false) {
+            DeltiqControlRow(label: String(localized: "settings.about.bundle", bundle: .module)) {
                 Text(bundleIdentifier)
                     .font(.system(size: 11))
                     .foregroundStyle(Color.Deltiq.textSecondary)
+            }
+            NavigationLink {
+                ExerciseMediaCreditsView()
+            } label: {
+                DeltiqRow(
+                    icon: "photo.on.rectangle.angled",
+                    label: String(localized: "settings.about.exerciseMediaCredit", bundle: .module),
+                    showsChevron: true,
+                    showsDivider: false
+                )
             }
         }
     }

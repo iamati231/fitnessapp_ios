@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1807 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1812 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1807 / 1807** (100%) | 0 |
-| 🇬🇧 English (EN) | **1807 / 1807** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1807 / 1807** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1812 / 1812** (100%) | 0 |
+| 🇬🇧 English (EN) | **1812 / 1812** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1812 / 1812** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1713,11 +1713,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (201 Keys)
+## `settings.*`  (206 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `settings.about.bundle` | Bundle | Bundle | Bundle |
+| `settings.about.exerciseMediaCredit` | Übungs-GIFs | Exercise GIFs | Egzersiz GIF'leri |
 | `settings.about.version` | Version | Version | Sürüm |
 | `settings.action.reset` | App zurücksetzen | Reset App | Uygulamayı Sıfırla |
 | `settings.appearance.dark` | Dunkel | Dark | Koyu |
@@ -1728,6 +1729,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.confirm.reset.action` | Alles löschen | Delete everything | Her şeyi sil |
 | `settings.confirm.reset.message` | Profil, alle Messungen, Pläne und Trainings-Sessions gehen UNWIDERRUFLICH verloren. Die App startet danach im Onboarding. | Profile, all measurements, plans, and workouts will be IRRECOVERABLY lost. The app will start in onboarding. | Profil, tüm ölçümler, planlar ve antrenman oturumları GERİ ALINAMAZ şekilde silinecek. Uygulama ardından tekrar onboarding'den başlayacak. |
 | `settings.confirm.reset.title` | App wirklich zurücksetzen? | Really reset the app? | Uygulamayı gerçekten sıfırlamak istiyor musun? |
+| `settings.credits.exerciseMedia.attribution` | © Gym visual — https://gymvisual.com/ | © Gym visual — https://gymvisual.com/ | © Gym visual — https://gymvisual.com/ |
+| `settings.credits.exerciseMedia.body` | Die animierten Übungs-GIFs stammen aus einem offenen Datensatz. Die Bildrechte liegen bei Gym visual und werden mit deren Erlaubnis gezeigt. | The animated exercise GIFs come from an open dataset. Image rights belong to Gym visual and are shown with their permission. | Animasyonlu egzersiz GIF'leri açık bir veri setinden alınmıştır. Görsel hakları Gym visual'a aittir ve izinleriyle gösterilmektedir. |
+| `settings.credits.exerciseMedia.sources` | Quelle: github.com/hasaneyldrm/exercises-dataset (Daten, MIT-Lizenz) und github.com/arvids-unavailable/openGym (Bilddateien). Volle Bedingungen: gymvisual.com/content/3-terms-and-conditions-of-use | Source: github.com/hasaneyldrm/exercises-dataset (data, MIT license) and github.com/arvids-unavailable/openGym (image files). Full terms: gymvisual.com/content/3-terms-and-conditions-of-use | Kaynak: github.com/hasaneyldrm/exercises-dataset (veri, MIT lisansı) ve github.com/arvids-unavailable/openGym (görsel dosyaları). Tam koşullar: gymvisual.com/content/3-terms-and-conditions-of-use |
+| `settings.credits.exerciseMedia.title` | Übungs-GIFs | Exercise GIFs | Egzersiz GIF'leri |
 | `settings.dangerZone.footer` | Löscht Profil, Messungen, Pläne, Trainings-Templates und Trainings-Sessions vollständig. Die Apple-Health-Daten bleiben erhalten — die löscht du in der Health-App selber. | Deletes profile, measurements, plans, training templates, and workout sessions completely. Apple Health data is preserved — delete that from the Health app. | Profil, ölçümler, planlar, antrenman şablonları ve antrenman oturumlarını tamamen siler. Apple Health verileri korunur — onları Health uygulamasından silersin. |
 | `settings.dataExport.action.share` | Archiv teilen | Share archive | Arşivi paylaş |
 | `settings.dataExport.action.start` | Export starten | Start export | Dışa aktarmayı başlat |
