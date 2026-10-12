@@ -136,4 +136,72 @@ final class ExerciseLibraryLocalizationTests: XCTestCase {
         let collisions = keys.filter(otherKeys.contains)
         XCTAssertTrue(collisions.isEmpty, "Neue localizationKeys kollidieren mit bestehenden Eintraegen: \(collisions)")
     }
+
+    /// GIF_OVERRIDES_TASK_2: 15 Praezisions-Varianten fuer per `FORCE_NO_GIF`
+    /// ausgeschlossene Eintraege + 3 eigene Tiefensuche-Treffer (Abschnitt 3).
+    /// Wie bei den Runde-2-Uebungen gilt: DE/EN/TR-Textwerte selbst werden im
+    /// Build-Skript gegen `Localizable.xcstrings` geprueft (TR == EN fuer
+    /// alle 18 Keys, verifiziert); hier nur die Swift-seitige Verdrahtung.
+    func testRound3ExercisesCarryDistinctLocalizationKeys() {
+        let expectations: [(germanName: String, expectedKey: String)] = [
+            ("Einbeinige Split-Kniebeuge (KH)", "exercise.name.dumbbellSingleLegSplitSquat"),
+            ("Liegendes Bein-Hüft-Heben", "exercise.name.lyingLegHipRaise"),
+            ("Innere Brustpresse (Maschine)", "exercise.name.machineInnerChestPress"),
+            ("Sitzender Kabel-Crunch", "exercise.name.cableSeatedCrunch"),
+            ("Kabel Cross-Over (Variation)", "exercise.name.cableCrossOverVariation"),
+            ("Kettlebell Schulterdrücken sitzend", "exercise.name.kettlebellSeatedPress"),
+            ("Kettlebell Doppel-Push-Press", "exercise.name.kettlebellDoublePushPress"),
+            ("Kettlebell Thruster", "exercise.name.kettlebellThruster"),
+            ("Latzug an der Kabelstange", "exercise.name.cableBarLateralPulldown"),
+            ("Kettlebell Plyo-Liegestütze", "exercise.name.kettlebellPlyoPushUp"),
+            ("Kabel Reverse Fly liegend", "exercise.name.cableSupineReverseFly"),
+            ("Schulterdrücken (Smith Machine)", "exercise.name.smithShoulderPress"),
+            ("Sitzendes Trizepsstrecken (KH)", "exercise.name.dumbbellSeatedTricepsExtension"),
+            ("Kettlebell Turkish Get-Up (Squat-Stil)", "exercise.name.kettlebellTurkishGetUpSquatStyle"),
+            ("Sitzendes Wadenheben (KH)", "exercise.name.dumbbellSeatedCalfRaise"),
+            ("Beincurl stehend (BW)", "exercise.name.standingSingleLegCurlBodyweight"),
+            ("Renegade Row (Kettlebell)", "exercise.name.kettlebellRenegadeRow"),
+            ("Latzug eng (Band)", "exercise.name.bandCloseGripPulldown"),
+        ]
+
+        for (germanName, expectedKey) in expectations {
+            guard let entry = ExerciseLibraryData.all.first(where: { $0.name == germanName }) else {
+                XCTFail("Neue Uebung '\(germanName)' fehlt in ExerciseLibraryData — wurde sie umbenannt oder versehentlich entfernt?")
+                continue
+            }
+            XCTAssertEqual(entry.localizationKey, expectedKey,
+                           "'\(germanName)' sollte localizationKey '\(expectedKey)' tragen, ist aber '\(entry.localizationKey ?? "nil")'")
+        }
+
+        let keys = expectations.map(\.expectedKey)
+        XCTAssertEqual(Set(keys).count, keys.count, "Die neuen localizationKeys duerfen sich nicht untereinander doppeln")
+
+        let otherKeys = Set(ExerciseLibraryData.all
+            .filter { entry in !expectations.contains { $0.germanName == entry.name } }
+            .compactMap(\.localizationKey))
+        let collisions = keys.filter(otherKeys.contains)
+        XCTAssertTrue(collisions.isEmpty, "Neue localizationKeys kollidieren mit bestehenden Eintraegen: \(collisions)")
+    }
+
+    /// Gegenprobe zu `testSystemCompoundsAreBarbellLiftsOnly` (siehe
+    /// ExerciseLibraryDataTests): keine der Runde-3-Uebungen nutzt Barbell,
+    /// also darf keine davon `isSystemCompound` tragen — das Flag ist
+    /// exklusiv fuer die kanonischen 5 Langhantel-Lifts reserviert, auch
+    /// wenn das Quell-JSON ein generisches "compound"-Flag mitliefert.
+    func testRound3ExercisesDoNotClaimSystemCompoundFlag() {
+        let names = [
+            "Einbeinige Split-Kniebeuge (KH)", "Innere Brustpresse (Maschine)",
+            "Kettlebell Schulterdrücken sitzend", "Kettlebell Doppel-Push-Press",
+            "Kettlebell Thruster", "Latzug an der Kabelstange",
+            "Kettlebell Plyo-Liegestütze", "Schulterdrücken (Smith Machine)",
+            "Kettlebell Turkish Get-Up (Squat-Stil)",
+        ]
+        for name in names {
+            guard let entry = ExerciseLibraryData.all.first(where: { $0.name == name }) else {
+                XCTFail("Neue Uebung '\(name)' fehlt in ExerciseLibraryData")
+                continue
+            }
+            XCTAssertFalse(entry.isSystemCompound, "'\(name)' ist kein Barbell-Lift und darf isSystemCompound nicht setzen")
+        }
+    }
 }

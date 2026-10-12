@@ -144,4 +144,65 @@ final class ExerciseMediaProviderTests: XCTestCase {
             XCTAssertEqual(ExerciseMediaProvider.gifFileName(forExerciseName: name), gifFile)
         }
     }
+
+    // MARK: GIF_OVERRIDES_TASK_2 (Runde 3)
+
+    /// Die 15 Praezisions-Varianten (Abschnitt 2) + 3 eigene
+    /// Tiefensuche-Treffer (Abschnitt 3) muessen ueber ihren Override
+    /// auffindbar sein — dasselbe GIF, das vorher (zu ungenau) an die
+    /// FORCE_NO_GIF-Uebung haengte, bzw. ein frisch recherchierter Treffer.
+    func testRound3PrecisionVariantsResolveViaRealOverrides() {
+        let expectations: [(name: String, gifFile: String)] = [
+            ("Einbeinige Split-Kniebeuge (KH)", "0410-qx4fgX7.gif"),
+            ("Liegendes Bein-Hüft-Heben", "0865-9IxJdtC.gif"),
+            ("Innere Brustpresse (Maschine)", "1301-wDN97Ca.gif"),
+            ("Sitzender Kabel-Crunch", "0212-8xUv4J7.gif"),
+            ("Kabel Cross-Over (Variation)", "0155-0CXGHya.gif"),
+            ("Kettlebell Schulterdrücken sitzend", "0546-BkxB8LW.gif"),
+            ("Kettlebell Doppel-Push-Press", "0528-I4KkPdl.gif"),
+            ("Kettlebell Thruster", "0550-yWxMvB5.gif"),
+            ("Latzug an der Kabelstange", "0150-eYnzaCm.gif"),
+            ("Kettlebell Plyo-Liegestütze", "0545-ktf3nvW.gif"),
+            ("Kabel Reverse Fly liegend", "0240-PQcUlDi.gif"),
+            ("Schulterdrücken (Smith Machine)", "0766-903mzG8.gif"),
+            ("Sitzendes Trizepsstrecken (KH)", "2188-kont8Ut.gif"),
+            ("Kettlebell Turkish Get-Up (Squat-Stil)", "0551-Ha7SZ3y.gif"),
+            ("Sitzendes Wadenheben (KH)", "1379-r29jP7S.gif"),
+            ("Beincurl stehend (BW)", "0795-C5jncD2.gif"),
+            ("Renegade Row (Kettlebell)", "0521-b9kqlBy.gif"),
+            ("Latzug eng (Band)", "0974-DptumMx.gif"),
+        ]
+        for (name, gifFile) in expectations {
+            XCTAssertEqual(ExerciseMediaProvider.gifFileName(forExerciseName: name), gifFile,
+                           "'\(name)' sollte per Override '\(gifFile)' auflösen")
+        }
+    }
+
+    /// Skull Crusher: direkter 100%-Treffer (Bewegung + Equipment identisch)
+    /// aus der zweiten Volldatensatz-Suche (Abschnitt 3) — keine neue
+    /// Uebung, nur ein Override auf den bestehenden Library-Eintrag.
+    func testSkullCrusherResolvesViaRealOverride() {
+        XCTAssertEqual(ExerciseMediaProvider.gifFileName(forExerciseName: "Skull Crusher"), "0060-h8LFzo9.gif")
+    }
+
+    /// GIF_OVERRIDES_TASK_2, Abschnitt 1: diese 16 Uebungen hatten bisher
+    /// einen (zu ungenauen) Override, der jetzt bewusst entfernt und durch
+    /// `FORCE_NO_GIF` blockiert wurde — die passend benannte Nachfolge-
+    /// Uebung traegt das GIF stattdessen. Haerteste Garantie gegen ein
+    /// stillschweigend zurueckkehrendes falsches Match: direkt gegen die
+    /// echten generierten Tabellen, nicht nur gegen injizierte Test-Dicts.
+    func testForceExcludedExercisesResolveToNilAgainstRealGeneratedTables() {
+        let names = [
+            "Beinheben (liegend)", "Bulgarische Kniebeuge (KH)", "Brustdrücken (Maschine)",
+            "Kabel Crunch", "Kabel Crossover", "Kettlebell Clean to Front Squat",
+            "Kettlebell Overhead Press", "Kettlebell Push Press", "Kettlebell Thruster einarmig",
+            "Latzug (weit)", "Liegestütze auf Kettlebell", "Reverse Cable Fly",
+            "Schulterdrücken (Maschine)", "Trizepsstrecker über Kopf (KH)", "Turkish Get-Up",
+            "Wadenheben (KH)",
+        ]
+        for name in names {
+            XCTAssertNil(ExerciseMediaProvider.gifFileName(forExerciseName: name),
+                         "'\(name)' sollte nach FORCE_NO_GIF kein GIF mehr liefern")
+        }
+    }
 }
