@@ -2,6 +2,150 @@
   "sourceLanguage": "en",
   "version": "1.0",
   "strings": {
+    "exercise.name.dumbbellArnoldPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Arnold Press (KH)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Dumbbell Arnold Press" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dumbbell Arnold Press" } }
+      }
+    },
+    "exercise.name.kettlebellArnoldPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Arnold Press (Kettlebell)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Arnold Press" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Arnold Press" } }
+      }
+    },
+    "exercise.name.dumbbellReverseLunge": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ausfallschritt rückwärts (KH)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Dumbbell Reverse Lunge" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dumbbell Reverse Lunge" } }
+      }
+    },
+    "exercise.name.barbellReverseLunge": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ausfallschritt rückwärts (LH)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Barbell Reverse Lunge" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Barbell Reverse Lunge" } }
+      }
+    },
+    "exercise.name.barbellLateralLunge": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Seitlicher Ausfallschritt (LH)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Barbell Lateral Lunge" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Barbell Lateral Lunge" } }
+      }
+    },
+    "exercise.name.kettlebellWindmill": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Windmill" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Windmill" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Windmill" } }
+      }
+    },
+    "exercise.name.kettlebellPistolSquat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Pistol Squat" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Pistol Squat" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Pistol Squat" } }
+      }
+    },
+    "exercise.name.kettlebellBentPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Bent Press" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Bent Press" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Bent Press" } }
+      }
+    },
+    "exercise.name.powerClean": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Power Clean" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Power Clean" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Power Clean" } }
+      }
+    },
+    "exercise.name.lowBarBackSquat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Low-Bar-Kniebeuge (LH)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Low Bar Back Squat" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Low Bar Back Squat" } }
+      }
+    },
+    "exercise.name.barbellHackSquat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Hack Squat (LH)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Barbell Hack Squat" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Barbell Hack Squat" } }
+      }
+    },
+    "exercise.name.smithHackSquat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Hack Squat (Smith)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Smith Machine Hack Squat" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Smith Machine Hack Squat" } }
+      }
+    },
+    "exercise.name.reverseCrunch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Reverse Crunch" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Reverse Crunch" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ters Mekik" } }
+      }
+    },
+    "exercise.name.cableReverseCrunch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kabel Reverse Crunch" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cable Reverse Crunch" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Cable Reverse Crunch" } }
+      }
+    },
+    "exercise.name.barbellWristCurl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Handgelenk-Curl (LH)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Barbell Wrist Curl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Barbell Bilek Curl" } }
+      }
+    },
+    "exercise.name.cableWristCurl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Handgelenk-Curl (Kabel)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cable Wrist Curl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Cable Bilek Curl" } }
+      }
+    },
+    "exercise.name.bandPullThrough": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Band Pull-Through" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Band Pull-Through" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Band Pull-Through" } }
+      }
+    },
+    "exercise.name.dumbbellBurpee": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Burpee mit Kurzhanteln" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Dumbbell Burpee" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dumbbell Burpee" } }
+      }
+    },
     "exercise.gif.a11y": {
       "extractionState": "manual",
       "localizations": {

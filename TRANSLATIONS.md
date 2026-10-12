@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1812 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1830 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1812 / 1812** (100%) | 0 |
-| 🇬🇧 English (EN) | **1812 / 1812** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1812 / 1812** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1830 / 1830** (100%) | 0 |
+| 🇬🇧 English (EN) | **1830 / 1830** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1830 / 1830** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -780,7 +780,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `equipment.kettlebell` | Kettlebell | Kettlebell | Kettlebell |
 | `equipment.machine` | Maschine | Machine | Makine |
 
-## `exercise.*`  (201 Keys)
+## `exercise.*`  (219 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -802,13 +802,18 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.backWidows` | Back Widows | Back Widow | Back Widow |
 | `exercise.name.bandCurl` | Band Curls | Band Curls | Band Curls |
 | `exercise.name.bandPullApart` | Band Pull-Aparts | Band Pull-Aparts | Band Pull-Aparts |
+| `exercise.name.bandPullThrough` | Band Pull-Through | Band Pull-Through | Band Pull-Through |
 | `exercise.name.bandedHipThrust` | Banded Hip Thrust | Banded Hip Thrust | Banded Hip Thrust |
 | `exercise.name.bandedSquat` | Banded Squats | Banded Squats | Banded Squats |
 | `exercise.name.barbellCurl` | Bizeps-Curl (LH) | Barbell Curl | Barbell Curl |
+| `exercise.name.barbellHackSquat` | Hack Squat (LH) | Barbell Hack Squat | Barbell Hack Squat |
 | `exercise.name.barbellHipThrust` | Hip Thrust (LH) | Barbell Hip Thrust | Barbell Hip Thrust |
+| `exercise.name.barbellLateralLunge` | Seitlicher Ausfallschritt (LH) | Barbell Lateral Lunge | Barbell Lateral Lunge |
 | `exercise.name.barbellLunge` | Ausfallschritte (LH) | Barbell Lunges | Barbell Lunges |
+| `exercise.name.barbellReverseLunge` | Ausfallschritt rückwärts (LH) | Barbell Reverse Lunge | Barbell Reverse Lunge |
 | `exercise.name.barbellShrug` | Shrug (LH) | Barbell Shrug | Barbell Shrug |
 | `exercise.name.barbellStandingCalfRaise` | Wadenheben (stehend, LH) | Standing Calf Raise (Barbell) | Standing Calf Raise |
+| `exercise.name.barbellWristCurl` | Handgelenk-Curl (LH) | Barbell Wrist Curl | Barbell Bilek Curl |
 | `exercise.name.barbellrow` | Rudern vorgebeugt | Bent-Over Row | Bent-Over Row |
 | `exercise.name.battleRopes` | Battle Ropes | Battle Ropes | Battle Ropes (Halat) |
 | `exercise.name.bayesianCurl` | Bayesian Curl | Bayesian Curl | Bayesian Curl |
@@ -829,7 +834,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.cableLateralRaise` | Kabel Seitheben | Cable Lateral Raise | Cable Lateral Raise |
 | `exercise.name.cableOverheadTricepExtension` | Trizepsstrecker über Kopf (Kabel) | Cable Overhead Triceps Extension | Cable Overhead Triceps Extension |
 | `exercise.name.cablePullThrough` | Cable Pull-Through | Cable Pull-Through | Cable Pull-Through |
+| `exercise.name.cableReverseCrunch` | Kabel Reverse Crunch | Cable Reverse Crunch | Cable Reverse Crunch |
 | `exercise.name.cableWoodchopper` | Cable Woodchopper | Cable Woodchopper | Cable Woodchopper (Odun Kesme) |
+| `exercise.name.cableWristCurl` | Handgelenk-Curl (Kabel) | Cable Wrist Curl | Cable Bilek Curl |
 | `exercise.name.calfPressLegPress` | Wadenpresse (Beinpresse) | Calf Press (Leg Press) | Baldır Press (Leg Press) |
 | `exercise.name.chestDip` | Dips (Brust) | Chest Dips | Chest Dips |
 | `exercise.name.chestPressMachine` | Brustdrücken (Maschine) | Machine Chest Press | Machine Chest Press |
@@ -846,7 +853,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.deficitDeadlift` | Deficit-Kreuzheben | Deficit Deadlift | Deficit Deadlift |
 | `exercise.name.diamondPushup` | Diamant-Liegestütze | Diamond Push-Up | Diamond Push-Up |
 | `exercise.name.dragonFlag` | Dragon Flag | Dragon Flag | Dragon Flag |
+| `exercise.name.dumbbellArnoldPress` | Arnold Press (KH) | Dumbbell Arnold Press | Dumbbell Arnold Press |
 | `exercise.name.dumbbellBenchPress` | Bankdrücken (KH) | Dumbbell Bench Press | Dumbbell Bench Press |
+| `exercise.name.dumbbellBurpee` | Burpee mit Kurzhanteln | Dumbbell Burpee | Dumbbell Burpee |
 | `exercise.name.dumbbellCalfRaise` | Wadenheben (KH) | Dumbbell Calf Raise | Dumbbell Calf Raise |
 | `exercise.name.dumbbellDeadlift` | Kreuzheben (KH) | Dumbbell Deadlift | Dumbbell Deadlift |
 | `exercise.name.dumbbellFlyFlat` | Flyes flach (KH) | Flat Dumbbell Fly | Flat Dumbbell Fly |
@@ -858,6 +867,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.dumbbellPullover` | Pullover (KH) | Dumbbell Pullover | Dumbbell Pullover |
 | `exercise.name.dumbbellPushPress` | Push Press (KH) | Dumbbell Push Press | Dumbbell Push Press |
 | `exercise.name.dumbbellRDL` | Rumänisches Kreuzheben (KH) | Dumbbell Romanian Deadlift | Dumbbell Romanian Deadlift |
+| `exercise.name.dumbbellReverseLunge` | Ausfallschritt rückwärts (KH) | Dumbbell Reverse Lunge | Dumbbell Reverse Lunge |
 | `exercise.name.dumbbellRowOneArm` | Rudern einarmig (KH) | One-Arm Dumbbell Row | One-Arm Dumbbell Row |
 | `exercise.name.dumbbellShoulderPress` | Schulterdrücken (KH) | Dumbbell Shoulder Press | Dumbbell Shoulder Press |
 | `exercise.name.dumbbellShrug` | Shrug (KH) | Dumbbell Shrug | Dumbbell Shrug |
@@ -884,6 +894,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.invertedRow` | Inverted Row | Inverted Row | Inverted Row |
 | `exercise.name.jumpSquat` | Jump Squat | Jump Squat | Jump Squat |
 | `exercise.name.jumpingLunges` | Gesprungene Ausfallschritte | Jumping Lunges | Jumping Lunges |
+| `exercise.name.kettlebellArnoldPress` | Arnold Press (Kettlebell) | Kettlebell Arnold Press | Kettlebell Arnold Press |
+| `exercise.name.kettlebellBentPress` | Kettlebell Bent Press | Kettlebell Bent Press | Kettlebell Bent Press |
 | `exercise.name.kettlebellCleanAndPress` | Kettlebell Clean & Press | Kettlebell Clean & Press | Kettlebell Clean & Press |
 | `exercise.name.kettlebellCleanToFrontSquat` | Kettlebell Clean to Front Squat | Kettlebell Clean to Front Squat | Kettlebell Clean to Front Squat |
 | `exercise.name.kettlebellDeadlift` | Kettlebell Kreuzheben | Kettlebell Deadlift | Kettlebell Deadlift |
@@ -892,6 +904,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.kettlebellGobletSquat` | Kettlebell Goblet Squat | Kettlebell Goblet Squat | Kettlebell Goblet Squat |
 | `exercise.name.kettlebellHalo` | Kettlebell Halo | Kettlebell Halo | Kettlebell Halo |
 | `exercise.name.kettlebellOverheadPress` | Kettlebell Overhead Press | Kettlebell Overhead Press | Kettlebell Overhead Press |
+| `exercise.name.kettlebellPistolSquat` | Kettlebell Pistol Squat | Kettlebell Pistol Squat | Kettlebell Pistol Squat |
 | `exercise.name.kettlebellPullover` | Kettlebell Pullover | Kettlebell Pullover | Kettlebell Pullover |
 | `exercise.name.kettlebellPushPress` | Kettlebell Push Press | Kettlebell Push Press | Kettlebell Push Press |
 | `exercise.name.kettlebellPushup` | Liegestütze auf Kettlebell | Push-Up on Kettlebell | Kettlebell Üzerinde Şınav |
@@ -905,6 +918,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.kettlebellSwing` | Kettlebell Swing | Kettlebell Swing | Kettlebell Swing |
 | `exercise.name.kettlebellThrusterSingleArm` | Kettlebell Thruster einarmig | Kettlebell Single-Arm Thruster | Tek Kollu Kettlebell Thruster |
 | `exercise.name.kettlebellUppercutRotation` | Kettlebell Uppercut Rotation | Kettlebell Uppercut Rotation | Kettlebell Uppercut Rotasyonu |
+| `exercise.name.kettlebellWindmill` | Kettlebell Windmill | Kettlebell Windmill | Kettlebell Windmill |
 | `exercise.name.kneePushup` | Liegestütze (Knie) | Knee Push-Up | Diz Üstü Şınav |
 | `exercise.name.lSit` | L-Sit | L-Sit | L-Sit |
 | `exercise.name.latPulldownClose` | Latzug (eng) | Close-Grip Lat Pulldown | Close-Grip Lat Pulldown |
@@ -913,6 +927,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.legExtension` | Beinstrecker | Leg Extension | Leg Extension |
 | `exercise.name.legpress` | Beinpresse | Leg Press | Leg Press |
 | `exercise.name.longRun` | Long Run | Long Run | Uzun Koşu |
+| `exercise.name.lowBarBackSquat` | Low-Bar-Kniebeuge (LH) | Low Bar Back Squat | Low Bar Back Squat |
 | `exercise.name.lyingLegCurl` | Beinbeuger liegend | Lying Leg Curl | Lying Leg Curl |
 | `exercise.name.lyingLegExtension` | Beinstrecker liegend | Lying Leg Extension | Lying Leg Extension |
 | `exercise.name.lyingLegRaise` | Beinheben (liegend) | Lying Leg Raise | Lying Leg Raise |
@@ -930,6 +945,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.pikePushup` | Pike Liegestütze | Pike Push-Up | Pike Push-Up |
 | `exercise.name.pistolSquat` | Pistol Squat | Pistol Squat | Pistol Squat |
 | `exercise.name.plank` | Plank | Plank | Plank |
+| `exercise.name.powerClean` | Power Clean | Power Clean | Power Clean |
 | `exercise.name.preacherCurl` | Preacher Curl (Maschine) | Machine Preacher Curl | Machine Preacher Curl |
 | `exercise.name.pullup` | Klimmzüge (eng/Chin-up) | Chin-Up | Barfiks (Chin-Up) |
 | `exercise.name.pullupStandard` | Klimmzüge | Pull-Up | Barfiks |
@@ -937,6 +953,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.pushup` | Liegestütze | Push-Up | Şınav |
 | `exercise.name.renegadeRow` | Renegade Row | Renegade Row | Renegade Row |
 | `exercise.name.reverseCableFly` | Reverse Cable Fly | Reverse Cable Fly | Ters Cable Fly |
+| `exercise.name.reverseCrunch` | Reverse Crunch | Reverse Crunch | Ters Mekik |
 | `exercise.name.reverseCurl` | Reverse Curl | Reverse Curl | Reverse Curl |
 | `exercise.name.reverseFlyDB` | Reverse Flyes (KH) | Dumbbell Reverse Fly | Dumbbell Reverse Fly |
 | `exercise.name.reverseNordicCurl` | Reverse Nordic Curl | Reverse Nordic Curl | Ters Nordic Curl |
@@ -957,6 +974,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.skullCrusher` | Skull Crusher | Skull Crusher | Skull Crusher |
 | `exercise.name.sledPull` | Sled Pull | Sled Pull | Kızak Çekme |
 | `exercise.name.sledPush` | Sled Push | Sled Push | Kızak İtme |
+| `exercise.name.smithHackSquat` | Hack Squat (Smith) | Smith Machine Hack Squat | Smith Machine Hack Squat |
 | `exercise.name.smithMachineSquat` | Smith Machine Squat | Smith Machine Squat | Smith Machine Squat |
 | `exercise.name.snatch` | Reißen (Snatch) | Snatch | Snatch (Koparma) |
 | `exercise.name.squat` | Kniebeuge | Back Squat | Back Squat |

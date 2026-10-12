@@ -433,6 +433,34 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Sled Push", equipment: .machine, primaryMuscle: .quads, difficultyLevel: .intermediate, isTimeBased: true, localizationKey: "exercise.name.sledPush"),
         ExerciseTemplateSpec(name: "Sled Pull", equipment: .machine, primaryMuscle: .back, difficultyLevel: .intermediate, isTimeBased: true, localizationKey: "exercise.name.sledPull"),
         ExerciseTemplateSpec(name: "Battle Ropes", equipment: .bodyweight, primaryMuscle: .shoulders, difficultyLevel: .intermediate, isTimeBased: true, localizationKey: "exercise.name.battleRopes"),
+
+        // ── NEU (GIF-Abgleich): Equipment-Varianten + Olympic-Lift-Ergaenzung ──
+        // Aus dem Uebungs-GIF-Datensatz identifizierte Luecken, deren GIF
+        // eindeutig zuordenbar ist (siehe exercise_gif_overrides.json).
+        ExerciseTemplateSpec(name: "Arnold Press (KH)", equipment: .dumbbell, primaryMuscle: .shoulders, localizationKey: "exercise.name.dumbbellArnoldPress"),
+        ExerciseTemplateSpec(name: "Arnold Press (Kettlebell)", equipment: .kettlebell, primaryMuscle: .shoulders, localizationKey: "exercise.name.kettlebellArnoldPress"),
+        ExerciseTemplateSpec(name: "Ausfallschritt rückwärts (KH)", equipment: .dumbbell, primaryMuscle: .quads, localizationKey: "exercise.name.dumbbellReverseLunge"),
+        ExerciseTemplateSpec(name: "Ausfallschritt rückwärts (LH)", equipment: .barbell, primaryMuscle: .quads, localizationKey: "exercise.name.barbellReverseLunge"),
+        ExerciseTemplateSpec(name: "Seitlicher Ausfallschritt (LH)", equipment: .barbell, primaryMuscle: .quads, localizationKey: "exercise.name.barbellLateralLunge"),
+        ExerciseTemplateSpec(name: "Kettlebell Windmill", equipment: .kettlebell, primaryMuscle: .core, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellWindmill"),
+        ExerciseTemplateSpec(name: "Kettlebell Pistol Squat", equipment: .kettlebell, primaryMuscle: .quads, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellPistolSquat"),
+        ExerciseTemplateSpec(name: "Kettlebell Bent Press", equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellBentPress"),
+        // DEL-098: Power Clean = Zug-Teil des Clean & Jerk ohne Stoßen —
+        // Faktoren analog "Umsetzen & Stoßen", leicht reduziert (kein Jerk).
+        ExerciseTemplateSpec(name: "Power Clean", equipment: .barbell, primaryMuscle: .shoulders, difficultyLevel: .advanced, isSystemCompound: true,
+                             systemicFatigueFactor: 0.85, localMuscleDamageFactor: 0.65, cnsDemandFactor: 0.92, axialLoadFactor: 0.85, technicalComplexityFactor: 0.90, recoveryClass: .extreme,
+                             localizationKey: "exercise.name.powerClean"),
+        ExerciseTemplateSpec(name: "Low-Bar-Kniebeuge (LH)", equipment: .barbell, primaryMuscle: .quads, difficultyLevel: .advanced,
+                             systemicFatigueFactor: 0.88, localMuscleDamageFactor: 0.78, cnsDemandFactor: 0.80, axialLoadFactor: 0.95, technicalComplexityFactor: 0.75, recoveryClass: .high,
+                             localizationKey: "exercise.name.lowBarBackSquat"),
+        ExerciseTemplateSpec(name: "Hack Squat (LH)", equipment: .barbell, primaryMuscle: .quads, localizationKey: "exercise.name.barbellHackSquat"),
+        ExerciseTemplateSpec(name: "Hack Squat (Smith)", equipment: .machine, primaryMuscle: .quads, localizationKey: "exercise.name.smithHackSquat"),
+        ExerciseTemplateSpec(name: "Reverse Crunch", equipment: .bodyweight, primaryMuscle: .core, difficultyLevel: .beginner, localizationKey: "exercise.name.reverseCrunch"),
+        ExerciseTemplateSpec(name: "Kabel Reverse Crunch", equipment: .cable, primaryMuscle: .core, localizationKey: "exercise.name.cableReverseCrunch"),
+        ExerciseTemplateSpec(name: "Handgelenk-Curl (LH)", equipment: .barbell, primaryMuscle: .biceps, difficultyLevel: .beginner, localizationKey: "exercise.name.barbellWristCurl"),
+        ExerciseTemplateSpec(name: "Handgelenk-Curl (Kabel)", equipment: .cable, primaryMuscle: .biceps, difficultyLevel: .beginner, localizationKey: "exercise.name.cableWristCurl"),
+        ExerciseTemplateSpec(name: "Band Pull-Through", equipment: .band, primaryMuscle: .glutes, difficultyLevel: .beginner, localizationKey: "exercise.name.bandPullThrough"),
+        ExerciseTemplateSpec(name: "Burpee mit Kurzhanteln", equipment: .dumbbell, primaryMuscle: .core, isTimeBased: true, localizationKey: "exercise.name.dumbbellBurpee"),
     ]
 
     /// Alternative-Mapping fuer den Environment-Swap (DEL-022). Bei einem
