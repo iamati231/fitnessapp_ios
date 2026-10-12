@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1830 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1848 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1830 / 1830** (100%) | 0 |
-| 🇬🇧 English (EN) | **1830 / 1830** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1830 / 1830** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1848 / 1848** (100%) | 0 |
+| 🇬🇧 English (EN) | **1848 / 1848** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1848 / 1848** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -780,7 +780,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `equipment.kettlebell` | Kettlebell | Kettlebell | Kettlebell |
 | `equipment.machine` | Maschine | Machine | Makine |
 
-## `exercise.*`  (219 Keys)
+## `exercise.*`  (237 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -800,6 +800,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.assistedPullUp` | Klimmzug (assistiert) | Assisted Pull-Up | Destekli Barfiks |
 | `exercise.name.australianPullup` | Australian Pull-ups | Australian Pull-Up | Australian Pull-Up |
 | `exercise.name.backWidows` | Back Widows | Back Widow | Back Widow |
+| `exercise.name.bandCloseGripPulldown` | Latzug eng (Band) | Band Close-Grip Pulldown | Band Close-Grip Pulldown |
 | `exercise.name.bandCurl` | Band Curls | Band Curls | Band Curls |
 | `exercise.name.bandPullApart` | Band Pull-Aparts | Band Pull-Aparts | Band Pull-Aparts |
 | `exercise.name.bandPullThrough` | Band Pull-Through | Band Pull-Through | Band Pull-Through |
@@ -810,10 +811,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.barbellHipThrust` | Hip Thrust (LH) | Barbell Hip Thrust | Barbell Hip Thrust |
 | `exercise.name.barbellLateralLunge` | Seitlicher Ausfallschritt (LH) | Barbell Lateral Lunge | Barbell Lateral Lunge |
 | `exercise.name.barbellLunge` | Ausfallschritte (LH) | Barbell Lunges | Barbell Lunges |
-| `exercise.name.barbellReverseLunge` | Ausfallschritt rückwärts (LH) | Barbell Reverse Lunge | Barbell Reverse Lunge |
+| `exercise.name.barbellReverseLunge` | Ausfallschritt rückwärts (LH) | Barbell Rear Lunge | Barbell Rear Lunge |
 | `exercise.name.barbellShrug` | Shrug (LH) | Barbell Shrug | Barbell Shrug |
 | `exercise.name.barbellStandingCalfRaise` | Wadenheben (stehend, LH) | Standing Calf Raise (Barbell) | Standing Calf Raise |
-| `exercise.name.barbellWristCurl` | Handgelenk-Curl (LH) | Barbell Wrist Curl | Barbell Bilek Curl |
+| `exercise.name.barbellWristCurl` | Handgelenk-Curl (LH) | Barbell Wrist Curl | Barbell Wrist Curl |
 | `exercise.name.barbellrow` | Rudern vorgebeugt | Bent-Over Row | Bent-Over Row |
 | `exercise.name.battleRopes` | Battle Ropes | Battle Ropes | Battle Ropes (Halat) |
 | `exercise.name.bayesianCurl` | Bayesian Curl | Bayesian Curl | Bayesian Curl |
@@ -828,6 +829,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.boxSquat` | Box Squat | Box Squat | Box Squat |
 | `exercise.name.bulgarianSplitSquatDB` | Bulgarische Kniebeuge (KH) | Dumbbell Bulgarian Split Squat | Dumbbell Bulgarian Split Squat |
 | `exercise.name.burpee` | Burpees | Burpees | Burpees |
+| `exercise.name.cableBarLateralPulldown` | Latzug an der Kabelstange | Cable Bar Lateral Pulldown | Cable Bar Lateral Pulldown |
+| `exercise.name.cableCrossOverVariation` | Kabel Cross-Over (Variation) | Cable Cross-Over Variation | Cable Cross-Over Variation |
 | `exercise.name.cableCrossover` | Kabel Crossover | Cable Crossover | Cable Crossover |
 | `exercise.name.cableCrunch` | Kabel Crunch | Cable Crunch | Cable Crunch |
 | `exercise.name.cableCurl` | Kabel Curl | Cable Curl | Cable Curl |
@@ -835,8 +838,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.cableOverheadTricepExtension` | Trizepsstrecker über Kopf (Kabel) | Cable Overhead Triceps Extension | Cable Overhead Triceps Extension |
 | `exercise.name.cablePullThrough` | Cable Pull-Through | Cable Pull-Through | Cable Pull-Through |
 | `exercise.name.cableReverseCrunch` | Kabel Reverse Crunch | Cable Reverse Crunch | Cable Reverse Crunch |
+| `exercise.name.cableSeatedCrunch` | Sitzender Kabel-Crunch | Cable Seated Crunch | Cable Seated Crunch |
+| `exercise.name.cableSupineReverseFly` | Kabel Reverse Fly liegend | Cable Supine Reverse Fly | Cable Supine Reverse Fly |
 | `exercise.name.cableWoodchopper` | Cable Woodchopper | Cable Woodchopper | Cable Woodchopper (Odun Kesme) |
-| `exercise.name.cableWristCurl` | Handgelenk-Curl (Kabel) | Cable Wrist Curl | Cable Bilek Curl |
+| `exercise.name.cableWristCurl` | Handgelenk-Curl (Kabel) | Cable Wrist Curl | Cable Wrist Curl |
 | `exercise.name.calfPressLegPress` | Wadenpresse (Beinpresse) | Calf Press (Leg Press) | Baldır Press (Leg Press) |
 | `exercise.name.chestDip` | Dips (Brust) | Chest Dips | Chest Dips |
 | `exercise.name.chestPressMachine` | Brustdrücken (Maschine) | Machine Chest Press | Machine Chest Press |
@@ -867,10 +872,13 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.dumbbellPullover` | Pullover (KH) | Dumbbell Pullover | Dumbbell Pullover |
 | `exercise.name.dumbbellPushPress` | Push Press (KH) | Dumbbell Push Press | Dumbbell Push Press |
 | `exercise.name.dumbbellRDL` | Rumänisches Kreuzheben (KH) | Dumbbell Romanian Deadlift | Dumbbell Romanian Deadlift |
-| `exercise.name.dumbbellReverseLunge` | Ausfallschritt rückwärts (KH) | Dumbbell Reverse Lunge | Dumbbell Reverse Lunge |
+| `exercise.name.dumbbellReverseLunge` | Ausfallschritt rückwärts (KH) | Dumbbell Rear Lunge | Dumbbell Rear Lunge |
 | `exercise.name.dumbbellRowOneArm` | Rudern einarmig (KH) | One-Arm Dumbbell Row | One-Arm Dumbbell Row |
+| `exercise.name.dumbbellSeatedCalfRaise` | Sitzendes Wadenheben (KH) | Dumbbell Seated Calf Raise | Dumbbell Seated Calf Raise |
+| `exercise.name.dumbbellSeatedTricepsExtension` | Sitzendes Trizepsstrecken (KH) | Dumbbell Seated Triceps Extension | Dumbbell Seated Triceps Extension |
 | `exercise.name.dumbbellShoulderPress` | Schulterdrücken (KH) | Dumbbell Shoulder Press | Dumbbell Shoulder Press |
 | `exercise.name.dumbbellShrug` | Shrug (KH) | Dumbbell Shrug | Dumbbell Shrug |
+| `exercise.name.dumbbellSingleLegSplitSquat` | Einbeinige Split-Kniebeuge (KH) | Dumbbell Single Leg Split Squat | Dumbbell Single Leg Split Squat |
 | `exercise.name.dumbbellThruster` | Thruster (KH) | Dumbbell Thruster | Dumbbell Thruster |
 | `exercise.name.dumbbellTricepKickback` | Trizepskickback (KH) | Dumbbell Triceps Kickback | Dumbbell Triceps Kickback |
 | `exercise.name.easyRun` | Easy Run | Easy Run | Kolay Koşu |
@@ -899,24 +907,30 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.kettlebellCleanAndPress` | Kettlebell Clean & Press | Kettlebell Clean & Press | Kettlebell Clean & Press |
 | `exercise.name.kettlebellCleanToFrontSquat` | Kettlebell Clean to Front Squat | Kettlebell Clean to Front Squat | Kettlebell Clean to Front Squat |
 | `exercise.name.kettlebellDeadlift` | Kettlebell Kreuzheben | Kettlebell Deadlift | Kettlebell Deadlift |
+| `exercise.name.kettlebellDoublePushPress` | Kettlebell Doppel-Push-Press | Kettlebell Double Push Press | Kettlebell Double Push Press |
 | `exercise.name.kettlebellFloorPress` | Kettlebell Floor Press | Kettlebell Floor Press | Kettlebell Floor Press |
 | `exercise.name.kettlebellFrontSquat` | Kettlebell Front Squat | Kettlebell Front Squat | Kettlebell Front Squat |
 | `exercise.name.kettlebellGobletSquat` | Kettlebell Goblet Squat | Kettlebell Goblet Squat | Kettlebell Goblet Squat |
 | `exercise.name.kettlebellHalo` | Kettlebell Halo | Kettlebell Halo | Kettlebell Halo |
 | `exercise.name.kettlebellOverheadPress` | Kettlebell Overhead Press | Kettlebell Overhead Press | Kettlebell Overhead Press |
 | `exercise.name.kettlebellPistolSquat` | Kettlebell Pistol Squat | Kettlebell Pistol Squat | Kettlebell Pistol Squat |
+| `exercise.name.kettlebellPlyoPushUp` | Kettlebell Plyo-Liegestütze | Kettlebell Plyo Push-Up | Kettlebell Plyo Push-Up |
 | `exercise.name.kettlebellPullover` | Kettlebell Pullover | Kettlebell Pullover | Kettlebell Pullover |
 | `exercise.name.kettlebellPushPress` | Kettlebell Push Press | Kettlebell Push Press | Kettlebell Push Press |
 | `exercise.name.kettlebellPushup` | Liegestütze auf Kettlebell | Push-Up on Kettlebell | Kettlebell Üzerinde Şınav |
 | `exercise.name.kettlebellRDL` | Kettlebell RDL | Kettlebell RDL | Kettlebell RDL |
+| `exercise.name.kettlebellRenegadeRow` | Renegade Row (Kettlebell) | Kettlebell Alternating Renegade Row | Kettlebell Alternating Renegade Row |
 | `exercise.name.kettlebellRowSingleArm` | Kettlebell Row einarmig | Kettlebell Single-Arm Row | Kettlebell Tek Kol Row |
+| `exercise.name.kettlebellSeatedPress` | Kettlebell Schulterdrücken sitzend | Kettlebell Seated Press | Kettlebell Seated Press |
 | `exercise.name.kettlebellSitUpOverhead` | Kettlebell Sit-Up (Overhead-Halten) | Kettlebell Sit-Up (Overhead Hold) | Kettlebell Mekik (Overhead Tutuş) |
 | `exercise.name.kettlebellSnatch` | Kettlebell Snatch | Kettlebell Snatch | Kettlebell Snatch |
 | `exercise.name.kettlebellSnatchLeft` | Kettlebell Snatch (Links) | Kettlebell Snatch (Left) | Kettlebell Snatch (Sol) |
 | `exercise.name.kettlebellSnatchRight` | Kettlebell Snatch (Rechts) | Kettlebell Snatch (Right) | Kettlebell Snatch (Sağ) |
 | `exercise.name.kettlebellSuitcaseCarry` | Kettlebell Suitcase Carry | Kettlebell Suitcase Carry | Kettlebell Bavul Taşıma |
 | `exercise.name.kettlebellSwing` | Kettlebell Swing | Kettlebell Swing | Kettlebell Swing |
+| `exercise.name.kettlebellThruster` | Kettlebell Thruster | Kettlebell Thruster | Kettlebell Thruster |
 | `exercise.name.kettlebellThrusterSingleArm` | Kettlebell Thruster einarmig | Kettlebell Single-Arm Thruster | Tek Kollu Kettlebell Thruster |
+| `exercise.name.kettlebellTurkishGetUpSquatStyle` | Kettlebell Turkish Get-Up (Squat-Stil) | Kettlebell Turkish Get-Up (Squat Style) | Kettlebell Turkish Get-Up (Squat Style) |
 | `exercise.name.kettlebellUppercutRotation` | Kettlebell Uppercut Rotation | Kettlebell Uppercut Rotation | Kettlebell Uppercut Rotasyonu |
 | `exercise.name.kettlebellWindmill` | Kettlebell Windmill | Kettlebell Windmill | Kettlebell Windmill |
 | `exercise.name.kneePushup` | Liegestütze (Knie) | Knee Push-Up | Diz Üstü Şınav |
@@ -927,10 +941,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.legExtension` | Beinstrecker | Leg Extension | Leg Extension |
 | `exercise.name.legpress` | Beinpresse | Leg Press | Leg Press |
 | `exercise.name.longRun` | Long Run | Long Run | Uzun Koşu |
-| `exercise.name.lowBarBackSquat` | Low-Bar-Kniebeuge (LH) | Low Bar Back Squat | Low Bar Back Squat |
+| `exercise.name.lowBarBackSquat` | Low-Bar-Kniebeuge (LH) | Barbell Low Bar Squat | Barbell Low Bar Squat |
 | `exercise.name.lyingLegCurl` | Beinbeuger liegend | Lying Leg Curl | Lying Leg Curl |
 | `exercise.name.lyingLegExtension` | Beinstrecker liegend | Lying Leg Extension | Lying Leg Extension |
+| `exercise.name.lyingLegHipRaise` | Liegendes Bein-Hüft-Heben | Lying Leg-Hip Raise | Lying Leg-Hip Raise |
 | `exercise.name.lyingLegRaise` | Beinheben (liegend) | Lying Leg Raise | Lying Leg Raise |
+| `exercise.name.machineInnerChestPress` | Innere Brustpresse (Maschine) | Machine Inner Chest Press | Machine Inner Chest Press |
 | `exercise.name.meadowsRow` | Meadows Row | Meadows Row | Meadows Row |
 | `exercise.name.medicineBallSlam` | Medizinball-Slam | Medicine Ball Slam | Sağlık Topu Slam |
 | `exercise.name.mountainClimber` | Mountain Climbers | Mountain Climbers | Mountain Climbers |
@@ -953,7 +969,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.pushup` | Liegestütze | Push-Up | Şınav |
 | `exercise.name.renegadeRow` | Renegade Row | Renegade Row | Renegade Row |
 | `exercise.name.reverseCableFly` | Reverse Cable Fly | Reverse Cable Fly | Ters Cable Fly |
-| `exercise.name.reverseCrunch` | Reverse Crunch | Reverse Crunch | Ters Mekik |
+| `exercise.name.reverseCrunch` | Reverse Crunch | Reverse Crunch | Reverse Crunch |
 | `exercise.name.reverseCurl` | Reverse Curl | Reverse Curl | Reverse Curl |
 | `exercise.name.reverseFlyDB` | Reverse Flyes (KH) | Dumbbell Reverse Fly | Dumbbell Reverse Fly |
 | `exercise.name.reverseNordicCurl` | Reverse Nordic Curl | Reverse Nordic Curl | Ters Nordic Curl |
@@ -974,12 +990,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.skullCrusher` | Skull Crusher | Skull Crusher | Skull Crusher |
 | `exercise.name.sledPull` | Sled Pull | Sled Pull | Kızak Çekme |
 | `exercise.name.sledPush` | Sled Push | Sled Push | Kızak İtme |
-| `exercise.name.smithHackSquat` | Hack Squat (Smith) | Smith Machine Hack Squat | Smith Machine Hack Squat |
+| `exercise.name.smithHackSquat` | Hack Squat (Smith) | Smith Hack Squat | Smith Hack Squat |
 | `exercise.name.smithMachineSquat` | Smith Machine Squat | Smith Machine Squat | Smith Machine Squat |
+| `exercise.name.smithShoulderPress` | Schulterdrücken (Smith Machine) | Smith Shoulder Press | Smith Shoulder Press |
 | `exercise.name.snatch` | Reißen (Snatch) | Snatch | Snatch (Koparma) |
 | `exercise.name.squat` | Kniebeuge | Back Squat | Back Squat |
 | `exercise.name.stairStepper` | Stepper | Stair Stepper | Stepper |
 | `exercise.name.standingLegCurl` | Beincurl stehend | Standing Leg Curl | Ayakta Bacak Curl |
+| `exercise.name.standingSingleLegCurlBodyweight` | Beincurl stehend (BW) | Standing Single Leg Curl | Standing Single Leg Curl |
 | `exercise.name.stationaryBike` | Fahrradergometer | Exercise Bike | Egzersiz Bisikleti |
 | `exercise.name.stepUpDB` | Step-Up (KH) | Dumbbell Step-Up | Dumbbell Step-Up |
 | `exercise.name.sumoDeadlift` | Sumo-Kreuzheben | Sumo Deadlift | Sumo Deadlift |

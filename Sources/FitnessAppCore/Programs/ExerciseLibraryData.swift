@@ -461,6 +461,35 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Handgelenk-Curl (Kabel)", equipment: .cable, primaryMuscle: .biceps, difficultyLevel: .beginner, localizationKey: "exercise.name.cableWristCurl"),
         ExerciseTemplateSpec(name: "Band Pull-Through", equipment: .band, primaryMuscle: .glutes, difficultyLevel: .beginner, localizationKey: "exercise.name.bandPullThrough"),
         ExerciseTemplateSpec(name: "Burpee mit Kurzhanteln", equipment: .dumbbell, primaryMuscle: .core, isTimeBased: true, localizationKey: "exercise.name.dumbbellBurpee"),
+
+        // ── NEU (GIF-Overrides Runde 3): Praezisions-Varianten fuer per
+        // FORCE_NO_GIF ausgeschlossene Eintraege + eigene Tiefensuche-Treffer.
+        // Die jeweils abgeloeste Uebung bleibt unveraendert und ohne GIF.
+        // DEL-098: `isSystemCompound` ist exklusiv fuer die kanonischen 5
+        // Langhantel-Lifts reserviert (steuert die Compound-Progressions-
+        // Schrittweite) — das JSON-Feld "compound" (jede Mehrgelenk-
+        // Uebung) ist ein anderes Konzept und wird hier bewusst NICHT
+        // auf dieses Flag uebertragen, siehe testSystemCompoundsAreBarbellLiftsOnly.
+        ExerciseTemplateSpec(name: "Einbeinige Split-Kniebeuge (KH)", equipment: .dumbbell, primaryMuscle: .quads, localizationKey: "exercise.name.dumbbellSingleLegSplitSquat"),
+        ExerciseTemplateSpec(name: "Liegendes Bein-Hüft-Heben", equipment: .bodyweight, primaryMuscle: .core, difficultyLevel: .beginner, localizationKey: "exercise.name.lyingLegHipRaise"),
+        ExerciseTemplateSpec(name: "Innere Brustpresse (Maschine)", equipment: .machine, primaryMuscle: .chest, difficultyLevel: .beginner, localizationKey: "exercise.name.machineInnerChestPress"),
+        ExerciseTemplateSpec(name: "Sitzender Kabel-Crunch", equipment: .cable, primaryMuscle: .core, difficultyLevel: .beginner, localizationKey: "exercise.name.cableSeatedCrunch"),
+        ExerciseTemplateSpec(name: "Kabel Cross-Over (Variation)", equipment: .cable, primaryMuscle: .chest, localizationKey: "exercise.name.cableCrossOverVariation"),
+        ExerciseTemplateSpec(name: "Kettlebell Schulterdrücken sitzend", equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .beginner, localizationKey: "exercise.name.kettlebellSeatedPress"),
+        ExerciseTemplateSpec(name: "Kettlebell Doppel-Push-Press", equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellDoublePushPress"),
+        ExerciseTemplateSpec(name: "Kettlebell Thruster", equipment: .kettlebell, primaryMuscle: .quads, difficultyLevel: .intermediate, localizationKey: "exercise.name.kettlebellThruster"),
+        ExerciseTemplateSpec(name: "Latzug an der Kabelstange", equipment: .cable, primaryMuscle: .back, difficultyLevel: .beginner, localizationKey: "exercise.name.cableBarLateralPulldown"),
+        ExerciseTemplateSpec(name: "Kettlebell Plyo-Liegestütze", equipment: .kettlebell, primaryMuscle: .chest, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellPlyoPushUp"),
+        ExerciseTemplateSpec(name: "Kabel Reverse Fly liegend", equipment: .cable, primaryMuscle: .shoulders, difficultyLevel: .beginner, localizationKey: "exercise.name.cableSupineReverseFly"),
+        ExerciseTemplateSpec(name: "Schulterdrücken (Smith Machine)", equipment: .machine, primaryMuscle: .shoulders, difficultyLevel: .beginner, localizationKey: "exercise.name.smithShoulderPress"),
+        ExerciseTemplateSpec(name: "Sitzendes Trizepsstrecken (KH)", equipment: .dumbbell, primaryMuscle: .triceps, localizationKey: "exercise.name.dumbbellSeatedTricepsExtension"),
+        ExerciseTemplateSpec(name: "Kettlebell Turkish Get-Up (Squat-Stil)", equipment: .kettlebell, primaryMuscle: .core, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellTurkishGetUpSquatStyle"),
+        ExerciseTemplateSpec(name: "Sitzendes Wadenheben (KH)", equipment: .dumbbell, primaryMuscle: .calves, difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellSeatedCalfRaise"),
+        // Abschnitt 3: eigene Volltext-Tiefensuche, je ein eindeutiger
+        // Einzel-Kandidat mit abweichendem Equipment.
+        ExerciseTemplateSpec(name: "Beincurl stehend (BW)", equipment: .bodyweight, primaryMuscle: .hamstrings, difficultyLevel: .beginner, localizationKey: "exercise.name.standingSingleLegCurlBodyweight"),
+        ExerciseTemplateSpec(name: "Renegade Row (Kettlebell)", equipment: .kettlebell, primaryMuscle: .back, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellRenegadeRow"),
+        ExerciseTemplateSpec(name: "Latzug eng (Band)", equipment: .band, primaryMuscle: .back, difficultyLevel: .beginner, localizationKey: "exercise.name.bandCloseGripPulldown"),
     ]
 
     /// Alternative-Mapping fuer den Environment-Swap (DEL-022). Bei einem
