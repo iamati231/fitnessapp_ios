@@ -145,6 +145,97 @@ BODY_PART_TO_MUSCLE = {
     "lower legs": "calves",
 }
 
+# ── Manuelle Tiefensuche (GIF_OVERRIDES_TASK, Abschnitt 3) ────────────────
+# Fuer jede Uebung aus den "unsicher"/"ohne GIF"-Listen wurde exercises.json
+# volltextlich nach Bewegung + Equipment-Synonymen durchsucht (nicht nur die
+# Top-3 des Auto-Matchers). Eindeutige Treffer stehen direkt in
+# exercise_gif_overrides.json; alles andere landet hier zur manuellen
+# Freigabe (mehrere plausible Kandidaten ODER Bewegung passt, Equipment
+# nicht) und wird im Report unter "Kandidaten zur Freigabe" aufgefuehrt.
+DEEP_SEARCH_CANDIDATES = {
+    "Beincurl stehend": [
+        ("0795-C5jncD2.gif", "standing single leg curl", "body weight statt machine — einzige 'standing leg curl'-Variante im Datensatz"),
+    ],
+    "Handgelenk-Curl": [
+        ("0369-D1xYJAU.gif", "dumbbell over bench wrist curl", "klassische Wrist-Curl-Haltung"),
+        ("0401-2dImyQ8.gif", "dumbbell seated palms up wrist curl", "alternative Sitzhaltung"),
+    ],
+    "Renegade Row": [
+        ("0521-b9kqlBy.gif", "kettlebell alternating renegade row", "Kettlebell statt Kurzhantel — einzige Renegade-Row-Variante im Datensatz"),
+    ],
+    "Latzug (eng)": [
+        ("0974-DptumMx.gif", "band close-grip pulldown", "Band statt Maschine — kein Maschinen-Pendant mit engem Griff gefunden"),
+    ],
+    "Wall Sit": [
+        ("0624-sVQCCeG.gif", "march sit (wall)", "marschiert an der Wand statt statisch zu halten — andere Bewegung"),
+    ],
+    "Pike Liegestütze": [
+        ("1296-sVvXT5J.gif", "exercise ball pike push up", "Gymnastikball statt Koerpergewicht"),
+    ],
+    "Box Jump": [
+        ("1374-iPm26QU.gif", "box jump down with one leg stabilization", "Sprung abwaerts mit einbeiniger Stabilisation — andere Bewegung als ein klassischer Box Jump"),
+    ],
+    "Ausfallschritte (BW)": [
+        ("3470-kMzUs9Y.gif", "forward lunge (male)", "stationaerer Ausfallschritt, naeher am App-Begriff"),
+        ("1460-IZVHb27.gif", "walking lunge", "laufende Variante"),
+    ],
+    "Skull Crusher": [
+        ("0060-h8LFzo9.gif", "barbell lying triceps extension skull crusher", "gleiche Bewegung, Datensatz-Name traegt Zusatz 'lying triceps extension'"),
+    ],
+    "Schulterdrücken (stehend)": [
+        ("1457-Kyd9Rz5.gif", "barbell standing wide military press", "breiter Griff"),
+        ("1456-wdRZISl.gif", "barbell standing close grip military press", "enger Griff — kein Eintrag ohne Griff-Qualifier gefunden"),
+    ],
+    "Floor Press": [
+        ("0065-vtusOWT.gif", "barbell one arm floor press", "einarmig statt beidarmig — kein beidarmiger Floor Press im Datensatz"),
+    ],
+    "Dip (assistiert)": [
+        ("0009-PAgTVaK.gif", "assisted chest dip (kneeling)", "Maschinen-Assist, Brust-Fokus"),
+        ("0019-J60bN17.gif", "assisted triceps dip (kneeling)", "Maschinen-Assist, Trizeps-Fokus"),
+        ("2364-PnZJIrk.gif", "assisted wide-grip chest dip (kneeling)", "Maschinen-Assist, breiter Griff"),
+    ],
+    "Band Curls": [
+        ("0968-3omWx6P.gif", "band alternating biceps curl", "alternierend statt beidarmig — kein beidarmiger Band-Curl im Datensatz"),
+    ],
+    "Seitstütz": [
+        ("3544-5VXmnV5.gif", "bodyweight incline side plank", "Schraeg-Variante"),
+        ("0664-KhHJ338.gif", "push-up to side plank", "Uebergangsbewegung aus der Liegestuetze"),
+        ("1775-VO2qeJg.gif", "side plank hip adduction", "mit zusaetzlicher Huefter-Bewegung"),
+    ],
+}
+
+# Tiefensuche durchgefuehrt, aber wirklich kein plausibler Kandidat gefunden
+# (Volltext-Suche nach Bewegung + Equipment-Synonymen blieb leer bzw.
+# lieferte nur fachfremde Treffer — nicht nur "Top-3 passt nicht").
+DEEP_SEARCH_NO_MATCH = {
+    "Beinstrecker liegend", "Box Squat", "Deficit-Kreuzheben", "Face Pull",
+    "Chest Supported Row (KH)", "Kettlebell Clean & Press", "Kettlebell Halo",
+    "Kettlebell Pullover", "Kettlebell RDL", "Kettlebell Uppercut Rotation",
+    "Kniebeuge (BW)", "Nacken-Extension", "Push Press", "Reißen (Snatch)",
+    "Reverse Nordic Curl", "Schwimmen", "Thruster (KH)", "Umsetzen & Stoßen",
+    "Z-Press", "Australian Pull-ups", "Back Widows", "Band Pull-Aparts",
+    "Banded Hip Thrust", "Bayesian Curl", "Cable Woodchopper", "Copenhagen Plank",
+    "Dragon Flag", "Easy Run", "Freier Lauf", "Gehen / Einlaufen",
+    "Hex Press (Squeeze Press)", "Hip Thrust (BW)", "Hip Thrust (KH)", "Hip Thrust (LH)",
+    "Intervalle", "Kettlebell Kreuzheben", "Kettlebell Sit-Up (Overhead Hold)",
+    "Kettlebell Suitcase Carry", "Lauf-Intervall", "Laufband", "Long Run",
+    "Meadows Row", "Nacken-Curl", "Nordic Curls", "Plank", "Rad-Intervall",
+    "Radfahren (outdoor)", "Rudermaschine", "Sandbag Carry",
+    "Sled Pull", "Sled Push", "Tibialis Raise",
+}
+
+# Neu in ExerciseLibraryData.swift aufgenommene Uebungen (GIF_OVERRIDES_TASK,
+# Abschnitt 4) — fuer den Report, nicht fuer das Matching selbst (die
+# Overrides in exercise_gif_overrides.json erledigen die Zuordnung bereits).
+NEWLY_ADDED_EXERCISES = [
+    "Arnold Press (KH)", "Arnold Press (Kettlebell)", "Ausfallschritt rückwärts (KH)",
+    "Ausfallschritt rückwärts (LH)", "Seitlicher Ausfallschritt (LH)", "Kettlebell Windmill",
+    "Kettlebell Pistol Squat", "Kettlebell Bent Press", "Power Clean",
+    "Low-Bar-Kniebeuge (LH)", "Hack Squat (LH)", "Hack Squat (Smith)",
+    "Reverse Crunch", "Kabel Reverse Crunch", "Handgelenk-Curl (LH)",
+    "Handgelenk-Curl (Kabel)", "Band Pull-Through", "Burpee mit Kurzhanteln",
+]
+
 
 def log(*args):
     print(*args, file=sys.stderr)
@@ -474,7 +565,7 @@ def load_or_seed_overrides():
     return {}
 
 
-def write_report(sicher, unsicher, ohne, dataset_sha, gif_sha, total_specs, dataset):
+def write_report(sicher, unsicher, ohne, dataset_sha, gif_sha, total_specs, dataset, overrides_used):
     equip_counts = collections.Counter(e["equipment"].lower() for e in dataset)
 
     lines = []
@@ -497,17 +588,24 @@ def write_report(sicher, unsicher, ohne, dataset_sha, gif_sha, total_specs, data
 
     lines.append("## Unsicher — Top-3-Kandidaten (benötigt Freigabe)")
     lines.append("")
-    lines.append("| App-Übung | Equipment | Kandidat 1 | Kandidat 2 | Kandidat 3 |")
-    lines.append("|---|---|---|---|---|")
+    lines.append("| App-Übung | Equipment | Kandidat 1 | Kandidat 2 | Kandidat 3 | Tiefensuche |")
+    lines.append("|---|---|---|---|---|---|")
     for m in sorted(unsicher, key=lambda m: m["spec"]["name"]):
         cands = m["candidates"]
+        name = m["spec"]["name"]
 
         def cell(c):
             ratio, e = c
             return f"{e['name']} ({ratio:.2f}, `{e['equipment']}`, `{gif_filename(e)}`)"
 
         row = [cell(cands[i]) if i < len(cands) else "—" for i in range(3)]
-        lines.append(f"| {m['spec']['name']} | {m['spec']['equipment']} | {row[0]} | {row[1]} | {row[2]} |")
+        if name in DEEP_SEARCH_CANDIDATES:
+            deep = "siehe 'Kandidaten zur Freigabe' unten"
+        elif name in DEEP_SEARCH_NO_MATCH:
+            deep = "kein Treffer"
+        else:
+            deep = "—"
+        lines.append(f"| {name} | {m['spec']['equipment']} | {row[0]} | {row[1]} | {row[2]} | {deep} |")
     lines.append("")
     lines.append(
         "Freigabe: gewünschten `gifFile`-Wert in `exercise_gif_overrides.json` "
@@ -515,12 +613,46 @@ def write_report(sicher, unsicher, ohne, dataset_sha, gif_sha, total_specs, data
     )
     lines.append("")
 
+    lines.append("## Kandidaten zur Freigabe (manuelle Tiefensuche)")
+    lines.append("")
+    lines.append(
+        "Volltextsuche in exercises.json ueber die Top-3 des Auto-Matchers hinaus. "
+        "Bewegung passt grundsaetzlich, aber entweder gibt es mehrere aehnlich "
+        "plausible Kandidaten oder das Equipment weicht ab — deshalb kein "
+        "automatischer Override."
+    )
+    lines.append("")
+    lines.append("| App-Übung | Kandidaten |")
+    lines.append("|---|---|")
+    for name in sorted(DEEP_SEARCH_CANDIDATES):
+        cands = DEEP_SEARCH_CANDIDATES[name]
+        cell = "<br>".join(f"{ds_name} (`{gif}`) — {note}" for gif, ds_name, note in cands)
+        lines.append(f"| {name} | {cell} |")
+    lines.append("")
+
     lines.append("## Ohne GIF")
     lines.append("")
     lines.append("| App-Übung | Grund |")
     lines.append("|---|---|")
     for m in sorted(ohne, key=lambda m: m["spec"]["name"]):
-        lines.append(f"| {m['spec']['name']} | {m['reason']} |")
+        reason = m["reason"]
+        if m["spec"]["name"] in DEEP_SEARCH_NO_MATCH:
+            reason += " · Tiefensuche (Volltext) ebenfalls ohne Kandidat"
+        lines.append(f"| {m['spec']['name']} | {reason} |")
+    lines.append("")
+
+    lines.append("## Neu hinzugefügt")
+    lines.append("")
+    lines.append(
+        "Uebungen, die es in der App vorher nicht gab und die wegen eines "
+        "eindeutig passenden GIFs neu in `ExerciseLibraryData.swift` angelegt wurden."
+    )
+    lines.append("")
+    lines.append("| App-Übung | GIF |")
+    lines.append("|---|---|")
+    for name in NEWLY_ADDED_EXERCISES:
+        gif = overrides_used.get(name, "—")
+        lines.append(f"| {name} | `{gif}` |")
     lines.append("")
 
     lines.append("## Zusammenfassung")
@@ -635,7 +767,7 @@ def main():
     sicher, unsicher, ohne = match_library(specs, en_names, dataset_with_gifs, overrides)
 
     write_map_json(dataset_with_gifs)
-    write_report(sicher, unsicher, ohne, dataset_sha, gif_sha, len(specs), dataset_with_gifs)
+    write_report(sicher, unsicher, ohne, dataset_sha, gif_sha, len(specs), dataset_with_gifs, overrides)
 
     resolution_pairs = build_normalized_pairs(
         [(m["spec"]["name"], m["gifFile"]) for m in sicher if m["reason"] != "override"],
