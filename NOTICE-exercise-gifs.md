@@ -1,6 +1,6 @@
 # Übungs-GIFs aus externen Quellen
 
-Die animierten GIFs unter [`Sources/FitnessAppUI/Resources/ExerciseGifs/`](Sources/FitnessAppUI/Resources/ExerciseGifs/)
+Die animierten GIFs unter [`Sources/FitnessAppUI/ExerciseGifs/`](Sources/FitnessAppUI/ExerciseGifs/)
 sind **unveränderte Kopien** aus zwei externen Repos:
 
 - **Metadaten** (Namen, Equipment, Zielmuskel — nicht Teil der App):

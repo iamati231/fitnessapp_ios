@@ -17,7 +17,7 @@ Erzeugt:
                                   Generierte Swift-Konstanten (Automatik-Treffer).
   - Sources/FitnessAppCore/Exercises/ExerciseGifOverrides.swift
                                   Generierte Swift-Konstanten (aus den Overrides).
-  - Sources/FitnessAppUI/Resources/ExerciseGifs/*.gif
+  - Sources/FitnessAppUI/ExerciseGifs/*.gif
                                   Nur die tatsaechlich gematchten GIF-Dateien.
 
 Lauf von Repo-Root (stdlib-only, kein pip-Install noetig):
@@ -60,7 +60,7 @@ REPORT_MD = os.path.join(ROOT, "GIF_MATCH_REPORT.md")
 
 GEN_RESOLUTION_SWIFT = os.path.join(ROOT, "Sources/FitnessAppCore/Exercises/ExerciseGifResolution.swift")
 GEN_OVERRIDES_SWIFT = os.path.join(ROOT, "Sources/FitnessAppCore/Exercises/ExerciseGifOverrides.swift")
-GIFS_DEST_DIR = os.path.join(ROOT, "Sources/FitnessAppUI/Resources/ExerciseGifs")
+GIFS_DEST_DIR = os.path.join(ROOT, "Sources/FitnessAppUI/ExerciseGifs")
 
 SICHER_RATIO = 0.90
 UNSICHER_RATIO_FLOOR = 0.70

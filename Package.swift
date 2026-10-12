@@ -51,7 +51,20 @@ let package = Package(
             dependencies: ["FitnessAppCore", "FitnessAppData",
                            "FitnessAppHealth", "FitnessAppActivities"],
             path: "Sources/FitnessAppUI",
-            resources: [.process("Resources")]
+            // ExerciseGifs liegt bewusst NICHT unter Resources/: `.process()`
+            // flacht verschachtelte Ordner ab (alle Dateien landen direkt im
+            // Bundle-Root, ohne Unterordner) — `Bundle.module.url(…,
+            // subdirectory: "ExerciseGifs")` liefe damit ins Leere. `.copy()`
+            // auf einem eigenen, nicht ueberlappenden Pfad behaelt die
+            // Ordnerstruktur im Bundle bei. SPM verbietet zudem ueberlappende
+            // Resource-Regeln fuer denselben Pfad (`.process("Resources")`
+            // + `.copy("Resources/ExerciseGifs")` schlaegt mit "duplicate
+            // resource rule" fehl), daher der eigene Top-Level-Ordner statt
+            // eines Unterordners von Resources/.
+            resources: [
+                .process("Resources"),
+                .copy("ExerciseGifs")
+            ]
         ),
         .testTarget(
             name: "FitnessAppCoreTests",
@@ -73,6 +86,15 @@ let package = Package(
             name: "FitnessAppDataTests",
             dependencies: ["FitnessAppData", "FitnessAppCore"],
             path: "Tests/FitnessAppDataTests"
+        ),
+        .testTarget(
+            // Bundle-Resource-Checks fuer FitnessAppUI (z.B. Uebungs-GIFs
+            // tatsaechlich ueber Bundle.module erreichbar) — auf Windows/Linux
+            // compiliert das SwiftUI-abhaengige FitnessAppUI leer, diese Tests
+            // beruehren nur Foundation und laufen echt auf Codemagic-Mac.
+            name: "FitnessAppUITests",
+            dependencies: ["FitnessAppUI", "FitnessAppCore"],
+            path: "Tests/FitnessAppUITests"
         )
     ]
 )

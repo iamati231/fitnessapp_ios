@@ -35,7 +35,7 @@ public struct ExerciseGifView: View {
         guard let fileName = ExerciseMediaProvider.gifFileName(forExerciseName: exerciseName) else {
             return nil
         }
-        return Bundle.module.url(forResource: fileName, withExtension: nil, subdirectory: "ExerciseGifs")
+        return ExerciseGifBundleResource.url(forGifFileName: fileName)
     }
 
     public var body: some View {
