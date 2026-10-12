@@ -89,4 +89,51 @@ final class ExerciseLibraryLocalizationTests: XCTestCase {
                           "'\(entry.name)' hat einen Key ausserhalb des `exercise.name.*` Namespaces: '\(key)'")
         }
     }
+
+    /// GIF_OVERRIDES_TASK: die 18 per GIF-Tiefensuche neu aufgenommenen
+    /// Uebungen muessen denselben Vertrag erfuellen wie jeder andere
+    /// Library-Eintrag — eigener Key, keine Kollision mit einem
+    /// bestehenden Key. Lokalisierte DE/EN/TR-Werte selbst werden im
+    /// Build-Skript (`load_en_names` gegen `Localizable.xcstrings`)
+    /// geprueft; hier geht es um die Swift-Seite der Zuordnung.
+    func testNewlyAddedExercisesCarryDistinctLocalizationKeys() {
+        let expectations: [(germanName: String, expectedKey: String)] = [
+            ("Arnold Press (KH)", "exercise.name.dumbbellArnoldPress"),
+            ("Arnold Press (Kettlebell)", "exercise.name.kettlebellArnoldPress"),
+            ("Ausfallschritt rückwärts (KH)", "exercise.name.dumbbellReverseLunge"),
+            ("Ausfallschritt rückwärts (LH)", "exercise.name.barbellReverseLunge"),
+            ("Seitlicher Ausfallschritt (LH)", "exercise.name.barbellLateralLunge"),
+            ("Kettlebell Windmill", "exercise.name.kettlebellWindmill"),
+            ("Kettlebell Pistol Squat", "exercise.name.kettlebellPistolSquat"),
+            ("Kettlebell Bent Press", "exercise.name.kettlebellBentPress"),
+            ("Power Clean", "exercise.name.powerClean"),
+            ("Low-Bar-Kniebeuge (LH)", "exercise.name.lowBarBackSquat"),
+            ("Hack Squat (LH)", "exercise.name.barbellHackSquat"),
+            ("Hack Squat (Smith)", "exercise.name.smithHackSquat"),
+            ("Reverse Crunch", "exercise.name.reverseCrunch"),
+            ("Kabel Reverse Crunch", "exercise.name.cableReverseCrunch"),
+            ("Handgelenk-Curl (LH)", "exercise.name.barbellWristCurl"),
+            ("Handgelenk-Curl (Kabel)", "exercise.name.cableWristCurl"),
+            ("Band Pull-Through", "exercise.name.bandPullThrough"),
+            ("Burpee mit Kurzhanteln", "exercise.name.dumbbellBurpee"),
+        ]
+
+        for (germanName, expectedKey) in expectations {
+            guard let entry = ExerciseLibraryData.all.first(where: { $0.name == germanName }) else {
+                XCTFail("Neue Uebung '\(germanName)' fehlt in ExerciseLibraryData — wurde sie umbenannt oder versehentlich entfernt?")
+                continue
+            }
+            XCTAssertEqual(entry.localizationKey, expectedKey,
+                           "'\(germanName)' sollte localizationKey '\(expectedKey)' tragen, ist aber '\(entry.localizationKey ?? "nil")'")
+        }
+
+        let keys = expectations.map(\.expectedKey)
+        XCTAssertEqual(Set(keys).count, keys.count, "Die neuen localizationKeys duerfen sich nicht untereinander doppeln")
+
+        let otherKeys = Set(ExerciseLibraryData.all
+            .filter { entry in !expectations.contains { $0.germanName == entry.name } }
+            .compactMap(\.localizationKey))
+        let collisions = keys.filter(otherKeys.contains)
+        XCTAssertTrue(collisions.isEmpty, "Neue localizationKeys kollidieren mit bestehenden Eintraegen: \(collisions)")
+    }
 }

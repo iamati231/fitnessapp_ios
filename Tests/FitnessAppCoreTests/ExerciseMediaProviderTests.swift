@@ -116,4 +116,32 @@ final class ExerciseMediaProviderTests: XCTestCase {
             }
         }
     }
+
+    /// GIF_OVERRIDES_TASK: konkreter End-to-End-Beleg gegen die ECHTEN
+    /// generierten Tabellen (nicht nur injizierte Test-Dicts) — fuer
+    /// "Kniebeuge" liefert die automatische Fuzzy-Suche nichts Sicheres
+    /// (siehe GIF_MATCH_REPORT.md), der manuell per Tiefensuche gesetzte
+    /// Override muss trotzdem durchkommen.
+    func testRealOverrideFromDeepSearchResolves() {
+        XCTAssertEqual(
+            ExerciseMediaProvider.gifFileName(forExerciseName: "Kniebeuge"),
+            "1436-Gnfo4FM.gif"
+        )
+    }
+
+    /// GIF_OVERRIDES_TASK: die neu in die Bibliothek aufgenommenen Uebungen
+    /// sind nur ueber ihren direkten Override auffindbar (kein Fuzzy-Match
+    /// noetig) — stellt sicher, dass Name und Override-Key tatsaechlich
+    /// zusammenpassen (keine Tippfehler zwischen ExerciseLibraryData.swift
+    /// und exercise_gif_overrides.json).
+    func testNewlyAddedExercisesResolveViaRealOverrides() {
+        let expectations: [(name: String, gifFile: String)] = [
+            ("Power Clean", "0648-SiWCcTN.gif"),
+            ("Reverse Crunch", "0872-nCU1Ekp.gif"),
+            ("Burpee mit Kurzhanteln", "1201-0JtKWum.gif"),
+        ]
+        for (name, gifFile) in expectations {
+            XCTAssertEqual(ExerciseMediaProvider.gifFileName(forExerciseName: name), gifFile)
+        }
+    }
 }
