@@ -131,6 +131,8 @@ struct ExerciseCard: View {
 
     private var header: some View {
         HStack(spacing: 10) {
+            ExerciseGifView(exerciseName: exercise.name, displayName: exercise.displayName)
+                .frame(width: 44, height: 44)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     // DEL-124: Active-Workout Card-Header via displayName.

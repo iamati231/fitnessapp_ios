@@ -2,6 +2,14 @@
   "sourceLanguage": "en",
   "version": "1.0",
   "strings": {
+    "exercise.gif.a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Animation: %@" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Animation: %@" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Animasyon: %@" } }
+      }
+    },
     "timedWorkout.amrap.addRound": {
       "extractionState": "manual",
       "localizations": {

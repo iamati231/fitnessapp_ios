@@ -139,6 +139,16 @@ struct ExerciseLibraryEditorSheet: View {
     @ViewBuilder
     private var readOnlyContent: some View {
         Section {
+            HStack {
+                Spacer()
+                ExerciseGifView(exerciseName: existing?.name ?? trimmedName, displayName: titleText)
+                    .frame(width: 140, height: 140)
+                Spacer()
+            }
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets())
+        }
+        Section {
             LabeledContent {
                 Text(muscle.localizedName)
             } label: {

@@ -325,8 +325,8 @@ public struct ExerciseLibraryView: View {
             }
         } label: {
             HStack(spacing: 12) {
-                Image(systemName: equipmentIcon(template.equipment))
-                    .deltiqAccentIcon()
+                ExerciseGifView(exerciseName: template.name, displayName: template.displayName, animated: false)
+                    .frame(width: 40, height: 40)
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
                         Text(template.displayName)
@@ -414,19 +414,6 @@ public struct ExerciseLibraryView: View {
         try? modelContext.save()
     }
 
-    /// DEL-210: Bibliothek + Picker SIND jetzt dieselbe View — die
-    /// frühere Spiegelung zum separaten ExercisePickerView entfällt.
-    private func equipmentIcon(_ e: Equipment) -> String {
-        switch e {
-        case .barbell:     return "scalemass"
-        case .dumbbell:    return "dumbbell"
-        case .bodyweight:  return "figure.walk"
-        case .machine:     return "gearshape"
-        case .cable:       return "cable.connector"
-        case .kettlebell:  return "circle.grid.cross"
-        case .band:        return "infinity"
-        }
-    }
 }
 
 // MARK: - DEL-210 Picker-Sheet-Wrapper
