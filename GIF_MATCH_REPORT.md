@@ -2,9 +2,9 @@
 
 - Dataset-Commit (`hasaneyldrm/exercises-dataset`): `7455efae41b330c265e7cd4b78dfa848e7ce5ebd`
 - GIF-Commit (`arvids-unavailable/openGym`): `c42ba6b98e3776af5981f20c05ba392238799670`
-- App-Uebungen gesamt: 204
+- App-Uebungen gesamt: 222
 
-**138 sicher · 31 unsicher · 35 ohne GIF**
+**141 sicher · 31 unsicher · 50 ohne GIF**
 
 ## Sicher zugeordnet
 
@@ -23,14 +23,12 @@
 | Battle Ropes | `0128-RJa4tCo.gif` | override |
 | Beinbeuger liegend | `0586-17lJ1kr.gif` | exact (equipment-variant) |
 | Beincurl sitzend | `0599-Zg3XY7P.gif` | exact (equipment-variant) |
-| Beinheben (liegend) | `0865-9IxJdtC.gif` | override |
+| Beincurl stehend (BW) | `0795-C5jncD2.gif` | override |
 | Beinpresse | `0760-7zdxRTl.gif` | exact (equipment-variant) |
 | Beinstrecker | `0585-my33uHU.gif` | exact (equipment-variant) |
 | Bizeps-Curl (KH) | `0294-NbVPDMW.gif` | override |
 | Bizeps-Curl (LH) | `0031-25GPyDY.gif` | exact |
 | Breite Liegestütze | `1311-JmMVpR3.gif` | override |
-| Brustdrücken (Maschine) | `1301-wDN97Ca.gif` | override |
-| Bulgarische Kniebeuge (KH) | `0410-qx4fgX7.gif` | override |
 | Burpee mit Kurzhanteln | `1201-0JtKWum.gif` | override |
 | Burpees | `1160-dK9394r.gif` | override |
 | Cable Pull-Through | `0196-OM46QHm.gif` | override |
@@ -39,6 +37,7 @@
 | Diamant-Liegestütze | `0283-soIB2rj.gif` | exact |
 | Dips (Brust) | `0251-9WTm7dq.gif` | override |
 | Dips (Trizeps) | `0814-X6C6i5Y.gif` | override |
+| Einbeinige Split-Kniebeuge (KH) | `0410-qx4fgX7.gif` | override |
 | Enges Bankdrücken | `0030-J6Dx1Mu.gif` | override |
 | Fahrradergometer | `2138-H1PESYI.gif` | override |
 | Farmer's Walk | `2133-qPEzJjA.gif` | override |
@@ -60,28 +59,30 @@
 | Handstand-Liegestütze | `0471-rQxwMxO.gif` | exact |
 | Handtuch-Rudern (Türrahmen) | `1773-bKWbrTA.gif` | override |
 | Hanging Leg Raises | `0472-I3tsCnC.gif` | exact |
+| Innere Brustpresse (Maschine) | `1301-wDN97Ca.gif` | override |
 | Inverted Row | `0499-bZGHsAZ.gif` | exact |
 | Jump Squat | `0514-LIlE5Tn.gif` | exact |
-| Kabel Crossover | `0155-0CXGHya.gif` | override |
-| Kabel Crunch | `0212-8xUv4J7.gif` | override |
+| Kabel Cross-Over (Variation) | `0155-0CXGHya.gif` | override |
 | Kabel Curl | `0868-G08RZcQ.gif` | exact |
 | Kabel Reverse Crunch | `0873-RqOtqD7.gif` | override |
+| Kabel Reverse Fly liegend | `0240-PQcUlDi.gif` | override |
 | Kabel Seitheben | `0178-goJ6ezq.gif` | exact |
 | Kabelrudern sitzend | `0861-fUBheHs.gif` | exact (equipment-variant) |
 | Kettlebell Bent Press | `0524-kjE55n5.gif` | override |
-| Kettlebell Clean to Front Squat | `0533-DB0n8AG.gif` | override |
+| Kettlebell Doppel-Push-Press | `0528-I4KkPdl.gif` | override |
 | Kettlebell Floor Press | `1298-rg59QCH.gif` | override |
 | Kettlebell Front Squat | `0533-DB0n8AG.gif` | exact |
 | Kettlebell Goblet Squat | `0534-ZA8b5hc.gif` | exact |
-| Kettlebell Overhead Press | `0546-BkxB8LW.gif` | override |
 | Kettlebell Pistol Squat | `0544-5bpPTHv.gif` | override |
-| Kettlebell Push Press | `0528-I4KkPdl.gif` | override |
+| Kettlebell Plyo-Liegestütze | `0545-ktf3nvW.gif` | override |
 | Kettlebell Row einarmig | `0541-g9AsZ8P.gif` | override |
+| Kettlebell Schulterdrücken sitzend | `0546-BkxB8LW.gif` | override |
 | Kettlebell Snatch | `0542-aXcUyKb.gif` | override |
 | Kettlebell Snatch (Links) | `0542-aXcUyKb.gif` | override |
 | Kettlebell Snatch (Rechts) | `0542-aXcUyKb.gif` | override |
 | Kettlebell Swing | `0549-UHJlbu3.gif` | exact |
-| Kettlebell Thruster einarmig | `0550-yWxMvB5.gif` | override |
+| Kettlebell Thruster | `0550-yWxMvB5.gif` | override |
+| Kettlebell Turkish Get-Up (Squat-Stil) | `0551-Ha7SZ3y.gif` | override |
 | Kettlebell Windmill | `0554-9Tkqa9O.gif` | override |
 | Klimmzug (assistiert) | `0017-kiJ4Z2K.gif` | exact |
 | Klimmzüge | `0652-lBDjFxJ.gif` | exact |
@@ -93,10 +94,11 @@
 | Kreuzheben (konventionell) | `0032-ila4NZS.gif` | override |
 | L-Sit | `3419-UpWmA5E.gif` | override |
 | Latzug (neutraler Griff) | `0818-rkg41Fb.gif` | override |
-| Latzug (weit) | `0150-eYnzaCm.gif` | override |
+| Latzug an der Kabelstange | `0150-eYnzaCm.gif` | override |
+| Latzug eng (Band) | `0974-DptumMx.gif` | override |
+| Liegendes Bein-Hüft-Heben | `0865-9IxJdtC.gif` | override |
 | Liegestütze | `0662-I4hDWkc.gif` | exact |
 | Liegestütze (Knie) | `3211-ZOuKWir.gif` | override |
-| Liegestütze auf Kettlebell | `0545-ktf3nvW.gif` | override |
 | Low-Bar-Kniebeuge (LH) | `1435-bTpEUcm.gif` | override |
 | Medizinball-Slam | `1354-oHg8eop.gif` | override |
 | Mountain Climbers | `0630-RJgzwny.gif` | override |
@@ -109,7 +111,7 @@
 | Preacher Curl (Maschine) | `0592-b6hQYMb.gif` | override |
 | Pullover (KH) | `0375-9XjtHvS.gif` | exact |
 | Push Press (KH) | `1700-FS63wTN.gif` | exact |
-| Reverse Cable Fly | `0240-PQcUlDi.gif` | override |
+| Renegade Row (Kettlebell) | `0521-b9kqlBy.gif` | override |
 | Reverse Crunch | `0872-nCU1Ekp.gif` | override |
 | Reverse Curl | `0080-xNrS20v.gif` | exact (equipment-variant) |
 | Reverse Flyes (KH) | `0383-EAs3xL9.gif` | exact |
@@ -123,13 +125,17 @@
 | Schrägbankdrücken (aufwärts) | `0047-3TZduzM.gif` | exact (equipment-variant) |
 | Schrägbankdrücken aufwärts (KH) | `0314-ns0SIbU.gif` | exact (equipment-variant) |
 | Schulterdrücken (KH) | `0405-znQUdHY.gif` | override |
-| Schulterdrücken (Maschine) | `0766-903mzG8.gif` | override |
+| Schulterdrücken (Smith Machine) | `0766-903mzG8.gif` | override |
 | Seitheben | `0334-DsgkuIt.gif` | exact (equipment-variant) |
 | Seitlicher Ausfallschritt (LH) | `1410-py1HSzx.gif` | override |
 | Shrug (KH) | `0406-NJzBsGJ.gif` | exact |
 | Shrug (LH) | `0095-dG7tG5y.gif` | exact |
 | Sissy Squats (BW) | `1489-xdYPUtE.gif` | exact |
 | Sit-ups | `0735-Bn6TXyO.gif` | override |
+| Sitzender Kabel-Crunch | `0212-8xUv4J7.gif` | override |
+| Sitzendes Trizepsstrecken (KH) | `2188-kont8Ut.gif` | override |
+| Sitzendes Wadenheben (KH) | `1379-r29jP7S.gif` | override |
+| Skull Crusher | `0060-h8LFzo9.gif` | override |
 | Smith Machine Squat | `0770-jFtipLl.gif` | override |
 | Step-Up (KH) | `0431-aXtJhlg.gif` | exact |
 | Stepper | `2311-j9Q5crt.gif` | override |
@@ -139,11 +145,8 @@
 | Trap-Bar-Kreuzheben | `0811-jQGwmxN.gif` | exact |
 | Trizepsdrücken (Kabel) | `0241-gAwDzB3.gif` | override |
 | Trizepskickback (KH) | `0333-W6PxUkg.gif` | override |
-| Trizepsstrecker über Kopf (KH) | `2188-kont8Ut.gif` | override |
 | Trizepsstrecker über Kopf (Kabel) | `1722-1xHyxys.gif` | override |
-| Turkish Get-Up | `0551-Ha7SZ3y.gif` | override |
 | Wadenheben (BW) | `1373-bJYHBIN.gif` | override |
-| Wadenheben (KH) | `1379-r29jP7S.gif` | override |
 | Wadenheben (stehend, LH) | `1372-8ozhUIZ.gif` | exact (equipment-variant) |
 | Wadenpresse (Beinpresse) | `1391-ykHcWme.gif` | fuzzy 0.93 |
 | Wadenpresse (sitzend) | `2335-Ie9UGty.gif` | exact (equipment-variant) |
@@ -154,7 +157,7 @@
 | App-Übung | Equipment | Kandidat 1 | Kandidat 2 | Kandidat 3 | Tiefensuche |
 |---|---|---|---|---|---|
 | Band Curls | band | band wrist curl (0.80, `band`, `1016-vUTfFHw.gif`) | ez barbell seated curls (0.73, `ez barbell`, `1458-jtFKbt5.gif`) | weighted standing curl (0.70, `weighted`, `0853-M5Y7GPg.gif`) | siehe 'Kandidaten zur Freigabe' unten |
-| Beincurl stehend | machine | weighted standing curl (0.87, `weighted`, `0853-M5Y7GPg.gif`) | cable standing inner curl (0.83, `cable`, `0229-YwnI4ja.gif`) | barbell standing close grip curl (0.83, `barbell`, `0106-4dUn2iv.gif`) | siehe 'Kandidaten zur Freigabe' unten |
+| Beincurl stehend | machine | weighted standing curl (0.87, `weighted`, `0853-M5Y7GPg.gif`) | cable standing inner curl (0.83, `cable`, `0229-YwnI4ja.gif`) | barbell standing close grip curl (0.83, `barbell`, `0106-4dUn2iv.gif`) | — |
 | Beinstrecker liegend | bodyweight | barbell lying extension (0.88, `barbell`, `0057-EMpUwRI.gif`) | dumbbell lying single extension (0.88, `dumbbell`, `1735-6MfS53i.gif`) | dumbbell lying alternate extension (0.82, `dumbbell`, `1729-NfP83rA.gif`) | kein Treffer |
 | Box Squat | barbell | squat on bosu ball (0.82, `bosu ball`, `1705-T2fA5Ir.gif`) | band squat row (0.78, `band`, `1003-w1NOByi.gif`) | barbell low bar squat (0.73, `barbell`, `1435-bTpEUcm.gif`) | kein Treffer |
 | Chest Supported Row (KH) | dumbbell | dumbbell supported squat (0.73, `dumbbell`, `2803-r5DgrW9.gif`) | dumbbell upright row (0.71, `dumbbell`, `0437-ainizkb.gif`) | dumbbell upright row (back pov) (0.67, `dumbbell`, `1765-Iptlv6x.gif`) | kein Treffer |
@@ -171,12 +174,12 @@
 | Kettlebell RDL | kettlebell | kettlebell windmill (0.79, `kettlebell`, `0554-9Tkqa9O.gif`) | kettlebell swing (0.73, `kettlebell`, `0549-UHJlbu3.gif`) | kettlebell figure 8 (0.73, `kettlebell`, `0532-L4ay0PW.gif`) | kein Treffer |
 | Kettlebell Uppercut Rotation | kettlebell | kettlebell pirate supper legs (0.70, `kettlebell`, `0543-kuXhl0o.gif`) | kettlebell front squat (0.64, `kettlebell`, `0533-DB0n8AG.gif`) | kettlebell one arm row (0.64, `kettlebell`, `0541-g9AsZ8P.gif`) | kein Treffer |
 | Kniebeuge (BW) | bodyweight | bodyweight squatting row (0.80, `body weight`, `3168-3xK09Sk.gif`) | bodyweight drop jump squat (0.76, `body weight`, `3543-wfotm7S.gif`) | weighted squat (0.80, `weighted`, `0852-JZuApnB.gif`) | kein Treffer |
-| Latzug (eng) | machine | band close-grip pulldown (0.90, `band`, `0974-DptumMx.gif`) | reverse grip machine lat pulldown (0.83, `leverage machine`, `0673-ecpY0rH.gif`) | lever reverse grip lateral pulldown (0.77, `leverage machine`, `2736-ky8FLU8.gif`) | siehe 'Kandidaten zur Freigabe' unten |
+| Latzug (eng) | machine | band close-grip pulldown (0.90, `band`, `0974-DptumMx.gif`) | reverse grip machine lat pulldown (0.83, `leverage machine`, `0673-ecpY0rH.gif`) | lever reverse grip lateral pulldown (0.77, `leverage machine`, `2736-ky8FLU8.gif`) | — |
 | Nacken-Extension | bodyweight | lever back extension (0.86, `leverage machine`, `0573-rUXfn3R.gif`) | lever leg extension (0.81, `leverage machine`, `0585-my33uHU.gif`) | resistance band leg extension (0.81, `resistance band`, `3007-Y1MsI1l.gif`) | kein Treffer |
 | Pike Liegestütze | bodyweight | exercise ball pike push up (1.00, `stability ball`, `1296-sVvXT5J.gif`) | side push-up (0.83, `body weight`, `0717-wpbD28t.gif`) | clap push up (0.75, `body weight`, `1273-wigSg76.gif`) | siehe 'Kandidaten zur Freigabe' unten |
 | Push Press | barbell | dumbbell push press (1.00, `dumbbell`, `1700-FS63wTN.gif`) | kettlebell double push press (0.74, `kettlebell`, `0528-I4KkPdl.gif`) | barbell bench press (0.67, `barbell`, `0025-EIeI8Vf.gif`) | kein Treffer |
 | Reißen (Snatch) | barbell | snatch pull (0.71, `barbell`, `0776-dG5Smob.gif`) | barbell one arm snatch (0.60, `barbell`, `0067-xHKN2s8.gif`) | kettlebell double snatch (0.63, `kettlebell`, `0529-M74kdvm.gif`) | kein Treffer |
-| Renegade Row | dumbbell | barbell rear delt row (0.72, `barbell`, `0076-S9zHIvU.gif`) | smith rear delt row (0.72, `smith machine`, `0762-nFUwqG6.gif`) | cable rope seated row (0.67, `cable`, `1323-SJqRxOt.gif`) | siehe 'Kandidaten zur Freigabe' unten |
+| Renegade Row | dumbbell | barbell rear delt row (0.72, `barbell`, `0076-S9zHIvU.gif`) | smith rear delt row (0.72, `smith machine`, `0762-nFUwqG6.gif`) | cable rope seated row (0.67, `cable`, `1323-SJqRxOt.gif`) | — |
 | Reverse Nordic Curl | bodyweight | ez barbell reverse grip curl (0.83, `ez barbell`, `0451-Y5X65IB.gif`) | band reverse wrist curl (0.81, `band`, `0994-Ezpnw9d.gif`) | barbell reverse wrist curl (0.81, `barbell`, `0082-LsZkfU6.gif`) | kein Treffer |
 | Schulterdrücken (stehend) | barbell | dumbbell standing overhead press (1.00, `dumbbell`, `0426-A6wtbuL.gif`) | band twisting overhead press (0.87, `band`, `1012-u4bAmKp.gif`) | barbell seated overhead press (0.82, `barbell`, `0091-kTbSH9h.gif`) | siehe 'Kandidaten zur Freigabe' unten |
 | Schwimmen | bodyweight | kettlebell swing (0.77, `kettlebell`, `0549-UHJlbu3.gif`) | swing 360 (0.59, `body weight`, `3318-tnaj0mT.gif`) | ring dips (0.47, `body weight`, `0677-ezTvXcr.gif`) | kein Treffer |
@@ -195,17 +198,13 @@ Volltextsuche in exercises.json ueber die Top-3 des Auto-Matchers hinaus. Bewegu
 |---|---|
 | Ausfallschritte (BW) | forward lunge (male) (`3470-kMzUs9Y.gif`) — stationaerer Ausfallschritt, naeher am App-Begriff<br>walking lunge (`1460-IZVHb27.gif`) — laufende Variante |
 | Band Curls | band alternating biceps curl (`0968-3omWx6P.gif`) — alternierend statt beidarmig — kein beidarmiger Band-Curl im Datensatz |
-| Beincurl stehend | standing single leg curl (`0795-C5jncD2.gif`) — body weight statt machine — einzige 'standing leg curl'-Variante im Datensatz |
 | Box Jump | box jump down with one leg stabilization (`1374-iPm26QU.gif`) — Sprung abwaerts mit einbeiniger Stabilisation — andere Bewegung als ein klassischer Box Jump |
 | Dip (assistiert) | assisted chest dip (kneeling) (`0009-PAgTVaK.gif`) — Maschinen-Assist, Brust-Fokus<br>assisted triceps dip (kneeling) (`0019-J60bN17.gif`) — Maschinen-Assist, Trizeps-Fokus<br>assisted wide-grip chest dip (kneeling) (`2364-PnZJIrk.gif`) — Maschinen-Assist, breiter Griff |
 | Floor Press | barbell one arm floor press (`0065-vtusOWT.gif`) — einarmig statt beidarmig — kein beidarmiger Floor Press im Datensatz |
 | Handgelenk-Curl | dumbbell over bench wrist curl (`0369-D1xYJAU.gif`) — klassische Wrist-Curl-Haltung<br>dumbbell seated palms up wrist curl (`0401-2dImyQ8.gif`) — alternative Sitzhaltung |
-| Latzug (eng) | band close-grip pulldown (`0974-DptumMx.gif`) — Band statt Maschine — kein Maschinen-Pendant mit engem Griff gefunden |
-| Pike Liegestütze | exercise ball pike push up (`1296-sVvXT5J.gif`) — Gymnastikball statt Koerpergewicht |
-| Renegade Row | kettlebell alternating renegade row (`0521-b9kqlBy.gif`) — Kettlebell statt Kurzhantel — einzige Renegade-Row-Variante im Datensatz |
+| Pike Liegestütze | exercise ball pike push up (`1296-sVvXT5J.gif`) — Gymnastikball statt Koerpergewicht; Datensatz-Zielmuskel 'pectorals' weicht zudem vom App-Eintrag (shoulders) ab — kein Uebernahme-Kandidat |
 | Schulterdrücken (stehend) | barbell standing wide military press (`1457-Kyd9Rz5.gif`) — breiter Griff<br>barbell standing close grip military press (`1456-wdRZISl.gif`) — enger Griff — kein Eintrag ohne Griff-Qualifier gefunden |
 | Seitstütz | bodyweight incline side plank (`3544-5VXmnV5.gif`) — Schraeg-Variante<br>push-up to side plank (`0664-KhHJ338.gif`) — Uebergangsbewegung aus der Liegestuetze<br>side plank hip adduction (`1775-VO2qeJg.gif`) — mit zusaetzlicher Huefter-Bewegung |
-| Skull Crusher | barbell lying triceps extension skull crusher (`0060-h8LFzo9.gif`) — gleiche Bewegung, Datensatz-Name traegt Zusatz 'lying triceps extension' |
 | Wall Sit | march sit (wall) (`0624-sVQCCeG.gif`) — marschiert an der Wand statt statisch zu halten — andere Bewegung |
 
 ## Ohne GIF
@@ -218,7 +217,10 @@ Volltextsuche in exercises.json ueber die Top-3 des Auto-Matchers hinaus. Bewegu
 | Band Pull-Aparts | kein Kandidat (bester Ratio 0.67) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
 | Banded Hip Thrust | kein Kandidat (bester Ratio 0.67) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
 | Bayesian Curl | kein Kandidat (bester Ratio 0.67) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
+| Beinheben (liegend) | bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF) |
 | Box Jump | kein Kandidat (bester Ratio 0.67) |
+| Brustdrücken (Maschine) | bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF) |
+| Bulgarische Kniebeuge (KH) | bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF) |
 | Cable Woodchopper | kein Kandidat (bester Ratio 0.69) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
 | Copenhagen Plank | kein Kandidat (bester Ratio 0.57) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
 | Dragon Flag | kein Kandidat (bester Ratio 0.60) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
@@ -228,11 +230,19 @@ Volltextsuche in exercises.json ueber die Top-3 des Auto-Matchers hinaus. Bewegu
 | Hex Press (Squeeze Press) | kein Kandidat (bester Ratio 0.63) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
 | Hip Thrust (BW) | kein Kandidat (bester Ratio 0.67) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
 | Intervalle | kein Kandidat (bester Ratio 0.57) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
+| Kabel Crossover | bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF) |
+| Kabel Crunch | bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF) |
+| Kettlebell Clean to Front Squat | bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
 | Kettlebell Kreuzheben | kein Kandidat (bester Ratio 0.70) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
+| Kettlebell Overhead Press | bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF) |
+| Kettlebell Push Press | bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF) |
 | Kettlebell Sit-Up (Overhead Hold) | kein Kandidat (bester Ratio 0.63) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
 | Kettlebell Suitcase Carry | kein Kandidat (bester Ratio 0.68) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
+| Kettlebell Thruster einarmig | bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF) |
+| Latzug (weit) | bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF) |
 | Lauf-Intervall | kein Kandidat (bester Ratio 0.64) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
 | Laufband | kein Kandidat (bester Ratio 0.59) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
+| Liegestütze auf Kettlebell | bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF) |
 | Long Run | kein Kandidat (bester Ratio 0.63) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
 | Meadows Row | kein Kandidat (bester Ratio 0.67) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
 | Nacken-Curl | kein Kandidat (bester Ratio 0.67) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
@@ -240,13 +250,17 @@ Volltextsuche in exercises.json ueber die Top-3 des Auto-Matchers hinaus. Bewegu
 | Plank | kein Kandidat (bester Ratio 0.62) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
 | Rad-Intervall | kein Kandidat (bester Ratio 0.62) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
 | Radfahren (outdoor) | kein Kandidat (bester Ratio 0.54) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
+| Reverse Cable Fly | bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF) |
 | Rudermaschine | kein Kandidat (bester Ratio 0.64) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
 | Sandbag Carry | kein Kandidat (bester Ratio 0.64) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
+| Schulterdrücken (Maschine) | bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF) |
 | Seitstütz | kein Kandidat (bester Ratio 0.65) |
-| Skull Crusher | kein Kandidat (bester Ratio 0.63) |
 | Sled Pull | kein Kandidat (bester Ratio 0.64) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
 | Sled Push | kein Kandidat (bester Ratio 0.67) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
 | Tibialis Raise | kein Kandidat (bester Ratio 0.67) · Tiefensuche (Volltext) ebenfalls ohne Kandidat |
+| Trizepsstrecker über Kopf (KH) | bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF) |
+| Turkish Get-Up | bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF) |
+| Wadenheben (KH) | bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF) |
 
 ## Neu hinzugefügt
 
@@ -273,12 +287,38 @@ Uebungen, die es in der App vorher nicht gab und die wegen eines eindeutig passe
 | Band Pull-Through | `0991-VtTbiP3.gif` |
 | Burpee mit Kurzhanteln | `1201-0JtKWum.gif` |
 
+### Runde 3 (GIF_OVERRIDES_TASK_2)
+
+15 Praezisions-Varianten fuer die per `FORCE_NO_GIF` ausgeschlossenen Uebungen (gleiches GIF, genauerer Name) + 3 eigene Tiefensuche-Treffer (Abschnitt 3, Equipment-Variante mit eindeutigem Datensatz-Kandidat; das jeweilige Original bleibt bewusst ohne GIF). Zusaetzlich wurde `Skull Crusher` als direkter 100%-Treffer (Bewegung + Equipment identisch) per Override aufgeloest, ohne eine neue Uebung anzulegen.
+
+| App-Übung | GIF |
+|---|---|
+| Einbeinige Split-Kniebeuge (KH) | `0410-qx4fgX7.gif` |
+| Liegendes Bein-Hüft-Heben | `0865-9IxJdtC.gif` |
+| Innere Brustpresse (Maschine) | `1301-wDN97Ca.gif` |
+| Sitzender Kabel-Crunch | `0212-8xUv4J7.gif` |
+| Kabel Cross-Over (Variation) | `0155-0CXGHya.gif` |
+| Kettlebell Schulterdrücken sitzend | `0546-BkxB8LW.gif` |
+| Kettlebell Doppel-Push-Press | `0528-I4KkPdl.gif` |
+| Kettlebell Thruster | `0550-yWxMvB5.gif` |
+| Latzug an der Kabelstange | `0150-eYnzaCm.gif` |
+| Kettlebell Plyo-Liegestütze | `0545-ktf3nvW.gif` |
+| Kabel Reverse Fly liegend | `0240-PQcUlDi.gif` |
+| Schulterdrücken (Smith Machine) | `0766-903mzG8.gif` |
+| Sitzendes Trizepsstrecken (KH) | `2188-kont8Ut.gif` |
+| Kettlebell Turkish Get-Up (Squat-Stil) | `0551-Ha7SZ3y.gif` |
+| Sitzendes Wadenheben (KH) | `1379-r29jP7S.gif` |
+| Beincurl stehend (BW) | `0795-C5jncD2.gif` |
+| Renegade Row (Kettlebell) | `0521-b9kqlBy.gif` |
+| Latzug eng (Band) | `0974-DptumMx.gif` |
+| Skull Crusher (bestehende Übung, direkter Override) | `0060-h8LFzo9.gif` |
+
 ## Zusammenfassung
 
-- Sicher: 138
+- Sicher: 141
 - Unsicher: 31
-- Ohne GIF: 35
-- Gesamt: 204
+- Ohne GIF: 50
+- Gesamt: 222
 
 ## Anhang: beobachtete Dataset-Equipment-Werte
 

@@ -153,24 +153,15 @@ BODY_PART_TO_MUSCLE = {
 # Freigabe (mehrere plausible Kandidaten ODER Bewegung passt, Equipment
 # nicht) und wird im Report unter "Kandidaten zur Freigabe" aufgefuehrt.
 DEEP_SEARCH_CANDIDATES = {
-    "Beincurl stehend": [
-        ("0795-C5jncD2.gif", "standing single leg curl", "body weight statt machine — einzige 'standing leg curl'-Variante im Datensatz"),
-    ],
     "Handgelenk-Curl": [
         ("0369-D1xYJAU.gif", "dumbbell over bench wrist curl", "klassische Wrist-Curl-Haltung"),
         ("0401-2dImyQ8.gif", "dumbbell seated palms up wrist curl", "alternative Sitzhaltung"),
-    ],
-    "Renegade Row": [
-        ("0521-b9kqlBy.gif", "kettlebell alternating renegade row", "Kettlebell statt Kurzhantel — einzige Renegade-Row-Variante im Datensatz"),
-    ],
-    "Latzug (eng)": [
-        ("0974-DptumMx.gif", "band close-grip pulldown", "Band statt Maschine — kein Maschinen-Pendant mit engem Griff gefunden"),
     ],
     "Wall Sit": [
         ("0624-sVQCCeG.gif", "march sit (wall)", "marschiert an der Wand statt statisch zu halten — andere Bewegung"),
     ],
     "Pike Liegestütze": [
-        ("1296-sVvXT5J.gif", "exercise ball pike push up", "Gymnastikball statt Koerpergewicht"),
+        ("1296-sVvXT5J.gif", "exercise ball pike push up", "Gymnastikball statt Koerpergewicht; Datensatz-Zielmuskel 'pectorals' weicht zudem vom App-Eintrag (shoulders) ab — kein Uebernahme-Kandidat"),
     ],
     "Box Jump": [
         ("1374-iPm26QU.gif", "box jump down with one leg stabilization", "Sprung abwaerts mit einbeiniger Stabilisation — andere Bewegung als ein klassischer Box Jump"),
@@ -178,9 +169,6 @@ DEEP_SEARCH_CANDIDATES = {
     "Ausfallschritte (BW)": [
         ("3470-kMzUs9Y.gif", "forward lunge (male)", "stationaerer Ausfallschritt, naeher am App-Begriff"),
         ("1460-IZVHb27.gif", "walking lunge", "laufende Variante"),
-    ],
-    "Skull Crusher": [
-        ("0060-h8LFzo9.gif", "barbell lying triceps extension skull crusher", "gleiche Bewegung, Datensatz-Name traegt Zusatz 'lying triceps extension'"),
     ],
     "Schulterdrücken (stehend)": [
         ("1457-Kyd9Rz5.gif", "barbell standing wide military press", "breiter Griff"),
@@ -210,7 +198,7 @@ DEEP_SEARCH_CANDIDATES = {
 DEEP_SEARCH_NO_MATCH = {
     "Beinstrecker liegend", "Box Squat", "Deficit-Kreuzheben", "Face Pull",
     "Chest Supported Row (KH)", "Kettlebell Clean & Press", "Kettlebell Halo",
-    "Kettlebell Pullover", "Kettlebell RDL", "Kettlebell Uppercut Rotation",
+    "Kettlebell Clean to Front Squat", "Kettlebell Pullover", "Kettlebell RDL", "Kettlebell Uppercut Rotation",
     "Kniebeuge (BW)", "Nacken-Extension", "Push Press", "Reißen (Snatch)",
     "Reverse Nordic Curl", "Schwimmen", "Thruster (KH)", "Umsetzen & Stoßen",
     "Z-Press", "Australian Pull-ups", "Back Widows", "Band Pull-Aparts",
@@ -224,6 +212,33 @@ DEEP_SEARCH_NO_MATCH = {
     "Sled Pull", "Sled Push", "Tibialis Raise",
 }
 
+# GIF_OVERRIDES_TASK_2, Abschnitt 1: diese Uebungen bekommen bewusst KEIN
+# GIF. Ihre bisherigen Overrides stammten aus zu ungenauen Matches (z.B.
+# eine "sitzend"/"Squat-Stil"/"Doppel"-Variante wurde dem generischen
+# Uebungsnamen untergeschoben) — die praezise benannte Nachfolge-Uebung
+# traegt das GIF jetzt stattdessen (siehe NEWLY_ADDED_EXERCISES_ROUND3).
+# Erste Prioritaet im Matching: verhindert, dass ein entfernter Override
+# durch Fuzzy-Match oder ein zukuenftiger Dataset-Stand stillschweigend
+# wieder auftaucht.
+FORCE_NO_GIF = {
+    "Beinheben (liegend)",
+    "Bulgarische Kniebeuge (KH)",
+    "Brustdrücken (Maschine)",
+    "Kabel Crunch",
+    "Kabel Crossover",
+    "Kettlebell Clean to Front Squat",
+    "Kettlebell Overhead Press",
+    "Kettlebell Push Press",
+    "Kettlebell Thruster einarmig",
+    "Latzug (weit)",
+    "Liegestütze auf Kettlebell",
+    "Reverse Cable Fly",
+    "Schulterdrücken (Maschine)",
+    "Trizepsstrecker über Kopf (KH)",
+    "Turkish Get-Up",
+    "Wadenheben (KH)",
+}
+
 # Neu in ExerciseLibraryData.swift aufgenommene Uebungen (GIF_OVERRIDES_TASK,
 # Abschnitt 4) — fuer den Report, nicht fuer das Matching selbst (die
 # Overrides in exercise_gif_overrides.json erledigen die Zuordnung bereits).
@@ -234,6 +249,19 @@ NEWLY_ADDED_EXERCISES = [
     "Low-Bar-Kniebeuge (LH)", "Hack Squat (LH)", "Hack Squat (Smith)",
     "Reverse Crunch", "Kabel Reverse Crunch", "Handgelenk-Curl (LH)",
     "Handgelenk-Curl (Kabel)", "Band Pull-Through", "Burpee mit Kurzhanteln",
+]
+
+# GIF_OVERRIDES_TASK_2, Abschnitt 2+3: Praezisions-Varianten fuer die
+# FORCE_NO_GIF-Liste (gleiche GIFs, genauerer Name) + 3 eigene
+# Tiefensuche-Treffer (Abschnitt 3) + 1 direkter 100%-Treffer (Skull Crusher,
+# siehe exercise_gif_overrides.json).
+NEWLY_ADDED_EXERCISES_ROUND3 = [
+    "Einbeinige Split-Kniebeuge (KH)", "Liegendes Bein-Hüft-Heben", "Innere Brustpresse (Maschine)",
+    "Sitzender Kabel-Crunch", "Kabel Cross-Over (Variation)", "Kettlebell Schulterdrücken sitzend",
+    "Kettlebell Doppel-Push-Press", "Kettlebell Thruster", "Latzug an der Kabelstange",
+    "Kettlebell Plyo-Liegestütze", "Kabel Reverse Fly liegend", "Schulterdrücken (Smith Machine)",
+    "Sitzendes Trizepsstrecken (KH)", "Kettlebell Turkish Get-Up (Squat-Stil)", "Sitzendes Wadenheben (KH)",
+    "Beincurl stehend (BW)", "Renegade Row (Kettlebell)", "Latzug eng (Band)",
 ]
 
 
@@ -469,6 +497,14 @@ def match_library(specs, en_names, dataset, overrides):
     for spec in specs:
         name = spec["name"]
 
+        # 0) Bewusster Ausschluss (GIF_OVERRIDES_TASK_2) — hat Vorrang vor
+        # JEDER anderen Stufe, auch vor einem noch vorhandenen Override oder
+        # einem kuenftigen Fuzzy-/Exact-Match. Verhindert, dass ein als zu
+        # ungenau erkanntes Match stillschweigend zurueckkehrt.
+        if name in FORCE_NO_GIF:
+            ohne.append({"spec": spec, "reason": "bewusst ohne GIF (manuelle Entscheidung, siehe FORCE_NO_GIF)"})
+            continue
+
         # 1) Override (von Hand freigegeben)
         if name in overrides:
             sicher.append({"spec": spec, "gifFile": overrides[name], "reason": "override"})
@@ -653,6 +689,25 @@ def write_report(sicher, unsicher, ohne, dataset_sha, gif_sha, total_specs, data
     for name in NEWLY_ADDED_EXERCISES:
         gif = overrides_used.get(name, "—")
         lines.append(f"| {name} | `{gif}` |")
+    lines.append("")
+
+    lines.append("### Runde 3 (GIF_OVERRIDES_TASK_2)")
+    lines.append("")
+    lines.append(
+        "15 Praezisions-Varianten fuer die per `FORCE_NO_GIF` ausgeschlossenen "
+        "Uebungen (gleiches GIF, genauerer Name) + 3 eigene Tiefensuche-Treffer "
+        "(Abschnitt 3, Equipment-Variante mit eindeutigem Datensatz-Kandidat; "
+        "das jeweilige Original bleibt bewusst ohne GIF). Zusaetzlich wurde "
+        "`Skull Crusher` als direkter 100%-Treffer (Bewegung + Equipment "
+        "identisch) per Override aufgeloest, ohne eine neue Uebung anzulegen."
+    )
+    lines.append("")
+    lines.append("| App-Übung | GIF |")
+    lines.append("|---|---|")
+    for name in NEWLY_ADDED_EXERCISES_ROUND3:
+        gif = overrides_used.get(name, "—")
+        lines.append(f"| {name} | `{gif}` |")
+    lines.append(f"| Skull Crusher (bestehende Übung, direkter Override) | `{overrides_used.get('Skull Crusher', '—')}` |")
     lines.append("")
 
     lines.append("## Zusammenfassung")
