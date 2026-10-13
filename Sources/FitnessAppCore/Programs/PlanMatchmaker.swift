@@ -29,6 +29,15 @@ public struct QuizAnswers: Sendable, Equatable {
     }
 }
 
+/// Fix "Badge fast ueberall": die drei unabhaengigen Gruende, aus denen ein
+/// Template zu den Onboarding-Antworten passt. Jede UI-Badge rendert genau
+/// EIN Feld — nie alle drei pauschal, nie wenn `false`.
+public struct PlanMatchReasons: Sendable, Equatable {
+    public let goalMatch: Bool
+    public let daysMatch: Bool
+    public let levelMatch: Bool
+}
+
 /// DEL-090: Pure-Logik-Scorer. Filtert Templates ueber K.O.-Kriterien
 /// (Environment + maxDays) und ranked den Rest ueber ein einfaches
 /// Punkte-System (Goal-Match = +3, Experience-Match = +2, exakte Day-Count =
@@ -39,20 +48,29 @@ public enum PlanMatchmaker {
     /// absteigend nach Score sortiert — `first` ist die Top-Empfehlung.
     /// Bei Score-Gleichstand bleibt die ursprueengliche Display-Reihenfolge
     /// aus `ProgramTemplates.all` erhalten (Stable-Sort).
+    ///
+    /// - Parameter experienceTrack: Fix "doppeltes Onboarding" — zusaetzlich
+    ///   zum weichen Experience-Score (`answers.experience`, +2) ein harter
+    ///   K.O.-Filter fuer Starter/Wiedereinsteiger: reine Expertenplaene
+    ///   (kein `.beginner`/`.intermediate` in `targetExperience`) fliegen
+    ///   komplett raus, keine Deprioritisierung. Default `nil` erhaelt das
+    ///   bisherige Verhalten (alle bestehenden Call-Sites/Tests).
     public static func rankPlans(
         for answers: QuizAnswers,
-        templates: [ProgramTemplate]
+        templates: [ProgramTemplate],
+        experienceTrack: ExperienceTrack? = nil
     ) -> [ProgramTemplate] {
         // 1) K.O.-Kriterien (Hard Filters).
         let eligible = templates.filter { template in
             envMatches(plan: template.targetEnvironment, user: answers.environment)
                 && template.daysPerWeek <= answers.preferredDays
                 && equipmentMatches(template: template, user: answers.equipmentPreferences)
+                && experienceTrackMatches(template: template, track: experienceTrack)
         }
 
         // Wenn alles raus-gefiltert wurde, fallback auf BW-/Anfaenger-Pfad.
         if eligible.isEmpty {
-            return fallback(for: answers, allTemplates: templates)
+            return fallback(for: answers, allTemplates: templates, experienceTrack: experienceTrack)
         }
 
         // 2) Scoring (Soft Filters). Stable-Sort: gleiche Scores behalten
@@ -71,6 +89,20 @@ public enum PlanMatchmaker {
                 return lhs.origin < rhs.origin
             }
             .map { $0.plan }
+    }
+
+    /// Fix "Badge fast ueberall": liefert, WARUM ein Template fuer diese
+    /// Antworten infrage kommt, statt der bisherigen einzelnen
+    /// `targetGoals.contains(goal)`-Pruefung, die bei mehrfach-getaggten
+    /// Templates ("Passt zu deinem Ziel" auf fast jedem Plan) nichtssagend
+    /// wurde. Die UI zeigt ein Badge NUR, wenn das jeweilige Feld `true` ist
+    /// — nie pauschal.
+    public static func matchReasons(for template: ProgramTemplate, answers: QuizAnswers) -> PlanMatchReasons {
+        PlanMatchReasons(
+            goalMatch: template.targetGoals.contains(answers.goal),
+            daysMatch: template.daysPerWeek == answers.preferredDays,
+            levelMatch: template.targetExperience.contains(answers.experience)
+        )
     }
 
     /// DEL-170: Hard-Filter für Equipment. Templates ohne `equipmentVariants`
@@ -100,15 +132,41 @@ public enum PlanMatchmaker {
         }
     }
 
+    /// Fix "doppeltes Onboarding": Starter/Wiedereinsteiger duerfen keine
+    /// reinen Expertenplaene vorgeschlagen bekommen. "Reiner Expertenplan"
+    /// heisst hier: `targetExperience` enthaelt WEDER `.beginner` noch
+    /// `.intermediate` — ein Plan, der zusaetzlich zu `.advanced` auch eine
+    /// der beiden anderen Stufen traegt, bleibt fuer alle Tracks sichtbar.
+    /// `nil`/`.experienced` filtert nichts zusaetzlich raus (bestehendes
+    /// Verhalten, nur der weiche Score ueber `answers.experience` gilt).
+    private static func experienceTrackMatches(template: ProgramTemplate, track: ExperienceTrack?) -> Bool {
+        switch track {
+        case .starter, .returner:
+            return template.targetExperience.contains(.beginner)
+                || template.targetExperience.contains(.intermediate)
+        case .experienced, nil:
+            return true
+        }
+    }
+
     /// Wenn die K.O.-Kriterien ALLES rausfiltern (extrem strenge Auswahl
     /// wie "Powerlifting + No-Equipment + 2 Tage"), liefern wir wenigstens
     /// die "harmlosen" Bodyweight-Plaene zurueck statt einer leeren Liste.
     /// Verhindert dass der Quiz-Result-Screen leer dasteht.
+    ///
+    /// Respektiert weiterhin den `experienceTrack`-Hartfilter (ein Starter
+    /// soll auch im Fallback-Pfad keinen reinen Expertenplan sehen) — faellt
+    /// aber, falls das die Liste KOMPLETT leeren wuerde, auf die
+    /// ungefilterte Bodyweight-Liste zurueck. "Irgendein Plan" schlaegt
+    /// "gar keiner", auch wenn er nicht perfekt passt.
     private static func fallback(
         for answers: QuizAnswers,
-        allTemplates: [ProgramTemplate]
+        allTemplates: [ProgramTemplate],
+        experienceTrack: ExperienceTrack?
     ) -> [ProgramTemplate] {
         // Bodyweight-Plaene laufen ueberall, daher sicherer Fallback.
-        return allTemplates.filter { $0.targetEnvironment == .noEquipment }
+        let bodyweight = allTemplates.filter { $0.targetEnvironment == .noEquipment }
+        let filtered = bodyweight.filter { experienceTrackMatches(template: $0, track: experienceTrack) }
+        return filtered.isEmpty ? bodyweight : filtered
     }
 }

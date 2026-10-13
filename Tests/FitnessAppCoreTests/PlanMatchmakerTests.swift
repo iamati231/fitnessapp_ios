@@ -117,6 +117,101 @@ final class PlanMatchmakerTests: XCTestCase {
                        "Top-Match fuer Abnehmen sollte das Fatburn-Ganzkoerper-Template sein, ist: \(ranked.first?.id ?? "nil")")
     }
 
+    // MARK: Fix "doppeltes Onboarding" — Persona-Tests (ExperienceTrack statt Quiz)
+
+    /// Persona "Abnehmen, 3 Tage, Gym, Starter" -> Ganzkoerper-Plan
+    /// (Fatburn-Ganzkoerper). `experienceTrack` nutzt hier den echten
+    /// Pfad ueber `asExperienceLevel`, nicht eine hart eingesetzte
+    /// `ExperienceLevel` — so wie es die Onboarding-UI jetzt tut.
+    func testStarterWeightLossThreeDaysGymTopsWithFullBodyPlan() {
+        let track = ExperienceTrack.starter
+        let answers = QuizAnswers(
+            goal: .weightLoss,
+            experience: track.asExperienceLevel,
+            preferredDays: 3,
+            environment: .gym
+        )
+        let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates, experienceTrack: track)
+        XCTAssertEqual(ranked.first?.id, "fat_loss_fullbody")
+    }
+
+    /// Persona "Muskelaufbau, 5 Tage, Gym, Erfahren" -> Split-Plan (Bro
+    /// Split ist das einzige Template mit genau 5 Tagen, das zusaetzlich
+    /// Hypertrophie UND Intermediate/Advanced traegt).
+    func testExperiencedHypertrophyFiveDaysGymTopsWithSplitPlan() {
+        let track = ExperienceTrack.experienced
+        let answers = QuizAnswers(
+            goal: .hypertrophy,
+            experience: track.asExperienceLevel,
+            preferredDays: 5,
+            environment: .gym
+        )
+        let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates, experienceTrack: track)
+        XCTAssertEqual(ranked.first?.id, "bro_split")
+    }
+
+    /// Harter Filter: ein Starter sieht `arnold_split` (reiner Expertenplan,
+    /// `targetExperience: [.advanced]`) ueberhaupt nicht in der Liste, auch
+    /// nicht weit hinten — unabhaengig vom Score.
+    func testStarterNeverSeesExpertOnlyPlans() {
+        let answers = QuizAnswers(goal: .hypertrophy, experience: .beginner, preferredDays: 6, environment: .gym)
+        let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates, experienceTrack: .starter)
+        XCTAssertFalse(ranked.contains { $0.id == "arnold_split" })
+    }
+
+    /// Ohne `experienceTrack` (Default `nil`, z.B. bestehende Aufrufer) bleibt
+    /// der reine Expertenplan weiterhin sichtbar — der harte Filter ist
+    /// optional, kein globales Verhalten.
+    func testExpertOnlyPlanStaysVisibleWithoutExperienceTrack() {
+        let answers = QuizAnswers(goal: .hypertrophy, experience: .beginner, preferredDays: 6, environment: .gym)
+        let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates)
+        XCTAssertTrue(ranked.contains { $0.id == "arnold_split" })
+    }
+
+    // MARK: Fix "Badge fast ueberall" — matchReasons
+
+    func testMatchReasonsAreTrueOnlyForActualMatches() {
+        let answers = QuizAnswers(goal: .strength, experience: .intermediate, preferredDays: 3, environment: .gym)
+        guard let template = allTemplates.first(where: { $0.id == "powerlifting_3x5" }) else {
+            return XCTFail("powerlifting_3x5 template not found")
+        }
+        let reasons = PlanMatchmaker.matchReasons(for: template, answers: answers)
+        XCTAssertTrue(reasons.goalMatch, "powerlifting_3x5 tags .strength")
+        XCTAssertTrue(reasons.daysMatch, "powerlifting_3x5 runs 3 days")
+        XCTAssertTrue(reasons.levelMatch, "powerlifting_3x5 tags .intermediate")
+    }
+
+    func testMatchReasonsAreFalseWhenNothingMatches() {
+        // powerlifting_3x5 tagt targetGoals: [.strength], targetExperience:
+        // [.intermediate, .advanced], daysPerWeek: 3 — .weightLoss/.beginner/6
+        // treffen keins davon.
+        let answers = QuizAnswers(goal: .weightLoss, experience: .beginner, preferredDays: 6, environment: .gym)
+        guard let template = allTemplates.first(where: { $0.id == "powerlifting_3x5" }) else {
+            return XCTFail("powerlifting_3x5 template not found")
+        }
+        let reasons = PlanMatchmaker.matchReasons(for: template, answers: answers)
+        XCTAssertFalse(reasons.goalMatch, "powerlifting_3x5 tags only .strength, not .weightLoss")
+        XCTAssertFalse(reasons.daysMatch, "powerlifting_3x5 runs 3 days, not 6")
+        XCTAssertFalse(reasons.levelMatch, "powerlifting_3x5 does not tag .beginner")
+    }
+
+    // MARK: Fix "doppeltes Onboarding" — Fallback respektiert ExperienceTrack
+
+    /// Der Fallback-Pfad (alles rausgefiltert) muss den experienceTrack-
+    /// Filter weiterhin respektieren: `crossfit_bodyweight_rx` ist
+    /// `.noEquipment` aber `targetExperience: [.advanced]` — ein Starter im
+    /// Fallback darf ihn nicht vorgeschlagen bekommen.
+    func testFallbackRespectsExperienceTrackWhenPossible() {
+        // Extremfilter wie testFallbackProducesBodyweightPlansWhenAllFiltered,
+        // zusaetzlich als Starter.
+        let answers = QuizAnswers(goal: .strength, experience: .advanced, preferredDays: 2, environment: .noEquipment)
+        let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates, experienceTrack: .starter)
+        XCTAssertFalse(ranked.isEmpty, "Fallback sollte weiterhin mindestens einen Plan liefern")
+        XCTAssertFalse(ranked.contains { $0.id == "crossfit_bodyweight_rx" },
+                       "crossfit_bodyweight_rx ist reiner Expertenplan, darf im Starter-Fallback nicht auftauchen")
+        XCTAssertTrue(ranked.allSatisfy { $0.targetEnvironment == .noEquipment })
+    }
+
     /// Fallback: Extrem-Filter "Strength + No-Equipment + 2 Tage" wuerde
     /// nichts treffen → wir liefern wenigstens die BW-Plaene zurueck.
     func testFallbackProducesBodyweightPlansWhenAllFiltered() {

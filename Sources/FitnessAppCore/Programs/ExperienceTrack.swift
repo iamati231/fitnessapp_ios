@@ -25,6 +25,26 @@ public enum ExperienceTrack: String, Sendable, Codable, CaseIterable, Hashable {
     case returner
     /// Trainiert aktuell regelmaessig, kennt die Technik.
     case experienced
+
+    /// Fix "doppeltes Onboarding": seit der Quiz-Entfernung ist dies die
+    /// EINZIGE Quelle fuer `PlanMatchmaker`/`QuizAnswers.experience` — es
+    /// gibt keine separate Selbsteinschaetzungs-Frage mehr (das waere
+    /// genau die redundante zweite Frage, die das Epic vermeiden will).
+    ///
+    /// Starter UND Returner werden bewusst GLEICH behandelt (beide ->
+    /// `.beginner`): ein Wiedereinsteiger braucht dieselbe konservative
+    /// Technik-Fuehrung wie ein echter Anfaenger, auch wenn `ComebackAdvisor`
+    /// seine Last separat ueber die Pausenlaenge dosiert. `.experienced`
+    /// mappt auf `.intermediate`, nicht `.advanced` — "trainiert gerade
+    /// regelmaessig" ist keine Aussage ueber Elite-Technik, und
+    /// `.intermediate`-Templates sind fuer diese Gruppe die sicherere
+    /// Standard-Annahme als `.advanced`-exklusive Programme.
+    public var asExperienceLevel: ExperienceLevel {
+        switch self {
+        case .starter, .returner: return .beginner
+        case .experienced: return .intermediate
+        }
+    }
 }
 
 /// Epic §4.3, Hauptfrage zur Trainingshistorie (vier Antworten, verhaltens-

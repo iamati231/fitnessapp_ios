@@ -110,6 +110,17 @@ final class ExperienceTrackTests: XCTestCase {
         )
     }
 
+    // MARK: - asExperienceLevel — Fix "doppeltes Onboarding"
+
+    func testStarterAndReturnerMapToBeginner() {
+        XCTAssertEqual(ExperienceTrack.starter.asExperienceLevel, .beginner)
+        XCTAssertEqual(ExperienceTrack.returner.asExperienceLevel, .beginner)
+    }
+
+    func testExperiencedMapsToIntermediateNotAdvanced() {
+        XCTAssertEqual(ExperienceTrack.experienced.asExperienceLevel, .intermediate)
+    }
+
     func testHistoryWithLongGapIsReturner() {
         XCTAssertEqual(
             ExperienceTrackResolver.trackFromHistory(
