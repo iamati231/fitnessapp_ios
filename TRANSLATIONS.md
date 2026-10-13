@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1854 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1852 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1854 / 1854** (100%) | 0 |
-| 🇬🇧 English (EN) | **1854 / 1854** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1854 / 1854** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1852 / 1852** (100%) | 0 |
+| 🇬🇧 English (EN) | **1852 / 1852** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1852 / 1852** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -224,7 +224,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `chart.timeRange.oneMonth` | 1M | 1M | 1A |
 | `chart.timeRange.threeMonths` | 3M | 3M | 3A |
 
-## `coaching.*`  (229 Keys)
+## `coaching.*`  (227 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -301,8 +301,6 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.edu.strict.9` | Niemand schuldet dir Ergebnisse. Du musst sie dir verdienen — Satz für Satz. | Nobody owes you results. You earn them — set by set. | Kimse sana sonuç borçlu değil. Set set kazanırsın. |
 | `coaching.empty.message` | Aktuell ist keine Warnung oder Aktion nötig — weiter so. | No warning or action needed right now — keep it up. | Şu an uyarı veya işlem gerekmez — böyle devam et. |
 | `coaching.empty.title` | Heute kein besonderer Hinweis | No special note today | Bugün özel bir not yok |
-| `coaching.goal.fatloss.blurb` | Hohe Trainingsintensität, dichte Einheiten, Kalorienverbrauch über Bewegung. | High intensity, dense sessions, calorie burn through movement. | Yüksek yoğunluk, sıkı antrenmanlar, hareketle kalori yakımı. |
-| `coaching.goal.fatloss.label` | Fett verbrennen | Burn Fat | Yağ Yak |
 | `coaching.goal.functional.blurb` | Alltagstaugliche Bewegungsmuster, Mobilität, kein reiner Kraft- oder Muskelfokus. | Everyday movement patterns, mobility, not purely strength- or muscle-focused. | Günlük yaşama uygun hareket kalıpları, mobilite, sadece güç veya kas odaklı değil. |
 | `coaching.goal.functional.label` | Funktionelle Fitness | Functional Fitness | Fonksiyonel Fitness |
 | `coaching.goal.hybrid.blurb` | Kraft + Ausdauer + Mobilität — alles fließt zusammen. | Strength + endurance + mobility — all flowing together. | Güç + dayanıklılık + mobilite — hepsi bir arada. |

@@ -22529,29 +22529,6 @@
         }
       }
     },
-    "coaching.goal.fatloss.blurb": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hohe Trainingsintensität, dichte Einheiten, Kalorienverbrauch über Bewegung."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "High intensity, dense sessions, calorie burn through movement."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Yüksek yoğunluk, sıkı antrenmanlar, hareketle kalori yakımı."
-          }
-        }
-      }
-    },
     "coaching.goal.functional.blurb": {
       "extractionState": "manual",
       "localizations": {
@@ -22686,29 +22663,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "İleri"
-          }
-        }
-      }
-    },
-    "coaching.goal.fatloss.label": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fett verbrennen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Burn Fat"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Yağ Yak"
           }
         }
       }
