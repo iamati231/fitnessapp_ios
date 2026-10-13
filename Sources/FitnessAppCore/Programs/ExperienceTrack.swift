@@ -58,6 +58,18 @@ public enum TrainingHistoryAnswer: String, Sendable, Codable, CaseIterable, Hash
     case trainingIrregularly
     /// "Ich trainiere regelmäßig (>= 3 Monate, mind. 2x/Woche)"
     case trainingRegularly
+
+    /// SF-Symbol fuers Onboarding — analog zu `TrainingGoal.symbol`/
+    /// `ExperienceLevel.symbol` in Core definiert, lokalisierte Texte dazu
+    /// leben wie dort in `FitnessAppUI/DomainEnums+Localization.swift`.
+    public var symbol: String {
+        switch self {
+        case .neverTrained:          return "leaf.fill"
+        case .longBreakAfterTraining: return "arrow.triangle.2.circlepath"
+        case .trainingIrregularly:   return "shuffle"
+        case .trainingRegularly:     return "bolt.fill"
+        }
+    }
 }
 
 /// Epic §4.3, Folgefrage A — nur bei `.longBreakAfterTraining`: wie lang die

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1852 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1854 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1852 / 1852** (100%) | 0 |
-| 🇬🇧 English (EN) | **1852 / 1852** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1852 / 1852** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1854 / 1854** (100%) | 0 |
+| 🇬🇧 English (EN) | **1854 / 1854** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1854 / 1854** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1253,7 +1253,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `muscleVolume.bucket.overreaching` | Übervolumen | Overreach | Aşırı yük |
 | `muscleVolume.bucket.untrained` | Untrainiert | Untrained | Eğitilmemiş |
 
-## `onboarding.*`  (57 Keys)
+## `onboarding.*`  (78 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1284,6 +1284,24 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.health.pulled` | Daten übernommen — du kannst sie im nächsten Schritt prüfen. | Data imported — review in the next step. | Veriler alındı — bir sonraki adımda kontrol edebilirsin. |
 | `onboarding.health.title` | Apple Health verbinden | Connect Apple Health | Apple Health'i Bağla |
 | `onboarding.health.unavailable` | Apple Health ist auf diesem Gerät nicht verfügbar. | Apple Health is not available on this device. | Apple Health bu cihazda kullanılamıyor. |
+| `onboarding.history.longBreakAfterTraining.blurb` | Wir passen dein Tempo an deine Pause an. | We'll adjust your pace to your break. | Tempona arana göre ayarlarız. |
+| `onboarding.history.longBreakAfterTraining.label` | Ich habe schon trainiert, aber vor einer langen Pause | I've trained before, but after a long break | Daha önce antrenman yaptım ama uzun bir aradan sonra |
+| `onboarding.history.neverTrained.blurb` | Wir starten mit einem sanften Einstieg. | We'll start with a gentle introduction. | Yumuşak bir başlangıçla başlarız. |
+| `onboarding.history.neverTrained.label` | Ich habe noch nie regelmäßig trainiert | I've never trained regularly | Hiç düzenli antrenman yapmadım |
+| `onboarding.history.pauseLength.overOneYear` | Über 1 Jahr | Over 1 year | 1 yıldan fazla |
+| `onboarding.history.pauseLength.sixToTwelveWeeks` | 6–12 Wochen | 6–12 weeks | 6-12 hafta |
+| `onboarding.history.pauseLength.threeToTwelveMonths` | 3–12 Monate | 3–12 months | 3-12 ay |
+| `onboarding.history.pauseLength.title` | Wie lange ist deine aktuelle Pause? | How long has your current break been? | Mevcut aran ne kadar sürdü? |
+| `onboarding.history.priorExperience.oneToThreeYears` | 1–3 Jahre | 1–3 years | 1-3 yıl |
+| `onboarding.history.priorExperience.overThreeYears` | Über 3 Jahre | Over 3 years | 3 yıldan fazla |
+| `onboarding.history.priorExperience.title` | Seit wann trainierst du insgesamt? | How long have you been training overall? | Toplamda ne zamandır antrenman yapıyorsun? |
+| `onboarding.history.priorExperience.underOneYear` | Weniger als 1 Jahr | Less than 1 year | 1 yıldan az |
+| `onboarding.history.subtitle` | Das hilft uns, dein Tempo richtig einzuschätzen. | This helps us calibrate your pace correctly. | Bu, tempona doğru karar vermemize yardımcı olur. |
+| `onboarding.history.title` | Wie sieht deine Trainingsgeschichte aus? | What does your training history look like? | Antrenman geçmişin nasıl? |
+| `onboarding.history.trainingIrregularly.blurb` | Eine kurze Folgefrage hilft uns, dich richtig einzuordnen. | One quick follow-up question helps us place you correctly. | Kısa bir ek soru seni doğru sınıflandırmamıza yardımcı olur. |
+| `onboarding.history.trainingIrregularly.label` | Ich trainiere gerade unregelmäßig | I currently train irregularly | Şu anda düzensiz antrenman yapıyorum |
+| `onboarding.history.trainingRegularly.blurb` | Wir starten direkt mit deinem vollen Tempo. | We'll start right at your full pace. | Doğrudan tam tempoyla başlarız. |
+| `onboarding.history.trainingRegularly.label` | Ich trainiere regelmäßig (mind. 3 Monate, 2×/Woche) | I train regularly (3+ months, at least 2×/week) | Düzenli antrenman yapıyorum (en az 3 ay, haftada 2×) |
 | `onboarding.import.button` | Backup importieren (ZIP) | Import backup (ZIP) | Yedeği içe aktar (ZIP) |
 | `onboarding.import.prompt` | Schon Deltiq-Nutzer? Stelle deine Daten aus einer Backup-Datei wieder her. | Already a Deltiq user? Restore your data from a backup file. | Zaten Deltiq kullanıcısı mısın? Verilerini bir yedek dosyasından geri yükle. |
 | `onboarding.import.running` | Stelle deine Daten wieder her… | Restoring your data… | Verilerin geri yükleniyor… |
@@ -1293,18 +1311,21 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.notif.measurement` | Mess-Erinnerung | Measurement Reminder | Ölçüm Hatırlatıcısı |
 | `onboarding.notif.section` | Benachrichtigungen | Notifications | Bildirimler |
 | `onboarding.notif.water` | Wasser-Erinnerung | Water Reminder | Su Hatırlatıcısı |
+| `onboarding.plan.alternatives` | Alternativen | Alternatives | Alternatifler |
 | `onboarding.plan.builderCard.footnote` | Ideal, wenn dir keines der Templates genau passt oder du volle Kontrolle willst. | Ideal if none of the templates quite fit, or if you want full control. | Şablonlardan hiçbiri tam uymuyorsa veya tam kontrol istiyorsan idealdir. |
 | `onboarding.plan.builderCard.subtitle` | Trainingsarten, Tage und Ausstattung frei kombinieren. | Freely combine training types, days, and equipment. | Antrenman türlerini, günleri ve ekipmanı özgürce birleştir. |
 | `onboarding.plan.builderCard.title` | Plan bauen | Build Plan | Plan Oluştur |
 | `onboarding.plan.builderSection` | Selbst bauen | Build Your Own | Kendin Oluştur |
-| `onboarding.plan.footnote` | Templates sind nach deinem Trainingsort gefiltert (%@). Auch ohne Plan starten ist okay. | Templates are filtered by your training location (%@). Starting without a plan is fine too. | Şablonlar antrenman yerine göre filtrelendi (%@). Plansız başlamak da mümkün. |
+| `onboarding.plan.daysMatch` | Tage passend | Days match | Gün uyumlu |
+| `onboarding.plan.equipmentMatch` | Equipment passend | Equipment match | Ekipman uyumlu |
 | `onboarding.plan.goalMatch` | Passt zu deinem Ziel | Matches your goal | Hedefine uygun |
-| `onboarding.plan.noTemplates` | Keine Templates für '%@'. Du kannst trotzdem ohne Plan starten und später einen eigenen anlegen. | No templates for '%@'. You can still start without a plan and create your own later. | '%@' için şablon yok. Plansız başlayıp sonradan kendi planını oluşturabilirsin. |
-| `onboarding.plan.quizCard.footnote` | Empfohlen, wenn du nicht weißt, welcher Plan zu dir passt. Du kannst stattdessen auch direkt aus der Liste unten wählen. | Recommended if you're not sure which plan fits. You can also pick directly from the list below. | Hangi planın sana uygun olduğundan emin değilsen önerilir. Aşağıdaki listeden de doğrudan seçebilirsin. |
-| `onboarding.plan.quizCard.subtitle` | 5 kurze Fragen — wir matchen dich auf den passenden Plan. | 5 quick questions — we match you to the right plan. | 5 kısa soru — sana uygun planı eşleştiririz. |
-| `onboarding.plan.quizCard.title` | Plan finden lassen | Find a Plan | Plan Bul |
+| `onboarding.plan.levelMatch` | Level passend | Level match | Seviye uyumlu |
+| `onboarding.plan.morePlans` | Weitere Pläne | More plans | Diğer planlar |
+| `onboarding.plan.reason.days` | %lld Tage pro Woche | %lld days per week | Haftada %lld gün |
+| `onboarding.plan.reason.goal` | Passt zu deinem Ziel | Matches your goal | Hedefine uygun |
+| `onboarding.plan.reason.level` | Passt zu deinem Level | Matches your level | Seviyene uygun |
 | `onboarding.plan.recommended` | Empfohlen | Recommended | Önerilen |
-| `onboarding.plan.section` | Trainingsplan für %@ | Plans for %@ | %@ için Plan |
+| `onboarding.plan.recommendedFootnote` | Basierend auf deinen Angaben zu Ziel, Trainingsgeschichte, Ort und Equipment. | Based on your answers about goal, training history, location, and equipment. | Hedef, antrenman geçmişi, yer ve ekipman bilgilerine dayanır. |
 | `onboarding.section.body` | Körpermaße | Body Measurements | Vücut Ölçüleri |
 | `onboarding.section.goals` | Ziel & Training | Goals & Training | Hedef & Antrenman |
 | `onboarding.section.name` | Dein Name | Your Name | Adın |
@@ -1674,30 +1695,6 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `progression.detail.newTargetFormat` | Neues Ziel: %@ kg | New target: %@ kg | Yeni hedef: %@ kg |
 | `progression.headline.deload` | Lass uns kurz zurückrudern | Let's pull back briefly | Biraz geri çekilelim |
 | `progression.headline.increase` | 🎯 Ziel erreicht — nächstes Mal mehr | 🎯 Goal hit — more next time | 🎯 Hedefe ulaşıldı — bir dahaki sefer daha fazla |
-
-## `quiz.*`  (19 Keys)
-
-| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
-|---|---|---|---|
-| `quiz.days.option` | %lld Tage | %lld days | %lld gün |
-| `quiz.days.subtitle` | Sei realistisch — lieber 3 Tage konsistent als 6 geplant und nur 2 gemacht. | Be realistic — 3 consistent days beat 6 planned and only 2 done. | Gerçekçi ol — tutarlı 3 gün, planlanmış 6 ama yalnızca 2 yapılandan iyidir. |
-| `quiz.days.title` | Wie oft möchtest du pro Woche trainieren? | How often do you want to train per week? | Haftada ne sıklıkla antrenman yapmak istersin? |
-| `quiz.environment.gym` | Fitnessstudio | Gym | Salon |
-| `quiz.environment.homeGym` | Home-Gym (Kurzhanteln) | Home Gym (Dumbbells) | Ev Salonu (Dambıllar) |
-| `quiz.environment.noEquipment` | Überall (ohne Geräte) | Anywhere (no equipment) | Her yer (ekipmansız) |
-| `quiz.environment.subtitle` | Wir filtern Programme, die zu deinem Equipment passen. | We filter programs to match your equipment. | Programları ekipmanına göre filtreleriz. |
-| `quiz.environment.title` | Wo trainierst du meistens? | Where do you usually train? | Genelde nerede antrenman yapıyorsun? |
-| `quiz.equipment.subtitle` | Wir filtern Programme, für die du das passende Equipment hast. | We filter programs based on the equipment you have. | Programları elindeki ekipmana göre filtreleriz. |
-| `quiz.equipment.title` | Was steht dir zur Verfügung? | What do you have available? | Elinde ne var? |
-| `quiz.experience.subtitle` | Wir wählen Programme, die dich nicht überfordern. | We pick programs that won't overwhelm you. | Seni zorlamayacak programlar seçeriz. |
-| `quiz.experience.title` | Wie viel Erfahrung hast du im Training? | How much training experience do you have? | Antrenmanda ne kadar deneyimin var? |
-| `quiz.goal.subtitle` | Wähle das, was dich aktuell am meisten antreibt. | Pick what drives you most right now. | Şu an seni en çok motive edeni seç. |
-| `quiz.goal.title` | Was ist dein primäres Ziel? | What's your primary goal? | Birincil hedefin ne? |
-| `quiz.nav.next` | Weiter | Next | İleri |
-| `quiz.result.alternatives` | Alternativen | Alternatives | Alternatifler |
-| `quiz.result.choose` | Diesen Plan wählen | Choose This Plan | Bu Planı Seç |
-| `quiz.result.topMatch` | TOP EMPFEHLUNG FÜR DICH | TOP MATCH FOR YOU | SENİN İÇİN EN İYİ EŞLEŞME |
-| `quiz.title` | Plan finden | Find a Plan | Plan Bul |
 
 ## `rest.*`  (5 Keys)
 

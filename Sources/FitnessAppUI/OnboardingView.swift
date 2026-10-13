@@ -38,6 +38,7 @@ public struct OnboardingView: View {
         case healthConnect
         case personalInfo
         case coachingStyle           // DEL-101: Goal + Tone in einem Schritt
+        case trainingHistory         // Fix "doppeltes Onboarding": ExperienceTrack-Herleitung
         case equipmentPreferences    // DEL-170b: Multi-Select Equipment
         case preferencesAndPlan
     }
@@ -75,7 +76,20 @@ public struct OnboardingView: View {
     /// DEL-207: Wochenziel (DEL-203) jetzt schon im Onboarding wählbar —
     /// der Kalender-Streak zählt ab Tag 1 gegen dieses Ziel. Default 3 =
     /// realistischer Median; der ProfileEditor kann es später ändern.
+    ///
+    /// Fix "doppeltes Onboarding": dient zusätzlich als `preferredDays` für
+    /// `PlanMatchmaker` — eine zweite "wie oft willst du trainieren"-Frage
+    /// nur für die Plan-Auswahl wäre exakt die Redundanz, die dieser Fix
+    /// beseitigt.
     @State private var weeklyGoal: Int = 3
+
+    // Fix "doppeltes Onboarding": Trainingshistorie-Schritt. Ersetzt die
+    // bisherige, separate ExperienceLevel-Selbsteinschätzung im Quiz —
+    // `ExperienceTrack` wird aus Verhalten/Pausenlänge hergeleitet statt
+    // erfragt zu werden (siehe `ExperienceTrackResolver`).
+    @State private var trainingHistoryAnswer: TrainingHistoryAnswer?
+    @State private var pauseLength: PauseLength = .sixToTwelveWeeks
+    @State private var priorExperienceDuration: PriorExperienceDuration = .underOneYear
 
     // DEL-170b — Equipment-Präferenzen (Multi-Select). Wird beim ersten
     // Betreten des Steps mit sinnvollen Defaults aus `environment` befüllt,
@@ -92,10 +106,6 @@ public struct OnboardingView: View {
     /// einem Sheet. Erst der "Diesen Plan waehlen"-Button im Detail finalisiert
     /// die Auswahl (`selectedTemplate = ...` + Onboarding-Finish).
     @State private var previewingTemplate: ProgramTemplate?
-
-    // DEL-090: Smart Onboarding Quiz. Wenn aktiv, oeffnet sich der Quiz statt
-    // der manuellen Plan-Liste. Quiz-Result fuehrt zum DayPicker.
-    @State private var showingQuiz: Bool = false
 
     // DEL-243: dritte Alternative
     // neben Template-Liste und Quiz. `PlanBuilderView(onGenerated:)`
@@ -144,6 +154,7 @@ public struct OnboardingView: View {
                     case .healthConnect:        healthConnectStep
                     case .personalInfo:         personalInfoStep
                     case .coachingStyle:        coachingStyleStep
+                    case .trainingHistory:      trainingHistoryStep
                     case .equipmentPreferences: equipmentPreferencesStep
                     case .preferencesAndPlan:   preferencesAndPlanStep
                     }
@@ -194,30 +205,6 @@ public struct OnboardingView: View {
                         }
                     }
                 }
-            }
-            // DEL-090: Smart Onboarding Quiz. Fünf kompakte Fragen +
-            // Result-Screen, der via `PlanMatchmaker` die 20 Templates ranked.
-            .sheet(isPresented: $showingQuiz) {
-                OnboardingQuizView(
-                    preselectedEnvironment: environment,
-                    // DEL-207: Ziel aus Step 3 in den Quiz reichen. Smart-
-                    // Onboarding-Epic: direkte Wertuebernahme, kein Mapper
-                    // mehr noetig seit GoalType/TrainingGoal konsolidiert sind.
-                    preselectedGoal: trainingGoal,
-                    onPlanSelected: { template in
-                        selectedTemplate = template
-                        showingQuiz = false
-                        // Quiz-Result direkt weiter in den DayPicker — das
-                        // ist der naechste Pflicht-Step im Wave-14-Flow.
-                        dayPickerTemplate = template
-                        // DEL-243: siehe
-                        // Kommentar beim Template-Preview-Adopt weiter oben.
-                        clearCustomPlan()
-                    },
-                    onCancel: {
-                        showingQuiz = false
-                    }
-                )
             }
             // DEL-088: DayPickerSheet — nach Plan-Wahl muss der User exakt
             // `template.daysPerWeek` Wochentage ankreuzen. Submit ruft direkt
@@ -705,6 +692,89 @@ public struct OnboardingView: View {
         }
     }
 
+    // MARK: - Trainingshistorie (Fix "doppeltes Onboarding")
+
+    /// Ersetzt die fruehere separate ExperienceLevel-Selbsteinschaetzung im
+    /// entfernten Quiz: statt "wie erfahren bist du" (Technik-Selbstauskunft)
+    /// fragt dieser Schritt nach Verhalten/Pausenlaenge — genau die Achse,
+    /// die `ExperienceTrackResolver` in `ExperienceTrack` (starter/returner/
+    /// experienced) uebersetzt. Diese Antwort speist sowohl den Coaching-
+    /// Track (`UserBodyProfile.experienceTrack`) als auch, ueber
+    /// `asExperienceLevel`, den Plan-Matching-Score — keine zweite, separate
+    /// Erfahrungs-Frage mehr noetig.
+    @ViewBuilder
+    private var trainingHistoryStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("onboarding.history.title", bundle: .module)
+                        .font(.title2.weight(.bold))
+                    Text("onboarding.history.subtitle", bundle: .module)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                VStack(spacing: 10) {
+                    ForEach(TrainingHistoryAnswer.allCases, id: \.self) { answer in
+                        coachingCard(
+                            title: String(localized: answer.localizedName),
+                            description: String(localized: answer.localizedBlurb),
+                            iconName: answer.symbol,
+                            isSelected: trainingHistoryAnswer == answer
+                        ) {
+                            trainingHistoryAnswer = answer
+                        }
+                    }
+                }
+
+                // Folgefrage A: nur bei "lange Pause" — kalibriert spaeter
+                // die Wiedereinstiegs-Rampe (nicht Teil dieser Phase).
+                if trainingHistoryAnswer == .longBreakAfterTraining {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("onboarding.history.pauseLength.title", bundle: .module)
+                            .font(.headline)
+                        Picker(selection: $pauseLength) {
+                            ForEach(PauseLength.allCases, id: \.self) { length in
+                                Text(length.localizedName).tag(length)
+                            }
+                        } label: {
+                            EmptyView()
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                }
+
+                // Folgefrage B: nur bei "unregelmaessig" — unterscheidet
+                // "noch keine 3 Monate am Stueck geschafft" (eher Starter)
+                // von "jahrelange Erfahrung, nur gerade unregelmaessig".
+                if trainingHistoryAnswer == .trainingIrregularly {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("onboarding.history.priorExperience.title", bundle: .module)
+                            .font(.headline)
+                        Picker(selection: $priorExperienceDuration) {
+                            ForEach(PriorExperienceDuration.allCases, id: \.self) { duration in
+                                Text(duration.localizedName).tag(duration)
+                            }
+                        } label: {
+                            EmptyView()
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+        }
+    }
+
+    /// Hergeleiteter Coaching-Track aus der Trainingshistorie-Antwort. `nil`
+    /// nur, solange der User die Hauptfrage noch nicht beantwortet hat
+    /// (`canAdvance` blockt den Schritt dafuer) — ab dem Plan-Schritt also
+    /// praktisch immer gesetzt.
+    private var resolvedExperienceTrack: ExperienceTrack? {
+        guard let trainingHistoryAnswer else { return nil }
+        return ExperienceTrackResolver.track(for: trainingHistoryAnswer, priorExperience: priorExperienceDuration)
+    }
+
     // MARK: - Step 4: Equipment-Präferenzen (DEL-170b)
 
     /// Multi-Select-Step für Equipment. Defaults werden anhand der aus Step 2
@@ -893,66 +963,56 @@ public struct OnboardingView: View {
                     .font(.footnote)
             }
 
-            // DEL-090: Hero-Card "Plan finden lassen" — startet den
-            // Smart-Onboarding-Quiz, der die 20 Templates fuer den User
-            // ranked, statt ihn manuell aus einer 20er-Liste raten zu lassen.
-            Section {
-                Button {
-                    showingQuiz = true
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "sparkles")
-                            .font(.title2)
-                            .foregroundStyle(.white)
-                            .frame(width: 44, height: 44)
-                            .background(Color.deltiqOrange.gradient)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("onboarding.plan.quizCard.title", bundle: .module)
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(.primary)
-                            Text("onboarding.plan.quizCard.subtitle", bundle: .module)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.tertiary)
-                    }
+            // Fix "doppeltes Onboarding": EIN Flow. Die Onboarding-Antworten
+            // (Ziel, Track, Tage, Ort, Equipment) gehen direkt in
+            // PlanMatchmaker.rankPlans — kein zweites Quiz mehr. Top-Match
+            // zuerst als grosse Karte, dann 2-3 Alternativen, der Rest
+            // eingeklappt.
+            if let top = rankedTemplates.first {
+                Section {
+                    recommendedPlanCard(top)
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                } header: {
+                    Text("onboarding.plan.recommended", bundle: .module)
+                } footer: {
+                    Text("onboarding.plan.recommendedFootnote", bundle: .module)
+                        .font(.footnote)
                 }
-                .buttonStyle(.plain)
-            } header: {
-                Text("onboarding.plan.recommended", bundle: .module)
-            } footer: {
-                Text("onboarding.plan.quizCard.footnote", bundle: .module)
-                    .font(.footnote)
             }
 
-            Section {
-                if filteredTemplates.isEmpty {
-                    Text(String(format: String(localized: "onboarding.plan.noTemplates", bundle: .module), environmentLabel))
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(filteredTemplates) { template in
+            let alternatives = Array(rankedTemplates.dropFirst().prefix(3))
+            if !alternatives.isEmpty {
+                Section {
+                    ForEach(alternatives) { template in
                         Button {
-                            // DEL-056: Tap oeffnet die Detail-Vorschau,
-                            // KEIN stilles Selektieren mehr. Erst der Adopt-
-                            // Button im Detail wahlt den Plan und triggert
-                            // den DayPicker.
                             previewingTemplate = template
                         } label: {
                             templateRow(template)
                         }
                         .buttonStyle(.plain)
                     }
+                } header: {
+                    Text("onboarding.plan.alternatives", bundle: .module)
                 }
-            } header: {
-                Text(String(format: String(localized: "onboarding.plan.section", bundle: .module), environmentLabel))
-            } footer: {
-                Text(String(format: String(localized: "onboarding.plan.footnote", bundle: .module), environmentLabel))
-                    .font(.footnote)
+            }
+
+            let morePlans = Array(rankedTemplates.dropFirst(1 + alternatives.count))
+            if !morePlans.isEmpty {
+                Section {
+                    DisclosureGroup {
+                        ForEach(morePlans) { template in
+                            Button {
+                                previewingTemplate = template
+                            } label: {
+                                templateRow(template)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    } label: {
+                        Text("onboarding.plan.morePlans", bundle: .module)
+                    }
+                }
             }
 
             // DEL-243: dritte
@@ -1001,73 +1061,133 @@ public struct OnboardingView: View {
         }
     }
 
-    /// String-Repraesentation des aktuellen Environments fuer Section-Header/
-    /// Footer-Interpolation. `LocalizedStringResource` direkt in einen
-    /// String-Interpolation-Context zu stecken faellt auf macOS-strict
-    /// Toolchain durch — `String(localized:)` ist der Cast.
-    private var environmentLabel: String {
-        String(localized: environment.localizedName)
+    /// Fix "doppeltes Onboarding": die Antworten, mit denen der
+    /// Plan-Schritt direkt `PlanMatchmaker.rankPlans` aufruft — `weeklyGoal`
+    /// dient zugleich als `preferredDays`, eine zweite "wie oft"-Frage nur
+    /// fuers Matching gaebe es sonst doppelt.
+    private var planMatchAnswers: QuizAnswers {
+        QuizAnswers(
+            goal: trainingGoal,
+            experience: (resolvedExperienceTrack ?? .experienced).asExperienceLevel,
+            preferredDays: weeklyGoal,
+            environment: environment,
+            equipmentPreferences: equipmentPreferences
+        )
     }
 
-    /// Templates passend zum gewaehlten Trainingsort.
-    ///   - `.gym`: alle Templates (Vollgym hat alles, was alle anderen brauchen)
-    ///   - `.homeGym`: homeGym + noEquipment (Bodyweight-Sachen gehen ueberall)
-    ///   - `.noEquipment`: strikt nur noEquipment-Templates (sonst landet der
-    ///     User in einem Plan, fuer den ihm das Equipment fehlt)
-    ///
-    /// DEL-207: zusätzlich goal-aware sortiert — Templates, deren
-    /// `targetGoals` das in Step 3 gewählte Trainingsziel enthalten, stehen
-    /// oben (stabile Partition, Reihenfolge innerhalb der Gruppen bleibt).
-    /// Vorher zeigte Step 5 alle 20 Templates unsortiert, obwohl der User
-    /// sein Ziel gerade erst angegeben hatte.
-    private var filteredTemplates: [ProgramTemplate] {
-        let byEnvironment = ProgramTemplates.all.filter { template in
-            switch environment {
-            case .gym:
-                return true
-            case .homeGym:
-                return template.targetEnvironment == .homeGym
-                    || template.targetEnvironment == .noEquipment
-            case .noEquipment:
-                return template.targetEnvironment == .noEquipment
+    /// Nach Score sortierte Templates fuer die aktuellen Onboarding-
+    /// Antworten. `experienceTrack` filtert zusaetzlich reine Expertenplaene
+    /// fuer Starter/Wiedereinsteiger komplett raus (siehe `PlanMatchmaker`).
+    private var rankedTemplates: [ProgramTemplate] {
+        PlanMatchmaker.rankPlans(
+            for: planMatchAnswers,
+            templates: ProgramTemplates.all,
+            experienceTrack: resolvedExperienceTrack
+        )
+    }
+
+    /// Grosse Hero-Karte fuer den Top-Match: Name/Tagline + 1-2
+    /// Begruendungszeilen (z.B. "3 Tage pro Woche, passt zu deinem Ziel,
+    /// passt zu deinem Level"), tippbar wie jede andere Plan-Zeile.
+    @ViewBuilder
+    private func recommendedPlanCard(_ template: ProgramTemplate) -> some View {
+        let reasons = PlanMatchmaker.matchReasons(for: template, answers: planMatchAnswers)
+        Button {
+            previewingTemplate = template
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 12) {
+                    Image(systemName: template.iconSystemName)
+                        .font(.title2)
+                        .foregroundStyle(.white)
+                        .frame(width: 48, height: 48)
+                        .background(Color.deltiqOrange.gradient)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(template.displayName)
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(.primary)
+                        Text(template.displayTagline)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    if selectedTemplate?.id == template.id {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                            .font(.title3)
+                    }
+                }
+                if let summary = recommendationSummary(reasons, template: template) {
+                    Text(summary)
+                        .font(.footnote.weight(.medium))
+                        .foregroundStyle(Color.deltiqOrange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.deltiqOrange.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.deltiqOrange.opacity(0.3), lineWidth: 1)
+            )
+            .contentShape(Rectangle())
         }
-        let matching = byEnvironment.filter { templateMatchesGoal($0) }
-        let rest = byEnvironment.filter { !templateMatchesGoal($0) }
-        return matching + rest
+        .buttonStyle(.plain)
     }
 
-    private func templateMatchesGoal(_ template: ProgramTemplate) -> Bool {
-        template.targetGoals.contains(trainingGoal)
+    /// Kommagetrennte Begruendungszeile aus den tatsaechlichen Treffern —
+    /// nie pauschal, nie wenn nichts zutrifft (dann `nil`, keine leere Zeile).
+    private func recommendationSummary(_ reasons: PlanMatchReasons, template: ProgramTemplate) -> String? {
+        var parts: [String] = []
+        if reasons.daysMatch {
+            parts.append(String(format: String(localized: "onboarding.plan.reason.days", bundle: .module), template.daysPerWeek))
+        }
+        if reasons.goalMatch {
+            parts.append(String(localized: "onboarding.plan.reason.goal", bundle: .module))
+        }
+        if reasons.levelMatch {
+            parts.append(String(localized: "onboarding.plan.reason.level", bundle: .module))
+        }
+        guard !parts.isEmpty else { return nil }
+        return parts.joined(separator: ", ")
     }
 
     private func templateRow(_ template: ProgramTemplate) -> some View {
-        HStack(spacing: 12) {
+        let reasons = PlanMatchmaker.matchReasons(for: template, answers: planMatchAnswers)
+        return HStack(spacing: 12) {
             Image(systemName: template.iconSystemName)
                 .font(.title3)
                 .foregroundStyle(.white)
                 .frame(width: 38, height: 38)
                 .background(Color.accentColor.gradient)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(template.displayName)
-                        .font(.body.weight(.semibold))
-                    // DEL-207: Badge für Templates, die zum in Step 3
-                    // gewählten Trainingsziel passen.
-                    if templateMatchesGoal(template) {
-                        Text("onboarding.plan.goalMatch", bundle: .module)
-                            .font(.caption2.weight(.bold))
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1)
-                            .background(Color.deltiqOrange.opacity(0.15))
-                            .foregroundStyle(Color.deltiqOrange)
-                            .clipShape(Capsule())
-                    }
-                }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(template.displayName)
+                    .font(.body.weight(.semibold))
                 Text(template.displayTagline)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                // Fix "Badge fast ueberall": nur die tatsaechlich
+                // zutreffenden Gruende, nie pauschal auf jedem Plan.
+                if reasons.goalMatch || reasons.daysMatch || reasons.levelMatch || reasons.equipmentMatch {
+                    HStack(spacing: 4) {
+                        if reasons.goalMatch {
+                            matchBadge(Text("onboarding.plan.goalMatch", bundle: .module))
+                        }
+                        if reasons.daysMatch {
+                            matchBadge(Text("onboarding.plan.daysMatch", bundle: .module))
+                        }
+                        if reasons.levelMatch {
+                            matchBadge(Text("onboarding.plan.levelMatch", bundle: .module))
+                        }
+                        if reasons.equipmentMatch {
+                            matchBadge(Text("onboarding.plan.equipmentMatch", bundle: .module))
+                        }
+                    }
+                }
             }
             Spacer()
             if selectedTemplate?.id == template.id {
@@ -1076,6 +1196,16 @@ public struct OnboardingView: View {
                     .font(.title3)
             }
         }
+    }
+
+    private func matchBadge(_ text: Text) -> some View {
+        text
+            .font(.caption2.weight(.bold))
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .background(Color.deltiqOrange.opacity(0.15))
+            .foregroundStyle(Color.deltiqOrange)
+            .clipShape(Capsule())
     }
 
     // DEL-243: Template-Pfad und
@@ -1140,6 +1270,12 @@ public struct OnboardingView: View {
             // Tone + Goal haben Defaults und Cards sind tap-stateful, also
             // nie wirklich "ungeloest" — immer weiter.
             return true
+        case .trainingHistory:
+            // Anders als Goal/Tone hat die Hauptfrage bewusst KEINEN
+            // stillen Default — ohne eine Antwort gibt es kein sinnvolles
+            // ExperienceTrack. Die beiden Folgefragen haben Defaults und
+            // blockieren nicht zusaetzlich.
+            return trainingHistoryAnswer != nil
         case .equipmentPreferences:
             // DEL-170b: leer ist erlaubt (= "Standard-Variante" beim Plan-
             // Adopt). User darf bewusst skippen, deshalb keine Pflicht.
@@ -1152,7 +1288,7 @@ public struct OnboardingView: View {
 
     private func handlePrimaryAction() {
         switch step {
-        case .healthConnect, .personalInfo, .coachingStyle, .equipmentPreferences:
+        case .healthConnect, .personalInfo, .coachingStyle, .trainingHistory, .equipmentPreferences:
             goToNextStep()
         case .preferencesAndPlan:
             finishOnboarding()
@@ -1251,6 +1387,15 @@ public struct OnboardingView: View {
         // DEL-207: Wochenziel aus dem Coaching-Step — der Kalender-Streak
         // (DEL-203) zählt ab Tag 1 gegen dieses Ziel.
         profile.weeklyWorkoutGoal = weeklyGoal
+        // Fix "doppeltes Onboarding": aus der Trainingshistorie-Antwort
+        // hergeleiteter Coaching-Track. `canAdvance` erzwingt eine Antwort
+        // auf dem Schritt, resolvedExperienceTrack ist hier also so gut wie
+        // immer gesetzt — ein spaeterer echter Onboarding-Flow (dieser
+        // Schritt IST bereits der echte Flow) ueberschreibt nichts, das
+        // nicht aus genau dieser Antwort stammt.
+        if let track = resolvedExperienceTrack {
+            profile.experienceTrack = track
+        }
         modelContext.insert(profile)
 
         // 2) Initial BodyMeasurement — keeps the "first weight" visible in the

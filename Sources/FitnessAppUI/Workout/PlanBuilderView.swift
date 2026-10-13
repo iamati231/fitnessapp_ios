@@ -11,10 +11,9 @@ import FitnessAppData
 /// `@Environment(\.dismiss)` + `@Environment(AppNavigation.self)` erledigen
 /// Sheet-Schluss + Navigation zum neuen Plan selbst.
 ///
-/// Struktur folgt bewusst `OnboardingQuizView` (einziger existierender
-/// Multi-Step-Assistent in dieser Codebase): `NavigationStack`, oberer
-/// Fortschrittsbalken, `Group { switch step { ... } }`, untere
-/// Zurueck/Weiter-Leiste.
+/// Struktur folgt bewusst `OnboardingView` (anderer Multi-Step-Assistent in
+/// dieser Codebase): `NavigationStack`, oberer Fortschrittsbalken,
+/// `Group { switch step { ... } }`, untere Zurueck/Weiter-Leiste.
 ///
 /// DEL-243: `onGenerated` ist der EINZIGE Weg,
 /// dieses Verhalten zu ueberschreiben - `OnboardingView` kann den fertig

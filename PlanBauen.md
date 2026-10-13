@@ -71,7 +71,7 @@ den die Wizard-UI auflöst.
 
 ### 1. `Sources/FitnessAppUI/Workout/PlanBuilderView.swift`
 
-Die UI selbst. Struktur folgt `OnboardingQuizView` (`NavigationStack`,
+Die UI selbst. Struktur folgt `OnboardingView` (`NavigationStack`,
 Fortschrittsbalken, `switch step`, Zurück/Weiter-Leiste). Schritte
 (`BuilderStep`):
 

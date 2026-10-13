@@ -216,6 +216,48 @@ public extension ExperienceLevel {
     }
 }
 
+// Fix "doppeltes Onboarding": Trainingshistorie-Frage, ersetzt die
+// fruehere ExperienceLevel-Selbsteinschaetzung im entfernten Quiz.
+public extension TrainingHistoryAnswer {
+    var localizedName: LocalizedStringResource {
+        switch self {
+        case .neverTrained:           LocalizedStringResource("onboarding.history.neverTrained.label",           bundle: .fitnessAppUI)
+        case .longBreakAfterTraining: LocalizedStringResource("onboarding.history.longBreakAfterTraining.label", bundle: .fitnessAppUI)
+        case .trainingIrregularly:    LocalizedStringResource("onboarding.history.trainingIrregularly.label",    bundle: .fitnessAppUI)
+        case .trainingRegularly:      LocalizedStringResource("onboarding.history.trainingRegularly.label",      bundle: .fitnessAppUI)
+        }
+    }
+
+    var localizedBlurb: LocalizedStringResource {
+        switch self {
+        case .neverTrained:           LocalizedStringResource("onboarding.history.neverTrained.blurb",           bundle: .fitnessAppUI)
+        case .longBreakAfterTraining: LocalizedStringResource("onboarding.history.longBreakAfterTraining.blurb", bundle: .fitnessAppUI)
+        case .trainingIrregularly:    LocalizedStringResource("onboarding.history.trainingIrregularly.blurb",    bundle: .fitnessAppUI)
+        case .trainingRegularly:      LocalizedStringResource("onboarding.history.trainingRegularly.blurb",      bundle: .fitnessAppUI)
+        }
+    }
+}
+
+public extension PauseLength {
+    var localizedName: LocalizedStringResource {
+        switch self {
+        case .sixToTwelveWeeks:    LocalizedStringResource("onboarding.history.pauseLength.sixToTwelveWeeks",    bundle: .fitnessAppUI)
+        case .threeToTwelveMonths: LocalizedStringResource("onboarding.history.pauseLength.threeToTwelveMonths", bundle: .fitnessAppUI)
+        case .overOneYear:         LocalizedStringResource("onboarding.history.pauseLength.overOneYear",         bundle: .fitnessAppUI)
+        }
+    }
+}
+
+public extension PriorExperienceDuration {
+    var localizedName: LocalizedStringResource {
+        switch self {
+        case .underOneYear:    LocalizedStringResource("onboarding.history.priorExperience.underOneYear",    bundle: .fitnessAppUI)
+        case .oneToThreeYears: LocalizedStringResource("onboarding.history.priorExperience.oneToThreeYears", bundle: .fitnessAppUI)
+        case .overThreeYears:  LocalizedStringResource("onboarding.history.priorExperience.overThreeYears",  bundle: .fitnessAppUI)
+        }
+    }
+}
+
 public extension SessionFeeling {
     var localizedName: LocalizedStringResource {
         switch self {
