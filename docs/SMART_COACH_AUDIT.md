@@ -100,6 +100,15 @@ Etabliertes Muster (aus den GIF-Integrationsrunden dieser Session direkt bekannt
 9. **PlanBauen.md ist nicht die richtige Einstiegslektüre** für Phase 2/4 — es dokumentiert den dritten, separaten „Plan bauen"-Pfad und ist selbst veraltet. Die eigentlich relevante, lebende Architektur ist `ProgramTemplates.swift` + `PlanMatchmaker.swift` + `ProgramInstantiator`.
 10. **Kein `VersionedSchema`/`SchemaMigrationPlan`** im Projekt — Migrationen laufen über Default-Werte (lightweight) + idempotente Backfill-Funktionen, unbedingt aus `RootView.task` aufgerufen. Neue Modelle müssen zusätzlich in `AppSchema.types`, `SettingsView.resetApp()`, Export/Import-CSV und ggf. `SettingsPortability.whitelist` eingetragen werden (sonst brechen Reset/Backup/Restore still).
 
-## 8. Offene Rückfragen
+## 8. Entscheidungen (vor Phase 2 eingeholt)
 
-Siehe separate Rückfrage an den Nutzer (Abschnitt 14 des Epics, plus zwei zusätzliche aus Punkt 1 und 2 oben) — wird nicht geraten, sondern vor Phase 2 gestellt.
+| Frage | Entscheidung |
+|---|---|
+| Wiedereinstiegs-Pfad auch für Läufer? | Nein, zunächst nur Kraft. |
+| Starter-Equipment: Maschinen vs. Kurzhantel/Körpergewicht? | Keine Pauschale — pro Bewegungsmuster die einfachste verfügbare Variante. |
+| Welche der 20 Templates für Starter/Returner sperren? | Über `targetExperience` filtern (vorhandenes Feld), keine manuelle Sperrliste. Aktuell qualifizieren sich 11 von 20 Templates (die mit `.beginner` in `targetExperience`). |
+| Premium-/Free-Schnitt für Coach-Funktionen? | Nein, alles frei. |
+| Zusammenführung `GoalType`/`TrainingGoal` (Abweichung 1)? | `TrainingGoal` wird erweitert (fatloss/functional ergänzt) und zur einzigen persistierten Zielquelle; `GoalType` entfällt, der verlustbehaftete Mapper fällt weg. |
+| Zwei Onboarding-Assistenten verschmelzen (Abweichung 2)? | Ja, zu einem linearen Flow verschmelzen. |
+
+Damit ist Aufgabe 1 abgeschlossen. Phase 2 kann auf Basis dieser Entscheidungen starten (Datenmodell: `OnboardingProfile`, `ExperienceTrack`, erweitertes `TrainingGoal`, Migration/Persistenz gemäß Abschnitt 2/7.10 oben).
