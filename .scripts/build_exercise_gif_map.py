@@ -153,12 +153,8 @@ BODY_PART_TO_MUSCLE = {
 # Freigabe (mehrere plausible Kandidaten ODER Bewegung passt, Equipment
 # nicht) und wird im Report unter "Kandidaten zur Freigabe" aufgefuehrt.
 DEEP_SEARCH_CANDIDATES = {
-    "Handgelenk-Curl": [
-        ("0369-D1xYJAU.gif", "dumbbell over bench wrist curl", "klassische Wrist-Curl-Haltung"),
-        ("0401-2dImyQ8.gif", "dumbbell seated palms up wrist curl", "alternative Sitzhaltung"),
-    ],
     "Wall Sit": [
-        ("0624-sVQCCeG.gif", "march sit (wall)", "marschiert an der Wand statt statisch zu halten — andere Bewegung"),
+        ("0624-sVQCCeG.gif", "march sit (wall)", "marschiert an der Wand statt statisch zu halten — andere Bewegung; als eigene Uebung 'Wand-Sitz mit Marschieren' aufgenommen"),
     ],
     "Pike Liegestütze": [
         ("1296-sVvXT5J.gif", "exercise ball pike push up", "Gymnastikball statt Koerpergewicht; Datensatz-Zielmuskel 'pectorals' weicht zudem vom App-Eintrag (shoulders) ab — kein Uebernahme-Kandidat"),
@@ -166,29 +162,16 @@ DEEP_SEARCH_CANDIDATES = {
     "Box Jump": [
         ("1374-iPm26QU.gif", "box jump down with one leg stabilization", "Sprung abwaerts mit einbeiniger Stabilisation — andere Bewegung als ein klassischer Box Jump"),
     ],
-    "Ausfallschritte (BW)": [
-        ("3470-kMzUs9Y.gif", "forward lunge (male)", "stationaerer Ausfallschritt, naeher am App-Begriff"),
-        ("1460-IZVHb27.gif", "walking lunge", "laufende Variante"),
-    ],
     "Schulterdrücken (stehend)": [
-        ("1457-Kyd9Rz5.gif", "barbell standing wide military press", "breiter Griff"),
-        ("1456-wdRZISl.gif", "barbell standing close grip military press", "enger Griff — kein Eintrag ohne Griff-Qualifier gefunden"),
+        ("1457-Kyd9Rz5.gif", "barbell standing wide military press", "breiter Griff; als eigene Uebung aufgenommen (kanonischer Big-Five-Lift bleibt unangetastet)"),
+        ("1456-wdRZISl.gif", "barbell standing close grip military press", "enger Griff; als eigene Uebung aufgenommen (kanonischer Big-Five-Lift bleibt unangetastet)"),
     ],
     "Floor Press": [
-        ("0065-vtusOWT.gif", "barbell one arm floor press", "einarmig statt beidarmig — kein beidarmiger Floor Press im Datensatz"),
+        ("0065-vtusOWT.gif", "barbell one arm floor press", "einarmig statt beidarmig — als eigene Uebung 'Floor Press einarmig (LH)' aufgenommen"),
     ],
     "Dip (assistiert)": [
-        ("0009-PAgTVaK.gif", "assisted chest dip (kneeling)", "Maschinen-Assist, Brust-Fokus"),
-        ("0019-J60bN17.gif", "assisted triceps dip (kneeling)", "Maschinen-Assist, Trizeps-Fokus"),
-        ("2364-PnZJIrk.gif", "assisted wide-grip chest dip (kneeling)", "Maschinen-Assist, breiter Griff"),
-    ],
-    "Band Curls": [
-        ("0968-3omWx6P.gif", "band alternating biceps curl", "alternierend statt beidarmig — kein beidarmiger Band-Curl im Datensatz"),
-    ],
-    "Seitstütz": [
-        ("3544-5VXmnV5.gif", "bodyweight incline side plank", "Schraeg-Variante"),
-        ("0664-KhHJ338.gif", "push-up to side plank", "Uebergangsbewegung aus der Liegestuetze"),
-        ("1775-VO2qeJg.gif", "side plank hip adduction", "mit zusaetzlicher Huefter-Bewegung"),
+        ("0009-PAgTVaK.gif", "assisted chest dip (kneeling)", "Maschinen-Assist, Brust-Fokus; als eigene Uebung 'Assistierte Brust-Dips (kniend)' aufgenommen (Original ist bereits Trizeps-fokussiert)"),
+        ("2364-PnZJIrk.gif", "assisted wide-grip chest dip (kneeling)", "Maschinen-Assist, breiter Griff — zu nah an der bereits aufgenommenen Brust-Variante, keine weitere Uebung"),
     ],
 }
 
@@ -197,17 +180,17 @@ DEEP_SEARCH_CANDIDATES = {
 # lieferte nur fachfremde Treffer — nicht nur "Top-3 passt nicht").
 DEEP_SEARCH_NO_MATCH = {
     "Beinstrecker liegend", "Box Squat", "Deficit-Kreuzheben", "Face Pull",
-    "Chest Supported Row (KH)", "Kettlebell Clean & Press", "Kettlebell Halo",
+    "Kettlebell Clean & Press", "Kettlebell Halo",
     "Kettlebell Clean to Front Squat", "Kettlebell Pullover", "Kettlebell RDL", "Kettlebell Uppercut Rotation",
     "Kniebeuge (BW)", "Nacken-Extension", "Push Press", "Reißen (Snatch)",
     "Reverse Nordic Curl", "Schwimmen", "Thruster (KH)", "Umsetzen & Stoßen",
-    "Z-Press", "Australian Pull-ups", "Back Widows", "Band Pull-Aparts",
-    "Banded Hip Thrust", "Bayesian Curl", "Cable Woodchopper", "Copenhagen Plank",
-    "Dragon Flag", "Easy Run", "Freier Lauf", "Gehen / Einlaufen",
+    "Z-Press", "Back Widows", "Band Pull-Aparts",
+    "Banded Hip Thrust", "Bayesian Curl", "Copenhagen Plank",
+    "Dragon Flag", "Gehen / Einlaufen",
     "Hex Press (Squeeze Press)", "Hip Thrust (BW)", "Hip Thrust (KH)", "Hip Thrust (LH)",
-    "Intervalle", "Kettlebell Kreuzheben", "Kettlebell Sit-Up (Overhead Hold)",
-    "Kettlebell Suitcase Carry", "Lauf-Intervall", "Laufband", "Long Run",
-    "Meadows Row", "Nacken-Curl", "Nordic Curls", "Plank", "Rad-Intervall",
+    "Kettlebell Kreuzheben", "Kettlebell Sit-Up (Overhead Hold)",
+    "Kettlebell Suitcase Carry",
+    "Meadows Row", "Nacken-Curl", "Nordic Curls", "Rad-Intervall",
     "Radfahren (outdoor)", "Rudermaschine", "Sandbag Carry",
     "Sled Pull", "Sled Push", "Tibialis Raise",
 }
@@ -222,22 +205,22 @@ DEEP_SEARCH_NO_MATCH = {
 # wieder auftaucht.
 FORCE_NO_GIF = {
     "Beinheben (liegend)",
-    "Bulgarische Kniebeuge (KH)",
-    "Brustdrücken (Maschine)",
-    "Kabel Crunch",
-    "Kabel Crossover",
     "Kettlebell Clean to Front Squat",
     "Kettlebell Overhead Press",
     "Kettlebell Push Press",
     "Kettlebell Thruster einarmig",
     "Latzug (weit)",
     "Liegestütze auf Kettlebell",
-    "Reverse Cable Fly",
-    "Schulterdrücken (Maschine)",
     "Trizepsstrecker über Kopf (KH)",
     "Turkish Get-Up",
     "Wadenheben (KH)",
 }
+# GIF_TIEFENSUCHE: Bulgarische Kniebeuge (KH), Brustdrücken (Maschine),
+# Kabel Crunch, Kabel Crossover, Reverse Cable Fly und Schulterdrücken
+# (Maschine) hier wieder ENTFERNT — die Tiefensuche hat fuer alle sechs
+# einen echten, equipment- und bewegungsgleichen Datensatz-Treffer
+# gefunden (per Bild-Sichtung bestaetigt), der vorherige FORCE_NO_GIF
+# war fuer diese sechs zu vorschnell.
 
 # Neu in ExerciseLibraryData.swift aufgenommene Uebungen (GIF_OVERRIDES_TASK,
 # Abschnitt 4) — fuer den Report, nicht fuer das Matching selbst (die
@@ -256,12 +239,46 @@ NEWLY_ADDED_EXERCISES = [
 # Tiefensuche-Treffer (Abschnitt 3) + 1 direkter 100%-Treffer (Skull Crusher,
 # siehe exercise_gif_overrides.json).
 NEWLY_ADDED_EXERCISES_ROUND3 = [
-    "Einbeinige Split-Kniebeuge (KH)", "Liegendes Bein-Hüft-Heben", "Innere Brustpresse (Maschine)",
+    "Liegendes Bein-Hüft-Heben", "Innere Brustpresse (Maschine)",
     "Sitzender Kabel-Crunch", "Kabel Cross-Over (Variation)", "Kettlebell Schulterdrücken sitzend",
     "Kettlebell Doppel-Push-Press", "Kettlebell Thruster", "Latzug an der Kabelstange",
     "Kettlebell Plyo-Liegestütze", "Kabel Reverse Fly liegend", "Schulterdrücken (Smith Machine)",
     "Sitzendes Trizepsstrecken (KH)", "Kettlebell Turkish Get-Up (Squat-Stil)", "Sitzendes Wadenheben (KH)",
     "Beincurl stehend (BW)", "Renegade Row (Kettlebell)", "Latzug eng (Band)",
+]
+# "Einbeinige Split-Kniebeuge (KH)" (urspruenglich hier) wurde in Runde 4
+# wieder entfernt: GIF_TIEFENSUCHE hat per Bild-Sichtung bestaetigt, dass
+# 0410-qx4fgX7.gif zur bestehenden "Bulgarische Kniebeuge (KH)" gehoert
+# (hinterer Fuss ausdruecklich auf Bank erhoeht) — echtes Duplikat, nicht
+# eine eigene Uebung. Override zurueck auf das Original, Neuanlage geloescht.
+
+# GIF_TIEFENSUCHE.md: Korrekturen an bestehenden Uebungen (Force-Exclude
+# zurueckgenommen oder DEEP_SEARCH_NO_MATCH/CANDIDATES aufgeloest) nach
+# visueller Pruefung der Preview-Bilder — kein neuer Library-Eintrag,
+# daher nicht in einer NEWLY_ADDED-Liste, aber hier dokumentiert:
+# Bulgarische Kniebeuge (KH), Brustdrücken (Maschine), Schulterdrücken
+# (Maschine), Reverse Cable Fly, Kabel Crunch, Kabel Crossover,
+# Chest Supported Row (KH), Australian Pull-ups, Handgelenk-Curl,
+# Band Curls, Ausfallschritte (BW), Seitstütz, Latzug (eng),
+# Cable Woodchopper, Plank, Freier Lauf, Easy Run, Long Run, Intervalle,
+# Lauf-Intervall, Laufband.
+RESOLVED_EXISTING_ROUND4 = [
+    "Bulgarische Kniebeuge (KH)", "Brustdrücken (Maschine)", "Schulterdrücken (Maschine)",
+    "Reverse Cable Fly", "Kabel Crunch", "Kabel Crossover", "Chest Supported Row (KH)",
+    "Australian Pull-ups", "Handgelenk-Curl", "Band Curls", "Ausfallschritte (BW)",
+    "Seitstütz", "Latzug (eng)", "Cable Woodchopper", "Plank", "Freier Lauf",
+    "Easy Run", "Long Run", "Intervalle", "Lauf-Intervall", "Laufband",
+]
+
+# GIF_TIEFENSUCHE.md, Abschnitt "Neue Alternativen": neue Praezisions-
+# Uebungen fuer Equipment-/Bewegungs-Varianten, die zu keiner bestehenden
+# Uebung 100% passen.
+NEWLY_ADDED_EXERCISES_ROUND4 = [
+    "Beinheben auf Flachbank", "Wand-Sitz mit Marschieren", "Gehen am Laufband (Steigung)",
+    "Assistierte Brust-Dips (kniend)", "Schulterdrücken stehend (LH, enger Griff)",
+    "Schulterdrücken stehend (LH, breiter Griff)", "Kettlebell Push Press einarmig",
+    "Kettlebell Schulterdrücken stehend (zwei Kettlebells)", "Floor Press einarmig (LH)",
+    "Kettlebell Clean & Jerk einarmig",
 ]
 
 
@@ -708,6 +725,49 @@ def write_report(sicher, unsicher, ohne, dataset_sha, gif_sha, total_specs, data
         gif = overrides_used.get(name, "—")
         lines.append(f"| {name} | `{gif}` |")
     lines.append(f"| Skull Crusher (bestehende Übung, direkter Override) | `{overrides_used.get('Skull Crusher', '—')}` |")
+    lines.append("")
+
+    lines.append("### Runde 4 (GIF_TIEFENSUCHE)")
+    lines.append("")
+    lines.append(
+        "10 neue Praezisions-Uebungen aus der Volldatensatz-Tiefensuche "
+        "(GIF_TIEFENSUCHE.md, Abschnitt \"Neue Alternativen\") — jeweils fuer "
+        "eine Equipment-/Griff-/Haltungs-Variante, die zu keiner bestehenden "
+        "Uebung 100% passt. Alle GIFs vor Uebernahme als Standbild gesichtet."
+    )
+    lines.append("")
+    lines.append("| App-Übung | GIF |")
+    lines.append("|---|---|")
+    for name in NEWLY_ADDED_EXERCISES_ROUND4:
+        gif = overrides_used.get(name, "—")
+        lines.append(f"| {name} | `{gif}` |")
+    lines.append("")
+
+    lines.append("### Runde 4: Korrekturen an bestehenden Übungen")
+    lines.append("")
+    lines.append(
+        "GIF_TIEFENSUCHE.md hat exercises.json vollstaendig (nicht nur Top-3) "
+        "nach Bewegung + Equipment durchsucht und die Kandidaten als Standbild "
+        "gesichtet. Dabei wurden 6 `FORCE_NO_GIF`-Eintraege aus Runde 3 "
+        "zurueckgenommen (die Ablehnung war zu vorschnell — ein echter "
+        "Datensatz-Treffer existiert) sowie 15 weitere bisher unsichere/ohne-"
+        "GIF-Uebungen direkt aufgeloest."
+    )
+    lines.append("")
+    lines.append("| App-Übung | GIF | Hinweis |")
+    lines.append("|---|---|---|")
+    _round4_notes = {
+        "Bulgarische Kniebeuge (KH)": "FORCE_NO_GIF zurückgenommen — Duplikat 'Einbeinige Split-Kniebeuge (KH)' aus Runde 3 wieder entfernt",
+        "Brustdrücken (Maschine)": "FORCE_NO_GIF zurückgenommen — eigener Datensatz-Eintrag, kein Konflikt mit 'Innere Brustpresse (Maschine)'",
+        "Schulterdrücken (Maschine)": "FORCE_NO_GIF zurückgenommen — echte Hebelmaschine, kein Konflikt mit 'Schulterdrücken (Smith Machine)'",
+        "Reverse Cable Fly": "FORCE_NO_GIF zurückgenommen — stehend/vorgebeugt, kein Konflikt mit 'Kabel Reverse Fly liegend'",
+        "Kabel Crunch": "FORCE_NO_GIF zurückgenommen — kniende Standardvariante",
+        "Kabel Crossover": "FORCE_NO_GIF zurückgenommen — eigener Datensatz-Eintrag (plain crossover), kein Konflikt mit 'Kabel Cross-Over (Variation)'",
+    }
+    for name in RESOLVED_EXISTING_ROUND4:
+        gif = overrides_used.get(name, "—")
+        note = _round4_notes.get(name, "zuvor unsicher/ohne GIF, jetzt eindeutiger Treffer nach Bild-Sichtung")
+        lines.append(f"| {name} | `{gif}` | {note} |")
     lines.append("")
 
     lines.append("## Zusammenfassung")
