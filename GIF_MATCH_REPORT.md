@@ -2,9 +2,9 @@
 
 - Dataset-Commit (`hasaneyldrm/exercises-dataset`): `7455efae41b330c265e7cd4b78dfa848e7ce5ebd`
 - GIF-Commit (`arvids-unavailable/openGym`): `c42ba6b98e3776af5981f20c05ba392238799670`
-- App-Uebungen gesamt: 231
+- App-Uebungen gesamt: 229
 
-**171 sicher · 27 unsicher · 33 ohne GIF**
+**171 sicher · 25 unsicher · 33 ohne GIF**
 
 ## Sicher zugeordnet
 
@@ -12,7 +12,6 @@
 |---|---|---|
 | Arnold Press (KH) | `2137-Xy4jlWA.gif` | override |
 | Arnold Press (Kettlebell) | `0523-UM8mgyG.gif` | override |
-| Assistierte Brust-Dips (kniend) | `0009-PAgTVaK.gif` | override |
 | Ausfallschritt rückwärts (KH) | `0381-SSsBDwB.gif` | override |
 | Ausfallschritt rückwärts (LH) | `0078-VaP75jl.gif` | override |
 | Ausfallschritte (BW) | `3470-kMzUs9Y.gif` | override |
@@ -44,6 +43,7 @@
 | Crosstrainer | `2141-rjtuP6X.gif` | override |
 | Crunches (BW) | `0274-TFqbd8t.gif` | override |
 | Diamant-Liegestütze | `0283-soIB2rj.gif` | exact |
+| Dip (assistiert) | `0009-PAgTVaK.gif` | override |
 | Dips (Brust) | `0251-9WTm7dq.gif` | override |
 | Dips (Trizeps) | `0814-X6C6i5Y.gif` | override |
 | Easy Run | `0685-oLrKqDH.gif` | override |
@@ -152,7 +152,7 @@
 | Schulterdrücken (KH) | `0405-znQUdHY.gif` | override |
 | Schulterdrücken (Maschine) | `0587-CggQhII.gif` | override |
 | Schulterdrücken (Smith Machine) | `0766-903mzG8.gif` | override |
-| Schulterdrücken stehend (LH, breiter Griff) | `1457-Kyd9Rz5.gif` | override |
+| Schulterdrücken (stehend) | `1457-Kyd9Rz5.gif` | override |
 | Schulterdrücken stehend (LH, enger Griff) | `1456-wdRZISl.gif` | override |
 | Seitheben | `0334-DsgkuIt.gif` | exact (equipment-variant) |
 | Seitlicher Ausfallschritt (LH) | `1410-py1HSzx.gif` | override |
@@ -190,7 +190,6 @@
 | Beinstrecker liegend | bodyweight | barbell lying extension (0.88, `barbell`, `0057-EMpUwRI.gif`) | dumbbell lying single extension (0.88, `dumbbell`, `1735-6MfS53i.gif`) | dumbbell lying alternate extension (0.82, `dumbbell`, `1729-NfP83rA.gif`) | kein Treffer |
 | Box Squat | barbell | squat on bosu ball (0.82, `bosu ball`, `1705-T2fA5Ir.gif`) | band squat row (0.78, `band`, `1003-w1NOByi.gif`) | barbell low bar squat (0.73, `barbell`, `1435-bTpEUcm.gif`) | kein Treffer |
 | Deficit-Kreuzheben | barbell | smith deadlift (0.73, `smith machine`, `0752-UfePqpx.gif`) | barbell deadlift (0.67, `barbell`, `0032-ila4NZS.gif`) | trap bar deadlift (0.67, `trap bar`, `0811-jQGwmxN.gif`) | kein Treffer |
-| Dip (assistiert) | machine | lever assisted chin-up (0.79, `leverage machine`, `0572-MaMuGH6.gif`) | assisted sit-up (0.81, `assisted`, `1758-aumB2IV.gif`) | lever seated dip (0.73, `leverage machine`, `1451-BRImeP8.gif`) | siehe 'Kandidaten zur Freigabe' unten |
 | Face Pull | cable | barbell rack pull (0.78, `barbell`, `0074-za9Ni4z.gif`) | snatch pull (0.70, `barbell`, `0776-dG5Smob.gif`) | archer pull up (0.70, `body weight`, `3293-72BC5Za.gif`) | kein Treffer |
 | Floor Press | barbell | barbell one arm floor press (0.73, `barbell`, `0065-vtusOWT.gif`) | kettlebell one arm floor press (0.73, `kettlebell`, `1298-rg59QCH.gif`) | smith leg press (0.70, `smith machine`, `0760-7zdxRTl.gif`) | siehe 'Kandidaten zur Freigabe' unten |
 | Hip Thrust (KH) | dumbbell | dumbbell shrug (0.73, `dumbbell`, `0406-NJzBsGJ.gif`) | dumbbell high curl (0.70, `dumbbell`, `1664-qAmNMJY.gif`) | dumbbell step-up (0.69, `dumbbell`, `0431-aXtJhlg.gif`) | kein Treffer |
@@ -207,7 +206,6 @@
 | Reißen (Snatch) | barbell | snatch pull (0.71, `barbell`, `0776-dG5Smob.gif`) | barbell one arm snatch (0.60, `barbell`, `0067-xHKN2s8.gif`) | kettlebell double snatch (0.63, `kettlebell`, `0529-M74kdvm.gif`) | kein Treffer |
 | Renegade Row | dumbbell | barbell rear delt row (0.72, `barbell`, `0076-S9zHIvU.gif`) | smith rear delt row (0.72, `smith machine`, `0762-nFUwqG6.gif`) | cable rope seated row (0.67, `cable`, `1323-SJqRxOt.gif`) | — |
 | Reverse Nordic Curl | bodyweight | ez barbell reverse grip curl (0.83, `ez barbell`, `0451-Y5X65IB.gif`) | band reverse wrist curl (0.81, `band`, `0994-Ezpnw9d.gif`) | barbell reverse wrist curl (0.81, `barbell`, `0082-LsZkfU6.gif`) | kein Treffer |
-| Schulterdrücken (stehend) | barbell | dumbbell standing overhead press (1.00, `dumbbell`, `0426-A6wtbuL.gif`) | band twisting overhead press (0.87, `band`, `1012-u4bAmKp.gif`) | barbell seated overhead press (0.82, `barbell`, `0091-kTbSH9h.gif`) | siehe 'Kandidaten zur Freigabe' unten |
 | Schwimmen | bodyweight | kettlebell swing (0.77, `kettlebell`, `0549-UHJlbu3.gif`) | swing 360 (0.59, `body weight`, `3318-tnaj0mT.gif`) | ring dips (0.47, `body weight`, `0677-ezTvXcr.gif`) | kein Treffer |
 | Thruster (KH) | dumbbell | barbell thruster (0.85, `barbell`, `3305-f7Y9eDZ.gif`) | dumbbell raise (0.77, `dumbbell`, `0376-c9MnDRp.gif`) | dumbbell shrug (0.77, `dumbbell`, `0406-NJzBsGJ.gif`) | kein Treffer |
 | Umsetzen & Stoßen | barbell | power clean (0.76, `barbell`, `0648-SiWCcTN.gif`) | dumbbell clean (0.67, `dumbbell`, `0295-7Hg55JG.gif`) | kettlebell double jerk (0.67, `kettlebell`, `0527-tznL2Ad.gif`) | kein Treffer |
@@ -223,10 +221,8 @@ Volltextsuche in exercises.json ueber die Top-3 des Auto-Matchers hinaus. Bewegu
 | App-Übung | Kandidaten |
 |---|---|
 | Box Jump | box jump down with one leg stabilization (`1374-iPm26QU.gif`) — Sprung abwaerts mit einbeiniger Stabilisation — andere Bewegung als ein klassischer Box Jump |
-| Dip (assistiert) | assisted chest dip (kneeling) (`0009-PAgTVaK.gif`) — Maschinen-Assist, Brust-Fokus; als eigene Uebung 'Assistierte Brust-Dips (kniend)' aufgenommen (Original ist bereits Trizeps-fokussiert)<br>assisted wide-grip chest dip (kneeling) (`2364-PnZJIrk.gif`) — Maschinen-Assist, breiter Griff — zu nah an der bereits aufgenommenen Brust-Variante, keine weitere Uebung |
 | Floor Press | barbell one arm floor press (`0065-vtusOWT.gif`) — einarmig statt beidarmig — als eigene Uebung 'Floor Press einarmig (LH)' aufgenommen |
-| Pike Liegestütze | exercise ball pike push up (`1296-sVvXT5J.gif`) — Gymnastikball statt Koerpergewicht; Datensatz-Zielmuskel 'pectorals' weicht zudem vom App-Eintrag (shoulders) ab — kein Uebernahme-Kandidat |
-| Schulterdrücken (stehend) | barbell standing wide military press (`1457-Kyd9Rz5.gif`) — breiter Griff; als eigene Uebung aufgenommen (kanonischer Big-Five-Lift bleibt unangetastet)<br>barbell standing close grip military press (`1456-wdRZISl.gif`) — enger Griff; als eigene Uebung aufgenommen (kanonischer Big-Five-Lift bleibt unangetastet) |
+| Pike Liegestütze | exercise ball pike push up (`1296-sVvXT5J.gif`) — Gymnastikball statt Koerpergewicht; Datensatz-Zielmuskel 'pectorals' weicht zudem vom App-Eintrag (shoulders) ab — kein Uebernahme-Kandidat<br>hanging pike (`0473-nuBF9MO.gif`) — haengt am Klimmzug-Bar, Knie-/Beinheben — keine Liegestuetze, andere Bewegung<br>pike-to-cobra push-up (`3662-XPUDTt7.gif`) — fliessender Uebergang Pike zu Cobra — andere, komplexere Bewegungsabfolge |
 | Wall Sit | march sit (wall) (`0624-sVQCCeG.gif`) — marschiert an der Wand statt statisch zu halten — andere Bewegung; als eigene Uebung 'Wand-Sitz mit Marschieren' aufgenommen |
 
 ## Ohne GIF
@@ -326,9 +322,7 @@ Uebungen, die es in der App vorher nicht gab und die wegen eines eindeutig passe
 | Beinheben auf Flachbank | `0620-WhuFnR7.gif` |
 | Wand-Sitz mit Marschieren | `0624-sVQCCeG.gif` |
 | Gehen am Laufband (Steigung) | `3666-rjiM4L3.gif` |
-| Assistierte Brust-Dips (kniend) | `0009-PAgTVaK.gif` |
 | Schulterdrücken stehend (LH, enger Griff) | `1456-wdRZISl.gif` |
-| Schulterdrücken stehend (LH, breiter Griff) | `1457-Kyd9Rz5.gif` |
 | Kettlebell Push Press einarmig | `0540-osdXT3K.gif` |
 | Kettlebell Schulterdrücken stehend (zwei Kettlebells) | `0553-blBXysN.gif` |
 | Floor Press einarmig (LH) | `0065-vtusOWT.gif` |
@@ -362,12 +356,23 @@ GIF_TIEFENSUCHE.md hat exercises.json vollstaendig (nicht nur Top-3) nach Bewegu
 | Lauf-Intervall | `0685-oLrKqDH.gif` | zuvor unsicher/ohne GIF, jetzt eindeutiger Treffer nach Bild-Sichtung |
 | Laufband | `0684-y5p0H8a.gif` | zuvor unsicher/ohne GIF, jetzt eindeutiger Treffer nach Bild-Sichtung |
 
+### Runde 5 (GIF_ROUND_5_TASK)
+
+Freigegebene Overrides auf zwei bestehende Uebungen, die zuvor nur unsicher/ohne GIF waren. Macht zwei Runde-4-Neuanlagen zu echten Duplikaten (gleiche GIF-Datei) — beide wieder entfernt, das Original traegt das GIF jetzt direkt.
+
+| App-Übung | GIF | Hinweis |
+|---|---|---|
+| Dip (assistiert) | `0009-PAgTVaK.gif` | Duplikat 'Assistierte Brust-Dips (kniend)' aus Runde 4 entfernt |
+| Schulterdrücken (stehend) | `1457-Kyd9Rz5.gif` | Duplikat 'Schulterdrücken stehend (LH, breiter Griff)' aus Runde 4 entfernt — kanonischer Big-Five-Lift bekommt jetzt doch ein GIF (breiter Griff, einzige plausible Variante ohne Griff-Qualifier im Datensatz) |
+
+Floor Press einarmig (LH) und Wand-Sitz mit Marschieren waren bereits aus Runde 4 vorhanden (keine Dubletten angelegt). Kettlebell Floor Press (`1298-rg59QCH.gif`) deckt den einzigen Kettlebell-Floor-Press-Datensatztreffer bereits ab. Ein Dumbbell Floor Press existiert im Datensatz nicht. Pike Liegestütze bleibt ohne GIF — zusaetzlich zur Gymnastikball-Variante wurden "hanging pike" und "pike-to-cobra push-up" gesichtet, beides andere Bewegungen.
+
 ## Zusammenfassung
 
 - Sicher: 171
-- Unsicher: 27
+- Unsicher: 25
 - Ohne GIF: 33
-- Gesamt: 231
+- Gesamt: 229
 
 ## Anhang: beobachtete Dataset-Equipment-Werte
 

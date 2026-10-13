@@ -158,20 +158,14 @@ DEEP_SEARCH_CANDIDATES = {
     ],
     "Pike Liegestütze": [
         ("1296-sVvXT5J.gif", "exercise ball pike push up", "Gymnastikball statt Koerpergewicht; Datensatz-Zielmuskel 'pectorals' weicht zudem vom App-Eintrag (shoulders) ab — kein Uebernahme-Kandidat"),
+        ("0473-nuBF9MO.gif", "hanging pike", "haengt am Klimmzug-Bar, Knie-/Beinheben — keine Liegestuetze, andere Bewegung"),
+        ("3662-XPUDTt7.gif", "pike-to-cobra push-up", "fliessender Uebergang Pike zu Cobra — andere, komplexere Bewegungsabfolge"),
     ],
     "Box Jump": [
         ("1374-iPm26QU.gif", "box jump down with one leg stabilization", "Sprung abwaerts mit einbeiniger Stabilisation — andere Bewegung als ein klassischer Box Jump"),
     ],
-    "Schulterdrücken (stehend)": [
-        ("1457-Kyd9Rz5.gif", "barbell standing wide military press", "breiter Griff; als eigene Uebung aufgenommen (kanonischer Big-Five-Lift bleibt unangetastet)"),
-        ("1456-wdRZISl.gif", "barbell standing close grip military press", "enger Griff; als eigene Uebung aufgenommen (kanonischer Big-Five-Lift bleibt unangetastet)"),
-    ],
     "Floor Press": [
         ("0065-vtusOWT.gif", "barbell one arm floor press", "einarmig statt beidarmig — als eigene Uebung 'Floor Press einarmig (LH)' aufgenommen"),
-    ],
-    "Dip (assistiert)": [
-        ("0009-PAgTVaK.gif", "assisted chest dip (kneeling)", "Maschinen-Assist, Brust-Fokus; als eigene Uebung 'Assistierte Brust-Dips (kniend)' aufgenommen (Original ist bereits Trizeps-fokussiert)"),
-        ("2364-PnZJIrk.gif", "assisted wide-grip chest dip (kneeling)", "Maschinen-Assist, breiter Griff — zu nah an der bereits aufgenommenen Brust-Variante, keine weitere Uebung"),
     ],
 }
 
@@ -273,12 +267,22 @@ RESOLVED_EXISTING_ROUND4 = [
 # GIF_TIEFENSUCHE.md, Abschnitt "Neue Alternativen": neue Praezisions-
 # Uebungen fuer Equipment-/Bewegungs-Varianten, die zu keiner bestehenden
 # Uebung 100% passen.
+# "Assistierte Brust-Dips (kniend)" und "Schulterdrücken stehend (LH,
+# breiter Griff)" (urspruenglich hier) wurden in Runde 5 wieder entfernt:
+# GIF_ROUND_5_TASK.md ordnet dieselben GIFs direkt den Originalen
+# "Dip (assistiert)" bzw. "Schulterdrücken (stehend)" zu — echte
+# Duplikate, nicht eigene Uebungen (siehe exercise_gif_overrides.json).
 NEWLY_ADDED_EXERCISES_ROUND4 = [
     "Beinheben auf Flachbank", "Wand-Sitz mit Marschieren", "Gehen am Laufband (Steigung)",
-    "Assistierte Brust-Dips (kniend)", "Schulterdrücken stehend (LH, enger Griff)",
-    "Schulterdrücken stehend (LH, breiter Griff)", "Kettlebell Push Press einarmig",
+    "Schulterdrücken stehend (LH, enger Griff)", "Kettlebell Push Press einarmig",
     "Kettlebell Schulterdrücken stehend (zwei Kettlebells)", "Floor Press einarmig (LH)",
     "Kettlebell Clean & Jerk einarmig",
+]
+
+# GIF_ROUND_5_TASK.md: freigegebene Overrides auf bestehende Uebungen
+# (kein neuer Library-Eintrag).
+RESOLVED_EXISTING_ROUND5 = [
+    "Dip (assistiert)", "Schulterdrücken (stehend)",
 ]
 
 
@@ -768,6 +772,37 @@ def write_report(sicher, unsicher, ohne, dataset_sha, gif_sha, total_specs, data
         gif = overrides_used.get(name, "—")
         note = _round4_notes.get(name, "zuvor unsicher/ohne GIF, jetzt eindeutiger Treffer nach Bild-Sichtung")
         lines.append(f"| {name} | `{gif}` | {note} |")
+    lines.append("")
+
+    lines.append("### Runde 5 (GIF_ROUND_5_TASK)")
+    lines.append("")
+    lines.append(
+        "Freigegebene Overrides auf zwei bestehende Uebungen, die zuvor nur "
+        "unsicher/ohne GIF waren. Macht zwei Runde-4-Neuanlagen zu echten "
+        "Duplikaten (gleiche GIF-Datei) — beide wieder entfernt, das Original "
+        "traegt das GIF jetzt direkt."
+    )
+    lines.append("")
+    lines.append("| App-Übung | GIF | Hinweis |")
+    lines.append("|---|---|---|")
+    _round5_notes = {
+        "Dip (assistiert)": "Duplikat 'Assistierte Brust-Dips (kniend)' aus Runde 4 entfernt",
+        "Schulterdrücken (stehend)": "Duplikat 'Schulterdrücken stehend (LH, breiter Griff)' aus Runde 4 entfernt — kanonischer Big-Five-Lift bekommt jetzt doch ein GIF (breiter Griff, einzige plausible Variante ohne Griff-Qualifier im Datensatz)",
+    }
+    for name in RESOLVED_EXISTING_ROUND5:
+        gif = overrides_used.get(name, "—")
+        note = _round5_notes.get(name, "")
+        lines.append(f"| {name} | `{gif}` | {note} |")
+    lines.append("")
+    lines.append(
+        "Floor Press einarmig (LH) und Wand-Sitz mit Marschieren waren bereits "
+        "aus Runde 4 vorhanden (keine Dubletten angelegt). Kettlebell Floor "
+        "Press (`1298-rg59QCH.gif`) deckt den einzigen Kettlebell-Floor-Press-"
+        "Datensatztreffer bereits ab. Ein Dumbbell Floor Press existiert im "
+        "Datensatz nicht. Pike Liegestütze bleibt ohne GIF — zusaetzlich zur "
+        "Gymnastikball-Variante wurden \"hanging pike\" und \"pike-to-cobra "
+        "push-up\" gesichtet, beides andere Bewegungen."
+    )
     lines.append("")
 
     lines.append("## Zusammenfassung")
