@@ -141,7 +141,16 @@ public final class UserBodyProfile {
     }
 
     public var trainingGoal: TrainingGoal {
-        get { TrainingGoal(rawValue: trainingGoalRaw) ?? .hybrid }
+        get {
+            // Smart-Onboarding-Epic: "fatloss" war kurzzeitig ein eigener
+            // TrainingGoal-Fall auf diesem Branch, bevor er wieder mit
+            // .weightLoss zusammengelegt wurde (doppelte Abnehmen-Semantik,
+            // siehe TrainingGoal-Doc-Kommentar). Toleranter Fallback statt
+            // stillem Sprung auf .hybrid, falls ein zwischenzeitlicher Build
+            // den Rohwert bereits geschrieben oder exportiert hat.
+            if trainingGoalRaw == "fatloss" { return .weightLoss }
+            return TrainingGoal(rawValue: trainingGoalRaw) ?? .hybrid
+        }
         set { trainingGoalRaw = newValue.rawValue }
     }
 

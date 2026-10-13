@@ -26,11 +26,13 @@ final class CoachingTypesTests: XCTestCase {
         // `coaching.{context}.{tone}.{goal}`. Eine Umbenennung hier ist ein
         // Migrations-Ereignis, deshalb bleibt der Snapshot exakt.
         //
-        // Smart-Onboarding-Epic: `fatloss`/`functional` kamen aus dem
-        // entfernten `GoalType` dazu (Konsolidierung auf eine Achse). Die
-        // vier bestehenden RawValues sind unveraendert, es wurde nur
-        // angehaengt.
-        XCTAssertEqual(cases, ["hypertrophy", "strength", "hybrid", "weightLoss", "fatloss", "functional"])
+        // Smart-Onboarding-Epic: `functional` kam aus dem entfernten
+        // `GoalType` dazu (Konsolidierung auf eine Achse). Ein zwischen-
+        // zeitliches `fatloss` ist wieder entfernt — es erzeugte eine zweite,
+        // konkurrierende "Abnehmen"-Bedeutung neben `.weightLoss` (siehe
+        // TrainingGoal-Doc-Kommentar). Die vier bestehenden RawValues sind
+        // unveraendert, es wurde nur `functional` angehaengt.
+        XCTAssertEqual(cases, ["hypertrophy", "strength", "hybrid", "weightLoss", "functional"])
     }
 
     /// Smart-Onboarding-Epic Leitplanke: die vier ORIGINAL-RawValues duerfen

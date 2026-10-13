@@ -104,7 +104,7 @@ public enum ProgramTemplates {
         targetEnvironment: .gym,
         iconSystemName: "flame.fill",
         targetExperience: [.beginner, .intermediate],
-        targetGoals: [.fatloss, .hypertrophy]
+        targetGoals: [.weightLoss, .hypertrophy]
     )
 
     // MARK: - 3. Home Gym Hero (Dumbbell-only)
@@ -190,7 +190,7 @@ public enum ProgramTemplates {
         targetEnvironment: .noEquipment,
         iconSystemName: "figure.run",
         targetExperience: [.beginner, .intermediate],
-        targetGoals: [.functional, .fatloss]
+        targetGoals: [.functional, .weightLoss]
     )
 
     // MARK: - 5. Push-Pull-Legs (6 days)
@@ -935,7 +935,7 @@ public enum ProgramTemplates {
         targetEnvironment: .noEquipment,
         iconSystemName: "figure.mixed.cardio",
         targetExperience: [.advanced],
-        targetGoals: [.functional, .fatloss]
+        targetGoals: [.functional, .weightLoss]
     )
 
     // MARK: - 16. CrossFit Bodyweight (Scaled)
@@ -975,7 +975,7 @@ public enum ProgramTemplates {
         targetEnvironment: .noEquipment,
         iconSystemName: "figure.mixed.cardio",
         targetExperience: [.beginner],
-        targetGoals: [.functional, .fatloss]
+        targetGoals: [.functional, .weightLoss]
     )
 
     // MARK: - 17. CrossFit mit Gewichten
@@ -1022,7 +1022,7 @@ public enum ProgramTemplates {
         // gab diesem Template sonst 0 statt +2 Erfahrungspunkte, obwohl die
         // Beschreibung "Einsteiger und Fortgeschrittene" beide Enden schon nennt.
         targetExperience: [.beginner, .intermediate, .advanced],
-        targetGoals: [.functional, .fatloss]
+        targetGoals: [.functional, .weightLoss]
     )
 
     // MARK: - 18. Kettlebell Grundlagen (Anfänger)
@@ -1065,7 +1065,7 @@ public enum ProgramTemplates {
         // auch fuer Kettlebell-Einsteiger mit anderweitiger Trainingserfahrung
         // relevant, nicht nur fuer komplette Anfaenger.
         targetExperience: [.beginner, .intermediate],
-        targetGoals: [.functional, .fatloss]
+        targetGoals: [.functional, .weightLoss]
     )
 
     // MARK: - 19. Kettlebell Fortgeschritten
@@ -1116,7 +1116,7 @@ public enum ProgramTemplates {
         targetEnvironment: .homeGym,
         iconSystemName: "flame.fill",
         targetExperience: [.advanced],
-        targetGoals: [.functional, .fatloss]
+        targetGoals: [.functional, .weightLoss]
     )
 
     // MARK: - 20. Kettlebell Komplexe (Zirkel-Zeitformat)
@@ -1189,7 +1189,7 @@ public enum ProgramTemplates {
         targetEnvironment: .homeGym,
         iconSystemName: "figure.highintensity.intervaltraining",
         targetExperience: [.intermediate, .advanced],
-        targetGoals: [.functional, .fatloss]
+        targetGoals: [.functional, .weightLoss]
     )
 
     // MARK: - Display order

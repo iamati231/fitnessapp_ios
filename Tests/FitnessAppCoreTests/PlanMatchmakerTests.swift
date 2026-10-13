@@ -97,6 +97,26 @@ final class PlanMatchmakerTests: XCTestCase {
                       "Top-Match muss das User-Goal beruehren")
     }
 
+    /// Fix "Doppelte Abnehmen-Semantik": eine fruehere Phase-2-Fassung hatte
+    /// Templates mit `.fatloss` getaggt, waehrend Quiz/Persistenz `.weightLoss`
+    /// nutzten — zwei Enum-Faelle fuer dieselbe Sache, Abnehmen-User bekamen
+    /// dadurch NIE einen Ziel-Matchbonus. `.fatloss` ist entfernt, alle
+    /// Templates taggen jetzt `.weightLoss`.
+    func testWeightLossGoalGetsTemplateMatchBonusAndTopsWithFatburnPlan() {
+        let answers = QuizAnswers(
+            goal: .weightLoss,
+            experience: .beginner,
+            preferredDays: 3,
+            environment: .gym
+        )
+        let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates)
+        XCTAssertFalse(ranked.isEmpty)
+        XCTAssertTrue(ranked.contains { $0.targetGoals.contains(.weightLoss) },
+                      "Mindestens ein Template muss .weightLoss tragen und so den Zielbonus bekommen")
+        XCTAssertEqual(ranked.first?.id, "fat_loss_fullbody",
+                       "Top-Match fuer Abnehmen sollte das Fatburn-Ganzkoerper-Template sein, ist: \(ranked.first?.id ?? "nil")")
+    }
+
     /// Fallback: Extrem-Filter "Strength + No-Equipment + 2 Tage" wuerde
     /// nichts treffen → wir liefern wenigstens die BW-Plaene zurueck.
     func testFallbackProducesBodyweightPlansWhenAllFiltered() {

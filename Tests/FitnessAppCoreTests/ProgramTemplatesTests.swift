@@ -230,4 +230,16 @@ final class ProgramTemplatesTests: XCTestCase {
                            "\(template.name) hat keine targetGoals-Tags")
         }
     }
+
+    /// Umgekehrte Richtung zu `testEveryTemplateHasOnboardingTags`: jedes
+    /// waehlbare `TrainingGoal` muss von mindestens einem Template abgedeckt
+    /// sein, sonst gibt es eine "tote" Quiz-Auswahl, die nie einen Ziel-
+    /// Matchbonus bekommen kann (siehe die `.fatloss`/`.weightLoss`-
+    /// Doppelsemantik, die genau das verursacht hatte).
+    func testEveryTrainingGoalHasAtLeastOneTemplate() {
+        for goal in TrainingGoal.allCases {
+            let hasTemplate = ProgramTemplates.all.contains { $0.targetGoals.contains(goal) }
+            XCTAssertTrue(hasTemplate, "TrainingGoal.\(goal) hat kein einziges Template — tote Quiz-Auswahl")
+        }
+    }
 }
