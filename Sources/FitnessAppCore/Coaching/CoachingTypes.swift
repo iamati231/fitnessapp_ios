@@ -39,10 +39,12 @@ public enum CoachingTone: String, Codable, Sendable, CaseIterable {
     }
 }
 
-/// DEL-100: Trainings-Hauptziel fuer die Coaching-Engine. **Separat** vom
-/// `GoalType` aus DEL-090 (Onboarding-Quiz fuer Plan-Matching), weil das
-/// hier eine LANGFRISTIGE Praeferenz ist — der Quiz-Goal kann pro Cycle
-/// abweichen (z.B. Bodybuilder, der vor einem Meet auf Strength umstellt).
+/// DEL-100: Trainings-Hauptziel fuer die Coaching-Engine UND (seit dem
+/// Smart-Onboarding-Epic) fuer das Quiz-/Template-Matching
+/// (`ProgramTemplate.targetGoals`, `QuizAnswers.goal`). Bis dahin gab es
+/// hier zwei getrennte Enums (`TrainingGoal` + `GoalType` aus DEL-090) mit
+/// einem verlustbehafteten Mapper dazwischen (`OnboardingView.mappedQuizGoal`,
+/// jetzt entfernt) — konsolidiert auf dieses eine Enum.
 public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
     case hypertrophy
     case strength
@@ -53,6 +55,15 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
     /// RawValue-Stabilität: neue Cases NUR anhängen, nie umbenennen —
     /// der String persistiert in UserBodyProfile.trainingGoalRaw.
     case weightLoss
+    /// Smart-Onboarding-Epic: ehemals `GoalType.fatloss` (Onboarding-Quiz-
+    /// Achse, DEL-090) — konsolidiert hierher, damit es nur noch EIN
+    /// Ziel-Enum gibt. Bewusst eigenständig neben `.weightLoss`: dort geht
+    /// es um Kaloriendefizit/Alltagsbewegung, hier um Trainingsintensität
+    /// als Hebel. RawValue-Stabilität: siehe `.weightLoss`-Kommentar.
+    case fatloss
+    /// Smart-Onboarding-Epic: ehemals `GoalType.functional`, ebenfalls
+    /// hierher konsolidiert.
+    case functional
 
     public var label: String {
         switch self {
@@ -60,6 +71,8 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
         case .strength:    return "Maximalkraft"
         case .hybrid:      return "Funktionell / Hybrid"
         case .weightLoss:  return "Abnehmen / Fettabbau"
+        case .fatloss:     return "Fett verbrennen"
+        case .functional:  return "Funktionelle Fitness"
         }
     }
 
@@ -69,6 +82,8 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
         case .strength:    return "scalemass.fill"
         case .hybrid:      return "figure.mixed.cardio"
         case .weightLoss:  return "flame.fill"
+        case .fatloss:     return "flame"
+        case .functional:  return "figure.cooldown"
         }
     }
 
@@ -78,6 +93,8 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
         case .strength:    return "Maximales 1RM, niedrige Reps, schwere Hauptlifts."
         case .hybrid:      return "Kraft + Ausdauer + Mobilität — alles fließt zusammen."
         case .weightLoss:  return "Kaloriendefizit, Muskelerhalt, Alltagsbewegung."
+        case .fatloss:     return "Hohe Trainingsintensität, dichte Einheiten, Kalorienverbrauch über Bewegung."
+        case .functional:  return "Alltagstaugliche Bewegungsmuster, Mobilität, kein reiner Kraft- oder Muskelfokus."
         }
     }
 }

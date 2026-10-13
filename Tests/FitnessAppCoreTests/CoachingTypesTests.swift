@@ -25,7 +25,23 @@ final class CoachingTypesTests: XCTestCase {
         // UserBodyProfile.trainingGoalRaw und in den Catalog-Keys
         // `coaching.{context}.{tone}.{goal}`. Eine Umbenennung hier ist ein
         // Migrations-Ereignis, deshalb bleibt der Snapshot exakt.
-        XCTAssertEqual(cases, ["hypertrophy", "strength", "hybrid", "weightLoss"])
+        //
+        // Smart-Onboarding-Epic: `fatloss`/`functional` kamen aus dem
+        // entfernten `GoalType` dazu (Konsolidierung auf eine Achse). Die
+        // vier bestehenden RawValues sind unveraendert, es wurde nur
+        // angehaengt.
+        XCTAssertEqual(cases, ["hypertrophy", "strength", "hybrid", "weightLoss", "fatloss", "functional"])
+    }
+
+    /// Smart-Onboarding-Epic Leitplanke: die vier ORIGINAL-RawValues duerfen
+    /// durch das Anhaengen von `fatloss`/`functional` nicht angefasst worden
+    /// sein — sonst brechen bereits gespeicherte `trainingGoalRaw`-Werte in
+    /// bestehenden `UserBodyProfile`-Zeilen still.
+    func testTrainingGoalOriginalRawValuesStayStable() {
+        XCTAssertEqual(TrainingGoal.hypertrophy.rawValue, "hypertrophy")
+        XCTAssertEqual(TrainingGoal.strength.rawValue, "strength")
+        XCTAssertEqual(TrainingGoal.hybrid.rawValue, "hybrid")
+        XCTAssertEqual(TrainingGoal.weightLoss.rawValue, "weightLoss")
     }
 
     /// Tonfall-Cases muessen alle ein Label, ein SF-Symbol und einen
