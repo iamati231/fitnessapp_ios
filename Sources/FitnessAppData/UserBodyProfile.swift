@@ -115,6 +115,17 @@ public final class UserBodyProfile {
     /// Nil = noch nie unterdrueckt worden.
     public var cardioFeasibilityDismissedFingerprint: String?
 
+    /// Smart-Onboarding-Epic: verhaltens-/pausenbasierte Track-Einstufung
+    /// (Einstieg/Wiedereinstieg/volle Automatik) — separat von
+    /// `coachingTone`/`trainingGoal`. Nil = noch nicht hergeleitet (z. B.
+    /// Bestandsnutzer vor diesem Update). `ExperienceTrackBackfill` befuellt
+    /// es einmalig aus der Trainingshistorie; die Onboarding-Flow-Frage
+    /// (spaetere Phase) ueberschreibt es danach mit einer expliziten Antwort.
+    /// Bewusst `String?` statt eines defaulteten Strings wie bei
+    /// `coachingToneRaw`: ein drittes, neutrales "nicht gesetzt"-Signal wird
+    /// gebraucht, damit der Backfill genau einmal greift.
+    public var experienceTrackRaw: String?
+
     /// Convenience-Accessor mit Default-Fallback, falls jemand einen
     /// invaliden String reinschreibt.
     public var cardioGoal: CardioGoal {
@@ -132,6 +143,14 @@ public final class UserBodyProfile {
     public var trainingGoal: TrainingGoal {
         get { TrainingGoal(rawValue: trainingGoalRaw) ?? .hybrid }
         set { trainingGoalRaw = newValue.rawValue }
+    }
+
+    /// `nil` bedeutet "noch nicht hergeleitet" (siehe `experienceTrackRaw`) —
+    /// anders als die uebrigen Raw-Accessors hier daher KEIN Default-Fallback
+    /// bei fehlendem Wert, nur bei einem ungueltigen (sollte nie vorkommen).
+    public var experienceTrack: ExperienceTrack? {
+        get { experienceTrackRaw.flatMap { ExperienceTrack(rawValue: $0) } }
+        set { experienceTrackRaw = newValue?.rawValue }
     }
 
     /// DEL-109: Typed Convenience-Accessor auf die Widget-Liste. Filtered

@@ -135,6 +135,12 @@ public struct RootView: View {
             // Nachgetragene Laeufe mit der Wanduhr-Dauer von ein, zwei Minuten
             // bekommen die eingetragene Laufzeit. Einmalig, nur die Dauer.
             SessionDurationRepair.runIfNeeded(in: modelContext)
+            // Smart-Onboarding-Epic: Bestandsnutzer ohne OnboardingProfile-
+            // Antwort bekommen einmalig einen aus der Trainingshistorie
+            // genaeherten ExperienceTrack statt dauerhaft eines blinden
+            // Defaults. Idempotent — Predicate filtert auf
+            // experienceTrackRaw == nil.
+            ExperienceTrackBackfill.runIfNeeded(in: modelContext)
 
             // Erinnerungen gegen die gespeicherten Schalter abgleichen: Die
             // geplanten Benachrichtigungen liegen im System und gehen z.B. bei
