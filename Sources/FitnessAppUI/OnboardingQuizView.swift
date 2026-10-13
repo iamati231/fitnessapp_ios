@@ -3,7 +3,7 @@ import SwiftUI
 import FitnessAppCore
 
 /// DEL-090: Smart Onboarding Quiz. Fuenf kompakte Fragen (Goal, Experience,
-/// preferredDays, Environment, Equipment) → `PlanMatchmaker` ranked die 19
+/// preferredDays, Environment, Equipment) → `PlanMatchmaker` ranked die 20
 /// Templates → Result-Screen praesentiert den Top-Match + Liste der
 /// Alternativen.
 ///
@@ -21,7 +21,7 @@ public struct OnboardingQuizView: View {
     public let onCancel: () -> Void
 
     @State private var step: QuizStep = .goal
-    @State private var goal: GoalType = .hypertrophy
+    @State private var goal: TrainingGoal = .hypertrophy
     @State private var experience: ExperienceLevel = .intermediate
     @State private var preferredDays: Int = 3
     @State private var environment: EnvironmentType
@@ -32,7 +32,7 @@ public struct OnboardingQuizView: View {
 
     public init(
         preselectedEnvironment: EnvironmentType,
-        preselectedGoal: GoalType? = nil,
+        preselectedGoal: TrainingGoal? = nil,
         onPlanSelected: @escaping (ProgramTemplate) -> Void,
         onCancel: @escaping () -> Void
     ) {
@@ -44,7 +44,9 @@ public struct OnboardingQuizView: View {
         // User hat es gerade erst gewählt; der Quiz soll nicht wieder bei
         // "Muskelaufbau" starten, wenn "Abnehmen" angegeben wurde. Die
         // Frage bleibt sichtbar (Korrektur möglich), nur der Startwert
-        // ist informiert statt hardcoded.
+        // ist informiert statt hardcoded. Smart-Onboarding-Epic: seit der
+        // GoalType/TrainingGoal-Konsolidierung ist das eine reine
+        // Wertuebernahme ohne Typ-Mapper.
         if let preselectedGoal {
             self._goal = State(initialValue: preselectedGoal)
         }
@@ -117,7 +119,7 @@ public struct OnboardingQuizView: View {
             title: String(localized: "quiz.goal.title", bundle: .module),
             subtitle: String(localized: "quiz.goal.subtitle", bundle: .module)
         ) {
-            ForEach(GoalType.allCases, id: \.self) { g in
+            ForEach(TrainingGoal.allCases, id: \.self) { g in
                 quizOption(
                     label: String(localized: g.localizedName),
                     icon: g.symbol,

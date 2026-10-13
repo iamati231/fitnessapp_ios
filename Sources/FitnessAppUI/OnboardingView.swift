@@ -195,13 +195,15 @@ public struct OnboardingView: View {
                     }
                 }
             }
-            // DEL-090: Smart Onboarding Quiz. Vier kompakte Fragen +
-            // Result-Screen, der via `PlanMatchmaker` die 14 Templates ranked.
+            // DEL-090: Smart Onboarding Quiz. Fünf kompakte Fragen +
+            // Result-Screen, der via `PlanMatchmaker` die 20 Templates ranked.
             .sheet(isPresented: $showingQuiz) {
                 OnboardingQuizView(
                     preselectedEnvironment: environment,
-                    // DEL-207: Ziel aus Step 3 in den Quiz reichen.
-                    preselectedGoal: mappedQuizGoal,
+                    // DEL-207: Ziel aus Step 3 in den Quiz reichen. Smart-
+                    // Onboarding-Epic: direkte Wertuebernahme, kein Mapper
+                    // mehr noetig seit GoalType/TrainingGoal konsolidiert sind.
+                    preselectedGoal: trainingGoal,
                     onPlanSelected: { template in
                         selectedTemplate = template
                         showingQuiz = false
@@ -892,8 +894,8 @@ public struct OnboardingView: View {
             }
 
             // DEL-090: Hero-Card "Plan finden lassen" — startet den
-            // Smart-Onboarding-Quiz, der die 14 Templates fuer den User
-            // ranked, statt ihn manuell aus einer 14er-Liste raten zu lassen.
+            // Smart-Onboarding-Quiz, der die 20 Templates fuer den User
+            // ranked, statt ihn manuell aus einer 20er-Liste raten zu lassen.
             Section {
                 Button {
                     showingQuiz = true
@@ -1016,7 +1018,7 @@ public struct OnboardingView: View {
     /// DEL-207: zusätzlich goal-aware sortiert — Templates, deren
     /// `targetGoals` das in Step 3 gewählte Trainingsziel enthalten, stehen
     /// oben (stabile Partition, Reihenfolge innerhalb der Gruppen bleibt).
-    /// Vorher zeigte Step 5 alle 14 Templates unsortiert, obwohl der User
+    /// Vorher zeigte Step 5 alle 20 Templates unsortiert, obwohl der User
     /// sein Ziel gerade erst angegeben hatte.
     private var filteredTemplates: [ProgramTemplate] {
         let byEnvironment = ProgramTemplates.all.filter { template in
@@ -1035,19 +1037,8 @@ public struct OnboardingView: View {
         return matching + rest
     }
 
-    /// DEL-207: Brücke zwischen der Coaching-Achse (TrainingGoal, Step 3)
-    /// und der Plan-Matching-Achse (GoalType, Templates/Quiz).
-    private var mappedQuizGoal: GoalType {
-        switch trainingGoal {
-        case .hypertrophy: return .hypertrophy
-        case .strength:    return .strength
-        case .hybrid:      return .hybrid
-        case .weightLoss:  return .fatloss
-        }
-    }
-
     private func templateMatchesGoal(_ template: ProgramTemplate) -> Bool {
-        template.targetGoals.contains(mappedQuizGoal)
+        template.targetGoals.contains(trainingGoal)
     }
 
     private func templateRow(_ template: ProgramTemplate) -> some View {
