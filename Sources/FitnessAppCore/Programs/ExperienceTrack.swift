@@ -45,6 +45,56 @@ public enum ExperienceTrack: String, Sendable, Codable, CaseIterable, Hashable {
         case .experienced: return .intermediate
         }
     }
+
+    /// UX-Fix "Empfehlung wirkt immer gleich": zentrale, dokumentierte
+    /// Track-Praeferenz oben auf `PlanMatchmaker.rankPlans`' Basis-Score
+    /// (Goal +3 / Level +2 / exakte Tage +1). Macht explizit, was vorher nur
+    /// als Nebenwirkung der drei Basis-Terme entstand — ohne diesen Bonus
+    /// konnte ein generischer <=3-Tage-Ganzkoerperplan mit einem passenden,
+    /// aber laengeren Split-Programm gleichauf liegen, sobald beide beim
+    /// exakten Tage-Treffer gleichermassen leer ausgingen; der stabile Sort
+    /// entschied dann rein nach Katalog-Reihenfolge (`full_body` steht dort
+    /// zuerst).
+    ///
+    /// Starter/Wiedereinsteiger bekommen hier bewusst NIE einen Bonus (Epic:
+    /// "kein Experten-Boost") — sie sind bereits ueber den Hard-Filter in
+    /// `PlanMatchmaker.experienceTrackMatches` auf sicher geeignete
+    /// Templates begrenzt; ein zusaetzlicher Score-Bonus wuerde daran nichts
+    /// Sinnvolles mehr aendern.
+    ///
+    /// Fuer Erfahrene gilt der Bonus NUR, wenn das Template bereits das
+    /// `TrainingGoal` teilt (`targetGoals.contains(answers.goal)`) — sonst
+    /// waere er ein blinder Experten-Boost fuer ein thematisch falsches
+    /// Template. Equipment- und Tage-Obergrenze sind an dieser Stelle
+    /// bereits durch `PlanMatchmaker.rankPlans`' Hard-Filter garantiert
+    /// (jedes hier bewertete Template erfuellt sie per Konstruktion), daher
+    /// keine erneute Pruefung noetig.
+    ///
+    /// Zwei Komponenten:
+    ///   * **Trainingsfrequenz/Split-Typ**: `max(0, daysPerWeek - 3)` — in
+    ///     dieser Bibliothek ist 3 Tage durchgehend die Grenze zwischen
+    ///     Ganzkoerper-/Grundlagenplaenen und echten Split-Programmen
+    ///     (Upper/Lower, PPL, Bro-Split, Hybrid-Stufen) — siehe
+    ///     `ProgramTemplates.all`. Ein 3-Tage-Plan bekommt also weiterhin
+    ///     keinen Bonus (Epic: bei 2-3 Tagen darf Ganzkoerper fuer Erfahrene
+    ///     plausibel bleiben), waehrend laengere, spezialisiertere Programme
+    ///     proportional zu ihrer Tagesanzahl bevorzugt werden.
+    ///   * **Explizites `.advanced`-Tag**: +1. Ohne diesen Bonus wuerde ein
+    ///     rein `.advanced`-getaggtes Template (z.B. Arnold Split) beim
+    ///     Basis-Score-Term "Level" (+2) leer ausgehen, weil Erfahrene ueber
+    ///     `asExperienceLevel` auf `.intermediate` gemappt werden, NIE auf
+    ///     `.advanced` (siehe dortiger Kommentar) — ohne diesen Ausgleich
+    ///     waere ein explizit als fortgeschritten markiertes Programm beim
+    ///     Scoring sogar schlechter gestellt als ein fuer Einsteiger UND
+    ///     Fortgeschrittene offenes.
+    public func templateScoreBonus(template: ProgramTemplate, answers: QuizAnswers) -> Int {
+        guard self == .experienced, template.targetGoals.contains(answers.goal) else { return 0 }
+        var bonus = max(0, template.daysPerWeek - 3)
+        if template.targetExperience.contains(.advanced) {
+            bonus += 1
+        }
+        return bonus
+    }
 }
 
 /// Epic §4.3, Hauptfrage zur Trainingshistorie (vier Antworten, verhaltens-

@@ -241,4 +241,141 @@ final class PlanMatchmakerTests: XCTestCase {
         XCTAssertFalse(ranked.isEmpty, "Fallback sollte mindestens einen BW-Plan liefern")
         XCTAssertTrue(ranked.allSatisfy { $0.targetEnvironment == .noEquipment })
     }
+
+    // MARK: - UX-Fix "Empfehlung wirkt immer gleich" — Persona-Matrix
+    //
+    // Reproduzierbare Faelle aus ONBOARDING_MATCHING_AND_UX_FIX.md, VOR dem
+    // eigentlichen Fix angelegt (wie dort explizit gefordert), um den echten
+    // Status quo zu dokumentieren statt eine vermutete Ursache blind zu
+    // fixen. Jeder Fall prueft Top-1 UND (wo sinnvoll) `matchReasons`.
+
+    /// Starter, Gym, Muskelaufbau, 3 Tage -> einfacher Ganzkoerperplan ist
+    /// laut Spec RICHTIG (keine kuenstliche Vielfalt fuer Starter erzwingen).
+    func testPersonaStarterHypertrophyThreeDaysGymTopsWithSimpleFullBody() {
+        let track = ExperienceTrack.starter
+        let answers = QuizAnswers(
+            goal: .hypertrophy,
+            experience: track.asExperienceLevel,
+            preferredDays: 3,
+            environment: .gym
+        )
+        let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates, experienceTrack: track)
+        XCTAssertEqual(ranked.first?.id, "full_body",
+                        "Starter+Hypertrophie+3 Tage sollte der einfache Ganzkoerperplan sein, ist: \(ranked.first?.id ?? "nil")")
+        let reasons = PlanMatchmaker.matchReasons(for: ranked.first!, answers: answers)
+        XCTAssertTrue(reasons.goalMatch && reasons.daysMatch && reasons.levelMatch)
+    }
+
+    /// Returner, Gym, Kraft, 3 Tage -> ein wiedereinstiegs-tauglicher,
+    /// kraftfokussierter Plan (Powerlifting 5x5 ist das einzige Template mit
+    /// .strength + Beginner/Intermediate-Tag bei 3 Tagen). Keine Phase-4-
+    /// Rampe wird hier vorgetaeuscht - nur Kandidat + Begruendung.
+    func testPersonaReturnerStrengthThreeDaysGymTopsWithBeginnerFriendlyStrengthPlan() {
+        let track = ExperienceTrack.returner
+        let answers = QuizAnswers(
+            goal: .strength,
+            experience: track.asExperienceLevel,
+            preferredDays: 3,
+            environment: .gym
+        )
+        let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates, experienceTrack: track)
+        XCTAssertEqual(ranked.first?.id, "powerlifting_5x5",
+                        "Returner+Kraft+3 Tage sollte der Einsteiger/Intermediate-Kraftplan sein, ist: \(ranked.first?.id ?? "nil")")
+    }
+
+    /// Experienced, Gym, Muskelaufbau, 5 Tage -> Split-Plan, NIEMALS
+    /// "Ganzkoerper 3x" als Top 1 (Duplikat zu
+    /// `testExperiencedHypertrophyFiveDaysGymTopsWithSplitPlan` oben, hier
+    /// bewusst nochmal explizit als Teil der zusammenhaengenden Persona-
+    /// Matrix aus dem UX-Fix-Dokument gefuehrt).
+    func testPersonaExperiencedHypertrophyFiveDaysGymNeverTopsWithFullBody() {
+        let track = ExperienceTrack.experienced
+        let answers = QuizAnswers(
+            goal: .hypertrophy,
+            experience: track.asExperienceLevel,
+            preferredDays: 5,
+            environment: .gym
+        )
+        let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates, experienceTrack: track)
+        XCTAssertNotEqual(ranked.first?.id, "full_body")
+        XCTAssertEqual(ranked.first?.id, "bro_split")
+    }
+
+    /// Experienced, Gym, Kraft, 4 Tage -> Upper-Lower-Split (einziges
+    /// 4-Tage-Template mit .strength-Tag) vor 3-Tage-Ganzkoerper.
+    func testPersonaExperiencedStrengthFourDaysGymTopsWithFourDaySplit() {
+        let track = ExperienceTrack.experienced
+        let answers = QuizAnswers(
+            goal: .strength,
+            experience: track.asExperienceLevel,
+            preferredDays: 4,
+            environment: .gym
+        )
+        let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates, experienceTrack: track)
+        XCTAssertEqual(ranked.first?.id, "upper_lower",
+                        "Experienced+Kraft+4 Tage sollte der 4-Tage-Split sein, ist: \(ranked.first?.id ?? "nil")")
+        XCTAssertNotEqual(ranked.first?.id, "full_body")
+    }
+
+    /// Experienced, Home-Gym, 3 Tage -> ein passender Home-Gym- oder
+    /// Ganzkoerperplan DARF gewinnen (Spec: "keine kuenstliche Vielfalt
+    /// erzwingen" bei 2-3 Tagen) - Pruefung zielt nur auf Environment-
+    /// Korrektheit (kein reines .gym-Template) und ein nicht-leeres Ergebnis.
+    func testPersonaExperiencedHomeGymThreeDaysAllowsFullBodyOrHomeGymPlan() {
+        let track = ExperienceTrack.experienced
+        let answers = QuizAnswers(
+            goal: .hypertrophy,
+            experience: track.asExperienceLevel,
+            preferredDays: 3,
+            environment: .homeGym
+        )
+        let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates, experienceTrack: track)
+        XCTAssertFalse(ranked.isEmpty)
+        XCTAssertNotEqual(ranked.first?.targetEnvironment, .gym,
+                           "Home-Gym-User sollte kein reines .gym-Template als Top-Match bekommen")
+    }
+
+    /// No Equipment, 3 Tage -> Bodyweight-Plan (Environment-Hard-Filter).
+    func testPersonaNoEquipmentThreeDaysTopsWithBodyweightPlan() {
+        let answers = QuizAnswers(
+            goal: .functional,
+            experience: .beginner,
+            preferredDays: 3,
+            environment: .noEquipment
+        )
+        let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates, experienceTrack: .starter)
+        XCTAssertFalse(ranked.isEmpty)
+        XCTAssertEqual(ranked.first?.targetEnvironment, .noEquipment)
+    }
+
+    // MARK: - UX-Fix Punkt 5 — rankPlansDetailed.isFallback
+
+    /// Normalfall: `isFallback` ist `false`, solange die Hard-Filter nicht
+    /// ALLES rausgefiltert haben.
+    func testRankPlansDetailedIsNotFallbackForNormalMatch() {
+        let answers = QuizAnswers(goal: .hypertrophy, experience: .intermediate, preferredDays: 3, environment: .gym)
+        let result = PlanMatchmaker.rankPlansDetailed(for: answers, templates: allTemplates)
+        XCTAssertFalse(result.isFallback)
+        XCTAssertEqual(result.templates.first?.id, "full_body")
+    }
+
+    /// Extremfilter (wie `testFallbackProducesBodyweightPlansWhenAllFiltered`)
+    /// -> `isFallback` ist `true`. Die UI nutzt das, um statt "Empfohlen fuer
+    /// dich" transparent "Beste verfuegbare Option mit deinen Angaben" zu
+    /// zeigen (Epic Problem 1, Punkt 5).
+    func testRankPlansDetailedFlagsFallback() {
+        let answers = QuizAnswers(goal: .strength, experience: .advanced, preferredDays: 2, environment: .noEquipment)
+        let result = PlanMatchmaker.rankPlansDetailed(for: answers, templates: allTemplates)
+        XCTAssertTrue(result.isFallback)
+        XCTAssertFalse(result.templates.isEmpty)
+    }
+
+    /// `rankPlans` (die bestehende einfache Schnittstelle) bleibt
+    /// unveraendert identisch zu `rankPlansDetailed(...).templates`.
+    func testRankPlansMatchesRankPlansDetailedTemplates() {
+        let answers = QuizAnswers(goal: .hybrid, experience: .intermediate, preferredDays: 5, environment: .gym)
+        let simple = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates)
+        let detailed = PlanMatchmaker.rankPlansDetailed(for: answers, templates: allTemplates)
+        XCTAssertEqual(simple, detailed.templates)
+    }
 }

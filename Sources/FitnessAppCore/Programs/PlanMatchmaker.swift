@@ -45,10 +45,27 @@ public struct PlanMatchReasons: Sendable, Equatable {
 /// +1). Lebt in Core, damit der Algorithmus auf Windows-CI getestbar bleibt.
 public enum PlanMatchmaker {
 
-    /// Gefiltertes + sortiertes Ergebnis. Die `[ProgramTemplate]` ist
-    /// absteigend nach Score sortiert — `first` ist die Top-Empfehlung.
-    /// Bei Score-Gleichstand bleibt die ursprueengliche Display-Reihenfolge
-    /// aus `ProgramTemplates.all` erhalten (Stable-Sort).
+    /// UX-Fix "Empfehlung wirkt immer gleich" Punkt 5: `rankPlans` allein
+    /// konnte der UI nicht sagen, ob die zurueckgelieferte Liste eine echte
+    /// Uebereinstimmung ist oder aus dem Fallback-Pfad (`fallback(...)`,
+    /// greift wenn die Hard-Filter ALLES rausgefiltert haben) stammt. Ohne
+    /// diese Unterscheidung zeigte das Onboarding auf einer reinen Notloesung
+    /// trotzdem "Empfohlen fuer dich" an — die UI soll stattdessen
+    /// "Beste verfuegbare Option mit deinen Angaben" zeigen.
+    public struct RankedPlanResult: Sendable, Equatable {
+        public let templates: [ProgramTemplate]
+        public let isFallback: Bool
+
+        public init(templates: [ProgramTemplate], isFallback: Bool) {
+            self.templates = templates
+            self.isFallback = isFallback
+        }
+    }
+
+    /// Gefiltertes + sortiertes Ergebnis samt Fallback-Kennzeichnung. Die
+    /// `templates`-Liste ist absteigend nach Score sortiert — `first` ist
+    /// die Top-Empfehlung. Bei Score-Gleichstand bleibt die urspruengliche
+    /// Display-Reihenfolge aus `ProgramTemplates.all` erhalten (Stable-Sort).
     ///
     /// - Parameter experienceTrack: Fix "doppeltes Onboarding" — zusaetzlich
     ///   zum weichen Experience-Score (`answers.experience`, +2) ein harter
@@ -56,11 +73,11 @@ public enum PlanMatchmaker {
     ///   (kein `.beginner`/`.intermediate` in `targetExperience`) fliegen
     ///   komplett raus, keine Deprioritisierung. Default `nil` erhaelt das
     ///   bisherige Verhalten (alle bestehenden Call-Sites/Tests).
-    public static func rankPlans(
+    public static func rankPlansDetailed(
         for answers: QuizAnswers,
         templates: [ProgramTemplate],
         experienceTrack: ExperienceTrack? = nil
-    ) -> [ProgramTemplate] {
+    ) -> RankedPlanResult {
         // 1) K.O.-Kriterien (Hard Filters).
         let eligible = templates.filter { template in
             envMatches(plan: template.targetEnvironment, user: answers.environment)
@@ -71,7 +88,8 @@ public enum PlanMatchmaker {
 
         // Wenn alles raus-gefiltert wurde, fallback auf BW-/Anfaenger-Pfad.
         if eligible.isEmpty {
-            return fallback(for: answers, allTemplates: templates, experienceTrack: experienceTrack)
+            let fallbackPlans = fallback(for: answers, allTemplates: templates, experienceTrack: experienceTrack)
+            return RankedPlanResult(templates: fallbackPlans, isFallback: true)
         }
 
         // 2) Scoring (Soft Filters). Stable-Sort: gleiche Scores behalten
@@ -81,15 +99,34 @@ public enum PlanMatchmaker {
             if plan.targetGoals.contains(answers.goal)            { score += 3 }
             if plan.targetExperience.contains(answers.experience) { score += 2 }
             if plan.daysPerWeek == answers.preferredDays          { score += 1 }
+            // UX-Fix "Empfehlung wirkt immer gleich": zusaetzliche, explizit
+            // dokumentierte Track-Praeferenz (siehe `ExperienceTrack.
+            // templateScoreBonus`) — ohne `experienceTrack` (bestehende
+            // Aufrufer, Default `nil`) bleibt das Scoring unveraendert.
+            if let experienceTrack {
+                score += experienceTrack.templateScoreBonus(template: plan, answers: answers)
+            }
             return (plan: plan, score: score, origin: index)
         }
 
-        return scored
+        let ranked = scored
             .sorted { lhs, rhs in
                 if lhs.score != rhs.score { return lhs.score > rhs.score }
                 return lhs.origin < rhs.origin
             }
             .map { $0.plan }
+        return RankedPlanResult(templates: ranked, isFallback: false)
+    }
+
+    /// Bestehende, einfache Schnittstelle — bleibt fuer alle bisherigen
+    /// Aufrufer/Tests unveraendert, liefert nur noch `templates` aus
+    /// `rankPlansDetailed(...)` ohne die Fallback-Kennzeichnung.
+    public static func rankPlans(
+        for answers: QuizAnswers,
+        templates: [ProgramTemplate],
+        experienceTrack: ExperienceTrack? = nil
+    ) -> [ProgramTemplate] {
+        rankPlansDetailed(for: answers, templates: templates, experienceTrack: experienceTrack).templates
     }
 
     /// Fix "Badge fast ueberall": liefert, WARUM ein Template fuer diese
