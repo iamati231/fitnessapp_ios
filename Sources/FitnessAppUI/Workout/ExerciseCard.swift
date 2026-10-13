@@ -43,6 +43,15 @@ struct ExerciseCard: View {
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
     @State private var rampExpanded = false
 
+    /// Bugfix "Workout-GIF-Overlay": frueher war hier ein animiertes
+    /// `ExerciseGifView` fix im Header eingebettet — je nach GIF-
+    /// Seitenverhaeltnis hat dessen `UIImageView`-Bruecke die vorgegebene
+    /// 44x44-Frame durchbrochen und das GIF ueber Name/Satzzeilen gelegt
+    /// (Root-Cause-Fix: `GifImageView.sizeThatFits`). Im aktiven Workout
+    /// zeigt die Karte jetzt gar kein GIF mehr inline, nur noch einen
+    /// kleinen Play-Button (`gifButton`), der `ExerciseGifSheet` oeffnet.
+    @State private var showingGifSheet = false
+
     var body: some View {
         // UX-203: berechne EINMAL pro Render den aktiven Satz — der erste
         // mit `existingLog == nil`. Wenn alle completed sind, bleibt es nil
@@ -131,8 +140,6 @@ struct ExerciseCard: View {
 
     private var header: some View {
         HStack(spacing: 10) {
-            ExerciseGifView(exerciseName: exercise.name, displayName: exercise.displayName)
-                .frame(width: 44, height: 44)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     // DEL-124: Active-Workout Card-Header via displayName.
@@ -161,6 +168,7 @@ struct ExerciseCard: View {
             }
             Spacer()
             progressPill
+            gifButton
             // DEL-154: Edit/Delete-Menu — nur wenn der Parent Hooks liefert
             // (Ad-Hoc-Workout). In der paginierten TabView gibt es keine
             // List-Swipe-Actions, daher ein Ellipsis-Menu im Header.
@@ -198,6 +206,46 @@ struct ExerciseCard: View {
                 .accessibilityLabel(Text("active.exercise.menuAccessibility", bundle: .module))
             }
         }
+        // Bugfix "Workout-GIF-Overlay": Sheet lebt am Header, nicht an der
+        // ganzen Karte — `exercise` ist ein stabiles `let` pro Card-Instanz,
+        // das Sheet zeigt also auch bei schnellem Seitenwechsel nie das GIF
+        // einer anderen Uebung (jede Praesentation erzeugt zudem ein frisches
+        // `ExerciseGifSheet`/`GifImageView`, kein geteilter Zustand zwischen
+        // Oeffnen-Vorgaengen). Sets/Timer/aktuelle Seite bleiben unberuehrt,
+        // weil `ExerciseCard` waehrenddessen einfach weiter gemountet bleibt.
+        .sheet(isPresented: $showingGifSheet) {
+            ExerciseGifSheet(exerciseName: exercise.name, displayName: exercise.displayName)
+        }
+    }
+
+    /// Kleiner Play-Button statt des frueheren Inline-GIFs (siehe
+    /// `showingGifSheet`-Kommentar). Nur sichtbar, wenn `ExerciseMediaProvider`
+    /// ueberhaupt ein GIF fuer diese Uebung kennt — kein leerer Button, kein
+    /// Platzhalter-Icon fuer eine nicht vorhandene Ressource.
+    @ViewBuilder
+    private var gifButton: some View {
+        if hasGif {
+            Button {
+                showingGifSheet = true
+            } label: {
+                Image(systemName: "play.circle.fill")
+                    .font(.title3)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel(Text(gifButtonAccessibilityText))
+        }
+    }
+
+    private var hasGif: Bool {
+        ExerciseMediaProvider.gifFileName(forExerciseName: exercise.name) != nil
+    }
+
+    private var gifButtonAccessibilityText: String {
+        let format = String(localized: "exercise.gif.button.a11y", bundle: .module)
+        return String(format: format, exercise.displayName)
     }
 
     /// DEL-087: Label-Text fuer die Role-Pill im Header.
