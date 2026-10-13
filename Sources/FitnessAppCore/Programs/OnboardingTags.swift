@@ -1,14 +1,26 @@
 import Foundation
 
-/// DEL-090: Tags fuer den Onboarding-Quiz-Matchmaker. Plan-Templates tragen
-/// `targetExperience: [ExperienceLevel]` + `targetGoals: [GoalType]` — der
-/// `PlanMatchmaker` ranked die Plaene gegen die User-Antworten ueber ein
+/// DEL-090: Tag fuer den Onboarding-Quiz-Matchmaker. Plan-Templates tragen
+/// `targetExperience: [ExperienceLevel]` + `targetGoals: [TrainingGoal]` —
+/// der `PlanMatchmaker` ranked die Plaene gegen die User-Antworten ueber ein
 /// einfaches Punkte-System (Match = +Punkte, Mismatch ignoriert).
 ///
-/// Die Enums sind public + RawRepresentable damit sie spaeter ohne
-/// Schema-Migration in SwiftData persistiert werden koennen (z.B. fuer
+/// Smart-Onboarding-Epic: das frühere zweite Tag-Enum `GoalType` (eigene,
+/// nie persistierte Quiz-Achse) wurde entfernt und in `TrainingGoal`
+/// (`FitnessAppCore/Coaching/CoachingTypes.swift`, DEL-100, persistiert auf
+/// `UserBodyProfile.trainingGoalRaw`) konsolidiert — es gibt jetzt nur noch
+/// EIN Ziel-Enum für Quiz-Matching UND Coaching. Der ehemalige verlustbehaftete
+/// Brücken-Mapper `OnboardingView.mappedQuizGoal` entfällt dadurch.
+///
+/// `ExperienceLevel` bleibt bewusst unverändert und getrennt vom neuen
+/// `ExperienceTrack` (siehe `ExperienceTrack.swift`): hier geht es um
+/// selbst eingeschätzte Technik-/Trainingserfahrung für das Plan-Matching,
+/// dort um eine aus Verhalten/Pausenlänge hergeleitete Coaching-Achse
+/// (Einstieg/Wiedereinstieg/volle Automatik).
+///
+/// Das Enum ist public + RawRepresentable damit es spaeter ohne
+/// Schema-Migration in SwiftData persistiert werden koennte (z.B. fuer
 /// einen "deine letzte Quiz-Auswahl"-Restore-Pfad).
-
 public enum ExperienceLevel: String, Sendable, Codable, CaseIterable, Hashable {
     case beginner
     case intermediate
@@ -27,34 +39,6 @@ public enum ExperienceLevel: String, Sendable, Codable, CaseIterable, Hashable {
         case .beginner:     return "leaf.fill"
         case .intermediate: return "bolt.fill"
         case .advanced:     return "flame.fill"
-        }
-    }
-}
-
-public enum GoalType: String, Sendable, Codable, CaseIterable, Hashable {
-    case hypertrophy
-    case strength
-    case fatloss
-    case hybrid
-    case functional
-
-    public var label: String {
-        switch self {
-        case .hypertrophy: return "Muskeln aufbauen"
-        case .strength:    return "Maximalkraft"
-        case .fatloss:     return "Fett verbrennen"
-        case .hybrid:      return "Athletisch werden"
-        case .functional:  return "Funktionelle Fitness"
-        }
-    }
-
-    public var symbol: String {
-        switch self {
-        case .hypertrophy: return "figure.strengthtraining.traditional"
-        case .strength:    return "scalemass.fill"
-        case .fatloss:     return "flame.fill"
-        case .hybrid:      return "figure.mixed.cardio"
-        case .functional:  return "figure.cooldown"
         }
     }
 }

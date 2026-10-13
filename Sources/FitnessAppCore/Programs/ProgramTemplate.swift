@@ -26,7 +26,10 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
     /// Antwortkombinationen passen kann (z.B. PPL ist sowohl Hypertrophie als
     /// auch Kraft; Hybrid passt Beginner UND Intermediate).
     public let targetExperience: [ExperienceLevel]
-    public let targetGoals: [GoalType]
+    /// Smart-Onboarding-Epic: vormals `[GoalType]` (eigenes Quiz-Enum) — auf
+    /// `TrainingGoal` konsolidiert, damit Quiz-Ziel und Coaching-Ziel dieselbe
+    /// Achse sind (kein verlustbehafteter Mapper mehr dazwischen).
+    public let targetGoals: [TrainingGoal]
 
     /// DEL-113: i18n-Lookup-Key fuer den Plan-Namen (Format
     /// `plan.template.<id>`). Optional — wenn gesetzt, rendert die UI den
@@ -68,7 +71,7 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
         targetEnvironment: EnvironmentType = .gym,
         iconSystemName: String = "figure.strengthtraining.traditional",
         targetExperience: [ExperienceLevel] = [.intermediate],
-        targetGoals: [GoalType] = [.hypertrophy],
+        targetGoals: [TrainingGoal] = [.hypertrophy],
         equipmentVariants: [EquipmentVariant]? = nil
     ) {
         self.id = id

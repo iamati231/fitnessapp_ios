@@ -3,7 +3,9 @@ import Foundation
 /// DEL-090: Antworten aus dem Onboarding-Quiz, die der `PlanMatchmaker`
 /// gegen die `ProgramTemplate`-Library scort.
 public struct QuizAnswers: Sendable, Equatable {
-    public let goal: GoalType
+    /// Smart-Onboarding-Epic: vormals `GoalType` — auf `TrainingGoal`
+    /// konsolidiert (siehe `ProgramTemplate.targetGoals`).
+    public let goal: TrainingGoal
     public let experience: ExperienceLevel
     public let preferredDays: Int          // 2–6 typischerweise
     public let environment: EnvironmentType
@@ -13,7 +15,7 @@ public struct QuizAnswers: Sendable, Equatable {
     public let equipmentPreferences: Set<Equipment>
 
     public init(
-        goal: GoalType,
+        goal: TrainingGoal,
         experience: ExperienceLevel,
         preferredDays: Int,
         environment: EnvironmentType,
