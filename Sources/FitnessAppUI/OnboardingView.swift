@@ -33,6 +33,11 @@ public struct OnboardingView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(HealthKitController.self) private var healthKit
     @Environment(PRNotificationCenter.self) private var prNotifications
+    /// UX-Fix "Umbrueche und Badge-Saettigung": steuert, ob Plan-Zeilen bei
+    /// grosser Schrift (Accessibility-Groessen) auf ein vertikales,
+    /// fuehrend ausgerichtetes Layout umschalten statt Icon und Text in
+    /// einer engen HStack zu quetschen.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     enum Step: Int, CaseIterable {
         case healthConnect
@@ -1154,9 +1159,14 @@ public struct OnboardingView: View {
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
                 } header: {
-                    Text("onboarding.plan.recommended", bundle: .module)
+                    // UX-Fix "Empfehlung wirkt immer gleich" Punkt 5: eine
+                    // reine Fallback-Notloesung (Hard-Filter haben ALLES
+                    // rausgefiltert, siehe `PlanMatchmaker.rankPlansDetailed`)
+                    // heisst ehrlich "beste verfuegbare Option" statt sich
+                    // als "Empfehlung" auszugeben.
+                    Text(rankedPlanResult.isFallback ? "onboarding.plan.fallbackRecommended" : "onboarding.plan.recommended", bundle: .module)
                 } footer: {
-                    Text("onboarding.plan.recommendedFootnote", bundle: .module)
+                    Text(rankedPlanResult.isFallback ? "onboarding.plan.fallbackRecommendedFootnote" : "onboarding.plan.recommendedFootnote", bundle: .module)
                         .font(.footnote)
                 }
             }
@@ -1255,20 +1265,29 @@ public struct OnboardingView: View {
         )
     }
 
-    /// Nach Score sortierte Templates fuer die aktuellen Onboarding-
-    /// Antworten. `experienceTrack` filtert zusaetzlich reine Expertenplaene
-    /// fuer Starter/Wiedereinsteiger komplett raus (siehe `PlanMatchmaker`).
-    private var rankedTemplates: [ProgramTemplate] {
-        PlanMatchmaker.rankPlans(
+    /// Komplettes Matcher-Ergebnis samt Fallback-Kennzeichnung (UX-Fix
+    /// "Empfehlung wirkt immer gleich" Punkt 5) fuer die aktuellen
+    /// Onboarding-Antworten. `experienceTrack` filtert zusaetzlich reine
+    /// Expertenplaene fuer Starter/Wiedereinsteiger komplett raus (siehe
+    /// `PlanMatchmaker`).
+    private var rankedPlanResult: PlanMatchmaker.RankedPlanResult {
+        PlanMatchmaker.rankPlansDetailed(
             for: planMatchAnswers,
             templates: ProgramTemplates.all,
             experienceTrack: resolvedExperienceTrack
         )
     }
 
-    /// Grosse Hero-Karte fuer den Top-Match: Name/Tagline + 1-2
-    /// Begruendungszeilen (z.B. "3 Tage pro Woche, passt zu deinem Ziel,
-    /// passt zu deinem Level"), tippbar wie jede andere Plan-Zeile.
+    /// Nach Score sortierte Templates — reine Bequemlichkeits-Projektion auf
+    /// `rankedPlanResult.templates` fuer die bestehenden Aufrufstellen.
+    private var rankedTemplates: [ProgramTemplate] {
+        rankedPlanResult.templates
+    }
+
+    /// Grosse Hero-Karte fuer den Top-Match: Name/Tagline + 2-3 einzelne
+    /// Checkmark-Begruendungszeilen (UX-Fix "Umbrueche und Badge-Saettigung":
+    /// vorher EINE kommagetrennte Zeile — jetzt klar lesbare Einzelzeilen
+    /// statt eines langen Fliesstexts), tippbar wie jede andere Plan-Zeile.
     @ViewBuilder
     private func recommendedPlanCard(_ template: ProgramTemplate) -> some View {
         let reasons = PlanMatchmaker.matchReasons(for: template, answers: planMatchAnswers)
@@ -1287,9 +1306,11 @@ public struct OnboardingView: View {
                         Text(template.displayName)
                             .font(.title3.weight(.bold))
                             .foregroundStyle(.primary)
+                            .lineLimit(2)
                         Text(template.displayTagline)
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                            .lineLimit(2)
                     }
                     Spacer()
                     if selectedTemplate?.id == template.id {
@@ -1298,12 +1319,7 @@ public struct OnboardingView: View {
                             .font(.title3)
                     }
                 }
-                if let summary = recommendationSummary(reasons, template: template) {
-                    Text(summary)
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(Color.deltiqOrange)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                recommendationReasonLines(reasons, template: template)
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1318,71 +1334,146 @@ public struct OnboardingView: View {
         .buttonStyle(.plain)
     }
 
-    /// Kommagetrennte Begruendungszeile aus den tatsaechlichen Treffern —
-    /// nie pauschal, nie wenn nichts zutrifft (dann `nil`, keine leere Zeile).
-    private func recommendationSummary(_ reasons: PlanMatchReasons, template: ProgramTemplate) -> String? {
-        var parts: [String] = []
-        if reasons.daysMatch {
-            parts.append(String(format: String(localized: "onboarding.plan.reason.days", bundle: .module), template.daysPerWeek))
+    /// Bis zu 3 einzelne Checkmark-Zeilen aus den tatsaechlichen Treffern —
+    /// nie pauschal, nie eine Zeile wenn nichts zutrifft. Reihenfolge
+    /// Ziel/Tage/Level folgt dem Spec-Beispiel ("Passt zu deinem Ziel: ...",
+    /// "3 Trainingstage pro Woche", "Geeignet fuer deinen Wiedereinstieg").
+    @ViewBuilder
+    private func recommendationReasonLines(_ reasons: PlanMatchReasons, template: ProgramTemplate) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if reasons.goalMatch {
+                reasonLine(String(localized: "onboarding.plan.reason.goal", bundle: .module))
+            }
+            if reasons.daysMatch {
+                reasonLine(String(format: String(localized: "onboarding.plan.reason.days", bundle: .module), template.daysPerWeek))
+            }
+            if reasons.levelMatch {
+                reasonLine(String(localized: "onboarding.plan.reason.level", bundle: .module))
+            }
         }
-        if reasons.goalMatch {
-            parts.append(String(localized: "onboarding.plan.reason.goal", bundle: .module))
-        }
-        if reasons.levelMatch {
-            parts.append(String(localized: "onboarding.plan.reason.level", bundle: .module))
-        }
-        guard !parts.isEmpty else { return nil }
-        return parts.joined(separator: ", ")
     }
 
+    private func reasonLine(_ text: String) -> some View {
+        Label {
+            Text(text)
+        } icon: {
+            Image(systemName: "checkmark.circle.fill")
+        }
+        .font(.footnote.weight(.medium))
+        .foregroundStyle(Color.deltiqOrange)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// Alternative-Zeile (UX-Fix "Umbrueche und Badge-Saettigung"): 48x48-
+    /// Icon, Titel/Tagline je max. 2 Zeilen, eine kompakte Metadatenzeile
+    /// ("3 Tage · Einsteiger") und hoechstens EIN Highlight-Badge statt der
+    /// fruehen festen Vier-Chip-HStack. Bei grosser Schrift (Accessibility-
+    /// Groessen) schaltet die Zeile auf ein vertikales, fuehrend
+    /// ausgerichtetes Layout um, damit Icon und zweizeiliger Text nicht in
+    /// eine zu schmale HStack gequetscht werden.
+    @ViewBuilder
     private func templateRow(_ template: ProgramTemplate) -> some View {
         let reasons = PlanMatchmaker.matchReasons(for: template, answers: planMatchAnswers)
-        return HStack(spacing: 12) {
-            Image(systemName: template.iconSystemName)
-                .font(.title3)
-                .foregroundStyle(.white)
-                .frame(width: 38, height: 38)
-                .background(Color.accentColor.gradient)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            VStack(alignment: .leading, spacing: 4) {
-                Text(template.displayName)
-                    .font(.body.weight(.semibold))
-                Text(template.displayTagline)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                // Fix "Badge fast ueberall": nur die tatsaechlich
-                // zutreffenden Gruende, nie pauschal auf jedem Plan.
-                if reasons.goalMatch || reasons.daysMatch || reasons.levelMatch || reasons.equipmentMatch {
-                    HStack(spacing: 4) {
-                        if reasons.goalMatch {
-                            matchBadge(Text("onboarding.plan.goalMatch", bundle: .module))
-                        }
-                        if reasons.daysMatch {
-                            matchBadge(Text("onboarding.plan.daysMatch", bundle: .module))
-                        }
-                        if reasons.levelMatch {
-                            matchBadge(Text("onboarding.plan.levelMatch", bundle: .module))
-                        }
-                        if reasons.equipmentMatch {
-                            matchBadge(Text("onboarding.plan.equipmentMatch", bundle: .module))
-                        }
-                    }
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    templateRowIcon(template)
+                    Spacer(minLength: 0)
+                    templateRowCheckmark(template)
                 }
+                templateRowTextBlock(template, reasons: reasons)
             }
-            Spacer()
-            if selectedTemplate?.id == template.id {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                    .font(.title3)
+        } else {
+            HStack(alignment: .top, spacing: 12) {
+                templateRowIcon(template)
+                templateRowTextBlock(template, reasons: reasons)
+                Spacer(minLength: 0)
+                templateRowCheckmark(template)
             }
+        }
+    }
+
+    private func templateRowIcon(_ template: ProgramTemplate) -> some View {
+        Image(systemName: template.iconSystemName)
+            .font(.title3)
+            .foregroundStyle(.white)
+            .frame(width: 48, height: 48)
+            .background(Color.accentColor.gradient)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    @ViewBuilder
+    private func templateRowCheckmark(_ template: ProgramTemplate) -> some View {
+        if selectedTemplate?.id == template.id {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+                .font(.title3)
+        }
+    }
+
+    @ViewBuilder
+    private func templateRowTextBlock(_ template: ProgramTemplate, reasons: PlanMatchReasons) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(template.displayName)
+                .font(.body.weight(.semibold))
+                .lineLimit(2)
+            Text(template.displayTagline)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+            Text(templateMetadataLine(template))
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+            // UX-Fix "Umbrueche und Badge-Saettigung": hoechstens EIN
+            // Highlight-Badge statt vier gleichwertiger Chips — Prioritaet
+            // Ziel > Level > Equipment > Tage (Epic-Vorgabe).
+            if let reason = highlightReason(for: reasons) {
+                matchBadge(highlightBadgeText(reason))
+            }
+        }
+    }
+
+    /// "3 Tage · Einsteiger" — Trainingstage + der niedrigste (am wenigsten
+    /// voraussetzungsreiche) Erfahrungs-Tag des Templates, damit die Zeile
+    /// ehrlich die am leichtesten erreichbare Einstiegshuerde zeigt statt
+    /// pauschal den hoechsten Tag.
+    private func templateMetadataLine(_ template: ProgramTemplate) -> String {
+        let level: ExperienceLevel = template.targetExperience.contains(.beginner) ? .beginner
+            : template.targetExperience.contains(.intermediate) ? .intermediate
+            : .advanced
+        let fmt = String(localized: "onboarding.plan.metadataLine", bundle: .module)
+        return String(format: fmt, template.daysPerWeek, String(localized: level.localizedName))
+    }
+
+    private enum PlanHighlightReason {
+        case goal, level, equipment, days
+    }
+
+    /// Die EINE staerkste zutreffende Begruendung, Prioritaet Ziel > Level >
+    /// Equipment > Tage (Epic-Vorgabe) — `nil` wenn nichts zutrifft, dann
+    /// zeigt die Zeile gar kein Badge.
+    private func highlightReason(for reasons: PlanMatchReasons) -> PlanHighlightReason? {
+        if reasons.goalMatch { return .goal }
+        if reasons.levelMatch { return .level }
+        if reasons.equipmentMatch { return .equipment }
+        if reasons.daysMatch { return .days }
+        return nil
+    }
+
+    private func highlightBadgeText(_ reason: PlanHighlightReason) -> Text {
+        switch reason {
+        case .goal:      Text("onboarding.plan.goalMatch", bundle: .module)
+        case .level:     Text("onboarding.plan.levelMatch", bundle: .module)
+        case .equipment: Text("onboarding.plan.equipmentMatch", bundle: .module)
+        case .days:      Text("onboarding.plan.daysMatch", bundle: .module)
         }
     }
 
     private func matchBadge(_ text: Text) -> some View {
         text
-            .font(.caption2.weight(.bold))
-            .padding(.horizontal, 5)
-            .padding(.vertical, 1)
+            .font(.caption.weight(.bold))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
             .background(Color.deltiqOrange.opacity(0.15))
             .foregroundStyle(Color.deltiqOrange)
             .clipShape(Capsule())
