@@ -2,12 +2,84 @@
   "sourceLanguage": "en",
   "version": "1.0",
   "strings": {
-    "exercise.name.dumbbellSingleLegSplitSquat": {
+    "exercise.name.lyingLegRaiseFlatBench": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Einbeinige Split-Kniebeuge (KH)" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Dumbbell Single Leg Split Squat" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Dumbbell Single Leg Split Squat" } }
+        "de": { "stringUnit": { "state": "translated", "value": "Beinheben auf Flachbank" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Lying Leg Raise Flat Bench" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Lying Leg Raise Flat Bench" } }
+      }
+    },
+    "exercise.name.marchSitWall": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Wand-Sitz mit Marschieren" } },
+        "en": { "stringUnit": { "state": "translated", "value": "March Sit (Wall)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "March Sit (Wall)" } }
+      }
+    },
+    "exercise.name.walkingInclineTreadmill": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Gehen am Laufband (Steigung)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Walking on Incline Treadmill" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Walking on Incline Treadmill" } }
+      }
+    },
+    "exercise.name.assistedChestDipKneeling": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Assistierte Brust-Dips (kniend)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Assisted Chest Dip (Kneeling)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Assisted Chest Dip (Kneeling)" } }
+      }
+    },
+    "exercise.name.barbellStandingCloseGripMilitaryPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schulterdrücken stehend (LH, enger Griff)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Barbell Standing Close Grip Military Press" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Barbell Standing Close Grip Military Press" } }
+      }
+    },
+    "exercise.name.barbellStandingWideMilitaryPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schulterdrücken stehend (LH, breiter Griff)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Barbell Standing Wide Military Press" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Barbell Standing Wide Military Press" } }
+      }
+    },
+    "exercise.name.kettlebellOneArmPushPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Push Press einarmig" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell One Arm Push Press" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell One Arm Push Press" } }
+      }
+    },
+    "exercise.name.kettlebellTwoArmMilitaryPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Schulterdrücken stehend (zwei Kettlebells)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell Two Arm Military Press" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell Two Arm Military Press" } }
+      }
+    },
+    "exercise.name.barbellOneArmFloorPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Floor Press einarmig (LH)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Barbell One Arm Floor Press" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Barbell One Arm Floor Press" } }
+      }
+    },
+    "exercise.name.kettlebellOneArmCleanAndJerk": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kettlebell Clean & Jerk einarmig" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Kettlebell One Arm Clean and Jerk" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kettlebell One Arm Clean and Jerk" } }
       }
     },
     "exercise.name.lyingLegHipRaise": {

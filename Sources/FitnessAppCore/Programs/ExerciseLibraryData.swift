@@ -470,7 +470,6 @@ public enum ExerciseLibraryData {
         // Schrittweite) — das JSON-Feld "compound" (jede Mehrgelenk-
         // Uebung) ist ein anderes Konzept und wird hier bewusst NICHT
         // auf dieses Flag uebertragen, siehe testSystemCompoundsAreBarbellLiftsOnly.
-        ExerciseTemplateSpec(name: "Einbeinige Split-Kniebeuge (KH)", equipment: .dumbbell, primaryMuscle: .quads, localizationKey: "exercise.name.dumbbellSingleLegSplitSquat"),
         ExerciseTemplateSpec(name: "Liegendes Bein-Hüft-Heben", equipment: .bodyweight, primaryMuscle: .core, difficultyLevel: .beginner, localizationKey: "exercise.name.lyingLegHipRaise"),
         ExerciseTemplateSpec(name: "Innere Brustpresse (Maschine)", equipment: .machine, primaryMuscle: .chest, difficultyLevel: .beginner, localizationKey: "exercise.name.machineInnerChestPress"),
         ExerciseTemplateSpec(name: "Sitzender Kabel-Crunch", equipment: .cable, primaryMuscle: .core, difficultyLevel: .beginner, localizationKey: "exercise.name.cableSeatedCrunch"),
@@ -490,6 +489,20 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Beincurl stehend (BW)", equipment: .bodyweight, primaryMuscle: .hamstrings, difficultyLevel: .beginner, localizationKey: "exercise.name.standingSingleLegCurlBodyweight"),
         ExerciseTemplateSpec(name: "Renegade Row (Kettlebell)", equipment: .kettlebell, primaryMuscle: .back, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellRenegadeRow"),
         ExerciseTemplateSpec(name: "Latzug eng (Band)", equipment: .band, primaryMuscle: .back, difficultyLevel: .beginner, localizationKey: "exercise.name.bandCloseGripPulldown"),
+
+        // ── NEU (GIF-Overrides Runde 4, GIF_TIEFENSUCHE): weitere
+        // Equipment-/Griff-/Haltungs-Varianten aus der Volltext-Tiefensuche,
+        // alle per Standbild gesichtet. Originale bleiben unveraendert.
+        ExerciseTemplateSpec(name: "Beinheben auf Flachbank", equipment: .bodyweight, primaryMuscle: .core, difficultyLevel: .beginner, localizationKey: "exercise.name.lyingLegRaiseFlatBench"),
+        ExerciseTemplateSpec(name: "Wand-Sitz mit Marschieren", equipment: .bodyweight, primaryMuscle: .quads, difficultyLevel: .beginner, isTimeBased: true, localizationKey: "exercise.name.marchSitWall"),
+        ExerciseTemplateSpec(name: "Gehen am Laufband (Steigung)", equipment: .machine, primaryMuscle: .core, difficultyLevel: .beginner, isCardio: true, localizationKey: "exercise.name.walkingInclineTreadmill"),
+        ExerciseTemplateSpec(name: "Assistierte Brust-Dips (kniend)", equipment: .machine, primaryMuscle: .chest, difficultyLevel: .beginner, localizationKey: "exercise.name.assistedChestDipKneeling"),
+        ExerciseTemplateSpec(name: "Schulterdrücken stehend (LH, enger Griff)", equipment: .barbell, primaryMuscle: .shoulders, localizationKey: "exercise.name.barbellStandingCloseGripMilitaryPress"),
+        ExerciseTemplateSpec(name: "Schulterdrücken stehend (LH, breiter Griff)", equipment: .barbell, primaryMuscle: .shoulders, localizationKey: "exercise.name.barbellStandingWideMilitaryPress"),
+        ExerciseTemplateSpec(name: "Kettlebell Push Press einarmig", equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellOneArmPushPress"),
+        ExerciseTemplateSpec(name: "Kettlebell Schulterdrücken stehend (zwei Kettlebells)", equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .beginner, localizationKey: "exercise.name.kettlebellTwoArmMilitaryPress"),
+        ExerciseTemplateSpec(name: "Floor Press einarmig (LH)", equipment: .barbell, primaryMuscle: .triceps, difficultyLevel: .advanced, localizationKey: "exercise.name.barbellOneArmFloorPress"),
+        ExerciseTemplateSpec(name: "Kettlebell Clean & Jerk einarmig", equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellOneArmCleanAndJerk"),
     ]
 
     /// Alternative-Mapping fuer den Environment-Swap (DEL-022). Bei einem

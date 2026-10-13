@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1848 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1857 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1848 / 1848** (100%) | 0 |
-| 🇬🇧 English (EN) | **1848 / 1848** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1848 / 1848** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1857 / 1857** (100%) | 0 |
+| 🇬🇧 English (EN) | **1857 / 1857** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1857 / 1857** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -780,7 +780,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `equipment.kettlebell` | Kettlebell | Kettlebell | Kettlebell |
 | `equipment.machine` | Maschine | Machine | Makine |
 
-## `exercise.*`  (237 Keys)
+## `exercise.*`  (246 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -796,6 +796,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.detail.stats.volume` | Volumen gesamt | Total volume | Toplam hacim |
 | `exercise.gif.a11y` | Animation: %@ | Animation: %@ | Animasyon: %@ |
 | `exercise.kind.cardio` | Cardio | Cardio | Kardiyo |
+| `exercise.name.assistedChestDipKneeling` | Assistierte Brust-Dips (kniend) | Assisted Chest Dip (Kneeling) | Assisted Chest Dip (Kneeling) |
 | `exercise.name.assistedDip` | Dip (assistiert) | Assisted Dip | Destekli Dip |
 | `exercise.name.assistedPullUp` | Klimmzug (assistiert) | Assisted Pull-Up | Destekli Barfiks |
 | `exercise.name.australianPullup` | Australian Pull-ups | Australian Pull-Up | Australian Pull-Up |
@@ -811,9 +812,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.barbellHipThrust` | Hip Thrust (LH) | Barbell Hip Thrust | Barbell Hip Thrust |
 | `exercise.name.barbellLateralLunge` | Seitlicher Ausfallschritt (LH) | Barbell Lateral Lunge | Barbell Lateral Lunge |
 | `exercise.name.barbellLunge` | Ausfallschritte (LH) | Barbell Lunges | Barbell Lunges |
+| `exercise.name.barbellOneArmFloorPress` | Floor Press einarmig (LH) | Barbell One Arm Floor Press | Barbell One Arm Floor Press |
 | `exercise.name.barbellReverseLunge` | Ausfallschritt rückwärts (LH) | Barbell Rear Lunge | Barbell Rear Lunge |
 | `exercise.name.barbellShrug` | Shrug (LH) | Barbell Shrug | Barbell Shrug |
 | `exercise.name.barbellStandingCalfRaise` | Wadenheben (stehend, LH) | Standing Calf Raise (Barbell) | Standing Calf Raise |
+| `exercise.name.barbellStandingCloseGripMilitaryPress` | Schulterdrücken stehend (LH, enger Griff) | Barbell Standing Close Grip Military Press | Barbell Standing Close Grip Military Press |
+| `exercise.name.barbellStandingWideMilitaryPress` | Schulterdrücken stehend (LH, breiter Griff) | Barbell Standing Wide Military Press | Barbell Standing Wide Military Press |
 | `exercise.name.barbellWristCurl` | Handgelenk-Curl (LH) | Barbell Wrist Curl | Barbell Wrist Curl |
 | `exercise.name.barbellrow` | Rudern vorgebeugt | Bent-Over Row | Bent-Over Row |
 | `exercise.name.battleRopes` | Battle Ropes | Battle Ropes | Battle Ropes (Halat) |
@@ -878,7 +882,6 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.dumbbellSeatedTricepsExtension` | Sitzendes Trizepsstrecken (KH) | Dumbbell Seated Triceps Extension | Dumbbell Seated Triceps Extension |
 | `exercise.name.dumbbellShoulderPress` | Schulterdrücken (KH) | Dumbbell Shoulder Press | Dumbbell Shoulder Press |
 | `exercise.name.dumbbellShrug` | Shrug (KH) | Dumbbell Shrug | Dumbbell Shrug |
-| `exercise.name.dumbbellSingleLegSplitSquat` | Einbeinige Split-Kniebeuge (KH) | Dumbbell Single Leg Split Squat | Dumbbell Single Leg Split Squat |
 | `exercise.name.dumbbellThruster` | Thruster (KH) | Dumbbell Thruster | Dumbbell Thruster |
 | `exercise.name.dumbbellTricepKickback` | Trizepskickback (KH) | Dumbbell Triceps Kickback | Dumbbell Triceps Kickback |
 | `exercise.name.easyRun` | Easy Run | Easy Run | Kolay Koşu |
@@ -912,6 +915,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.kettlebellFrontSquat` | Kettlebell Front Squat | Kettlebell Front Squat | Kettlebell Front Squat |
 | `exercise.name.kettlebellGobletSquat` | Kettlebell Goblet Squat | Kettlebell Goblet Squat | Kettlebell Goblet Squat |
 | `exercise.name.kettlebellHalo` | Kettlebell Halo | Kettlebell Halo | Kettlebell Halo |
+| `exercise.name.kettlebellOneArmCleanAndJerk` | Kettlebell Clean & Jerk einarmig | Kettlebell One Arm Clean and Jerk | Kettlebell One Arm Clean and Jerk |
+| `exercise.name.kettlebellOneArmPushPress` | Kettlebell Push Press einarmig | Kettlebell One Arm Push Press | Kettlebell One Arm Push Press |
 | `exercise.name.kettlebellOverheadPress` | Kettlebell Overhead Press | Kettlebell Overhead Press | Kettlebell Overhead Press |
 | `exercise.name.kettlebellPistolSquat` | Kettlebell Pistol Squat | Kettlebell Pistol Squat | Kettlebell Pistol Squat |
 | `exercise.name.kettlebellPlyoPushUp` | Kettlebell Plyo-Liegestütze | Kettlebell Plyo Push-Up | Kettlebell Plyo Push-Up |
@@ -931,6 +936,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.kettlebellThruster` | Kettlebell Thruster | Kettlebell Thruster | Kettlebell Thruster |
 | `exercise.name.kettlebellThrusterSingleArm` | Kettlebell Thruster einarmig | Kettlebell Single-Arm Thruster | Tek Kollu Kettlebell Thruster |
 | `exercise.name.kettlebellTurkishGetUpSquatStyle` | Kettlebell Turkish Get-Up (Squat-Stil) | Kettlebell Turkish Get-Up (Squat Style) | Kettlebell Turkish Get-Up (Squat Style) |
+| `exercise.name.kettlebellTwoArmMilitaryPress` | Kettlebell Schulterdrücken stehend (zwei Kettlebells) | Kettlebell Two Arm Military Press | Kettlebell Two Arm Military Press |
 | `exercise.name.kettlebellUppercutRotation` | Kettlebell Uppercut Rotation | Kettlebell Uppercut Rotation | Kettlebell Uppercut Rotasyonu |
 | `exercise.name.kettlebellWindmill` | Kettlebell Windmill | Kettlebell Windmill | Kettlebell Windmill |
 | `exercise.name.kneePushup` | Liegestütze (Knie) | Knee Push-Up | Diz Üstü Şınav |
@@ -946,7 +952,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.lyingLegExtension` | Beinstrecker liegend | Lying Leg Extension | Lying Leg Extension |
 | `exercise.name.lyingLegHipRaise` | Liegendes Bein-Hüft-Heben | Lying Leg-Hip Raise | Lying Leg-Hip Raise |
 | `exercise.name.lyingLegRaise` | Beinheben (liegend) | Lying Leg Raise | Lying Leg Raise |
+| `exercise.name.lyingLegRaiseFlatBench` | Beinheben auf Flachbank | Lying Leg Raise Flat Bench | Lying Leg Raise Flat Bench |
 | `exercise.name.machineInnerChestPress` | Innere Brustpresse (Maschine) | Machine Inner Chest Press | Machine Inner Chest Press |
+| `exercise.name.marchSitWall` | Wand-Sitz mit Marschieren | March Sit (Wall) | March Sit (Wall) |
 | `exercise.name.meadowsRow` | Meadows Row | Meadows Row | Meadows Row |
 | `exercise.name.medicineBallSlam` | Medizinball-Slam | Medicine Ball Slam | Sağlık Topu Slam |
 | `exercise.name.mountainClimber` | Mountain Climbers | Mountain Climbers | Mountain Climbers |
@@ -1011,6 +1019,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.tricepDip` | Dips (Trizeps) | Triceps Dips | Triceps Dips |
 | `exercise.name.tricepPushdown` | Trizepsdrücken (Kabel) | Cable Triceps Pushdown | Cable Triceps Pushdown |
 | `exercise.name.turkishGetUp` | Turkish Get-Up | Turkish Get-Up | Türk Kalkışı |
+| `exercise.name.walkingInclineTreadmill` | Gehen am Laufband (Steigung) | Walking on Incline Treadmill | Walking on Incline Treadmill |
 | `exercise.name.wallSit` | Wall Sit | Wall Sit | Wall Sit |
 | `exercise.name.warmupWalk` | Gehen / Einlaufen | Warm-Up Walk | Isınma Yürüyüşü |
 | `exercise.name.widePullup` | Klimmzüge (weit) | Wide-Grip Pull-Up | Wide-Grip Pull-Up |
