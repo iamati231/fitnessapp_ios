@@ -40437,6 +40437,29 @@
           }
         }
       }
+    },
+    "exercise.gif.button.a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Animation ansehen: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View animation: %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Animasyonu görüntüle: %@"
+          }
+        }
+      }
     }
   }
 }
