@@ -230,9 +230,7 @@ final class ExerciseLibraryLocalizationTests: XCTestCase {
             ("Beinheben auf Flachbank", "exercise.name.lyingLegRaiseFlatBench"),
             ("Wand-Sitz mit Marschieren", "exercise.name.marchSitWall"),
             ("Gehen am Laufband (Steigung)", "exercise.name.walkingInclineTreadmill"),
-            ("Assistierte Brust-Dips (kniend)", "exercise.name.assistedChestDipKneeling"),
             ("Schulterdrücken stehend (LH, enger Griff)", "exercise.name.barbellStandingCloseGripMilitaryPress"),
-            ("Schulterdrücken stehend (LH, breiter Griff)", "exercise.name.barbellStandingWideMilitaryPress"),
             ("Kettlebell Push Press einarmig", "exercise.name.kettlebellOneArmPushPress"),
             ("Kettlebell Schulterdrücken stehend (zwei Kettlebells)", "exercise.name.kettlebellTwoArmMilitaryPress"),
             ("Floor Press einarmig (LH)", "exercise.name.barbellOneArmFloorPress"),
@@ -264,7 +262,6 @@ final class ExerciseLibraryLocalizationTests: XCTestCase {
     func testRound4BarbellExercisesDoNotClaimSystemCompoundFlag() {
         let names = [
             "Schulterdrücken stehend (LH, enger Griff)",
-            "Schulterdrücken stehend (LH, breiter Griff)",
             "Floor Press einarmig (LH)",
         ]
         for name in names {
@@ -275,5 +272,32 @@ final class ExerciseLibraryLocalizationTests: XCTestCase {
             XCTAssertEqual(entry.equipment, .barbell, "'\(name)' sollte Barbell-Equipment nutzen")
             XCTAssertFalse(entry.isSystemCompound, "'\(name)' ist nicht Teil der kanonischen Big Five und darf isSystemCompound nicht setzen")
         }
+    }
+
+    /// GIF_ROUND_5_TASK: "Assistierte Brust-Dips (kniend)" und
+    /// "Schulterdrücken stehend (LH, breiter Griff)" (Runde 4) wurden
+    /// entfernt, weil ihre GIFs jetzt direkt den Originalen "Dip
+    /// (assistiert)" bzw. "Schulterdrücken (stehend)" zugeordnet sind —
+    /// echte Duplikate. Haerteste Garantie: die Namen duerfen in der
+    /// Library nicht mehr existieren.
+    func testRound5DuplicateExercisesWereRemoved() {
+        for name in ["Assistierte Brust-Dips (kniend)", "Schulterdrücken stehend (LH, breiter Griff)"] {
+            XCTAssertNil(
+                ExerciseLibraryData.all.first(where: { $0.name == name }),
+                "Dubletten-Uebung '\(name)' haette in Runde 5 entfernt werden muessen"
+            )
+        }
+    }
+
+    /// Das Override in Runde 5 darf das `isSystemCompound`-Flag des
+    /// kanonischen Big-Five-Lifts nicht veraendern — nur die GIF-Zuordnung
+    /// (in exercise_gif_overrides.json) kommt hinzu, die Spec bleibt gleich.
+    func testSchulterdrueckenStehendStaysSystemCompoundAfterRound5Override() {
+        guard let entry = ExerciseLibraryData.all.first(where: { $0.name == "Schulterdrücken (stehend)" }) else {
+            XCTFail("'Schulterdrücken (stehend)' fehlt in ExerciseLibraryData")
+            return
+        }
+        XCTAssertTrue(entry.isSystemCompound, "'Schulterdrücken (stehend)' ist einer der kanonischen Big Five und muss isSystemCompound behalten")
+        XCTAssertEqual(entry.equipment, .barbell)
     }
 }

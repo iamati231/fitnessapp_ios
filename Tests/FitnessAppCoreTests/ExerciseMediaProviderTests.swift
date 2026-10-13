@@ -259,9 +259,7 @@ final class ExerciseMediaProviderTests: XCTestCase {
             ("Beinheben auf Flachbank", "0620-WhuFnR7.gif"),
             ("Wand-Sitz mit Marschieren", "0624-sVQCCeG.gif"),
             ("Gehen am Laufband (Steigung)", "3666-rjiM4L3.gif"),
-            ("Assistierte Brust-Dips (kniend)", "0009-PAgTVaK.gif"),
             ("Schulterdrücken stehend (LH, enger Griff)", "1456-wdRZISl.gif"),
-            ("Schulterdrücken stehend (LH, breiter Griff)", "1457-Kyd9Rz5.gif"),
             ("Kettlebell Push Press einarmig", "0540-osdXT3K.gif"),
             ("Kettlebell Schulterdrücken stehend (zwei Kettlebells)", "0553-blBXysN.gif"),
             ("Floor Press einarmig (LH)", "0065-vtusOWT.gif"),
@@ -279,5 +277,37 @@ final class ExerciseMediaProviderTests: XCTestCase {
     /// mehr liefern (weder Override noch zufaelliger Fuzzy-Match).
     func testRemovedDuplicateExerciseNoLongerResolves() {
         XCTAssertNil(ExerciseMediaProvider.gifFileName(forExerciseName: "Einbeinige Split-Kniebeuge (KH)"))
+    }
+
+    // MARK: GIF_ROUND_5_TASK (Runde 5)
+
+    /// Freigegebene Overrides auf zwei bestehende Uebungen, die zuvor nur
+    /// unsicher/ohne GIF waren (siehe Top-3-Kandidaten im Report — keiner
+    /// davon war die richtige Zuordnung).
+    func testRound5ApprovedOverridesResolveViaRealOverrides() {
+        let expectations: [(name: String, gifFile: String)] = [
+            ("Dip (assistiert)", "0009-PAgTVaK.gif"),
+            ("Schulterdrücken (stehend)", "1457-Kyd9Rz5.gif"),
+        ]
+        for (name, gifFile) in expectations {
+            XCTAssertEqual(ExerciseMediaProvider.gifFileName(forExerciseName: name), gifFile,
+                           "'\(name)' sollte per Override '\(gifFile)' auflösen")
+        }
+    }
+
+    /// Dubletten-Bereinigung: beide Runde-4-Neuanlagen duerfen im
+    /// generierten Mapping keinen Treffer mehr liefern, nachdem ihre GIFs
+    /// jetzt direkt an den Originalen haengen.
+    func testRound5RemovedDuplicateExercisesNoLongerResolve() {
+        for name in ["Assistierte Brust-Dips (kniend)", "Schulterdrücken stehend (LH, breiter Griff)"] {
+            XCTAssertNil(ExerciseMediaProvider.gifFileName(forExerciseName: name),
+                        "'\(name)' wurde entfernt und sollte kein GIF mehr liefern")
+        }
+    }
+
+    /// Pike Liegestütze bleibt trotz dreier gepruefter Kandidaten (Ball,
+    /// Hanging Pike, Pike-to-Cobra) ohne GIF — keiner ist dieselbe Bewegung.
+    func testPikePushupStillHasNoGif() {
+        XCTAssertNil(ExerciseMediaProvider.gifFileName(forExerciseName: "Pike Liegestütze"))
     }
 }
