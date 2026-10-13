@@ -153,7 +153,6 @@ final class ExerciseMediaProviderTests: XCTestCase {
     /// FORCE_NO_GIF-Uebung haengte, bzw. ein frisch recherchierter Treffer.
     func testRound3PrecisionVariantsResolveViaRealOverrides() {
         let expectations: [(name: String, gifFile: String)] = [
-            ("Einbeinige Split-Kniebeuge (KH)", "0410-qx4fgX7.gif"),
             ("Liegendes Bein-Hüft-Heben", "0865-9IxJdtC.gif"),
             ("Innere Brustpresse (Maschine)", "1301-wDN97Ca.gif"),
             ("Sitzender Kabel-Crunch", "0212-8xUv4J7.gif"),
@@ -193,16 +192,92 @@ final class ExerciseMediaProviderTests: XCTestCase {
     /// echten generierten Tabellen, nicht nur gegen injizierte Test-Dicts.
     func testForceExcludedExercisesResolveToNilAgainstRealGeneratedTables() {
         let names = [
-            "Beinheben (liegend)", "Bulgarische Kniebeuge (KH)", "Brustdrücken (Maschine)",
-            "Kabel Crunch", "Kabel Crossover", "Kettlebell Clean to Front Squat",
+            "Beinheben (liegend)", "Kettlebell Clean to Front Squat",
             "Kettlebell Overhead Press", "Kettlebell Push Press", "Kettlebell Thruster einarmig",
-            "Latzug (weit)", "Liegestütze auf Kettlebell", "Reverse Cable Fly",
-            "Schulterdrücken (Maschine)", "Trizepsstrecker über Kopf (KH)", "Turkish Get-Up",
+            "Latzug (weit)", "Liegestütze auf Kettlebell",
+            "Trizepsstrecker über Kopf (KH)", "Turkish Get-Up",
             "Wadenheben (KH)",
         ]
         for name in names {
             XCTAssertNil(ExerciseMediaProvider.gifFileName(forExerciseName: name),
                          "'\(name)' sollte nach FORCE_NO_GIF kein GIF mehr liefern")
         }
+    }
+
+    // MARK: GIF_TIEFENSUCHE (Runde 4)
+
+    /// Bulgarische Kniebeuge (KH), Brustdrücken (Maschine), Schulterdrücken
+    /// (Maschine), Reverse Cable Fly, Kabel Crunch, Kabel Crossover: die
+    /// Runde-3-FORCE_NO_GIF-Ablehnung war zu vorschnell — die Tiefensuche
+    /// hat einen echten, per Bild gesichteten Datensatz-Treffer gefunden.
+    func testRound4RevokedForceExcludesResolveViaRealOverrides() {
+        let expectations: [(name: String, gifFile: String)] = [
+            ("Bulgarische Kniebeuge (KH)", "0410-qx4fgX7.gif"),
+            ("Brustdrücken (Maschine)", "0577-T0yTjgW.gif"),
+            ("Schulterdrücken (Maschine)", "0587-CggQhII.gif"),
+            ("Reverse Cable Fly", "0154-aqvSOQE.gif"),
+            ("Kabel Crunch", "0175-WW95auq.gif"),
+            ("Kabel Crossover", "1269-UKWTJWR.gif"),
+        ]
+        for (name, gifFile) in expectations {
+            XCTAssertEqual(ExerciseMediaProvider.gifFileName(forExerciseName: name), gifFile,
+                           "'\(name)' sollte nach Rücknahme aus FORCE_NO_GIF per Override '\(gifFile)' auflösen")
+        }
+    }
+
+    /// Weitere, bisher unsichere/ohne-GIF-Uebungen, die GIF_TIEFENSUCHE per
+    /// Volltextsuche + Bild-Sichtung aufgeloest hat (kein FORCE_NO_GIF
+    /// beteiligt — waren vorher einfach ohne Treffer oder mehrdeutig).
+    func testRound4ResolvedExistingExercisesResolveViaRealOverrides() {
+        let expectations: [(name: String, gifFile: String)] = [
+            ("Chest Supported Row (KH)", "0327-7vG5o25.gif"),
+            ("Australian Pull-ups", "0499-bZGHsAZ.gif"),
+            ("Handgelenk-Curl", "0401-2dImyQ8.gif"),
+            ("Band Curls", "0968-3omWx6P.gif"),
+            ("Ausfallschritte (BW)", "3470-kMzUs9Y.gif"),
+            ("Seitstütz", "0705-RKjH6Lt.gif"),
+            ("Latzug (eng)", "0673-ecpY0rH.gif"),
+            ("Cable Woodchopper", "0862-fhZQPlV.gif"),
+            ("Plank", "3665-hCjGsRQ.gif"),
+            ("Freier Lauf", "0685-oLrKqDH.gif"),
+            ("Easy Run", "0685-oLrKqDH.gif"),
+            ("Long Run", "0685-oLrKqDH.gif"),
+            ("Intervalle", "0685-oLrKqDH.gif"),
+            ("Lauf-Intervall", "0685-oLrKqDH.gif"),
+            ("Laufband", "0684-y5p0H8a.gif"),
+        ]
+        for (name, gifFile) in expectations {
+            XCTAssertEqual(ExerciseMediaProvider.gifFileName(forExerciseName: name), gifFile,
+                           "'\(name)' sollte per Override '\(gifFile)' auflösen")
+        }
+    }
+
+    /// Die 10 neuen Runde-4-Uebungen (GIF_TIEFENSUCHE, Abschnitt "Neue
+    /// Alternativen") muessen ueber ihren Override auffindbar sein.
+    func testRound4NewExercisesResolveViaRealOverrides() {
+        let expectations: [(name: String, gifFile: String)] = [
+            ("Beinheben auf Flachbank", "0620-WhuFnR7.gif"),
+            ("Wand-Sitz mit Marschieren", "0624-sVQCCeG.gif"),
+            ("Gehen am Laufband (Steigung)", "3666-rjiM4L3.gif"),
+            ("Assistierte Brust-Dips (kniend)", "0009-PAgTVaK.gif"),
+            ("Schulterdrücken stehend (LH, enger Griff)", "1456-wdRZISl.gif"),
+            ("Schulterdrücken stehend (LH, breiter Griff)", "1457-Kyd9Rz5.gif"),
+            ("Kettlebell Push Press einarmig", "0540-osdXT3K.gif"),
+            ("Kettlebell Schulterdrücken stehend (zwei Kettlebells)", "0553-blBXysN.gif"),
+            ("Floor Press einarmig (LH)", "0065-vtusOWT.gif"),
+            ("Kettlebell Clean & Jerk einarmig", "0537-vzAxBtt.gif"),
+        ]
+        for (name, gifFile) in expectations {
+            XCTAssertEqual(ExerciseMediaProvider.gifFileName(forExerciseName: name), gifFile,
+                           "'\(name)' sollte per Override '\(gifFile)' auflösen")
+        }
+    }
+
+    /// Dubletten-Bereinigung: "Einbeinige Split-Kniebeuge (KH)" (Runde 3)
+    /// war dasselbe GIF wie "Bulgarische Kniebeuge (KH)" — die Neuanlage
+    /// wurde geloescht, ihr Name darf im generierten Mapping keinen Treffer
+    /// mehr liefern (weder Override noch zufaelliger Fuzzy-Match).
+    func testRemovedDuplicateExerciseNoLongerResolves() {
+        XCTAssertNil(ExerciseMediaProvider.gifFileName(forExerciseName: "Einbeinige Split-Kniebeuge (KH)"))
     }
 }

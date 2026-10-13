@@ -144,7 +144,6 @@ final class ExerciseLibraryLocalizationTests: XCTestCase {
     /// alle 18 Keys, verifiziert); hier nur die Swift-seitige Verdrahtung.
     func testRound3ExercisesCarryDistinctLocalizationKeys() {
         let expectations: [(germanName: String, expectedKey: String)] = [
-            ("Einbeinige Split-Kniebeuge (KH)", "exercise.name.dumbbellSingleLegSplitSquat"),
             ("Liegendes Bein-Hüft-Heben", "exercise.name.lyingLegHipRaise"),
             ("Innere Brustpresse (Maschine)", "exercise.name.machineInnerChestPress"),
             ("Sitzender Kabel-Crunch", "exercise.name.cableSeatedCrunch"),
@@ -190,7 +189,7 @@ final class ExerciseLibraryLocalizationTests: XCTestCase {
     /// wenn das Quell-JSON ein generisches "compound"-Flag mitliefert.
     func testRound3ExercisesDoNotClaimSystemCompoundFlag() {
         let names = [
-            "Einbeinige Split-Kniebeuge (KH)", "Innere Brustpresse (Maschine)",
+            "Innere Brustpresse (Maschine)",
             "Kettlebell Schulterdrücken sitzend", "Kettlebell Doppel-Push-Press",
             "Kettlebell Thruster", "Latzug an der Kabelstange",
             "Kettlebell Plyo-Liegestütze", "Schulterdrücken (Smith Machine)",
@@ -202,6 +201,79 @@ final class ExerciseLibraryLocalizationTests: XCTestCase {
                 continue
             }
             XCTAssertFalse(entry.isSystemCompound, "'\(name)' ist kein Barbell-Lift und darf isSystemCompound nicht setzen")
+        }
+    }
+
+    /// GIF_TIEFENSUCHE: "Einbeinige Split-Kniebeuge (KH)" (Runde 3) war ein
+    /// echtes Duplikat von "Bulgarische Kniebeuge (KH)" — dieselbe
+    /// Bewegung (hinterer Fuss auf Bank), per Bild-Sichtung bestaetigt.
+    /// Die Neuanlage wurde geloescht, das Original bekommt den Override
+    /// zurueck. Haerteste Garantie, dass die Dublette nicht wieder
+    /// auftaucht: der Name darf in der Library schlicht nicht mehr existieren.
+    func testDuplicateSingleLegSplitSquatWasRemoved() {
+        XCTAssertNil(
+            ExerciseLibraryData.all.first(where: { $0.name == "Einbeinige Split-Kniebeuge (KH)" }),
+            "Dubletten-Uebung haette in Runde 4 entfernt werden muessen"
+        )
+        XCTAssertNotNil(
+            ExerciseLibraryData.all.first(where: { $0.name == "Bulgarische Kniebeuge (KH)" }),
+            "Original 'Bulgarische Kniebeuge (KH)' darf durch die Dubletten-Bereinigung nicht verschwinden"
+        )
+    }
+
+    /// GIF_TIEFENSUCHE.md, Abschnitt "Neue Alternativen": 10 weitere
+    /// Praezisions-Uebungen aus der Volltext-Tiefensuche. DE/EN/TR-Werte
+    /// (TR == EN) werden wie bei Runde 3 im Build-Skript gegen
+    /// Localizable.xcstrings geprueft; hier nur die Swift-Verdrahtung.
+    func testRound4ExercisesCarryDistinctLocalizationKeys() {
+        let expectations: [(germanName: String, expectedKey: String)] = [
+            ("Beinheben auf Flachbank", "exercise.name.lyingLegRaiseFlatBench"),
+            ("Wand-Sitz mit Marschieren", "exercise.name.marchSitWall"),
+            ("Gehen am Laufband (Steigung)", "exercise.name.walkingInclineTreadmill"),
+            ("Assistierte Brust-Dips (kniend)", "exercise.name.assistedChestDipKneeling"),
+            ("Schulterdrücken stehend (LH, enger Griff)", "exercise.name.barbellStandingCloseGripMilitaryPress"),
+            ("Schulterdrücken stehend (LH, breiter Griff)", "exercise.name.barbellStandingWideMilitaryPress"),
+            ("Kettlebell Push Press einarmig", "exercise.name.kettlebellOneArmPushPress"),
+            ("Kettlebell Schulterdrücken stehend (zwei Kettlebells)", "exercise.name.kettlebellTwoArmMilitaryPress"),
+            ("Floor Press einarmig (LH)", "exercise.name.barbellOneArmFloorPress"),
+            ("Kettlebell Clean & Jerk einarmig", "exercise.name.kettlebellOneArmCleanAndJerk"),
+        ]
+
+        for (germanName, expectedKey) in expectations {
+            guard let entry = ExerciseLibraryData.all.first(where: { $0.name == germanName }) else {
+                XCTFail("Neue Uebung '\(germanName)' fehlt in ExerciseLibraryData — wurde sie umbenannt oder versehentlich entfernt?")
+                continue
+            }
+            XCTAssertEqual(entry.localizationKey, expectedKey,
+                           "'\(germanName)' sollte localizationKey '\(expectedKey)' tragen, ist aber '\(entry.localizationKey ?? "nil")'")
+        }
+
+        let keys = expectations.map(\.expectedKey)
+        XCTAssertEqual(Set(keys).count, keys.count, "Die neuen localizationKeys duerfen sich nicht untereinander doppeln")
+
+        let otherKeys = Set(ExerciseLibraryData.all
+            .filter { entry in !expectations.contains { $0.germanName == entry.name } }
+            .compactMap(\.localizationKey))
+        let collisions = keys.filter(otherKeys.contains)
+        XCTAssertTrue(collisions.isEmpty, "Neue localizationKeys kollidieren mit bestehenden Eintraegen: \(collisions)")
+    }
+
+    /// Gegenprobe wie bei Runde 3: drei der neuen Uebungen nutzen zwar
+    /// Barbell, sind aber nicht Teil der kanonischen Big Five und duerfen
+    /// daher `isSystemCompound` nicht tragen.
+    func testRound4BarbellExercisesDoNotClaimSystemCompoundFlag() {
+        let names = [
+            "Schulterdrücken stehend (LH, enger Griff)",
+            "Schulterdrücken stehend (LH, breiter Griff)",
+            "Floor Press einarmig (LH)",
+        ]
+        for name in names {
+            guard let entry = ExerciseLibraryData.all.first(where: { $0.name == name }) else {
+                XCTFail("Neue Uebung '\(name)' fehlt in ExerciseLibraryData")
+                continue
+            }
+            XCTAssertEqual(entry.equipment, .barbell, "'\(name)' sollte Barbell-Equipment nutzen")
+            XCTAssertFalse(entry.isSystemCompound, "'\(name)' ist nicht Teil der kanonischen Big Five und darf isSystemCompound nicht setzen")
         }
     }
 }

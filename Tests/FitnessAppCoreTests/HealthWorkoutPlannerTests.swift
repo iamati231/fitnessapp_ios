@@ -784,7 +784,7 @@ final class HealthWorkoutPlannerTests: XCTestCase {
         XCTAssertFalse(HealthWorkoutPlanner.hasExplicitModality(forExerciseName: "Kniebeuge"))
     }
 
-    /// Alle 14 Bibliotheks-Cardio-Eintraege mit ihrer erwarteten Art und
+    /// Alle 15 Bibliotheks-Cardio-Eintraege mit ihrer erwarteten Art und
     /// ihrem Ort (nur Dauer geloggt, kein Geraet) — pinnt die Zuordnung, nicht
     /// nur ihre Existenz.
     func testLibraryCardioExercisesMapToTheExpectedActivityAndLocation() {
@@ -795,6 +795,7 @@ final class HealthWorkoutPlannerTests: XCTestCase {
             "exercise.name.intervals":       (.running, nil),
             "exercise.name.runInterval":     (.running, nil),
             "exercise.name.treadmill":       (.running, true),
+            "exercise.name.walkingInclineTreadmill": (.walking, true),
             "exercise.name.warmupWalk":      (.walking, nil),
             "exercise.name.cycling":         (.cycling, false),
             "exercise.name.cyclingInterval": (.cycling, nil),
