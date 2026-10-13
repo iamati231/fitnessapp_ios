@@ -38,6 +38,23 @@ extension Double {
         return scaled.rounded(.towardZero) / factor
     }
 
+    /// Rounds to the NEAREST value at `decimals` places (standard rounding,
+    /// half-up on the scaled magnitude) — unlike `truncated(to:)` above,
+    /// which deliberately always rounds DOWN so calculated body-composition
+    /// metrics are never cosmetically overstated.
+    ///
+    /// A raw sensor/scale reading isn't a calculated "progress" number that
+    /// needs that protection — it should round to its real precision like
+    /// any other measurement. Use this for values that enter the app from
+    /// an external source (HealthKit, CSV import, manual entry) and may
+    /// carry excess binary-float precision (e.g. a Float32 written upstream
+    /// surfacing as `70.050003` once read back as `Double`).
+    public func rounded(toDecimals decimals: Int) -> Double {
+        precondition(decimals >= 0, "decimals must be non-negative")
+        let factor = pow(10.0, Double(decimals))
+        return (self * factor).rounded() / factor
+    }
+
     /// Formats to a fixed number of decimals, locale-aware via `Locale.current`.
     /// Signature-Geruest 2.16: der Nachkommastellen-Bedarf ist nicht mehr fuer
     /// jeden Wert gleich (Gewicht/Koerperfett/Differenzen brauchen eine Stelle,
@@ -53,10 +70,10 @@ extension Double {
     /// sollen nie eine Tausendergruppierung zeigen. Entfernt sie deshalb
     /// gezielt nach der Formatierung, ohne das Rundungsverhalten von `%f`
     /// selbst anzufassen.
-    public func formatted(decimals: Int) -> String {
+    public func formatted(decimals: Int, locale: Locale = .current) -> String {
         precondition(decimals >= 0, "decimals must be non-negative")
-        let raw = String(format: "%.\(decimals)f", locale: Locale.current, self)
-        guard let groupingSeparator = Locale.current.groupingSeparator, !groupingSeparator.isEmpty else {
+        let raw = String(format: "%.\(decimals)f", locale: locale, self)
+        guard let groupingSeparator = locale.groupingSeparator, !groupingSeparator.isEmpty else {
             return raw
         }
         return raw.replacingOccurrences(of: groupingSeparator, with: "")
@@ -81,6 +98,35 @@ extension Double {
     /// Trainingsvolumen oder Kalorien, bei denen "0,00" nur erfundene
     /// Praezision vortaeuscht.
     public var formattedNoDecimals: String { formatted(decimals: 0) }
+
+    /// Fix "70,050003"-Bug: Gewicht fuer editierbare Felder (Messung,
+    /// Onboarding, Profil-Editor). Rundet zuerst ECHT auf 2 Nachkommastellen
+    /// (`rounded(toDecimals:)`, nicht `truncated(to:)` — siehe dessen
+    /// Dokumentation zum Unterschied), formatiert dann OHNE erzwungene
+    /// Nachkommastellen: 70.0 -> "70", 70.5 -> "70,5", 70.05 -> "70,05" (nie
+    /// "70,00"). Anders als `formattedTwoDecimals`, das bewusst IMMER zwei
+    /// Stellen zeigt (einheitliches Stat-Karten-Layout) — hier soll ein frei
+    /// editierbares Feld so aussehen, wie der Nutzer es natuerlicherweise
+    /// eingeben wuerde.
+    ///
+    /// `locale` ist explizit parametrisiert (Default `.current`) statt wie
+    /// `formattedTwoDecimals` fest an `Locale.current` gebunden, damit DE-
+    /// und EN-Darstellung unabhaengig vom Geraete-Locale testbar sind.
+    public func formattedWeightInput(locale: Locale = .current) -> String {
+        let clean = rounded(toDecimals: 2)
+        var text = clean.formatted(decimals: 2, locale: locale)
+        guard let separator = locale.decimalSeparator, !separator.isEmpty,
+              text.contains(separator) else {
+            return text
+        }
+        while text.hasSuffix("0") {
+            text.removeLast()
+        }
+        if text.hasSuffix(separator) {
+            text.removeLast(separator.count)
+        }
+        return text
+    }
 }
 
 extension Float {

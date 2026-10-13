@@ -79,6 +79,62 @@ final class DoubleFormattingTests: XCTestCase {
         XCTAssertTrue(Double.nan.truncated(to: 2).isNaN)
     }
 
+    // MARK: rounded(toDecimals:) — Fix "70,050003"-Bug
+
+    /// Anders als `truncated(to:)` rundet dies ECHT zur naechsten Stelle,
+    /// nicht Richtung Null.
+    func testRoundedToDecimalsRoundsUpWhenCloserToTheNextValue() {
+        XCTAssertEqual((70.049999).rounded(toDecimals: 2), 70.05, accuracy: 1e-9)
+        XCTAssertEqual((15.866).rounded(toDecimals: 2), 15.87, accuracy: 1e-9)
+    }
+
+    func testRoundedToDecimalsRoundsDownWhenCloserToThePreviousValue() {
+        XCTAssertEqual((70.041).rounded(toDecimals: 2), 70.04, accuracy: 1e-9)
+    }
+
+    func testRoundedToDecimalsHealsTheReportedFloatArtifact() {
+        // Der gemeldete Bug: ein Health-Gewicht kommt als 70.050003 statt 70.05 an.
+        XCTAssertEqual((70.050003).rounded(toDecimals: 2), 70.05, accuracy: 1e-9)
+    }
+
+    func testRoundedToDecimalsKeepsWholeAndOneDecimalValuesUnchanged() {
+        XCTAssertEqual((70.0).rounded(toDecimals: 2), 70.0, accuracy: 1e-9)
+        XCTAssertEqual((70.5).rounded(toDecimals: 2), 70.5, accuracy: 1e-9)
+    }
+
+    // MARK: formattedWeightInput — Fix "70,050003"-Bug
+
+    private let de = Locale(identifier: "de_DE")
+    private let en = Locale(identifier: "en_US")
+
+    /// Die vier vom Bugfix geforderten Faelle, je einmal pro Locale.
+    func testFormattedWeightInputMatchesTheRequiredCasesInGerman() {
+        XCTAssertEqual((70.05).formattedWeightInput(locale: de), "70,05")
+        XCTAssertEqual((70.0).formattedWeightInput(locale: de), "70")
+        XCTAssertEqual((70.5).formattedWeightInput(locale: de), "70,5")
+        // Float-Roundtrip-Artefakt: rundet weiterhin korrekt auf 70,05, nicht 70,04.
+        XCTAssertEqual((70.049999).formattedWeightInput(locale: de), "70,05")
+    }
+
+    func testFormattedWeightInputMatchesTheRequiredCasesInEnglish() {
+        XCTAssertEqual((70.05).formattedWeightInput(locale: en), "70.05")
+        XCTAssertEqual((70.0).formattedWeightInput(locale: en), "70")
+        XCTAssertEqual((70.5).formattedWeightInput(locale: en), "70.5")
+        XCTAssertEqual((70.049999).formattedWeightInput(locale: en), "70.05")
+    }
+
+    /// Der urspruenglich gemeldete Bug, woertlich: 70,050003 -> 70,05.
+    func testFormattedWeightInputHealsTheReportedHealthKitArtifact() {
+        XCTAssertEqual((70.050003).formattedWeightInput(locale: de), "70,05")
+        XCTAssertEqual((70.050003).formattedWeightInput(locale: en), "70.05")
+    }
+
+    /// Nie mehr als 2 Nachkommastellen, auch bei staerkerem Praezisions-Rauschen.
+    func testFormattedWeightInputNeverShowsMoreThanTwoDecimals() {
+        XCTAssertEqual((70.199999).formattedWeightInput(locale: en), "70.2")
+        XCTAssertEqual((99.995).formattedWeightInput(locale: en), "100")
+    }
+
     // MARK: formattedTwoDecimals
 
     func testEnteredTenthIsDisplayedUnchangedAfterTruncateAndFormat() {
