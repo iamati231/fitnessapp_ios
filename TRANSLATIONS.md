@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1956 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1959 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1956 / 1956** (100%) | 0 |
-| 🇬🇧 English (EN) | **1956 / 1956** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1956 / 1956** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1959 / 1959** (100%) | 0 |
+| 🇬🇧 English (EN) | **1959 / 1959** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1959 / 1959** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1360,7 +1360,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `muscleVolume.bucket.overreaching` | Übervolumen | Overreach | Aşırı yük |
 | `muscleVolume.bucket.untrained` | Untrainiert | Untrained | Eğitilmemiş |
 
-## `onboarding.*`  (78 Keys)
+## `onboarding.*`  (81 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1425,8 +1425,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.plan.builderSection` | Selbst bauen | Build Your Own | Kendin Oluştur |
 | `onboarding.plan.daysMatch` | Tage passend | Days match | Gün uyumlu |
 | `onboarding.plan.equipmentMatch` | Equipment passend | Equipment match | Ekipman uyumlu |
+| `onboarding.plan.fallbackRecommended` | Beste verfügbare Option | Best available option | Mevcut en iyi seçenek |
+| `onboarding.plan.fallbackRecommendedFootnote` | Mit deinen aktuellen Angaben gibt es keine perfekte Übereinstimmung — das ist die naheliegendste verfügbare Option. | There's no perfect match for your current answers — this is the closest available option. | Mevcut yanıtlarınla tam uyan bir seçenek yok — bu, mevcut en yakın seçenek. |
 | `onboarding.plan.goalMatch` | Passt zu deinem Ziel | Matches your goal | Hedefine uygun |
 | `onboarding.plan.levelMatch` | Level passend | Level match | Seviye uyumlu |
+| `onboarding.plan.metadataLine` | %1$lld Tage · %2$@ | %1$lld days · %2$@ | %1$lld gün · %2$@ |
 | `onboarding.plan.morePlans` | Weitere Pläne | More plans | Diğer planlar |
 | `onboarding.plan.reason.days` | %lld Tage pro Woche | %lld days per week | Haftada %lld gün |
 | `onboarding.plan.reason.goal` | Passt zu deinem Ziel | Matches your goal | Hedefine uygun |

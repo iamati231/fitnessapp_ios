@@ -40460,6 +40460,75 @@
           }
         }
       }
+    },
+    "onboarding.plan.fallbackRecommended": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beste verfügbare Option"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Best available option"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mevcut en iyi seçenek"
+          }
+        }
+      }
+    },
+    "onboarding.plan.fallbackRecommendedFootnote": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit deinen aktuellen Angaben gibt es keine perfekte Übereinstimmung — das ist die naheliegendste verfügbare Option."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There's no perfect match for your current answers — this is the closest available option."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mevcut yanıtlarınla tam uyan bir seçenek yok — bu, mevcut en yakın seçenek."
+          }
+        }
+      }
+    },
+    "onboarding.plan.metadataLine": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld Tage · %2$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld days · %2$@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld gün · %2$@"
+          }
+        }
+      }
     }
   }
 }
