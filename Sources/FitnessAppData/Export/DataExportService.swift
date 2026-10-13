@@ -224,7 +224,11 @@ public enum DataExportService {
             "weekly_workout_goal", "cardio_coaching_enabled", "cardio_goal",
             "cardio_race_date", "current_5k_reference_seconds",
             "weekly_base_volume_km", "max_heart_rate_bpm",
-            "cardio_feasibility_dismissed_fingerprint"
+            "cardio_feasibility_dismissed_fingerprint",
+            // Smart-Onboarding-Epic: achte additive Spalte — aeltere
+            // Importer ignorieren sie, aeltere ZIPs liefern beim Import nil
+            // (= "noch nicht hergeleitet", der Backfill greift dann erneut).
+            "experience_track"
         ])
         for p in profiles {
             w.appendRow([
@@ -247,7 +251,8 @@ public enum DataExportService {
                 p.current5kReferenceSeconds.map(String.init) ?? "",
                 CSVWriter.decimal(p.weeklyBaseVolumeKm),
                 p.maxHeartRateBpm.map(String.init) ?? "",
-                p.cardioFeasibilityDismissedFingerprint ?? ""
+                p.cardioFeasibilityDismissedFingerprint ?? "",
+                p.experienceTrackRaw ?? ""
             ])
         }
         return w.data()

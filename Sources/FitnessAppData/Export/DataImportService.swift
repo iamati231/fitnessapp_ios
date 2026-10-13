@@ -660,6 +660,10 @@ public enum DataImportService {
             p.weeklyBaseVolumeKm = row.double("weekly_base_volume_km")
             p.maxHeartRateBpm = row.int("max_heart_rate_bpm")
             p.cardioFeasibilityDismissedFingerprint = row.optionalString("cardio_feasibility_dismissed_fingerprint")
+            // Smart-Onboarding-Epic: additive Spalte, gleiches Prinzip wie
+            // oben — fehlt sie (aelterer Export) oder ist sie leer, liefert
+            // optionalString nil und ExperienceTrackBackfill greift erneut.
+            p.experienceTrackRaw = row.optionalString("experience_track")
 
             if target == nil {
                 context.insert(p)

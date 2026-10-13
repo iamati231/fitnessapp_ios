@@ -847,6 +847,60 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertNil(imported?.cardioFeasibilityDismissedFingerprint)
     }
 
+    // Smart-Onboarding-Epic: `experience_track` ist eine additive CSV-Spalte
+    // (ans Ende des Headers angehaengt) — ein gesetzter Wert muss Backup/
+    // Restore ueberleben, sonst verliert ein Nutzer seine abgeleitete oder
+    // im Onboarding gewaehlte Einstufung bei jedem Restore.
+    func testExperienceTrackSurvivesRoundtrip() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        profile.experienceTrack = .returner
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.experienceTrack, .returner)
+    }
+
+    /// Ohne gesetzten Track (z.B. frisch angelegtes Profil, Backfill lief
+    /// noch nicht) bleibt die Spalte leer und bleibt `nil` — ein Restore darf
+    /// nicht versehentlich `.experienced` oder sonst einen Wert erfinden.
+    func testExperienceTrackDefaultsToNilOnRoundtrip() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertNil(imported?.experienceTrack)
+    }
+
     // Handoff "Lauf-Coaching - Machbarkeits-Check": generationSource muss
     // ein Backup/Restore ueberleben, sonst haelt die "bereits angenommen"-
     // Erkennung (bzw. hier: die zugrundeliegende Herkunfts-Markierung) einen
