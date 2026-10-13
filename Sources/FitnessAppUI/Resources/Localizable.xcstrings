@@ -17083,19 +17083,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "4 kurze Fragen — wir matchen dich auf den passenden Plan."
+            "value": "5 kurze Fragen — wir matchen dich auf den passenden Plan."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "4 quick questions — we match you to the right plan."
+            "value": "5 quick questions — we match you to the right plan."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "4 kısa soru — sana uygun planı eşleştiririz."
+            "value": "5 kısa soru — sana uygun planı eşleştiririz."
           }
         }
       }
@@ -22529,6 +22529,52 @@
         }
       }
     },
+    "coaching.goal.fatloss.blurb": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hohe Trainingsintensität, dichte Einheiten, Kalorienverbrauch über Bewegung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High intensity, dense sessions, calorie burn through movement."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yüksek yoğunluk, sıkı antrenmanlar, hareketle kalori yakımı."
+          }
+        }
+      }
+    },
+    "coaching.goal.functional.blurb": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alltagstaugliche Bewegungsmuster, Mobilität, kein reiner Kraft- oder Muskelfokus."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everyday movement patterns, mobility, not purely strength- or muscle-focused."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Günlük yaşama uygun hareket kalıpları, mobilite, sadece güç veya kas odaklı değil."
+          }
+        }
+      }
+    },
     "coaching.goal.strength.blurb": {
       "extractionState": "manual",
       "localizations": {
@@ -22644,53 +22690,7 @@
         }
       }
     },
-    "goalType.hypertrophy": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Muskeln aufbauen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Build Muscle"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kas Yap"
-          }
-        }
-      }
-    },
-    "goalType.strength": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Maximalkraft"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Maximum Strength"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Maksimal Güç"
-          }
-        }
-      }
-    },
-    "goalType.fatloss": {
+    "coaching.goal.fatloss.label": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -22713,30 +22713,7 @@
         }
       }
     },
-    "goalType.hybrid": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Athletisch werden"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Become Athletic"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Atletik Ol"
-          }
-        }
-      }
-    },
-    "goalType.functional": {
+    "coaching.goal.functional.label": {
       "extractionState": "manual",
       "localizations": {
         "de": {

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1855 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1854 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1855 / 1855** (100%) | 0 |
-| 🇬🇧 English (EN) | **1855 / 1855** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1855 / 1855** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1854 / 1854** (100%) | 0 |
+| 🇬🇧 English (EN) | **1854 / 1854** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1854 / 1854** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -224,7 +224,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `chart.timeRange.oneMonth` | 1M | 1M | 1A |
 | `chart.timeRange.threeMonths` | 3M | 3M | 3A |
 
-## `coaching.*`  (225 Keys)
+## `coaching.*`  (229 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -301,6 +301,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.edu.strict.9` | Niemand schuldet dir Ergebnisse. Du musst sie dir verdienen — Satz für Satz. | Nobody owes you results. You earn them — set by set. | Kimse sana sonuç borçlu değil. Set set kazanırsın. |
 | `coaching.empty.message` | Aktuell ist keine Warnung oder Aktion nötig — weiter so. | No warning or action needed right now — keep it up. | Şu an uyarı veya işlem gerekmez — böyle devam et. |
 | `coaching.empty.title` | Heute kein besonderer Hinweis | No special note today | Bugün özel bir not yok |
+| `coaching.goal.fatloss.blurb` | Hohe Trainingsintensität, dichte Einheiten, Kalorienverbrauch über Bewegung. | High intensity, dense sessions, calorie burn through movement. | Yüksek yoğunluk, sıkı antrenmanlar, hareketle kalori yakımı. |
+| `coaching.goal.fatloss.label` | Fett verbrennen | Burn Fat | Yağ Yak |
+| `coaching.goal.functional.blurb` | Alltagstaugliche Bewegungsmuster, Mobilität, kein reiner Kraft- oder Muskelfokus. | Everyday movement patterns, mobility, not purely strength- or muscle-focused. | Günlük yaşama uygun hareket kalıpları, mobilite, sadece güç veya kas odaklı değil. |
+| `coaching.goal.functional.label` | Funktionelle Fitness | Functional Fitness | Fonksiyonel Fitness |
 | `coaching.goal.hybrid.blurb` | Kraft + Ausdauer + Mobilität — alles fließt zusammen. | Strength + endurance + mobility — all flowing together. | Güç + dayanıklılık + mobilite — hepsi bir arada. |
 | `coaching.goal.hybrid.label` | Funktionell / Hybrid | Functional / Hybrid | Fonksiyonel / Hibrit |
 | `coaching.goal.hypertrophy.blurb` | Volumen, Pump, sichtbares Muskelwachstum. | Volume, pump, visible muscle growth. | Hacim, pump, görünür kas gelişimi. |
@@ -1071,16 +1075,6 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `gear.list.title` | Ausrüstung | Gear | Ekipman |
 | `gear.needsReplacement` | Schuh erneuern — Dämpfung erschöpft. | Replace shoe — cushioning depleted. | Ayakkabıyı değiştir — yastıklama tükendi. |
 
-## `goalType.*`  (5 Keys)
-
-| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
-|---|---|---|---|
-| `goalType.fatloss` | Fett verbrennen | Burn Fat | Yağ Yak |
-| `goalType.functional` | Funktionelle Fitness | Functional Fitness | Fonksiyonel Fitness |
-| `goalType.hybrid` | Athletisch werden | Become Athletic | Atletik Ol |
-| `goalType.hypertrophy` | Muskeln aufbauen | Build Muscle | Kas Yap |
-| `goalType.strength` | Maximalkraft | Maximum Strength | Maksimal Güç |
-
 ## `heroMetric.*`  (10 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
@@ -1309,7 +1303,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.plan.goalMatch` | Passt zu deinem Ziel | Matches your goal | Hedefine uygun |
 | `onboarding.plan.noTemplates` | Keine Templates für '%@'. Du kannst trotzdem ohne Plan starten und später einen eigenen anlegen. | No templates for '%@'. You can still start without a plan and create your own later. | '%@' için şablon yok. Plansız başlayıp sonradan kendi planını oluşturabilirsin. |
 | `onboarding.plan.quizCard.footnote` | Empfohlen, wenn du nicht weißt, welcher Plan zu dir passt. Du kannst stattdessen auch direkt aus der Liste unten wählen. | Recommended if you're not sure which plan fits. You can also pick directly from the list below. | Hangi planın sana uygun olduğundan emin değilsen önerilir. Aşağıdaki listeden de doğrudan seçebilirsin. |
-| `onboarding.plan.quizCard.subtitle` | 4 kurze Fragen — wir matchen dich auf den passenden Plan. | 4 quick questions — we match you to the right plan. | 4 kısa soru — sana uygun planı eşleştiririz. |
+| `onboarding.plan.quizCard.subtitle` | 5 kurze Fragen — wir matchen dich auf den passenden Plan. | 5 quick questions — we match you to the right plan. | 5 kısa soru — sana uygun planı eşleştiririz. |
 | `onboarding.plan.quizCard.title` | Plan finden lassen | Find a Plan | Plan Bul |
 | `onboarding.plan.recommended` | Empfohlen | Recommended | Önerilen |
 | `onboarding.plan.section` | Trainingsplan für %@ | Plans for %@ | %@ için Plan |

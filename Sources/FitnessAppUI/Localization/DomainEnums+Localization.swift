@@ -179,6 +179,8 @@ public extension TrainingGoal {
         case .strength:    LocalizedStringResource("coaching.goal.strength.label",    bundle: .fitnessAppUI)
         case .hybrid:      LocalizedStringResource("coaching.goal.hybrid.label",      bundle: .fitnessAppUI)
         case .weightLoss:  LocalizedStringResource("coaching.goal.weightLoss.label",  bundle: .fitnessAppUI)
+        case .fatloss:     LocalizedStringResource("coaching.goal.fatloss.label",     bundle: .fitnessAppUI)
+        case .functional:  LocalizedStringResource("coaching.goal.functional.label",  bundle: .fitnessAppUI)
         }
     }
 
@@ -188,6 +190,8 @@ public extension TrainingGoal {
         case .strength:    LocalizedStringResource("coaching.goal.strength.blurb",    bundle: .fitnessAppUI)
         case .hybrid:      LocalizedStringResource("coaching.goal.hybrid.blurb",      bundle: .fitnessAppUI)
         case .weightLoss:  LocalizedStringResource("coaching.goal.weightLoss.blurb",  bundle: .fitnessAppUI)
+        case .fatloss:     LocalizedStringResource("coaching.goal.fatloss.blurb",     bundle: .fitnessAppUI)
+        case .functional:  LocalizedStringResource("coaching.goal.functional.blurb",  bundle: .fitnessAppUI)
         }
     }
 }
@@ -210,18 +214,6 @@ public extension ExperienceLevel {
         case .beginner:     LocalizedStringResource("experience.beginner",     bundle: .fitnessAppUI)
         case .intermediate: LocalizedStringResource("experience.intermediate", bundle: .fitnessAppUI)
         case .advanced:     LocalizedStringResource("experience.advanced",     bundle: .fitnessAppUI)
-        }
-    }
-}
-
-public extension GoalType {
-    var localizedName: LocalizedStringResource {
-        switch self {
-        case .hypertrophy: LocalizedStringResource("goalType.hypertrophy", bundle: .fitnessAppUI)
-        case .strength:    LocalizedStringResource("goalType.strength",    bundle: .fitnessAppUI)
-        case .fatloss:     LocalizedStringResource("goalType.fatloss",     bundle: .fitnessAppUI)
-        case .hybrid:      LocalizedStringResource("goalType.hybrid",      bundle: .fitnessAppUI)
-        case .functional:  LocalizedStringResource("goalType.functional",  bundle: .fitnessAppUI)
         }
     }
 }
