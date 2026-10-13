@@ -18,17 +18,25 @@ public struct ExerciseGifView: View {
     private let displayName: String
     private let animated: Bool
     private let cornerRadius: CGFloat
+    private let contentMode: ContentMode
 
+    /// `contentMode` default `.fill` erhaelt das Verhalten der beiden
+    /// bestehenden Aufrufer (`ExerciseLibraryView`-Thumbnail,
+    /// `ExerciseLibraryEditorSheet`-Detail) unveraendert — nur der neue
+    /// `ExerciseGifSheet` (Bugfix "Workout-GIF-Overlay") fordert explizit
+    /// `.fit` an, um das GANZE Bild ohne Beschnitt zu zeigen.
     public init(
         exerciseName: String,
         displayName: String,
         animated: Bool = true,
-        cornerRadius: CGFloat = Deltiq.Radius.input
+        cornerRadius: CGFloat = Deltiq.Radius.input,
+        contentMode: ContentMode = .fill
     ) {
         self.exerciseName = exerciseName
         self.displayName = displayName
         self.animated = animated
         self.cornerRadius = cornerRadius
+        self.contentMode = contentMode
     }
 
     private var gifURL: URL? {
@@ -50,15 +58,15 @@ public struct ExerciseGifView: View {
         if let gifURL {
             #if canImport(UIKit)
             if animated {
-                GifImageView(url: gifURL)
+                GifImageView(url: gifURL, contentMode: contentMode == .fit ? .scaleAspectFit : .scaleAspectFill)
             } else {
-                StaticGifFrameView(url: gifURL, placeholder: placeholder)
+                StaticGifFrameView(url: gifURL, contentMode: contentMode, placeholder: placeholder)
             }
             #else
             // macOS-Zweig von ActiveWorkoutView (kein UIKit): immer das
             // erste Frame, nie animiert — ImageIO/CGImageSource ist
             // plattformuebergreifend, nur der UIImageView-Wrapper ist es nicht.
-            StaticGifFrameView(url: gifURL, placeholder: placeholder)
+            StaticGifFrameView(url: gifURL, contentMode: contentMode, placeholder: placeholder)
             #endif
         } else {
             placeholder
@@ -87,6 +95,7 @@ public struct ExerciseGifView: View {
 /// SwiftUIs eigenem View-Recycling in Listen.
 private struct StaticGifFrameView<Placeholder: View>: View {
     let url: URL
+    var contentMode: ContentMode = .fill
     let placeholder: Placeholder
 
     @State private var frame: CGImage?
@@ -96,7 +105,7 @@ private struct StaticGifFrameView<Placeholder: View>: View {
             if let frame {
                 Image(decorative: frame, scale: 1)
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
+                    .aspectRatio(contentMode: contentMode)
             } else {
                 placeholder
             }
@@ -122,6 +131,7 @@ import UIKit
 /// spielt sie ueber `UIImageView.animationImages` in Dauerschleife ab.
 struct GifImageView: UIViewRepresentable {
     let url: URL
+    var contentMode: UIView.ContentMode = .scaleAspectFill
 
     final class Coordinator {
         var loadedURL: URL?
@@ -131,12 +141,13 @@ struct GifImageView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> UIImageView {
         let imageView = UIImageView()
-        imageView.contentMode = .scaleAspectFill
+        imageView.contentMode = contentMode
         imageView.clipsToBounds = true
         return imageView
     }
 
     func updateUIView(_ uiView: UIImageView, context: Context) {
+        uiView.contentMode = contentMode
         guard context.coordinator.loadedURL != url else { return }
         context.coordinator.loadedURL = url
 
@@ -154,6 +165,25 @@ struct GifImageView: UIViewRepresentable {
                 uiView.startAnimating()
             }
         }
+    }
+
+    /// Bugfix (Workout-GIF-Overlay): ohne diesen Override zieht SwiftUI bei
+    /// der Groessenverhandlung teils `UIImageView.intrinsicContentSize`
+    /// heran — die springt, sobald `image`/`animationImages` gesetzt sind,
+    /// auf die echten Pixelmasse des dekodierten GIFs (oft deutlich groesser
+    /// als jeder UI-Rahmen) statt auf die von aussen vorgegebene SwiftUI-
+    /// Frame-Groesse. Das war die Ursache fuer das ueber Uebungsname und
+    /// Satzzeilen liegende Riesen-GIF in `ExerciseCard` — der dort gesetzte
+    /// `.frame(width: 44, height: 44)` wurde dadurch bei bestimmten GIF-
+    /// Seitenverhaeltnissen innerhalb der Header-HStack nicht respektiert.
+    /// Mit explizitem `sizeThatFits` haelt sich die Representable-Bruecke
+    /// IMMER an den von SwiftUI vorgeschlagenen Platz, unabhaengig von der
+    /// intrinsischen Bildgroesse.
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UIImageView, context: Context) -> CGSize? {
+        CGSize(
+            width: proposal.width ?? uiView.intrinsicContentSize.width,
+            height: proposal.height ?? uiView.intrinsicContentSize.height
+        )
     }
 
     static func dismantleUIView(_ uiView: UIImageView, coordinator: Coordinator) {
