@@ -1,4 +1,5 @@
 import Foundation
+import FitnessAppCore
 
 /// Approximate authorization status as exposed to the UI.
 ///
@@ -274,8 +275,17 @@ public struct WeightReading: Sendable, Equatable {
     public let date: Date
     public let sourceName: String
 
+    /// Fix "70,050003"-Bug: `weightKg` wird hier, am einzigen
+    /// Konstruktionsort, auf 2 Nachkommastellen gerundet (nicht
+    /// abgeschnitten). HealthKit liefert `doubleValue(for:)` zwar als
+    /// echten `Double`, aber der Wert selbst kann bereits von einer
+    /// Float32-Rundung beim urspruenglichen Schreiben (Waage/Quell-App)
+    /// verunreinigt sein. Rundung an der Quelle heisst: jeder Konsument
+    /// (Messung-Autofill, Onboarding-Snapshot, kuenftige Call-Sites)
+    /// bekommt automatisch einen sauberen Wert, ohne sich daran erinnern zu
+    /// muessen.
     public init(weightKg: Double, date: Date, sourceName: String) {
-        self.weightKg = weightKg
+        self.weightKg = weightKg.rounded(toDecimals: 2)
         self.date = date
         self.sourceName = sourceName
     }

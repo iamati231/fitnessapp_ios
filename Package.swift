@@ -36,7 +36,11 @@ let package = Package(
             path: "Sources/FitnessAppData"
         ),
         .target(
+            // Haengt von Core ab wegen Double.rounded(toDecimals:) (Fix
+            // "70,050003"-Bug: WeightReading rundet Health-Gewichtswerte an
+            // der Quelle statt den Fehler bis zur UI durchzureichen).
             name: "FitnessAppHealth",
+            dependencies: ["FitnessAppCore"],
             path: "Sources/FitnessAppHealth"
         ),
         .target(
