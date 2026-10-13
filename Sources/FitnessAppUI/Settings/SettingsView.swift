@@ -936,9 +936,9 @@ public struct SettingsView: View {
     private func formattedWeight(_ kg: Double) -> String {
         if weightUnitRaw == "lbs" {
             let lbs = kg / 0.453592
-            return "\(lbs.truncated(to: 2).formattedTwoDecimals) lbs"
+            return "\(lbs.formattedWeightInput()) lbs"
         }
-        return "\(kg.truncated(to: 2).formattedTwoDecimals) kg"
+        return "\(kg.formattedWeightInput()) kg"
     }
 
     // DEL-118: route durch die zentrale .localizedName-Extension.

@@ -372,7 +372,7 @@ public struct MeasurementView: View {
         // Hauptaussage des Screens - die eine erlaubte Orange-Kante.
         DeltiqSection(loc("measurement.section.core.title").uppercased(), accentEdge: true) {
             // Gewicht (immer Pflicht)
-            measurementRow(label: loc("measurement.field.weight"), value: $weightKg, field: .weight)
+            measurementRow(label: loc("measurement.field.weight"), value: $weightKg, field: .weight, roundsToWeightPrecision: true)
                 .onChange(of: weightKg) { _, newValue in
                     if weightCameFromHealth, newValue != lastHealthFilledWeight {
                         weightCameFromHealth = false
@@ -797,13 +797,26 @@ public struct MeasurementView: View {
     /// DEL-034 + DEL-106: TextField mit Decimal-Keyboard, an den FocusState
     /// gebunden und mit einer `.id` versehen, damit der ScrollViewReader
     /// die Zeile beim Fokus-Wechsel zentrieren kann.
+    ///
+    /// Fix "70,050003"-Bug: `roundsToWeightPrecision` ist NUR fuer das
+    /// Gewichtsfeld `true` — alle anderen Umfang-Felder behalten ihr
+    /// bisheriges, unveraendertes Verhalten. Rundet den geschriebenen Wert
+    /// sofort auf 2 Nachkommastellen (nicht nur kosmetisch die Anzeige) und
+    /// zeigt nie unnoetige Nachkommastellen.
     @ViewBuilder
     private func decimalField(
         _ label: String,
         value: Binding<Double?>,
-        field: MeasurementField
+        field: MeasurementField,
+        roundsToWeightPrecision: Bool = false
     ) -> some View {
-        TextField(label, value: value, format: .number, prompt: Text(label))
+        let displayValue: Binding<Double?> = roundsToWeightPrecision
+            ? Binding(get: { value.wrappedValue }, set: { value.wrappedValue = $0?.rounded(toDecimals: 2) })
+            : value
+        let style: FloatingPointFormatStyle<Double> = roundsToWeightPrecision
+            ? .number.precision(.fractionLength(0...2))
+            : .number
+        TextField(label, value: displayValue, format: style, prompt: Text(label))
             .decimalKeyboard()
             .disabled(!fieldsEnabled)
             .focused($focusedField, equals: field)
@@ -821,10 +834,11 @@ public struct MeasurementView: View {
         label: String,
         value: Binding<Double?>,
         field: MeasurementField,
-        showsDivider: Bool = true
+        showsDivider: Bool = true,
+        roundsToWeightPrecision: Bool = false
     ) -> some View {
         DeltiqControlRow(label: label, showsDivider: showsDivider) {
-            decimalField(label, value: value, field: field)
+            decimalField(label, value: value, field: field, roundsToWeightPrecision: roundsToWeightPrecision)
         }
         .id(field)
     }

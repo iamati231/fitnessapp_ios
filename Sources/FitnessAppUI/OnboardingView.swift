@@ -573,7 +573,7 @@ public struct OnboardingView: View {
 
             Section {
                 decimalField(String(localized: "onboarding.field.heightCm", bundle: .module), value: $heightCm)
-                decimalField(String(localized: "onboarding.field.weightCurrentKg", bundle: .module), value: $currentWeightKg)
+                decimalField(String(localized: "onboarding.field.weightCurrentKg", bundle: .module), value: $currentWeightKg, roundsToWeightPrecision: true)
             } header: {
                 Text("onboarding.section.body", bundle: .module)
             } footer: {
@@ -590,7 +590,7 @@ public struct OnboardingView: View {
             }
 
             Section {
-                decimalField(String(localized: "onboarding.field.goalWeightKg", bundle: .module), value: $goalWeightKg)
+                decimalField(String(localized: "onboarding.field.goalWeightKg", bundle: .module), value: $goalWeightKg, roundsToWeightPrecision: true)
                 Picker(selection: $environment) {
                     ForEach(EnvironmentType.allCases, id: \.self) { env in
                         Text(env.localizedName).tag(env)
@@ -1314,9 +1314,19 @@ public struct OnboardingView: View {
 
     // MARK: - Helpers + constants
 
+    /// Fix "70,050003"-Bug: `roundsToWeightPrecision` ist NUR fuer die
+    /// Gewichtsfelder `true` (Hoehe bleibt unveraendert). Rundet den
+    /// geschriebenen Wert sofort auf 2 Nachkommastellen statt nur kosmetisch
+    /// anzuzeigen, und zeigt nie unnoetige Nachkommastellen.
     @ViewBuilder
-    private func decimalField(_ label: String, value: Binding<Double?>) -> some View {
-        TextField(value: value, format: .number, prompt: Text(label)) {
+    private func decimalField(_ label: String, value: Binding<Double?>, roundsToWeightPrecision: Bool = false) -> some View {
+        let displayValue: Binding<Double?> = roundsToWeightPrecision
+            ? Binding(get: { value.wrappedValue }, set: { value.wrappedValue = $0?.rounded(toDecimals: 2) })
+            : value
+        let style: FloatingPointFormatStyle<Double> = roundsToWeightPrecision
+            ? .number.precision(.fractionLength(0...2))
+            : .number
+        TextField(value: displayValue, format: style, prompt: Text(label)) {
             Text(label)
         }
         .decimalKeyboard()

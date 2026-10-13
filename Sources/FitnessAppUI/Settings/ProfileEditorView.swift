@@ -493,7 +493,8 @@ public struct ProfileEditorView: View {
                 decimalField(
                     String(localized: "onboarding.field.goalWeightKg", bundle: .module),
                     value: $profile.goalWeightKg,
-                    placeholder: String(localized: "profile.goal.weightPlaceholder", bundle: .module)
+                    placeholder: String(localized: "profile.goal.weightPlaceholder", bundle: .module),
+                    roundsToWeightPrecision: true
                 )
             }
             DeltiqControlRow(label: String(localized: "onboarding.field.environment", bundle: .module), showsDivider: false) {
@@ -955,9 +956,19 @@ public struct ProfileEditorView: View {
             .frame(maxWidth: 140)
     }
 
+    /// Fix "70,050003"-Bug: `roundsToWeightPrecision` ist NUR fuer das
+    /// Zielgewicht `true` (die andere Aufrufstelle, Wochen-Laufvolumen in
+    /// km, bleibt unveraendert). Rundet den geschriebenen Wert sofort auf 2
+    /// Nachkommastellen statt nur kosmetisch anzuzeigen.
     @ViewBuilder
-    private func decimalField(_ label: String, value: Binding<Double?>, placeholder: String) -> some View {
-        TextField(label, value: value, format: .number, prompt: Text(placeholder))
+    private func decimalField(_ label: String, value: Binding<Double?>, placeholder: String, roundsToWeightPrecision: Bool = false) -> some View {
+        let displayValue: Binding<Double?> = roundsToWeightPrecision
+            ? Binding(get: { value.wrappedValue }, set: { value.wrappedValue = $0?.rounded(toDecimals: 2) })
+            : value
+        let style: FloatingPointFormatStyle<Double> = roundsToWeightPrecision
+            ? .number.precision(.fractionLength(0...2))
+            : .number
+        TextField(label, value: displayValue, format: style, prompt: Text(placeholder))
             .decimalKeyboard()
             .multilineTextAlignment(.trailing)
             .font(.system(size: 15))
