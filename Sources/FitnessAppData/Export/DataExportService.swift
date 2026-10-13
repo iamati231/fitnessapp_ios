@@ -228,7 +228,18 @@ public enum DataExportService {
             // Smart-Onboarding-Epic: achte additive Spalte — aeltere
             // Importer ignorieren sie, aeltere ZIPs liefern beim Import nil
             // (= "noch nicht hergeleitet", der Backfill greift dann erneut).
-            "experience_track"
+            "experience_track",
+            // Start-Check-Epic: 18 weitere additive Spalten fuer den
+            // optionalen Baseline-Check. Gleiches Prinzip — jedes Feld ist
+            // unabhaengig optional, ein aelterer Import liefert ueberall nil
+            // (= "noch nicht durchgefuehrt").
+            "baseline_date", "baseline_source", "baseline_safety_status", "baseline_version",
+            "baseline_push_up_variant", "baseline_push_up_clean_reps",
+            "baseline_chair_squat_clean_reps", "baseline_chair_squat_duration_seconds",
+            "baseline_pull_variant", "baseline_pull_clean_reps", "baseline_pull_load_kg", "baseline_pull_rir",
+            "baseline_plank_seconds", "baseline_cardio_answer",
+            "baseline_push_self_assessment", "baseline_legs_self_assessment", "baseline_pull_self_assessment",
+            "baseline_desired_first_week_intensity"
         ])
         for p in profiles {
             w.appendRow([
@@ -252,7 +263,25 @@ public enum DataExportService {
                 CSVWriter.decimal(p.weeklyBaseVolumeKm),
                 p.maxHeartRateBpm.map(String.init) ?? "",
                 p.cardioFeasibilityDismissedFingerprint ?? "",
-                p.experienceTrackRaw ?? ""
+                p.experienceTrackRaw ?? "",
+                p.baselineDate.map(CSVWriter.iso8601) ?? "",
+                p.baselineSourceRaw ?? "",
+                p.baselineSafetyStatusRaw ?? "",
+                p.baselineVersion.map(String.init) ?? "",
+                p.baselinePushUpVariantRaw ?? "",
+                p.baselinePushUpCleanReps.map(String.init) ?? "",
+                p.baselineChairSquatCleanReps.map(String.init) ?? "",
+                p.baselineChairSquatDurationSeconds.map(String.init) ?? "",
+                p.baselinePullVariantRaw ?? "",
+                p.baselinePullCleanReps.map(String.init) ?? "",
+                CSVWriter.decimal(p.baselinePullLoadKg),
+                CSVWriter.decimal(p.baselinePullRir),
+                p.baselinePlankSeconds.map(String.init) ?? "",
+                p.baselineCardioAnswerRaw ?? "",
+                p.baselinePushSelfAssessmentRaw ?? "",
+                p.baselineLegsSelfAssessmentRaw ?? "",
+                p.baselinePullSelfAssessmentRaw ?? "",
+                p.baselineDesiredFirstWeekIntensityRaw ?? ""
             ])
         }
         return w.data()

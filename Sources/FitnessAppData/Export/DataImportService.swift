@@ -669,6 +669,30 @@ public enum DataImportService {
             // optionalString nil und ExperienceTrackBackfill greift erneut.
             p.experienceTrackRaw = row.optionalString("experience_track")
 
+            // Start-Check-Epic: 18 additive Spalten, gleiches Prinzip —
+            // fehlt eine (aelterer Export) oder ist sie leer, liefert der
+            // jeweilige Row-Accessor nil, was hier ueberall exakt "Check
+            // noch nicht durchgefuehrt" bedeutet (kein Sonderfall wie bei
+            // dashboard_widgets/hero_metric_slots noetig).
+            p.baselineDate = row.date("baseline_date")
+            p.baselineSourceRaw = row.optionalString("baseline_source")
+            p.baselineSafetyStatusRaw = row.optionalString("baseline_safety_status")
+            p.baselineVersion = row.int("baseline_version")
+            p.baselinePushUpVariantRaw = row.optionalString("baseline_push_up_variant")
+            p.baselinePushUpCleanReps = row.int("baseline_push_up_clean_reps")
+            p.baselineChairSquatCleanReps = row.int("baseline_chair_squat_clean_reps")
+            p.baselineChairSquatDurationSeconds = row.int("baseline_chair_squat_duration_seconds")
+            p.baselinePullVariantRaw = row.optionalString("baseline_pull_variant")
+            p.baselinePullCleanReps = row.int("baseline_pull_clean_reps")
+            p.baselinePullLoadKg = row.double("baseline_pull_load_kg")
+            p.baselinePullRir = row.double("baseline_pull_rir")
+            p.baselinePlankSeconds = row.int("baseline_plank_seconds")
+            p.baselineCardioAnswerRaw = row.optionalString("baseline_cardio_answer")
+            p.baselinePushSelfAssessmentRaw = row.optionalString("baseline_push_self_assessment")
+            p.baselineLegsSelfAssessmentRaw = row.optionalString("baseline_legs_self_assessment")
+            p.baselinePullSelfAssessmentRaw = row.optionalString("baseline_pull_self_assessment")
+            p.baselineDesiredFirstWeekIntensityRaw = row.optionalString("baseline_desired_first_week_intensity")
+
             if target == nil {
                 context.insert(p)
             }

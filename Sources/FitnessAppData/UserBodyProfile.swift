@@ -126,6 +126,44 @@ public final class UserBodyProfile {
     /// gebraucht, damit der Backfill genau einmal greift.
     public var experienceTrackRaw: String?
 
+    // MARK: - Start-Check (optionaler Baseline-Check im Onboarding)
+    //
+    // Flaches Feld-pro-Wert-Muster (wie bei den Cardio-Feldern oben), nicht
+    // ein JSON-Blob: das Projekt hat genau einen Blob-Praezedenzfall
+    // (`TrainingPlan.generatorInputRaw`, ein einmal geschriebener/wieder
+    // eingelesener Wizard-Input) — hier dagegen soll jedes Einzelfeld
+    // unabhaengig CSV-exportierbar und `nil`-faehig sein, exakt wie bei den
+    // Cardio-Feldern. Alle Felder bleiben unabhaengig optional — ein Check
+    // darf teilweise ausgefuellt sein (z. B. nur Push-up getestet).
+    // Bestandsnutzer ohne Check: alles `nil`, kein Backfill/Migration
+    // erzwungen (Epic: "Alte Nutzer: keine Baseline = unknown").
+
+    public var baselineDate: Date?
+    public var baselineSourceRaw: String?
+    public var baselineSafetyStatusRaw: String?
+    public var baselineVersion: Int?
+
+    public var baselinePushUpVariantRaw: String?
+    public var baselinePushUpCleanReps: Int?
+
+    public var baselineChairSquatCleanReps: Int?
+    public var baselineChairSquatDurationSeconds: Int?
+
+    public var baselinePullVariantRaw: String?
+    public var baselinePullCleanReps: Int?
+    public var baselinePullLoadKg: Double?
+    public var baselinePullRir: Double?
+
+    public var baselinePlankSeconds: Int?
+
+    public var baselineCardioAnswerRaw: String?
+
+    public var baselinePushSelfAssessmentRaw: String?
+    public var baselineLegsSelfAssessmentRaw: String?
+    public var baselinePullSelfAssessmentRaw: String?
+
+    public var baselineDesiredFirstWeekIntensityRaw: String?
+
     /// Convenience-Accessor mit Default-Fallback, falls jemand einen
     /// invaliden String reinschreibt.
     public var cardioGoal: CardioGoal {
@@ -160,6 +198,84 @@ public final class UserBodyProfile {
     public var experienceTrack: ExperienceTrack? {
         get { experienceTrackRaw.flatMap { ExperienceTrack(rawValue: $0) } }
         set { experienceTrackRaw = newValue?.rawValue }
+    }
+
+    /// Setzt/liest den kompletten Start-Check in einem Schritt, auf Basis
+    /// der flachen Einzelfelder oben. `nil` heisst "noch nie durchgefuehrt"
+    /// (Bestandsnutzer, oder Nutzer hat "Spaeter machen" gewaehlt und noch
+    /// nicht nachgeholt) — die vier Pflichtfelder von `BaselineAssessment`
+    /// (`date`/`source`/`safetyStatus`/`desiredFirstWeekIntensity`) muessen
+    /// ALLE gueltig vorliegen, sonst gibt es keinen sinnvollen
+    /// teil-rekonstruierten Check.
+    public var baselineAssessment: BaselineAssessment? {
+        get {
+            guard let baselineDate,
+                  let sourceRaw = baselineSourceRaw, let source = BaselineSource(rawValue: sourceRaw),
+                  let safetyRaw = baselineSafetyStatusRaw, let safetyStatus = SafetyStatus(rawValue: safetyRaw),
+                  let intensityRaw = baselineDesiredFirstWeekIntensityRaw,
+                  let intensity = FirstWeekIntensity(rawValue: intensityRaw)
+            else { return nil }
+
+            let pushUp: PushUpAssessment? = baselinePushUpVariantRaw
+                .flatMap(PushUpVariant.init(rawValue:))
+                .flatMap { variant in baselinePushUpCleanReps.map { PushUpAssessment(variant: variant, cleanReps: $0) } }
+
+            let chairSquat: ChairSquatAssessment? = baselineChairSquatCleanReps.flatMap { reps in
+                baselineChairSquatDurationSeconds.map { ChairSquatAssessment(cleanReps: reps, durationSeconds: $0) }
+            }
+
+            let pull: PullAssessment? = baselinePullVariantRaw
+                .flatMap(PullVariant.init(rawValue:))
+                .flatMap { variant in
+                    baselinePullCleanReps.map { reps in
+                        PullAssessment(variant: variant, cleanReps: reps, loadKg: baselinePullLoadKg, rir: baselinePullRir)
+                    }
+                }
+
+            let plank = baselinePlankSeconds.map { PlankAssessment(seconds: $0) }
+            let cardio = baselineCardioAnswerRaw.flatMap(CardioBaselineAnswer.init(rawValue:)).map { CardioBaseline(answer: $0) }
+
+            return BaselineAssessment(
+                date: baselineDate,
+                source: source,
+                safetyStatus: safetyStatus,
+                version: baselineVersion ?? BaselineAssessment.currentVersion,
+                pushUp: pushUp,
+                chairSquat: chairSquat,
+                pull: pull,
+                plank: plank,
+                cardio: cardio,
+                pushSelfAssessment: baselinePushSelfAssessmentRaw.flatMap(SelfAssessmentAnswer.init(rawValue:)),
+                legsSelfAssessment: baselineLegsSelfAssessmentRaw.flatMap(SelfAssessmentAnswer.init(rawValue:)),
+                pullSelfAssessment: baselinePullSelfAssessmentRaw.flatMap(SelfAssessmentAnswer.init(rawValue:)),
+                desiredFirstWeekIntensity: intensity
+            )
+        }
+        set {
+            baselineDate = newValue?.date
+            baselineSourceRaw = newValue?.source.rawValue
+            baselineSafetyStatusRaw = newValue?.safetyStatus.rawValue
+            baselineVersion = newValue?.version
+            baselineDesiredFirstWeekIntensityRaw = newValue?.desiredFirstWeekIntensity.rawValue
+
+            baselinePushUpVariantRaw = newValue?.pushUp?.variant.rawValue
+            baselinePushUpCleanReps = newValue?.pushUp?.cleanReps
+
+            baselineChairSquatCleanReps = newValue?.chairSquat?.cleanReps
+            baselineChairSquatDurationSeconds = newValue?.chairSquat?.durationSeconds
+
+            baselinePullVariantRaw = newValue?.pull?.variant.rawValue
+            baselinePullCleanReps = newValue?.pull?.cleanReps
+            baselinePullLoadKg = newValue?.pull?.loadKg
+            baselinePullRir = newValue?.pull?.rir
+
+            baselinePlankSeconds = newValue?.plank?.seconds
+            baselineCardioAnswerRaw = newValue?.cardio?.answer.rawValue
+
+            baselinePushSelfAssessmentRaw = newValue?.pushSelfAssessment?.rawValue
+            baselineLegsSelfAssessmentRaw = newValue?.legsSelfAssessment?.rawValue
+            baselinePullSelfAssessmentRaw = newValue?.pullSelfAssessment?.rawValue
+        }
     }
 
     /// DEL-109: Typed Convenience-Accessor auf die Widget-Liste. Filtered

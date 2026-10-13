@@ -901,6 +901,111 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertNil(imported?.experienceTrack)
     }
 
+    // Start-Check-Epic: Core-Pflichttest 2 ("Jede Testvariante kann
+    // gespeichert, exportiert und importiert werden") + 8 ("Backward
+    // compatibility: bestehender User ohne Baseline bleibt unveraendert").
+
+    /// Ein VOLLSTAENDIGER Check (alle fuenf Bewegungsfamilien + beide
+    /// Selbsteinschaetzungs-Fallbacks gesetzt) muss 1:1 ueberleben.
+    func testFullBaselineAssessmentSurvivesRoundtrip() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        let assessment = BaselineAssessment(
+            date: Date(timeIntervalSince1970: 1_700_000_000),
+            source: .guidedTest,
+            safetyStatus: .clear,
+            pushUp: PushUpAssessment(variant: .knees, cleanReps: 8),
+            chairSquat: ChairSquatAssessment(cleanReps: 12, durationSeconds: 30),
+            pull: PullAssessment(variant: .latPulldown, cleanReps: 10, loadKg: 35.5, rir: 2.5),
+            plank: PlankAssessment(seconds: 42),
+            cardio: CardioBaseline(answer: .canJogEasy10Min),
+            pushSelfAssessment: .canButStrenuous,
+            legsSelfAssessment: .easy,
+            pullSelfAssessment: .unsureNoCleanRep,
+            desiredFirstWeekIntensity: .veryEasy
+        )
+        profile.baselineAssessment = assessment
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.baselineAssessment, assessment)
+    }
+
+    /// Ein TEILWEISE ausgefuellter Check (nur Push-up getestet, Rest nil)
+    /// darf beim Restore nichts erfinden.
+    func testPartialBaselineAssessmentSurvivesRoundtripWithNilFieldsIntact() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        let assessment = BaselineAssessment(
+            date: Date(timeIntervalSince1970: 1_700_000_000),
+            source: .selfAssessment,
+            safetyStatus: .flagged,
+            pushUp: PushUpAssessment(variant: .standard, cleanReps: 15)
+        )
+        profile.baselineAssessment = assessment
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.baselineAssessment, assessment)
+        XCTAssertNil(imported?.baselineAssessment?.chairSquat)
+        XCTAssertNil(imported?.baselineAssessment?.pull)
+        XCTAssertNil(imported?.baselineAssessment?.plank)
+        XCTAssertNil(imported?.baselineAssessment?.cardio)
+    }
+
+    /// Bestandsnutzer OHNE Check (Default-Zustand) bleiben unveraendert —
+    /// kein Restore darf versehentlich einen Check erfinden.
+    func testNoBaselineAssessmentStaysNilOnRoundtrip() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertNil(imported?.baselineAssessment)
+    }
+
     // Handoff "Lauf-Coaching - Machbarkeits-Check": generationSource muss
     // ein Backup/Restore ueberleben, sonst haelt die "bereits angenommen"-
     // Erkennung (bzw. hier: die zugrundeliegende Herkunfts-Markierung) einen
