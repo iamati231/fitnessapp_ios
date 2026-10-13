@@ -26,28 +26,12 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Walking on Incline Treadmill" } }
       }
     },
-    "exercise.name.assistedChestDipKneeling": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Assistierte Brust-Dips (kniend)" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Assisted Chest Dip (Kneeling)" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Assisted Chest Dip (Kneeling)" } }
-      }
-    },
     "exercise.name.barbellStandingCloseGripMilitaryPress": {
       "extractionState": "manual",
       "localizations": {
         "de": { "stringUnit": { "state": "translated", "value": "Schulterdrücken stehend (LH, enger Griff)" } },
         "en": { "stringUnit": { "state": "translated", "value": "Barbell Standing Close Grip Military Press" } },
         "tr": { "stringUnit": { "state": "translated", "value": "Barbell Standing Close Grip Military Press" } }
-      }
-    },
-    "exercise.name.barbellStandingWideMilitaryPress": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Schulterdrücken stehend (LH, breiter Griff)" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Barbell Standing Wide Military Press" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Barbell Standing Wide Military Press" } }
       }
     },
     "exercise.name.kettlebellOneArmPushPress": {

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1857 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1855 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1857 / 1857** (100%) | 0 |
-| 🇬🇧 English (EN) | **1857 / 1857** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1857 / 1857** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1855 / 1855** (100%) | 0 |
+| 🇬🇧 English (EN) | **1855 / 1855** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1855 / 1855** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -780,7 +780,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `equipment.kettlebell` | Kettlebell | Kettlebell | Kettlebell |
 | `equipment.machine` | Maschine | Machine | Makine |
 
-## `exercise.*`  (246 Keys)
+## `exercise.*`  (244 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -796,7 +796,6 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.detail.stats.volume` | Volumen gesamt | Total volume | Toplam hacim |
 | `exercise.gif.a11y` | Animation: %@ | Animation: %@ | Animasyon: %@ |
 | `exercise.kind.cardio` | Cardio | Cardio | Kardiyo |
-| `exercise.name.assistedChestDipKneeling` | Assistierte Brust-Dips (kniend) | Assisted Chest Dip (Kneeling) | Assisted Chest Dip (Kneeling) |
 | `exercise.name.assistedDip` | Dip (assistiert) | Assisted Dip | Destekli Dip |
 | `exercise.name.assistedPullUp` | Klimmzug (assistiert) | Assisted Pull-Up | Destekli Barfiks |
 | `exercise.name.australianPullup` | Australian Pull-ups | Australian Pull-Up | Australian Pull-Up |
@@ -817,7 +816,6 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.barbellShrug` | Shrug (LH) | Barbell Shrug | Barbell Shrug |
 | `exercise.name.barbellStandingCalfRaise` | Wadenheben (stehend, LH) | Standing Calf Raise (Barbell) | Standing Calf Raise |
 | `exercise.name.barbellStandingCloseGripMilitaryPress` | Schulterdrücken stehend (LH, enger Griff) | Barbell Standing Close Grip Military Press | Barbell Standing Close Grip Military Press |
-| `exercise.name.barbellStandingWideMilitaryPress` | Schulterdrücken stehend (LH, breiter Griff) | Barbell Standing Wide Military Press | Barbell Standing Wide Military Press |
 | `exercise.name.barbellWristCurl` | Handgelenk-Curl (LH) | Barbell Wrist Curl | Barbell Wrist Curl |
 | `exercise.name.barbellrow` | Rudern vorgebeugt | Bent-Over Row | Bent-Over Row |
 | `exercise.name.battleRopes` | Battle Ropes | Battle Ropes | Battle Ropes (Halat) |
