@@ -40,6 +40,7 @@ public struct OnboardingView: View {
         case coachingStyle           // DEL-101: Goal + Tone in einem Schritt
         case trainingHistory         // Fix "doppeltes Onboarding": ExperienceTrack-Herleitung
         case equipmentPreferences    // DEL-170b: Multi-Select Equipment
+        case baselineCheck           // Start-Check-Epic: optionaler "Wo stehst du heute?"-Check
         case preferencesAndPlan
     }
 
@@ -90,6 +91,16 @@ public struct OnboardingView: View {
     @State private var trainingHistoryAnswer: TrainingHistoryAnswer?
     @State private var pauseLength: PauseLength = .sixToTwelveWeeks
     @State private var priorExperienceDuration: PriorExperienceDuration = .underOneYear
+
+    // Start-Check-Epic: optionaler "Wo stehst du heute?"-Check. `nil` =
+    // weder getestet noch selbst eingeschaetzt noch bewusst uebersprungen —
+    // `finishOnboarding()` schreibt nur bei einem Nicht-nil-Ergebnis in
+    // `UserBodyProfile.baselineAssessment`, sonst bleibt es dort ebenfalls
+    // `nil` (identisch zum Bestandsnutzer-Zustand, siehe Epic: "Alte Nutzer:
+    // keine Baseline = unknown").
+    @State private var baselineAssessmentResult: BaselineAssessment?
+    @State private var showingBaselineCheck: Bool = false
+    @State private var baselineEntryMode: BaselineCheckFlowView.EntryMode = .guidedTest
 
     // DEL-170b — Equipment-Präferenzen (Multi-Select). Wird beim ersten
     // Betreten des Steps mit sinnvollen Defaults aus `environment` befüllt,
@@ -156,6 +167,7 @@ public struct OnboardingView: View {
                     case .coachingStyle:        coachingStyleStep
                     case .trainingHistory:      trainingHistoryStep
                     case .equipmentPreferences: equipmentPreferencesStep
+                    case .baselineCheck:        baselineCheckStep
                     case .preferencesAndPlan:   preferencesAndPlanStep
                     }
                 }
@@ -235,6 +247,21 @@ public struct OnboardingView: View {
                     customPlanInput = input
                     customPlanResult = result
                     clearSelectedTemplate()
+                }
+            }
+            // Start-Check-Epic: Sheet fuer den optionalen "Wo stehst du
+            // heute?"-Check. `onFinish(nil)` (Abbruch/Sheet weggewischt)
+            // laesst ein vorhandenes `baselineAssessmentResult` bewusst
+            // unangetastet statt es zu loeschen.
+            .sheet(isPresented: $showingBaselineCheck) {
+                BaselineCheckFlowView(
+                    entryMode: baselineEntryMode,
+                    goal: trainingGoal,
+                    equipmentPreferences: equipmentPreferences
+                ) { result in
+                    if let result {
+                        baselineAssessmentResult = result
+                    }
                 }
             }
         }
@@ -888,6 +915,159 @@ public struct OnboardingView: View {
         }
     }
 
+    // MARK: - Start-Check (Optionaler "Wo stehst du heute?"-Check)
+
+    /// Platzierung laut Epic: nach Trainingshistorie/Equipment, vor
+    /// Zeitbudget/Plan-Ergebnis. Starter/Wiedereinsteiger sehen den vollen
+    /// 3-Wege-Einstieg ("Jetzt testen" / "Selbst einschaetzen" / "Spaeter"),
+    /// Erfahrene nur einen kompakten optionalen Link OHNE gefuehrten
+    /// Test-Track (Epic: Erfahrene bekommen keinen Test-Track vorgesetzt) —
+    /// der Link oeffnet `BaselineCheckFlowView` direkt mit
+    /// `entryMode: .selfAssessment`, derselben Weiche wie der "Selbst
+    /// einschaetzen"-Pfad der Starter/Wiedereinsteiger. Nie ein Gate:
+    /// `canAdvance` ist fuer diesen Schritt immer `true`.
+    @ViewBuilder
+    private var baselineCheckStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("baseline.step.title", bundle: .module)
+                        .font(.title2.weight(.bold))
+                    Text(isFullBaselineTrack ? "baseline.step.subtitle" : "baseline.step.subtitle.compact", bundle: .module)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let baselineAssessmentResult {
+                    baselineCapturedSummary(baselineAssessmentResult)
+                } else if isFullBaselineTrack {
+                    VStack(spacing: 10) {
+                        baselineChoiceRow(
+                            icon: "figure.strengthtraining.traditional",
+                            title: String(localized: "baseline.step.cta.test", bundle: .module),
+                            subtitle: String(localized: "baseline.step.cta.test.subtitle", bundle: .module),
+                            prominent: true
+                        ) {
+                            baselineEntryMode = .guidedTest
+                            showingBaselineCheck = true
+                        }
+                        baselineChoiceRow(
+                            icon: "hand.point.up.left",
+                            title: String(localized: "baseline.step.cta.selfAssess", bundle: .module),
+                            subtitle: String(localized: "baseline.step.cta.selfAssess.subtitle", bundle: .module),
+                            prominent: false
+                        ) {
+                            baselineEntryMode = .selfAssessment
+                            showingBaselineCheck = true
+                        }
+                        baselineChoiceRow(
+                            icon: "arrow.right.circle",
+                            title: String(localized: "baseline.step.cta.later", bundle: .module),
+                            subtitle: String(localized: "baseline.step.cta.later.subtitle", bundle: .module),
+                            prominent: false
+                        ) {
+                            goToNextStep()
+                        }
+                    }
+                } else {
+                    Button {
+                        baselineEntryMode = .selfAssessment
+                        showingBaselineCheck = true
+                    } label: {
+                        Label {
+                            Text("baseline.step.cta.compactLink", bundle: .module)
+                        } icon: {
+                            Image(systemName: "slider.horizontal.3")
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                }
+
+                Text("baseline.step.disclaimer", bundle: .module)
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+        }
+    }
+
+    /// Starter/Wiedereinsteiger bekommen den vollen gefuehrten Test-Track
+    /// angeboten; Erfahrene nur den kompakten Link (Epic-Vorgabe). Ohne
+    /// Antwort auf dem Trainingshistorie-Schritt (sollte durch `canAdvance`
+    /// dort praktisch nie vorkommen) faellt dies konservativ auf den vollen
+    /// Track zurueck statt Erfahrenen-Verhalten zu unterstellen.
+    private var isFullBaselineTrack: Bool {
+        resolvedExperienceTrack != .experienced
+    }
+
+    @ViewBuilder
+    private func baselineCapturedSummary(_ result: BaselineAssessment) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label {
+                Text("baseline.step.done.title", bundle: .module)
+            } icon: {
+                Image(systemName: "checkmark.circle.fill")
+            }
+            .font(.headline)
+            .foregroundStyle(.green)
+
+            Button {
+                baselineEntryMode = isFullBaselineTrack ? .guidedTest : .selfAssessment
+                showingBaselineCheck = true
+            } label: {
+                Text("baseline.step.done.redo", bundle: .module)
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.green.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    /// Einmalige Action-Zeile im selben visuellen Stil wie `coachingCard`,
+    /// aber ohne persistente Selektion — jeder Tap oeffnet direkt das Sheet
+    /// bzw. springt weiter, es gibt keinen "ausgewaehlten" Zustand.
+    private func baselineChoiceRow(
+        icon: String,
+        title: String,
+        subtitle: String,
+        prominent: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: icon)
+                    .font(.title2)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(prominent ? Color.deltiqOrange : .secondary)
+                    .frame(width: 32, height: 32)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.secondary.opacity(prominent ? 0.10 : 0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(prominent ? Color.deltiqOrange : Color.secondary.opacity(0.25),
+                            lineWidth: prominent ? 1.5 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
     /// DEL-101: Reusable SelectableCard im Deltiq-Stil — DeltiqOrange-
     /// Stroke + Checkmark-Icon bei Selektion, sonst dezent gegraut.
     @ViewBuilder
@@ -1280,6 +1460,10 @@ public struct OnboardingView: View {
             // DEL-170b: leer ist erlaubt (= "Standard-Variante" beim Plan-
             // Adopt). User darf bewusst skippen, deshalb keine Pflicht.
             return true
+        case .baselineCheck:
+            // Start-Check-Epic: "nie ein Gate" — Test, Selbsteinschaetzung
+            // und "Spaeter" sind alle gleichwertig gueltige Abschluesse.
+            return true
         case .preferencesAndPlan:
             // Plan + Reminder sind beide optional — immer fertig erlaubt.
             return true
@@ -1288,7 +1472,7 @@ public struct OnboardingView: View {
 
     private func handlePrimaryAction() {
         switch step {
-        case .healthConnect, .personalInfo, .coachingStyle, .trainingHistory, .equipmentPreferences:
+        case .healthConnect, .personalInfo, .coachingStyle, .trainingHistory, .equipmentPreferences, .baselineCheck:
             goToNextStep()
         case .preferencesAndPlan:
             finishOnboarding()
@@ -1300,8 +1484,12 @@ public struct OnboardingView: View {
         // DEL-207: Equipment-Step bei "Kein Equipment" überspringen —
         // wer ohne Geräte trainiert, hat dort nichts auszuwählen, und
         // die Equipment-Varianten der Pläne sind für ihn irrelevant.
+        // Fix: Sprungziel ist der naechste WIRKLICH gezeigte Schritt
+        // (`.baselineCheck`), nicht `.preferencesAndPlan` — sonst wuerde der
+        // Start-Check-Schritt fuer No-Equipment-User komplett uebersprungen,
+        // seit `.baselineCheck` zwischen Equipment und Plan eingefuegt wurde.
         if next == .equipmentPreferences && environment == .noEquipment {
-            next = .preferencesAndPlan
+            next = .baselineCheck
         }
         step = next
     }
@@ -1309,8 +1497,14 @@ public struct OnboardingView: View {
     private func goToPreviousStep() {
         guard var prev = Step(rawValue: step.rawValue - 1) else { return }
         // DEL-207: Skip auch rückwärts symmetrisch.
+        // Fix: Sprungziel ist `.trainingHistory` (der Schritt direkt VOR dem
+        // uebersprungenen Equipment-Schritt) — vorher landete man bei
+        // `.coachingStyle` und ueberspraeng damit `.trainingHistory`
+        // zusaetzlich mit, ein Bug seit dessen Einfuehrung (Fix
+        // "doppeltes Onboarding"), der hier beim Einbau von
+        // `.baselineCheck` mit aufgefallen ist.
         if prev == .equipmentPreferences && environment == .noEquipment {
-            prev = .coachingStyle
+            prev = .trainingHistory
         }
         step = prev
     }
@@ -1395,6 +1589,14 @@ public struct OnboardingView: View {
         // nicht aus genau dieser Antwort stammt.
         if let track = resolvedExperienceTrack {
             profile.experienceTrack = track
+        }
+        // Start-Check-Epic: nur bei echtem Ergebnis schreiben (Test,
+        // Selbsteinschaetzung ODER bewusst "uebersprungen" mit Sicherheits-
+        // Flag) — bei "Spaeter machen" bleibt `baselineAssessmentResult`
+        // `nil` und damit `profile.baselineAssessment` ebenfalls `nil`,
+        // identisch zum Bestandsnutzer-Zustand ohne Check.
+        if let baselineAssessmentResult {
+            profile.baselineAssessment = baselineAssessmentResult
         }
         modelContext.insert(profile)
 
