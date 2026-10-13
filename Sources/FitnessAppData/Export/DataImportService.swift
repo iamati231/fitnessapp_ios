@@ -611,7 +611,11 @@ public enum DataImportService {
                 birthDate: birthDate,
                 heightCm: height,
                 profile: profileEnum,
-                goalWeightKg: row.double("goal_weight_kg"),
+                // Fix "70,050003"-Bug: aeltere Exports koennen noch einen
+                // ungerundeten Wert enthalten (vor diesem Fix wurde nirgends
+                // gerundet) — beim Import auf 2 Nachkommastellen runden statt
+                // die Verunreinigung weiterzutragen.
+                goalWeightKg: row.double("goal_weight_kg")?.rounded(toDecimals: 2),
                 environment: envEnum
             )
             // Bei einem existierenden Profil die Kern-Felder explizit
@@ -620,7 +624,7 @@ public enum DataImportService {
                 p.birthDate = birthDate
                 p.heightCm = height
                 p.profile = profileEnum
-                p.goalWeightKg = row.double("goal_weight_kg")
+                p.goalWeightKg = row.double("goal_weight_kg")?.rounded(toDecimals: 2)
                 p.environment = envEnum
             }
             p.firstName = row.optionalString("first_name")
@@ -923,7 +927,11 @@ public enum DataImportService {
 
         for row in reader.rows() {
             guard let date = row.date("date_utc"),
-                  let weight = row.double("weight_kg") else {
+                  // Fix "70,050003"-Bug: aeltere Exports koennen noch einen
+                  // ungerundeten Wert enthalten — beim Import runden statt
+                  // die Verunreinigung weiterzutragen (fliesst auch in den
+                  // Dedup-Key ein, der bleibt dadurch konsistent).
+                  let weight = row.double("weight_kg")?.rounded(toDecimals: 2) else {
                 errors.append(.init(line: row.lineNumber, reason: "missing date_utc or weight_kg"))
                 continue
             }
