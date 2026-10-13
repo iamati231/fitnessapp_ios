@@ -29,13 +29,14 @@ public struct QuizAnswers: Sendable, Equatable {
     }
 }
 
-/// Fix "Badge fast ueberall": die drei unabhaengigen Gruende, aus denen ein
+/// Fix "Badge fast ueberall": die vier unabhaengigen Gruende, aus denen ein
 /// Template zu den Onboarding-Antworten passt. Jede UI-Badge rendert genau
-/// EIN Feld — nie alle drei pauschal, nie wenn `false`.
+/// EIN Feld — nie alle pauschal, nie wenn `false`.
 public struct PlanMatchReasons: Sendable, Equatable {
     public let goalMatch: Bool
     public let daysMatch: Bool
     public let levelMatch: Bool
+    public let equipmentMatch: Bool
 }
 
 /// DEL-090: Pure-Logik-Scorer. Filtert Templates ueber K.O.-Kriterien
@@ -101,7 +102,15 @@ public enum PlanMatchmaker {
         PlanMatchReasons(
             goalMatch: template.targetGoals.contains(answers.goal),
             daysMatch: template.daysPerWeek == answers.preferredDays,
-            levelMatch: template.targetExperience.contains(answers.experience)
+            levelMatch: template.targetExperience.contains(answers.experience),
+            // Equipment ist bereits ein harter K.O.-Filter in rankPlans —
+            // jedes hier ankommende Template erfuellt es per Konstruktion
+            // IMMER. Das Badge ist deshalb nur aussagekraeftig, wenn der
+            // Nutzer ueberhaupt eigene Praeferenzen gepflegt hat (leeres Set
+            // = "nicht gepflegt", siehe QuizAnswers.equipmentPreferences) —
+            // sonst waere es bei jedem Template an, genau das Badge-
+            // Saettigungsproblem, das dieser Fix beheben soll.
+            equipmentMatch: !answers.equipmentPreferences.isEmpty
         )
     }
 

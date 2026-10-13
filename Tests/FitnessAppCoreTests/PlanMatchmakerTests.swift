@@ -171,7 +171,10 @@ final class PlanMatchmakerTests: XCTestCase {
     // MARK: Fix "Badge fast ueberall" — matchReasons
 
     func testMatchReasonsAreTrueOnlyForActualMatches() {
-        let answers = QuizAnswers(goal: .strength, experience: .intermediate, preferredDays: 3, environment: .gym)
+        let answers = QuizAnswers(
+            goal: .strength, experience: .intermediate, preferredDays: 3, environment: .gym,
+            equipmentPreferences: [.barbell]
+        )
         guard let template = allTemplates.first(where: { $0.id == "powerlifting_3x5" }) else {
             return XCTFail("powerlifting_3x5 template not found")
         }
@@ -179,6 +182,19 @@ final class PlanMatchmakerTests: XCTestCase {
         XCTAssertTrue(reasons.goalMatch, "powerlifting_3x5 tags .strength")
         XCTAssertTrue(reasons.daysMatch, "powerlifting_3x5 runs 3 days")
         XCTAssertTrue(reasons.levelMatch, "powerlifting_3x5 tags .intermediate")
+        XCTAssertTrue(reasons.equipmentMatch, "Nutzer hat Equipment-Praeferenzen gepflegt")
+    }
+
+    /// Equipment ist bereits ein harter K.O.-Filter — das Badge ist nur dann
+    /// aussagekraeftig, wenn der Nutzer ueberhaupt Praeferenzen gepflegt hat
+    /// (leeres Set = "nicht gepflegt", siehe `QuizAnswers.equipmentPreferences`).
+    func testMatchReasonsEquipmentMatchIsFalseWithoutMaintainedPreferences() {
+        let answers = QuizAnswers(goal: .strength, experience: .intermediate, preferredDays: 3, environment: .gym)
+        guard let template = allTemplates.first(where: { $0.id == "powerlifting_3x5" }) else {
+            return XCTFail("powerlifting_3x5 template not found")
+        }
+        let reasons = PlanMatchmaker.matchReasons(for: template, answers: answers)
+        XCTAssertFalse(reasons.equipmentMatch, "leeres Equipment-Set heisst 'nicht gepflegt', kein Treffer")
     }
 
     func testMatchReasonsAreFalseWhenNothingMatches() {
