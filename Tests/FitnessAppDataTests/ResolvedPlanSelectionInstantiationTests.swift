@@ -58,8 +58,8 @@ final class ResolvedPlanSelectionInstantiationTests: XCTestCase {
         // pruefen wir separat die Instanziierung einer ECHTEN Substitution
         // ueber ein synthetisches Template unten.
         let profile = fullyConfirmedProfile(available: [.kettlebell: nil])
-        let context = SubstitutionContext(goal: .hypertrophy, experienceTrack: .experienced)
-        let selection = PlanSelectionResolver.resolve(template: hybridBalanced, profile: profile, context: context)
+        let substitutionContext = SubstitutionContext(goal: .hypertrophy, experienceTrack: .experienced)
+        let selection = PlanSelectionResolver.resolve(template: hybridBalanced, profile: profile, context: substitutionContext)
         XCTAssertFalse(selection.isAdapted, "Vorbedingung: Kettlebell-Variante passt bereits ohne Substitution (Phase 4)")
 
         let plan = ProgramInstantiator.instantiate(hybridBalanced, in: context, resolvedSelection: selection)
@@ -87,8 +87,8 @@ final class ResolvedPlanSelectionInstantiationTests: XCTestCase {
             daysPerWeek: 2, days: [strengthDay, circuitDay]
         )
         let profile = fullyConfirmedProfile(available: [.dumbbell: 2]) // Bank fehlt -> R3 greift
-        let context = SubstitutionContext(goal: .hypertrophy, experienceTrack: .experienced)
-        let selection = PlanSelectionResolver.resolve(template: template, profile: profile, context: context)
+        let substitutionContext = SubstitutionContext(goal: .hypertrophy, experienceTrack: .experienced)
+        let selection = PlanSelectionResolver.resolve(template: template, profile: profile, context: substitutionContext)
         XCTAssertTrue(selection.isAdapted)
         XCTAssertEqual(selection.appliedAdaptation?.replacements.first?.replacementName, "Ausfallschritte (KH)")
 

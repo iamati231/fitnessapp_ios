@@ -221,6 +221,38 @@ den 3 Phase-4-Tests (`ProgramInstantiatorEquipmentTests`) liegen damit 7
 discovered/ausgefuehrt werden (bekannte, seit Phase 4 dokumentierte
 SwiftData-Einschraenkung dieser Linux-Toolchain).
 
+**Korrektur dieser Aussage, belegt durch einen echten Codemagic-Lauf.** Der
+User hat ein `run_unit_tests__release_gate__1.log` eines tatsaechlichen
+Release-Gate-Builds hochgeladen — Build fehlgeschlagen, mit 4 konkreten
+Compiler-Fehlern in `ResolvedPlanSelectionInstantiationTests.swift`. Root
+Cause: in 2 der 4 Tests ueberschattet (shadowing) eine lokale `let context =
+SubstitutionContext(...)` die Klassen-Property `context: ModelContext`
+desselben Namens — `ProgramInstantiator.instantiate(..., in: context, ...)`
+erhielt dadurch den falschen Typ. Gefixt (lokale Variable auf
+`substitutionContext` umbenannt). `grep -r "let context = " Tests/
+FitnessAppDataTests` bestaetigt: kein weiteres Vorkommen dieses Musters im
+Target.
+
+Grund, warum Linux das nie haette fangen koennen: `SwiftData` ist auf dieser
+Linux-Toolchain NICHT importierbar (`echo 'import SwiftData' | swift -`
+schlaegt mit "no such module" fehl) — jede `FitnessAppDataTests`-Datei steht
+komplett hinter `#if canImport(SwiftData)`, das hier `false` ist. "Kompiliert
+auf Linux" bedeutete fuer diese Dateien bisher NUR "parst als syntaktisch
+gueltiges Swift", NICHT "der Datei-Inhalt wurde typgeprueft" — der
+Compiler sieht den Codeblock hinter dem `#if` auf Linux ueberhaupt nie. Das
+ist eine schwaechere Garantie als in jedem bisherigen Phasenbericht
+suggeriert. Als Ersatz wurde die gesamte Datei nach dem Fix manuell gegen
+die echten Signaturen verifiziert (`ProgramInstantiator.instantiate`,
+`DaySpec`/`ProgramTemplate`/`ExerciseSpec`-Init, `TrainingPlan`/`TrainingDay`/
+`Exercise`-Properties — alle per `grep`/`Read` im jeweiligen Quell-File
+gegengeprueft, mehrere Konstruktions-Muster zusaetzlich 1:1 gegen bereits auf
+Linux ausgefuehrten Core-Code abgeglichen). Danach erneut `swift build
+--build-tests` + `swift test --parallel`: weiterhin 944/944 gruen.
+**Fuer kuenftige Phasen:** "FitnessAppDataTests kompiliert auf Linux" wird ab
+jetzt NICHT mehr als Typpruefungs-Nachweis dargestellt — nur noch als
+Syntax-Check. Echte Typsicherheit fuer diese Dateien gibt es ausschliesslich
+durch einen echten Codemagic/Apple-Lauf.
+
 **Keine UI-Tests.** Es wurden fuer Phase 5 keine `FitnessAppUITests`
 ergaenzt — die neue Vorschau-/Freigabe-UI (`adaptedEquipmentBanner`,
 `DisclosureGroup`) wurde ausschliesslich durch Code-Review + die
