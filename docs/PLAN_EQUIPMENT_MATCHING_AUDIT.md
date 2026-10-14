@@ -522,3 +522,91 @@ Konkret fuer diese Phase:
   `DataPortabilityRoundtripTests` (Export/Import-Rundlauf, Bestandsprofil
   bleibt unbekannt). Diese laufen beim naechsten Codemagic-Build auf
   macOS automatisch mit.
+
+## 11. Phase 3 — Equipment-Auswahl in Onboarding + Profil-Editor
+
+Umgesetzt (Task #86):
+
+- **Core-Erweiterung** (`EquipmentRequirement.swift`):
+  `UserEquipmentProfile.confirmRemainingAsUnavailable()` (die "vollstaendige
+  Bestaetigung" — alles noch `.unknown` wird explizit `.unavailable`,
+  idempotent) und `.legacyEquipmentPreferences` (reine Projektion auf das
+  alte `Equipment`-Set, zaehlt NUR `.available`-Eintraege, nie `.unknown`).
+  9 neue Core-Tests, auf Linux ausgefuehrt und gruen.
+- **Persistenz** (`UserBodyProfile.swift`): neues Feld
+  `equipmentProfileConfirmedComplete: Bool` (Default `false`) + drei neue
+  Methoden: `confirmEquipmentProfileComplete()` (Bestaetigung + einmaliger
+  Legacy-Sync), `confirmBodyweightOnly()` (verwirft eine Teil-Auswahl,
+  bestaetigt alles als nicht verfuegbar), `setEquipmentAvailability(_:for:
+  count:)` (Einzel-Item-Aenderung, synct die alte `equipmentPreferences`
+  nur wenn bereits bestaetigt). **Zentrale Korrektheits-Eigenschaft,
+  getestet**: vor der ersten Bestaetigung bleibt `equipmentPreferences`
+  (DEL-170, von `PlanMatchmaker`s Equipment-Hartfilter konsumiert) komplett
+  unberuehrt — sonst haette eine unvollstaendige Zwischenauswahl den
+  bestehenden Matcher-Filter verfrueht scharf geschaltet (Abschnitt 9's
+  Leitlinie "kein pauschales Equipment-passend aus unvollstaendigen
+  Angaben" wörtlich am Code durchgesetzt). CSV um eine vierte additive
+  Spalte erweitert. 7 neue Tests (Data-Layer): geschrieben, kompiliert,
+  nicht lokal ausgefuehrt (siehe Abschnitt 10 — gilt fuer jeden
+  `FitnessAppDataTests`-Test in diesem Projekt).
+- **Geteilte UI-Komponente** (`Components/EquipmentProfileEditor.swift`,
+  neu): EINZIGE Implementierung der Mehrfachauswahl — Gewichte-Sektion (4
+  Items) + Zubehoer-Sektion (6 Items), je Item ein Toggle, Stueckzahl-Chips
+  (1 / 2+, kein Default) fuer Kurzhantel/Kettlebell, "Nur Koerpergewicht"
+  als eigene Aktion (verwirft Teil-Auswahl, markiert alles nicht
+  verfuegbar). Die "vollstaendige Bestaetigung" selbst ist bewusst NICHT
+  Teil der Komponente — das entscheidet der Einbettungs-Kontext (Wizard-
+  "Weiter" vs. Sheet-"Fertig"), damit Navigation und Dateneingabe getrennt
+  bleiben.
+- **Onboarding** (`OnboardingView.swift`): Equipment-Schritt nutzt die
+  geteilte Komponente, KEIN Environment-Prefill mehr (die alten
+  `defaultEquipment(for:)`/`prefillEquipmentIfNeeded`-Funktionen sind
+  vollstaendig entfernt, nicht nur deaktiviert). Neuer "Später
+  einrichten"-Link umgeht die Bestaetigung bewusst (alles bleibt
+  `.unknown`); der normale "Weiter"-Pfad bestaetigt. Eine neue
+  `derivedLegacyEquipment`-Berechnung liefert `[]`, bis bestaetigt wurde —
+  speist `QuizAnswers`, `BaselineCheckFlowView`, `TemplatePreviewView` und
+  `ProgramInstantiator.instantiate` konsistent. Der `.noEquipment`-
+  Umgebungs-Skip (DEL-207: Equipment-Schritt wird fuer "Kein Equipment"
+  uebersprungen) bleibt bewusst unangetastet — nicht Teil dieser Anfrage,
+  siehe Abgrenzung unten.
+- **Profil-Editor** (`ProfileEditorView.swift`): die alte Checkbox-Liste
+  ist durch eine `DeltiqRow` mit Status-Text (Nicht eingerichtet / Teilweise
+  erfasst / Nur Koerpergewicht / Bestaetigt) ersetzt, die ein Sheet mit der
+  gleichen geteilten Komponente oeffnet (Vorbild: der bestehende
+  Baseline-Check-Re-Entry-Punkt). Toolbar "Fertig" bestaetigt, "Schliessen"
+  verlaesst ohne zu bestaetigen (= "spaeter", Angaben bleiben wie sie
+  sind). Ein eigener Binding-Wrapper haelt die alte `equipmentPreferences`
+  live im Sync, sobald einmal bestaetigt wurde.
+- **Bestehende Trainingsplaene unveraendert**: durch Konstruktion erfuellt
+  — nichts in dieser Phase beruehrt `TrainingPlan`/`TrainingDay`/
+  `ProgramInstantiator`s Instanziierungslogik selbst, nur WELCHE
+  Equipment-Menge als Eingabe an die bestehende, unveraenderte Logik
+  uebergeben wird.
+- **Lokalisierung**: 24 neue Keys (DE/EN/TR, echte Uebersetzungen, kein
+  TR=EN-Platzhalter) + 3 inhaltlich ueberarbeitete Bestandskeys
+  (`onboarding.equipment.subtitle`/`.footer`, `profile.equipment.footer`).
+  `TRANSLATIONS.md` regeneriert (1973 → 1997 Keys, 0 hartkodierte Strings).
+
+### Bewusst nicht umgesetzt / unveraendert gelassen
+
+- Der `.noEquipment`-Umgebungs-Skip (Step wird fuer "Kein Equipment"
+  uebersprungen) — die Anfrage nennt explizit nur Gym/Home-Gym-Defaults als
+  zu entfernendes Verhalten. Ein Nutzer, der "Kein Equipment" waehlt, kann
+  seine Ausruestung (z.B. eine Klimmzugstange zuhause) aktuell weiterhin
+  nicht im Onboarding angeben — vorgemerkt als offene Frage fuer eine
+  spaetere Phase, sobald das neue Modell tatsaechlich im Matching verwendet
+  wird.
+- Keine Aenderung an `PlanMatchmaker`/`ProgramInstantiator`/
+  `EquipmentVariant`/`BaselineCheckFlowView`s eigener `hasPullUpBar`-Frage
+  — alle konsumieren weiterhin ausschliesslich die alte, jetzt automatisch
+  synchronisierte `equipmentPreferences`. Die Umstellung dieser Konsumenten
+  auf das reichere `UserEquipmentProfile`/die dreistufige Pruefung ist
+  Gegenstand der noch ausstehenden Taskliste (u.a. #87-89).
+- Kein UI-Test (kein Test-Target im Repo), kein echter Xcode/Geraete-Lauf
+  — nur Linux-Build (Klammer-Balance, keine echte Typpruefung fuer
+  SwiftUI-Dateien) + sorgfaeltige manuelle Zeile-fuer-Zeile-Pruefung,
+  zusaetzlich gegen mehrere bereits bestehende, nachweislich funktionierende
+  Code-Stellen in genau dieser Codebase abgeglichen (u.a. identisches
+  Ternary-in-Text/-foregroundStyle-Muster, identisches
+  DeltiqSection+.sheet-Muster).

@@ -171,4 +171,81 @@ final class EquipmentRequirementTests: XCTestCase {
         let profile = UserEquipmentProfile(availability: [.dumbbell: .available], counts: [.dumbbell: 2])
         XCTAssertTrue(requirement.evaluate(against: profile).isSatisfied)
     }
+
+    // MARK: - confirmRemainingAsUnavailable (Phase 3: vollstaendige Bestaetigung)
+
+    func testConfirmRemainingAsUnavailableLeavesAlreadyAvailableItemsUntouched() {
+        var profile = UserEquipmentProfile(availability: [.kettlebell: .available], counts: [.kettlebell: 1])
+        profile.confirmRemainingAsUnavailable()
+        XCTAssertEqual(profile.availability(for: .kettlebell), .available)
+        XCTAssertEqual(profile.count(for: .kettlebell), 1, "Stueckzahl bleibt beim Bestaetigen unangetastet")
+    }
+
+    func testConfirmRemainingAsUnavailableLeavesAlreadyUnavailableItemsUntouched() {
+        var profile = UserEquipmentProfile(availability: [.rack: .unavailable])
+        profile.confirmRemainingAsUnavailable()
+        XCTAssertEqual(profile.availability(for: .rack), .unavailable)
+    }
+
+    func testConfirmRemainingAsUnavailableConvertsEveryUnknownItem() {
+        var profile = UserEquipmentProfile(availability: [.kettlebell: .available])
+        profile.confirmRemainingAsUnavailable()
+        for item in EquipmentItem.allCases where item != .kettlebell {
+            XCTAssertEqual(profile.availability(for: item), .unavailable,
+                           "\(item) war nicht ausgewaehlt und muss nach der Bestaetigung als nicht verfuegbar gelten")
+        }
+        XCTAssertEqual(profile.availability(for: .kettlebell), .available)
+    }
+
+    func testConfirmRemainingAsUnavailableOnEmptyProfileMatchesBodyweightOnly() {
+        var profile = UserEquipmentProfile()
+        profile.confirmRemainingAsUnavailable()
+        for item in EquipmentItem.allCases {
+            XCTAssertEqual(profile.availability(for: item), .unavailable)
+        }
+    }
+
+    func testConfirmRemainingAsUnavailableIsIdempotent() {
+        var profile = UserEquipmentProfile(availability: [.barbell: .available])
+        profile.confirmRemainingAsUnavailable()
+        let afterFirstCall = profile
+        profile.confirmRemainingAsUnavailable()
+        XCTAssertEqual(profile, afterFirstCall, "Ein zweiter Aufruf (z.B. nach einem App-Update mit neuen Items) aendert nichts an bereits entschiedenen Items")
+    }
+
+    // MARK: - legacyEquipmentPreferences (Rueckwaerts-Kompatibilitaet DEL-170)
+
+    func testLegacyEquipmentPreferencesAlwaysIncludesBodyweight() {
+        XCTAssertEqual(UserEquipmentProfile().legacyEquipmentPreferences, [.bodyweight])
+    }
+
+    func testLegacyEquipmentPreferencesOnlyCountsConfirmedAvailableItems() {
+        let profile = UserEquipmentProfile(availability: [
+            .kettlebell: .available,
+            .barbell: .unknown,     // nicht bestaetigt -> zaehlt nicht
+            .dumbbell: .unavailable // explizit nicht vorhanden -> zaehlt nicht
+        ])
+        XCTAssertEqual(profile.legacyEquipmentPreferences, [.bodyweight, .kettlebell])
+    }
+
+    func testLegacyEquipmentPreferencesMapsAllSixOverlappingItems() {
+        let profile = UserEquipmentProfile(availability: [
+            .dumbbell: .available, .kettlebell: .available, .barbell: .available,
+            .resistanceBand: .available, .cableStation: .available, .machineStation: .available
+        ])
+        XCTAssertEqual(profile.legacyEquipmentPreferences, [
+            .bodyweight, .dumbbell, .kettlebell, .barbell, .band, .cable, .machine
+        ])
+    }
+
+    func testLegacyEquipmentPreferencesIgnoresAccessoriesWithoutOldModelEquivalent() {
+        // Audit Abschnitt 3: Bank/Rack/Klimmzugstange existieren im alten
+        // Equipment-Enum schlicht nicht - duerfen also auch in der Projektion
+        // nichts beitragen.
+        let profile = UserEquipmentProfile(availability: [
+            .pullUpBar: .available, .flatBench: .available,
+            .adjustableBench: .available, .rack: .available
+        ])
+        XCTAssertEqual(profile.legacyEquipmentPreferences, [.bodyweight])
+    }
 }

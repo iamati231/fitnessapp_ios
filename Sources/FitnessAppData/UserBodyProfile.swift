@@ -68,11 +68,11 @@ public final class UserBodyProfile {
     /// das deckt sowohl ein brandneues Item als auch ein komplett
     /// unberuehrtes Bestandsprofil (beide Listen leer) automatisch und
     /// korrekt ab: "eine leere alte Auswahl bleibt unbekannt". Absichtlich
-    /// KEIN Backfill aus `equipmentPreferencesRaw`: dessen Eintraege koennen
-    /// aus einer ungeprueften Environment-Vorbelegung stammen (Audit
-    /// Abschnitt 5.1/5.2, `OnboardingView.defaultEquipment(for:)`), eine
-    /// Uebernahme in den neuen Modell waere exakt die "falsche Sicherheit
-    /// aus unvollstaendigen/fraglichen Altdaten", die Phase 2 vermeiden soll.
+    /// KEIN Backfill aus `equipmentPreferencesRaw`: dessen Eintraege konnten
+    /// vor Phase 3 aus einer ungeprueften Environment-Vorbelegung stammen
+    /// (Audit Abschnitt 5.1/5.2), eine Uebernahme in das neue Modell waere
+    /// exakt die "falsche Sicherheit aus unvollstaendigen/fraglichen
+    /// Altdaten", die diese Phase vermeiden soll.
     public var equipmentAvailableItemsRaw: [String] = []
     public var equipmentUnavailableItemsRaw: [String] = []
 
@@ -82,6 +82,19 @@ public final class UserBodyProfile {
     /// der uebrigen Felder hier, kein neuer Persistenz-Typ noetig. Ein
     /// fehlender Eintrag bedeutet "nicht erfasst", nicht "0".
     public var equipmentItemCountsRaw: [String] = []
+
+    /// Smart-Onboarding-Epic Phase 3: ob die Equipment-Erfassung oben
+    /// EXPLIZIT als vollstaendig bestaetigt wurde (ueber
+    /// `confirmEquipmentProfileComplete()` oder "Nur Koerpergewicht").
+    /// Default `false` — sowohl fuer ein brandneues Profil als auch fuer
+    /// jedes Bestandsprofil vor dieser Phase (Lightweight-Migration).
+    /// Steuert NICHT die Tri-State-Semantik selbst (die lebt rein in den
+    /// drei Feldern oben, siehe `equipmentProfile`), sondern ob die aeltere
+    /// `equipmentPreferences` (DEL-170) bereits aus dem neuen Modell
+    /// synchronisiert werden darf — vor der ersten Bestaetigung bliebe eine
+    /// Synchronisierung sonst eine verfruehte, moeglicherweise unvollstaendige
+    /// Equipment-Aussage (siehe `confirmEquipmentProfileComplete`).
+    public var equipmentProfileConfirmedComplete: Bool = false
 
     /// DEL-203: Wochenziel für den Trainings-Streak (1-7 Workouts/Woche).
     /// Der Kalender-Streak (DEL-197) zählt nur Wochen, die dieses Ziel
@@ -371,6 +384,61 @@ public final class UserBodyProfile {
             equipmentItemCountsRaw = newValue.counts
                 .map { "\($0.key.rawValue):\($0.value)" }
                 .sorted()
+        }
+    }
+
+    /// Smart-Onboarding-Epic Phase 3: die "vollstaendige Bestaetigung" fuer
+    /// ein lebendes, bereits inserted `UserBodyProfile` (Profil-Editor —
+    /// Onboarding hat noch kein Profil und ruft stattdessen direkt
+    /// `UserEquipmentProfile.confirmRemainingAsUnavailable()` auf einem
+    /// lokalen `@State`-Wert auf). Alles bisher nicht ausgewaehlte Item wird
+    /// jetzt explizit `.unavailable`; danach ist die Erfassung abgeschlossen
+    /// und die aeltere `equipmentPreferences` (DEL-170) wird EINMALIG aus
+    /// dem neuen, reicheren Modell synchronisiert — die einzige Schreibstelle
+    /// dafuer seit Phase 3 die alte Checkbox-UI ersetzt hat (keine zweite,
+    /// unabhaengig editierbare Equipment-Quelle mehr).
+    public func confirmEquipmentProfileComplete() {
+        var current = equipmentProfile
+        current.confirmRemainingAsUnavailable()
+        equipmentProfile = current
+        equipmentProfileConfirmedComplete = true
+        equipmentPreferences = current.legacyEquipmentPreferences
+    }
+
+    /// "Nur Koerpergewicht" (Audit-Vorgabe: muss ausdruecklich bestaetigt
+    /// werden, nicht nur aus einer leeren Auswahl erschlossen). Setzt JEDES
+    /// Item auf `.unavailable` — verwirft dabei bewusst eine eventuell
+    /// zuvor begonnene Teil-Auswahl, da "nur Koerpergewicht" ihr sonst
+    /// widersprechen wuerde.
+    public func confirmBodyweightOnly() {
+        equipmentProfile = UserEquipmentProfile()
+        confirmEquipmentProfileComplete()
+    }
+
+    /// Smart-Onboarding-Epic Phase 3: setzt Verfuegbarkeit (und optional
+    /// Stueckzahl) GENAU EINES Items und haelt `equipmentPreferences`
+    /// automatisch im Sync — aber NUR wenn die Erfassung bereits bestaetigt
+    /// wurde (siehe `confirmEquipmentProfileComplete`). Vor der ersten
+    /// Bestaetigung bleibt die aeltere Spalte unberuehrt, damit kein
+    /// Zwischenstand sie verfrueht mit einer unvollstaendigen Aussage
+    /// ueberschreibt. `availability: nil` entfernt den Eintrag wieder
+    /// (zurueck zu `.unknown`) — das ist, was ein erneutes Abwaehlen VOR der
+    /// Bestaetigung tut, nie ein explizites `.unavailable`.
+    public func setEquipmentAvailability(_ availability: EquipmentAvailability?, for item: EquipmentItem, count: Int? = nil) {
+        var current = equipmentProfile
+        if let availability {
+            current.availability[item] = availability
+        } else {
+            current.availability.removeValue(forKey: item)
+        }
+        if let count {
+            current.counts[item] = count
+        } else {
+            current.counts.removeValue(forKey: item)
+        }
+        equipmentProfile = current
+        if equipmentProfileConfirmedComplete {
+            equipmentPreferences = current.legacyEquipmentPreferences
         }
     }
 

@@ -16807,19 +16807,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bestimmt, welche Geräte-Variante dein Trainingsplan nutzt — z. B. Kurzhantel- statt Langhantel-Übungen, wenn du kein Rack hast."
+            "value": "Wähle alles aus, was du nutzen kannst — auch Zubehör wie Bank oder Klimmzugstange. Nicht Ausgewähltes bleibt offen, bis du unten bestätigst."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Determines which equipment variant your training plan uses — e.g. dumbbell instead of barbell exercises if you have no rack."
+            "value": "Pick everything you can use — including accessories like a bench or pull-up bar. Anything unselected stays open until you confirm below."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Antrenman planının hangi ekipman varyantını kullanacağını belirler — örneğin rack yoksa halter yerine dambıl egzersizleri."
+            "value": "Kullanabileceğin her şeyi seç — bank veya barfiks demiri gibi aksesuarlar dahil. Seçilmeyenler, aşağıda onaylayana kadar açık kalır."
           }
         }
       }
@@ -16830,19 +16830,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Du kannst diese Auswahl später jederzeit im Profil anpassen. Leer lassen = Standard-Variante (Langhantel) wird verwendet."
+            "value": "Du kannst diese Auswahl später jederzeit im Profil anpassen. Dein Trainingsort allein legt dein Equipment nie automatisch fest."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You can change this anytime in your profile. Leave empty = default variant (barbell) is used."
+            "value": "You can adjust this anytime later in your profile. Your training location alone never automatically sets your equipment."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bu seçimi profilden istediğin zaman değiştirebilirsin. Boş bırakırsan varsayılan (barbell) kullanılır."
+            "value": "Bu seçimi istediğin zaman profilinden değiştirebilirsin. Antrenman yerin tek başına ekipmanını asla otomatik belirlemez."
           }
         }
       }
@@ -17606,25 +17606,577 @@
         }
       }
     },
+    "equipmentItem.dumbbell": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kurzhantel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dambıl"
+          }
+        }
+      }
+    },
+    "equipmentItem.kettlebell": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kettlebell"
+          }
+        }
+      }
+    },
+    "equipmentItem.barbell": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Langhantel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Halter"
+          }
+        }
+      }
+    },
+    "equipmentItem.resistanceBand": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Widerstandsband"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resistance band"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direnç bandı"
+          }
+        }
+      }
+    },
+    "equipmentItem.pullUpBar": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klimmzugstange"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pull-up bar"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barfiks demiri"
+          }
+        }
+      }
+    },
+    "equipmentItem.flatBench": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flachbank"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flat bench"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Düz bank"
+          }
+        }
+      }
+    },
+    "equipmentItem.adjustableBench": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verstellbare Bank"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjustable bench"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayarlanabilir bank"
+          }
+        }
+      }
+    },
+    "equipmentItem.rack": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rack"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rack"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Squat rack"
+          }
+        }
+      }
+    },
+    "equipmentItem.cableStation": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kabelzug-Station"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable station"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kablo istasyonu"
+          }
+        }
+      }
+    },
+    "equipmentItem.machineStation": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maschinen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Machines"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Makineler"
+          }
+        }
+      }
+    },
+    "equipmentEditor.section.weights": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gewichte"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weights"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ağırlıklar"
+          }
+        }
+      }
+    },
+    "equipmentEditor.section.accessories": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zubehör & Stationen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessories & stations"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aksesuarlar ve istasyonlar"
+          }
+        }
+      }
+    },
+    "equipmentEditor.bodyweightOnly.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur Körpergewicht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bodyweight only"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sadece vücut ağırlığı"
+          }
+        }
+      }
+    },
+    "equipmentEditor.bodyweightOnly.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ich trainiere ohne zusätzliche Geräte"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I train without any extra equipment"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ek ekipman olmadan antrenman yapıyorum"
+          }
+        }
+      }
+    },
+    "equipmentEditor.count.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie viele?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How many?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaç tane?"
+          }
+        }
+      }
+    },
+    "equipmentEditor.count.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1"
+          }
+        }
+      }
+    },
+    "equipmentEditor.count.twoOrMore": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 oder mehr"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 or more"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 veya daha fazla"
+          }
+        }
+      }
+    },
+    "equipmentEditor.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht ausgewählte Geräte gelten als unbekannt, nicht als fehlend — bis du bestätigst. Du kannst alles später im Profil ändern."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unselected equipment counts as unknown, not missing — until you confirm. You can change everything later in your profile."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seçilmeyen ekipmanlar, onaylayana kadar eksik değil bilinmiyor sayılır. Her şeyi daha sonra profilinden değiştirebilirsin."
+          }
+        }
+      }
+    },
+    "onboarding.equipment.laterLink": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Später einrichten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set up later"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daha sonra ayarla"
+          }
+        }
+      }
+    },
+    "profile.equipment.sheet.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausrüstung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipman"
+          }
+        }
+      }
+    },
+    "profile.equipment.status.notSet": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht eingerichtet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not set up"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayarlanmadı"
+          }
+        }
+      }
+    },
+    "profile.equipment.status.bodyweightOnly": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur Körpergewicht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bodyweight only"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sadece vücut ağırlığı"
+          }
+        }
+      }
+    },
+    "profile.equipment.status.confirmed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bestätigt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmed"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Onaylandı"
+          }
+        }
+      }
+    },
+    "profile.equipment.status.inProgress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teilweise erfasst"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partially filled in"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kısmen girildi"
+          }
+        }
+      }
+    },
     "profile.equipment.footer": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wähle aus, was du zur Verfügung hast. Pläne mit mehreren Implement-Varianten (z.B. Hybrid) bekommen automatisch die passende Übungsauswahl. Leer = Standard-Variante (Langhantel)."
+            "value": "Wähle aus, was du zur Verfügung hast. Nicht Ausgewähltes gilt als unbekannt, bis du bestätigst — dein Trainingsort legt dein Equipment nie automatisch fest."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pick what you have available. Plans with multiple implement variants (e.g. Hybrid) automatically get the matching exercise lineup. Empty = default variant (barbell)."
+            "value": "Pick what you have available. Anything unselected counts as unknown until you confirm — your training location never automatically sets your equipment."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sahip olduğun ekipmanı seç. Birden çok ekipman varyantı olan planlar (örn. Hybrid) otomatik olarak uygun hareket listesini alır. Boş = varsayılan (barbell)."
+            "value": "Elindeki ekipmanı seç. Seçilmeyenler onaylayana kadar bilinmiyor sayılır — antrenman yerin ekipmanını asla otomatik belirlemez."
           }
         }
       }

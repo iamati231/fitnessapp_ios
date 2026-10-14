@@ -244,7 +244,11 @@ public enum DataExportService {
             // fuer die dreiwertige Equipment-Erfassung — aeltere Importer
             // ignorieren sie, aeltere ZIPs liefern beim Import ueberall ""
             // (= alles unbekannt, siehe `UserBodyProfile.equipmentProfile`).
-            "equipment_available_items", "equipment_unavailable_items", "equipment_item_counts"
+            "equipment_available_items", "equipment_unavailable_items", "equipment_item_counts",
+            // Smart-Onboarding-Epic Phase 3: vierte additive Spalte, gleiches
+            // Prinzip — aeltere Importer ignorieren sie, aeltere ZIPs liefern
+            // beim Import "" = false (noch nicht bestaetigt).
+            "equipment_profile_confirmed_complete"
         ])
         for p in profiles {
             w.appendRow([
@@ -289,7 +293,8 @@ public enum DataExportService {
                 p.baselineDesiredFirstWeekIntensityRaw ?? "",
                 p.equipmentAvailableItemsRaw.joined(separator: ";"),
                 p.equipmentUnavailableItemsRaw.joined(separator: ";"),
-                p.equipmentItemCountsRaw.joined(separator: ";")
+                p.equipmentItemCountsRaw.joined(separator: ";"),
+                CSVWriter.bool(p.equipmentProfileConfirmedComplete)
             ])
         }
         return w.data()

@@ -44,6 +44,46 @@ public extension Equipment {
     }
 }
 
+/// Smart-Onboarding-Epic Phase 3: lokalisierte Namen + SF-Symbole fuer die
+/// neue, feingranulare Nutzer-Inventar-Erfassung (`EquipmentProfileEditor`).
+/// Eigener Key-Namespace `equipmentItem.*`, getrennt von `equipment.*`
+/// (das bleibt die aeltere, grobe `Equipment`-Klassifikation oben).
+public extension EquipmentItem {
+    var localizedName: LocalizedStringResource {
+        switch self {
+        case .dumbbell:       LocalizedStringResource("equipmentItem.dumbbell",       bundle: .fitnessAppUI)
+        case .kettlebell:     LocalizedStringResource("equipmentItem.kettlebell",     bundle: .fitnessAppUI)
+        case .barbell:        LocalizedStringResource("equipmentItem.barbell",        bundle: .fitnessAppUI)
+        case .resistanceBand: LocalizedStringResource("equipmentItem.resistanceBand", bundle: .fitnessAppUI)
+        case .pullUpBar:      LocalizedStringResource("equipmentItem.pullUpBar",      bundle: .fitnessAppUI)
+        case .flatBench:      LocalizedStringResource("equipmentItem.flatBench",      bundle: .fitnessAppUI)
+        case .adjustableBench: LocalizedStringResource("equipmentItem.adjustableBench", bundle: .fitnessAppUI)
+        case .rack:           LocalizedStringResource("equipmentItem.rack",           bundle: .fitnessAppUI)
+        case .cableStation:   LocalizedStringResource("equipmentItem.cableStation",   bundle: .fitnessAppUI)
+        case .machineStation: LocalizedStringResource("equipmentItem.machineStation", bundle: .fitnessAppUI)
+        }
+    }
+
+    /// Bewusst konservativ gewaehlte, lange bekannte SF-Symbole — Gewichte
+    /// spiegeln `Equipment.iconName` (gleiches physisches Ding), Zubehoer
+    /// nutzt einfache, garantiert vorhandene Basis-Symbole statt exotischer
+    /// Namen, die auf dieser Linux-Sandbox nicht visuell verifizierbar sind.
+    var iconName: String {
+        switch self {
+        case .dumbbell:        return "dumbbell"
+        case .kettlebell:      return "circle.grid.cross"
+        case .barbell:         return "scalemass"
+        case .resistanceBand:  return "infinity"
+        case .pullUpBar:       return "figure.climbing"
+        case .flatBench:       return "rectangle"
+        case .adjustableBench: return "slider.horizontal.3"
+        case .rack:            return "square.grid.3x3"
+        case .cableStation:    return "cable.connector"
+        case .machineStation:  return "gearshape"
+        }
+    }
+}
+
 public extension CardioEquipment {
     /// DEL-155: lokalisierter Anzeigename fuer den Cardio-Equipment-Picker
     /// im Verlauf + ExerciseEditor.

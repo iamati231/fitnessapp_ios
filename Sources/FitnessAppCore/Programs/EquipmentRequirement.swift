@@ -89,6 +89,45 @@ public struct UserEquipmentProfile: Sendable, Equatable {
     public func count(for item: EquipmentItem) -> Int? {
         counts[item]
     }
+
+    /// Smart-Onboarding-Epic Phase 3: die "vollstaendige Bestaetigung".
+    /// Vor diesem Aufruf bleibt ein nicht ausgewaehltes Item `.unknown`
+    /// (siehe Typ-Dokumentation oben) — genau das verlangt die Vorgabe
+    /// ("ungewaehlte Geraete vor der vollstaendigen Bestaetigung nicht als
+    /// fehlend interpretieren"). Danach ist jedes Item explizit entschieden:
+    /// alles, was nicht aktiv auf `.available` gesetzt wurde, wird jetzt zu
+    /// `.unavailable`. Idempotent — ein zweiter Aufruf (z.B. nach einem
+    /// spaeteren App-Update mit neuen `EquipmentItem`-Faellen) aendert nur
+    /// die inzwischen neu hinzugekommenen, noch unbekannten Items.
+    public mutating func confirmRemainingAsUnavailable() {
+        for item in EquipmentItem.allCases where availability(for: item) == .unknown {
+            availability[item] = .unavailable
+        }
+    }
+
+    /// Projiziert diese reichhaltigeren Phase-2/3-Daten auf das aeltere,
+    /// grobe `Equipment`-Set (DEL-170) — ausschliesslich fuer Rueckwaerts-
+    /// Kompatibilitaet mit Call-Sites, die noch nicht auf
+    /// `UserEquipmentProfile` umgestellt sind (`PlanMatchmaker`,
+    /// `ProgramInstantiator`, `EquipmentVariant`). Zaehlt NUR echte
+    /// `.available`-Eintraege — niemals `.unknown`, sonst waere das genau
+    /// die "falsche Sicherheit aus unvollstaendigen Angaben", die beide
+    /// Phasen vermeiden sollen. `.bodyweight` ist immer enthalten (jeder
+    /// hat einen Koerper, unabhaengig von jeder Auswahl hier).
+    ///
+    /// Zubehoer/Stationen ohne Entsprechung im alten Modell (Bank, Rack,
+    /// Klimmzugstange) tragen bewusst nichts bei — das grobe `Equipment`
+    /// kennt sie schlicht nicht (Audit Abschnitt 3).
+    public var legacyEquipmentPreferences: Set<Equipment> {
+        var result: Set<Equipment> = [.bodyweight]
+        if availability(for: .dumbbell) == .available { result.insert(.dumbbell) }
+        if availability(for: .kettlebell) == .available { result.insert(.kettlebell) }
+        if availability(for: .barbell) == .available { result.insert(.barbell) }
+        if availability(for: .resistanceBand) == .available { result.insert(.band) }
+        if availability(for: .cableStation) == .available { result.insert(.cable) }
+        if availability(for: .machineStation) == .available { result.insert(.machine) }
+        return result
+    }
 }
 
 /// Voraussetzung fuer eine konkrete Uebungs-Variante: ein Baum aus UND/

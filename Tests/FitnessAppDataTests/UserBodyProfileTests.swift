@@ -230,5 +230,87 @@ final class UserBodyProfileTests: XCTestCase {
 
         XCTAssertNil(profile.equipmentProfile.count(for: .dumbbell))
     }
+
+    // MARK: - Smart-Onboarding-Epic Phase 3: Bestaetigung + Legacy-Sync
+
+    func testConfirmEquipmentProfileCompleteConvertsUnknownItemsAndSetsFlag() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        profile.equipmentProfile = UserEquipmentProfile(availability: [.kettlebell: .available])
+        profile.confirmEquipmentProfileComplete()
+
+        XCTAssertTrue(profile.equipmentProfileConfirmedComplete)
+        XCTAssertEqual(profile.equipmentProfile.availability(for: .kettlebell), .available)
+        XCTAssertEqual(profile.equipmentProfile.availability(for: .barbell), .unavailable,
+                       "Nicht ausgewaehlt + jetzt bestaetigt -> explizit nicht verfuegbar")
+    }
+
+    /// Zentrale Korrektheits-Anforderung: VOR der Bestaetigung darf die
+    /// aeltere `equipmentPreferences`-Spalte nicht veraendert werden, sonst
+    /// wuerde eine unvollstaendige Zwischenauswahl den bestehenden Plan-
+    /// Matcher-Hartfilter (`PlanMatchmaker.equipmentMatches`) vorzeitig
+    /// scharf schalten (leeres Set = "nicht gepflegt", ein verfruehtes
+    /// `[.bodyweight]` waere bereits NICHT leer und wuerde sofort filtern).
+    func testEquipmentPreferencesStaysEmptyBeforeConfirmation() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        profile.setEquipmentAvailability(.available, for: .kettlebell)
+
+        XCTAssertTrue(profile.equipmentPreferences.isEmpty,
+                      "Vor der Bestaetigung darf die alte Spalte nicht befuellt werden")
+        XCTAssertFalse(profile.equipmentProfileConfirmedComplete)
+    }
+
+    func testConfirmEquipmentProfileCompleteSyncsLegacyEquipmentPreferences() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        profile.setEquipmentAvailability(.available, for: .kettlebell)
+        profile.confirmEquipmentProfileComplete()
+
+        XCTAssertEqual(profile.equipmentPreferences, [.bodyweight, .kettlebell])
+    }
+
+    /// Nach der ersten Bestaetigung synchronisiert jede weitere
+    /// `setEquipmentAvailability`-Aenderung sofort weiter (die Erfassung
+    /// gilt als abgeschlossen, ein neuer Gegenstand ist nur ein Update
+    /// eines bereits vollstaendigen Bildes, kein verfruehter Zwischenstand).
+    func testSetEquipmentAvailabilitySyncsLiveAfterConfirmation() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        profile.confirmEquipmentProfileComplete() // alles unavailable, bestaetigt
+        profile.setEquipmentAvailability(.available, for: .barbell)
+
+        XCTAssertEqual(profile.equipmentPreferences, [.bodyweight, .barbell])
+    }
+
+    func testSetEquipmentAvailabilityNilRemovesEntryInsteadOfMarkingUnavailable() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        profile.setEquipmentAvailability(.available, for: .rack)
+        profile.setEquipmentAvailability(nil, for: .rack)
+
+        XCTAssertEqual(profile.equipmentProfile.availability(for: .rack), .unknown,
+                       "Ein erneutes Abwaehlen VOR der Bestaetigung macht das Item wieder unbekannt, nie explizit nicht-verfuegbar")
+    }
+
+    func testConfirmBodyweightOnlyClearsPriorSelectionAndConfirms() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        profile.setEquipmentAvailability(.available, for: .kettlebell, count: 2)
+        profile.confirmBodyweightOnly()
+
+        XCTAssertTrue(profile.equipmentProfileConfirmedComplete)
+        XCTAssertEqual(profile.equipmentPreferences, [.bodyweight])
+        for item in EquipmentItem.allCases {
+            XCTAssertEqual(profile.equipmentProfile.availability(for: item), .unavailable)
+        }
+        XCTAssertNil(profile.equipmentProfile.count(for: .kettlebell), "Nur-Koerpergewicht verwirft eine zuvor begonnene Teil-Auswahl vollstaendig")
+    }
 }
 #endif

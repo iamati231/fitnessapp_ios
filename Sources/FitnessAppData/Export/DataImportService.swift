@@ -640,6 +640,10 @@ public enum DataImportService {
             p.equipmentAvailableItemsRaw = splitMulti(row["equipment_available_items"])
             p.equipmentUnavailableItemsRaw = splitMulti(row["equipment_unavailable_items"])
             p.equipmentItemCountsRaw = splitMulti(row["equipment_item_counts"])
+            // Phase 3, vierte additive Spalte: fehlend oder leer -> false
+            // (noch nicht bestaetigt), identisches Muster wie
+            // cardio_coaching_enabled oben.
+            p.equipmentProfileConfirmedComplete = row.bool("equipment_profile_confirmed_complete") ?? false
             // Bugfix (Audit): Spalten-PRAESENZ statt Wert-Leerheit pruefen.
             // Eine leere Liste ist ein gueltiger, bewusst vom User gewaehlter
             // Zustand ("alle Hero-Metriken/Dashboard-Widgets ausgeblendet",

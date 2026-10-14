@@ -107,11 +107,28 @@ public struct OnboardingView: View {
     @State private var showingBaselineCheck: Bool = false
     @State private var baselineEntryMode: BaselineCheckFlowView.EntryMode = .guidedTest
 
-    // DEL-170b — Equipment-Präferenzen (Multi-Select). Wird beim ersten
-    // Betreten des Steps mit sinnvollen Defaults aus `environment` befüllt,
-    // sodass der User direkt eine Vor-Auswahl sieht und nur korrigieren muss.
-    @State private var equipmentPreferences: Set<Equipment> = []
-    @State private var equipmentPrefilledForEnv: EnvironmentType? = nil
+    // Smart-Onboarding-Epic Phase 3 (PLAN_EQUIPMENT_MATCHING_AUDIT.md):
+    // dreiwertige Equipment-Erfassung. Bewusst OHNE Environment-Prefill —
+    // "Ort ist nicht Ausstattung" (Audit 5.1): "Gym"/"Home-Gym" duerfen nie
+    // automatisch Equipment als vorhanden markieren. Kein Profil existiert
+    // hier noch, daher lokaler State statt direkt `UserBodyProfile` —
+    // `finishOnboarding()` uebertraegt beides auf das neu angelegte Profil.
+    @State private var equipmentProfile: UserEquipmentProfile = UserEquipmentProfile()
+    @State private var equipmentProfileConfirmedComplete: Bool = false
+
+    /// Rueckwaerts-Kompatibilitaets-Bruecke zur aelteren `Equipment`-Menge
+    /// (DEL-170, weiterhin von `PlanMatchmaker`/`ProgramInstantiator`/
+    /// `BaselineCheckFlowView` konsumiert). Liefert `[]` ("nicht gepflegt",
+    /// bestehendes Verhalten) solange der Nutzer die Erfassung NICHT
+    /// bestaetigt hat — sonst wuerde eine unvollstaendige Zwischenauswahl
+    /// (z.B. "erst 2 von 10 Kategorien angetippt") den bestehenden
+    /// Equipment-Hartfilter verfrueht scharf schalten, obwohl der Nutzer die
+    /// Erfassung noch gar nicht abgeschlossen hat (Audit-Vorgabe: "kein
+    /// pauschales 'Equipment passend' aus den neuen Angaben ableiten,
+    /// solange Katalog-Erfassung und Planpruefung unvollstaendig sind").
+    private var derivedLegacyEquipment: Set<Equipment> {
+        equipmentProfileConfirmedComplete ? equipmentProfile.legacyEquipmentPreferences : []
+    }
 
     // Step 4 — Präferenzen + Plan
     @State private var enableWaterReminder: Bool = true
@@ -199,7 +216,7 @@ public struct OnboardingView: View {
                     TemplatePreviewView(
                         template: template,
                         adoptButtonTitle: "Diesen Plan wählen",
-                        userEquipment: equipmentPreferences
+                        userEquipment: derivedLegacyEquipment
                     ) {
                         // DEL-088: Adopt finalisiert die Plan-Wahl noch nicht
                         // direkt — stattdessen oeffnet sich der DayPicker,
@@ -263,7 +280,7 @@ public struct OnboardingView: View {
                 BaselineCheckFlowView(
                     entryMode: baselineEntryMode,
                     goal: trainingGoal,
-                    equipmentPreferences: equipmentPreferences
+                    equipmentPreferences: derivedLegacyEquipment
                 ) { result in
                     if let result {
                         baselineAssessmentResult = result
@@ -808,12 +825,15 @@ public struct OnboardingView: View {
         return ExperienceTrackResolver.track(for: trainingHistoryAnswer, priorExperience: priorExperienceDuration)
     }
 
-    // MARK: - Step 4: Equipment-Präferenzen (DEL-170b)
+    // MARK: - Step 4: Equipment-Erfassung (Smart-Onboarding-Epic Phase 3)
 
-    /// Multi-Select-Step für Equipment. Defaults werden anhand der aus Step 2
-    /// gewählten `environment` vor-befüllt — der User sieht eine sinnvolle
-    /// Auswahl und kann nur korrigieren. Pflegt sich gegenseitig mit dem
-    /// Profil-Editor (gleiches Datenmodell).
+    /// Nutzt die geteilte `EquipmentProfileEditor`-Komponente (Core-Modell
+    /// `UserEquipmentProfile`, keine zweite Equipment-Datenquelle). Bewusst
+    /// KEIN Prefill aus `environment` — "Ort ist nicht Ausstattung" (Audit
+    /// 5.1). Die "vollstaendige Bestaetigung" (nicht ausgewaehlte Items
+    /// werden zu `.unavailable`) passiert NICHT hier, sondern wenn der User
+    /// unten auf "Weiter" tippt (`handlePrimaryAction`) — "Später
+    /// einrichten" umgeht das bewusst und laesst alles `.unknown`.
     @ViewBuilder
     private var equipmentPreferencesStep: some View {
         ScrollView {
@@ -826,99 +846,36 @@ public struct OnboardingView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                VStack(spacing: 10) {
-                    ForEach(Equipment.allCases, id: \.self) { equip in
-                        equipmentChoiceRow(equip)
-                    }
-                }
+                EquipmentProfileEditor(equipmentProfile: $equipmentProfile)
 
                 Text("onboarding.equipment.footer", bundle: .module)
                     .font(.footnote)
                     .foregroundStyle(.tertiary)
+
+                Button {
+                    goToNextStep()
+                } label: {
+                    Text("onboarding.equipment.laterLink", bundle: .module)
+                        .font(.callout.weight(.medium))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .padding(.top, 4)
             }
             .padding()
         }
-        // Beim ersten Betreten des Steps Defaults aus `environment` ziehen.
-        // Gate über `equipmentPrefilledForEnv`: wenn der User in Step 2
-        // nachträglich die Environment ändert, prefill'en wir erneut —
-        // bestehende User-Auswahl überschreiben wir aber nicht, sondern
-        // mergen die zusätzlichen Defaults (Union).
-        .onAppear { prefillEquipmentIfNeeded() }
-        .onChange(of: environment) { _, _ in
-            // Neue Environment → neue Defaults vorschlagen (mergen).
-            prefillEquipmentIfNeeded(force: true)
-        }
     }
 
-    @ViewBuilder
-    private func equipmentChoiceRow(_ equip: Equipment) -> some View {
-        let isSelected = equipmentPreferences.contains(equip)
-        Button {
-            if isSelected { equipmentPreferences.remove(equip) }
-            else          { equipmentPreferences.insert(equip) }
-        } label: {
-            HStack(alignment: .center, spacing: 14) {
-                Image(systemName: equipmentIcon(equip))
-                    .font(.title3)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(isSelected ? Color.deltiqOrange : .secondary)
-                    .frame(width: 32, height: 32)
-                Text(equip.localizedName)
-                    .font(.body)
-                    .foregroundStyle(.primary)
-                Spacer()
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
-                    .foregroundStyle(isSelected ? Color.deltiqOrange : .secondary)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.deltiqOrange.opacity(0.08) : Color.secondary.opacity(0.06))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color.deltiqOrange : Color.secondary.opacity(0.25),
-                            lineWidth: isSelected ? 1.5 : 1)
-            )
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    /// Spiegelung der SF-Symbole aus dem Picker — visuelle Konsistenz.
-    private func equipmentIcon(_ e: Equipment) -> String {
-        switch e {
-        case .barbell:     return "scalemass"
-        case .dumbbell:    return "dumbbell"
-        case .bodyweight:  return "figure.walk"
-        case .machine:     return "gearshape"
-        case .cable:       return "cable.connector"
-        case .kettlebell:  return "circle.grid.cross"
-        case .band:        return "infinity"
-        }
-    }
-
-    /// Prefill-Logik: schlägt sinnvolle Defaults vor, basierend auf der
-    /// gewählten Trainings-Umgebung (`environment`). Defaults werden nur
-    /// einmal pro Environment-Wert vorgeschlagen (idempotent) und überschreiben
-    /// keine vom User explizit getroffene Auswahl — `Set.formUnion` merged.
-    private func prefillEquipmentIfNeeded(force: Bool = false) {
-        if !force, equipmentPrefilledForEnv == environment { return }
-        let suggestion = defaultEquipment(for: environment)
-        equipmentPreferences.formUnion(suggestion)
-        equipmentPrefilledForEnv = environment
-    }
-
-    /// Sinnvolle Equipment-Defaults pro Trainings-Umgebung. Gym = "hat alles";
-    /// Home-Gym = freie Gewichte ohne Maschinen; No-Equipment = Body + Band.
-    private func defaultEquipment(for env: EnvironmentType) -> Set<Equipment> {
-        switch env {
-        case .gym:         return [.barbell, .dumbbell, .machine, .cable, .kettlebell, .bodyweight]
-        case .homeGym:     return [.dumbbell, .kettlebell, .band, .bodyweight]
-        case .noEquipment: return [.bodyweight, .band]
-        }
+    /// Smart-Onboarding-Epic Phase 3: die "vollstaendige Bestaetigung" fuer
+    /// den regulaeren "Weiter"-Pfad (siehe `handlePrimaryAction`) — alles,
+    /// was der Nutzer nicht aktiv ausgewaehlt hat, wird jetzt explizit
+    /// `.unavailable`. Der separate "Später einrichten"-Link im Step oben
+    /// ruft das bewusst NICHT auf (`goToNextStep()` direkt), damit dort
+    /// wirklich alles `.unknown` bleibt.
+    private func confirmEquipmentStepIfNeeded() {
+        equipmentProfile.confirmRemainingAsUnavailable()
+        equipmentProfileConfirmedComplete = true
     }
 
     // MARK: - Start-Check (Optionaler "Wo stehst du heute?"-Check)
@@ -1263,7 +1220,7 @@ public struct OnboardingView: View {
             experience: (resolvedExperienceTrack ?? .experienced).asExperienceLevel,
             preferredDays: weeklyGoal,
             environment: environment,
-            equipmentPreferences: equipmentPreferences
+            equipmentPreferences: derivedLegacyEquipment
         )
     }
 
@@ -1550,8 +1507,8 @@ public struct OnboardingView: View {
             // blockieren nicht zusaetzlich.
             return trainingHistoryAnswer != nil
         case .equipmentPreferences:
-            // DEL-170b: leer ist erlaubt (= "Standard-Variante" beim Plan-
-            // Adopt). User darf bewusst skippen, deshalb keine Pflicht.
+            // Phase 3: nie ein Gate — "Später einrichten" ist eine
+            // gleichwertig gueltige Antwort, keine Luecke.
             return true
         case .baselineCheck:
             // Start-Check-Epic: "nie ein Gate" — Test, Selbsteinschaetzung
@@ -1565,7 +1522,10 @@ public struct OnboardingView: View {
 
     private func handlePrimaryAction() {
         switch step {
-        case .healthConnect, .personalInfo, .coachingStyle, .trainingHistory, .equipmentPreferences, .baselineCheck:
+        case .equipmentPreferences:
+            confirmEquipmentStepIfNeeded()
+            goToNextStep()
+        case .healthConnect, .personalInfo, .coachingStyle, .trainingHistory, .baselineCheck:
             goToNextStep()
         case .preferencesAndPlan:
             finishOnboarding()
@@ -1667,10 +1627,18 @@ public struct OnboardingView: View {
             environment: environment,
             coachingTone: coachingTone,
             trainingGoal: trainingGoal,
-            // DEL-170b: User-Equipment aus dem Multi-Select-Step. Leer =
-            // Standard-Variante beim ersten Plan-Adopt (Backward-Compat-Pfad).
-            equipmentPreferences: equipmentPreferences
+            // DEL-170b, ab Phase 3 aus `derivedLegacyEquipment` hergeleitet:
+            // `[]` solange nicht bestaetigt (Backward-Compat-Pfad), sonst aus
+            // dem neuen, reicheren Modell projiziert.
+            equipmentPreferences: derivedLegacyEquipment
         )
+        // Smart-Onboarding-Epic Phase 3: das reichere Modell wird UNABHAENGIG
+        // vom Bestaetigungsstatus gespeichert — auch eine unvollstaendige
+        // Teil-Auswahl ("später einrichten" nach 2 von 10 Kategorien) geht
+        // nicht verloren, nur die aeltere `equipmentPreferences`-Spalte oben
+        // bleibt bis zur Bestaetigung bewusst leer.
+        profile.equipmentProfile = equipmentProfile
+        profile.equipmentProfileConfirmedComplete = equipmentProfileConfirmedComplete
         // DEL-207: Wochenziel aus dem Coaching-Step — der Kalender-Streak
         // (DEL-203) zählt ab Tag 1 gegen dieses Ziel.
         profile.weeklyWorkoutGoal = weeklyGoal
@@ -1716,7 +1684,7 @@ public struct OnboardingView: View {
                 template,
                 in: modelContext,
                 selectedWeekdays: selectedWeekdays.isEmpty ? nil : selectedWeekdays,
-                userEquipment: equipmentPreferences
+                userEquipment: derivedLegacyEquipment
             )
         } else if let customPlanInput, let customPlanResult {
             // DEL-243: der im Builder-

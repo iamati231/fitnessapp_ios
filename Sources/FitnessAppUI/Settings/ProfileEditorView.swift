@@ -27,6 +27,10 @@ public struct ProfileEditorView: View {
     /// des Onboardings (siehe `coachingCard`).
     @State private var showingBaselineCheck = false
 
+    /// Smart-Onboarding-Epic Phase 3: Re-Entry-Punkt fuer die Equipment-
+    /// Erfassung ausserhalb des Onboardings (siehe `equipmentCard`).
+    @State private var showingEquipmentEditor = false
+
     /// DEL-250: MM:SS-Eingabepuffer fuer die 5-km-Referenzzeit. Bewusst ein
     /// eigenstaendiger `@State`-String statt einer Binding<String> ueber
     /// `profile.current5kReferenceSeconds` (Review-Fund): eine computed
@@ -827,27 +831,82 @@ public struct ProfileEditorView: View {
         }
     }
 
-    /// DEL-170: Equipment-Präferenzen (Multi-Select). Steuert die Auswahl
-    /// von `EquipmentVariant` bei Templates mit mehreren Implement-Varianten
-    /// (z.B. Hybrid-Pläne: Barbell-Gym vs. Dumbbell-Only). Default leer →
-    /// Plan-Matcher behandelt das wie "nicht gepflegt" und nimmt die
-    /// Standard-Variante; sobald der User mindestens eine Box ankreuzt,
-    /// wirken die Präferenzen sofort beim nächsten Plan-Adopt.
+    /// Smart-Onboarding-Epic Phase 3 (PLAN_EQUIPMENT_MATCHING_AUDIT.md):
+    /// oeffnet die geteilte `EquipmentProfileEditor`-Komponente in einem
+    /// Sheet — dieselbe UI/dasselbe Core-Modell wie im Onboarding-Schritt,
+    /// keine zweite Equipment-Datenquelle. Die aeltere Checkbox-Liste
+    /// (direkt auf `Equipment`/`equipmentPreferences`) ist damit ersetzt;
+    /// jenes Feld wird jetzt ausschliesslich aus dem neuen Modell
+    /// synchronisiert (`equipmentProfileBinding` fuer jede laufende
+    /// Aenderung, `confirmEquipmentProfileComplete()` beim "Fertig"-Tap),
+    /// nie mehr direkt editiert.
     private var equipmentCard: some View {
         DeltiqSection(String(localized: "profile.equipment.header", bundle: .module).uppercased()) {
-            ForEach(Equipment.allCases, id: \.self) { equip in
-                DeltiqControlRow(
-                    icon: equipmentIcon(equip),
-                    label: String(localized: equip.localizedName),
-                    showsDivider: equip != Equipment.allCases.last
-                ) {
-                    Toggle("", isOn: equipmentBinding(for: equip))
-                        .labelsHidden()
-                        .tint(Color.deltiqOrange)
-                }
+            DeltiqRow(
+                icon: "dumbbell",
+                label: String(localized: "profile.equipment.sheet.title", bundle: .module),
+                value: equipmentStatusText,
+                showsChevron: true,
+                showsDivider: false
+            ) {
+                showingEquipmentEditor = true
             }
             hintRow(String(localized: "profile.equipment.footer", bundle: .module))
         }
+        .sheet(isPresented: $showingEquipmentEditor) {
+            NavigationStack {
+                ScrollView {
+                    EquipmentProfileEditor(equipmentProfile: equipmentProfileBinding)
+                        .padding()
+                }
+                .navigationTitle(String(localized: "profile.equipment.sheet.title", bundle: .module))
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(String(localized: "common.close", bundle: .module)) {
+                            showingEquipmentEditor = false
+                        }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(String(localized: "common.done", bundle: .module)) {
+                            profile.confirmEquipmentProfileComplete()
+                            showingEquipmentEditor = false
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Schreibt jede Aenderung aus der geteilten Editor-Komponente direkt
+    /// durch UND haelt `equipmentPreferences` (DEL-170) automatisch im Sync
+    /// — aber NUR wenn die Erfassung bereits bestaetigt wurde. Vor der
+    /// ersten Bestaetigung bleibt die aeltere Spalte unberuehrt, damit kein
+    /// Zwischenstand sie verfrueht mit einer unvollstaendigen Aussage
+    /// ueberschreibt (identisches Prinzip wie
+    /// `UserBodyProfile.setEquipmentAvailability`, hier fuer den
+    /// Ganz-Profil-Binding-Fall der geteilten UI-Komponente).
+    private var equipmentProfileBinding: Binding<UserEquipmentProfile> {
+        Binding(
+            get: { profile.equipmentProfile },
+            set: { newValue in
+                profile.equipmentProfile = newValue
+                if profile.equipmentProfileConfirmedComplete {
+                    profile.equipmentPreferences = newValue.legacyEquipmentPreferences
+                }
+            }
+        )
+    }
+
+    private var equipmentStatusText: String {
+        guard profile.equipmentProfileConfirmedComplete else {
+            let hasAnySelection = EquipmentItem.allCases.contains { profile.equipmentProfile.availability(for: $0) == .available }
+            return String(localized: hasAnySelection ? "profile.equipment.status.inProgress" : "profile.equipment.status.notSet", bundle: .module)
+        }
+        let isBodyweightOnly = EquipmentItem.allCases.allSatisfy { profile.equipmentProfile.availability(for: $0) == .unavailable }
+        return String(localized: isBodyweightOnly ? "profile.equipment.status.bodyweightOnly" : "profile.equipment.status.confirmed", bundle: .module)
     }
 
     /// DEL-203: Wochenziel für den Trainings-Streak. Stepper 1-7 —
@@ -870,31 +929,6 @@ public struct ProfileEditorView: View {
                 }
             }
             hintRow(String(localized: "profile.weeklyGoal.footer", bundle: .module))
-        }
-    }
-
-    private func equipmentBinding(for equipment: Equipment) -> Binding<Bool> {
-        Binding(
-            get: { profile.equipmentPreferences.contains(equipment) },
-            set: { isOn in
-                var current = profile.equipmentPreferences
-                if isOn { current.insert(equipment) } else { current.remove(equipment) }
-                profile.equipmentPreferences = current
-            }
-        )
-    }
-
-    /// Spiegelung von `ExercisePickerView.equipmentIcon` für visuelle
-    /// Konsistenz mit dem Picker (gleiche SF-Symbole).
-    private func equipmentIcon(_ e: Equipment) -> String {
-        switch e {
-        case .barbell:     return "scalemass"
-        case .dumbbell:    return "dumbbell"
-        case .bodyweight:  return "figure.walk"
-        case .machine:     return "gearshape"
-        case .cable:       return "cable.connector"
-        case .kettlebell:  return "circle.grid.cross"
-        case .band:        return "infinity"
         }
     }
 

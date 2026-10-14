@@ -964,6 +964,37 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         }
     }
 
+    /// Smart-Onboarding-Epic Phase 3: die neue Bestaetigungs-Flag muss den
+    /// Rundlauf ueberleben — sonst wuerde ein Restore eine bereits
+    /// abgeschlossene Erfassung wieder als "offen" erscheinen lassen.
+    func testEquipmentProfileConfirmedCompleteSurvivesRoundtrip() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        profile.confirmBodyweightOnly()
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.equipmentProfileConfirmedComplete, true)
+        XCTAssertEqual(imported?.equipmentPreferences, [.bodyweight])
+        for item in EquipmentItem.allCases {
+            XCTAssertEqual(imported?.equipmentProfile.availability(for: item), .unavailable)
+        }
+    }
+
     // Start-Check-Epic: Core-Pflichttest 2 ("Jede Testvariante kann
     // gespeichert, exportiert und importiert werden") + 8 ("Backward
     // compatibility: bestehender User ohne Baseline bleibt unveraendert").
