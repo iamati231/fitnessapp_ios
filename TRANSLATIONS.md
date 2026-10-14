@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1959 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 1973 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1959 / 1959** (100%) | 0 |
-| 🇬🇧 English (EN) | **1959 / 1959** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1959 / 1959** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **1973 / 1973** (100%) | 0 |
+| 🇬🇧 English (EN) | **1973 / 1973** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **1973 / 1973** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -119,36 +119,41 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `barbell.loading.type.standard` | Langhantel | Barbell | Halter |
 | `barbell.loading.type.trapBar` | Trap | Trap | Trap |
 
-## `baseline.*`  (101 Keys)
+## `baseline.*`  (113 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `baseline.action.backToTest` | Zurück zum Test | Back to test | Teste geri dön |
+| `baseline.action.saveAndContinue` | Speichern | Save | Kaydet |
 | `baseline.action.skipExercise` | Diese Übung überspringen | Skip this exercise | Bu egzersizi atla |
-| `baseline.action.skippedNote` | Übung übersprungen. | Exercise skipped. | Egzersiz atlandı. |
 | `baseline.action.switchToSelfAssess` | Stattdessen einschätzen | Estimate instead | Bunun yerine değerlendir |
 | `baseline.cardio.answer.canJogEasy10Min` | Ich kann 10 Minuten locker joggen | I can jog easily for 10 minutes | 10 dakika rahat tempoda koşabilirim |
 | `baseline.cardio.answer.canWalkBriskly10Min` | Ich kann 10 Minuten zügig gehen | I can walk briskly for 10 minutes | 10 dakika hızlı yürüyebilirim |
 | `baseline.cardio.answer.runsRegularly` | Ich laufe bereits regelmäßig | I already run regularly | Zaten düzenli koşuyorum |
 | `baseline.cardio.answer.unsure` | Unsicher / noch nicht ausprobiert | Not sure / haven't tried yet | Emin değilim / henüz denemedim |
-| `baseline.cardio.subtitle` | Kein Test, nur eine kurze Einschätzung — das hilft uns, dein Lauf-/Ausdauertraining passend zu starten. | No test, just a quick self-assessment — this helps us start your running/cardio training at the right level. | Test yok, sadece kısa bir öz değerlendirme — bu, koşu/dayanıklılık antrenmanına doğru seviyeden başlamamıza yardımcı olur. |
-| `baseline.cardio.title` | E. Ausdauer | E. Cardio | E. Dayanıklılık |
 | `baseline.core.doneButton` | Fertig, Zeit übernehmen | Done, keep this time | Bitti, bu süreyi kullan |
 | `baseline.core.instructions` | Unterarmstütz, so lange wie angenehm möglich — maximal 60 Sekunden. Brich bei Hohlkreuz oder Formverlust ab. | Forearm plank, as long as comfortable — max 60 seconds. Stop if your lower back sags or your form breaks down. | Ön kol plank, rahat olduğun sürece — en fazla 60 saniye. Belin çukurlaşırsa veya form bozulursa dur. |
 | `baseline.core.seconds.label` | Sekunden gehalten | Seconds held | Tutulan saniye |
-| `baseline.core.skipCta` | Überspringen | Skip | Atla |
+| `baseline.family.cardio.cue1` | Kein Test — nur eine ehrliche Selbsteinschätzung. | No test — just an honest self-assessment. | Test yok — sadece dürüst bir öz değerlendirme. |
+| `baseline.family.cardio.cue2` | Hilft uns, dein Ausdauertraining passend zu starten. | Helps us start your cardio training at the right level. | Dayanıklılık antrenmanına doğru seviyeden başlamamıza yardımcı olur. |
+| `baseline.family.cardio.overviewSubtitle` | Kurze Einschätzung für dein Lauftraining | Quick self-assessment for your running training | Koşu antrenmanın için kısa öz değerlendirme |
+| `baseline.family.cardio.title` | Ausdauer | Cardio | Dayanıklılık |
 | `baseline.family.core.cue1` | Rücken bleibt gerade, kein Hohlkreuz. | Back stays straight, no sagging lower back. | Sırt düz kalır, bel çukurlaşmaz. |
 | `baseline.family.core.cue2` | Gesäß leicht anspannen, Blick zum Boden. | Gently brace your glutes, look at the floor. | Kalçayı hafifçe sık, bakış yere doğru. |
-| `baseline.family.core.title` | D. Rumpf (Unterarmstütz) | D. Core (forearm plank) | D. Core (Ön Kol Plank) |
+| `baseline.family.core.overviewSubtitle` | Optional — Rumpfstabilität | Optional — core stability | İsteğe bağlı — core stabilitesi |
+| `baseline.family.core.title` | Rumpf (Unterarmstütz) | Core (forearm plank) | Core (Ön Kol Plank) |
 | `baseline.family.legs.cue1` | Knie zeigen in Richtung der Zehen, nicht nach innen. | Knees track toward your toes, not inward. | Dizler ayak uçlarına doğru gider, içe çökmez. |
 | `baseline.family.legs.cue2` | Kontrolliert runter, kontrolliert wieder hoch. | Controlled down, controlled up. | Kontrollü aşağı, kontrollü yukarı. |
-| `baseline.family.legs.title` | B. Beine (Stuhl-Kniebeuge) | B. Legs (chair squat) | B. Bacaklar (Sandalye Squat) |
+| `baseline.family.legs.overviewSubtitle` | Kurzer Check für deine Beine | Quick check for your legs | Bacakların için kısa kontrol |
+| `baseline.family.legs.title` | Beine (Stuhl-Kniebeuge) | Legs (chair squat) | Bacaklar (Sandalye Squat) |
 | `baseline.family.pull.cue1` | Schultern bleiben unten, nicht hochziehen. | Shoulders stay down, not shrugged up. | Omuzlar aşağıda kalır, yukarı kalkmaz. |
 | `baseline.family.pull.cue2` | Ellbogen führen die Bewegung, nicht die Hände. | Elbows lead the movement, not your hands. | Hareketi dirsekler yönlendirir, eller değil. |
-| `baseline.family.pull.title` | C. Ziehen | C. Pull | C. Çekme |
+| `baseline.family.pull.overviewSubtitle` | Kurzer Check fürs Ziehen | Quick check for pulling | Çekme hareketi için kısa kontrol |
+| `baseline.family.pull.title` | Ziehen | Pull | Çekme |
 | `baseline.family.push.cue1` | Körper bildet eine gerade Linie von Kopf bis Ferse. | Body forms a straight line from head to heel. | Vücut baştan topuğa düz bir çizgi oluşturur. |
 | `baseline.family.push.cue2` | Brust kommt nah an den Boden, Ellbogen nicht komplett durchdrücken. | Chest comes close to the floor; don't lock out your elbows. | Göğüs yere yaklaşır, dirsekler tam kilitlenmez. |
-| `baseline.family.push.title` | A. Drücken (Liegestütze) | A. Push (push-ups) | A. İtme (Şınav) |
+| `baseline.family.push.overviewSubtitle` | Kurzer Check für Oberkörper-Drücken | Quick check for upper-body pushing | Üst vücut itme için kısa kontrol |
+| `baseline.family.push.title` | Drücken (Liegestütze) | Push (push-ups) | İtme (Şınav) |
 | `baseline.flow.title` | Start-Check | Start Check | Başlangıç Kontrolü |
 | `baseline.intensity.comfortablyChallenging.blurb` | Spürbar, aber nicht überfordernd — der empfohlene Standard. | Noticeable, but not overwhelming — the recommended default. | Hissedilir ama yıpratıcı değil — önerilen varsayılan. |
 | `baseline.intensity.comfortablyChallenging.label` | Angenehm fordernd | Comfortably challenging | Rahatça zorlayıcı |
@@ -158,10 +163,13 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `baseline.intensity.title` | Wie anstrengend darf deine erste Woche sein? | How challenging should your first week be? | İlk haftan ne kadar zorlayıcı olsun? |
 | `baseline.intensity.veryEasy.blurb` | Lieber zu leicht als zu schwer — ich will mich erst herantasten. | Better too easy than too hard — I want to ease in. | Zor olmaktansa kolay olsun — yavaş yavaş alışmak istiyorum. |
 | `baseline.intensity.veryEasy.label` | Sehr leicht starten | Start very easy | Çok kolay başla |
+| `baseline.legs.confirmReps.title` | Wie viele saubere Wiederholungen? | How many clean reps? | Kaç temiz tekrar yaptın? |
 | `baseline.legs.noChairAssessIntro` | Mach stattdessen 10 kontrollierte Kniebeugen ohne Stuhl. Wie hat sich das angefühlt? | Instead, do 10 controlled squats without a chair. How did that feel? | Bunun yerine sandalyesiz 10 kontrollü squat yap. Nasıl hissettirdi? |
 | `baseline.legs.reps.label` | Saubere Wiederholungen in 30 Sekunden | Clean reps in 30 seconds | 30 saniyede temiz tekrar sayısı |
 | `baseline.legs.timer.instructions` | Stell dich hüftbreit vor einen stabilen Stuhl, Hände leicht auf der Sitzfläche. 30 Sekunden, zähl deine sauberen Wiederholungen. | Stand shoulder-width in front of a stable chair, hands lightly on the seat. 30 seconds — count your clean reps. | Sağlam bir sandalyenin önünde omuz genişliğinde dur, ellerini hafifçe oturma yüzeyine koy. 30 saniye — temiz tekrarlarını say. |
-| `baseline.progress.format` | Optionaler Check %1$d von %2$d | Optional check %1$d of %2$d | İsteğe bağlı kontrol %1$d / %2$d |
+| `baseline.overview.expandTitle` | Optional erweitern | Expand (optional) | İsteğe bağlı genişlet |
+| `baseline.overview.subtitle` | Starte mit einer Karte deiner Wahl. Du kannst jederzeit überspringen oder direkt zum Ergebnis weitergehen. | Start with whichever card you like. You can skip anytime or jump straight to your result. | İstediğin kartla başla. İstediğin zaman atlayabilir veya doğrudan sonuca geçebilirsin. |
+| `baseline.overview.title` | Deine Checks im Überblick | Your checks at a glance | Kontrollerine genel bakış |
 | `baseline.pull.barQuestion.title` | Hast du Zugang zu einer Klimmzugstange? | Do you have access to a pull-up bar? | Barfiks barına erişimin var mı? |
 | `baseline.pull.latPulldown.intro` | Wähle ein Gewicht, mit dem du 8–12 saubere Wiederholungen schaffst. | Choose a weight you can do 8–12 clean reps with. | 8-12 temiz tekrar yapabileceğin bir ağırlık seç. |
 | `baseline.pull.latPulldown.reps.label` | Wiederholungen | Reps | Tekrar |
@@ -182,21 +190,22 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `baseline.push.variant.standard` | Standard | Standard | Standart |
 | `baseline.push.variant.title` | Welche Variante schaffst du sauber? | Which variant can you do with clean form? | Hangi varyantı temiz formla yapabiliyorsun? |
 | `baseline.push.zeroRepsNote` | Alles gut — wir starten mit einer passenden Variante für dich. | Totally fine — we'll start with a suitable variant for you. | Sorun değil — sana uygun bir varyantla başlayacağız. |
-| `baseline.result.doneButton` | Fertig | Done | Bitti |
+| `baseline.result.detailsTitle` | Einzelheiten anzeigen | Show details | Ayrıntıları göster |
 | `baseline.result.overall.high` | Du bringst schon eine gute Basis mit. Wir starten trotzdem kontrolliert und steigern bewusst Schritt für Schritt. | You already bring a solid base. We'll still start in a controlled way and increase deliberately, step by step. | Zaten sağlam bir temelin var. Yine de kontrollü başlayıp adım adım bilinçli şekilde artıracağız. |
 | `baseline.result.overall.low` | Du startest mit einem soliden, etwas reduzierten Einstieg. Das Tempo passen wir Schritt für Schritt an. | You're starting with a solid, slightly reduced setup. We'll adjust the pace step by step. | Sağlam ama biraz hafifletilmiş bir başlangıç yapıyorsun. Temponu adım adım ayarlayacağız. |
 | `baseline.result.overall.moderate` | Du startest im normalen Tempo — ein guter, ausgewogener Einstieg. | You're starting at a normal pace — a good, balanced start. | Normal bir tempoda başlıyorsun — dengeli, iyi bir başlangıç. |
 | `baseline.result.overall.unknown` | Wir haben noch keine Ausgangswerte von dir — kein Problem, wir kalibrieren einfach während der ersten Workouts. | We don't have starting values from you yet — no problem, we'll calibrate during your first workouts. | Henüz senden başlangıç değeri yok — sorun değil, ilk antrenmanların sırasında ayarlarız. |
 | `baseline.result.overall.veryLow` | Du startest sinnvoll mit den einfachsten Varianten. Wir schauen in ein paar Wochen gemeinsam, ob wir steigern. | You're starting sensibly with the simplest variants. We'll check together in a few weeks whether to increase. | En basit varyantlarla mantıklı bir başlangıç yapıyorsun. Birkaç hafta sonra birlikte artırıp artırmayacağımıza bakarız. |
+| `baseline.result.phaseNote` | Dein Check ist gespeichert und fließt in künftige Anpassungen ein — dein aktueller Plan ändert sich dadurch jetzt noch nicht automatisch. | Your check is saved and will inform future adjustments — it doesn't change your current plan automatically yet. | Kontrolün kaydedildi ve gelecekteki ayarlamalara yansıyacak — şu an mevcut planını otomatik olarak değiştirmiyor. |
+| `baseline.result.planButton` | Plan ansehen | View plan | Planı görüntüle |
 | `baseline.result.recheckNote` | Nach 4–6 Wochen schauen wir gemeinsam, ob sich etwas verändert hat — verglichen nur mit deinem eigenen Start, nie mit anderen. | In 4–6 weeks we'll check together whether anything has changed — compared only to your own starting point, never to others. | 4-6 hafta sonra birlikte bir şey değişti mi diye bakacağız — sadece kendi başlangıcınla karşılaştırarak, asla başkalarıyla değil. |
 | `baseline.result.safetyNote` | Du hattest oben Vorsicht angegeben — wenn Beschwerden bestehen bleiben, sprich bitte mit einer Ärztin oder einem Arzt. | You indicated caution above — if symptoms persist, please talk to a doctor first. | Yukarıda dikkatli olmanı gerektiren bir durum belirttin — şikayetlerin sürerse lütfen önce bir doktora danış. |
 | `baseline.result.title` | Dein Start-Check | Your Start Check | Başlangıç Kontrolün |
 | `baseline.safety.flaggedNote` | Alles gut — wir überspringen die Belastungstests und starten vorsichtig. Bei anhaltenden Beschwerden sprich bitte vorher mit einer Ärztin oder einem Arzt. | All good — we'll skip the exertion tests and start carefully. If symptoms persist, please talk to a doctor first. | Sorun değil — zorlayıcı testleri atlıyoruz ve dikkatli başlıyoruz. Şikayetlerin sürerse lütfen önce bir doktora danış. |
-| `baseline.safety.option.no` | Nein, alles klar | No, all good | Hayır, her şey yolunda |
-| `baseline.safety.option.unsure` | Unsicher | Not sure | Emin değilim |
-| `baseline.safety.option.yes` | Ja | Yes | Evet |
+| `baseline.safety.option.clear` | Ja, los geht's | Yes, let's go | Evet, başlayalım |
+| `baseline.safety.option.flagged` | Lieber ohne Test | I'd rather skip the test | Testsiz devam etmeyi tercih ederim |
 | `baseline.safety.question` | Hast du aktuell Schmerzen, Schwindel, Brustschmerzen oder eine ärztliche Einschränkung für Sport? | Do you currently have pain, dizziness, chest pain, or a medical restriction for exercise? | Şu anda ağrın, baş dönmen, göğüs ağrın veya spor için tıbbi bir kısıtlaman var mı? |
-| `baseline.safety.title` | Kurzer Sicherheits-Check | Quick safety check | Kısa güvenlik kontrolü |
+| `baseline.safety.title` | Heute beschwerdefrei? | Pain-free today? | Bugün şikayetin yok mu? |
 | `baseline.selfAssess.answer.canButStrenuous` | Kann ich, aber anstrengend | I can, but it's strenuous | Yapabiliyorum ama zorlayıcı |
 | `baseline.selfAssess.answer.easy` | Fühlt sich aktuell leicht an | Feels easy right now | Şu anda kolay geliyor |
 | `baseline.selfAssess.answer.skipped` | Überspringen | Skip | Atla |
@@ -204,19 +213,22 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `baseline.selfAssess.legs.title` | Wie fühlen sich Kniebeugen aktuell für dich an? | How do squats feel for you right now? | Squat şu anda sana nasıl geliyor? |
 | `baseline.selfAssess.pull.title` | Wie fühlt sich Ziehen (z. B. Klimmzüge) aktuell für dich an? | How does pulling (e.g. pull-ups) feel for you right now? | Çekme hareketi (örn. barfiks) şu anda sana nasıl geliyor? |
 | `baseline.selfAssess.push.title` | Wie fühlen sich Liegestütze aktuell für dich an? | How do push-ups feel for you right now? | Şınav şu anda sana nasıl geliyor? |
-| `baseline.step.cta.compactLink` | Startwerte erfassen | Log starting values | Başlangıç değerlerini gir |
-| `baseline.step.cta.later` | Später machen | Do it later | Sonra yaparım |
+| `baseline.status.open` | Offen | Open | Açık |
+| `baseline.status.recorded` | Erfasst | Recorded | Kaydedildi |
+| `baseline.status.skipped` | Übersprungen | Skipped | Atlandı |
+| `baseline.step.cta.compactLink` | Startwerte erfassen (optional) | Log starting values (optional) | Başlangıç değerlerini kaydet (isteğe bağlı) |
+| `baseline.step.cta.later` | Später entscheiden | Decide later | Sonra karar ver |
 | `baseline.step.cta.later.subtitle` | Du kannst das jederzeit später nachholen. | You can always do this later. | Bunu istediğin zaman sonra yapabilirsin. |
-| `baseline.step.cta.selfAssess` | Ich schätze mich selbst ein | I'll estimate myself | Kendimi değerlendiririm |
+| `baseline.step.cta.selfAssess` | Selbst einschätzen | Self-assess | Kendimi değerlendir |
 | `baseline.step.cta.selfAssess.subtitle` | Ein paar einfache Fragen statt Test — dauert eine Minute. | A few simple questions instead of a test — takes a minute. | Test yerine birkaç basit soru — bir dakika sürer. |
-| `baseline.step.cta.test` | Jetzt kurz testen | Take a quick test | Hemen kısa bir test yap |
+| `baseline.step.cta.test` | Kurz testen | Quick test | Kısa test |
 | `baseline.step.cta.test.subtitle` | 5 kurze, schonende Übungen mit Sicherheits-Check davor. | 5 short, gentle exercises with a safety check first. | Önce güvenlik kontrolü, sonra 5 kısa ve nazik egzersiz. |
 | `baseline.step.disclaimer` | Kein medizinischer Test. Bei Schmerzen oder Unsicherheit sprich vorher mit einer Ärztin oder einem Arzt. | Not a medical test. If you have pain or are unsure, talk to a doctor first. | Tıbbi bir test değildir. Ağrın varsa veya emin değilsen önce bir doktora danış. |
 | `baseline.step.done.redo` | Erneut durchführen | Redo | Tekrar yap |
 | `baseline.step.done.title` | Start-Check erfasst | Start check recorded | Başlangıç kontrolü kaydedildi |
-| `baseline.step.subtitle` | Ein kurzer, freiwilliger Check hilft uns, den Einstieg passend zu deinem Körper zu kalibrieren. Keine Diagnose, keine Note — nur ein besserer Start. | A short, optional check helps us calibrate your start to your body. No diagnosis, no grade — just a better starting point. | Kısa, isteğe bağlı bir kontrol, başlangıcını vücuduna göre ayarlamamıza yardımcı olur. Teşhis değil, not değil — sadece daha iyi bir başlangıç. |
+| `baseline.step.subtitle` | Optional: Mit 2–3 kurzen Checks machen wir deinen Einstieg passender. Es gibt kein Bestehen oder Durchfallen. | Optional: A couple of short checks help us tailor your start. There's no passing or failing. | İsteğe bağlı: 2-3 kısa kontrolle başlangıcını sana daha uygun hale getiriyoruz. Burada geçme ya da kalma yok. |
 | `baseline.step.subtitle.compact` | Du kannst optional ein paar Startwerte hinterlegen — ganz ohne geführten Test. | You can optionally log some starting values — no guided test needed. | İstersen rehberli test olmadan birkaç başlangıç değeri girebilirsin. |
-| `baseline.step.title` | Wo stehst du heute? | Where are you starting from? | Bugün nerede duruyorsun? |
+| `baseline.step.title` | Dein Startpunkt | Your starting point | Başlangıç Noktan |
 | `baseline.timer.cancel` | Abbrechen | Cancel | İptal |
 | `baseline.timer.elapsed.a11y` | %d Sekunden gehalten | %d seconds held | %d saniye tutuldu |
 | `baseline.timer.finished` | Fertig | Done | Bitti |
@@ -1736,7 +1748,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (57 Keys)
+## `profile.*`  (59 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1768,6 +1780,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.cardio.retroSync.title` | Retro-Sync | Retro-Sync | Geriye Dönük Senkron |
 | `profile.cardio.weeklyVolume` | Start-Laufvolumen (km/Woche) | Starting volume (km/week) | Başlangıç hacmi (km/hafta) |
 | `profile.cardio.weeklyVolumePlaceholder` | z.B. 20 | e.g. 20 | örn. 20 |
+| `profile.coaching.baselineCheck` | Start-Check | Start check | Başlangıç Kontrolü |
+| `profile.coaching.baselineCheck.notDone` | Noch nicht durchgeführt | Not done yet | Henüz yapılmadı |
 | `profile.coaching.footer` | Steuert Tonfall und Inhalt der Coaching-Insights auf dem Dashboard. Lässt sich jederzeit ändern. | Drives tone and content of coaching insights on the dashboard. Changeable any time. | Paneldeki koçluk öngörülerinin tonunu ve içeriğini yönlendirir. Her zaman değiştirilebilir. |
 | `profile.coaching.goal` | Trainingsziel | Training Goal | Antrenman Hedefi |
 | `profile.coaching.tone` | Coaching-Stil | Coaching Style | Koçluk Tarzı |

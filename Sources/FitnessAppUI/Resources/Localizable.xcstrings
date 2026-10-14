@@ -17698,6 +17698,52 @@
         }
       }
     },
+    "profile.coaching.baselineCheck": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start-Check"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start check"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başlangıç Kontrolü"
+          }
+        }
+      }
+    },
+    "profile.coaching.baselineCheck.notDone": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch nicht durchgeführt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not done yet"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz yapılmadı"
+          }
+        }
+      }
+    },
     "profile.section.coach": {
       "extractionState": "manual",
       "localizations": {
@@ -38121,19 +38167,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wo stehst du heute?"
+            "value": "Dein Startpunkt"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Where are you starting from?"
+            "value": "Your starting point"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bugün nerede duruyorsun?"
+            "value": "Başlangıç Noktan"
           }
         }
       }
@@ -38144,19 +38190,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ein kurzer, freiwilliger Check hilft uns, den Einstieg passend zu deinem Körper zu kalibrieren. Keine Diagnose, keine Note — nur ein besserer Start."
+            "value": "Optional: Mit 2–3 kurzen Checks machen wir deinen Einstieg passender. Es gibt kein Bestehen oder Durchfallen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A short, optional check helps us calibrate your start to your body. No diagnosis, no grade — just a better starting point."
+            "value": "Optional: A couple of short checks help us tailor your start. There's no passing or failing."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kısa, isteğe bağlı bir kontrol, başlangıcını vücuduna göre ayarlamamıza yardımcı olur. Teşhis değil, not değil — sadece daha iyi bir başlangıç."
+            "value": "İsteğe bağlı: 2-3 kısa kontrolle başlangıcını sana daha uygun hale getiriyoruz. Burada geçme ya da kalma yok."
           }
         }
       }
@@ -38190,19 +38236,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jetzt kurz testen"
+            "value": "Kurz testen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Take a quick test"
+            "value": "Quick test"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hemen kısa bir test yap"
+            "value": "Kısa test"
           }
         }
       }
@@ -38236,19 +38282,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ich schätze mich selbst ein"
+            "value": "Selbst einschätzen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "I'll estimate myself"
+            "value": "Self-assess"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kendimi değerlendiririm"
+            "value": "Kendimi değerlendir"
           }
         }
       }
@@ -38282,19 +38328,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Später machen"
+            "value": "Später entscheiden"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Do it later"
+            "value": "Decide later"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sonra yaparım"
+            "value": "Sonra karar ver"
           }
         }
       }
@@ -38328,19 +38374,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Startwerte erfassen"
+            "value": "Startwerte erfassen (optional)"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Log starting values"
+            "value": "Log starting values (optional)"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Başlangıç değerlerini gir"
+            "value": "Başlangıç değerlerini kaydet (isteğe bağlı)"
           }
         }
       }
@@ -38437,48 +38483,163 @@
         }
       }
     },
-    "baseline.progress.format": {
+    "baseline.overview.title": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Optionaler Check %1$d von %2$d"
+            "value": "Deine Checks im Überblick"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Optional check %1$d of %2$d"
+            "value": "Your checks at a glance"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "İsteğe bağlı kontrol %1$d / %2$d"
+            "value": "Kontrollerine genel bakış"
           }
         }
       }
     },
-    "baseline.safety.title": {
+    "baseline.overview.subtitle": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kurzer Sicherheits-Check"
+            "value": "Starte mit einer Karte deiner Wahl. Du kannst jederzeit überspringen oder direkt zum Ergebnis weitergehen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quick safety check"
+            "value": "Start with whichever card you like. You can skip anytime or jump straight to your result."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kısa güvenlik kontrolü"
+            "value": "İstediğin kartla başla. İstediğin zaman atlayabilir veya doğrudan sonuca geçebilirsin."
+          }
+        }
+      }
+    },
+    "baseline.overview.expandTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional erweitern"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand (optional)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İsteğe bağlı genişlet"
+          }
+        }
+      }
+    },
+    "baseline.status.open": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Açık"
+          }
+        }
+      }
+    },
+    "baseline.status.recorded": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erfasst"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydedildi"
+          }
+        }
+      }
+    },
+    "baseline.status.skipped": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übersprungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skipped"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atlandı"
+          }
+        }
+      }
+    },
+        "baseline.safety.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute beschwerdefrei?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pain-free today?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün şikayetin yok mu?"
           }
         }
       }
@@ -38506,76 +38667,7 @@
         }
       }
     },
-    "baseline.safety.option.yes": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ja"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Yes"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Evet"
-          }
-        }
-      }
-    },
-    "baseline.safety.option.unsure": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unsicher"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Not sure"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Emin değilim"
-          }
-        }
-      }
-    },
-    "baseline.safety.option.no": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nein, alles klar"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No, all good"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hayır, her şey yolunda"
-          }
-        }
-      }
-    },
-    "baseline.safety.flaggedNote": {
+                "baseline.safety.flaggedNote": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -38598,25 +38690,71 @@
         }
       }
     },
+    "baseline.safety.option.clear": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ja, los geht's"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yes, let's go"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Evet, başlayalım"
+          }
+        }
+      }
+    },
+    "baseline.safety.option.flagged": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lieber ohne Test"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I'd rather skip the test"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testsiz devam etmeyi tercih ederim"
+          }
+        }
+      }
+    },
     "baseline.family.push.title": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "A. Drücken (Liegestütze)"
+            "value": "Drücken (Liegestütze)"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A. Push (push-ups)"
+            "value": "Push (push-ups)"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "A. İtme (Şınav)"
+            "value": "İtme (Şınav)"
           }
         }
       }
@@ -38667,25 +38805,48 @@
         }
       }
     },
+    "baseline.family.push.overviewSubtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kurzer Check für Oberkörper-Drücken"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick check for upper-body pushing"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üst vücut itme için kısa kontrol"
+          }
+        }
+      }
+    },
     "baseline.family.legs.title": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "B. Beine (Stuhl-Kniebeuge)"
+            "value": "Beine (Stuhl-Kniebeuge)"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "B. Legs (chair squat)"
+            "value": "Legs (chair squat)"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "B. Bacaklar (Sandalye Squat)"
+            "value": "Bacaklar (Sandalye Squat)"
           }
         }
       }
@@ -38736,25 +38897,48 @@
         }
       }
     },
+    "baseline.family.legs.overviewSubtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kurzer Check für deine Beine"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick check for your legs"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bacakların için kısa kontrol"
+          }
+        }
+      }
+    },
     "baseline.family.pull.title": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "C. Ziehen"
+            "value": "Ziehen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "C. Pull"
+            "value": "Pull"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "C. Çekme"
+            "value": "Çekme"
           }
         }
       }
@@ -38805,25 +38989,48 @@
         }
       }
     },
+    "baseline.family.pull.overviewSubtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kurzer Check fürs Ziehen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick check for pulling"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çekme hareketi için kısa kontrol"
+          }
+        }
+      }
+    },
     "baseline.family.core.title": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "D. Rumpf (Unterarmstütz)"
+            "value": "Rumpf (Unterarmstütz)"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "D. Core (forearm plank)"
+            "value": "Core (forearm plank)"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "D. Core (Ön Kol Plank)"
+            "value": "Core (Ön Kol Plank)"
           }
         }
       }
@@ -38870,6 +39077,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kalçayı hafifçe sık, bakış yere doğru."
+          }
+        }
+      }
+    },
+    "baseline.family.core.overviewSubtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional — Rumpfstabilität"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional — core stability"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İsteğe bağlı — core stabilitesi"
           }
         }
       }
@@ -39123,6 +39353,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bunun yerine sandalyesiz 10 kontrollü squat yap. Nasıl hissettirdi?"
+          }
+        }
+      }
+    },
+    "baseline.legs.confirmReps.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie viele saubere Wiederholungen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How many clean reps?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaç temiz tekrar yaptın?"
           }
         }
       }
@@ -39633,76 +39886,7 @@
         }
       }
     },
-    "baseline.core.skipCta": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Überspringen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skip"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Atla"
-          }
-        }
-      }
-    },
-    "baseline.cardio.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "E. Ausdauer"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "E. Cardio"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "E. Dayanıklılık"
-          }
-        }
-      }
-    },
-    "baseline.cardio.subtitle": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kein Test, nur eine kurze Einschätzung — das hilft uns, dein Lauf-/Ausdauertraining passend zu starten."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No test, just a quick self-assessment — this helps us start your running/cardio training at the right level."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Test yok, sadece kısa bir öz değerlendirme — bu, koşu/dayanıklılık antrenmanına doğru seviyeden başlamamıza yardımcı olur."
-          }
-        }
-      }
-    },
-    "baseline.cardio.answer.canWalkBriskly10Min": {
+                "baseline.cardio.answer.canWalkBriskly10Min": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -39790,6 +39974,98 @@
           "stringUnit": {
             "state": "translated",
             "value": "Emin değilim / henüz denemedim"
+          }
+        }
+      }
+    },
+    "baseline.family.cardio.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausdauer"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardio"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dayanıklılık"
+          }
+        }
+      }
+    },
+    "baseline.family.cardio.overviewSubtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kurze Einschätzung für dein Lauftraining"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick self-assessment for your running training"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu antrenmanın için kısa öz değerlendirme"
+          }
+        }
+      }
+    },
+    "baseline.family.cardio.cue1": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Test — nur eine ehrliche Selbsteinschätzung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No test — just an honest self-assessment."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test yok — sadece dürüst bir öz değerlendirme."
+          }
+        }
+      }
+    },
+    "baseline.family.cardio.cue2": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hilft uns, dein Ausdauertraining passend zu starten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Helps us start your cardio training at the right level."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dayanıklılık antrenmanına doğru seviyeden başlamamıza yardımcı olur."
           }
         }
       }
@@ -40001,30 +40277,7 @@
         }
       }
     },
-    "baseline.result.doneButton": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fertig"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Done"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bitti"
-          }
-        }
-      }
-    },
-    "baseline.result.safetyNote": {
+        "baseline.result.safetyNote": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -40043,6 +40296,75 @@
           "stringUnit": {
             "state": "translated",
             "value": "Yukarıda dikkatli olmanı gerektiren bir durum belirttin — şikayetlerin sürerse lütfen önce bir doktora danış."
+          }
+        }
+      }
+    },
+    "baseline.result.detailsTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einzelheiten anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show details"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayrıntıları göster"
+          }
+        }
+      }
+    },
+    "baseline.result.phaseNote": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Check ist gespeichert und fließt in künftige Anpassungen ein — dein aktueller Plan ändert sich dadurch jetzt noch nicht automatisch."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your check is saved and will inform future adjustments — it doesn't change your current plan automatically yet."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontrolün kaydedildi ve gelecekteki ayarlamalara yansıyacak — şu an mevcut planını otomatik olarak değiştirmiyor."
+          }
+        }
+      }
+    },
+    "baseline.result.planButton": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan ansehen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View plan"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planı görüntüle"
           }
         }
       }
@@ -40208,6 +40530,29 @@
         }
       }
     },
+    "baseline.action.saveAndContinue": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichern"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydet"
+          }
+        }
+      }
+    },
     "baseline.action.backToTest": {
       "extractionState": "manual",
       "localizations": {
@@ -40254,30 +40599,7 @@
         }
       }
     },
-    "baseline.action.skippedNote": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Übung übersprungen."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Exercise skipped."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Egzersiz atlandı."
-          }
-        }
-      }
-    },
-    "baseline.timer.start": {
+        "baseline.timer.start": {
       "extractionState": "manual",
       "localizations": {
         "de": {
