@@ -294,18 +294,12 @@ public struct OnboardingView: View {
 
     private var progressIndicator: some View {
         HStack(spacing: 8) {
-            ForEach(visibleSteps, id: \.self) { s in
+            ForEach(Step.allCases, id: \.self) { s in
                 Capsule()
                     .fill(s.rawValue <= step.rawValue ? Color.accentColor : Color.secondary.opacity(0.2))
                     .frame(height: 4)
             }
         }
-    }
-
-    /// DEL-207: bei "Kein Equipment" wird der Equipment-Step übersprungen —
-    /// der Indikator zeigt dann ehrlich 4 statt 5 Kapseln.
-    private var visibleSteps: [Step] {
-        Step.allCases.filter { $0 != .equipmentPreferences || environment != .noEquipment }
     }
 
     // MARK: - Step 1: HealthKit-Connect
@@ -1533,32 +1527,12 @@ public struct OnboardingView: View {
     }
 
     private func goToNextStep() {
-        guard var next = Step(rawValue: step.rawValue + 1) else { return }
-        // DEL-207: Equipment-Step bei "Kein Equipment" überspringen —
-        // wer ohne Geräte trainiert, hat dort nichts auszuwählen, und
-        // die Equipment-Varianten der Pläne sind für ihn irrelevant.
-        // Fix: Sprungziel ist der naechste WIRKLICH gezeigte Schritt
-        // (`.baselineCheck`), nicht `.preferencesAndPlan` — sonst wuerde der
-        // Start-Check-Schritt fuer No-Equipment-User komplett uebersprungen,
-        // seit `.baselineCheck` zwischen Equipment und Plan eingefuegt wurde.
-        if next == .equipmentPreferences && environment == .noEquipment {
-            next = .baselineCheck
-        }
+        guard let next = Step(rawValue: step.rawValue + 1) else { return }
         step = next
     }
 
     private func goToPreviousStep() {
-        guard var prev = Step(rawValue: step.rawValue - 1) else { return }
-        // DEL-207: Skip auch rückwärts symmetrisch.
-        // Fix: Sprungziel ist `.trainingHistory` (der Schritt direkt VOR dem
-        // uebersprungenen Equipment-Schritt) — vorher landete man bei
-        // `.coachingStyle` und ueberspraeng damit `.trainingHistory`
-        // zusaetzlich mit, ein Bug seit dessen Einfuehrung (Fix
-        // "doppeltes Onboarding"), der hier beim Einbau von
-        // `.baselineCheck` mit aufgefallen ist.
-        if prev == .equipmentPreferences && environment == .noEquipment {
-            prev = .trainingHistory
-        }
+        guard let prev = Step(rawValue: step.rawValue - 1) else { return }
         step = prev
     }
 

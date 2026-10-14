@@ -561,4 +561,41 @@ final class PlanMatchmakerTests: XCTestCase {
         let days = template.resolvedDays(forUserEquipment: [.dumbbell])
         XCTAssertEqual(days, template.days, "Ohne equipmentVariants bleibt es immer bei der Basis-Liste")
     }
+
+    // MARK: - Vor Phase 4 (PLAN_EQUIPMENT_MATCHING_AUDIT.md): "bestaetigt leer" vs. "unbekannt"
+
+    /// Direkte Antwort auf die Rueckfrage, ob "Nur Koerpergewicht bestaetigt"
+    /// und "Ausstattung unbekannt" im Matcher beide als "kein Filter" gelten:
+    /// NEIN. `[]` (nicht gepflegt) nimmt den fruehen Ausstieg in
+    /// `equipmentMatches` und laesst jedes Template durch. `{.bodyweight}`
+    /// (das `UserEquipmentProfile.legacyEquipmentPreferences` nach einer
+    /// "Nur Koerpergewicht"-Bestaetigung liefert, siehe
+    /// `EquipmentRequirementTests.testLegacyEquipmentPreferencesAlwaysIncludesBodyweight`)
+    /// ist NICHT leer und durchlaeuft die echte Pruefung — geprueft sowohl
+    /// fuer den aus Uebungen hergeleiteten Pfad (`push_pull_legs`, keine
+    /// `equipmentVariants`) als auch den `equipmentVariants`-Pfad
+    /// (`hybrid_balanced`: keines der vier `EquipmentProfile`-Anforderungs-
+    /// Sets ist mit reinem Koerpergewicht erreichbar).
+    func testEmptyEquipmentIsNoFilterButConfirmedBodyweightOnlyActuallyFilters() {
+        let unknown = QuizAnswers(
+            goal: .hypertrophy, experience: .advanced, preferredDays: 6, environment: .gym,
+            equipmentPreferences: []
+        )
+        let confirmedBodyweightOnly = QuizAnswers(
+            goal: .hypertrophy, experience: .advanced, preferredDays: 6, environment: .gym,
+            equipmentPreferences: [.bodyweight]
+        )
+
+        let unknownResult = PlanMatchmaker.rankPlansDetailed(for: unknown, templates: allTemplates)
+        XCTAssertTrue(unknownResult.templates.contains { $0.id == "push_pull_legs" },
+                      "Unbekannte Ausstattung ist 'nicht gepflegt' -> kein Equipment-Filter (hergeleiteter Pfad)")
+        XCTAssertTrue(unknownResult.templates.contains { $0.id == "hybrid_balanced" },
+                      "Unbekannte Ausstattung ist 'nicht gepflegt' -> kein Equipment-Filter (Variant-Pfad)")
+
+        let bodyweightResult = PlanMatchmaker.rankPlansDetailed(for: confirmedBodyweightOnly, templates: allTemplates)
+        XCTAssertFalse(bodyweightResult.templates.contains { $0.id == "push_pull_legs" },
+                       "Bestaetigtes 'Nur Koerpergewicht' ist NICHT leer und muss Langhantel/Kurzhantel-Anforderungen durchsetzen")
+        XCTAssertFalse(bodyweightResult.templates.contains { $0.id == "hybrid_balanced" },
+                       "Keine der vier EquipmentProfile-Varianten ist mit reinem Koerpergewicht erreichbar")
+    }
 }

@@ -213,6 +213,35 @@ final class EquipmentRequirementTests: XCTestCase {
         XCTAssertEqual(profile, afterFirstCall, "Ein zweiter Aufruf (z.B. nach einem App-Update mit neuen Items) aendert nichts an bereits entschiedenen Items")
     }
 
+    /// Vor Phase 4 (PLAN_EQUIPMENT_MATCHING_AUDIT.md), Punkt "Stueckzahl
+    /// unbekannt": ein ausgewaehltes Item OHNE erfasste Stueckzahl darf beim
+    /// Bestaetigen weder (a) stillschweigend zu `.unavailable` kippen — die
+    /// Bestaetigung aendert nur `.unknown`-Items, `.available` bleibt
+    /// unangetastet, unabhaengig davon ob `counts` dafuer einen Eintrag hat —
+    /// noch (b) danach optimistisch als "ausreichend" fuer eine Uebung mit
+    /// Mindest-Stueckzahl > 1 gelten. End-to-End-Test, der beide Fakten
+    /// zusammen statt nur je einzeln prueft (die bestehenden Tests oben
+    /// decken sie bislang nur getrennt ab:
+    /// `testConfirmRemainingAsUnavailableLeavesAlreadyAvailableItemsUntouched`
+    /// nutzt eine GESETZTE Stueckzahl, `testItemAvailableWithUnrecordedCountIsUnknownNotSatisfied`
+    /// ruft `confirmRemainingAsUnavailable()` gar nicht auf).
+    func testSelectedItemWithUnrecordedCountSurvivesConfirmationAndStaysUnknownAgainstDoubleRequirement() {
+        var profile = UserEquipmentProfile(availability: [.dumbbell: .available])
+        XCTAssertNil(profile.count(for: .dumbbell), "Vorbedingung: Stueckzahl nie erfasst")
+
+        profile.confirmRemainingAsUnavailable()
+
+        XCTAssertEqual(profile.availability(for: .dumbbell), .available,
+                       "Ausgewaehltes Item darf durch die Bestaetigung nicht zu .unavailable kippen")
+        XCTAssertNil(profile.count(for: .dumbbell),
+                     "Die Bestaetigung darf keine Stueckzahl erfinden")
+
+        let result = ExerciseRequirement.item(.dumbbell, minimumCount: 2).evaluate(against: profile)
+        XCTAssertEqual(result, .unknown(reasons: [
+            UnmetReason(item: .dumbbell, requiredCount: 2, availability: .available, knownCount: nil)
+        ]), "Vorhanden ohne bekannte Stueckzahl bleibt nach der Bestaetigung weiterhin unbekannt, nie 'erfuellt'")
+    }
+
     // MARK: - legacyEquipmentPreferences (Rueckwaerts-Kompatibilitaet DEL-170)
 
     func testLegacyEquipmentPreferencesAlwaysIncludesBodyweight() {

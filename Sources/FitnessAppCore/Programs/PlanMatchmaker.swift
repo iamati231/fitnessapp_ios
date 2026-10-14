@@ -205,6 +205,19 @@ public enum PlanMatchmaker {
     /// benoetigte Equipment jetzt aus den referenzierten Uebungen hergeleitet.
     /// Leeres User-Preference-Set bleibt "nicht gepflegt" und passiert den
     /// Filter unveraendert.
+    ///
+    /// Vor-Phase-4-Praezisierung (PLAN_EQUIPMENT_MATCHING_AUDIT.md): "Nur
+    /// Koerpergewicht bestaetigt" (`UserEquipmentProfile.legacyEquipmentPreferences`
+    /// nach `confirmEquipmentProfileComplete()`, liefert IMMER mindestens
+    /// `{.bodyweight}`) und "Ausstattung unbekannt" (`[]`, nie bestaetigt)
+    /// sind hier bewusst NICHT dieselbe Sache: `[]` ist leer und nimmt oben
+    /// den fruehen Ausstieg, `{.bodyweight}` ist nicht leer und durchlaeuft
+    /// die echte Pruefung. Das traegt zuverlaessig, weil `.bodyweight` nie
+    /// Teil eines `requiredEquipment`-Ergebnisses ist (weder hier noch in
+    /// `EquipmentProfile.requiredEquipment`) — ein bestaetigter Nur-
+    /// Koerpergewicht-Nutzer besteht deshalb korrekt KEIN Template, das
+    /// tatsaechlich Geraete braucht. Siehe
+    /// `PlanMatchmakerTests.testEmptyEquipmentIsNoFilterButConfirmedBodyweightOnlyActuallyFilters`.
     private static func equipmentMatches(template: ProgramTemplate, user: Set<Equipment>) -> Bool {
         guard !user.isEmpty else { return true }
         if let variants = template.equipmentVariants {
