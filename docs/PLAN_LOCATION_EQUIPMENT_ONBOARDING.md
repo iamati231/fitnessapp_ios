@@ -335,3 +335,52 @@ Phasenbericht gilt: Linux-kompilierter SwiftUI-Code wird hier nicht als
 "Apple-getestet" dargestellt. Ein echter Codemagic-/Xcode-Lauf (inkl.
 manueller Pruefung der neuen UI auf einem Geraet/Simulator) bleibt eine
 offene Release-Voraussetzung.
+
+## 10. Nachtrag: echter Codemagic-Build-Fehler + Fix (zweiter Build-Fehler dieser Epic)
+
+Der User hat ein zweites echtes Release-Gate-Log hochgeladen
+(`run_unit_tests__release_gate__2.log`) — Build fehlgeschlagen, 3 Compiler-
+Fehler in `EquipmentProfileEditor.swift` (Zeilen 165, 259, 369), alle
+identisch: `cannot convert value of type 'String' to expected argument
+type 'LocalizedStringKey'`.
+
+**Root Cause.** `Text(_:bundle:)` hat auf Apple-Plattformen NUR eine
+Ueberladung, die einen `bundle:`-Parameter akzeptiert — die mit
+`LocalizedStringKey`. Ein String-LITERAL konvertiert am Aufrufort automatisch
+dorthin (`ExpressibleByStringLiteral`); eine `String`-VARIABLE/-Property
+(wie `option.titleKey`, der `titleKey`-Parameter, der `key`-Parameter aus
+meinem Phase-6.3-Refactor) tut das NICHT. Betraf exakt die 3 Stellen, an
+denen ich Zeilen-Rendering in wiederverwendbare freie Funktionen
+ausgelagert und den Lokalisierungs-Key dabei als `String` durchgereicht
+hatte.
+
+**Wieder von Linux nicht gefangen — diesmal aus einem ANDEREN Grund als der
+SwiftData-Fund zuvor:** diesmal ist es keine Typpruefungs-Luecke (SwiftUI
+wird auf dieser Linux-Toolchain durchaus typgeprueft, siehe alle anderen
+UI-Dateien), sondern ein echter API-Unterschied — die hier verwendete
+Linux-SwiftUI-Implementierung akzeptiert `Text(_:bundle:)` offenbar auch
+mit einer `String`-Variable, waehrend echtes Apple-SwiftUI das ablehnt.
+Zweite, unabhaengige Bestaetigung: "kompiliert auf Linux" ist fuer
+SwiftUI-Code KEIN verlaesslicher Beweis fuer "kompiliert auf Apple" — auch
+ausserhalb von SwiftData-Faellen.
+
+**Fix.** `LocalizedStringKey(...)` an allen 3 Stellen explizit konstruiert
+(`Text(LocalizedStringKey(option.titleKey), bundle: .module)` usw.) —
+semantisch identisch zu einem Literal, da `LocalizedStringKey` den
+Catalog-Lookup unabhaengig davon durchfuehrt, ob der Key-String zur
+Compile-Zeit oder zur Laufzeit konstruiert wurde.
+
+**Projektweite Verifikation statt Einzelfix.** `grep` nach demselben Muster
+(`Text(<Bezeichner>, bundle:)` ohne `LocalizedStringKey(...)`) ueber den
+gesamten `FitnessAppUI`-Zielordner zeigt: die einzigen 3 echten Treffer
+waren die jetzt gefixten Stellen. Drei weitere, oberflaechlich aehnliche
+Stellen (`DashboardEmptyState.swift`, `DayAnalysisCard.swift`,
+`BaselineCheckFlowView.swift`) sind KORREKT — ihre Parameter sind bereits
+als `LocalizedStringKey` (nicht `String`) deklariert, ein bereits vor
+dieser Phase etabliertes, in `BaselineCheckFlowView.swift` explizit
+dokumentiertes Muster (`footerLink`/`cueRow`-Kommentar), das mein
+Phase-6.3-Refactor haette befolgen sollen, aber nicht kannte. Keine
+weiteren Instanzen des Bugs im Projekt gefunden.
+
+955/961 → nach dem Fix weiterhin 961/961 Linux-Tests gruen (die
+Equipment-Core-Logik war von diesem rein UI-seitigen Fehler nie betroffen).

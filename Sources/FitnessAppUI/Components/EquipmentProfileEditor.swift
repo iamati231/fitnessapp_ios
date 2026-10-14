@@ -162,7 +162,7 @@ private func selectableRow(icon: String, title: Text, isSelected: Bool, action: 
 
 @available(iOS 17.0, macOS 14.0, *)
 private func choiceRow<T: ChoiceOption>(_ option: T, isSelected: Bool, onSelect: @escaping (T) -> Void) -> some View {
-    selectableRow(icon: option.iconName, title: Text(option.titleKey, bundle: .module), isSelected: isSelected) {
+    selectableRow(icon: option.iconName, title: Text(LocalizedStringKey(option.titleKey), bundle: .module), isSelected: isSelected) {
         onSelect(option)
     }
 }
@@ -256,10 +256,10 @@ private func bodyweightOnlyButton(titleKey: String, subtitleKey: String, profile
                 .foregroundStyle(isSelected ? Color.deltiqOrange : .secondary)
                 .frame(width: 32, height: 32)
             VStack(alignment: .leading, spacing: 2) {
-                Text(titleKey, bundle: .module)
+                Text(LocalizedStringKey(titleKey), bundle: .module)
                     .font(.body.weight(.semibold))
                     .foregroundStyle(.primary)
-                Text(subtitleKey, bundle: .module)
+                Text(LocalizedStringKey(subtitleKey), bundle: .module)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -366,7 +366,7 @@ struct EquipmentProfileEditor: View {
     }
 
     private func sectionHeader(_ key: String) -> some View {
-        Text(key, bundle: .module)
+        Text(LocalizedStringKey(key), bundle: .module)
             .font(.caption.weight(.semibold))
             .foregroundStyle(.secondary)
             .textCase(.uppercase)
