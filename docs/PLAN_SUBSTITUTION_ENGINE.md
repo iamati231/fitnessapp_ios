@@ -59,3 +59,113 @@ bleibt es bewusst, statt den Scope eigenstaendig zu erweitern.
   Regel an; keine Regelketten (ein Ersatz wird nie seinerseits ersetzt).
 - `PlanAdaptationValidator`: Programm-Ebene — doppelte Ersatz-Namen am
   selben Tag, verlorene Push/Pull/Legs-Abdeckung.
+
+## 3. Variantenwahl (Phase 5.3, `PlanSelectionResolver`)
+
+`PlanSelectionResolver.resolve(template:profile:context:rules:) -> ResolvedPlanSelection`
+ersetzt NICHT `ProgramTemplate.bestEquipmentCheckedVariant` (Phase 4), sondern
+erweitert den Datenfluss davor:
+
+1. Zuerst exakt die Phase-4-Logik: gibt es eine Variante, die bereits
+   VOLLSTAENDIG passt (`equipmentStatus.isAvailable`), gewinnt sie
+   unveraendert — kein Adaptionsversuch, `isAdapted == false`. Eine bereits
+   passende Variante wird nie durch eine mit Substitutionen ersetzt.
+2. Erst wenn das fehlschlaegt: JEDE konkrete Quell-Variante (nicht nur die
+   von Phase 4 bevorzugte Basis) einzeln ueber
+   `ExerciseSubstitutionEngine.adapt` bewerten (`equipmentCheckedVariants(against:)`).
+3. Unter den VOLLSTAENDIG geloesten Entwuerfen (`PlanAdaptationDraft.isFullyResolved`)
+   gewinnt: zuerst die wenigsten Substitutionen, dann die niedrigste
+   summierte `deviationCost`, erst dann die hoehere Basis-Prioritaet als
+   stabiler Tie-Breaker — nie umgekehrt, sonst wuerden technisch schwerere
+   Ersetzungen scheinbar bevorzugt (durch einen synthetischen Mehr-Varianten-
+   Test in `PlanSelectionResolverTests` abgesichert).
+4. Loest NICHTS vollstaendig, faellt die Funktion auf die unveraenderte,
+   transparente Phase-4-Basisvariante zurueck (nie eine nur TEILWEISE
+   geloeste Anpassung als Ergebnis ausgeben) — alle versuchten Entwuerfe
+   bleiben in `consideredButUnresolvedAdaptations` fuer die UI erhalten
+   ("das haben wir versucht, das fehlt noch").
+
+`ResolvedPlanSelection` traegt zusaetzlich `ruleSetVersion`
+(`ReviewedSubstitutionCatalog.version`) und `equipmentSnapshot` (das Profil,
+gegen das aufgeloest wurde) fuer die Veraltungs-Pruefung in Abschnitt 4.
+
+## 4. Instanziierung (Phase 5.4)
+
+Punkt 6 der Vorgabe woertlich: *"Do NOT preview adaptedDays and then call an
+instantiator that reselects bestEquipmentCheckedVariant and loses
+substitutions."* Dafuer:
+
+- `ResolvedPlanSelection.isStale(comparedTo:)` — einfacher `Equatable`-
+  Vergleich des gespeicherten `equipmentSnapshot` gegen das aktuelle Profil.
+- `ProgramInstantiator.instantiate(...)` bekommt einen neuen Parameter
+  `resolvedSelection: ResolvedPlanSelection? = nil`, der — sobald gesetzt —
+  als EINZIGE Quelle fuer `resolvedDays` gilt (Prioritaet:
+  `resolvedSelection` > `bestEquipmentCheckedVariant` [Phase 4] >
+  `resolvedDays(forUserEquipment:)` [Legacy]). Eine `precondition` sichert
+  `resolvedSelection.templateID == template.id` ab (Caller-Fehler, kein
+  Laufzeit-Normalfall).
+- Beide Aufrufstellen (`OnboardingView.finishOnboarding()`,
+  `ProgramTemplatePickerView.instantiate(_:selection:)`) pruefen VOR dem
+  Instanziieren `isStale(comparedTo:)` gegen das aktuell geladene Profil;
+  bei Veraltung wird still ueber `PlanSelectionResolver.resolve` frisch
+  aufgeloest statt eine moeglicherweise falsche Auswahl zu uebernehmen, bei
+  frischer Auswahl wird sie EXAKT (keine erneute Herleitung) uebernommen.
+  Dokumentiert als defensiv: kein UI-Pfad in diesem Flow erlaubt aktuell
+  eine Equipment-Aenderung zwischen Vorschau und Adopt.
+- `TemplatePreviewView.onAdopt` liefert jetzt die in der Vorschau tatsaechlich
+  verwendete `ResolvedPlanSelection` an den Parent zurueck (statt eines
+  parameterlosen Callbacks) — Vorschau (`resolvedSelection`-computed-property)
+  und `adoptButton` lesen dieselbe Funktion, die die Instanziierung erhaelt.
+- Neue Ersatz-Uebungen uebernehmen nie Last/Progression der Quell-Uebung —
+  by construction, da `ProgramInstantiator.makeExercise` `suggestedWeight`/
+  `progressionStep` nie aus einem `ExerciseSpec` liest (kein neuer Code
+  dafuer noetig, siehe Apple-Test 22).
+- Bewusst NICHT umgesetzt: persistierte Herkunfts-/Regelversion-Felder auf
+  `Exercise`. Nicht noetig fuer MVP-Korrektheit (nichts liest aktuell "war
+  das substituiert" zurueck), und haette CSV-Export/-Import/Backup/Reset
+  beruehrt — Scope-Risiko, das diese Epic durchgehend vermeidet ("only as
+  needed" laut Vorgabe Abschnitt 7).
+
+## 5. Vorschau-/Freigabe-UI + Lokalisierung (Phase 5.5)
+
+`TemplatePreviewView.equipmentStatusBanner` (Vorgabe Abschnitt 6):
+
+- Zeigt `adaptedEquipmentBanner(_:)` NUR, wenn `resolvedSelection.appliedAdaptation`
+  gesetzt ist — per Konstruktion (Abschnitt 3) also nur bei vollstaendig
+  geloester Substitution, nie bei einem Teilerfolg. Titel "An deine
+  Ausruestung angepasst" (`picker.plan.equipment.adapted.title`), blaues
+  `wand.and.stars`-Icon statt dem gruenen Haken der unveraenderten
+  Passend-Anzeige — bewusst unterscheidbar.
+- Eine aufklappbare `DisclosureGroup` ("Aenderungen anzeigen",
+  `picker.plan.equipment.adapted.showChanges`) listet jede
+  `ExerciseReplacement` als durchgestrichener Original-Name → fett
+  hervorgehobener Ersatz-Name, darunter der lokalisierte Begruendungstext
+  (`replacement.reasonKey`, einer der 5 `substitution.reason.*`-Keys aus
+  Abschnitt 1).
+- Bleibt nach der Substitution eine Luecke (Fall "nichts vollstaendig
+  geloest"), haengt `missingGapDetail` den zusaetzlichen Hinweistext
+  `picker.plan.equipment.adaptationAttemptedHint` an, sobald
+  `consideredButUnresolvedAdaptations` nicht leer ist — "wir haben es
+  versucht, aber es hat nicht vollstaendig geklappt" statt einer stillen
+  Luecke ohne Kontext.
+- `adoptButton` ruft `onAdopt(resolvedSelection)` — der CTA ist IMMER
+  aktiv (kein separater "nur bei vollstaendiger Loesung"-Gate auf
+  Button-Ebene noetig), weil `resolvedSelection` bei einer ungeloesten
+  Luecke ohnehin die transparente, unveraenderte Basis-Variante liefert
+  (Abschnitt 3, Punkt 4) — der User uebernimmt in dem Fall exakt das, was
+  die Vorschau zeigt, nie eine verdeckte Teil-Anpassung.
+- Abbrechen (Sheet schliessen ohne Adopt) persistiert nichts — `resolvedSelection`
+  ist eine reine `computed property`, es existiert kein Zwischenspeicher,
+  der beim Verwerfen aufgeraeumt werden muesste (Vorgabe Abschnitt 6:
+  "Cancelling must preserve answers/inventory and create no persisted
+  draft"). Eine Inventar-Aenderung waehrend die Vorschau offen ist, gibt es
+  in diesem Flow nicht (kein editierbarer Equipment-Schritt zwischen
+  Preview und Adopt) — die Veraltungs-Pruefung in Abschnitt 4 deckt den
+  Fall trotzdem defensiv ab, falls sich das je aendert.
+- 8 neue Lokalisierungs-Keys (DE/EN/TR, TR=EN fuer die 5 Uebungs-/Regel-
+  Begruendungstexte analog zur bestehenden Konvention fuer Uebungsnamen):
+  `picker.plan.equipment.adapted.title`, `.adapted.showChanges`,
+  `.adaptationAttemptedHint`, sowie `substitution.reason.squatToGobletSquat`,
+  `.bulgarianSplitSquatToLunge`, `.barbellRowToChestSupportedRow`,
+  `.pullupToCableLatPulldown`, `.chestSupportedRowToSeatedCableRow`.
+  `TRANSLATIONS.md`: 2011 Keys gesamt, 0 hartkodierte Strings.

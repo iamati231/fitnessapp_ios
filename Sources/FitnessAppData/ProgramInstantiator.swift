@@ -61,9 +61,25 @@ public enum ProgramInstantiator {
         // Legacy-Verhalten ueber `userEquipment` oben. Gesetzt = EINZIGE
         // Quelle der Wahrheit fuer die Variantenwahl, identisch zu der, die
         // `TemplatePreviewView` fuer dieselbe Vorschau verwendet (Punkt 6:
-        // Vorschau und Instanziierung duerfen nie auseinanderlaufen).
-        userEquipmentProfile: UserEquipmentProfile? = nil
+        // Vorschau und Instanziierung duerfen nie auseinanderlaufen). Wird
+        // ignoriert, sobald `resolvedSelection` gesetzt ist.
+        userEquipmentProfile: UserEquipmentProfile? = nil,
+        // Smart-Onboarding-Epic Phase 5.4 (PLAN_SUBSTITUTION_ENGINE.md
+        // Abschnitt 4): die vom User tatsaechlich FREIGEGEBENE, ggf. bereits
+        // substituierte Auswahl — EINZIGE Quelle der Wahrheit, sobald
+        // gesetzt. Verhindert genau den Fehler, den die Vorgabe explizit
+        // nennt: "Do NOT preview adaptedDays and then call an instantiator
+        // that reselects bestEquipmentCheckedVariant and loses
+        // substitutions." Caller MUSS vorher `isStale(comparedTo:)` gegen
+        // das aktuelle Profil geprueft haben — der Instantiator selbst
+        // validiert das nicht erneut (reine Materialisierung einer bereits
+        // getroffenen, freigegebenen Entscheidung).
+        resolvedSelection: ResolvedPlanSelection? = nil
     ) -> TrainingPlan {
+        if let resolvedSelection {
+            precondition(resolvedSelection.templateID == template.id,
+                         "ResolvedPlanSelection.templateID (\(resolvedSelection.templateID)) muss zum instanziierten Template (\(template.id)) passen")
+        }
         // 1) Deactivate every existing plan.
         let allPlans = (try? context.fetch(FetchDescriptor<TrainingPlan>())) ?? []
         for plan in allPlans {
@@ -103,12 +119,13 @@ public enum ProgramInstantiator {
         let normalized = normalize(weekdays: rawWeekdays, expectedCount: template.daysPerWeek)
 
         // 5) Workout-Tage mappen (sequenceIndex → realer Wochentag).
-        // DEL-170 + PLAN_EQUIPMENT_MATCHING_AUDIT.md 5.4/13: Variant-Auswahl
-        // über `bestEquipmentCheckedVariant` (Phase 4, sobald ein echtes
-        // Profil vorliegt) bzw. `resolvedDays` (Legacy-Pfad) — dieselbe
-        // Funktion, die auch `TemplatePreviewView` fuer die Vorschau
-        // aufruft, damit beide nie wieder auseinanderlaufen koennen.
-        let resolvedDays = userEquipmentProfile.map { template.bestEquipmentCheckedVariant(against: $0).days }
+        // PLAN_SUBSTITUTION_ENGINE.md Abschnitt 4 / PLAN_EQUIPMENT_MATCHING_
+        // AUDIT.md 5.4/13: `resolvedSelection` (Phase 5, ggf. substituiert)
+        // > `bestEquipmentCheckedVariant` (Phase 4) > `resolvedDays`
+        // (Legacy) — dieselbe Prioritaet wie in `TemplatePreviewView`, damit
+        // Vorschau und Instanziierung nie auseinanderlaufen koennen.
+        let resolvedDays = resolvedSelection?.days
+            ?? userEquipmentProfile.map { template.bestEquipmentCheckedVariant(against: $0).days }
             ?? template.resolvedDays(forUserEquipment: userEquipment)
         let sortedDays = resolvedDays.sorted { $0.sequenceIndex < $1.sequenceIndex }
         var workoutDayWeekdays = Set<Int>()

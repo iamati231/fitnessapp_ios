@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2003 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2011 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2003 / 2003** (100%) | 0 |
-| 🇬🇧 English (EN) | **2003 / 2003** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2003 / 2003** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2011 / 2011** (100%) | 0 |
+| 🇬🇧 English (EN) | **2011 / 2011** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2011 / 2011** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1487,7 +1487,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.weeklyGoal.subtitle` | Wie oft willst du pro Woche trainieren? Dein Kalender-Streak zählt gegen dieses Ziel — wähle, was du wirklich durchhalten kannst. | How often do you want to train per week? Your calendar streak counts against this — pick what you can actually sustain. | Haftada kaç kez antrenman yapmak istiyorsun? Takvim serin bu hedefe göre sayılır — gerçekten sürdürebileceğini seç. |
 | `onboarding.weeklyGoal.title` | Dein Wochenziel | Your weekly goal | Haftalık hedefin |
 
-## `picker.*`  (18 Keys)
+## `picker.*`  (21 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1501,6 +1501,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `picker.exercise.namePlaceholder` | Name (z.B. Bankdrücken) | Name (e.g. Bench Press) | Ad (örn. Bench Press) |
 | `picker.exercise.section.customs` | Eigene | Custom | Özel |
 | `picker.plan.adoptFootnote` | Beim Übernehmen wird eine Tiefkopie für deine eigene Bibliothek angelegt — Tage, Übungen, Sätze sind danach frei editierbar. | Adopting creates a deep copy in your library — days, exercises, and sets are then freely editable. | Plan alındığında kütüphanende derin kopya oluşturulur — günler, hareketler ve setler özgürce düzenlenebilir. |
+| `picker.plan.equipment.adaptationAttemptedHint` | Eine automatische Anpassung wurde versucht, war aber nicht vollständig möglich. | An automatic adaptation was attempted but wasn't fully possible. | Otomatik bir uyarlama denendi ancak tam olarak mümkün olmadı. |
+| `picker.plan.equipment.adapted.showChanges` | Änderungen anzeigen | Show changes | Değişiklikleri göster |
+| `picker.plan.equipment.adapted.title` | An deine Ausrüstung angepasst | Adapted to your equipment | Ekipmanına göre uyarlandı |
 | `picker.plan.equipment.available.title` | Equipment passend bestätigt | Equipment confirmed to match | Ekipman uyumlu olarak onaylandı |
 | `picker.plan.equipment.missingItems` | Fehlt: %@ | Missing: %@ | Eksik: %@ |
 | `picker.plan.equipment.notAnnotatedHint` | Einzelne Übungen sind im Katalog noch nicht auf Geräte-Voraussetzungen geprüft. | A few exercises haven't been checked against equipment requirements yet. | Bazı egzersizler henüz ekipman gereksinimlerine göre kontrol edilmedi. |
@@ -2126,6 +2129,16 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 |---|---|---|---|
 | `sex.female` | Weiblich | Female | Kadın |
 | `sex.male` | Männlich | Male | Erkek |
+
+## `substitution.*`  (5 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `substitution.reason.barbellRowToChestSupportedRow` | Ohne Langhantel: das unterstützte Kurzhantel-Rudern trainiert dieselbe Zugbewegung ohne Belastung für den unteren Rücken. | Without a barbell: the chest-supported dumbbell row trains the same pulling movement without lower-back strain. | Halter olmadan: desteklenmiş dambıl çekişi, bel alt kısmına yük bindirmeden aynı çekme hareketini çalıştırır. |
+| `substitution.reason.bulgarianSplitSquatToLunge` | Ohne passende Bank: der normale Ausfallschritt trainiert dieselben Muskeln mit etwas geringerer Bewegungsreichweite. | Without a suitable bench: the regular lunge trains the same muscles with a slightly smaller range of motion. | Uygun bir bank olmadan: normal hamle aynı kasları biraz daha az hareket genişliğiyle çalıştırır. |
+| `substitution.reason.chestSupportedRowToSeatedCableRow` | Ohne passende Bank: sitzendes Kabelrudern trainiert dieselbe Zugbewegung, verlangt aber etwas mehr Rumpfstabilisation. | Without a suitable bench: the seated cable row trains the same pulling movement, but requires a bit more core stabilization. | Uygun bir bank olmadan: oturarak kablo çekişi aynı çekme hareketini çalıştırır, ancak biraz daha fazla gövde stabilizasyonu gerektirir. |
+| `substitution.reason.pullupToCableLatPulldown` | Ohne Klimmzugstange: der Latzug am Kabel trainiert dieselbe Zugrichtung mit einstellbarem Gewicht. | Without a pull-up bar: the cable lat pulldown trains the same pulling direction with adjustable weight. | Barfiks demiri olmadan: kablo lat pulldown aynı çekiş yönünü ayarlanabilir ağırlıkla çalıştırır. |
+| `substitution.reason.squatToGobletSquat` | Ohne Langhantel und Rack: Goblet Squat trainiert dieselbe Bewegung, aber mit geringerer Lastkapazität. | Without a barbell and rack: the goblet squat trains the same movement, but with lower load capacity. | Halter ve rack olmadan: Goblet Squat aynı hareketi çalıştırır, ancak daha düşük yük kapasitesiyle. |
 
 ## `summary.*`  (68 Keys)
 

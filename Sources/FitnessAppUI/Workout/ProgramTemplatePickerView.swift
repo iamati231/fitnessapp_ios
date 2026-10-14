@@ -37,9 +37,11 @@ public struct ProgramTemplatePickerView: View {
                             NavigationLink {
                                 TemplatePreviewView(
                                     template: template,
-                                    userEquipmentProfile: profiles.first?.equipmentProfile ?? UserEquipmentProfile()
-                                ) {
-                                    instantiate(template)
+                                    userEquipmentProfile: profiles.first?.equipmentProfile ?? UserEquipmentProfile(),
+                                    goal: profiles.first?.trainingGoal ?? .hybrid,
+                                    experienceTrack: profiles.first?.experienceTrack
+                                ) { selection in
+                                    instantiate(template, selection: selection)
                                 }
                             } label: {
                                 ProgramRow(template: template)
@@ -116,14 +118,27 @@ public struct ProgramTemplatePickerView: View {
         return String(localized: env.localizedName)
     }
 
-    private func instantiate(_ template: ProgramTemplate) {
-        // Smart-Onboarding-Epic Phase 4: dasselbe Profil, das die Vorschau
-        // gerade gezeigt hat (Punkt 6) — nie die grobe Legacy-Menge allein.
-        let userEquipmentProfile = profiles.first?.equipmentProfile ?? UserEquipmentProfile()
+    private func instantiate(_ template: ProgramTemplate, selection: ResolvedPlanSelection) {
+        // Smart-Onboarding-Epic Phase 5.4 (PLAN_SUBSTITUTION_ENGINE.md
+        // Abschnitt 4): "Before saving, recheck against the current
+        // equipment snapshot and reject stale/incompatible selection." In
+        // diesem Flow liegt kein editierbarer Equipment-Schritt zwischen
+        // Vorschau und Adopt — die Pruefung ist defensiv (deckt z.B. eine
+        // Profil-Aenderung in einer anderen Szene ab), nie beobachtet als
+        // erreichbarer Fall. Bei Veraltung wird still frisch aufgeloest,
+        // statt eine moeglicherweise falsche Auswahl zu uebernehmen.
+        let currentProfile = profiles.first?.equipmentProfile ?? UserEquipmentProfile()
+        let freshSelection = selection.isStale(comparedTo: currentProfile)
+            ? PlanSelectionResolver.resolve(
+                template: template, profile: currentProfile,
+                context: SubstitutionContext(goal: profiles.first?.trainingGoal ?? .hybrid, experienceTrack: profiles.first?.experienceTrack)
+            )
+            : selection
+
         let plan = ProgramInstantiator.instantiate(
             template,
             in: modelContext,
-            userEquipmentProfile: userEquipmentProfile
+            resolvedSelection: freshSelection
         )
         dismiss()
         // Defer the navigation to the next runloop — gives the sheet's dismiss
@@ -193,19 +208,29 @@ private struct ProgramRow: View {
 public struct TemplatePreviewView: View {
     public let template: ProgramTemplate
     /// Action, die getriggert wird wenn der User die Tiefkopie tatsaechlich
-    /// erstellen will. Wird vom Parent injected, damit dort Insert,
-    /// Navigation und Sheet-Dismiss orchestriert wird.
-    public let onAdopt: () -> Void
+    /// erstellen will. Liefert EXAKT die hier angezeigte `ResolvedPlanSelection`
+    /// zurueck — der Parent reicht sie unveraendert an
+    /// `ProgramInstantiator.instantiate(resolvedSelection:)` weiter, damit
+    /// Vorschau (inkl. ggf. angewandter Substitutionen) und Instanziierung
+    /// nie auseinanderlaufen koennen (PLAN_SUBSTITUTION_ENGINE.md Abschnitt 4).
+    public let onAdopt: (ResolvedPlanSelection) -> Void
     /// Anpassbarer Button-Titel.
     public let adoptButtonTitle: String
     /// Smart-Onboarding-Epic Phase 4 (PLAN_EQUIPMENT_MATCHING_AUDIT.md
     /// Abschnitt 13): dasselbe `UserEquipmentProfile`, das der jeweilige
     /// Parent gleich darauf an `ProgramInstantiator.instantiate` reicht —
-    /// damit `checkedVariant`/`orderedDays` IMMER dieselbe Variante (und
+    /// damit `resolvedSelection`/`orderedDays` IMMER dieselbe Variante (und
     /// denselben Equipment-Status) zeigen, die beim Adopt tatsaechlich
     /// gespeichert wird (Punkt 6). Default leer/unbekannt = Basis-Variante,
     /// Status `.unknown` fuer jede annotierte Uebung.
     public let userEquipmentProfile: UserEquipmentProfile
+    /// Smart-Onboarding-Epic Phase 5.1 (PLAN_SUBSTITUTION_ENGINE.md): Kontext
+    /// fuer das Regel-Gating der Substitutions-Engine (Kraft-Ziel-Anker,
+    /// Starter-Schutz). Default `.hybrid`/`nil` fuer Call-Sites ohne eigene
+    /// Zielangabe — dort bleiben die goal-/track-gegateten Regeln inaktiv,
+    /// nie faelschlich aktiv.
+    public let goal: TrainingGoal
+    public let experienceTrack: ExperienceTrack?
 
     @Environment(\.dismiss) private var dismiss
 
@@ -213,11 +238,15 @@ public struct TemplatePreviewView: View {
         template: ProgramTemplate,
         adoptButtonTitle: String = "Diesen Plan übernehmen",
         userEquipmentProfile: UserEquipmentProfile = UserEquipmentProfile(),
-        onAdopt: @escaping () -> Void
+        goal: TrainingGoal = .hybrid,
+        experienceTrack: ExperienceTrack? = nil,
+        onAdopt: @escaping (ResolvedPlanSelection) -> Void
     ) {
         self.template = template
         self.adoptButtonTitle = adoptButtonTitle
         self.userEquipmentProfile = userEquipmentProfile
+        self.goal = goal
+        self.experienceTrack = experienceTrack
         self.onAdopt = onAdopt
     }
 
@@ -257,39 +286,99 @@ public struct TemplatePreviewView: View {
 
     // MARK: Subsections
 
-    /// Smart-Onboarding-Epic Phase 4: EINZIGE Variantenwahl fuer diese
-    /// Vorschau — `ProgramInstantiator.instantiate` ruft bei Adopt dieselbe
-    /// Funktion mit demselben Profil auf (Punkt 6).
-    private var checkedVariant: CheckedPlanVariant {
-        template.bestEquipmentCheckedVariant(against: userEquipmentProfile)
+    /// Smart-Onboarding-Epic Phase 5.3: EINZIGE Varianten-/Substitutions-
+    /// Wahl fuer diese Vorschau — `onAdopt` liefert GENAU dieses Ergebnis an
+    /// den Parent zurueck, der es unveraendert an
+    /// `ProgramInstantiator.instantiate(resolvedSelection:)` reicht (Punkt 6:
+    /// Vorschau und Instanziierung duerfen nie auseinanderlaufen).
+    private var resolvedSelection: ResolvedPlanSelection {
+        PlanSelectionResolver.resolve(
+            template: template, profile: userEquipmentProfile,
+            context: SubstitutionContext(goal: goal, experienceTrack: experienceTrack)
+        )
     }
 
     /// Punkt 5/7/8: zeigt den tatsaechlichen Pruefstatus der oben gewaehlten
-    /// Variante transparent an — "Equipment passend" nur bei `.available`,
-    /// eine Luecke (fehlend oder unbekannt) wird konkret benannt statt
+    /// Variante transparent an — "Equipment passend" nur bei `.available`
+    /// OHNE Substitution, "angepasst" nur bei vollstaendig geloester
+    /// Substitution (niemals bei einem nur TEILWEISE geloesten Versuch —
+    /// `resolvedSelection.isAdapted` ist laut `PlanSelectionResolver` per
+    /// Konstruktion nur bei vollstaendiger Loesung `true`). Eine verbleibende
+    /// Luecke (fehlend oder unbekannt) wird konkret benannt statt
     /// stillschweigend uebergangen oder durch eine andere Uebung ersetzt.
     @ViewBuilder
     private var equipmentStatusBanner: some View {
-        switch checkedVariant.equipmentStatus {
-        case .available:
+        let selection = resolvedSelection
+        if let adaptation = selection.appliedAdaptation {
+            adaptedEquipmentBanner(adaptation)
+        } else {
+            switch selection.equipmentStatus {
+            case .available:
+                equipmentStatusRow(
+                    icon: "checkmark.circle.fill", tint: .green,
+                    title: String(localized: "picker.plan.equipment.available.title", bundle: .module),
+                    detail: nil
+                )
+            case let .unknown(gaps):
+                equipmentStatusRow(
+                    icon: "questionmark.circle.fill", tint: .orange,
+                    title: String(localized: "picker.plan.equipment.unknown.title", bundle: .module),
+                    detail: unknownGapDetail(gaps)
+                )
+            case let .unavailable(gaps):
+                equipmentStatusRow(
+                    icon: "exclamationmark.triangle.fill", tint: .red,
+                    title: String(localized: "picker.plan.equipment.unavailable.title", bundle: .module),
+                    detail: missingGapDetail(gaps, attemptedButUnresolved: !selection.consideredButUnresolvedAdaptations.isEmpty)
+                )
+            }
+        }
+    }
+
+    /// Smart-Onboarding-Epic Phase 5.5: "Adapted to your equipment" NUR nach
+    /// vollstaendig geloester Substitution — plus eine aufklappbare Vorher-
+    /// Nachher-Liste mit lokalisierter Begruendung je Ersetzung (Vorgabe
+    /// Abschnitt 6).
+    private func adaptedEquipmentBanner(_ adaptation: PlanAdaptationDraft) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
             equipmentStatusRow(
-                icon: "checkmark.circle.fill", tint: .green,
-                title: String(localized: "picker.plan.equipment.available.title", bundle: .module),
+                icon: "wand.and.stars", tint: .blue,
+                title: String(localized: "picker.plan.equipment.adapted.title", bundle: .module),
                 detail: nil
             )
-        case let .unknown(gaps):
-            equipmentStatusRow(
-                icon: "questionmark.circle.fill", tint: .orange,
-                title: String(localized: "picker.plan.equipment.unknown.title", bundle: .module),
-                detail: unknownGapDetail(gaps)
-            )
-        case let .unavailable(gaps):
-            equipmentStatusRow(
-                icon: "exclamationmark.triangle.fill", tint: .red,
-                title: String(localized: "picker.plan.equipment.unavailable.title", bundle: .module),
-                detail: missingGapDetail(gaps)
-            )
+            DisclosureGroup {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(Array(adaptation.replacements.enumerated()), id: \.offset) { _, replacement in
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 6) {
+                                Text(localizedExerciseName(replacement.originalName))
+                                    .strikethrough()
+                                    .foregroundStyle(Color.Deltiq.textSecondary)
+                                Image(systemName: "arrow.right")
+                                    .foregroundStyle(Color.Deltiq.textSecondary)
+                                Text(localizedExerciseName(replacement.replacementName))
+                                    .foregroundStyle(Color.primary)
+                                    .font(.body.weight(.medium))
+                            }
+                            .font(.footnote)
+                            Text(String(localized: String.LocalizationValue(replacement.reasonKey), bundle: .module))
+                                .font(.caption)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                    }
+                }
+                .padding(.top, 4)
+            } label: {
+                Text("picker.plan.equipment.adapted.showChanges", bundle: .module)
+                    .font(.footnote.weight(.medium))
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 10)
         }
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.Deltiq.surface)
+        )
     }
 
     private func equipmentStatusRow(icon: String, tint: Color, title: String, detail: String?) -> some View {
@@ -314,8 +403,11 @@ public struct TemplatePreviewView: View {
     }
 
     /// Nennt die konkret fehlenden Geraete (aus allen `.missing`-Luecken,
-    /// dedupliziert) — nie nur "Equipment fehlt" ohne Angabe wonach.
-    private func missingGapDetail(_ gaps: [PlanEquipmentGap]) -> String? {
+    /// dedupliziert) — nie nur "Equipment fehlt" ohne Angabe wonach. Haengt
+    /// optional den Hinweis an, dass eine automatische Anpassung versucht,
+    /// aber nicht vollstaendig moeglich war (Vorgabe Abschnitt 3, Punkt 7:
+    /// "explain missing equipment/unsupported tasks").
+    private func missingGapDetail(_ gaps: [PlanEquipmentGap], attemptedButUnresolved: Bool = false) -> String? {
         var items: Set<EquipmentItem> = []
         for gap in gaps {
             if case let .missing(reasons) = gap.reason {
@@ -324,7 +416,11 @@ public struct TemplatePreviewView: View {
         }
         guard !items.isEmpty else { return nil }
         let names = items.map { String(localized: $0.localizedName) }.sorted()
-        return String(format: String(localized: "picker.plan.equipment.missingItems", bundle: .module), names.joined(separator: ", "))
+        var text = String(format: String(localized: "picker.plan.equipment.missingItems", bundle: .module), names.joined(separator: ", "))
+        if attemptedButUnresolved {
+            text += " " + String(localized: "picker.plan.equipment.adaptationAttemptedHint", bundle: .module)
+        }
+        return text
     }
 
     /// Unterscheidet "Geraet selbst noch nicht bestaetigt/Stueckzahl unklar"
@@ -448,7 +544,7 @@ public struct TemplatePreviewView: View {
     private var adoptButton: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
-                onAdopt()
+                onAdopt(resolvedSelection)
             } label: {
                 Label(adoptButtonTitle, systemImage: "checkmark.circle.fill")
             }
@@ -467,13 +563,14 @@ public struct TemplatePreviewView: View {
     /// Vorher haben wir hier Mo-first nach Apple-Weekday sortiert — das ist
     /// jetzt obsolet, weil Templates keinen Wochentag mehr enthalten.
     ///
-    /// PLAN_EQUIPMENT_MATCHING_AUDIT.md 5.4/13: loest ueber `checkedVariant`
-    /// dieselbe Equipment-Variante auf wie `ProgramInstantiator.instantiate`
+    /// PLAN_EQUIPMENT_MATCHING_AUDIT.md 5.4/13 + PLAN_SUBSTITUTION_ENGINE.md
+    /// Abschnitt 7: loest ueber `resolvedSelection` dieselbe (ggf.
+    /// substituierte) Auswahl auf wie `ProgramInstantiator.instantiate`
     /// (vorher wurde hier IMMER `template.days`, also die Basis-Variante,
     /// gezeigt — unabhaengig davon, welche Variante beim Adopt gespeichert
     /// wurde).
     private var orderedDays: [DaySpec] {
-        checkedVariant.days.sorted { $0.sequenceIndex < $1.sequenceIndex }
+        resolvedSelection.days.sorted { $0.sequenceIndex < $1.sequenceIndex }
     }
 
     /// DEL-118: ExerciseSpec.name ist der deutsche Raw-String aus dem

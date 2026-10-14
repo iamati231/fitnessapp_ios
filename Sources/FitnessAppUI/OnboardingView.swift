@@ -135,6 +135,12 @@ public struct OnboardingView: View {
     @State private var enableMeasurementReminder: Bool = true
     @State private var selectedTemplate: ProgramTemplate?
 
+    /// Smart-Onboarding-Epic Phase 5.4 (PLAN_SUBSTITUTION_ENGINE.md Abschnitt
+    /// 4): die exakte, in der Vorschau gezeigte Auswahl (Basis/Variante,
+    /// ggf. mit Substitutionen) — `finishOnboarding()` instanziiert GENAU
+    /// das hier, nie eine neu abgeleitete Variante.
+    @State private var resolvedPlanSelection: ResolvedPlanSelection?
+
     /// DEL-056: Tap auf einen Template-Row oeffnet eine Detail-Vorschau in
     /// einem Sheet. Erst der "Diesen Plan waehlen"-Button im Detail finalisiert
     /// die Auswahl (`selectedTemplate = ...` + Onboarding-Finish).
@@ -216,12 +222,19 @@ public struct OnboardingView: View {
                     TemplatePreviewView(
                         template: template,
                         adoptButtonTitle: "Diesen Plan wählen",
-                        userEquipmentProfile: equipmentProfile
-                    ) {
+                        userEquipmentProfile: equipmentProfile,
+                        goal: trainingGoal,
+                        experienceTrack: resolvedExperienceTrack
+                    ) { selection in
                         // DEL-088: Adopt finalisiert die Plan-Wahl noch nicht
                         // direkt — stattdessen oeffnet sich der DayPicker,
                         // damit der User die Trainings-Wochentage festlegt.
+                        // Smart-Onboarding-Epic Phase 5.4: die exakte
+                        // Vorschau-Auswahl (ggf. substituiert) wird fuer
+                        // `finishOnboarding()` gemerkt statt dort erneut
+                        // hergeleitet (PLAN_SUBSTITUTION_ENGINE.md Abschnitt 4).
                         selectedTemplate = template
+                        resolvedPlanSelection = selection
                         previewingTemplate = nil
                         dayPickerTemplate = template
                         // DEL-243: ein
@@ -1658,14 +1671,28 @@ public struct OnboardingView: View {
         //    User direkt "Fertig" ohne Plan drueckt, ist die Liste leer und
         //    der Instantiator nutzt seine Defaults (defaultWeekdays(for:)).
         if let template = selectedTemplate {
-            // Smart-Onboarding-Epic Phase 4: dasselbe `equipmentProfile`, mit
-            // dem die Vorschau gerade die Variante gezeigt hat (Punkt 6) —
-            // nicht die grobe, erst-nach-Bestaetigung gefuellte Legacy-Menge.
+            // Smart-Onboarding-Epic Phase 5.4 (PLAN_SUBSTITUTION_ENGINE.md
+            // Abschnitt 4): "Before saving, recheck against the current
+            // equipment snapshot and reject stale/incompatible selection."
+            // Zwischen Vorschau und hier liegt nur der DayPickerSheet (keine
+            // Equipment-Aenderung moeglich) — die Pruefung ist defensiv,
+            // nie beobachtet als erreichbarer Fall. Bei Veraltung (oder
+            // fehlender Vorschau-Auswahl) wird still frisch aufgeloest statt
+            // eine moeglicherweise falsche, veraltete Auswahl zu instanziieren.
+            let freshSelection: ResolvedPlanSelection
+            if let resolvedPlanSelection, !resolvedPlanSelection.isStale(comparedTo: equipmentProfile) {
+                freshSelection = resolvedPlanSelection
+            } else {
+                freshSelection = PlanSelectionResolver.resolve(
+                    template: template, profile: equipmentProfile,
+                    context: SubstitutionContext(goal: trainingGoal, experienceTrack: resolvedExperienceTrack)
+                )
+            }
             ProgramInstantiator.instantiate(
                 template,
                 in: modelContext,
                 selectedWeekdays: selectedWeekdays.isEmpty ? nil : selectedWeekdays,
-                userEquipmentProfile: equipmentProfile
+                resolvedSelection: freshSelection
             )
         } else if let customPlanInput, let customPlanResult {
             // DEL-243: der im Builder-

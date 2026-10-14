@@ -46,6 +46,15 @@ public struct ResolvedPlanSelection: Sendable, Equatable {
     }
 
     public var isAdapted: Bool { appliedAdaptation != nil }
+
+    /// Smart-Onboarding-Epic Phase 5.4: "Before saving, recheck against the
+    /// current equipment snapshot and reject stale/incompatible selection."
+    /// Ein einfacher Wertevergleich reicht — `UserEquipmentProfile` ist
+    /// `Equatable`, jede Aenderung (auch nur eine neu erfasste Stueckzahl)
+    /// macht die Auswahl veraltet und verlangt eine frische Freigabe.
+    public func isStale(comparedTo currentProfile: UserEquipmentProfile) -> Bool {
+        equipmentSnapshot != currentProfile
+    }
 }
 
 /// Smart-Onboarding-Epic Phase 5.3: loest EIN Template gegen ein echtes

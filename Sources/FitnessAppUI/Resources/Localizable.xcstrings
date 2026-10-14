@@ -18296,6 +18296,190 @@
         }
       }
     },
+    "picker.plan.equipment.adapted.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An deine Ausrüstung angepasst"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adapted to your equipment"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipmanına göre uyarlandı"
+          }
+        }
+      }
+    },
+    "picker.plan.equipment.adapted.showChanges": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Änderungen anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show changes"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Değişiklikleri göster"
+          }
+        }
+      }
+    },
+    "picker.plan.equipment.adaptationAttemptedHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eine automatische Anpassung wurde versucht, war aber nicht vollständig möglich."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An automatic adaptation was attempted but wasn't fully possible."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otomatik bir uyarlama denendi ancak tam olarak mümkün olmadı."
+          }
+        }
+      }
+    },
+    "substitution.reason.squatToGobletSquat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne Langhantel und Rack: Goblet Squat trainiert dieselbe Bewegung, aber mit geringerer Lastkapazität."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without a barbell and rack: the goblet squat trains the same movement, but with lower load capacity."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Halter ve rack olmadan: Goblet Squat aynı hareketi çalıştırır, ancak daha düşük yük kapasitesiyle."
+          }
+        }
+      }
+    },
+    "substitution.reason.bulgarianSplitSquatToLunge": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne passende Bank: der normale Ausfallschritt trainiert dieselben Muskeln mit etwas geringerer Bewegungsreichweite."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without a suitable bench: the regular lunge trains the same muscles with a slightly smaller range of motion."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uygun bir bank olmadan: normal hamle aynı kasları biraz daha az hareket genişliğiyle çalıştırır."
+          }
+        }
+      }
+    },
+    "substitution.reason.barbellRowToChestSupportedRow": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne Langhantel: das unterstützte Kurzhantel-Rudern trainiert dieselbe Zugbewegung ohne Belastung für den unteren Rücken."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without a barbell: the chest-supported dumbbell row trains the same pulling movement without lower-back strain."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Halter olmadan: desteklenmiş dambıl çekişi, bel alt kısmına yük bindirmeden aynı çekme hareketini çalıştırır."
+          }
+        }
+      }
+    },
+    "substitution.reason.pullupToCableLatPulldown": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne Klimmzugstange: der Latzug am Kabel trainiert dieselbe Zugrichtung mit einstellbarem Gewicht."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without a pull-up bar: the cable lat pulldown trains the same pulling direction with adjustable weight."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barfiks demiri olmadan: kablo lat pulldown aynı çekiş yönünü ayarlanabilir ağırlıkla çalıştırır."
+          }
+        }
+      }
+    },
+    "substitution.reason.chestSupportedRowToSeatedCableRow": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne passende Bank: sitzendes Kabelrudern trainiert dieselbe Zugbewegung, verlangt aber etwas mehr Rumpfstabilisation."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without a suitable bench: the seated cable row trains the same pulling movement, but requires a bit more core stabilization."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uygun bir bank olmadan: oturarak kablo çekişi aynı çekme hareketini çalıştırır, ancak biraz daha fazla gövde stabilizasyonu gerektirir."
+          }
+        }
+      }
+    },
     "profile.equipment.footer": {
       "extractionState": "manual",
       "localizations": {
