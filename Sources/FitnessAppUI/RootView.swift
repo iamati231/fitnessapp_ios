@@ -132,6 +132,11 @@ public struct RootView: View {
             // Custom-Uebungen ohne Muskel/Equipment-Override bekommen die
             // Werte aus ihrem Custom-Template nachgezogen. Idempotent.
             LibrarySeeder.backfillCustomExerciseMetadataIfNeeded(in: modelContext)
+            // Settings-Epic Phase 2: Bereinigt bereits gespeicherte, aus einem
+            // BMI-Naeherungswert erfundene KFA/FFM/FFMI-Werte (keine echten
+            // Umfaenge vorhanden). Idempotent — Predicate filtert auf
+            // vorhandenen Deurenberg-Wert, der nach dem Nullen verschwindet.
+            BodyMeasurementMigrator.backfillFabricatedBodyCompositionIfNeeded(in: modelContext)
             // Nachgetragene Laeufe mit der Wanduhr-Dauer von ein, zwei Minuten
             // bekommen die eingetragene Laufzeit. Einmalig, nur die Dauer.
             SessionDurationRepair.runIfNeeded(in: modelContext)

@@ -158,5 +158,36 @@ extension BodyMeasurement {
             bmr: bmr
         )
     }
+
+    /// Settings-Epic Phase 2: Build a row for a weight-only entry — no
+    /// circumferences were collected, so there is nothing to derive body
+    /// composition from. Deliberately does NOT fall back to
+    /// `BodyCalculations.deurenbergBodyFat` (a BMI-only *estimate*) the way
+    /// `makeDerived` does — that fallback is exactly the "fabricated FFM/FFMI"
+    /// bug this service exists to avoid (see docs/SETTINGS_UX_AUDIT.md,
+    /// finding PE-FFM). BMI and BMR stay in, since both are exact formulas
+    /// over weight/height/age alone — never an estimate standing in for a
+    /// missing measurement — so computing them automatically fabricates
+    /// nothing.
+    public static func makeWeightOnly(
+        date: Date = Date(),
+        ageYears: Int,
+        weightKg: Double,
+        heightCm: Double,
+        profile: BodyFormulaProfile
+    ) -> BodyMeasurement {
+        let bmi = heightCm > 0 ? BodyCalculations.bmi(weightKg: weightKg, heightCm: heightCm) : nil
+        let bmr = heightCm > 0
+            ? BodyCalculations.bmrMifflinStJeor(weightKg: weightKg, heightCm: heightCm,
+                                                ageYears: ageYears, profile: profile)
+            : nil
+        return BodyMeasurement(
+            date: date,
+            ageYearsAtMeasurement: ageYears,
+            weightKg: weightKg,
+            bmi: bmi,
+            bmr: bmr
+        )
+    }
 }
 #endif

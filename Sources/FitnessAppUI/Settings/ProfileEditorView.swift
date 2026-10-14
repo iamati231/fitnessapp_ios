@@ -130,28 +130,24 @@ public struct ProfileEditorView: View {
         // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
         .deltiqSwipeBackEnabled()
         .keyboardDismissToolbar()
-        // DEL-047 + DEL-049 + DEL-050: Trainingsort-Aenderung im Profil
-        // triggert zwei sequentielle Schritte:
+        // DEL-047 + DEL-049: Trainingsort-Aenderung im Profil triggert einen
+        // Adapt- oder Restore-Prompt ueber die Uebungen. Adapt bei "frischer"
+        // Aenderung, Restore wenn irgendein Plan archivierte Originale hat,
+        // die im neuen Env wieder passen.
         //
-        //   * SCHRITT 1 (DEL-050 Top-Down-Sync): Plan-Metadaten unbedingt
-        //     mit-aktualisieren, BEVOR der User die "anpassen?"-Frage
-        //     beantwortet. Sonst koennte er "Nein, so lassen" sagen und es
-        //     entstuende ein Mismatch (Profil = BW, Plan = Gym). Dies passiert
-        //     ohne Prompt — Profil ist die Source of Truth fuer alle Plaene.
-        //
-        //   * SCHRITT 2 (DEL-047/049): Adapt- oder Restore-Prompt
-        //     ueber die Uebungen. Adapt bei "frischer" Aenderung, Restore wenn
-        //     irgendein Plan archivierte Originale hat, die im neuen Env wieder
-        //     passen.
+        // Settings-Epic Phase 2 (docs/SETTINGS_UX_AUDIT.md, Befund PE-G2):
+        // es gab hier zusaetzlich einen unbedingten, promptlosen
+        // "Top-Down-Sync" (DEL-050), der `targetEnvironment` auf JEDEM Plan —
+        // auch archivierten, auch ohne jede Uebung — sofort umschrieb, noch
+        // bevor der User die Frage unten ueberhaupt sieht. Effekt: "Nein, so
+        // lassen" stellte den Ursprungszustand NICHT wieder her, es gab
+        // keinen Undo-Pfad. Entfernt wie von der Vorgabe verlangt — die
+        // Uebungs-Anpassung unten bleibt die einzige Stelle, die
+        // `targetEnvironment` tatsaechlich aendert, und tut das nur nach
+        // expliziter Bestaetigung.
         .onChange(of: profile.environment) { oldValue, newValue in
             guard oldValue != newValue else { return }
 
-            // ── SCHRITT 1: DEL-050 Top-Down-Sync (immer, ohne Prompt). ──
-            for plan in allPlans where plan.targetEnvironment != newValue {
-                plan.targetEnvironment = newValue
-            }
-
-            // ── SCHRITT 2: Adapt-oder-Restore-Frage (nur wenn relevant). ──
             guard allPlans.contains(where: { plan in
                 plan.days.contains(where: { !$0.activeExercises.isEmpty })
             }) else { return }

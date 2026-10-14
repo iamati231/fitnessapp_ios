@@ -1842,7 +1842,14 @@ public struct OnboardingView: View {
         // 2) Initial BodyMeasurement — keeps the "first weight" visible in the
         //    Trend-Chart right after onboarding, instead of an empty dashboard
         //    until the user adds another measurement manually.
-        let measurement = BodyMeasurement.makeDerived(
+        //
+        // Settings-Epic Phase 2 (docs/SETTINGS_UX_AUDIT.md, Befund PE-FFM):
+        // Onboarding erfasst nie Umfaenge, daher `makeWeightOnly` statt
+        // `makeDerived` — sonst erbt jede Tag-1-Messung einen erfundenen
+        // KFA/FFM/FFMI-Wert aus dem BMI-Naeherungsfallback. FFMI/Lean-Mass
+        // zeigen bis zur ersten echten Umfang-Messung bewusst "–" statt
+        // eines Schaetzwerts.
+        let measurement = BodyMeasurement.makeWeightOnly(
             ageYears: age,
             weightKg: currentWeightKg,
             heightCm: heightCm,
