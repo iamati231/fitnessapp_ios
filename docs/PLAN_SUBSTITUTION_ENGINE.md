@@ -169,3 +169,77 @@ substitutions."* Dafuer:
   `.bulgarianSplitSquatToLunge`, `.barbellRowToChestSupportedRow`,
   `.pullupToCableLatPulldown`, `.chestSupportedRowToSeatedCableRow`.
   `TRANSLATIONS.md`: 2011 Keys gesamt, 0 hartkodierte Strings.
+
+## 6. Abschlussbericht (Phase 5.6)
+
+**Regeln.** 5 freigegeben (R2 Kniebeuge→Goblet Squat, R3 Bulgarische
+Kniebeuge→Ausfallschritte, R4 Rudern vorgebeugt→Chest Supported Row, R5
+Klimmzüge/Klimmzüge (weit)→Latzug neutral, R6 Chest Supported Row→Kabelrudern
+sitzend), 2 abgelehnt (R1 Ziel existiert nicht im Katalog, R7 Bilateral→
+unilateral-Semantik nicht implementiert). Details + Gating: Abschnitt 1.
+
+**Ungeloeste/bewusst nicht abgedeckte Faelle** (werden transparent als Luecke
+gezeigt, NIE still uebergangen oder falsch ersetzt):
+- Kurzhantel-Bankdruecken (flach/schraeg) ohne Bank — keine Regel vorhanden
+  (R1 abgelehnt), bleibt eine `missing`-Luecke ohne Substitutionsangebot.
+- Die meisten Langhantel-Grunduebungen ohne Regel (z. B. Kreuzheben,
+  Langhantel-Bankdruecken, Langhantel-Schulterdruecken) — nur Kniebeuge (R2)
+  und Rudern vorgebeugt (R4) haben eine reviewte Regel; alles andere bleibt
+  unsubstituiert.
+- Kettlebell-Doppel-Push-Press ohne zwei Kettlebells — keine Regel (R7
+  abgelehnt).
+- Jede Kraft-Ziel-Kombination (`goal == .strength`) fuer R2/R4 — Gate
+  schliesst sie bewusst aus, bleibt unsubstituiert (Vorgabe: kein Ersatz
+  fuer Kraft-Anker-Uebungen).
+- R5s Einschraenkung "goal is not specifically pull-up performance" hat
+  aktuell keinen entsprechenden `TrainingGoal`-Fall im Katalog — dokumentierte
+  Limitation ohne erzwingbare Wirkung, keine erfundene Sperre (Abschnitt 1).
+- `uncertain`/`notAnnotated`-Luecken (Geraet unbestaetigt, Stueckzahl unklar,
+  oder eine der 17 absichtlich nicht annotierten Katalog-Uebungen aus Phase 4)
+  werden NIE substituiert — bleiben immer Klaerungs-Hinweis, per Design.
+- Cardio-, Warmup/Cooldown- und jeder Tag mit `timeFormat != nil`
+  (AMRAP/EMOM/Circuit/Auf-Zeit) — global von Substitution ausgenommen,
+  unabhaengig vom Equipment-Status.
+- Verkettungen (eine Ersatzuebung wird ihrerseits ersetzt) — die Engine
+  verkettet nie; fehlt auch dem Regel-Ziel das Equipment, bleibt der
+  Versuch unvollstaendig und landet in `consideredButUnresolvedAdaptations`.
+
+**Tests, tatsaechlich ausgefuehrt (Linux).** Phase 5 fuegt 25 neue
+Core-Tests hinzu (`ExerciseSubstitutionEngineTests` 21, `PlanSelectionResolverTests`
+4) — Teil der 903 in `FitnessAppCoreTests` insgesamt ausgefuehrten Tests.
+Projekt gesamt: **944/944 gruen** (903 Core + 38 Health + 3 UI), per
+`swift test --parallel` auf Linux tatsaechlich gelaufen und verifiziert
+(zuletzt direkt vor diesem Commit erneut bestaetigt).
+
+**Tests, nur kompiliert (Apple/SwiftData, NICHT lokal ausgefuehrt).** 4 neue
+`ResolvedPlanSelectionInstantiationTests` (Items 18, 21, 22 der Vorgabe —
+19/20/24 sind reine UI-/Verhaltensfragen ohne sinnvollen SwiftData-Test;
+23 entfaellt, siehe Abschnitt 4: keine neuen Herkunfts-Felder). Zusammen mit
+den 3 Phase-4-Tests (`ProgramInstantiatorEquipmentTests`) liegen damit 7
+`FitnessAppDataTests` vor, die auf Linux kompilieren (`swift build
+--build-tests` erfolgreich) aber laut `swift test list` mit 0 Treffern NICHT
+discovered/ausgefuehrt werden (bekannte, seit Phase 4 dokumentierte
+SwiftData-Einschraenkung dieser Linux-Toolchain).
+
+**Keine UI-Tests.** Es wurden fuer Phase 5 keine `FitnessAppUITests`
+ergaenzt — die neue Vorschau-/Freigabe-UI (`adaptedEquipmentBanner`,
+`DisclosureGroup`) wurde ausschliesslich durch Code-Review + die
+Core/Data-Tests der darunterliegenden Logik abgesichert, nicht durch einen
+automatisierten UI-Test.
+
+**Apple/Codemagic-Status: weiterhin ungeprueft, explizit offen.**
+`mcp__github__actions_list` liefert fuer `claude/smart-onboarding-epic`
+`total_count: 0` (keine sichtbaren Workflow-Runs), es existiert keine
+Pull Request fuer diesen Branch. Diese Session hat KEINE Sicht auf
+Codemagic-Build-/Test-Ergebnisse. Wie in jedem vorherigen Phasenbericht:
+Linux-kompilierter SwiftData-/SwiftUI-Code wird hier nicht als
+"Apple-getestet" dargestellt — die Phase-4- UND jetzt Phase-5-
+Apple-Validierung (echter `mac_mini_m2`-Build inkl. der 7 `FitnessAppDataTests`
+und einer manuellen Pruefung der neuen UI) bleibt eine offene
+Release-Voraussetzung.
+
+**Nicht Teil dieser Phase (bewusste Scope-Entscheidungen, siehe Abschnitt 4).**
+Keine persistierten Herkunfts-/Regelversion-Felder. Keine Aenderung an
+bestehenden, bereits gespeicherten Plaenen (durch `testExistingPlanContentIsUnchangedWhenANewAdaptedPlanIsInstantiated`
+abgesichert). Kein Substitutions-Ketten-Mechanismus. Keine ueber die 7
+Kandidaten der Vorgabe hinausgehenden Regeln.
