@@ -923,9 +923,11 @@ public struct OnboardingView: View {
     // MARK: - Start-Check (Optionaler "Wo stehst du heute?"-Check)
 
     /// Platzierung laut Epic: nach Trainingshistorie/Equipment, vor
-    /// Zeitbudget/Plan-Ergebnis. Starter/Wiedereinsteiger sehen den vollen
-    /// 3-Wege-Einstieg ("Jetzt testen" / "Selbst einschaetzen" / "Spaeter"),
-    /// Erfahrene nur einen kompakten optionalen Link OHNE gefuehrten
+    /// Zeitbudget/Plan-Ergebnis. Starter/Wiedereinsteiger sehen den vollen,
+    /// gleichwertigen 3-Wege-Einstieg ("Kurz testen" / "Selbst einschaetzen" /
+    /// "Spaeter entscheiden" — UX-Fix "Einladung statt Pruefung", keiner der
+    /// drei Wege optisch hervorgehoben), Erfahrene nur einen kompakten
+    /// optionalen Link OHNE gefuehrten
     /// Test-Track (Epic: Erfahrene bekommen keinen Test-Track vorgesetzt) —
     /// der Link oeffnet `BaselineCheckFlowView` direkt mit
     /// `entryMode: .selfAssessment`, derselben Weiche wie der "Selbst
@@ -950,8 +952,7 @@ public struct OnboardingView: View {
                         baselineChoiceRow(
                             icon: "figure.strengthtraining.traditional",
                             title: String(localized: "baseline.step.cta.test", bundle: .module),
-                            subtitle: String(localized: "baseline.step.cta.test.subtitle", bundle: .module),
-                            prominent: true
+                            subtitle: String(localized: "baseline.step.cta.test.subtitle", bundle: .module)
                         ) {
                             baselineEntryMode = .guidedTest
                             showingBaselineCheck = true
@@ -959,8 +960,7 @@ public struct OnboardingView: View {
                         baselineChoiceRow(
                             icon: "hand.point.up.left",
                             title: String(localized: "baseline.step.cta.selfAssess", bundle: .module),
-                            subtitle: String(localized: "baseline.step.cta.selfAssess.subtitle", bundle: .module),
-                            prominent: false
+                            subtitle: String(localized: "baseline.step.cta.selfAssess.subtitle", bundle: .module)
                         ) {
                             baselineEntryMode = .selfAssessment
                             showingBaselineCheck = true
@@ -968,8 +968,7 @@ public struct OnboardingView: View {
                         baselineChoiceRow(
                             icon: "arrow.right.circle",
                             title: String(localized: "baseline.step.cta.later", bundle: .module),
-                            subtitle: String(localized: "baseline.step.cta.later.subtitle", bundle: .module),
-                            prominent: false
+                            subtitle: String(localized: "baseline.step.cta.later.subtitle", bundle: .module)
                         ) {
                             goToNextStep()
                         }
@@ -1034,11 +1033,14 @@ public struct OnboardingView: View {
     /// Einmalige Action-Zeile im selben visuellen Stil wie `coachingCard`,
     /// aber ohne persistente Selektion — jeder Tap oeffnet direkt das Sheet
     /// bzw. springt weiter, es gibt keinen "ausgewaehlten" Zustand.
+    /// UX-Fix "Einladung statt Pruefung": alle drei Einstiegswege sind
+    /// gleichwertig (kein `prominent`-Flag mehr, das einen Weg optisch als
+    /// Pflicht ueber die Alternativen stellen wuerde) — siehe
+    /// `docs/BASELINE_CHECK_UX.md` §1.
     private func baselineChoiceRow(
         icon: String,
         title: String,
         subtitle: String,
-        prominent: Bool,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -1046,7 +1048,7 @@ public struct OnboardingView: View {
                 Image(systemName: icon)
                     .font(.title2)
                     .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(prominent ? Color.deltiqOrange : .secondary)
+                    .foregroundStyle(.secondary)
                     .frame(width: 32, height: 32)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
@@ -1062,12 +1064,11 @@ public struct OnboardingView: View {
             .padding(14)
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(Color.secondary.opacity(prominent ? 0.10 : 0.06))
+                    .fill(Color.secondary.opacity(0.06))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .stroke(prominent ? Color.deltiqOrange : Color.secondary.opacity(0.25),
-                            lineWidth: prominent ? 1.5 : 1)
+                    .stroke(Color.secondary.opacity(0.25), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
