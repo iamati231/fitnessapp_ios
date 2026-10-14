@@ -189,14 +189,29 @@ Equipment-Theater — stattdessen zeigt Abschnitt D nur `rack`/`cableStation`/
 Katalog-Audit, welche Übungen sie tatsächlich brauchen) ist expliziter
 Scope dieser Phase NICHT.
 
-## 7. Persistenz — erwartete Entscheidung (Verifikation folgt in 6.6)
+## 7. Persistenz — verifiziert: keine neue Spalte/Property nötig
 
-`UserBodyProfile.environment`, `.equipmentProfile`, `.equipmentProfileConfirmedComplete`
-sind bereits persistiert (CSV, Backup/Restore, Reset). `EquipmentPlanningContext`
-wird bei Bedarf aus genau diesen drei Werten neu berechnet (reine Funktion,
-§2) — es gibt keinen Grund, das Ergebnis selbst zu speichern. Erwartung:
-**keine neue Spalte/Property nötig.** Wird in Task 6.6 gegen den
-tatsächlichen Export-/Import-/Reset-Code verifiziert, nicht nur angenommen.
+Gegen den tatsächlichen Code geprüft (nicht nur angenommen):
+
+- `UserBodyProfile.environment` → CSV-Spalte `environment`
+  (`DataExportService.swift:260`/`DataImportService.swift:608`).
+- `UserBodyProfile.equipmentProfileConfirmedComplete` → CSV-Spalte
+  `equipment_profile_confirmed_complete` (`DataExportService.swift:297`/
+  `DataImportService.swift:646`).
+- `UserBodyProfile.equipmentProfile` (computed, Getter/Setter auf drei rohen
+  `[String]`-Properties) → CSV-Spalten `equipment_available_items`/
+  `equipment_unavailable_items`/`equipment_item_counts`
+  (`DataExportService.swift:294-296`/`DataImportService.swift:640-642`).
+- `BackupService.createBackup` ruft intern `DataExportService.makeExport`
+  auf — Backup/Restore laufen also durch denselben, bereits verifizierten
+  CSV-Pfad, kein separater Serialisierungsweg.
+- Reset (`SettingsView.deleteAll<T: PersistentModel>`) löscht ganze
+  `UserBodyProfile`-Zeilen generisch — keine feldspezifische Logik, die
+  Phase 6 berühren könnte.
+
+`EquipmentPlanningContext` wird ausschließlich aus diesen drei bereits
+persistierten Werten berechnet (reine Funktion, §2) — es gibt nichts
+Zusätzliches zu speichern, zu exportieren oder zurückzusetzen.
 
 ## 8. Pflicht-Test-Mapping (Vorgabe Abschnitt 6 → konkrete Tests)
 

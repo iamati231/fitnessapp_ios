@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2011 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2034 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2011 / 2011** (100%) | 0 |
-| 🇬🇧 English (EN) | **2011 / 2011** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2011 / 2011** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2034 / 2034** (100%) | 0 |
+| 🇬🇧 English (EN) | **2034 / 2034** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2034 / 2034** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -900,17 +900,27 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `equipment.kettlebell` | Kettlebell | Kettlebell | Kettlebell |
 | `equipment.machine` | Maschine | Machine | Makine |
 
-## `equipmentEditor.*`  (8 Keys)
+## `equipmentEditor.*`  (18 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `equipmentEditor.bench.adjustable` | Verstellbare Bank | Adjustable bench | Ayarlanabilir bank |
+| `equipmentEditor.bench.flat` | Flachbank | Flat bench | Düz bank |
+| `equipmentEditor.bench.none` | Keine Bank | No bench | Bank yok |
+| `equipmentEditor.bench.unknown` | Weiß ich noch nicht | Not sure yet | Henüz bilmiyorum |
 | `equipmentEditor.bodyweightOnly.subtitle` | Ich trainiere ohne zusätzliche Geräte | I train without any extra equipment | Ek ekipman olmadan antrenman yapıyorum |
 | `equipmentEditor.bodyweightOnly.title` | Nur Körpergewicht | Bodyweight only | Sadece vücut ağırlığı |
 | `equipmentEditor.count.label` | Wie viele? | How many? | Kaç tane? |
 | `equipmentEditor.count.one` | 1 | 1 | 1 |
 | `equipmentEditor.count.twoOrMore` | 2 oder mehr | 2 or more | 2 veya daha fazla |
 | `equipmentEditor.footer` | Nicht ausgewählte Geräte gelten als unbekannt, nicht als fehlend — bis du bestätigst. Du kannst alles später im Profil ändern. | Unselected equipment counts as unknown, not missing — until you confirm. You can change everything later in your profile. | Seçilmeyen ekipmanlar, onaylayana kadar eksik değil bilinmiyor sayılır. Her şeyi daha sonra profilinden değiştirebilirsin. |
+| `equipmentEditor.pullUpBar.no` | Nein | No | Hayır |
+| `equipmentEditor.pullUpBar.unknown` | Weiß ich noch nicht | Not sure yet | Henüz bilmiyorum |
+| `equipmentEditor.pullUpBar.yes` | Ja | Yes | Evet |
 | `equipmentEditor.section.accessories` | Zubehör & Stationen | Accessories & stations | Aksesuarlar ve istasyonlar |
+| `equipmentEditor.section.bench` | Bank | Bench | Bank |
+| `equipmentEditor.section.further` | Weitere Ausstattung | Further equipment | Diğer ekipmanlar |
+| `equipmentEditor.section.pullUpBar` | Klimmzugstange | Pull-up bar | Barfiks demiri |
 | `equipmentEditor.section.weights` | Gewichte | Weights | Ağırlıklar |
 
 ## `equipmentItem.*`  (10 Keys)
@@ -1400,7 +1410,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `muscleVolume.bucket.overreaching` | Übervolumen | Overreach | Aşırı yük |
 | `muscleVolume.bucket.untrained` | Untrainiert | Untrained | Eğitilmemiş |
 
-## `onboarding.*`  (82 Keys)
+## `onboarding.*`  (92 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1410,7 +1420,17 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.environment.footnote1` | Trainingsort filtert Plan-Empfehlungen und die Equipment-Auswahl beim Übungs-Tausch. | Training location filters plan recommendations and equipment options when swapping exercises. | Antrenman yeri plan önerilerini ve hareket değiştirirken ekipman seçeneklerini filtreler. |
 | `onboarding.environment.footnote2` | Hybrid- oder reine Lauf-Athleten wählen ihren Strength-Ort — die Hybrid-Pläne enthalten ihre Run-Tage unabhängig davon. | Hybrid or pure running athletes pick their strength location — Hybrid plans include run days regardless. | Hibrit veya saf koşu sporcuları güç antrenman yerini seçer — Hibrit planlar koşu günlerini her durumda içerir. |
 | `onboarding.equipment.footer` | Du kannst diese Auswahl später jederzeit im Profil anpassen. Dein Trainingsort allein legt dein Equipment nie automatisch fest. | You can adjust this anytime later in your profile. Your training location alone never automatically sets your equipment. | Bu seçimi istediğin zaman profilinden değiştirebilirsin. Antrenman yerin tek başına ekipmanını asla otomatik belirlemez. |
+| `onboarding.equipment.gym.adjustButton` | Ausstattung anpassen | Adjust equipment | Ekipmanı düzenle |
+| `onboarding.equipment.gym.confirmedTitle` | Ausstattung erfasst | Equipment recorded | Ekipman kaydedildi |
+| `onboarding.equipment.gym.editButton` | Ausstattung bearbeiten | Edit equipment | Ekipmanı düzenle |
+| `onboarding.equipment.gym.footer` | Die meisten Studios haben Langhantel, Kurzhanteln, Bank, Rack, Kabelzug und Maschinen. Weicht dein Studio davon ab, kannst du das hier anpassen. | Most gyms have a barbell, dumbbells, a bench, a rack, a cable station and machines. If your gym differs, you can adjust it here. | Çoğu spor salonunda halter, dambıl, bank, rack, kablo istasyonu ve makineler bulunur. Senin salonun farklıysa burada güncelleyebilirsin. |
+| `onboarding.equipment.gym.sheetTitle` | Deine Ausrüstung | Your equipment | Ekipmanın |
+| `onboarding.equipment.gym.subtitle` | Wir planen für ein übliches Fitnessstudio. Fehlende Geräte kannst du jederzeit anpassen. | We plan for a typical gym. You can adjust missing equipment anytime. | Standart bir spor salonu için planlıyoruz. Eksik ekipmanları istediğin zaman güncelleyebilirsin. |
+| `onboarding.equipment.gym.title` | Deine Ausrüstung im Studio | Your gym equipment | Spor salonu ekipmanın |
 | `onboarding.equipment.laterLink` | Später einrichten | Set up later | Daha sonra ayarla |
+| `onboarding.equipment.noEquipment.further` | Weitere Ausstattung | Further equipment | Diğer ekipmanlar |
+| `onboarding.equipment.noEquipment.subtitle` | Kurzhanteln, ein Kettlebell oder ein Widerstandsband zählen schon. | Dumbbells, a kettlebell, or a resistance band already count. | Dambıl, kettlebell veya direnç bandı bile yeterli. |
+| `onboarding.equipment.noEquipment.title` | Hast du kleine Trainingshilfen? | Do you have any small training aids? | Küçük antrenman yardımcıların var mı? |
 | `onboarding.equipment.subtitle` | Wähle alles aus, was du nutzen kannst — auch Zubehör wie Bank oder Klimmzugstange. Nicht Ausgewähltes bleibt offen, bis du unten bestätigst. | Pick everything you can use — including accessories like a bench or pull-up bar. Anything unselected stays open until you confirm below. | Kullanabileceğin her şeyi seç — bank veya barfiks demiri gibi aksesuarlar dahil. Seçilmeyenler, aşağıda onaylayana kadar açık kalır. |
 | `onboarding.equipment.title` | Womit trainierst du? | What do you train with? | Hangi ekipmanla çalışıyorsun? |
 | `onboarding.field.birthdate` | Geburtsdatum | Birth date | Doğum Tarihi |
@@ -1487,7 +1507,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.weeklyGoal.subtitle` | Wie oft willst du pro Woche trainieren? Dein Kalender-Streak zählt gegen dieses Ziel — wähle, was du wirklich durchhalten kannst. | How often do you want to train per week? Your calendar streak counts against this — pick what you can actually sustain. | Haftada kaç kez antrenman yapmak istiyorsun? Takvim serin bu hedefe göre sayılır — gerçekten sürdürebileceğini seç. |
 | `onboarding.weeklyGoal.title` | Dein Wochenziel | Your weekly goal | Haftalık hedefin |
 
-## `picker.*`  (21 Keys)
+## `picker.*`  (23 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1505,6 +1525,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `picker.plan.equipment.adapted.showChanges` | Änderungen anzeigen | Show changes | Değişiklikleri göster |
 | `picker.plan.equipment.adapted.title` | An deine Ausrüstung angepasst | Adapted to your equipment | Ekipmanına göre uyarlandı |
 | `picker.plan.equipment.available.title` | Equipment passend bestätigt | Equipment confirmed to match | Ekipman uyumlu olarak onaylandı |
+| `picker.plan.equipment.gymAssumption.detail` | Du hast deine Ausrüstung noch nicht individuell eingerichtet — passe sie jederzeit in den Einstellungen an. | You haven't set up your own equipment yet — you can adjust it anytime in Settings. | Ekipmanını henüz kişiselleştirmedin — istediğin zaman Ayarlar'dan güncelleyebilirsin. |
+| `picker.plan.equipment.gymAssumption.title` | Für ein übliches Fitnessstudio geplant | Planned for a typical gym | Standart bir spor salonu için planlandı |
 | `picker.plan.equipment.missingItems` | Fehlt: %@ | Missing: %@ | Eksik: %@ |
 | `picker.plan.equipment.notAnnotatedHint` | Einzelne Übungen sind im Katalog noch nicht auf Geräte-Voraussetzungen geprüft. | A few exercises haven't been checked against equipment requirements yet. | Bazı egzersizler henüz ekipman gereksinimlerine göre kontrol edilmedi. |
 | `picker.plan.equipment.unavailable.title` | Passt nicht zu deiner Ausrüstung | Doesn't match your equipment | Ekipmanınla uyuşmuyor |
@@ -1786,7 +1808,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (64 Keys)
+## `profile.*`  (65 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1837,6 +1859,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.equipment.sheet.title` | Ausrüstung | Equipment | Ekipman |
 | `profile.equipment.status.bodyweightOnly` | Nur Körpergewicht | Bodyweight only | Sadece vücut ağırlığı |
 | `profile.equipment.status.confirmed` | Bestätigt | Confirmed | Onaylandı |
+| `profile.equipment.status.gymAssumption` | Für ein übliches Fitnessstudio geplant | Planned for a typical gym | Standart bir spor salonu için planlandı |
 | `profile.equipment.status.inProgress` | Teilweise erfasst | Partially filled in | Kısmen girildi |
 | `profile.equipment.status.notSet` | Nicht eingerichtet | Not set up | Ayarlanmadı |
 | `profile.goal.footer` | Das Zielgewicht erscheint als grüne Linie im Dashboard-Trend-Chart. Trainingsort filtert später Plan-Empfehlungen. | Goal weight shows as a green line in the dashboard trend chart. Training location filters plan recommendations. | Hedef kilo, panel trend grafiğinde yeşil çizgi olarak görünür. Antrenman yeri plan önerilerini filtreler. |
