@@ -685,3 +685,210 @@ hat) **nicht pruefbar**. Ob Codemagic tatsaechlich automatisch angelaufen
 ist und mit welchem Ergebnis, kann nur im Codemagic-Dashboard selbst
 eingesehen werden — das liegt ausserhalb dessen, was ueber die in dieser
 Session verfuegbaren GitHub-Tools sichtbar ist.
+
+## 13. Phase 4 — Vollstaendige Equipment-Pruefung fuer Katalog + Planvarianten
+
+Setzt den 9-Punkte-Auftrag um, der ausdruecklich erst nach den vier
+Abschnitt-12-Praezisierungen beginnen sollte. Kein Backfill, keine Aenderung
+an bestehenden `TrainingPlan`/`TrainingDay`/`Exercise`-Zeilen — nur WELCHE
+Variante als Eingabe fuer Vorschau/Instanziierung dient, aendert sich.
+
+### 13.1 Katalog-Annotation (Punkte 1-2)
+
+**Reihenfolge wie gefordert**: zuerst alle 102 Uebungen annotiert, die
+tatsaechlich in einem ausgelieferten Template ODER einer seiner
+`equipmentVariants` vorkommen (empirisch ermittelt per Scratch-Test, nicht
+geschaetzt), danach die restlichen 127 Katalog-Eintraege.
+
+| | Annotiert | Gesamt | Deckung |
+|---|---|---|---|
+| Ausgelieferte Templates + Varianten | 102 | 102 | 100 % |
+| Restliche Bibliothek | 110 | 127 | 87 % |
+| **Gesamt** | **212** | **229** | **92,6 %** |
+
+**Fehlende Annotation ist niemals automatisch "keine Anforderung"**: durchgesetzt
+in `PlanEquipmentChecker.check` — eine Uebung ohne `equipmentRequirement`
+(oder ganz ohne Katalog-Treffer) zaehlt als `PlanEquipmentGapReason.notAnnotated`
+und macht die GESAMTE Planvariante `.unknown`, nie `.available` (siehe
+`PlanEquipmentCheckTests.testNotYetAnnotatedExerciseMakesDayUnknownNeverAvailable`/
+`testUnknownExerciseNameIsTreatedLikeNotAnnotatedNeverAvailable`).
+
+**17 offene Eintraege** (Abdeckungsreport mit konkreten Namen, wie gefordert),
+in zwei Kategorien:
+
+*Unklar — Uebung/Geraet-Zuordnung bleibt auch mit dem bestehenden
+`EquipmentItem`-Vokabular zweifelhaft, bewusst nicht geraten:*
+- Nordic Curls (Knoechel-Fixierung — Partner/Geraet unklar)
+- Australian Pull-ups, Inverted Row (niedrige Stange/Schlinge — nicht dieselbe
+  Sache wie `.pullUpBar`)
+- Back Widows (Bewegung nicht sicher identifiziert)
+- Beincurl stehend (BW) (vermutlich Slider/Band, nicht eindeutig)
+
+*Noch nicht erfasst — das benoetigte Geraet existiert als `EquipmentItem`-Fall
+schlicht noch nicht (Plyo-Box, Dip-Station, Sandsack, Schlingen, Landmine,
+Trap-Bar, Sled):*
+- Box Jump, Box Squat (zusaetzlich zur bereits erfassten Langhantel+Rack-Anforderung)
+- Dips (Brust), Dips (Trizeps)
+- Battle Ropes, Medizinball-Slam, Sandbag Carry
+- Sled Push, Sled Pull
+- Meadows Row, T-Bar Rudern (Landmine)
+- Trap-Bar-Kreuzheben
+
+Beide Kategorien liefern ueber `PlanEquipmentChecker` korrekt `.unknown`
+(nie `.available`, nie `.unavailable`) — das System behauptet an keiner
+Stelle, diese 17 Uebungen seien geprueft.
+
+**Modellierungs-Entscheidung waehrend der Annotation**: eine Flachbank-
+Anforderung akzeptiert `.any([.item(.flatBench), .item(.adjustableBench)])`
+statt nur `.item(.flatBench)` — eine verstellbare Bank kann flach genutzt
+werden, deckt also eine Flachbank-Anforderung mit ab. Umgekehrt gilt das
+NICHT: eine reine Flachbank kann nicht inclinen/declinen, eine Schraegbank-
+Uebung verlangt deshalb weiterhin ausschliesslich `.adjustableBench` (siehe
+Doc-Kommentar an `EquipmentItem.flatBench`, `PlanEquipmentCheckTests.
+testFlatBenchSatisfiesFlatExerciseButNotInclineExercise`/
+`testAdjustableBenchSatisfiesBothFlatAndInclineExercises`).
+
+**Beim Testen entdeckte, bestehende (Phase-2-) Einschraenkung, nicht Teil
+dieser Phase**: `ExerciseRequirement.evaluate`s `.all(...)`-Fall liefert beim
+ERSTEN definitiv unerfuellten Kind sofort dessen Grund zurueck (kurzschliesst),
+sammelt also nicht ALLE fehlenden Teile einer Mehrfach-Anforderung ein (siehe
+bereits bestehender `EquipmentRequirementTests.
+testAllIsDefinitelyUnmetWhenOneChildDefinitelyUnmetEvenIfAnotherIsUnknown`).
+Praktisch: "Kniebeuge" (Langhantel UND Rack) zeigt bei beidem fehlend nur
+"Langhantel fehlt", nicht zusaetzlich "Rack fehlt". Nie falsch (die Uebung
+gilt korrekt als nicht erfuellt), nur nicht maximal erschoepfend — kein
+Phase-4-Blocker, aber dokumentiert fuer eine spaetere UI-Verfeinerung.
+
+### 13.2 Planvarianten-Pruefung (Punkt 3) — neue Core-Typen
+
+`Sources/FitnessAppCore/Programs/PlanEquipmentCheck.swift` (neu):
+
+- `PlanEquipmentStatus` (available / unavailable(gaps:) / unknown(gaps:)) +
+  `PlanEquipmentGap`/`PlanEquipmentGapReason` (notAnnotated / missing / uncertain)
+  — die "vorhanden, fehlt oder unbekannt, jeweils mit konkreten Gruenden"-Vorgabe.
+- `PlanEquipmentChecker.check(days:against:)` — prueft JEDE Uebung einer
+  Tage-Liste einzeln ueber das bestehende `ExerciseRequirement.evaluate`
+  (Phase 2) und aggregiert: ein definitiv fehlendes Item irgendwo gewinnt,
+  sonst macht ein unbekanntes/nicht-annotiertes Item die ganze Variante
+  `.unknown`, nur wenn ALLES erfuellt ist wird `.available` geliefert.
+- `CheckedPlanVariant` + `ProgramTemplate.equipmentCheckedVariants(against:)`
+  (alle Varianten inkl. Basis, je mit Status) und
+  `.bestEquipmentCheckedVariant(against:)` (EINE Auswahl: zuerst eine
+  `.available`-Variante nach `EquipmentProfile.priority`, sonst die
+  bestplatzierte `.unknown`, sonst transparent die Basis MIT ihrem
+  `.unavailable`-Status — keine stillschweigende Ersatz-Variante).
+
+### 13.3 Matcher + Begruendungen (Punkt 4-5)
+
+`QuizAnswers` traegt jetzt `equipmentProfile: UserEquipmentProfile?` (Default
+`nil` = reiner Legacy-Pfad, unveraendertes alt-Verhalten fuer jeden
+bestehenden Aufrufer/Test). Ist es gesetzt:
+
+- `PlanMatchmaker`s Equipment-Hartfilter (`equipmentMatches`) entscheidet
+  AUSSCHLIESSLICH ueber `bestEquipmentCheckedVariant` — die grobe
+  `equipmentPreferences`-Projektion wird fuer diese Entscheidung ignoriert.
+  Nur `.unavailable` schliesst aus, `.unknown` laesst durch (Punkt 1 erneut
+  durchgesetzt, diesmal auf Plan-Ebene).
+- `matchReasons(for:answers:)` liefert `equipmentStatus: PlanEquipmentStatus?`
+  zusaetzlich zum (jetzt praeziseren) `equipmentMatch: Bool`. `equipmentMatch`
+  ist `true` ausschliesslich bei `.available` — ein unbestaetigtes/unklares
+  Template zeigt nie das "Equipment passend"-Badge.
+- `OnboardingView.planMatchAnswers` gibt das LEBENDE `equipmentProfile`
+  immer mit, auch vor vollstaendiger Bestaetigung — eine unvollstaendige
+  Erfassung liefert dadurch korrekt `.unknown` statt eines verfruehten
+  Ausschlusses ODER eines stillschweigenden "passt schon" (die alte
+  `derivedLegacyEquipment`-Gate-Logik bleibt nur fuer die Legacy-Spalte und
+  `BaselineCheckFlowView` bestehen).
+
+Auftrags-Vorgabe erfuellt: "legacyEquipmentPreferences bleibt nur
+Kompatibilitaetsprojektion, darf eine bestaetigte Unvereinbarkeit nicht
+uebersteuern" — belegt durch
+`PlanEquipmentCheckTests.testDumbbellWithoutBenchDoesNotSelectDumbbellVariantForHybridBalanced`
+(Kurzhanteln vorhanden wuerde die alte Set-Pruefung durchlassen, die neue
+Pro-Uebung-Pruefung blockt wegen der fehlenden Bank korrekt).
+
+### 13.4 Vorschau + Instanziierung + Fallback (Punkt 6-7)
+
+- `TemplatePreviewView` nutzt `userEquipmentProfile: UserEquipmentProfile`
+  statt der alten groben Menge; `checkedVariant`/`orderedDays` laufen beide
+  ueber `bestEquipmentCheckedVariant`. Neue `equipmentStatusBanner` zeigt den
+  Status TRANSPARENT: gruen "Equipment passend bestaetigt", orange "noch
+  nicht vollstaendig bestaetigt" (mit den konkreten unklaren Geraeten UND,
+  getrennt davon, einem Hinweis auf noch nicht annotierte Uebungen), rot
+  "passt nicht" mit den konkret fehlenden Geraeten.
+- `ProgramInstantiator.instantiate` bekommt einen neuen
+  `userEquipmentProfile: UserEquipmentProfile?`-Parameter; gesetzt, resolved
+  er ueber DIESELBE `bestEquipmentCheckedVariant`-Funktion wie die Vorschau
+  (Punkt 6 woertlich: "dieselbe geprueften Variante"). `nil` (der
+  synthetische Template-Pfad aus `PlanGeneratorInstantiator`, der nie
+  `equipmentVariants` hat) faellt unveraendert auf die alte
+  `resolvedDays(forUserEquipment:)` zurueck.
+- `PlanMatchmaker.fallback(...)` respektiert jetzt Equipment als vorletzte
+  Lockerungsstufe (nach Tagen/Track, vor dem absoluten Notfall ohne jeden
+  Filter) — vorher pruefte der Fallback-Pfad GAR KEIN Equipment. Konkret und
+  getestet: `crossfit_bodyweight_rx` ist `.noEquipment`-getaggt, braucht aber
+  tatsaechlich eine Klimmzugstange ("Klimmzüge") — ein Nutzer mit bestaetigt
+  fehlender Stange bekommt ihn auch im Fallback nicht mehr vorgeschlagen,
+  waehrend das klimmzugstangen-freie Geschwister-Template
+  `crossfit_bodyweight_scaled` ein gueltiger Kandidat bleibt
+  (`testFallbackRespectsConfirmedMissingPullUpBarEvenForNoEquipmentTemplates`/
+  `testFallbackAllowsPullUpBarTemplateWhenConfirmedAvailable`).
+
+### 13.5 Punkt 8 (keine Ersatzuebungs-Engine) + Punkt 9 (bestehende Plaene unveraendert)
+
+Keine Ersatzuebungs-Logik existiert — wo keine Variante passt, liefert
+`bestEquipmentCheckedVariant` transparent die Basis-Variante MIT ihrem
+`.unavailable`-Status zurueck (siehe
+`testBodyweightOnlySelectsNoVariantAsAvailableForHybridBalanced`,
+`testInstantiateWithBodyweightOnlyProfileStillMaterializesTheTransparentBaseVariant`)
+statt irgendeine andere Uebung/Template unterzuschieben. Bestehende
+Nutzerplaene: durch Konstruktion unveraendert — kein Code in dieser Phase
+beruehrt `TrainingPlan`/`TrainingDay`/`Exercise` selbst oder irgendeine
+Migrations-/Backfill-Logik, nur WELCHE `[DaySpec]` als Eingabe fuer einen
+NEU zu instanziierenden Plan gewaehlt wird.
+
+### 13.6 Regressionstests (Punkt 9 der Testvorgabe)
+
+Alle sechs explizit geforderten Szenarien, je mit Auswahl + Begruendung
+(und, wo ueber SwiftData moeglich, der tatsaechlich instanziierten Variante):
+
+| Szenario | Core-Test (Linux-ausgefuehrt) | Data-Layer-Test (kompiliert, Apple-Lauf ausstehend) |
+|---|---|---|
+| Nur Koerpergewicht | `testBodyweightOnlyProfileRejectsBarbellExercise`, `testBodyweightOnlySelectsNoVariantAsAvailableForHybridBalanced`, `testBodyweightOnlyExcludesHybridBalancedFromMatcherResults` | `testInstantiateWithBodyweightOnlyProfileStillMaterializesTheTransparentBaseVariant` |
+| Nur Kettlebells | `testKettlebellOnlyProfileSatisfiesSingleKettlebellExercises`, `testKettlebellOnlySelectsKettlebellVariantAsAvailableForHybridBalanced` | `testInstantiateWithKettlebellOnlyProfileUsesTheSameVariantAsBestEquipmentCheckedVariant` |
+| KH ohne Bank | `testDumbbellWithoutAnyBenchRejectsBenchDependentExercise`, `testDumbbellWithoutConfirmedBenchIsUnknownNotUnavailable`, `testDumbbellWithoutBenchDoesNotSelectDumbbellVariantForHybridBalanced` | — (ueber denselben Core-Pfad abgedeckt, kein separater Data-Test noetig) |
+| KH Flachbank vs. Schraegbank | `testFlatBenchSatisfiesFlatExerciseButNotInclineExercise`, `testAdjustableBenchSatisfiesBothFlatAndInclineExercises` | — |
+| Klimmzugstange vorhanden/fehlend | `testPullUpBarAvailableSatisfiesPullupExercise`, `testPullUpBarConfirmedMissingRejectsPullupExercise`, `testPullUpBarUnknownIsUnknownNotAvailable`, `testFallbackRespectsConfirmedMissingPullUpBarEvenForNoEquipmentTemplates`, `testFallbackAllowsPullUpBarTemplateWhenConfirmedAvailable` | — |
+| Unbekannte Stueckzahl | `testKettlebellAvailableWithoutCountIsUnknownForDoubleKettlebellExercise`, `testKettlebellAvailableWithConfirmedCountOfTwoSatisfiesDoubleKettlebellExercise`, `testKettlebellAvailableWithConfirmedCountOfOneRejectsDoubleKettlebellExercise` | — |
+
+Zusaetzlich: `testInstantiateWithoutProfileFallsBackToLegacyResolvedDays`
+(Legacy-Pfad unveraendert) und
+`testBestEquipmentCheckedVariantIsDeterministicAcrossRepeatedCalls` (Schutz
+gegen die Phase-1-Vorschau/Instanziierung-Divergenz in neuer Form).
+
+### 13.7 Tatsaechlich ausgefuehrte Tests vs. offen
+
+**Ausgefuehrt und gruen, auf Linux, diese Session**: 919 Core-/Health-/UI-Tests
+(vorher 896 — 21 neue `PlanEquipmentCheckTests` + 2 neue
+`PlanMatchmakerTests`-Faelle), inklusive `swift build` fuer alle 5 Targets.
+
+**Geschrieben, kompiliert, NICHT lokal ausgefuehrt** (gilt wie bei jeder
+bisherigen Phase fuer `FitnessAppDataTests` — SwiftData, laut README nur auf
+macOS lauffaehig, `swift test list` zeigt auf diesem Linux-Sandbox
+weiterhin `0` Data-Tests): die 3 neuen Tests in
+`ProgramInstantiatorEquipmentTests.swift`.
+
+**Weiterhin offen, ausdruecklich nicht aus dieser Session heraus pruefbar**
+(siehe Abschnitt 12.4 — unveraendert): ob Codemagic die gepushten Commits
+dieser Phase tatsaechlich gebaut/getestet hat, inklusive eines echten
+Xcode/iOS-Builds von `TemplatePreviewView`s neuer `equipmentStatusBanner`.
+Nur im Codemagic-Dashboard selbst einsehbar.
+
+**Bewusst nicht Teil dieser Phase**: ein UI-Fluss, der gezielt nach genau den
+unklaren Geraeten EINES konkreten Plans zurueckfragt (die Vorschau zeigt sie
+nur an, verlinkt noch nicht direkt in den Profil-Editor) — das waere ein
+eigener kleiner UX-Schritt, kein Korrektheitsproblem. Die 17 offenen
+Katalog-Eintraege aus 13.1 bleiben ebenfalls offen, bis entweder die
+Modellierungsfrage geklaert (z.B. ein dediziertes "Low Bar"-Item) oder das
+noetige `EquipmentItem` ergaenzt wird (Plyo-Box, Dip-Station, Sandsack,
+Schlingen, Landmine, Trap-Bar, Sled).
