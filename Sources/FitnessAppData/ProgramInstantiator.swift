@@ -52,8 +52,17 @@ public enum ProgramInstantiator {
         selectedWeekdays: [Int]? = nil,
         // DEL-170: User-Equipment-Präferenzen. Steuert die Auswahl der
         // `EquipmentVariant`. Leer = keine Variant-Auswahl, Caller bekommt
-        // die Standard-Variante (`template.days`).
-        userEquipment: Set<Equipment> = []
+        // die Standard-Variante (`template.days`). Legacy-Pfad — wird
+        // ignoriert, sobald `userEquipmentProfile` gesetzt ist.
+        userEquipment: Set<Equipment> = [],
+        // Smart-Onboarding-Epic Phase 4: die praezise, dreiwertige
+        // Equipment-Pruefung. `nil` (z.B. der synthetische Template-Pfad aus
+        // `PlanGeneratorInstantiator`, der nie `equipmentVariants` hat) =
+        // Legacy-Verhalten ueber `userEquipment` oben. Gesetzt = EINZIGE
+        // Quelle der Wahrheit fuer die Variantenwahl, identisch zu der, die
+        // `TemplatePreviewView` fuer dieselbe Vorschau verwendet (Punkt 6:
+        // Vorschau und Instanziierung duerfen nie auseinanderlaufen).
+        userEquipmentProfile: UserEquipmentProfile? = nil
     ) -> TrainingPlan {
         // 1) Deactivate every existing plan.
         let allPlans = (try? context.fetch(FetchDescriptor<TrainingPlan>())) ?? []
@@ -94,11 +103,13 @@ public enum ProgramInstantiator {
         let normalized = normalize(weekdays: rawWeekdays, expectedCount: template.daysPerWeek)
 
         // 5) Workout-Tage mappen (sequenceIndex → realer Wochentag).
-        // DEL-170 + PLAN_EQUIPMENT_MATCHING_AUDIT.md 5.4: Variant-Auswahl
-        // über `ProgramTemplate.resolvedDays` — dieselbe Funktion, die auch
-        // `TemplatePreviewView` fuer die Vorschau aufruft, damit beide nie
-        // wieder auseinanderlaufen koennen.
-        let resolvedDays = template.resolvedDays(forUserEquipment: userEquipment)
+        // DEL-170 + PLAN_EQUIPMENT_MATCHING_AUDIT.md 5.4/13: Variant-Auswahl
+        // über `bestEquipmentCheckedVariant` (Phase 4, sobald ein echtes
+        // Profil vorliegt) bzw. `resolvedDays` (Legacy-Pfad) — dieselbe
+        // Funktion, die auch `TemplatePreviewView` fuer die Vorschau
+        // aufruft, damit beide nie wieder auseinanderlaufen koennen.
+        let resolvedDays = userEquipmentProfile.map { template.bestEquipmentCheckedVariant(against: $0).days }
+            ?? template.resolvedDays(forUserEquipment: userEquipment)
         let sortedDays = resolvedDays.sorted { $0.sequenceIndex < $1.sequenceIndex }
         var workoutDayWeekdays = Set<Int>()
         for (idx, daySpec) in sortedDays.enumerated() {

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1997 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2003 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1997 / 1997** (100%) | 0 |
-| 🇬🇧 English (EN) | **1997 / 1997** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1997 / 1997** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2003 / 2003** (100%) | 0 |
+| 🇬🇧 English (EN) | **2003 / 2003** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2003 / 2003** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1487,7 +1487,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.weeklyGoal.subtitle` | Wie oft willst du pro Woche trainieren? Dein Kalender-Streak zählt gegen dieses Ziel — wähle, was du wirklich durchhalten kannst. | How often do you want to train per week? Your calendar streak counts against this — pick what you can actually sustain. | Haftada kaç kez antrenman yapmak istiyorsun? Takvim serin bu hedefe göre sayılır — gerçekten sürdürebileceğini seç. |
 | `onboarding.weeklyGoal.title` | Dein Wochenziel | Your weekly goal | Haftalık hedefin |
 
-## `picker.*`  (12 Keys)
+## `picker.*`  (18 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1501,6 +1501,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `picker.exercise.namePlaceholder` | Name (z.B. Bankdrücken) | Name (e.g. Bench Press) | Ad (örn. Bench Press) |
 | `picker.exercise.section.customs` | Eigene | Custom | Özel |
 | `picker.plan.adoptFootnote` | Beim Übernehmen wird eine Tiefkopie für deine eigene Bibliothek angelegt — Tage, Übungen, Sätze sind danach frei editierbar. | Adopting creates a deep copy in your library — days, exercises, and sets are then freely editable. | Plan alındığında kütüphanende derin kopya oluşturulur — günler, hareketler ve setler özgürce düzenlenebilir. |
+| `picker.plan.equipment.available.title` | Equipment passend bestätigt | Equipment confirmed to match | Ekipman uyumlu olarak onaylandı |
+| `picker.plan.equipment.missingItems` | Fehlt: %@ | Missing: %@ | Eksik: %@ |
+| `picker.plan.equipment.notAnnotatedHint` | Einzelne Übungen sind im Katalog noch nicht auf Geräte-Voraussetzungen geprüft. | A few exercises haven't been checked against equipment requirements yet. | Bazı egzersizler henüz ekipman gereksinimlerine göre kontrol edilmedi. |
+| `picker.plan.equipment.unavailable.title` | Passt nicht zu deiner Ausrüstung | Doesn't match your equipment | Ekipmanınla uyuşmuyor |
+| `picker.plan.equipment.uncertainItems` | Noch ungeklärt: %@ | Still unclear: %@ | Henüz belirsiz: %@ |
+| `picker.plan.equipment.unknown.title` | Ausrüstung noch nicht vollständig bestätigt | Equipment not fully confirmed yet | Ekipman henüz tam olarak onaylanmadı |
 | `picker.plan.filterFootnote` | Gefiltert nach deinem Trainingsort (%@). Im Profil anpassen, wenn du auch andere Pläne sehen willst. | Filtered by your training location (%@). Adjust in profile to see other plans. | Antrenman yerine göre filtrelendi (%@). Diğer planları görmek için profilden ayarla. |
 | `picker.plan.title` | Programm wählen | Choose Program | Program Seç |
 

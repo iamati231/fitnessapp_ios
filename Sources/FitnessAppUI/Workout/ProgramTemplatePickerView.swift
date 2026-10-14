@@ -37,7 +37,7 @@ public struct ProgramTemplatePickerView: View {
                             NavigationLink {
                                 TemplatePreviewView(
                                     template: template,
-                                    userEquipment: profiles.first?.equipmentPreferences ?? []
+                                    userEquipmentProfile: profiles.first?.equipmentProfile ?? UserEquipmentProfile()
                                 ) {
                                     instantiate(template)
                                 }
@@ -117,13 +117,13 @@ public struct ProgramTemplatePickerView: View {
     }
 
     private func instantiate(_ template: ProgramTemplate) {
-        // DEL-170: User-Equipment vom Profil ziehen, damit Templates mit
-        // `equipmentVariants` die passende Variante bekommen. Leer = Standard.
-        let userEquipment = profiles.first?.equipmentPreferences ?? []
+        // Smart-Onboarding-Epic Phase 4: dasselbe Profil, das die Vorschau
+        // gerade gezeigt hat (Punkt 6) — nie die grobe Legacy-Menge allein.
+        let userEquipmentProfile = profiles.first?.equipmentProfile ?? UserEquipmentProfile()
         let plan = ProgramInstantiator.instantiate(
             template,
             in: modelContext,
-            userEquipment: userEquipment
+            userEquipmentProfile: userEquipmentProfile
         )
         dismiss()
         // Defer the navigation to the next runloop — gives the sheet's dismiss
@@ -198,25 +198,26 @@ public struct TemplatePreviewView: View {
     public let onAdopt: () -> Void
     /// Anpassbarer Button-Titel.
     public let adoptButtonTitle: String
-    /// PLAN_EQUIPMENT_MATCHING_AUDIT.md 5.4: dieselbe Equipment-Menge, die
-    /// der jeweilige Parent gleich darauf an `ProgramInstantiator.instantiate`
-    /// reicht — damit `orderedDays` ueber `ProgramTemplate.resolvedDays` IMMER
-    /// dieselbe Variante zeigt, die beim Adopt tatsaechlich gespeichert wird.
-    /// Default leer = Basis-Variante (bestehendes Verhalten fuer Templates
-    /// ohne `equipmentVariants`, also 17 der 20 Templates unveraendert).
-    public let userEquipment: Set<Equipment>
+    /// Smart-Onboarding-Epic Phase 4 (PLAN_EQUIPMENT_MATCHING_AUDIT.md
+    /// Abschnitt 13): dasselbe `UserEquipmentProfile`, das der jeweilige
+    /// Parent gleich darauf an `ProgramInstantiator.instantiate` reicht —
+    /// damit `checkedVariant`/`orderedDays` IMMER dieselbe Variante (und
+    /// denselben Equipment-Status) zeigen, die beim Adopt tatsaechlich
+    /// gespeichert wird (Punkt 6). Default leer/unbekannt = Basis-Variante,
+    /// Status `.unknown` fuer jede annotierte Uebung.
+    public let userEquipmentProfile: UserEquipmentProfile
 
     @Environment(\.dismiss) private var dismiss
 
     public init(
         template: ProgramTemplate,
         adoptButtonTitle: String = "Diesen Plan übernehmen",
-        userEquipment: Set<Equipment> = [],
+        userEquipmentProfile: UserEquipmentProfile = UserEquipmentProfile(),
         onAdopt: @escaping () -> Void
     ) {
         self.template = template
         self.adoptButtonTitle = adoptButtonTitle
-        self.userEquipment = userEquipment
+        self.userEquipmentProfile = userEquipmentProfile
         self.onAdopt = onAdopt
     }
 
@@ -235,6 +236,7 @@ public struct TemplatePreviewView: View {
 
             VStack(alignment: .leading, spacing: 18) {
                 heroCard
+                equipmentStatusBanner
                 ForEach(orderedDays, id: \.sequenceIndex) { day in
                     dayCard(day)
                 }
@@ -254,6 +256,105 @@ public struct TemplatePreviewView: View {
     }
 
     // MARK: Subsections
+
+    /// Smart-Onboarding-Epic Phase 4: EINZIGE Variantenwahl fuer diese
+    /// Vorschau — `ProgramInstantiator.instantiate` ruft bei Adopt dieselbe
+    /// Funktion mit demselben Profil auf (Punkt 6).
+    private var checkedVariant: CheckedPlanVariant {
+        template.bestEquipmentCheckedVariant(against: userEquipmentProfile)
+    }
+
+    /// Punkt 5/7/8: zeigt den tatsaechlichen Pruefstatus der oben gewaehlten
+    /// Variante transparent an — "Equipment passend" nur bei `.available`,
+    /// eine Luecke (fehlend oder unbekannt) wird konkret benannt statt
+    /// stillschweigend uebergangen oder durch eine andere Uebung ersetzt.
+    @ViewBuilder
+    private var equipmentStatusBanner: some View {
+        switch checkedVariant.equipmentStatus {
+        case .available:
+            equipmentStatusRow(
+                icon: "checkmark.circle.fill", tint: .green,
+                title: String(localized: "picker.plan.equipment.available.title", bundle: .module),
+                detail: nil
+            )
+        case let .unknown(gaps):
+            equipmentStatusRow(
+                icon: "questionmark.circle.fill", tint: .orange,
+                title: String(localized: "picker.plan.equipment.unknown.title", bundle: .module),
+                detail: unknownGapDetail(gaps)
+            )
+        case let .unavailable(gaps):
+            equipmentStatusRow(
+                icon: "exclamationmark.triangle.fill", tint: .red,
+                title: String(localized: "picker.plan.equipment.unavailable.title", bundle: .module),
+                detail: missingGapDetail(gaps)
+            )
+        }
+    }
+
+    private func equipmentStatusRow(icon: String, tint: Color, title: String, detail: String?) -> some View {
+        DeltiqCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundStyle(tint)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Color.primary)
+                    if let detail {
+                        Text(detail)
+                            .font(.footnote)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    /// Nennt die konkret fehlenden Geraete (aus allen `.missing`-Luecken,
+    /// dedupliziert) — nie nur "Equipment fehlt" ohne Angabe wonach.
+    private func missingGapDetail(_ gaps: [PlanEquipmentGap]) -> String? {
+        var items: Set<EquipmentItem> = []
+        for gap in gaps {
+            if case let .missing(reasons) = gap.reason {
+                for reason in reasons { items.insert(reason.item) }
+            }
+        }
+        guard !items.isEmpty else { return nil }
+        let names = items.map { String(localized: $0.localizedName) }.sorted()
+        return String(format: String(localized: "picker.plan.equipment.missingItems", bundle: .module), names.joined(separator: ", "))
+    }
+
+    /// Unterscheidet "Geraet selbst noch nicht bestaetigt/Stueckzahl unklar"
+    /// (konkrete Item-Namen) von "Uebung noch nicht im Katalog annotiert"
+    /// (kein Item nennbar — Audit-Vorgabe: fehlende Annotation ist kein
+    /// Vorwand, irgendetwas zu behaupten). Zeigt beide Luecken-Arten, statt
+    /// stillschweigend nur eine zu waehlen.
+    private func unknownGapDetail(_ gaps: [PlanEquipmentGap]) -> String? {
+        var uncertainItems: Set<EquipmentItem> = []
+        var notAnnotatedCount = 0
+        for gap in gaps {
+            switch gap.reason {
+            case let .uncertain(reasons):
+                for reason in reasons { uncertainItems.insert(reason.item) }
+            case .notAnnotated:
+                notAnnotatedCount += 1
+            case .missing:
+                break
+            }
+        }
+        var parts: [String] = []
+        if !uncertainItems.isEmpty {
+            let names = uncertainItems.map { String(localized: $0.localizedName) }.sorted()
+            parts.append(String(format: String(localized: "picker.plan.equipment.uncertainItems", bundle: .module), names.joined(separator: ", ")))
+        }
+        if notAnnotatedCount > 0 {
+            parts.append(String(localized: "picker.plan.equipment.notAnnotatedHint", bundle: .module))
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " ")
+    }
 
     private var heroCard: some View {
         DeltiqCard {
@@ -366,13 +467,13 @@ public struct TemplatePreviewView: View {
     /// Vorher haben wir hier Mo-first nach Apple-Weekday sortiert — das ist
     /// jetzt obsolet, weil Templates keinen Wochentag mehr enthalten.
     ///
-    /// PLAN_EQUIPMENT_MATCHING_AUDIT.md 5.4: loest ueber `resolvedDays` die
-    /// gleiche Equipment-Variante auf wie `ProgramInstantiator.instantiate`
+    /// PLAN_EQUIPMENT_MATCHING_AUDIT.md 5.4/13: loest ueber `checkedVariant`
+    /// dieselbe Equipment-Variante auf wie `ProgramInstantiator.instantiate`
     /// (vorher wurde hier IMMER `template.days`, also die Basis-Variante,
     /// gezeigt — unabhaengig davon, welche Variante beim Adopt gespeichert
     /// wurde).
     private var orderedDays: [DaySpec] {
-        template.resolvedDays(forUserEquipment: userEquipment).sorted { $0.sequenceIndex < $1.sequenceIndex }
+        checkedVariant.days.sorted { $0.sequenceIndex < $1.sequenceIndex }
     }
 
     /// DEL-118: ExerciseSpec.name ist der deutsche Raw-String aus dem

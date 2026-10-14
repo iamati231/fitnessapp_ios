@@ -216,7 +216,7 @@ public struct OnboardingView: View {
                     TemplatePreviewView(
                         template: template,
                         adoptButtonTitle: "Diesen Plan wählen",
-                        userEquipment: derivedLegacyEquipment
+                        userEquipmentProfile: equipmentProfile
                     ) {
                         // DEL-088: Adopt finalisiert die Plan-Wahl noch nicht
                         // direkt — stattdessen oeffnet sich der DayPicker,
@@ -1214,7 +1214,13 @@ public struct OnboardingView: View {
             experience: (resolvedExperienceTrack ?? .experienced).asExperienceLevel,
             preferredDays: weeklyGoal,
             environment: environment,
-            equipmentPreferences: derivedLegacyEquipment
+            equipmentPreferences: derivedLegacyEquipment,
+            // Smart-Onboarding-Epic Phase 4: das volle, lebende Profil geht
+            // IMMER mit — auch vor der vollstaendigen Bestaetigung. Eine
+            // unvollstaendige Erfassung liefert dadurch korrekt `.unknown`
+            // (siehe PlanEquipmentChecker), nie einen verfruehten Ausschluss
+            // UND nie ein stillschweigendes "passt schon".
+            equipmentProfile: equipmentProfile
         )
     }
 
@@ -1652,13 +1658,14 @@ public struct OnboardingView: View {
         //    User direkt "Fertig" ohne Plan drueckt, ist die Liste leer und
         //    der Instantiator nutzt seine Defaults (defaultWeekdays(for:)).
         if let template = selectedTemplate {
-            // DEL-170b: User-Equipment direkt aus dem Onboarding-State —
-            // greift sofort beim ersten Plan-Adopt (Hybrid → DB-Variante etc.).
+            // Smart-Onboarding-Epic Phase 4: dasselbe `equipmentProfile`, mit
+            // dem die Vorschau gerade die Variante gezeigt hat (Punkt 6) —
+            // nicht die grobe, erst-nach-Bestaetigung gefuellte Legacy-Menge.
             ProgramInstantiator.instantiate(
                 template,
                 in: modelContext,
                 selectedWeekdays: selectedWeekdays.isEmpty ? nil : selectedWeekdays,
-                userEquipment: derivedLegacyEquipment
+                userEquipmentProfile: equipmentProfile
             )
         } else if let customPlanInput, let customPlanResult {
             // DEL-243: der im Builder-

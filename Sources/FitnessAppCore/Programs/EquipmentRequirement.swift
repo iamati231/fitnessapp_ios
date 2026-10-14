@@ -23,6 +23,13 @@ public enum EquipmentItem: String, Codable, Sendable, CaseIterable, Hashable {
     case resistanceBand
     // Zubehoer / Stationen
     case pullUpBar
+    /// Smart-Onboarding-Epic Phase 4 (PLAN_EQUIPMENT_MATCHING_AUDIT.md
+    /// Abschnitt 13): eine Uebung, die nur eine FLACHE Bank braucht, nutzt in
+    /// `ExerciseLibraryData` immer `.any([.item(.flatBench), .item(.adjustableBench)])`,
+    /// nie `.item(.flatBench)` allein — eine verstellbare Bank kann flach
+    /// genutzt werden, deckt eine Flachbank-Anforderung also mit ab. Umgekehrt
+    /// gilt das NICHT: eine reine Flachbank kann nicht inclinen/declinen, eine
+    /// Schraegbank-Uebung verlangt deshalb ausschliesslich `.adjustableBench`.
     case flatBench
     case adjustableBench
     case rack

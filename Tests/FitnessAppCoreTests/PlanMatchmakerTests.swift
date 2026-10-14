@@ -228,6 +228,43 @@ final class PlanMatchmakerTests: XCTestCase {
         XCTAssertTrue(ranked.allSatisfy { $0.targetEnvironment == .noEquipment })
     }
 
+    /// Smart-Onboarding-Epic Phase 4: "auch im Fallback bestaetigte
+    /// Equipment-Grenzen respektieren". `crossfit_bodyweight_rx` ist zwar
+    /// `.noEquipment`-getaggt, braucht aber tatsaechlich eine Klimmzugstange
+    /// ("Klimmzüge") — sein eigenes Geschwister-Template
+    /// `crossfit_bodyweight_scaled` ersetzt genau diese Uebung durch
+    /// Handtuch-Rudern. Ein Nutzer mit bestaetigt FEHLENDER Klimmzugstange
+    /// darf `crossfit_bodyweight_rx` deshalb auch im Fallback-Pfad nicht
+    /// vorgeschlagen bekommen.
+    func testFallbackRespectsConfirmedMissingPullUpBarEvenForNoEquipmentTemplates() {
+        var profile = UserEquipmentProfile()
+        profile.confirmRemainingAsUnavailable()
+        let answers = QuizAnswers(
+            goal: .strength, experience: .advanced, preferredDays: 1, environment: .noEquipment,
+            equipmentProfile: profile
+        )
+        let result = PlanMatchmaker.rankPlansDetailed(for: answers, templates: allTemplates)
+        XCTAssertTrue(result.isFallback, "Vorbedingung: 1 Tag + Advanced ohne Track muss die Hard-Filter leerlaufen lassen")
+        XCTAssertFalse(result.templates.contains { $0.id == "crossfit_bodyweight_rx" },
+                        "Braucht eine bestaetigt fehlende Klimmzugstange — darf auch im Fallback nicht erscheinen")
+        XCTAssertTrue(result.templates.contains { $0.id == "crossfit_bodyweight_scaled" },
+                       "Das klimmzugstangen-freie Geschwister-Template bleibt ein gueltiger Fallback-Kandidat")
+    }
+
+    /// Gegenprobe: eine bestaetigt VORHANDENE Klimmzugstange laesst
+    /// `crossfit_bodyweight_rx` im selben Extremfilter weiterhin zu.
+    func testFallbackAllowsPullUpBarTemplateWhenConfirmedAvailable() {
+        var profile = UserEquipmentProfile()
+        profile.availability[.pullUpBar] = .available
+        profile.confirmRemainingAsUnavailable()
+        let answers = QuizAnswers(
+            goal: .strength, experience: .advanced, preferredDays: 1, environment: .noEquipment,
+            equipmentProfile: profile
+        )
+        let result = PlanMatchmaker.rankPlansDetailed(for: answers, templates: allTemplates)
+        XCTAssertTrue(result.templates.contains { $0.id == "crossfit_bodyweight_rx" })
+    }
+
     /// Fallback: Extrem-Filter "Strength + No-Equipment + 2 Tage" wuerde
     /// nichts treffen → wir liefern wenigstens die BW-Plaene zurueck.
     func testFallbackProducesBodyweightPlansWhenAllFiltered() {

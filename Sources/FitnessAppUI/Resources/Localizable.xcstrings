@@ -18158,6 +18158,144 @@
         }
       }
     },
+    "picker.plan.equipment.available.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment passend bestätigt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment confirmed to match"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipman uyumlu olarak onaylandı"
+          }
+        }
+      }
+    },
+    "picker.plan.equipment.unknown.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausrüstung noch nicht vollständig bestätigt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment not fully confirmed yet"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipman henüz tam olarak onaylanmadı"
+          }
+        }
+      }
+    },
+    "picker.plan.equipment.unavailable.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passt nicht zu deiner Ausrüstung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doesn't match your equipment"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipmanınla uyuşmuyor"
+          }
+        }
+      }
+    },
+    "picker.plan.equipment.missingItems": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fehlt: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missing: %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eksik: %@"
+          }
+        }
+      }
+    },
+    "picker.plan.equipment.uncertainItems": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch ungeklärt: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Still unclear: %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz belirsiz: %@"
+          }
+        }
+      }
+    },
+    "picker.plan.equipment.notAnnotatedHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einzelne Übungen sind im Katalog noch nicht auf Geräte-Voraussetzungen geprüft."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A few exercises haven't been checked against equipment requirements yet."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bazı egzersizler henüz ekipman gereksinimlerine göre kontrol edilmedi."
+          }
+        }
+      }
+    },
     "profile.equipment.footer": {
       "extractionState": "manual",
       "localizations": {

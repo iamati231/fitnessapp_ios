@@ -13,19 +13,31 @@ public struct QuizAnswers: Sendable, Equatable {
     /// gepflegt → der Matcher wendet keinen zusätzlichen Equipment-Filter an
     /// (Backward-Compat-Pfad für pre-DEL-170-Profile).
     public let equipmentPreferences: Set<Equipment>
+    /// Smart-Onboarding-Epic Phase 4 (PLAN_EQUIPMENT_MATCHING_AUDIT.md
+    /// Abschnitt 13): die praezise, dreiwertige Equipment-Pruefung. `nil`
+    /// bedeutet reiner Legacy-Pfad — Equipment-Filter/-Begruendung laufen
+    /// dann unveraendert ueber `equipmentPreferences` (Set-Teilmengen-
+    /// Pruefung). Sobald ein Profil mitgegeben wird, ist DIESES fuer Filter
+    /// UND Begruendungen massgeblich; `equipmentPreferences` bleibt daneben
+    /// nur noch eine Kompatibilitaetsprojektion (z.B. fuer Call-Sites, die
+    /// noch nicht umgestellt sind) und darf eine ueber dieses Profil
+    /// bestaetigte Unvereinbarkeit nicht uebersteuern.
+    public let equipmentProfile: UserEquipmentProfile?
 
     public init(
         goal: TrainingGoal,
         experience: ExperienceLevel,
         preferredDays: Int,
         environment: EnvironmentType,
-        equipmentPreferences: Set<Equipment> = []
+        equipmentPreferences: Set<Equipment> = [],
+        equipmentProfile: UserEquipmentProfile? = nil
     ) {
         self.goal = goal
         self.experience = experience
         self.preferredDays = preferredDays
         self.environment = environment
         self.equipmentPreferences = equipmentPreferences
+        self.equipmentProfile = equipmentProfile
     }
 }
 
@@ -36,7 +48,26 @@ public struct PlanMatchReasons: Sendable, Equatable {
     public let goalMatch: Bool
     public let daysMatch: Bool
     public let levelMatch: Bool
+    /// `true` ausschliesslich bei vollstaendig bestaetigter Equipment-Passung
+    /// — niemals bei unbekannten Voraussetzungen (Smart-Onboarding-Epic
+    /// Phase 4, Punkt 5). Rueckwaerts-kompatibler Bool-Zugriff: wird `nil`
+    /// (reiner Legacy-Pfad ohne `UserEquipmentProfile`), aus
+    /// `equipmentStatus` gespiegelt, sonst die alte grobe Pruefung.
     public let equipmentMatch: Bool
+    /// Smart-Onboarding-Epic Phase 4: die volle, dreiwertige Equipment-
+    /// Pruefung der tatsaechlich fuer dieses Template gewaehlten Variante —
+    /// `nil` nur im reinen Legacy-Pfad (kein `UserEquipmentProfile`
+    /// uebergeben). Traegt die konkreten Luecken (fehlend/unbekannt/nicht
+    /// annotiert) fuer eine transparente UI-Anzeige, statt nur eines Bools.
+    public let equipmentStatus: PlanEquipmentStatus?
+
+    public init(goalMatch: Bool, daysMatch: Bool, levelMatch: Bool, equipmentMatch: Bool, equipmentStatus: PlanEquipmentStatus? = nil) {
+        self.goalMatch = goalMatch
+        self.daysMatch = daysMatch
+        self.levelMatch = levelMatch
+        self.equipmentMatch = equipmentMatch
+        self.equipmentStatus = equipmentStatus
+    }
 }
 
 /// DEL-090: Pure-Logik-Scorer. Filtert Templates ueber K.O.-Kriterien
@@ -82,7 +113,7 @@ public enum PlanMatchmaker {
         let eligible = templates.filter { template in
             envMatches(plan: template.targetEnvironment, user: answers.environment)
                 && template.daysPerWeek <= answers.preferredDays
-                && equipmentMatches(template: template, user: answers.equipmentPreferences)
+                && equipmentMatches(template: template, user: answers.equipmentPreferences, profile: answers.equipmentProfile)
                 && experienceTrackMatches(template: template, track: experienceTrack)
         }
 
@@ -177,7 +208,22 @@ public enum PlanMatchmaker {
     /// wurde. Die UI zeigt ein Badge NUR, wenn das jeweilige Feld `true` ist
     /// — nie pauschal.
     public static func matchReasons(for template: ProgramTemplate, answers: QuizAnswers) -> PlanMatchReasons {
-        PlanMatchReasons(
+        if let profile = answers.equipmentProfile {
+            // Smart-Onboarding-Epic Phase 4, Punkt 5: "Equipment passend" nur
+            // bei vollstaendig bestaetigter Passung der tatsaechlich
+            // gewaehlten Variante — niemals bei `.unknown` (unbekannte
+            // Voraussetzungen werden sichtbar gemacht, nie als sicher
+            // passend dargestellt).
+            let status = template.bestEquipmentCheckedVariant(against: profile).equipmentStatus
+            return PlanMatchReasons(
+                goalMatch: template.targetGoals.contains(answers.goal),
+                daysMatch: template.daysPerWeek == answers.preferredDays,
+                levelMatch: template.targetExperience.contains(answers.experience),
+                equipmentMatch: status.isAvailable,
+                equipmentStatus: status
+            )
+        }
+        return PlanMatchReasons(
             goalMatch: template.targetGoals.contains(answers.goal),
             daysMatch: template.daysPerWeek == answers.preferredDays,
             levelMatch: template.targetExperience.contains(answers.experience),
@@ -188,9 +234,10 @@ public enum PlanMatchmaker {
             // UEBERHAUPT Praeferenzen gepflegt", nie ob DIESES Template
             // tatsaechlich passt. Jetzt dieselbe echte Pruefung wie der
             // Hard-Filter, nur zusaetzlich an "ueberhaupt gepflegt" geknuepft
-            // (leeres Set = "nicht gepflegt", kein Badge noetig).
+            // (leeres Set = "nicht gepflegt", kein Badge noetig). Reiner
+            // Legacy-Pfad (kein `UserEquipmentProfile` uebergeben).
             equipmentMatch: !answers.equipmentPreferences.isEmpty
-                && equipmentMatches(template: template, user: answers.equipmentPreferences)
+                && equipmentMatches(template: template, user: answers.equipmentPreferences, profile: nil)
         )
     }
 
@@ -218,7 +265,21 @@ public enum PlanMatchmaker {
     /// Koerpergewicht-Nutzer besteht deshalb korrekt KEIN Template, das
     /// tatsaechlich Geraete braucht. Siehe
     /// `PlanMatchmakerTests.testEmptyEquipmentIsNoFilterButConfirmedBodyweightOnlyActuallyFilters`.
-    private static func equipmentMatches(template: ProgramTemplate, user: Set<Equipment>) -> Bool {
+    ///
+    /// Smart-Onboarding-Epic Phase 4: wenn `profile` gesetzt ist, entscheidet
+    /// AUSSCHLIESSLICH die praezise Pro-Uebung-Pruefung
+    /// (`bestEquipmentCheckedVariant`) — `user`/die grobe Set-Pruefung werden
+    /// dann ignoriert, das ist die "legacy bleibt nur Kompatibilitaets-
+    /// projektion, darf eine bestaetigte Unvereinbarkeit nicht uebersteuern"-
+    /// Vorgabe. Nur `.unavailable` (definitiv fehlendes Equipment bei
+    /// mindestens einer annotierten Uebung) schliesst aus — `.unknown`
+    /// (unklar oder noch nicht annotiert) lässt das Template bewusst durch,
+    /// sonst wuerde eine fehlende Annotation wie eine automatische Ablehnung
+    /// wirken, was die Audit-Vorgabe ausdruecklich verbietet.
+    private static func equipmentMatches(template: ProgramTemplate, user: Set<Equipment>, profile: UserEquipmentProfile?) -> Bool {
+        if let profile {
+            return !template.bestEquipmentCheckedVariant(against: profile).equipmentStatus.isUnavailable
+        }
         guard !user.isEmpty else { return true }
         if let variants = template.equipmentVariants {
             let baseRequires = EquipmentProfile.barbellGym.requiredEquipment
@@ -292,10 +353,19 @@ public enum PlanMatchmaker {
     ///   1. Tage-Obergrenze UND Track respektiert.
     ///   2. Nur Track respektiert (ein laengerer, aber sicherer Plan schlaegt
     ///      einen kurzen ungeeigneten — Sicherheit vor Tages-Praeferenz).
-    ///   3. Absoluter Notfall ohne Track-Filter — `isFallback` ist in diesem
-    ///      Pfad ohnehin `true`, die UI zeigt bereits "Beste verfuegbare
-    ///      Option" statt "Empfohlen" (UX-Fix "Empfehlung wirkt immer
-    ///      gleich", Punkt 5).
+    ///   3. Nur Track respektiert UND Equipment respektiert (Tage-Obergrenze
+    ///      faellt als erstes, Equipment bleibt laenger verbindlich).
+    ///   4. Absoluter Notfall ohne Track-/Equipment-Filter — `isFallback` ist
+    ///      in diesem Pfad ohnehin `true`, die UI zeigt bereits "Beste
+    ///      verfuegbare Option" statt "Empfohlen" (UX-Fix "Empfehlung wirkt
+    ///      immer gleich", Punkt 5).
+    ///
+    /// Smart-Onboarding-Epic Phase 4, Punkt "auch im Fallback bestaetigte
+    /// Equipment- und Tagegrenzen respektieren": vorher pruefte der Fallback
+    /// GAR KEIN Equipment (implizite Annahme "jeder Bodyweight-Plan passt
+    /// garantiert jedem" — stimmt nicht mehr fuer Templates mit z.B. einer
+    /// Klimmzugstangen-Uebung). Equipment wird deshalb als VORLETZTES
+    /// relaxt, nicht als erstes — Sicherheit vor Tages-/Track-Praeferenz.
     private static func fallback(
         for answers: QuizAnswers,
         allTemplates: [ProgramTemplate],
@@ -304,13 +374,24 @@ public enum PlanMatchmaker {
         // Bodyweight-Plaene laufen ueberall, daher sicherer Fallback.
         let bodyweight = allTemplates.filter { $0.targetEnvironment == .noEquipment }
 
-        let daysAndTrack = bodyweight.filter {
-            $0.daysPerWeek <= answers.preferredDays && experienceTrackMatches(template: $0, track: experienceTrack)
+        func equipmentOK(_ template: ProgramTemplate) -> Bool {
+            equipmentMatches(template: template, user: answers.equipmentPreferences, profile: answers.equipmentProfile)
         }
-        if !daysAndTrack.isEmpty { return daysAndTrack }
 
-        let trackOnly = bodyweight.filter { experienceTrackMatches(template: $0, track: experienceTrack) }
-        if !trackOnly.isEmpty { return trackOnly }
+        let daysTrackEquipment = bodyweight.filter {
+            $0.daysPerWeek <= answers.preferredDays
+                && experienceTrackMatches(template: $0, track: experienceTrack)
+                && equipmentOK($0)
+        }
+        if !daysTrackEquipment.isEmpty { return daysTrackEquipment }
+
+        let trackEquipment = bodyweight.filter {
+            experienceTrackMatches(template: $0, track: experienceTrack) && equipmentOK($0)
+        }
+        if !trackEquipment.isEmpty { return trackEquipment }
+
+        let equipmentOnly = bodyweight.filter(equipmentOK)
+        if !equipmentOnly.isEmpty { return equipmentOnly }
 
         return bodyweight
     }
