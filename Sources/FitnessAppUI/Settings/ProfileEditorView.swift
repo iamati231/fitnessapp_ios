@@ -23,6 +23,10 @@ public struct ProfileEditorView: View {
     @State private var healthKitFetchInProgress: Bool = false
     @State private var healthKitFilledFields: Set<String> = []
 
+    /// UX-Fix P3 §6: Re-Entry-Punkt fuer den optionalen Start-Check ausserhalb
+    /// des Onboardings (siehe `coachingCard`).
+    @State private var showingBaselineCheck = false
+
     /// DEL-250: MM:SS-Eingabepuffer fuer die 5-km-Referenzzeit. Bewusst ein
     /// eigenstaendiger `@State`-String statt einer Binding<String> ueber
     /// `profile.current5kReferenceSeconds` (Review-Fund): eine computed
@@ -918,7 +922,7 @@ public struct ProfileEditorView: View {
                 }
                 .pickerStyle(.menu)
             }
-            DeltiqControlRow(label: String(localized: "profile.coaching.tone", bundle: .module), showsDivider: false) {
+            DeltiqControlRow(label: String(localized: "profile.coaching.tone", bundle: .module)) {
                 Picker(selection: Binding(
                     get: { profile.coachingTone },
                     set: { profile.coachingTone = $0 }
@@ -936,8 +940,41 @@ public struct ProfileEditorView: View {
                 }
                 .pickerStyle(.menu)
             }
+            DeltiqRow(
+                icon: "checkmark.seal",
+                label: String(localized: "profile.coaching.baselineCheck", bundle: .module),
+                value: baselineCheckStatusText,
+                showsChevron: true,
+                showsDivider: false
+            ) {
+                showingBaselineCheck = true
+            }
             hintRow(String(localized: "profile.coaching.footer", bundle: .module))
         }
+        // UX-Fix P3 §6: "wiederholbar jederzeit nach dem Onboarding aus
+        // Profil/Einstellungen" — derselbe Sheet-Aufruf wie im Onboarding-
+        // Schritt (`OnboardingView.baselineCheckStep`), hier nur ausserhalb
+        // davon erreichbar. Starter/Wiedereinsteiger bekommen weiterhin den
+        // vollen 3-Wege-Einstieg (inkl. Sicherheits-Gate), Erfahrene direkt
+        // die Selbsteinschaetzung — dieselbe Weiche wie beim Erstdurchlauf.
+        .sheet(isPresented: $showingBaselineCheck) {
+            BaselineCheckFlowView(
+                entryMode: profile.experienceTrack == .experienced ? .selfAssessment : .guidedTest,
+                goal: profile.trainingGoal,
+                equipmentPreferences: profile.equipmentPreferences
+            ) { result in
+                if let result {
+                    profile.baselineAssessment = result
+                }
+            }
+        }
+    }
+
+    private var baselineCheckStatusText: String {
+        guard let date = profile.baselineAssessment?.date else {
+            return String(localized: "profile.coaching.baselineCheck.notDone", bundle: .module)
+        }
+        return date.formatted(date: .abbreviated, time: .omitted)
     }
 
     // MARK: - Row helpers
