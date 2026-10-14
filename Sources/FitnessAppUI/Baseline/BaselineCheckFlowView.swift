@@ -250,8 +250,19 @@ struct BaselineCheckFlowView: View {
         }
     }
 
+    /// `@ViewBuilder` + if/else statt `.buttonStyle(status == .clear ?
+    /// .borderedProminent : .bordered)`: `.borderedProminent`/`.bordered`
+    /// sind verschiedene konkrete Typen (nicht nur verschiedene Werte
+    /// desselben Enums wie z.B. `FamilyMode`), ein Ternary kann `buttonStyle`s
+    /// generischen Parameter also nicht auf einen gemeinsamen Typ vereinheit-
+    /// lichen — scheitert real im Xcode-Build ("type 'ButtonStyle' has no
+    /// member 'borderedProminent'"), auf dem Linux-Toolchain aber unsichtbar,
+    /// weil SwiftUI-Dateien dort nie typgeprueft werden (siehe Verifikations-
+    /// Luecke in der Session-Doku). Jeder Zweig bekommt stattdessen seinen
+    /// eigenen, nicht-bedingten `.buttonStyle(...)`-Aufruf.
+    @ViewBuilder
     private func safetyButton(_ status: SafetyStatus) -> some View {
-        Button {
+        let button = Button {
             safetyStatus = status
             if status == .flagged {
                 // "Lieber ohne Test" erzwingt JEDE Familie auf Selbstein-
@@ -272,7 +283,11 @@ struct BaselineCheckFlowView: View {
                 .font(.callout.weight(.semibold))
                 .frame(maxWidth: .infinity)
         }
-        .buttonStyle(status == .clear ? .borderedProminent : .bordered)
+        if status == .clear {
+            button.buttonStyle(.borderedProminent)
+        } else {
+            button.buttonStyle(.bordered)
+        }
     }
 
     // MARK: - Uebersicht (Hub)
