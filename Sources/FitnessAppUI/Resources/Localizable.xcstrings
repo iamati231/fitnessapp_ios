@@ -13533,19 +13533,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Höchste Trainingsfrequenz pro Muskelgruppe. Laut Forschung optimal für Anfänger und Wiedereinstieg — maximales Signal für Muskelwachstum."
+            "value": "Hohe Trainingsfrequenz pro Muskelgruppe — ein bewährter Ansatz für den Einstieg. Enthält freie Kniebeuge, Kreuzheben und Schulterdrücken: plane in den ersten Wochen Zeit für die Technik ein."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Highest training frequency per muscle group. Research-backed as optimal for beginners and re-entry — maximum signal for muscle growth."
+            "value": "High training frequency per muscle group — a well-established approach for getting started. Includes free-weight squats, deadlifts, and overhead presses: budget time for technique in the first few weeks."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kas grubu başına en yüksek antrenman frekansı. Araştırmalar başlangıç ve yeniden başlama için ideal olduğunu gösteriyor — kas gelişimi için maksimum sinyal."
+            "value": "Kas grubu başına yüksek antrenman frekansı — başlangıç için köklü bir yaklaşım. Serbest ağırlıkla squat, deadlift ve omuz press içerir: ilk haftalarda tekniğe zaman ayır."
           }
         }
       }
@@ -13579,19 +13579,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Effektiver Ganzkörperplan komplett mit Kurzhanteln. Ideal für das Training zuhause — kein Fitnessstudio nötig."
+            "value": "Effektiver Ganzkörperplan mit Kurzhanteln. Für einige Übungen ist zusätzlich eine Flach-/Schrägbank hilfreich — sonst reicht das Training zuhause ohne Fitnessstudio."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Effective full-body plan using only dumbbells. Ideal for training at home — no gym required."
+            "value": "Effective full-body plan using dumbbells. A flat/incline bench is helpful for a few exercises — otherwise this works at home without a gym."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sadece dambıllarla etkili tüm vücut planı. Evde antrenman için ideal — salon gerekmez."
+            "value": "Dambıllarla etkili tüm vücut planı. Birkaç hareket için düz/eğimli bir bank faydalı olur — aksi halde salon olmadan evde çalışır."
           }
         }
       }
@@ -13602,19 +13602,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Komplettes Körpergewichtstraining ohne ein einziges Gerät. Kürzere Pausen und isometrische Übungen sorgen für maximalen Trainingsreiz."
+            "value": "Komplettes Körpergewichtstraining – die meisten Übungen brauchen kein Gerät. Für Rudern nutzt du einen stabilen Türrahmen, für Dips idealerweise Barren oder zwei stabile Erhöhungen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Complete bodyweight training without a single piece of equipment. Shorter rest periods and isometric exercises maximize training stimulus."
+            "value": "Complete bodyweight training — most exercises need no equipment. Rows use a sturdy door frame, and dips work best with parallel bars or two stable elevated surfaces."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tek bir ekipman olmadan komple vücut ağırlığı antrenmanı. Kısa molalar ve izometrik hareketler maksimum antrenman uyarısı sağlar."
+            "value": "Komple vücut ağırlığı antrenmanı — çoğu hareket ekipman gerektirmez. Row hareketi için sağlam bir kapı çerçevesi, dips için paralel barlar veya iki sağlam yükseltilmiş yüzey idealdir."
           }
         }
       }
@@ -13625,19 +13625,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wissenschaftlich optimierter Split. Jede Muskelgruppe wird 2x pro Woche trainiert – ideal für intermediäre Sportler laut Meta-Analysen."
+            "value": "Klassischer 6-Tage-Split: jede Muskelgruppe wird 2x pro Woche trainiert. Hohes Wochenvolumen — für Fortgeschrittene mit vorhandener Trainingsbasis gedacht."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Scientifically optimized split. Each muscle group trained 2x per week — ideal for intermediate lifters per meta-analyses."
+            "value": "Classic 6-day split: each muscle group trained twice a week. High weekly volume — built for advanced lifters with an existing training base."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bilimsel olarak optimize edilmiş split. Her kas grubu haftada 2 kez çalıştırılır — meta-analizlere göre orta seviye sporcular için ideal."
+            "value": "Klasik 6 günlük split: her kas grubu haftada 2 kez çalıştırılır. Yüksek haftalık hacim — mevcut antrenman temeli olan ileri seviye sporcular için tasarlandı."
           }
         }
       }
@@ -13648,19 +13648,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Optimale Balance zwischen Frequenz und Volumen. Laut Studienlage der effektivste Split für Kraft- und Muskelaufbau bei Intermediären."
+            "value": "Balance aus Frequenz und Volumen: Kraft- und Aufbau-Tage wechseln sich ab. Ein bewährter Split für Fortgeschrittene mit vorhandener Technik in den Grundübungen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Optimal balance between frequency and volume. Studies show this is the most effective split for strength and muscle building at the intermediate level."
+            "value": "A balance of frequency and volume: strength and volume days alternate. A well-established split for intermediate/advanced lifters with existing technique in the main lifts."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Frekans ve hacim arasında optimal denge. Çalışmalar bunun orta seviyede güç ve kas gelişimi için en etkili split olduğunu gösteriyor."
+            "value": "Frekans ve hacim dengesi: güç ve hacim günleri birbirini izler. Temel hareketlerde tekniğe sahip orta/ileri seviye sporcular için köklü bir split."
           }
         }
       }
@@ -13717,19 +13717,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Das bewährteste Kraft-Programm für Anfänger & Fortgeschrittene. Progressive Überlastung mit den Grundübungen — wissenschaftlich und praktisch belegt."
+            "value": "Einfaches, lineares Kraftprogramm mit den Grundübungen. Progressive Überlastung macht Fortschritt leicht nachvollziehbar — ein klassischer Einstieg ins Krafttraining."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The most proven strength program for beginners and intermediates. Progressive overload with the main lifts — scientifically and practically validated."
+            "value": "A simple, linear strength program built on the main lifts. Progressive overload makes progress easy to track — a classic starting point for strength training."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Başlangıç ve orta seviye için en kanıtlanmış güç programı. Temel hareketlerle aşamalı yüklenme — bilimsel ve pratik olarak doğrulanmış."
+            "value": "Temel hareketlere dayanan basit, doğrusal bir güç programı. Aşamalı yüklenme ilerlemeyi takip etmeyi kolaylaştırır — güç antrenmanına klasik bir başlangıç."
           }
         }
       }
