@@ -213,24 +213,30 @@ Gegen den tatsächlichen Code geprüft (nicht nur angenommen):
 persistierten Werten berechnet (reine Funktion, §2) — es gibt nichts
 Zusätzliches zu speichern, zu exportieren oder zurückzusetzen.
 
-## 8. Pflicht-Test-Mapping (Vorgabe Abschnitt 6 → konkrete Tests)
+## 8. Pflicht-Test-Mapping (Vorgabe Abschnitt 6 → konkrete Tests, final)
 
-| # | Szenario | Testebene |
+| # | Szenario | Test |
 |---|---|---|
-| 1 | Gym ohne Anpassung: kein Pflichtschritt, Standard-Empfehlung, nicht bestätigt gespeichert | Core (`EquipmentPlanningResolverTests`) + manuelle UI-Prüfung |
-| 2 | Gym mit explizit fehlendem Gerät: Default überschreibt Angabe nicht | Core |
-| 3 | Home-Gym: nur KB, keine Bank, keine Stange → keine unveränderten KH-/Bank-/Klimmzug-Übungen als passend | Core (bestehende Phase-4-Infrastruktur, neuer Testfall) |
-| 4 | Home-Gym: KH+KB+verstellbare Bank+Stange → Kombination bleibt vollständig erhalten | Core |
-| 5 | Home-Gym: Flachbank → keine automatische Freigabe für Schrägbank | Core |
-| 6 | Home-Gym: Bank ausdrücklich unbekannt → bleibt `unknown` | Core |
-| 7 | Kein Equipment + Widerstandsband → bandbasierte Varianten möglich | Core (`PlanMatchmakerTests`) |
-| 8 | Kein Equipment + Kurzhanteln → nicht nur durch Ortsfilter blockiert | Core (`PlanMatchmakerTests`, envMatches) |
-| 9 | „Nein, nur Körpergewicht" → Zusatzgeräte gelten als fehlend, keine Gym-Annahme | Core |
-| 10 | „Später entscheiden" → keine automatische Abwesenheitsbestätigung | Core |
-| 11 | Ortswechsel/Zurück/Sheet-Abbruch → keine verlorenen Angaben | Manuell (reiner `@State`-Fluss, kein Core-Test möglich) + Code-Review |
-| 12 | Vorschau und Übernahme: identische Variante + Planungskontext; geänderte Inhalte verlangen erneute Freigabe | Core (`ResolvedPlanSelection.isStale` gegen effektives Profil) |
+| 1 | Gym ohne Anpassung: kein Pflichtschritt, Standard-Empfehlung, nicht bestätigt gespeichert | `EquipmentPlanningContextTests.testGymWithoutCustomizationUsesGymDefaultAsAssumptionNotConfirmed` + Code-Review (UI-Pfad) |
+| 2 | Gym mit explizit fehlendem Gerät: Default überschreibt Angabe nicht | `testGymDefaultNeverOverridesAnExplicitlyMissingItem` |
+| 3 | Home-Gym: nur KB, keine Bank, keine Stange → keine unveränderten KH-/Bank-/Klimmzug-Übungen als passend | `HomeGymEquipmentScenarioTests.testKettlebellOnlyHomeGymNeverShowsDumbbellBenchOrPullUpExercisesAsAvailable` |
+| 4 | Home-Gym: KH+KB+verstellbare Bank+Stange → Kombination bleibt vollständig erhalten | `testFullHomeGymCombinationStaysFullyAvailableTogether` |
+| 5 | Home-Gym: Flachbank → keine automatische Freigabe für Schrägbank | `testFlatBenchOnlyDoesNotUnlockInclineExercise` |
+| 6 | Home-Gym: Bank ausdrücklich unbekannt → bleibt `unknown`, auch nach Abschluss | `EquipmentRequirementTests.testConfirmRemainingAsUnavailableNeverOverridesAnExplicitlyUnknownItem` |
+| 7 | Kein Equipment + Widerstandsband → bandbasierte Varianten möglich | `PlanMatchmakerTests.testNoEquipmentWithConfirmedResistanceBandDiscoversCompatibleHomeGymTemplate` |
+| 8 | Kein Equipment + Kurzhanteln → nicht nur durch Ortsfilter blockiert | `testNoEquipmentWithConfirmedDumbbellsDiscoversCompatibleHomeGymTemplate` + Sicherheitsnetz-Gegenprobe `testNoEquipmentConfirmedBodyweightOnlyStillExcludesHomeGymTemplateNeedingDumbbells` |
+| 9 | „Nein, nur Körpergewicht" → Zusatzgeräte gelten als fehlend, keine Gym-Annahme | `EquipmentPlanningContextTests.testConfirmedBodyweightOnlyIsConfirmedNotAssumption` |
+| 10 | „Später entscheiden" → keine automatische Abwesenheitsbestätigung | `testLaterDecisionStaysUnconfirmedWithNoAutomaticAbsenceConfirmation` |
+| 11 | Ortswechsel/Zurück/Sheet-Abbruch → keine verlorenen Angaben | Code-Review (reiner `@State`-Fluss in `OnboardingView`, kein Core-Test möglich — siehe Abschlussbericht) |
+| 12 | Vorschau und Übernahme: identische Variante + Planungskontext; geänderte Inhalte verlangen erneute Freigabe | `testGymAssumptionPreviewAndAdoptResolveToTheIdenticalSelectionWhenNothingChanged` + `testGymAssumptionSelectionBecomesStaleWhenIndividualCorrectionChangesTheEffectiveProfile` |
 
-Items 1 und 11 sind reine UI-/Navigations-Fragen ohne sinnvollen
-SwiftData-/Core-Test — werden per Code-Review verifiziert und im
-Abschlussbericht (6.10) explizit als „code-gelesen, nicht automatisiert
-getestet" ausgewiesen, nicht stillschweigend als getestet behauptet.
+Items 1 und 11 bleiben teilweise bzw. vollständig reine UI-/Navigations-
+Fragen ohne SwiftData-/Core-Test — im Abschlussbericht (6.10) explizit als
+„code-gelesen, nicht automatisiert getestet" ausgewiesen, nicht
+stillschweigend als getestet behauptet. `BenchChoice`/`TriStateChoice`
+selbst (die UI-Zuordnung Auswahl → `EquipmentItem`-Werte) sind `private` in
+`EquipmentProfileEditor.swift` und damit nicht direkt unit-testbar; Items
+3-6 verifizieren stattdessen END-TO-END, dass die resultierenden
+`UserEquipmentProfile`-Werte (die die Auswahl laut Code erzeugen wuerde)
+von der bestehenden, bereits in Phase 4 getesteten Equipment-Pruefung
+korrekt verarbeitet werden.

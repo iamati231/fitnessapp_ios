@@ -101,13 +101,22 @@ public struct UserEquipmentProfile: Sendable, Equatable {
     /// Vor diesem Aufruf bleibt ein nicht ausgewaehltes Item `.unknown`
     /// (siehe Typ-Dokumentation oben) — genau das verlangt die Vorgabe
     /// ("ungewaehlte Geraete vor der vollstaendigen Bestaetigung nicht als
-    /// fehlend interpretieren"). Danach ist jedes Item explizit entschieden:
-    /// alles, was nicht aktiv auf `.available` gesetzt wurde, wird jetzt zu
-    /// `.unavailable`. Idempotent — ein zweiter Aufruf (z.B. nach einem
+    /// fehlend interpretieren"). Danach ist jedes NIE ANGEFASSTE Item
+    /// explizit entschieden: alles ohne eigenen Dictionary-Eintrag wird jetzt
+    /// zu `.unavailable`. Idempotent — ein zweiter Aufruf (z.B. nach einem
     /// spaeteren App-Update mit neuen `EquipmentItem`-Faellen) aendert nur
     /// die inzwischen neu hinzugekommenen, noch unbekannten Items.
+    ///
+    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// Pflicht-Test 6): ein Item, das EXPLIZIT auf `.unknown` gesetzt wurde
+    /// (z.B. "Weiß ich noch nicht" bei Bank/Klimmzugstange —
+    /// `EquipmentProfileEditor`), ist bewusst von einem nie angefassten Item
+    /// (kein Dictionary-Eintrag) unterschieden: NUR Letzteres wird hier zu
+    /// `.unavailable`. Eine bewusste "weiß ich nicht"-Aussage bleibt auch
+    /// nach der vollstaendigen Bestaetigung `.unknown` — "bewusst unbekannte
+    /// Angaben nicht ueberschreiben" (Vorgabe woertlich).
     public mutating func confirmRemainingAsUnavailable() {
-        for item in EquipmentItem.allCases where availability(for: item) == .unknown {
+        for item in EquipmentItem.allCases where availability[item] == nil {
             availability[item] = .unavailable
         }
     }

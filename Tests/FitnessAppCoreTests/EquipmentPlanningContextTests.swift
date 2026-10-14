@@ -3,7 +3,7 @@ import XCTest
 
 /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
 /// §1/§2/§4): `EquipmentPlanningContext`/`EquipmentPlanningResolver` +
-/// `UserEquipmentProfile.gymDefault`. Deckt Pflicht-Tests 1, 2, 9, 10.
+/// `UserEquipmentProfile.gymDefault`. Deckt Pflicht-Tests 1, 2, 9, 10, 12.
 final class EquipmentPlanningContextTests: XCTestCase {
 
     // MARK: - gymDefault
@@ -120,5 +120,51 @@ final class EquipmentPlanningContextTests: XCTestCase {
         XCTAssertEqual(context.effectiveProfile.availability(for: .dumbbell), .available)
         XCTAssertEqual(context.effectiveProfile.availability(for: .barbell), .unknown,
                        "Nicht angefasste Items bleiben unknown, werden NICHT automatisch zu unavailable")
+    }
+
+    // MARK: - Pflicht-Test 12: Vorschau und Übernahme bei Gym-Annahme
+
+    /// Vorschau und Übernahme müssen denselben effektiven Planungskontext
+    /// verwenden — zwei unabhängige Aufrufe von `PlanSelectionResolver.resolve`
+    /// mit identischem Gym-Annahme-Profil liefern dieselbe konkrete Auswahl
+    /// (gleicher `equipmentSnapshot`, `isStale` daher `false`).
+    func testGymAssumptionPreviewAndAdoptResolveToTheIdenticalSelectionWhenNothingChanged() {
+        let template = ProgramTemplates.all.first { $0.id == "hybrid_balanced" }!
+        let context = EquipmentPlanningResolver.resolve(
+            environment: .gym, individualProfile: UserEquipmentProfile(), confirmedComplete: false
+        )
+        let previewSelection = PlanSelectionResolver.resolve(
+            template: template, profile: context.effectiveProfile,
+            context: SubstitutionContext(goal: .hybrid, experienceTrack: .experienced)
+        )
+        let adoptTimeContext = EquipmentPlanningResolver.resolve(
+            environment: .gym, individualProfile: UserEquipmentProfile(), confirmedComplete: false
+        )
+        XCTAssertFalse(previewSelection.isStale(comparedTo: adoptTimeContext.effectiveProfile),
+                       "Unveraenderte Gym-Annahme darf zwischen Vorschau und Uebernahme nicht als veraltet gelten")
+    }
+
+    /// Gegenprobe: aendert sich die Gym-Annahme zwischen Vorschau und
+    /// Uebernahme (User hat zwischenzeitlich "Ausstattung anpassen" genutzt
+    /// und ein Standard-Item explizit als fehlend bestaetigt), muss
+    /// `isStale` das erkennen — "veränderte Inhalte benötigen erneute
+    /// Freigabe" (Vorgabe wörtlich).
+    func testGymAssumptionSelectionBecomesStaleWhenIndividualCorrectionChangesTheEffectiveProfile() {
+        let template = ProgramTemplates.all.first { $0.id == "hybrid_balanced" }!
+        let initialContext = EquipmentPlanningResolver.resolve(
+            environment: .gym, individualProfile: UserEquipmentProfile(), confirmedComplete: false
+        )
+        let previewSelection = PlanSelectionResolver.resolve(
+            template: template, profile: initialContext.effectiveProfile,
+            context: SubstitutionContext(goal: .hybrid, experienceTrack: .experienced)
+        )
+
+        var corrected = UserEquipmentProfile()
+        corrected.availability[.barbell] = .unavailable
+        let laterContext = EquipmentPlanningResolver.resolve(
+            environment: .gym, individualProfile: corrected, confirmedComplete: false
+        )
+        XCTAssertTrue(previewSelection.isStale(comparedTo: laterContext.effectiveProfile),
+                      "Eine individuelle Korrektur an der Gym-Annahme macht die vorherige Auswahl veraltet")
     }
 }

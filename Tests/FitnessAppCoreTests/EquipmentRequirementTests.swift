@@ -213,6 +213,29 @@ final class EquipmentRequirementTests: XCTestCase {
         XCTAssertEqual(profile, afterFirstCall, "Ein zweiter Aufruf (z.B. nach einem App-Update mit neuen Items) aendert nichts an bereits entschiedenen Items")
     }
 
+    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// Pflicht-Test 6): ein EXPLIZIT auf `.unknown` gesetztes Item (z.B.
+    /// "Weiß ich noch nicht" bei Bank/Klimmzugstange) unterscheidet sich jetzt
+    /// bewusst von einem nie angefassten Item (kein Dictionary-Eintrag) — nur
+    /// Letzteres wird bei der vollstaendigen Bestaetigung zu `.unavailable`.
+    /// Vor diesem Fix haetten beide Faelle identisch zu `.unavailable`
+    /// gekippt, weil `availability(for:)` ueber `?? .unknown` beide Faelle
+    /// ununterscheidbar macht — der Fix muss direkt am Dictionary pruefen.
+    func testConfirmRemainingAsUnavailableNeverOverridesAnExplicitlyUnknownItem() {
+        var explicit = UserEquipmentProfile()
+        explicit.availability[.adjustableBench] = .unknown
+        explicit.confirmRemainingAsUnavailable()
+        XCTAssertEqual(explicit.availability(for: .adjustableBench), .unknown,
+                       "Explizit 'weiss ich nicht' bleibt auch nach der vollstaendigen Bestaetigung unknown")
+        XCTAssertEqual(explicit.availability(for: .barbell), .unavailable,
+                       "Ein wirklich nie angefasstes Item kippt weiterhin wie gewohnt zu unavailable")
+
+        var untouched = UserEquipmentProfile()
+        untouched.confirmRemainingAsUnavailable()
+        XCTAssertEqual(untouched.availability(for: .adjustableBench), .unavailable,
+                       "Gegenprobe: ohne expliziten Eintrag bleibt das bisherige Verhalten (kippt zu unavailable)")
+    }
+
     /// Vor Phase 4 (PLAN_EQUIPMENT_MATCHING_AUDIT.md), Punkt "Stueckzahl
     /// unbekannt": ein ausgewaehltes Item OHNE erfasste Stueckzahl darf beim
     /// Bestaetigen weder (a) stillschweigend zu `.unavailable` kippen — die

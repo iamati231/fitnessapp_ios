@@ -57,6 +57,13 @@ private enum BenchChoice: CaseIterable, ChoiceOption {
     /// bestehende `.any([.flatBench, .adjustableBench])`-Konvention in
     /// `ExerciseLibraryData` deckt Flachbank-Anforderungen darueber bereits
     /// ab (Vorgabe wörtlich: "die vorhandene Core-Semantik nutzen").
+    ///
+    /// `.unknown` setzt BEWUSST explizit `.unknown` (nicht: Eintrag
+    /// entfernen) — Pflicht-Test 6 verlangt, dass eine ausdrueckliche
+    /// "Weiß ich noch nicht"-Aussage auch die anschliessende vollstaendige
+    /// Bestaetigung des gesamten Schritts ueberlebt (siehe
+    /// `UserEquipmentProfile.confirmRemainingAsUnavailable`), waehrend ein
+    /// nie angefasstes Item danach zu `.unavailable` wird.
     func apply(to profile: inout UserEquipmentProfile) {
         switch self {
         case .none:
@@ -69,8 +76,8 @@ private enum BenchChoice: CaseIterable, ChoiceOption {
             profile.availability[.flatBench] = .unavailable
             profile.availability[.adjustableBench] = .available
         case .unknown:
-            profile.availability.removeValue(forKey: .flatBench)
-            profile.availability.removeValue(forKey: .adjustableBench)
+            profile.availability[.flatBench] = .unknown
+            profile.availability[.adjustableBench] = .unknown
         }
     }
 }
@@ -105,11 +112,14 @@ private enum TriStateChoice: CaseIterable, ChoiceOption {
         }
     }
 
+    /// `.unknown` setzt BEWUSST explizit `.unknown` statt den Eintrag zu
+    /// entfernen — siehe `BenchChoice.apply` fuer die ausfuehrliche
+    /// Begruendung (Pflicht-Test 6).
     func apply(to item: EquipmentItem, in profile: inout UserEquipmentProfile) {
         switch self {
         case .yes:     profile.availability[item] = .available
         case .no:      profile.availability[item] = .unavailable
-        case .unknown: profile.availability.removeValue(forKey: item)
+        case .unknown: profile.availability[item] = .unknown
         }
     }
 }
