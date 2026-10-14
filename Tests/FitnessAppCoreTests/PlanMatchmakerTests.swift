@@ -378,4 +378,91 @@ final class PlanMatchmakerTests: XCTestCase {
         let detailed = PlanMatchmaker.rankPlansDetailed(for: answers, templates: allTemplates)
         XCTAssertEqual(simple, detailed.templates)
     }
+
+    // MARK: - Plan-Katalog-Audit (PLAN_CATALOG_AUDIT_AND_MATCHING.md) — Regressionen
+
+    /// Reproduktion Befund 1+8 (`docs/PLAN_CATALOG_AUDIT.md`): ein Gym-Nutzer
+    /// mit NUR Maschinen/Kabelzug (keine Langhantel/Kurzhantel) darf
+    /// `push_pull_legs` (braucht laut Audit 40 Langhantel- + 30
+    /// Kurzhantel-Saetze/Woche) nicht als passend angezeigt bekommen — vor
+    /// dem Fix liess `equipmentMatches` jedes Template ohne
+    /// `equipmentVariants` ungeprueft durch.
+    func testMachineOnlyGymUserDoesNotMatchBarbellHeavyPushPullLegs() {
+        let answers = QuizAnswers(
+            goal: .hypertrophy, experience: .advanced, preferredDays: 6, environment: .gym,
+            equipmentPreferences: [.machine, .cable]
+        )
+        let result = PlanMatchmaker.rankPlansDetailed(for: answers, templates: allTemplates)
+        XCTAssertFalse(result.templates.contains { $0.id == "push_pull_legs" },
+                        "push_pull_legs braucht echte Langhanteln/Kurzhanteln, die der Nutzer nicht hat")
+    }
+
+    /// Gegenprobe zum vorigen Test: mit einem vollstaendigen Equipment-Set
+    /// bleibt `push_pull_legs` weiterhin erreichbar — der neue Equipment-
+    /// Check blockiert nur, wenn tatsaechlich etwas fehlt.
+    func testFullyEquippedGymUserStillMatchesPushPullLegs() {
+        let answers = QuizAnswers(
+            goal: .hypertrophy, experience: .advanced, preferredDays: 6, environment: .gym,
+            equipmentPreferences: [.barbell, .dumbbell, .cable, .machine, .bodyweight]
+        )
+        let result = PlanMatchmaker.rankPlansDetailed(for: answers, templates: allTemplates)
+        XCTAssertTrue(result.templates.contains { $0.id == "push_pull_legs" })
+    }
+
+    /// Reproduktion Befund 2: das Equipment-Badge darf fuer ein Template, das
+    /// tatsaechlich NICHT zum gepflegten Equipment passt, nicht mehr
+    /// anzeigen — vorher reichte "ueberhaupt irgendeine Praeferenz gepflegt".
+    func testMatchReasonsEquipmentMatchIsFalseWhenTemplateActuallyNeedsMoreEquipment() {
+        let answers = QuizAnswers(
+            goal: .hypertrophy, experience: .advanced, preferredDays: 6, environment: .gym,
+            equipmentPreferences: [.machine, .cable]
+        )
+        guard let template = allTemplates.first(where: { $0.id == "push_pull_legs" }) else {
+            return XCTFail("push_pull_legs template not found")
+        }
+        let reasons = PlanMatchmaker.matchReasons(for: template, answers: answers)
+        XCTAssertFalse(reasons.equipmentMatch,
+                        "Nutzer hat zwar Praeferenzen gepflegt, aber push_pull_legs braucht Langhantel/Kurzhantel, die fehlen")
+    }
+
+    /// `requiredEquipment(for:)` leitet das Equipment korrekt aus den
+    /// referenzierten Uebungen her und ignoriert `.bodyweight` als
+    /// Anforderung (dafuer muss niemand etwas besitzen).
+    func testRequiredEquipmentDerivesFromExercisesAndIgnoresBodyweight() {
+        guard let pushPullLegs = allTemplates.first(where: { $0.id == "push_pull_legs" }) else {
+            return XCTFail("push_pull_legs template not found")
+        }
+        let required = PlanMatchmaker.requiredEquipment(for: pushPullLegs)
+        XCTAssertTrue(required.contains(.barbell))
+        XCTAssertTrue(required.contains(.dumbbell))
+        XCTAssertTrue(required.contains(.cable))
+        XCTAssertTrue(required.contains(.machine))
+        XCTAssertFalse(required.contains(.bodyweight), "Bodyweight ist keine Beschaffungs-Anforderung")
+    }
+
+    /// Reproduktion Befund 3 + Regression Nr. 6 aus der Vorgabe: ein Starter
+    /// mit 6 frei verfuegbaren Tagen darf keinen reinen Intermediate/Advanced-
+    /// Plan wie Push-Pull-Legs automatisch vorgeschlagen bekommen, nur weil
+    /// `.intermediate` im Tag steht — `.beginner` muss explizit vorhanden sein.
+    func testStarterWithSixFreeDaysDoesNotGetHighVolumeIntermediatePPL() {
+        let answers = QuizAnswers(goal: .hypertrophy, experience: .beginner, preferredDays: 6, environment: .gym)
+        let result = PlanMatchmaker.rankPlansDetailed(for: answers, templates: allTemplates, experienceTrack: .starter)
+        XCTAssertFalse(result.templates.contains { $0.id == "push_pull_legs" })
+        XCTAssertFalse(result.templates.contains { $0.id == "upper_lower" })
+        XCTAssertFalse(result.templates.contains { $0.id == "bro_split" })
+        XCTAssertFalse(result.templates.contains { $0.id == "powerlifting_3x5" })
+    }
+
+    /// Regression Nr. 3 aus der Vorgabe: bei 6 Tagen ist Push-Pull-Legs ein
+    /// gueltiger Kandidat fuer Erfahrene — kein impliziter Ausschluss nur
+    /// weil Arnold Split ebenfalls 6 Tage hat (der Tage-Bonus ist entfernt,
+    /// siehe `ExperienceTrackTests`).
+    func testExperiencedSixDaysHypertrophyIncludesPushPullLegsAsCandidate() {
+        let track = ExperienceTrack.experienced
+        let answers = QuizAnswers(
+            goal: .hypertrophy, experience: track.asExperienceLevel, preferredDays: 6, environment: .gym
+        )
+        let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates, experienceTrack: track)
+        XCTAssertTrue(ranked.contains { $0.id == "push_pull_legs" })
+    }
 }

@@ -8,6 +8,18 @@ import Foundation
 /// modified or removed entries require a manual user library reset.
 public enum ExerciseLibraryData {
 
+    /// Plan-Katalog-Audit: Name-Lookup fuer `PlanMatchmaker.requiredEquipment`
+    /// (leitet das tatsaechlich benoetigte Equipment eines Templates aus
+    /// seinen Uebungen her, statt Templates ohne `equipmentVariants` blind
+    /// durchzulassen). `uniquingKeysWith` statt `uniqueKeysWithValues`
+    /// bewusst defensiv: ein zukuenftiger Namenskonflikt soll den Matcher nie
+    /// zum Absturz bringen (aktuell 229 von 229 Namen eindeutig, siehe
+    /// docs/PLAN_CATALOG_AUDIT.md).
+    public static let byName: [String: ExerciseTemplateSpec] = Dictionary(
+        all.map { ($0.name, $0) },
+        uniquingKeysWith: { first, _ in first }
+    )
+
     public static let all: [ExerciseTemplateSpec] = [
         // ── BARBELL · CHEST ────────────────────────────────────────────────
         // DEL-098: Bench Press = klassischer Compound, hoher Brust-Schaden +

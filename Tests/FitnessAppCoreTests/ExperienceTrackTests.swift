@@ -154,37 +154,38 @@ final class ExperienceTrackTests: XCTestCase {
                        "Kein Bonus ohne Ziel-Match — sonst waere es ein blinder Experten-Boost")
     }
 
-    /// 3-Tage-Plaene bekommen auch bei Ziel-Match keinen Frequenz-Bonus —
-    /// das ist die Grenze zwischen Ganzkoerper/Grundlagen und echtem Split
-    /// in dieser Bibliothek; bei 2-3 Tagen darf Ganzkoerper fuer Erfahrene
-    /// weiterhin plausibel bleiben (Epic-Vorgabe).
-    func testNoFrequencyBonusAtThreeDaysOrFewer() {
-        let answers = QuizAnswers(goal: .hypertrophy, experience: .intermediate, preferredDays: 3, environment: .gym)
-        let fullBody = template("full_body") // 3 Tage, targetGoals enthaelt .hypertrophy
-        XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: fullBody, answers: answers), 0)
+    /// Plan-Katalog-Audit Befund 5: der fruehere pauschale Tage-Bonus
+    /// (`max(0, daysPerWeek - 3)`) ist entfernt — Tage-Anzahl allein
+    /// beeinflusst `templateScoreBonus` nicht mehr, unabhaengig davon wie
+    /// viele Tage ein nicht-advanced-getaggtes Template hat. Der bestehende
+    /// Basis-Score-Term "exakte Tage" (+1 in `PlanMatchmaker.rankPlans`)
+    /// deckt die Tages-Praeferenz bereits ab.
+    func testNonAdvancedTemplateGetsNoBonusRegardlessOfDays() {
+        let answers = QuizAnswers(goal: .hypertrophy, experience: .intermediate, preferredDays: 5, environment: .gym)
+        let fullBody = template("full_body")     // 3 Tage, [.beginner, .intermediate]
+        let upperLower = template("upper_lower") // 4 Tage, [.intermediate, .advanced] -> hat .advanced, siehe naechster Test
+        let broSplit = template("bro_split")     // 5 Tage, [.intermediate, .advanced] -> hat .advanced ebenfalls
+        XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: fullBody, answers: answers), 0,
+                       "full_body traegt kein .advanced-Tag, also kein Bonus unabhaengig von der Tagesanzahl")
+        // upperLower/broSplit hier nur zur Kontrastbildung mitgefuehrt — ihr
+        // Bonus kommt einzig vom .advanced-Tag, siehe testAdvancedTagGrantsFlatBonusRegardlessOfDays.
+        XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: upperLower, answers: answers), 1)
+        XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: broSplit, answers: answers), 1)
     }
 
-    /// Frequenz-/Split-Bonus skaliert mit Tagen oberhalb 3 — ein 5-Tage-Split
-    /// bekommt mehr als ein 4-Tage-Split.
-    func testFrequencyBonusScalesWithDaysAboveThree() {
-        let answers = QuizAnswers(goal: .hypertrophy, experience: .intermediate, preferredDays: 5, environment: .gym)
+    /// Ein `.advanced`-getaggtes Template bekommt einen flachen +1-Bonus,
+    /// unabhaengig von seiner Tagesanzahl (4, 5 oder 6 Tage liefern alle
+    /// denselben Bonus) — ohne ihn wuerde ein solches Template beim
+    /// Basis-Score-Term "Level" leer ausgehen, weil Erfahrene ueber
+    /// `asExperienceLevel` auf `.intermediate` mappen, nie auf `.advanced`.
+    func testAdvancedTagGrantsFlatBonusRegardlessOfDays() {
+        let answers = QuizAnswers(goal: .hypertrophy, experience: .intermediate, preferredDays: 6, environment: .gym)
         let upperLower = template("upper_lower")   // 4 Tage, [.intermediate, .advanced]
         let broSplit = template("bro_split")       // 5 Tage, [.intermediate, .advanced]
-        let upperLowerBonus = ExperienceTrack.experienced.templateScoreBonus(template: upperLower, answers: answers)
-        let broSplitBonus = ExperienceTrack.experienced.templateScoreBonus(template: broSplit, answers: answers)
-        XCTAssertEqual(upperLowerBonus, 2, "4 Tage: +1 Frequenz, +1 .advanced-Tag")
-        XCTAssertEqual(broSplitBonus, 3, "5 Tage: +2 Frequenz, +1 .advanced-Tag")
-        XCTAssertGreaterThan(broSplitBonus, upperLowerBonus)
-    }
-
-    /// Ein rein `.advanced`-getaggtes Template bekommt den Tag-Bonus
-    /// zusaetzlich zum Frequenz-Bonus — ohne ihn wuerde Arnold Split beim
-    /// Basis-Score-Term "Level" leer ausgehen (Erfahrene mappen auf
-    /// `.intermediate`, nie `.advanced`, siehe `asExperienceLevel`).
-    func testAdvancedTagAddsBonusOnTopOfFrequency() {
-        let answers = QuizAnswers(goal: .hypertrophy, experience: .intermediate, preferredDays: 6, environment: .gym)
         let arnoldSplit = template("arnold_split") // 6 Tage, [.advanced] exklusiv
-        XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: arnoldSplit, answers: answers), 4,
-                       "6 Tage: +3 Frequenz, +1 .advanced-Tag")
+        XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: upperLower, answers: answers), 1)
+        XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: broSplit, answers: answers), 1)
+        XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: arnoldSplit, answers: answers), 1,
+                       "Flacher Bonus, kein zusaetzlicher Tage-Term mehr")
     }
 }

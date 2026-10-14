@@ -140,30 +140,56 @@ public enum PlanMatchmaker {
             goalMatch: template.targetGoals.contains(answers.goal),
             daysMatch: template.daysPerWeek == answers.preferredDays,
             levelMatch: template.targetExperience.contains(answers.experience),
-            // Equipment ist bereits ein harter K.O.-Filter in rankPlans —
-            // jedes hier ankommende Template erfuellt es per Konstruktion
-            // IMMER. Das Badge ist deshalb nur aussagekraeftig, wenn der
-            // Nutzer ueberhaupt eigene Praeferenzen gepflegt hat (leeres Set
-            // = "nicht gepflegt", siehe QuizAnswers.equipmentPreferences) —
-            // sonst waere es bei jedem Template an, genau das Badge-
-            // Saettigungsproblem, das dieser Fix beheben soll.
+            // Plan-Katalog-Audit, Befund 2: Equipment ist ein harter K.O.-
+            // Filter in rankPlans, aber `equipmentMatches` war bis zum Audit
+            // fuer Templates ohne `equipmentVariants` ein Blindgaenger (immer
+            // `true`) — das Badge pruefte deshalb nur "hat der Nutzer
+            // UEBERHAUPT Praeferenzen gepflegt", nie ob DIESES Template
+            // tatsaechlich passt. Jetzt dieselbe echte Pruefung wie der
+            // Hard-Filter, nur zusaetzlich an "ueberhaupt gepflegt" geknuepft
+            // (leeres Set = "nicht gepflegt", kein Badge noetig).
             equipmentMatch: !answers.equipmentPreferences.isEmpty
+                && equipmentMatches(template: template, user: answers.equipmentPreferences)
         )
     }
 
-    /// DEL-170: Hard-Filter für Equipment. Templates ohne `equipmentVariants`
-    /// haben keine Equipment-spezifische Anforderung (Backward-Compat).
-    /// Templates MIT Variants müssen vom User abgedeckt sein — entweder über
-    /// die implizite Basis-Variante (`template.days`, Konvention: barbellGym)
-    /// ODER mindestens eine der gelisteten `equipmentVariants`. Leeres
-    /// User-Preference-Set wird als "nicht gepflegt" interpretiert und passiert
-    /// den Filter (Onboarding-Skip / pre-DEL-170-Bestand).
+    /// DEL-170 + Plan-Katalog-Audit Befund 1: Hard-Filter fuer Equipment.
+    /// Templates MIT `equipmentVariants` pruefen wie bisher (Basis-Variante =
+    /// `barbellGym`-Konvention ODER eine der gelisteten Varianten). Templates
+    /// OHNE `equipmentVariants` galten bisher als "keine Equipment-
+    /// spezifische Anforderung" und liessen JEDEN Nutzer durch — das betraf
+    /// 17 von 20 Templates, darunter reine Langhantel-Programme wie
+    /// Push-Pull-Legs/Upper-Lower/Arnold-Split/Bro-Split/Powerlifting (siehe
+    /// docs/PLAN_CATALOG_AUDIT.md). Fuer diese wird das tatsaechlich
+    /// benoetigte Equipment jetzt aus den referenzierten Uebungen hergeleitet.
+    /// Leeres User-Preference-Set bleibt "nicht gepflegt" und passiert den
+    /// Filter unveraendert.
     private static func equipmentMatches(template: ProgramTemplate, user: Set<Equipment>) -> Bool {
         guard !user.isEmpty else { return true }
-        guard let variants = template.equipmentVariants else { return true }
-        let baseRequires = EquipmentProfile.barbellGym.requiredEquipment
-        if baseRequires.isSubset(of: user) { return true }
-        return variants.contains { $0.profile.requiredEquipment.isSubset(of: user) }
+        if let variants = template.equipmentVariants {
+            let baseRequires = EquipmentProfile.barbellGym.requiredEquipment
+            if baseRequires.isSubset(of: user) { return true }
+            return variants.contains { $0.profile.requiredEquipment.isSubset(of: user) }
+        }
+        return requiredEquipment(for: template).isSubset(of: user)
+    }
+
+    /// Leitet das tatsaechlich benoetigte Equipment eines Templates OHNE
+    /// `equipmentVariants` aus seinen Uebungen her (Name-Join gegen
+    /// `ExerciseLibraryData.byName`). `.bodyweight` zaehlt nicht als
+    /// Anforderung — dafuer muss der Nutzer nichts besitzen. Ein unbekannter
+    /// Uebungsname wird uebersprungen statt den gesamten Filter zu blockieren
+    /// (sollte laut `ExerciseLibraryDataTests` nicht vorkommen, ist aber kein
+    /// Grund, allen Nutzern das Template zu verweigern).
+    static func requiredEquipment(for template: ProgramTemplate) -> Set<Equipment> {
+        var result: Set<Equipment> = []
+        for day in template.days {
+            for exercise in day.exercises {
+                guard let spec = ExerciseLibraryData.byName[exercise.name], spec.equipment != .bodyweight else { continue }
+                result.insert(spec.equipment)
+            }
+        }
+        return result
     }
 
     /// Hard-Filter-Logik fuer das Environment:
@@ -178,18 +204,22 @@ public enum PlanMatchmaker {
         }
     }
 
-    /// Fix "doppeltes Onboarding": Starter/Wiedereinsteiger duerfen keine
-    /// reinen Expertenplaene vorgeschlagen bekommen. "Reiner Expertenplan"
-    /// heisst hier: `targetExperience` enthaelt WEDER `.beginner` noch
-    /// `.intermediate` — ein Plan, der zusaetzlich zu `.advanced` auch eine
-    /// der beiden anderen Stufen traegt, bleibt fuer alle Tracks sichtbar.
-    /// `nil`/`.experienced` filtert nichts zusaetzlich raus (bestehendes
-    /// Verhalten, nur der weiche Score ueber `answers.experience` gilt).
+    /// Fix "doppeltes Onboarding", verschaerft durch Plan-Katalog-Audit
+    /// Befund 3: Starter/Wiedereinsteiger duerfen keine Plaene vorgeschlagen
+    /// bekommen, die nicht nachgewiesen einsteigertauglich sind. Die fruehere
+    /// Fassung liess ein Template schon durch, wenn es IRGENDWO
+    /// `.intermediate` trug — damit bestanden reine Intermediate/Advanced-
+    /// Programme wie Push-Pull-Legs (119 Saetze/Woche, 6 Tage, 5 freie
+    /// Compound-Lifts), Upper-Lower, Bro-Split und Powerlifting 3x5 den
+    /// Filter trotz fehlendem `.beginner`-Tag. Jetzt verlangt der Filter
+    /// explizit `.beginner` — "intermediate-getaggt" allein ist keine
+    /// Freigabe (siehe docs/PLAN_CATALOG_AUDIT.md). `nil`/`.experienced`
+    /// filtert nichts zusaetzlich raus (bestehendes Verhalten, nur der
+    /// weiche Score ueber `answers.experience` gilt).
     private static func experienceTrackMatches(template: ProgramTemplate, track: ExperienceTrack?) -> Bool {
         switch track {
         case .starter, .returner:
             return template.targetExperience.contains(.beginner)
-                || template.targetExperience.contains(.intermediate)
         case .experienced, nil:
             return true
         }
@@ -200,11 +230,18 @@ public enum PlanMatchmaker {
     /// die "harmlosen" Bodyweight-Plaene zurueck statt einer leeren Liste.
     /// Verhindert dass der Quiz-Result-Screen leer dasteht.
     ///
-    /// Respektiert weiterhin den `experienceTrack`-Hartfilter (ein Starter
-    /// soll auch im Fallback-Pfad keinen reinen Expertenplan sehen) — faellt
-    /// aber, falls das die Liste KOMPLETT leeren wuerde, auf die
-    /// ungefilterte Bodyweight-Liste zurueck. "Irgendein Plan" schlaegt
-    /// "gar keiner", auch wenn er nicht perfekt passt.
+    /// Plan-Katalog-Audit Befund 4: die fruehere Fassung ignorierte
+    /// `preferredDays` komplett und konnte, falls die Track-Filterung leer
+    /// ausging, auf die KOMPLETT ungefilterte Bodyweight-Liste zurueckfallen
+    /// — die `crossfit_bodyweight_rx` (rein `.advanced`) enthaelt. Jetzt drei
+    /// Stufen, strikt in dieser Prioritaet:
+    ///   1. Tage-Obergrenze UND Track respektiert.
+    ///   2. Nur Track respektiert (ein laengerer, aber sicherer Plan schlaegt
+    ///      einen kurzen ungeeigneten — Sicherheit vor Tages-Praeferenz).
+    ///   3. Absoluter Notfall ohne Track-Filter — `isFallback` ist in diesem
+    ///      Pfad ohnehin `true`, die UI zeigt bereits "Beste verfuegbare
+    ///      Option" statt "Empfohlen" (UX-Fix "Empfehlung wirkt immer
+    ///      gleich", Punkt 5).
     private static func fallback(
         for answers: QuizAnswers,
         allTemplates: [ProgramTemplate],
@@ -212,7 +249,15 @@ public enum PlanMatchmaker {
     ) -> [ProgramTemplate] {
         // Bodyweight-Plaene laufen ueberall, daher sicherer Fallback.
         let bodyweight = allTemplates.filter { $0.targetEnvironment == .noEquipment }
-        let filtered = bodyweight.filter { experienceTrackMatches(template: $0, track: experienceTrack) }
-        return filtered.isEmpty ? bodyweight : filtered
+
+        let daysAndTrack = bodyweight.filter {
+            $0.daysPerWeek <= answers.preferredDays && experienceTrackMatches(template: $0, track: experienceTrack)
+        }
+        if !daysAndTrack.isEmpty { return daysAndTrack }
+
+        let trackOnly = bodyweight.filter { experienceTrackMatches(template: $0, track: experienceTrack) }
+        if !trackOnly.isEmpty { return trackOnly }
+
+        return bodyweight
     }
 }
