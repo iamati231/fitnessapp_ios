@@ -567,9 +567,8 @@ Umgesetzt (Task #86):
   `derivedLegacyEquipment`-Berechnung liefert `[]`, bis bestaetigt wurde —
   speist `QuizAnswers`, `BaselineCheckFlowView`, `TemplatePreviewView` und
   `ProgramInstantiator.instantiate` konsistent. Der `.noEquipment`-
-  Umgebungs-Skip (DEL-207: Equipment-Schritt wird fuer "Kein Equipment"
-  uebersprungen) bleibt bewusst unangetastet — nicht Teil dieser Anfrage,
-  siehe Abgrenzung unten.
+  Umgebungs-Skip (DEL-207) wurde in dieser Phase noch bewusst unangetastet
+  gelassen — mittlerweile entfernt, siehe Abschnitt 12.
 - **Profil-Editor** (`ProfileEditorView.swift`): die alte Checkbox-Liste
   ist durch eine `DeltiqRow` mit Status-Text (Nicht eingerichtet / Teilweise
   erfasst / Nur Koerpergewicht / Bestaetigt) ersetzt, die ein Sheet mit der
@@ -590,13 +589,6 @@ Umgesetzt (Task #86):
 
 ### Bewusst nicht umgesetzt / unveraendert gelassen
 
-- Der `.noEquipment`-Umgebungs-Skip (Step wird fuer "Kein Equipment"
-  uebersprungen) — die Anfrage nennt explizit nur Gym/Home-Gym-Defaults als
-  zu entfernendes Verhalten. Ein Nutzer, der "Kein Equipment" waehlt, kann
-  seine Ausruestung (z.B. eine Klimmzugstange zuhause) aktuell weiterhin
-  nicht im Onboarding angeben — vorgemerkt als offene Frage fuer eine
-  spaetere Phase, sobald das neue Modell tatsaechlich im Matching verwendet
-  wird.
 - Keine Aenderung an `PlanMatchmaker`/`ProgramInstantiator`/
   `EquipmentVariant`/`BaselineCheckFlowView`s eigener `hasPullUpBar`-Frage
   — alle konsumieren weiterhin ausschliesslich die alte, jetzt automatisch
@@ -610,3 +602,86 @@ Umgesetzt (Task #86):
   Code-Stellen in genau dieser Codebase abgeglichen (u.a. identisches
   Ternary-in-Text/-foregroundStyle-Muster, identisches
   DeltiqSection+.sheet-Muster).
+
+## 12. Vor Phase 4 — vier Praezisierungen (Tasks #92-95)
+
+Vor dem eigentlichen Phase-4-Auftrag explizit angefordert, weil Phase 3 nur
+die Eingabe gebaut hat — die tatsaechliche Planpruefung liest bis Phase 4
+weiterhin die alte, grobe `equipmentPreferences`-Spalte.
+
+### 12.1 `.noEquipment`-Skip entfernt (Task #92)
+
+**Befund**: `OnboardingView.visibleSteps`/`goToNextStep()`/`goToPreviousStep()`
+haben den kompletten Equipment-Schritt uebersprungen, sobald
+`environment == .noEquipment` (DEL-207, urspruenglich fuer die ALTE,
+binaere Equipment-Auswahl gedacht). Dadurch konnte diese Nutzergruppe den
+in Phase 3 gebauten "Nur Koerpergewicht bestaetigen"-Button nie erreichen
+— `equipmentProfileConfirmedComplete` blieb permanent `false`,
+`derivedLegacyEquipment` damit permanent `[]` ("unbekannt"), obwohl die
+Umgebungswahl inhaltlich genau das nahelegt.
+
+**Fix**: Skip-Logik komplett entfernt (`visibleSteps` faellt weg, der
+Equipment-Schritt ist jetzt fuer jede Umgebung Teil des Wizards).
+Bewusst KEIN Ersatz durch eine automatische "No-Equipment -> bestaetigt
+Koerpergewicht"-Herleitung — das waere wieder "Ort ist nicht Ausstattung"
+(Abschnitt 5.1) nur mit anderem Vorzeichen. Der Nutzer sieht stattdessen
+denselben Schritt wie jede andere Umgebung und bestaetigt explizit (Ein
+Tap auf den bereits vorhandenen "Nur Koerpergewicht"-Button, falls
+zutreffend) oder waehlt abweichend echtes Equipment (z.B. eine
+Klimmzugstange zuhause trotz "Kein Equipment"-Wahl).
+
+### 12.2 "Bestaetigt leer" vs. "unbekannt" im Matcher (Task #93)
+
+**Frage**: Behandelt `PlanMatchmaker.equipmentMatches` ein bestaetigtes
+"Nur Koerpergewicht" (`{.bodyweight}`) und ein nie gepflegtes Profil (`[]`)
+beide als "kein Filter"?
+
+**Empirisch verifiziert (nicht nur aus dem Gedaechtnis): Nein.**
+`equipmentMatches` steigt nur bei `user.isEmpty` fruehzeitig mit `true`
+aus. `UserEquipmentProfile.legacyEquipmentPreferences` liefert nach einer
+Bestaetigung IMMER mindestens `{.bodyweight}` (nie `[]`) — und
+`.bodyweight` ist nachweislich nie Teil eines `requiredEquipment`-
+Ergebnisses, weder in `PlanMatchmaker.requiredEquipment(for:)` noch in
+`EquipmentProfile.requiredEquipment` (alle vier Faelle: Langhantel+
+Kurzhantel / Kurzhantel / Kettlebell / Maschine+Kabel). Ein bestaetigter
+Nur-Koerpergewicht-Nutzer besteht deshalb korrekt keinen Equipment-Check,
+der echtes Geraet braucht — in beiden Pruefpfaden (hergeleitet UND
+`equipmentVariants`).
+
+Jetzt robust dokumentiert (Doc-Kommentar direkt an `equipmentMatches`,
+nicht nur in diesem Audit) UND durch einen dedizierten Test abgesichert,
+der genau diese beiden Zustaende nebeneinander prueft:
+`PlanMatchmakerTests.testEmptyEquipmentIsNoFilterButConfirmedBodyweightOnlyActuallyFilters`.
+
+### 12.3 Stueckzahl-unbekannt-Invariante (Task #94)
+
+**Frage**: Kann ein ausgewaehltes Geraet ohne erfasste Stueckzahl beim
+Bestaetigen faelschlich zu "nicht vorhanden" kippen, oder faelschlich als
+"ausreichend" fuer eine Zwei-Geraete-Uebung gelten?
+
+**Verifiziert durch neuen End-to-End-Test** (vorher nur getrennt, nie in
+Kombination getestet):
+`EquipmentRequirementTests.testSelectedItemWithUnrecordedCountSurvivesConfirmationAndStaysUnknownAgainstDoubleRequirement`.
+`confirmRemainingAsUnavailable()` aendert ausschliesslich Items, die noch
+`.unknown` sind — ein bereits `.available` markiertes Item (mit oder ohne
+Stueckzahl) bleibt unangetastet. `ExerciseRequirement.evaluate` liefert
+fuer "verfuegbar, Stueckzahl nie erfasst, `minimumCount > 1`" weiterhin
+`.unknown`, nie `.satisfied`. Kein Fix noetig, nur die fehlende
+Kombinations-Absicherung ergaenzt.
+
+### 12.4 CI-Status der gepushten Commits (Task #95)
+
+**Ehrlicher Befund, keine Vermutung**: dieses Repository hat **keine**
+GitHub-Actions-Workflows (`list_workflows`/`list_workflow_runs` liefern
+beide `total_count: 0`), und `get_commit` liefert fuer keinen der
+gepushten Commits (`f55f02f`, `d0ec07a`, `6c6b671`, `bb6133d`, `84637e7`)
+ein `status`/`check_runs`-Feld. Aus dieser Session heraus ist der
+tatsaechliche Lauf-Status des `swift-package`-Workflows aus
+`codemagic.yaml` (triggert laut Konfiguration auf `push`/`pull_request`
+fuer jeden Branch, `instance_type: mac_mini_m2`, fuehrt `swift build` +
+`swift test --parallel` + iOS-Simulator-Library-Build fuer alle 5 Targets
+aus — inklusive `FitnessAppUI`, wo diese Phase ausschliesslich gearbeitet
+hat) **nicht pruefbar**. Ob Codemagic tatsaechlich automatisch angelaufen
+ist und mit welchem Ergebnis, kann nur im Codemagic-Dashboard selbst
+eingesehen werden — das liegt ausserhalb dessen, was ueber die in dieser
+Session verfuegbaren GitHub-Tools sichtbar ist.
