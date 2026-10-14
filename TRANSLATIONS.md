@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2051 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2064 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2051 / 2051** (100%) | 0 |
-| 🇬🇧 English (EN) | **2051 / 2051** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2051 / 2051** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2064 / 2064** (100%) | 0 |
+| 🇬🇧 English (EN) | **2064 / 2064** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2064 / 2064** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1810,7 +1810,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (75 Keys)
+## `profile.*`  (81 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1878,6 +1878,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.health.denied` | Berechtigung verweigert. Aktiviere sie in iOS-Einstellungen → Datenschutz → Apple Health → Deltiq. | Permission denied. Enable it in iOS Settings → Privacy → Apple Health → Deltiq. | İzin reddedildi. iOS Ayarlar → Gizlilik → Apple Health → Deltiq'ten etkinleştir. |
 | `profile.health.footer` | Übernimmt Geburtsdatum, Geschlecht und Größe aus dem Apple-Health-Profil und ersetzt damit die aktuellen Werte. | Takes date of birth, sex, and height from your Apple Health profile and replaces the current values. | Doğum tarihi, cinsiyet ve boyu Apple Health profilinden alır ve mevcut değerlerin yerine geçirir. |
 | `profile.health.pull` | Aus Apple Health übernehmen | Import from Apple Health | Apple Health'ten Al |
+| `profile.health.pullConfirm.apply` | Übernehmen | Import | Al |
+| `profile.health.pullConfirm.fieldBirthdate` | Geburtsdatum: %@ | Date of birth: %@ | Doğum tarihi: %@ |
+| `profile.health.pullConfirm.fieldHeight` | Größe: %@ cm | Height: %@ cm | Boy: %@ cm |
+| `profile.health.pullConfirm.fieldSex` | Geschlecht: %@ | Sex: %@ | Cinsiyet: %@ |
+| `profile.health.pullConfirm.nothingFound` | Apple Health hat keine passenden Werte geliefert. | Apple Health didn't provide any usable values. | Apple Health kullanılabilir bir değer vermedi. |
+| `profile.health.pullConfirm.title` | Werte aus Apple Health übernehmen? | Import values from Apple Health? | Apple Health'ten değerler alınsın mı? |
 | `profile.health.pulled` | Aus Apple Health übernommen: %@ | Imported from Apple Health: %@ | Apple Health'ten alındı: %@ |
 | `profile.person.footer` | Sex steuert die Navy/Deurenberg-Formeln; das Alter geht in Mifflin-St-Jeor-BMR und Deurenberg ein. | Sex drives the Navy/Deurenberg formulas; age feeds into Mifflin-St-Jeor BMR and Deurenberg. | Cinsiyet Navy/Deurenberg formüllerini etkiler; yaş Mifflin-St-Jeor BMR ve Deurenberg'e dahil olur. |
 | `profile.section.body` | Körpermasse | Body Metrics | Vücut Ölçüleri |
@@ -1947,7 +1953,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (211 Keys)
+## `settings.*`  (218 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -2044,8 +2050,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.health.footer` | Bei aktivierter Verbindung wird im Messwerte-Formular das letzte Waagen-Gewicht vorausgefüllt. Beim Speichern werden Gewicht, KFA und Magere Masse zurück nach Apple Health geschrieben. | When connected, the measurement form prefills your last scale weight. Saving writes weight, body fat %, and lean mass back to Apple Health. | Bağlıyken ölçüm formu son tartı kilonu önceden doldurur. Kaydetme; kilo, yağ oranı ve yağsız kütleyi Apple Health'e yazar. |
 | `settings.health.lastSync` | Letzter Sync | Last Sync | Son Senkronizasyon |
 | `settings.health.notSetup` | Nicht eingerichtet | Not set up | Kurulmadı |
+| `settings.health.readGroup.header` | Daten übernehmen | Import data | Verileri içe aktar |
 | `settings.health.unavailable` | Nicht verfügbar | Not available | Kullanılamıyor |
-| `settings.health.workoutImport` | Workout-Import (Adidas Running, Strava, …) | Workout Import (Adidas Running, Strava, …) | Antrenman İçe Aktarma (Adidas Running, Strava, …) |
+| `settings.health.workoutImport` | Workouts übernehmen (Adidas Running, Strava, …) | Import workouts (Adidas Running, Strava, …) | Antrenmanları içe aktar (Adidas Running, Strava, …) |
 | `settings.health.workoutImport.footer` | Läufe und Radfahrten aus anderen Apps (z.B. Adidas Running, Strava) werden automatisch als Trainingseinheiten übernommen, sobald sie in Apple Health erscheinen. | Runs and rides from other apps (e.g. Adidas Running, Strava) are automatically added as workouts once they appear in Apple Health. | Diğer uygulamalardan (örn. Adidas Running, Strava) koşular ve bisiklet turları, Apple Health'te göründükten sonra otomatik olarak antrenman olarak eklenir. |
 | `settings.healthWrite.accessBlocked` | Fehlt dort der Schalter „Trainings“, kann iOS die Frage nicht noch einmal stellen: Sie gilt als beantwortet, zum Beispiel weil „Trainings“ zuerst nur zum Lesen angefragt wurde (Workout-Import). Dann hilft voraussichtlich nur, Deltiq zu löschen und neu zu installieren. Sichere vorher deine Daten mit „Daten exportieren (CSV)“ und lege die ZIP-Datei außerhalb von Deltiq ab, etwa in iCloud Drive. | If the “Workouts” switch is missing there, iOS can no longer ask: the question counts as answered, for example because “Workouts” was first requested for reading only (workout import). Then it will most likely only be fixed by deleting and reinstalling Deltiq. Back up your data first with “Export data (CSV)” and save the ZIP file outside Deltiq, for example in iCloud Drive. | Orada „Antrenmanlar“ anahtarı yoksa iOS soruyu bir daha soramaz: Soru yanıtlanmış sayılır, örneğin „Antrenmanlar“ önce yalnızca okuma için istendiği için (antrenman içe aktarma). Bunun çözümü büyük olasılıkla yalnızca Deltiq'i silip yeniden yüklemektir. Öncesinde verilerini „Verileri dışa aktar (CSV)“ ile yedekle ve ZIP dosyasını Deltiq dışında, örneğin iCloud Drive'da sakla. |
 | `settings.healthWrite.accessButton` | Zugriff erlauben | Allow access | Erişime izin ver |
@@ -2061,6 +2068,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.healthWrite.confirmAction` | Ja, jetzt schreiben | Yes, write now | Evet, şimdi yaz |
 | `settings.healthWrite.confirmMessage` | Für jedes Training entsteht ein Eintrag mit Start, Dauer und Art, bei Krafttraining mit den Namen der Übungen – ohne Kalorien und Puls. In Deltiq lässt sich das nicht rückgängig machen, nur in Health. Health kann die Trainings bei Trainingsminuten und Stehen vergangener Tage mitrechnen; mit einer Apple Watch kann das doppelt zählen. | Each workout becomes an entry with start, duration and type, with the names of the exercises for strength training – without calories and heart rate. This cannot be undone in Deltiq, only in Health. Health may count the workouts towards exercise minutes and stand hours of past days; with an Apple Watch this can count twice. | Her antrenman için başlangıç, süre ve türü içeren, kuvvet antrenmanında ayrıca egzersizlerin adlarını taşıyan bir kayıt oluşur – kalori ve nabız olmadan. Bu, Deltiq'te geri alınamaz, yalnızca Health'te. Health antrenmanları geçmiş günlerin egzersiz dakikalarına ve ayakta kalma saatlerine katabilir; Apple Watch ile bu iki kez sayılabilir. |
 | `settings.healthWrite.confirmTitle` | Trainings nach Health schreiben? | Write workouts to Health? | Antrenmanlar Health'e yazılsın mı? |
+| `settings.healthWrite.diagnosticDisclosure` | Diagnose anzeigen | Show diagnostics | Tanılamayı göster |
 | `settings.healthWrite.distanceButton` | Geh- und Laufdistanz erlauben | Allow walking + running distance | Yürüyüş + koşu mesafesine izin ver |
 | `settings.healthWrite.distanceMissing` | „Geh- und Laufdistanz“ ist nicht freigegeben – Läufe werden ohne Distanz gespeichert. Erlaube sie in der Health-App unter Profil → Apps → Deltiq. | “Walking + Running Distance” is not allowed – runs are saved without distance. Allow it in the Health app under Profile → Apps → Deltiq. | „Yürüyüş + koşu mesafesi“ için izin yok – koşular mesafesiz kaydedilir. Health uygulamasında Profil → Uygulamalar → Deltiq altından izin ver. |
 | `settings.healthWrite.errorGeneric` | Die Abfrage von Health ist fehlgeschlagen. Es wurde nichts geschrieben. | Querying Health failed. Nothing was written. | Health sorgusu başarısız oldu. Hiçbir şey yazılmadı. |
@@ -2102,14 +2110,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.healthWrite.resultUnverified` | Nicht bestätigt (Gerät gesperrt?) | Not confirmed (device locked?) | Doğrulanmadı (cihaz kilitli mi?) |
 | `settings.healthWrite.resultWithoutDistance` | Ohne Distanz gespeichert: %lld – die Freigabe „Geh- und Laufdistanz“ fehlt oder wurde abgelehnt. | Saved without distance: %lld – the “Walking + Running Distance” permission is missing or was declined. | Mesafesiz kaydedilen: %lld – „Yürüyüş + koşu mesafesi“ izni yok veya reddedildi. |
 | `settings.healthWrite.resultWritten` | Geschrieben | Written | Yazıldı |
-| `settings.healthWrite.row` | Trainings in Health | Workouts in Health | Health'te antrenmanlar |
+| `settings.healthWrite.row` | Trainings an Health senden | Send workouts to Health | Antrenmanları Health'e gönder |
 | `settings.healthWrite.stopDeviceLocked` | Gestoppt: Health war nicht lesbar (Gerät gesperrt?). Entsperre das Gerät und starte den Export erneut. | Stopped: Health was not readable (device locked?). Unlock the device and start the export again. | Durduruldu: Health okunamadı (cihaz kilitli mi?). Cihazın kilidini aç ve dışa aktarmayı yeniden başlat. |
 | `settings.healthWrite.stopNotAuthorized` | Gestoppt: Der Zugriff auf Trainings wurde entzogen. | Stopped: access to workouts was withdrawn. | Durduruldu: Antrenmanlara erişim geri alındı. |
 | `settings.healthWrite.stopTooManyFailures` | Gestoppt: Health hat mehrere Trainings in Folge abgelehnt. Prüfe den Zugriff und starte erneut. | Stopped: Health rejected several workouts in a row. Check access and start again. | Durduruldu: Health üst üste birkaç antrenmanı reddetti. Erişimi kontrol et ve yeniden başlat. |
 | `settings.healthWrite.strengthFooter` | Auch AMRAP, EMOM, Auf Zeit und Zirkel – außer Tagen, die nur aus Cardio-Übungen bestehen, die zählen zu Cardio. Trägst du dabei eine Apple Watch, nimmt sie das Training schon auf – dann lass das aus, sonst steht es doppelt in Health. | Includes AMRAP, EMOM, For Time and circuits – except days made up only of cardio exercises, which count as cardio. If you wear an Apple Watch while training it already records the workout – turn this off, or it appears twice in Health. | AMRAP, EMOM, Süreye Karşı ve Devre dahil – yalnızca kardiyo egzersizlerinden oluşan günler hariç, onlar kardiyoya sayılır. Antrenman sırasında Apple Watch takıyorsan antrenmanı zaten o kaydeder – bunu kapat, yoksa Health'te iki kez görünür. |
 | `settings.healthWrite.strengthLabel` | Krafttraining schreiben | Write strength workouts | Kuvvet antrenmanlarını yaz |
 | `settings.healthWrite.switchesHeader` | Was Deltiq schreibt | What Deltiq writes | Deltiq neyi yazar |
-| `settings.healthWrite.title` | Trainings in Health | Workouts in Health | Health'te Antrenmanlar |
+| `settings.healthWrite.title` | Trainings an Health senden | Send workouts to Health | Antrenmanları Health'e gönder |
 | `settings.healthWrite.valueBoth` | Kraft + Cardio | Strength + cardio | Kuvvet + kardiyo |
 | `settings.healthWrite.valueCardio` | Cardio | Cardio | Kardiyo |
 | `settings.healthWrite.valueNoAccess` | Nicht freigegeben | Not allowed | İzin verilmedi |
@@ -2135,6 +2143,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.reminders.frequency` | Häufigkeit | Frequency | Sıklık |
 | `settings.reminders.hour` | %lld:00 Uhr | %lld:00 | %lld:00 |
 | `settings.reminders.measurement` | Messung erinnern | Measurement reminder | Ölçüm hatırlat |
+| `settings.reminders.permission.denied` | Benachrichtigungen verweigert | Notifications denied | Bildirimlere izin verilmedi |
+| `settings.reminders.permission.deniedHint` | Erinnerungen bleiben wie eingestellt, werden aber nicht zugestellt, solange Benachrichtigungen für Deltiq deaktiviert sind. | Reminders stay as configured but won't be delivered while notifications for Deltiq are turned off. | Deltiq için bildirimler kapalıyken hatırlatıcılar ayarlandığı gibi kalır, ancak iletilmez. |
+| `settings.reminders.permission.granted` | Benachrichtigungen erlaubt | Notifications allowed | Bildirimlere izin verildi |
+| `settings.reminders.permission.notDetermined` | Noch nicht festgelegt | Not yet determined | Henüz belirlenmedi |
+| `settings.reminders.permission.openSettings` | Einstellungen öffnen | Open Settings | Ayarları Aç |
 | `settings.reminders.section` | Erinnerungen | Reminders | Hatırlatıcılar |
 | `settings.reminders.time` | Uhrzeit | Time | Saat |
 | `settings.reminders.water` | Wasser erinnern | Water reminder | Su hatırlat |

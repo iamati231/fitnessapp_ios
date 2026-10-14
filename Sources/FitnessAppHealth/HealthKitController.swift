@@ -21,14 +21,33 @@ public final class HealthKitController {
     /// reads the status fresh inside `HealthKitService.saveWorkout`.
     public private(set) var workoutWriteAuthorization: WorkoutWriteAuthorization = .unavailable
     public private(set) var isAvailable: Bool = false
+    /// Settings-Epic Phase 4 (docs/SETTINGS_UX_AUDIT.md, Befund SV-F13):
+    /// persistiert ueber `UserDefaults`, damit der Zeitstempel einen
+    /// Kaltstart ueberlebt — vorher rein In-Memory, verschwand nach jedem
+    /// Neustart und wirkte dann wie "noch nie synchronisiert", obwohl laengst
+    /// erfolgreich geschrieben wurde. Wird AUSSCHLIESSLICH ueber
+    /// `markSyncSucceeded()` gesetzt — nie bei einem blossen Zugriffsdialog,
+    /// Versuch oder Fehler (siehe dortige Call-Sites in `saveMeasurement`/
+    /// `saveWorkout`: beide setzen das erst NACH einem nachweislich
+    /// erfolgreichen Schreibvorgang).
     public private(set) var lastSyncDate: Date?
     public private(set) var lastError: (any Error)?
+
+    /// `internal` statt `private`, damit `HealthKitControllerLastSyncTests`
+    /// (`@testable import`) denselben Key verwendet statt ihn zu duplizieren.
+    static let lastSyncDateDefaultsKey = "healthkit_last_sync_date"
+    private let userDefaults: UserDefaults
 
     #if canImport(HealthKit)
     private let service: HealthKitService?
     #endif
 
-    public init() {
+    /// `userDefaults` ist injizierbar (Vorbild: `ReminderPreferences.load(from:)`)
+    /// — Produktionscode nutzt immer die Vorgabe `.standard`, Tests isolieren
+    /// sich ueber eine eigene Suite statt `UserDefaults.standard` zu beruehren.
+    public init(userDefaults: UserDefaults = .standard) {
+        self.userDefaults = userDefaults
+        self.lastSyncDate = userDefaults.object(forKey: Self.lastSyncDateDefaultsKey) as? Date
         #if canImport(HealthKit)
         if let s = try? HealthKitService() {
             self.service = s
@@ -41,6 +60,15 @@ public final class HealthKitController {
             self.service = nil
         }
         #endif
+    }
+
+    /// Einzige Schreibstelle fuer `lastSyncDate` — haelt In-Memory-Wert
+    /// (fuer `@Observable`-Updates) und `UserDefaults` (fuer den naechsten
+    /// Kaltstart) synchron.
+    private func markSyncSucceeded() {
+        let now = Date()
+        lastSyncDate = now
+        userDefaults.set(now, forKey: Self.lastSyncDateDefaultsKey)
     }
 
     // MARK: Authorization
@@ -284,7 +312,7 @@ public final class HealthKitController {
         if let firstError {
             lastError = firstError
         } else {
-            lastSyncDate = Date()
+            markSyncSucceeded()
             lastError = nil
         }
         #endif
@@ -316,7 +344,7 @@ public final class HealthKitController {
         guard let service else { throw HealthKitError.unavailable }
         do {
             let outcome = try await service.saveWorkout(draft)
-            lastSyncDate = Date()
+            markSyncSucceeded()
             lastError = nil
             return outcome
         } catch {

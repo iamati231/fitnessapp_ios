@@ -60,8 +60,15 @@ public struct SettingsDataConnectionsView: View {
 
     // MARK: Sections
 
+    /// Settings-Epic Phase 4 (docs/SETTINGS_UX_AUDIT.md, §9/Terminologie):
+    /// "Daten übernehmen" (Lesen) und "Trainings an Health senden" (Schreiben)
+    /// bleiben EINE Section (keine neue Navigationsebene), bekommen aber je
+    /// eine eigene Beschriftung + Trennlinie — bisher liefen Verbindungs-
+    /// Status, Workout-Import (Lesen) und der Link zum Schreib-Screen ohne
+    /// jede Unterscheidung untereinander durch. Zeilen/Logik unveraendert.
     private var healthKitSection: some View {
         DeltiqSection(String(localized: "profile.section.health", bundle: .module).uppercased()) {
+            sectionCaption("settings.health.readGroup.header")
             healthKitStatusRow
             if healthKit.authorizationStatus == .sharingDenied {
                 openHealthAppButton
@@ -78,7 +85,7 @@ public struct SettingsDataConnectionsView: View {
             DeltiqControlRow(
                 icon: "figure.run.circle",
                 label: String(localized: "settings.health.workoutImport", bundle: .module),
-                showsDivider: healthKit.isAvailable
+                showsDivider: false
             ) {
                 Toggle(isOn: $externalWorkoutImportEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
@@ -95,6 +102,10 @@ public struct SettingsDataConnectionsView: View {
                     }
             }
             if healthKit.isAvailable {
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
+                sectionCaption("settings.healthWrite.row")
                 NavigationLink {
                     HealthWorkoutWriteView()
                 } label: {
@@ -114,6 +125,18 @@ public struct SettingsDataConnectionsView: View {
                 ].joined(separator: "\n")
             )
         }
+    }
+
+    /// Kleine Caption-Zeile zur Untergliederung innerhalb einer `DeltiqSection`
+    /// — gleiches Muster wie `EquipmentProfileEditor.sectionHeader`.
+    private func sectionCaption(_ key: String) -> some View {
+        Text(LocalizedStringKey(key), bundle: .module)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .textCase(.uppercase)
+            .padding(.horizontal, 14)
+            .padding(.top, 10)
+            .padding(.bottom, 2)
     }
 
     private var healthWriteValue: String {

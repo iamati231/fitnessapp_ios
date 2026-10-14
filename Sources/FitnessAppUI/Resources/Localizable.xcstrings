@@ -22048,9 +22048,9 @@
     "settings.healthWrite.row": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Trainings in Health" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Workouts in Health" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Health'te antrenmanlar" } }
+        "de": { "stringUnit": { "state": "translated", "value": "Trainings an Health senden" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Send workouts to Health" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Antrenmanları Health'e gönder" } }
       }
     },
     "settings.healthWrite.valueNoAccess": {
@@ -22096,9 +22096,9 @@
     "settings.healthWrite.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Trainings in Health" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Workouts in Health" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Health'te Antrenmanlar" } }
+        "de": { "stringUnit": { "state": "translated", "value": "Trainings an Health senden" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Send workouts to Health" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Antrenmanları Health'e gönder" } }
       }
     },
     "settings.healthWrite.introHeader": {
@@ -39294,19 +39294,19 @@
       "de" : {
         "stringUnit" : {
           "state" : "translated",
-          "value" : "Workout-Import (Adidas Running, Strava, …)"
+          "value" : "Workouts übernehmen (Adidas Running, Strava, …)"
         }
       },
       "en" : {
         "stringUnit" : {
           "state" : "translated",
-          "value" : "Workout Import (Adidas Running, Strava, …)"
+          "value" : "Import workouts (Adidas Running, Strava, …)"
         }
       },
       "tr" : {
         "stringUnit" : {
           "state" : "translated",
-          "value" : "Antrenman İçe Aktarma (Adidas Running, Strava, …)"
+          "value" : "Antrenmanları içe aktar (Adidas Running, Strava, …)"
         }
       }
     }
@@ -42642,6 +42642,305 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$lld gün · %2$@"
+          }
+        }
+      }
+    },
+    "settings.reminders.permission.granted": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Benachrichtigungen erlaubt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications allowed"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bildirimlere izin verildi"
+          }
+        }
+      }
+    },
+    "settings.reminders.permission.denied": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Benachrichtigungen verweigert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications denied"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bildirimlere izin verilmedi"
+          }
+        }
+      }
+    },
+    "settings.reminders.permission.deniedHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erinnerungen bleiben wie eingestellt, werden aber nicht zugestellt, solange Benachrichtigungen für Deltiq deaktiviert sind."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminders stay as configured but won't be delivered while notifications for Deltiq are turned off."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deltiq için bildirimler kapalıyken hatırlatıcılar ayarlandığı gibi kalır, ancak iletilmez."
+          }
+        }
+      }
+    },
+    "settings.reminders.permission.openSettings": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen öffnen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayarları Aç"
+          }
+        }
+      }
+    },
+    "settings.reminders.permission.notDetermined": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch nicht festgelegt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not yet determined"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz belirlenmedi"
+          }
+        }
+      }
+    },
+    "settings.healthWrite.diagnosticDisclosure": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnose anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show diagnostics"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tanılamayı göster"
+          }
+        }
+      }
+    },
+    "settings.health.readGroup.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daten übernehmen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import data"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verileri içe aktar"
+          }
+        }
+      }
+    },
+    "profile.health.pullConfirm.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Werte aus Apple Health übernehmen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import values from Apple Health?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health'ten değerler alınsın mı?"
+          }
+        }
+      }
+    },
+    "profile.health.pullConfirm.apply": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übernehmen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Al"
+          }
+        }
+      }
+    },
+    "profile.health.pullConfirm.fieldBirthdate": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geburtsdatum: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date of birth: %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doğum tarihi: %@"
+          }
+        }
+      }
+    },
+    "profile.health.pullConfirm.fieldSex": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geschlecht: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sex: %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cinsiyet: %@"
+          }
+        }
+      }
+    },
+    "profile.health.pullConfirm.fieldHeight": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Größe: %@ cm"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Height: %@ cm"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boy: %@ cm"
+          }
+        }
+      }
+    },
+    "profile.health.pullConfirm.nothingFound": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health hat keine passenden Werte geliefert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health didn't provide any usable values."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health kullanılabilir bir değer vermedi."
           }
         }
       }

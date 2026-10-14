@@ -367,4 +367,14 @@ public struct OnboardingHealthSnapshot: Sendable, Equatable {
     public static let empty = OnboardingHealthSnapshot(
         dateOfBirth: nil, sex: .notSet, heightCm: nil, weightKg: nil
     )
+
+    /// Settings-Epic Phase 4 (Befund PE-H1): ob dieser Snapshot mindestens ein
+    /// Profilfeld liefert, das `ProfileEditorView.applyHealthPull(_:)`
+    /// uebernehmen wuerde — steuert dort, ob der Bestaetigungsdialog oder der
+    /// "nichts gefunden"-Hinweis gezeigt wird. `weightKg` zaehlt bewusst NICHT
+    /// mit: Gewicht lebt ausschliesslich in `BodyMeasurement`, nie im Profil.
+    public var hasApplicableProfileFields: Bool {
+        let hasSex = sex == .male || sex == .female
+        return dateOfBirth != nil || hasSex || (heightCm ?? 0) > 0
+    }
 }

@@ -194,7 +194,22 @@ public struct OnboardingView: View {
     @State private var backupImportError: String?
     @State private var backupImportRunning = false
 
-    public init() {}
+    /// Settings-Epic Phase 4 (docs/SETTINGS_UX_AUDIT.md, Befund REM-02):
+    /// seedet die Reminder-Toggles aus bereits gespeicherten Praeferenzen
+    /// statt sie hart auf `true` zu setzen. Bei einem GENUINEN Erst-
+    /// Onboarding liefert `ReminderPreferences.load()` exakt dieselben
+    /// Vorgabewerte (keine Keys vorhanden) — unveraendertes Verhalten. Bei
+    /// einem ERZWUNGENEN Re-Onboarding (z.B. nach "App zuruecksetzen", das
+    /// diese Keys bewusst NICHT loescht) wuerde `finishOnboarding()` weiter
+    /// unten sonst die erhaltene Praeferenz mit dem hartkodierten
+    /// Vorgabewert ueberschreiben, sobald der User die Toggles hier
+    /// unveraendert laesst — genau der Bruch, den die Reset-Zusage
+    /// ausschliesst.
+    public init() {
+        let existingReminderPreferences = ReminderPreferences.load()
+        _enableWaterReminder = State(initialValue: existingReminderPreferences.waterEnabled)
+        _enableMeasurementReminder = State(initialValue: existingReminderPreferences.measurementEnabled)
+    }
 
     public var body: some View {
         NavigationStack {

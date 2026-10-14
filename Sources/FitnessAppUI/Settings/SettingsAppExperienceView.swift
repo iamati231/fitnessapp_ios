@@ -14,6 +14,7 @@ public struct SettingsAppExperienceView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(PRNotificationCenter.self) private var prNotifications
 
     @Query private var profiles: [UserBodyProfile]
@@ -68,6 +69,19 @@ public struct SettingsAppExperienceView: View {
         #endif
         .navigationBarBackButtonHidden(true)
         .deltiqSwipeBackEnabled()
+        // Settings-Epic Phase 4 (REM-01): Status BEIM OEFFNEN aktualisieren —
+        // reiner Lesezugriff (`refreshAuthorizationStatus`), fragt nie eine
+        // Berechtigung an (das macht ausschliesslich `rescheduleReminders()`,
+        // ausgeloest durch einen echten Toggle-Tap).
+        .task { await prNotifications.refreshAuthorizationStatus() }
+        // ...und nach Rueckkehr aus den Systemeinstellungen — gleiches
+        // grobkoerniges, aber bereits im Health-Bereich bewaehrtes Muster
+        // (jedes Foregrounding re-checkt, nicht nur ein gezielter "kam von
+        // den Settings zurueck"-Fall).
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            Task { await prNotifications.refreshAuthorizationStatus() }
+        }
     }
 
     // MARK: Sections
@@ -224,6 +238,7 @@ public struct SettingsAppExperienceView: View {
 
     private var remindersSection: some View {
         DeltiqSection(String(localized: "settings.reminders.section", bundle: .module).uppercased()) {
+            reminderPermissionStatusRow
             DeltiqControlRow(
                 icon: "drop.fill",
                 label: String(localized: "settings.reminders.water", bundle: .module),
@@ -293,6 +308,63 @@ public struct SettingsAppExperienceView: View {
                 }
             }
             hintRow(String(localized: "settings.reminders.footer", bundle: .module))
+        }
+    }
+
+    /// Settings-Epic Phase 4 (REM-01): zeigt den TATSAECHLICHEN OS-
+    /// Benachrichtigungsstatus — unabhaengig von den gespeicherten
+    /// App-Praeferenzen (den Toggles unten), die bei verweigerter
+    /// Berechtigung bewusst unveraendert und eingeschaltet bleiben koennen
+    /// (Vorgabe: Praeferenz und Zustellung sind zwei verschiedene Dinge).
+    /// `PRNotificationCenter.isAuthorized` ist bereits die geteilte Quelle
+    /// fuer den App-weiten Benachrichtigungsstatus (dieselbe
+    /// `UNUserNotificationCenter`-Berechtigung wie PR-Celebrations) — keine
+    /// zweite Status-Abfrage noetig. `.provisional`/`.ephemeral` zaehlen dort
+    /// bereits korrekt als "erlaubt" (leise Zustellung ist fuer einen
+    /// Wasser-/Mess-Reminder kein Unterschied, der eine eigene UI-Stufe
+    /// braucht).
+    @ViewBuilder
+    private var reminderPermissionStatusRow: some View {
+        switch NotificationPermissionDisplayState(isAuthorized: prNotifications.isAuthorized) {
+        case .granted:
+            DeltiqControlRow(
+                icon: "bell.badge",
+                label: String(localized: "settings.reminders.permission.granted", bundle: .module)
+            ) {
+                Image(systemName: "checkmark")
+                    .foregroundStyle(Color.Deltiq.success)
+            }
+        case .denied:
+            VStack(alignment: .leading, spacing: 0) {
+                DeltiqControlRow(
+                    icon: "bell.slash",
+                    label: String(localized: "settings.reminders.permission.denied", bundle: .module),
+                    showsDivider: false
+                ) {
+                    EmptyView()
+                }
+                hintRow(String(localized: "settings.reminders.permission.deniedHint", bundle: .module))
+                #if os(iOS)
+                Button {
+                    AppSettingsLink.open()
+                } label: {
+                    DeltiqRow(
+                        icon: "gearshape",
+                        label: String(localized: "settings.reminders.permission.openSettings", bundle: .module),
+                        showsDivider: false
+                    )
+                }
+                .buttonStyle(.plain)
+                #endif
+            }
+        case .notDetermined:
+            DeltiqControlRow(
+                icon: "bell",
+                label: String(localized: "settings.reminders.permission.notDetermined", bundle: .module),
+                showsDivider: false
+            ) {
+                EmptyView()
+            }
         }
     }
 

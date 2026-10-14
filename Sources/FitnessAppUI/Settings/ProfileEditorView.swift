@@ -23,6 +23,16 @@ public struct ProfileEditorView: View {
     @State private var healthKitFetchInProgress: Bool = false
     @State private var healthKitFilledFields: Set<String> = []
 
+    /// Settings-Epic Phase 4 (docs/SETTINGS_UX_AUDIT.md, Befund PE-H1):
+    /// haelt den geladenen, noch UNBESTAETIGTEN Health-Snapshot. Non-nil
+    /// zeigt die Bestaetigungs-Frage; vor dem Bestaetigen findet KEINE
+    /// Profil-Mutation statt (reiner Lese-Fetch in `requestHealthPull()`).
+    @State private var pendingHealthPull: OnboardingHealthSnapshot?
+    /// Kurzlebiger Hinweis, wenn Health verbunden ist, aber kein einziges der
+    /// drei Felder (Geburtsdatum/Geschlecht/Groesse) liefert — dann gibt es
+    /// nichts zu bestaetigen, aber auch keinen stillen No-Op ohne Rueckmeldung.
+    @State private var healthPullFoundNothing = false
+
     /// UX-Fix P3 §6: Re-Entry-Punkt fuer den optionalen Start-Check ausserhalb
     /// des Onboardings (siehe `coachingCard`).
     @State private var showingBaselineCheck = false
@@ -243,6 +253,33 @@ public struct ProfileEditorView: View {
         } message: { result in
             Text(cardioBaselineMessage(result))
         }
+        // Settings-Epic Phase 4 (Befund PE-H1): zeigt NUR die tatsaechlich
+        // verfuegbaren Felder mit ihrem konkreten Wert, bevor Geburtsdatum/
+        // Geschlecht/Groesse ueberschrieben werden. "Abbrechen" (bzw. Wegtippen)
+        // verwirft den geladenen Snapshot vollstaendig — keine Mutation.
+        .confirmationDialog(
+            Text("profile.health.pullConfirm.title", bundle: .module),
+            isPresented: Binding(
+                get: { pendingHealthPull != nil },
+                set: { if !$0 { pendingHealthPull = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: pendingHealthPull
+        ) { snapshot in
+            Button {
+                applyHealthPull(snapshot)
+                pendingHealthPull = nil
+            } label: {
+                Text("profile.health.pullConfirm.apply", bundle: .module)
+            }
+            Button(role: .cancel) {
+                pendingHealthPull = nil
+            } label: {
+                Text("common.cancel", bundle: .module)
+            }
+        } message: { snapshot in
+            Text(healthPullPreviewMessage(snapshot))
+        }
         .overlay(alignment: .bottom) {
             if let msg = profileSwapToast {
                 Label(msg, systemImage: "checkmark.seal.fill")
@@ -326,7 +363,7 @@ public struct ProfileEditorView: View {
                 switch healthKit.authorizationStatus {
                 case .sharingAuthorized:
                     Button {
-                        Task { await pullProfileFromHealthKit() }
+                        Task { await requestHealthPull() }
                     } label: {
                         HStack {
                             if healthKitFetchInProgress {
@@ -349,6 +386,9 @@ public struct ProfileEditorView: View {
                     .foregroundStyle(Color.deltiqOrange)
                     .disabled(healthKitFetchInProgress)
 
+                    if healthPullFoundNothing {
+                        hintRow(String(localized: "profile.health.pullConfirm.nothingFound", bundle: .module))
+                    }
                     if !healthKitFilledFields.isEmpty {
                         HStack {
                             Label {
@@ -371,7 +411,7 @@ public struct ProfileEditorView: View {
                         Task {
                             await healthKit.requestAuthorization()
                             if healthKit.authorizationStatus == .sharingAuthorized {
-                                await pullProfileFromHealthKit()
+                                await requestHealthPull()
                             }
                         }
                     } label: {
@@ -410,17 +450,30 @@ public struct ProfileEditorView: View {
         }
     }
 
-    private func pullProfileFromHealthKit() async {
+    /// Settings-Epic Phase 4 (Befund PE-H1): reiner Lese-Schritt — holt den
+    /// Snapshot und zeigt ihn zur Bestaetigung, OHNE das Profil anzufassen.
+    /// Die eigentliche Mutation passiert ausschliesslich in
+    /// `applyHealthPull(_:)`, ausgeloest durch den expliziten "Uebernehmen"-
+    /// Tap im `confirmationDialog` unten.
+    private func requestHealthPull() async {
         healthKitFetchInProgress = true
         defer { healthKitFetchInProgress = false }
 
         let snapshot = await healthKit.loadOnboardingSnapshot()
-        var filled: Set<String> = []
+        guard snapshot.hasApplicableProfileFields else {
+            healthPullFoundNothing = true
+            return
+        }
+        healthPullFoundNothing = false
+        pendingHealthPull = snapshot
+    }
 
-        // Der Pull ist eine explizite Nutzer-Aktion ("Aus Apple Health
-        // uebernehmen") und ersetzt die aktuellen Werte - nur, was Health
-        // tatsaechlich liefert (nicht gesetzte Felder bleiben unberuehrt).
-        // `profile.health.footer` beschreibt genau das.
+    /// Mutiert das Profil — nur mit den Feldern, die der Snapshot tatsaechlich
+    /// liefert. Fehlende Health-Werte bleiben unberuehrt (keine Loeschung
+    /// vorhandener Profilwerte); Gewicht wird bewusst NIE gelesen (lebt
+    /// ausschliesslich in `BodyMeasurement`, siehe `BodyDataEditorView`).
+    private func applyHealthPull(_ snapshot: OnboardingHealthSnapshot) {
+        var filled: Set<String> = []
         if let dob = snapshot.dateOfBirth {
             profile.birthDate = dob
             filled.insert("Geburtsdatum")
@@ -439,8 +492,38 @@ public struct ProfileEditorView: View {
             profile.heightCm = h
             filled.insert("Größe")
         }
-
         healthKitFilledFields = filled
+    }
+
+    /// Baut die Vorschau-Nachricht fuer den Bestaetigungsdialog — zeigt NUR
+    /// die Felder, die tatsaechlich verfuegbar sind, mit ihrem konkreten Wert.
+    private func healthPullPreviewMessage(_ snapshot: OnboardingHealthSnapshot) -> String {
+        var lines: [String] = []
+        if let dob = snapshot.dateOfBirth {
+            lines.append(String(
+                format: String(localized: "profile.health.pullConfirm.fieldBirthdate", bundle: .module),
+                dob.formatted(date: .abbreviated, time: .omitted)
+            ))
+        }
+        let sexLabel: String?
+        switch snapshot.sex {
+        case .male:   sexLabel = String(localized: "sex.male", bundle: .module)
+        case .female: sexLabel = String(localized: "sex.female", bundle: .module)
+        case .other, .notSet: sexLabel = nil
+        }
+        if let sexLabel {
+            lines.append(String(
+                format: String(localized: "profile.health.pullConfirm.fieldSex", bundle: .module),
+                sexLabel
+            ))
+        }
+        if let h = snapshot.heightCm, h > 0 {
+            lines.append(String(
+                format: String(localized: "profile.health.pullConfirm.fieldHeight", bundle: .module),
+                h.formattedTwoDecimals
+            ))
+        }
+        return lines.joined(separator: "\n")
     }
 
     // MARK: - Sections

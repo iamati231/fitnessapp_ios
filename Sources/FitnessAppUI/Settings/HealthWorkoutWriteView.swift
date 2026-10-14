@@ -239,14 +239,28 @@ public struct HealthWorkoutWriteView: View {
         #endif
     }
 
-    /// Technischer Zustand fuer Rueckmeldungen aus TestFlight (nicht lokalisiert).
+    /// Settings-Epic Phase 4 (docs/SETTINGS_UX_AUDIT.md, Befund R-08): der
+    /// rohe technische Zustand (fuer Support-/TestFlight-Rueckmeldungen) wird
+    /// nicht mehr ungefragt gezeigt — gerade im `.blocked`-Zustand, dem
+    /// HAEUFIGSTEN Fall bei Bestandsnutzern, wo Label + zwei Hinweistexte +
+    /// "Health-App oeffnen" bereits eine verstaendliche Erklaerung und eine
+    /// passende naechste Aktion liefern (siehe `accessContent` oben). Die
+    /// Disclosure selbst ist vollstaendig lokalisiert; nur ihr AUFGEKLAPPTER
+    /// Inhalt bleibt bewusst unlokalisiert (`Text(verbatim:)`) — das sind
+    /// rohe Enum-Bezeichner fuer eine Support-Rueckmeldung, keine an den
+    /// Nutzer gerichtete Aussage.
     private var diagnosticRow: some View {
-        Text(verbatim: healthKit.workoutWriteAuthorization.diagnosticDescription)
-            .font(.system(size: 10, design: .monospaced))
-            .foregroundStyle(Color.Deltiq.textSecondary.opacity(0.7))
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 14)
-            .padding(.bottom, 8)
+        DisclosureGroup(String(localized: "settings.healthWrite.diagnosticDisclosure", bundle: .module)) {
+            Text(verbatim: healthKit.workoutWriteAuthorization.diagnosticDescription)
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundStyle(Color.Deltiq.textSecondary.opacity(0.7))
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 4)
+        }
+        .font(.system(size: 12, weight: .medium))
+        .foregroundStyle(Color.Deltiq.textSecondary)
+        .padding(.horizontal, 14)
+        .padding(.bottom, 8)
     }
 
     private func requestAccess() {
