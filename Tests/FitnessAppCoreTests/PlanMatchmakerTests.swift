@@ -465,4 +465,67 @@ final class PlanMatchmakerTests: XCTestCase {
         let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates, experienceTrack: track)
         XCTAssertTrue(ranked.contains { $0.id == "push_pull_legs" })
     }
+
+    // MARK: - Szenario 8 (PLAN_MATCHING_AND_EQUIPMENT_COMBINED.md)
+
+    /// Direkter Unit-Test fuer `goalIsSupportedButNotPrimaryFocus`: nur
+    /// `.weightLoss` qualifiziert, und nur Templates mit echtem Hypertrophie-
+    /// /Kraft-Fokus — keine pauschale Freigabe (Epic-Vorgabe) und kein
+    /// Zusatzpunkt fuer Funktional-/Zirkel-Ziele, die bereits ueber den
+    /// Primaerfokus-Term zaehlen, falls selbst `.weightLoss`-getaggt.
+    func testGoalIsSupportedButNotPrimaryFocusOnlyForWeightLossWithStrengthOrHypertrophyFocus() {
+        let upperLower = allTemplates.first { $0.id == "upper_lower" }!      // [.hypertrophy, .strength]
+        let crossfitWeighted = allTemplates.first { $0.id == "crossfit_weighted" }! // [.functional, .weightLoss]
+
+        XCTAssertTrue(
+            PlanMatchmaker.goalIsSupportedButNotPrimaryFocus(.weightLoss, of: upperLower),
+            "Kraft-/Hypertrophie-Split unterstuetzt Abnehmen inhaltlich (Kaloriendefizit)"
+        )
+        XCTAssertFalse(
+            PlanMatchmaker.goalIsSupportedButNotPrimaryFocus(.weightLoss, of: crossfitWeighted),
+            "Hat bereits einen echten .weightLoss-Tag -> zaehlt ueber den Primaerfokus-Term, nicht hier"
+        )
+        XCTAssertFalse(
+            PlanMatchmaker.goalIsSupportedButNotPrimaryFocus(.hypertrophy, of: upperLower),
+            "Nur fuer .weightLoss aktiv — kein analoger Unterstuetzungs-Gedanke fuer andere Ziele"
+        )
+        XCTAssertFalse(
+            PlanMatchmaker.goalIsSupportedButNotPrimaryFocus(.weightLoss, of: allTemplates.first { $0.id == "kettlebell_beginner" }!),
+            "Funktionales Zirkel-Programm ohne Hypertrophie-/Kraft-Fokus bekommt keinen Support-Punkt"
+        )
+    }
+
+    /// Woertliche Reproduktion von Szenario 8: "regelmaessig trainiert,
+    /// Abnehmen, Gym, 4 Tage" durfte auf einem echten Geraet "CrossFit mit
+    /// Gewichten" als Top-Empfehlung liefern, mit Upper-Lower (einzigem
+    /// Kandidaten mit exakt 4 Tagen) komplett ausserhalb der gezeigten
+    /// Alternativen. Fix: Upper-Lower muss jetzt vor allen praeferenz-
+    /// getriebenen Zirkel-/CrossFit-Templates ranken, CrossFit darf nicht
+    /// mehr die Top-Position belegen.
+    func testScenario8ExperiencedWeightLossGymFourDaysRanksStrengthSplitAboveCircuitPreferencePrograms() {
+        let track = ExperienceTrack.experienced
+        let answers = QuizAnswers(
+            goal: .weightLoss,
+            experience: track.asExperienceLevel,
+            preferredDays: 4,
+            environment: .gym
+        )
+        let result = PlanMatchmaker.rankPlansDetailed(for: answers, templates: allTemplates, experienceTrack: track)
+        XCTAssertFalse(result.isFallback)
+
+        let ids = result.templates.map(\.id)
+        guard let upperLowerRank = ids.firstIndex(of: "upper_lower") else {
+            return XCTFail("upper_lower muss als Kandidat auftauchen (4 Tage, Gym, Erfahren)")
+        }
+        XCTAssertNotEqual(ids.first, "crossfit_weighted",
+                           "CrossFit darf bei 'Abnehmen' nicht automatisch die Top-Empfehlung sein — das ist eine Trainingspraeferenz, keine Zielkonsequenz")
+        if let crossfitRank = ids.firstIndex(of: "crossfit_weighted") {
+            XCTAssertLessThan(upperLowerRank, crossfitRank,
+                               "Ein zu den Tagen exakt passender Kraft-Split darf nicht hinter einem CrossFit-Programm ohne explizite Praeferenz liegen")
+        }
+        if let kettlebellRank = ids.firstIndex(of: "kettlebell_beginner") {
+            XCTAssertLessThan(upperLowerRank, kettlebellRank,
+                               "Ein zu den Tagen exakt passender Kraft-Split darf nicht hinter einem Kettlebell-Zirkel-Programm ohne explizite Praeferenz liegen")
+        }
+    }
 }

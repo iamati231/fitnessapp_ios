@@ -96,7 +96,26 @@ public enum PlanMatchmaker {
         //    die ursprueengliche Reihenfolge.
         let scored = eligible.enumerated().map { (index, plan) -> (plan: ProgramTemplate, score: Int, origin: Int) in
             var score = 0
-            if plan.targetGoals.contains(answers.goal)            { score += 3 }
+            if plan.targetGoals.contains(answers.goal) {
+                score += 3
+            } else if goalIsSupportedButNotPrimaryFocus(answers.goal, of: plan) {
+                // Szenario 8 (PLAN_MATCHING_AND_EQUIPMENT_COMBINED.md): ohne
+                // diesen Term konnte ein inhaltlich passender Kraft-Split wie
+                // Upper-Lower bei "Abnehmen" rechnerisch nie mit einem
+                // explizit weightLoss-getaggten Zirkel-/CrossFit-Programm
+                // konkurrieren, selbst wenn Tage/Erfahrung/Equipment exakt
+                // passten — ein fehlender Zieltag allein hat ihn komplett
+                // aus dem Rennen genommen. +1 reichte empirisch nicht: ein
+                // rein praeferenzgetriebenes Zirkel-/CrossFit-Template mit
+                // echtem weightLoss-Tag blieb trotzdem vor einem inhaltlich
+                // passenden Kraft-Split, obwohl keine explizite CrossFit-
+                // Praeferenz vorlag (Epic-Vorgabe: das darf nicht sein). +2
+                // hebt den Support-Fall auf Augenhoehe mit dem Level-Term,
+                // genug um echte Zirkel-/CrossFit-Praeferenz-Programme zu
+                // ueberholen, aber weiterhin klar hinter Templates mit echtem
+                // weightLoss-PRIMAERfokus (+3), die zu Recht vorne bleiben.
+                score += 2
+            }
             if plan.targetExperience.contains(answers.experience) { score += 2 }
             if plan.daysPerWeek == answers.preferredDays          { score += 1 }
             // UX-Fix "Empfehlung wirkt immer gleich": zusaetzliche, explizit
@@ -116,6 +135,28 @@ public enum PlanMatchmaker {
             }
             .map { $0.plan }
         return RankedPlanResult(templates: ranked, isFallback: false)
+    }
+
+    /// Szenario 8 (PLAN_MATCHING_AND_EQUIPMENT_COMBINED.md): trennt
+    /// Ziel-UNTERSTUETZUNG vom Ziel-PRIMAERFOKUS (`targetGoals.contains`,
+    /// weiterhin der staerkere +3-Term oben). Ein Krafttraining-Split traegt
+    /// Muskelmasse im Kaloriendefizit genauso bei wie ein explizit
+    /// `weightLoss`-getaggter Plan — Fettverlust kommt aus dem Defizit, nicht
+    /// aus der Trainingsform (siehe `fat_loss_fullbody`s eigene Beschreibung).
+    /// Bewusst NICHT die vom Auftrag ausdruecklich verbotene "pauschale
+    /// weightLoss-Freigabe fuer alle Templates": nur Templates mit echtem
+    /// Hypertrophie-/Kraft-Fokus qualifizieren inhaltlich begruendet.
+    /// Funktionelle/Zirkel-Programme (CrossFit, Kettlebell-Komplexe) bekommen
+    /// HIER keinen Zusatz-Punkt — CrossFit/Zirkel ist eine Trainings-
+    /// PRAEFERENZ, keine automatische Konsequenz aus "Abnehmen" (Epic-
+    /// Vorgabe); deren eigene `weightLoss`-Tags (wo vorhanden) zaehlen
+    /// bereits ueber den Primaerfokus-Term oben.
+    ///
+    /// Nur fuer `.weightLoss` aktiv — die anderen Ziele haben keine analoge
+    /// "jedes Krafttraining hilft auch hierbei"-Begruendung.
+    static func goalIsSupportedButNotPrimaryFocus(_ goal: TrainingGoal, of template: ProgramTemplate) -> Bool {
+        guard goal == .weightLoss else { return false }
+        return template.targetGoals.contains(.hypertrophy) || template.targetGoals.contains(.strength)
     }
 
     /// Bestehende, einfache Schnittstelle — bleibt fuer alle bisherigen

@@ -63,13 +63,23 @@ public enum ExperienceTrack: String, Sendable, Codable, CaseIterable, Hashable {
     /// war redundant und verzerrend zugleich.
     ///
     /// Geblieben ist NUR die inhaltlich begruendete Komponente: ein
-    /// explizites `.advanced`-Tag (+1). Ohne diesen Ausgleich wuerde ein rein
-    /// `.advanced`-getaggtes Template (z.B. Arnold Split) beim Basis-Score-
-    /// Term "Level" (+2) leer ausgehen, weil Erfahrene ueber
-    /// `asExperienceLevel` auf `.intermediate` gemappt werden, NIE auf
-    /// `.advanced` (siehe dortiger Kommentar) — ein explizit als
-    /// fortgeschritten markiertes Programm waere sonst schlechter gestellt
-    /// als eines, das auch Einsteiger zulaesst.
+    /// explizites `.advanced`-Tag (+1), ABER NUR wenn das Template beim
+    /// Basis-Score-Term "Level" (+2) sonst leer ausgehen wuerde. Ohne diese
+    /// Einschraenkung (Fix "Szenario 8", PLAN_MATCHING_AND_EQUIPMENT_
+    /// COMBINED.md) bekam JEDES Template mit `.advanced` IRGENDWO im Tag
+    /// diesen Bonus obendrauf — auch wenn es zusaetzlich `.intermediate`
+    /// trug und damit die vollen Basis-+2 fuer "Level" schon kassiert hatte.
+    /// Reproduzierbar an `crossfit_weighted` (`targetExperience: [.beginner,
+    /// .intermediate, .advanced]`): bekam fuer jeden Erfahrenen-Nutzer einen
+    /// unbegruendeten zusaetzlichen +1 und gewann dadurch allein durch
+    /// Zieltag-Uebereinstimmung (`weightLoss`) gegen inhaltlich passendere
+    /// Kraft-Splits wie Upper-Lower, die dasselbe Ziel nicht teilen. Der
+    /// Bonus ist ausschliesslich als Ausgleich fuer rein `.advanced`-
+    /// getaggte Templates (z.B. Arnold Split) gedacht, die sonst — weil
+    /// Erfahrene ueber `asExperienceLevel` auf `.intermediate` gemappt
+    /// werden, NIE auf `.advanced` — beim Level-Term leer ausgehen wuerden.
+    /// Ein Template, das `.intermediate` BEREITS traegt, hat diesen
+    /// Ausgleich nicht noetig.
     ///
     /// Starter/Wiedereinsteiger bekommen hier bewusst NIE einen Bonus (Epic:
     /// "kein Experten-Boost") — sie sind bereits ueber den Hard-Filter in
@@ -80,7 +90,9 @@ public enum ExperienceTrack: String, Sendable, Codable, CaseIterable, Hashable {
     /// Experten-Boost fuer ein thematisch falsches Template.
     public func templateScoreBonus(template: ProgramTemplate, answers: QuizAnswers) -> Int {
         guard self == .experienced, template.targetGoals.contains(answers.goal) else { return 0 }
-        return template.targetExperience.contains(.advanced) ? 1 : 0
+        let levelAlreadyCredited = template.targetExperience.contains(answers.experience)
+        guard !levelAlreadyCredited, template.targetExperience.contains(.advanced) else { return 0 }
+        return 1
     }
 }
 

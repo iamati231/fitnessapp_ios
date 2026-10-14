@@ -162,30 +162,39 @@ final class ExperienceTrackTests: XCTestCase {
     /// deckt die Tages-Praeferenz bereits ab.
     func testNonAdvancedTemplateGetsNoBonusRegardlessOfDays() {
         let answers = QuizAnswers(goal: .hypertrophy, experience: .intermediate, preferredDays: 5, environment: .gym)
-        let fullBody = template("full_body")     // 3 Tage, [.beginner, .intermediate]
-        let upperLower = template("upper_lower") // 4 Tage, [.intermediate, .advanced] -> hat .advanced, siehe naechster Test
-        let broSplit = template("bro_split")     // 5 Tage, [.intermediate, .advanced] -> hat .advanced ebenfalls
+        let fullBody = template("full_body") // 3 Tage, [.beginner, .intermediate]
         XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: fullBody, answers: answers), 0,
                        "full_body traegt kein .advanced-Tag, also kein Bonus unabhaengig von der Tagesanzahl")
-        // upperLower/broSplit hier nur zur Kontrastbildung mitgefuehrt — ihr
-        // Bonus kommt einzig vom .advanced-Tag, siehe testAdvancedTagGrantsFlatBonusRegardlessOfDays.
-        XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: upperLower, answers: answers), 1)
-        XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: broSplit, answers: answers), 1)
     }
 
-    /// Ein `.advanced`-getaggtes Template bekommt einen flachen +1-Bonus,
-    /// unabhaengig von seiner Tagesanzahl (4, 5 oder 6 Tage liefern alle
-    /// denselben Bonus) — ohne ihn wuerde ein solches Template beim
-    /// Basis-Score-Term "Level" leer ausgehen, weil Erfahrene ueber
-    /// `asExperienceLevel` auf `.intermediate` mappen, nie auf `.advanced`.
-    func testAdvancedTagGrantsFlatBonusRegardlessOfDays() {
+    /// Fix "Szenario 8" (PLAN_MATCHING_AND_EQUIPMENT_COMBINED.md): ein
+    /// Template, das `.intermediate` BEREITS traegt (auch wenn zusaetzlich
+    /// `.advanced` dabeisteht), bekommt KEINEN Bonus mehr — der Basis-Score-
+    /// Term "Level" (+2) hat es dafuer schon vollstaendig kreditiert. Die
+    /// vorige Fassung gab hier faelschlich trotzdem +1, wodurch z.B.
+    /// `crossfit_weighted` (`[.beginner, .intermediate, .advanced]`) jedem
+    /// Erfahrenen einen unbegruendeten Vorsprung vor inhaltlich passenderen,
+    /// nur `.intermediate`/`.advanced`-getaggten Kraft-Splits bekam.
+    func testTemplateAlreadyTaggedWithUsersLevelGetsNoAdvancedBonus() {
         let answers = QuizAnswers(goal: .hypertrophy, experience: .intermediate, preferredDays: 6, environment: .gym)
-        let upperLower = template("upper_lower")   // 4 Tage, [.intermediate, .advanced]
-        let broSplit = template("bro_split")       // 5 Tage, [.intermediate, .advanced]
-        let arnoldSplit = template("arnold_split") // 6 Tage, [.advanced] exklusiv
-        XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: upperLower, answers: answers), 1)
-        XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: broSplit, answers: answers), 1)
+        let upperLower = template("upper_lower")           // [.intermediate, .advanced]
+        let broSplit = template("bro_split")               // [.intermediate, .advanced]
+        let crossfitWeighted = template("crossfit_weighted") // [.beginner, .intermediate, .advanced]
+        XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: upperLower, answers: answers), 0,
+                       "traegt bereits .intermediate, Level-Term ist schon +2")
+        XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: broSplit, answers: answers), 0)
+        XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: crossfitWeighted, answers: answers), 0,
+                       "Szenario-8-Regression: durfte frueher faelschlich +1 bekommen")
+    }
+
+    /// Ein REIN `.advanced`-getaggtes Template (ohne `.intermediate`/
+    /// `.beginner`) bekommt weiterhin den Ausgleichs-Bonus — ohne ihn wuerde
+    /// es beim Level-Term leer ausgehen, weil Erfahrene ueber
+    /// `asExperienceLevel` nie auf `.advanced` mappen.
+    func testPurelyAdvancedTemplateStillGetsCompensatingBonus() {
+        let answers = QuizAnswers(goal: .hypertrophy, experience: .intermediate, preferredDays: 6, environment: .gym)
+        let arnoldSplit = template("arnold_split") // [.advanced] exklusiv
         XCTAssertEqual(ExperienceTrack.experienced.templateScoreBonus(template: arnoldSplit, answers: answers), 1,
-                       "Flacher Bonus, kein zusaetzlicher Tage-Term mehr")
+                       "Ohne .intermediate/.beginner im Tag bleibt der Level-Term sonst leer")
     }
 }
