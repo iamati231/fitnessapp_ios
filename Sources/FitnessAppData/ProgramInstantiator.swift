@@ -94,24 +94,11 @@ public enum ProgramInstantiator {
         let normalized = normalize(weekdays: rawWeekdays, expectedCount: template.daysPerWeek)
 
         // 5) Workout-Tage mappen (sequenceIndex → realer Wochentag).
-        // DEL-170: Variant-Auswahl. Wenn das Template Equipment-Variants hat
-        // UND der User Equipment-Präferenzen gepflegt hat, wählen wir die
-        // beste passende Variante. Sonst: Standard `template.days` (das ist
-        // die implizite Barbell-Gym-Variante).
-        let resolvedDays: [DaySpec] = {
-            guard let variants = template.equipmentVariants, !userEquipment.isEmpty else {
-                return template.days
-            }
-            // Base-Variante (template.days = barbellGym-implizit) bevorzugen,
-            // wenn der User Barbell + Dumbbell hat.
-            let baseRequires = EquipmentProfile.barbellGym.requiredEquipment
-            if baseRequires.isSubset(of: userEquipment) {
-                return template.days
-            }
-            // Sonst die priorisierte beste Variante; Fallback auf base.
-            return EquipmentVariant.bestMatch(in: variants, userOwns: userEquipment)?.days
-                ?? template.days
-        }()
+        // DEL-170 + PLAN_EQUIPMENT_MATCHING_AUDIT.md 5.4: Variant-Auswahl
+        // über `ProgramTemplate.resolvedDays` — dieselbe Funktion, die auch
+        // `TemplatePreviewView` fuer die Vorschau aufruft, damit beide nie
+        // wieder auseinanderlaufen koennen.
+        let resolvedDays = template.resolvedDays(forUserEquipment: userEquipment)
         let sortedDays = resolvedDays.sorted { $0.sequenceIndex < $1.sequenceIndex }
         var workoutDayWeekdays = Set<Int>()
         for (idx, daySpec) in sortedDays.enumerated() {

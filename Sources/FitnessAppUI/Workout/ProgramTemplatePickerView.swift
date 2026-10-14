@@ -35,7 +35,10 @@ public struct ProgramTemplatePickerView: View {
                             // instantiate mehr. Erst nach "Plan uebernehmen"
                             // in der Preview wird die Tiefkopie erstellt.
                             NavigationLink {
-                                TemplatePreviewView(template: template) {
+                                TemplatePreviewView(
+                                    template: template,
+                                    userEquipment: profiles.first?.equipmentPreferences ?? []
+                                ) {
                                     instantiate(template)
                                 }
                             } label: {
@@ -195,16 +198,25 @@ public struct TemplatePreviewView: View {
     public let onAdopt: () -> Void
     /// Anpassbarer Button-Titel.
     public let adoptButtonTitle: String
+    /// PLAN_EQUIPMENT_MATCHING_AUDIT.md 5.4: dieselbe Equipment-Menge, die
+    /// der jeweilige Parent gleich darauf an `ProgramInstantiator.instantiate`
+    /// reicht — damit `orderedDays` ueber `ProgramTemplate.resolvedDays` IMMER
+    /// dieselbe Variante zeigt, die beim Adopt tatsaechlich gespeichert wird.
+    /// Default leer = Basis-Variante (bestehendes Verhalten fuer Templates
+    /// ohne `equipmentVariants`, also 17 der 20 Templates unveraendert).
+    public let userEquipment: Set<Equipment>
 
     @Environment(\.dismiss) private var dismiss
 
     public init(
         template: ProgramTemplate,
         adoptButtonTitle: String = "Diesen Plan übernehmen",
+        userEquipment: Set<Equipment> = [],
         onAdopt: @escaping () -> Void
     ) {
         self.template = template
         self.adoptButtonTitle = adoptButtonTitle
+        self.userEquipment = userEquipment
         self.onAdopt = onAdopt
     }
 
@@ -353,8 +365,14 @@ public struct TemplatePreviewView: View {
     /// DEL-088: Template-Tage sind ueber `sequenceIndex` 1...N geordnet.
     /// Vorher haben wir hier Mo-first nach Apple-Weekday sortiert — das ist
     /// jetzt obsolet, weil Templates keinen Wochentag mehr enthalten.
+    ///
+    /// PLAN_EQUIPMENT_MATCHING_AUDIT.md 5.4: loest ueber `resolvedDays` die
+    /// gleiche Equipment-Variante auf wie `ProgramInstantiator.instantiate`
+    /// (vorher wurde hier IMMER `template.days`, also die Basis-Variante,
+    /// gezeigt — unabhaengig davon, welche Variante beim Adopt gespeichert
+    /// wurde).
     private var orderedDays: [DaySpec] {
-        template.days.sorted { $0.sequenceIndex < $1.sequenceIndex }
+        template.resolvedDays(forUserEquipment: userEquipment).sorted { $0.sequenceIndex < $1.sequenceIndex }
     }
 
     /// DEL-118: ExerciseSpec.name ist der deutsche Raw-String aus dem

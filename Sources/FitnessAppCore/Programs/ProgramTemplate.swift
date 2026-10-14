@@ -91,4 +91,26 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
         self.descriptionKey = descriptionKey
         self.equipmentVariants = equipmentVariants
     }
+
+    /// PLAN_EQUIPMENT_MATCHING_AUDIT.md Abschnitt 5.4: EINZIGE Quelle für
+    /// "welche Tage-Liste passt zum Equipment" — vorher duplizierte
+    /// `ProgramInstantiator.instantiate` diese Logik inline, während die
+    /// Vorschau (`TemplatePreviewView.orderedDays`) ungeprüft `days` zeigte.
+    /// Für die 3 Templates mit `equipmentVariants` (hybrid_beginner/
+    /// _balanced/_performance) konnte die angezeigte Vorschau dadurch von
+    /// der tatsächlich gespeicherten Variante abweichen. Beide Call-Sites
+    /// rufen jetzt diese eine Funktion auf, damit sie nie wieder
+    /// auseinanderlaufen können.
+    ///
+    /// Leeres `userEquipment` oder keine `equipmentVariants` -> immer die
+    /// Basis-Variante (`days`). Erfüllt der Nutzer die `barbellGym`-
+    /// Basis-Anforderung, bleibt es ebenfalls bei `days`. Sonst die
+    /// prioritätshöchste passende Variante, oder `days` als letzter
+    /// Rückfall, falls keine passt.
+    public func resolvedDays(forUserEquipment userEquipment: Set<Equipment>) -> [DaySpec] {
+        guard let variants = equipmentVariants, !userEquipment.isEmpty else { return days }
+        let baseRequires = EquipmentProfile.barbellGym.requiredEquipment
+        if baseRequires.isSubset(of: userEquipment) { return days }
+        return EquipmentVariant.bestMatch(in: variants, userOwns: userEquipment)?.days ?? days
+    }
 }

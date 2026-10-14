@@ -198,7 +198,8 @@ public struct OnboardingView: View {
                 NavigationStack {
                     TemplatePreviewView(
                         template: template,
-                        adoptButtonTitle: "Diesen Plan wählen"
+                        adoptButtonTitle: "Diesen Plan wählen",
+                        userEquipment: equipmentPreferences
                     ) {
                         // DEL-088: Adopt finalisiert die Plan-Wahl noch nicht
                         // direkt — stattdessen oeffnet sich der DayPicker,

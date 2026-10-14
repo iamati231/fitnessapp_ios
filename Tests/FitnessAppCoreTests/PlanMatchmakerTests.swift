@@ -528,4 +528,37 @@ final class PlanMatchmakerTests: XCTestCase {
                                "Ein zu den Tagen exakt passender Kraft-Split darf nicht hinter einem Kettlebell-Zirkel-Programm ohne explizite Praeferenz liegen")
         }
     }
+
+    // MARK: - resolvedDays (PLAN_EQUIPMENT_MATCHING_AUDIT.md 5.4)
+
+    /// Gemeinsame Quelle fuer Vorschau (`TemplatePreviewView.orderedDays`)
+    /// und tatsaechliche Instanziierung (`ProgramInstantiator.instantiate`)
+    /// — vorher duplizierte Logik, die auseinanderlaufen konnte (Fix siehe
+    /// Audit-Dokument). Direkter Test gegen das echte Katalog-Template
+    /// `hybrid_balanced`, das eine `.dumbbellOnly`-Variante hat.
+    func testResolvedDaysUsesBaseVariantWithoutEquipmentPreferences() {
+        let template = allTemplates.first { $0.id == "hybrid_balanced" }!
+        let days = template.resolvedDays(forUserEquipment: [])
+        XCTAssertEqual(days.first?.exercises.first?.name, "Bankdrücken",
+                       "Leeres Equipment-Set -> Basis-/Barbell-Variante (bestehendes Verhalten)")
+    }
+
+    func testResolvedDaysUsesBaseVariantWhenBarbellGymSatisfied() {
+        let template = allTemplates.first { $0.id == "hybrid_balanced" }!
+        let days = template.resolvedDays(forUserEquipment: [.barbell, .dumbbell, .machine])
+        XCTAssertEqual(days.first?.exercises.first?.name, "Bankdrücken")
+    }
+
+    func testResolvedDaysSwitchesToDumbbellVariantWhenBarbellMissing() {
+        let template = allTemplates.first { $0.id == "hybrid_balanced" }!
+        let days = template.resolvedDays(forUserEquipment: [.dumbbell])
+        XCTAssertEqual(days.first?.exercises.first?.name, "Bankdrücken (KH)",
+                       "Ohne Langhantel muss dieselbe Variante gewaehlt werden wie beim Instanziieren — das war der Vorschau/Instanziierung-Bug aus Abschnitt 5.4")
+    }
+
+    func testResolvedDaysFallsBackToBaseWhenNoVariantFitsAndTemplateHasNoVariants() {
+        let template = allTemplates.first { $0.id == "upper_lower" }! // keine equipmentVariants
+        let days = template.resolvedDays(forUserEquipment: [.dumbbell])
+        XCTAssertEqual(days, template.days, "Ohne equipmentVariants bleibt es immer bei der Basis-Liste")
+    }
 }
