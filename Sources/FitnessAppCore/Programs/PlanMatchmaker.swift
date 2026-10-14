@@ -309,13 +309,26 @@ public enum PlanMatchmaker {
 
     /// Hard-Filter-Logik fuer das Environment:
     ///   * User `.gym` → akzeptiert alle Templates (Gym hat alles)
-    ///   * User `.homeGym` → akzeptiert `.homeGym` UND `.noEquipment`
-    ///   * User `.noEquipment` → akzeptiert nur `.noEquipment`
+    ///   * User `.homeGym`/`.noEquipment` → akzeptiert `.homeGym` UND `.noEquipment`
+    ///
+    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// §3): `.noEquipment` war bis Phase 5 auf `plan == .noEquipment`
+    /// beschraenkt — das blockierte ein Home-Gym-getaggtes Template allein
+    /// wegen des Orts, selbst wenn der User ueber die neue "kleine
+    /// Trainingshilfen"-Frage z.B. Kurzhanteln bestaetigt hat, mit denen das
+    /// Template tatsaechlich ausfuehrbar waere ("Massgeblich sind konkrete
+    /// Voraussetzungen... nicht der Ort", Vorgabe woertlich). Sicher, weil
+    /// `envMatches` nur EINER von zwei UND-verknuepften Hard-Filtern ist —
+    /// `equipmentMatches` (unveraendert) schliesst ein Home-Gym-Template fuer
+    /// einen `.noEquipment`-User weiterhin aus, sobald mindestens eine
+    /// annotierte Uebung definitiv fehlendes Equipment braucht. Ein
+    /// `.gym`-getaggtes Template bleibt fuer `.noEquipment`/`.homeGym`-User in
+    /// jedem Fall ausgeschlossen ("Ein Gym-Plan darf nicht allein deshalb
+    /// zugelassen werden, weil eine Kurzhantel vorhanden ist").
     private static func envMatches(plan: EnvironmentType, user: EnvironmentType) -> Bool {
         switch user {
-        case .gym:         return true
-        case .homeGym:     return plan == .homeGym || plan == .noEquipment
-        case .noEquipment: return plan == .noEquipment
+        case .gym:                    return true
+        case .homeGym, .noEquipment:  return plan == .homeGym || plan == .noEquipment
         }
     }
 

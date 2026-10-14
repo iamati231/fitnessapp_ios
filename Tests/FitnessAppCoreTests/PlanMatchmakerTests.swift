@@ -49,8 +49,15 @@ final class PlanMatchmakerTests: XCTestCase {
         }
     }
 
-    /// No-Equipment-User → nur Bodyweight-Plan sollte durchkommen.
-    func testKOEnvFiltersOutGymPlans() {
+    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// §3): `.noEquipment` akzeptiert jetzt wie `.homeGym` auch Home-Gym-
+    /// getaggte Templates — reines Gym bleibt aber in JEDEM Fall
+    /// ausgeschlossen ("Ein Gym-Plan darf nicht allein deshalb zugelassen
+    /// werden, weil eine Kurzhantel vorhanden ist"). Vor Phase 6 war dieser
+    /// Test strenger (nur `.noEquipment` durfte durchkommen) — die Lockerung
+    /// ist eine bewusste Verhaltensaenderung, siehe die positiven/negativen
+    /// Gegenproben unten (`testNoEquipmentWithConfirmed...`).
+    func testKOEnvFiltersOutGymPlansButAllowsHomeGym() {
         let answers = QuizAnswers(
             goal: .functional,
             experience: .beginner,
@@ -59,9 +66,96 @@ final class PlanMatchmakerTests: XCTestCase {
         )
         let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates)
         for plan in ranked {
-            XCTAssertEqual(plan.targetEnvironment, .noEquipment,
-                           "\(plan.name) ist nicht noEquipment, sollte aber gefiltert sein")
+            XCTAssertNotEqual(plan.targetEnvironment, .gym,
+                           "\(plan.name) ist .gym, sollte fuer noEquipment-User raus")
         }
+    }
+
+    /// Positiv-Fall Pflicht-Test 8: ein `.noEquipment`-User mit bestaetigt
+    /// VORHANDENEN Kurzhanteln soll ein Home-Gym-getaggtes Template finden,
+    /// das tatsaechlich NUR Kurzhanteln braucht — "nicht nur durch den
+    /// Ortsfilter ausgeschlossen" (Vorgabe woertlich). Synthetisches
+    /// Template statt eines Katalog-Eintrags: `home_gym_hero` (einziges
+    /// echtes Kurzhantel-Home-Gym-Template) braucht zusaetzlich eine Bank
+    /// ("Bankdrücken (KH)") und waere damit kein sauberer Beleg fuer GENAU
+    /// diese Kombination.
+    func testNoEquipmentWithConfirmedDumbbellsDiscoversCompatibleHomeGymTemplate() {
+        let dumbbellOnlyHomeGymDay = DaySpec(
+            name: "Ganzkörper", type: .fullBody, sequenceIndex: 1,
+            exercises: [
+                ExerciseSpec(name: "Schulterdrücken (KH)", sets: 3, repsMin: 8, repsMax: 12),
+                ExerciseSpec(name: "Rumänisches Kreuzheben (KH)", sets: 3, repsMin: 10, repsMax: 12)
+            ]
+        )
+        let template = ProgramTemplate(
+            id: "test_dumbbell_only_homegym", name: "Test", tagline: "Test", descriptionText: "Test", focus: "Test",
+            daysPerWeek: 1, days: [dumbbellOnlyHomeGymDay], targetEnvironment: .homeGym
+        )
+        var profile = UserEquipmentProfile()
+        profile.availability[.dumbbell] = .available
+        profile.counts[.dumbbell] = 2
+        profile.confirmRemainingAsUnavailable()
+        let answers = QuizAnswers(
+            goal: .hypertrophy, experience: .beginner, preferredDays: 3, environment: .noEquipment,
+            equipmentProfile: profile
+        )
+        let result = PlanMatchmaker.rankPlansDetailed(for: answers, templates: [template])
+        XCTAssertFalse(result.isFallback)
+        XCTAssertTrue(result.templates.contains { $0.id == "test_dumbbell_only_homegym" },
+                      "Mit bestaetigten 2 Kurzhanteln ist dieses Home-Gym-Template fuer einen noEquipment-User ausfuehrbar und darf nicht allein wegen des Ortstags fehlen")
+    }
+
+    /// Gegenprobe/Sicherheitsnetz zu oben: ein `.noEquipment`-User, der
+    /// ausdruecklich "Nur Koerpergewicht" bestaetigt hat, darf dasselbe
+    /// Home-Gym-Template weiterhin NICHT angeboten bekommen — die Lockerung
+    /// von `envMatches` darf niemals die orthogonale, praezise
+    /// `equipmentMatches`-Pruefung aushebeln.
+    func testNoEquipmentConfirmedBodyweightOnlyStillExcludesHomeGymTemplateNeedingDumbbells() {
+        let dumbbellOnlyHomeGymDay = DaySpec(
+            name: "Ganzkörper", type: .fullBody, sequenceIndex: 1,
+            exercises: [ExerciseSpec(name: "Schulterdrücken (KH)", sets: 3, repsMin: 8, repsMax: 12)]
+        )
+        let template = ProgramTemplate(
+            id: "test_dumbbell_only_homegym_2", name: "Test", tagline: "Test", descriptionText: "Test", focus: "Test",
+            daysPerWeek: 1, days: [dumbbellOnlyHomeGymDay], targetEnvironment: .homeGym
+        )
+        var profile = UserEquipmentProfile()
+        profile.confirmRemainingAsUnavailable()
+        let answers = QuizAnswers(
+            goal: .hypertrophy, experience: .beginner, preferredDays: 3, environment: .noEquipment,
+            equipmentProfile: profile
+        )
+        let result = PlanMatchmaker.rankPlansDetailed(for: answers, templates: [template])
+        XCTAssertFalse(result.templates.contains { $0.id == "test_dumbbell_only_homegym_2" },
+                       "Bestaetigt 'nur Koerpergewicht' muss ein Kurzhantel-Template weiterhin ausschliessen")
+    }
+
+    /// Pflicht-Test 7: Widerstandsband analog zu den Kurzhanteln oben — echte
+    /// Katalog-Uebungen ("Band Pull-Aparts"/"Banded Squats"), die
+    /// ausschliesslich `.resistanceBand` verlangen.
+    func testNoEquipmentWithConfirmedResistanceBandDiscoversCompatibleHomeGymTemplate() {
+        let bandOnlyDay = DaySpec(
+            name: "Ganzkörper", type: .fullBody, sequenceIndex: 1,
+            exercises: [
+                ExerciseSpec(name: "Band Pull-Aparts", sets: 3, repsMin: 15, repsMax: 20),
+                ExerciseSpec(name: "Banded Squats", sets: 3, repsMin: 15, repsMax: 20)
+            ]
+        )
+        let template = ProgramTemplate(
+            id: "test_band_only_homegym", name: "Test", tagline: "Test", descriptionText: "Test", focus: "Test",
+            daysPerWeek: 1, days: [bandOnlyDay], targetEnvironment: .homeGym
+        )
+        var profile = UserEquipmentProfile()
+        profile.availability[.resistanceBand] = .available
+        profile.confirmRemainingAsUnavailable()
+        let answers = QuizAnswers(
+            goal: .hypertrophy, experience: .beginner, preferredDays: 3, environment: .noEquipment,
+            equipmentProfile: profile
+        )
+        let result = PlanMatchmaker.rankPlansDetailed(for: answers, templates: [template])
+        XCTAssertFalse(result.isFallback)
+        XCTAssertTrue(result.templates.contains { $0.id == "test_band_only_homegym" },
+                      "Mit bestaetigtem Widerstandsband ist dieses Template fuer einen noEquipment-User ausfuehrbar")
     }
 
     /// Home-Gym-User → kein reines Gym-Programm sollte durchkommen, aber
