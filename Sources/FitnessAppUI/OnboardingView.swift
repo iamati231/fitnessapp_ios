@@ -115,6 +115,11 @@ public struct OnboardingView: View {
     // `finishOnboarding()` uebertraegt beides auf das neu angelegte Profil.
     @State private var equipmentProfile: UserEquipmentProfile = UserEquipmentProfile()
     @State private var equipmentProfileConfirmedComplete: Bool = false
+    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// §1): steuert das optionale "Ausstattung anpassen"-Sheet im Gym-Pfad —
+    /// dort gibt es KEINEN Pflichtschritt, der Editor ist nur bei Bedarf
+    /// erreichbar.
+    @State private var showingGymEquipmentSheet: Bool = false
 
     /// Rueckwaerts-Kompatibilitaets-Bruecke zur aelteren `Equipment`-Menge
     /// (DEL-170, weiterhin von `PlanMatchmaker`/`ProgramInstantiator`/
@@ -213,6 +218,18 @@ public struct OnboardingView: View {
             .navigationBarTitleDisplayMode(.large)
             #endif
             .keyboardDismissToolbar()
+            // Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_
+            // ONBOARDING.md §1, Abschnitt 4): bei einem Ortswechsel bleibt
+            // `equipmentProfile` selbst unangetastet ("nicht automatisch
+            // loeschen oder ueberschreiben" — bisherige Angaben bleiben
+            // vorausgefuellt), aber eine bereits abgeschlossene Bestaetigung
+            // gilt NICHT automatisch fuer den neuen Ort weiter ("klaeren, ob
+            // diese auch am neuen Ort gelten") — der jeweilige Equipment-
+            // Schritt (Gym-Hinweis/Home-Gym-Editor/Kein-Equipment-Kurzfrage)
+            // verlangt dadurch eine frische Bestaetigung fuer den neuen Ort.
+            .onChange(of: environment) { _, _ in
+                equipmentProfileConfirmedComplete = false
+            }
             // DEL-056: Plan-Detail-Sheet. Wird auf Step 3 geoeffnet, wenn der
             // User einen Template-Row antippt. Adopt-Button finalisiert die
             // Auswahl und triggert direkt das Onboarding-Finish — sonst
@@ -832,17 +849,127 @@ public struct OnboardingView: View {
         return ExperienceTrackResolver.track(for: trainingHistoryAnswer, priorExperience: priorExperienceDuration)
     }
 
-    // MARK: - Step 4: Equipment-Erfassung (Smart-Onboarding-Epic Phase 3)
+    // MARK: - Step 4: Equipment-Erfassung (Smart-Onboarding-Epic Phase 3/6)
 
-    /// Nutzt die geteilte `EquipmentProfileEditor`-Komponente (Core-Modell
-    /// `UserEquipmentProfile`, keine zweite Equipment-Datenquelle). Bewusst
-    /// KEIN Prefill aus `environment` — "Ort ist nicht Ausstattung" (Audit
-    /// 5.1). Die "vollstaendige Bestaetigung" (nicht ausgewaehlte Items
-    /// werden zu `.unavailable`) passiert NICHT hier, sondern wenn der User
-    /// unten auf "Weiter" tippt (`handlePrimaryAction`) — "Später
-    /// einrichten" umgeht das bewusst und laesst alles `.unknown`.
+    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// §1): der Inhalt dieses Schritts haengt jetzt vom gewaehlten
+    /// Trainingsort ab — Gym bekommt KEINEN Pflichtschritt mehr (nur einen
+    /// Hinweis + optionales Sheet), Home-Gym den vollen Editor, Kein
+    /// Equipment eine kurze Frage. "Ort ist nicht Ausstattung" bleibt in
+    /// allen drei Faellen gueltig: kein Pfad leitet aus dem Ort allein eine
+    /// BESTAETIGTE Verfuegbarkeit her.
     @ViewBuilder
     private var equipmentPreferencesStep: some View {
+        switch environment {
+        case .gym:         gymEquipmentStep
+        case .homeGym:      homeGymEquipmentStep
+        case .noEquipment: noEquipmentQuickStep
+        }
+    }
+
+    /// Kein Pflichtschritt: Hinweis auf die Standard-Gym-Planungsannahme
+    /// (`EquipmentPlanningResolver`, PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// §2/§4) + optionales Sheet mit dem vollen Editor. NIE "Equipment
+    /// bestätigt" zeigen, solange `equipmentProfileConfirmedComplete ==
+    /// false` — das waere eine vom Ort hergeleitete, nicht vom User
+    /// bestaetigte Aussage.
+    @ViewBuilder
+    private var gymEquipmentStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("onboarding.equipment.gym.title", bundle: .module)
+                        .font(.title2.weight(.bold))
+                    Text("onboarding.equipment.gym.subtitle", bundle: .module)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+
+                if equipmentProfileConfirmedComplete {
+                    gymEquipmentConfirmedCard
+                } else {
+                    Button {
+                        showingGymEquipmentSheet = true
+                    } label: {
+                        Label {
+                            Text("onboarding.equipment.gym.adjustButton", bundle: .module)
+                        } icon: {
+                            Image(systemName: "slider.horizontal.3")
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                }
+
+                Text("onboarding.equipment.gym.footer", bundle: .module)
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding()
+        }
+        .sheet(isPresented: $showingGymEquipmentSheet) {
+            gymEquipmentSheet
+        }
+    }
+
+    /// Nach einer abgeschlossenen individuellen Erfassung (via Sheet) —
+    /// identischer Stil zur bestehenden `baselineCapturedSummary` (Start-
+    /// Check-Epic), damit "erfasst/bestaetigt"-Karten app-weit gleich aussehen.
+    private var gymEquipmentConfirmedCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label {
+                Text("onboarding.equipment.gym.confirmedTitle", bundle: .module)
+            } icon: {
+                Image(systemName: "checkmark.circle.fill")
+            }
+            .font(.headline)
+            .foregroundStyle(.green)
+
+            Button {
+                showingGymEquipmentSheet = true
+            } label: {
+                Text("onboarding.equipment.gym.editButton", bundle: .module)
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.green.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var gymEquipmentSheet: some View {
+        NavigationStack {
+            ScrollView {
+                EquipmentProfileEditor(equipmentProfile: $equipmentProfile)
+                    .padding()
+            }
+            .navigationTitle(String(localized: "onboarding.equipment.gym.sheetTitle", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "common.close", bundle: .module)) {
+                        showingGymEquipmentSheet = false
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "common.done", bundle: .module)) {
+                        confirmEquipmentStepIfNeeded()
+                        showingGymEquipmentSheet = false
+                    }
+                }
+            }
+        }
+    }
+
+    /// Unveraendertes Phase-3-Verhalten: voller Editor, "Später
+    /// einrichten"-Link laesst alles `.unknown`. Die "vollstaendige
+    /// Bestaetigung" (nicht ausgewaehlte Items werden zu `.unavailable`)
+    /// passiert NICHT hier, sondern wenn der User unten auf "Weiter" tippt
+    /// (`handlePrimaryAction`).
+    @ViewBuilder
+    private var homeGymEquipmentStep: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 6) {
@@ -859,19 +986,56 @@ public struct OnboardingView: View {
                     .font(.footnote)
                     .foregroundStyle(.tertiary)
 
-                Button {
-                    goToNextStep()
-                } label: {
-                    Text("onboarding.equipment.laterLink", bundle: .module)
-                        .font(.callout.weight(.medium))
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .padding(.top, 4)
+                laterLinkButton
             }
             .padding()
         }
+    }
+
+    /// Smart-Onboarding-Epic Phase 6 §1: kurze Frage statt des vollen
+    /// Editors — "Nein, nur Körpergewicht" bleibt Teil der Dateneingabe
+    /// (`NoEquipmentQuickEquipmentPicker`), "Später entscheiden" bleibt eine
+    /// Navigations-Entscheidung dieses Schritts (identisches Prinzip wie
+    /// beim Home-Gym-Editor).
+    @ViewBuilder
+    private var noEquipmentQuickStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("onboarding.equipment.noEquipment.title", bundle: .module)
+                        .font(.title2.weight(.bold))
+                    Text("onboarding.equipment.noEquipment.subtitle", bundle: .module)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+
+                NoEquipmentQuickEquipmentPicker(equipmentProfile: $equipmentProfile)
+
+                Text("onboarding.equipment.footer", bundle: .module)
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+
+                laterLinkButton
+            }
+            .padding()
+        }
+    }
+
+    /// "Später einrichten"/"Später entscheiden" — identisch fuer Home-Gym
+    /// und Kein-Equipment, ruft `goToNextStep()` bewusst DIREKT auf (siehe
+    /// `confirmEquipmentStepIfNeeded` Dokumentation), damit die Erfassung
+    /// wirklich `.unknown` bleibt statt stillschweigend bestaetigt zu werden.
+    private var laterLinkButton: some View {
+        Button {
+            goToNextStep()
+        } label: {
+            Text("onboarding.equipment.laterLink", bundle: .module)
+                .font(.callout.weight(.medium))
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .padding(.top, 4)
     }
 
     /// Smart-Onboarding-Epic Phase 3: die "vollstaendige Bestaetigung" fuer
@@ -1536,7 +1700,15 @@ public struct OnboardingView: View {
     private func handlePrimaryAction() {
         switch step {
         case .equipmentPreferences:
-            confirmEquipmentStepIfNeeded()
+            // Smart-Onboarding-Epic Phase 6: im Gym-Pfad gibt es keinen
+            // Pflichtschritt — "Weiter" ohne das optionale Sheet darf NICHT
+            // automatisch `equipmentProfileConfirmedComplete = true` setzen
+            // (das waere eine vom Ort hergeleitete, nicht vom User
+            // bestaetigte Aussage). Die Bestaetigung passiert dort
+            // ausschliesslich ueber das Sheet selbst (`gymEquipmentSheet`).
+            if environment != .gym {
+                confirmEquipmentStepIfNeeded()
+            }
             goToNextStep()
         case .healthConnect, .personalInfo, .coachingStyle, .trainingHistory, .baselineCheck:
             goToNextStep()
