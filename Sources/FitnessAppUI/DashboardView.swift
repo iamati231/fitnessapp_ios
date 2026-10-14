@@ -620,25 +620,31 @@ public struct DashboardView: View {
                 delta: weeklyWeightDelta()
             )
         case .bodyFatNavy:
+            let source = fallbackMeasurement(latest: latest) { $0.navyBodyFatPct != nil }
             MetricCard(
                 label: label,
-                value: latest.navyBodyFatPct?.truncated(to: 1).formattedOneDecimal ?? "—",
-                unit: latest.navyBodyFatPct != nil ? "%" : nil,
-                delta: nil
+                value: source?.navyBodyFatPct?.truncated(to: 1).formattedOneDecimal ?? "—",
+                unit: source?.navyBodyFatPct != nil ? "%" : nil,
+                delta: nil,
+                asOfDate: fallbackDate(source: source, latest: latest)
             )
         case .ffmi:
+            let source = fallbackMeasurement(latest: latest) { $0.ffmi != nil }
             MetricCard(
                 label: label,
-                value: latest.ffmi?.truncated(to: 1).formattedOneDecimal ?? "—",
+                value: source?.ffmi?.truncated(to: 1).formattedOneDecimal ?? "—",
                 unit: nil,
-                delta: nil
+                delta: nil,
+                asOfDate: fallbackDate(source: source, latest: latest)
             )
         case .leanMass:
+            let source = fallbackMeasurement(latest: latest) { $0.fatFreeMassKg != nil }
             MetricCard(
                 label: label,
-                value: latest.fatFreeMassKg?.truncated(to: 1).formattedOneDecimal ?? "—",
-                unit: latest.fatFreeMassKg != nil ? "kg" : nil,
-                delta: nil
+                value: source?.fatFreeMassKg?.truncated(to: 1).formattedOneDecimal ?? "—",
+                unit: source?.fatFreeMassKg != nil ? "kg" : nil,
+                delta: nil,
+                asOfDate: fallbackDate(source: source, latest: latest)
             )
         case .bmi:
             let bmi = computedBMI(measurement: latest)
@@ -692,6 +698,27 @@ public struct DashboardView: View {
                 unit: nil
             )
         }
+    }
+
+    /// Settings-Epic Phase 3 (docs/SETTINGS_UX_AUDIT.md, Punkt 5): liefert
+    /// `latest` selbst, wenn die gefragte Kennzahl dort vorliegt — sonst die
+    /// JUENGSTE AELTERE Zeile mit einem echten Wert. `measurements` ist
+    /// bereits rueckwaerts-chronologisch sortiert (`.first(where:)` trifft
+    /// daher automatisch die juengste passende Zeile). Verhindert, dass eine
+    /// neue Weight-only-Messung eine aeltere, gueltige Koerperkompositions-
+    /// Analyse verdeckt — ohne je einen neuen KFA-/FFM-/FFMI-Schaetzwert aus
+    /// dem reinen Gewichtseintrag zu erzeugen (der bleibt nil, siehe
+    /// `BodyMeasurement.makeWeightOnly`).
+    private func fallbackMeasurement(latest: BodyMeasurement, hasValue: (BodyMeasurement) -> Bool) -> BodyMeasurement? {
+        hasValue(latest) ? latest : measurements.first(where: hasValue)
+    }
+
+    /// Nil, wenn `source` identisch mit `latest` ist (kein Rueckfall noetig,
+    /// kein Datum anzeigen) — sonst `source`s eigenes Datum, NIE das von
+    /// `latest` uebernommen.
+    private func fallbackDate(source: BodyMeasurement?, latest: BodyMeasurement) -> Date? {
+        guard let source, source.date != latest.date else { return nil }
+        return source.date
     }
 
     /// DEL-132 (Phase 1): BMI = weight_kg / (height_m)². Nil-Fallback
@@ -3475,6 +3502,12 @@ private struct MetricCard: View {
     let value: String
     let unit: String?
     let delta: Double?
+    /// Settings-Epic Phase 3 (docs/SETTINGS_UX_AUDIT.md, Punkt 5): gesetzt nur
+    /// wenn `value` NICHT aus der neuesten Messung stammt, sondern aus einem
+    /// Rueckfall auf eine aeltere Zeile mit echtem Wert — zeigt deren
+    /// tatsaechliches Datum, statt den Wert kommentarlos als aktuell
+    /// auszugeben.
+    var asOfDate: Date? = nil
 
     var body: some View {
         // Signature-Geruest 1.6/1.8: Hero-Kachel-Label wird zum Eyebrow-Stil
@@ -3512,6 +3545,13 @@ private struct MetricCard: View {
                 }
                 if let delta {
                     deltaLabel(delta)
+                } else if let asOfDate {
+                    Text(String(format: String(localized: "dashboard.hero.asOf", bundle: .module),
+                                 asOfDate.formatted(date: .abbreviated, time: .omitted)))
+                        .font(.caption2)
+                        .foregroundStyle(Color.Deltiq.textTertiary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 } else {
                     Text(" ")
                         .font(.caption2)

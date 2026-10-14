@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2034 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2051 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2034 / 2034** (100%) | 0 |
-| 🇬🇧 English (EN) | **2034 / 2034** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2034 / 2034** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2051 / 2051** (100%) | 0 |
+| 🇬🇧 English (EN) | **2051 / 2051** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2051 / 2051** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -616,7 +616,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `customExercise.section.name` | Name | Name | Ad |
 | `customExercise.title` | Neue Übung | New exercise | Yeni hareket |
 
-## `dashboard.*`  (89 Keys)
+## `dashboard.*`  (90 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -658,6 +658,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.heatmap.a11y.tile` | %1$@, %2$lld Sätze, %3$@ | %1$@, %2$lld sets, %3$@ | %1$@, %2$lld set, %3$@ |
 | `dashboard.heatmap.legend` | Sätze | Sets | Set |
 | `dashboard.heatmap.title` | Muskel-Heatmap (Woche) | Muscle Heatmap (week) | Kas Isı Haritası (hafta) |
+| `dashboard.hero.asOf` | Stand: %@ | As of %@ | %@ itibarıyla |
 | `dashboard.history.countOnly` | %lld Trainings | %lld workouts | %lld antrenman |
 | `dashboard.history.countWithLast` | %1$lld Trainings • zuletzt %2$@ | %1$lld workouts • last %2$@ | %1$lld antrenman • son %2$@ |
 | `dashboard.history.empty` | Noch keine Trainings — starte oben dein erstes. | No workouts yet — start your first one above. | Henüz antrenman yok — yukarıdan ilkini başlat. |
@@ -1227,7 +1228,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `gear.list.empty.description` | Füge Laufschuhe oder Fahrräder hinzu, damit die App deine Kilometer automatisch trackt. | Add running shoes or bicycles so the app can track your distance automatically. | Koşu ayakkabıları veya bisikletler ekle, böylece uygulama mesafeni otomatik takip etsin. |
 | `gear.list.empty.title` | Noch keine Ausrüstung | No gear yet | Henüz ekipman yok |
 | `gear.list.footer` | Cardio-Trainings buchen ihre Distanz automatisch auf den im Finish-Sheet ausgewählten Schuh. | Cardio workouts log distance to the shoe selected in the finish sheet. | Kardiyo antrenmanları, bitiş sayfasında seçilen ayakkabıya mesafe ekler. |
-| `gear.list.title` | Ausrüstung | Gear | Ekipman |
+| `gear.list.title` | Ausrüstung & Schuhe | Gear & Shoes | Ekipman & Ayakkabı |
 | `gear.needsReplacement` | Schuh erneuern — Dämpfung erschöpft. | Replace shoe — cushioning depleted. | Ayakkabıyı değiştir — yastıklama tükendi. |
 
 ## `heroMetric.*`  (10 Keys)
@@ -1292,7 +1293,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `library.searchPlaceholder` | Übung suchen | Search exercise | Hareket ara |
 | `library.title` | Übungsbibliothek | Exercise Library | Hareket Kütüphanesi |
 
-## `measurement.*`  (83 Keys)
+## `measurement.*`  (84 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1379,6 +1380,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `measurement.validation.field.weight` | Gewicht | Weight | Ağırlık |
 | `measurement.validation.missing.many` | Pflichtfelder noch leer: %@. | Required fields missing: %@. | Zorunlu alanlar eksik: %@. |
 | `measurement.validation.missing.one` | Pflichtfeld noch leer: %@. | Required field missing: %@. | Zorunlu alan eksik: %@. |
+| `measurement.weightOnly.editHint` | Diese Messung wurde nur mit Gewicht erfasst. Umfänge sind hier optional. | This entry was logged with weight only. Circumferences are optional here. | Bu ölçüm yalnızca kiloyla kaydedildi. Çevre ölçüleri burada isteğe bağlıdır. |
 
 ## `metric.*`  (1 Keys)
 
@@ -1808,13 +1810,22 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (65 Keys)
+## `profile.*`  (75 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `profile.body.footerOk` | Alle Berechnungen lesen Höhe metrisch aus dieser Quelle. | All calculations read height metrically from this source. | Tüm hesaplamalar boyu metrik olarak bu kaynaktan okur. |
 | `profile.body.heightPlaceholder` | z.B. 180 | e.g. 180 | örn. 180 |
 | `profile.body.plausible` | Plausibel: %1$lld–%2$lld cm. | Plausible: %1$lld–%2$lld cm. | Makul: %1$lld–%2$lld cm. |
+| `profile.bodyData.summary.footer` | Größe, aktuelles Gewicht und Zielgewicht an einem Ort. | Height, current weight and goal weight in one place. | Boy, güncel kilo ve hedef kilo tek yerde. |
+| `profile.bodyData.title` | Körperdaten | Body data | Vücut verileri |
+| `profile.bodyData.weight.footer` | Gewicht lässt sich hier ohne Umfänge speichern. Für Körperfett- und FFMI-Werte nutze die vollständige Messung. | You can log weight here without circumferences. For body-fat and FFMI values, use the full measurement. | Burada çevre ölçüsü olmadan kilo kaydedebilirsin. Vücut yağı ve FFMI değerleri için tam ölçümü kullan. |
+| `profile.bodyData.weight.fullMeasurement` | Vollständige Messung hinzufügen | Add full measurement | Tam ölçüm ekle |
+| `profile.bodyData.weight.header` | Gewicht | Weight | Kilo |
+| `profile.bodyData.weight.label` | Aktuelles Gewicht (kg) | Current weight (kg) | Güncel kilo (kg) |
+| `profile.bodyData.weight.lastEntry` | Zuletzt erfasst: %@ | Last recorded: %@ | Son kayıt: %@ |
+| `profile.bodyData.weight.noEntry` | Noch keine Gewichtsmessung erfasst. | No weight entry recorded yet. | Henüz kilo kaydı yok. |
+| `profile.bodyData.weight.placeholderEmpty` | Gewicht eingeben | Enter weight | Kilo gir |
 | `profile.cardio.enable` | Lauf-Coaching aktivieren | Enable running coaching | Koşu koçluğunu etkinleştir |
 | `profile.cardio.feasibility.acceptSuggestion` | Vorschlag annehmen | Accept suggestion | Öneriyi kabul et |
 | `profile.cardio.feasibility.adjustPlan` | Plan anpassen | Adjust plan | Planı düzenle |
@@ -1874,6 +1885,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.section.coach` | Coach | Coach | Koç |
 | `profile.section.health` | Apple Health | Apple Health | Apple Health |
 | `profile.section.person` | Person | Person | Kişi |
+| `profile.trainingLocation.title` | Trainingsort & Ausstattung | Training location & equipment | Antrenman yeri & ekipman |
 | `profile.weeklyGoal.footer` | Dein Kalender-Streak zählt nur Wochen, die dieses Ziel erfüllen. Wähle, was du wirklich durchhalten kannst — ein gehaltener Streak schlägt ein verfehltes Ziel. | Your calendar streak only counts weeks that meet this goal. Pick what you can actually sustain — a streak you keep beats a goal you don't. | Takvim serin yalnızca bu hedefi karşılayan haftaları sayar. Gerçekten sürdürebileceğini seç — tutulan bir seri, kaçırılan bir hedeften iyidir. |
 | `profile.weeklyGoal.header` | Wochenziel | Weekly goal | Haftalık hedef |
 | `profile.weeklyGoal.label` | Workouts pro Woche | Workouts per week | Haftalık antrenman |
@@ -1935,7 +1947,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (206 Keys)
+## `settings.*`  (211 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -2023,6 +2035,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.deload.endNow` | Gesenkte Gewichte zurücksetzen (%lld Übungen) | Restore lowered weights (%lld exercises) | Düşürülmüş ağırlıkları geri yükle (%lld egzersiz) |
 | `settings.deload.endNow.done` | Ursprüngliche Gewichte wiederhergestellt. | Original weights restored. | Orijinal ağırlıklar geri yüklendi. |
 | `settings.deload.toggle` | Deload-Vorschläge | Deload suggestions | Deload önerileri |
+| `settings.group.appExperience` | App & Trainingserlebnis | App & Workout Experience | Uygulama & Antrenman Deneyimi |
+| `settings.group.dataConnections` | Daten & Verbindungen | Data & Connections | Veri & Bağlantılar |
+| `settings.group.helpInfo` | Hilfe & Informationen | Help & Information | Yardım & Bilgi |
+| `settings.group.libraryEquipment` | Bibliothek & Ausrüstung | Library & Gear | Kütüphane & Ekipman |
 | `settings.health.connect` | Verbinden | Connect | Bağla |
 | `settings.health.denied` | Berechtigung verweigert | Permission denied | İzin reddedildi |
 | `settings.health.footer` | Bei aktivierter Verbindung wird im Messwerte-Formular das letzte Waagen-Gewicht vorausgefüllt. Beim Speichern werden Gewicht, KFA und Magere Masse zurück nach Apple Health geschrieben. | When connected, the measurement form prefills your last scale weight. Saving writes weight, body fat %, and lean mass back to Apple Health. | Bağlıyken ölçüm formu son tartı kilonu önceden doldurur. Kaydetme; kilo, yağ oranı ve yağsız kütleyi Apple Health'e yazar. |
@@ -2124,6 +2140,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.reminders.water` | Wasser erinnern | Water reminder | Su hatırlat |
 | `settings.section.about` | Über | About | Hakkında |
 | `settings.section.danger_zone` | Daten-Management | Data Management | Veri Yönetimi |
+| `settings.section.more` | Weitere Einstellungen | More Settings | Diğer Ayarlar |
 | `settings.section.preferences` | Präferenzen | Preferences | Tercihler |
 | `settings.section.privacy` | Datenschutz | Privacy | Gizlilik |
 | `settings.section.profile_goals` | Profil & Ziele | Profile & Goals | Profil & Hedefler |

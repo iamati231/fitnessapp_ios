@@ -92,6 +92,16 @@ public struct MeasurementView: View {
     @State private var prefilledBicepsCm: Double?
     @State private var prefilledThighCm: Double?
 
+    /// Settings-Epic Phase 3 (docs/SETTINGS_UX_AUDIT.md, Befund "editierbar
+    /// ohne Umfangspflicht"): gesetzt einmalig beim Edit-Prefill, wenn die zu
+    /// bearbeitende Zeile ohne Umfaenge angelegt wurde (`makeWeightOnly`,
+    /// erkennbar an `neckCm == nil` — kein vollstaendiger Eintrag kann das
+    /// je haben, `canSave` verlangt es). Lockert `canSave` fuer GENAU diese
+    /// Zeile, erzwingt aber nichts — fuellt der User beim Bearbeiten
+    /// nachtraeglich alle Pflicht-Umfaenge aus, speichert `save()` trotzdem
+    /// als vollen Eintrag (siehe dortige `hasFullCircumferences`-Pruefung).
+    @State private var isEditingWeightOnlyEntry: Bool = false
+
     /// DEL-034: Edit-Mode startet als reine Detail-Ansicht. Felder werden erst
     /// editierbar, sobald der User oben rechts "Bearbeiten" tippt. Im New-Mode
     /// (kein editingMeasurement) ist die View IMMER editierbar — User soll
@@ -300,6 +310,9 @@ public struct MeasurementView: View {
     private func missingRequiredFieldNames(profile: UserBodyProfile) -> [String] {
         var missing: [String] = []
         if (weightKg ?? 0) <= 0 { missing.append(loc("measurement.validation.field.weight")) }
+        // Settings-Epic Phase 3: eine urspruenglich ohne Umfaenge angelegte
+        // Zeile verlangt beim Bearbeiten nur noch das Gewicht.
+        guard !isEditingWeightOnlyEntry else { return missing }
         if (neckCm ?? 0)   <= 0 { missing.append(loc("measurement.validation.field.neck")) }
         if (waistCm ?? 0)  <= 0 { missing.append(loc("measurement.validation.field.waist")) }
         if profile.profile == .female, (hipCm ?? 0) <= 0 {
@@ -397,22 +410,26 @@ public struct MeasurementView: View {
                 .padding(.bottom, 8)
             }
 
-            // Hals (immer Pflicht)
+            if isEditingWeightOnlyEntry {
+                hintRow(loc("measurement.weightOnly.editHint"))
+            }
+
+            // Hals (Pflicht ausser bei einer urspruenglich umfangslosen Zeile)
             measurementRow(label: loc("measurement.field.neck"), value: $neckCm, field: .neck)
-            requirementHint(isRequired: true, isMissing: (neckCm ?? 0) <= 0)
+            requirementHint(isRequired: !isEditingWeightOnlyEntry, isMissing: !isEditingWeightOnlyEntry && (neckCm ?? 0) <= 0)
             fieldHint(loc("measurement.hint.neck"))
 
-            // Taille (immer Pflicht, sex-spezifischer Hint)
+            // Taille (Pflicht ausser bei einer urspruenglich umfangslosen Zeile, sex-spezifischer Hint)
             measurementRow(label: loc("measurement.field.waist"), value: $waistCm, field: .waist)
-            requirementHint(isRequired: true, isMissing: (waistCm ?? 0) <= 0)
+            requirementHint(isRequired: !isEditingWeightOnlyEntry, isMissing: !isEditingWeightOnlyEntry && (waistCm ?? 0) <= 0)
             fieldHint(profile.profile == .male
                       ? loc("measurement.hint.waist.male")
                       : loc("measurement.hint.waist.female"))
 
-            // Hüfte: Pflicht bei Frauen, optional/anders gruppiert bei Maennern
+            // Hüfte: Pflicht bei Frauen (ausser bei umfangsloser Zeile), optional/anders gruppiert bei Maennern
             if profile.profile == .female {
                 measurementRow(label: loc("measurement.field.hip"), value: $hipCm, field: .hip, showsDivider: false)
-                requirementHint(isRequired: true, isMissing: (hipCm ?? 0) <= 0)
+                requirementHint(isRequired: !isEditingWeightOnlyEntry, isMissing: !isEditingWeightOnlyEntry && (hipCm ?? 0) <= 0)
                 fieldHint(loc("measurement.hint.broadest"))
             } else {
                 // Männer: Schulter direkt in Pflicht-Section (optional fuer SWR-Ratio).
@@ -898,6 +915,7 @@ public struct MeasurementView: View {
     // MARK: - Edit-Mode pre-fill
 
     private func applyExistingMeasurement(_ m: BodyMeasurement) {
+        isEditingWeightOnlyEntry = (m.neckCm == nil)
         weightKg   = m.weightKg
         neckCm     = m.neckCm
         waistCm    = m.waistCm
@@ -946,8 +964,12 @@ public struct MeasurementView: View {
     ///   Maenner: Gewicht, Hals, Taille
     ///   Frauen:  Gewicht, Hals, Taille, Hüfte
     private func canSave(profile: UserBodyProfile) -> Bool {
-        guard let w = weightKg, w > 0,
-              let n = neckCm, n > 0,
+        guard let w = weightKg, w > 0 else { return false }
+        // Settings-Epic Phase 3: eine urspruenglich ohne Umfaenge angelegte
+        // Zeile bleibt beim Bearbeiten ohne sie speicherbar — s.
+        // `isEditingWeightOnlyEntry`-Dokumentation.
+        if isEditingWeightOnlyEntry { return true }
+        guard let n = neckCm, n > 0,
               let waist = waistCm, waist > 0
         else { return false }
         if profile.profile == .female {
@@ -975,22 +997,40 @@ public struct MeasurementView: View {
         guard let weightKg, canSave(profile: profile) else { return }
 
         if let existing = editingMeasurement {
+            // Settings-Epic Phase 3: am tatsaechlichen Feldstand entscheiden,
+            // nicht am Ausgangszustand — eine urspruenglich umfangslose Zeile
+            // darf beim Bearbeiten nachtraeglich zu einer vollen werden, wenn
+            // der User jetzt alle Pflicht-Umfaenge eintraegt (siehe
+            // `isEditingWeightOnlyEntry`-Dokumentation). Umgekehrt bleibt eine
+            // urspruenglich volle Zeile von dieser Bedingung unberuehrt: ihr
+            // `canSave` verlangt die Umfaenge ohnehin schon, `save()` wird nie
+            // mit leeren Pflichtfeldern erreicht.
+            let hasFullCircumferences = (neckCm ?? 0) > 0 && (waistCm ?? 0) > 0
+                && (profile.profile == .male || (hipCm ?? 0) > 0)
             // Edit-Mode: ueberschreibe existing Record.
-            let recomputed = BodyMeasurement.makeDerived(
-                date: existing.date,
-                ageYears: existing.ageYearsAtMeasurement,
-                weightKg: weightKg,
-                heightCm: profile.heightCm,
-                profile: profile.profile,
-                neckCm: neckCm,
-                waistCm: waistCm,
-                hipCm: hipCm,
-                shoulderCm: shoulderCm,
-                chestCm: chestCm,
-                upperArmCm: bicepsCm,
-                thighCm: thighCm,
-                calfCm: calfCm
-            )
+            let recomputed = hasFullCircumferences
+                ? BodyMeasurement.makeDerived(
+                    date: existing.date,
+                    ageYears: existing.ageYearsAtMeasurement,
+                    weightKg: weightKg,
+                    heightCm: profile.heightCm,
+                    profile: profile.profile,
+                    neckCm: neckCm,
+                    waistCm: waistCm,
+                    hipCm: hipCm,
+                    shoulderCm: shoulderCm,
+                    chestCm: chestCm,
+                    upperArmCm: bicepsCm,
+                    thighCm: thighCm,
+                    calfCm: calfCm
+                )
+                : BodyMeasurement.makeWeightOnly(
+                    date: existing.date,
+                    ageYears: existing.ageYearsAtMeasurement,
+                    weightKg: weightKg,
+                    heightCm: profile.heightCm,
+                    profile: profile.profile
+                )
             existing.weightKg = recomputed.weightKg
             existing.neckCm = recomputed.neckCm
             existing.waistCm = recomputed.waistCm
@@ -1007,13 +1047,29 @@ public struct MeasurementView: View {
             // schreiben: sonst wuerde der beim Prefill gebildete Mittelwert
             // persistiert und die Seiten-Werte in der Anzeige dauerhaft
             // maskieren (`bicepsDisplay` bevorzugt den Einzelwert).
-            if bicepsCm != prefilledBicepsCm {
-                existing.upperArmCm = recomputed.upperArmCm
+            //
+            // Settings-Epic Phase 3: fehlen jetzt die Pflicht-Umfaenge
+            // (`!hasFullCircumferences`), werden Arm/Bein IMMER genullt —
+            // unabhaengig vom Prefill-Vergleich, sonst bliebe bei einer zur
+            // Weight-only-Zeile zurueckgestuften Eingabe ein inkonsistenter
+            // Rest aus Hals/Taille-losen, aber noch gesetzten Arm/Bein-Werten
+            // stehen.
+            if hasFullCircumferences {
+                if bicepsCm != prefilledBicepsCm {
+                    existing.upperArmCm = recomputed.upperArmCm
+                    existing.upperArmLeftCm = nil
+                    existing.upperArmRightCm = nil
+                }
+                if thighCm != prefilledThighCm {
+                    existing.thighCm = recomputed.thighCm
+                    existing.thighLeftCm = nil
+                    existing.thighRightCm = nil
+                }
+            } else {
+                existing.upperArmCm = nil
                 existing.upperArmLeftCm = nil
                 existing.upperArmRightCm = nil
-            }
-            if thighCm != prefilledThighCm {
-                existing.thighCm = recomputed.thighCm
+                existing.thighCm = nil
                 existing.thighLeftCm = nil
                 existing.thighRightCm = nil
             }

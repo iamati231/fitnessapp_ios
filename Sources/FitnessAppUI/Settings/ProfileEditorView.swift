@@ -27,9 +27,17 @@ public struct ProfileEditorView: View {
     /// des Onboardings (siehe `coachingCard`).
     @State private var showingBaselineCheck = false
 
-    /// Smart-Onboarding-Epic Phase 3: Re-Entry-Punkt fuer die Equipment-
-    /// Erfassung ausserhalb des Onboardings (siehe `equipmentCard`).
-    @State private var showingEquipmentEditor = false
+    /// Settings-Epic Phase 3: Re-Entry-Punkte fuer die kombinierten
+    /// Koerperdaten-/Trainingsort-Editoren (siehe `bodyDataCard`/
+    /// `trainingLocationCard`).
+    @State private var showingBodyDataEditor = false
+    @State private var showingTrainingLocationEditor = false
+
+    /// Settings-Epic Phase 3: fuer die Gewicht-mit-Datum-Zeile in
+    /// `bodyDataCard`s Zusammenfassung — derselbe Query wie in
+    /// `BodyDataEditorView`.
+    @Query(sort: \BodyMeasurement.date, order: .reverse)
+    private var bodyMeasurements: [BodyMeasurement]
 
     /// DEL-250: MM:SS-Eingabepuffer fuer die 5-km-Referenzzeit. Bewusst ein
     /// eigenstaendiger `@State`-String statt einer Binding<String> ueber
@@ -110,11 +118,10 @@ public struct ProfileEditorView: View {
 
             VStack(alignment: .leading, spacing: 18) {
                 personCard
-                bodyCard
-                goalCard
+                bodyDataCard
+                trainingLocationCard
                 cardioCard
                 weeklyGoalCard
-                equipmentCard
                 coachingCard
                 healthCard
             }
@@ -468,51 +475,80 @@ public struct ProfileEditorView: View {
         }
     }
 
-    private var bodyCard: some View {
-        DeltiqSection(String(localized: "profile.section.body", bundle: .module).uppercased()) {
-            DeltiqControlRow(label: String(localized: "onboarding.field.heightCm", bundle: .module), showsDivider: false) {
-                decimalField(
-                    String(localized: "onboarding.field.heightCm", bundle: .module),
-                    value: $profile.heightCm,
-                    placeholder: String(localized: "profile.body.heightPlaceholder", bundle: .module)
-                )
+    /// Settings-Epic Phase 3 (docs/SETTINGS_UX_AUDIT.md, Befunde `PE-B1`/
+    /// `PE-G1`): kombinierte Koerperdaten-Zeile — Groesse, aktuelles Gewicht
+    /// (mit Datum) und Zielgewicht an einem Ort statt auf `bodyCard`/
+    /// `goalCard` verteilt. Oeffnet `BodyDataEditorView` als Draft-Sheet mit
+    /// explizitem Speichern/Abbrechen; die Zeile selbst zeigt nur den
+    /// aktuellen Stand, nie editierbar direkt hier.
+    private var bodyDataCard: some View {
+        DeltiqSection(String(localized: "profile.bodyData.title", bundle: .module).uppercased()) {
+            DeltiqRow(
+                icon: "ruler",
+                label: String(localized: "profile.bodyData.title", bundle: .module),
+                value: bodyDataSummaryText,
+                showsChevron: true,
+                showsDivider: false
+            ) {
+                showingBodyDataEditor = true
             }
-            if !Self.heightRange.contains(profile.heightCm) {
-                let template = String(localized: "profile.body.plausible", bundle: .module)
-                hintRow(
-                    template
-                        .replacingOccurrences(of: "%1$lld", with: "\(Int(Self.heightRange.lowerBound))")
-                        .replacingOccurrences(of: "%2$lld", with: "\(Int(Self.heightRange.upperBound))"),
-                    color: Color.Deltiq.error
-                )
-            } else {
-                hintRow(String(localized: "profile.body.footerOk", bundle: .module))
-            }
+            hintRow(String(localized: "profile.bodyData.summary.footer", bundle: .module))
+        }
+        .sheet(isPresented: $showingBodyDataEditor) {
+            BodyDataEditorView(profile: profile)
         }
     }
 
-    private var goalCard: some View {
-        DeltiqSection(String(localized: "onboarding.section.goals", bundle: .module).uppercased()) {
-            DeltiqControlRow(label: String(localized: "onboarding.field.goalWeightKg", bundle: .module)) {
-                decimalField(
-                    String(localized: "onboarding.field.goalWeightKg", bundle: .module),
-                    value: $profile.goalWeightKg,
-                    placeholder: String(localized: "profile.goal.weightPlaceholder", bundle: .module),
-                    roundsToWeightPrecision: true
-                )
-            }
-            DeltiqControlRow(label: String(localized: "onboarding.field.environment", bundle: .module), showsDivider: false) {
-                Picker(selection: $profile.environment) {
-                    Text("environment.gym", bundle: .module).tag(EnvironmentType.gym)
-                    Text("environment.home_gym", bundle: .module).tag(EnvironmentType.homeGym)
-                    Text("environment.no_equipment", bundle: .module).tag(EnvironmentType.noEquipment)
-                } label: {
-                    EmptyView()
-                }
-                .pickerStyle(.menu)
-            }
-            hintRow(String(localized: "profile.goal.footer", bundle: .module))
+    private var bodyDataSummaryText: String {
+        var parts = [profile.heightCm.formattedTwoDecimals + " cm"]
+        if let latest = bodyMeasurements.first {
+            parts.append(latest.weightKg.formattedWeightInput() + " kg")
         }
+        if let goal = profile.goalWeightKg {
+            parts.append(String(format: String(localized: "settings.profile.goal", bundle: .module), goal.formattedWeightInput() + " kg"))
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    /// Settings-Epic Phase 3: kombinierter Trainingsort+Ausstattung-Editor
+    /// ersetzt die getrennte Umgebungs-Picker-Zeile (vormals in `goalCard`)
+    /// und das eigenstaendige `equipmentCard`-Sheet. Oeffnet
+    /// `TrainingLocationEquipmentEditorView` als Draft-Sheet — Details dort.
+    private var trainingLocationCard: some View {
+        DeltiqSection(String(localized: "profile.trainingLocation.title", bundle: .module).uppercased()) {
+            DeltiqRow(
+                icon: "dumbbell",
+                label: String(localized: "profile.trainingLocation.title", bundle: .module),
+                value: "\(environmentLabel(profile.environment)) · \(equipmentStatusText)",
+                showsChevron: true,
+                showsDivider: false
+            ) {
+                showingTrainingLocationEditor = true
+            }
+            hintRow(String(localized: "profile.equipment.footer", bundle: .module))
+        }
+        .sheet(isPresented: $showingTrainingLocationEditor) {
+            TrainingLocationEquipmentEditorView(profile: profile)
+        }
+    }
+
+    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// §1): ein nicht individuell eingerichtetes Gym-Profil zeigt NIE
+    /// "nicht erfasst" — dort gilt die Standard-Gym-Planungsannahme
+    /// (`EquipmentPlanningContext`), kein echtes "noch nichts angegeben".
+    private var equipmentStatusText: String {
+        guard profile.equipmentProfileConfirmedComplete else {
+            let hasAnySelection = EquipmentItem.allCases.contains { profile.equipmentProfile.availability(for: $0) == .available }
+            if hasAnySelection {
+                return String(localized: "profile.equipment.status.inProgress", bundle: .module)
+            }
+            if profile.environment == .gym {
+                return String(localized: "profile.equipment.status.gymAssumption", bundle: .module)
+            }
+            return String(localized: "profile.equipment.status.notSet", bundle: .module)
+        }
+        let isBodyweightOnly = EquipmentItem.allCases.allSatisfy { profile.equipmentProfile.availability(for: $0) == .unavailable }
+        return String(localized: isBodyweightOnly ? "profile.equipment.status.bodyweightOnly" : "profile.equipment.status.confirmed", bundle: .module)
     }
 
     /// DEL-250: Cardio-/Lauf-Ziele nachtraeglich editierbar (Post-Onboarding).
@@ -827,94 +863,6 @@ public struct ProfileEditorView: View {
         }
     }
 
-    /// Smart-Onboarding-Epic Phase 3 (PLAN_EQUIPMENT_MATCHING_AUDIT.md):
-    /// oeffnet die geteilte `EquipmentProfileEditor`-Komponente in einem
-    /// Sheet — dieselbe UI/dasselbe Core-Modell wie im Onboarding-Schritt,
-    /// keine zweite Equipment-Datenquelle. Die aeltere Checkbox-Liste
-    /// (direkt auf `Equipment`/`equipmentPreferences`) ist damit ersetzt;
-    /// jenes Feld wird jetzt ausschliesslich aus dem neuen Modell
-    /// synchronisiert (`equipmentProfileBinding` fuer jede laufende
-    /// Aenderung, `confirmEquipmentProfileComplete()` beim "Fertig"-Tap),
-    /// nie mehr direkt editiert.
-    private var equipmentCard: some View {
-        DeltiqSection(String(localized: "profile.equipment.header", bundle: .module).uppercased()) {
-            DeltiqRow(
-                icon: "dumbbell",
-                label: String(localized: "profile.equipment.sheet.title", bundle: .module),
-                value: equipmentStatusText,
-                showsChevron: true,
-                showsDivider: false
-            ) {
-                showingEquipmentEditor = true
-            }
-            hintRow(String(localized: "profile.equipment.footer", bundle: .module))
-        }
-        .sheet(isPresented: $showingEquipmentEditor) {
-            NavigationStack {
-                ScrollView {
-                    EquipmentProfileEditor(equipmentProfile: equipmentProfileBinding)
-                        .padding()
-                }
-                .navigationTitle(String(localized: "profile.equipment.sheet.title", bundle: .module))
-                #if os(iOS)
-                .navigationBarTitleDisplayMode(.inline)
-                #endif
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button(String(localized: "common.close", bundle: .module)) {
-                            showingEquipmentEditor = false
-                        }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button(String(localized: "common.done", bundle: .module)) {
-                            profile.confirmEquipmentProfileComplete()
-                            showingEquipmentEditor = false
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /// Schreibt jede Aenderung aus der geteilten Editor-Komponente direkt
-    /// durch UND haelt `equipmentPreferences` (DEL-170) automatisch im Sync
-    /// — aber NUR wenn die Erfassung bereits bestaetigt wurde. Vor der
-    /// ersten Bestaetigung bleibt die aeltere Spalte unberuehrt, damit kein
-    /// Zwischenstand sie verfrueht mit einer unvollstaendigen Aussage
-    /// ueberschreibt (identisches Prinzip wie
-    /// `UserBodyProfile.setEquipmentAvailability`, hier fuer den
-    /// Ganz-Profil-Binding-Fall der geteilten UI-Komponente).
-    private var equipmentProfileBinding: Binding<UserEquipmentProfile> {
-        Binding(
-            get: { profile.equipmentProfile },
-            set: { newValue in
-                profile.equipmentProfile = newValue
-                if profile.equipmentProfileConfirmedComplete {
-                    profile.equipmentPreferences = newValue.legacyEquipmentPreferences
-                }
-            }
-        )
-    }
-
-    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
-    /// §1): ein nicht individuell eingerichtetes Gym-Profil zeigt NIE
-    /// "nicht erfasst" — dort gilt die Standard-Gym-Planungsannahme
-    /// (`EquipmentPlanningContext`), kein echtes "noch nichts angegeben".
-    private var equipmentStatusText: String {
-        guard profile.equipmentProfileConfirmedComplete else {
-            let hasAnySelection = EquipmentItem.allCases.contains { profile.equipmentProfile.availability(for: $0) == .available }
-            if hasAnySelection {
-                return String(localized: "profile.equipment.status.inProgress", bundle: .module)
-            }
-            if profile.environment == .gym {
-                return String(localized: "profile.equipment.status.gymAssumption", bundle: .module)
-            }
-            return String(localized: "profile.equipment.status.notSet", bundle: .module)
-        }
-        let isBodyweightOnly = EquipmentItem.allCases.allSatisfy { profile.equipmentProfile.availability(for: $0) == .unavailable }
-        return String(localized: isBodyweightOnly ? "profile.equipment.status.bodyweightOnly" : "profile.equipment.status.confirmed", bundle: .module)
-    }
-
     /// DEL-203: Wochenziel für den Trainings-Streak. Stepper 1-7 —
     /// der Kalender-Streak zählt nur Wochen, die das Ziel erfüllen.
     private var weeklyGoalCard: some View {
@@ -1020,19 +968,8 @@ public struct ProfileEditorView: View {
     // MARK: - Row helpers
 
     /// DEL-106-Muster (siehe MeasurementView.decimalField): TextField mit Decimal-
-    /// Keyboard, rechtsbuendig, `fitnessNumberStyle()`. Zwei Overloads (optional/
-    /// nicht-optional), weil `UserBodyProfile.heightCm` non-optional ist,
-    /// `goalWeightKg` aber `Double?`.
-    @ViewBuilder
-    private func decimalField(_ label: String, value: Binding<Double>, placeholder: String) -> some View {
-        TextField(label, value: value, format: .number, prompt: Text(placeholder))
-            .decimalKeyboard()
-            .multilineTextAlignment(.trailing)
-            .font(.system(size: 15))
-            .fitnessNumberStyle()
-            .frame(maxWidth: 140)
-    }
-
+    /// Keyboard, rechtsbuendig, `fitnessNumberStyle()`.
+    ///
     /// Fix "70,050003"-Bug: `roundsToWeightPrecision` ist NUR fuer das
     /// Zielgewicht `true` (die andere Aufrufstelle, Wochen-Laufvolumen in
     /// km, bleibt unveraendert). Rundet den geschriebenen Wert sofort auf 2
@@ -1077,8 +1014,6 @@ public struct ProfileEditorView: View {
             .padding(.top, 4)
             .padding(.bottom, 8)
     }
-
-    private static let heightRange: ClosedRange<Double> = 100...250
 
     private static var minBirthDate: Date {
         Calendar.current.date(byAdding: .year, value: -125, to: Date()) ?? Date.distantPast
