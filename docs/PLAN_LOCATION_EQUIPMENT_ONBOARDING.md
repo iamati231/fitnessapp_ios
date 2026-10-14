@@ -240,3 +240,98 @@ selbst (die UI-Zuordnung Auswahl → `EquipmentItem`-Werte) sind `private` in
 `UserEquipmentProfile`-Werte (die die Auswahl laut Code erzeugen wuerde)
 von der bestehenden, bereits in Phase 4 getesteten Equipment-Pruefung
 korrekt verarbeitet werden.
+
+## 9. Abschlussbericht (Phase 6.10)
+
+**Welche Schritte pro Trainingsort tatsächlich erscheinen.**
+
+- **Fitnessstudio**: `equipmentPreferencesStep` zeigt `gymEquipmentStep` —
+  Hinweistext ("Wir planen für ein übliches Fitnessstudio...") + Button
+  "Ausstattung anpassen", der den vollen `EquipmentProfileEditor` als Sheet
+  öffnet. Kein Pflichtfeld, "Weiter" funktioniert ohne jede Interaktion.
+  Nach einer abgeschlossenen individuellen Erfassung ersetzt eine gruene
+  "Ausstattung erfasst"-Karte (Stil wie die bestehende
+  `baselineCapturedSummary`) den Hinweistext.
+- **Home-Gym**: `homeGymEquipmentStep` — unverändert der volle,
+  restrukturierte `EquipmentProfileEditor` (Abschnitte Gewichte / Bank /
+  Klimmzugstange / Weitere Ausstattung) + "Später einrichten"-Link.
+- **Kein Equipment**: `noEquipmentQuickStep` — `NoEquipmentQuickEquipmentPicker`
+  (Kurzhanteln/Kettlebell/Widerstandsband + "Nur Körpergewicht"-Button +
+  aufklappbare "Weitere Ausstattung" fuer Klimmzugstange/Rack/Kabelzug/
+  Kraftstation) + derselbe "Später entscheiden"-Link.
+
+Die Fortschrittsanzeige (`progressIndicator`) zeigt weiterhin alle 7 Schritte
+unveraendert — bewusst KEIN Re-Skip des Equipment-Slots (das waere exakt die
+vor Phase 4 bewusst entfernte `.noEquipment`-Skip-Logik, siehe Task #92).
+"Kein leerer Pflichtschritt" wird stattdessen durch den INHALT (Hinweis statt
+Formular, nie blockierend) erfuellt, nicht durch Ausblenden des Schritts.
+
+**Welche Gym-Annahmen gelten.** `UserEquipmentProfile.gymDefault`: Langhantel,
+Kurzhantel, verstellbare Bank, Rack, Kabelzug, Kraftstation, Klimmzugstange
+= angenommen verfügbar. Kettlebell und Widerstandsband bleiben bewusst
+`unknown` (nicht universell genug für eine Annahme). Jede individuelle
+Angabe (verfügbar ODER fehlend) überschreibt die Annahme für genau dieses
+Item, der Rest bleibt die Annahme.
+
+**Welche Daten bestätigt bzw. unbekannt bleiben.** Drei Zustände
+(`EquipmentPlanningSource`): `confirmed` (Erfassung abgeschlossen, jedes
+Item explizit entschieden), `gymAssumption` (Standard-Gym-Annahme aktiv,
+NIE als bestätigt dargestellt oder gespeichert), `unconfirmed`
+(Home-Gym/Kein Equipment vor Abschluss — alles Nicht-Angefasste bleibt
+`unknown`). Ein EXPLIZIT als "weiß ich nicht" markiertes Item (Bank/
+Klimmzugstange) übersteht jetzt auch die vollständige Bestätigung des
+gesamten Schritts (Fix in Abschnitt 6.8) — vorher wäre es wie ein nie
+angefasstes Item zu `unavailable` gekippt.
+
+**Tests, tatsächlich ausgeführt (Linux).** 17 neue Core-Tests:
+`EquipmentPlanningContextTests` (10), `HomeGymEquipmentScenarioTests` (3),
+3 neue + 1 bewusst umbenannter Test in `PlanMatchmakerTests`,
+1 neuer Test in `EquipmentRequirementTests`. Projekt gesamt: **961/961
+grün** (920 Core + 38 Health + 3 UI), `swift test --parallel` zuletzt
+direkt vor diesem Bericht erneut bestätigt. Keine neuen Data- oder
+UI-Test-Dateien in dieser Phase (anders als Phase 5) — die neue UI
+(`gymEquipmentStep`, `NoEquipmentQuickEquipmentPicker`, restrukturierter
+Editor) wurde ausschließlich durch Code-Review + die Core-Tests der
+darunterliegenden `UserEquipmentProfile`/`EquipmentPlanningContext`-Logik
+abgesichert, nicht durch einen automatisierten UI-Test.
+
+**Explizit NICHT automatisiert getestet (Code-Review statt Test).**
+- Pflicht-Test 1 (Gym-UI zeigt tatsächlich den Hinweis statt eines leeren
+  Formulars) und Pflicht-Test 11 (Ortswechsel/Zurück/Sheet-Abbruch verlieren
+  keine Angaben) — reine SwiftUI-`@State`-Navigationsfragen ohne
+  sinnvollen Core-/SwiftData-Test. Verifiziert durch Lesen des tatsächlichen
+  Codes (`equipmentPreferencesStep`-Dispatch, `.onChange(of: environment)`,
+  `gymEquipmentSheet`-Toolbar-Buttons), nicht durch Ausführung.
+- `BenchChoice`/`TriStateChoice` (die UI-Zuordnung Auswahl → `EquipmentItem`-
+  Werte) sind `private` in `EquipmentProfileEditor.swift`, daher nicht direkt
+  unit-testbar — end-to-end über die resultierenden `UserEquipmentProfile`-
+  Werte verifiziert (Abschnitt 8).
+
+**Bewusste Scope-Entscheidungen.**
+- Kein viertes `EquipmentAvailability`-Fall für die Gym-Annahme — stattdessen
+  ein separater, rein-rechnerischer `EquipmentPlanningContext` (Abschnitt 1).
+- Keine Dip-Barren/Ringe-Schlingentrainer — kein `EquipmentItem` dafür
+  vorhanden, kein Toggle ohne Matching-Wirkung (Abschnitt 6).
+- Ortswechsel: keine eigene "gilt das noch?"-Abfrage gebaut. Stattdessen
+  setzt `.onChange(of: environment)` nur `equipmentProfileConfirmedComplete`
+  zurück (Daten bleiben erhalten, verlangen aber frische Bestätigung für den
+  neuen Ort) — proportional zur Vorgabe ("ohne getrennte Ortsprofile"),
+  keine zusätzliche Dialog-UI für einen seltenen Onboarding-Edge-Case.
+- Kein Umbau der Ersatzübungs-Engine (Phase 5 bleibt unverändert) und keine
+  Änderung an bestehenden, bereits instanziierten Nutzerplänen — beides
+  explizit aus dem Scope ausgeschlossen, auch so eingehalten.
+
+**Apple/Codemagic-Status: weiterhin ungeprüft, mit einer wichtigen
+Präzisierung.** `mcp__github__actions_list` liefert erneut `total_count: 0`
+für `claude/smart-onboarding-epic`, keine Pull Request existiert für diesen
+Branch — diese Session hat über die GitHub-API weiterhin KEINE Sicht auf
+CI-Ergebnisse. **Aber:** in dieser Session hat der User ein echtes
+Codemagic-Build-Log hochgeladen (`run_unit_tests__release_gate__1.log`,
+siehe Commit `2cf82c7`) — Codemagic baut diesen Branch also nachweislich,
+nur eben nicht über eine fuer diese Session sichtbare GitHub-Actions-
+Workflow-Run. Diese Phase-6-Aenderungen sind seit dem letzten Push NICHT
+durch einen echten Apple-Build bestaetigt; wie in jedem vorherigen
+Phasenbericht gilt: Linux-kompilierter SwiftUI-Code wird hier nicht als
+"Apple-getestet" dargestellt. Ein echter Codemagic-/Xcode-Lauf (inkl.
+manueller Pruefung der neuen UI auf einem Geraet/Simulator) bleibt eine
+offene Release-Voraussetzung.
