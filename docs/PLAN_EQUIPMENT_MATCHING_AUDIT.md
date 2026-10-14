@@ -436,3 +436,89 @@ Vorgabe, Tasks #84-#88 im Projekt-Tracking):
 
 Dieser Scope-Schnitt wird im Abschlussbericht an den Nutzer offen
 kommuniziert, nicht stillschweigend vorausgesetzt.
+
+## 10. Phase 2 — Equipment-Datenmodell, Persistenz, Voraussetzungen-Prüfung
+
+Umgesetzt (Tasks #84/#85, Commit siehe Git-Log):
+
+- **Core** (`Sources/FitnessAppCore/Programs/EquipmentRequirement.swift`):
+  `EquipmentItem` (10 Faelle: 4 Gewichte + 6 Zubehoer/Stationen, bewusst
+  getrennt von `Equipment`), `EquipmentAvailability` (available/unavailable/
+  unknown), `UserEquipmentProfile` (reine Sicht, kein SwiftData-Bezug),
+  `ExerciseRequirement` (UND/ODER-Baum mit optionaler Mindest-Stueckzahl),
+  `RequirementStatus`/`UnmetReason` fuer die dreistufige Pruefung mit
+  konkreten Gruenden (Kleene/Łukasiewicz-Logik: ein definitiv unerfuelltes
+  Kind schlaegt ein unbekanntes im UND; ein unbekanntes Kind haelt das ODER
+  offen statt es als unerfuellt zu werten). 19 Core-Tests, auf Linux
+  tatsaechlich ausgefuehrt und gruen.
+- **Katalog-Anbindung**: `ExerciseTemplateSpec.equipmentRequirement: Exer
+  ciseRequirement?` (neues optionales Feld, Default `nil`, bestehende 229
+  Eintraege unveraendert). 8 Uebungen aus den Worked Examples der Vorgabe
+  real annotiert und verifiziert (Kniebeuge: Langhantel UND Rack; Goblet
+  Squat: Kettlebell ODER Kurzhantel; Schraegbankdruecken aufwaerts (KH) +
+  Chest Supported Row (KH): 2 Kurzhanteln UND verstellbare Bank; alle 3
+  Klimmzug-Varianten: Klimmzugstange — zeigt zugleich den Mehrwert ggueber
+  `Equipment` alleine, da diese als `.bodyweight` klassifiziert sind, aber
+  real eine Stange brauchen; Kettlebell Floor Press: nur Kettlebell, explizit
+  keine Bank; Kettlebell Doppel-Push-Press: 2 Kettlebells). Die vollstaendige
+  Erfassung aller 229 Eintraege ist NICHT Teil dieser Phase (Task #87, siehe
+  Abschnitt 9).
+- **Persistenz** (`UserBodyProfile.swift`): drei neue additive Felder
+  (`equipmentAvailableItemsRaw`/`equipmentUnavailableItemsRaw`/
+  `equipmentItemCountsRaw`, alle `[String]`, Default `[]`) + typisierter
+  `equipmentProfile`-Accessor. Bewusst KEIN Backfill aus der alten
+  `equipmentPreferencesRaw` (Begruendung: Abschnitt 5.1/5.2 — deren
+  Eintraege koennen aus einer ungeprueften Environment-Vorbelegung stammen,
+  eine Uebernahme waere falsche Sicherheit aus fraglichen Altdaten). Jedes
+  Bestandsprofil liest nach dieser Aenderung fuer jedes `EquipmentItem`
+  `.unknown` — keine aktive Migration noetig, weil nichts hergeleitet wird
+  (die "idempotente Migration" ist hier per Konstruktion erfuellt, nicht
+  durch eine eigene Backfill-Klasse wie bei `experienceTrackRaw`).
+- **CSV Export/Import**: drei additive Spalten (`equipment_available_items`/
+  `equipment_unavailable_items`/`equipment_item_counts`), gleiches
+  `;`-Join-Verfahren wie `equipment_preferences`. Kein `headerSet`-Guard
+  noetig (anders als `dashboard_widgets`/`hero_metric_slots`): fehlende
+  Spalte und vorhandene-aber-leere Spalte fuehren hier auf denselben Wert
+  ("alles unbekannt"), es gibt keinen abweichenden Konstruktor-Default zu
+  schuetzen.
+- **Reset**: keine Code-Aenderung noetig — `SettingsView.resetApp()` loescht
+  bereits die gesamte `UserBodyProfile`-Zeile (`deleteAll(of:
+  UserBodyProfile.self)`), die neuen Felder haengen am selben Modell und
+  werden automatisch mitgeloescht. Durch Lesen verifiziert, kein eigener
+  Test moeglich (`resetApp` ist SwiftUI-View-interne Logik, nicht pure-
+  testbar).
+- **Bestehende Trainingsplaene unveraendert**: durch Konstruktion erfuellt
+  — nichts in dieser Phase beruehrt `TrainingPlan`/`TrainingDay`/`Exercise`
+  oder deren Instanziierung/Matching. Kein eigener Regressionstest dafuer
+  (waere ohne echten Beruehrungspunkt ein Test ohne Aussagekraft); die
+  bestehende `DataPortabilityRoundtripTests`-Suite deckt eine versehentliche
+  Beeinflussung des gemeinsamen Export/Import-Pfads indirekt mit ab.
+- **Bewusst NICHT umgesetzt** (wie von der Anfrage selbst ausgeschlossen):
+  Ersatzuebungs-Engine, grosser Onboarding-UI-Umbau, vollstaendige
+  Katalog-Erfassung aller 229 Uebungen, exakte Plan-Verifikation (Abschnitt
+  5 der Original-Vorgabe).
+
+### Testabdeckung — tatsaechlich ausgefuehrt vs. nur geschrieben+geprueft
+
+Dieses Projekt dokumentiert in seiner `README.md` bereits selbst, dass
+`swift test` auf Linux NUR den Core- und Health-Teil ausfuehrt — der
+komplette `FitnessAppDataTests`-Teil (laut README ca. 80 Tests, inklusive
+aller bereits bestehenden SwiftData-Roundtrip-/Backfill-Tests) braucht
+echtes SwiftData und laeuft nur auf macOS/Codemagic. Das ist keine neue
+Einschraenkung dieser Phase, sondern durch `swift test list` empirisch
+bestaetigt: **kein einziger** Test aus `FitnessAppDataTests` erscheint in
+der Linux-Testliste, obwohl der komplette Code (inklusive der neuen
+SwiftData-Tests dieser Phase) sauber kompiliert.
+
+Konkret fuer diese Phase:
+- **Tatsaechlich auf Linux ausgefuehrt und gruen**: alle 19 neuen
+  `EquipmentRequirementTests` (Core, dreistufige UND/ODER-Pruefung) + die
+  volle bestehende Core/Health-Suite (885 Tests insgesamt, 0 Fehler).
+- **Geschrieben, kompiliert, manuell gegengelesen, aber NICHT lokal
+  ausgefuehrt** (identische Einschraenkung wie bei JEDEM bestehenden
+  `FitnessAppDataTests`-Test in diesem Projekt, nicht spezifisch fuer diese
+  Aenderung): 5 neue `UserBodyProfileTests` (equipmentProfile Get/Set,
+  Stale-Value-Robustheit, Disjunktheit der beiden Rohlisten) + 2 neue
+  `DataPortabilityRoundtripTests` (Export/Import-Rundlauf, Bestandsprofil
+  bleibt unbekannt). Diese laufen beim naechsten Codemagic-Build auf
+  macOS automatisch mit.

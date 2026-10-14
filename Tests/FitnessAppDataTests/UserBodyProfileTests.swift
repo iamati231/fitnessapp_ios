@@ -152,5 +152,83 @@ final class UserBodyProfileTests: XCTestCase {
         XCTAssertNil(profile.baselineAssessment?.pushUp)
         XCTAssertEqual(profile.baselineAssessment?.plank, PlankAssessment(seconds: 30))
     }
+
+    // MARK: - Smart-Onboarding-Epic Phase 2: equipmentProfile get/set
+
+    /// "Eine leere alte Auswahl bleibt unbekannt" — ein frisches Profil (wie
+    /// ein echtes Bestandsprofil vor dieser Phase) liest fuer JEDES Item
+    /// `.unknown`, nie `.unavailable`.
+    func testEquipmentProfileDefaultsToAllUnknown() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        for item in EquipmentItem.allCases {
+            XCTAssertEqual(profile.equipmentProfile.availability(for: item), .unknown)
+            XCTAssertNil(profile.equipmentProfile.count(for: item))
+        }
+    }
+
+    func testSettingEquipmentProfileRoundTripsThroughFlatFields() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        profile.equipmentProfile = UserEquipmentProfile(
+            availability: [.kettlebell: .available, .pullUpBar: .unavailable],
+            counts: [.kettlebell: 2]
+        )
+
+        XCTAssertEqual(Set(profile.equipmentAvailableItemsRaw), ["kettlebell"])
+        XCTAssertEqual(Set(profile.equipmentUnavailableItemsRaw), ["pullUpBar"])
+        XCTAssertEqual(profile.equipmentItemCountsRaw, ["kettlebell:2"])
+
+        XCTAssertEqual(profile.equipmentProfile.availability(for: .kettlebell), .available)
+        XCTAssertEqual(profile.equipmentProfile.availability(for: .pullUpBar), .unavailable)
+        XCTAssertEqual(profile.equipmentProfile.availability(for: .barbell), .unknown, "Unberuehrtes Item bleibt unbekannt")
+        XCTAssertEqual(profile.equipmentProfile.count(for: .kettlebell), 2)
+    }
+
+    /// Ein Item darf nie gleichzeitig in beiden Rohlisten stehen — Umschalten
+    /// von verfuegbar auf nicht-verfuegbar muss den alten Eintrag ersetzen,
+    /// nicht duplizieren.
+    func testTogglingAvailabilityNeverLeavesItemInBothRawLists() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        profile.equipmentProfile = UserEquipmentProfile(availability: [.rack: .available])
+        XCTAssertTrue(profile.equipmentAvailableItemsRaw.contains("rack"))
+        XCTAssertFalse(profile.equipmentUnavailableItemsRaw.contains("rack"))
+
+        profile.equipmentProfile = UserEquipmentProfile(availability: [.rack: .unavailable])
+        XCTAssertFalse(profile.equipmentAvailableItemsRaw.contains("rack"))
+        XCTAssertTrue(profile.equipmentUnavailableItemsRaw.contains("rack"))
+    }
+
+    /// Gleicher Robustness-Pattern wie `equipmentPreferences`/
+    /// `activeDashboardWidgets`: ein veralteter Rohwert (Enum-Case existiert
+    /// nicht mehr) wird beim Lesen stillschweigend uebersprungen statt zu
+    /// crashen oder die uebrigen Eintraege zu verwerfen.
+    func testStaleRawItemIsIgnoredOnRead() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        profile.equipmentAvailableItemsRaw = ["kettlebell", "does-not-exist-anymore"]
+        profile.equipmentItemCountsRaw = ["kettlebell:2", "garbage", "does-not-exist-anymore:3"]
+
+        XCTAssertEqual(profile.equipmentProfile.availability(for: .kettlebell), .available)
+        XCTAssertEqual(profile.equipmentProfile.count(for: .kettlebell), 2)
+    }
+
+    /// Nur Items mit `supportsCount == true` werden ueberhaupt in Betracht
+    /// gezogen fuer die Stueckzahl-Erfassung in echten Aufrufen — der
+    /// Accessor selbst ist zwar permissiv (encodiert, was ihm gegeben wird),
+    /// aber ein Item OHNE erfasste Stueckzahl bleibt nil, niemals 0.
+    func testCountDefaultsToNilNotZeroWhenNeverSet() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        profile.equipmentProfile = UserEquipmentProfile(availability: [.dumbbell: .available])
+
+        XCTAssertNil(profile.equipmentProfile.count(for: .dumbbell))
+    }
 }
 #endif

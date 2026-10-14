@@ -631,6 +631,15 @@ public enum DataImportService {
             p.coachingToneRaw = row.optionalString("coaching_tone") ?? CoachingTone.analytical.rawValue
             p.trainingGoalRaw = row.optionalString("training_goal") ?? TrainingGoal.hybrid.rawValue
             p.equipmentPreferencesRaw = splitMulti(row["equipment_preferences"])
+            // Smart-Onboarding-Epic Phase 2: additive Spalten, gleiches
+            // Prinzip wie `equipment_preferences` direkt darueber — kein
+            // headerSet-Guard noetig, weil "Spalte fehlt" (aelterer Export)
+            // und "Spalte vorhanden, aber leer" hier auf denselben Wert
+            // fuehren (alles unbekannt), anders als bei dashboard_widgets/
+            // hero_metric_slots mit ihrem abweichenden Nicht-leer-Default.
+            p.equipmentAvailableItemsRaw = splitMulti(row["equipment_available_items"])
+            p.equipmentUnavailableItemsRaw = splitMulti(row["equipment_unavailable_items"])
+            p.equipmentItemCountsRaw = splitMulti(row["equipment_item_counts"])
             // Bugfix (Audit): Spalten-PRAESENZ statt Wert-Leerheit pruefen.
             // Eine leere Liste ist ein gueltiger, bewusst vom User gewaehlter
             // Zustand ("alle Hero-Metriken/Dashboard-Widgets ausgeblendet",

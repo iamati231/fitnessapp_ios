@@ -239,7 +239,12 @@ public enum DataExportService {
             "baseline_pull_variant", "baseline_pull_clean_reps", "baseline_pull_load_kg", "baseline_pull_rir",
             "baseline_plank_seconds", "baseline_cardio_answer",
             "baseline_push_self_assessment", "baseline_legs_self_assessment", "baseline_pull_self_assessment",
-            "baseline_desired_first_week_intensity"
+            "baseline_desired_first_week_intensity",
+            // Smart-Onboarding-Epic Phase 2: drei weitere additive Spalten
+            // fuer die dreiwertige Equipment-Erfassung — aeltere Importer
+            // ignorieren sie, aeltere ZIPs liefern beim Import ueberall ""
+            // (= alles unbekannt, siehe `UserBodyProfile.equipmentProfile`).
+            "equipment_available_items", "equipment_unavailable_items", "equipment_item_counts"
         ])
         for p in profiles {
             w.appendRow([
@@ -281,7 +286,10 @@ public enum DataExportService {
                 p.baselinePushSelfAssessmentRaw ?? "",
                 p.baselineLegsSelfAssessmentRaw ?? "",
                 p.baselinePullSelfAssessmentRaw ?? "",
-                p.baselineDesiredFirstWeekIntensityRaw ?? ""
+                p.baselineDesiredFirstWeekIntensityRaw ?? "",
+                p.equipmentAvailableItemsRaw.joined(separator: ";"),
+                p.equipmentUnavailableItemsRaw.joined(separator: ";"),
+                p.equipmentItemCountsRaw.joined(separator: ";")
             ])
         }
         return w.data()

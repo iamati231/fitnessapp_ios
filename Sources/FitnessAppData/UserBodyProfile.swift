@@ -58,6 +58,31 @@ public final class UserBodyProfile {
     /// gepflegt" und nutzt die Standard-Variante (template.days).
     public var equipmentPreferencesRaw: [String] = []
 
+    /// Smart-Onboarding-Epic Phase 2 (PLAN_EQUIPMENT_MATCHING_AUDIT.md):
+    /// dreiwertige Verfuegbarkeit je `EquipmentItem` (Zubehoer/Stationen,
+    /// zusaetzlich zu den groben `equipmentPreferences` oben). Zwei
+    /// getrennte RawValue-Listen statt einer einzelnen mit Status-Suffix —
+    /// gleiches "flaches Feld-pro-Wert"-Prinzip wie bei den Baseline-Feldern
+    /// unten, jedes unabhaengig CSV-exportierbar. Ein Item in KEINER der
+    /// beiden Listen ist `.unknown` (siehe `equipmentProfile`-Accessor) —
+    /// das deckt sowohl ein brandneues Item als auch ein komplett
+    /// unberuehrtes Bestandsprofil (beide Listen leer) automatisch und
+    /// korrekt ab: "eine leere alte Auswahl bleibt unbekannt". Absichtlich
+    /// KEIN Backfill aus `equipmentPreferencesRaw`: dessen Eintraege koennen
+    /// aus einer ungeprueften Environment-Vorbelegung stammen (Audit
+    /// Abschnitt 5.1/5.2, `OnboardingView.defaultEquipment(for:)`), eine
+    /// Uebernahme in den neuen Modell waere exakt die "falsche Sicherheit
+    /// aus unvollstaendigen/fraglichen Altdaten", die Phase 2 vermeiden soll.
+    public var equipmentAvailableItemsRaw: [String] = []
+    public var equipmentUnavailableItemsRaw: [String] = []
+
+    /// Stueckzahl je `EquipmentItem`, nur fuer Items mit `supportsCount ==
+    /// true` befuellt. Encoding `"itemRawValue:count"` statt eines
+    /// `[String: Int]`-Feldes — konsistent mit dem Array-RawValue-Muster
+    /// der uebrigen Felder hier, kein neuer Persistenz-Typ noetig. Ein
+    /// fehlender Eintrag bedeutet "nicht erfasst", nicht "0".
+    public var equipmentItemCountsRaw: [String] = []
+
     /// DEL-203: Wochenziel für den Trainings-Streak (1-7 Workouts/Woche).
     /// Der Kalender-Streak (DEL-197) zählt nur Wochen, die dieses Ziel
     /// erfüllen. Default 1 = altes "mindestens ein Workout"-Verhalten —
@@ -307,6 +332,46 @@ public final class UserBodyProfile {
     public var equipmentPreferences: Set<Equipment> {
         get { Set(equipmentPreferencesRaw.compactMap { Equipment(rawValue: $0) }) }
         set { equipmentPreferencesRaw = newValue.map(\.rawValue).sorted() }
+    }
+
+    /// Smart-Onboarding-Epic Phase 2: Typed Accessor fuer die neue,
+    /// dreiwertige Equipment-Erfassung. Stale rawStrings (Enum-Cases
+    /// existieren nicht mehr) werden beim Lesen rausgefiltert — gleicher
+    /// Robustness-Pattern wie `equipmentPreferences`/`activeDashboardWidgets`.
+    /// Ein Item darf nie gleichzeitig in beiden Rohlisten stehen; der Setter
+    /// stellt das her, indem er aus EINER Quelle (`UserEquipmentProfile.
+    /// availability`) beide Listen disjunkt neu schreibt.
+    public var equipmentProfile: UserEquipmentProfile {
+        get {
+            var availability: [EquipmentItem: EquipmentAvailability] = [:]
+            for raw in equipmentAvailableItemsRaw {
+                guard let item = EquipmentItem(rawValue: raw) else { continue }
+                availability[item] = .available
+            }
+            for raw in equipmentUnavailableItemsRaw {
+                guard let item = EquipmentItem(rawValue: raw) else { continue }
+                availability[item] = .unavailable
+            }
+            var counts: [EquipmentItem: Int] = [:]
+            for pair in equipmentItemCountsRaw {
+                let parts = pair.split(separator: ":", maxSplits: 1)
+                guard parts.count == 2, let item = EquipmentItem(rawValue: String(parts[0])),
+                      let count = Int(parts[1]) else { continue }
+                counts[item] = count
+            }
+            return UserEquipmentProfile(availability: availability, counts: counts)
+        }
+        set {
+            equipmentAvailableItemsRaw = newValue.availability
+                .compactMap { item, availability in availability == .available ? item.rawValue : nil }
+                .sorted()
+            equipmentUnavailableItemsRaw = newValue.availability
+                .compactMap { item, availability in availability == .unavailable ? item.rawValue : nil }
+                .sorted()
+            equipmentItemCountsRaw = newValue.counts
+                .map { "\($0.key.rawValue):\($0.value)" }
+                .sorted()
+        }
     }
 
     public init(

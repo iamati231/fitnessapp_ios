@@ -901,6 +901,69 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertNil(imported?.experienceTrack)
     }
 
+    // MARK: - Smart-Onboarding-Epic Phase 2: equipmentProfile (dreiwertige Equipment-Erfassung)
+
+    func testEquipmentProfileSurvivesRoundtrip() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        profile.equipmentProfile = UserEquipmentProfile(
+            availability: [.kettlebell: .available, .adjustableBench: .unavailable, .pullUpBar: .available],
+            counts: [.kettlebell: 1]
+        )
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .kettlebell), .available)
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .adjustableBench), .unavailable)
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .pullUpBar), .available)
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .barbell), .unknown)
+        XCTAssertEqual(imported?.equipmentProfile.count(for: .kettlebell), 1)
+    }
+
+    /// Entspricht einem Bestandsprofil von vor dieser Phase: die drei neuen
+    /// Spalten fehlen im Export schlicht nicht (sie werden immer mit-
+    /// geschrieben), aber ein Profil, das die Felder nie gesetzt hat, muss
+    /// nach dem Rundlauf weiterhin ueberall `.unknown` liefern — kein Restore
+    /// darf `.unavailable` erfinden.
+    func testEquipmentProfileDefaultsToAllUnknownOnRoundtripForUntouchedProfile() throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        for item in EquipmentItem.allCases {
+            XCTAssertEqual(imported?.equipmentProfile.availability(for: item), .unknown)
+        }
+    }
+
     // Start-Check-Epic: Core-Pflichttest 2 ("Jede Testvariante kann
     // gespeichert, exportiert und importiert werden") + 8 ("Backward
     // compatibility: bestehender User ohne Baseline bleibt unveraendert").
