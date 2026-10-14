@@ -135,6 +135,18 @@ public struct OnboardingView: View {
         equipmentProfileConfirmedComplete ? equipmentProfile.legacyEquipmentPreferences : []
     }
 
+    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// §1/§4): EINE Berechnung des effektiven Planungskontexts — Vorschau
+    /// (`previewingTemplate`-Sheet) UND `finishOnboarding()` verwenden
+    /// exakt diesen, nie das rohe `equipmentProfile` direkt, sobald der Ort
+    /// Gym ist und keine individuelle Erfassung abgeschlossen wurde.
+    private var equipmentPlanningContext: EquipmentPlanningContext {
+        EquipmentPlanningResolver.resolve(
+            environment: environment, individualProfile: equipmentProfile,
+            confirmedComplete: equipmentProfileConfirmedComplete
+        )
+    }
+
     // Step 4 — Präferenzen + Plan
     @State private var enableWaterReminder: Bool = true
     @State private var enableMeasurementReminder: Bool = true
@@ -239,9 +251,10 @@ public struct OnboardingView: View {
                     TemplatePreviewView(
                         template: template,
                         adoptButtonTitle: "Diesen Plan wählen",
-                        userEquipmentProfile: equipmentProfile,
+                        userEquipmentProfile: equipmentPlanningContext.effectiveProfile,
                         goal: trainingGoal,
-                        experienceTrack: resolvedExperienceTrack
+                        experienceTrack: resolvedExperienceTrack,
+                        isEquipmentAssumption: equipmentPlanningContext.isAssumption
                     ) { selection in
                         // DEL-088: Adopt finalisiert die Plan-Wahl noch nicht
                         // direkt — stattdessen oeffnet sich der DayPicker,
@@ -1851,12 +1864,19 @@ public struct OnboardingView: View {
             // nie beobachtet als erreichbarer Fall. Bei Veraltung (oder
             // fehlender Vorschau-Auswahl) wird still frisch aufgeloest statt
             // eine moeglicherweise falsche, veraltete Auswahl zu instanziieren.
+            // Phase 6 (PLAN_LOCATION_EQUIPMENT_ONBOARDING.md §1/§4): Vergleich
+            // UND eine eventuelle Neuaufloesung laufen gegen denselben
+            // effektiven Planungskontext wie die gerade geschlossene Vorschau
+            // — sonst wuerde eine reine Gym-Annahme hier faelschlich als
+            // "veraltet" gelten (das rohe `equipmentProfile` enthaelt die
+            // Annahme nicht, nur `equipmentPlanningContext.effectiveProfile`).
+            let currentEffectiveProfile = equipmentPlanningContext.effectiveProfile
             let freshSelection: ResolvedPlanSelection
-            if let resolvedPlanSelection, !resolvedPlanSelection.isStale(comparedTo: equipmentProfile) {
+            if let resolvedPlanSelection, !resolvedPlanSelection.isStale(comparedTo: currentEffectiveProfile) {
                 freshSelection = resolvedPlanSelection
             } else {
                 freshSelection = PlanSelectionResolver.resolve(
-                    template: template, profile: equipmentProfile,
+                    template: template, profile: currentEffectiveProfile,
                     context: SubstitutionContext(goal: trainingGoal, experienceTrack: resolvedExperienceTrack)
                 )
             }

@@ -900,10 +900,20 @@ public struct ProfileEditorView: View {
         )
     }
 
+    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// §1): ein nicht individuell eingerichtetes Gym-Profil zeigt NIE
+    /// "nicht erfasst" — dort gilt die Standard-Gym-Planungsannahme
+    /// (`EquipmentPlanningContext`), kein echtes "noch nichts angegeben".
     private var equipmentStatusText: String {
         guard profile.equipmentProfileConfirmedComplete else {
             let hasAnySelection = EquipmentItem.allCases.contains { profile.equipmentProfile.availability(for: $0) == .available }
-            return String(localized: hasAnySelection ? "profile.equipment.status.inProgress" : "profile.equipment.status.notSet", bundle: .module)
+            if hasAnySelection {
+                return String(localized: "profile.equipment.status.inProgress", bundle: .module)
+            }
+            if profile.environment == .gym {
+                return String(localized: "profile.equipment.status.gymAssumption", bundle: .module)
+            }
+            return String(localized: "profile.equipment.status.notSet", bundle: .module)
         }
         let isBodyweightOnly = EquipmentItem.allCases.allSatisfy { profile.equipmentProfile.availability(for: $0) == .unavailable }
         return String(localized: isBodyweightOnly ? "profile.equipment.status.bodyweightOnly" : "profile.equipment.status.confirmed", bundle: .module)

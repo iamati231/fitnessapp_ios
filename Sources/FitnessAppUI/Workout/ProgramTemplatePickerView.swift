@@ -37,9 +37,10 @@ public struct ProgramTemplatePickerView: View {
                             NavigationLink {
                                 TemplatePreviewView(
                                     template: template,
-                                    userEquipmentProfile: profiles.first?.equipmentProfile ?? UserEquipmentProfile(),
+                                    userEquipmentProfile: equipmentPlanningContext.effectiveProfile,
                                     goal: profiles.first?.trainingGoal ?? .hybrid,
-                                    experienceTrack: profiles.first?.experienceTrack
+                                    experienceTrack: profiles.first?.experienceTrack,
+                                    isEquipmentAssumption: equipmentPlanningContext.isAssumption
                                 ) { selection in
                                     instantiate(template, selection: selection)
                                 }
@@ -91,10 +92,14 @@ public struct ProgramTemplatePickerView: View {
         return ordered.map { ($0, bucket[$0] ?? []) }
     }
 
-    /// Filtert nach `profile.environment`. Same Logik wie OnboardingView:
+    /// Filtert nach `profile.environment`. Smart-Onboarding-Epic Phase 6
+    /// (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md §3): dieselbe Lockerung
+    /// wie `PlanMatchmaker.envMatches` — `.noEquipment` sieht jetzt auch
+    /// Home-Gym-getaggte Templates (die konkrete Ausfuehrbarkeit entscheidet
+    /// weiterhin die Equipment-Pruefung in der Vorschau, nicht dieser reine
+    /// Orts-Filter):
     ///   - gym: alle Templates
-    ///   - homeGym: homeGym + noEquipment
-    ///   - noEquipment: nur noEquipment
+    ///   - homeGym/noEquipment: homeGym + noEquipment
     /// Falls noch kein Profil existiert (sollte hier eigentlich nicht passieren
     /// — Profil ist Voraussetzung fuer MainTabView), fallen wir auf alle Plaene
     /// zurueck statt eine leere Liste zu zeigen.
@@ -102,12 +107,27 @@ public struct ProgramTemplatePickerView: View {
         guard let env = profiles.first?.environment else { return ProgramTemplates.all }
         return ProgramTemplates.all.filter { template in
             switch env {
-            case .gym:         return true
-            case .homeGym:     return template.targetEnvironment == .homeGym
-                                     || template.targetEnvironment == .noEquipment
-            case .noEquipment: return template.targetEnvironment == .noEquipment
+            case .gym:
+                return true
+            case .homeGym, .noEquipment:
+                return template.targetEnvironment == .homeGym || template.targetEnvironment == .noEquipment
             }
         }
+    }
+
+    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// §1/§4): derselbe effektive Planungskontext, den `TemplatePreviewView`
+    /// fuer die Anzeige UND `instantiate` fuer die Veraltungspruefung nutzt —
+    /// EINE Berechnung, nicht pro Call-Site neu zusammengesetzt. Fehlt noch
+    /// ein Profil (siehe `filteredTemplates`-Kommentar), verhaelt sich das
+    /// wie `.gym` mit leerem individuellem Profil (reine Gym-Annahme) statt
+    /// gar nichts anzuzeigen.
+    private var equipmentPlanningContext: EquipmentPlanningContext {
+        EquipmentPlanningResolver.resolve(
+            environment: profiles.first?.environment ?? .gym,
+            individualProfile: profiles.first?.equipmentProfile ?? UserEquipmentProfile(),
+            confirmedComplete: profiles.first?.equipmentProfileConfirmedComplete ?? false
+        )
     }
 
     private var userEnvironmentLabel: String {
@@ -127,10 +147,16 @@ public struct ProgramTemplatePickerView: View {
         // Profil-Aenderung in einer anderen Szene ab), nie beobachtet als
         // erreichbarer Fall. Bei Veraltung wird still frisch aufgeloest,
         // statt eine moeglicherweise falsche Auswahl zu uebernehmen.
-        let currentProfile = profiles.first?.equipmentProfile ?? UserEquipmentProfile()
-        let freshSelection = selection.isStale(comparedTo: currentProfile)
+        //
+        // Phase 6 (PLAN_LOCATION_EQUIPMENT_ONBOARDING.md §1/§4): der Vergleich
+        // UND eine eventuelle Neuaufloesung laufen gegen denselben effektiven
+        // Planungskontext wie die gerade gezeigte Vorschau (`equipmentPlanningContext`),
+        // nicht gegen das rohe, individuelle Profil — sonst wuerde eine reine
+        // Gym-Annahme bei jedem Adopt faelschlich als "veraltet" gelten.
+        let currentEffectiveProfile = equipmentPlanningContext.effectiveProfile
+        let freshSelection = selection.isStale(comparedTo: currentEffectiveProfile)
             ? PlanSelectionResolver.resolve(
-                template: template, profile: currentProfile,
+                template: template, profile: currentEffectiveProfile,
                 context: SubstitutionContext(goal: profiles.first?.trainingGoal ?? .hybrid, experienceTrack: profiles.first?.experienceTrack)
             )
             : selection
@@ -231,6 +257,15 @@ public struct TemplatePreviewView: View {
     /// nie faelschlich aktiv.
     public let goal: TrainingGoal
     public let experienceTrack: ExperienceTrack?
+    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// §1/§5): `true` ausschließlich, wenn `userEquipmentProfile` die reine
+    /// Gym-Planungsannahme ist (`EquipmentPlanningContext.isAssumption`),
+    /// NIE ein individuell bestätigtes Profil. Überschreibt die normale
+    /// Equipment-Status-Anzeige durch einen Annahme-Hinweis — "Equipment
+    /// passend"/"angepasst"/"fehlt" wären für eine Annahme eine zu starke,
+    /// nicht belegte Aussage (Vorgabe: nie "Equipment bestätigt" für eine
+    /// Annahme zeigen).
+    public let isEquipmentAssumption: Bool
 
     @Environment(\.dismiss) private var dismiss
 
@@ -240,6 +275,7 @@ public struct TemplatePreviewView: View {
         userEquipmentProfile: UserEquipmentProfile = UserEquipmentProfile(),
         goal: TrainingGoal = .hybrid,
         experienceTrack: ExperienceTrack? = nil,
+        isEquipmentAssumption: Bool = false,
         onAdopt: @escaping (ResolvedPlanSelection) -> Void
     ) {
         self.template = template
@@ -247,6 +283,7 @@ public struct TemplatePreviewView: View {
         self.userEquipmentProfile = userEquipmentProfile
         self.goal = goal
         self.experienceTrack = experienceTrack
+        self.isEquipmentAssumption = isEquipmentAssumption
         self.onAdopt = onAdopt
     }
 
@@ -308,31 +345,48 @@ public struct TemplatePreviewView: View {
     /// stillschweigend uebergangen oder durch eine andere Uebung ersetzt.
     @ViewBuilder
     private var equipmentStatusBanner: some View {
-        let selection = resolvedSelection
-        if let adaptation = selection.appliedAdaptation {
-            adaptedEquipmentBanner(adaptation)
+        if isEquipmentAssumption {
+            gymAssumptionBanner
         } else {
-            switch selection.equipmentStatus {
-            case .available:
-                equipmentStatusRow(
-                    icon: "checkmark.circle.fill", tint: .green,
-                    title: String(localized: "picker.plan.equipment.available.title", bundle: .module),
-                    detail: nil
-                )
-            case let .unknown(gaps):
-                equipmentStatusRow(
-                    icon: "questionmark.circle.fill", tint: .orange,
-                    title: String(localized: "picker.plan.equipment.unknown.title", bundle: .module),
-                    detail: unknownGapDetail(gaps)
-                )
-            case let .unavailable(gaps):
-                equipmentStatusRow(
-                    icon: "exclamationmark.triangle.fill", tint: .red,
-                    title: String(localized: "picker.plan.equipment.unavailable.title", bundle: .module),
-                    detail: missingGapDetail(gaps, attemptedButUnresolved: !selection.consideredButUnresolvedAdaptations.isEmpty)
-                )
+            let selection = resolvedSelection
+            if let adaptation = selection.appliedAdaptation {
+                adaptedEquipmentBanner(adaptation)
+            } else {
+                switch selection.equipmentStatus {
+                case .available:
+                    equipmentStatusRow(
+                        icon: "checkmark.circle.fill", tint: .green,
+                        title: String(localized: "picker.plan.equipment.available.title", bundle: .module),
+                        detail: nil
+                    )
+                case let .unknown(gaps):
+                    equipmentStatusRow(
+                        icon: "questionmark.circle.fill", tint: .orange,
+                        title: String(localized: "picker.plan.equipment.unknown.title", bundle: .module),
+                        detail: unknownGapDetail(gaps)
+                    )
+                case let .unavailable(gaps):
+                    equipmentStatusRow(
+                        icon: "exclamationmark.triangle.fill", tint: .red,
+                        title: String(localized: "picker.plan.equipment.unavailable.title", bundle: .module),
+                        detail: missingGapDetail(gaps, attemptedButUnresolved: !selection.consideredButUnresolvedAdaptations.isEmpty)
+                    )
+                }
             }
         }
+    }
+
+    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// §5): einzige Anzeige, wenn `isEquipmentAssumption == true` — niemals
+    /// "Equipment passend"/"angepasst"/"fehlt", auch wenn die Pruefung gegen
+    /// die Gym-Annahme technisch einen dieser Status ergeben wuerde. Eine
+    /// Annahme bleibt eine Annahme, unabhaengig vom Rechenergebnis.
+    private var gymAssumptionBanner: some View {
+        equipmentStatusRow(
+            icon: "building.2.fill", tint: .blue,
+            title: String(localized: "picker.plan.equipment.gymAssumption.title", bundle: .module),
+            detail: String(localized: "picker.plan.equipment.gymAssumption.detail", bundle: .module)
+        )
     }
 
     /// Smart-Onboarding-Epic Phase 5.5: "Adapted to your equipment" NUR nach
