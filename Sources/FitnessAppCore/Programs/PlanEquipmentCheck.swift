@@ -75,38 +75,105 @@ public enum PlanEquipmentGapReason: Sendable, Equatable {
     case uncertain([UnmetReason])
 }
 
+/// Smart-Onboarding-Epic Phase 5 (PLAN_SUBSTITUTION_ENGINE.md): Position
+/// einer Uebung innerhalb einer konkreten Tage-Liste. Namen allein reichen
+/// nicht als Identitaet — dieselbe Uebung (z.B. "Plank") kann an mehreren
+/// Tagen derselben Variante vorkommen.
+public struct ExerciseSlot: Sendable, Hashable {
+    public let dayIndex: Int
+    public let exerciseIndex: Int
+
+    public init(dayIndex: Int, exerciseIndex: Int) {
+        self.dayIndex = dayIndex
+        self.exerciseIndex = exerciseIndex
+    }
+}
+
+/// Smart-Onboarding-Epic Phase 5: EIN Pruefergebnis-Eintrag fuer eine NICHT
+/// bestaetigt erfuellte Uebung (erfuellte Uebungen tauchen hier nicht auf).
+/// Im Unterschied zu `PlanEquipmentGap` traegt dieser Eintrag seine
+/// `ExerciseSlot`-Position — fuer die Substitutions-Engine zwingend, um eine
+/// gefundene Ersatzuebung an GENAU der richtigen Stelle einzusetzen.
+public struct PlanEquipmentFinding: Sendable, Equatable {
+    public let slot: ExerciseSlot
+    public let exerciseName: String
+    public let reason: PlanEquipmentGapReason
+
+    public init(slot: ExerciseSlot, exerciseName: String, reason: PlanEquipmentGapReason) {
+        self.slot = slot
+        self.exerciseName = exerciseName
+        self.reason = reason
+    }
+}
+
+/// Smart-Onboarding-Epic Phase 5: vollstaendiger Pro-Uebung-Bericht einer
+/// Tage-Liste, GETRENNT nach `missing` (definitiv fehlend — einzige
+/// zulaessige Substitutions-Kandidaten) und `uncertain` (unbekannt/nicht
+/// annotiert — reine Klaerungs-Hinweise, NIE automatisch ersetzt, Vorgabe
+/// Abschnitt 1 woertlich: "Unknown inventory, unknown counts and missing
+/// annotations require clarification, not a guessed substitute"). Noetig,
+/// weil `PlanEquipmentStatus`/`check(days:against:)` bei der ERSTEN
+/// definitiv fehlenden Uebung alle unklaren Geschwister-Funde verwirft
+/// (Kurzschluss-Aggregation, Phase 4) — die Substitutions-Engine braucht
+/// aber beide Kategorien gleichzeitig.
+public struct PlanEquipmentReport: Sendable, Equatable {
+    public let missing: [PlanEquipmentFinding]
+    public let uncertain: [PlanEquipmentFinding]
+
+    public init(missing: [PlanEquipmentFinding], uncertain: [PlanEquipmentFinding]) {
+        self.missing = missing
+        self.uncertain = uncertain
+    }
+
+    public var isFullyAvailable: Bool { missing.isEmpty && uncertain.isEmpty }
+}
+
 /// Prueft eine konkrete Tage-Liste (= eine Planvariante) Uebung fuer Uebung
 /// gegen ein `UserEquipmentProfile`. Reiner Aggregator ueber
 /// `ExerciseRequirement.evaluate(against:)` — die eigentliche Drei-Werte-Logik
 /// pro Uebung lebt unveraendert in `EquipmentRequirement.swift`.
 public enum PlanEquipmentChecker {
-    public static func check(days: [DaySpec], against profile: UserEquipmentProfile) -> PlanEquipmentStatus {
-        var missingGaps: [PlanEquipmentGap] = []
-        var uncertainGaps: [PlanEquipmentGap] = []
+    /// Smart-Onboarding-Epic Phase 5: der vollstaendige, slot-genaue Bericht
+    /// — Grundlage sowohl fuer `check(days:against:)` (Phase 4, aggregiert)
+    /// als auch fuer `ExerciseSubstitutionEngine` (braucht `missing` UND
+    /// `uncertain` gleichzeitig, nie nur die "gewinnende" Kategorie).
+    public static func fullReport(days: [DaySpec], against profile: UserEquipmentProfile) -> PlanEquipmentReport {
+        var missing: [PlanEquipmentFinding] = []
+        var uncertain: [PlanEquipmentFinding] = []
 
-        for day in days {
-            for exercise in day.exercises {
+        for (dayIndex, day) in days.enumerated() {
+            for (exerciseIndex, exercise) in day.exercises.enumerated() {
+                let slot = ExerciseSlot(dayIndex: dayIndex, exerciseIndex: exerciseIndex)
                 guard let spec = ExerciseLibraryData.byName[exercise.name],
                       let requirement = spec.equipmentRequirement
                 else {
                     // Kein Katalog-Treffer ODER (noch) keine Annotation —
                     // beides heisst "wir wissen es nicht", nie "passt schon".
-                    uncertainGaps.append(PlanEquipmentGap(exerciseName: exercise.name, reason: .notAnnotated))
+                    uncertain.append(PlanEquipmentFinding(slot: slot, exerciseName: exercise.name, reason: .notAnnotated))
                     continue
                 }
                 switch requirement.evaluate(against: profile) {
                 case .satisfied:
                     continue
                 case let .unmet(reasons):
-                    missingGaps.append(PlanEquipmentGap(exerciseName: exercise.name, reason: .missing(reasons)))
+                    missing.append(PlanEquipmentFinding(slot: slot, exerciseName: exercise.name, reason: .missing(reasons)))
                 case let .unknown(reasons):
-                    uncertainGaps.append(PlanEquipmentGap(exerciseName: exercise.name, reason: .uncertain(reasons)))
+                    uncertain.append(PlanEquipmentFinding(slot: slot, exerciseName: exercise.name, reason: .uncertain(reasons)))
                 }
             }
         }
 
-        if !missingGaps.isEmpty { return .unavailable(gaps: missingGaps) }
-        if !uncertainGaps.isEmpty { return .unknown(gaps: uncertainGaps) }
+        return PlanEquipmentReport(missing: missing, uncertain: uncertain)
+    }
+
+    public static func check(days: [DaySpec], against profile: UserEquipmentProfile) -> PlanEquipmentStatus {
+        let report = fullReport(days: days, against: profile)
+        if !report.missing.isEmpty {
+            return .unavailable(gaps: report.missing.map { PlanEquipmentGap(exerciseName: $0.exerciseName, reason: $0.reason) })
+        }
+        if !report.uncertain.isEmpty {
+            return .unknown(gaps: report.uncertain.map { PlanEquipmentGap(exerciseName: $0.exerciseName, reason: $0.reason) })
+        }
         return .available
     }
 }
