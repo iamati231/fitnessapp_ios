@@ -299,6 +299,10 @@ public struct ExerciseEditorView: View {
             revertToSnapshot()
             dismiss()
         }
+        // UI-Refactor (Korrektur, Punkt 4): interaktives Wegziehen des
+        // Sheets ist sonst ein ungesicherter Verlassen-Weg am Discard-Dialog
+        // vorbei. Ohne Aenderungen (`!isDirty`) bleibt es normal moeglich.
+        .interactiveDismissDisabled(isDirty)
         // DEL-160: Confirm-Dialog vor dem dauerhaften Loeschen.
         .confirmationDialog(
             Text("editor.exercise.deleteConfirmTitle", bundle: .module),
@@ -578,9 +582,11 @@ public struct ExerciseEditorView: View {
 /// bei den anderen Editoren. Dieser Snapshot haelt alle in diesem Sheet
 /// editierbaren Felder beim Oeffnen fest, damit `isDirty` (Chevron-Discard-
 /// Schutz) erkennbar ist UND "Aenderungen verwerfen" die bereits autosaved
-/// geschriebenen Live-Werte tatsaechlich zurueckrollen kann.
+/// geschriebenen Live-Werte tatsaechlich zurueckrollen kann. `internal`
+/// statt `private`, damit gezielte Tests (siehe `Tests/FitnessAppUITests`)
+/// die Capture/Apply-Logik per `@testable import` direkt pruefen koennen.
 @available(iOS 17.0, macOS 14.0, *)
-private struct ExerciseSnapshot: Equatable {
+struct ExerciseSnapshot: Equatable {
     var customName: String?
     var isCardio: Bool
     var isTimeBased: Bool

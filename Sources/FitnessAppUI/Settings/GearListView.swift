@@ -291,6 +291,10 @@ private struct GearEditorView: View {
         .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
             dismiss()
         }
+        // UI-Refactor (Korrektur, Punkt 4): interaktives Wegziehen des
+        // Sheets ist sonst ein ungesicherter Verlassen-Weg am Discard-Dialog
+        // vorbei. Ohne Aenderungen (`!isDirty`) bleibt es normal moeglich.
+        .interactiveDismissDisabled(isDirty)
     }
 
     private var gearForm: some View {

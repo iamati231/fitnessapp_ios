@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2092 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2095 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2092 / 2092** (100%) | 0 |
-| 🇬🇧 English (EN) | **2092 / 2092** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2092 / 2092** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2095 / 2095** (100%) | 0 |
+| 🇬🇧 English (EN) | **2095 / 2095** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2095 / 2095** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -864,7 +864,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `difficulty.beginner` | Anfänger | Beginner | Başlangıç |
 | `difficulty.intermediate` | Fortgeschritten | Intermediate | Orta |
 
-## `editor.*`  (35 Keys)
+## `editor.*`  (37 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -903,6 +903,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `editor.exercise.toggle.compoundLift` | Compound-Lift | Compound Lift | Bileşik Hareket |
 | `editor.exercise.toggle.smartOverload` | Smart Overload aktivieren | Enable Smart Overload | Akıllı Aşırı Yüklemeyi Etkinleştir |
 | `editor.exercise.toggle.timeBased` | Zeit-basiert | Time-Based | Süre Bazlı |
+| `editor.reorder.done` | Fertig | Done | Bitti |
+| `editor.reorder.start` | Sortieren | Reorder | Sırala |
 
 ## `environment.*`  (3 Keys)
 
@@ -1765,7 +1767,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.wizard.unitsCount.one` | %lld Einheit | %lld unit | %lld birim |
 | `planBuilder.wizard.unitsCount.other` | %lld Einheiten | %lld units | %lld birim |
 
-## `planEditor.*`  (26 Keys)
+## `planEditor.*`  (27 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1789,6 +1791,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planEditor.progressRIR.rir1` | RIR ≥ 1 | RIR ≥ 1 | RIR ≥ 1 |
 | `planEditor.progressRIR.rir2` | RIR ≥ 2 | RIR ≥ 2 | RIR ≥ 2 |
 | `planEditor.progressRIR.rir3` | RIR ≥ 3 | RIR ≥ 3 | RIR ≥ 3 |
+| `planEditor.recalculate.action` | Neu rechnen | Recalculate | Yeniden Hesapla |
 | `planEditor.section.info` | Plan-Info | Plan Info | Plan Bilgisi |
 | `planEditor.section.settings` | Einstellungen | Settings | Ayarlar |
 | `planEditor.section.trainingDays` | Trainings-Tage | Training Days | Antrenman Günleri |

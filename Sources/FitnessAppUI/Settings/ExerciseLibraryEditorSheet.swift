@@ -102,6 +102,11 @@ struct ExerciseLibraryEditorSheet: View {
             .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
                 dismiss()
             }
+            // UI-Refactor (Korrektur, Punkt 4): interaktives Wegziehen des
+            // Sheets ist sonst ein ungesicherter Verlassen-Weg am Discard-
+            // Dialog vorbei. Read-Only (System-Template) hat nichts zu
+            // verlieren — dort bleibt Wegziehen frei moeglich.
+            .interactiveDismissDisabled(isReadOnly ? false : isDirty)
         }
     }
 

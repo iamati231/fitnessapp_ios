@@ -87,6 +87,11 @@ struct BodyDataEditorView: View {
             .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
                 dismiss()
             }
+            // UI-Refactor (Korrektur, Punkt 4): interaktives Wegziehen des
+            // Sheets ist sonst ein ungesicherter Verlassen-Weg am Discard-
+            // Dialog vorbei. Ohne Aenderungen (`!isDirty`) bleibt es normal
+            // moeglich (direktes Schliessen).
+            .interactiveDismissDisabled(isDirty)
         }
     }
 

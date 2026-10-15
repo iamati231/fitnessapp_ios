@@ -130,7 +130,11 @@ public struct DayEditorView: View {
         // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
         // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
         // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
-        .deltiqSwipeBackEnabled()
+        // UI-Refactor (Korrektur, Punkt 4): bei Aenderungen bleibt die Geste
+        // bewusst AUS — die Wisch-Geste ist sonst ein ungesicherter
+        // Verlassen-Weg, der am Discard-Dialog vorbeigeht. Ohne Aenderungen
+        // (`!isDirty`) funktioniert sie weiter normal (direktes Schliessen).
+        .deltiqSwipeBackEnabled(!isDirty)
         .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
             snapshot.apply(to: day)
             dismiss()
@@ -264,36 +268,54 @@ public struct DayEditorView: View {
         }
     }
 
-    /// DEL-095: Ersatz fuer EditButton() — aktiviert denselben Drag-Mode
-    /// fuer die Uebungs-Reihenfolge, nur als Header-Aktion statt natives
-    /// Toolbar-Item. Bei readOnly-Templates, leerem Uebungs-Array oder
-    /// Ruhetagen bleibt die Aktion ganz weg. `editMode` selbst ist auf
-    /// macOS/watchOS unavailable - leeres Array dort.
-    ///
-    /// UI-Refactor (DeltiqHeader-Muster): zusaetzlich zum Reorder-Toggle
-    /// steht hier jetzt der Save-Checkmark (`saveAction`). Waehrend des
-    /// Reorder-Modus zeigt NUR dessen eigener Done-Checkmark — sonst
-    /// kollidieren zwei gleichzeitige Actions mit demselben `systemImage`
-    /// (siehe `DeltiqHeaderAction.id`-Dokumentation in Theme.swift).
-    /// Ausserhalb des Reorder-Modus stehen beide nebeneinander (verschiedene
-    /// Icons, der Cap von 2 Actions reicht genau).
+    /// UI-Refactor (Korrektur): der Save-Checkmark muss auf jedem
+    /// bearbeitbaren Formular immer ganz rechts erreichbar sein — er darf
+    /// weder durch den 2-Action-Cap von `DeltiqHeader` verdraengt werden
+    /// noch (waehrend des Reorder-Modus) dasselbe Icon/dieselbe Position
+    /// wie ein "Reorder fertig"-Haekchen teilen (eindeutige Bedeutung,
+    /// stabile Position). Deshalb wandert der bisherige Top-Level-Reorder-
+    /// Toggle (DEL-095, Ersatz fuer EditButton()) in ein Ellipsis-Menu —
+    /// Start UND Ende des Reorder-Modus sind beides Menu-Eintraege, nie der
+    /// Save-Slot selbst. `saveAction` ist dadurch immer genau 1 der
+    /// hoechstens 2 Actions und immer die LETZTE (= am weitesten rechts,
+    /// `ForEach(actions)` rendert in Array-Reihenfolge, siehe Theme.swift).
     private var headerActions: [DeltiqHeaderAction] {
+        var actions: [DeltiqHeaderAction] = []
         #if os(iOS)
         if !isReadOnly, !day.activeExercises.isEmpty, !isRestDay {
-            let isEditing = editMode?.wrappedValue.isEditing == true
-            let reorderAction = DeltiqHeaderAction(
-                systemImage: isEditing ? "checkmark" : "arrow.up.arrow.down",
-                isHighlighted: isEditing
-            ) {
+            actions.append(reorderMenuAction)
+        }
+        #endif
+        actions.append(saveAction)
+        return actions
+    }
+
+    #if os(iOS)
+    /// UI-Refactor (Korrektur): Reorder-Start/-Ende als EIN stabiler
+    /// Ellipsis-Menu-Eintrag statt eines eigenen Top-Level-Icons — das
+    /// Menu selbst traegt immer dasselbe `"ellipsis"`-Icon (Konvention
+    /// dieses Repos, siehe z.B. `WorkoutSummaryView`/`PRHistoryView`),
+    /// nur der Eintrag darin wechselt Label/Icon je nach `editMode`.
+    private var reorderMenuAction: DeltiqHeaderAction {
+        let isEditing = editMode?.wrappedValue.isEditing == true
+        return DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+            Button {
                 withAnimation {
                     editMode?.wrappedValue = isEditing ? .inactive : .active
                 }
+            } label: {
+                Label {
+                    Text(isEditing
+                         ? "editor.reorder.done"
+                         : "editor.reorder.start",
+                         bundle: .module)
+                } icon: {
+                    Image(systemName: isEditing ? "checkmark" : "arrow.up.arrow.down")
+                }
             }
-            return isEditing ? [reorderAction] : [reorderAction, saveAction]
-        }
-        #endif
-        return [saveAction]
+        })
     }
+    #endif
 
     /// UI-Refactor (DeltiqHeader-Muster): Autosave-Screen (siehe
     /// `ExerciseEditorView`) — kein echter Speicher-Schritt, reines
@@ -1309,8 +1331,11 @@ private struct ExerciseRow: View {
 /// Felder fest (Name/Wochentag/Typ/Intensitaet/Zeitformat + dessen Unterfelder)
 /// — NICHT die Uebungsliste, deren Hinzufuegen/Loeschen/Reorder/Training-
 /// Starten eigene, sofort wirksame Aktionen ohne Save/Cancel-Konzept sind.
+/// `internal` statt `private`, damit gezielte Tests (siehe
+/// `Tests/FitnessAppUITests`) die Capture/Apply-Logik per `@testable
+/// import` direkt pruefen koennen.
 @available(iOS 17.0, macOS 14.0, *)
-private struct TrainingDaySnapshot: Equatable {
+struct TrainingDaySnapshot: Equatable {
     var customName: String?
     var weekday: Int
     var type: DayType

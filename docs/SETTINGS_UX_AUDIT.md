@@ -1077,3 +1077,180 @@ Code-seitig (Typen, Bindings, Optionalitaet, Equatable-Konformanz der
 Snapshot-Structs) wurde durchgehend gegen die tatsaechlichen SwiftData-
 Modell-Definitionen gegengelesen; funktional korrekt kompilierender Code
 ist aber nicht dasselbe wie ein verifiziertes UI-Verhalten.
+
+---
+
+## Teil 16 — Korrektur zu Teil 15: fuenf fachliche Nachbesserungen
+
+User-Feedback nach Teil 15: "Grundrichtung passt, aber noch nicht als
+abgeschlossen behandeln." Fuenf konkrete Punkte, alle umgesetzt. Dieser
+Teil ergaenzt/korrigiert Teil 15, statt ihn zu ersetzen — Teil 15s
+Architektur-Grundlage (DeltiqHeaderAction/discardChangesConfirmation,
+Fork 1) bleibt unveraendert gueltig; nur die hier aufgefuehrten Stellen
+waren falsch oder unvollstaendig.
+
+### Punkt 1+2 — Save-Checkmark stabil, nie als Reorder-Done ueberladen
+
+Teil 15 liess den Save-Checkmark in `PlanEditorView` beim seltenen
+Zusammentreffen "Generator-Plan + Tage + nicht editierend" durch den
+2-Action-Cap verschwinden — genau das verbietet die Korrektur-Vorgabe
+ausdruecklich. Fix in `DayEditorView` UND `PlanEditorView`: der bisherige
+Top-Level-Reorder-Toggle (eigenes Icon, eigene Position) wandert in ein
+Ellipsis-Menu (`"ellipsis"`, bestehende Repo-Konvention, siehe
+`WorkoutSummaryView`/`PRHistoryView`/`PlansListView`). `PlanEditorView`s
+"Neu rechnen" wandert ins selbe Menu. Der Save-Checkmark ist dadurch IMMER
+genau 1 von hoechstens 2 Actions und IMMER die letzte (= am weitesten
+rechts, `ForEach(actions)` rendert in Array-Reihenfolge) — nie durch den
+Cap verdraengt, nie Icon/Position mit einem "Reorder fertig"-Haekchen
+geteilt (das lebt jetzt als eigener Menu-Eintrag, dessen Label/Icon
+zwischen "Sortieren" und "Fertig" wechselt, voellig unabhaengig vom
+Save-Slot). Die anderen 6 Editoren hatten nie konkurrierende Header-
+Actions und waren bereits konform — hier war nichts zu aendern.
+
+Neue xcstrings-Keys: `editor.reorder.start`/`editor.reorder.done`
+(wiederverwendet in beiden Screens), `planEditor.recalculate.action`
+(uebernimmt die Formulierung von `planBuilder.result.recalculate` fuer
+Konsistenz). DE/EN/TR, per chirurgischem Splice ergaenzt (69 Insertions,
+0 Deletions, wie gehabt per `git diff --stat` bestaetigt).
+
+### Punkt 3 — Discard-Scope fachlich korrigiert
+
+Teil 15 schloss `targetEnvironment`/`isActive` (PlanEditorView) komplett
+vom Snapshot aus, mit der Begruendung, ein einfaches Feld-Rueckschreiben
+koenne ihre Seiteneffekte nicht mitverwerfen. Das loest das Problem nicht,
+es versteckt es nur: ein reiner, folgenloser Picker-Wechsel (z.B. bei
+einem leeren Plan, wo gar keine Migration laeuft) waere dann STILL NICHT
+ueber "Verwerfen" rueckgaengig zu machen — die Korrektur-Vorgabe verlangt
+aber "Änderungen des aktuellen Formulars vollständig verwerfen", nicht
+"manche Formular-Felder nie". Fix:
+
+- `PlanMetaSnapshot` erfasst jetzt `targetEnvironment` UND `isActive` als
+  vollwertige Snapshot-Felder — ein einfacher Picker-/Toggle-Wechsel ohne
+  nachgelagerte Aktion ist ab sofort normal ueber `isDirty`/"Verwerfen"
+  rueckgaengig zu machen, wie jedes andere Feld.
+- Sobald der User eine der ihr eigenen, bereits sichtbar bestaetigten
+  Aktionen auslöst — Umgebungs-Migration (Adapt/Restore ueber die
+  `envSwap`/`envRestore`-Dialoge, inkl. Seiteneffekt "Uebungen archiviert/
+  getauscht") oder (in `ProfileEditorView`) `CardioFeasibilityCardModel.
+  accept`/`acceptCustom` (legt einen neuen Plan samt Tagen an) —, wird der
+  Snapshot SOFORT per neuer `rebaselineSnapshot()`-Funktion auf den
+  Nach-Zustand neu gesetzt. Ab dann ist diese Aenderung keine "ausstehende,
+  per Verwerfen rueckrollbare Formular-Aenderung" mehr, sondern eine
+  eigene, abgeschlossene Aktion — der Discard-Dialog verspricht ab da
+  nichts mehr, was er nicht einloesen kann (das war die praezise Lesart
+  von "Bereits separat bestaetigte Untereditor-Aktionen klar davon
+  abgrenzen" / "Keine pauschale Verwerfen-Zusage bei nur teilweisem
+  Rueckrollen").
+- Fuer `isActive` zusaetzlich: `setActive(true)` deaktiviert global jeden
+  anderen Plan. Ein reines `isActive = false` beim Verwerfen wuerde diesen
+  anderen Plan NICHT reaktivieren. Neuer State `otherActivePlanIDAtOpen`
+  (erfasst in `.onAppear`, nicht `init` — `@Query allPlans` ist zum
+  Init-Zeitpunkt noch leer) haelt fest, welcher andere Plan beim Oeffnen
+  aktiv war; `revertToSnapshot()` reaktiviert ihn, wenn genau dieser Screen
+  ihn waehrend der Sitzung verdraengt hat.
+- Fuer `targetEnvironment` zusaetzlich: `.onChange(of: plan.
+  targetEnvironment)` triggert normalerweise den Migrations-Dialog. Ein
+  Revert darf das NICHT nochmal ausloesen (der User hat seinen Discard ja
+  gerade bestaetigt) — neuer Guard `isApplyingSnapshot`, nur waehrend
+  `revertToSnapshot()` gesetzt.
+- `BodyDataEditorView`/`TrainingLocationEquipmentEditorView`/
+  `ExerciseLibraryEditorSheet`/`GearEditorView`: reine Draft-Screens, bei
+  denen vor dem expliziten Speichern ohnehin nichts committed wird —
+  "Verwerfen" war dort immer schon vollstaendig, keine Aenderung noetig.
+  `DayEditorView`s `metaSection`-Scope hat ebenfalls kein Feld mit eigenem
+  Bestaetigungs-Dialog — ebenfalls unveraendert korrekt.
+- `ProfileEditorView`s delegierte Sub-Editoren (`BodyDataEditorView` fuer
+  `heightCm`/`goalWeightKg`, `TrainingLocationEquipmentEditorView` fuer
+  `environment`/`equipmentProfile`, `BaselineCheckFlowView` fuer
+  `baselineAssessment`) bleiben bewusst ausserhalb des Snapshots — das
+  sind echte, eigenstaendige Sub-Editoren mit eigenem sichtbarem Save/
+  Cancel, keine stillschweigende Mehrdeutigkeit wie bei den Dialog-
+  gesteuerten Aktionen oben.
+
+**Selbst gefundener Fehler bei der Umsetzung:** die erste Fassung von
+`revertToSnapshot()`s Bedingung fuer die Plan-Reaktivierung war invertiert
+(`!wasActive` statt `wasActive`) — haette beim Zurueckrollen eines frisch
+eingeschalteten `isActive` den verdraengten anderen Plan NICHT reaktiviert.
+Beim eigenen Nachlesen des Diffs gefunden und korrigiert, bevor
+irgendetwas committet wurde; zusaetzlich eine unabhaengige Code-Review
+ueber den gesamten Diff angestossen, genau wegen dieser Fehlerklasse
+(invertierte Bedingungen sind auf Linux nicht kompilierbar pruefbar, siehe
+Punkt 5).
+
+### Punkt 4 — alle Verlassen-Wege abgesichert
+
+Vorher sicherte nur der DeltiqHeader-Chevron gegen Datenverlust ab — Swipe-
+Back (Push-Screens) und interaktives Sheet-Wegziehen (Dismiss-Sheets)
+gingen am Discard-Dialog komplett vorbei.
+
+- **Push-Screens** (`DayEditorView`, `PlanEditorView`, `ProfileEditorView`):
+  `.deltiqSwipeBackEnabled()` → `.deltiqSwipeBackEnabled(!isDirty)`. Die
+  Geste existiert in diesem Repo nur als einfacher An/Aus-Schalter (siehe
+  `SwipeBackEnabler` in Theme.swift, `enabled: Bool = true`) — kein Hook,
+  um beim Versuch einen Dialog einzublenden. Bei Aenderungen bleibt die
+  Geste deshalb komplett deaktiviert (kein Swipe-Pop moeglich), ohne
+  Aenderungen funktioniert sie normal. Matcht "ohne Aenderungen weiterhin
+  direkt schliessen".
+- **Sheet-Screens** (`BodyDataEditorView`, `TrainingLocationEquipmentEditorView`,
+  `ExerciseLibraryEditorSheet`, `GearEditorView`, `ExerciseEditorView`):
+  neu `.interactiveDismissDisabled(isDirty)` (Apple-API seit iOS 15, ein
+  einzelner `Bool`-Parameter — per Websuche gegen die offizielle Doku
+  verifiziert, da auf Linux nicht kompilierbar pruefbar). Bei Aenderungen
+  tut Wegziehen nichts (Sheet bleibt offen), ohne Aenderungen normal.
+  `ExerciseLibraryEditorSheet` bekommt den bestehenden `isReadOnly`-Guard
+  dazu (`isReadOnly ? false : isDirty`) — im Read-Only-Modus (System-
+  Template) gibt es nichts zu verlieren.
+
+### Punkt 5 — Linux-Tests sind keine Verifikation dieser Aenderung
+
+Alle 8 betroffenen Dateien sind `#if canImport(SwiftUI) && canImport
+(SwiftData)`-gegated. `swift build`/`swift test` auf Linux (979/979, siehe
+unten) pruefen NUR, dass der Rest des Pakets weiterhin kompiliert — sie
+pruefen nicht, ob dieser PR-Inhalt selbst richtig ist (die Datei wird auf
+Linux mangels SwiftUI/SwiftData schlicht uebersprungen). Das war bereits
+in Teil 15 so benannt, wird hier aber konkretisiert statt nur wiederholt:
+
+- **Neue gezielte Tests:** `Tests/FitnessAppUITests/EditorDiscardSnapshotTests.swift`
+  (`@testable import FitnessAppUI`, gleiches `#if canImport`-Gate wie die
+  Produktionsdateien). Dafuer wurden `ExerciseSnapshot`/`TrainingDaySnapshot`/
+  `PlanMetaSnapshot`/`ProfileMetaSnapshot` von `private` auf `internal`
+  gestellt (keine funktionale Aenderung, nur Sichtbarkeit innerhalb des
+  Moduls fuer `@testable import`). Die Tests pruefen Capture/Apply-
+  Rundreisen und Mehrfeld-Reverts (inklusive des neu erfassten
+  `targetEnvironment`/`isActive`-Paars) — bewusst NUR die reine Struct-
+  Logik. Was NICHT getestet wird, weil es einen echten View-/UI-Test-
+  Harness braucht, den dieses Repo nicht hat: die View-seitige
+  Verdrahtung selbst (genau die Stelle, an der der oben beschriebene
+  invertierte-Bedingung-Fehler sass) sowie die Cross-Entity-Seiteneffekte
+  (Custom-Template-Ruecksync, Plan-Reaktivierung).
+- **Diese Tests laufen NICHT auf Linux** — exakt dieselbe `#if canImport`-
+  Einschraenkung gilt fuer die Testdatei selbst. Sie kompilieren und laufen
+  nur auf einem Apple-Runner.
+- **Automatischer Apple-Build ist nach dem Push bereits angestossen:**
+  `codemagic.yaml` definiert zwei Workflows, `swift-package` und `ios-app`,
+  BEIDE mit `triggering: events: [push, pull_request]` auf
+  `branch_patterns: '*'` — jeder Push auf irgendeinen Branch startet
+  automatisch einen `mac_mini_m2`-Lauf mit echtem Xcode: `swift build`/
+  `swift test --parallel` auf macOS (wo `canImport(SwiftUI)` wahr ist —
+  die neuen Tests liefen dort also tatsaechlich) PLUS
+  `xcodebuild -scheme FitnessAppUI -destination 'generic/platform=iOS
+  Simulator'` fuer alle Library-Targets PLUS den vollen App+Widget-Build
+  via `ios-app`. Diese Session kann den Lauf weder selbst anstossen noch
+  einsehen, aber er passiert automatisch durch das Pushen dieses Commits —
+  bei einem Fehlschlag geht automatisch eine E-Mail an die hinterlegte
+  Adresse (`publishing.email.recipients`, `notify.failure: true`). Das ist
+  exakt der Mechanismus, der in dieser Epic bereits dreimal echte Apple-
+  seitige Bugs gefangen hat (Log 16/17/18, Teile 10-12) — kein Linux-
+  Workaround, sondern dieselbe reale Pruefung wie immer.
+- **Was auch nach einem gruenen Codemagic-Lauf offen bleibt:** visuelles
+  Layout, tatsaechliches Verhalten der Dialoge/Gesten auf einem Geraet,
+  und alles, was Teil 15s "Ehrliche Grenzen"-Abschnitt bereits auflistet —
+  `xcodebuild ... build` fuer den Simulator beweist Kompilierbarkeit und
+  Typkorrektheit, kein manuelles UI-Verhalten.
+
+### Linux-Kontrolle (diese Session)
+
+`swift build`/`swift test` gruen, 979/979 Tests (unveraendert — reiner
+UI-Layer-Refactor plus eine neue, ebenfalls SwiftUI-gegatete Testdatei,
+die auf Linux uebersprungen wird). 3 weitere xcstrings-Keys (2092 → 2095),
+weiterhin 0 hardcodierte Strings, `TRANSLATIONS.md` regeneriert.

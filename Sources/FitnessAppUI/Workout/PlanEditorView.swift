@@ -52,18 +52,29 @@ public struct PlanEditorView: View {
     /// wird, statt sofort zu schliessen.
     @State private var showingDiscardConfirm = false
 
-    /// UI-Refactor (DeltiqHeader-Muster fuer Autosave-Screens): Zustand der
-    /// einfachen `metaSection`/`settingsSection`-Felder beim Oeffnen — siehe
-    /// `PlanMetaSnapshot`. `targetEnvironment` und `isActive` sind bewusst
-    /// NICHT Teil davon: beide loesen bereits eigene, sorgfaeltig gestaltete
-    /// Bestaetigungs-Flows mit Seiteneffekten auf andere Entitaeten aus
-    /// (Umgebungs-Wechsel-Migration via `onChange`+Dialoge oben;
-    /// Active-Toggle deaktiviert andere Plaene in `setActive`) — ein simples
-    /// Feld-Rueckschreiben wuerde diese Seiteneffekte NICHT mitverwerfen und
-    /// koennte den Store inkonsistenter zuruecklassen als vorher (z.B. kein
-    /// Plan mehr aktiv). Die Tage-Liste bleibt aus demselben Grund wie in
-    /// `DayEditorView` aussen vor (eigene sofort wirksame Aktionen).
+    /// UI-Refactor (Korrektur): deckt ALLE Felder dieses Formulars ab,
+    /// inklusive `targetEnvironment` und `isActive` — "Verwerfen" muss die
+    /// Formular-Aenderungen vollstaendig zuruecknehmen, kein Teil-Rollback.
+    /// Die Tage-Liste bleibt aus demselben Grund wie in `DayEditorView`
+    /// aussen vor (eigene sofort wirksame Aktionen ohne Save/Cancel-Konzept).
     @State private var snapshot: PlanMetaSnapshot
+
+    /// UI-Refactor (Korrektur): unterdrueckt waehrend `revertToSnapshot()`
+    /// den `.onChange(of: plan.targetEnvironment)`-Handler — ein Revert ist
+    /// kein neuer User-Edit und darf nicht nochmal den Migrations-Dialog
+    /// aufmachen.
+    @State private var isApplyingSnapshot = false
+
+    /// UI-Refactor (Korrektur): welcher ANDERE Plan beim Oeffnen aktiv war
+    /// (falls dieser Plan es selbst nicht war) — noetig, um einen
+    /// `isActive`-Toggle sauber zurueckzurollen: `setActive(true)`
+    /// deaktiviert global alle anderen Plaene, ein reines
+    /// `plan.isActive = false` beim Verwerfen wuerde diesen anderen Plan
+    /// NICHT reaktivieren und den Store ohne jeden aktiven Plan zuruecklassen.
+    /// Kann erst in `.onAppear` erfasst werden, nicht in `init` — `@Query
+    /// allPlans` ist zum Init-Zeitpunkt noch nicht befuellt.
+    @State private var otherActivePlanIDAtOpen: PersistentIdentifier?
+    @State private var didCaptureOtherActivePlanBaseline = false
 
     public init(plan: TrainingPlan) {
         self.plan = plan
@@ -105,10 +116,19 @@ public struct PlanEditorView: View {
         // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
         // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
         // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
-        .deltiqSwipeBackEnabled()
+        // UI-Refactor (Korrektur, Punkt 4): bei Aenderungen bleibt die Geste
+        // bewusst AUS — ein ungesicherter Verlassen-Weg wuerde am Discard-
+        // Dialog vorbei. Ohne Aenderungen funktioniert sie weiter normal.
+        .deltiqSwipeBackEnabled(!isDirty)
         .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
-            snapshot.apply(to: plan)
-            dismiss()
+            revertToSnapshot()
+        }
+        .onAppear {
+            guard !didCaptureOtherActivePlanBaseline else { return }
+            didCaptureOtherActivePlanBaseline = true
+            otherActivePlanIDAtOpen = allPlans.first {
+                $0.isActive && $0.persistentModelID != plan.persistentModelID
+            }?.persistentModelID
         }
         // DEL-022 + DEL-031 + DEL-049 + DEL-050 — Trainingsort-Wechsel feuert
         // einen mehrstufigen Flow:
@@ -129,6 +149,11 @@ public struct PlanEditorView: View {
         // Schritt A laeuft trotzdem — Metadaten-Sync ist auch ohne Uebungen
         // relevant (User koennte spaeter welche hinzufuegen wollen).
         .onChange(of: plan.targetEnvironment) { oldValue, newValue in
+            // UI-Refactor (Korrektur): ein `revertToSnapshot()`-Rueckschreiben
+            // ist kein neuer User-Edit — darf nicht nochmal den Migrations-
+            // Dialog ausloesen (sonst muesste der User seinen eigenen Discard
+            // durch einen weiteren Dialog bestaetigen).
+            guard !isApplyingSnapshot else { return }
             guard oldValue != newValue else { return }
             let pending = PendingEnvironmentSwap(oldEnv: oldValue, newEnv: newValue)
 
@@ -342,6 +367,55 @@ public struct PlanEditorView: View {
         String(localized: env.localizedName)
     }
 
+    /// UI-Refactor (Korrektur): rollt ALLE Formular-Felder vollstaendig
+    /// zurueck, inklusive `targetEnvironment` (Migrations-Dialog bleibt
+    /// waehrenddessen unterdrueckt, siehe `isApplyingSnapshot`) und
+    /// `isActive` (reaktiviert den beim Oeffnen aktiven anderen Plan, falls
+    /// dieser Screen ihn durch Einschalten verdraengt hat — `setActive`
+    /// selbst deaktiviert beim Ausschalten keinen anderen Plan, ein reines
+    /// Zurueckschreiben von `isActive` ist in diesem Fall also bereits
+    /// vollstaendig und reaktiviert nichts extra). Bereits separat
+    /// bestaetigte Migrationen (Adapt/Restore ueber die eigenen Dialoge
+    /// oben) sind davon NICHT betroffen — die haben sich per
+    /// `rebaselineSnapshot()` schon als neue Baseline festgeschrieben, bevor
+    /// dieser Pfad ueberhaupt erreichbar ist (siehe dort).
+    private func revertToSnapshot() {
+        // Zustand VOR dem Rueckschreiben: true nur, wenn der User
+        // `isActive` waehrend dieser Sitzung eingeschaltet hat (die
+        // Snapshot-Baseline war dann zwingend `false`, siehe
+        // `otherActivePlanIDAtOpen`-Dokumentation) — GENAU dieser Fall hat
+        // `setActive(true)` ausgeloest und einen anderen Plan verdraengt.
+        let wasActiveBeforeRevert = plan.isActive
+        isApplyingSnapshot = true
+        snapshot.apply(to: plan)
+        isApplyingSnapshot = false
+        if wasActiveBeforeRevert, !snapshot.isActive,
+           let otherID = otherActivePlanIDAtOpen,
+           let other = allPlans.first(where: { $0.persistentModelID == otherID }) {
+            other.isActive = true
+        }
+        dismiss()
+    }
+
+    /// UI-Refactor (Korrektur): macht den aktuellen `plan`-Zustand zur neuen
+    /// Baseline. Aufgerufen direkt nachdem eine der eigenen, bereits
+    /// explizit bestaetigten Umgebungs-Migrationen (Adapt/Restore)
+    /// tatsaechlich gelaufen ist — diese Aenderung (Feld + migrierte
+    /// Uebungen) ist dann kein "ausstehender, per Verwerfen rueckrollbarer
+    /// Formular-Edit" mehr, sondern eine eigene, abgeschlossene Aktion mit
+    /// Seiteneffekten auf andere Entitaeten (archivierte/getauschte
+    /// Uebungen). Ohne diesen Re-Snapshot wuerde der Discard-Dialog
+    /// faelschlich versprechen, `targetEnvironment` verwerfen zu koennen,
+    /// obwohl die migrierten Uebungen davon unberuehrt blieben — genau das
+    /// "Keine pauschale Verwerfen-Zusage bei nur teilweisem Rueckrollen" aus
+    /// der Korrektur-Vorgabe. Ein reiner Picker-Wechsel ohne Migration
+    /// (leerer Plan, oder "justEnv" ohne Anpassung) bleibt bewusst normal
+    /// ueber `snapshot`/`isDirty` revertierbar — dort ist nichts inkonsistent
+    /// zurueckzulassen.
+    private func rebaselineSnapshot() {
+        snapshot = PlanMetaSnapshot.capture(from: plan)
+    }
+
     /// DEL-030: Plaene sind jetzt IMMER editierbar. `plan.isTemplate` bleibt
     /// im Model fuer eventuelle zukuenftige Read-Only-Surface (z.B. App-Store-
     /// Curated-Showcase-Plaene), aktuell aber durchgehend false nach
@@ -358,53 +432,64 @@ public struct PlanEditorView: View {
         snapshot != PlanMetaSnapshot.capture(from: plan)
     }
 
-    /// Bis zu drei unabhaengige Header-Aktionen, je nur sichtbar wenn
-    /// zutreffend:
-    ///
-    /// * README 2.20 "neu rechnen" — nur fuer Plaene mit `generatorInput`
-    ///   (ueber "Plan bauen" entstanden), auf allen Plattformen.
-    /// * DEL-095: Ersatz fuer EditButton() — aktiviert denselben Drag-Mode
-    ///   fuer die Tage-Reihenfolge, nur als Header-Aktion statt natives
-    ///   Toolbar-Item. Bei readOnly-Templates oder leerem Tage-Array bleibt
-    ///   die Aktion ganz weg (kein Reorder ohne mind. 2 Tage sinnvoll).
-    ///   `editMode` selbst ist auf macOS/watchOS unavailable - dort iOS-only
-    ///   gegated (siehe Kommentar an der Property-Deklaration).
-    /// * UI-Refactor (DeltiqHeader-Muster): Save-Checkmark, ganz am Ende
-    ///   angehaengt. `DeltiqHeader` kappt bei 2 Actions (`actions.prefix(2)`,
-    ///   Theme.swift) — faellt bei generatorInput+Tage+nicht-editing (beide
-    ///   anderen Slots bereits belegt) bewusst weg, statt "Neu rechnen" oder
-    ///   den Reorder-Toggle zu verdraengen: beide bleiben ERREICHBAR. Der
-    ///   Checkmark ist auf diesem Autosave-Screen ohnehin nur ein zweiter
-    ///   Weg zum selben `dismiss()`, den der Chevron (sofern nicht
-    ///   `isDirty`) schon bietet. Waehrend des Reorder-Modus zeigt NUR
-    ///   dessen eigener Done-Checkmark (sonst Icon-Kollision, siehe
-    ///   `DeltiqHeaderAction.id`-Dokumentation in Theme.swift).
+    /// UI-Refactor (Korrektur): der Save-Checkmark muss immer ganz rechts
+    /// erreichbar sein — darf weder durch den 2-Action-Cap verdraengt
+    /// werden noch (waehrend des Reorder-Modus) Icon/Position mit einem
+    /// "Reorder fertig"-Haekchen teilen. "Neu rechnen" (README 2.20) UND
+    /// der Tage-Reorder-Toggle (DEL-095) wandern deshalb BEIDE in EIN
+    /// Ellipsis-Menu — `saveAction` ist dadurch immer genau 1 der
+    /// hoechstens 2 Actions und immer die LETZTE (am weitesten rechts,
+    /// `ForEach(actions)` rendert in Array-Reihenfolge, siehe Theme.swift).
     private var headerActions: [DeltiqHeaderAction] {
-        var actions: [DeltiqHeaderAction] = []
-        // README 2.20: nur Plaene, die ueber "Plan bauen" entstanden sind,
-        // tragen `generatorInput` - kein Platform-Guard noetig, im Gegensatz
-        // zum Reorder-Toggle unten haengt das nicht an `editMode` (UIKit-only).
-        if plan.generatorInput != nil {
-            actions.append(DeltiqHeaderAction(systemImage: "arrow.triangle.2.circlepath") {
-                recalculateFromGenerator()
-            })
-        }
+        let menuAction = planMenuAction
+        return menuAction != nil ? [menuAction!, saveAction] : [saveAction]
+    }
+
+    /// Ellipsis-Menu mit bis zu zwei Eintraegen: "Neu rechnen" (nur fuer
+    /// Plaene mit `generatorInput`) und Reorder-Start/-Ende (nur iOS, nur
+    /// wenn nicht readOnly und Tage vorhanden). `nil` wenn keiner von
+    /// beiden zutrifft — dann zeigt der Header nur den Save-Checkmark.
+    private var planMenuAction: DeltiqHeaderAction? {
+        let showsRecalculate = plan.generatorInput != nil
         #if os(iOS)
-        if !isReadOnly, !plan.days.isEmpty {
-            let isEditing = editMode?.wrappedValue.isEditing == true
-            actions.append(DeltiqHeaderAction(
-                systemImage: isEditing ? "checkmark" : "arrow.up.arrow.down",
-                isHighlighted: isEditing
-            ) {
-                withAnimation {
-                    editMode?.wrappedValue = isEditing ? .inactive : .active
-                }
-            })
-            if isEditing { return actions }
-        }
+        let isEditing = editMode?.wrappedValue.isEditing == true
+        let showsReorder = !isReadOnly && !plan.days.isEmpty
+        #else
+        let isEditing = false
+        let showsReorder = false
         #endif
-        actions.append(saveAction)
-        return actions
+        guard showsRecalculate || showsReorder else { return nil }
+        return DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+            if showsRecalculate {
+                Button {
+                    recalculateFromGenerator()
+                } label: {
+                    Label {
+                        Text("planEditor.recalculate.action", bundle: .module)
+                    } icon: {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                    }
+                }
+            }
+            #if os(iOS)
+            if showsReorder {
+                Button {
+                    withAnimation {
+                        editMode?.wrappedValue = isEditing ? .inactive : .active
+                    }
+                } label: {
+                    Label {
+                        Text(isEditing
+                             ? "editor.reorder.done"
+                             : "editor.reorder.start",
+                             bundle: .module)
+                    } icon: {
+                        Image(systemName: isEditing ? "checkmark" : "arrow.up.arrow.down")
+                    }
+                }
+            }
+            #endif
+        })
     }
 
     /// UI-Refactor (DeltiqHeader-Muster): Autosave-Screen (siehe
@@ -716,6 +801,10 @@ public struct PlanEditorView: View {
             modelContext: modelContext
         )
         showSwapToast(result: result)
+        // UI-Refactor (Korrektur): diese Migration ist bereits ueber ihren
+        // eigenen Dialog explizit bestaetigt — ab jetzt neue Baseline statt
+        // ausstehender, nur per Discard scheinbar rueckrollbarer Aenderung.
+        rebaselineSnapshot()
     }
 
     /// DEL-049: gegen-Operation zu `performEnvironmentSwap`. Reaktiviert die
@@ -727,6 +816,7 @@ public struct PlanEditorView: View {
             modelContext: modelContext
         )
         showSwapToast(result: result)
+        rebaselineSnapshot()
     }
 
     private func showSwapToast(result: PlanEnvironmentSwapResult) {
@@ -803,21 +893,27 @@ private struct DayRow: View {
     }
 }
 
-/// UI-Refactor (DeltiqHeader-Muster fuer Autosave-Screens): `TrainingPlan`
-/// ist `@Bindable` und autosaved direkt in SwiftData. Haelt bewusst NUR die
-/// simplen Felder ohne Seiteneffekte fest — siehe die Scope-Begruendung bei
-/// `PlanEditorView.snapshot`.
+/// UI-Refactor (Korrektur): `TrainingPlan` ist `@Bindable` und autosaved
+/// direkt in SwiftData. Deckt ALLE Formular-Felder ab (inklusive
+/// `targetEnvironment`/`isActive`) — siehe die Begruendung bei
+/// `PlanEditorView.snapshot`/`revertToSnapshot()`. `internal` statt
+/// `private`, damit gezielte Tests (siehe `Tests/FitnessAppUITests`) die
+/// Capture/Apply-Logik per `@testable import` direkt pruefen koennen.
 @available(iOS 17.0, macOS 14.0, *)
-private struct PlanMetaSnapshot: Equatable {
+struct PlanMetaSnapshot: Equatable {
     var customName: String?
     var weeks: Int
     var progressionTargetRIROverride: Float?
+    var targetEnvironment: EnvironmentType
+    var isActive: Bool
 
     static func capture(from plan: TrainingPlan) -> PlanMetaSnapshot {
         PlanMetaSnapshot(
             customName: plan.customName,
             weeks: plan.weeks,
-            progressionTargetRIROverride: plan.progressionTargetRIROverride
+            progressionTargetRIROverride: plan.progressionTargetRIROverride,
+            targetEnvironment: plan.targetEnvironment,
+            isActive: plan.isActive
         )
     }
 
@@ -825,6 +921,8 @@ private struct PlanMetaSnapshot: Equatable {
         plan.customName = customName
         plan.weeks = weeks
         plan.progressionTargetRIROverride = progressionTargetRIROverride
+        plan.targetEnvironment = targetEnvironment
+        plan.isActive = isActive
     }
 }
 #endif

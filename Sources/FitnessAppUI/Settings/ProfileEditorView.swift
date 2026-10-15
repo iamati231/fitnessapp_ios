@@ -164,7 +164,10 @@ public struct ProfileEditorView: View {
         // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
         // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
         // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
-        .deltiqSwipeBackEnabled()
+        // UI-Refactor (Korrektur, Punkt 4): bei Aenderungen bleibt die Geste
+        // bewusst AUS — ein ungesicherter Verlassen-Weg wuerde am Discard-
+        // Dialog vorbei. Ohne Aenderungen funktioniert sie weiter normal.
+        .deltiqSwipeBackEnabled(!isDirty)
         .keyboardDismissToolbar()
         .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
             revertToSnapshot()
@@ -391,6 +394,21 @@ public struct ProfileEditorView: View {
     private func revertToSnapshot() {
         snapshot.apply(to: profile)
         fiveKReferenceText = snapshot.current5kReferenceSeconds.map(PaceCalculator.formatDuration) ?? ""
+    }
+
+    /// UI-Refactor (Korrektur): macht den aktuellen Profil-Zustand zur neuen
+    /// Baseline. Aufgerufen direkt nach `CardioFeasibilityCardModel.accept/
+    /// dismiss/acceptCustom` — diese Aktionen sind ueber ihre eigenen,
+    /// bereits sichtbaren CTAs ("Übernehmen"/"Plan anpassen"/"Ziel behalten")
+    /// explizit entschieden und legen bei `accept`/`acceptCustom` zusaetzlich
+    /// einen neuen Plan samt Tagen an — kein ausstehender, per "Verwerfen"
+    /// rueckrollbarer Formular-Edit mehr. Ohne diesen Re-Snapshot wuerde der
+    /// Discard-Dialog faelschlich versprechen, `cardioGoal` verwerfen zu
+    /// koennen, obwohl der neu angelegte Plan davon unberuehrt bliebe
+    /// (Teil-Rollback, siehe PlanEditorView fuer dieselbe Problematik bei
+    /// der Umgebungs-Migration).
+    private func rebaselineSnapshot() {
+        snapshot = ProfileMetaSnapshot.capture(from: profile)
     }
 
     // MARK: - Health
@@ -956,7 +974,15 @@ public struct ProfileEditorView: View {
             // drei Text-Knoepfe in einer Zeile waeren auf Kartenbreite eng.
             if model.hasPlan {
                 Button {
+                    // UI-Refactor (Korrektur): `accept` schreibt `cardioGoal`
+                    // (ein Snapshot-Feld) UND legt einen neuen Plan samt Tagen
+                    // an — eine bereits abgeschlossene, eigene Aktion, kein
+                    // ausstehender Formular-Edit mehr. Re-Snapshot sofort
+                    // danach, sonst wuerde "Verwerfen" `cardioGoal` isoliert
+                    // zuruecksetzen, ohne den neuen Plan mit zu entfernen
+                    // (Teil-Rollback, siehe `rebaselineSnapshot()`-Dokumentation).
                     withAnimation { _ = model.accept(profile: profile, in: modelContext) }
+                    rebaselineSnapshot()
                 } label: {
                     Text(model.verdict.feasible
                          ? String(localized: "profile.cardio.feasibility.apply", bundle: .module)
@@ -980,6 +1006,7 @@ public struct ProfileEditorView: View {
                 if !model.verdict.feasible {
                     Button {
                         withAnimation { model.dismiss(profile: profile) }
+                        rebaselineSnapshot()
                     } label: {
                         Text("profile.cardio.feasibility.keepGoal", bundle: .module)
                             .font(.subheadline)
@@ -995,6 +1022,7 @@ public struct ProfileEditorView: View {
             if let input = model.planInput {
                 PlanBuilderView(initialInput: input) { adjustedInput, adjustedResult in
                     _ = model.acceptCustom(input: adjustedInput, result: adjustedResult, profile: profile, in: modelContext)
+                    rebaselineSnapshot()
                 }
             }
         }
@@ -1160,9 +1188,11 @@ public struct ProfileEditorView: View {
 /// UI-Refactor (DeltiqHeader-Muster fuer Autosave-Screens): `UserBodyProfile`
 /// ist `@Bindable` und autosaved direkt in SwiftData. Haelt bewusst NUR die
 /// einfachen, rein lokalen Profil-Felder fest — siehe die Scope-Begruendung
-/// bei `ProfileEditorView.snapshot`.
+/// bei `ProfileEditorView.snapshot`. `internal` statt `private`, damit
+/// gezielte Tests (siehe `Tests/FitnessAppUITests`) die Capture/Apply-Logik
+/// per `@testable import` direkt pruefen koennen.
 @available(iOS 17.0, macOS 14.0, *)
-private struct ProfileMetaSnapshot: Equatable {
+struct ProfileMetaSnapshot: Equatable {
     var profile: BodyFormulaProfile
     var birthDate: Date
     var cardioCoachingEnabled: Bool
