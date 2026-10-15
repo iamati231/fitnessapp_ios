@@ -1394,7 +1394,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     func testCustomExerciseTemplateIDResolvesThroughDedupOnReimport() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
-        let template = ExerciseTemplate(name: "Dedup-Uebung", equipment: .machine, primaryMuscle: .legs, isCustom: true)
+        let template = ExerciseTemplate(name: "Dedup-Uebung", equipment: .machine, primaryMuscle: .quads, isCustom: true)
         ctx.insert(template)
         let exercise = Exercise(name: template.name, exerciseTemplateID: template.id, sets: 3)
         ctx.insert(exercise)
@@ -1403,7 +1403,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         // Zielcontainer hat bereits eine gleichnamige Vorlage mit ANDERER ID.
         let target = try makeContainer()
-        let existingTemplate = ExerciseTemplate(name: "Dedup-Uebung", equipment: .machine, primaryMuscle: .legs, isCustom: true)
+        let existingTemplate = ExerciseTemplate(name: "Dedup-Uebung", equipment: .machine, primaryMuscle: .quads, isCustom: true)
         target.mainContext.insert(existingTemplate)
         try target.mainContext.save()
         XCTAssertNotEqual(existingTemplate.id, template.id)
