@@ -17451,19 +17451,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sex steuert die Navy/Deurenberg-Formeln; das Alter geht in Mifflin-St-Jeor-BMR und Deurenberg ein."
+            "value": "Sex steuert die Navy/Deurenberg-Formeln; das Alter geht in Mifflin-St-Jeor-BMR und Deurenberg ein. Eine Änderung wirkt nur auf künftige Messungen — bereits gespeicherte Körperfett-/FFMI-Werte werden nicht neu berechnet."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sex drives the Navy/Deurenberg formulas; age feeds into Mifflin-St-Jeor BMR and Deurenberg."
+            "value": "Sex drives the Navy/Deurenberg formulas; age feeds into Mifflin-St-Jeor BMR and Deurenberg. A change only affects future measurements — already saved body-fat/FFMI values are not recalculated."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cinsiyet Navy/Deurenberg formüllerini etkiler; yaş Mifflin-St-Jeor BMR ve Deurenberg'e dahil olur."
+            "value": "Cinsiyet Navy/Deurenberg formüllerini etkiler; yaş Mifflin-St-Jeor BMR ve Deurenberg'e dahil olur. Bir değişiklik yalnızca gelecekteki ölçümleri etkiler — zaten kaydedilmiş vücut yağı/FFMI değerleri yeniden hesaplanmaz."
           }
         }
       }

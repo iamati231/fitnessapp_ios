@@ -20,7 +20,7 @@ Phase 1 des Settings-Epics (`SETTINGS_FULL_REVIEW_AND_IMPLEMENTATION.md`, ersetz
 | PE-FFM | Profil/Körperdaten | `BodyMeasurement.swift:105-160` (`makeDerived`), Call-Site `OnboardingView.swift:1845-1850` | **P0** | `makeDerived` berechnet KFA/FFM/FFMI unbedingt per Deurenberg-BMI-Fallback, auch ganz ohne Umfänge. Onboarding ruft das bereits produktiv auf (0 Umfänge dort je erfasst) — **jede** Tag-1-Messung aller Bestandsnutzer trägt einen erfundenen Wert, der auf dem Dashboard als echt angezeigt wird. | Neuer `makeWeightOnly`-Service ohne Fallback-Kette; Onboarding umstellen; Altdaten per Migration bereinigen | P2 | **behoben** (Phase 2) |
 | PE-B1/G1 | Profil/Körperdaten | `ProfileEditorView.swift:477-507` | P1 | Größe und Zielgewicht in getrennten Cards, aktuelles Gewicht nirgends in diesem Screen sichtbar (0 Treffer für ein Gewichts-Ist-Feld) | Kombinierte Höhe/Gewicht/Zielgewicht-Karte, Gewicht aus `BodyMeasurement` gelesen (wie Dashboard/MeasurementView) | P3 | **behoben** (Phase 3) |
 | PE-H1 | Profil/Körperdaten | `ProfileEditorView.swift:306-441` | P1 | HealthKit-"Übernehmen"-Button überschreibt Geburtsdatum/Geschlecht/Größe unbedingt, ohne Bestätigung, ohne Undo | Bestätigungsschritt vor dem Übernehmen ergänzen | P4 | **behoben** (Phase 4) |
-| PE-P1 | Profil/Körperdaten | `ProfileEditorView.swift:447-453`, `BodyMeasurement.swift` | P2 | Geschlechts-Änderung berechnet vorhandene `BodyMeasurement`-Ableitungen (Navy/Deurenberg/FFMI) nicht neu — bleiben unter altem Geschlecht eingefroren | Hinweistext ergänzen, kein Code-Zwang nötig | P3 | open |
+| PE-P1 | Profil/Körperdaten | `ProfileEditorView.swift:447-453`, `BodyMeasurement.swift` | P2 | Geschlechts-Änderung berechnet vorhandene `BodyMeasurement`-Ableitungen (Navy/Deurenberg/FFMI) nicht neu — bleiben unter altem Geschlecht eingefroren | Hinweistext ergänzen, kein Code-Zwang nötig | P3 | **behoben** (Phase 7) |
 | DX-02c | Daten/Export | `DataExportView.swift:239-275`, `DataExportService.swift` | **P0** | Export läuft komplett synchron auf MainActor (Kommentar behauptet `Task.detached`, Code tut es nicht) — UI friert für die volle CSV/ZIP-Dauer ein | Fetch bleibt Main, dann Sendable-DTOs bauen, CSV/ZIP-Arbeit off-Main | P5 | **behoben** (Phase 5) |
 | BL-07 | Daten/Backup | `BackupListView.swift:278-289` | **P0** | `createNow()` ist komplett synchron, kein `Task{}` — UI friert schlimmer ein als beim Export | Gleiches DTO-Snapshot-Muster wie DX-02c | P5 | **behoben** (Phase 5) |
 | DI-03 | Daten/Import | `DataImportView.swift:600-648` | **P0** | `loadPreview` läuft synchron bei jeder Dateiauswahl — entpackt+parsed das ganze ZIP auf Main, UI friert bei **jeder** Dateiwahl ein | In `Task{}` verschieben (reine Daten, kein `ModelContext` nötig) | P5 | **behoben** (Phase 5) |
@@ -394,3 +394,184 @@ via nicht-existentem Pfad.
   (Gear-Zeile, Dashboard-Sortier-Buttons) oder des `DeltiqHeaderAction`-
   Accessibility-Feldes im SwiftUI-Kontext. Das naechste verbindliche Signal
   ist der naechste Codemagic-Lauf.
+
+---
+
+## Teil 9 — Phase 7 Abnahmebericht
+
+### 1. Audit vollständig abgeglichen
+
+Alle 29 Befund-IDs aus Teil 1 haben einen eindeutigen Endstatus — **0 offen**:
+
+- 27 IDs **behoben** in den Phasen 2–6 (PE-G2/PE-FFM: Phase 2; PE-B1/G1/GEAR-01:
+  Phase 3; PE-H1/R-08/REM-01/REM-02/SV-F13: Phase 4; DX-02c/BL-07/DI-03/BL-03/
+  RS-02/SV-F01/DX-03/04/BL-08/DI-09/RS-03a/DX-05 + BL-05-Teil1: Phase 5;
+  GEAR-05/EXLIB-07/09/SV-F07/08/09/GEAR-04/CREDITS-02/SV-F02/EXLIB-02/03 +
+  BL-05-Teil2: Phase 6).
+- 1 ID **begründet unverändert**: R-24 ("OK" — niedriges Realrisiko, Fix nur
+  relevant falls Consent-Dialoge je strukturell getrennt werden; keine
+  Codeänderung vorgenommen).
+- 1 ID **in dieser Phase behoben**: **PE-P1** — `profile.person.footer`
+  (DE/EN/TR) um einen Satz erweitert: eine Geschlechts-Änderung wirkt nur auf
+  künftige Messungen, bereits gespeicherte Körperfett-/FFMI-Werte werden nicht
+  rückwirkend neu berechnet. Reiner Text-Fix wie im Audit-Vorschlag selbst
+  vorgesehen ("Hinweistext ergänzen, kein Code-Zwang nötig") — keine
+  Logikänderung an `BodyMeasurement`/`ProfileEditorView`.
+
+**Gegenprobe statt Blindvertrauen:** die 10 Phase-2–4-"behoben"-Markierungen
+(PE-G2, PE-FFM, PE-B1/G1, PE-H1, R-08, REM-01, REM-02, GEAR-01, SV-F13, R-24)
+wurden von einem unabhängigen Such-Lauf nochmal gegen den aktuellen Code
+gelesen (nicht nur die alte Markierung übernommen) — alle 10 bestätigt, keine
+Regression, nur unwesentliche Zeilenverschiebungen durch spätere Phasen. Alle
+Phase-5/6-"behoben"-Markierungen wurden in dieser Phase ebenfalls direkt am
+aktuellen Code nachgelesen (nicht nur am Commit-Diff) — ebenfalls alle
+bestätigt.
+
+**"Implementiert" vs. "auf Apple getestet" — gilt einheitlich für alle 29
+IDs:** der Code ist für jede ID vollständig implementiert. Ob er auf Apple
+tatsächlich kompiliert und funktioniert, ist je nach Gate unterschiedlich
+sicher (siehe Abschnitt 2) — für keine einzige ID liegt eine echte
+Apple-Kompilierung oder ein Gerätetest aus dieser Session vor.
+
+### 2. Apple-Build, SwiftData-Tests, Codemagic-Signal
+
+**Apple-Zugriff geprüft und verneint:** `list_environments` liefert für diese
+Session genau ein Environment (`anthropic_cloud`, Kind "Standard") — kein
+macOS-/Xcode-Environment verfügbar. Damit gilt wie in jeder vorherigen Phase:
+**kein Apple-Build, kein SwiftData-Test-Lauf, keine Abnahme auf Apple-Seite
+wird hier behauptet.**
+
+**Linux-Lauf (nach dem PE-P1-Fix erneut ausgeführt, cached Swift 6.0.3):**
+`swift build` grün, `swift test`: **979/979 Tests, 0 Fehler.** Aufschlüsselung
+nach tatsächlicher Prüftiefe:
+
+- **Echt typegecheckt + echt ausgeführt** (kein `#if canImport(SwiftData/
+  SwiftUI)`-Gate, da reines `FitnessAppCore`): die komplette ID-first-
+  Gruppierungslogik in `PRDetector`/`LiftAttempt`/`PersonalRecord` inkl. der 4
+  neuen Phase-6-Tests (Umbenennen überlebt via ID, unterschiedliche IDs bei
+  gleichem Namen bleiben getrennt, nil-ID fällt auf Namen zurück, ID/nil
+  werden nie gemischt).
+- **Nur Linux-geparst, NICHT typegecheckt** (Gate evaluiert auf Linux zu
+  `false`, `swift build`/`swift test` sehen diesen Code nur syntaktisch):
+  alle `@Model`-Änderungen (`ExerciseTemplate.id`, `Exercise.exerciseTemplateID`,
+  `ExerciseLog.exerciseTemplateIDSnapshot`, `PersonalRecordEntry.exerciseTemplateID`),
+  `ExerciseTemplateIDBackfill` + seine 2 Tests, die CSV-Export/-Import-
+  Erweiterungen (`exercise_template_id`-Spalten) + die 4 neuen
+  `DataPortabilityRoundtripTests`, die 4 neuen `BackupServiceFailurePathTests`,
+  sowie jede SwiftUI-Änderung (Gear-Bestätigungsdialog, Dashboard-Auf/Ab-
+  Buttons, alle 19 neuen `.accessibilityLabel`, No-Results-State).
+  Konkret zu den vom User benannten Schwerpunkten: **Migration**
+  (`ExerciseTemplateIDBackfill`) — nur geparst. **Stabile Übungsreferenzen**
+  — Core-Teil (Gruppierung) echt getestet, SwiftData-Teil (Backfill,
+  CSV-Spalten) nur geparst. **CSV-/Backup-Roundtrip** — nur geparst
+  (`DataPortabilityRoundtripTests`). **Replace-Import** (Phase 5) — nur
+  geparst. **Reset/Restore** (Phase 5) — nur geparst. **Injizierte
+  Backup-Fehlerpfade** (`BackupServiceFailurePathTests`, Phase 6) — nur
+  geparst, obwohl die Tests selbst so geschrieben sind, dass sie
+  umgebungsunabhängig (kein Root/Sandbox-Problem) auf echtem Apple-Toolchain
+  laufen würden.
+
+**Neuer Befund — Codemagic existiert und läuft automatisch:** `codemagic.yaml`
+konfiguriert zwei Workflows (`swift-package`, `ios-app`), die bei **jedem
+Push auf jeden Branch** (`branch_patterns: '*'`) auf echter Mac-mini-M2-
+Hardware mit echtem Xcode laufen: `swift build` + `swift test --parallel` +
+`xcodebuild` für iOS-Simulator (5 Library-Produkte einzeln, dann die ganze
+App inkl. Widget-Extension über ein generiertes Xcode-Projekt). Das heißt:
+für die in dieser Epic gepushten Commits sollte bereits echtes Apple-Signal
+vorliegen oder gerade entstehen. **Ich kann dieses Ergebnis aus dieser
+Session heraus aber nicht einsehen** — für `claude/smart-onboarding-epic`
+existiert kein Pull Request (geprüft via `list_pull_requests`), über das
+Checks sichtbar wären, und mir steht kein API-Zugriff auf Commit-Status/
+Check-Runs für einen bloßen Branch-Ref zur Verfügung (nur PR- und
+Workflow-Run-bezogene Tools, Codemagic läuft aber außerhalb von GitHub
+Actions). **Empfehlung:** Codemagic-Dashboard oder die GitHub-Commit-Seite
+der gepushten Commits direkt prüfen — dort kann das tatsächliche,
+verbindliche Ergebnis bereits vorliegen, ohne dass ich es faelschlich als
+"ungeprüft" hätte stehen lassen müssen.
+
+### 3. Gerätetest — alle 8 Punkte offen/blockiert
+
+Keiner der 8 Punkte ist in dieser Session durchführbar (kein iOS-Gerät, kein
+Simulator, kein Xcode). Status je Punkt — was der Code verspricht (bereits
+code-verifiziert) vs. was auf Gerät fehlt:
+
+1. **Gewicht ohne Umfänge speichern/bearbeiten** — `BodyMeasurement.makeWeightOnly`
+   (Phase 2) code-verifiziert. Offen: echtes Speichern/Bearbeiten auf Gerät.
+2. **Trainingsort/Equipment ändern ohne Planänderung** — PE-G2-Fix (Phase 2)
+   code-verifiziert (promptloser Bulk-Sync entfernt). Offen: Gerätetest.
+3. **Eigene Übung umbenennen → Plan/Verlauf/PRs/Trends** — EXLIB-07/09
+   (Phase 6), Core-Gruppierung echt getestet, SwiftUI/SwiftData-Seite nur
+   geparst. Offen: echtes Umbenennen + Sichtprüfung auf Gerät.
+4. **Vorlage löschen → historische Daten bleiben** — strukturell erzwungen
+   durch fehlende `@Relationship` (kein Cascade möglich). Offen: Gerätetest.
+5. **Gear-Löschen abbrechen/bestätigen** — `confirmationDialog` + Cancel-Pfad
+   code-verifiziert (Cancel setzt nur `pendingDelete = nil`). Offen: echtes
+   Antippen, Doppeltipp-Schutz auf Gerät.
+6. **Dashboard per Auf/Ab + VoiceOver sortieren** — Buttons + Labels vorhanden
+   (Phase 6). Offen: reale VoiceOver-Ausgabe nie gehört.
+7. **Benachrichtigungen + Health-Bestätigung** — REM-01/PE-H1 code-verifiziert.
+   Offen: echte OS-Berechtigungsdialoge nie durchlaufen.
+8. **Export/Import/Backup/Reset-Restore mit Testdaten** — soweit auf Linux
+   ausführbar, grün (siehe Abschnitt 2). Offen: echter Durchlauf mit
+   Share-Sheet/Dateisystem/App-Group auf Gerät.
+
+**Alle 8 Punkte: offen, blockiert durch fehlenden Geräte-/Simulator-Zugriff.**
+Keine Abnahme wird hierfür behauptet.
+
+### 4. Kleine Displays, große Schrift, DE/EN/TR
+
+- **DE/EN/TR-Stichprobe** (8 Phase-6/7-Keys inkl. der neuen PE-P1-Erweiterung:
+  `profile.person.footer`, `gear.delete.confirm.title/.message`,
+  `library.noResults.title/.description`, `dashboardSettings.reorder.action`,
+  `dashboardSettings.add.actionFormat`, `backups.actions.menu`) direkt aus dem
+  Catalog gelesen (nicht nur automatisiert validiert): alle 3 Sprachen
+  vorhanden, inhaltlich korrekt und sinngemäß übereinstimmend, keine
+  Platzhalter-Lücken, kein EN-Leak in DE/TR. `generate_translations_md.py`
+  bestätigt zusätzlich: 2086/2086/2086 Keys, **0 hardcodierte Strings**.
+- **Große Schrift/kleine Displays:** gezielte Nachprüfung der in Phase 6 NEU
+  hinzugekommenen Elemente (Gear-Zeile, Dashboard-Sortier-Buttons,
+  No-Results-State) auf feste Text-Frames, die bei großer Dynamic-Type-Schrift
+  abschneiden könnten — gefunden wurden nur zwei feste `.frame(width:height:)`
+  (44×44 Gear-Lösch-Button, 40×40 Library-Zeilen-Icon), beides reine
+  Icon-Container ohne Text darin, kein Clipping-Risiko. Keine neue Regression
+  gegenüber dem bereits in Phase 6 (Teil 8, Punkt 4) dokumentierten Befund.
+  Weiterhin nicht möglich: echtes Rendering bei z. B. "Accessibility XXL" oder
+  auf SE-Displaygröße — das bleibt Code-Review ohne Simulator.
+- **Settings-Erreichbarkeit** (Teil 3, SV-01…SV-32 über 5 Gruppen) Punkt für
+  Punkt gegen den aktuellen Code verifiziert: `SettingsView` (Profil-
+  Direktlink, 4 Gruppen-Links, Reset ganz unten) → `SettingsAppExperienceView`
+  (Dashboard-Link + alle Inline-Controls SV-03/06/07–20) →
+  `SettingsDataConnectionsView` (Health/Export/Backup/Import, 4 Links) →
+  `SettingsLibraryEquipmentView` (Library/Gear, 2 Links) →
+  `SettingsHelpInfoView` (Version/Bundle als reiner Text, GIF-Credits als
+  Link). **Alle ursprünglichen SV-Einträge bleiben erreichbar — keine Lücke
+  gefunden.**
+
+### 5. Zusammenfassung — tatsächliche Ergebnisse und offene Blocker
+
+**Erreicht:**
+- Alle 29 Audit-Befund-IDs behoben oder begründet — 0 offen.
+- Linux-Build/-Tests vollständig grün (979/979), frisch nach dem letzten Fix
+  erneut bestätigt.
+- DE/EN/TR vollständig (2086 Keys, 0 hardcodiert), Stichprobe inhaltlich
+  geprüft.
+- Settings-Navigation vollständig auf Erreichbarkeit alle 32 Alteinträge
+  verifiziert.
+- Keine neue Dynamic-Type-/Kleindisplay-Regression in den Phase-6-Neuerungen
+  gefunden.
+
+**Offene Blocker (keine Abnahme wird dafür behauptet):**
+- Kein Apple-Build, kein SwiftData-Typecheck, keine SwiftData-Tests in dieser
+  Session ausgeführt — mangels Apple-/Xcode-Environment.
+- Alle 8 Gerätetest-Punkte aus Abschnitt 3 offen.
+- Reale VoiceOver-Ausgabe und reales Dynamic-Type-/Kleindisplay-Rendering nie
+  beobachtet, nur code-verifiziert.
+- Codemagic ist konfiguriert und läuft automatisch bei jedem Push — das
+  tatsächliche Ergebnis für die gepushten Commits ist aus dieser Session
+  heraus nicht einsehbar (siehe Abschnitt 2). Nächster Schritt liegt beim
+  User: Codemagic-Dashboard bzw. GitHub-Commit-Checks ansehen.
+
+Diese Blocker sind identisch zu denen jeder vorherigen Phase — neu ist
+lediglich, dass sie hier vollständig gegen jede einzelne der 29 Befund-IDs
+sowie gegen alle 5 Vorgabe-Punkte der finalen Abnahme durchdekliniert und
+damit explizit bestätigt statt nur pauschal wiederholt wurden.
