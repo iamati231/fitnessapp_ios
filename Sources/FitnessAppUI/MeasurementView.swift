@@ -102,17 +102,17 @@ public struct MeasurementView: View {
     /// als vollen Eintrag (siehe dortige `hasFullCircumferences`-Pruefung).
     @State private var isEditingWeightOnlyEntry: Bool = false
 
-    /// DEL-034: Edit-Mode startet als reine Detail-Ansicht. Felder werden erst
-    /// editierbar, sobald der User oben rechts "Bearbeiten" tippt. Im New-Mode
-    /// (kein editingMeasurement) ist die View IMMER editierbar — User soll
-    /// direkt eintragen koennen.
-    @State private var isEditingEnabled: Bool = false
+    /// UI-Refactor (Korrektur V4): zeigt den Verwerfen-Dialog, wenn der
+    /// Zurueck-Chevron im Edit-Mode bei vorhandenen Aenderungen (`isDirty`)
+    /// angetippt wird, statt sofort zu schliessen. Im New-Mode ungenutzt
+    /// (kein `onBack`, siehe `body` — Tab-Root).
+    @State private var showingDiscardConfirm = false
 
-    /// Sind die Eingabefelder aktuell editierbar? Im New-Mode immer ja,
-    /// im Edit-Mode nur wenn der User "Bearbeiten" getippt hat.
-    private var fieldsEnabled: Bool {
-        !isEditMode || isEditingEnabled
-    }
+    /// UI-Refactor (Korrektur V4): Feldstand direkt nach dem Edit-Mode-
+    /// Prefill (`applyExistingMeasurement`, siehe `.task` in `body`) —
+    /// Vergleichsbasis fuer `isDirty`. Default (alle `nil`) ist im New-Mode
+    /// irrelevant, da dort kein Zurueck-Chevron existiert.
+    @State private var fieldsAtOpen = MeasurementFieldSnapshot()
 
     public init() {
         self.editingMeasurement = nil
@@ -138,15 +138,11 @@ public struct MeasurementView: View {
                 // Chevron erschien trotzdem und tat nichts. Nur im
                 // gepushten Edit-Mode (historyRow-NavigationLink) gibt es
                 // etwas zum Dismissen.
-                onBack: isEditMode ? { dismiss() } : nil,
-                actions: isEditMode ? [
-                    DeltiqHeaderAction(
-                        systemImage: isEditingEnabled ? "checkmark" : "pencil",
-                        isHighlighted: isEditingEnabled
-                    ) {
-                        isEditingEnabled.toggle()
-                    }
-                ] : []
+                // UI-Refactor (Korrektur V4): Verwerfen-Schutz wie bei jedem
+                // anderen Editor dieser Epic — ohne Aenderungen sofort
+                // schliessen, sonst erst nach Bestaetigung.
+                onBack: isEditMode ? { isDirty ? (showingDiscardConfirm = true) : dismiss() } : nil,
+                actions: headerActions
             )
 
             // DEL-106: ScrollViewReader hostet die Auto-Scroll-Choreografie,
@@ -173,7 +169,7 @@ public struct MeasurementView: View {
                             if !isEditMode {
                                 healthKitSection
                             }
-                            actionsSection(forProfile: profile)
+                            actionsSection
                             if !isEditMode {
                                 historySection
                             }
@@ -216,7 +212,13 @@ public struct MeasurementView: View {
         // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift. Am
         // Tab-Root (New-Mode) ein No-Op, weil dort nichts zum Zurueck-
         // wischen existiert.
-        .deltiqSwipeBackEnabled()
+        // UI-Refactor (Korrektur V4): im Edit-Mode bei Aenderungen bewusst
+        // AUS — sonst waere die Wisch-Geste ein ungesicherter Verlassen-Weg
+        // am Discard-Dialog vorbei.
+        .deltiqSwipeBackEnabled(isEditMode ? !isDirty : true)
+        .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+            dismiss()
+        }
         .toolbar {
             // DEL-106: Keyboard-Accessory mit Previous/Next/Done. Da der
             // .decimalPad keinen Return-Key hat, brauchen wir das hier
@@ -254,6 +256,11 @@ public struct MeasurementView: View {
             if isEditMode, !didPrefillFromExisting, let m = editingMeasurement {
                 applyExistingMeasurement(m)
                 didPrefillFromExisting = true
+                // UI-Refactor (Korrektur V4): Baseline fuer `isDirty` ERST
+                // jetzt erfassen, nachdem der Prefill die Felder gefuellt
+                // hat — sonst waere jede bestehende Messung beim Oeffnen
+                // sofort faelschlich "dirty".
+                fieldsAtOpen = currentFieldSnapshot
             }
             if !isEditMode {
                 await healthKit.refreshAuthorizationStatus()
@@ -269,7 +276,7 @@ public struct MeasurementView: View {
     /// Simulator-Befund (Light Mode, 5. August): die Marke zeigte nur eine
     /// Zahl ("2 Pflichtfelder"), ohne dass die Zeilen darunter erkennen
     /// liessen, WELCHE zwei gemeint waren. Sie nennt jetzt die Feldnamen
-    /// direkt (dieselben Keys wie `missingFieldsHint`s Satz).
+    /// direkt (dieselben Namen wie `missingRequiredFieldNames` liefert).
     @ViewBuilder
     private func measurementContextRow(profile: UserBodyProfile) -> some View {
         if !isEditMode {
@@ -304,9 +311,8 @@ public struct MeasurementView: View {
     }
 
     /// Lokalisierte Namen der noch fehlenden Pflichtfelder, in Formular-
-    /// Reihenfolge. Single-Source-of-Truth fuer die Kontextzeilen-Marke UND
-    /// `missingFieldsHint`s Satz - beide zaehlten vorher getrennt dieselbe
-    /// Logik hoch.
+    /// Reihenfolge. Treibt die Kontextzeilen-Marke (New-Mode) sowie die
+    /// per-Feld "erforderlich"-Markierungen (`requirementHint`).
     private func missingRequiredFieldNames(profile: UserBodyProfile) -> [String] {
         var missing: [String] = []
         if (weightKg ?? 0) <= 0 { missing.append(loc("measurement.validation.field.weight")) }
@@ -321,14 +327,48 @@ public struct MeasurementView: View {
         return missing
     }
 
-    /// Titel-Mapping: New-Mode → "measurement.title.new", Edit-Mode wechselt
-    /// zwischen "measurement.title.detail" und "measurement.title.edit" je
-    /// nach Editing-Toggle (DEL-107).
+    /// Titel-Mapping: New-Mode → "measurement.title.new", Edit-Mode →
+    /// "measurement.title.edit" (DEL-107). UI-Refactor (Korrektur V4): keine
+    /// separate reine Detail-Ansicht mehr — eine bestehende Messung ist beim
+    /// Oeffnen sofort editierbar, wie jeder andere Editor dieser Epic.
     private var navTitle: String {
-        if isEditMode {
-            return isEditingEnabled ? loc("measurement.title.edit") : loc("measurement.title.detail")
-        }
-        return loc("measurement.title.new")
+        isEditMode ? loc("measurement.title.edit") : loc("measurement.title.new")
+    }
+
+    /// UI-Refactor (Korrektur V4): der Haken oben rechts ist jetzt die
+    /// EINZIGE Speichern-Aktion (New- UND Edit-Mode) — ersetzt sowohl den
+    /// alten Stift/Haken-Umschalter (der selbst nie speicherte, nur
+    /// `isEditingEnabled` togglete — die eigentliche Ursache des gemeldeten
+    /// Bugs: wer ihn antippte in der Erwartung, damit zu speichern, verlor
+    /// seine Eingabe kommentarlos) als auch den separaten Speichern-Button
+    /// unten in `actionsSection`. Ohne Profil (Empty-State) gibt es nichts
+    /// zu speichern — dann zeigt der Header keine Aktion.
+    private var headerActions: [DeltiqHeaderAction] {
+        guard let profile = profiles.first else { return [] }
+        return [
+            DeltiqHeaderAction(
+                systemImage: "checkmark",
+                isDisabled: !canSave(profile: profile),
+                accessibilityLabel: String(localized: "common.save", bundle: .module)
+            ) {
+                save(profile: profile)
+            }
+        ]
+    }
+
+    /// UI-Refactor (Korrektur V4): Vergleich gegen `fieldsAtOpen` — nur im
+    /// Edit-Mode relevant (New-Mode hat keinen Zurueck-Chevron, der danach
+    /// fragen koennte).
+    private var isDirty: Bool {
+        isEditMode && currentFieldSnapshot != fieldsAtOpen
+    }
+
+    private var currentFieldSnapshot: MeasurementFieldSnapshot {
+        MeasurementFieldSnapshot(
+            weightKg: weightKg, neckCm: neckCm, waistCm: waistCm, hipCm: hipCm,
+            shoulderCm: shoulderCm, chestCm: chestCm, bicepsCm: bicepsCm,
+            thighCm: thighCm, calfCm: calfCm
+        )
     }
 
     // MARK: - Profile-Section (Single-Source-of-Truth)
@@ -657,69 +697,42 @@ public struct MeasurementView: View {
         }
     }
 
-    /// DEL-034: Im Edit-Mode-Detail-View (fieldsEnabled=false) zeigen wir
-    /// keine Save/Delete-Buttons — User muss erst "Bearbeiten" oben rechts
-    /// tippen. Im New-Mode + im aktiven Edit-Mode beide Buttons sichtbar.
+    /// UI-Refactor (Korrektur V4): Speichern ist jetzt ausschliesslich der
+    /// Haken oben rechts (`headerActions`) — hier unten bleibt nur noch
+    /// Loeschen (Edit-Mode) + der "zuletzt gespeichert"-Hinweis, wie bei
+    /// allen anderen Editoren dieser Epic ("Unten auf der Seite gibt es
+    /// KEINEN zweiten Speichern-Button mehr"). Braucht kein Profil mehr
+    /// (das steckte nur im entfernten Save-Button).
     @ViewBuilder
-    private func actionsSection(forProfile profile: UserBodyProfile) -> some View {
-        if fieldsEnabled {
-            VStack(spacing: 12) {
-                // DEL-106: Primary Save-Button auf dem Deltiq-Hero-Style.
-                // Disabled-State erbt das visuelle Look-and-Feel von der
-                // umgebenden Section — Tastatur-Dismiss-Toolbar bleibt drueber.
-                Button {
-                    save(profile: profile)
+    private var actionsSection: some View {
+        VStack(spacing: 12) {
+            if isEditMode {
+                // Signature-Geruest 1.9: Destruktiv = Text 15pt in
+                // #FF453A, kein Hintergrund - statt des bisherigen
+                // .bordered-System-Buttons.
+                Button(role: .destructive) {
+                    deleteCurrentMeasurement()
                 } label: {
                     Label {
-                        Text(isEditMode
-                             ? "measurement.action.saveEdit"
-                             : "measurement.action.save",
-                             bundle: .module)
+                        Text("measurement.action.delete", bundle: .module)
                     } icon: {
-                        Image(systemName: "tray.and.arrow.down")
+                        Image(systemName: "trash")
                     }
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.Deltiq.error)
+                    .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.plain)
-                .deltiqButtonStyle()
-                .opacity(canSave(profile: profile) ? 1.0 : 0.5)
-                .disabled(!canSave(profile: profile))
+            }
 
-                if isEditMode {
-                    // Signature-Geruest 1.9: Destruktiv = Text 15pt in
-                    // #FF453A, kein Hintergrund - statt des bisherigen
-                    // .bordered-System-Buttons.
-                    Button(role: .destructive) {
-                        deleteCurrentMeasurement()
-                    } label: {
-                        Label {
-                            Text("measurement.action.delete", bundle: .module)
-                        } icon: {
-                            Image(systemName: "trash")
-                        }
-                        .font(.system(size: 15))
-                        .foregroundStyle(Color.Deltiq.error)
-                        .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                if let lastSavedAt {
-                    // DEL-107: %@-Placeholder fuer das formatierte Datum.
-                    let stamp = lastSavedAt.formatted(date: .abbreviated, time: .shortened)
-                    Text(isEditMode
-                         ? String(localized: "measurement.lastSaved.edit", bundle: .module).replacingOccurrences(of: "%@", with: stamp)
-                         : String(localized: "measurement.lastSaved.new", bundle: .module).replacingOccurrences(of: "%@", with: stamp))
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color.Deltiq.textSecondary)
-                }
-
-                if !canSave(profile: profile) {
-                    Text(missingFieldsHint(profile: profile))
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color.deltiqOrange)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 4)
-                }
+            if let lastSavedAt {
+                // DEL-107: %@-Placeholder fuer das formatierte Datum.
+                let stamp = lastSavedAt.formatted(date: .abbreviated, time: .shortened)
+                Text(isEditMode
+                     ? String(localized: "measurement.lastSaved.edit", bundle: .module).replacingOccurrences(of: "%@", with: stamp)
+                     : String(localized: "measurement.lastSaved.new", bundle: .module).replacingOccurrences(of: "%@", with: stamp))
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
         }
     }
@@ -811,9 +824,10 @@ public struct MeasurementView: View {
         }
     }
 
-    /// DEL-034 + DEL-106: TextField mit Decimal-Keyboard, an den FocusState
-    /// gebunden und mit einer `.id` versehen, damit der ScrollViewReader
-    /// die Zeile beim Fokus-Wechsel zentrieren kann.
+    /// DEL-106: TextField mit Decimal-Keyboard, an den FocusState gebunden
+    /// und mit einer `.id` versehen, damit der ScrollViewReader die Zeile
+    /// beim Fokus-Wechsel zentrieren kann. UI-Refactor (Korrektur V4): immer
+    /// editierbar — es gibt keine separate Nur-Lese-Ansicht mehr.
     ///
     /// Fix "70,050003"-Bug: `roundsToWeightPrecision` ist NUR fuer das
     /// Gewichtsfeld `true` — alle anderen Umfang-Felder behalten ihr
@@ -835,7 +849,6 @@ public struct MeasurementView: View {
             : .number
         TextField(label, value: displayValue, format: style, prompt: Text(label))
             .decimalKeyboard()
-            .disabled(!fieldsEnabled)
             .focused($focusedField, equals: field)
             .multilineTextAlignment(.trailing)
             .font(.system(size: 15))
@@ -976,19 +989,6 @@ public struct MeasurementView: View {
             guard let h = hipCm, h > 0 else { return false }
         }
         return true
-    }
-
-    /// Erklaerung welche Pflichtfelder noch fehlen — zeigt's im
-    /// Actions-Footer wenn `canSave` false ist.
-    /// DEL-107: einzelne Feldnamen + Singular/Plural-Frame komplett
-    /// lokalisiert, sodass der Hint auch auf EN/TR konsistent klingt.
-    private func missingFieldsHint(profile: UserBodyProfile) -> String {
-        let missing = missingRequiredFieldNames(profile: profile)
-        let joined = missing.joined(separator: ", ")
-        let template = missing.count == 1
-            ? String(localized: "measurement.validation.missing.one", bundle: .module)
-            : String(localized: "measurement.validation.missing.many", bundle: .module)
-        return template.replacingOccurrences(of: "%@", with: joined)
     }
 
     // MARK: - Save / Delete
@@ -1211,6 +1211,32 @@ private struct HistoryRow: View {
         default:                        return nil
         }
     }
+}
+
+/// UI-Refactor (Korrektur V4): Vergleichsbasis fuer `MeasurementView.isDirty`
+/// — die neun Formularfelder, direkt nach dem Edit-Mode-Prefill erfasst
+/// (siehe `fieldsAtOpen`). Kein `apply(to:)`: anders als die autosave-
+/// Editoren dieser Epic schreibt `MeasurementView` Feldaenderungen NIE
+/// direkt ins SwiftData-Model, sondern haelt sie als reinen Draft in
+/// `@State` (wie `BodyDataEditorView`) — "Verwerfen" ist deshalb ein
+/// einfaches `dismiss()`, das Model wurde nie angefasst. `internal` statt
+/// `private`, damit gezielte Tests (siehe `Tests/FitnessAppUITests`) die
+/// Equatable-Semantik direkt pruefen koennen.
+@available(iOS 17.0, macOS 14.0, *)
+struct MeasurementFieldSnapshot: Equatable {
+    // Explizite `= nil`-Defaults (statt nur `Double?`): macht den
+    // synthetisierten memberwise `init()` garantiert parameterlos aufrufbar
+    // (`fieldsAtOpen`s Default-Init oben) statt von einer impliziten
+    // Optional-Default-Regel abzuhaengen.
+    var weightKg: Double? = nil
+    var neckCm: Double? = nil
+    var waistCm: Double? = nil
+    var hipCm: Double? = nil
+    var shoulderCm: Double? = nil
+    var chestCm: Double? = nil
+    var bicepsCm: Double? = nil
+    var thighCm: Double? = nil
+    var calfCm: Double? = nil
 }
 
 // MARK: - Previews

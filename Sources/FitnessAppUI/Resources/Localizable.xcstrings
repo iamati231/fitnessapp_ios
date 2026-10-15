@@ -4683,29 +4683,6 @@
         }
       }
     },
-    "measurement.title.detail": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Messung"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Measurement"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ölçüm"
-          }
-        }
-      }
-    },
     "measurement.title.edit": {
       "extractionState": "manual",
       "localizations": {
@@ -5994,52 +5971,6 @@
         }
       }
     },
-    "measurement.action.save": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Messung speichern"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Save Measurement"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ölçümü Kaydet"
-          }
-        }
-      }
-    },
-    "measurement.action.saveEdit": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Änderungen speichern"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Save Changes"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Değişiklikleri Kaydet"
-          }
-        }
-      }
-    },
     "measurement.action.delete": {
       "extractionState": "manual",
       "localizations": {
@@ -6128,52 +6059,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Son değişiklik: %@"
-          }
-        }
-      }
-    },
-    "measurement.validation.missing.one": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pflichtfeld noch leer: %@."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Required field missing: %@."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zorunlu alan eksik: %@."
-          }
-        }
-      }
-    },
-    "measurement.validation.missing.many": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pflichtfelder noch leer: %@."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Required fields missing: %@."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zorunlu alanlar eksik: %@."
           }
         }
       }
@@ -19488,52 +19373,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Koçluk Tarzı"
-          }
-        }
-      }
-    },
-    "profile.coaching.baselineCheck": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Start-Check"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Start check"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Başlangıç Kontrolü"
-          }
-        }
-      }
-    },
-    "profile.coaching.baselineCheck.notDone": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch nicht durchgeführt"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Not done yet"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Henüz yapılmadı"
           }
         }
       }

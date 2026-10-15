@@ -60,21 +60,36 @@ public final class UserBodyProfile {
 
     /// Smart-Onboarding-Epic Phase 2 (PLAN_EQUIPMENT_MATCHING_AUDIT.md):
     /// dreiwertige Verfuegbarkeit je `EquipmentItem` (Zubehoer/Stationen,
-    /// zusaetzlich zu den groben `equipmentPreferences` oben). Zwei
-    /// getrennte RawValue-Listen statt einer einzelnen mit Status-Suffix —
-    /// gleiches "flaches Feld-pro-Wert"-Prinzip wie bei den Baseline-Feldern
-    /// unten, jedes unabhaengig CSV-exportierbar. Ein Item in KEINER der
-    /// beiden Listen ist `.unknown` (siehe `equipmentProfile`-Accessor) —
-    /// das deckt sowohl ein brandneues Item als auch ein komplett
-    /// unberuehrtes Bestandsprofil (beide Listen leer) automatisch und
-    /// korrekt ab: "eine leere alte Auswahl bleibt unbekannt". Absichtlich
-    /// KEIN Backfill aus `equipmentPreferencesRaw`: dessen Eintraege konnten
-    /// vor Phase 3 aus einer ungeprueften Environment-Vorbelegung stammen
-    /// (Audit Abschnitt 5.1/5.2), eine Uebernahme in das neue Modell waere
-    /// exakt die "falsche Sicherheit aus unvollstaendigen/fraglichen
-    /// Altdaten", die diese Phase vermeiden soll.
+    /// zusaetzlich zu den groben `equipmentPreferences` oben). Drei getrennte
+    /// RawValue-Listen statt einer einzelnen mit Status-Suffix — gleiches
+    /// "flaches Feld-pro-Wert"-Prinzip wie bei den Baseline-Feldern unten,
+    /// jedes unabhaengig CSV-exportierbar. Ein Item in KEINER der drei Listen
+    /// ist ebenfalls `.unknown` (siehe `equipmentProfile`-Accessor) — das
+    /// deckt sowohl ein brandneues Item als auch ein komplett unberuehrtes
+    /// Bestandsprofil (alle drei Listen leer) automatisch und korrekt ab:
+    /// "eine leere alte Auswahl bleibt unbekannt". Absichtlich KEIN Backfill
+    /// aus `equipmentPreferencesRaw`: dessen Eintraege konnten vor Phase 3
+    /// aus einer ungeprueften Environment-Vorbelegung stammen (Audit
+    /// Abschnitt 5.1/5.2), eine Uebernahme in das neue Modell waere exakt
+    /// die "falsche Sicherheit aus unvollstaendigen/fraglichen Altdaten",
+    /// die diese Phase vermeiden soll.
     public var equipmentAvailableItemsRaw: [String] = []
     public var equipmentUnavailableItemsRaw: [String] = []
+    /// Korrektur V5 (vorher fehlend): `EquipmentProfileEditor` kann ein Item
+    /// (bisher nur Bank/Klimmzugstange) explizit auf `.unknown` setzen — eine
+    /// bewusste "Weiß ich nicht"-Aussage, die sich von einem nie angefassten
+    /// Item unterscheidet (siehe `UserEquipmentProfile.
+    /// confirmRemainingAsUnavailable`-Doc: NUR Letzteres wird dort zu
+    /// `.unavailable`). Ohne eigene Raw-Liste dafuer landete ein explizites
+    /// `.unknown` in KEINER der zwei Listen oben — nach dem naechsten Save/
+    /// Reload war es vom Persistenz-Layer aus nicht mehr von "nie angefasst"
+    /// unterscheidbar, und die naechste `confirmRemainingAsUnavailable()`
+    /// (z.B. beim Abschluss der Erfassung) hat die bewusste "weiß ich nicht"-
+    /// Aussage faelschlich stillschweigend zu `.unavailable` gemacht — genau
+    /// der gemeldete Bug. Diese Liste macht "explizit unbekannt" zu einem
+    /// eigenen, persistenten Zustand statt einer rein transienten In-Memory-
+    /// Unterscheidung.
+    public var equipmentUnknownItemsRaw: [String] = []
 
     /// Stueckzahl je `EquipmentItem`, nur fuer Items mit `supportsCount ==
     /// true` befuellt. Encoding `"itemRawValue:count"` statt eines
@@ -351,9 +366,11 @@ public final class UserBodyProfile {
     /// dreiwertige Equipment-Erfassung. Stale rawStrings (Enum-Cases
     /// existieren nicht mehr) werden beim Lesen rausgefiltert — gleicher
     /// Robustness-Pattern wie `equipmentPreferences`/`activeDashboardWidgets`.
-    /// Ein Item darf nie gleichzeitig in beiden Rohlisten stehen; der Setter
-    /// stellt das her, indem er aus EINER Quelle (`UserEquipmentProfile.
-    /// availability`) beide Listen disjunkt neu schreibt.
+    /// Ein Item darf nie gleichzeitig in mehr als einer der drei Rohlisten
+    /// stehen; der Setter stellt das her, indem er aus EINER Quelle
+    /// (`UserEquipmentProfile.availability`) alle drei Listen disjunkt neu
+    /// schreibt (Korrektur V5: dritte Liste fuer explizites `.unknown`,
+    /// siehe `equipmentUnknownItemsRaw`).
     public var equipmentProfile: UserEquipmentProfile {
         get {
             var availability: [EquipmentItem: EquipmentAvailability] = [:]
@@ -364,6 +381,14 @@ public final class UserBodyProfile {
             for raw in equipmentUnavailableItemsRaw {
                 guard let item = EquipmentItem(rawValue: raw) else { continue }
                 availability[item] = .unavailable
+            }
+            // Korrektur V5: explizit erfasste "Weiß ich nicht"-Antworten
+            // bekommen einen ECHTEN Dictionary-Eintrag (nicht bloß die
+            // Abwesenheit aus beiden Listen oben) — siehe
+            // `equipmentUnknownItemsRaw`-Doc.
+            for raw in equipmentUnknownItemsRaw {
+                guard let item = EquipmentItem(rawValue: raw) else { continue }
+                availability[item] = .unknown
             }
             var counts: [EquipmentItem: Int] = [:]
             for pair in equipmentItemCountsRaw {
@@ -380,6 +405,13 @@ public final class UserBodyProfile {
                 .sorted()
             equipmentUnavailableItemsRaw = newValue.availability
                 .compactMap { item, availability in availability == .unavailable ? item.rawValue : nil }
+                .sorted()
+            // Korrektur V5: explizites `.unknown` separat persistieren, sonst
+            // ist es nach dem Schreiben von keiner der beiden Listen oben
+            // erfasst und damit ab dem naechsten Lesen ununterscheidbar von
+            // einem nie angefassten Item (siehe `equipmentUnknownItemsRaw`-Doc).
+            equipmentUnknownItemsRaw = newValue.availability
+                .compactMap { item, availability in availability == .unknown ? item.rawValue : nil }
                 .sorted()
             equipmentItemCountsRaw = newValue.counts
                 .map { "\($0.key.rawValue):\($0.value)" }

@@ -5,11 +5,14 @@ import FitnessAppCore
 import FitnessAppData
 @testable import FitnessAppUI
 
-/// UI-Refactor (Korrektur, Punkt 5): gezielte Tests fuer die Capture/Apply/
-/// Equatable-Vertraege der vier Editor-Snapshot-Structs (`ExerciseSnapshot`,
-/// `TrainingDaySnapshot`, `PlanMetaSnapshot`, `ProfileMetaSnapshot`) — der
-/// Kern der neuen Discard-Logik. Diese Structs sind `internal` (nicht
-/// `public`), deshalb `@testable import FitnessAppUI`.
+/// UI-Refactor (Korrektur, Punkt 5; erweitert um die 3. Korrektur-Runde
+/// V1-V3): gezielte Tests fuer die Capture/Apply/Equatable-Vertraege der
+/// vier Editor-Snapshot-Structs (`ExerciseSnapshot`, `TrainingDaySnapshot`,
+/// `PlanMetaSnapshot`, `ProfileMetaSnapshot`) UND fuer die `internal`
+/// Pure-Logic-Funktionen, die `PlanEditorView`/`DayEditorView` fuer
+/// Reorder-Discard (V1) und Plan-Reaktivierung (V3) tragen. Diese Structs/
+/// Funktionen sind `internal` (nicht `public`), deshalb `@testable import
+/// FitnessAppUI`.
 ///
 /// Diese Datei ist wie ihre Produktionsdateien `#if canImport(SwiftUI) &&
 /// canImport(SwiftData)`-gegated und existiert auf Linux schlicht nicht
@@ -20,15 +23,28 @@ import FitnessAppData
 /// keine Verifikation — das gilt fuer alle SwiftUI-gegateten Dateien dieses
 /// Pakets, nicht nur fuer diese.
 ///
-/// Was hier NICHT getestet wird (braucht einen echten View-/UI-Test-
-/// Harness, den dieses Repo nicht hat): die View-seitige Verdrahtung
-/// (DeltiqHeader-Chevron/Checkmark, Discard-Dialog, `.onChange`-
+/// V1/V3-Tests instanziieren `PlanEditorView`/`DayEditorView` direkt als
+/// reinen Struct-Wert (ueber ihren oeffentlichen `init(plan:)`/`init(day:)`)
+/// und rufen NUR `internal` Funktionen auf, die ausschliesslich den
+/// uebergebenen `plan`/`day` (ein `@Bindable`-Parameter — ein normaler
+/// Objekt-Verweis, kein SwiftUI-Rendering noetig) sowie ihre eigenen,
+/// EXPLIZITEN Parameter anfassen (`comparedTo:`/`usingSnapshot:`/
+/// `otherActivePlanIDAtOpen:amongCandidates:`) — nie `@Query`- oder
+/// `@Environment`-rueckgebundene Properties (`allPlans`, `modelContext`,
+/// `dismiss`, `navigation`). Deshalb ist das Konstruieren der View hier
+/// sicher, obwohl kein echter SwiftUI-/`.modelContainer`-Rendering-Kontext
+/// existiert.
+///
+/// Was hier NACH WIE VOR NICHT getestet wird (braucht einen echten View-/
+/// UI-Test-Harness, den dieses Repo nicht hat): die eigentliche View-
+/// Verdrahtung (DeltiqHeader-Chevron/Checkmark, Discard-Dialog, `.onChange`-
 /// Unterdrueckung waehrend eines Reverts, `.interactiveDismissDisabled`/
-/// `.deltiqSwipeBackEnabled`) sowie die Cross-Entity-Seiteneffekte, die
-/// NICHT im Snapshot-Struct selbst liegen (Custom-Template-Ruecksync in
-/// `ExerciseEditorView.revertToSnapshot()`, Reaktivierung des anderen Plans
-/// in `PlanEditorView.revertToSnapshot()`). Diese bleiben nur per echtem
-/// Geraete-/Simulator-Test verifizierbar.
+/// `.deltiqSwipeBackEnabled`, `.onAppear`s Erfassung von
+/// `otherActivePlanIDAtOpen` aus der LIVE `allPlans`-Query) sowie
+/// Cross-Entity-Seiteneffekte, die nicht in einer der hier getesteten reinen
+/// Funktionen liegen (Custom-Template-Ruecksync in `ExerciseEditorView.
+/// revertToSnapshot()`). Diese bleiben nur per echtem Geraete-/Simulator-
+/// Test verifizierbar.
 @available(iOS 17.0, macOS 14.0, *)
 @MainActor
 final class EditorDiscardSnapshotTests: XCTestCase {
@@ -219,6 +235,238 @@ final class EditorDiscardSnapshotTests: XCTestCase {
         XCTAssertEqual(profile.cardioGoal, .generalFitness)
         XCTAssertNil(profile.current5kReferenceSeconds)
         XCTAssertEqual(profile.weeklyWorkoutGoal, 1)
+    }
+
+    // MARK: - Korrektur-Runde 3 (V1/V2/V3)
+
+    /// Korrektur V2: `rebaselineTargetEnvironment()` (PlanEditorView) macht
+    /// NUR `targetEnvironment` zur neuen Baseline — ein zu diesem Zeitpunkt
+    /// noch offener, unabhaengiger Formular-Edit (`customName`) muss
+    /// weiterhin dirty UND per Discard revertierbar bleiben. Ein frueheres
+    /// volles `PlanMetaSnapshot.capture(from:)` (das jetzt behobene V2-
+    /// Problem) haette beide Aenderungen faelschlich gemeinsam bestaetigt.
+    func testPlanMetaSnapshotTargetedRebaselineLeavesOtherFieldsDirty() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let plan = TrainingPlan(name: "Plan A", weeks: 12, isActive: false, targetEnvironment: .gym)
+        ctx.insert(plan)
+        var snapshot = PlanMetaSnapshot.capture(from: plan)
+
+        // Zwei unabhaengige, gleichzeitig offene Aenderungen:
+        plan.customName = "Mein Plan"        // noch unbestaetigter Formular-Edit
+        plan.targetEnvironment = .homeGym    // wird GLEICH ueber Adapt/Restore bestaetigt
+        XCTAssertNotEqual(snapshot, PlanMetaSnapshot.capture(from: plan))
+
+        // Entspricht exakt PlanEditorView.rebaselineTargetEnvironment().
+        snapshot.targetEnvironment = plan.targetEnvironment
+
+        XCTAssertEqual(snapshot.targetEnvironment, plan.targetEnvironment, "targetEnvironment gilt jetzt als bestaetigt")
+        XCTAssertNotEqual(snapshot, PlanMetaSnapshot.capture(from: plan), "customName bleibt ein offener, dirty Edit")
+        XCTAssertNotEqual(snapshot.customName, plan.customName)
+
+        snapshot.apply(to: plan)
+        XCTAssertNil(plan.customName, "customName muss beim Verwerfen zurueckgerollt werden")
+        XCTAssertEqual(plan.targetEnvironment, .homeGym, "targetEnvironment bleibt bestaetigt, kein Rollback")
+    }
+
+    /// Korrektur V1 (PlanEditorView): reines Umsortieren der Tage (Wochentage
+    /// rotiert, siehe `moveDays`) OHNE jede andere Aenderung muss als dirty
+    /// erkannt und exakt zurueckgerollt werden.
+    func testPlanEditorViewDetectsAndRevertsDayReorder() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: false, targetEnvironment: .gym)
+        ctx.insert(plan)
+        let monday = TrainingDay(name: "A", weekday: 2, type: .custom, plan: plan)
+        let wednesday = TrainingDay(name: "B", weekday: 4, type: .custom, plan: plan)
+        ctx.insert(monday)
+        ctx.insert(wednesday)
+
+        let view = PlanEditorView(plan: plan)
+        let weekdayAtOpen: [PersistentIdentifier: Int] = [
+            monday.persistentModelID: monday.weekday,
+            wednesday.persistentModelID: wednesday.weekday
+        ]
+        XCTAssertFalse(view.dayOrderIsDirty(comparedTo: weekdayAtOpen))
+
+        // Simuliert einen Drag&Drop-Reorder (siehe `moveDays`): die beiden
+        // Wochentag-Werte tauschen den Platz.
+        monday.weekday = 4
+        wednesday.weekday = 2
+        XCTAssertTrue(view.dayOrderIsDirty(comparedTo: weekdayAtOpen))
+
+        view.revertDayOrder(usingSnapshot: weekdayAtOpen)
+        XCTAssertEqual(monday.weekday, 2)
+        XCTAssertEqual(wednesday.weekday, 4)
+        XCTAssertFalse(view.dayOrderIsDirty(comparedTo: weekdayAtOpen))
+    }
+
+    /// Korrektur V1: ein NEU angelegter Tag (kein Eintrag im Open-Snapshot)
+    /// bleibt beim Reorder-Revert unangetastet — Anlegen ist eine eigene,
+    /// sofort wirksame Aktion (siehe `dayWeekdayAtOpen`-Doc).
+    func testPlanEditorViewIgnoresNewlyAddedDayInReorderRevert() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: false, targetEnvironment: .gym)
+        ctx.insert(plan)
+        let monday = TrainingDay(name: "A", weekday: 2, type: .custom, plan: plan)
+        ctx.insert(monday)
+
+        let view = PlanEditorView(plan: plan)
+        let weekdayAtOpen: [PersistentIdentifier: Int] = [monday.persistentModelID: monday.weekday]
+
+        let newDay = TrainingDay(name: "C", weekday: 7, type: .custom, plan: plan)
+        ctx.insert(newDay)
+        XCTAssertFalse(view.dayOrderIsDirty(comparedTo: weekdayAtOpen), "Ein neuer Tag allein ist kein Reorder")
+
+        view.revertDayOrder(usingSnapshot: weekdayAtOpen)
+        XCTAssertEqual(newDay.weekday, 7, "Neu angelegte Tage bleiben beim Reorder-Revert unangetastet")
+    }
+
+    /// Korrektur V1 (DayEditorView): reines Umsortieren der Uebungen
+    /// (`orderIndex`, siehe `moveExercises`) OHNE jede andere Aenderung muss
+    /// als dirty erkannt und exakt zurueckgerollt werden.
+    func testDayEditorViewDetectsAndRevertsExerciseReorder() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let day = TrainingDay(name: "Tag", weekday: 2, type: .custom)
+        ctx.insert(day)
+        let first = Exercise(name: "Bankdrücken", orderIndex: 0, day: day)
+        let second = Exercise(name: "Kniebeuge", orderIndex: 1, day: day)
+        ctx.insert(first)
+        ctx.insert(second)
+
+        let view = DayEditorView(day: day)
+        let orderAtOpen: [PersistentIdentifier: Int] = [
+            first.persistentModelID: first.orderIndex,
+            second.persistentModelID: second.orderIndex
+        ]
+        XCTAssertFalse(view.exerciseOrderIsDirty(comparedTo: orderAtOpen))
+
+        first.orderIndex = 1
+        second.orderIndex = 0
+        XCTAssertTrue(view.exerciseOrderIsDirty(comparedTo: orderAtOpen))
+
+        view.revertExerciseOrder(usingSnapshot: orderAtOpen)
+        XCTAssertEqual(first.orderIndex, 0)
+        XCTAssertEqual(second.orderIndex, 1)
+        XCTAssertFalse(view.exerciseOrderIsDirty(comparedTo: orderAtOpen))
+    }
+
+    /// Korrektur V1: eine NEU hinzugefuegte Uebung (kein Eintrag im
+    /// Open-Snapshot) bleibt beim Reorder-Revert unangetastet — Hinzufuegen
+    /// ist eine eigene, sofort wirksame Aktion (siehe
+    /// `exerciseOrderIndexAtOpen`-Doc).
+    func testDayEditorViewIgnoresNewlyAddedExerciseInReorderRevert() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let day = TrainingDay(name: "Tag", weekday: 2, type: .custom)
+        ctx.insert(day)
+        let first = Exercise(name: "Bankdrücken", orderIndex: 0, day: day)
+        ctx.insert(first)
+
+        let view = DayEditorView(day: day)
+        let orderAtOpen: [PersistentIdentifier: Int] = [first.persistentModelID: first.orderIndex]
+
+        let added = Exercise(name: "Kniebeuge", orderIndex: 1, day: day)
+        ctx.insert(added)
+        XCTAssertFalse(view.isExerciseOrderDirty(comparedTo: orderAtOpen), "Eine neue Uebung allein ist kein Reorder")
+
+        view.revertExerciseOrder(usingSnapshot: orderAtOpen)
+        XCTAssertEqual(added.orderIndex, 1, "Neu hinzugefuegte Uebungen bleiben beim Reorder-Revert unangetastet")
+    }
+
+    /// Korrektur V3 — das eigentliche gemeldete Szenario: Plan A ist aktiv,
+    /// User oeffnet den Editor fuer Plan B, schaltet B an (verdraengt A ueber
+    /// `setActive(true)`) und wieder aus (`setActive(false)` reaktiviert
+    /// NIEMANDEN automatisch). A bleibt danach faelschlich inaktiv, obwohl
+    /// B wieder exakt im Ausgangszustand ist — `planToReactivateOnDiscard`
+    /// muss A trotzdem anhand der beim Oeffnen erfassten ID wiederfinden.
+    func testPlanToReactivateOnDiscardSurvivesOnOffToggleSequence() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let planA = TrainingPlan(name: "A", weeks: 8, isActive: true, targetEnvironment: .gym)
+        let planB = TrainingPlan(name: "B", weeks: 8, isActive: false, targetEnvironment: .gym)
+        ctx.insert(planA)
+        ctx.insert(planB)
+
+        let view = PlanEditorView(plan: planB)
+        let otherAtOpen = planA.persistentModelID // von .onAppear erfasst, als B's Editor oeffnete
+
+        // "B einschalten" (wie setActive(true), verdraengt A):
+        planA.isActive = false
+        planB.isActive = true
+        // "B wieder ausschalten" (wie setActive(false), reaktiviert niemanden):
+        planB.isActive = false
+
+        XCTAssertFalse(planA.isActive, "A ist nach der Toggle-Sequenz faelschlich inaktiv")
+        let found = view.planToReactivateOnDiscard(otherActivePlanIDAtOpen: otherAtOpen, amongCandidates: [planA, planB])
+        XCTAssertEqual(found?.persistentModelID, planA.persistentModelID)
+
+        found?.isActive = true
+        XCTAssertTrue(planA.isActive)
+        XCTAssertFalse(planB.isActive)
+    }
+
+    /// Korrektur V3: wurde der andere Plan waehrend der Sitzung nie
+    /// angefasst, ist die Reaktivierung ein folgenloses No-Op (schon aktiv).
+    func testPlanToReactivateOnDiscardIsNoOpWhenOtherStillActive() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let planA = TrainingPlan(name: "A", weeks: 8, isActive: true, targetEnvironment: .gym)
+        let planB = TrainingPlan(name: "B", weeks: 8, isActive: false, targetEnvironment: .gym)
+        ctx.insert(planA)
+        ctx.insert(planB)
+
+        let view = PlanEditorView(plan: planB)
+        let found = view.planToReactivateOnDiscard(otherActivePlanIDAtOpen: planA.persistentModelID, amongCandidates: [planA, planB])
+        XCTAssertEqual(found?.persistentModelID, planA.persistentModelID)
+        XCTAssertTrue(found?.isActive ?? false, "A war die ganze Zeit aktiv - Reaktivierung ist ein No-Op")
+    }
+
+    /// Korrektur V3: war dieser Plan beim Oeffnen selbst schon aktiv (oder
+    /// gar keiner), gibt es keinen "anderen Plan" zu reaktivieren.
+    func testPlanToReactivateOnDiscardReturnsNilWhenNoOtherPlanWasActiveAtOpen() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let plan = TrainingPlan(name: "Solo", weeks: 8, isActive: false, targetEnvironment: .gym)
+        ctx.insert(plan)
+        let view = PlanEditorView(plan: plan)
+        XCTAssertNil(view.planToReactivateOnDiscard(otherActivePlanIDAtOpen: nil, amongCandidates: [plan]))
+    }
+
+    // MARK: - Korrektur V4 (MeasurementView)
+
+    /// Korrektur V4: `MeasurementFieldSnapshot` ist die Vergleichsbasis fuer
+    /// `MeasurementView.isDirty` — Grundvertrag wie bei den anderen drei
+    /// Snapshot-Structs: identischer Feldstand ist gleich, ein veraendertes
+    /// Feld macht sie ungleich. Der eigentliche Bug (Haken oben rechts rief
+    /// nie `save(profile:)` auf, sondern togglete nur einen Lese-/Editier-
+    /// Modus) war reine View-Verdrahtung ohne `@Query`/`@Environment`-freie
+    /// Pure-Logic-Stelle und bleibt deshalb — wie die View-seitige
+    /// Verdrahtung generell (siehe Datei-Header) — nur per echtem Geraete-/
+    /// Simulator-Test verifizierbar: dort muss geprueft werden, dass der
+    /// Haken beim Bearbeiten einer bestehenden Messung tatsaechlich
+    /// speichert (keine neue Zeile, Werte bleiben nach erneutem Oeffnen).
+    func testMeasurementFieldSnapshotEquatableContract() {
+        let a = MeasurementFieldSnapshot(weightKg: 82.5, neckCm: 38, waistCm: 85, hipCm: nil, shoulderCm: 110, chestCm: 100, bicepsCm: 35, thighCm: 55, calfCm: 38)
+        let sameValues = MeasurementFieldSnapshot(weightKg: 82.5, neckCm: 38, waistCm: 85, hipCm: nil, shoulderCm: 110, chestCm: 100, bicepsCm: 35, thighCm: 55, calfCm: 38)
+        XCTAssertEqual(a, sameValues)
+
+        var changed = a
+        changed.weightKg = 83.0
+        XCTAssertNotEqual(a, changed)
+    }
+
+    /// Korrektur V4: der Default-Init (verwendet von `fieldsAtOpen`, bevor
+    /// der Edit-Mode-Prefill gelaufen ist) muss parameterlos aufrufbar sein
+    /// und alle Felder auf `nil` setzen.
+    func testMeasurementFieldSnapshotDefaultInitIsAllNil() {
+        let snapshot = MeasurementFieldSnapshot()
+        XCTAssertEqual(snapshot, MeasurementFieldSnapshot(
+            weightKg: nil, neckCm: nil, waistCm: nil, hipCm: nil,
+            shoulderCm: nil, chestCm: nil, bicepsCm: nil, thighCm: nil, calfCm: nil
+        ))
     }
 }
 #endif

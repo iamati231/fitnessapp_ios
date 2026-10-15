@@ -83,9 +83,22 @@ public struct PlanEditorView: View {
     @State private var otherActivePlanIDAtOpen: PersistentIdentifier?
     @State private var didCaptureOtherActivePlanBaseline = false
 
+    /// UI-Refactor (Korrektur V1): `weekday` pro Tag-ID beim Oeffnen, NUR fuer
+    /// die Reihenfolge-Erkennung. `plan.days` ist ein direkter Init-Parameter
+    /// (kein `@Query`), deshalb hier in `init` erfassbar statt erst in
+    /// `.onAppear`. Intersection-basiert: neu angelegte Tage haben keinen
+    /// Eintrag (werden beim Verwerfen nicht angefasst - Anlegen/Loeschen
+    /// bleiben bewusst sofort wirksame Aktionen, siehe `snapshot`-Doc), nur
+    /// bereits beim Oeffnen vorhandene UND noch existierende Tage werden auf
+    /// ihren urspruenglichen Wochentag zurueckgesetzt.
+    @State private var dayWeekdayAtOpen: [PersistentIdentifier: Int]
+
     public init(plan: TrainingPlan) {
         self.plan = plan
         _snapshot = State(initialValue: PlanMetaSnapshot.capture(from: plan))
+        _dayWeekdayAtOpen = State(initialValue: Dictionary(
+            uniqueKeysWithValues: plan.days.map { ($0.persistentModelID, $0.weekday) }
+        ))
     }
 
     public var body: some View {
@@ -391,23 +404,13 @@ public struct PlanEditorView: View {
 
     /// UI-Refactor (Korrektur): rollt ALLE Formular-Felder vollstaendig
     /// zurueck, inklusive `targetEnvironment` (Migrations-Dialog bleibt
-    /// waehrenddessen unterdrueckt, siehe `isApplyingSnapshot`) und
-    /// `isActive` (reaktiviert den beim Oeffnen aktiven anderen Plan, falls
-    /// dieser Screen ihn durch Einschalten verdraengt hat — `setActive`
-    /// selbst deaktiviert beim Ausschalten keinen anderen Plan, ein reines
-    /// Zurueckschreiben von `isActive` ist in diesem Fall also bereits
-    /// vollstaendig und reaktiviert nichts extra). Bereits separat
-    /// bestaetigte Migrationen (Adapt/Restore ueber die eigenen Dialoge
-    /// oben) sind davon NICHT betroffen — die haben sich per
-    /// `rebaselineSnapshot()` schon als neue Baseline festgeschrieben, bevor
-    /// dieser Pfad ueberhaupt erreichbar ist (siehe dort).
+    /// waehrenddessen unterdrueckt, siehe `isApplyingSnapshot`), `isActive`
+    /// und (Korrektur V1) die Tage-Reihenfolge. Bereits separat bestaetigte
+    /// Migrationen (Adapt/Restore ueber die eigenen Dialoge oben) sind davon
+    /// NICHT betroffen — die haben sich per `rebaselineTargetEnvironment()`
+    /// schon als neue Baseline festgeschrieben, bevor dieser Pfad ueberhaupt
+    /// erreichbar ist (siehe dort).
     private func revertToSnapshot() {
-        // Zustand VOR dem Rueckschreiben: true nur, wenn der User
-        // `isActive` waehrend dieser Sitzung eingeschaltet hat (die
-        // Snapshot-Baseline war dann zwingend `false`, siehe
-        // `otherActivePlanIDAtOpen`-Dokumentation) — GENAU dieser Fall hat
-        // `setActive(true)` ausgeloest und einen anderen Plan verdraengt.
-        let wasActiveBeforeRevert = plan.isActive
         // UI-Refactor (Korrektur, 2. Anlauf): das Flag NUR scharf schalten,
         // wenn sich `targetEnvironment` hier nachweislich aendert — sonst
         // feuert `.onChange(of: plan.targetEnvironment)` fuer diesen Aufruf
@@ -419,31 +422,54 @@ public struct PlanEditorView: View {
             isApplyingSnapshot = true
         }
         snapshot.apply(to: plan)
-        if wasActiveBeforeRevert, !snapshot.isActive,
-           let otherID = otherActivePlanIDAtOpen,
-           let other = allPlans.first(where: { $0.persistentModelID == otherID }) {
+        // UI-Refactor (Korrektur V1): Tage, die beim Oeffnen schon da waren,
+        // zurueck auf ihren urspruenglichen Wochentag — ignoriert seitdem
+        // neu angelegte/geloeschte Tage (siehe `dayWeekdayAtOpen`-Doc).
+        revertDayOrder(usingSnapshot: dayWeekdayAtOpen)
+        // UI-Refactor (Korrektur V3): `snapshot.apply` schreibt `isActive`
+        // immer auf den Baseline-Wert zurueck. `otherActivePlanIDAtOpen` ist
+        // laut Invariante NUR gesetzt, wenn diese Baseline `false` war
+        // (`setActive` haelt "hoechstens ein aktiver Plan" global ein) —
+        // nach der Zeile oben ist `plan.isActive` in diesem Fall also
+        // garantiert `false`. Deshalb reicht "ID vorhanden" als Bedingung:
+        // war der andere Plan zwischenzeitlich (ob durch einmaliges An- oder
+        // durch ein An-Aus-Toggle) nicht mehr aktiv, reaktiviert das hier
+        // ihn wieder; war er es die ganze Zeit ueber noch, ist es ein
+        // folgenloses No-Op.
+        if let other = planToReactivateOnDiscard(otherActivePlanIDAtOpen: otherActivePlanIDAtOpen, amongCandidates: allPlans) {
             other.isActive = true
         }
         dismiss()
     }
 
-    /// UI-Refactor (Korrektur): macht den aktuellen `plan`-Zustand zur neuen
-    /// Baseline. Aufgerufen direkt nachdem eine der eigenen, bereits
-    /// explizit bestaetigten Umgebungs-Migrationen (Adapt/Restore)
-    /// tatsaechlich gelaufen ist — diese Aenderung (Feld + migrierte
-    /// Uebungen) ist dann kein "ausstehender, per Verwerfen rueckrollbarer
-    /// Formular-Edit" mehr, sondern eine eigene, abgeschlossene Aktion mit
-    /// Seiteneffekten auf andere Entitaeten (archivierte/getauschte
-    /// Uebungen). Ohne diesen Re-Snapshot wuerde der Discard-Dialog
-    /// faelschlich versprechen, `targetEnvironment` verwerfen zu koennen,
-    /// obwohl die migrierten Uebungen davon unberuehrt blieben — genau das
-    /// "Keine pauschale Verwerfen-Zusage bei nur teilweisem Rueckrollen" aus
-    /// der Korrektur-Vorgabe. Ein reiner Picker-Wechsel ohne Migration
+    /// UI-Refactor (Korrektur V1): reine Rueckschreib-Logik mit explizitem
+    /// `weekdayAtOpen`-Parameter statt direktem `@State`-Zugriff — testbar
+    /// ohne lebende SwiftUI-Umgebung (siehe Tests/FitnessAppUITests).
+    internal func revertDayOrder(usingSnapshot weekdayAtOpen: [PersistentIdentifier: Int]) {
+        for day in plan.days {
+            if let original = weekdayAtOpen[day.persistentModelID] {
+                day.weekday = original
+            }
+        }
+    }
+
+    /// UI-Refactor (Korrektur V2): macht NUR `targetEnvironment` zur neuen
+    /// Baseline — nicht den kompletten Snapshot. Aufgerufen direkt nachdem
+    /// eine der eigenen, bereits explizit bestaetigten Umgebungs-Migrationen
+    /// (Adapt/Restore) tatsaechlich gelaufen ist: dieses eine Feld (plus die
+    /// migrierten Uebungen, die ohnehin ausserhalb von `snapshot` liegen)
+    /// ist dann kein "ausstehender, per Verwerfen rueckrollbarer
+    /// Formular-Edit" mehr. Ein volles Re-Capture wuerde hier faelschlich
+    /// JEDE andere zu diesem Zeitpunkt noch offene Formular-Aenderung (z.B.
+    /// `customName`) mit bestaetigen, obwohl der User die nie separat
+    /// freigegeben hat — genau das "Ein vollstaendiges rebaselineSnapshot()
+    /// darf nicht unbeabsichtigt andere offene Aenderungen mitbestaetigen"
+    /// aus der Korrektur-Vorgabe. Ein reiner Picker-Wechsel ohne Migration
     /// (leerer Plan, oder "justEnv" ohne Anpassung) bleibt bewusst normal
     /// ueber `snapshot`/`isDirty` revertierbar — dort ist nichts inkonsistent
     /// zurueckzulassen.
-    private func rebaselineSnapshot() {
-        snapshot = PlanMetaSnapshot.capture(from: plan)
+    private func rebaselineTargetEnvironment() {
+        snapshot.targetEnvironment = plan.targetEnvironment
     }
 
     /// DEL-030: Plaene sind jetzt IMMER editierbar. `plan.isTemplate` bleibt
@@ -457,9 +483,65 @@ public struct PlanEditorView: View {
     }
 
     /// UI-Refactor (DeltiqHeader-Muster): Vergleich gegen `PlanMetaSnapshot`
-    /// vom Oeffnen des Sheets — siehe dessen Scope-Begruendung oben.
+    /// vom Oeffnen des Sheets — siehe dessen Scope-Begruendung oben. Plus
+    /// (Korrektur V1/V3) die beiden Faelle, die ein reiner Feld-Vergleich
+    /// nicht sieht: Tage-Reihenfolge und ein nur zwischenzeitlich
+    /// umgeschalteter anderer aktiver Plan.
     private var isDirty: Bool {
-        snapshot != PlanMetaSnapshot.capture(from: plan)
+        snapshot != PlanMetaSnapshot.capture(from: plan) || isDayOrderDirty || isOtherActivePlanStateDirty
+    }
+
+    /// UI-Refactor (Korrektur V1): true, wenn mindestens ein beim Oeffnen
+    /// vorhandener Tag seitdem einen anderen Wochentag bekommen hat
+    /// (Drag&Drop-Reorder, siehe `moveDays`). Neue/geloeschte Tage zaehlen
+    /// bewusst nicht mit (siehe `dayWeekdayAtOpen`-Doc). Live-Property reicht
+    /// nur `dayWeekdayAtOpen` durch — die eigentliche Pruefung steckt in der
+    /// `internal` Funktion darunter, die ohne `@State`-Zugriff direkt testbar
+    /// ist (siehe Tests/FitnessAppUITests).
+    private var isDayOrderDirty: Bool {
+        dayOrderIsDirty(comparedTo: dayWeekdayAtOpen)
+    }
+
+    /// UI-Refactor (Korrektur V1): reine Pruef-Logik mit explizitem
+    /// `weekdayAtOpen`-Parameter statt direktem `@State`-Zugriff — testbar
+    /// ohne lebende SwiftUI-Umgebung. Bewusst NICHT `isDayOrderDirty`
+    /// genannt (anderer Name als die Property direkt darueber), um jede
+    /// Zweideutigkeit zwischen Property- und Funktionsreferenz zu vermeiden.
+    internal func dayOrderIsDirty(comparedTo weekdayAtOpen: [PersistentIdentifier: Int]) -> Bool {
+        plan.days.contains { day in
+            guard let original = weekdayAtOpen[day.persistentModelID] else { return false }
+            return original != day.weekday
+        }
+    }
+
+    /// UI-Refactor (Korrektur V3): faengt eine An-Aus-Toggle-Sequenz ab, die
+    /// ein reiner `snapshot.isActive`-Vergleich nicht sieht. Beispiel: Plan A
+    /// ist beim Oeffnen aktiv (`otherActivePlanIDAtOpen == A`, `snapshot.
+    /// isActive == false`), User schaltet diesen Plan an (verdraengt A) und
+    /// wieder aus — `plan.isActive` ist danach wieder `false`, identisch zur
+    /// Baseline, obwohl A jetzt faelschlich inaktiv geblieben ist. Nur
+    /// relevant, wenn dieser Plan selbst (wieder) inaktiv ist — ist er aktiv,
+    /// meldet bereits der normale Feld-Vergleich oben "dirty". Nutzt dieselbe
+    /// `planToReactivateOnDiscard`-Lookup wie `revertToSnapshot()`.
+    private var isOtherActivePlanStateDirty: Bool {
+        guard !plan.isActive else { return false }
+        let other = planToReactivateOnDiscard(otherActivePlanIDAtOpen: otherActivePlanIDAtOpen, amongCandidates: allPlans)
+        return other?.isActive != true
+    }
+
+    /// UI-Refactor (Korrektur V3): reine Entscheidungslogik fuer "welcher
+    /// andere Plan muss beim Verwerfen reaktiviert werden" — `otherActive-
+    /// PlanIDAtOpen` und die Plan-Liste als EXPLIZITE Parameter statt
+    /// direktem `@State`/`@Query`-Zugriff, damit sie ohne lebende SwiftUI-/
+    /// Query-Umgebung direkt testbar ist (siehe Tests/FitnessAppUITests).
+    /// `nil` heisst "nichts zu tun" (kein anderer Plan beim Oeffnen
+    /// betroffen, oder er ist nicht mehr auffindbar).
+    internal func planToReactivateOnDiscard(
+        otherActivePlanIDAtOpen: PersistentIdentifier?,
+        amongCandidates candidates: [TrainingPlan]
+    ) -> TrainingPlan? {
+        guard let otherID = otherActivePlanIDAtOpen else { return nil }
+        return candidates.first { $0.persistentModelID == otherID }
     }
 
     /// UI-Refactor (Korrektur): der Save-Checkmark muss immer ganz rechts
@@ -831,10 +913,11 @@ public struct PlanEditorView: View {
             modelContext: modelContext
         )
         showSwapToast(result: result)
-        // UI-Refactor (Korrektur): diese Migration ist bereits ueber ihren
+        // UI-Refactor (Korrektur V2): diese Migration ist bereits ueber ihren
         // eigenen Dialog explizit bestaetigt — ab jetzt neue Baseline statt
         // ausstehender, nur per Discard scheinbar rueckrollbarer Aenderung.
-        rebaselineSnapshot()
+        // Nur das betroffene Feld, siehe Doc an `rebaselineTargetEnvironment`.
+        rebaselineTargetEnvironment()
     }
 
     /// DEL-049: gegen-Operation zu `performEnvironmentSwap`. Reaktiviert die
@@ -846,7 +929,7 @@ public struct PlanEditorView: View {
             modelContext: modelContext
         )
         showSwapToast(result: result)
-        rebaselineSnapshot()
+        rebaselineTargetEnvironment()
     }
 
     private func showSwapToast(result: PlanEnvironmentSwapResult) {

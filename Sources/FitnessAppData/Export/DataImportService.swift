@@ -672,6 +672,11 @@ public enum DataImportService {
             p.equipmentAvailableItemsRaw = splitMulti(row["equipment_available_items"])
             p.equipmentUnavailableItemsRaw = splitMulti(row["equipment_unavailable_items"])
             p.equipmentItemCountsRaw = splitMulti(row["equipment_item_counts"])
+            // Korrektur V5: fuenfte additive Spalte, gleiches Prinzip wie die
+            // drei direkt darueber — fehlt sie (aelteres ZIP), liefert
+            // splitMulti("") == [] (kein explizites Unknown aus dieser
+            // Zeile), identisch zum Vorher-Verhalten.
+            p.equipmentUnknownItemsRaw = splitMulti(row["equipment_unknown_items"])
             // Phase 3, vierte additive Spalte: fehlend oder leer -> false
             // (noch nicht bestaetigt), identisches Muster wie
             // cardio_coaching_enabled oben.

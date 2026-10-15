@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2095 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2088 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2095 / 2095** (100%) | 0 |
-| 🇬🇧 English (EN) | **2095 / 2095** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2095 / 2095** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2088 / 2088** (100%) | 0 |
+| 🇬🇧 English (EN) | **2088 / 2088** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2088 / 2088** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1325,14 +1325,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `library.searchPlaceholder` | Übung suchen | Search exercise | Hareket ara |
 | `library.title` | Übungsbibliothek | Exercise Library | Hareket Kütüphanesi |
 
-## `measurement.*`  (84 Keys)
+## `measurement.*`  (79 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `measurement.action.delete` | Messung löschen | Delete Measurement | Ölçümü Sil |
 | `measurement.action.done` | Fertig | Done | Tamam |
-| `measurement.action.save` | Messung speichern | Save Measurement | Ölçümü Kaydet |
-| `measurement.action.saveEdit` | Änderungen speichern | Save Changes | Değişiklikleri Kaydet |
 | `measurement.context.last` | Letzte: %@ | Last: %@ | Son: %@ |
 | `measurement.derived.bmi` | BMI | BMI | BKİ |
 | `measurement.derived.bmr` | BMR | BMR | BMR |
@@ -1403,15 +1401,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `measurement.section.history` | Verlauf | History | Geçmiş |
 | `measurement.section.profile` | Profil | Profile | Profil |
 | `measurement.section.ratios` | Körper-Proportion | Body Proportion | Vücut Oranı |
-| `measurement.title.detail` | Messung | Measurement | Ölçüm |
 | `measurement.title.edit` | Messung bearbeiten | Edit Measurement | Ölçümü Düzenle |
 | `measurement.title.new` | Neue Messung | New Measurement | Yeni Ölçüm |
 | `measurement.validation.field.hip` | Hüfte | Hip | Kalça |
 | `measurement.validation.field.neck` | Hals | Neck | Boyun |
 | `measurement.validation.field.waist` | Taille | Waist | Bel |
 | `measurement.validation.field.weight` | Gewicht | Weight | Ağırlık |
-| `measurement.validation.missing.many` | Pflichtfelder noch leer: %@. | Required fields missing: %@. | Zorunlu alanlar eksik: %@. |
-| `measurement.validation.missing.one` | Pflichtfeld noch leer: %@. | Required field missing: %@. | Zorunlu alan eksik: %@. |
 | `measurement.weightOnly.editHint` | Diese Messung wurde nur mit Gewicht erfasst. Umfänge sind hier optional. | This entry was logged with weight only. Circumferences are optional here. | Bu ölçüm yalnızca kiloyla kaydedildi. Çevre ölçüleri burada isteğe bağlıdır. |
 
 ## `metric.*`  (1 Keys)
@@ -1843,7 +1838,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (81 Keys)
+## `profile.*`  (79 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1884,8 +1879,6 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.cardio.retroSync.title` | Retro-Sync | Retro-Sync | Geriye Dönük Senkron |
 | `profile.cardio.weeklyVolume` | Start-Laufvolumen (km/Woche) | Starting volume (km/week) | Başlangıç hacmi (km/hafta) |
 | `profile.cardio.weeklyVolumePlaceholder` | z.B. 20 | e.g. 20 | örn. 20 |
-| `profile.coaching.baselineCheck` | Start-Check | Start check | Başlangıç Kontrolü |
-| `profile.coaching.baselineCheck.notDone` | Noch nicht durchgeführt | Not done yet | Henüz yapılmadı |
 | `profile.coaching.footer` | Steuert Tonfall und Inhalt der Coaching-Insights auf dem Dashboard. Lässt sich jederzeit ändern. | Drives tone and content of coaching insights on the dashboard. Changeable any time. | Paneldeki koçluk öngörülerinin tonunu ve içeriğini yönlendirir. Her zaman değiştirilebilir. |
 | `profile.coaching.goal` | Trainingsziel | Training Goal | Antrenman Hedefi |
 | `profile.coaching.tone` | Coaching-Stil | Coaching Style | Koçluk Tarzı |

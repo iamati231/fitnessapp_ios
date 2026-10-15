@@ -300,7 +300,14 @@ public enum DataExportService {
             // Smart-Onboarding-Epic Phase 3: vierte additive Spalte, gleiches
             // Prinzip — aeltere Importer ignorieren sie, aeltere ZIPs liefern
             // beim Import "" = false (noch nicht bestaetigt).
-            "equipment_profile_confirmed_complete"
+            "equipment_profile_confirmed_complete",
+            // Korrektur V5: fuenfte additive Spalte fuer explizit auf
+            // "Weiß ich nicht" gesetzte Items (siehe
+            // `UserBodyProfile.equipmentUnknownItemsRaw`-Doc) — aeltere
+            // Importer ignorieren sie, aeltere ZIPs liefern beim Import ""
+            // (kein explizites Unknown aus dieser Zeile, identisch zum
+            // Vorher-Verhalten).
+            "equipment_unknown_items"
         ])
         for p in profiles {
             w.appendRow([
@@ -346,7 +353,8 @@ public enum DataExportService {
                 p.equipmentAvailableItemsRaw.joined(separator: ";"),
                 p.equipmentUnavailableItemsRaw.joined(separator: ";"),
                 p.equipmentItemCountsRaw.joined(separator: ";"),
-                CSVWriter.bool(p.equipmentProfileConfirmedComplete)
+                CSVWriter.bool(p.equipmentProfileConfirmedComplete),
+                p.equipmentUnknownItemsRaw.joined(separator: ";")
             ])
         }
         return w.data()

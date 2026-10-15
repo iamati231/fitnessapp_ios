@@ -942,6 +942,52 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(imported?.equipmentProfile.count(for: .kettlebell), 1)
     }
 
+    /// Korrektur V5: eine explizite "Weiß ich nicht"-Aussage (Bank/
+    /// Klimmzugstange im `EquipmentProfileEditor`) muss den vollen CSV-
+    /// Export/Import-Rundlauf ueberleben — nicht nur den reinen In-Memory-
+    /// Setter/Getter von `UserBodyProfileTests`. Vor dem Fix gab es dafuer
+    /// gar keine eigene CSV-Spalte: `.unknown` landete in keiner der beiden
+    /// bestehenden Listen und war nach dem Export/Import nicht mehr von
+    /// einem nie angefassten Item unterscheidbar.
+    func testExplicitlyUnknownEquipmentSurvivesRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        profile.equipmentProfile = UserEquipmentProfile(
+            availability: [.adjustableBench: .unknown, .pullUpBar: .unknown, .kettlebell: .available]
+        )
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .adjustableBench), .unknown)
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .pullUpBar), .unknown)
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .kettlebell), .available)
+
+        // Die eigentliche Regression: nach dem Rundlauf muss die explizite
+        // "weiß ich nicht"-Aussage auch die anschliessende vollstaendige
+        // Bestaetigung ueberleben (siehe `UserBodyProfileTests.
+        // testExplicitlyUnknownBenchSurvivesConfirmEquipmentProfileCompleteThroughPersistence`
+        // fuer denselben Vertrag ohne den CSV-Rundlauf dazwischen).
+        imported?.confirmEquipmentProfileComplete()
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .adjustableBench), .unknown,
+                       "Explizit 'weiß ich nicht' darf auch nach Export/Import nicht zu 'nicht vorhanden' kippen")
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .barbell), .unavailable,
+                       "Ein wirklich nie angefasstes Item kippt weiterhin wie gewohnt zu unavailable")
+    }
+
     /// Entspricht einem Bestandsprofil von vor dieser Phase: die drei neuen
     /// Spalten fehlen im Export schlicht nicht (sie werden immer mit-
     /// geschrieben), aber ein Profil, das die Felder nie gesetzt hat, muss

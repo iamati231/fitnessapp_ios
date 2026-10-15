@@ -231,6 +231,54 @@ final class UserBodyProfileTests: XCTestCase {
         XCTAssertNil(profile.equipmentProfile.count(for: .dumbbell))
     }
 
+    /// Korrektur V5 (vorher fehlender Fall): ein explizit auf `.unknown`
+    /// gesetztes Item (Bank/Klimmzugstange im `EquipmentProfileEditor`) muss
+    /// als EIGENE, dritte Rohliste persistiert werden — nicht nur ueber die
+    /// Abwesenheit aus den beiden anderen Listen. Vorher landete `.unknown`
+    /// in KEINER der zwei Listen, war also ab dem naechsten Lesen nicht mehr
+    /// von einem nie angefassten Item unterscheidbar (siehe
+    /// `equipmentUnknownItemsRaw`-Doc).
+    func testExplicitUnknownPersistsInItsOwnRawListAndRoundTrips() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        profile.equipmentProfile = UserEquipmentProfile(
+            availability: [.adjustableBench: .unknown, .pullUpBar: .available]
+        )
+
+        XCTAssertEqual(profile.equipmentUnknownItemsRaw, ["adjustableBench"])
+        XCTAssertFalse(profile.equipmentAvailableItemsRaw.contains("adjustableBench"))
+        XCTAssertFalse(profile.equipmentUnavailableItemsRaw.contains("adjustableBench"))
+
+        XCTAssertEqual(profile.equipmentProfile.availability(for: .adjustableBench), .unknown)
+        XCTAssertEqual(profile.equipmentProfile.availability(for: .pullUpBar), .available)
+    }
+
+    /// Kernregression des gemeldeten Bugs: eine explizite "Weiß ich nicht"-
+    /// Aussage fuer Bank/Klimmzugstange muss die anschliessende vollstaendige
+    /// Bestaetigung der Equipment-Erfassung (`confirmEquipmentProfileComplete`,
+    /// der reale Produktions-Pfad — ruft intern `equipmentProfile` GETTER,
+    /// dann `confirmRemainingAsUnavailable()`, dann den SETTER auf) ueberleben
+    /// — exakt wie `EquipmentRequirementTests.
+    /// testConfirmRemainingAsUnavailableNeverOverridesAnExplicitlyUnknownItem`
+    /// es fuer das reine Core-Struct schon verlangt, hier aber zusaetzlich
+    /// durch die tatsaechliche SwiftData-Rohfeld-Persistenz hindurch. Vor dem
+    /// Fix waere `.adjustableBench` nach dem Setter/Getter-Roundtrip aus
+    /// KEINER Rohliste mehr lesbar gewesen (ununterscheidbar von "nie
+    /// angefasst") und haette hier faelschlich `.unavailable` ergeben.
+    func testExplicitlyUnknownBenchSurvivesConfirmEquipmentProfileCompleteThroughPersistence() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        profile.equipmentProfile = UserEquipmentProfile(availability: [.adjustableBench: .unknown])
+        profile.confirmEquipmentProfileComplete()
+
+        XCTAssertEqual(profile.equipmentProfile.availability(for: .adjustableBench), .unknown,
+                       "Explizit 'weiß ich nicht' darf durch die Bestaetigung nicht zu 'nicht vorhanden' kippen")
+        XCTAssertEqual(profile.equipmentProfile.availability(for: .pullUpBar), .unavailable,
+                       "Ein wirklich nie angefasstes Item kippt weiterhin wie gewohnt zu unavailable")
+    }
+
     // MARK: - Smart-Onboarding-Epic Phase 3: Bestaetigung + Legacy-Sync
 
     func testConfirmEquipmentProfileCompleteConvertsUnknownItemsAndSetsFlag() throws {

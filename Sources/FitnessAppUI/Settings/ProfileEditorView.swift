@@ -33,10 +33,6 @@ public struct ProfileEditorView: View {
     /// nichts zu bestaetigen, aber auch keinen stillen No-Op ohne Rueckmeldung.
     @State private var healthPullFoundNothing = false
 
-    /// UX-Fix P3 §6: Re-Entry-Punkt fuer den optionalen Start-Check ausserhalb
-    /// des Onboardings (siehe `coachingCard`).
-    @State private var showingBaselineCheck = false
-
     /// Settings-Epic Phase 3: Re-Entry-Punkte fuer die kombinierten
     /// Koerperdaten-/Trainingsort-Editoren (siehe `bodyDataCard`/
     /// `trainingLocationCard`).
@@ -118,11 +114,14 @@ public struct ProfileEditorView: View {
     /// `ProfileMetaSnapshot`. Bewusst NICHT Teil davon: `heightCm`/
     /// `goalWeightKg`/Gewichtsmessungen (eigener Save/Cancel-Flow in
     /// `BodyDataEditorView`), `environment`/`equipmentProfile` (eigener Flow
-    /// in `TrainingLocationEquipmentEditorView`), `baselineAssessment`
-    /// (eigener mehrstufiger Flow in `BaselineCheckFlowView`), sowie alles,
-    /// was `feasibilitySection`s accept/dismiss/acceptCustom anfasst (eigene,
+    /// in `TrainingLocationEquipmentEditorView`), sowie alles, was
+    /// `feasibilitySection`s accept/dismiss/acceptCustom anfasst (eigene,
     /// bereits explizit bestaetigte Aktionen mit Seiteneffekten auf andere
     /// Plaene/Tage, analog `targetEnvironment` in `PlanEditorView`).
+    /// `baselineAssessment` selbst bleibt unangetastet — nur der Wieder-
+    /// Einstieg DAFUER aus diesem Screen wurde entfernt (Korrektur V6), der
+    /// gespeicherte Wert und sein `BaselineCheckFlowView`-Flow im Onboarding
+    /// existieren unveraendert weiter.
     @State private var snapshot: ProfileMetaSnapshot
 
     public init(profile: UserBodyProfile) {
@@ -1055,6 +1054,13 @@ public struct ProfileEditorView: View {
     /// auf die Computed-Properties von `UserBodyProfile` (die sich um das
     /// rawValue-Mapping kuemmern). Picker-Style "menu" damit beide Werte
     /// kompakt in eine Zeile passen.
+    ///
+    /// Korrektur V6: der Start-Check-Wiedereinstieg (UX-Fix P3 §6) wurde aus
+    /// diesem Screen entfernt ("Profil bearbeiten" ausserhalb des
+    /// Onboardings). `profile.baselineAssessment` selbst und sein Flow im
+    /// Onboarding (`OnboardingView.baselineCheckStep`/`BaselineCheckFlowView`)
+    /// sind davon unberuehrt — nur dieser zusaetzliche Re-Entry-Punkt faellt
+    /// weg.
     private var coachingCard: some View {
         DeltiqSection(String(localized: "profile.section.coach", bundle: .module).uppercased()) {
             DeltiqControlRow(label: String(localized: "profile.coaching.goal", bundle: .module)) {
@@ -1075,7 +1081,7 @@ public struct ProfileEditorView: View {
                 }
                 .pickerStyle(.menu)
             }
-            DeltiqControlRow(label: String(localized: "profile.coaching.tone", bundle: .module)) {
+            DeltiqControlRow(label: String(localized: "profile.coaching.tone", bundle: .module), showsDivider: false) {
                 Picker(selection: Binding(
                     get: { profile.coachingTone },
                     set: { profile.coachingTone = $0 }
@@ -1093,41 +1099,8 @@ public struct ProfileEditorView: View {
                 }
                 .pickerStyle(.menu)
             }
-            DeltiqRow(
-                icon: "checkmark.seal",
-                label: String(localized: "profile.coaching.baselineCheck", bundle: .module),
-                value: baselineCheckStatusText,
-                showsChevron: true,
-                showsDivider: false
-            ) {
-                showingBaselineCheck = true
-            }
             hintRow(String(localized: "profile.coaching.footer", bundle: .module))
         }
-        // UX-Fix P3 §6: "wiederholbar jederzeit nach dem Onboarding aus
-        // Profil/Einstellungen" — derselbe Sheet-Aufruf wie im Onboarding-
-        // Schritt (`OnboardingView.baselineCheckStep`), hier nur ausserhalb
-        // davon erreichbar. Starter/Wiedereinsteiger bekommen weiterhin den
-        // vollen 3-Wege-Einstieg (inkl. Sicherheits-Gate), Erfahrene direkt
-        // die Selbsteinschaetzung — dieselbe Weiche wie beim Erstdurchlauf.
-        .sheet(isPresented: $showingBaselineCheck) {
-            BaselineCheckFlowView(
-                entryMode: profile.experienceTrack == .experienced ? .selfAssessment : .guidedTest,
-                goal: profile.trainingGoal,
-                equipmentPreferences: profile.equipmentPreferences
-            ) { result in
-                if let result {
-                    profile.baselineAssessment = result
-                }
-            }
-        }
-    }
-
-    private var baselineCheckStatusText: String {
-        guard let date = profile.baselineAssessment?.date else {
-            return String(localized: "profile.coaching.baselineCheck.notDone", bundle: .module)
-        }
-        return date.formatted(date: .abbreviated, time: .omitted)
     }
 
     // MARK: - Row helpers

@@ -77,9 +77,22 @@ public struct DayEditorView: View {
     /// Save/Cancel-Konzept, kein Teil dieses "Formulars".
     @State private var snapshot: TrainingDaySnapshot
 
+    /// UI-Refactor (Korrektur V1): `orderIndex` pro Uebung beim Oeffnen, NUR
+    /// fuer die Reihenfolge-Erkennung — analog zu `PlanEditorView.
+    /// dayWeekdayAtOpen`. `day.activeExercises` ist ueber den direkten
+    /// `day`-Init-Parameter (kein `@Query`) schon in `init` verfuegbar.
+    /// Intersection-basiert: neu hinzugefuegte/geloeschte Uebungen haben
+    /// keinen Eintrag und werden beim Verwerfen nicht angefasst — Hinzufuegen/
+    /// Loeschen bleiben eigene, sofort wirksame Aktionen ohne Save/Cancel-
+    /// Konzept (siehe `snapshot`-Doc oben).
+    @State private var exerciseOrderIndexAtOpen: [PersistentIdentifier: Int]
+
     public init(day: TrainingDay) {
         self.day = day
         _snapshot = State(initialValue: TrainingDaySnapshot.capture(from: day))
+        _exerciseOrderIndexAtOpen = State(initialValue: Dictionary(
+            uniqueKeysWithValues: day.activeExercises.map { ($0.persistentModelID, $0.orderIndex) }
+        ))
     }
 
     public var body: some View {
@@ -136,8 +149,7 @@ public struct DayEditorView: View {
         // (`!isDirty`) funktioniert sie weiter normal (direktes Schliessen).
         .deltiqSwipeBackEnabled(!isDirty)
         .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
-            snapshot.apply(to: day)
-            dismiss()
+            revertToSnapshot()
         }
         .sheet(isPresented: $showingPicker) {
             // DEL-210: einheitliche Übungs-Auswahl — dieselbe View wie die
@@ -403,9 +415,34 @@ public struct DayEditorView: View {
     }
 
     /// UI-Refactor (DeltiqHeader-Muster): Vergleich gegen `TrainingDaySnapshot`
-    /// vom Oeffnen des Sheets — nur die `metaSection`-Felder, siehe dort.
+    /// vom Oeffnen des Sheets — nur die `metaSection`-Felder, siehe dort. Plus
+    /// (Korrektur V1) die Uebungs-Reihenfolge, die ein reiner Feld-Vergleich
+    /// nicht sieht.
     private var isDirty: Bool {
-        snapshot != TrainingDaySnapshot.capture(from: day)
+        snapshot != TrainingDaySnapshot.capture(from: day) || isExerciseOrderDirty
+    }
+
+    /// UI-Refactor (Korrektur V1): true, wenn mindestens eine beim Oeffnen
+    /// vorhandene Uebung seitdem einen anderen `orderIndex` bekommen hat
+    /// (Drag&Drop-Reorder, siehe `moveExercises`). Neue/geloeschte Uebungen
+    /// zaehlen bewusst nicht mit (siehe `exerciseOrderIndexAtOpen`-Doc).
+    /// Live-Property reicht nur `exerciseOrderIndexAtOpen` durch — die
+    /// eigentliche Pruefung steckt in der `internal` Funktion darunter, die
+    /// ohne `@State`-Zugriff direkt testbar ist (siehe Tests/FitnessAppUITests).
+    private var isExerciseOrderDirty: Bool {
+        exerciseOrderIsDirty(comparedTo: exerciseOrderIndexAtOpen)
+    }
+
+    /// UI-Refactor (Korrektur V1): reine Pruef-Logik mit explizitem
+    /// `orderIndexAtOpen`-Parameter statt direktem `@State`-Zugriff — testbar
+    /// ohne lebende SwiftUI-Umgebung. Bewusst NICHT `isExerciseOrderDirty`
+    /// genannt (anderer Name als die Property direkt darueber), um jede
+    /// Zweideutigkeit zwischen Property- und Funktionsreferenz zu vermeiden.
+    internal func exerciseOrderIsDirty(comparedTo orderIndexAtOpen: [PersistentIdentifier: Int]) -> Bool {
+        day.activeExercises.contains { exercise in
+            guard let original = orderIndexAtOpen[exercise.persistentModelID] else { return false }
+            return original != exercise.orderIndex
+        }
     }
 
     private var metaSection: some View {
@@ -1004,6 +1041,29 @@ public struct DayEditorView: View {
             day: day
         )
         modelContext.insert(exercise)
+    }
+
+    /// UI-Refactor (Korrektur V1): Name/Struktur analog zu
+    /// `PlanEditorView.revertToSnapshot()` — rollt die `metaSection`-Felder
+    /// UND (neu) die Uebungs-Reihenfolge zurueck.
+    private func revertToSnapshot() {
+        snapshot.apply(to: day)
+        revertExerciseOrder(usingSnapshot: exerciseOrderIndexAtOpen)
+        dismiss()
+    }
+
+    /// UI-Refactor (Korrektur V1): reine Rueckschreib-Logik mit explizitem
+    /// `orderIndexAtOpen`-Parameter statt direktem `@State`-Zugriff — testbar
+    /// ohne lebende SwiftUI-Umgebung (siehe Tests/FitnessAppUITests).
+    /// Uebungen, die beim Oeffnen schon da waren, zurueck auf ihren
+    /// urspruenglichen Platz — ignoriert seitdem neu hinzugefuegte/geloeschte
+    /// Uebungen (siehe `exerciseOrderIndexAtOpen`-Doc).
+    internal func revertExerciseOrder(usingSnapshot orderIndexAtOpen: [PersistentIdentifier: Int]) {
+        for exercise in day.activeExercises {
+            if let original = orderIndexAtOpen[exercise.persistentModelID] {
+                exercise.orderIndex = original
+            }
+        }
     }
 
     /// DEL-095: Reorder via Drag&Drop. Per `Array.move` umschichten, dann
