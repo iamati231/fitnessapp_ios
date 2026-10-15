@@ -129,9 +129,15 @@ public struct ExerciseLibraryView: View {
                 if planEnvironment != nil {
                     planEnvFilterSection
                 }
-                customSection
-                ForEach(MuscleGroup.allCases, id: \.self) { muscle in
-                    muscleSection(muscle)
+                // EXLIB-02/03: Suche/Filter ohne Treffer rendert sonst eine
+                // stumme leere Liste — expliziter Hinweis statt Stille.
+                if filtered.isEmpty {
+                    noResultsRow
+                } else {
+                    customSection
+                    ForEach(MuscleGroup.allCases, id: \.self) { muscle in
+                        muscleSection(muscle)
+                    }
                 }
             }
             .scrollContentBackground(.hidden)
@@ -151,11 +157,13 @@ public struct ExerciseLibraryView: View {
             ExerciseLibraryEditorSheet(template: template)
         }
         // DEL-201: Übungs-Detail-Push. Leading-Swipe auf einer Zeile setzt
-        // historyTemplate; der Detail-Screen identifiziert die Historie
-        // über den System-Namen (Snapshot-Matching, DEL-051).
+        // historyTemplate; der Detail-Screen identifiziert die Historie seit
+        // Settings-Epic Phase 6 (EXLIB-07/09) primaer ueber die stabile
+        // `template.id`, mit Namens-Snapshot als Fallback fuer Alt-Daten.
         .navigationDestination(item: $historyTemplate) { template in
             ExerciseDetailView(
                 systemName: template.name,
+                exerciseTemplateID: template.id,
                 displayName: template.displayName,
                 isCardio: template.isCardio
             )
@@ -250,6 +258,19 @@ public struct ExerciseLibraryView: View {
     }
 
     @ViewBuilder
+    /// EXLIB-02/03: Expliziter No-Results-State, wenn Suche/Filter alles
+    /// ausschliessen. Kein CTA — der Ausweg ist, Suchtext/Filter anzupassen,
+    /// nicht eine Aktion hier auf der Zeile.
+    private var noResultsRow: some View {
+        DashboardEmptyState(
+            icon: "magnifyingglass",
+            title: "library.noResults.title",
+            description: "library.noResults.description"
+        )
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+    }
+
     private var customSection: some View {
         let customs = filtered.filter(\.isCustom)
         if !customs.isEmpty {

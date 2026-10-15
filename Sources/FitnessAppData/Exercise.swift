@@ -14,6 +14,19 @@ public final class Exercise {
     /// Catalog-Eintrag faellt.
     public var name: String
 
+    /// Settings-Epic Phase 6 (EXLIB-07/09): stabile Rueckreferenz auf die
+    /// `ExerciseTemplate`, von der diese Plan-Uebung adoptiert wurde. Wird
+    /// beim Adoptieren gesetzt (`DayEditorView.addExercise(from:)`,
+    /// `ActiveWorkoutView.addAdHocExercise(from:)`) und bleibt stabil, auch
+    /// wenn der User die Vorlage spaeter umbenennt — anders als `name`, das
+    /// nur ein Snapshot zum Adopt-Zeitpunkt ist. `nil` fuer Alt-Eintraege vor
+    /// diesem Feld (unkritisch: Lookups fallen dann auf den Namens-Snapshot
+    /// zurueck, exakt das bisherige Verhalten) oder wenn die Vorlage seither
+    /// geloescht wurde. Bewusst ein `UUID`-Scalar statt `@Relationship` —
+    /// siehe `ExerciseTemplate.id`-Dokumentation fuer die Begruendung
+    /// (Loeschen einer Vorlage darf Logs/PRs strukturell nie mitloeschen).
+    public var exerciseTemplateID: UUID?
+
     /// DEL-125: User-Custom-Override des Anzeigenamens.
     /// Nil = User hat den Namen NICHT geaendert, Display zeigt den lokalisierten
     /// System-Namen (via `name` -> Library-Lookup -> Catalog-Key).
@@ -190,6 +203,7 @@ public final class Exercise {
 
     public init(
         name: String,
+        exerciseTemplateID: UUID? = nil,
         customName: String? = nil,
         sets: Int = 3,
         repsMin: Int = 8,
@@ -224,6 +238,7 @@ public final class Exercise {
         day: TrainingDay? = nil
     ) {
         self.name = name
+        self.exerciseTemplateID = exerciseTemplateID
         self.customName = customName
         self.sets = sets
         self.repsMin = repsMin

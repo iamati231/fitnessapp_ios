@@ -1049,6 +1049,9 @@ public struct ActiveWorkoutView: View {
         // `Exercise.displayName`-Extension.
         let exercise = Exercise(
             name: template.name,
+            // Settings-Epic Phase 6 (EXLIB-07/09): stabile Rueckreferenz,
+            // ueberlebt ein spaeteres Umbenennen der Vorlage.
+            exerciseTemplateID: template.id,
             // DEL-157: Cardio/Time-Based starten mit 1 Satz (siehe
             // DayEditorView.addExercise).
             sets: (template.isCardio || template.isTimeBased) ? 1 : 3,

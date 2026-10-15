@@ -507,6 +507,10 @@ public enum DataExportService {
     ) -> Data {
         var w = CSVWriter(headers: [
             "id", "day_id", "name", "custom_name",
+            // Settings-Epic Phase 6 (EXLIB-07/09): stabile Rueckreferenz auf
+            // custom_exercises.csv's "template_id" — ueberlebt ein
+            // Umbenennen der Vorlage, anders als "name" (reiner Snapshot).
+            "exercise_template_id",
             "sets", "reps_min", "reps_max", "rest_seconds",
             "notes", "suggested_weight_kg", "order_index",
             "target_rir", "weight_reduced_note",
@@ -539,6 +543,7 @@ public enum DataExportService {
             row.append(e.day.map { id($0) } ?? "")
             row.append(e.name)
             row.append(e.customName ?? "")
+            row.append(e.exerciseTemplateID?.uuidString ?? "")
             row.append(String(e.sets))
             row.append(String(e.repsMin))
             row.append(String(e.repsMax))
@@ -650,6 +655,9 @@ public enum DataExportService {
             "date_utc", "set_index",
             "weight_kg", "reps", "rpe", "rir", "comment",
             "exercise_name_snapshot",
+            // Settings-Epic Phase 6 (EXLIB-07/09): Snapshot der stabilen
+            // Vorlagen-ID, analog zu exercise_name_snapshot.
+            "exercise_template_id_snapshot",
             "exercise_is_cardio_snapshot", "exercise_is_time_based_snapshot",
             "exercise_cardio_equipment_snapshot",
             "distance_km", "duration_seconds"
@@ -668,6 +676,7 @@ public enum DataExportService {
             row.append(CSVWriter.decimal(Double(l.rir), fractionDigits: 1))
             row.append(l.comment ?? "")
             row.append(l.exerciseNameSnapshot ?? "")
+            row.append(l.exerciseTemplateIDSnapshot?.uuidString ?? "")
             row.append(CSVWriter.bool(l.exerciseIsCardioSnapshot))
             row.append(CSVWriter.bool(l.exerciseIsTimeBasedSnapshot))
             row.append(l.exerciseCardioEquipmentSnapshot ?? "")
@@ -683,7 +692,12 @@ public enum DataExportService {
         id: (AnyObject) -> String
     ) -> Data {
         var w = CSVWriter(headers: [
-            "id", "date_utc", "exercise_name", "kind",
+            "id", "date_utc", "exercise_name",
+            // Settings-Epic Phase 6 (EXLIB-07/09): stabile Vorlagen-ID, leer
+            // fuer WOD-Zeitformat-PRs (exercise_name traegt dort den
+            // WOD-Namen) sowie fuer nicht per Backfill aufloesbare Alt-PRs.
+            "exercise_template_id",
+            "kind",
             "value", "previous_value", "weight_kg", "reps",
             "cardio_equipment", "session_id"
         ])
@@ -692,6 +706,7 @@ public enum DataExportService {
                 id(p),
                 CSVWriter.iso8601(p.date),
                 p.exerciseName,
+                p.exerciseTemplateID?.uuidString ?? "",
                 p.kindRaw,
                 CSVWriter.decimal(p.value),
                 CSVWriter.decimal(p.previousValue),
@@ -740,7 +755,7 @@ public enum DataExportService {
         id: (AnyObject) -> String
     ) -> Data {
         var w = CSVWriter(headers: [
-            "id", "name", "equipment", "primary_muscle",
+            "id", "template_id", "name", "equipment", "primary_muscle",
             "is_custom", "difficulty_level",
             "is_system_compound", "is_time_based", "is_cardio",
             "localization_key", "is_system_provided",
@@ -751,6 +766,12 @@ public enum DataExportService {
         for t in items {
             w.appendRow([
                 id(t),
+                // Settings-Epic Phase 6 (EXLIB-07/09): die STABILE Vorlagen-ID
+                // (anders als die obige "id"-Spalte, die nur ein pro Export-
+                // Lauf frisch generierter Cross-CSV-Schluessel ist). Wird beim
+                // Import 1:1 wiederhergestellt, damit exercise_template_id auf
+                // Exercise/ExerciseLog/PersonalRecordEntry weiter aufloest.
+                t.id.uuidString,
                 t.name,
                 t.equipment.rawValue,
                 t.primaryMuscle.rawValue,

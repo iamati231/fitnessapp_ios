@@ -873,6 +873,9 @@ public struct DayEditorView: View {
         // `displayName` (Extension) wieder lokalisiert.
         let exercise = Exercise(
             name: template.name,
+            // Settings-Epic Phase 6 (EXLIB-07/09): stabile Rueckreferenz,
+            // ueberlebt ein spaeteres Umbenennen der Vorlage.
+            exerciseTemplateID: template.id,
             // DEL-157: Cardio- + Time-Based-Uebungen starten mit genau 1 Satz
             // (eine Distanz-/Dauer- bzw. Halte-Zeile). Die Standard-3-Saetze
             // ergeben fuer einen Lauf/Plank keinen Sinn. Strength bleibt 3.

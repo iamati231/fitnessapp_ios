@@ -847,6 +847,12 @@ public enum DataImportService {
 
         for row in reader.rows() {
             let exportID = row["id"]
+            // Settings-Epic Phase 6 (EXLIB-07/09): die stabile Vorlagen-ID,
+            // getrennt von der obigen Export-Lauf-lokalen `exportID`. `nil`
+            // bei einem Backup von vor dieser Phase (Spalte fehlt) — dann
+            // bleibt die neue Vorlage ohne wiederhergestellte ID (bekommt
+            // beim Insert unten per Default eine frische).
+            let templateIDString = row.optionalString("template_id")
             let name = row.optionalString("name") ?? ""
             guard !name.isEmpty,
                   let equipment = Equipment(rawValue: row["equipment"]),
@@ -856,12 +862,19 @@ public enum DataImportService {
             }
             if let dup = existingIndex[name.lowercased()] {
                 if !exportID.isEmpty { idMap[exportID] = dup }
+                // Dedup-Fall: die bereits vorhandene Vorlage behaelt IHRE
+                // eigene ID — die importierte `template_id` wird trotzdem auf
+                // sie gemappt, damit exercise_template_id-Spalten weiter
+                // unten (Exercise/ExerciseLog/PersonalRecordEntry) korrekt
+                // auf die wiederverwendete Vorlage aufloesen.
+                if let templateIDString { idMap[templateIDString] = dup }
                 skipped += 1
                 continue
             }
             let difficulty = DifficultyLevel(rawValue: row["difficulty_level"]) ?? .intermediate
             let recovery = ExerciseRecoveryClass(rawValue: row["recovery_class"]) ?? .medium
             let t = ExerciseTemplate(
+                id: templateIDString.flatMap(UUID.init(uuidString:)) ?? UUID(),
                 name: name,
                 equipment: equipment,
                 primaryMuscle: muscle,
@@ -882,6 +895,7 @@ public enum DataImportService {
             context.insert(t)
             existingIndex[name.lowercased()] = t
             if !exportID.isEmpty { idMap[exportID] = t }
+            if let templateIDString { idMap[templateIDString] = t }
             imported += 1
         }
         return (imported, skipped, errors)
@@ -1280,9 +1294,21 @@ public enum DataImportService {
             let supersetId = UUID(uuidString: row["superset_id"])
             let primaryMuscle = MuscleGroup(rawValue: row["primary_muscle"])
             let equipment = Equipment(rawValue: row["equipment"])
+            // Settings-Epic Phase 6 (EXLIB-07/09): "exercise_template_id"
+            // traegt die STABILE Vorlagen-ID (siehe importCustomExercises),
+            // aufgeloest ueber idMap auf die tatsaechlich in DIESEM Import
+            // verwendete Vorlage (neu angelegt ODER per Dedup wiederverwendet
+            // — beide Faelle sind in idMap hinterlegt). Fehlt custom_exercises.csv
+            // im ZIP (sollte nicht vorkommen) oder ist die Spalte leer
+            // (Backup von vor dieser Phase), bleibt es defensiv beim rohen
+            // UUID-Parse bzw. `nil` — nie geraten.
+            let exerciseTemplateID: UUID? = row.optionalString("exercise_template_id").flatMap { raw in
+                (idMap[raw] as? ExerciseTemplate)?.id ?? UUID(uuidString: raw)
+            }
 
             let e = Exercise(
                 name: name,
+                exerciseTemplateID: exerciseTemplateID,
                 customName: row.optionalString("custom_name"),
                 sets: row.int("sets") ?? 3,
                 repsMin: row.int("reps_min") ?? 8,
@@ -1450,6 +1476,12 @@ public enum DataImportService {
             // (manuell gepflegte oder migrierte Snapshots dürfen nicht
             // verlorengehen).
             log.exerciseNameSnapshot = nameSnap
+            // Settings-Epic Phase 6 (EXLIB-07/09): wie bei exercise_template_id
+            // auf Exercise (importPlanExercises) — ueber idMap auf die in
+            // DIESEM Import tatsaechlich verwendete Vorlage aufloesen.
+            log.exerciseTemplateIDSnapshot = row.optionalString("exercise_template_id_snapshot").flatMap { raw in
+                (idMap[raw] as? ExerciseTemplate)?.id ?? UUID(uuidString: raw)
+            }
             log.exerciseIsCardioSnapshot = row.bool("exercise_is_cardio_snapshot") ?? false
             log.exerciseIsTimeBasedSnapshot = row.bool("exercise_is_time_based_snapshot") ?? false
             log.exerciseCardioEquipmentSnapshot = row.optionalString("exercise_cardio_equipment_snapshot")
@@ -1538,10 +1570,17 @@ public enum DataImportService {
                 continue
             }
             let session = idMap[row["session_id"]] as? WorkoutSession
+            // Settings-Epic Phase 6 (EXLIB-07/09): wie bei exercise_template_id
+            // auf Exercise/ExerciseLog — leer bei WOD-Zeitformat-PRs und bei
+            // Backups von vor dieser Phase.
+            let exerciseTemplateID: UUID? = row.optionalString("exercise_template_id").flatMap { raw in
+                (idMap[raw] as? ExerciseTemplate)?.id ?? UUID(uuidString: raw)
+            }
 
             let p = PersonalRecordEntry(
                 date: date,
                 exerciseName: name,
+                exerciseTemplateID: exerciseTemplateID,
                 kindRaw: kind,
                 value: row.double("value") ?? 0,
                 previousValue: row.double("previous_value") ?? 0,

@@ -30,21 +30,28 @@ public enum PRDetector {
         sessionLifts: [LiftAttempt],
         history: [LiftAttempt]
     ) -> [PersonalRecord] {
-        // DEL-156: Composite-Gruppierung nach (Name, Cardio-Equipment). Bei
-        // Strength/Bodyweight/TimeBased ist `cardioEquipment` immer `.none`,
-        // sodass deren Gruppierung unveraendert "nur nach Name" bleibt. Bei
-        // Cardio splittet der Key Laufband- vs. Fahrrad- vs. Rudergeraet-
-        // Versuche in eigene PR-Reihen.
-        let bySessionExercise = Dictionary(grouping: sessionLifts) {
-            GroupKey(name: $0.exerciseName, equipment: $0.cardioEquipment)
-        }
+        // DEL-156: Composite-Gruppierung nach (Identitaet, Cardio-Equipment).
+        // Bei Strength/Bodyweight/TimeBased ist `cardioEquipment` immer
+        // `.none`, sodass deren Gruppierung unveraendert "nur nach Identitaet"
+        // bleibt. Bei Cardio splittet der Key Laufband- vs. Fahrrad- vs.
+        // Rudergeraet-Versuche in eigene PR-Reihen.
+        //
+        // Settings-Epic Phase 6 (EXLIB-07/09): Identitaet ist bevorzugt die
+        // stabile `exerciseTemplateID` (ueberlebt ein Umbenennen der
+        // Uebung); nur Attempts ohne aufloesbare ID (Alt-Daten ohne
+        // Backfill-Treffer) gruppieren weiterhin per Name wie bisher — das
+        // ist reines Beibehalten des bestehenden Verhaltens fuer diese
+        // Faelle, kein neues Rate-Verfahren.
+        let bySessionExercise = Dictionary(grouping: sessionLifts, by: GroupKey.init)
         var records: [PersonalRecord] = []
 
         for (key, sessionAttempts) in bySessionExercise {
-            let exerciseName = key.name
-            let exerciseHistory = history.filter {
-                $0.exerciseName == key.name && $0.cardioEquipment == key.equipment
-            }
+            // Jeder Attempt in diesem Bucket teilt per Konstruktion dieselbe
+            // Identitaet (GroupKey.init) — der erste Attempt liefert also den
+            // repraesentativen Namen/ID fuer die Ausgabe.
+            let exerciseName = sessionAttempts.first?.exerciseName ?? ""
+            let exerciseTemplateID = sessionAttempts.first?.exerciseTemplateID
+            let exerciseHistory = history.filter { GroupKey($0) == key }
             guard !exerciseHistory.isEmpty else { continue }    // Need a baseline.
 
             // Categorize the exercise using session AND history together — a single
@@ -59,6 +66,7 @@ public enum PRDetector {
                     sessionAttempts: sessionAttempts,
                     exerciseHistory: exerciseHistory,
                     exerciseName: exerciseName,
+                    exerciseTemplateID: exerciseTemplateID,
                     equipment: key.equipment
                 ))
 
@@ -66,14 +74,16 @@ public enum PRDetector {
                 records.append(contentsOf: detectWeightedPRs(
                     sessionAttempts: sessionAttempts,
                     exerciseHistory: exerciseHistory,
-                    exerciseName: exerciseName
+                    exerciseName: exerciseName,
+                    exerciseTemplateID: exerciseTemplateID
                 ))
 
             case .bodyweight:
                 if let pr = maxRepsPR(
                     in: sessionAttempts,
                     history: exerciseHistory,
-                    exerciseName: exerciseName
+                    exerciseName: exerciseName,
+                    exerciseTemplateID: exerciseTemplateID
                 ) {
                     records.append(pr)
                 }
@@ -82,7 +92,8 @@ public enum PRDetector {
                 if let pr = maxHoldSecondsPR(
                     in: sessionAttempts,
                     history: exerciseHistory,
-                    exerciseName: exerciseName
+                    exerciseName: exerciseName,
+                    exerciseTemplateID: exerciseTemplateID
                 ) {
                     records.append(pr)
                 }
@@ -102,11 +113,25 @@ public enum PRDetector {
 
     // MARK: Grouping
 
-    /// DEL-156: Gruppierungs-Schluessel. Trennt Cardio-PRs nach Equipment;
-    /// fuer Non-Cardio ist `equipment` stets `.none` → effektiv "nur Name".
+    /// DEL-156 / Settings-Epic Phase 6 (EXLIB-07/09): Gruppierungs-Schluessel.
+    /// Trennt Cardio-PRs nach Equipment; fuer Non-Cardio ist `equipment`
+    /// stets `.none`. Identitaet ist ID-first: ein Attempt mit aufloesbarer
+    /// `exerciseTemplateID` gruppiert darueber (ueberlebt Umbenennen), ein
+    /// Attempt ohne ID gruppiert weiterhin per Name (unveraendertes
+    /// Alt-Verhalten) — niemals beides gemischt, damit ein zufaelliger
+    /// Namens-Treffer nie zwei verschiedene Uebungen zusammenlegt.
     private struct GroupKey: Hashable {
-        let name: String
+        enum Identity: Hashable {
+            case id(UUID)
+            case name(String)
+        }
+        let identity: Identity
         let equipment: CardioEquipment
+
+        init(_ lift: LiftAttempt) {
+            identity = lift.exerciseTemplateID.map(Identity.id) ?? .name(lift.exerciseName)
+            equipment = lift.cardioEquipment
+        }
     }
 
     // MARK: Categorization
@@ -141,6 +166,7 @@ public enum PRDetector {
         sessionAttempts: [LiftAttempt],
         exerciseHistory: [LiftAttempt],
         exerciseName: String,
+        exerciseTemplateID: UUID?,
         equipment: CardioEquipment
     ) -> [PersonalRecord] {
         // Cardio-Logs gruppieren per (Date-Day) zu Session-Aggregaten, falls
@@ -161,6 +187,7 @@ public enum PRDetector {
             records.append(PersonalRecord(
                 kind: .longestDistance,
                 exerciseName: exerciseName,
+                exerciseTemplateID: exerciseTemplateID,
                 weightKg: 0,
                 reps: 0,
                 previousValue: prevBestKm,
@@ -179,6 +206,7 @@ public enum PRDetector {
                 records.append(PersonalRecord(
                     kind: .fastestPace,
                     exerciseName: exerciseName,
+                    exerciseTemplateID: exerciseTemplateID,
                     weightKg: 0,
                     reps: 0,
                     previousValue: prevBestPace,
@@ -223,7 +251,8 @@ public enum PRDetector {
     private static func detectWeightedPRs(
         sessionAttempts: [LiftAttempt],
         exerciseHistory: [LiftAttempt],
-        exerciseName: String
+        exerciseName: String,
+        exerciseTemplateID: UUID?
     ) -> [PersonalRecord] {
         let weighted = sessionAttempts.filter {
             $0.weightKg > 0 && $0.reps > 0 && !$0.isTimeBased
@@ -234,13 +263,13 @@ public enum PRDetector {
         guard !weighted.isEmpty else { return [] }
 
         var records: [PersonalRecord] = []
-        if let pr = heaviestWeightPR(in: weighted, history: weightedHistory, exerciseName: exerciseName) {
+        if let pr = heaviestWeightPR(in: weighted, history: weightedHistory, exerciseName: exerciseName, exerciseTemplateID: exerciseTemplateID) {
             records.append(pr)
         }
-        if let pr = bestSetPR(in: weighted, history: weightedHistory, exerciseName: exerciseName) {
+        if let pr = bestSetPR(in: weighted, history: weightedHistory, exerciseName: exerciseName, exerciseTemplateID: exerciseTemplateID) {
             records.append(pr)
         }
-        if let pr = estimated1RMPR(in: weighted, history: weightedHistory, exerciseName: exerciseName) {
+        if let pr = estimated1RMPR(in: weighted, history: weightedHistory, exerciseName: exerciseName, exerciseTemplateID: exerciseTemplateID) {
             records.append(pr)
         }
         return records
@@ -249,7 +278,8 @@ public enum PRDetector {
     private static func heaviestWeightPR(
         in attempts: [LiftAttempt],
         history: [LiftAttempt],
-        exerciseName: String
+        exerciseName: String,
+        exerciseTemplateID: UUID?
     ) -> PersonalRecord? {
         let prevBest = history.map(\.weightKg).max() ?? 0
         guard let bestNow = attempts.max(by: { $0.weightKg < $1.weightKg }) else { return nil }
@@ -257,6 +287,7 @@ public enum PRDetector {
         return PersonalRecord(
             kind: .heaviestWeight,
             exerciseName: exerciseName,
+            exerciseTemplateID: exerciseTemplateID,
             weightKg: bestNow.weightKg,
             reps: bestNow.reps,
             previousValue: prevBest,
@@ -268,7 +299,8 @@ public enum PRDetector {
     private static func bestSetPR(
         in attempts: [LiftAttempt],
         history: [LiftAttempt],
-        exerciseName: String
+        exerciseName: String,
+        exerciseTemplateID: UUID?
     ) -> PersonalRecord? {
         let prevBest = history.map(\.volume).max() ?? 0
         guard let bestNow = attempts.max(by: { $0.volume < $1.volume }) else { return nil }
@@ -276,6 +308,7 @@ public enum PRDetector {
         return PersonalRecord(
             kind: .bestSet,
             exerciseName: exerciseName,
+            exerciseTemplateID: exerciseTemplateID,
             weightKg: bestNow.weightKg,
             reps: bestNow.reps,
             previousValue: prevBest,
@@ -287,7 +320,8 @@ public enum PRDetector {
     private static func estimated1RMPR(
         in attempts: [LiftAttempt],
         history: [LiftAttempt],
-        exerciseName: String
+        exerciseName: String,
+        exerciseTemplateID: UUID?
     ) -> PersonalRecord? {
         let prevBest = history.compactMap(estimated1RM).max() ?? 0
         let nowCandidates = attempts.compactMap { lift -> (LiftAttempt, Double)? in
@@ -299,6 +333,7 @@ public enum PRDetector {
         return PersonalRecord(
             kind: .estimated1RM,
             exerciseName: exerciseName,
+            exerciseTemplateID: exerciseTemplateID,
             weightKg: bestNow.0.weightKg,
             reps: bestNow.0.reps,
             previousValue: prevBest,
@@ -312,7 +347,8 @@ public enum PRDetector {
     private static func maxRepsPR(
         in sessionAttempts: [LiftAttempt],
         history: [LiftAttempt],
-        exerciseName: String
+        exerciseName: String,
+        exerciseTemplateID: UUID?
     ) -> PersonalRecord? {
         let valid = sessionAttempts.filter {
             $0.weightKg == 0 && $0.reps > 0 && !$0.isTimeBased
@@ -328,6 +364,7 @@ public enum PRDetector {
         return PersonalRecord(
             kind: .maxReps,
             exerciseName: exerciseName,
+            exerciseTemplateID: exerciseTemplateID,
             weightKg: 0,
             reps: bestNow.reps,
             previousValue: Double(prevBestReps),
@@ -341,7 +378,8 @@ public enum PRDetector {
     private static func maxHoldSecondsPR(
         in sessionAttempts: [LiftAttempt],
         history: [LiftAttempt],
-        exerciseName: String
+        exerciseName: String,
+        exerciseTemplateID: UUID?
     ) -> PersonalRecord? {
         // For time-based: `reps` carries seconds. Weight is ignored even if > 0.
         let valid = sessionAttempts.filter { $0.isTimeBased && $0.reps > 0 }
@@ -354,6 +392,7 @@ public enum PRDetector {
         return PersonalRecord(
             kind: .maxHoldSeconds,
             exerciseName: exerciseName,
+            exerciseTemplateID: exerciseTemplateID,
             weightKg: bestNow.weightKg,        // preserved for display, not for PR-math
             reps: bestNow.reps,
             previousValue: Double(prevBestSeconds),

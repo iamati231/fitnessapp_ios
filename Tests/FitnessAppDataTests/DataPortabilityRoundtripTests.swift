@@ -1279,5 +1279,148 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<BodyMeasurement>()), 1)
         XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<WaterEntry>()), 1)
     }
+
+    // MARK: - Settings-Epic Phase 6 (EXLIB-07/09): stabile Exercise-Referenz
+
+    /// Kern-Regression des Audit-Befunds: Umbenennen einer eigenen Übung
+    /// darf Verlaufs-Lookup nicht brechen. `exerciseTemplateID` (stabil)
+    /// bleibt unveraendert; `exerciseNameSnapshot` (historischer Snapshot)
+    /// bleibt bewusst auf dem ALTEN Namen stehen — der Test beweist explizit,
+    /// dass ein Lookup rein über den aktuellen Namen die Historie verfehlen
+    /// WUERDE, waehrend die ID sie weiterhin findet.
+    func testExerciseTemplateIDResolvesHistoryAfterTemplateRename() throws {
+        let ctx = try makeContainer().mainContext
+        let template = ExerciseTemplate(name: "Kabelzug", equipment: .cable, primaryMuscle: .back, isCustom: true)
+        ctx.insert(template)
+        let exercise = Exercise(name: template.name, exerciseTemplateID: template.id, sets: 3)
+        ctx.insert(exercise)
+        let log = ExerciseLog(setIndex: 0, weight: 50, reps: 10, rir: 2, exercise: exercise)
+        ctx.insert(log)
+        try ctx.save()
+
+        XCTAssertEqual(log.resolvedExerciseTemplateID, template.id)
+        XCTAssertEqual(log.resolvedExerciseName, "Kabelzug")
+
+        template.name = "Lat-Zug"
+        try ctx.save()
+
+        XCTAssertEqual(log.resolvedExerciseTemplateID, template.id, "Umbenennen darf die stabile Referenz nicht brechen")
+        XCTAssertEqual(log.resolvedExerciseName, "Kabelzug", "Historischer Namens-Snapshot bleibt erhalten")
+        XCTAssertNotEqual(
+            log.resolvedExerciseName, template.name,
+            "Beweis: ein Lookup NUR ueber den aktuellen Namen wuerde diesen Log nach dem Umbenennen verfehlen — die ID ist die einzig verlässliche Referenz"
+        )
+    }
+
+    /// Löschen einer (Custom-)Vorlage darf Logs/PRs strukturell niemals
+    /// mitlöschen — `exerciseTemplateID` ist ein reiner UUID-Scalar, kein
+    /// `@Relationship`, genau damit es keine Delete-Rule gibt, die das
+    /// erzwingen könnte.
+    func testDeletingTemplateNeverCascadesToExerciseLogsOrPRs() throws {
+        let ctx = try makeContainer().mainContext
+        let template = ExerciseTemplate(name: "Face Pull", equipment: .cable, primaryMuscle: .shoulders, isCustom: true)
+        ctx.insert(template)
+        let exercise = Exercise(name: template.name, exerciseTemplateID: template.id, sets: 3)
+        ctx.insert(exercise)
+        let log = ExerciseLog(setIndex: 0, weight: 15, reps: 15, rir: 2, exercise: exercise)
+        ctx.insert(log)
+        let pr = PersonalRecordEntry(
+            date: Date(), exerciseName: template.name, exerciseTemplateID: template.id,
+            kindRaw: PersonalRecord.Kind.heaviestWeight.rawValue,
+            value: 15, previousValue: 10, weightKg: 15, reps: 15
+        )
+        ctx.insert(pr)
+        try ctx.save()
+
+        ctx.delete(template)
+        try ctx.save()
+
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<ExerciseLog>()), 1, "Log darf durch das Vorlagen-Loeschen nicht verschwinden")
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<PersonalRecordEntry>()), 1, "PR darf durch das Vorlagen-Loeschen nicht verschwinden")
+        // Snapshot-Felder bleiben unveraendert — nur die Live-Vorlage ist weg.
+        XCTAssertEqual(log.exerciseTemplateIDSnapshot, template.id)
+        XCTAssertEqual(pr.exerciseTemplateID, template.id)
+    }
+
+    /// CSV-/Backup-Roundtrip (häufiger Fall): Export + Import in einen
+    /// FRISCHEN Container — die stabile `ExerciseTemplate.id` wird 1:1
+    /// wiederhergestellt, und `exercise_template_id` auf Exercise/PR löst
+    /// nach dem Import korrekt auf die neu angelegte Vorlage auf.
+    func testCustomExerciseTemplateIDSurvivesExportImportRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+        let template = ExerciseTemplate(name: "Meine Uebung", equipment: .dumbbell, primaryMuscle: .chest, isCustom: true)
+        ctx.insert(template)
+        let exercise = Exercise(name: template.name, exerciseTemplateID: template.id, sets: 3)
+        ctx.insert(exercise)
+        let log = ExerciseLog(setIndex: 0, weight: 20, reps: 12, rir: 2, exercise: exercise)
+        ctx.insert(log)
+        let pr = PersonalRecordEntry(
+            date: Date(), exerciseName: template.name, exerciseTemplateID: template.id,
+            kindRaw: PersonalRecord.Kind.heaviestWeight.rawValue,
+            value: 20, previousValue: 15, weightKg: 20, reps: 12
+        )
+        ctx.insert(pr)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        let importedTemplates = try target.mainContext.fetch(FetchDescriptor<ExerciseTemplate>())
+        guard let importedTemplate = importedTemplates.first(where: { $0.name == "Meine Uebung" }) else {
+            return XCTFail("Custom-Vorlage fehlt nach dem Import")
+        }
+        XCTAssertEqual(importedTemplate.id, template.id, "Stabile ID muss 1:1 ueberleben (frischer Container, kein Dedup)")
+
+        let importedExercises = try target.mainContext.fetch(FetchDescriptor<Exercise>())
+        XCTAssertEqual(importedExercises.first?.exerciseTemplateID, importedTemplate.id)
+
+        let importedPRs = try target.mainContext.fetch(FetchDescriptor<PersonalRecordEntry>())
+        XCTAssertEqual(importedPRs.first?.exerciseTemplateID, importedTemplate.id)
+
+        let importedLogs = try target.mainContext.fetch(FetchDescriptor<ExerciseLog>())
+        XCTAssertEqual(importedLogs.first?.exerciseTemplateIDSnapshot, importedTemplate.id)
+    }
+
+    /// CSV-/Backup-Roundtrip (Dedup-Fall): der Zielcontainer hat bereits eine
+    /// gleichnamige Custom-Vorlage MIT EIGENER ID (z.B. ein zweiter Import
+    /// derselben ZIP, oder ein Merge zweier Geräte). Der Importer legt dann
+    /// KEINE zweite Vorlage an, sondern verknuepft `exercise_template_id`
+    /// auf die BEREITS VORHANDENE Vorlage — nicht auf die (jetzt verwaiste)
+    /// ID aus der Export-Datei.
+    func testCustomExerciseTemplateIDResolvesThroughDedupOnReimport() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+        let template = ExerciseTemplate(name: "Dedup-Uebung", equipment: .machine, primaryMuscle: .legs, isCustom: true)
+        ctx.insert(template)
+        let exercise = Exercise(name: template.name, exerciseTemplateID: template.id, sets: 3)
+        ctx.insert(exercise)
+        try ctx.save()
+        let bundle = try DataExportService.makeExport(context: ctx)
+
+        // Zielcontainer hat bereits eine gleichnamige Vorlage mit ANDERER ID.
+        let target = try makeContainer()
+        let existingTemplate = ExerciseTemplate(name: "Dedup-Uebung", equipment: .machine, primaryMuscle: .legs, isCustom: true)
+        target.mainContext.insert(existingTemplate)
+        try target.mainContext.save()
+        XCTAssertNotEqual(existingTemplate.id, template.id)
+
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        XCTAssertEqual(
+            try target.mainContext.fetchCount(FetchDescriptor<ExerciseTemplate>()), 1,
+            "Dedup muss greifen — keine zweite gleichnamige Vorlage"
+        )
+        let importedExercises = try target.mainContext.fetch(FetchDescriptor<Exercise>())
+        XCTAssertEqual(
+            importedExercises.first?.exerciseTemplateID, existingTemplate.id,
+            "Referenz muss auf die WIEDERVERWENDETE Vorlage zeigen, nicht auf die verwaiste Export-ID"
+        )
+    }
 }
 #endif

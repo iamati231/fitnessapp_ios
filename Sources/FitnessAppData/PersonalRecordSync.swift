@@ -199,6 +199,9 @@ public enum PersonalRecordSync {
             guard let name = log.resolvedExerciseName else { return nil }
             return LiftAttempt(
                 exerciseName: name,
+                // Settings-Epic Phase 6 (EXLIB-07/09): stabile ID durchreichen,
+                // damit PRDetector ueber Umbenennen hinweg korrekt gruppiert.
+                exerciseTemplateID: log.resolvedExerciseTemplateID,
                 weightKg: log.weight,
                 reps: log.reps,
                 date: log.date,
@@ -237,6 +240,7 @@ public enum PersonalRecordSync {
             else { return nil }
             return LiftAttempt(
                 exerciseName: name,
+                exerciseTemplateID: log.resolvedExerciseTemplateID,
                 weightKg: log.weight,
                 reps: log.reps,
                 date: log.date,

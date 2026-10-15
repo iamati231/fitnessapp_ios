@@ -97,7 +97,7 @@ let package = Package(
             // compiliert das SwiftUI-abhaengige FitnessAppUI leer, diese Tests
             // beruehren nur Foundation und laufen echt auf Codemagic-Mac.
             name: "FitnessAppUITests",
-            dependencies: ["FitnessAppUI", "FitnessAppCore"],
+            dependencies: ["FitnessAppUI", "FitnessAppCore", "FitnessAppData"],
             path: "Tests/FitnessAppUITests"
         )
     ]

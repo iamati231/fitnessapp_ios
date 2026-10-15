@@ -589,4 +589,79 @@ final class PRDetectorTests: XCTestCase {
             }
         }
     }
+
+    // MARK: - Settings-Epic Phase 6 (EXLIB-07/09): ID-first Gruppierung
+
+    /// Kernfall des Bugs: eine Uebung wurde umbenannt (Historie traegt noch
+    /// den ALTEN Namens-Snapshot, die aktuelle Session den NEUEN), aber
+    /// beide Attempts tragen dieselbe stabile `exerciseTemplateID`. Vor
+    /// Phase 6 waere das eine "neue Uebung ohne Historie" gewesen (0 PRs,
+    /// weil `exerciseHistory` leer bleibt) — jetzt gruppiert die ID beide
+    /// zusammen, die Historie bleibt gefunden.
+    func testRenameSurvivesViaSharedTemplateID() {
+        let templateID = UUID()
+        // Gleiche Zahlen wie testHeaviestWeightPRDetected (dort gegen den
+        // Namen allein verifiziert): 90kg x 3 schlaegt nur das Gewicht
+        // (90 gegen 80), nicht Volume (270 gegen 640) oder 1RM (99 gegen
+        // 101.33) — isoliert also sauber genau EINEN PR-Kind.
+        let history = LiftAttempt(
+            exerciseName: "Alter Name", exerciseTemplateID: templateID,
+            weightKg: 80, reps: 8, date: weekAgo
+        )
+        let session = LiftAttempt(
+            exerciseName: "Neuer Name", exerciseTemplateID: templateID,
+            weightKg: 90, reps: 3, date: now
+        )
+        let prs = PRDetector.detectPRs(sessionLifts: [session], history: [history])
+        XCTAssertEqual(prs.count, 1, "Trotz Namenswechsel sollte die gemeinsame ID die Historie finden")
+        XCTAssertEqual(prs.first?.kind, .heaviestWeight)
+        XCTAssertEqual(prs.first?.exerciseTemplateID, templateID)
+        // Anzeige-Name ist der AKTUELLE (Session-)Name, nicht der veraltete.
+        XCTAssertEqual(prs.first?.exerciseName, "Neuer Name")
+    }
+
+    /// Kehrprobe: zwei verschiedene Uebungen, die zufaellig denselben Namen
+    /// tragen (z.B. eine geloeschte und eine neu angelegte Custom-Uebung),
+    /// aber unterschiedliche IDs — duerfen NIEMALS zusammengelegt werden,
+    /// sonst koennte ein Namens-Zufall fremde Historie "erben".
+    func testDifferentTemplateIDsWithSameNameStayAparts() {
+        let idA = UUID()
+        let idB = UUID()
+        let history = LiftAttempt(
+            exerciseName: "Rudern", exerciseTemplateID: idA,
+            weightKg: 80, reps: 8, date: weekAgo
+        )
+        let session = LiftAttempt(
+            exerciseName: "Rudern", exerciseTemplateID: idB,
+            weightKg: 90, reps: 8, date: now
+        )
+        let prs = PRDetector.detectPRs(sessionLifts: [session], history: [history])
+        XCTAssertTrue(prs.isEmpty, "Unterschiedliche IDs duerfen trotz gleichem Namen keine Historie teilen")
+    }
+
+    /// Alt-Daten ohne jede ID (vor dieser Phase geloggt, nicht per Backfill
+    /// aufloesbar) gruppieren weiterhin per Name — unveraendertes Verhalten,
+    /// keine Regression.
+    func testNilTemplateIDFallsBackToNameGrouping() {
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [bench(90, 3)],
+            history: [bench(80, 8, weekAgo)]
+        )
+        XCTAssertEqual(prs.count, 1)
+        XCTAssertNil(prs.first?.exerciseTemplateID)
+    }
+
+    /// Eine Seite mit ID, die andere ohne (z.B. Session schon migriert,
+    /// Historie-Zeile ein nicht per Backfill aufloesbarer Alt-Eintrag mit
+    /// zufaellig gleichem Namen) — gilt bewusst als NICHT derselbe Bucket,
+    /// damit nie ID- und Namens-Identitaet vermischt werden.
+    func testMixedIDAndNilNeverMerge() {
+        let session = LiftAttempt(
+            exerciseName: "Bankdruecken", exerciseTemplateID: UUID(),
+            weightKg: 90, reps: 8, date: now
+        )
+        let history = bench(80, 8, weekAgo)   // kein exerciseTemplateID
+        let prs = PRDetector.detectPRs(sessionLifts: [session], history: [history])
+        XCTAssertTrue(prs.isEmpty, "ID-Attempt und namensgleicher Nil-ID-Attempt duerfen nicht gemischt gruppiert werden")
+    }
 }

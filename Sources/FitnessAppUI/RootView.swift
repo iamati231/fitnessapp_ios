@@ -123,6 +123,12 @@ public struct RootView: View {
             // laufen, damit der dort potenziell faelschlich gesetzte
             // `customName` hier wieder bereinigt werden kann. Idempotent.
             ExerciseNameBackfill.runIfNeeded(in: modelContext)
+            // Settings-Epic Phase 6 (EXLIB-07/09): stabile Vorlagen-ID
+            // rueckwirkend verknuepfen, wo eindeutig moeglich. MUSS NACH
+            // ExerciseNameBackfill laufen (siehe dortige Begruendung) —
+            // sonst wuerden Fremdsprach-Namens-Snapshots faelschlich als
+            // unaufloesbar durchfallen. Idempotent.
+            ExerciseTemplateIDBackfill.runIfNeeded(in: modelContext)
             // DEL-150: Ad-Hoc-Workout-Titel-Repair. Spontane Sessions, deren
             // ephemerer TrainingDay noch ohne localizationKey gespeichert
             // wurde, bekommen `session.adHoc.dayName` nachgezogen — damit

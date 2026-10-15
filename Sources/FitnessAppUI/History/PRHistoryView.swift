@@ -22,6 +22,12 @@ public struct PRHistoryView: View {
     @Query(sort: \PersonalRecordEntry.date, order: .reverse)
     private var entries: [PersonalRecordEntry]
 
+    /// Settings-Epic Phase 6 (EXLIB-07/09): fuer die ID-first-Aufloesung des
+    /// aktuellen Anzeige-Namens pro Trophy-Gruppe (`grouped`). ~Hunderte
+    /// Zeilen — ein `Dictionary`-Aufbau pro Render ist vernachlaessigbar,
+    /// gleiches Performance-Argument wie `ExerciseTemplate+DisplayName.swift`.
+    @Query private var allTemplates: [ExerciseTemplate]
+
     /// Used by the empty-state CTA to know whether a backfill would actually
     /// produce anything.
     @Query(filter: #Predicate<WorkoutSession> { $0.isCompleted == true })
@@ -178,25 +184,44 @@ public struct PRHistoryView: View {
 
     // MARK: Grouping
 
-    /// Entries grouped by exerciseName, with the headline kind chosen per
-    /// exercise. Sorted by most-recent-PR first so the Trophy Room "tells a
-    /// story" — what the user has set lately bubbles up.
+    /// Entries grouped by exercise identity, with the headline kind chosen
+    /// per exercise. Sorted by most-recent-PR first so the Trophy Room
+    /// "tells a story" — what the user has set lately bubbles up.
     private var grouped: [ExerciseTrophyGroup] {
         let filtered = selectedKind.map { kind in
             entries.filter { $0.kind == kind }
         } ?? entries
 
-        // DEL-156: Gruppierung nach (Name, Cardio-Equipment). Non-Cardio-PRs
-        // tragen .none → effektiv "nur nach Name". Cardio-PRs splitten nach
-        // Modalitaet (Laufband ≠ Fahrrad) in eigene Trophy-Reihen.
+        // DEL-156: Gruppierung nach (Identitaet, Cardio-Equipment). Non-
+        // Cardio-PRs tragen .none → effektiv "nur nach Identitaet". Cardio-
+        // PRs splitten nach Modalitaet (Laufband ≠ Fahrrad) in eigene
+        // Trophy-Reihen.
+        //
+        // Settings-Epic Phase 6 (EXLIB-07/09): Identitaet ist bevorzugt die
+        // stabile `exerciseTemplateID` (ueberlebt ein Umbenennen); nur
+        // Eintraege ohne aufloesbare ID gruppieren weiterhin per Name
+        // (unveraendertes Alt-Verhalten).
         let byExercise = Dictionary(grouping: filtered) { entry in
-            TrophyGroupKey(name: entry.exerciseName, equipment: entry.cardioEquipment)
+            TrophyGroupKey(
+                identity: entry.exerciseTemplateID.map(TrophyGroupKey.Identity.id) ?? .name(entry.exerciseName),
+                equipment: entry.cardioEquipment
+            )
         }
+        let templatesByID = Dictionary(uniqueKeysWithValues: allTemplates.map { ($0.id, $0) })
         return byExercise.compactMap { (key, rows) -> ExerciseTrophyGroup? in
             guard !rows.isEmpty else { return nil }
             let sorted = rows.sorted { $0.date > $1.date }
+            let fallbackName = sorted.first?.exerciseName ?? ""
+            let templateID: UUID? = if case .id(let id) = key.identity { id } else { nil }
+            // ID aufloesbar + Vorlage noch vorhanden → deren LIVE-Name
+            // (ueberlebt Umbenennen). Sonst: bisherige Snapshot-Namens-
+            // Aufloesung (Sprachfest ueber Reverse-Lookup), unveraendert.
+            let resolvedName = templateID.flatMap { templatesByID[$0] }?.displayName
+                ?? Exercise.resolvedDisplayName(forStoredName: fallbackName)
             return ExerciseTrophyGroup(
-                exerciseName: key.name,
+                exerciseTemplateID: templateID,
+                exerciseName: fallbackName,
+                displayName: resolvedName,
                 cardioEquipment: key.equipment,
                 entries: sorted,
                 latestDate: sorted.first?.date ?? .distantPast
@@ -223,19 +248,36 @@ public struct PRHistoryView: View {
 
 // MARK: - Exercise group container
 
-/// DEL-156: Composite-Gruppierungs-Schluessel fuer den Trophy-Room.
+/// DEL-156 / Settings-Epic Phase 6 (EXLIB-07/09): Composite-Gruppierungs-
+/// Schluessel fuer den Trophy-Room. Identitaet ist ID-first — siehe
+/// `PRHistoryView.grouped` fuer die Begruendung (nie ID und Name gemischt,
+/// sonst koennte ein zufaelliger Namens-Treffer zwei Uebungen zusammenlegen).
 @available(iOS 17.0, macOS 14.0, *)
 struct TrophyGroupKey: Hashable {
-    let name: String
+    enum Identity: Hashable {
+        case id(UUID)
+        case name(String)
+    }
+    let identity: Identity
     let equipment: CardioEquipment
 }
 
 @available(iOS 17.0, macOS 14.0, *)
 struct ExerciseTrophyGroup: Identifiable {
-    /// DEL-156: Composite-ID, damit Laufband- und Fahrrad-Reihen derselben
-    /// Uebung als getrennte DisclosureGroups erscheinen.
-    var id: String { "\(exerciseName)|\(cardioEquipment.rawValue)" }
+    /// Composite-ID, damit Laufband- und Fahrrad-Reihen derselben Uebung als
+    /// getrennte DisclosureGroups erscheinen (DEL-156). Nutzt die stabile
+    /// `exerciseTemplateID`, wenn vorhanden, sonst den Namens-Snapshot.
+    var id: String { "\(exerciseTemplateID?.uuidString ?? exerciseName)|\(cardioEquipment.rawValue)" }
+    /// Settings-Epic Phase 6 (EXLIB-07/09): stabile Vorlagen-ID, falls
+    /// aufloesbar — `nil` fuer Alt-Gruppen ohne Backfill-Treffer.
+    let exerciseTemplateID: UUID?
+    /// Snapshot-Name der juengsten PR-Zeile — Fallback-Anzeige, wenn sich
+    /// `exerciseTemplateID` nicht (mehr) zu einer lebenden Vorlage aufloesen
+    /// laesst (z.B. geloescht).
     let exerciseName: String
+    /// Bereits aufgeloester Anzeige-Name (live Vorlagen-Name bei ID-Treffer,
+    /// sonst sprachfeste Snapshot-Aufloesung) — siehe `PRHistoryView.grouped`.
+    let displayName: String
     let cardioEquipment: CardioEquipment
     let entries: [PersonalRecordEntry]
     let latestDate: Date
@@ -278,7 +320,7 @@ private struct ExerciseTrophySection: View {
                 // wir das Equipment-Label an, damit Laufband-/Fahrrad-Reihen
                 // unterscheidbar sind.
                 HStack(spacing: 6) {
-                    Text(Exercise.resolvedDisplayName(forStoredName: group.exerciseName))
+                    Text(group.displayName)
                         .font(.body.weight(.semibold))
                     if group.cardioEquipment != .none {
                         Label {

@@ -789,6 +789,11 @@ public struct WorkoutSummaryView: View {
             guard let name = log.resolvedExerciseName else { return nil }
             return LiftAttempt(
                 exerciseName: name,
+                // Settings-Epic Phase 6 (EXLIB-07/09): stabile ID durchreichen,
+                // damit diese Vorschau-Detection mit PersonalRecordSync
+                // konsistent gruppiert (sonst koennte das Summary-Badge einem
+                // spaeter persistierten Trophy-Room-Eintrag widersprechen).
+                exerciseTemplateID: log.resolvedExerciseTemplateID,
                 weightKg: log.weight,
                 reps: log.reps,
                 date: log.date,
@@ -812,6 +817,7 @@ public struct WorkoutSummaryView: View {
             else { return nil }
             return LiftAttempt(
                 exerciseName: name,
+                exerciseTemplateID: log.resolvedExerciseTemplateID,
                 weightKg: log.weight,
                 reps: log.reps,
                 date: log.date,

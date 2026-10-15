@@ -79,6 +79,11 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
     public let id: UUID
     public let kind: Kind
     public let exerciseName: String
+    /// Stabile `ExerciseTemplate.id`-Referenz, falls die Session- und
+    /// Historien-Attempts eine gemeinsame aufloesbare ID trugen (Settings-
+    /// Epic Phase 6, EXLIB-07/09). `nil` fuer WOD-Zeitformat-PRs
+    /// (`detectTimedFormatPR`) und nicht-aufloesbare Alt-Eintraege.
+    public let exerciseTemplateID: UUID?
     /// DEL-156: Cardio-Equipment des PRs. `.none` fuer Strength/Bodyweight/
     /// TimeBased. Trennt Cardio-PRs nach Modalitaet (Laufband ≠ Fahrrad).
     public let cardioEquipment: CardioEquipment
@@ -97,6 +102,7 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
         id: UUID = UUID(),
         kind: Kind,
         exerciseName: String,
+        exerciseTemplateID: UUID? = nil,
         weightKg: Double,
         reps: Int,
         previousValue: Double,
@@ -107,6 +113,7 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
         self.id = id
         self.kind = kind
         self.exerciseName = exerciseName
+        self.exerciseTemplateID = exerciseTemplateID
         self.weightKg = weightKg
         self.reps = reps
         self.previousValue = previousValue
