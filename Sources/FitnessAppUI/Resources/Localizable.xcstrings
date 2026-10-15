@@ -373,9 +373,9 @@
     "settings.credits.exerciseMedia.body": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Die animierten Übungs-GIFs stammen aus einem offenen Datensatz. Die Bildrechte liegen bei Gym visual und werden mit deren Erlaubnis gezeigt." } },
-        "en": { "stringUnit": { "state": "translated", "value": "The animated exercise GIFs come from an open dataset. Image rights belong to Gym visual and are shown with their permission." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Animasyonlu egzersiz GIF'leri açık bir veri setinden alınmıştır. Görsel hakları Gym visual'a aittir ve izinleriyle gösterilmektedir." } }
+        "de": { "stringUnit": { "state": "translated", "value": "Die animierten Übungs-GIFs stammen aus einem offenen Datensatz. Laut dessen eigener Hinweis-Datei gehören die Bildrechte Gym visual und werden mit deren Erlaubnis weitergegeben." } },
+        "en": { "stringUnit": { "state": "translated", "value": "The animated exercise GIFs come from an open dataset. According to that dataset's own notice, the image rights belong to Gym visual and are redistributed with their permission." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Animasyonlu egzersiz GIF'leri açık bir veri setinden alınmıştır. Bu veri setinin kendi bildirim dosyasına göre görsel hakları Gym visual'a aittir ve onların izniyle yeniden paylaşılmaktadır." } }
       }
     },
     "settings.credits.exerciseMedia.attribution": {
@@ -43171,6 +43171,282 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sıfırlamadan önceki yedekleme başarısız oldu: %@. Hiçbir şey silinmedi."
+          }
+        }
+      }
+    },
+    "gear.delete.confirm.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Ausrüstung löschen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this gear?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu ekipman silinsin mi?"
+          }
+        }
+      }
+    },
+    "gear.delete.confirm.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Kilometerstand von „%@“ wird endgültig gelöscht. Das kann nicht rückgängig gemacht werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The distance history for “%@” will be permanently deleted. This cannot be undone."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” için kilometre geçmişi kalıcı olarak silinecek. Bu işlem geri alınamaz."
+          }
+        }
+      }
+    },
+    "gear.delete.confirm.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Löschen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sil"
+          }
+        }
+      }
+    },
+    "gear.delete.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausrüstung löschen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete gear"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipmanı sil"
+          }
+        }
+      }
+    },
+    "library.noResults.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Treffer"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matches"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eşleşme yok"
+          }
+        }
+      }
+    },
+    "library.noResults.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Übung passt zu deiner Suche oder den gewählten Filtern. Versuche einen anderen Begriff oder setze die Filter zurück."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No exercise matches your search or the selected filters. Try a different term or reset the filters."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aramanıza veya seçili filtrelere uyan bir egzersiz yok. Farklı bir terim deneyin veya filtreleri sıfırlayın."
+          }
+        }
+      }
+    },
+    "dashboardSettings.reorder.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sortieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reorder"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sırala"
+          }
+        }
+      }
+    },
+    "dashboardSettings.moveUp.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach oben verschieben"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move up"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yukarı taşı"
+          }
+        }
+      }
+    },
+    "dashboardSettings.moveDown.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach unten verschieben"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move down"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aşağı taşı"
+          }
+        }
+      }
+    },
+    "dashboardSettings.add.actionFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ hinzufügen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ekle"
+          }
+        }
+      }
+    },
+    "gear.list.add.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausrüstung hinzufügen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add gear"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipman ekle"
+          }
+        }
+      }
+    },
+    "backups.actions.menu": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktionen für Sicherung vom %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actions for the backup from %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ tarihli yedek için işlemler"
           }
         }
       }

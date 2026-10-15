@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2074 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2086 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2074 / 2074** (100%) | 0 |
-| 🇬🇧 English (EN) | **2074 / 2074** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2074 / 2074** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2086 / 2086** (100%) | 0 |
+| 🇬🇧 English (EN) | **2086 / 2086** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2086 / 2086** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -87,10 +87,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `activity.veryActive.description` | Tag-täglich intensives Training oder schwere körperliche Arbeit. | Daily intense training or heavy physical labor. | Her gün yoğun antrenman ya da ağır fiziksel iş. |
 | `activity.veryActive.label` | Sehr aktiv (1.9) | Very Active (1.9) | Çok Aktif (1.9) |
 
-## `backups.*`  (24 Keys)
+## `backups.*`  (25 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `backups.actions.menu` | Aktionen für Sicherung vom %@ | Actions for the backup from %@ | %@ tarihli yedek için işlemler |
 | `backups.createNow` | Jetzt sichern | Back up now | Şimdi yedekle |
 | `backups.creating.running` | Wird gesichert … | Backing up … | Yedekleniyor … |
 | `backups.delete.action` | Löschen | Delete | Sil |
@@ -718,13 +719,17 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.weeklySummary.title` | Diese Woche | This Week | Bu Hafta |
 | `dashboard.weeklySummary.volume` | Volumen | Volume | Hacim |
 
-## `dashboardSettings.*`  (14 Keys)
+## `dashboardSettings.*`  (18 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `dashboardSettings.add.actionFormat` | %@ hinzufügen | Add %@ | %@ ekle |
 | `dashboardSettings.empty` | Alle Widgets deaktiviert. Tippe ein '+' weiter unten, um wieder welche einzublenden. | All widgets are off. Tap '+' below to bring some back. | Tüm widget'lar kapalı. Geri eklemek için aşağıdan '+' simgesine dokun. |
 | `dashboardSettings.entry.subtitle` | Widgets ein-/ausblenden und umsortieren | Toggle widgets on/off and reorder | Widget'ları aç/kapat ve sırala |
 | `dashboardSettings.entry.title` | Dashboard anpassen | Customize Dashboard | Panoyu Özelleştir |
+| `dashboardSettings.moveDown.action` | Nach unten verschieben | Move down | Aşağı taşı |
+| `dashboardSettings.moveUp.action` | Nach oben verschieben | Move up | Yukarı taşı |
+| `dashboardSettings.reorder.action` | Sortieren | Reorder | Sırala |
 | `dashboardSettings.section.active.footer` | Halten + ziehen zum Umsortieren. Toggle aus, um ein Widget zu deaktivieren. | Press and drag to reorder. Toggle off to deactivate a widget. | Sıralamak için basılı tutup sürükle. Devre dışı bırakmak için kapat. |
 | `dashboardSettings.section.active.title` | Reihenfolge & Sichtbarkeit | Order & Visibility | Sıralama ve Görünürlük |
 | `dashboardSettings.section.hero.empty` | Keine Hero-Karten aktiv — die obere Reihe ist ausgeblendet. | No hero cards active — the top row is hidden. | Aktif üst kart yok — üst satır gizlendi. |
@@ -1214,10 +1219,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `feeling.hard` | Sehr schwer | Very Hard | Çok Zor |
 | `feeling.okay` | Okay | Okay | İdare Eder |
 
-## `gear.*`  (19 Keys)
+## `gear.*`  (24 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `gear.delete.action` | Ausrüstung löschen | Delete gear | Ekipmanı sil |
+| `gear.delete.confirm.action` | Löschen | Delete | Sil |
+| `gear.delete.confirm.message` | Der Kilometerstand von „%@“ wird endgültig gelöscht. Das kann nicht rückgängig gemacht werden. | The distance history for “%@” will be permanently deleted. This cannot be undone. | “%@” için kilometre geçmişi kalıcı olarak silinecek. Bu işlem geri alınamaz. |
+| `gear.delete.confirm.title` | Diese Ausrüstung löschen? | Delete this gear? | Bu ekipman silinsin mi? |
 | `gear.editor.distance.footer` | Laufschuhe verlieren nach ~600–800 km ihre Dämpfung. Bei Erreichen des Maximums warnt die App. | Running shoes lose cushioning after ~600–800 km. The app warns when you hit the max. | Koşu ayakkabıları ~600–800 km sonra yastıklamasını kaybeder. Maks. ulaşıldığında uygulama uyarır. |
 | `gear.editor.field.currentKm` | Bisherige km | Current km | Mevcut km |
 | `gear.editor.field.maxKm` | Max. km | Max km | Maks. km |
@@ -1231,6 +1240,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `gear.editor.type.bike` | Fahrrad | Bike | Bisiklet |
 | `gear.editor.type.shoe` | Laufschuh | Shoe | Ayakkabı |
 | `gear.inactive` | INAKTIV | INACTIVE | PASİF |
+| `gear.list.add.action` | Ausrüstung hinzufügen | Add gear | Ekipman ekle |
 | `gear.list.empty.cta` | Ausrüstung anlegen | Add Gear | Ekipman Ekle |
 | `gear.list.empty.description` | Füge Laufschuhe oder Fahrräder hinzu, damit die App deine Kilometer automatisch trackt. | Add running shoes or bicycles so the app can track your distance automatically. | Koşu ayakkabıları veya bisikletler ekle, böylece uygulama mesafeni otomatik takip etsin. |
 | `gear.list.empty.title` | Noch keine Ausrüstung | No gear yet | Henüz ekipman yok |
@@ -1291,10 +1301,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `import.preview.title` | Inhalt der Datei | File contents | Dosya içeriği |
 | `import.preview.unreadable` | Diese Datei konnte nicht gelesen werden — sie ist kein gültiges Deltiq-Backup. | This file could not be read — it isn't a valid Deltiq backup. | Bu dosya okunamadı — geçerli bir Deltiq yedeği değil. |
 
-## `library.*`  (4 Keys)
+## `library.*`  (6 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `library.noResults.description` | Keine Übung passt zu deiner Suche oder den gewählten Filtern. Versuche einen anderen Begriff oder setze die Filter zurück. | No exercise matches your search or the selected filters. Try a different term or reset the filters. | Aramanıza veya seçili filtrelere uyan bir egzersiz yok. Farklı bir terim deneyin veya filtreleri sıfırlayın. |
+| `library.noResults.title` | Keine Treffer | No matches | Eşleşme yok |
 | `library.readOnlyFooter` | System-Übung — die Basis-Vorlagen der App sind nicht bearbeitbar. | System exercise — the app's base templates can't be edited. | Sistem hareketi — uygulamanın temel şablonları düzenlenemez. |
 | `library.row.history` | Verlauf | History | Geçmiş |
 | `library.searchPlaceholder` | Übung suchen | Search exercise | Hareket ara |
@@ -1977,7 +1989,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.confirm.reset.message` | Profil, alle Messungen, Pläne und Trainings-Sessions gehen UNWIDERRUFLICH verloren. Die App startet danach im Onboarding. | Profile, all measurements, plans, and workouts will be IRRECOVERABLY lost. The app will start in onboarding. | Profil, tüm ölçümler, planlar ve antrenman oturumları GERİ ALINAMAZ şekilde silinecek. Uygulama ardından tekrar onboarding'den başlayacak. |
 | `settings.confirm.reset.title` | App wirklich zurücksetzen? | Really reset the app? | Uygulamayı gerçekten sıfırlamak istiyor musun? |
 | `settings.credits.exerciseMedia.attribution` | © Gym visual — https://gymvisual.com/ | © Gym visual — https://gymvisual.com/ | © Gym visual — https://gymvisual.com/ |
-| `settings.credits.exerciseMedia.body` | Die animierten Übungs-GIFs stammen aus einem offenen Datensatz. Die Bildrechte liegen bei Gym visual und werden mit deren Erlaubnis gezeigt. | The animated exercise GIFs come from an open dataset. Image rights belong to Gym visual and are shown with their permission. | Animasyonlu egzersiz GIF'leri açık bir veri setinden alınmıştır. Görsel hakları Gym visual'a aittir ve izinleriyle gösterilmektedir. |
+| `settings.credits.exerciseMedia.body` | Die animierten Übungs-GIFs stammen aus einem offenen Datensatz. Laut dessen eigener Hinweis-Datei gehören die Bildrechte Gym visual und werden mit deren Erlaubnis weitergegeben. | The animated exercise GIFs come from an open dataset. According to that dataset's own notice, the image rights belong to Gym visual and are redistributed with their permission. | Animasyonlu egzersiz GIF'leri açık bir veri setinden alınmıştır. Bu veri setinin kendi bildirim dosyasına göre görsel hakları Gym visual'a aittir ve onların izniyle yeniden paylaşılmaktadır. |
 | `settings.credits.exerciseMedia.sources` | Quelle: github.com/hasaneyldrm/exercises-dataset (Daten, MIT-Lizenz) und github.com/arvids-unavailable/openGym (Bilddateien). Volle Bedingungen: gymvisual.com/content/3-terms-and-conditions-of-use | Source: github.com/hasaneyldrm/exercises-dataset (data, MIT license) and github.com/arvids-unavailable/openGym (image files). Full terms: gymvisual.com/content/3-terms-and-conditions-of-use | Kaynak: github.com/hasaneyldrm/exercises-dataset (veri, MIT lisansı) ve github.com/arvids-unavailable/openGym (görsel dosyaları). Tam koşullar: gymvisual.com/content/3-terms-and-conditions-of-use |
 | `settings.credits.exerciseMedia.title` | Übungs-GIFs | Exercise GIFs | Egzersiz GIF'leri |
 | `settings.dangerZone.footer` | Löscht Profil, Messungen, Pläne, Trainings-Templates und Trainings-Sessions vollständig. Die Apple-Health-Daten bleiben erhalten — die löscht du in der Health-App selber. | Deletes profile, measurements, plans, training templates, and workout sessions completely. Apple Health data is preserved — delete that from the Health app. | Profil, ölçümler, planlar, antrenman şablonları ve antrenman oturumlarını tamamen siler. Apple Health verileri korunur — onları Health uygulamasından silersin. |
