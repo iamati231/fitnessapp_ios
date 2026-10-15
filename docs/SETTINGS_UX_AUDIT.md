@@ -575,3 +575,46 @@ Diese Blocker sind identisch zu denen jeder vorherigen Phase — neu ist
 lediglich, dass sie hier vollständig gegen jede einzelne der 29 Befund-IDs
 sowie gegen alle 5 Vorgabe-Punkte der finalen Abnahme durchdekliniert und
 damit explizit bestätigt statt nur pauschal wiederholt wurden.
+
+---
+
+## Teil 10 — Codemagic-Nachtrag (echtes Apple-Signal eingetroffen)
+
+Kurz nach Teil 9 hat der User ein echtes Codemagic-Build-Log (`testflight`-
+Workflow, Schritt "Run unit tests (Release-Gate)") bereitgestellt — genau das
+in Teil 9 Abschnitt 2 als nicht einsehbar beschriebene Signal lag damit real
+vor und bestätigt die dort geäußerte Sorge unmittelbar:
+
+**Fund:** `DataPortabilityRoundtripTests.swift:1397,1406` (Phase-6-Test
+`testCustomExerciseTemplateIDResolvesThroughDedupOnReimport`) nutzte
+`primaryMuscle: .legs` — `.legs` existiert aber nicht auf `MuscleGroup`
+(nur auf `DayType`; `MuscleGroup` hat stattdessen `.quads`/`.hamstrings`/
+`.glutes`). Ein echter Tippfehler meinerseits, auf dem Linux-Toolchain
+unsichtbar, weil die Datei SwiftData-gated und dort nur geparst, nie
+typegecheckt wird — exakt die in Teil 7/8/9 wiederholt benannte Lücke.
+Der erste echte Apple-Typecheck hat sie real aufgedeckt, kein anderer
+Befund im Log.
+
+**Fix:** beide Stellen auf `.quads` korrigiert (Commit `7c2e626`), nur
+Testfixture-Daten betroffen, keine Produktionslogik. Linux-Build/-Test
+danach erneut grün (979/979, unverändert — der Fix selbst ist auf Linux
+nicht prüfbar, nur die Abwesenheit einer Regression anderswo).
+
+**Zwei vorbestehende, nicht-blockierende Warnungen im selben Log** (nicht
+Teil dieser Phase, nicht von mir eingeführt — `DeloadManager.swift` zuletzt
+vor dem Smart-Onboarding-Epic geändert, `HealthKitControllerLastSyncTests.swift`
+zuletzt in Phase 4): `DeloadManager.defaultFactor` (main-actor-isoliertes
+statisches Property als Parameter-Default in nonisolated Kontext) und
+`HealthKitControllerLastSyncTests` (Sendable-Capture von `UserDefaults` in
+einer `@Sendable`-Closure) sind beide laut Compiler "ein Fehler im
+Swift-6-Sprachmodus" — das Paket baut aktuell offenbar noch nicht mit
+voller Swift-6-Strict-Concurrency-Prüfung, sonst wären das bereits Fehler
+statt Warnungen. Nicht behoben (außerhalb des Auftrags, keine
+Verhaltensänderung nötig, keine Regression dieser Epic) — hier nur
+dokumentiert, falls eine künftige Swift-6-Migration ansteht.
+
+**Status:** mit diesem Fix ist der einzige im bereitgestellten Log sichtbare
+Fehler behoben. Ob der `testflight`-Workflow jetzt komplett durchläuft
+(inkl. Signing/Archive/Upload-Schritte danach), ist weiterhin nicht
+einsehbar — dafür wäre ein erneuter Codemagic-Lauf nötig, den nur der
+User anstoßen bzw. einsehen kann.
