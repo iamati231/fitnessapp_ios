@@ -33,6 +33,8 @@ struct TrainingLocationEquipmentEditorView: View {
     /// darf eine vorhandene Gym-Annahme nicht ungefragt in eine volle
     /// Bestaetigung umwandeln.
     @State private var equipmentTouched = false
+    /// UI-Refactor (DeltiqHeader-Muster): siehe `BodyDataEditorView`.
+    @State private var showingDiscardConfirm = false
 
     init(profile: UserBodyProfile) {
         self.profile = profile
@@ -42,32 +44,45 @@ struct TrainingLocationEquipmentEditorView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    locationSection
-                    equipmentSection
+            VStack(spacing: 0) {
+                // UI-Refactor (DeltiqHeader-Muster fuer Editoren): siehe
+                // `BodyDataEditorView` fuer die ausfuehrliche Begruendung.
+                DeltiqHeader(
+                    eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                    title: String(localized: "profile.trainingLocation.title", bundle: .module),
+                    onBack: { isDirty ? (showingDiscardConfirm = true) : dismiss() },
+                    actions: [
+                        DeltiqHeaderAction(
+                            systemImage: "checkmark",
+                            accessibilityLabel: String(localized: "common.save", bundle: .module)
+                        ) {
+                            save()
+                        }
+                    ]
+                )
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        locationSection
+                        equipmentSection
+                    }
+                    .padding()
                 }
-                .padding()
             }
             .background(Color.Deltiq.background.ignoresSafeArea())
-            .navigationTitle(String(localized: "profile.trainingLocation.title", bundle: .module))
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "common.cancel", bundle: .module)) {
-                        dismiss()
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "common.save", bundle: .module)) {
-                        save()
-                    }
-                    .fontWeight(.semibold)
-                }
+            .navigationBarBackButtonHidden(true)
+            .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+                dismiss()
             }
         }
+    }
+
+    /// UI-Refactor (DeltiqHeader-Muster): `UserEquipmentProfile`/`EnvironmentType`
+    /// sind beide `Equatable` — reiner Wertevergleich gegen den Ausgangszustand.
+    private var isDirty: Bool {
+        draftEnvironment != profile.environment || draftEquipmentProfile != profile.equipmentProfile
     }
 
     private var locationSection: some View {

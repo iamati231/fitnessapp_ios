@@ -922,3 +922,158 @@ anderen Sprachen oder bei sehr grosser Dynamic-Type-Schrift, die dieses
 gesamte Fixed-Width-HStack-Muster strukturell anfaellig macht, wie die
 fuenf vorherigen Anlaeufe in der Datei-Historie bereits zeigen), kann nur
 ein echter Geraetetest zeigen.
+
+---
+
+## Teil 15 — UI-Refactor: DeltiqHeader-Muster + Discard-Bestaetigung fuer alle Editoren
+
+User-Vorgabe (sinngemaess): einheitliche Kopfzeile fuer alle Formulare/
+Editoren — Speichern-Checkmark oben rechts (Orange, disabled bei
+`!canSave`), Zurueck-Chevron oben links mit Discard-Bestaetigung bei
+vorhandenen Aenderungen, Loesch-Aktionen bleiben ganz unten in roter
+Warnfarbe. Betroffen: `BodyDataEditorView`, `TrainingLocationEquipmentEditorView`,
+`ExerciseLibraryEditorSheet`, `GearEditorView` (in `GearListView.swift`),
+`ExerciseEditorView`, `DayEditorView`, `PlanEditorView`, `ProfileEditorView`
+— 8 Editoren insgesamt.
+
+### Architektur-Grundlage (`Theme.swift`)
+
+`DeltiqHeaderAction` bekommt ein additives `isDisabled: Bool = false`
+(dimmt das Icon, deaktiviert den Tap). Neue geteilte Extension
+`discardChangesConfirmation(isPresented:onDiscard:)` kapselt den
+`confirmationDialog` ("Änderungen verwerfen?" / "Änderungen verwerfen"
+destruktiv / "Weiter bearbeiten" abbrechend) — einmal geschrieben, von
+allen 8 Editoren per `.discardChangesConfirmation(isPresented:) { ... }`
+wiederverwendet statt 8× dasselbe Dialog-Boilerplate.
+
+### Fork 1 — DeltiqHeader auch fuer Sheets
+
+`GearListView.swift` dokumentierte bisher explizit die Regel "Sheets sind
+kein Fall fuer DeltiqHeader" (native `.toolbar` mit Cancel/Done fuer
+sheet-praesentierte Editoren). Diese Vorgabe hebt die Regel fuer die
+betroffenen Sheets (`ExerciseLibraryEditorSheet`, `GearEditorView`)
+bewusst auf: DeltiqHeader wird INNERHALB des Sheets im eigenen
+`NavigationStack` gerendert (`.toolbar(.hidden, for: .navigationBar)` +
+`.navigationBarBackButtonHidden(true)`, keine Aenderung am
+Praesentations-Modus selbst). Kein Modell-/Daten-Risiko, rein visuell —
+das bestehende "kein DeltiqHeader in Sheets"-Dokumentationszitat in
+`GearListView.swift` wurde entsprechend korrigiert.
+
+### Fork 2 — Snapshot+Revert fuer Autosave-Screens
+
+Vier der acht Screens (`ExerciseEditorView`, `DayEditorView`,
+`PlanEditorView`, `ProfileEditorView`) binden `@Bindable` direkt an ihr
+SwiftData-Modell — jede Eingabe persistiert sofort, es gibt keinen Draft
+und (vor dieser Aenderung) keinen Cancel-Pfad. "Aenderungen verwerfen"
+waere auf einem solchen Screen eine leere UI-Behauptung ohne Wirkung, wenn
+es nur `dismiss()` aufruft — die laengst geschriebenen Werte blieben
+stehen. Statt die verworfene Alternative umzusetzen (Saves komplett hinter
+einen expliziten Commit sperren — groesserer Verhaltenswechsel, Risiko von
+Datenverlust bei App-Kill vor dem Speichern), bekommt jeder Autosave-Screen
+einen Snapshot-Mechanismus:
+
+- Ein `XxxSnapshot`-Struct (`Equatable`) erfasst die editierbaren Felder
+  beim Oeffnen (`State(initialValue: Snapshot.capture(from: model))` im
+  `init`).
+- `isDirty` vergleicht den aktuellen Modell-Zustand live gegen den
+  Snapshot.
+- Der Zurueck-Chevron zeigt bei `isDirty` den Discard-Dialog; "Aenderungen
+  verwerfen" ruft `snapshot.apply(to: model)` auf (schreibt alle Felder
+  zurueck) und dismissed erst danach.
+- Der Save-Checkmark bleibt ein reines "Fertig" (`dismiss()`), da ohnehin
+  schon alles autosaved ist — kein `canSave`-Gate auf diesen vier Screens.
+
+**Scope-Einschraenkungen (bewusst, pro Screen begruendet):**
+
+- **`ExerciseEditorView`:** Snapshot deckt alle 17 editierbaren Felder ab.
+  Eine verworfene Muskel-/Equipment-/Compound-Aenderung wird zusaetzlich
+  auf das verknuepfte Custom-`ExerciseTemplate` zurueckgespiegelt (dieselbe
+  `syncCustomTemplate`-Funktion, die auch beim Editieren schreibt, DEL-163)
+  — sonst bliebe ein verworfener Wert dauerhaft in der Library-Vorlage
+  stehen.
+- **`DayEditorView`:** Snapshot deckt nur `metaSection` ab (Name/Wochentag/
+  Typ/Intensitaet/Zeitformat + Unterfelder). Die Uebungsliste (Hinzufuegen/
+  Loeschen/Reorder/Training starten) bleibt aussen vor — das sind eigene,
+  sofort wirksame Aktionen ohne Save/Cancel-Konzept, kein Teil eines
+  "Formulars". Der bestehende Reorder-Toggle im Header (teilt sich sein
+  Icon mit "Fertig"-Checkmark waehrend des Edit-Modes) und der neue
+  Save-Checkmark vertragen sich wegen `DeltiqHeader`s Cap von 2 Actions:
+  waehrend des Reorder-Modes zeigt NUR dessen eigener Checkmark (sonst
+  Icon-Kollision, siehe `DeltiqHeaderAction.id`-Dokumentation), ausserhalb
+  stehen beide nebeneinander.
+- **`PlanEditorView`:** Snapshot deckt nur `customName`/`weeks`/
+  `progressionTargetRIROverride` ab — NICHT `targetEnvironment` (eigener
+  Migrations-Flow mit `onChange`+mehreren Dialogen, Seiteneffekte auf
+  Uebungen) und NICHT `isActive` (deaktiviert andere Plaene global,
+  `setActive`). Ein einfaches Feld-Rueckschreiben wuerde diese
+  Seiteneffekte nicht mitverwerfen und koennte den Store inkonsistenter
+  zuruecklassen als vorher (z.B. kein Plan mehr aktiv). Zusaetzliche
+  Kollisions-Vermeidung: der bestehende "Neu rechnen"-Action (nur fuer
+  Generator-Plaene) + Reorder-Toggle + neuer Save-Checkmark sind bis zu
+  DREI Kandidaten fuer den 2-Action-Cap — Save faellt im seltenen Fall
+  "Generator-Plan + Tage + nicht editierend" bewusst weg, statt "Neu
+  rechnen" oder Reorder zu verdraengen (beide bleiben erreichbar; der
+  Checkmark ist hier ohnehin nur ein zweiter Weg zum selben `dismiss()`,
+  den der Chevron bei `!isDirty` schon bietet).
+- **`ProfileEditorView`:** Snapshot deckt nur die einfachen lokalen Felder
+  ab (Geschlecht, Geburtsdatum, Cardio-Coaching inkl. Ziel/Referenzzeit/
+  Renndatum/Wochenvolumen/Maxpuls, Wochenziel, Trainingsziel, Coaching-Ton).
+  Explizit NICHT erfasst: `heightCm`/`goalWeightKg`/Gewichtsmessungen
+  (eigener Save/Cancel-Flow in `BodyDataEditorView`), `environment`/
+  `equipmentProfile` (eigener Flow in `TrainingLocationEquipmentEditorView`),
+  `baselineAssessment` (eigener mehrstufiger Flow in
+  `BaselineCheckFlowView`), sowie alles, was der Machbarkeits-Karte
+  (`feasibilitySection`s accept/dismiss/acceptCustom) anfasst — eigene,
+  bereits explizit bestaetigte Aktionen mit Seiteneffekten auf andere
+  Plaene/Tage. Dieser Screen hatte zuvor KEINE Header-Actions — der neue
+  Save-Checkmark kollidiert mit nichts.
+
+Diese Scope-Entscheidungen (Fork 2 insgesamt sowie die vier Screen-
+spezifischen Ausschluesse) wurden autonom getroffen, nicht einzeln
+rueckgefragt — konsistent mit dem bisherigen Arbeitsmuster dieser Epic.
+Sie werden hier transparent dokumentiert, nicht erst am Ende verschwiegen.
+
+### Lokalisierung
+
+3 neue Keys (`editor.discardChanges.title`, `.confirmAction`,
+`.keepEditing`), DE/EN/TR, per chirurgischem Text-Splice eingefuegt (siehe
+Teil 13 fuer die Methodik — NIE `json.dump` auf die xcstrings-Datei, das
+sortiert/reformatiert die gesamte ~1.2MB-Datei neu). `git diff --stat`
+bestaetigt exakt 69 Insertions, 0 Deletions. Katalog 2089 → 2092 Keys,
+weiterhin 0 hardcodierte Strings (automatisiert bestaetigt via
+`generate_translations_md.py`), `TRANSLATIONS.md` regeneriert.
+
+### Linux-Kontrolle
+
+`swift build`/`swift test` gruen, 979/979 Tests (unveraendert — reiner
+UI-Layer-Refactor, alle 8 betroffenen Dateien sind
+`#if canImport(SwiftUI) && canImport(SwiftData)`-gegated und werden auf
+Linux nur geparst, nie type-gecheckt oder gerendert. "Build complete!"
+beweist hier ausschliesslich syntaktische Korrektheit, keine SwiftUI-
+Semantik — identische Einschraenkung wie der gesamte Rest dieser Epic.
+
+### Ehrliche Grenzen — kein Apple-/Geraetezugriff
+
+Folgendes kann aus dieser Session heraus NICHT verifiziert werden (kein
+Simulator-/Geraetezugriff):
+
+- Visuelles Layout aller 8 Kopfzeilen (Checkmark-Platzierung, Chevron,
+  Eyebrow) auf echten Displaygroessen/Dynamic Type.
+- Das tatsaechliche Erscheinen/Verschwinden des Discard-Dialogs bei
+  `isDirty`-Uebergaengen zur Laufzeit.
+- Dass der Snapshot-Rueckschreibe-Pfad (`apply(to:)`) auf einem echten
+  SwiftData-`ModelContext` wirklich alle Felder korrekt zuruecksetzt
+  (insbesondere `fiveKReferenceText`s Resync in `ProfileEditorView` und
+  die Custom-Template-Ruecksynchronisierung in `ExerciseEditorView`).
+- Die Icon-Kollisions-Vermeidung in `DayEditorView`/`PlanEditorView`
+  (Reorder-Checkmark vs. Save-Checkmark) im tatsaechlichen Edit-Mode-
+  Uebergang.
+- Dass `GearEditorView`/`ExerciseLibraryEditorSheet` innerhalb ihres
+  Sheets mit ausgeblendeter Navigationsleiste optisch korrekt aussehen
+  (Fork 1 — erstmaliger Einsatz von DeltiqHeader in einem Sheet-Kontext
+  in diesem Repo).
+
+Code-seitig (Typen, Bindings, Optionalitaet, Equatable-Konformanz der
+Snapshot-Structs) wurde durchgehend gegen die tatsaechlichen SwiftData-
+Modell-Definitionen gegengelesen; funktional korrekt kompilierender Code
+ist aber nicht dasselbe wie ein verifiziertes UI-Verhalten.

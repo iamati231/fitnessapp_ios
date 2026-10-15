@@ -7,12 +7,20 @@ import FitnessAppData
 /// Sheet for editing a single Exercise's parameters. Bound directly to the @Model
 /// instance — every field change persists via SwiftData's autosave.
 ///
-/// Gruppe B (Sheet), kein Gruppe-A-Kandidat: beide Call-Sites
-/// (`DayEditorView`, `ActiveWorkoutView`) praesentieren ausschliesslich per
-/// `.sheet(item:)` in einem frischen `NavigationStack` mit nativem
-/// "Fertig"-Toolbar-Button, es gibt keinen Push-Call-Site. Bekommt daher
-/// bewusst KEIN DeltiqHeader - die Form-Rows tragen die Deltiq-Karten-
-/// Flaeche (siehe Gruppe-B-Pass), navigationTitle/Toolbar bleiben nativ.
+/// Gruppe B (Sheet): beide Call-Sites (`DayEditorView`, `ActiveWorkoutView`)
+/// praesentieren ausschliesslich per `.sheet(item:)` in einem frischen
+/// `NavigationStack` — diese View haelt KEINEN eigenen `NavigationStack`
+/// (kein NavigationLink im Body noetig).
+///
+/// UI-Refactor (DeltiqHeader-Muster): ersetzt das vormals native, Cancel-
+/// lose "Fertig"-Toolbar durch DeltiqHeader (Checkmark oben rechts, Chevron
+/// oben links). Autosave-Screen ohne eigenen Save-Schritt — der Chevron
+/// braucht trotzdem Discard-Schutz: `ExerciseSnapshot` haelt den Zustand
+/// beim Oeffnen fest und schreibt ihn bei "Aenderungen verwerfen" zurueck
+/// (inkl. Custom-Template-Sync, siehe `syncCustomTemplate`) — sonst waere
+/// "Verwerfen" bei Live-Autosave nur eine leere UI-Behauptung ohne Wirkung.
+/// Der Loesch-Button/-Dialog (DEL-160) bleibt dabei komplett unveraendert
+/// ganz unten in roter Warnfarbe.
 @available(iOS 17.0, macOS 14.0, *)
 public struct ExerciseEditorView: View {
 
@@ -22,6 +30,15 @@ public struct ExerciseEditorView: View {
 
     /// DEL-160: Confirm-Gate fuer das Loeschen einer Custom-Uebung.
     @State private var showingDeleteConfirm = false
+
+    /// UI-Refactor (DeltiqHeader-Muster): zeigt den Verwerfen-Dialog, wenn
+    /// der Zurueck-Chevron bei vorhandenen Aenderungen (`isDirty`) angetippt
+    /// wird, statt sofort zu schliessen.
+    @State private var showingDiscardConfirm = false
+
+    /// UI-Refactor (DeltiqHeader-Muster fuer Autosave-Screens): Zustand beim
+    /// Oeffnen des Sheets — siehe `ExerciseSnapshot` weiter unten.
+    @State private var snapshot: ExerciseSnapshot
 
     /// DEL-143: User-Toggle für RIR-Tooltips, gleicher AppStorage-Key
     /// wie SetRow. Default true.
@@ -34,6 +51,7 @@ public struct ExerciseEditorView: View {
 
     public init(exercise: Exercise) {
         self.exercise = exercise
+        _snapshot = State(initialValue: ExerciseSnapshot.capture(from: exercise))
     }
 
     /// True wenn die Uebung zu einem Template-basierten Plan gehoert
@@ -55,7 +73,35 @@ public struct ExerciseEditorView: View {
         )
     }
 
+    /// UI-Refactor (DeltiqHeader-Muster): Vergleich gegen `ExerciseSnapshot`
+    /// vom Oeffnen des Sheets — `ExerciseSnapshot` ist `Equatable`.
+    private var isDirty: Bool {
+        snapshot != ExerciseSnapshot.capture(from: exercise)
+    }
+
     public var body: some View {
+        VStack(spacing: 0) {
+            // UI-Refactor (DeltiqHeader-Muster fuer Editoren): ersetzt das
+            // vormals native "Fertig"-Toolbar. Autosave-Screen ohne eigenen
+            // Speicher-Schritt — der Checkmark ist ein reines "Fertig",
+            // deshalb ohne `isDisabled` (kein Validitaets-Gate auf diesem
+            // Screen). Der Chevron fragt bei `isDirty` nach, statt sofort zu
+            // schliessen (siehe `ExerciseSnapshot` fuer den Rueckroll-Pfad).
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
+                title: exercise.name.isEmpty
+                    ? String(localized: "active.addExercise", bundle: .module)
+                    : exercise.displayName,
+                onBack: { isDirty ? (showingDiscardConfirm = true) : dismiss() },
+                actions: [
+                    DeltiqHeaderAction(
+                        systemImage: "checkmark",
+                        accessibilityLabel: String(localized: "common.done", bundle: .module)
+                    ) {
+                        dismiss()
+                    }
+                ]
+            )
         Form {
             // DEL-062: Cardio + Zeit-basiert sind mutually-exclusive — der
             // onChange-Handler verhindert, dass beide gleichzeitig true
@@ -242,22 +288,16 @@ public struct ExerciseEditorView: View {
             }
         }
         .scrollContentBackground(.hidden)
+        }
         .background(Color.Deltiq.background.ignoresSafeArea())
-        // DEL-124: navigationTitle via displayName, damit Library-Uebungen
-        // im EN/TR-Mode auch hier korrekt rendern.
-        .navigationTitle(exercise.name.isEmpty
-                         ? String(localized: "active.addExercise", bundle: .module)
-                         : exercise.displayName)
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
         .keyboardDismissToolbar()
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button { dismiss() } label: {
-                    Text("common.done", bundle: .module)
-                }
-            }
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .navigationBarBackButtonHidden(true)
+        .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+            revertToSnapshot()
+            dismiss()
         }
         // DEL-160: Confirm-Dialog vor dem dauerhaften Loeschen.
         .confirmationDialog(
@@ -301,6 +341,22 @@ public struct ExerciseEditorView: View {
         try? modelContext.save()
 
         dismiss()
+    }
+
+    /// UI-Refactor (DeltiqHeader-Muster): rollt alle Felder auf den Zustand
+    /// beim Oeffnen zurueck — noetig, weil `exercise` live autosaved und
+    /// "Verwerfen" sonst nur eine leere UI-Behauptung waere. Spiegelt eine
+    /// evtl. verworfene Muskel-/Equipment-/Compound-Aenderung zusaetzlich
+    /// auf das Custom-Template zurueck (dieselbe Sync-Funktion, die
+    /// `customMetadataSection` beim Editieren nutzt, DEL-163) — sonst
+    /// bliebe ein verworfener Wert dauerhaft in der Library-Vorlage stehen.
+    private func revertToSnapshot() {
+        snapshot.apply(to: exercise)
+        syncCustomTemplate { template in
+            template.primaryMuscle = snapshot.primaryMuscleRaw.flatMap(MuscleGroup.init(rawValue:)) ?? .chest
+            template.equipment = snapshot.equipmentRaw.flatMap(Equipment.init(rawValue:)) ?? .bodyweight
+            template.isSystemCompound = snapshot.isCompound
+        }
     }
 
     /// DEL-159: True wenn die Uebung KEINEN Library-Eintrag matcht — also
@@ -514,6 +570,81 @@ public struct ExerciseEditorView: View {
             get: { ProgressionStep(closestTo: exercise.progressionStep) },
             set: { exercise.progressionStep = $0.rawValue }
         )
+    }
+}
+
+/// UI-Refactor (DeltiqHeader-Muster fuer Autosave-Screens): `Exercise` ist
+/// `@Bindable` und autosaved direkt in SwiftData — es gibt keinen Draft wie
+/// bei den anderen Editoren. Dieser Snapshot haelt alle in diesem Sheet
+/// editierbaren Felder beim Oeffnen fest, damit `isDirty` (Chevron-Discard-
+/// Schutz) erkennbar ist UND "Aenderungen verwerfen" die bereits autosaved
+/// geschriebenen Live-Werte tatsaechlich zurueckrollen kann.
+@available(iOS 17.0, macOS 14.0, *)
+private struct ExerciseSnapshot: Equatable {
+    var customName: String?
+    var isCardio: Bool
+    var isTimeBased: Bool
+    var sets: Int
+    var repsMin: Int
+    var repsMax: Int
+    var restSeconds: Int
+    var targetRir: Float
+    var suggestedWeight: Double?
+    var targetDistanceKm: Double?
+    var targetDurationMinutes: Int?
+    var cardioEquipmentRaw: String?
+    var notes: String?
+    var primaryMuscleRaw: String?
+    var equipmentRaw: String?
+    var isCompound: Bool
+    var smartProgressionEnabled: Bool
+    var progressionStep: Double
+
+    static func capture(from exercise: Exercise) -> ExerciseSnapshot {
+        ExerciseSnapshot(
+            customName: exercise.customName,
+            isCardio: exercise.isCardio,
+            isTimeBased: exercise.isTimeBased,
+            sets: exercise.sets,
+            repsMin: exercise.repsMin,
+            repsMax: exercise.repsMax,
+            restSeconds: exercise.restSeconds,
+            targetRir: exercise.targetRir,
+            suggestedWeight: exercise.suggestedWeight,
+            targetDistanceKm: exercise.targetDistanceKm,
+            targetDurationMinutes: exercise.targetDurationMinutes,
+            cardioEquipmentRaw: exercise.cardioEquipmentRaw,
+            notes: exercise.notes,
+            primaryMuscleRaw: exercise.primaryMuscleRaw,
+            equipmentRaw: exercise.equipmentRaw,
+            isCompound: exercise.isCompound,
+            smartProgressionEnabled: exercise.smartProgressionEnabled,
+            progressionStep: exercise.progressionStep
+        )
+    }
+
+    /// Schreibt alle Felder zurueck auf die Exercise-Instanz. Die gespiegelte
+    /// Custom-Template-Synchronisierung (Muskel/Equipment/Compound) passiert
+    /// separat in `ExerciseEditorView.revertToSnapshot()`.
+    func apply(to exercise: Exercise) {
+        exercise.customName = customName
+        exercise.isCardio = isCardio
+        exercise.isTimeBased = isTimeBased
+        exercise.sets = sets
+        exercise.repsMin = repsMin
+        exercise.repsMax = repsMax
+        exercise.restSeconds = restSeconds
+        exercise.targetRir = targetRir
+        exercise.suggestedWeight = suggestedWeight
+        exercise.targetDistanceKm = targetDistanceKm
+        exercise.targetDurationMinutes = targetDurationMinutes
+        exercise.cardioEquipmentRaw = cardioEquipmentRaw
+        exercise.notes = notes
+        exercise.primaryMuscleRaw = primaryMuscleRaw
+        exercise.equipmentRaw = equipmentRaw
+        exercise.isCompound = isCompound
+        exercise.smartProgressionEnabled = smartProgressionEnabled
+        exercise.progressionStep = progressionStep
     }
 }
 #endif

@@ -456,15 +456,24 @@ public struct DeltiqHeaderAction: Identifiable {
     /// keinen gesprochenen Namen. `nil` aendert nichts am bisherigen
     /// Verhalten — additiv, kein Eingriff in bestehende Call-Sites.
     public let accessibilityLabel: String?
+    /// UI-Refactor (DeltiqHeader-Muster fuer Editoren): fuer einen
+    /// Speichern-Checkmark, der nur bei gueltigem Formular aktiv sein soll
+    /// (`!canSave`). Additiv, Default `false` aendert nichts an bestehenden
+    /// Call-Sites. Dimmt das Icon UND deaktiviert den Tap — ein deaktivierter
+    /// Menu-Trigger ergibt keinen Sinn, betrifft also praktisch nur den
+    /// `action:`-Initializer.
+    public let isDisabled: Bool
 
     public init(
         systemImage: String,
         isHighlighted: Bool = false,
+        isDisabled: Bool = false,
         accessibilityLabel: String? = nil,
         action: @escaping () -> Void
     ) {
         self.systemImage = systemImage
         self.isHighlighted = isHighlighted
+        self.isDisabled = isDisabled
         self.action = action
         self.menuContent = nil
         self.accessibilityLabel = accessibilityLabel
@@ -478,6 +487,7 @@ public struct DeltiqHeaderAction: Identifiable {
     ) {
         self.systemImage = systemImage
         self.isHighlighted = isHighlighted
+        self.isDisabled = false
         self.action = nil
         self.menuContent = { AnyView(menu()) }
         self.accessibilityLabel = accessibilityLabel
@@ -566,6 +576,7 @@ public struct DeltiqHeader: View {
                     Button(action: action) {
                         headerActionIcon(headerAction)
                     }
+                    .disabled(headerAction.isDisabled)
                     .conditionalAccessibilityLabel(headerAction.accessibilityLabel)
                 }
             }
@@ -577,10 +588,37 @@ public struct DeltiqHeader: View {
     private func headerActionIcon(_ headerAction: DeltiqHeaderAction) -> some View {
         Image(systemName: headerAction.systemImage)
             .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(Color.deltiqOrange)
+            .foregroundStyle(headerAction.isDisabled ? Color.secondary.opacity(0.4) : Color.deltiqOrange)
             .frame(width: 32, height: 32)
             .background(headerAction.isHighlighted ? Color.deltiqOrange.opacity(0.16) : Color.Deltiq.fill)
             .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+    }
+}
+
+// MARK: - UI-Refactor: einheitlicher Discard-Dialog fuer Editoren
+
+/// UI-Refactor (DeltiqHeader-Muster fuer Editoren): gemeinsamer "Änderungen
+/// verwerfen?"-Dialog, den jeder Editor mit Entwurfs-/Autosave-Zustand ueber
+/// seinen Zurueck-/Abbrechen-Trigger einhaengt, statt die Dialog-Bausteine
+/// pro Screen zu duplizieren. Der Aufrufer traegt die eigentliche
+/// Dirty-Pruefung (`onBack: { isDirty ? (showingDiscard = true) : dismiss() }`)
+/// sowie die Verwerfen-Aktion selbst (reiner `dismiss()` bei Entwurfs-
+/// Screens, ein Rueck-Schreiben der Schnappschuss-Werte bei Autosave-
+/// Screens) — dieser Modifier liefert nur Text + Buttons.
+extension View {
+    func discardChangesConfirmation(isPresented: Binding<Bool>, onDiscard: @escaping () -> Void) -> some View {
+        confirmationDialog(
+            Text("editor.discardChanges.title", bundle: .module),
+            isPresented: isPresented,
+            titleVisibility: .visible
+        ) {
+            Button(role: .destructive, action: onDiscard) {
+                Text("editor.discardChanges.confirmAction", bundle: .module)
+            }
+            Button(role: .cancel) {} label: {
+                Text("editor.discardChanges.keepEditing", bundle: .module)
+            }
+        }
     }
 }
 

@@ -65,8 +65,21 @@ public struct DayEditorView: View {
     /// von "abgebrochen".
     @State private var didStartSessionForAdHocDay = false
 
+    /// UI-Refactor (DeltiqHeader-Muster): zeigt den Verwerfen-Dialog, wenn
+    /// der Zurueck-Chevron bei vorhandenen Aenderungen (`isDirty`) angetippt
+    /// wird, statt sofort zu schliessen.
+    @State private var showingDiscardConfirm = false
+
+    /// UI-Refactor (DeltiqHeader-Muster fuer Autosave-Screens): Zustand der
+    /// `metaSection`-Felder beim Oeffnen — siehe `TrainingDaySnapshot`. Die
+    /// Uebungsliste (Hinzufuegen/Loeschen/Reorder/Training starten) bleibt
+    /// bewusst ausserhalb: das sind eigene, sofort wirksame Aktionen ohne
+    /// Save/Cancel-Konzept, kein Teil dieses "Formulars".
+    @State private var snapshot: TrainingDaySnapshot
+
     public init(day: TrainingDay) {
         self.day = day
+        _snapshot = State(initialValue: TrainingDaySnapshot.capture(from: day))
     }
 
     public var body: some View {
@@ -77,7 +90,7 @@ public struct DayEditorView: View {
             DeltiqHeader(
                 eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
                 title: day.name.isEmpty ? String(localized: "day.editor.untitled", bundle: .module) : day.displayName,
-                onBack: { dismiss() },
+                onBack: { isDirty ? (showingDiscardConfirm = true) : dismiss() },
                 actions: headerActions
             )
 
@@ -118,6 +131,10 @@ public struct DayEditorView: View {
         // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
         // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
         .deltiqSwipeBackEnabled()
+        .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+            snapshot.apply(to: day)
+            dismiss()
+        }
         .sheet(isPresented: $showingPicker) {
             // DEL-210: einheitliche Übungs-Auswahl — dieselbe View wie die
             // Bibliothek unter Einstellungen, im Picker-Modus.
@@ -252,22 +269,42 @@ public struct DayEditorView: View {
     /// Toolbar-Item. Bei readOnly-Templates, leerem Uebungs-Array oder
     /// Ruhetagen bleibt die Aktion ganz weg. `editMode` selbst ist auf
     /// macOS/watchOS unavailable - leeres Array dort.
+    ///
+    /// UI-Refactor (DeltiqHeader-Muster): zusaetzlich zum Reorder-Toggle
+    /// steht hier jetzt der Save-Checkmark (`saveAction`). Waehrend des
+    /// Reorder-Modus zeigt NUR dessen eigener Done-Checkmark — sonst
+    /// kollidieren zwei gleichzeitige Actions mit demselben `systemImage`
+    /// (siehe `DeltiqHeaderAction.id`-Dokumentation in Theme.swift).
+    /// Ausserhalb des Reorder-Modus stehen beide nebeneinander (verschiedene
+    /// Icons, der Cap von 2 Actions reicht genau).
     private var headerActions: [DeltiqHeaderAction] {
         #if os(iOS)
-        guard !isReadOnly, !day.activeExercises.isEmpty, !isRestDay else { return [] }
-        return [
-            DeltiqHeaderAction(
-                systemImage: editMode?.wrappedValue.isEditing == true ? "checkmark" : "arrow.up.arrow.down",
-                isHighlighted: editMode?.wrappedValue.isEditing == true
+        if !isReadOnly, !day.activeExercises.isEmpty, !isRestDay {
+            let isEditing = editMode?.wrappedValue.isEditing == true
+            let reorderAction = DeltiqHeaderAction(
+                systemImage: isEditing ? "checkmark" : "arrow.up.arrow.down",
+                isHighlighted: isEditing
             ) {
                 withAnimation {
-                    editMode?.wrappedValue = editMode?.wrappedValue.isEditing == true ? .inactive : .active
+                    editMode?.wrappedValue = isEditing ? .inactive : .active
                 }
             }
-        ]
-        #else
-        return []
+            return isEditing ? [reorderAction] : [reorderAction, saveAction]
+        }
         #endif
+        return [saveAction]
+    }
+
+    /// UI-Refactor (DeltiqHeader-Muster): Autosave-Screen (siehe
+    /// `ExerciseEditorView`) — kein echter Speicher-Schritt, reines
+    /// "Fertig". Kein Validitaets-Gate auf diesem Screen → kein `isDisabled`.
+    private var saveAction: DeltiqHeaderAction {
+        DeltiqHeaderAction(
+            systemImage: "checkmark",
+            accessibilityLabel: String(localized: "common.done", bundle: .module)
+        ) {
+            dismiss()
+        }
     }
 
     /// Eyebrow-Stil statt der nativen List-Section-Header-Konvention.
@@ -341,6 +378,12 @@ public struct DayEditorView: View {
     /// Trainingstag mehr anlegen. Jetzt strikt nach Typ (DEL-021/023).
     private var isRestDay: Bool {
         day.type == .rest
+    }
+
+    /// UI-Refactor (DeltiqHeader-Muster): Vergleich gegen `TrainingDaySnapshot`
+    /// vom Oeffnen des Sheets — nur die `metaSection`-Felder, siehe dort.
+    private var isDirty: Bool {
+        snapshot != TrainingDaySnapshot.capture(from: day)
     }
 
     private var metaSection: some View {
@@ -1258,6 +1301,50 @@ private struct ExerciseRow: View {
             .replacingOccurrences(of: "%1$lld", with: "\(exercise.sets)")
             .replacingOccurrences(of: "%2$@",   with: repsText)
             .replacingOccurrences(of: "%3$lld", with: "\(exercise.restSeconds)")
+    }
+}
+
+/// UI-Refactor (DeltiqHeader-Muster fuer Autosave-Screens): `TrainingDay` ist
+/// `@Bindable` und autosaved direkt in SwiftData. Haelt nur die `metaSection`-
+/// Felder fest (Name/Wochentag/Typ/Intensitaet/Zeitformat + dessen Unterfelder)
+/// — NICHT die Uebungsliste, deren Hinzufuegen/Loeschen/Reorder/Training-
+/// Starten eigene, sofort wirksame Aktionen ohne Save/Cancel-Konzept sind.
+@available(iOS 17.0, macOS 14.0, *)
+private struct TrainingDaySnapshot: Equatable {
+    var customName: String?
+    var weekday: Int
+    var type: DayType
+    var nextIntensity: DayIntensity
+    var timeFormat: WorkoutTimeFormat?
+    var timeCapMinutes: Int?
+    var circuitRounds: Int?
+    var circuitRestSeconds: Int?
+    var circuitMode: CircuitRoundMode?
+
+    static func capture(from day: TrainingDay) -> TrainingDaySnapshot {
+        TrainingDaySnapshot(
+            customName: day.customName,
+            weekday: day.weekday,
+            type: day.type,
+            nextIntensity: day.nextIntensity,
+            timeFormat: day.timeFormat,
+            timeCapMinutes: day.timeCapMinutes,
+            circuitRounds: day.circuitRounds,
+            circuitRestSeconds: day.circuitRestSeconds,
+            circuitMode: day.circuitMode
+        )
+    }
+
+    func apply(to day: TrainingDay) {
+        day.customName = customName
+        day.weekday = weekday
+        day.type = type
+        day.nextIntensity = nextIntensity
+        day.timeFormat = timeFormat
+        day.timeCapMinutes = timeCapMinutes
+        day.circuitRounds = circuitRounds
+        day.circuitRestSeconds = circuitRestSeconds
+        day.circuitMode = circuitMode
     }
 }
 #endif

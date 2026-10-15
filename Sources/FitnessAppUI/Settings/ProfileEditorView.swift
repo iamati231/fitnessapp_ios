@@ -108,11 +108,29 @@ public struct ProfileEditorView: View {
         let newEnv: EnvironmentType
     }
 
+    /// UI-Refactor (DeltiqHeader-Muster): zeigt den Verwerfen-Dialog, wenn
+    /// der Zurueck-Chevron bei vorhandenen Aenderungen (`isDirty`) angetippt
+    /// wird, statt sofort zu schliessen.
+    @State private var showingDiscardConfirm = false
+
+    /// UI-Refactor (DeltiqHeader-Muster fuer Autosave-Screens): Zustand der
+    /// einfachen, lokalen Profil-Felder beim Oeffnen — siehe
+    /// `ProfileMetaSnapshot`. Bewusst NICHT Teil davon: `heightCm`/
+    /// `goalWeightKg`/Gewichtsmessungen (eigener Save/Cancel-Flow in
+    /// `BodyDataEditorView`), `environment`/`equipmentProfile` (eigener Flow
+    /// in `TrainingLocationEquipmentEditorView`), `baselineAssessment`
+    /// (eigener mehrstufiger Flow in `BaselineCheckFlowView`), sowie alles,
+    /// was `feasibilitySection`s accept/dismiss/acceptCustom anfasst (eigene,
+    /// bereits explizit bestaetigte Aktionen mit Seiteneffekten auf andere
+    /// Plaene/Tage, analog `targetEnvironment` in `PlanEditorView`).
+    @State private var snapshot: ProfileMetaSnapshot
+
     public init(profile: UserBodyProfile) {
         self.profile = profile
         _fiveKReferenceText = State(
             initialValue: profile.current5kReferenceSeconds.map(PaceCalculator.formatDuration) ?? ""
         )
+        _snapshot = State(initialValue: ProfileMetaSnapshot.capture(from: profile))
     }
 
     public var body: some View {
@@ -123,7 +141,8 @@ public struct ProfileEditorView: View {
             DeltiqHeader(
                 eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
                 title: String(localized: "profile.editor.title", bundle: .module),
-                onBack: { dismiss() }
+                onBack: { isDirty ? (showingDiscardConfirm = true) : dismiss() },
+                actions: [saveAction]
             )
 
             VStack(alignment: .leading, spacing: 18) {
@@ -147,6 +166,10 @@ public struct ProfileEditorView: View {
         // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
         .deltiqSwipeBackEnabled()
         .keyboardDismissToolbar()
+        .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+            revertToSnapshot()
+            dismiss()
+        }
         // DEL-047 + DEL-049: Trainingsort-Aenderung im Profil triggert einen
         // Adapt- oder Restore-Prompt ueber die Uebungen. Adapt bei "frischer"
         // Aenderung, Restore wenn irgendein Plan archivierte Originale hat,
@@ -339,6 +362,35 @@ public struct ProfileEditorView: View {
     // DEL-118: route durch die zentrale .localizedName-Extension.
     private func environmentLabel(_ env: EnvironmentType) -> String {
         String(localized: env.localizedName)
+    }
+
+    // MARK: - UI-Refactor (DeltiqHeader-Muster)
+
+    /// Vergleich gegen `ProfileMetaSnapshot` vom Oeffnen des Sheets — siehe
+    /// dessen Scope-Begruendung bei `snapshot` oben.
+    private var isDirty: Bool {
+        snapshot != ProfileMetaSnapshot.capture(from: profile)
+    }
+
+    /// Autosave-Screen (siehe `ExerciseEditorView`) — kein echter Speicher-
+    /// Schritt, reines "Fertig". Kein Validitaets-Gate auf diesem Screen →
+    /// kein `isDisabled`.
+    private var saveAction: DeltiqHeaderAction {
+        DeltiqHeaderAction(
+            systemImage: "checkmark",
+            accessibilityLabel: String(localized: "common.done", bundle: .module)
+        ) {
+            dismiss()
+        }
+    }
+
+    /// Schreibt die Snapshot-Felder zurueck UND resynct den `fiveKReferenceText`-
+    /// Eingabepuffer (siehe dessen Doc-Kommentar) — sonst zeigt das Textfeld
+    /// nach einem Discard weiter den zuletzt getippten, nicht mehr gueltigen
+    /// String statt des wiederhergestellten Modellwerts.
+    private func revertToSnapshot() {
+        snapshot.apply(to: profile)
+        fiveKReferenceText = snapshot.current5kReferenceSeconds.map(PaceCalculator.formatDuration) ?? ""
     }
 
     // MARK: - Health
@@ -1102,6 +1154,55 @@ public struct ProfileEditorView: View {
 
     private static var minBirthDate: Date {
         Calendar.current.date(byAdding: .year, value: -125, to: Date()) ?? Date.distantPast
+    }
+}
+
+/// UI-Refactor (DeltiqHeader-Muster fuer Autosave-Screens): `UserBodyProfile`
+/// ist `@Bindable` und autosaved direkt in SwiftData. Haelt bewusst NUR die
+/// einfachen, rein lokalen Profil-Felder fest — siehe die Scope-Begruendung
+/// bei `ProfileEditorView.snapshot`.
+@available(iOS 17.0, macOS 14.0, *)
+private struct ProfileMetaSnapshot: Equatable {
+    var profile: BodyFormulaProfile
+    var birthDate: Date
+    var cardioCoachingEnabled: Bool
+    var cardioGoal: CardioGoal
+    var current5kReferenceSeconds: Int?
+    var cardioRaceDate: Date?
+    var weeklyBaseVolumeKm: Double?
+    var maxHeartRateBpm: Int?
+    var weeklyWorkoutGoal: Int
+    var trainingGoal: TrainingGoal
+    var coachingTone: CoachingTone
+
+    static func capture(from profile: UserBodyProfile) -> ProfileMetaSnapshot {
+        ProfileMetaSnapshot(
+            profile: profile.profile,
+            birthDate: profile.birthDate,
+            cardioCoachingEnabled: profile.cardioCoachingEnabled,
+            cardioGoal: profile.cardioGoal,
+            current5kReferenceSeconds: profile.current5kReferenceSeconds,
+            cardioRaceDate: profile.cardioRaceDate,
+            weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm,
+            maxHeartRateBpm: profile.maxHeartRateBpm,
+            weeklyWorkoutGoal: profile.weeklyWorkoutGoal,
+            trainingGoal: profile.trainingGoal,
+            coachingTone: profile.coachingTone
+        )
+    }
+
+    func apply(to profile: UserBodyProfile) {
+        profile.profile = self.profile
+        profile.birthDate = birthDate
+        profile.cardioCoachingEnabled = cardioCoachingEnabled
+        profile.cardioGoal = cardioGoal
+        profile.current5kReferenceSeconds = current5kReferenceSeconds
+        profile.cardioRaceDate = cardioRaceDate
+        profile.weeklyBaseVolumeKm = weeklyBaseVolumeKm
+        profile.maxHeartRateBpm = maxHeartRateBpm
+        profile.weeklyWorkoutGoal = weeklyWorkoutGoal
+        profile.trainingGoal = trainingGoal
+        profile.coachingTone = coachingTone
     }
 }
 

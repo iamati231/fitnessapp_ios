@@ -47,8 +47,27 @@ public struct PlanEditorView: View {
     @State private var pendingGlobalSync: PendingEnvironmentSwap?
     @State private var swapResultToast: String?
 
+    /// UI-Refactor (DeltiqHeader-Muster): zeigt den Verwerfen-Dialog, wenn
+    /// der Zurueck-Chevron bei vorhandenen Aenderungen (`isDirty`) angetippt
+    /// wird, statt sofort zu schliessen.
+    @State private var showingDiscardConfirm = false
+
+    /// UI-Refactor (DeltiqHeader-Muster fuer Autosave-Screens): Zustand der
+    /// einfachen `metaSection`/`settingsSection`-Felder beim Oeffnen — siehe
+    /// `PlanMetaSnapshot`. `targetEnvironment` und `isActive` sind bewusst
+    /// NICHT Teil davon: beide loesen bereits eigene, sorgfaeltig gestaltete
+    /// Bestaetigungs-Flows mit Seiteneffekten auf andere Entitaeten aus
+    /// (Umgebungs-Wechsel-Migration via `onChange`+Dialoge oben;
+    /// Active-Toggle deaktiviert andere Plaene in `setActive`) — ein simples
+    /// Feld-Rueckschreiben wuerde diese Seiteneffekte NICHT mitverwerfen und
+    /// koennte den Store inkonsistenter zuruecklassen als vorher (z.B. kein
+    /// Plan mehr aktiv). Die Tage-Liste bleibt aus demselben Grund wie in
+    /// `DayEditorView` aussen vor (eigene sofort wirksame Aktionen).
+    @State private var snapshot: PlanMetaSnapshot
+
     public init(plan: TrainingPlan) {
         self.plan = plan
+        _snapshot = State(initialValue: PlanMetaSnapshot.capture(from: plan))
     }
 
     public var body: some View {
@@ -62,7 +81,7 @@ public struct PlanEditorView: View {
             DeltiqHeader(
                 eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
                 title: plan.name.isEmpty ? String(localized: "tab.plan", bundle: .module) : plan.displayName,
-                onBack: { dismiss() },
+                onBack: { isDirty ? (showingDiscardConfirm = true) : dismiss() },
                 actions: headerActions
             )
 
@@ -87,6 +106,10 @@ public struct PlanEditorView: View {
         // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
         // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
         .deltiqSwipeBackEnabled()
+        .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+            snapshot.apply(to: plan)
+            dismiss()
+        }
         // DEL-022 + DEL-031 + DEL-049 + DEL-050 — Trainingsort-Wechsel feuert
         // einen mehrstufigen Flow:
         //
@@ -329,7 +352,14 @@ public struct PlanEditorView: View {
         false
     }
 
-    /// Zwei unabhaengige Header-Aktionen, je nur sichtbar wenn zutreffend:
+    /// UI-Refactor (DeltiqHeader-Muster): Vergleich gegen `PlanMetaSnapshot`
+    /// vom Oeffnen des Sheets — siehe dessen Scope-Begruendung oben.
+    private var isDirty: Bool {
+        snapshot != PlanMetaSnapshot.capture(from: plan)
+    }
+
+    /// Bis zu drei unabhaengige Header-Aktionen, je nur sichtbar wenn
+    /// zutreffend:
     ///
     /// * README 2.20 "neu rechnen" — nur fuer Plaene mit `generatorInput`
     ///   (ueber "Plan bauen" entstanden), auf allen Plattformen.
@@ -339,6 +369,16 @@ public struct PlanEditorView: View {
     ///   die Aktion ganz weg (kein Reorder ohne mind. 2 Tage sinnvoll).
     ///   `editMode` selbst ist auf macOS/watchOS unavailable - dort iOS-only
     ///   gegated (siehe Kommentar an der Property-Deklaration).
+    /// * UI-Refactor (DeltiqHeader-Muster): Save-Checkmark, ganz am Ende
+    ///   angehaengt. `DeltiqHeader` kappt bei 2 Actions (`actions.prefix(2)`,
+    ///   Theme.swift) — faellt bei generatorInput+Tage+nicht-editing (beide
+    ///   anderen Slots bereits belegt) bewusst weg, statt "Neu rechnen" oder
+    ///   den Reorder-Toggle zu verdraengen: beide bleiben ERREICHBAR. Der
+    ///   Checkmark ist auf diesem Autosave-Screen ohnehin nur ein zweiter
+    ///   Weg zum selben `dismiss()`, den der Chevron (sofern nicht
+    ///   `isDirty`) schon bietet. Waehrend des Reorder-Modus zeigt NUR
+    ///   dessen eigener Done-Checkmark (sonst Icon-Kollision, siehe
+    ///   `DeltiqHeaderAction.id`-Dokumentation in Theme.swift).
     private var headerActions: [DeltiqHeaderAction] {
         var actions: [DeltiqHeaderAction] = []
         // README 2.20: nur Plaene, die ueber "Plan bauen" entstanden sind,
@@ -351,17 +391,32 @@ public struct PlanEditorView: View {
         }
         #if os(iOS)
         if !isReadOnly, !plan.days.isEmpty {
+            let isEditing = editMode?.wrappedValue.isEditing == true
             actions.append(DeltiqHeaderAction(
-                systemImage: editMode?.wrappedValue.isEditing == true ? "checkmark" : "arrow.up.arrow.down",
-                isHighlighted: editMode?.wrappedValue.isEditing == true
+                systemImage: isEditing ? "checkmark" : "arrow.up.arrow.down",
+                isHighlighted: isEditing
             ) {
                 withAnimation {
-                    editMode?.wrappedValue = editMode?.wrappedValue.isEditing == true ? .inactive : .active
+                    editMode?.wrappedValue = isEditing ? .inactive : .active
                 }
             })
+            if isEditing { return actions }
         }
         #endif
+        actions.append(saveAction)
         return actions
+    }
+
+    /// UI-Refactor (DeltiqHeader-Muster): Autosave-Screen (siehe
+    /// `ExerciseEditorView`) — kein echter Speicher-Schritt, reines
+    /// "Fertig". Kein Validitaets-Gate auf diesem Screen → kein `isDisabled`.
+    private var saveAction: DeltiqHeaderAction {
+        DeltiqHeaderAction(
+            systemImage: "checkmark",
+            accessibilityLabel: String(localized: "common.done", bundle: .module)
+        ) {
+            dismiss()
+        }
     }
 
     // MARK: Sections
@@ -745,6 +800,31 @@ private struct DayRow: View {
         case .light:  return "Leicht"
         case .heavy:  return "Schwer"
         }
+    }
+}
+
+/// UI-Refactor (DeltiqHeader-Muster fuer Autosave-Screens): `TrainingPlan`
+/// ist `@Bindable` und autosaved direkt in SwiftData. Haelt bewusst NUR die
+/// simplen Felder ohne Seiteneffekte fest — siehe die Scope-Begruendung bei
+/// `PlanEditorView.snapshot`.
+@available(iOS 17.0, macOS 14.0, *)
+private struct PlanMetaSnapshot: Equatable {
+    var customName: String?
+    var weeks: Int
+    var progressionTargetRIROverride: Float?
+
+    static func capture(from plan: TrainingPlan) -> PlanMetaSnapshot {
+        PlanMetaSnapshot(
+            customName: plan.customName,
+            weeks: plan.weeks,
+            progressionTargetRIROverride: plan.progressionTargetRIROverride
+        )
+    }
+
+    func apply(to plan: TrainingPlan) {
+        plan.customName = customName
+        plan.weeks = weeks
+        plan.progressionTargetRIROverride = progressionTargetRIROverride
     }
 }
 #endif

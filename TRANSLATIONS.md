@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2089 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2092 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2089 / 2089** (100%) | 0 |
-| 🇬🇧 English (EN) | **2089 / 2089** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2089 / 2089** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2092 / 2092** (100%) | 0 |
+| 🇬🇧 English (EN) | **2092 / 2092** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2092 / 2092** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -864,10 +864,13 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `difficulty.beginner` | Anfänger | Beginner | Başlangıç |
 | `difficulty.intermediate` | Fortgeschritten | Intermediate | Orta |
 
-## `editor.*`  (32 Keys)
+## `editor.*`  (35 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `editor.discardChanges.confirmAction` | Änderungen verwerfen | Discard Changes | Değişiklikleri Sil |
+| `editor.discardChanges.keepEditing` | Weiter bearbeiten | Keep Editing | Düzenlemeye Devam Et |
+| `editor.discardChanges.title` | Änderungen verwerfen? | Discard changes? | Değişiklikler silinsin mi? |
 | `editor.exercise.delete` | Übung löschen | Delete exercise | Hareketi sil |
 | `editor.exercise.deleteConfirmCta` | Löschen | Delete | Sil |
 | `editor.exercise.deleteConfirmMessage` | Bist du sicher? Diese Custom-Übung verschwindet dauerhaft. Bereits geloggte Trainings bleiben erhalten. | Are you sure? This custom exercise is removed permanently. Already logged workouts stay intact. | Emin misin? Bu özel hareket kalıcı olarak silinir. Kaydedilmiş antrenmanlar korunur. |

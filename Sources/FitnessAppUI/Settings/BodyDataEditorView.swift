@@ -34,6 +34,10 @@ struct BodyDataEditorView: View {
     @State private var draftGoalWeightKg: Double?
     @State private var draftWeightKg: Double?
     @State private var weightTouched = false
+    /// UI-Refactor (DeltiqHeader-Muster): zeigt den Verwerfen-Dialog, wenn
+    /// der Zurueck-Chevron bei vorhandenen Aenderungen (`isDirty`) angetippt
+    /// wird, statt sofort zu schliessen.
+    @State private var showingDiscardConfirm = false
 
     init(profile: UserBodyProfile) {
         self.profile = profile
@@ -44,35 +48,57 @@ struct BodyDataEditorView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    heightSection
-                    weightSection
-                    goalSection
+            VStack(spacing: 0) {
+                // UI-Refactor (DeltiqHeader-Muster fuer Editoren): ersetzt
+                // natives Cancel/Save-Toolbar. Speichern sitzt jetzt als
+                // Checkmark oben rechts (deaktiviert bei `!canSave`), der
+                // Chevron oben links fragt bei Aenderungen nach statt sofort
+                // zu schliessen (reiner Draft-Screen — bei Discard wurde
+                // noch nichts persistiert, `dismiss()` reicht).
+                DeltiqHeader(
+                    eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                    title: String(localized: "profile.bodyData.title", bundle: .module),
+                    onBack: { isDirty ? (showingDiscardConfirm = true) : dismiss() },
+                    actions: [
+                        DeltiqHeaderAction(
+                            systemImage: "checkmark",
+                            isDisabled: !canSave,
+                            accessibilityLabel: String(localized: "common.save", bundle: .module)
+                        ) {
+                            save()
+                        }
+                    ]
+                )
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        heightSection
+                        weightSection
+                        goalSection
+                    }
+                    .padding()
                 }
-                .padding()
             }
             .background(Color.Deltiq.background.ignoresSafeArea())
             .keyboardDismissToolbar()
-            .navigationTitle(String(localized: "profile.bodyData.title", bundle: .module))
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "common.cancel", bundle: .module)) {
-                        dismiss()
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "common.save", bundle: .module)) {
-                        save()
-                    }
-                    .disabled(!canSave)
-                    .fontWeight(.semibold)
-                }
+            .navigationBarBackButtonHidden(true)
+            .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+                dismiss()
             }
         }
+    }
+
+    /// UI-Refactor (DeltiqHeader-Muster): true sobald sich mind. ein Feld
+    /// vom Ausgangszustand unterscheidet. Ein beruehrtes, aber wieder auf
+    /// "kein Wert"/0 zurueckgesetztes Gewichtsfeld zaehlt bewusst NICHT als
+    /// Aenderung — `canSave`/`save()` behandeln einen solchen Zustand
+    /// ebenfalls als "kein neuer Eintrag" (siehe dort).
+    private var isDirty: Bool {
+        draftHeightCm != profile.heightCm
+            || draftGoalWeightKg != profile.goalWeightKg
+            || (weightTouched && (draftWeightKg ?? 0) > 0)
     }
 
     private var heightSection: some View {

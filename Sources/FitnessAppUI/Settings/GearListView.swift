@@ -236,10 +236,13 @@ public struct GearListView: View {
 
 // MARK: - GearEditorView (Add + Edit)
 
-/// Gruppe B (Sheet): praesentiert per `.sheet`, Cancel/Fertig statt
-/// Zurueck-Navigation - bekommt bewusst KEIN DeltiqHeader (siehe Handoff-
-/// Regel "Sheets sind kein Fall fuer DeltiqHeader"). Native Toolbar/Titel
-/// bleiben; die Form-Rows tragen jetzt die Deltiq-Karten-Flaeche.
+/// Gruppe B (Sheet): praesentiert per `.sheet`. UI-Refactor (DeltiqHeader-
+/// Muster fuer Editoren) hebt die vormalige Handoff-Regel "Sheets sind kein
+/// Fall fuer DeltiqHeader" fuer diesen Screen bewusst auf — DeltiqHeader
+/// wird innerhalb des Sheets im eigenen `NavigationStack` gerendert
+/// (`.toolbar(.hidden, for: .navigationBar)` + `.navigationBarBackButtonHidden`),
+/// der Praesentations-Modus selbst (`.sheet`) bleibt unveraendert. Die
+/// Form-Rows tragen weiterhin die Deltiq-Karten-Flaeche.
 @available(iOS 17.0, macOS 14.0, *)
 private struct GearEditorView: View {
     enum Mode {
@@ -258,8 +261,39 @@ private struct GearEditorView: View {
     @State private var currentDistance: Double = 0
     @State private var isActive: Bool = true
     @State private var didInit: Bool = false
+    /// UI-Refactor (DeltiqHeader-Muster): siehe `BodyDataEditorView`.
+    @State private var showingDiscardConfirm = false
 
     var body: some View {
+        VStack(spacing: 0) {
+            // UI-Refactor (DeltiqHeader-Muster fuer Editoren): ersetzt
+            // natives Cancel/Save-Toolbar, siehe `BodyDataEditorView`.
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                title: navigationTitle,
+                onBack: { isDirty ? (showingDiscardConfirm = true) : dismiss() },
+                actions: [
+                    DeltiqHeaderAction(
+                        systemImage: "checkmark",
+                        isDisabled: name.trimmingCharacters(in: .whitespaces).isEmpty,
+                        accessibilityLabel: String(localized: "common.save", bundle: .module)
+                    ) {
+                        save()
+                    }
+                ]
+            )
+            gearForm
+        }
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .navigationBarBackButtonHidden(true)
+        .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+            dismiss()
+        }
+    }
+
+    private var gearForm: some View {
         Form {
             Section {
                 TextField(String(localized: "gear.editor.field.name", bundle: .module), text: $name)
@@ -310,23 +344,6 @@ private struct GearEditorView: View {
         }
         .scrollContentBackground(.hidden)
         .background(Color.Deltiq.background.ignoresSafeArea())
-        .navigationTitle(navigationTitle)
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button { dismiss() } label: {
-                    Text("common.cancel", bundle: .module)
-                }
-            }
-            ToolbarItem(placement: .confirmationAction) {
-                Button { save() } label: {
-                    Text("common.save", bundle: .module)
-                }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-        }
         .onAppear {
             guard !didInit else { return }
             didInit = true
@@ -343,6 +360,21 @@ private struct GearEditorView: View {
     private var navigationTitle: String {
         if case .new = mode { return String(localized: "gear.editor.title.new", bundle: .module) }
         return String(localized: "gear.editor.title.edit", bundle: .module)
+    }
+
+    /// UI-Refactor (DeltiqHeader-Muster): `.new` vergleicht gegen die
+    /// Init-Defaults, `.edit` gegen das geladene `Gear`.
+    private var isDirty: Bool {
+        switch mode {
+        case .new:
+            return !name.isEmpty || type != .shoe || maxDistance != 800 || currentDistance != 0 || !isActive
+        case .edit(let gear):
+            return name != gear.name
+                || type != gear.type
+                || maxDistance != gear.maxDistanceKm
+                || currentDistance != gear.currentDistanceKm
+                || isActive != gear.isActive
+        }
     }
 
     private func save() {
