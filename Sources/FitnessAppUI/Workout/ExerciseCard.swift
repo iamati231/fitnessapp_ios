@@ -75,6 +75,14 @@ struct ExerciseCard: View {
                 warmupRampSection(ramp)
                 Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
             }
+            // Korrektur post-Review (RIR strukturell statt komprimiert):
+            // Spalten-Beschriftung einmal pro Uebung statt "KG"/"WDH" in
+            // jeder einzelnen SetRow. Nur fuer Strength/Bodyweight sinnvoll
+            // (Cardio/TimeBased haben ein eigenes Zeilenlayout ohne diese
+            // Spalten).
+            if !exercise.isCardio && !exercise.isTimeBased {
+                setRowColumnHeader
+            }
             ForEach(0..<exercise.sets, id: \.self) { setIndex in
                 SetRow(
                     setIndex: setIndex,
@@ -134,6 +142,51 @@ struct ExerciseCard: View {
             .padding(.top, 4)
         }
         }
+    }
+
+    // MARK: Set-Spalten-Header
+
+    /// Korrektur post-Review (RIR strukturell statt komprimiert): einmalige
+    /// Spaltenbeschriftung oberhalb der Satzzeilen. Nutzt dieselben
+    /// `SetRow.SetRowColumns`-Breiten wie `SetRow.singleLineInputRow`, damit
+    /// Header und Satzzeilen spaltengenau ausgerichtet sind. Die beiden
+    /// letzten Platzhalter (Plate-Spalte, Checkmark-Spalte) bleiben
+    /// unbeschriftet, reservieren aber dieselbe Breite, damit "RIR" exakt
+    /// über der Kapsel-Spalte steht.
+    ///
+    /// Bekannte Grenze: deckt nur das Ein-Zeilen-Layout von `SetRow`
+    /// bündig ab. Faellt `SetRow` bei extrem schmalem Display + sehr großer
+    /// Dynamic-Type-Stufe auf sein zweizeiliges Layout zurück, bleibt dieser
+    /// Header unverändert einzeilig stehen — "RIR" würde dann nicht mehr
+    /// exakt über der (auf Zeile 2 gewanderten) Kapsel stehen. Ein voll
+    /// synchronisierter Header für beide Fallback-Zustände ist auf Geräte-
+    /// Verifikation angewiesen (siehe Datei-Header dieser Session zur
+    /// Linux-Grenze) und bewusst nicht in dieser Runde gebaut.
+    private var setRowColumnHeader: some View {
+        HStack(spacing: SetRow.SetRowColumns.spacing) {
+            Text("set.column.setLabel", bundle: .module)
+                .deltiqLabel()
+                .frame(width: SetRow.SetRowColumns.setNumberWidth, alignment: .leading)
+            Text("unit.kg.upper", bundle: .module)
+                .deltiqLabel()
+                .frame(width: SetRow.SetRowColumns.weightWidth, alignment: .center)
+            Text(String(localized: "unit.reps.short", bundle: .module).uppercased())
+                .deltiqLabel()
+                .frame(width: SetRow.SetRowColumns.repsWidth, alignment: .center)
+            Color.clear.frame(width: SetRow.SetRowColumns.plateWidth, height: 1)
+            Spacer(minLength: 6)
+            Text("set.column.rirLabel", bundle: .module)
+                .deltiqLabel()
+                .frame(width: SetRow.SetRowColumns.rirWidth, alignment: .center)
+            Color.clear.frame(width: SetRow.SetRowColumns.checkmarkWidth, height: 1)
+        }
+        .padding(.horizontal, 8)
+        // Jedes Eingabefeld traegt sein eigenes Accessibility-Label bereits
+        // (siehe SetRow); der Header ist eine rein visuelle Spaltenangabe,
+        // wird VoiceOver-Nutzern aber als EIN zusammengefasstes Element
+        // einmalig vorgelesen statt als vier separate Stopps.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("set.column.header.accessibilityLabel", bundle: .module))
     }
 
     // MARK: Header

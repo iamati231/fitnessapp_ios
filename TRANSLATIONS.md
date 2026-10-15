@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2088 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2091 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2088 / 2088** (100%) | 0 |
-| 🇬🇧 English (EN) | **2088 / 2088** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2088 / 2088** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2091 / 2091** (100%) | 0 |
+| 🇬🇧 English (EN) | **2091 / 2091** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2091 / 2091** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1972,10 +1972,13 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `session.recovery.resume` | Fortsetzen | Continue | Devam et |
 | `session.recovery.saveAndRestart` | Speichern & neu starten | Save & Restart | Kaydet ve Yeniden Başlat |
 
-## `set.*`  (2 Keys)
+## `set.*`  (5 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `set.column.header.accessibilityLabel` | Spaltenbeschriftung: Satz, Kilogramm, Wiederholungen, RIR | Column headers: set, kilograms, repetitions, RIR | Sütun başlıkları: set, kilogram, tekrar, RIR |
+| `set.column.rirLabel` | RIR | RIR | RIR |
+| `set.column.setLabel` | Satz | Set | Set |
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 

@@ -100,6 +100,31 @@ struct SetRow: View {
         case holding(elapsedSeconds: Int)
     }
 
+    /// Korrektur post-Review (RIR strukturell statt komprimiert): EINE
+    /// gemeinsame Quelle fuer die Spaltenbreiten der Satz-Zeile UND der
+    /// Header-Zeile in `ExerciseCard` — verhindert, dass beide unabhaengig
+    /// gepflegte Zahlenpaare auseinanderdriften. `rirWidth` ist anhand der
+    /// `.caption`-monospacedDigit-Schriftmetrik fuer den laengsten gueltigen
+    /// Wert ("4,5", 3 Zeichen) plus 14pt Kapsel-Padding GERECHNET, nicht an
+    /// einem echten Geraet GEMESSEN (siehe Datei-Header zur Linux-Grenze
+    /// dieser Session — Geraetepruefung bleibt offen).
+    internal enum SetRowColumns {
+        static let setNumberWidth: CGFloat = 24
+        static let weightWidth: CGFloat = 56
+        static let repsWidth: CGFloat = 48
+        static let plateWidth: CGFloat = 22
+        static let rirWidth: CGFloat = 44
+        /// Naeherung der `@ScaledMetric checkmarkIconSize`-Spalte fuer den
+        /// Header-Platzhalter — reine Layout-Richtgroesse, skaliert NICHT
+        /// exakt mit Dynamic Type wie das echte Icon.
+        static let checkmarkWidth: CGFloat = 28
+        static let spacing: CGFloat = 6
+        /// Einzug fuer RIR-Regler/„letztes Mal"-Zeile unter der Eingabezeile
+        /// — Satznummer-Spalte + ein Spacing, damit sie unter dem
+        /// Dateninhalt (nicht der Satznummer) beginnen.
+        static let secondaryLineIndent: CGFloat = setNumberWidth + spacing
+    }
+
     private var isCompleted: Bool { existingLog != nil }
 
     /// DEL-060: explizite Drei-Wege-Verzweigung der UI nach Uebungs-
@@ -165,12 +190,13 @@ struct SetRow: View {
 
     // MARK: - DEL-045 Compact Set Row (Strength + Cardio)
 
-    /// Kompaktes Layout: Satz-Nummer, KG, Wdh, Spacer, RIR-Kapsel, Checkmark
-    /// — alle in einer HStack. Darunter zwei OPTIONALE Zeilen (Signature-
-    /// Geruest 2.16): der ausgeklappte RIR-Regler (Tap auf die Kapsel) und
-    /// der "letztes Mal"-Vergleich (nur beim aktiven Satz). Ein ruhender Satz
-    /// (completed oder upcoming, kein Regler offen) braucht dadurch keine
-    /// feste zweite Zone mehr.
+    /// Korrektur post-Review (RIR strukturell statt komprimiert): Spalten-
+    /// Layout statt Text-Kompression. `ViewThatFits` waehlt `singleLineInput
+    /// Row`, wenn sie in die verfuegbare Breite passt, sonst automatisch den
+    /// zweizeiligen Fallback `twoLineInputRow` (schmale Displays/grosse
+    /// Schrift) — ohne manuelle Size-Class-/GeometryReader-Verdrahtung.
+    /// Die Spaltenbreiten (`SetRowColumns`) sind dieselben, die `ExerciseCard`
+    /// fuer die einmalige Header-Zeile nutzt.
     ///
     /// UX-203 Layering der Visual-States:
     ///   * completed → ganze Row Opacity 0.55, kein Background
@@ -180,96 +206,25 @@ struct SetRow: View {
     ///   * upcoming  → neutral, kein Background, kein Akzent
     private var compactSetRow: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Layout-Fix 2026-05-21: HStack-Spacing 12 → 8. Auf iPhone-SE
-            // (375pt Bildschirm) ist die HStack mit 7 Children (Set-Nummer,
-            // weightInput, "KG", plateCalcButton, repsInput, "WDH",
-            // Checkmark) plus Spacer knapp am Overflow — mit 12pt Spacing
-            // zwischen jeden zwei kommt zu viel Luft zusammen, mit 8pt
-            // bleibt's auch bei 3-stelligem Gewicht (125 kg) komfortabel.
-            //
-            // Bugfix (Nutzer-Feedback, Screenshot Ganzkoerper C/Front Squat):
-            // 8pt war bei Hantelübungen (`plateCalcButton` zusätzlich im
-            // Layout) weiterhin zu knapp, sobald die RIR-Kapsel einen
-            // Halbschritt-Wert zeigt ("RIR 2,5" statt "RIR 2" - zwei Zeichen
-            // breiter). Die Eingabezeile ragte dann minimal ueber den
-            // Bildschirmrand hinaus; da die Seite in einer `ScrollView`
-            // innerhalb der Exercise-TabView sitzt, zentriert SwiftUI den zu
-            // breiten Inhalt und beschneidet ihn beidseitig — sichtbar als
-            // abgeschnittener Uebungsname links UND abgeschnittene Werte
-            // rechts, obwohl nur EIN Element (die Kapsel) tatsaechlich zu
-            // breit war. 8 → 6pt (siehe auch `rirCapsule`-Padding unten)
-            // schafft den fehlenden Puffer zurueck.
-            HStack(spacing: 6) {
-                // DEL-059 + UX-203: Rounded-Design + monospacedDigit fuer
-                // konsistente Zahlen-Ausrichtung (sonst springt der Slot
-                // zwischen 1-stellig und 2-stellig). Active-Set bekommt
-                // Brand-Color, completed bleibt secondary, upcoming primary.
-                Text("\(setIndex + 1)")
-                    .font(.system(size: 16, weight: .bold, design: .rounded).monospacedDigit())
-                    .foregroundStyle(setNumberColor)
-                    .frame(width: 24, alignment: .leading)
-
-                if !exercise.isCardio {
-                    weightInput
-                    // DEL-128: KG-Label via xcstrings.
-                    // Layout-Fix 2026-05-21: `.fixedSize()` zwingt das Label
-                    // auf seine intrinsische Breite — sonst komprimiert
-                    // SwiftUI die Text-Labels weg, wenn der Row-Inhalt knapp
-                    // wird.
-                    Text("unit.kg.upper", bundle: .module)
-                        .deltiqLabel()
-                        .fixedSize()
-                }
-
-                repsInput
-                // DEL-128: WDH/REPS/TKR — reuse `unit.reps.short` (lowercase
-                // "Wdh"/"reps"/"tkr") und uppercase im Caller. ASCII-Strings,
-                // kein Unicode-Drama mit `.uppercased()`.
-                // Layout-Fix 2026-05-21: identischer `.fixedSize()`-Schutz.
-                Text(String(localized: "unit.reps.short", bundle: .module).uppercased())
-                    .deltiqLabel()
-                    .fixedSize()
-
-                Spacer(minLength: 6)
-
-                // README 2.25 (Nutzer-Feedback, fuenf Simulator-Screenshots):
-                // die Eingabezeile ist mit Satznummer/Gewicht/KG/Aufladung/
-                // Wdh/WDH/Haekchen bereits fast voll (340 von 342 pt auf
-                // einem 390-pt-Schirm) - die Kapsel war das einzige flexible
-                // Kind ohne `.fixedSize()`/`.lineLimit(1)` und bekam nur die
-                // verbleibenden ~2pt, der Wert brach darin Zeichen fuer
-                // Zeichen um. Bei aufgeklapptem Satz zieht die Kapsel jetzt
-                // in `rirSliderRow` (dort ist Platz) - hier bleibt sie nur
-                // als getoenter Aufklapp-Knopf, wenn die Zone geschlossen ist.
-                if !rirExpanded {
-                    rirCapsule
-                }
-                checkmarkButton
+            ViewThatFits(in: .horizontal) {
+                singleLineInputRow
+                twoLineInputRow
             }
-            // Layout-Fix 2026-05-21 (Iteration 2): minHeight 44 auf der
-            // Input-HStack. Verhindert dass die Row beim Tippen oder
-            // Plate-Button-Toggle senkrecht ruckelt — die intrinsische
-            // Hoehe der Children kann minimal schwanken (Font-Metrics
-            // zwischen Placeholder + Zahl), 44pt deckt beide Faelle ab
-            // und matched Apple's HIG-Minimum-Touch-Target-Size.
-            .frame(minHeight: 44)
 
-            // Signature-Geruest 2.16: der Regler belegt nur noch Platz,
-            // wenn er per Tap auf `rirCapsule` aufgeklappt wurde.
+            // Die Kapsel bleibt beim Aufklappen an ihrer festen Spalten-
+            // Position stehen (siehe `rirCapsule`) — der Regler erscheint
+            // nur als zusaetzliche Zeile darunter, kein Zeilensprung mehr.
             if rirExpanded, !isCompleted {
                 rirSliderRow
-                    .padding(.leading, 36)
+                    .padding(.leading, SetRowColumns.secondaryLineIndent)
                     .transition(.opacity)
             }
 
             // Signature-Geruest 2.16: der "letztes Mal"-Vergleich gilt nur
-            // noch fuer den AKTIVEN Satz, in voller Laenge auf eigener
-            // Zeile — vorher stand er bei JEDEM nicht abgeschlossenen Satz
-            // inline hinter dem RIR-Regler und wurde dort abgeschnitten
-            // (einziger Schutz war `.lineLimit(1)` + `.minimumScaleFactor`).
+            // noch fuer den AKTIVEN Satz, in voller Laenge auf eigener Zeile.
             if isActiveSet, let prev = previousLog {
                 previousHintLine(prev)
-                    .padding(.leading, 36)
+                    .padding(.leading, SetRowColumns.secondaryLineIndent)
             }
         }
         .padding(.vertical, 4)
@@ -332,6 +287,78 @@ struct SetRow: View {
         return .primary
     }
 
+    private var setNumberLabel: some View {
+        // DEL-059 + UX-203: Rounded-Design + monospacedDigit fuer
+        // konsistente Zahlen-Ausrichtung (sonst springt der Slot zwischen
+        // 1-stellig und 2-stellig). Active-Set bekommt Brand-Color,
+        // completed bleibt secondary, upcoming primary.
+        Text("\(setIndex + 1)")
+            .font(.system(size: 16, weight: .bold, design: .rounded).monospacedDigit())
+            .foregroundStyle(setNumberColor)
+            .frame(width: SetRowColumns.setNumberWidth, alignment: .leading)
+    }
+
+    /// Bevorzugtes Layout: alle Eingaben in einer Zeile. `ViewThatFits`
+    /// (siehe `compactSetRow`) faellt automatisch auf `twoLineInputRow`
+    /// zurueck, wenn das bei der aktuellen Breite/Schriftgroesse nicht
+    /// passt — Kapsel und Plate-Button bleiben in BEIDEN Layouts an
+    /// derselben relativen Spalten-Position, keine Springerei beim
+    /// Umschalten.
+    private var singleLineInputRow: some View {
+        HStack(spacing: SetRowColumns.spacing) {
+            setNumberLabel
+            weightInput
+            repsInput
+            plateColumn
+            Spacer(minLength: 6)
+            rirCapsule
+            checkmarkButton
+        }
+        .frame(minHeight: 44)
+    }
+
+    /// Fallback fuer schmale Displays/grosse Dynamic-Type-Stufen: Zahlen-
+    /// Eingaben auf Zeile 1, Aufladung/RIR/Haekchen auf Zeile 2 — dieselbe
+    /// Spaltenreihenfolge wie `singleLineInputRow`, nur umgebrochen, damit
+    /// kein Element abgeschnitten wird oder Auslassungspunkte zeigt.
+    private var twoLineInputRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: SetRowColumns.spacing) {
+                setNumberLabel
+                weightInput
+                repsInput
+                Spacer(minLength: 0)
+            }
+            HStack(spacing: SetRowColumns.spacing) {
+                Color.clear.frame(width: SetRowColumns.setNumberWidth, height: 1)
+                    .accessibilityHidden(true)
+                plateColumn
+                Spacer(minLength: 6)
+                rirCapsule
+                checkmarkButton
+            }
+        }
+    }
+
+    /// Eigene schmale Spalte statt Overlay auf `weightInput` (Korrektur
+    /// post-Review: das Overlay ueberdeckte die Gewichtszahl). Die Breite
+    /// wird FUER JEDES Equipment reserviert (auch wenn der Button bei
+    /// Nicht-Hantelübungen unsichtbar bleibt) — erhaelt die mit 130f2e8
+    /// eingefuehrte Eigenschaft, dass die Zeile fuer jedes Equipment gleich
+    /// breit ist.
+    @ViewBuilder
+    private var plateColumn: some View {
+        if isBarbellExercise {
+            let plateShown = (weight ?? 0) > 0
+            plateCalculatorButton(weight: weight ?? 0)
+                .opacity(plateShown ? 1 : 0)
+                .allowsHitTesting(plateShown)
+        } else {
+            Color.clear.frame(width: SetRowColumns.plateWidth, height: 1)
+                .accessibilityHidden(true)
+        }
+    }
+
     /// Signature-Geruest 2.17: Barbell-Detection nach demselben Fallback-
     /// Muster wie `ExerciseCard.isBarbellExercise` — DEL-159-Override
     /// gewinnt, sonst Library-Lookup ueber den System-Namen.
@@ -342,17 +369,14 @@ struct SetRow: View {
         return ExerciseLibraryData.all.first { $0.name == exercise.name }?.equipment == .barbell
     }
 
-    /// DEL-085: Quick-Access-Button fuer den Plate-Calculator. Sitzt als
-    /// Badge auf der Gewichts-Eingabe (`weightInput`-Overlay), sichtbar wenn
+    /// DEL-085: Quick-Access-Button fuer den Plate-Calculator. Korrektur
+    /// post-Review: eigene Spalte (`plateColumn`) statt Overlay auf
+    /// `weightInput` — das Overlay ueberdeckte dort die Gewichtszahl.
+    /// Sichtbar (Opacity/HitTesting, Spaltenbreite bleibt reserviert) wenn
     /// ein konkretes Gewicht > 0 eingetragen ist UND die Uebung mit einer
-    /// Hantelstange ausgefuehrt wird (also keine Bodyweight-/Cardio-/
-    /// TimeBased-Lifts). Tap oeffnet ein Popover mit der Aufladungs-
-    /// Visualisierung — der eigentliche Content lebt in `PlatePopoverContent`
-    /// weiter unten.
-    ///
-    /// Bugfix (Nutzer-Feedback): 28×28 → 22×22, da das Badge nur noch als
-    /// kleiner Eck-Akzent auf `weightInput` sitzt, nicht mehr als eigenstaendiges
-    /// Element in der Eingabezeile Platz beansprucht.
+    /// Hantelstange ausgefuehrt wird. Tap oeffnet ein Popover mit der
+    /// Aufladungs-Visualisierung — der eigentliche Content lebt in
+    /// `PlatePopoverContent` weiter unten.
     @ViewBuilder
     private func plateCalculatorButton(weight: Double) -> some View {
         Button {
@@ -362,12 +386,9 @@ struct SetRow: View {
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.deltiqOrange)
                 .font(.caption)
-                .frame(width: 22, height: 22)
+                .frame(width: SetRowColumns.plateWidth, height: SetRowColumns.plateWidth)
                 .background(Color.deltiqOrange.opacity(0.16))
                 .clipShape(Circle())
-                // Dezenter Rand, damit das Badge sich von der dahinterliegenden
-                // `weightInput`-Fuellung absetzt, auch wenn es sie ueberlappt.
-                .overlay(Circle().strokeBorder(Color.Deltiq.background, lineWidth: 1.5))
         }
         .buttonStyle(.plain)
         // Bugfix: war hartcodiert deutsch ("Hantel-Aufladung anzeigen"),
@@ -398,7 +419,7 @@ struct SetRow: View {
         TextField(weightPlaceholder, value: $weight, format: .number, prompt: Text(weightPlaceholder))
             .decimalKeyboard()
             .monospacedDigit()
-            .frame(width: 56)
+            .frame(width: SetRowColumns.weightWidth)
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background(Color.secondary.opacity(0.12))
@@ -417,23 +438,6 @@ struct SetRow: View {
             .onChange(of: weight) { _, newValue in
                 if let w = newValue, w > PlateCalculator.maxTargetKg {
                     weight = PlateCalculator.maxTargetKg
-                }
-            }
-            // Bugfix (Nutzer-Feedback, Screenshots Ganzkoerper B): der
-            // Aufladungs-Knopf sass vorher als eigenes HStack-Kind zwischen
-            // "KG" und `repsInput` — bei Langhantel-Uebungen beanspruchte er
-            // zusaetzliche ~34pt, die der `rirCapsule` fehlten (siehe dort)
-            // UND liess die Zeile je nach Equipment unterschiedlich breit
-            // wirken. Als Badge auf der Gewichts-Eingabe selbst braucht er
-            // keinen eigenen Platz im linearen Layout mehr — Zeile ist jetzt
-            // fuer jedes Equipment gleich aufgebaut.
-            .overlay(alignment: .topTrailing) {
-                if isBarbellExercise {
-                    let plateShown = (weight ?? 0) > 0 && !exercise.isTimeBased
-                    plateCalculatorButton(weight: weight ?? 0)
-                        .offset(x: 6, y: -6)
-                        .opacity(plateShown ? 1 : 0)
-                        .allowsHitTesting(plateShown)
                 }
             }
     }
@@ -536,47 +540,35 @@ struct SetRow: View {
         return Color.secondary.opacity(0.5)
     }
 
-    /// Signature-Geruest 2.16: Kapsel statt permanentem Regler — zeigt den
-    /// aktuellen RIR-Wert, Tap klappt `rirSliderRow` auf/zu. Gesperrt bei
-    /// abgeschlossenen Saetzen (zeigt dann nur noch den geloggten Wert),
-    /// gleiches Sperr-Muster wie `weightInput`/`repsInput`.
-    /// README 2.24: gefuellt statt nur getoent, solange die Zone offen ist.
-    /// README 2.25 (Nutzer-Feedback): `.fixedSize()` + `.lineLimit(1)` -
-    /// dieselbe Absicherung, die "KG"/"WDH" seit dem Layout-Fix vom 21. Mai
-    /// tragen. Ohne sie war die Kapsel das einzige flexible Kind der
-    /// Eingabezeile-HStack und wurde auf ~2pt zusammengedrueckt - der Wert
-    /// brach darin Zeichen fuer Zeichen um (unlesbar) UND bestimmte die
-    /// Zeilenhoehe ueber seine Zeichenzahl ("RIR 1" vs "RIR 3,5" - jeder
-    /// Halbschritt aenderte die Hoehe). Wird bei aufgeklapptem Satz nicht
-    /// mehr in der Eingabezeile gebraucht (siehe Aufrufstelle dort) - lebt
-    /// dann in `rirSliderRow`, wo Platz ist.
+    /// Korrektur post-Review (RIR strukturell statt komprimiert): Kapsel
+    /// bleibt JETZT IMMER an ihrer festen Spalten-Position in der
+    /// Eingabezeile sichtbar — auch waehrend der Regler aufgeklappt ist
+    /// (vorher wechselte sie in `rirSliderRow` auf eine neue Zeile, das
+    /// liess die Reglerposition beim Oeffnen "springen"). Tap klappt
+    /// `rirSliderRow` auf/zu. Gesperrt bei abgeschlossenen Saetzen (zeigt
+    /// dann nur noch den geloggten Wert), gleiches Sperr-Muster wie
+    /// `weightInput`/`repsInput`.
     ///
-    /// Bugfix (Nutzer-Feedback, Screenshots Ganzkoerper B): "RIR 2,5" war bei
-    /// Hantelübungen (zusaetzliches Plate-Icon in der Zeile, siehe dort)
-    /// selbst mit `.minimumScaleFactor(0.85)` nicht mehr unterzubringen - bei
-    /// echtem Overflow hat SwiftUI der Kapsel praktisch keine Breite mehr
-    /// gelassen, der Text wurde auf ein einzelnes "R" zusammengequetscht.
-    /// Der Aufladungs-Knopf ist jetzt kein eigenes HStack-Kind mehr (siehe
-    /// `weightInput`), trotzdem bleibt die Kapsel kompakt ("R3"/"R2,5" statt
-    /// "RIR 3"/"RIR 2,5") als zusaetzlicher Puffer - sie ist bei jedem
-    /// Halbschritt-Wert die einzige Komponente mit variabler Breite. Der
-    /// sichtbare Text ist bewusst kuerzer als der gesprochene: VoiceOver
-    /// hoert weiterhin die volle Form ueber `.accessibilityLabel`.
+    /// Kein "R"-Praefix mehr (reiner Wert, wie bei `weightInput`/
+    /// `repsInput`) — `.fixedSize()` statt `.lineLimit(1)` +
+    /// `.minimumScaleFactor(0.85)` stellt sicher, dass kein gueltiger Wert
+    /// (auch "4,5", der laengste) jemals abgeschnitten oder verkleinert
+    /// dargestellt wird. `SetRowColumns.rirWidth` reserviert dafuer genug
+    /// Platz (siehe dortiger Kommentar zur Berechnungsgrundlage).
     private var rirCapsule: some View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) { rirExpanded.toggle() }
         } label: {
-            Text("R\(rir.formattedRIR)")
+            Text(rir.formattedRIR)
                 .font(.caption.weight(.semibold).monospacedDigit())
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
+                .fixedSize()
                 .foregroundStyle(rirExpanded ? .white : Color.deltiqOrange)
                 .padding(.horizontal, 7)
                 .padding(.vertical, 4)
                 // Mindestbreite statt reiner Inhaltsbreite - verhindert, dass
-                // die Kapsel bei einstelligen Werten ("R0") optisch zum
-                // Kreis statt einer Pille wird.
-                .frame(minWidth: 32)
+                // die Kapsel bei einstelligen Werten ("0") optisch zum Kreis
+                // statt einer Pille wird.
+                .frame(minWidth: SetRowColumns.rirWidth)
                 .background(rirExpanded ? Color.deltiqOrange : Color.deltiqOrange.opacity(0.12))
                 .clipShape(Capsule())
         }
@@ -616,18 +608,12 @@ struct SetRow: View {
     /// liessen sich hier nicht verifizieren).
     private var rirSliderRow: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // README 2.25: die Kapsel selbst statt eines bloßen "RIR"-Labels
-            // - sie zieht bei aufgeklapptem Satz hier ein (siehe `rirCapsule`-
-            // Doc), weil die Eingabezeile ihr keinen Platz mit Breite geben
-            // kann. `.center` statt `.firstTextBaseline`, weil die Kapsel
-            // (Button+Capsule, kein reiner Text) keine sinnvolle
-            // Baseline neben einem Fliesstext hat.
-            HStack(alignment: .center, spacing: 8) {
-                rirCapsule
-                Text("active.set.rir.subtitle", bundle: .module)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
+            // Korrektur post-Review: die Kapsel bleibt oben in der
+            // Eingabezeile (siehe `rirCapsule`-Doc) — hier nur noch der
+            // erklaerende Untertitel.
+            Text("active.set.rir.subtitle", bundle: .module)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
             Slider(
                 value: Binding(
                     get: { Double(rir) },

@@ -479,3 +479,54 @@ der jeweiligen Teilaufgabe oben einzeln vermerkt — keine pauschale „alles gr
 P1.2 (RIR-Redesign) — einziger offener Punkt aus dem Fehler-Paket, in sich geschlossen, ohne
 Abhängigkeit zu den Konfliktfragen oder zu P2–P6. Wird als nächstes umgesetzt, sobald dieser
 präzisierte Bericht akzeptiert ist.
+
+## P1-Abschlussbericht
+
+```
+Paket: P1 — Bestehende Fehler und Regressionen absichern
+Implementiert: P1.2 RIR strukturelle Spalten-Neugestaltung vollständig umgesetzt.
+Noch nicht implementiert: nichts innerhalb P1 — P1.1 war bereits in P0 verifiziert.
+Geänderte Komponenten:
+  - Sources/FitnessAppUI/Workout/SetRow.swift: neues `SetRowColumns`-Enum (geteilte
+    Spaltenmetriken), `compactSetRow` auf `ViewThatFits(singleLineInputRow, twoLineInputRow)`
+    umgestellt, `rirCapsule` entkompaktiert (kein "R"-Präfix, `.fixedSize()`, feste Spaltenbreite,
+    bleibt bei aufgeklapptem Regler an fester Position), `weightInput`-Overlay entfernt, neue
+    `plateColumn` (eigene Spalte statt Overlay), `rirSliderRow` ohne eingebettete Kapsel.
+  - Sources/FitnessAppUI/Workout/ExerciseCard.swift: neue `setRowColumnHeader`-Zeile (Satz/kg/
+    Wdh/RIR, einmal pro Übung, nur für Strength/Bodyweight), nutzt dieselben `SetRow.
+    SetRowColumns`-Breiten wie die Satzzeilen.
+  - Sources/FitnessAppUI/Resources/Localizable.xcstrings: 3 neue Keys (`set.column.setLabel`,
+    `set.column.rirLabel`, `set.column.header.accessibilityLabel`), DE/EN/TR vollständig, mit
+    bestehendem `deltiqLabel()`-Stil (identisch zu KG/WDH/PACE) statt eigenem Styling.
+Neue/geänderte Datenfelder: keine (reines UI, kein SwiftData-Schema berührt).
+Tests hinzugefügt: keine neuen automatisierten Tests — reine Layout-/Darstellungsänderung ohne
+  neue Linux-testbare Logik (bestehende Pure-Logic-Tests in EditorDiscardSnapshotTests.swift sind
+  von dieser Änderung nicht betroffen).
+Tests tatsächlich ausgeführt: `swift build` + `swift test --parallel` auf Linux, grün, 979/979
+  unverändert. Diese Datei-Paar ist `#if canImport(SwiftUI)`-gegated — der Linux-Lauf bestätigt
+  NUR, dass der Rest des Pakets weiterhin kompiliert, NICHT die Syntax-/Typkorrektheit von
+  `ViewThatFits`/den neuen Views selbst (die kompilieren auf Linux zu einer leeren Einheit). Den
+  gesamten Diff deshalb zusätzlich manuell Zeile für Zeile gegengelesen (Klammerbilanz, API-Namen,
+  Typkonsistenz, keine verwaisten Referenzen auf entfernten Code).
+Apple-Build/CI: nicht verifiziert — diese Session hat keinen Codemagic-Zugriff. Der Push löst die
+  Workflows automatisch aus; ein erster echter Compiler-Lauf (der z. B. `ViewThatFits`-Verwendung
+  oder Tippfehler tatsächlich prüfen würde) liegt außerhalb dieser Session und wird erst bei einem
+  geteilten Log sichtbar (wie zuvor bei Finding 1 in dieser Epik).
+UI-/Geräteprüfung: NICHT durchgeführt, kein Simulator-/Geräte-Zugriff aus dieser Session. Explizit
+  offen: Spaltenausrichtung Header/Satzzeilen auf echtem Gerät, RIR-Wert-Lesbarkeit bei allen 11
+  gültigen Werten (0 bis 5 in 0,5-Schritten) auf iPhone SE, Reglerposition beim Öffnen/Schließen
+  über mehrere Sätze hinweg, Plate-Popover-Anker nach Spalten-Umzug, Zwei-Zeilen-Fallback bei
+  größter Dynamic-Type-Stufe, Regressionsprüfung der in diesem Paket laut Vorgabe unverändert zu
+  haltenden Funktionen (Trainingsseiten-Swipes, Drag & Drop, Eingaben, Logging, Timer) — diese
+  wurden im Diff bewusst nicht berührt (siehe Komponentenliste oben, Swipe-/Reorder-/Timer-Code
+  liegt in anderen Dateien und war an keiner Stelle Teil dieses Edits), eine Geräte-Gegenprobe
+  bleibt aber trotzdem ausständig.
+Bekannte Grenzen/Risiken: der Spalten-Header selbst ist nicht an `ViewThatFits`s Fallback-
+  Entscheidung gekoppelt — fällt `SetRow` auf sein zweizeiliges Layout zurück, bleibt der Header
+  einzeilig stehen und "RIR" steht dann nicht mehr exakt über der (auf Zeile 2 gewanderten) Kapsel.
+  Bewusst nicht in dieser Runde behoben, siehe Doc-Kommentar an `setRowColumnHeader`. Alle
+  Breitenwerte (`SetRowColumns`) sind Schriftmetrik-Berechnungen, keine Geräte-Messungen.
+Branch/Commit: claude/smart-onboarding-epic (gespiegelt auf claude/neue-views-entwicklung-ahsg90),
+  Commit-SHA wird mit dem zugehörigen Push-Bericht genannt.
+Nächste Aufgabe: P2.0 — Datenvertrag für Planungskontext/Wochenentwurf (Core, Linux-testbar).
+```

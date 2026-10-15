@@ -43359,6 +43359,75 @@
         }
       }
     },
+    "set.column.setLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Satz"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set"
+          }
+        }
+      }
+    },
+    "set.column.rirLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RIR"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RIR"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RIR"
+          }
+        }
+      }
+    },
+    "set.column.header.accessibilityLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spaltenbeschriftung: Satz, Kilogramm, Wiederholungen, RIR"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Column headers: set, kilograms, repetitions, RIR"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sütun başlıkları: set, kilogram, tekrar, RIR"
+          }
+        }
+      }
+    },
     "editor.discardChanges.title": {
       "extractionState": "manual",
       "localizations": {
