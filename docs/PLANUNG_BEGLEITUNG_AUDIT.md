@@ -267,6 +267,37 @@ durchführbar, bleibt offen zu melden.
 
 ### P2 — Gemeinsamen Planungskontext und Wochenentwurf herstellen
 
+**P2.0 Datenvertrag für Planungskontext und Wochenentwurf (eigener Task, vor P2.1–P2.4)**
+Komponenten: neue reine Werttypen in FitnessAppCore (kein `ModelContext`-Bezug). Skizze:
+
+```swift
+public struct PlanningContext {
+    public var goal: TrainingGoal
+    public var enduranceModality: EnduranceModality?   // nil wenn goal nicht ausdauerrelevant
+    public var runCoachEnabled: Bool                    // nur gueltig bei .running/.both, siehe Invariante
+    public var daysPerWeek: Int
+    public var sessionDurationMinutes: Int
+    public var scheduling: SchedulingMode               // .fixedWeekdays([Int]) | .flexibleOrder
+    public var environment: EnvironmentType
+    public var equipmentProfile: UserEquipmentProfile
+}
+public enum PlanningMode { case onboarding, standaloneBuilder(editing: TrainingPlan?) }
+public struct PlanDraft {
+    public var days: [DraftDay]              // wertbasiert, KEIN TrainingDay/ModelContext
+    public var fixedDayIDs: Set<DraftDay.ID> // Inhalt fixiert
+    public var fixedPositionIndices: Set<Int> // Position fixiert
+}
+```
+Abhängigkeiten: keine. Abnahme (Validierungsregeln, je als Test): `runCoachEnabled == true` ist
+**ungültig**, wenn `enduranceModality` nicht `.running`/`.both` ist (harte Invariante, direkte
+Umsetzung der Dok02-Zustandstabelle — verhindert exakt den eingangs befürchteten, aktuell nicht
+existierenden Auto-Kopplungs-Fehler strukturell statt per Konvention); `scheduling ==
+.fixedWeekdays(x)` erfordert `x.count == daysPerWeek`; `environment == .gym` mit leerem
+`equipmentProfile` ohne `confirmEquipmentProfileComplete` löst die bestehende Gym-Annahme aus, nie
+stille Lücke. `PlanDraft` ist bewusst NICHT `TrainingDay` — siehe P3.2. Datenmodell: keine
+SwiftData-Änderung, reine Core-Werttypen. Testplattform: **Linux-testbar** (kein SwiftUI/SwiftData-
+Bezug) — dies ist der erste Core-Baustein von P2 und sollte vor jeder UI-Arbeit stehen.
+
 **P2.1 `targetEnvironment`-Hardcode-Bug beheben**
 Komponenten: `PlanGeneratorInstantiator.swift` (`makeTemplate`). Abhängigkeiten: keine. Abnahme: ein
 über den Builder mit Home-Gym-Equipment erzeugter Plan bekommt ein zur Equipment-Auswahl passendes
@@ -306,10 +337,19 @@ fachlicher Vorschlag), Kartenauswahl setzt `TrainingGoal` korrekt inkl. Unterfra
 optionales `goal`-Feld (additiv, kein SwiftData-Schema betroffen). Testplattform: Core-Erweiterung
 Linux-testbar, Builder-UI Apple-CI/Gerät.
 
-**P3.2 Wochenübersicht-UI + Drag&Drop + „Verschieben nach…"**
+**P3.2 Wochenübersicht-UI + Drag&Drop + „Verschieben nach…" — zuerst an Entwurfsdaten gebunden**
 Komponenten: neue View (Wochenübersicht), löst `PlanEditorView.daysSection`s reine List ab/ergänzt sie.
-Abhängigkeiten: P2.4. Abnahme: B01 (Drag&Drop + zugängliche Alternative). Datenmodell: keine.
-Testplattform: reines SwiftUI, 0 auf Linux — nur Apple-CI (Build) + Gerät (Gesten/VoiceOver).
+Abhängigkeiten: P2.4, P2.0. Abnahme: B01 (Drag&Drop + zugängliche Alternative). **Verbindlich**: die
+View bindet ausschließlich an `PlanDraft` (P2.0) — auch im Modus „bestehenden Plan bearbeiten"
+(`PlanningMode.standaloneBuilder(editing: plan)`) wird der Plan beim Öffnen EINMALIG in einen
+`PlanDraft` kopiert, alle Interaktionen (Reorder/Fixieren/Alternative) mutieren nur die Kopie. Kein
+Control der View ist direkt an ein lebendes `TrainingDay`/`Exercise`-Objekt gebunden — das
+unterscheidet sie bewusst vom bestehenden `PlanEditorView`, der live auf SwiftData bindet. Schreiben
+in den `ModelContext` passiert ausschließlich über den P2.3-Adopt-Pfad beim expliziten Bestätigen,
+nie während der Vorschau/Bearbeitung selbst (Dok00: „Vorschau/Entwurf erzeugt keine persistierten
+Pläne" gilt damit auch für den Editier-, nicht nur den Erstellungsfall). Datenmodell: keine.
+Testplattform: `PlanDraft`-Mutationslogik (Reorder/Fixieren) als reine Core-Funktionen
+**Linux-testbar**; die View selbst 0 auf Linux — nur Apple-CI (Build) + Gerät (Gesten/VoiceOver).
 
 **P3.3 Gezielte Alternativen statt globalem Shuffle**
 Komponenten: `PlanGenerator.swift` (neue gezielte Ersatzfunktion statt `shuffle: true`),
@@ -348,15 +388,46 @@ Komponenten: neue gemeinsame UI-Komponente, `CardioFeasibilityCardModel` (Refact
 Wiederverwendung durch Equipment-Pfad). Abhängigkeiten: P4.2, P2.3 (Adopt-Pfad). Abnahme: C01, C02,
 C06. Datenmodell: keine. Testplattform: Apple-CI/Gerät.
 
+**P4.4 Echte Equipment-Präferenz (Gewichtung) — eigener Task, kein Nebensatz von P4.2**
+Heute existiert keine echte Präferenz (Abschnitt 2b) — `equipmentPreferences` ist ein veralteter
+Verfügbarkeits-Spiegel, kein Gewichtungssystem. Vier eigenständige Teile:
+- **UI**: neue Oberfläche, in der ein Nutzer mit MEHREREN vorhandenen Geräten eines bevorzugen kann
+  (z. B. „habe Langhantel UND Kurzhanteln, bevorzuge Kurzhanteln") — bewusst getrennt von der
+  Verfügbarkeits-Erfassung in `EquipmentProfileEditor`, da andere Fragestellung („was bevorzugst du"
+  vs. „was hast du").
+- **Persistenz**: neues, eindeutig benanntes Feld auf `UserBodyProfile` (NICHT `equipmentPreferences`
+  wiederverwenden — der Name ist bereits doppelt belegt, siehe Abschnitt 2b; Vorschlag
+  `preferredEquipmentRaw`), additiv.
+- **Weiche Gewichtung**: neuer Scoring-Term in `PlanMatchmaker.rankPlansDetailed`
+  (`PlanMatchmaker.swift:128–160`, aktuell 0 Equipment-Gewichtung) bzw. in der Varianten-/
+  Substitutionswahl — bevorzugtes Gerät wird höher gerankt, andere Geräte bleiben weiterhin erlaubt
+  (Dok01 §6: „andere Geräte nicht pauschal verbieten").
+- **Anpassungsvorschau**: eigener, bewusst weicherer Ton als P4.2s Verfügbarkeits-Warnung — „diese
+  Übung würde zu X, weil du Y bevorzugst" statt „diese Übung geht nicht ohne X".
+Komponenten: `EquipmentProfileEditor.swift`/neue Präferenz-UI, `UserBodyProfile.swift`,
+`PlanMatchmaker.swift`, `EquipmentVariant.swift`. Abhängigkeiten: P2, unabhängig von P4.1–P4.3 (kann
+parallel geplant werden). Abnahme: C04 (optionale Neugewichtung, kein Geräteverbot). Datenmodell:
+neues additives Feld (s. o.). Testplattform: Scoring-Term-Logik **Linux-testbar** (reine
+`PlanMatchmaker`-Erweiterung), UI/Persistenz Apple-CI/Gerät.
+
 ### P5 — Versionierung/Datenqualität für spätere Rückblicke sichern
 
-**P5.1 `TrainingPlan.activatedAt` (Zeitanker)**
+**P5.1 `TrainingPlan.activatedAt` (Zeitanker) — kein erfundenes historisches Datum**
 Komponenten: `TrainingPlan.swift`, Lightweight-Backfill, `DataExportService`/`DataImportService`
 (additive CSV-Spalte, Pattern wie `equipment_unknown_items`). Abhängigkeiten: keine (kann parallel zu
-P3/P4 laufen). Abnahme: Migrationstest — Bestandsspeicher ohne Feld öffnen ergibt sinnvollen
-Default/Backfill statt Crash; CSV-Roundtrip mit und ohne das neue Feld. Datenmodell: `TrainingPlan` +
-`activatedAt: Date?` (additiv); Export + `plan_activated_at`-Spalte. Testplattform: SwiftData-Modell
-Apple-CI/Gerät; CSV-Parsing-Anteil (sofern reine String-Logik in `CSVReader`/`CSVWriter`, FitnessAppCore)
+P3/P4 laufen). **Verbindlich**: `activatedAt: Date?` bleibt für JEDEN Bestandsplan ohne bekanntes
+Datum **`nil`** — kein Backfill rät ein Datum (nicht Erstellungsdatum, nicht erste Session, nicht
+„heute"). Der P6.1-Orchestrator behandelt `nil` als eigenen, expliziten Zustand „unbekannt → neue
+Beobachtungsphase ab jetzt" (Beobachtungsfenster beginnt am Tag des ersten Reviews/der Migration,
+NIE als vorgetäuschte Historie dargestellt — der Review-Text muss das offen benennen, z. B. „noch
+keine ausreichende Datengrundlage" statt einer erfundenen Wochenzahl). Abnahme: Migrationstest —
+Bestandsspeicher ohne Feld öffnen ergibt `activatedAt == nil` (nicht irgendein Default-Datum); ein
+Review-Lauf auf einem `nil`-Plan meldet ausdrücklich „neue Beobachtungsphase", niemals eine erfundene
+Laufzeit; CSV-Roundtrip mit und ohne das neue Feld. Datenmodell: `TrainingPlan` + `activatedAt:
+Date?` (additiv, `nil` ist ein gültiger Dauerzustand, kein Platzhalter); Export +
+`plan_activated_at`-Spalte (leer bei `nil`). Testplattform: SwiftData-Modell Apple-CI/Gerät;
+CSV-Parsing-Anteil (reine String-Logik in `CSVReader`/`CSVWriter`, FitnessAppCore) sowie die
+„`nil` → neue Beobachtungsphase"-Entscheidungslogik selbst (reine Funktion, kein SwiftData-Bezug)
 Linux-testbar.
 
 **P5.2 Inhalts-Snapshot pro `TrainingDay`-Fassung (Konfliktlösung 3)**
