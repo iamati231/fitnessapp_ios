@@ -1680,3 +1680,110 @@ ausschliesslich SwiftUI-/SwiftData-/UIKit-gegatete Dateien beruehren (s.o.,
 explizit per Probe-Skript verifiziert statt nur angenommen). 7 verwaiste
 xcstrings-Keys entfernt (2095 → 2088, 5 nach V4 + 2 nach V6), weiterhin 0
 hardcodierte Strings, `TRANSLATIONS.md` regeneriert.
+
+## Teil 18 — Korrektur-Runde 4: drei Code-Review-Befunde zu V1/V3/V2
+
+Externes Code-Review der Teil-17-Diffs fand drei konkrete Fehler — zwei
+echte fachliche Bugs (einer davon eine neue Regression aus V3 selbst,
+einer ein von V2 uebersehenes zweites Vorkommen derselben Fehlerklasse)
+und einen falschen Funktionsnamen im Test. Alle drei behoben, Finding 2
+und 3 zusaetzlich mit gezielten Regressionstests.
+
+### Finding 1 — Testaufruf passte nicht zur V1-API
+
+**Befund:** `EditorDiscardSnapshotTests.swift` rief in einem Test noch
+`view.isExerciseOrderDirty(comparedTo:)` auf. Die bei V1 bewusst
+abweichend benannte, tatsaechlich `internal` gemachte Funktion heisst
+`exerciseOrderIsDirty(comparedTo:)` (siehe Teil 17/V1 — die Umbenennung
+sollte jede Verwechslungsgefahr mit der gleichnamigen `private var`
+ausschliessen). Reiner Tippfehler-Rest aus derselben Umbenennung, zwei von
+drei Vorkommen in der Datei waren bereits korrekt.
+
+**Fix:** einzeiliger Rename im Testaufruf, keine Produktionscode-Aenderung.
+
+### Finding 2 — PlanEditorView.isOtherActivePlanStateDirty: nil faelschlich dirty
+
+**Befund:** die V3-Fix-Funktion verglich `other?.isActive != true`. Swift
+hebt `true` dabei auf `Bool?` an — `nil != .some(true)` ist `true`. War
+beim Oeffnen gar kein anderer Plan aktiv (`otherActivePlanIDAtOpen ==
+nil`, der mit Abstand haeufigste Fall: einfach der aktuell einzige aktive
+Plan wird bearbeitet), meldete die Funktion trotzdem faelschlich "dirty"
+— ein komplett unveraendertes, inaktives `TrainingPlan`-Formular zeigte
+den Discard-Dialog und die Checkmark-Markierung, obwohl nichts zu
+verwerfen war.
+
+**Fix:** Logik in eine testbare `internal func
+otherActivePlanStateIsDirty(otherActivePlanIDAtOpen:amongCandidates:)`
+extrahiert (gleiches Muster wie `planToReactivateOnDiscard`), `nil`
+explizit ueber ein `guard ... let other = ... else { return false }`
+als "keine Aenderung" behandelt statt per `!=`-Vergleich zu raten:
+
+```swift
+internal func otherActivePlanStateIsDirty(
+    otherActivePlanIDAtOpen: PersistentIdentifier?,
+    amongCandidates candidates: [TrainingPlan]
+) -> Bool {
+    guard !plan.isActive,
+          let other = planToReactivateOnDiscard(otherActivePlanIDAtOpen: otherActivePlanIDAtOpen, amongCandidates: candidates)
+    else { return false }
+    return !other.isActive
+}
+```
+
+**Getestet:** drei neue Tests in `EditorDiscardSnapshotTests.swift` —
+`testOtherActivePlanStateIsDirtyIsFalseWhenNoOtherPlanWasActiveAtOpen`
+(der eigentliche Regressionsfall: `nil` → `false`),
+`testOtherActivePlanStateIsDirtyDetectsOnOffToggleSequence`
+(Gegenprobe: die originale V3-An-Aus-Toggle-Sequenz wird weiterhin als
+dirty erkannt, Fix hat das nicht mit kaputt gemacht), und
+`testOtherActivePlanStateIsDirtyIsFalseWhenOtherStillActive` (anderer Plan
+durchgehend aktiv → No-Op, nicht dirty). Direkt ueber `PlanEditorView(plan:)`
+aufgerufen, ohne lebende Query-/Environment-Umgebung.
+
+### Finding 3 — ProfileEditorView.rebaselineSnapshot() weiterhin voller Capture
+
+**Befund:** dieselbe Fehlerklasse wie V2 (Teil 17), dort nur fuer
+`PlanEditorView` behoben — `ProfileEditorView.rebaselineSnapshot()` rief
+nach JEDER der drei Cardio-Feasibility-Aktionen (`accept`/`dismiss`/
+`acceptCustom`) weiterhin uneingeschraenkt `ProfileMetaSnapshot.capture(from:
+profile)` auf. Jede andere zu diesem Zeitpunkt noch offene, unbestaetigte
+Formularaenderung (z. B. ein gerade erst getippter neuer Coaching-Ton)
+wurde dadurch STILLSCHWEIGEND mitbestaetigt — "Verwerfen" konnte sie
+danach nicht mehr zuruecknehmen, obwohl der Nutzer sie nie bestaetigt hat.
+Root-Cause-Pruefung von `CardioFeasibilityCardModel` ergab: NUR `accept()`
+aendert ueberhaupt ein `ProfileMetaSnapshot`-Feld (`cardioGoal`);
+`dismiss()` und `acceptCustom()` aendern ausschliesslich
+`cardioFeasibilityDismissedFingerprint`, das gar nicht im Snapshot steckt
+— fuer diese beiden war JEDES Rebaseline falsch, nicht nur ein zu grobes.
+
+**Fix:** `rebaselineSnapshot()` → `rebaselineCardioGoal()`, schreibt nur
+noch `snapshot.cardioGoal = profile.cardioGoal`; Aufruf nach `accept()`
+bleibt (umbenannt), die Aufrufe nach `dismiss()`/`acceptCustom()` wurden
+ersatzlos ENTFERNT (nicht nur verengt — sie waren schlicht unnoetig).
+`rebaselineCardioGoal()`/`revertToSnapshot()` von `private` auf `internal`
+angehoben fuer Testbarkeit (keine der beiden beruehrt `@Query`/
+`@Environment`).
+
+**Getestet:** neuer Test
+`testProfileEditorViewRebaselineCardioGoalLeavesCoachingToneDiscardable`
+in `EditorDiscardSnapshotTests.swift`, exakt das vom Review vorgegebene
+Szenario: `coachingTone` aendern (offener Edit) → `cardioGoal` aendern +
+`rebaselineCardioGoal()` (simuliert bestaetigte Cardio-Aktion) →
+`revertToSnapshot()` (simuliert Verwerfen) → `coachingTone` wieder beim
+Ausgangswert, `cardioGoal` bleibt beim bestaetigten Wert. Direkt ueber
+`ProfileEditorView(profile:)` aufgerufen.
+
+### Linux-Kontrolle (Teil 18)
+
+`swift build`/`swift test`: gruen, weiterhin 979/979 Tests — unveraendert,
+weil `PlanEditorView.swift`/`ProfileEditorView.swift` und die
+Testdatei-Erweiterungen ausschliesslich `#if canImport(SwiftUI)`-gegatete
+Dateien betreffen (siehe Teil 17, "Ehrliche Grenzen" — Befund gilt
+unveraendert fort). Vier neue Testfunktionen in dieser Runde (drei fuer
+Finding 2, eine fuer Finding 3) liefen auf Linux NICHT tatsaechlich durch
+den Compiler/Testrunner — hinzugefuegt, aber auf dieser Plattform nicht
+ausgefuehrt. **Tests hinzugefuegt** (vier, s.o.) und **Tests erfolgreich
+ausgefuehrt** (null auf Linux; der tatsaechliche Lauf passiert erst
+automatisch via Codemagic auf echtem Apple-Build nach diesem Push — diese
+Session hat dafuer weder Ausloese- noch Einsichts-Zugriff, siehe Teil 17)
+sind hier bewusst als zwei getrennte Aussagen gehalten.

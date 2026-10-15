@@ -370,7 +370,7 @@ final class EditorDiscardSnapshotTests: XCTestCase {
 
         let added = Exercise(name: "Kniebeuge", orderIndex: 1, day: day)
         ctx.insert(added)
-        XCTAssertFalse(view.isExerciseOrderDirty(comparedTo: orderAtOpen), "Eine neue Uebung allein ist kein Reorder")
+        XCTAssertFalse(view.exerciseOrderIsDirty(comparedTo: orderAtOpen), "Eine neue Uebung allein ist kein Reorder")
 
         view.revertExerciseOrder(usingSnapshot: orderAtOpen)
         XCTAssertEqual(added.orderIndex, 1, "Neu hinzugefuegte Uebungen bleiben beim Reorder-Revert unangetastet")
@@ -435,6 +435,54 @@ final class EditorDiscardSnapshotTests: XCTestCase {
         XCTAssertNil(view.planToReactivateOnDiscard(otherActivePlanIDAtOpen: nil, amongCandidates: [plan]))
     }
 
+    /// Korrektur post-Review (Finding 2): `otherActivePlanIDAtOpen == nil`
+    /// (kein anderer Plan war beim Oeffnen aktiv) darf NICHT als dirty
+    /// gelten. Der urspruengliche `other?.isActive != true`-Vergleich liefert
+    /// bei `nil` faelschlich `true` und markiert einen nie angefassten,
+    /// inaktiven Plan als dirty.
+    func testOtherActivePlanStateIsDirtyIsFalseWhenNoOtherPlanWasActiveAtOpen() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let plan = TrainingPlan(name: "Solo", weeks: 8, isActive: false, targetEnvironment: .gym)
+        ctx.insert(plan)
+        let view = PlanEditorView(plan: plan)
+        XCTAssertFalse(view.otherActivePlanStateIsDirty(otherActivePlanIDAtOpen: nil, amongCandidates: [plan]))
+    }
+
+    /// Korrektur V3 (Regressionsschutz nach Finding-2-Fix): die eigentliche
+    /// An-Aus-Toggle-Sequenz muss weiterhin als dirty erkannt werden.
+    func testOtherActivePlanStateIsDirtyDetectsOnOffToggleSequence() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let planA = TrainingPlan(name: "A", weeks: 8, isActive: true, targetEnvironment: .gym)
+        let planB = TrainingPlan(name: "B", weeks: 8, isActive: false, targetEnvironment: .gym)
+        ctx.insert(planA)
+        ctx.insert(planB)
+
+        let view = PlanEditorView(plan: planB)
+        let otherAtOpen = planA.persistentModelID
+
+        planA.isActive = false
+        planB.isActive = true
+        planB.isActive = false
+
+        XCTAssertTrue(view.otherActivePlanStateIsDirty(otherActivePlanIDAtOpen: otherAtOpen, amongCandidates: [planA, planB]))
+    }
+
+    /// Korrektur post-Review (Finding 2): blieb der andere Plan die ganze
+    /// Zeit aktiv, ist das ein folgenloses No-Op, nicht dirty.
+    func testOtherActivePlanStateIsDirtyIsFalseWhenOtherStillActive() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let planA = TrainingPlan(name: "A", weeks: 8, isActive: true, targetEnvironment: .gym)
+        let planB = TrainingPlan(name: "B", weeks: 8, isActive: false, targetEnvironment: .gym)
+        ctx.insert(planA)
+        ctx.insert(planB)
+
+        let view = PlanEditorView(plan: planB)
+        XCTAssertFalse(view.otherActivePlanStateIsDirty(otherActivePlanIDAtOpen: planA.persistentModelID, amongCandidates: [planA, planB]))
+    }
+
     // MARK: - Korrektur V4 (MeasurementView)
 
     /// Korrektur V4: `MeasurementFieldSnapshot` ist die Vergleichsbasis fuer
@@ -467,6 +515,40 @@ final class EditorDiscardSnapshotTests: XCTestCase {
             weightKg: nil, neckCm: nil, waistCm: nil, hipCm: nil,
             shoulderCm: nil, chestCm: nil, bicepsCm: nil, thighCm: nil, calfCm: nil
         ))
+    }
+
+    // MARK: - Korrektur post-Review (Finding 3: ProfileEditorView)
+
+    /// Exaktes Szenario aus dem Review: Coaching-Ton aendern (offener,
+    /// unbestaetigter Formular-Edit) -> Cardio-Aktion bestaetigen (eigene,
+    /// bereits abgeschlossene Aktion, setzt `cardioGoal` + rebaselined NUR
+    /// dieses Feld via `rebaselineCardioGoal()`) -> Verwerfen. Der
+    /// urspruengliche Bug (volles `rebaselineSnapshot()` nach jeder
+    /// Feasibility-Aktion) haette den Coaching-Ton-Edit faelschlich mit
+    /// bestaetigt; der Discard haette ihn nicht mehr zurueckgerollt.
+    func testProfileEditorViewRebaselineCardioGoalLeavesCoachingToneDiscardable() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 0), heightCm: 180, profile: .male,
+            coachingTone: .analytical, cardioGoal: .generalFitness
+        )
+        ctx.insert(profile)
+
+        let view = ProfileEditorView(profile: profile)
+
+        // Unabhaengiger, noch offener Formular-Edit:
+        profile.coachingTone = .motivating
+        // Cardio-Aktion wird ueber ihre eigene, separate CTA bestaetigt
+        // (entspricht `CardioFeasibilityCardModel.accept` + direkt folgendem
+        // `rebaselineCardioGoal()`-Aufruf in der View):
+        profile.cardioGoal = .marathon
+        view.rebaselineCardioGoal()
+
+        view.revertToSnapshot()
+
+        XCTAssertEqual(profile.coachingTone, .analytical, "Unabhaengiger Coaching-Ton-Edit muss beim Verwerfen zurueckgerollt werden")
+        XCTAssertEqual(profile.cardioGoal, .marathon, "Bestaetigtes cardioGoal bleibt bestehen, kein Teil-Rollback")
     }
 }
 #endif

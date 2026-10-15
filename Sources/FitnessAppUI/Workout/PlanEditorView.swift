@@ -524,9 +524,24 @@ public struct PlanEditorView: View {
     /// meldet bereits der normale Feld-Vergleich oben "dirty". Nutzt dieselbe
     /// `planToReactivateOnDiscard`-Lookup wie `revertToSnapshot()`.
     private var isOtherActivePlanStateDirty: Bool {
-        guard !plan.isActive else { return false }
-        let other = planToReactivateOnDiscard(otherActivePlanIDAtOpen: otherActivePlanIDAtOpen, amongCandidates: allPlans)
-        return other?.isActive != true
+        otherActivePlanStateIsDirty(otherActivePlanIDAtOpen: otherActivePlanIDAtOpen, amongCandidates: allPlans)
+    }
+
+    /// UI-Refactor (Korrektur post-Review): reine Entscheidungslogik, analog
+    /// `planToReactivateOnDiscard` extrahiert (explizite Parameter statt
+    /// `@State`/`@Query`, direkt testbar). `nil` (kein anderer Plan war beim
+    /// Oeffnen aktiv) heisst explizit "keine Aenderung" — ein Vergleich wie
+    /// `other?.isActive != true` waere hier falsch, da er bei `nil` ebenfalls
+    /// `true` liefert und einen nie angefassten, inaktiven Plan faelschlich
+    /// dirty meldet.
+    internal func otherActivePlanStateIsDirty(
+        otherActivePlanIDAtOpen: PersistentIdentifier?,
+        amongCandidates candidates: [TrainingPlan]
+    ) -> Bool {
+        guard !plan.isActive,
+              let other = planToReactivateOnDiscard(otherActivePlanIDAtOpen: otherActivePlanIDAtOpen, amongCandidates: candidates)
+        else { return false }
+        return !other.isActive
     }
 
     /// UI-Refactor (Korrektur V3): reine Entscheidungslogik fuer "welcher

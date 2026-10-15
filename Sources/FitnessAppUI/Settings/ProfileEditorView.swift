@@ -390,24 +390,31 @@ public struct ProfileEditorView: View {
     /// Eingabepuffer (siehe dessen Doc-Kommentar) — sonst zeigt das Textfeld
     /// nach einem Discard weiter den zuletzt getippten, nicht mehr gueltigen
     /// String statt des wiederhergestellten Modellwerts.
-    private func revertToSnapshot() {
+    ///
+    /// `internal` (statt `private`) macht die Funktion direkt per
+    /// `ProfileEditorView(profile:)`-Konstruktion testbar (siehe
+    /// Tests/FitnessAppUITests) — beruehrt kein `@Environment`/`@Query`.
+    internal func revertToSnapshot() {
         snapshot.apply(to: profile)
         fiveKReferenceText = snapshot.current5kReferenceSeconds.map(PaceCalculator.formatDuration) ?? ""
     }
 
-    /// UI-Refactor (Korrektur): macht den aktuellen Profil-Zustand zur neuen
-    /// Baseline. Aufgerufen direkt nach `CardioFeasibilityCardModel.accept/
-    /// dismiss/acceptCustom` — diese Aktionen sind ueber ihre eigenen,
-    /// bereits sichtbaren CTAs ("Übernehmen"/"Plan anpassen"/"Ziel behalten")
-    /// explizit entschieden und legen bei `accept`/`acceptCustom` zusaetzlich
-    /// einen neuen Plan samt Tagen an — kein ausstehender, per "Verwerfen"
-    /// rueckrollbarer Formular-Edit mehr. Ohne diesen Re-Snapshot wuerde der
-    /// Discard-Dialog faelschlich versprechen, `cardioGoal` verwerfen zu
-    /// koennen, obwohl der neu angelegte Plan davon unberuehrt bliebe
-    /// (Teil-Rollback, siehe PlanEditorView fuer dieselbe Problematik bei
-    /// der Umgebungs-Migration).
-    private func rebaselineSnapshot() {
-        snapshot = ProfileMetaSnapshot.capture(from: profile)
+    /// UI-Refactor (Korrektur post-Review, Finding 3): macht NUR `cardioGoal`
+    /// zur neuen Baseline — nicht das gesamte Profil. Aufgerufen direkt nach
+    /// `CardioFeasibilityCardModel.accept(profile:in:)`, dem einzigen der
+    /// drei Feasibility-Callbacks, der ueberhaupt ein `ProfileMetaSnapshot`-
+    /// Feld aendert (`cardioGoal`; `dismiss`/`acceptCustom` ruehren
+    /// ausschliesslich `cardioFeasibilityDismissedFingerprint` an, das NICHT
+    /// im Snapshot steckt — dort ist kein Rebaseline noetig, siehe die
+    /// entfernten Aufrufe an den jeweiligen Stellen). Ein voller
+    /// `ProfileMetaSnapshot.capture(from:)` wie zuvor wuerde jede andere,
+    /// noch offene Formularaenderung (z. B. den Coaching-Ton) faelschlich
+    /// mit bestaetigen und dadurch "Verwerfen" dafuer unwirksam machen
+    /// (dieselbe Problematik wie bei PlanEditorView fuer die
+    /// Umgebungs-Migration — dort bereits gezielt auf das betroffene Feld
+    /// begrenzt).
+    internal func rebaselineCardioGoal() {
+        snapshot.cardioGoal = profile.cardioGoal
     }
 
     // MARK: - Health
@@ -974,14 +981,17 @@ public struct ProfileEditorView: View {
             if model.hasPlan {
                 Button {
                     // UI-Refactor (Korrektur): `accept` schreibt `cardioGoal`
-                    // (ein Snapshot-Feld) UND legt einen neuen Plan samt Tagen
-                    // an — eine bereits abgeschlossene, eigene Aktion, kein
-                    // ausstehender Formular-Edit mehr. Re-Snapshot sofort
-                    // danach, sonst wuerde "Verwerfen" `cardioGoal` isoliert
-                    // zuruecksetzen, ohne den neuen Plan mit zu entfernen
-                    // (Teil-Rollback, siehe `rebaselineSnapshot()`-Dokumentation).
+                    // (das einzige betroffene Snapshot-Feld) UND legt einen
+                    // neuen Plan samt Tagen an — eine bereits abgeschlossene,
+                    // eigene Aktion, kein ausstehender Formular-Edit mehr.
+                    // Re-Snapshot NUR fuer `cardioGoal` sofort danach, sonst
+                    // wuerde "Verwerfen" es isoliert zuruecksetzen, ohne den
+                    // neuen Plan mit zu entfernen (Teil-Rollback) — ein voller
+                    // Re-Snapshot wuerde umgekehrt jede andere offene
+                    // Formularaenderung mit bestaetigen (siehe
+                    // `rebaselineCardioGoal()`-Dokumentation).
                     withAnimation { _ = model.accept(profile: profile, in: modelContext) }
-                    rebaselineSnapshot()
+                    rebaselineCardioGoal()
                 } label: {
                     Text(model.verdict.feasible
                          ? String(localized: "profile.cardio.feasibility.apply", bundle: .module)
@@ -1004,8 +1014,11 @@ public struct ProfileEditorView: View {
                 }
                 if !model.verdict.feasible {
                     Button {
+                        // `dismiss` aendert nur `cardioFeasibilityDismissed-
+                        // Fingerprint`, kein Snapshot-Feld — kein Rebaseline
+                        // noetig, ein offener Coaching-Ton-Edit muss per
+                        // "Verwerfen" weiterhin ruecknehmbar bleiben.
                         withAnimation { model.dismiss(profile: profile) }
-                        rebaselineSnapshot()
                     } label: {
                         Text("profile.cardio.feasibility.keepGoal", bundle: .module)
                             .font(.subheadline)
@@ -1020,8 +1033,10 @@ public struct ProfileEditorView: View {
         .sheet(isPresented: $showingPlanAdjustSheet) {
             if let input = model.planInput {
                 PlanBuilderView(initialInput: input) { adjustedInput, adjustedResult in
+                    // `acceptCustom` aendert ebenfalls nur `cardioFeasibility-
+                    // DismissedFingerprint`, nicht `cardioGoal` — kein
+                    // Rebaseline noetig (siehe `rebaselineCardioGoal()`).
                     _ = model.acceptCustom(input: adjustedInput, result: adjustedResult, profile: profile, in: modelContext)
-                    rebaselineSnapshot()
                 }
             }
         }
