@@ -97,8 +97,18 @@ public enum BackupService {
     /// worden (letzter Tag v0.1.73 = DEL-216, BackupService kam mit DEL-227).
     /// Auf Entwickler-Geraeten liegengebliebene Generationen am alten Pfad
     /// werden einmalig mitgenommen, damit dort nichts verwaist.
+    /// Settings-Epic Phase 6 (DI-Seam fuer BL-03/BL-05-Fehlerpfade): `nil`
+    /// (Default) aendert nichts — `backupsDirectory()` nutzt weiterhin den
+    /// echten `Documents/Backups`-Pfad. `@testable import FitnessAppData`
+    /// kann hier ein temporaeres Test-Verzeichnis setzen (z.B. eines, dessen
+    /// Berechtigungen oder Existenz gezielt manipuliert werden), um Lade-/
+    /// Loeschfehler reproduzierbar zu testen, ohne den echten Documents-Pfad
+    /// anzufassen. Kein globaler Architekturumbau — ein einzelner Override-Punkt.
+    static var backupsDirectoryOverride: URL?
+
     public static func backupsDirectory() throws -> URL {
-        let base = URL.documentsDirectory.appendingPathComponent("Backups", isDirectory: true)
+        let base = backupsDirectoryOverride
+            ?? URL.documentsDirectory.appendingPathComponent("Backups", isDirectory: true)
         if !FileManager.default.fileExists(atPath: base.path) {
             try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
         }
