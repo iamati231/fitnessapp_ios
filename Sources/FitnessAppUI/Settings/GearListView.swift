@@ -16,6 +16,10 @@ public struct GearListView: View {
 
     @State private var editingGear: Gear?
     @State private var showingNewGearSheet = false
+    /// GEAR-05: Bestätigung vor dem (irreversiblen) Löschen — analog zum
+    /// Custom-Exercise-Löschen in `ExerciseLibraryView`.
+    @State private var pendingDelete: Gear?
+    @State private var deleteErrorMessage: String?
 
     public init() {}
 
@@ -29,7 +33,10 @@ public struct GearListView: View {
                 title: String(localized: "gear.list.title", bundle: .module),
                 onBack: { dismiss() },
                 actions: [
-                    DeltiqHeaderAction(systemImage: "plus") {
+                    DeltiqHeaderAction(
+                        systemImage: "plus",
+                        accessibilityLabel: String(localized: "gear.list.add.action", bundle: .module)
+                    ) {
                         showingNewGearSheet = true
                     }
                 ]
@@ -63,6 +70,30 @@ public struct GearListView: View {
                 GearEditorView(mode: .edit(gear))
             }
         }
+        // GEAR-05: Loeschen ist irreversibel (Kilometerstand-Historie geht
+        // verloren) — Bestaetigung analog zu ExerciseLibraryView/BackupListView.
+        .confirmationDialog(
+            String(localized: "gear.delete.confirm.title", bundle: .module),
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: pendingDelete
+        ) { gear in
+            Button(role: .destructive) {
+                confirmDelete(gear)
+            } label: {
+                Text("gear.delete.confirm.action", bundle: .module)
+            }
+            Button(role: .cancel) {
+                pendingDelete = nil
+            } label: {
+                Text("common.cancel", bundle: .module)
+            }
+        } message: { gear in
+            Text(String(format: String(localized: "gear.delete.confirm.message", bundle: .module), gear.name))
+        }
     }
 
     // MARK: - Empty State
@@ -86,60 +117,83 @@ public struct GearListView: View {
                 gearRow(gear, showsDivider: gear.id != allGears.last?.id)
             }
             hintRow(String(localized: "gear.list.footer", bundle: .module))
+            if let deleteErrorMessage {
+                Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
+                Text(deleteErrorMessage)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.error)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+            }
         }
     }
 
     private func gearRow(_ gear: Gear, showsDivider: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 10) {
-                    Image(systemName: gear.type == .shoe ? "shoe" : "bicycle")
-                        .symbolRenderingMode(.hierarchical)
-                        .font(.title3)
-                        .foregroundStyle(gear.needsReplacement ? Color.Deltiq.error : Color.deltiqOrange)
-                        .frame(width: 28)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(gear.name)
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(Color.primary)
-                        Text("\(formatKm(gear.currentDistanceKm)) / \(formatKm(gear.maxDistanceKm)) km")
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(gear.needsReplacement ? Color.Deltiq.error : Color.Deltiq.textSecondary)
+            HStack(alignment: .top, spacing: 4) {
+                // GEAR-04: echter `Button` statt `.onTapGesture` auf einem
+                // VStack — gibt VoiceOver korrekte Button-Semantik (Exercise
+                // Library macht das bereits richtig). Der Loesch-Knopf bleibt
+                // ein eigenstaendiger SIBLING-Button (kein Nesting), damit
+                // beide Tap-Ziele unabhaengig funktionieren.
+                Button {
+                    editingGear = gear
+                } label: {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 10) {
+                            Image(systemName: gear.type == .shoe ? "shoe" : "bicycle")
+                                .symbolRenderingMode(.hierarchical)
+                                .font(.title3)
+                                .foregroundStyle(gear.needsReplacement ? Color.Deltiq.error : Color.deltiqOrange)
+                                .frame(width: 28)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(gear.name)
+                                    .font(.body.weight(.semibold))
+                                    .foregroundStyle(Color.primary)
+                                Text("\(formatKm(gear.currentDistanceKm)) / \(formatKm(gear.maxDistanceKm)) km")
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(gear.needsReplacement ? Color.Deltiq.error : Color.Deltiq.textSecondary)
+                            }
+                            Spacer()
+                            if !gear.isActive {
+                                Text("gear.inactive", bundle: .module).deltiqLabel()
+                            }
+                        }
+                        ProgressView(value: min(gear.progress, 1.0))
+                            .tint(gear.needsReplacement ? Color.Deltiq.error : Color.deltiqOrange)
+                        if gear.needsReplacement {
+                            Label {
+                                Text("gear.needsReplacement", bundle: .module)
+                            } icon: {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                            }
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(Color.Deltiq.error)
+                        }
                     }
-                    Spacer()
-                    if !gear.isActive {
-                        Text("gear.inactive", bundle: .module).deltiqLabel()
-                    }
-                    // Ersetzt das bisherige .onDelete-Swipe (List-exklusiv,
-                    // funktioniert nicht mehr ausserhalb einer List) durch
-                    // einen expliziten Loesch-Knopf pro Zeile — Zeilen-Tap
-                    // bleibt fuer "Bearbeiten" reserviert.
-                    Button {
-                        delete(gear)
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(Color.Deltiq.textTertiary)
-                    }
-                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
                 }
-                ProgressView(value: min(gear.progress, 1.0))
-                    .tint(gear.needsReplacement ? Color.Deltiq.error : Color.deltiqOrange)
-                if gear.needsReplacement {
-                    Label {
-                        Text("gear.needsReplacement", bundle: .module)
-                    } icon: {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                    }
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(Color.Deltiq.error)
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+
+                // Ersetzt das bisherige .onDelete-Swipe (List-exklusiv,
+                // funktioniert nicht mehr ausserhalb einer List) durch einen
+                // expliziten Loesch-Knopf pro Zeile. BL-05-Lehre (Phase 5):
+                // Tap-Ziel mind. 44x44pt, eigenes Accessibility-Label.
+                Button {
+                    pendingDelete = gear
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(Color.Deltiq.textTertiary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("gear.delete.action", bundle: .module))
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                editingGear = gear
-            }
+            .padding(.leading, 14)
+            .padding(.trailing, 6)
+            .padding(.vertical, 8)
             if showsDivider {
                 Rectangle()
                     .fill(Color.Deltiq.divider)
@@ -159,8 +213,15 @@ public struct GearListView: View {
             .padding(.bottom, 8)
     }
 
-    private func delete(_ gear: Gear) {
+    private func confirmDelete(_ gear: Gear) {
+        pendingDelete = nil
+        deleteErrorMessage = nil
         modelContext.delete(gear)
+        do {
+            try modelContext.save()
+        } catch {
+            deleteErrorMessage = error.localizedDescription
+        }
     }
 
     private func formatKm(_ km: Double) -> String {
