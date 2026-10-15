@@ -526,7 +526,61 @@ Bekannte Grenzen/Risiken: der Spalten-Header selbst ist nicht an `ViewThatFits`s
   einzeilig stehen und "RIR" steht dann nicht mehr exakt über der (auf Zeile 2 gewanderten) Kapsel.
   Bewusst nicht in dieser Runde behoben, siehe Doc-Kommentar an `setRowColumnHeader`. Alle
   Breitenwerte (`SetRowColumns`) sind Schriftmetrik-Berechnungen, keine Geräte-Messungen.
-Branch/Commit: claude/smart-onboarding-epic (gespiegelt auf claude/neue-views-entwicklung-ahsg90),
-  Commit e3407a3.
+Branch/Commit: claude/smart-onboarding-epic (gespiegelt auf claude/neue-views-entwicklung-ahsg90).
+  Commit e3407a3 = diese RIR-Implementierung. Commit b68d5e4 = rein redaktionelle Folgeänderung
+  (SHA-Ergänzung in diesem Dokument selbst), enthält keinen Code dieses Pakets.
 Nächste Aufgabe: P2.0 — Datenvertrag für Planungskontext/Wochenentwurf (Core, Linux-testbar).
 ```
+
+## P1-Nachbesserung (vor Abnahme korrigiert)
+
+Review-Rückmeldung nach dem ersten P1-Bericht fand drei konkrete, berechtigte Lücken. Alle behoben,
+P1 gilt erst mit dieser Nachbesserung als code-seitig vollständig — Apple-Build/UI-Prüfung bleiben
+unverändert offen (siehe unten).
+
+**1. Äußere Spaltenbreiten.** `weightInput`/`repsInput` setzen `.frame(width:)` VOR ihrem eigenen
+`.padding(.horizontal, 8)` — die sichtbare Box ist dadurch 16pt breiter als die reine Feldbreite
+(72/64pt statt 56/48pt). Der Header reservierte vorher nur die schmalere Feldbreite. **Fix:**
+`SetRowColumns.weightWidth`/`repsWidth` sind jetzt explizit als `weightFieldWidth/repsFieldWidth +
+2 × fieldHorizontalPadding` definiert (die tatsächliche äußere Breite); `weightInput`/`repsInput`
+selbst nutzen die neuen `*FieldWidth`-Konstanten für ihr `.frame()`, unverändert in der Optik. Header
+und `ViewThatFits`-Breitenvergleich nutzen ausschließlich die korrigierten `weightWidth`/`repsWidth`.
+
+**2. Header/Zwei-Zeilen-Fallback-Konsistenz.** Der Header war starr einzeilig; bei `SetRow`s
+zweizeiligem Fallback hätte „RIR" über leerem Platz gestanden. **Fix:** Der Header hat jetzt selbst
+einen `ViewThatFits(fullSetRowColumnHeader, reducedSetRowColumnHeader)`. Die reduzierte Variante zeigt
+nur noch Satz/kg/Wdh (exakt Zeile 1 von `twoLineInputRow`) und nutzt dieselben Spaltenbreiten wie die
+Satzzeile, wodurch beide `ViewThatFits`-Entscheidungen bei gleicher verfügbarer Breite zusammenfallen
+— kein eigenständig gepflegter Breitenwert, der hätte abweichen können. Zusätzlich bekommt
+`twoLineInputRow`s zweite Zeile ein eigenes Inline-„RIR"-Label direkt neben der Kapsel, sodass die
+Bedeutung in BEIDEN Fällen eindeutig ist (Vorgabe „gemeinsame Layoutentscheidung" UND „eindeutige
+lokale Beschriftung im Fallback" beide umgesetzt, nicht nur eine Option). Kein neuer Overflow-Pfad:
+der reduzierte Header hat strukturell weniger Inhalt als der volle, kann also nicht breiter sein.
+
+**3. Dynamic Type.** Checkmark-Spalte nutzte einen statischen `28`-Platzhalter, obwohl das echte Icon
+über `@ScaledMetric` skaliert — bei großen Schriftstufen hätte das auseinanderlaufen können. RIR-Spalte
+im Header nutzte eigenes Styling statt der Kapsel-Vorgabe. **Fix:** `ExerciseCard` deklariert dieselbe
+`@ScaledMetric(relativeTo: .title2)`-Property (gleiche Basis 28) wie `SetRow.checkmarkIconSize` —
+beide im selben Environment ausgewertet, garantiert identischer Wert, statt einer behaupteten
+Gleichheit zweier unabhängiger Zahlen. Neuer `SetRow.RIRValueTextStyle`-`ViewModifier` (Font/
+FixedSize/Padding/MinWidth) wird von `rirCapsule` UND dem Header-RIR-Label GEMEINSAM angewendet —
+Breitengleichheit durch identischen Code, nicht durch zwei manuell synchron gehaltene Werte.
+
+Geänderte Komponenten zusätzlich zum ersten P1-Commit: `SetRow.swift` (`SetRowColumns` korrigiert,
+neuer `RIRValueTextStyle`, `weightInput`/`repsInput` umgestellt, `rirCapsule` nutzt den Modifier,
+`twoLineInputRow` mit Inline-RIR-Label), `ExerciseCard.swift` (`setRowColumnHeader` jetzt
+`ViewThatFits` mit `fullSetRowColumnHeader`/`reducedSetRowColumnHeader`, neue `@ScaledMetric`-Property),
+`Localizable.xcstrings` (+1 Key `set.column.header.reducedAccessibilityLabel`, DE/EN/TR).
+
+Tests ausgeführt: Linux Build+Test grün, 979/979 unverändert — gleiche Einschränkung wie beim ersten
+P1-Commit (SwiftUI-gegated, beweist nur Restpaket-Kompatibilität). Gesamten Diff erneut manuell
+gegengelesen (Klammerbilanz, `ViewModifier`-Konformität, `@ScaledMetric`-Deklarationssyntax,
+Referenz-Konsistenz zwischen den neuen Konstanten).
+
+**Weiterhin ausdrücklich offen, nicht „erledigt":** Apple-Build/CI — nicht verifizierbar aus dieser
+Session, erster echter Compiler-Lauf passiert erst bei einem geteilten Codemagic-Log. UI-/
+Geräteprüfung — nicht durchgeführt: ob Header und Satzzeilen auf einem echten Gerät bei jeder
+Dynamic-Type-Stufe tatsächlich pixelgenau fluchten, ob `ViewThatFits` in beiden Stellen wirklich
+synchron kippt, und ob die berechneten (nicht gemessenen) Breitenwerte (`rirWidth`, ScaledMetric-Basis
+28) in der Praxis ausreichen, ist ohne Simulator/Gerät nicht feststellbar. P1 bleibt bis zu einer
+solchen Prüfung "implementiert, nicht abgenommen".

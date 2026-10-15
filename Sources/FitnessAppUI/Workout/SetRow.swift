@@ -103,26 +103,67 @@ struct SetRow: View {
     /// Korrektur post-Review (RIR strukturell statt komprimiert): EINE
     /// gemeinsame Quelle fuer die Spaltenbreiten der Satz-Zeile UND der
     /// Header-Zeile in `ExerciseCard` — verhindert, dass beide unabhaengig
-    /// gepflegte Zahlenpaare auseinanderdriften. `rirWidth` ist anhand der
-    /// `.caption`-monospacedDigit-Schriftmetrik fuer den laengsten gueltigen
-    /// Wert ("4,5", 3 Zeichen) plus 14pt Kapsel-Padding GERECHNET, nicht an
-    /// einem echten Geraet GEMESSEN (siehe Datei-Header zur Linux-Grenze
-    /// dieser Session — Geraetepruefung bleibt offen).
+    /// gepflegte Zahlenpaare auseinanderdriften.
+    ///
+    /// Korrektur post-Review (Nachbesserung): `weightWidth`/`repsWidth`
+    /// bezeichnen jetzt explizit die TATSAECHLICHE AEUSSERE Breite der
+    /// sichtbaren Box (Feld-Innenbreite + beidseitiges Padding), nicht nur
+    /// die Feld-Innenbreite. `weightInput`/`repsInput` wenden NACH ihrem
+    /// `.frame(width:)` noch `.padding(.horizontal: fieldHorizontalPadding)`
+    /// an — die vorherige Fassung reservierte im Header nur die
+    /// Feld-Innenbreite (56/48pt) fuer eine tatsaechlich 72/64pt breite Box,
+    /// wodurch Header- und Satzzeilen-Spalten nicht deckungsgleich waren.
+    /// `weightFieldWidth`/`repsFieldWidth` bleiben als interne Werte fuer
+    /// `weightInput`/`repsInput` selbst erhalten; fuer JEDE
+    /// Spalten-Ausrichtung (Header, `ViewThatFits`-Breitenvergleich) gilt
+    /// ausschliesslich `weightWidth`/`repsWidth`.
     internal enum SetRowColumns {
         static let setNumberWidth: CGFloat = 24
-        static let weightWidth: CGFloat = 56
-        static let repsWidth: CGFloat = 48
+        static let weightFieldWidth: CGFloat = 56
+        static let repsFieldWidth: CGFloat = 48
+        /// Zusaetzliches horizontales Padding, das `weightInput`/
+        /// `repsInput` NACH ihrem `.frame(width:)` noch anwenden.
+        static let fieldHorizontalPadding: CGFloat = 8
+        static let weightWidth: CGFloat = weightFieldWidth + 2 * fieldHorizontalPadding
+        static let repsWidth: CGFloat = repsFieldWidth + 2 * fieldHorizontalPadding
         static let plateWidth: CGFloat = 22
+        /// Mindestbreite des RIR-Werts (Text + Padding) — ueber
+        /// `RIRValueTextStyle` von Kapsel UND Header-Label GEMEINSAM
+        /// genutzt (gleicher Code statt zwei unabhaengig gepflegter
+        /// Stylings), damit beide bei JEDER Dynamic-Type-Stufe exakt
+        /// gleich breit bleiben. Anhand der `.caption`-monospacedDigit-
+        /// Schriftmetrik fuer den laengsten gueltigen Wert ("4,5", 3
+        /// Zeichen) plus 14pt Padding GERECHNET, nicht an einem echten
+        /// Geraet GEMESSEN (Geraetepruefung bleibt offen).
         static let rirWidth: CGFloat = 44
-        /// Naeherung der `@ScaledMetric checkmarkIconSize`-Spalte fuer den
-        /// Header-Platzhalter — reine Layout-Richtgroesse, skaliert NICHT
-        /// exakt mit Dynamic Type wie das echte Icon.
-        static let checkmarkWidth: CGFloat = 28
+        /// Bewusst KEIN statischer Wert fuer die Checkmark-Spalte hier —
+        /// das echte Icon skaliert via `@ScaledMetric` mit Dynamic Type,
+        /// ein `enum` kann keine Environment-abhaengigen Werte halten.
+        /// `ExerciseCard` deklariert stattdessen dieselbe `@ScaledMetric`
+        /// (gleiche Basis, gleiches `relativeTo`) wie `SetRow.
+        /// checkmarkIconSize`, siehe dort.
         static let spacing: CGFloat = 6
         /// Einzug fuer RIR-Regler/„letztes Mal"-Zeile unter der Eingabezeile
         /// — Satznummer-Spalte + ein Spacing, damit sie unter dem
         /// Dateninhalt (nicht der Satznummer) beginnen.
         static let secondaryLineIndent: CGFloat = setNumberWidth + spacing
+    }
+
+    /// Geteilte Schrift-/Breitenvorgabe fuer den reinen RIR-Wert-Text. Von
+    /// `rirCapsule` UND `ExerciseCard.fullSetRowColumnHeader`s "RIR"-Label
+    /// genutzt — EIN Code-Pfad statt zwei unabhaengig gepflegter Stylings,
+    /// die bei Dynamic-Type-Aenderungen sonst hätten auseinanderlaufen
+    /// können. Enthaelt bewusst KEINE Farbe/kein Background (unterscheiden
+    /// sich je Call-Site).
+    internal struct RIRValueTextStyle: ViewModifier {
+        func body(content: Content) -> some View {
+            content
+                .font(.caption.weight(.semibold).monospacedDigit())
+                .fixedSize()
+                .padding(.horizontal, 7)
+                .padding(.vertical, 4)
+                .frame(minWidth: SetRowColumns.rirWidth)
+        }
     }
 
     private var isCompleted: Bool { existingLog != nil }
@@ -334,6 +375,14 @@ struct SetRow: View {
                     .accessibilityHidden(true)
                 plateColumn
                 Spacer(minLength: 6)
+                // Korrektur post-Review: in diesem Fallback zeigt der Header
+                // darueber NUR noch Satz/kg/Wdh (siehe ExerciseCard.
+                // reducedSetRowColumnHeader) - "RIR" steht hier deshalb als
+                // eigenes, unmittelbar angrenzendes Inline-Label, damit die
+                // Kapsel-Bedeutung ohne den (jetzt nicht mehr passenden)
+                // Header-Platz eindeutig bleibt.
+                Text("set.column.rirLabel", bundle: .module)
+                    .deltiqLabel()
                 rirCapsule
                 checkmarkButton
             }
@@ -419,8 +468,8 @@ struct SetRow: View {
         TextField(weightPlaceholder, value: $weight, format: .number, prompt: Text(weightPlaceholder))
             .decimalKeyboard()
             .monospacedDigit()
-            .frame(width: SetRowColumns.weightWidth)
-            .padding(.horizontal, 8)
+            .frame(width: SetRowColumns.weightFieldWidth)
+            .padding(.horizontal, SetRowColumns.fieldHorizontalPadding)
             .padding(.vertical, 6)
             .background(Color.secondary.opacity(0.12))
             .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -458,8 +507,8 @@ struct SetRow: View {
         TextField("-", value: $reps, format: .number, prompt: Text("-"))
             .decimalKeyboard()
             .monospacedDigit()
-            .frame(width: 48)
-            .padding(.horizontal, 8)
+            .frame(width: SetRowColumns.repsFieldWidth)
+            .padding(.horizontal, SetRowColumns.fieldHorizontalPadding)
             .padding(.vertical, 6)
             .background(Color.secondary.opacity(0.12))
             .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -560,15 +609,8 @@ struct SetRow: View {
             withAnimation(.easeInOut(duration: 0.2)) { rirExpanded.toggle() }
         } label: {
             Text(rir.formattedRIR)
-                .font(.caption.weight(.semibold).monospacedDigit())
-                .fixedSize()
+                .modifier(RIRValueTextStyle())
                 .foregroundStyle(rirExpanded ? .white : Color.deltiqOrange)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 4)
-                // Mindestbreite statt reiner Inhaltsbreite - verhindert, dass
-                // die Kapsel bei einstelligen Werten ("0") optisch zum Kreis
-                // statt einer Pille wird.
-                .frame(minWidth: SetRowColumns.rirWidth)
                 .background(rirExpanded ? Color.deltiqOrange : Color.deltiqOrange.opacity(0.12))
                 .clipShape(Capsule())
         }

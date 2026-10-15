@@ -52,6 +52,16 @@ struct ExerciseCard: View {
     /// kleinen Play-Button (`gifButton`), der `ExerciseGifSheet` oeffnet.
     @State private var showingGifSheet = false
 
+    /// Korrektur post-Review (Dynamic Type): identische Deklaration (gleiche
+    /// Basis, gleiches `relativeTo`) wie `SetRow.checkmarkIconSize` — beide
+    /// werden von SwiftUI im selben Environment (gleiche Dynamic-Type-Stufe)
+    /// ausgewertet und liefern dadurch GARANTIERT denselben skalierten Wert,
+    /// statt einer statischen Zahl, die bei groesseren Schriftstufen vom
+    /// tatsaechlichen Checkmark-Icon abweichen wuerde. `SetRowColumns` kann
+    /// das nicht selbst halten, da `@ScaledMetric` Live-Environment-Zugriff
+    /// braucht (ein `enum` mit `static let` hat keinen).
+    @ScaledMetric(relativeTo: .title2) private var checkmarkColumnPlaceholderWidth: CGFloat = 28
+
     var body: some View {
         // UX-203: berechne EINMAL pro Render den aktiven Satz — der erste
         // mit `existingLog == nil`. Wenn alle completed sind, bleibt es nil
@@ -149,20 +159,31 @@ struct ExerciseCard: View {
     /// Korrektur post-Review (RIR strukturell statt komprimiert): einmalige
     /// Spaltenbeschriftung oberhalb der Satzzeilen. Nutzt dieselben
     /// `SetRow.SetRowColumns`-Breiten wie `SetRow.singleLineInputRow`, damit
-    /// Header und Satzzeilen spaltengenau ausgerichtet sind. Die beiden
-    /// letzten Platzhalter (Plate-Spalte, Checkmark-Spalte) bleiben
-    /// unbeschriftet, reservieren aber dieselbe Breite, damit "RIR" exakt
-    /// über der Kapsel-Spalte steht.
+    /// Header und Satzzeilen spaltengenau ausgerichtet sind.
     ///
-    /// Bekannte Grenze: deckt nur das Ein-Zeilen-Layout von `SetRow`
-    /// bündig ab. Faellt `SetRow` bei extrem schmalem Display + sehr großer
-    /// Dynamic-Type-Stufe auf sein zweizeiliges Layout zurück, bleibt dieser
-    /// Header unverändert einzeilig stehen — "RIR" würde dann nicht mehr
-    /// exakt über der (auf Zeile 2 gewanderten) Kapsel stehen. Ein voll
-    /// synchronisierter Header für beide Fallback-Zustände ist auf Geräte-
-    /// Verifikation angewiesen (siehe Datei-Header dieser Session zur
-    /// Linux-Grenze) und bewusst nicht in dieser Runde gebaut.
+    /// Korrektur post-Review (Nachbesserung): eigener `ViewThatFits` statt
+    /// starrem Ein-Zeilen-Layout — faellt `SetRow.compactSetRow` bei
+    /// schmalem Display/grosser Dynamic-Type-Stufe auf sein zweizeiliges
+    /// `twoLineInputRow` zurueck, zeigt dieser Header analog
+    /// `reducedSetRowColumnHeader` (nur noch Satz/kg/Wdh, exakt was auf
+    /// Zeile 1 des Fallbacks steht). "RIR" wird in diesem reduzierten
+    /// Zustand bewusst NICHT hier oben beschriftet (stuende ueber der
+    /// leeren ersten Zeile, waehrend die Kapsel auf Zeile 2 gewandert ist)
+    /// — stattdessen traegt `twoLineInputRow`s zweite Zeile dort ein
+    /// eigenes Inline-"RIR"-Label direkt neben der Kapsel. Beide Varianten
+    /// nutzen exakt dieselben Spaltenbreiten/Abstaende wie die jeweilige
+    /// Satzzeilen-Variante, wodurch `ViewThatFits` bei GLEICHER verfuegbarer
+    /// Breite auch zur GLEICHEN Entscheidung kommt wie die Satzzeile selbst
+    /// — zwei unabhaengige `ViewThatFits`-Aufrufe, aber mit identischen
+    /// Eingabegroessen statt zweier nur zufaellig uebereinstimmender Werte.
     private var setRowColumnHeader: some View {
+        ViewThatFits(in: .horizontal) {
+            fullSetRowColumnHeader
+            reducedSetRowColumnHeader
+        }
+    }
+
+    private var fullSetRowColumnHeader: some View {
         HStack(spacing: SetRow.SetRowColumns.spacing) {
             Text("set.column.setLabel", bundle: .module)
                 .deltiqLabel()
@@ -175,10 +196,15 @@ struct ExerciseCard: View {
                 .frame(width: SetRow.SetRowColumns.repsWidth, alignment: .center)
             Color.clear.frame(width: SetRow.SetRowColumns.plateWidth, height: 1)
             Spacer(minLength: 6)
+            // Korrektur post-Review (Dynamic Type): `RIRValueTextStyle`
+            // statt eigenem Font/Padding/Frame — exakt dieselbe Breiten-
+            // vorgabe wie `rirCapsule` selbst nutzt, damit beide bei JEDER
+            // Dynamic-Type-Stufe exakt gleich breit bleiben (geteilter Code
+            // statt zweier Zahlen, die haetten auseinanderlaufen koennen).
             Text("set.column.rirLabel", bundle: .module)
-                .deltiqLabel()
-                .frame(width: SetRow.SetRowColumns.rirWidth, alignment: .center)
-            Color.clear.frame(width: SetRow.SetRowColumns.checkmarkWidth, height: 1)
+                .modifier(SetRow.RIRValueTextStyle())
+                .foregroundStyle(.secondary)
+            Color.clear.frame(width: checkmarkColumnPlaceholderWidth, height: 1)
         }
         .padding(.horizontal, 8)
         // Jedes Eingabefeld traegt sein eigenes Accessibility-Label bereits
@@ -187,6 +213,28 @@ struct ExerciseCard: View {
         // einmalig vorgelesen statt als vier separate Stopps.
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("set.column.header.accessibilityLabel", bundle: .module))
+    }
+
+    /// Reduzierte Variante fuer `SetRow.twoLineInputRow` — exakt dieselben
+    /// Spalten wie dessen erste Zeile (Satz/kg/Wdh, kein Plate-/RIR-/
+    /// Checkmark-Platzhalter mehr), damit `ViewThatFits` hier bei der
+    /// gleichen Breite kippt wie die Satzzeile selbst.
+    private var reducedSetRowColumnHeader: some View {
+        HStack(spacing: SetRow.SetRowColumns.spacing) {
+            Text("set.column.setLabel", bundle: .module)
+                .deltiqLabel()
+                .frame(width: SetRow.SetRowColumns.setNumberWidth, alignment: .leading)
+            Text("unit.kg.upper", bundle: .module)
+                .deltiqLabel()
+                .frame(width: SetRow.SetRowColumns.weightWidth, alignment: .center)
+            Text(String(localized: "unit.reps.short", bundle: .module).uppercased())
+                .deltiqLabel()
+                .frame(width: SetRow.SetRowColumns.repsWidth, alignment: .center)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("set.column.header.reducedAccessibilityLabel", bundle: .module))
     }
 
     // MARK: Header

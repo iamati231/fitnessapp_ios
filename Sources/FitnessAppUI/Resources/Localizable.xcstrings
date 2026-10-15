@@ -43428,6 +43428,29 @@
         }
       }
     },
+    "set.column.header.reducedAccessibilityLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spaltenbeschriftung: Satz, Kilogramm, Wiederholungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Column headers: set, kilograms, repetitions"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sütun başlıkları: set, kilogram, tekrar"
+          }
+        }
+      }
+    },
     "editor.discardChanges.title": {
       "extractionState": "manual",
       "localizations": {
