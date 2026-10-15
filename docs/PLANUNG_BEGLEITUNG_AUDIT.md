@@ -527,6 +527,6 @@ Bekannte Grenzen/Risiken: der Spalten-Header selbst ist nicht an `ViewThatFits`s
   Bewusst nicht in dieser Runde behoben, siehe Doc-Kommentar an `setRowColumnHeader`. Alle
   Breitenwerte (`SetRowColumns`) sind Schriftmetrik-Berechnungen, keine Geräte-Messungen.
 Branch/Commit: claude/smart-onboarding-epic (gespiegelt auf claude/neue-views-entwicklung-ahsg90),
-  Commit-SHA wird mit dem zugehörigen Push-Bericht genannt.
+  Commit e3407a3.
 Nächste Aufgabe: P2.0 — Datenvertrag für Planungskontext/Wochenentwurf (Core, Linux-testbar).
 ```
