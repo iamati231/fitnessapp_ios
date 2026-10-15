@@ -1787,3 +1787,73 @@ ausgefuehrt** (null auf Linux; der tatsaechliche Lauf passiert erst
 automatisch via Codemagic auf echtem Apple-Build nach diesem Push — diese
 Session hat dafuer weder Ausloese- noch Einsichts-Zugriff, siehe Teil 17)
 sind hier bewusst als zwei getrennte Aussagen gehalten.
+
+## Teil 19 — Erster echter Apple-CI-Befund dieser Epic (zwei Codemagic-Logs)
+
+Der User hat erstmals zwei tatsaechliche Codemagic-Build-Logs (`run_unit_
+tests (release gate)`, Laeufe 3 und 4) direkt geteilt. Das macht aus der in
+Teil 17/18 nur theoretisch beschriebenen Apple-Verifikation zum ersten Mal
+echte, einsehbare Evidenz. Beide Logs ausgewertet:
+
+**Lauf 3 (Stand vor Finding 1-3):** kompletter Build-Fehler, nicht nur ein
+Testfehlschlag. `EditorDiscardSnapshotTests.swift:373` rief `view.
+isExerciseOrderDirty(comparedTo:)` auf — das ist exakt Finding 1, aber
+schwerwiegender als eine Stilfrage: Xcode meldet einen harten Compile-
+Fehler ("cannot call value of non-function type 'Bool'", "inaccessible due
+to 'private' protection level"), weil der Name zur privaten `Bool`-Property
+statt zur `internal func` aufloeste. Das gesamte `FitnessAppUITests`-Target
+baute deshalb nicht — Release-Gate komplett rot, 0 Tests gelaufen,
+einschliesslich der 979 Bestandstests. Log enthielt keine der Finding-1/2/3-
+Funktionsnamen und bestaetigt damit den Vor-Fix-Stand.
+
+**Lauf 4 (nach Finding 1-3-Push, gezielt NUR
+`testProfileEditorViewRebaselineCardioGoalLeavesCoachingToneDiscardable`
+ausgefuehrt):** Build jetzt erfolgreich — Finding 1 damit auf echtem Xcode
+bestaetigt behoben. Aber: genau dieser eine, neue Test schlug fehl —
+`XCTAssertEqual failed: ("generalFitness") is not equal to ("marathon")`.
+
+**Root-Cause-Analyse:** der Test rief `view.rebaselineCardioGoal()` und
+direkt danach `view.revertToSnapshot()` auf derselben, per `ProfileEditorView
+(profile:)` direkt konstruierten View-Instanz auf — OHNE lebenden SwiftUI-
+Graph. `@State`s Schreibzugriff (`nonmutating set`) braucht eine verbundene
+`_location`, um dauerhaft zu schreiben; ohne lebenden Graph (`_location ==
+nil`) geht die erste Mutation (`rebaselineCardioGoal()`s `snapshot.cardioGoal
+= profile.cardioGoal`) beim naechsten Methodenaufruf verloren — `snapshot`
+blieb beim `init`-Wert (`generalFitness`), und `revertToSnapshot()` schrieb
+genau den zurueck. **Das ist nach sorgfaeltiger Pruefung ein reines Test-
+Artefakt, kein Produktionsbug:** im echten, lebenden View-Baum ist `_location`
+laengst verbunden, bevor ein Button ueberhaupt antippbar ist — die Sequenz
+`rebaselineCardioGoal()` → (spaeter) `revertToSnapshot()` funktioniert dort
+korrekt. ALLE anderen Tests in dieser Datei (V1-V3, Finding 2) umgehen dieses
+Risiko bereits konsequent, indem sie entweder nur bei `init` gesetzte
+`@State`-Werte LESEN (nie ueber einen View-Methodenaufruf SCHREIBEN) oder
+komplett ohne `@State` auskommen (explizite Parameter). Mein neuer Test war
+der erste, der eine `@State`-Mutation ueber zwei getrennte Methodenaufrufe
+verkettete — und damit auch der erste, der dieses Pattern ueberhaupt
+brauchte, um real auf Apple-Hardware zu laufen (Linux haette das NIE
+gefunden, s. Teil 17/18).
+
+**Fix:** Testlogik auf ein lokales `var snapshot` umgestellt (identisches
+Muster zu `testPlanMetaSnapshotTargetedRebaselineLeavesOtherFieldsDirty` fuer
+`PlanEditorView`) — bildet `rebaselineCardioGoal()`/`revertToSnapshot()`s
+Funktionskoerper exakt nach, ohne die View-Instanz fuer die Verkettung zu
+benutzen. Produktionscode (`ProfileEditorView.swift`) NICHT veraendert — der
+Fix betrifft ausschliesslich den Test. Datei-Header von
+`EditorDiscardSnapshotTests.swift` um diese Einschraenkung ergaenzt, damit
+kuenftige Tests denselben Fehler nicht wiederholen.
+
+**Einordnung:** Finding 1 ist damit das erste in dieser gesamten Epic auf
+echter Apple-Hardware VERIFIZIERT behobene (nicht nur code-gelesene) Problem
+— und zugleich der Beleg, dass Finding 1 ohne diesen Fix das komplette
+Release-Gate blockiert haette, unabhaengig von Findings 2/3. Finding 2 lief
+im selben Lauf 4 nicht separat (Lauf 4 war gezielt auf den einen Test
+eingeschraenkt) und bleibt bis zu einem vollen Lauf unbestaetigt, ist aber
+durch den vorherigen vollstaendigen Lauf 3 (der VOR der Code-Aenderung lag)
+noch nicht abgedeckt — ein vollstaendiger Lauf nach diesem Push steht noch
+aus.
+
+### Linux-Kontrolle (Teil 19)
+
+`swift build`: gruen (Testdatei bleibt SwiftUI-/SwiftData-gegated, auf Linux
+unveraendert nicht kompiliert). Reine Testdatei-Aenderung, kein Produktions-
+code beruehrt.

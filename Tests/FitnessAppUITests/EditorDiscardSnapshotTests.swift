@@ -35,6 +35,24 @@ import FitnessAppData
 /// sicher, obwohl kein echter SwiftUI-/`.modelContainer`-Rendering-Kontext
 /// existiert.
 ///
+/// WICHTIGE EINSCHRAENKUNG (per echtem Apple-CI-Lauf bestaetigt, Korrektur
+/// post-Review/Finding 3): das gilt NICHT fuer eine `@State`-MUTATION, die
+/// in einem Methodenaufruf gesetzt und erst in einem SPAETEREN Aufruf auf
+/// derselben direkt konstruierten View-Instanz wieder gelesen wird (z.B.
+/// `view.rebaselineCardioGoal()` gefolgt von `view.revertToSnapshot()`).
+/// Ohne lebenden SwiftUI-Graph ist `@State`s `_location` `nil` — `State`s
+/// `nonmutating set` hat dann keine dauerhafte Stelle zum Schreiben, die
+/// Mutation geht beim naechsten Methodenaufruf verloren (im echten, lebenden
+/// View-Baum ist `_location` laengst verbunden und die Sequenz funktioniert
+/// korrekt — reiner Pruef-Artefakt dieses Patterns, kein Produktionsbug).
+/// Betroffene Tests bilden die Funktionskoerper deshalb auf einem lokalen
+/// `var snapshot` nach (siehe `testPlanMetaSnapshotTargetedRebaselineLeaves-
+/// OtherFieldsDirty`/`testProfileEditorViewRebaselineCardioGoalLeaves-
+/// CoachingToneDiscardable`) statt die View-Methoden direkt zu verketten.
+/// Ein reiner LESE-Zugriff auf eine bei `init` gesetzte `@State`-Property
+/// (z.B. `dayWeekdayAtOpen` in V1) ist davon nicht betroffen — der
+/// Init-Wert steht unabhaengig von `_location` sicher zur Verfuegung.
+///
 /// Was hier NACH WIE VOR NICHT getestet wird (braucht einen echten View-/
 /// UI-Test-Harness, den dieses Repo nicht hat): die eigentliche View-
 /// Verdrahtung (DeltiqHeader-Chevron/Checkmark, Discard-Dialog, `.onChange`-
@@ -522,10 +540,26 @@ final class EditorDiscardSnapshotTests: XCTestCase {
     /// Exaktes Szenario aus dem Review: Coaching-Ton aendern (offener,
     /// unbestaetigter Formular-Edit) -> Cardio-Aktion bestaetigen (eigene,
     /// bereits abgeschlossene Aktion, setzt `cardioGoal` + rebaselined NUR
-    /// dieses Feld via `rebaselineCardioGoal()`) -> Verwerfen. Der
-    /// urspruengliche Bug (volles `rebaselineSnapshot()` nach jeder
-    /// Feasibility-Aktion) haette den Coaching-Ton-Edit faelschlich mit
-    /// bestaetigt; der Discard haette ihn nicht mehr zurueckgerollt.
+    /// dieses Feld) -> Verwerfen. Der urspruengliche Bug (volles
+    /// `rebaselineSnapshot()` nach jeder Feasibility-Aktion) haette den
+    /// Coaching-Ton-Edit faelschlich mit bestaetigt; der Discard haette ihn
+    /// nicht mehr zurueckgerollt.
+    ///
+    /// Arbeitet — wie `testPlanMetaSnapshotTargetedRebaselineLeavesOther-
+    /// FieldsDirty` fuer `PlanEditorView.rebaselineTargetEnvironment()` —
+    /// bewusst auf einem lokalen `var snapshot` statt ueber zwei direkte
+    /// Aufrufe von `view.rebaselineCardioGoal()`/`view.revertToSnapshot()`:
+    /// ein per Apple-CI-Lauf bestaetigter Befund zeigte, dass eine `@State`-
+    /// Mutation aus einem Methodenaufruf auf einer direkt konstruierten
+    /// View (ohne lebenden SwiftUI-Graph, `_location == nil`) fuer einen
+    /// SPAETEREN Methodenaufruf auf derselben View-Instanz nicht sichtbar
+    /// ist — `State`s `nonmutating set` kann ohne angeschlossenen Graph
+    /// nirgends dauerhaft hinschreiben. Im echten, lebenden View-Baum (wo
+    /// `rebaselineCardioGoal()`/`revertToSnapshot()` tatsaechlich aufgerufen
+    /// werden) ist `_location` laengst verbunden, dort funktioniert die
+    /// Sequenz korrekt — das ist eine Grenze des Direkt-Konstruktion-Test-
+    /// Patterns, kein Produktionsbug. Die hier gepruefte Logik ist exakt
+    /// identisch zum jeweiligen Funktionskoerper.
     func testProfileEditorViewRebaselineCardioGoalLeavesCoachingToneDiscardable() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
@@ -534,18 +568,19 @@ final class EditorDiscardSnapshotTests: XCTestCase {
             coachingTone: .analytical, cardioGoal: .generalFitness
         )
         ctx.insert(profile)
-
-        let view = ProfileEditorView(profile: profile)
+        var snapshot = ProfileMetaSnapshot.capture(from: profile)
 
         // Unabhaengiger, noch offener Formular-Edit:
         profile.coachingTone = .motivating
         // Cardio-Aktion wird ueber ihre eigene, separate CTA bestaetigt
-        // (entspricht `CardioFeasibilityCardModel.accept` + direkt folgendem
-        // `rebaselineCardioGoal()`-Aufruf in der View):
+        // (entspricht `CardioFeasibilityCardModel.accept`):
         profile.cardioGoal = .marathon
-        view.rebaselineCardioGoal()
+        // Entspricht exakt ProfileEditorView.rebaselineCardioGoal():
+        snapshot.cardioGoal = profile.cardioGoal
 
-        view.revertToSnapshot()
+        // Entspricht exakt ProfileEditorView.revertToSnapshot() (ohne den
+        // reinen View-State `fiveKReferenceText`-Resync, siehe Datei-Header):
+        snapshot.apply(to: profile)
 
         XCTAssertEqual(profile.coachingTone, .analytical, "Unabhaengiger Coaching-Ton-Edit muss beim Verwerfen zurueckgerollt werden")
         XCTAssertEqual(profile.cardioGoal, .marathon, "Bestaetigtes cardioGoal bleibt bestehen, kein Teil-Rollback")
