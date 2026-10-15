@@ -271,9 +271,16 @@ public struct BackupListView: View {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Color.Deltiq.textSecondary)
-                        .frame(width: 32, height: 32)
+                        // BL-05 (Phase 6): 32x32pt lag unter dem 44pt-Minimum.
+                        .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
+                // BL-05: Label MIT Datum, sonst liest VoiceOver nur "Mehr",
+                // ohne zu sagen, fuer welche Sicherung.
+                .accessibilityLabel(Text(String(
+                    format: String(localized: "backups.actions.menu", bundle: .module),
+                    Self.dateText(generation.createdAt)
+                )))
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)

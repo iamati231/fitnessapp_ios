@@ -89,6 +89,7 @@ public struct SettingsDataConnectionsView: View {
             ) {
                 Toggle(isOn: $externalWorkoutImportEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
+                    .accessibilityLabel(Text("settings.health.workoutImport", bundle: .module))
                     .disabled(!healthKit.isAvailable)
                     .onChange(of: externalWorkoutImportEnabled) { _, enabled in
                         guard enabled else { return }

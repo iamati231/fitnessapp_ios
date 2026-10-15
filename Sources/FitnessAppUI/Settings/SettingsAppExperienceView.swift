@@ -97,6 +97,7 @@ public struct SettingsAppExperienceView: View {
                 .labelsHidden()
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
+                .accessibilityLabel(Text("settings.preferences.units.label", bundle: .module))
             }
             dashboardCustomizationRow
             hintRow(String(localized: "settings.units.footer", bundle: .module))
@@ -141,14 +142,17 @@ public struct SettingsAppExperienceView: View {
             DeltiqControlRow(icon: "speaker.wave.2.fill", label: String(localized: "settings.timer.sound", bundle: .module)) {
                 Toggle(isOn: $timerSoundEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
+                    .accessibilityLabel(Text("settings.timer.sound", bundle: .module))
             }
             DeltiqControlRow(icon: "iphone.radiowaves.left.and.right", label: String(localized: "settings.timer.haptics", bundle: .module)) {
                 Toggle(isOn: $timerHapticsEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
+                    .accessibilityLabel(Text("settings.timer.haptics", bundle: .module))
             }
             DeltiqControlRow(icon: "lock.fill", label: String(localized: "settings.timer.backgroundAudio", bundle: .module)) {
                 Toggle(isOn: $timerBackgroundAudioEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
+                    .accessibilityLabel(Text("settings.timer.backgroundAudio", bundle: .module))
             }
             DeltiqControlRow(
                 icon: "trophy.fill",
@@ -156,6 +160,7 @@ public struct SettingsAppExperienceView: View {
             ) {
                 Toggle(isOn: $prCelebrationsEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
+                    .accessibilityLabel(Text("settings.timer.prCelebrations", bundle: .module))
             }
             DeltiqControlRow(
                 icon: "timer",
@@ -170,6 +175,7 @@ public struct SettingsAppExperienceView: View {
                 } label: { EmptyView() }
                 .pickerStyle(.menu)
                 .labelsHidden()
+                .accessibilityLabel(Text("settings.timer.preroll", bundle: .module))
             }
             hintRow(String(localized: "settings.timer.footer", bundle: .module))
         }
@@ -180,10 +186,12 @@ public struct SettingsAppExperienceView: View {
             DeltiqControlRow(icon: "flame.fill", label: String(localized: "settings.workout.showWarmups", bundle: .module)) {
                 Toggle(isOn: $showWarmups) { EmptyView() }
                     .tint(Color.deltiqOrange)
+                    .accessibilityLabel(Text("settings.workout.showWarmups", bundle: .module))
             }
             DeltiqControlRow(icon: "info.circle.fill", label: String(localized: "settings.training.rirTooltip.title", bundle: .module)) {
                 Toggle(isOn: $showRirTooltips) { EmptyView() }
                     .tint(Color.deltiqOrange)
+                    .accessibilityLabel(Text("settings.training.rirTooltip.title", bundle: .module))
             }
             DeltiqControlRow(
                 icon: "arrow.down.heart",
@@ -192,6 +200,7 @@ public struct SettingsAppExperienceView: View {
             ) {
                 Toggle(isOn: $deloadEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
+                    .accessibilityLabel(Text("settings.deload.toggle", bundle: .module))
             }
             if pendingDeloadCount > 0 {
                 Button {
@@ -246,6 +255,7 @@ public struct SettingsAppExperienceView: View {
             ) {
                 Toggle(isOn: $waterReminderEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
+                    .accessibilityLabel(Text("settings.reminders.water", bundle: .module))
                     .onChange(of: waterReminderEnabled) { _, _ in
                         Task { await rescheduleReminders() }
                     }
@@ -260,6 +270,7 @@ public struct SettingsAppExperienceView: View {
                     } label: { EmptyView() }
                     .pickerStyle(.menu)
                     .labelsHidden()
+                    .accessibilityLabel(Text("settings.reminders.frequency", bundle: .module))
                     .onChange(of: waterReminderHours) { _, _ in
                         Task { await rescheduleReminders() }
                     }
@@ -273,6 +284,7 @@ public struct SettingsAppExperienceView: View {
             ) {
                 Toggle(isOn: $measurementReminderEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
+                    .accessibilityLabel(Text("settings.reminders.measurement", bundle: .module))
                     .onChange(of: measurementReminderEnabled) { _, _ in
                         Task { await rescheduleReminders() }
                     }
@@ -287,6 +299,7 @@ public struct SettingsAppExperienceView: View {
                     } label: { EmptyView() }
                     .pickerStyle(.menu)
                     .labelsHidden()
+                    .accessibilityLabel(Text("day.editor.field.weekday", bundle: .module))
                     .onChange(of: measurementWeekday) { _, _ in
                         Task { await rescheduleReminders() }
                     }
@@ -302,6 +315,7 @@ public struct SettingsAppExperienceView: View {
                     } label: { EmptyView() }
                     .pickerStyle(.menu)
                     .labelsHidden()
+                    .accessibilityLabel(Text("settings.reminders.time", bundle: .module))
                     .onChange(of: measurementHour) { _, _ in
                         Task { await rescheduleReminders() }
                     }

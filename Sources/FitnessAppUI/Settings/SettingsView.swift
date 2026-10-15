@@ -337,8 +337,10 @@ public struct SettingsView: View {
         // Praeferenz (genau wie Erscheinungsbild/Erinnerungen), widersprach
         // sich also mit dem eigenen Kommentar oben. Reset loescht Daten,
         // nicht Einstellungen.
-        for key in ["height_unit", "unit_system",
-                    "deload_until", "lastDataExportAt",
+        // Settings-Epic Phase 6 (Befund SV-F02): `height_unit`/`unit_system`
+        // entfernt — tote Keys, werden im ganzen Repo nirgends sonst
+        // gelesen oder geschrieben (verifiziert), reine Altlast.
+        for key in ["deload_until", "lastDataExportAt",
                     AbsenceDeload.lastAppliedKey, AbsenceDeload.suppressedUntilGapKey] {
             UserDefaults.standard.removeObject(forKey: key)
         }

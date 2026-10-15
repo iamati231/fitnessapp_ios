@@ -38,13 +38,19 @@ public struct DashboardSettingsView: View {
     /// dort (siehe Kommentar an der Property-Deklaration).
     private var headerActions: [DeltiqHeaderAction] {
         #if os(iOS)
+        let isEditing = editMode?.wrappedValue.isEditing == true
         return [
             DeltiqHeaderAction(
-                systemImage: editMode?.wrappedValue.isEditing == true ? "checkmark" : "arrow.up.arrow.down",
-                isHighlighted: editMode?.wrappedValue.isEditing == true
+                systemImage: isEditing ? "checkmark" : "arrow.up.arrow.down",
+                isHighlighted: isEditing,
+                // SV-F07/08/09 / DSV-01: schwerste Einzel-Accessibility-Luecke
+                // im Audit — komplett icon-only, kein Label in keinem Zustand.
+                accessibilityLabel: isEditing
+                    ? String(localized: "common.done", bundle: .module)
+                    : String(localized: "dashboardSettings.reorder.action", bundle: .module)
             ) {
                 withAnimation {
-                    editMode?.wrappedValue = editMode?.wrappedValue.isEditing == true ? .inactive : .active
+                    editMode?.wrappedValue = isEditing ? .inactive : .active
                 }
             }
         ]
@@ -133,6 +139,17 @@ public struct DashboardSettingsView: View {
                 .font(.system(size: 15))
                 .foregroundStyle(Color.primary)
             Spacer()
+            #if os(iOS)
+            // Settings-Epic Phase 6: Sortieren auch ohne zwingendes Dragging
+            // — Auf/Ab-Buttons als Alternative zum Drag-Handle, nur im
+            // Edit-Modus sichtbar (dort ist Dragging ohnehin die einzige
+            // Reorder-Moeglichkeit).
+            if editMode?.wrappedValue.isEditing == true {
+                reorderButtons(for: widget, in: profile.activeDashboardWidgets) { newOrder in
+                    profile.activeDashboardWidgets = newOrder
+                }
+            }
+            #endif
             // Toggle steuert nur das Entfernen aus der aktiven Liste —
             // ein "false"-Set löscht das Widget, ein "true"-Set ist NoOp
             // (es ist ohnehin schon aktiv, weil wir es hier rendern).
@@ -148,8 +165,59 @@ public struct DashboardSettingsView: View {
             ))
             .labelsHidden()
             .tint(Color.deltiqOrange)
+            // SV-F07/08/09: ohne Label liest VoiceOver nur "Schalter", ohne
+            // zu sagen welches Widget gemeint ist.
+            .accessibilityLabel(Text(LocalizedStringKey(widget.localizationKey), bundle: .module))
         }
     }
+
+    #if os(iOS)
+    /// Settings-Epic Phase 6: Auf/Ab-Buttons als Alternative zum
+    /// Drag-Handle — Dragging bleibt moeglich, ist aber nicht mehr die
+    /// EINZIGE Art zu sortieren (z.B. fuer VoiceOver/Switch-Control oder
+    /// einfach, wer Drag-Gesten umstaendlich findet).
+    @ViewBuilder
+    private func reorderButtons<T: Equatable>(
+        for item: T,
+        in list: [T],
+        apply: @escaping ([T]) -> Void
+    ) -> some View {
+        if let index = list.firstIndex(of: item) {
+            HStack(spacing: 2) {
+                Button {
+                    var copy = list
+                    copy.swapAt(index, index - 1)
+                    apply(copy)
+                } label: {
+                    Image(systemName: "chevron.up")
+                        .font(.footnote.weight(.semibold))
+                        .padding(8)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(index == 0)
+                .opacity(index == 0 ? 0.3 : 1)
+                .accessibilityLabel(Text("dashboardSettings.moveUp.action", bundle: .module))
+
+                Button {
+                    var copy = list
+                    copy.swapAt(index, index + 1)
+                    apply(copy)
+                } label: {
+                    Image(systemName: "chevron.down")
+                        .font(.footnote.weight(.semibold))
+                        .padding(8)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(index == list.count - 1)
+                .opacity(index == list.count - 1 ? 0.3 : 1)
+                .accessibilityLabel(Text("dashboardSettings.moveDown.action", bundle: .module))
+            }
+            .foregroundStyle(Color.Deltiq.textSecondary)
+        }
+    }
+    #endif
 
     private func moveActive(from source: IndexSet, to destination: Int) {
         var arr = profile.activeDashboardWidgets
@@ -193,6 +261,15 @@ public struct DashboardSettingsView: View {
                 .font(.system(size: 15))
                 .foregroundStyle(Color.primary)
             Spacer()
+            #if os(iOS)
+            if editMode?.wrappedValue.isEditing == true {
+                reorderButtons(for: slot, in: profile.heroMetricSlots) { newOrder in
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.78)) {
+                        profile.heroMetricSlots = newOrder
+                    }
+                }
+            }
+            #endif
             // DEL-132 (Phase 1): gleiche Toggle-as-removal-Logic wie
             // aktiver Widget-Section.
             // DEL-132 (Phase 4): Spring-Animation um die Mutation,
@@ -213,6 +290,7 @@ public struct DashboardSettingsView: View {
             ))
             .labelsHidden()
             .tint(Color.deltiqOrange)
+            .accessibilityLabel(Text(LocalizedStringKey(slot.localizationKey), bundle: .module))
         }
     }
 
@@ -261,6 +339,10 @@ public struct DashboardSettingsView: View {
                         }
                         .buttonStyle(.plain)
                         .disabled(atMax)
+                        .accessibilityLabel(Text(String(
+                            format: String(localized: "dashboardSettings.add.actionFormat", bundle: .module),
+                            String(localized: String.LocalizationValue(stringLiteral: slot.localizationKey), bundle: .module)
+                        )))
                     }
                     .listRowBackground(Color.Deltiq.surface)
                 }
@@ -303,6 +385,10 @@ public struct DashboardSettingsView: View {
                                 .font(.title3)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel(Text(String(
+                            format: String(localized: "dashboardSettings.add.actionFormat", bundle: .module),
+                            String(localized: String.LocalizationValue(stringLiteral: widget.localizationKey), bundle: .module)
+                        )))
                     }
                     .listRowBackground(Color.Deltiq.surface)
                 }

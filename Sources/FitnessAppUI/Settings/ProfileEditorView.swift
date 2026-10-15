@@ -652,6 +652,7 @@ public struct ProfileEditorView: View {
                 Toggle("", isOn: $profile.cardioCoachingEnabled)
                     .labelsHidden()
                     .tint(Color.deltiqOrange)
+                    .accessibilityLabel(Text("profile.cardio.enable", bundle: .module))
             }
             if profile.cardioCoachingEnabled {
                 // DEL-251: Retro-Sync — berechnet Wochenvolumen + Referenzpace
@@ -731,6 +732,7 @@ public struct ProfileEditorView: View {
                     Toggle("", isOn: cardioRaceDateToggleBinding)
                         .labelsHidden()
                         .tint(Color.deltiqOrange)
+                        .accessibilityLabel(Text("profile.cardio.raceDateToggle", bundle: .module))
                 }
                 if profile.cardioRaceDate != nil {
                     DeltiqControlRow(label: String(localized: "profile.cardio.raceDateValue", bundle: .module)) {

@@ -451,23 +451,50 @@ public struct DeltiqHeaderAction: Identifiable {
     public let isHighlighted: Bool
     public let action: (() -> Void)?
     public let menuContent: (() -> AnyView)?
+    /// Settings-Epic Phase 6 (SV-F07/08/09, DSV-01): optionales VoiceOver-
+    /// Label. Icon-only Header-Actions (z.B. "+"/Sortieren) haben sonst
+    /// keinen gesprochenen Namen. `nil` aendert nichts am bisherigen
+    /// Verhalten — additiv, kein Eingriff in bestehende Call-Sites.
+    public let accessibilityLabel: String?
 
-    public init(systemImage: String, isHighlighted: Bool = false, action: @escaping () -> Void) {
+    public init(
+        systemImage: String,
+        isHighlighted: Bool = false,
+        accessibilityLabel: String? = nil,
+        action: @escaping () -> Void
+    ) {
         self.systemImage = systemImage
         self.isHighlighted = isHighlighted
         self.action = action
         self.menuContent = nil
+        self.accessibilityLabel = accessibilityLabel
     }
 
     public init<MenuContent: View>(
         systemImage: String,
         isHighlighted: Bool = false,
+        accessibilityLabel: String? = nil,
         @ViewBuilder menu: @escaping () -> MenuContent
     ) {
         self.systemImage = systemImage
         self.isHighlighted = isHighlighted
         self.action = nil
         self.menuContent = { AnyView(menu()) }
+        self.accessibilityLabel = accessibilityLabel
+    }
+}
+
+/// Settings-Epic Phase 6: hilft, ein optionales Accessibility-Label additiv
+/// anzuhaengen, ohne bei `nil` den Default (z.B. den systemImage-Namen) mit
+/// einem leeren String zu ueberschreiben.
+extension View {
+    @ViewBuilder
+    func conditionalAccessibilityLabel(_ label: String?) -> some View {
+        if let label {
+            self.accessibilityLabel(Text(label))
+        } else {
+            self
+        }
     }
 }
 
@@ -534,10 +561,12 @@ public struct DeltiqHeader: View {
                     } label: {
                         headerActionIcon(headerAction)
                     }
+                    .conditionalAccessibilityLabel(headerAction.accessibilityLabel)
                 } else if let action = headerAction.action {
                     Button(action: action) {
                         headerActionIcon(headerAction)
                     }
+                    .conditionalAccessibilityLabel(headerAction.accessibilityLabel)
                 }
             }
         }
