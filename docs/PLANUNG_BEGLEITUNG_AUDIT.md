@@ -28,25 +28,65 @@ im Repo. Reine Bestandsaufnahme — sechs parallele Code-Audits, alle Aussagen d
 - `PlanEnvironmentMigrator` arbeitet nur auf bereits persistierten Objekten — für einen Builder-Schritt
   vor dem Insert nicht direkt nutzbar.
 
-## 2. Profil/Equipment
+## 2. Profil/Equipment — getrennt nach Ausführbarkeit und Präferenz
 
-- Feingranulares Modell ist **vollständig und sauber** für die Plan-Erstellung: `EquipmentItem`/
-  `EquipmentAvailability`/`UserEquipmentProfile` (3-Zustand inkl. `equipmentUnknownItemsRaw`),
-  `ExerciseRequirement`/`RequirementStatus` (dreiwertige Kleene-Logik), `EquipmentVariant`,
-  `PlanEquipmentChecker`, `ExerciseSubstitutionEngine`/`PlanAdaptationValidator`,
-  `ReviewedSubstitutionRule`, `ResolvedPlanSelection`/`PlanSelectionResolver`.
-- **Kritische Lücke**: Equipment-Änderung in `ProfileEditorView`/`TrainingLocationEquipmentEditorView`
-  hat **keinerlei Wirkung auf bestehende Pläne** — es gibt `.onChange(of: profile.environment)`, aber
-  kein Äquivalent für `profile.equipmentProfile`. Kein „Änderung → Auswirkung → Vorschau → Übernahme"-
-  Ablauf existiert für Equipment (nur für Environment, binär, altes grobes Modell).
-  `docs/PLAN_EQUIPMENT_MATCHING_AUDIT.md:887–890` dokumentiert diesen Scope-Cut bereits explizit.
+Equipment hat im Code zwei fachlich und technisch **unterschiedliche** Dimensionen, die bisher
+zusammen referiert wurden. Hier getrennt mit je eigenem Datenfluss und eigener Lücke.
+
+### 2a. Verfügbarkeit (Ausführbarkeit) — „kann diese Übung überhaupt ausgeführt werden?"
+
+**Bestehender Datenfluss (vollständig, nur bei Plan-ERSTELLUNG verdrahtet):**
+`UserBodyProfile.equipmentProfile` (3-Zustand `available`/`unavailable`/`unknown` pro `EquipmentItem`,
+`EquipmentRequirement.swift:77–147`) → `ExerciseRequirement.evaluate(against:)` (dreiwertige
+Kleene-Logik, `EquipmentRequirement.swift:204–279`) → `PlanEquipmentChecker.check`/`fullReport`
+(aggregiert pro Tag/Plan, `PlanEquipmentCheck.swift:140–178`) → `ProgramTemplate.
+bestEquipmentCheckedVariant` wählt die beste `EquipmentVariant` (`PlanEquipmentCheck.swift:229–240`)
+→ `ExerciseSubstitutionEngine.adapt` ersetzt NUR bestätigt fehlendes Equipment über freigegebene
+`ReviewedSubstitutionRule`s (`ExerciseSubstitutionEngine.swift:95–174`) → `PlanSelectionResolver.
+resolve`/`ResolvedPlanSelection` bündelt das Ergebnis (`ResolvedPlanSelection.swift:67–130`).
+Dreiwertige Semantik ("unbekannt" ≠ "bestätigt leer") ist dabei korrekt durchgehalten.
+
+**Fehlende Anbindung an gespeicherte Pläne (verifiziert, nicht nur vermutet):** Dieser gesamte Pfad
+läuft ausschließlich auf Core-`DaySpec`/`ExerciseSpec` (Template-Ebene) und wird nur von
+`ProgramTemplatePickerView.swift:141–177,331–336` und `OnboardingView.swift:1900–1910` aufgerufen —
+beides reine Vorschau-/Neuerstellungs-Pfade. Gegen einen bereits persistierten `TrainingPlan`/
+`TrainingDay` (SwiftData) läuft er nie. Konkreter Beleg: `grep -rn "onChange(of: profile\." Sources/
+FitnessAppUI` liefert **genau einen** Treffer im gesamten Modul —
+`ProfileEditorView.swift:190` für `profile.environment`. Für `profile.equipmentProfile` existiert
+keinerlei Reaktion. Ändert ein Nutzer z. B. die Bank von „vorhanden" auf „nicht vorhanden", bleibt
+jeder bestehende Plan unverändert und ungeprüft, bis er manuell einen neuen Plan baut.
+
+### 2b. Präferenz (Gewichtung) — „welches von mehreren vorhandenen Geräten wird bevorzugt?"
+
+**Bestehender Datenfluss:** `UserBodyProfile.equipmentPreferences` (`Set<Equipment>`, das ALTE grobe
+Enum, nicht `EquipmentItem`) wird ausschließlich als **Projektion** geschrieben — nie eigenständig
+editiert — in `confirmEquipmentProfileComplete()`/`setEquipmentAvailability()`
+(`UserBodyProfile.swift:432–438,459–475`), abgeleitet aus `equipmentProfile.legacyEquipmentPreferences`.
+Genutzt wird es an zwei Stellen, **beide als Hart-Filter, nie als Gewichtung**:
+(1) `PlanMatchmaker.equipmentMatches` (`PlanMatchmaker.swift:279–290`) — im Legacy-Pfad ohne
+`UserEquipmentProfile` ein K.-o.-Teilmengen-Check, der Templates komplett ausschließt;
+(2) `EquipmentVariant.bestMatch`/`priority` (`EquipmentVariant.swift:35–42,64–71`) — eine **fixe,
+vom Entwickler festgelegte** Rangfolge (`barbellGym`=40 > `dumbbellOnly`=30 > `kettlebellOnly`=20 >
+`machineGym`=10), nicht vom Nutzer einstellbar. `PlanMatchmaker.rankPlansDetailed`
+(`PlanMatchmaker.swift:128–160`) hat **keinen** Equipment-Gewichtungsterm im Scoring.
+
+**Fazit:** Eine echte Nutzer-Präferenz ("habe beides, bevorzuge Kurzhantel") existiert heute **nicht**.
+`equipmentPreferences` ist trotz des Namens ein zweiter, veralteter Verfügbarkeits-Spiegel.
+
+**Fehlende Anbindung an gespeicherte Pläne:** identisch zu 2a — auch dieser Pfad läuft nur bei
+Template-Erstellung (`EquipmentVariant.bestMatch` wird von `ProgramInstantiator`/
+`PlanGeneratorInstantiator` zum Insert-Zeitpunkt aufgerufen, nie danach erneut).
+
+### Gemeinsame Punkte
+
 - **Zwei parallele, unverbundene Kompatibilitätssysteme**: (a) altes grobes `Equipment`/
-  `EnvironmentType` + `PlanEnvironmentMigrator` (wirkt auf echte Pläne, reaktiv) vs. (b) neues
-  `UserEquipmentProfile`-System (präzise, nur bei Plan-Erstellung). Siehe Konflikt 2.
-- `equipmentPreferences` ist trotz des Namens **kein weiches Gewichtungskriterium**, sondern ein
-  Hart-Filter/Legacy-Duplikat der Verfügbarkeit. Scoring in `PlanMatchmaker` hat keinen
-  Equipment-Gewichtungsterm.
+  `EnvironmentType` + `PlanEnvironmentMigrator` (wirkt auf echte Pläne, reaktiv, aber grob) vs.
+  (b) neues `UserEquipmentProfile`-System aus 2a/2b (präzise, nur bei Plan-Erstellung). Siehe Konflikt 2.
 - Unknown-Persistenz über Export/Import/Neustart ist verifiziert korrekt (V5, bestätigt).
+- P5 (Profiländerung → bestätigte Plananpassung) muss **beide** Dimensionen bedienen: 2a als
+  Ausführbarkeits-Prüfung (Übung ersetzen/warnen), 2b nur als zukünftig zu bauende, bisher nicht
+  existierende weiche Gewichtung — nicht verwechseln, da unterschiedliche UI-Konsequenz
+  (Pflicht-Hinweis vs. optionale Neugewichtung, siehe Dokument 01 §6-Tabelle).
 
 ## 3. Progression/Deload/Comeback/Cardio-Coaching
 
@@ -90,22 +130,46 @@ im Repo. Reine Bestandsaufnahme — sechs parallele Code-Audits, alle Aussagen d
 
 ## 5. Onboarding/ExperienceTrack/Hybrid/Start-Check
 
-- Onboarding-Schrittablauf ist **strikt linear** (`Step.rawValue ± 1`), keine zielabhängige
-  Verzweigung. Hybrid-Auswahl löst **nichts** aus — geht direkt zum generischen nächsten Schritt.
-- **„Ausdauerform" (Laufen/Radfahren) existiert nirgends** — komplett neu zu bauen, kein Umbau.
-- `cardioCoachingEnabled` wird im Onboarding **an keiner Stelle berührt** (bleibt beim Klassen-Default
-  `false`). Der in Dokument 02 befürchtete „Hybrid schaltet Coach automatisch an"-Bug existiert in
-  dieser Form nicht — weil die Verdrahtung schlicht komplett fehlt. P4 ist also „neu bauen", nicht
-  „falsche Kopplung lösen".
-- Einziger bestehender Präzedenzfall eines „Hybrid schaltet Cardio-Frage frei": `BaselineCheckFlow
-  View.showsCardioStep` (optionale Selbsteinschätzung, nicht an `cardioCoachingEnabled`/`CardioGoal`
-  gekoppelt) — bei Neuimplementierung zu berücksichtigen, ob dieser Schalter mitwandert.
-- `CardioGoal` ist reine Lauf-Distanzen (keine Rad-Dimension) — siehe Konflikt 1.
-- Deaktivieren des (aktuell nur im Profil-Editor existierenden) Coach-Toggles löscht nichts, blendet
-  nur aus — unverändert als Produktentscheidung zu bestätigen, keine Lösch-Logik vorhanden.
-- **Start-Check-Isolation verifiziert korrekt**: genau ein lebendiger Einstieg, vollständig im
-  Onboarding (V6-Fix hält, keine Reste in ProfileEditorView/Dashboard/Settings).
-- Kein späterer kurzer Alltags-/Belastungs-Rückblick (Dokument 03 §4) existiert — komplett neu.
+**Präzisierung**: „Ausdauerform existiert nirgends" war zu pauschal. Der bestehende Plan-Builder
+KENNT Laufen/Radfahren bereits als Generator-Bausteine — nur Onboarding, Profilmodell und der (noch
+nicht existierende) gemeinsame Planungskontext haben keine Entsprechung. Aufgeschlüsselt:
+
+| Ebene | Ist-Stand |
+|---|---|
+| **Generator (Core)** | `TrainingTypeKind.running`/`.cycling` existiert vollständig (`PlanGeneratorInput.swift:9–19`, `isCardio`-Flag Zeile 17–19). `PlanGenerator.cardioCandidates(for:)` (`PlanGenerator.swift:500–569`) erzeugt daraus echte Lauf-/Rad-Tage mit eigenen Titeln ("Laufen"/"Radfahren", Zeile 347–348). `PlanGeneratorInput.selections` ist ein Array — Laufen UND Radfahren können **schon heute gleichzeitig** mit je eigenen `daysPerWeek`/`sessionDurationMinutes` gewählt werden (Grundlage für Dok02-Zustand "Laufen/Radfahren kombiniert"). **Reusable.** |
+| **Builder-UI** | `PlanBuilderView`s Schritt 1 bietet `TrainingTypeKind` als eine von 6 gleichrangigen Mehrfachauswahl-Optionen (`barbell/dumbbell/kettlebell/bodyweight/running/cycling`) — funktional vorhanden, aber **nicht** die vom Auftrag verlangte dedizierte, zielabhängige Ausdauerform-Frage mit Laufcoach-Folgefrage. Kein Bezug zu `TrainingGoal`, keine Coaching-Verzweigung. |
+| **Onboarding** | `OnboardingView` bindet `PlanBuilderView` optional für den "eigenen Plan"-Pfad ein (`OnboardingView.swift:326–332`) — d. h. die generische Builder-Auswahl ist über diesen Umweg theoretisch erreichbar, aber es gibt **keine** eigene, immer gezeigte Ausdauerform-Frage, **keine** Laufcoach-Entscheidung, **keine** zielabhängige Verzweigung nach Hybrid. `cardioCoachingEnabled` wird im gesamten Onboarding-Code **an keiner Stelle gesetzt** (bleibt Default `false`). **Komplett neu zu bauen**, nicht umzubauen — der in Dokument 02 befürchtete „Hybrid schaltet Coach automatisch an"-Bug existiert nicht, weil die Verdrahtung schlicht fehlt. |
+| **Profilmodell** | `UserBodyProfile` hat kein persistiertes Feld für eine dauerhafte "bevorzugte Ausdauerform" (Laufen/Radfahren/beides) — `TrainingTypeKind`-Auswahl im Builder ist reiner `@State`, nie in `UserBodyProfile` geschrieben. **Neues Feld nötig**, additiv (Pattern wie `equipmentUnknownItemsRaw`). |
+| **Gemeinsamer Planungskontext (P2)** | Existiert noch nicht — soll beim Bau direkt auf `TrainingTypeKind`/`PlanGeneratorInput.selections` aufsetzen statt neue Cardio-Typen zu erfinden. |
+
+### Explizite Abgrenzung: kein Radcoach in diesem Auftrag
+
+- Laufen UND Radfahren werden als **Planbestandteile** unterstützt (siehe Tabelle — Generator kann das
+  bereits). Das ist unabhängig von jeder Coaching-Funktion.
+- Der **Laufcoach** (`cardioCoachingEnabled`/`CardioGoal`/`CardioFeasibilityCardModel`) bleibt
+  **ausdrücklich optional und strukturell getrennt** von „Laufeinheiten im Plan" — dieser Schalter
+  betrifft NUR Zielverfolgung/Pace/Volumen-Empfehlungen für Laufen, nie Radfahren.
+  `CardioGoal` (`CardioProfile.swift:8–14`) ist und bleibt reine Lauf-Distanz (`fiveK`/`tenK`/
+  `halfMarathon`/`marathon`/`generalFitness`) — **wird in diesem Auftrag nicht auf Radfahren
+  erweitert**, kein neues Rad-Pendant wird gebaut. Bei „Hybrid nur mit Radfahren" entfällt die
+  Laufcoach-Frage komplett (Dok02 §3-Tabelle), nicht nur die Vorbefüllung.
+- Einziger bestehender Präzedenzfall eines „Hybrid schaltet Cardio-Frage frei":
+  `BaselineCheckFlowView.showsCardioStep` (optionale Selbsteinschätzung, nicht an
+  `cardioCoachingEnabled`/`CardioGoal` gekoppelt) — bleibt unverändert, kein Umbau in diesem Auftrag.
+
+### Start-Check — unveränderliche Grenze
+
+- **Start-Check-Isolation verifiziert korrekt**: genau ein lebendiger Einstieg
+  (`OnboardingView.swift:337–347`), vollständig im Onboarding (V6-Fix hält, keine Reste in
+  ProfileEditorView/Dashboard/Settings — alle drei gezielt gegengeprüft).
+  **Muss in jeder P1–P6-Aufgabe erhalten bleiben.**
+- Der in Dokument 03 §4 geforderte spätere, kurze Alltags-/Belastungs-Rückblick existiert nicht und
+  ist komplett neu zu bauen — **ausdrücklich NICHT** als zweiter Start-Check, als Erweiterung von
+  `BaselineCheckFlowView` oder mit Leistungstest-Fragen. Eigene, schlanke UI mit den 5 Fragen aus
+  Dok03 §4 (Häufigkeit/Dauer/Belastung/Beschwerden/Ziel-noch-aktuell), jede überspringbar.
+
+Deaktivieren des (aktuell nur im Profil-Editor existierenden) Coach-Toggles löscht nichts, blendet nur
+aus — unverändert als Produktentscheidung zu bestätigen, keine Lösch-Logik vorhanden.
 
 ## 6. Plan-Versionierung/Session-Historie/Export-Import
 
@@ -171,58 +235,176 @@ versioniert, nicht jedes Einzelattribut. Wird so umgesetzt, sofern kein Widerspr
 Kein Konflikt, sondern ein Bug — wird als eigenständiger, in sich geschlossener Fix an den Anfang von
 P2 gezogen (Voraussetzung dafür, dass der neue Builder überhaupt equipment-korrekte Pläne erzeugt).
 
-## Phasenplan — kleine Aufgaben mit Abnahmekriterien
+## Phasenplan — sechs Schritte in Abhängigkeitsreihenfolge
 
-**P1 — Rest-Bugfix (nur RIR offen)**
-- P1.1 Header-Zeile (Satz/kg/Wdh/RIR) einmalig in `ExerciseCard`, Pro-Zeile-Labels aus `SetRow`
-  entfernen. *Abnahme: Label erscheint einmal pro Übung, nicht pro Satz.*
-- P1.2 `rirCapsule` entkompaktieren, Breite am längsten gültigen Wert bemessen, kein Abschneiden bei
-  keinem gültigen Wert 0–5 in 0,5-Schritten. *Abnahme: E03.*
-- P1.3 Reglerposition beim Öffnen stabil (Overlay/Popover statt Zeilen-Neuplatzierung).
-  *Abnahme: D-analog, kein Zeilensprung beim Tap.*
-- P1.4 Plate-Button in eigene schmale Spalte, keine Überlappung mit Zahlen/Touch-Flächen.
-- P1.5 Schmale-Display-/Großschrift-Fallback (zweizeilig). *Abnahme: E04.*
-- P1.6 Tests + Linux-Build, Geräteprüfung dokumentiert als offen (kein Simulator-Zugriff).
+Reihenfolge wie vorgegeben: Fehler absichern → gemeinsamer Planungskontext → Builder+Onboarding daran
+anbinden → Profiländerung↔Plananpassung → Versionierung/Datenqualität → erst dann Rückblicke.
+**Start-Check-Isolation (ein Einstieg, nur Onboarding) ist in JEDER Phase eine unveränderliche
+Nebenbedingung, keine eigene Aufgabe.**
 
-**P2 — Gemeinsamer Planungskontext**
-- P2.1 Bugfix: `targetEnvironment` aus tatsächlicher Equipment-Auswahl ableiten statt hardcoden.
-- P2.2 `TrainingGoal`-Erweiterung gemäß Konfliktlösung 1 (nach Rückfrage).
-- P2.3 Gemeinsamer Adopt-Pfad (`PlanAdoptionService` o.ä.) statt 4 getrennter Commit-Implementierungen.
-- P2.4 Fixierungs-Flag im Builder-Draft-State (reines UI-/Draft-Feld, nicht persistiert vor Übernahme).
-- *Abnahme: A02, B06.*
+Testplattform-Hinweis gilt durchgehend: Dateien unter `#if canImport(SwiftUI)`/`canImport(SwiftData)`
+kompilieren auf Linux zu leeren Einheiten (verifiziert, s. frühere Audits). „Linux" unten heißt echte
+Verifikation; „Apple-CI" heißt nur Kompilierbarkeit (kein Testlauf-Beweis für UI-Verhalten); „Gerät"
+heißt Simulator/Hardware, aus dieser Session nicht durchführbar.
 
-**P3 — Zielorientierter Builder + Wocheneditor** (braucht P2)
-- P3.1 Ziel-Schritt in `PlanBuilderView`. P3.2 Wochenübersicht-UI. P3.3 Drag&Drop + „Verschieben
-  nach…". P3.4 Fixierung Inhalt/Position getrennt. P3.5 Gezielte Alternativen statt globalem Shuffle.
-- *Abnahme: B01–B06.*
+### P1 — Bestehende Fehler und Regressionen absichern
 
-**P4 — Onboarding Hybrid/Laufcoach** (braucht P2, P3)
-- P4.1 Ausdauerform-Frage (neu). P4.2 Laufcoach-Entscheidung (neu). P4.3 `cardioCoachingEnabled`
-  erstmals im Onboarding verdrahten. P4.4 Zustandstabelle Dok02 §3 vollständig umsetzen.
-- *Abnahme: A03–A09.*
+**P1.1 Vier bereits behobene Bugs als Regressionsschutz fixieren**
+Komponenten: `PlanEditorView.swift`, `DayEditorView.swift`, `UserBodyProfile.swift`,
+`MeasurementView.swift`, `Theme.swift`. Abhängigkeiten: keine. Abnahme: D01–D05, C05, E01, E05 bleiben
+grün bei jedem folgenden Merge. Datenmodell: keine Änderung. Testplattform: Apple-CI/Gerät (Tests in
+`EditorDiscardSnapshotTests.swift` sind SwiftUI/SwiftData-gegated, auf Linux nicht kompiliert).
 
-**P5 — Profiländerung → Plananpassung** (braucht P2, P3)
-- P5.1 Equipment-Change-Trigger (`.onChange` analog Environment). P5.2 Impact-Analyse auf dem
-  präzisen Modell (Konfliktlösung 2). P5.3 3-Wege-Entscheidung (anpassen/neu/behalten), wiederverwendet
-  für Cardio UND Equipment.
-- *Abnahme: C01–C06.*
+**P1.2 RIR strukturelle Spalten-Neugestaltung**
+Komponenten: `SetRow.swift` (`compactSetRow`, `rirCapsule`, `weightInput`, `rirSliderRow`),
+`ExerciseCard.swift` (neue Header-Zeile), `Localizable.xcstrings` (neue Keys für Spaltenlabels).
+Abhängigkeiten: keine, in sich geschlossen. Abnahme: E03 (alle RIR-Werte 0–5 in 0,5-Schritten
+vollständig sichtbar), E04 (schmaler Bildschirm/große Schrift ohne Abschneiden/Überdeckung),
+Reglerposition bleibt beim Öffnen stabil, Plate-Button überdeckt keine Zahlen/Touch-Flächen.
+Datenmodell: keine. Testplattform: Apple-CI baut den Code; visuelle Korrektheit NUR auf
+Gerät/Simulator (iPhone SE + größte Dynamic-Type-Stufe) prüfbar — aus dieser Session nicht
+durchführbar, bleibt offen zu melden.
 
-**P6 — Plan-Versionierung & Datenqualität** (braucht P0, P2)
-- P6.1 `TrainingPlan.activatedAt`/`createdAt` (additive Migration). P6.2 Inhalts-Snapshot pro
-  `TrainingDay`-Fassung (Konfliktlösung 3). P6.3 Additive CSV-Erweiterung.
-- *Blockiert P7/P8 — ohne Zeitanker keine Kalenderfrist berechenbar.*
+### P2 — Gemeinsamen Planungskontext und Wochenentwurf herstellen
 
-**P7 — Erster Vier-Wochen-Rückblick** (braucht P6)
-- Dünne Orchestrator-Schicht über bestehende Advisors + neuer Soll-Ist-Vergleich (geplante vs.
-  absolvierte Einheiten). Kein neues Fachwissen, nur Bündelung. *Abnahme: F01–F03, F06–F08.*
+**P2.1 `targetEnvironment`-Hardcode-Bug beheben**
+Komponenten: `PlanGeneratorInstantiator.swift` (`makeTemplate`). Abhängigkeiten: keine. Abnahme: ein
+über den Builder mit Home-Gym-Equipment erzeugter Plan bekommt ein zur Equipment-Auswahl passendes
+`targetEnvironment`, `EquipmentVariant`/`ResolvedPlanSelection` greifen auch für Builder-Pläne.
+Datenmodell: keine. Testplattform: Datei liegt in FitnessAppData (SwiftData-gegated) → Apple-CI/Gerät;
+reiner Auswahl-Algorithmus ließe sich als Core-Funktion extrahieren und wäre dann Linux-testbar
+(Empfehlung bei Umsetzung).
 
-**P8 — Block-Reviews + gezielte Vorschläge** (braucht P3, P5, P7)
-- `plateauDetected`-Emitter aktivieren, Progression-Outcome-Historie persistieren, Schwerpunktwechsel-
-  Regeln aus Dok03 §6. *Abnahme: F04–F05.*
+**P2.2 `TrainingGoal.endurance` anhängen (entschiedenes Mapping)**
+Komponenten: `CoachingTypes.swift`. Abhängigkeiten: keine. Abnahme: neuer Fall kompiliert, bestehende
+RawValues/Profile unverändert lesbar, bestehender Test „jedes TrainingGoal hat mindestens ein
+Template" liefert für `.endurance` ein Ergebnis statt zu crashen. Datenmodell:
+`TrainingGoal`-RawRepresentable bekommt 6. Fall, rein additiv, keine Migration. Testplattform:
+FitnessAppCore, kein SwiftUI/SwiftData-Bezug → **echter Linux-Unit-Test möglich**.
 
-**P9 — Verifikation, Regression, Doku** — laufend + Abschluss je Paket nach Dokument 04.
+**P2.3 Gemeinsamer Adopt-Pfad statt vier getrennter Commit-Implementierungen**
+Komponenten: neuer Service in FitnessAppData, ersetzt Teile von `OnboardingView.finishOnboarding`,
+`CardioFeasibilityCardModel.accept`/`.acceptCustom`, `PlanBuilderView.adoptPlan()`. Abhängigkeiten:
+P2.1. Abnahme: A11 (kein doppeltes/verwaistes Anlegen), B06 (Mehrfach-Tap-Schutz), alle vier
+Call-Sites nutzen denselben Pfad. Datenmodell: keine (reine Konsolidierung). Testplattform:
+Apple-CI/Gerät (SwiftData-Insert-Pfad).
+
+**P2.4 Fixierungs-Flag im Builder-Draft**
+Komponenten: `PlanBuilderView.swift` (neuer Draft-State), ggf. `GeneratedDay`-Erweiterung (Core).
+Abhängigkeiten: P2.3. Abnahme: B02/B03 (Inhalt/Position getrennt fixierbar, bleibt bei Neuberechnung
+erhalten). Datenmodell: **ausdrücklich kein persistiertes Feld** — reiner Draft-Zustand, verschwindet
+nach Übernahme (Dok00: „Vorschau/Entwurf erzeugt keine persistierten Pläne"). Testplattform:
+Core-Anteil ggf. Linux-testbar, Builder-UI-Anbindung Apple-CI/Gerät.
+
+### P3 — A+B-Builder und Onboarding daran anbinden
+
+**P3.1 Ziel-Schritt im Builder (vier Zielkarten)**
+Komponenten: `PlanBuilderView.swift` (neuer `BuilderStep.goal`), `PlanGeneratorInput.swift`
+(`TrainingGoal`-Feld). Abhängigkeiten: P2.2, P2.3. Abnahme: A02 (gleiche Eingaben → gleicher
+fachlicher Vorschlag), Kartenauswahl setzt `TrainingGoal` korrekt inkl. Unterfrage
+`.hypertrophy`/`.strength` bei „Kraft & Muskelaufbau". Datenmodell: `PlanGeneratorInput` bekommt
+optionales `goal`-Feld (additiv, kein SwiftData-Schema betroffen). Testplattform: Core-Erweiterung
+Linux-testbar, Builder-UI Apple-CI/Gerät.
+
+**P3.2 Wochenübersicht-UI + Drag&Drop + „Verschieben nach…"**
+Komponenten: neue View (Wochenübersicht), löst `PlanEditorView.daysSection`s reine List ab/ergänzt sie.
+Abhängigkeiten: P2.4. Abnahme: B01 (Drag&Drop + zugängliche Alternative). Datenmodell: keine.
+Testplattform: reines SwiftUI, 0 auf Linux — nur Apple-CI (Build) + Gerät (Gesten/VoiceOver).
+
+**P3.3 Gezielte Alternativen statt globalem Shuffle**
+Komponenten: `PlanGenerator.swift` (neue gezielte Ersatzfunktion statt `shuffle: true`),
+`PlanBuilderView.swift` (3 Optionen statt „Neu rechnen"). Abhängigkeiten: P2.4, P3.2. Abnahme: B04
+(keine stillen Verluste bei manuellen Änderungen + Neuberechnung), B05 (sichtbarer Konflikt statt
+abgeschnittener Einheiten). Datenmodell: keine. Testplattform: Core-Teil Linux-testbar, UI-Anbindung
+Apple-CI/Gerät.
+
+**P3.4 Onboarding: Ausdauerform-Frage + Laufcoach-Entscheidung**
+Komponenten: `OnboardingView.swift` (neuer Step, nutzt `TrainingTypeKind.running`/`.cycling` aus dem
+Generator weiter, siehe Abschnitt 5-Tabelle), neues Feld in `UserBodyProfile` für die dauerhafte
+Ausdauerform-Präferenz. Abhängigkeiten: P3.1. Abnahme: A03–A09 (volle Zustandstabelle Dok02 §3),
+Start-Check-Isolation unverändert. Datenmodell: `UserBodyProfile` neues additives Feld
+(Ausdauerform-Präferenz) + `cardioCoachingEnabled` wird erstmals im Onboarding beschrieben (kein neuer
+Typ, nur neuer Schreibpfad). **Kein neues `CardioGoal`-Pendant für Radfahren** (siehe Abschnitt 5).
+Testplattform: Enum/Kernlogik Linux-testbar, Onboarding-Flow Apple-CI/Gerät.
+
+### P4 — Profiländerungen mit bestätigter Plananpassung verbinden
+
+**P4.1 Equipment-Change-Trigger**
+Komponenten: `ProfileEditorView.swift` (`.onChange(of: profile.equipmentProfile)`, analog Zeile 190
+für `environment`). Abhängigkeiten: P2. Abnahme: Änderung löst überhaupt erstmals eine Reaktion aus
+(Vorbedingung für C03/C05). Datenmodell: keine. Testplattform: Apple-CI/Gerät.
+
+**P4.2 Equipment-Impact-Analyse gegen Bestandspläne**
+Komponenten: neue Brücke in FitnessAppData — wendet `PlanEquipmentChecker`/`ExerciseRequirement`
+(bisher nur gegen Core-`DaySpec`/`ExerciseSpec`) auf echte persistierte `TrainingDay`/`Exercise` an.
+Abhängigkeiten: P4.1, Konfliktlösung 2 (präzises Modell statt `PlanEnvironmentMigrator`). Abnahme: C03
+(betroffene Übung erkannt + begründeter Ersatz), C04 (Präferenz = optionale Neugewichtung, kein
+Geräteverbot — **neu zu bauen**, siehe Abschnitt 2b, existiert heute gar nicht). Datenmodell: keine
+zwingend (reine Abfrage), ggf. Transport-Struktur ohne Persistenz. Testplattform: Brücken-Logik ggf.
+Linux-testbar falls rein formuliert, SwiftData-Anbindung Apple-CI/Gerät.
+
+**P4.3 3-Wege-Entscheidung (anpassen/neu/behalten), gemeinsam für Cardio UND Equipment**
+Komponenten: neue gemeinsame UI-Komponente, `CardioFeasibilityCardModel` (Refactor zur
+Wiederverwendung durch Equipment-Pfad). Abhängigkeiten: P4.2, P2.3 (Adopt-Pfad). Abnahme: C01, C02,
+C06. Datenmodell: keine. Testplattform: Apple-CI/Gerät.
+
+### P5 — Versionierung/Datenqualität für spätere Rückblicke sichern
+
+**P5.1 `TrainingPlan.activatedAt` (Zeitanker)**
+Komponenten: `TrainingPlan.swift`, Lightweight-Backfill, `DataExportService`/`DataImportService`
+(additive CSV-Spalte, Pattern wie `equipment_unknown_items`). Abhängigkeiten: keine (kann parallel zu
+P3/P4 laufen). Abnahme: Migrationstest — Bestandsspeicher ohne Feld öffnen ergibt sinnvollen
+Default/Backfill statt Crash; CSV-Roundtrip mit und ohne das neue Feld. Datenmodell: `TrainingPlan` +
+`activatedAt: Date?` (additiv); Export + `plan_activated_at`-Spalte. Testplattform: SwiftData-Modell
+Apple-CI/Gerät; CSV-Parsing-Anteil (sofern reine String-Logik in `CSVReader`/`CSVWriter`, FitnessAppCore)
+Linux-testbar.
+
+**P5.2 Inhalts-Snapshot pro `TrainingDay`-Fassung (Konfliktlösung 3)**
+Komponenten: neue persistierte Snapshot-Struktur (Namenskollision mit den bestehenden UI-Discard-
+Snapshots wie `PlanMetaSnapshot` vermeiden — eigener Name, z. B. `TrainingDayContentRecord`),
+Verknüpfung zu `WorkoutSession`. Abhängigkeiten: P5.1. Abnahme: F07 (Review-Übernahme verändert
+Historie nicht); ein nachträglich umsortierter `TrainingDay` verändert die inhaltliche Darstellung
+einer bereits geloggten `WorkoutSession` nicht mehr. **Bewusst enger Scope**: nur der Tagesinhalt
+(Übungen/Reihenfolge) wird eingefroren — die bestehende, bewusste Live-Lese-Ausnahme für einzelne
+Korrekturfaktoren (`cnsFatigueScore` u. ä.) bleibt unverändert bestehen (Konfliktlösung 3).
+Datenmodell: neues SwiftData-Modell oder JSON-Snapshot-Feld auf `WorkoutSession`; Migration nötig
+(Bestandssessions ohne Snapshot werden explizit als „kein Snapshot verfügbar" markiert, keine
+rückwirkende Fantasie-Rekonstruktion). Testplattform: SwiftData, nur Apple-CI/Gerät.
+
+### P6 — Vier-Wochen-Rückblick und spätere Plan-Checks (ausdrücklich erst nach P1–P5)
+
+**P6.1 Soll-Ist-Orchestrator**
+Komponenten: neue dünne Core-Schicht, bündelt `DeloadAdvisor`/`ComebackAdvisor`/
+`CardioCoachingAdvisor`/`TrainingCalendarAggregator`/`VolumeOverTimeAggregator` unverändert, ergänzt
+nur den fehlenden „geplant vs. absolviert"-Vergleich. Abhängigkeiten: P5.1 (Zeitanker zwingend
+erforderlich — ohne `activatedAt` keine Kalenderfrist berechenbar). Abnahme: F01–F03, F08 (keine
+widersprüchlichen Vorschläge verschiedener Advisors). Datenmodell: additiver Review-Zustand
+(„zuletzt reviewed am"/„nächstes fällig am", Pattern wie `AbsenceDeload`s Cooldown-Timestamp).
+Testplattform: reine Funktionslogik mit injizierten Daten → **Linux-testbar**.
+
+**P6.2 Review-UI — ausdrücklich kein Start-Check**
+Komponenten: neue eigenständige View „Dein Plan-Check", Anbindung an die P3.2-Wochenübersicht für
+„Änderungen ansehen". Abhängigkeiten: P6.1, P3.2, P5.2 (Vorher/Nachher-Vergleich braucht den
+Inhalts-Snapshot). Abnahme: F06/F07; **Start-Check-Isolation bleibt unverändert** — kein neuer Pfad zu
+`BaselineCheckFlowView`, keine Leistungstest-Fragen, eigene schlanke UI mit den 5 Fragen aus Dok03 §4.
+Datenmodell: keine zusätzlich zu P6.1. Testplattform: Apple-CI/Gerät.
+
+**P6.3 Block-Reviews + `plateauDetected`-Emitter**
+Komponenten: `CoachingTypes.swift` (`plateauDetected` bekommt erstmals einen Emitter),
+Progression-Outcome-Historie (neu persistiert, bisher sammelt `ProgressionApplicator` `.hold`-Fälle
+nirgends). Abhängigkeiten: P6.1, P6.2. Abnahme: F04/F05. Datenmodell: neues Feld/Modell für den
+Progression-Outcome-Verlauf (additiv). Testplattform: Core-Emitter-Logik Linux-testbar, Persistenz
+Apple-CI/Gerät.
+
+### P7 — Verifikation, Regression, Dokumentation (laufend + Abschluss je Paket)
+
+Komponenten: alle. Abhängigkeiten: begleitet jede Phase, Abschlussbericht nach jedem P-Schritt gemäß
+Dokument-04-Vorlage. Abnahme: implementiert/teilweise/offen klar getrennt benannt, DE/EN/TR,
+Light/Dark, kleine Displays geprüft wo zutreffend. Datenmodell: keine eigenen. Testplattform: wie in
+der jeweiligen Teilaufgabe oben einzeln vermerkt — keine pauschale „alles grün"-Aussage.
 
 ## Nächste Aufgabe
 
-P1 (RIR-Redesign) — einziger offener Punkt aus dem Fehler-Paket, in sich geschlossen, ohne
-Abhängigkeit zu den Konfliktfragen. Wird als nächstes umgesetzt.
+P1.2 (RIR-Redesign) — einziger offener Punkt aus dem Fehler-Paket, in sich geschlossen, ohne
+Abhängigkeit zu den Konfliktfragen oder zu P2–P6. Wird als nächstes umgesetzt, sobald dieser
+präzisierte Bericht akzeptiert ist.
