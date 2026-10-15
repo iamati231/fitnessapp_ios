@@ -59,10 +59,17 @@ public struct PlanEditorView: View {
     /// aussen vor (eigene sofort wirksame Aktionen ohne Save/Cancel-Konzept).
     @State private var snapshot: PlanMetaSnapshot
 
-    /// UI-Refactor (Korrektur): unterdrueckt waehrend `revertToSnapshot()`
-    /// den `.onChange(of: plan.targetEnvironment)`-Handler — ein Revert ist
+    /// UI-Refactor (Korrektur, 2. Anlauf): unterdrueckt genau EINE Reaktion
+    /// des `.onChange(of: plan.targetEnvironment)`-Handlers — ein Revert ist
     /// kein neuer User-Edit und darf nicht nochmal den Migrations-Dialog
-    /// aufmachen.
+    /// aufmachen. Scharf geschaltet in `revertToSnapshot()` (nur wenn sich
+    /// das Feld dort tatsaechlich aendert), konsumiert ausschliesslich im
+    /// `.onChange`-Handler selbst — NICHT synchron in `revertToSnapshot()`
+    /// zurueckgesetzt, weil `.onChange` erst NACH dessen synchronem Ende
+    /// feuert (eine fruehere Fassung setzte das Flag dort faelschlich
+    /// schon wieder auf `false`, bevor der Handler es je sehen konnte —
+    /// Fund einer unabhaengigen Code-Review, siehe Doc-Kommentare an
+    /// beiden Stellen).
     @State private var isApplyingSnapshot = false
 
     /// UI-Refactor (Korrektur): welcher ANDERE Plan beim Oeffnen aktiv war
@@ -149,11 +156,26 @@ public struct PlanEditorView: View {
         // Schritt A laeuft trotzdem — Metadaten-Sync ist auch ohne Uebungen
         // relevant (User koennte spaeter welche hinzufuegen wollen).
         .onChange(of: plan.targetEnvironment) { oldValue, newValue in
-            // UI-Refactor (Korrektur): ein `revertToSnapshot()`-Rueckschreiben
-            // ist kein neuer User-Edit — darf nicht nochmal den Migrations-
-            // Dialog ausloesen (sonst muesste der User seinen eigenen Discard
-            // durch einen weiteren Dialog bestaetigen).
-            guard !isApplyingSnapshot else { return }
+            // UI-Refactor (Korrektur, 2. Anlauf): ein `revertToSnapshot()`-
+            // Rueckschreiben ist kein neuer User-Edit — darf nicht nochmal
+            // den Migrations-Dialog ausloesen. Die urspruengliche Fassung
+            // setzte `isApplyingSnapshot` synchron in `revertToSnapshot()`
+            // wieder auf `false`, BEVOR dieser Handler ueberhaupt feuert
+            // (SwiftUI ruft `.onChange` nach dem Update-Zyklus auf, nicht
+            // innerhalb desselben synchronen Closures) — die Pruefung sah
+            // dadurch immer `false`, unterdrueckte also nie etwas (Fund
+            // einer unabhaengigen Code-Review). Fix: `isApplyingSnapshot`
+            // wird NUR in `revertToSnapshot()` auf `true` gesetzt (und zwar
+            // nur, wenn sich `targetEnvironment` dort nachweislich aendert —
+            // `.onChange` feuert garantiert bei jeder echten Aenderung,
+            // das Flag kann also nie "haengen bleiben"). Konsumiert wird es
+            // ausschliesslich HIER, beim tatsaechlichen Feuern — unabhaengig
+            // vom Timing zwischen dem synchronen Rueckschreiben und SwiftUIs
+            // Update-Zyklus.
+            if isApplyingSnapshot {
+                isApplyingSnapshot = false
+                return
+            }
             guard oldValue != newValue else { return }
             let pending = PendingEnvironmentSwap(oldEnv: oldValue, newEnv: newValue)
 
@@ -386,9 +408,17 @@ public struct PlanEditorView: View {
         // `otherActivePlanIDAtOpen`-Dokumentation) — GENAU dieser Fall hat
         // `setActive(true)` ausgeloest und einen anderen Plan verdraengt.
         let wasActiveBeforeRevert = plan.isActive
-        isApplyingSnapshot = true
+        // UI-Refactor (Korrektur, 2. Anlauf): das Flag NUR scharf schalten,
+        // wenn sich `targetEnvironment` hier nachweislich aendert — sonst
+        // feuert `.onChange(of: plan.targetEnvironment)` fuer diesen Aufruf
+        // gar nicht, niemand konsumiert das Flag, und es bliebe `true`
+        // haengen (wuerde dann faelschlich den NAECHSTEN echten User-Edit
+        // unterdruecken). Siehe den `.onChange`-Handler oben fuer den
+        // Konsum-Teil dieses Fixes.
+        if plan.targetEnvironment != snapshot.targetEnvironment {
+            isApplyingSnapshot = true
+        }
         snapshot.apply(to: plan)
-        isApplyingSnapshot = false
         if wasActiveBeforeRevert, !snapshot.isActive,
            let otherID = otherActivePlanIDAtOpen,
            let other = allPlans.first(where: { $0.persistentModelID == otherID }) {

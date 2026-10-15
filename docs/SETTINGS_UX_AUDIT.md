@@ -1167,15 +1167,49 @@ aber "Änderungen des aktuellen Formulars vollständig verwerfen", nicht
   Cancel, keine stillschweigende Mehrdeutigkeit wie bei den Dialog-
   gesteuerten Aktionen oben.
 
-**Selbst gefundener Fehler bei der Umsetzung:** die erste Fassung von
-`revertToSnapshot()`s Bedingung fuer die Plan-Reaktivierung war invertiert
-(`!wasActive` statt `wasActive`) — haette beim Zurueckrollen eines frisch
-eingeschalteten `isActive` den verdraengten anderen Plan NICHT reaktiviert.
-Beim eigenen Nachlesen des Diffs gefunden und korrigiert, bevor
-irgendetwas committet wurde; zusaetzlich eine unabhaengige Code-Review
-ueber den gesamten Diff angestossen, genau wegen dieser Fehlerklasse
-(invertierte Bedingungen sind auf Linux nicht kompilierbar pruefbar, siehe
-Punkt 5).
+**Zwei gefundene Fehler bei der Umsetzung — keiner davon auf Linux
+kompilierbar pruefbar, beide nur durch Nachlesen/Review gefunden:**
+
+1. **Selbst gefunden, vor dem ersten Commit:** die erste Fassung von
+   `revertToSnapshot()`s Bedingung fuer die Plan-Reaktivierung war
+   invertiert (`!wasActive` statt `wasActive`) — haette beim
+   Zurueckrollen eines frisch eingeschalteten `isActive` den
+   verdraengten anderen Plan NICHT reaktiviert. Beim eigenen Nachlesen
+   des Diffs gefunden und korrigiert.
+2. **Von der unabhaengigen Code-Review gefunden, NACH dem ersten
+   Commit dieser Korrekturrunde:** `isApplyingSnapshot` unterdrueckte in
+   Wahrheit GAR NICHTS. Die urspruengliche Fassung setzte das Flag in
+   `revertToSnapshot()` synchron `true` → `snapshot.apply(to: plan)` →
+   synchron wieder `false`, alles in einem Zug. SwiftUIs
+   `.onChange(of:)` feuert aber erst NACH diesem synchronen Durchlauf,
+   zum Zeitpunkt des naechsten Update-Zyklus — die Pruefung im Handler
+   sah das Flag deshalb immer schon wieder auf `false` und unterdrueckte
+   nichts, weder bei echten Edits (korrekt) noch beim Revert
+   (inkorrekt — genau der Fall, den das Flag eigentlich abdecken sollte).
+   Konkretes Fehlerbild: ein Plan ohne aktive Uebungen (oder nach einem
+   "justEnv"-Dialogklick) aendert `targetEnvironment`, der User verwirft
+   ueber den Chevron — `revertToSnapshot()` schreibt das Feld zurueck,
+   der (wirkungslose) Guard laesst den kompletten DEL-050-Flow ein
+   zweites Mal durchlaufen: `profile.environment` wird beim Verlassen
+   des Screens nochmal (still) ueberschrieben, bei einem Plan MIT
+   Uebungen poppt sogar der Adapt/Restore-Dialog erneut auf, waehrend
+   der Screen eigentlich schon schliessen sollte. **Fix:** das Flag wird
+   jetzt NUR in `revertToSnapshot()` scharf geschaltet (und nur, wenn
+   sich `targetEnvironment` dort nachweislich aendert — sonst faende
+   `.onChange` nie statt und das Flag bliebe `true` haengen), und
+   ausschliesslich im `.onChange`-Handler selbst wieder konsumiert/
+   zurueckgesetzt — unabhaengig davon, wann genau SwiftUI diesen Handler
+   tatsaechlich aufruft.
+
+Eine unabhaengige Code-Review ueber den gesamten Diff wurde bewusst
+angestossen, genau wegen dieser Fehlerklasse (Timing-/Logik-Fehler, die
+auf Linux nicht kompilierbar pruefbar sind, siehe Punkt 5) — sie hat den
+zweiten, subtileren Fehler gefunden, den das eigene Nachlesen uebersehen
+hatte. Alles andere im Diff (Reaktivierungs-Bedingung nach Fix 1,
+`rebaselineSnapshot()`-Aufrufstellen, Header-Action-Reihenfolge in beiden
+Screens, alle Boolean-Richtungen bei `interactiveDismissDisabled`/
+`deltiqSwipeBackEnabled`, Test-Datei-Enum-Werte) wurde von der Review
+gegengelesen und nicht beanstandet.
 
 ### Punkt 4 — alle Verlassen-Wege abgesichert
 
