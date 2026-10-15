@@ -144,6 +144,29 @@ public enum BackupService {
         return try store(bundle: bundle, reason: reason, now: now)
     }
 
+    /// Settings-Epic Phase 5 (Befunde DX-02c/BL-07): fuer User-initiierte
+    /// Aufrufe (manueller Export, "Jetzt sichern", Vorab-Sicherung vor
+    /// Import/Reset) — haelt den Main-Thread waehrend ZIP-Kompression +
+    /// Schreiben/Rotieren der Generation responsiv. `createBackup` (oben)
+    /// bleibt fuer den automatischen Hintergrund-Lauf
+    /// (`runAutomaticBackupIfDue`) unveraendert synchron — dort ist das
+    /// gewollt (siehe dortiger Kommentar).
+    @discardableResult
+    public static func createBackupAsync(
+        context: ModelContext,
+        reason: Reason,
+        appVersion: String = "—",
+        now: Date = Date()
+    ) async throws -> Generation {
+        let bundle = try await DataExportService.makeExportAsync(context: context, appVersion: appVersion)
+        // `store` beruehrt weder `context` noch ein lebendes SwiftData-
+        // Objekt (nur Dateisystem-I/O auf dem bereits fertigen, Sendable
+        // `bundle`) — sicher per `Task.detached`.
+        return try await Task.detached {
+            try store(bundle: bundle, reason: reason, now: now)
+        }.value
+    }
+
     /// Legt ein SCHON ERZEUGTES Export-Bundle als Generation ab.
     ///
     /// Getrennt von `createBackup`, damit der manuelle Export in den
@@ -206,10 +229,16 @@ public enum BackupService {
     /// veraendert `creationDate`, den Namen aber nicht.
     public static func listGenerations() throws -> [Generation] {
         let dir = try backupsDirectory()
-        let urls = (try? FileManager.default.contentsOfDirectory(
+        // Settings-Epic Phase 5 (Befund BL-03): `try`, nicht `try?` — ein
+        // echter Lesefehler (Berechtigung entzogen, Datentraeger-Problem) muss
+        // bis zur UI durchgereicht werden. `backupsDirectory()` legt das
+        // Verzeichnis bereits an, falls es fehlt; eine "leere Liste, weil
+        // noch nie gesichert wurde" kommt also nie hierueber zustande —
+        // dieser Aufruf scheitert nur, wenn danach wirklich etwas kaputt ist.
+        let urls = try FileManager.default.contentsOfDirectory(
             at: dir,
             includingPropertiesForKeys: [.fileSizeKey]
-        )) ?? []
+        )
 
         var result: [Generation] = []
         for url in urls where url.pathExtension.lowercased() == BackupFilename.fileExtension {

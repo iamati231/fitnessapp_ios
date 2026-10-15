@@ -40,6 +40,12 @@ public struct DataExportView: View {
     @State private var temporaryFileURL: URL?
     @State private var showShareSheet = false
     @State private var errorMessage: String?
+    /// Settings-Epic Phase 5 (Befund DX-03/04): die lokale Zusatzsicherung
+    /// (`BackupService.store`) ist ein zweiter, unabhaengiger Schritt NACH
+    /// dem Export selbst. Scheitert nur sie, bleibt Teilen trotzdem moeglich
+    /// — dieser Hinweis macht den Teilfehler sichtbar, statt ihn wie vorher
+    /// per `try?` stillschweigend zu verschlucken.
+    @State private var backupWarning: String?
 
     enum Phase {
         case ready
@@ -176,6 +182,20 @@ public struct DataExportView: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
 
+                if let backupWarning {
+                    Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(Color.Deltiq.error)
+                        Text(backupWarning)
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                }
+
                 Rectangle()
                     .fill(Color.Deltiq.divider)
                     .frame(height: 1)
@@ -224,28 +244,28 @@ public struct DataExportView: View {
 
     private func startExport() {
         errorMessage = nil
+        backupWarning = nil
         phase = .exporting
 
         // Wir snapshotten den modelContext-Pointer (Sendable-Workaround
         // entfällt, weil ModelContext seinerseits an den Main-Thread bzw.
         // den eigenen Container gebunden ist). Bei iOS 17 ist `ModelContext`
-        // tatsächlich kein Sendable — also bleibt die Fetch-Operation auf
-        // dem Main-Thread, der teure Teil (CSV-Strings bauen + ZIP-Stream)
-        // läuft via `await Task.detached`. Das Fetch-Latency ist im Sub-100ms-
-        // Bereich; das Ausreizen wird erst beim Logs-Dump knapp.
+        // tatsächlich kein Sendable.
         let ctx = modelContext
         let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "—"
 
         Task {
             do {
-                // Fetch + Build hängen am ModelContext, also auf dem aktuellen
-                // Actor. SwiftData fetched sehr schnell, der CSV-Bau ist CPU-
-                // bound — kein I/O — und das ZIP-Schreiben ist in-memory.
-                // Gesamt bei einem typischen User unter 1 s, bei power-User
-                // mit Jahren History ~3-5 s. Acceptable für ein einmaliges
-                // Export-Click.
-                let bundle = try DataExportService.makeExport(context: ctx, appVersion: appVersion)
-                let url = try writeToTempFile(bundle: bundle)
+                // Settings-Epic Phase 5 (Befund DX-02c): Fetch + CSV-Bau
+                // bleiben auf dem Actor von `ctx` (schnell, SwiftData-
+                // gebunden); die ZIP-Kompression — der dominante Kostenfaktor
+                // bei grosser Historie — laeuft in `makeExportAsync` off-Main.
+                let bundle = try await DataExportService.makeExportAsync(context: ctx, appVersion: appVersion)
+                // Reines Dateisystem-I/O auf dem bereits fertigen, Sendable
+                // Bundle — sicher per `Task.detached`.
+                let url = try await Task.detached {
+                    try Self.writeToTempFile(bundle: bundle)
+                }.value
 
                 // DEL-228: Das ZIP zusätzlich dauerhaft als Backup-Generation
                 // hinterlegen. Vorher war ein manueller Export flüchtig — die
@@ -253,17 +273,36 @@ public struct DataExportView: View {
                 // der User sie nicht selbst irgendwohin schob (oder das Sheet
                 // abbrach), war sie beim nächsten Aufräumen von iOS weg. Kein
                 // erneuter Export nötig: `store` nimmt das schon gebaute
-                // Bundle. Fehler hier dürfen den Export-Flow nicht kippen —
-                // das Teilen funktioniert auch ohne die Generation.
-                _ = try? BackupService.store(bundle: bundle, reason: .manual)
+                // Bundle.
+                //
+                // Settings-Epic Phase 5 (Befund DX-03/04): das ist ein
+                // zweiter, von Teilen UNABHÄNGIGER Schritt. Scheitert NUR er,
+                // bleibt Teilen trotzdem möglich (vorher: `try?`, Fehler
+                // komplett verschluckt) — `lastDataExportAt` bedeutet ab jetzt
+                // "lokale Sicherung erfolgreich gespeichert" und wird deshalb
+                // NUR im Erfolgsfall gesetzt; der Teilfehler bleibt sichtbar.
+                var backupFailureMessage: String?
+                do {
+                    _ = try await Task.detached {
+                        try BackupService.store(bundle: bundle, reason: .manual)
+                    }.value
+                } catch {
+                    backupFailureMessage = String(
+                        format: String(localized: "settings.dataExport.backupFailed", bundle: .module),
+                        error.localizedDescription
+                    )
+                }
 
                 await MainActor.run {
                     self.temporaryFileURL = url
                     self.phase = .finished(bundle: bundle)
-                    // DEL-177: Backup-Reminder-Timestamp setzen. Dashboard
-                    // checkt diesen Wert; bei > 30 Tagen Distanz wird die
-                    // soft-coaching .backupOverdue-Message gezündet.
-                    self.lastDataExportAt = Date().timeIntervalSince1970
+                    self.backupWarning = backupFailureMessage
+                    if backupFailureMessage == nil {
+                        // DEL-177: Backup-Reminder-Timestamp setzen. Dashboard
+                        // checkt diesen Wert; bei > 30 Tagen Distanz wird die
+                        // soft-coaching .backupOverdue-Message gezündet.
+                        self.lastDataExportAt = Date().timeIntervalSince1970
+                    }
                 }
             } catch {
                 await MainActor.run {
@@ -277,7 +316,12 @@ public struct DataExportView: View {
     /// Schreibt das ZIP in den temporären Caches-Ordner — UIActivityVC kann
     /// nur File-URLs teilen, keine Data-Blobs. Beim nächsten App-Start
     /// räumt iOS Caches selbständig auf, deshalb kein Cleanup nötig.
-    private func writeToTempFile(bundle: DataExportBundle) throws -> URL {
+    ///
+    /// `static` statt Instanzmethode: beruehrt kein `self` (keine
+    /// `@State`/`@Environment`-Zugriffe), ist also gefahrlos aus
+    /// `Task.detached` aufrufbar, ohne dass die View selbst `Sendable` sein
+    /// muesste.
+    private static func writeToTempFile(bundle: DataExportBundle) throws -> URL {
         let cachesDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         let exportDir = cachesDir.appendingPathComponent("exports", isDirectory: true)
         try FileManager.default.createDirectory(at: exportDir, withIntermediateDirectories: true)

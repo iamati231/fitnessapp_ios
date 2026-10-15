@@ -51,8 +51,51 @@ public enum DataExportService {
     /// additiv-rückwärtskompatible Feldergänzungen.
     public static let formatVersion = "1.0.0"
 
-    /// Hauptentry — sammelt alles, baut das ZIP, gibt es zurück.
+    /// Hauptentry — sammelt alles, baut das ZIP, gibt es zurück. Komplett
+    /// synchron auf dem Actor von `context` (auch die ZIP-Kompression) — fuer
+    /// den automatischen Hintergrund-Backup-Lauf (`BackupService.
+    /// runAutomaticBackupIfDue`, beim App→Background-Wechsel) ist das
+    /// gewollt: dort konkurriert nichts mit dem Main-Thread um Aufmerksamkeit,
+    /// ein kurzer synchroner Schreibvorgang ist unkritisch. Fuer
+    /// User-initiierte Export-/Backup-Taps siehe `makeExportAsync` unten.
     public static func makeExport(context: ModelContext, appVersion: String = "—") throws -> DataExportBundle {
+        let snapshot = try makeFilesSnapshot(context: context)
+        return try buildBundle(from: snapshot, appVersion: appVersion)
+    }
+
+    /// Settings-Epic Phase 5 (Befund DX-02c): derselbe Export, aber mit der
+    /// ZIP-Kompression off-Main — fuer UI-Aufrufe (Settings-Export,
+    /// "Jetzt sichern", Vorab-Sicherung vor Import/Reset), bei denen der
+    /// Main-Thread waehrend des Exports responsiv bleiben soll.
+    ///
+    /// **Warum nur die ZIP-Kompression wandert:** Fetch + CSV-Bau muessen auf
+    /// dem Actor von `context` bleiben — `ModelContext` ist nicht `Sendable`,
+    /// lebende SwiftData-Objekte duerfen den Actor nicht verlassen (`id(_:)`
+    /// braucht ausserdem die lebenden Objekt-Referenzen fuer die FK-Map). Das
+    /// ist zugleich der schnelle Teil: Property-Lesezugriffe + String-
+    /// Formatierung sind O(n) ueber die gefetchten Zeilen, aber kein I/O und
+    /// keine Kompression. Die eigentliche DEFLATE-Kompression (der
+    /// dominante Kostenfaktor bei grosser Historie, siehe Teil 5 der
+    /// Vorgabe) laeuft auf den bereits fertigen, Sendable CSV-/JSON-Bytes in
+    /// einem `Task.detached` — dort steckt kein `ModelContext` und kein
+    /// lebendes SwiftData-Objekt mehr drin.
+    public static func makeExportAsync(context: ModelContext, appVersion: String = "—") async throws -> DataExportBundle {
+        let snapshot = try makeFilesSnapshot(context: context)
+        return try await Task.detached {
+            try buildBundle(from: snapshot, appVersion: appVersion)
+        }.value
+    }
+
+    /// Sendable Zwischenstand nach dem Fetch: fertige CSV-Bytes pro Datei +
+    /// Gesamt-Zeilenzahl. Ab hier ist kein SwiftData-Zugriff mehr noetig.
+    private struct FilesSnapshot: Sendable {
+        let files: [(name: String, data: Data)]
+        let totalRows: Int
+    }
+
+    /// Fetch + CSV-Bau — der Teil, der zwingend auf dem Actor von `context`
+    /// laufen muss.
+    private static func makeFilesSnapshot(context: ModelContext) throws -> FilesSnapshot {
         // 1) ID-Map. Für jedes SwiftData-Objekt erzeugen wir eine UUID, die
         //    durch alle CSVs hindurch stabil bleibt. Cross-File-Referenzen
         //    nutzen diese UUIDs als FKs. ObjectIdentifier ist innerhalb
@@ -109,6 +152,19 @@ public enum DataExportService {
         // Whitelist-basiert aus UserDefaults, siehe SettingsPortability.
         files.append(("settings.csv",         buildSettings()))
 
+        let totalRows = profiles.count + measurements.count + waters.count
+            + plans.count + days.count + exercises.count
+            + sessions.count + logs.count + prs.count
+            + gears.count + customExercises.count
+
+        return FilesSnapshot(files: files, totalRows: totalRows)
+    }
+
+    /// meta.json + ZIP-Erstellung — reine Byte-Arbeit auf dem bereits
+    /// fertigen `FilesSnapshot`, kein SwiftData-Zugriff mehr.
+    private static func buildBundle(from snapshot: FilesSnapshot, appVersion: String) throws -> DataExportBundle {
+        var files = snapshot.files
+
         // meta.json bewusst NEBEN den CSVs (kein _meta in CSV — sauberere
         // Trennung Schema-Metadata vs. Daten).
         let meta = MetaPayload(
@@ -120,8 +176,8 @@ public enum DataExportService {
         let metaData = try JSONEncoder.prettyEncoder.encode(meta)
         files.append(("meta.json", metaData))
 
-        // 4) ZIP-Erstellung via ZIPFoundation. In-memory Archive: kein
-        //    temporäres Disk-File, weniger Cleanup-Pflicht, schneller.
+        // ZIP-Erstellung via ZIPFoundation. In-memory Archive: kein
+        // temporäres Disk-File, weniger Cleanup-Pflicht, schneller.
         //
         // Throwing-Variante des Init (ZIPFoundation 0.9.x bietet die
         // failable Variante deprecated, die throwing-Variante als neu
@@ -151,18 +207,14 @@ public enum DataExportService {
             throw ExportError.zipCreationFailed
         }
 
-        // 5) Filename. ISO-Datum + Stunde, damit zwei Exporte am selben Tag
-        //    unterscheidbar bleiben. Slashes verboten in Files-App.
+        // Filename. ISO-Datum + Stunde, damit zwei Exporte am selben Tag
+        // unterscheidbar bleiben. Slashes verboten in Files-App.
         let filename = "deltiq-export-\(Self.filenameStamp(Date())).zip"
-        let totalRows = profiles.count + measurements.count + waters.count
-            + plans.count + days.count + exercises.count
-            + sessions.count + logs.count + prs.count
-            + gears.count + customExercises.count
 
         return DataExportBundle(
             data: zipData,
             suggestedFilename: filename,
-            totalRows: totalRows
+            totalRows: snapshot.totalRows
         )
     }
 
