@@ -25,12 +25,12 @@ Phase 1 des Settings-Epics (`SETTINGS_FULL_REVIEW_AND_IMPLEMENTATION.md`, ersetz
 | BL-07 | Daten/Backup | `BackupListView.swift:278-289` | **P0** | `createNow()` ist komplett synchron, kein `Task{}` — UI friert schlimmer ein als beim Export | Gleiches DTO-Snapshot-Muster wie DX-02c | P5 | **behoben** (Phase 5) |
 | DI-03 | Daten/Import | `DataImportView.swift:600-648` | **P0** | `loadPreview` läuft synchron bei jeder Dateiauswahl — entpackt+parsed das ganze ZIP auf Main, UI friert bei **jeder** Dateiwahl ein | In `Task{}` verschieben (reine Daten, kein `ModelContext` nötig) | P5 | **behoben** (Phase 5) |
 | BL-03 | Daten/Backup | `BackupListView.swift:274-276`, `BackupService.swift:209-212` | **P0** | `(try? listGenerations()) ?? []` — echter Lesefehler ununterscheidbar von "keine Backups", genau das Panic-Szenario, für das der Screen existiert | Echte I/O-Fehler durchreichen, eigener Error-State statt wiederverwendetem Empty-State | P5 | **behoben** (Phase 5) |
-| BL-05 | Daten/Backup | `BackupListView.swift:182-197` | **P0** | Backup löschen: ein Tap, keine Bestätigung, irreversibel; Fehler verschluckt (`try?`); Tap-Ziel 32×32pt (< 44pt-Minimum) | Eigener `confirmationDialog`, Fehler anzeigen, Tap-Ziel vergrößern, `.accessibilityLabel` mit Datum | P5 | **teilbehoben** (Phase 5) — Bestätigung + Fehleranzeige; Tap-Ziel-Vergrößerung ist Phase-6-Accessibility-Scope |
+| BL-05 | Daten/Backup | `BackupListView.swift:182-197` | **P0** | Backup löschen: ein Tap, keine Bestätigung, irreversibel; Fehler verschluckt (`try?`); Tap-Ziel 32×32pt (< 44pt-Minimum) | Eigener `confirmationDialog`, Fehler anzeigen, Tap-Ziel vergrößern, `.accessibilityLabel` mit Datum | P5/P6 | **behoben** (Phase 5 + 6) — Bestätigung + Fehleranzeige (Phase 5); Tap-Ziel auf 44×44pt vergrößert + `.accessibilityLabel` mit Datum ergänzt (Phase 6) |
 | RS-02 | Daten/Reset | `SettingsView.swift:816-919` | **P0** | "App zurücksetzen" ist die einzige destruktive Aktion ohne automatisches Vorab-Backup | Automatisches Backup vor dem Löschen | P5 | **behoben** (Phase 5) |
-| GEAR-05 | Gear | `GearListView.swift:113-124,162-164` | **P0** | Gear löschen ohne Bestätigung, ein Tap, Kilometerstand-Historie unwiderruflich weg (Workout-Sessions selbst bleiben, `.nullify`) | Bestätigungsdialog wie bei Custom-Exercise-Löschung | P6 | open |
-| EXLIB-07/09 | Bibliothek | `ExerciseLibraryEditorSheet.swift:180-200`; `Exercise.swift:15`, `ExerciseLog.swift:40`, `PersonalRecordEntry.swift:27` | **P0** | Umbenennen einer eigenen Übung bricht Verlaufs-/PR-Lookup und Plan-Anzeige für alle vorher geloggten Einträge — `name` wird beim Adoptieren kopiert, kein Rückbezug zu `ExerciseTemplate`. Kein Warnhinweis beim Umbenennen. Daten nicht verloren, nur unauffindbar (falsch-leer). | Stabile Referenz (ID) von `Exercise`/`ExerciseLog`/`PersonalRecordEntry` zurück zu `ExerciseTemplate` | P6 | **entschieden** — jetzt sauber beheben (Schema-Änderung) |
+| GEAR-05 | Gear | `GearListView.swift:113-124,162-164` | **P0** | Gear löschen ohne Bestätigung, ein Tap, Kilometerstand-Historie unwiderruflich weg (Workout-Sessions selbst bleiben, `.nullify`) | Bestätigungsdialog wie bei Custom-Exercise-Löschung | P6 | **behoben** (Phase 6) |
+| EXLIB-07/09 | Bibliothek | `ExerciseLibraryEditorSheet.swift:180-200`; `Exercise.swift:15`, `ExerciseLog.swift:40`, `PersonalRecordEntry.swift:27` | **P0** | Umbenennen einer eigenen Übung bricht Verlaufs-/PR-Lookup und Plan-Anzeige für alle vorher geloggten Einträge — `name` wird beim Adoptieren kopiert, kein Rückbezug zu `ExerciseTemplate`. Kein Warnhinweis beim Umbenennen. Daten nicht verloren, nur unauffindbar (falsch-leer). | Stabile Referenz (ID) von `Exercise`/`ExerciseLog`/`PersonalRecordEntry` zurück zu `ExerciseTemplate` | P6 | **behoben** (Phase 6) |
 | SV-F01 | Settings | `SettingsView.swift:245-261` vs. `:857` / `SettingsPortability.swift:33` | P1 | `weight_unit` ist laut Portability-Whitelist "echte Präferenz", wird aber von Reset gelöscht — widerspricht Resets eigenem Kommentar | Default: als Präferenz behandeln, nicht löschen | P5 | **behoben** (Phase 5) |
-| SV-F07/08/09 | Settings/Dashboard | `Theme.swift` (`DeltiqControlRow`/`DeltiqRow`/`DeltiqHeaderAction`), alle Toggle/Picker/Icon-Buttons in `SettingsView.swift` + `DashboardSettingsView.swift` | P1 | Durchgängig fehlende `.accessibilityLabel` (Gegenprobe: `HealthWorkoutWriteView.swift` macht es im selben Ordner korrekt) | Labels pro Instanz ergänzen, **nicht** die shared Theme-Components anfassen | P6 | open |
+| SV-F07/08/09 | Settings/Dashboard | `Theme.swift` (`DeltiqControlRow`/`DeltiqRow`/`DeltiqHeaderAction`), alle Toggle/Picker/Icon-Buttons in `SettingsView.swift` + `DashboardSettingsView.swift` | P1 | Durchgängig fehlende `.accessibilityLabel` (Gegenprobe: `HealthWorkoutWriteView.swift` macht es im selben Ordner korrekt) | Labels pro Instanz ergänzen, **nicht** die shared Theme-Components anfassen | P6 | **behoben** (Phase 6) — 19 Toggle/Picker-Instanzen in `SettingsAppExperienceView`/`SettingsDataConnectionsView`/`ProfileEditorView`/`DashboardSettingsView` gelabelt; `DeltiqHeaderAction` um optionales `accessibilityLabel` ergänzt (additiv, Theme-Component selbst nur um das neue Feld erweitert) fuer DSV-01 + Gear-/Dashboard-"+"-Buttons |
 | DX-03/04 | Daten/Export | `DataExportView.swift:183-195, 266, 294-306` | P1 | `lastDataExportAt` wird gesetzt bevor Share/Backup bestätigt ist; `ShareSheet` ohne Completion-Handler | Erst nach erfolgreichem `BackupService.store()` setzen | P5 | **behoben** (Phase 5) |
 | BL-08 | Daten/Backup | `BackupListView.swift:232-239` | P1 | Status-Text "Wird wiederhergestellt…" erscheint identisch auch beim reinen Backup-Erstellen | Eigener String je Operation (Enum statt `isWorking: Bool`) | P5 | **behoben** (Phase 5) |
 | DI-09 | Daten/Import | `DataImportView.swift:705-773`, `DataImportService.swift:352-360` | P1 | `performImport` durchgehend synchron ohne `await` — "live" Fortschrittsbalken kann nicht wirklich animieren | async + `Task.yield()` zwischen Phasen, oder ehrlicher Indeterminate-Spinner | P5 | **behoben** (Phase 5) |
@@ -38,13 +38,13 @@ Phase 1 des Settings-Epics (`SETTINGS_FULL_REVIEW_AND_IMPLEMENTATION.md`, ersetz
 | REM-01 | Reminder | `SettingsView.swift:459-529` | P1 | Reminder-Toggles lesen nie den echten OS-Benachrichtigungsstatus — anders als strukturell identische `healthKitSection` (`SV-21`) | OS-Status aktiv abfragen, analog `healthKitSection` anzeigen | P4 | **behoben** (Phase 4) |
 | REM-02 | Reminder | `ReminderPreferencesApplier.swift` + Onboarding-Re-Init-Pfad | P1 | Resets Zusage "Reminder-Prefs bleiben erhalten" wird durch hartkodierte Re-Init bei erzwungenem Re-Onboarding gebrochen | Re-Onboarding darf vorhandene, nicht-default Reminder-Prefs nicht überschreiben | P4 | **behoben** (Phase 4) |
 | GEAR-01 | Gear/Profil | `GearListView.swift:29`; `ProfileEditorView.swift:847,862` | P1 | Gear-Screen-Titel und Equipment-Sheet-Titel/`navigationTitle` beide identisch "Ausrüstung" | Gear-Screen-Titel um "& Schuhe" ergänzen (Settings-Zeile hat es schon) | P3 | **behoben** (Phase 3) |
-| GEAR-04 | Gear | `GearListView.swift:92-142` | P1 | Gear-Zeile nutzt `.onTapGesture` auf `VStack` statt `Button` — keine VoiceOver-Button-Semantik (Exercise Library macht es korrekt) | In `Button` einpacken | P6 | open |
-| CREDITS-02 | Bibliothek | `ExerciseMediaCreditsView.swift:21-33` | P1 | Credits-Text behauptet "mit Erlaubnis gezeigt" als gesicherte Tatsache, stärker als die eigene `NOTICE-exercise-gifs.md` das stützt | Formulierung auf Quelle zurückführen ("laut Datensatz-Projekt"), nicht als eigene Zusicherung | P6 | open |
+| GEAR-04 | Gear | `GearListView.swift:92-142` | P1 | Gear-Zeile nutzt `.onTapGesture` auf `VStack` statt `Button` — keine VoiceOver-Button-Semantik (Exercise Library macht es korrekt) | In `Button` einpacken | P6 | **behoben** (Phase 6) |
+| CREDITS-02 | Bibliothek | `ExerciseMediaCreditsView.swift:21-33` | P1 | Credits-Text behauptet "mit Erlaubnis gezeigt" als gesicherte Tatsache, stärker als die eigene `NOTICE-exercise-gifs.md` das stützt | Formulierung auf Quelle zurückführen ("laut Datensatz-Projekt"), nicht als eigene Zusicherung | P6 | **behoben** (Phase 6) |
 | RS-03a | Daten/Reset | `SettingsView.swift:913-919` vs. `DataImportService.swift:505-508` | P1 | Zwei unabhängig gepflegte "Alles löschen"-Sequenzen; Repo-README warnt bereits vor dem Drift-Risiko | Gemeinsamen `wipeAllPersistentModels`-Helper extrahieren | P5 | **behoben** (Phase 5) |
 | DX-05 | Daten/Export | `DataExportView.swift:199-210, 258` | P2 | `BackupService.store`-Fehler per `try?` verschluckt, Banner zeigt trotzdem "fertig" | Fehler nicht-blockierend zusätzlich anzeigen | P5 | **behoben** (Phase 5) — derselbe Fix wie DX-03/04 |
-| SV-F02 | Settings | `SettingsView.swift:857` | P2 | `height_unit`/`unit_system` sind tote Keys | Aus Reset-Loop entfernen | P5 | open |
+| SV-F02 | Settings | `SettingsView.swift:857` | P2 | `height_unit`/`unit_system` sind tote Keys | Aus Reset-Loop entfernen | P6 | **behoben** (Phase 6) |
 | SV-F13 | Settings | `HealthKitController.swift:24` | P2 | "Letzter Sync" nur In-Memory, verschwindet nach jedem Kaltstart | Persistieren oder als "diese Sitzung" kennzeichnen | P4 | **behoben** (Phase 4) |
-| EXLIB-02/03 | Bibliothek | `ExerciseLibraryView.swift:253-279,282-294` | P2 | Suche/Filter ohne Treffer rendert stumme leere Liste, kein "keine Treffer"-Hinweis | Expliziten No-Results-State ergänzen | P6 | open |
+| EXLIB-02/03 | Bibliothek | `ExerciseLibraryView.swift:253-279,282-294` | P2 | Suche/Filter ohne Treffer rendert stumme leere Liste, kein "keine Treffer"-Hinweis | Expliziten No-Results-State ergänzen | P6 | **behoben** (Phase 6) |
 | R-24 | Health | `HealthKitController.swift:130-231` | P2 | Gewicht-Schreibstatus als Lese-Gate für andere Health-Typen zweckentfremdet — niedriges Realrisiko (ein gemeinsamer Consent-Dialog) | Nur relevant, falls Consent-Dialoge je getrennt werden | — | OK |
 
 ### Bereits korrekt — nicht anfassen
@@ -247,3 +247,150 @@ Alle sieben Punkte der Vorgabe (Export/Backup-Erstellung, Import, Backup-Liste, 
   - Vollstaendiger End-to-End-Lauf: Reset ausloesen → Vorab-Sicherung wird angelegt → Reset laeuft durch → ueber die Backup-Liste wiederherstellen → App ist wieder im Vor-Reset-Zustand.
   - `XCTFail`/do-catch-Umstellung in `testGarbageZipThrowsWithoutWiping` kompiliert und verhaelt sich wie erwartet (kann auf diesem Toolchain nicht ausgefuehrt werden).
   - Das reale, verbindliche Signal bleibt der naechste Codemagic-Lauf — ein dort auftretender Fehler wird wie bei jeder vorherigen Phase anhand des Logs diagnostiziert und gezielt behoben.
+
+---
+
+## Teil 8 — Phase 6 Abschlussbericht
+
+**1. Stabile Exercise-Referenz (EXLIB-07/09):** `ExerciseTemplate` bekommt ein
+neues `id: UUID` (Default-Literal, KEIN `@Relationship`, damit Loeschen einer
+Vorlage strukturell nie Logs/PRs mitloeschen kann). `Exercise.exerciseTemplateID`,
+`ExerciseLog.exerciseTemplateIDSnapshot` und `PersonalRecordEntry.exerciseTemplateID`
+referenzieren diese ID zusaetzlich zum bestehenden Namens-Snapshot (der bewusst
+erhalten bleibt — "historische Namens-Snapshots erhalten"). `PRDetector.GroupKey`
+und der Trophy-Room (`PRHistoryView.TrophyGroupKey`) gruppieren jetzt ID-first:
+ein Attempt mit aufloesbarer ID gruppiert darueber (ueberlebt ein Umbenennen),
+nur Alt-Eintraege ohne ID fallen weiterhin auf den Namen zurueck — nie beides
+gemischt, damit ein zufaelliger Namens-Treffer nie zwei Uebungen zusammenlegt.
+`ExerciseDetailView` (die "Verlaufs-Swipe"-Ansicht) loest ebenso ID-first auf.
+Neue One-Shot-Migration `ExerciseTemplateIDBackfill` (gleicher Ort/Aufruf-Pattern
+wie `ExerciseNameBackfill`, MUSS danach laufen) verknuepft Bestandsdaten
+rueckwirkend — aber NUR bei exaktem, eindeutigem Namens-Treffer; zwei Vorlagen
+mit demselben Namen oder gar kein Treffer bleiben bewusst `nil`, es wird nicht
+geraten ("Mehrdeutige Altzuordnungen nicht anhand aehnlicher Namen raten").
+CSV-Export/-Import (`custom_exercises.csv` + neue `exercise_template_id`-
+Spalten auf den 3 anderen Tabellen) sichert die ID ueber Backup-Roundtrips ab,
+inklusive Dedup-Fall (Zielcontainer hat bereits eine gleichnamige Vorlage mit
+eigener ID → Referenz zeigt auf die wiederverwendete, nicht die verwaiste
+Export-ID). Rueckwaertskompatibel: ein Backup von vor dieser Phase hat die
+neuen Spalten nicht, `CSVReader` liefert dafuer `nil` (keine Sonderbehandlung
+noetig, Pattern bereits etabliert z. B. bei `superset_id`).
+*Bewusst nicht mit angefasst:* `DashboardView.cardioSeries` (DEL-065-Pace-
+Trend-Chart) gruppiert Cardio-Logs ebenfalls per Namens-Snapshot — dieselbe
+Bug-Kategorie, aber deutlich geringere Schwere (eine umbenannte Cardio-Uebung
+splittet nur in zwei Legenden-Linien statt eine Linie zu verlieren oder
+Daten falsch zu verstecken/zusammenzulegen). Nicht Teil dieser Phase, da es
+eine neue `@Query<ExerciseTemplate>` in einer bereits 3000+-Zeilen-Datei
+erfordert haette, die ich nicht vollstaendig gelesen habe — Kandidat fuer
+einen kleinen Folge-Fix.
+
+**2. Gear-Loeschen (GEAR-05/04):** `GearListView` bekommt `pendingDelete` +
+`confirmationDialog` (Vorbild: `BackupListView`/`ExerciseLibraryView`), Fehler
+werden per `do/catch` + sichtbarer Inline-Fehlerzeile angezeigt (nicht mehr
+stillschweigend `try?`). Die Zeile ist jetzt ein echter `Button` (VoiceOver-
+Semantik) statt `.onTapGesture` auf einem `VStack`; der Loesch-Button bleibt
+ein eigenstaendiger SIBLING-Button (kein Nesting) mit eigenem 44×44pt-Tap-Ziel
+und `.accessibilityLabel`. Titel-Pruefung: `GearListView` ("Ausruestung &
+Schuhe") und der Trainingsort-Equipment-Screen ("Trainingsort & Ausstattung",
+`TrainingLocationEquipmentEditorView`) sind bereits eindeutig unterschiedlich
+benannt (verifiziert, keine Aenderung noetig).
+
+**3. Exercise-Library "Keine Treffer" (EXLIB-02/03):** expliziter No-Results-
+State (`DashboardEmptyState`, Icon "magnifyingglass") wenn Suche/Filter alles
+ausschliessen; Plan-Env-Filter-Zeile bleibt sichtbar, damit der User den
+Filter direkt anpassen kann. System-Uebungen-Schutz (`ExerciseLibraryEditorSheet`
+read-only-Pfad) unberuehrt, verifiziert.
+
+**4. Dashboard/Settings Accessibility + Sortierung:** 19 bislang unbeschriftete
+Toggle-/Picker-Instanzen in `SettingsAppExperienceView`, `SettingsDataConnectionsView`,
+`ProfileEditorView` und `DashboardSettingsView` bekommen `.accessibilityLabel`
+(derselbe String, der ohnehin schon als sichtbares `DeltiqControlRow`-Label
+existiert — keine neuen Uebersetzungen noetig, bis auf die unten genannten).
+`DeltiqHeaderAction` bekommt ein neues optionales `accessibilityLabel`-Feld
+(additiv, Default `nil` aendert nichts an bestehenden Call-Sites) — behebt
+damit DSV-01 (schwerste Einzel-Luecke im Audit: Dashboard-Sortieren-Button
+war komplett icon-only in beiden Zustaenden) sowie den Gear-"+"-Button und
+die beiden Dashboard-"+"-Buttons. Sortieren ohne zwingendes Dragging: neue
+Auf-/Ab-Buttons pro Zeile in beiden Dashboard-Listen (aktive Widgets, Hero-
+Slots), sichtbar nur im Edit-Modus (dort ist Dragging ohnehin die einzige
+bisherige Option) — Drag bleibt zusaetzlich moeglich, ist aber nicht mehr
+die einzige Art zu sortieren. BL-05s verbliebener Teil (Tap-Ziel 32×32pt →
+44×44pt) nachgeholt. Kleine Displays/grosse Schrift: Stichprobe ergab, dass
+die bestehenden Shared-Components (`DeltiqHeader`, `DeltiqControlRow`) bereits
+`.lineLimit(1)` + `.minimumScaleFactor` einsetzen und in `SettingsView`/
+`DashboardSettingsView`/`GearListView` keine riskanten festen Text-Frames
+existieren — keine weitere Haertung noetig ueber das hinaus, was neue eigene
+Elemente (Gear-Zeile, Sortier-Buttons) selbst schon beachten. SV-F02 (toter
+Reset-Loop-Eintrag `height_unit`/`unit_system`, Phase-5-Nachtrag) ebenfalls
+entfernt, verifiziert dass die Keys nirgends sonst im Repo referenziert sind.
+
+**5. GIF-Credits (CREDITS-02):** `settings.credits.exerciseMedia.body` (DE/
+EN/TR) umformuliert — die "mit Erlaubnis gezeigt"-Aussage wird jetzt explizit
+der Quelle zugeschrieben ("laut dessen eigener Hinweis-Datei"/"according to
+that dataset's own notice") statt als eigene Zusicherung der App zu stehen.
+Keine Code-Aenderung noetig, nur der lokalisierte Textinhalt.
+
+**6. DI-Seams fuer Phase-5-Fehlerpfade:** zwei gezielte, additive Oeffnungen,
+keine Architekturaenderung. `SharedStore.health`: `private(set)` →
+`internal(set)` — `@testable import FitnessAppData` kann den Zustand jetzt
+direkt auf `.fellBackAfterGroupStoreFailure` setzen, ohne einen echten
+App-Group-Fehler zu provozieren. `BackupService.backupsDirectoryOverride:
+URL?` (neu, `internal`, Default `nil` = unveraendertes Verhalten): Tests
+koennen ein temporaeres Verzeichnis unterschieben. Neue
+`BackupServiceFailurePathTests.swift` nutzt beide Seams: "fehlgeschlagene
+Sicherung" (`storeUnhealthy` wird geworfen/nicht geworfen, je nach Health-
+Zustand), sowie BL-03/BL-05 — echter Ladefehler via einem Pfad, der auf eine
+REGULAERE DATEI statt ein Verzeichnis zeigt (`contentsOfDirectory` wirft dann
+umgebungsunabhaengig, ohne auf Unix-Permissions angewiesen zu sein, die in
+einer Root-/Sandbox-Umgebung oft gar nicht greifen), und ein echter Loeschfehler
+via nicht-existentem Pfad.
+
+**Tests/Build — getrennt berichtet:**
+- **Core (reines Swift):** `swift test` — **979 Tests, 0 Fehler** (975 aus
+  Phase 5 + 4 neue `PRDetectorTests` fuer die ID-first-Gruppierung: Umbenennen-
+  ueberlebt-via-ID, unterschiedliche-IDs-trotz-gleichem-Namen-bleiben-getrennt,
+  Nil-ID-faellt-auf-Namen-zurueck, ID-und-Nil-werden-nie-gemischt). `LiftAttempt`/
+  `PersonalRecord`/`PRDetector` liegen in `FitnessAppCore` OHNE SwiftData-Gate —
+  diese 4 Tests sind also ECHT auf diesem Linux-Toolchain ausgefuehrt, nicht
+  nur geparst.
+- **SwiftData (Linux-Toolchain, nur oberflaechlich geparst, `#if canImport(SwiftData)`
+  bzw. `#if canImport(SwiftUI) && canImport(SwiftData)` evaluieren hier `false`):**
+  7 neue Tests geschrieben, auf diesem Toolchain NICHT ausfuehrbar:
+  - `DataPortabilityRoundtripTests.swift`: `testExerciseTemplateIDResolvesHistoryAfterTemplateRename`,
+    `testDeletingTemplateNeverCascadesToExerciseLogsOrPRs`,
+    `testCustomExerciseTemplateIDSurvivesExportImportRoundtrip`,
+    `testCustomExerciseTemplateIDResolvesThroughDedupOnReimport`.
+  - Neue `Tests/FitnessAppUITests/ExerciseTemplateIDBackfillTests.swift` (dort,
+    nicht in `FitnessAppDataTests`, weil `ExerciseTemplateIDBackfill` wie sein
+    Vorbild `ExerciseNameBackfill` in `FitnessAppUI` liegt — `FitnessAppUITests`
+    bekam dafuer `FitnessAppData` als neue Test-only-Dependency in `Package.swift`):
+    `testBackfillConnectsOnlyUniqueNameMatches`, `testBackfillConnectsSystemExerciseByName`.
+  - Neue `Tests/FitnessAppDataTests/BackupServiceFailurePathTests.swift` (4 Tests,
+    siehe Punkt 6 oben).
+- **Nicht durch Unit-Tests abgedeckt, nur durch Code-Lektuere verifiziert:**
+  - "Abgebrochene Bestaetigung"/"Doppeltippen" fuer den neuen Gear-Lösch-Dialog:
+    gleiches Argument wie in jeder vorherigen Phase — kein UI-Test-Target in
+    diesem Repo. Cancel-Button ruft ausschliesslich `pendingDelete = nil` auf
+    (verifiziert durch Lesen), Trigger-Buttons sind durch den Dialog selbst vor
+    Doppel-Aktivierung geschuetzt (SwiftUI `confirmationDialog` blockt weitere
+    Taps waehrend er offen ist).
+  - Reale VoiceOver-Ausgabe der 19+ neuen `.accessibilityLabel`-Aufrufe sowie der
+    neuen Dashboard-Sortier-Buttons: nur Code-Review (korrekter Key, korrekte
+    Bindung), keine tatsaechliche VoiceOver-Sitzung moeglich ohne Geraet/Simulator.
+  - Visuelle Pruefung des neuen No-Results-States, der restrukturierten Gear-
+    Zeile (zwei Sibling-Buttons statt einem `.onTapGesture`-VStack) und der
+    neuen Dashboard-Auf-/Ab-Buttons bei grosser Dynamic-Type-Schriftgroesse
+    und auf kleinen Displays (SE-Groesse): nicht moeglich ohne Simulator.
+- **Apple-Build/iOS-Abnahme:** **nicht durchgefuehrt in dieser Session**, exakt
+  aus denselben Gruenden wie in jeder vorherigen Phase (kein Xcode/iOS-Target
+  verfuegbar). `swift build`/`swift test` auf dem Linux-Toolchain bestaetigen
+  nur: (a) die `#if`/`#endif`-Klammerung aller SwiftData-/SwiftUI-gegateten
+  Dateien ist syntaktisch intakt, (b) der komplett ungegatete Core-Code
+  (inkl. der neuen `exerciseTemplateID`-Felder auf `LiftAttempt`/`PersonalRecord`
+  und der neuen `PRDetector`-Gruppierungslogik) ist korrekt typisiert und
+  getestet. **Kein echtes Typechecking** der neuen SwiftData-`@Model`-Felder
+  (`ExerciseTemplate.id`, `Exercise.exerciseTemplateID`, etc.), der neuen
+  Migration, der CSV-Spalten-Aenderungen, der restrukturierten SwiftUI-Views
+  (Gear-Zeile, Dashboard-Sortier-Buttons) oder des `DeltiqHeaderAction`-
+  Accessibility-Feldes im SwiftUI-Kontext. Das naechste verbindliche Signal
+  ist der naechste Codemagic-Lauf.
