@@ -95,6 +95,13 @@ public struct RootView: View {
             restTimerActivity.refreshAvailability()
             await prNotifications.refreshAuthorizationStatus()
 
+            // Bugfix (Geraetetest): raeumt vor jedem weiteren Seeder-Aufruf
+            // bereits entstandene System-Template-Dubletten auf (siehe Doc
+            // dort fuer die Ursache). MUSS vor `seedIfNeeded`/
+            // `backfillNewLibraryEntriesIfNeeded` laufen — sonst wuerden
+            // bestehende Dubletten jeden Start als "schon vorhanden" gelten,
+            // ohne je bereinigt zu werden. Idempotent.
+            LibrarySeeder.deduplicateTemplatesIfNeeded(in: modelContext)
             // Seed the canonical exercise library on first launch (idempotent
             // — fetchCount short-circuits when rows already exist).
             LibrarySeeder.seedIfNeeded(in: modelContext)

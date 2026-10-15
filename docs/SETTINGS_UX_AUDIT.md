@@ -758,3 +758,98 @@ koennen. Bestaetigt die in jeder vorherigen Phase wiederholte Einschaetzung:
 "Kein echtes Typechecking" auf Linux bedeutet nicht nur "ungetestete
 Geschaeftslogik", sondern auch "ungetestete Objektlebensdauer" — eine
 eigene Fehlerklasse, die Code-Review strukturell nicht abdecken kann.
+
+---
+
+## Teil 13 — Geraetetest-Fund: Uebungsbibliothek zeigte jede Uebung mehrfach
+
+Erster echter Geraetetest-Befund dieser Epic (3 Screenshots vom User:
+"Bankdruecken" 8-fach, "Australian Pull-ups" 8-fach, "Arnold Press (KH)"
+mehrfach in der Uebungsbibliothek).
+
+**Root Cause (vom User korrekt diagnostiziert, verifiziert):**
+`LibrarySeeder.seedIfNeeded`/`backfillNewLibraryEntriesIfNeeded` behandelten
+einen fehlgeschlagenen Fetch (`try? ... ?? 0` bzw. `?? []`) identisch zu
+"Bibliothek ist leer"/"Eintrag fehlt noch". Schlaegt der Fetch aus
+irgendeinem Grund fehl, fuegt `seedIfNeeded` bei JEDEM App-Start die
+komplette ~229-Eintraege-Library erneut ein — kompoundiert mit jedem
+weiteren Start. Plausibler Ausloeser (nicht aus dieser Session heraus
+beweisbar, siehe naechster Absatz): die Lightweight-Migration, die beim
+Hinzufuegen von `ExerciseTemplate.id` in Phase 6 noetig wurde.
+
+**Fix 1 — Ursache:** `seedIfNeeded`/`backfillNewLibraryEntriesIfNeeded` in
+`LibrarySeeder.swift` werfen den Fetch-Fehler jetzt explizit per `do/catch`
+durch und geben bei einem echten Fehler `false`/`0` zurueck, OHNE etwas
+einzufuegen — ein fehlgeschlagener Fetch darf nie mehr als "leer"
+interpretiert werden. Im schlimmsten Fall bleibt ein Start ohne Seeding,
+der naechste versucht es erneut — himmelweit sicherer als kompoundierende
+Duplikate.
+
+**Fix 2 — bereits entstandener Schaden:** neue
+`LibrarySeeder.deduplicateTemplatesIfNeeded(in:)` gruppiert alle System-
+Templates (`isCustom == false`) case-insensitiv nach Namen und behaelt
+genau einen Eintrag pro Name (bevorzugt den mit gesetztem
+`localizationKey`). Custom-Templates sind nie betroffen. In `RootView.task`
+VOR allen anderen Seeder-Aufrufen eingehaengt. Sicher bzgl. bestehender
+Referenzen: `exerciseTemplateID` ist ein reiner UUID-Scalar (kein
+`@Relationship`, siehe Phase-6-Begruendung) — Loeschen ueberzaehliger
+Duplikate kann keine PR-/Verlaufs-Zuordnung brechen.
+
+**Zusaetzliche, eigenstaendige Absicherung (ueber die User-Vorgabe hinaus):**
+Recherche zu SwiftDatas Lightweight-Migration ergab ein von mehreren
+Entwicklern berichtetes, aber nicht offiziell dokumentiertes Risiko: ein
+neues Property mit Expression-Default wie `ExerciseTemplate.id: UUID =
+UUID()` bekommt bei einer Migration moeglicherweise NICHT pro Bestandszeile
+einen eigenen frischen Wert, sondern denselben einen Default fuer mehrere/
+alle migrierten Zeilen — das haette unterschiedliche Uebungen mit
+kollidierender ID und damit faelschlich zusammengelegte PR-/Verlaufs-
+Historien zur Folge (die ID-basierte Gruppierung in `PRDetector.GroupKey`/
+`PRHistoryView.TrophyGroupKey` vergleicht nur den WERT, nicht ob die
+Vorlage noch existiert). **Aus dieser Session heraus nicht an echtem
+Apple-SwiftData verifizierbar** (kein Xcode-/Geraete-Zugriff) — deshalb
+defensiv behandelt, nicht unterstellt oder ignoriert:
+- `ExerciseTemplateIDBackfill.repairDuplicateTemplateIDsIfNeeded(in:)`
+  (neu): findet jede von 2+ verschiedenen Vorlagen geteilte `id`, vergibt
+  allen bis auf eine je eine frische UUID. Laeuft als allererster Schritt
+  in `runIfNeeded`, bevor irgendeine Namens-Verknuepfung stattfindet.
+- `runIfNeeded` selbst bekam einen Konsistenz-Check: eine bereits gesetzte
+  `exerciseTemplateID`/`-Snapshot`, die zu KEINER Vorlage mit demselben
+  Namen mehr passt (z.B. weil `deduplicateTemplatesIfNeeded` genau die
+  Vorlage geloescht hat, auf die sie zeigte), wird zurueckgesetzt und ueber
+  den normalen eindeutigen Namens-Treffer neu aufgeloest — vorher wurde
+  eine einmal gesetzte ID fuer immer als "erledigt" uebersprungen, auch
+  wenn sie inzwischen ins Leere zeigte.
+- **Ehrliche Grenze:** bereits VOR diesem Fix fehlerhaft verknuepfte
+  `Exercise`/`ExerciseLog`/`PersonalRecordEntry`-Zeilen (falls das
+  Kollisions-Risiko real eingetreten ist) werden durch
+  `repairDuplicateTemplateIDsIfNeeded` allein NICHT rueckwirkend geheilt —
+  nur der neue Konsistenz-Check in `runIfNeeded` kann das, und nur fuer
+  Faelle, in denen die ID inzwischen zu gar keiner Vorlage mit demselben
+  Namen mehr passt (nicht fuer den selteneren Fall, dass die kollidierende
+  ID zufaellig weiterhin zu EINER anderen, falschen Vorlage mit einem
+  ANDEREN Namen passt). Ob dieses Risiko auf irgendeinem Geraet tatsaechlich
+  eingetreten ist, ist unbekannt — es gibt keinen gemeldeten Befund dafuer,
+  nur den gemeldeten Duplikate-Bug.
+
+**Tests:** 4 neue in `LibrarySeederTests.swift`
+(`testDeduplicateRemovesExcessSystemTemplateCopies` — 5 identische
+Bankdruecken-Templates → 4 entfernt, 1 bleibt, wie vom User verlangt;
+`testDeduplicateNeverTouchesCustomTemplateWithSameName` — Custom-Template
+mit gleichem Namen bleibt unangetastet, wie vom User verlangt;
+`testDeduplicateIsIdempotent`; `testDeduplicateHandlesMultipleNameGroupsIndependently`)
++ 3 neue in `ExerciseTemplateIDBackfillTests.swift`
+(`testRepairDuplicateTemplateIDsAssignsFreshIDToCollidingTemplate`,
+`testRepairDuplicateTemplateIDsIsIdempotent`,
+`testRunIfNeededHealsExerciseWithStaleTemplateIDPointingToDeletedDuplicate`).
+Alle sieben SwiftData-gated, auf Linux nur geparst, nicht real ausgefuehrt
+— identische Einschraenkung wie der gesamte Rest dieser Epic.
+
+**Linux-Kontrolle:** `swift build`/`swift test` grün, 979/979 (unveraendert,
+da alle Aenderungen SwiftData-gegateten Code betreffen).
+
+**Status:** Root Cause behoben, bestehender Schaden wird beim naechsten
+Start automatisch bereinigt, zusaetzliche Absicherung gegen ein verwandtes,
+aber unbestaetigtes Risiko ergaenzt. Ob der Fix auf dem betroffenen Geraet
+tatsaechlich greift (Duplikate verschwinden nach dem Update, bleiben
+verschwunden), kann nur der naechste Start auf echtem Geraet zeigen — hier
+nicht verifizierbar.

@@ -91,5 +91,70 @@ final class ExerciseTemplateIDBackfillTests: XCTestCase {
 
         XCTAssertEqual(exercise.exerciseTemplateID, system.id)
     }
+
+    // MARK: - Bugfix (Geraetetest): repairDuplicateTemplateIDsIfNeeded
+
+    /// Absicherung gegen ein (aus dieser Session heraus nicht an echtem
+    /// Apple-SwiftData verifizierbares, aber von Entwicklern berichtetes)
+    /// Lightweight-Migrations-Risiko: zwei VERSCHIEDENE Vorlagen mit
+    /// zufaellig derselben `id` (hier direkt erzwungen, da auf dem
+    /// In-Memory-Store ueber `ExerciseTemplate.init` nie zwei echte
+    /// Zufalls-UUIDs kollidieren) muessen nach dem Reparatur-Lauf
+    /// unterschiedliche IDs tragen.
+    func testRepairDuplicateTemplateIDsAssignsFreshIDToCollidingTemplate() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let sharedID = UUID()
+        let first = ExerciseTemplate(id: sharedID, name: "Bankdrücken", equipment: .barbell, primaryMuscle: .chest)
+        let second = ExerciseTemplate(id: sharedID, name: "Kniebeuge", equipment: .barbell, primaryMuscle: .quads)
+        ctx.insert(first)
+        ctx.insert(second)
+        try ctx.save()
+
+        let repaired = ExerciseTemplateIDBackfill.repairDuplicateTemplateIDsIfNeeded(in: ctx)
+
+        XCTAssertEqual(repaired, 1, "von zwei kollidierenden Vorlagen behaelt genau eine ihre ID")
+        XCTAssertNotEqual(first.id, second.id)
+    }
+
+    func testRepairDuplicateTemplateIDsIsIdempotent() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let sharedID = UUID()
+        ctx.insert(ExerciseTemplate(id: sharedID, name: "Bankdrücken", equipment: .barbell, primaryMuscle: .chest))
+        ctx.insert(ExerciseTemplate(id: sharedID, name: "Kniebeuge", equipment: .barbell, primaryMuscle: .quads))
+        try ctx.save()
+
+        _ = ExerciseTemplateIDBackfill.repairDuplicateTemplateIDsIfNeeded(in: ctx)
+        let secondPass = ExerciseTemplateIDBackfill.repairDuplicateTemplateIDsIfNeeded(in: ctx)
+
+        XCTAssertEqual(secondPass, 0, "zweiter Lauf findet keine Kollision mehr")
+    }
+
+    /// Konsistenz-Check in `runIfNeeded`: eine bereits gesetzte
+    /// `exerciseTemplateID`, die zu KEINER Vorlage mit demselben Namen mehr
+    /// passt (z.B. weil `LibrarySeeder.deduplicateTemplatesIfNeeded` genau
+    /// die Vorlage geloescht hat, auf die diese ID zeigte), muss
+    /// zurueckgesetzt und ueber den normalen eindeutigen Namens-Treffer neu
+    /// aufgeloest werden — nicht dauerhaft auf einer ins Leere zeigenden ID
+    /// stehen bleiben.
+    func testRunIfNeededHealsExerciseWithStaleTemplateIDPointingToDeletedDuplicate() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let staleID = UUID()
+        let survivor = ExerciseTemplate(name: "Bankdrücken", equipment: .barbell, primaryMuscle: .chest, isCustom: true)
+        ctx.insert(survivor)
+        // Simuliert: die Exercise zeigte urspruenglich auf ein Duplikat, das
+        // inzwischen geloescht wurde — `staleID` existiert auf keiner
+        // aktuellen Vorlage mehr.
+        let exercise = Exercise(name: "Bankdrücken", exerciseTemplateID: staleID, sets: 3)
+        ctx.insert(exercise)
+        try ctx.save()
+        XCTAssertNotEqual(exercise.exerciseTemplateID, survivor.id)
+
+        ExerciseTemplateIDBackfill.runIfNeeded(in: ctx)
+
+        XCTAssertEqual(exercise.exerciseTemplateID, survivor.id, "stale ID muss durch den eindeutigen Namens-Treffer ersetzt werden")
+    }
 }
 #endif

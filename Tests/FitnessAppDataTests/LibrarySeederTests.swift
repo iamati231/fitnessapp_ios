@@ -124,6 +124,72 @@ final class LibrarySeederTests: XCTestCase {
         XCTAssertEqual(customTemplates.first?.name, "Meine eigene Uebung")
     }
 
+    // MARK: - Bugfix (Geraetetest): deduplicateTemplatesIfNeeded
+
+    /// Kernszenario des gemeldeten Bugs: 5 identische System-Templates fuer
+    /// "Bankdruecken" (entstanden durch den behobenen Fetch-Fehler-Bug, der
+    /// `seedIfNeeded` bei jedem Start erneut seeden liess) muessen auf genau
+    /// 1 reduziert werden.
+    func testDeduplicateRemovesExcessSystemTemplateCopies() {
+        for _ in 0..<5 {
+            context.insert(ExerciseTemplate(
+                name: "Bankdrücken", equipment: .barbell, primaryMuscle: .chest,
+                isCustom: false, localizationKey: "exercise.name.benchpress"
+            ))
+        }
+
+        let removed = LibrarySeeder.deduplicateTemplatesIfNeeded(in: context)
+
+        XCTAssertEqual(removed, 4)
+        let descriptor = FetchDescriptor<ExerciseTemplate>(predicate: #Predicate { $0.name == "Bankdrücken" })
+        XCTAssertEqual(try context.fetchCount(descriptor), 1)
+    }
+
+    /// Ein Custom-Template mit zufaellig demselben Namen wie eine System-
+    /// Uebung darf niemals geloescht werden — Nutzer duerfen bewusst eigene
+    /// Uebungen gleich benennen wie eine Library-Uebung.
+    func testDeduplicateNeverTouchesCustomTemplateWithSameName() {
+        context.insert(ExerciseTemplate(name: "Bankdrücken", equipment: .barbell, primaryMuscle: .chest, isCustom: false))
+        context.insert(ExerciseTemplate(name: "Bankdrücken", equipment: .barbell, primaryMuscle: .chest, isCustom: false))
+        let custom = ExerciseTemplate(name: "Bankdrücken", equipment: .dumbbell, primaryMuscle: .chest, isCustom: true)
+        context.insert(custom)
+
+        let removed = LibrarySeeder.deduplicateTemplatesIfNeeded(in: context)
+
+        XCTAssertEqual(removed, 1, "nur das ueberzaehlige System-Duplikat, nicht das Custom-Template")
+        let customDescriptor = FetchDescriptor<ExerciseTemplate>(predicate: #Predicate { $0.isCustom == true })
+        XCTAssertEqual(try context.fetchCount(customDescriptor), 1)
+        XCTAssertEqual(try context.fetch(customDescriptor).first?.id, custom.id)
+    }
+
+    func testDeduplicateIsIdempotent() {
+        for _ in 0..<3 {
+            context.insert(ExerciseTemplate(name: "Kniebeuge", equipment: .barbell, primaryMuscle: .quads, isCustom: false))
+        }
+        _ = LibrarySeeder.deduplicateTemplatesIfNeeded(in: context)
+        let secondPass = LibrarySeeder.deduplicateTemplatesIfNeeded(in: context)
+        XCTAssertEqual(secondPass, 0, "zweiter Aufruf darf nichts mehr finden")
+    }
+
+    /// Mehrere unterschiedlich benannte Dubletten-Gruppen gleichzeitig —
+    /// stellt sicher, dass die Gruppierung nicht uebergreifend verwechselt.
+    func testDeduplicateHandlesMultipleNameGroupsIndependently() {
+        for _ in 0..<3 {
+            context.insert(ExerciseTemplate(name: "Bankdrücken", equipment: .barbell, primaryMuscle: .chest, isCustom: false))
+        }
+        for _ in 0..<2 {
+            context.insert(ExerciseTemplate(name: "Kniebeuge", equipment: .barbell, primaryMuscle: .quads, isCustom: false))
+        }
+        context.insert(ExerciseTemplate(name: "Klimmzug", equipment: .bodyweight, primaryMuscle: .back, isCustom: false))
+
+        let removed = LibrarySeeder.deduplicateTemplatesIfNeeded(in: context)
+
+        XCTAssertEqual(removed, 3, "2 ueberzaehlige Bankdruecken + 1 ueberzaehlige Kniebeuge")
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<ExerciseTemplate>(predicate: #Predicate { $0.name == "Bankdrücken" })), 1)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<ExerciseTemplate>(predicate: #Predicate { $0.name == "Kniebeuge" })), 1)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<ExerciseTemplate>(predicate: #Predicate { $0.name == "Klimmzug" })), 1)
+    }
+
     // MARK: - backfillCustomNamesIfNeeded (Plaene)
 
     /// Der frisch angelegte Leer-Plan ("Neuer Plan" + Katalog-Schluessel) ist
