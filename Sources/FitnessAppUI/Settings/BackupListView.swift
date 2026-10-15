@@ -25,9 +25,24 @@ public struct BackupListView: View {
 
     @State private var generations: [BackupService.Generation] = []
     @State private var pendingRestore: BackupService.Generation?
-    @State private var isWorking = false
+    @State private var pendingDelete: BackupService.Generation?
+    /// Settings-Epic Phase 5 (Befund BL-08): ersetzt das gemeinsame
+    /// `isWorking: Bool` — der Status-Text zeigte vorher IMMER
+    /// "Wird wiederhergestellt…", auch waehrend `createNow()` lief.
+    @State private var operation: Operation = .idle
     @State private var resultMessage: String?
     @State private var errorMessage: String?
+    /// Settings-Epic Phase 5 (Befund BL-03): getrennt von `generations.isEmpty`
+    /// — ein echter Ladefehler (Berechtigung, Datentraeger) darf nicht wie
+    /// "noch nie gesichert" aussehen.
+    @State private var listLoadError: String?
+
+    enum Operation: Equatable {
+        case idle
+        case creating
+        case restoring
+        case deleting
+    }
 
     public init() {}
 
@@ -48,7 +63,9 @@ public struct BackupListView: View {
                 // zu lesen und es werden bewusst keine Backups mehr geschrieben.
                 unhealthyStoreCard
                 introCard
-                if generations.isEmpty {
+                if let listLoadError {
+                    loadErrorCard(listLoadError)
+                } else if generations.isEmpty {
                     emptyCard
                 } else {
                     generationsCard
@@ -89,6 +106,34 @@ public struct BackupListView: View {
                 Text(String(
                     format: String(localized: "backups.restore.confirm.message", bundle: .module),
                     Self.dateText(pendingRestore.createdAt)
+                ))
+            }
+        }
+        // Settings-Epic Phase 5 (Befund BL-05): Loeschen war vorher ein
+        // ungesicherter Tap — jetzt derselbe Bestaetigungs-Dialog wie beim
+        // Wiederherstellen.
+        .confirmationDialog(
+            Text("backups.delete.confirm.title", bundle: .module),
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(role: .destructive) {
+                if let target = pendingDelete { delete(target) }
+                pendingDelete = nil
+            } label: {
+                Text("backups.delete.action", bundle: .module)
+            }
+            Button(role: .cancel) { pendingDelete = nil } label: {
+                Text("common.cancel", bundle: .module)
+            }
+        } message: {
+            if let pendingDelete {
+                Text(String(
+                    format: String(localized: "backups.delete.confirm.message", bundle: .module),
+                    Self.dateText(pendingDelete.createdAt)
                 ))
             }
         }
@@ -141,6 +186,38 @@ public struct BackupListView: View {
         .deltiqCardStyle()
     }
 
+    /// Settings-Epic Phase 5 (Befund BL-03): ein echter Lesefehler (Zugriff
+    /// entzogen, Datentraeger-Problem) sieht jetzt sichtbar anders aus als
+    /// "noch nie gesichert" (`emptyCard`) — sonst verschwinden bestehende
+    /// Backups scheinbar spurlos, obwohl sie noch da sind.
+    private func loadErrorCard(_ message: String) -> some View {
+        DeltiqSection {
+            VStack(alignment: .leading, spacing: 6) {
+                Label {
+                    Text("backups.loadError.title", bundle: .module)
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                }
+                .font(.headline)
+                .foregroundStyle(Color.Deltiq.error)
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    reload()
+                } label: {
+                    Text("backups.loadError.retry", bundle: .module)
+                }
+                .font(.caption.weight(.semibold))
+                .tint(Color.deltiqOrange)
+                .padding(.top, 2)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+        }
+    }
+
     private var generationsCard: some View {
         DeltiqSection {
             ForEach(generations) { generation in
@@ -180,7 +257,9 @@ public struct BackupListView: View {
                         }
                     }
                     Button(role: .destructive) {
-                        delete(generation)
+                        // Settings-Epic Phase 5 (Befund BL-05): Loeschen
+                        // erst nach Bestaetigung, nicht mehr per direktem Tap.
+                        pendingDelete = generation
                     } label: {
                         Label {
                             Text("backups.delete.action", bundle: .module)
@@ -220,18 +299,21 @@ public struct BackupListView: View {
                         Image(systemName: "arrow.clockwise")
                     }
                     Spacer()
-                    if isWorking { ProgressView() }
+                    if operation != .idle { ProgressView() }
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
                 .frame(minHeight: 44)
             }
             .buttonStyle(.plain)
-            .disabled(isWorking)
+            .disabled(operation != .idle)
 
-            if isWorking {
+            // Settings-Epic Phase 5 (Befund BL-08): eigener Text je Operation
+            // statt eines gemeinsamen `isWorking`-Flags, das z.B. waehrend
+            // `createNow()` faelschlich "Wird wiederhergestellt…" zeigte.
+            if let runningLabelKey = operationRunningLabelKey {
                 Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
-                Text("backups.restore.running", bundle: .module)
+                Text(String(localized: runningLabelKey, bundle: .module))
                     .font(.caption)
                     .foregroundStyle(Color.Deltiq.textSecondary)
                     .padding(.horizontal, 14)
@@ -269,28 +351,69 @@ public struct BackupListView: View {
             .padding(.bottom, 8)
     }
 
+    /// Settings-Epic Phase 5 (Befund BL-08): ein eigener Text je laufender
+    /// Operation statt eines gemeinsamen `isWorking`-Flags.
+    private var operationRunningLabelKey: String.LocalizationValue? {
+        switch operation {
+        case .idle:      nil
+        case .creating:  "backups.creating.running"
+        case .restoring: "backups.restore.running"
+        case .deleting:  "backups.deleting.running"
+        }
+    }
+
     // MARK: Aktionen
 
     private func reload() {
-        generations = (try? BackupService.listGenerations()) ?? []
+        // Settings-Epic Phase 5 (Befund BL-03): `listGenerations()` wirft
+        // jetzt bei einem echten Lesefehler (vorher `try?` -> `[]`, nicht
+        // mehr unterscheidbar von "noch nie gesichert").
+        do {
+            generations = try BackupService.listGenerations()
+            listLoadError = nil
+        } catch {
+            listLoadError = error.localizedDescription
+        }
     }
 
     private func createNow() {
-        isWorking = true
+        operation = .creating
+        resultMessage = nil
+        errorMessage = nil
+        let ctx = modelContext
+        Task {
+            do {
+                // Settings-Epic Phase 5 (Befund BL-07): echtes `Task` statt
+                // komplett synchronem Aufruf — `createBackupAsync` haelt den
+                // Main-Thread waehrend ZIP-Kompression + Schreiben responsiv.
+                _ = try await BackupService.createBackupAsync(context: ctx, reason: .manual)
+                await MainActor.run {
+                    self.reload()
+                    self.operation = .idle
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                    self.operation = .idle
+                }
+            }
+        }
+    }
+
+    private func delete(_ generation: BackupService.Generation) {
+        // Einzelne Datei loeschen ist nahezu instantan — bleibt synchron,
+        // zeigt aber jetzt den Fehler statt ihn mit `try?` zu verschlucken
+        // (Befund BL-05).
+        operation = .deleting
         resultMessage = nil
         errorMessage = nil
         do {
-            try BackupService.createBackup(context: modelContext, reason: .manual)
+            try BackupService.delete(generation)
             reload()
         } catch {
             errorMessage = error.localizedDescription
         }
-        isWorking = false
-    }
-
-    private func delete(_ generation: BackupService.Generation) {
-        try? BackupService.delete(generation)
-        reload()
+        operation = .idle
     }
 
     /// Wiederherstellen = Replace-Import des gewaehlten ZIPs.
@@ -301,37 +424,49 @@ public struct BackupListView: View {
     /// ueber die `preImport`-Generation zurueck. Der Importer selbst validiert
     /// vor dem Wipe (DEL-183), ein kaputtes ZIP kann also nichts loeschen.
     private func restore(_ generation: BackupService.Generation) {
-        isWorking = true
+        operation = .restoring
         resultMessage = nil
         errorMessage = nil
-        do {
-            try BackupService.createBackup(context: modelContext, reason: .preImport)
-            let data = try Data(contentsOf: generation.url)
-            let result = try DataImportService.performImport(
-                zipData: data,
-                context: modelContext,
-                strategy: .replace
-            )
-            // Nachgetragene Laeufe aus einer Sicherung vor dem Dauer-Fix
-            // (1-2 Min statt der eingetragenen Laufzeit) nachziehen.
-            SessionDurationRepair.repairAfterImport(in: modelContext)
-            // Das Ersetzen hat alle Trainings geloescht: Ein noch laufender Zeitformat-
-            // Lauf (stilles Hintergrund-Audio + Live Activity) hat keine Session mehr.
-            TimedWorkoutBackground.shared.endAll()
-            resultMessage = String(
-                format: String(localized: "backups.restore.done", bundle: .module),
-                result.totalImported, result.totalSkipped
-            )
-            // Die wiederhergestellten Erinnerungs-Schalter (settings.csv) sind
-            // jetzt in UserDefaults, die geplanten Benachrichtigungen im System
-            // aber noch die alten - gleich abgleichen statt erst beim naechsten
-            // Kaltstart.
-            Task { await ReminderPreferencesApplier.applyStoredSchedules() }
-            reload()
-        } catch {
-            errorMessage = error.localizedDescription
+        let ctx = modelContext
+        Task {
+            do {
+                try await BackupService.createBackupAsync(context: ctx, reason: .preImport)
+                // Reines Datei-I/O auf einer bereits abgeschlossenen ZIP —
+                // sicher per `Task.detached`, haelt den Main-Thread waehrend
+                // des Lesens einer potenziell grossen Generation responsiv.
+                let data = try await Task.detached { try Data(contentsOf: generation.url) }.value
+                let result = try await DataImportService.performImport(
+                    zipData: data,
+                    context: ctx,
+                    strategy: .replace
+                )
+                // Nachgetragene Laeufe aus einer Sicherung vor dem Dauer-Fix
+                // (1-2 Min statt der eingetragenen Laufzeit) nachziehen.
+                SessionDurationRepair.repairAfterImport(in: ctx)
+                await MainActor.run {
+                    // Das Ersetzen hat alle Trainings geloescht: Ein noch
+                    // laufender Zeitformat-Lauf (stilles Hintergrund-Audio +
+                    // Live Activity) hat keine Session mehr.
+                    TimedWorkoutBackground.shared.endAll()
+                    self.resultMessage = String(
+                        format: String(localized: "backups.restore.done", bundle: .module),
+                        result.totalImported, result.totalSkipped
+                    )
+                    self.operation = .idle
+                }
+                // Die wiederhergestellten Erinnerungs-Schalter (settings.csv) sind
+                // jetzt in UserDefaults, die geplanten Benachrichtigungen im System
+                // aber noch die alten - gleich abgleichen statt erst beim naechsten
+                // Kaltstart.
+                await ReminderPreferencesApplier.applyStoredSchedules()
+                await MainActor.run { self.reload() }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                    self.operation = .idle
+                }
+            }
         }
-        isWorking = false
     }
 
     // MARK: Formatierung
@@ -345,6 +480,7 @@ public struct BackupListView: View {
         case .automatic: String(localized: "backups.reason.automatic", bundle: .module)
         case .manual:    String(localized: "backups.reason.manual", bundle: .module)
         case .preImport: String(localized: "backups.reason.preImport", bundle: .module)
+        case .preReset:  String(localized: "backups.reason.preReset", bundle: .module)
         }
     }
 

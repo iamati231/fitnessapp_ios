@@ -27,6 +27,10 @@ public struct SettingsView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var navigation
+    /// Settings-Epic Phase 5 (Teil 6, Live-Activities bei Reset): dieselbe
+    /// Instanz, die `RootView` injiziert (`.environment(restTimerActivity)`)
+    /// — `SettingsView` sitzt im selben `MainTabView`-Teilbaum.
+    @Environment(RestTimerActivityController.self) private var restTimerActivity
 
     @Query private var profiles: [UserBodyProfile]
 
@@ -74,7 +78,7 @@ public struct SettingsView: View {
         #endif
         .navigationBarBackButtonHidden(true)
         .alert(
-            "Fehler beim Zurücksetzen",
+            Text("settings.reset.errorTitle", bundle: .module),
             isPresented: Binding(
                 get: { resetErrorMessage != nil },
                 set: { if !$0 { resetErrorMessage = nil } }
@@ -90,7 +94,7 @@ public struct SettingsView: View {
             titleVisibility: .visible
         ) {
             Button(role: .destructive) {
-                resetApp()
+                Task { await resetApp() }
             } label: {
                 Text("settings.confirm.reset.action", bundle: .module)
             }
@@ -235,6 +239,16 @@ public struct SettingsView: View {
     /// so the app re-renders into Onboarding. Apple-Health-Daten bleiben unangetastet
     /// (sind Eigentum des Users in einer separaten Datenbank).
     ///
+    /// **Settings-Epic Phase 5 (Befund RS-02):** vor jeder destruktiven
+    /// Loeschung steht jetzt eine automatische Vorab-Sicherung — wie beim
+    /// Replace-Import (`BackupListView.restore`/`DataImportView.runImport`,
+    /// Grund `.preImport`, hier `.preReset`). Schlaegt sie fehl, wird NICHT
+    /// trotzdem geloescht: `resetApp` kehrt dann VOR `isResetting = true` und
+    /// vor jeder Mutation zurueck, zeigt stattdessen den Fehler. Die neue
+    /// Generation landet in `Documents/Backups` — einem von der SwiftData-
+    /// Loeschung voellig unabhaengigen Verzeichnis, kann vom nachfolgenden
+    /// Reset also nicht mitgeloescht werden.
+    ///
     /// **Crash-safe Reset-Pattern** (v0.1.17 DEL-017-Fix): Wir leeren ERST
     /// `navigation.workoutPath` und schicken den Tab auf Dashboard — das raeumt
     /// jede `@Bindable`-Referenz auf gleich zu loeschende Models aus dem
@@ -242,16 +256,38 @@ public struct SettingsView: View {
     /// `DispatchQueue.main.async` an. Synchrones Delete + Save HIER wuerde
     /// SwiftUI mid-render mit halb-leerem Model-Graph konfrontieren und einen
     /// EXC_BREAKPOINT-Crash ausloesen, weil @Bindable/@Query-Subscriber auf
-    /// gerade geloeschte UserBodyProfile-Refs zugreifen.
+    /// gerade geloeschte UserBodyProfile-Refs zugreifen. Dieser Teil bleibt
+    /// bewusst unveraendert (GCD, nicht Swift Concurrency) — er loest ein
+    /// spezifisches Render-Timing-Problem, kein generisches Threading-Problem.
     ///
     /// **Per-instance statt batch-delete** (v0.1.13 DEL-006-Fix): SwiftData's
     /// bulk `delete(model:)` baut intern ein NSBatchDeleteRequest und umgeht
     /// die @Relationship-Cascade/Nullify-Regeln → "mandatory OTO nullify
     /// inverse"-Violations. Fetch + delete-each respektiert die Regeln.
     ///
-    /// Neue `@Model`-Typen MUESSEN in `deleteAll`-Sequenz unten — sonst
-    /// "Geist"-Daten nach dem vermeintlichen Reset.
-    private func resetApp() {
+    /// **Settings-Epic Phase 5 (Befund RS-03a):** die 10 Typen, deren
+    /// Loeschumfang mit dem destruktiven Replace-Import identisch ist, kommen
+    /// jetzt aus der gemeinsamen `UserDataWipe.deleteSharedUserData` (Core).
+    /// `ExerciseTemplate` bleibt bewusst SEPARAT: Reset loescht ALLE Templates
+    /// (System eingeschlossen) und reseedet sie danach, ein Replace-Import
+    /// loescht nur Custom-Templates und laesst die System-Library unberuehrt
+    /// — zwei tatsaechlich unterschiedliche Umfaenge, die nicht in eine
+    /// gemeinsame Funktion gezwungen werden.
+    ///
+    /// Neue `@Model`-Typen MUESSEN nach `UserDataWipe` (falls der Reset-Umfang
+    /// mit dem Replace-Import uebereinstimmt) oder hier direkt (falls nicht) —
+    /// sonst "Geist"-Daten nach dem vermeintlichen Reset.
+    private func resetApp() async {
+        do {
+            _ = try await BackupService.createBackupAsync(context: modelContext, reason: .preReset)
+        } catch {
+            resetErrorMessage = String(
+                format: String(localized: "settings.reset.backupFailed", bundle: .module),
+                error.localizedDescription
+            )
+            return
+        }
+
         // DEL-134: isResetting-Gate. Vorher konnten Views, die zwischen
         // dem Navigation-Reset und dem async-deferred Delete neu rendern,
         // auf SwiftData-Objekte zugreifen, die im naechsten Frame
@@ -266,6 +302,10 @@ public struct SettingsView: View {
         // hat danach keinen Player mehr, der ihn beendete - nach einem Tab-Wechsel
         // kam bei dessen Abbau auch kein `onDisappear` mehr. Hier explizit beenden.
         TimedWorkoutBackground.shared.endAll()
+        // Settings-Epic Phase 5 (Teil 6): derselbe Fall fuer den Pausen-Timer
+        // (Live Activity pro Satz, unabhaengig vom Zeitformat-Lauf oben) —
+        // vorher ueberlebte eine laufende Pause-Activity den Reset.
+        await restTimerActivity.endRestTimer(reason: .skipped)
 
         // 1) Navigation-State sofort zuruecksetzen — entfernt @Bindable-
         //    References auf gleich-zu-loeschende UserBodyProfile/Plan/Day.
@@ -292,7 +332,12 @@ public struct SettingsView: View {
         // damit hierher — nicht in die SettingsPortability-Whitelist. Nach
         // einem Wipe gibt es keine Trainings-Historie mehr, also auch keine
         // Absenz, auf die sie sich beziehen koennten.
-        for key in ["weight_unit", "height_unit", "unit_system",
+        // Settings-Epic Phase 5 (Befund SV-F01): `weight_unit` NICHT mehr
+        // hier — es ist laut `SettingsPortability`-Whitelist eine ECHTE
+        // Praeferenz (genau wie Erscheinungsbild/Erinnerungen), widersprach
+        // sich also mit dem eigenen Kommentar oben. Reset loescht Daten,
+        // nicht Einstellungen.
+        for key in ["height_unit", "unit_system",
                     "deload_until", "lastDataExportAt",
                     AbsenceDeload.lastAppliedKey, AbsenceDeload.suppressedUntilGapKey] {
             UserDefaults.standard.removeObject(forKey: key)
@@ -305,24 +350,17 @@ public struct SettingsView: View {
         //    sieht dann das Empty-State und swappt sauber auf Onboarding.
         DispatchQueue.main.async {
             do {
-                // Children-first ordering. Per-instance-Delete respektiert
-                // @Relationship-Rules.
-                try self.deleteAll(of: PersonalRecordEntry.self)
-                try self.deleteAll(of: ExerciseLog.self)
-                try self.deleteAll(of: WorkoutSession.self)
-                try self.deleteAll(of: Exercise.self)
-                try self.deleteAll(of: TrainingDay.self)
-                try self.deleteAll(of: TrainingPlan.self)
-                try self.deleteAll(of: ExerciseTemplate.self)
-                try self.deleteAll(of: WaterEntry.self)
-                try self.deleteAll(of: BodyMeasurement.self)
-                // DEL-219: Gear fehlte in dieser Sequenz — Schuhe und Raeder
-                // (inkl. ihrer Kilometerstaende) haben jeden "Alle Daten
-                // loeschen" ueberlebt und tauchten im frischen Onboarding
-                // wieder auf. Nach ExerciseLog/WorkoutSession, damit die
-                // nullify-Relationship der Sessions schon aufgeloest ist.
-                try self.deleteAll(of: Gear.self)
-                try self.deleteAll(of: UserBodyProfile.self)
+                // Settings-Epic Phase 5 (Befund RS-03a): die 10 mit dem
+                // Replace-Import identischen Typen kommen aus der
+                // gemeinsamen Core-Funktion — Children-first ordering,
+                // Per-instance-Delete respektiert @Relationship-Rules (siehe
+                // Doc-Kommentar dort).
+                try UserDataWipe.deleteSharedUserData(in: self.modelContext)
+                // ExerciseTemplate bleibt reset-spezifisch: ALLE Templates
+                // (System eingeschlossen) weg, danach Neu-Seed unten — ein
+                // Replace-Import loescht stattdessen nur Custom-Templates
+                // (siehe `DataImportService.wipeAllUserData`).
+                try UserDataWipe.deleteEach(of: ExerciseTemplate.self, in: self.modelContext)
                 try self.modelContext.save()
                 // Die System-Uebungsbibliothek gehoert zum frischen Zustand:
                 // RootView seedet sie nur beim App-START, ohne das blieben
@@ -341,18 +379,6 @@ public struct SettingsView: View {
             // profiles.isEmpty == true) oder zur ErrorView falls die
             // Error-Message gesetzt wurde.
             self.isResetting = false
-        }
-    }
-
-    /// Fetches every instance of `T` and deletes them one by one. Rule-aware
-    /// alternative to `modelContext.delete(model:)`, which uses NSBatchDeleteRequest
-    /// under the hood and trips constraint violations on cascade/nullify
-    /// relationships.
-    private func deleteAll<T: PersistentModel>(of type: T.Type) throws {
-        let descriptor = FetchDescriptor<T>()
-        let items = try modelContext.fetch(descriptor)
-        for item in items {
-            modelContext.delete(item)
         }
     }
 

@@ -93,7 +93,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
     // MARK: - Tests
 
-    func testExportImportRoundtripRestoresAllRows() throws {
+    func testExportImportRoundtripRestoresAllRows() async throws {
         // 1) Quelle befüllen + exportieren.
         let source = try makeContainer()
         try seed(source.mainContext)
@@ -103,7 +103,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         // 2) In einen FRISCHEN Container importieren (Append auf leer =
         //    Neues-Gerät-Szenario).
         let target = try makeContainer()
-        let result = try DataImportService.performImport(
+        let result = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -142,13 +142,13 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertNotNil(session?.gear, "Gear-FK muss über die idMap resolven")
     }
 
-    func testReimportIntoSameStoreSkipsDuplicates() throws {
+    func testReimportIntoSameStoreSkipsDuplicates() async throws {
         // Append-Import in den GLEICHEN Store: alles Duplikat, nichts doppelt.
         let container = try makeContainer()
         try seed(container.mainContext)
         let bundle = try DataExportService.makeExport(context: container.mainContext)
 
-        let result = try DataImportService.performImport(
+        let result = try await DataImportService.performImport(
             zipData: bundle.data,
             context: container.mainContext,
             strategy: .appendOnly
@@ -167,7 +167,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         // deshalb hier KEIN Plan-Count-Assert.
     }
 
-    func testReplaceImportWipesBeforeRestore() throws {
+    func testReplaceImportWipesBeforeRestore() async throws {
         // Replace: Store enthält EXTRA-Daten, die nicht im ZIP sind — nach
         // dem Replace-Import müssen sie weg sein.
         let container = try makeContainer()
@@ -185,7 +185,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         try container.mainContext.save()
         XCTAssertEqual(try container.mainContext.fetchCount(FetchDescriptor<WorkoutSession>()), 2)
 
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: container.mainContext,
             strategy: .replace
@@ -196,18 +196,26 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         )
     }
 
-    func testGarbageZipThrowsWithoutWiping() throws {
+    func testGarbageZipThrowsWithoutWiping() async throws {
         // DEL-183-Regression: ein kaputtes ZIP darf bei Replace NIEMALS
         // erst wipen und dann scheitern.
         let container = try makeContainer()
         try seed(container.mainContext)
         let garbage = Data("definitiv kein zip".utf8)
 
-        XCTAssertThrowsError(try DataImportService.performImport(
-            zipData: garbage,
-            context: container.mainContext,
-            strategy: .replace
-        ))
+        // `performImport` ist jetzt `async` — `XCTAssertThrowsError`s
+        // Autoclosure-Parameter ist das nicht, deshalb manuelles do/catch
+        // statt der sonst ueblichen Einzeiler-Assertion.
+        do {
+            _ = try await DataImportService.performImport(
+                zipData: garbage,
+                context: container.mainContext,
+                strategy: .replace
+            )
+            XCTFail("Erwartete einen Fehler fuer ein ungueltiges ZIP")
+        } catch {
+            // erwartet
+        }
         XCTAssertEqual(
             try container.mainContext.fetchCount(FetchDescriptor<WorkoutSession>()), 1,
             "Bestand muss nach abgelehntem ZIP unangetastet sein — Validate-first!"
@@ -224,7 +232,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// Vor DEL-225 bestand der Dedup-Schluessel aus (session.startTime,
     /// set_index, name_snapshot) — fuer beide Serien identisch. Die komplette
     /// zweite Serie wurde beim Import still als Duplikat verworfen.
-    func testSecondSeriesOfSameExerciseSurvivesImport() throws {
+    func testSecondSeriesOfSameExerciseSurvivesImport() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -260,7 +268,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -277,7 +285,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// ein Schluessel ueber die Uebungs-Identitaet haette hier verdoppelt,
     /// weil `importPlanExercises` kein Dedup hat und beim zweiten Lauf neue
     /// Exercise-Rows anlegt.
-    func testDoubleImportDoesNotDuplicateLogs() throws {
+    func testDoubleImportDoesNotDuplicateLogs() async throws {
         let source = try makeContainer()
         try seed(source.mainContext)
         let bundle = try DataExportService.makeExport(context: source.mainContext)
@@ -285,7 +293,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let target = try makeContainer()
         for _ in 0..<2 {
-            _ = try DataImportService.performImport(
+            _ = try await DataImportService.performImport(
                 zipData: bundle.data,
                 context: target.mainContext,
                 strategy: .appendOnly
@@ -301,7 +309,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// Ein ergaenzender Import darf den LAUFENDEN Plan des Users nicht
     /// umschalten. Vorher deaktivierte jedes Backup mit aktivem Plan
     /// bedingungslos alle bestehenden aktiven Plaene.
-    func testAppendImportDoesNotHijackActivePlan() throws {
+    func testAppendImportDoesNotHijackActivePlan() async throws {
         let source = try makeContainer()
         try seed(source.mainContext)   // enthaelt einen aktiven "Roundtrip-Plan"
         let bundle = try DataExportService.makeExport(context: source.mainContext)
@@ -312,7 +320,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         target.mainContext.insert(mine)
         try target.mainContext.save()
 
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -328,7 +336,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// Die Swap-Referenz (DEL-091 Urlaubs-Modus) muss den Roundtrip
     /// ueberleben — sonst ist der Tausch nach einem Restore nicht mehr
     /// zuruecknehmbar.
-    func testSwappedFromOriginalSurvivesRoundtrip() throws {
+    func testSwappedFromOriginalSurvivesRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
         let plan = TrainingPlan(name: "Swap-Plan", programType: "custom", isActive: true)
@@ -344,7 +352,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -376,7 +384,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// dort: `guard let sequenceIndex = day.generatorSequenceIndex ... else
     /// { continue }`) jeden Tag des Plans, "neu rechnen" tut fortan nichts
     /// mehr - ohne Fehler, ohne Hinweis.
-    func testTimedFormatDayAndSessionSurviveRoundtrip() throws {
+    func testTimedFormatDayAndSessionSurviveRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -405,7 +413,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -438,7 +446,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// `circuitRestEndDate` als optionales Datum, `circuitCurrentRoundCheckedRaw`
     /// als Snapshot einer laufenden Pause mitten in einer Session) - gleiches
     /// Prinzip wie `testTimedFormatDayAndSessionSurviveRoundtrip` fuer AMRAP.
-    func testCircuitDayAndSessionSurviveRoundtrip() throws {
+    func testCircuitDayAndSessionSurviveRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -465,7 +473,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -493,7 +501,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// importierte Session (z.B. Adidas Running) — ohne Roundtrip-Schutz
     /// wuerde ein Backup/Restore diese Herkunft stillschweigend verlieren,
     /// und die Session saehe danach wie eine nativ erfasste aus.
-    func testHealthKitImportProvenanceSurvivesRoundtrip() throws {
+    func testHealthKitImportProvenanceSurvivesRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -509,7 +517,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -528,7 +536,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// Ein Marker aus einem fremden Backup koennte ausserdem zu einem anderen
     /// Health-Konto gehoeren. Der Test haelt fest, dass die Spalte nicht
     /// versehentlich in workouts.csv landet.
-    func testHealthKitExportMarkerIsNotPartOfTheBackup() throws {
+    func testHealthKitExportMarkerIsNotPartOfTheBackup() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -545,7 +553,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -565,7 +573,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// Zustaende in einem Export/Import-Durchlauf ab: nie gestartet (nil),
     /// gestartet ohne Fortschritt ("-"), gestartet mit Fortschritt (echte
     /// Daten) - keiner darf durch den Roundtrip in einen anderen kippen.
-    func testForTimeCheckedRoundsRawSurvivesRoundtripIncludingPlaceholder() throws {
+    func testForTimeCheckedRoundsRawSurvivesRoundtripIncludingPlaceholder() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -606,7 +614,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -626,13 +634,13 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// neuen additiven Spalten nicht ploetzlich ein Zeitformat annehmen -
     /// leere Zelle muss zuverlaessig als nil ankommen, nicht als "amrap"
     /// o.ae. missinterpretiert werden.
-    func testNormalDayStaysNilTimeFormatAfterRoundtrip() throws {
+    func testNormalDayStaysNilTimeFormatAfterRoundtrip() async throws {
         let source = try makeContainer()
         try seed(source.mainContext)
         let bundle = try DataExportService.makeExport(context: source.mainContext)
 
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
         )
 
@@ -647,7 +655,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     // MARK: - DEL-226 Trockenlauf
 
     /// Die Vorschau muss den Inhalt korrekt melden und dabei NICHTS schreiben.
-    func testPreviewReportsContentWithoutTouchingData() throws {
+    func testPreviewReportsContentWithoutTouchingData() async throws {
         let source = try makeContainer()
         try seed(source.mainContext)
         let bundle = try DataExportService.makeExport(context: source.mainContext)
@@ -681,7 +689,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
     /// Ein kaputtes ZIP muss in der Vorschau scheitern — dort ist der Abbruch
     /// harmlos, weil noch nichts angefasst wurde.
-    func testPreviewRejectsGarbage() throws {
+    func testPreviewRejectsGarbage() async throws {
         XCTAssertThrowsError(
             try DataImportService.preview(zipData: Data("kein zip".utf8))
         )
@@ -698,7 +706,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// liefert fuer beide `""`) und ueberschrieb eine bewusst geleerte Liste
     /// nach jedem Restore stillschweigend mit dem nicht-leeren
     /// Konstruktor-Default.
-    func testEmptyDashboardWidgetsAndHeroSlotsSurviveRoundtrip() throws {
+    func testEmptyDashboardWidgetsAndHeroSlotsSurviveRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -713,7 +721,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -729,7 +737,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// DEL-250: alle sechs neuen Cardio-Profil-Felder muessen den Export/
     /// Import-Roundtrip ueberleben — inklusive `cardioRaceDate` (ein echtes
     /// `Date?`, nicht nur ein String-Feld wie `cardioGoalRaw`).
-    func testCardioProfileFieldsSurviveRoundtrip() throws {
+    func testCardioProfileFieldsSurviveRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -748,7 +756,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -769,7 +777,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// Bestandsnutzer nach einem Update) darf beim Roundtrip nicht
     /// versehentlich Werte "erfinden" — alle sechs Felder bleiben auf
     /// ihrem Default/nil.
-    func testCardioProfileDefaultsSurviveRoundtrip() throws {
+    func testCardioProfileDefaultsSurviveRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -782,7 +790,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -800,7 +808,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     // Handoff "Lauf-Coaching - Machbarkeits-Check": der Fingerprint muss
     // ein Backup/Restore ueberleben, sonst zeigt die Karte nach einem
     // Restore erneut einen bereits verworfenen/angenommenen Vorschlag.
-    func testCardioFeasibilityDismissedFingerprintSurvivesRoundtrip() throws {
+    func testCardioFeasibilityDismissedFingerprintSurvivesRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -814,7 +822,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -824,7 +832,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(imported?.cardioFeasibilityDismissedFingerprint, "marathon#1800000000#22.4")
     }
 
-    func testCardioFeasibilityDismissedFingerprintDefaultsToNilOnRoundtrip() throws {
+    func testCardioFeasibilityDismissedFingerprintDefaultsToNilOnRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -837,7 +845,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -851,7 +859,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     // (ans Ende des Headers angehaengt) — ein gesetzter Wert muss Backup/
     // Restore ueberleben, sonst verliert ein Nutzer seine abgeleitete oder
     // im Onboarding gewaehlte Einstufung bei jedem Restore.
-    func testExperienceTrackSurvivesRoundtrip() throws {
+    func testExperienceTrackSurvivesRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -865,7 +873,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -878,7 +886,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// Ohne gesetzten Track (z.B. frisch angelegtes Profil, Backfill lief
     /// noch nicht) bleibt die Spalte leer und bleibt `nil` — ein Restore darf
     /// nicht versehentlich `.experienced` oder sonst einen Wert erfinden.
-    func testExperienceTrackDefaultsToNilOnRoundtrip() throws {
+    func testExperienceTrackDefaultsToNilOnRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -891,7 +899,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -903,7 +911,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
     // MARK: - Smart-Onboarding-Epic Phase 2: equipmentProfile (dreiwertige Equipment-Erfassung)
 
-    func testEquipmentProfileSurvivesRoundtrip() throws {
+    func testEquipmentProfileSurvivesRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -920,7 +928,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -939,7 +947,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// geschrieben), aber ein Profil, das die Felder nie gesetzt hat, muss
     /// nach dem Rundlauf weiterhin ueberall `.unknown` liefern — kein Restore
     /// darf `.unavailable` erfinden.
-    func testEquipmentProfileDefaultsToAllUnknownOnRoundtripForUntouchedProfile() throws {
+    func testEquipmentProfileDefaultsToAllUnknownOnRoundtripForUntouchedProfile() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -952,7 +960,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -967,7 +975,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// Smart-Onboarding-Epic Phase 3: die neue Bestaetigungs-Flag muss den
     /// Rundlauf ueberleben — sonst wuerde ein Restore eine bereits
     /// abgeschlossene Erfassung wieder als "offen" erscheinen lassen.
-    func testEquipmentProfileConfirmedCompleteSurvivesRoundtrip() throws {
+    func testEquipmentProfileConfirmedCompleteSurvivesRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -981,7 +989,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -1001,7 +1009,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
     /// Ein VOLLSTAENDIGER Check (alle fuenf Bewegungsfamilien + beide
     /// Selbsteinschaetzungs-Fallbacks gesetzt) muss 1:1 ueberleben.
-    func testFullBaselineAssessmentSurvivesRoundtrip() throws {
+    func testFullBaselineAssessmentSurvivesRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -1029,7 +1037,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -1041,7 +1049,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
     /// Ein TEILWEISE ausgefuellter Check (nur Push-up getestet, Rest nil)
     /// darf beim Restore nichts erfinden.
-    func testPartialBaselineAssessmentSurvivesRoundtripWithNilFieldsIntact() throws {
+    func testPartialBaselineAssessmentSurvivesRoundtripWithNilFieldsIntact() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -1061,7 +1069,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -1077,7 +1085,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
     /// Bestandsnutzer OHNE Check (Default-Zustand) bleiben unveraendert —
     /// kein Restore darf versehentlich einen Check erfinden.
-    func testNoBaselineAssessmentStaysNilOnRoundtrip() throws {
+    func testNoBaselineAssessmentStaysNilOnRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -1090,7 +1098,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -1104,7 +1112,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     // ein Backup/Restore ueberleben, sonst haelt die "bereits angenommen"-
     // Erkennung (bzw. hier: die zugrundeliegende Herkunfts-Markierung) einen
     // Restore nicht durch.
-    func testGenerationSourceSurvivesRoundtrip() throws {
+    func testGenerationSourceSurvivesRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -1115,7 +1123,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -1125,7 +1133,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(imported?.generationSource, .cardioCoach)
     }
 
-    func testGenerationSourceDefaultsToManualOnRoundtrip() throws {
+    func testGenerationSourceDefaultsToManualOnRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -1135,7 +1143,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -1143,6 +1151,133 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let imported = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
         XCTAssertEqual(imported?.generationSource, .manual)
+    }
+
+    // MARK: - Settings-Epic Phase 5
+
+    /// Befund-Aufhaenger: "grosse Historie". Beweist, dass der neue Off-Main-
+    /// Pfad (`makeExportAsync`, ZIP-Kompression per `Task.detached`) bei
+    /// echtem Datenvolumen exakt dieselben Daten liefert wie der bisherige
+    /// synchrone Pfad — die Sendable-Snapshot-Aufteilung (Fetch+CSV-Bau
+    /// bleibt auf dem Context-Actor, nur die Kompression wandert) darf die
+    /// Zeilen nicht verlieren oder verdoppeln.
+    func testAsyncExportAtVolumeRoundtripsCompletely() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 700_000_000),
+            heightCm: 180, profile: .male, goalWeightKg: 90, environment: .gym
+        )
+        ctx.insert(profile)
+        let plan = TrainingPlan(name: "Volumen-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let day = TrainingDay(name: "Ganzkoerper", weekday: 1, type: .fullBody, plan: plan)
+        ctx.insert(day)
+        let exercise = Exercise(name: "Kreuzheben", sets: 3, suggestedWeight: 100, day: day)
+        ctx.insert(exercise)
+
+        let sessionCount = 250
+        for i in 0..<sessionCount {
+            let start = Date(timeIntervalSince1970: 1_700_000_000 + Double(i) * 86_400)
+            let session = WorkoutSession(
+                startTime: start, endTime: start.addingTimeInterval(3_600),
+                durationMinutes: 60, exerciseCount: 1, totalSets: 3,
+                totalVolumeKg: 900, isCompleted: true, day: day
+            )
+            ctx.insert(session)
+            for setIndex in 0..<3 {
+                ctx.insert(ExerciseLog(
+                    date: start, setIndex: setIndex, weight: 100, reps: 5, rir: 2,
+                    exercise: exercise, session: session
+                ))
+            }
+        }
+        try ctx.save()
+
+        let bundle = try await DataExportService.makeExportAsync(context: ctx)
+        XCTAssertEqual(bundle.totalRows, 1 /* profile */ + 1 /* plan */ + sessionCount + sessionCount * 3)
+
+        let target = try makeContainer()
+        let result = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+        XCTAssertEqual(result.errorRows, 0)
+        XCTAssertEqual(try target.mainContext.fetchCount(FetchDescriptor<WorkoutSession>()), sessionCount)
+        XCTAssertEqual(try target.mainContext.fetchCount(FetchDescriptor<ExerciseLog>()), sessionCount * 3)
+    }
+
+    /// Befund RS-03a: `UserDataWipe.deleteSharedUserData` darf GENAU die 10
+    /// mit dem Replace-Import gemeinsamen Typen loeschen — `ExerciseTemplate`
+    /// (System UND Custom) muss unberuehrt bleiben, weil Reset und
+    /// Replace-Import dafuer bewusst unterschiedliche, separat behandelte
+    /// Umfaenge haben (siehe `SettingsView.resetApp`/
+    /// `DataImportService.wipeAllUserData`).
+    func testUserDataWipeDeletesOnlyTheSharedScope() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        try seed(ctx)
+        let systemTemplate = ExerciseTemplate(name: "Systemuebung", equipment: .barbell, primaryMuscle: .chest, isCustom: false)
+        let customTemplate = ExerciseTemplate(name: "Eigene Uebung", equipment: .dumbbell, primaryMuscle: .chest, isCustom: true)
+        ctx.insert(systemTemplate)
+        ctx.insert(customTemplate)
+        try ctx.save()
+
+        try UserDataWipe.deleteSharedUserData(in: ctx)
+        try ctx.save()
+
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<PersonalRecordEntry>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<ExerciseLog>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<WorkoutSession>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<Exercise>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<TrainingDay>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<TrainingPlan>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<WaterEntry>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<BodyMeasurement>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<Gear>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<UserBodyProfile>()), 0)
+        // Der eigentliche Punkt des Tests: beide Templates ueberleben.
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<ExerciseTemplate>()), 2)
+    }
+
+    /// Befund RS-02/"Restore nach Reset": eine VOR einem destruktiven Wipe
+    /// erzeugte Sicherung (wie `BackupService.createBackupAsync(reason:
+    /// .preReset)` sie vor `SettingsView.resetApp`s Loeschung anlegt) muss
+    /// den kompletten Vor-Wipe-Zustand wiederherstellen koennen. Simuliert
+    /// den Reset-Loeschumfang direkt (`UserDataWipe` + alle Templates, wie
+    /// `resetApp` es tut) statt ueber die UI — die eigentliche
+    /// Service-Garantie ("Backup vor Wipe ist vollstaendig restaurierbar")
+    /// ist hier vollstaendig pruefbar, die SwiftUI-Orchestrierung selbst
+    /// nicht (kein UI-Test-Target in diesem Repo).
+    func testRestoreAfterResetLikeWipeRecoversFullState() async throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        try seed(ctx)
+
+        // 1) "Vorab-Sicherung" — exakt das, was vor einem Reset passieren wuerde.
+        let preResetBundle = try DataExportService.makeExport(context: ctx)
+
+        // 2) Reset-Loeschumfang: gemeinsame Typen + ALLE ExerciseTemplates
+        //    (anders als der Replace-Import, der nur Custom-Templates wischt —
+        //    hier gibt es ohnehin keine, seed() legt keine an).
+        try UserDataWipe.deleteSharedUserData(in: ctx)
+        try UserDataWipe.deleteEach(of: ExerciseTemplate.self, in: ctx)
+        try ctx.save()
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<UserBodyProfile>()), 0, "Wipe muss vorher wirklich leeren")
+
+        // 3) Restore — wie `BackupListView.restore(_:)` es tut.
+        let result = try await DataImportService.performImport(
+            zipData: preResetBundle.data, context: ctx, strategy: .replace
+        )
+        XCTAssertEqual(result.errorRows, 0)
+
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<UserBodyProfile>()), 1)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<TrainingPlan>()), 1)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<WorkoutSession>()), 1)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<ExerciseLog>()), 2)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<PersonalRecordEntry>()), 1)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<Gear>()), 1)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<BodyMeasurement>()), 1)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<WaterEntry>()), 1)
     }
 }
 #endif

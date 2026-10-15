@@ -147,15 +147,20 @@ public enum DataImportService {
     /// Handler MUSS thread-safe sein (er läuft auf dem ImportService-Actor,
     /// nicht zwingend Main); UI-Code im Handler also via `Task { @MainActor }`
     /// oder analog dispatchen.
-    /// Hauptentry. Wirft bei strukturellen Fehlern (kaputtes ZIP, fehlendes
-    /// meta.json, falsche formatVersion). Reihen-lokale Fehler landen im
-    /// Result.
+    ///
+    /// Settings-Epic Phase 5 (Befund DI-03/DI-09): `async`, damit zwei Dinge
+    /// off-Main laufen koennen: das Entpacken/Parsen (`extractAndValidate` —
+    /// reine Byte-/Foundation-Arbeit, kein `ModelContext`, sicher per
+    /// `Task.detached`) UND, innerhalb von `runImport` (`@MainActor`, da dort
+    /// SwiftData geschrieben wird), ein `Task.yield()` je Datei-Phase, damit
+    /// die UI den `progressHandler`-Tick tatsaechlich noch rendern kann,
+    /// bevor der naechste (synchrone) Insert-Batch laeuft.
     public static func performImport(
         zipData: Data,
         context: ModelContext,
         strategy: DataImportStrategy = .appendOnly,
         progressHandler: (@Sendable (ImportProgress) -> Void)? = nil
-    ) throws -> DataImportResult {
+    ) async throws -> DataImportResult {
 
         // 1) ZIP entpacken.
         //
@@ -182,8 +187,14 @@ public enum DataImportService {
         // der Dry-Run (`preview`) EXAKT dieselben Pruefungen durchlaeuft. Eine
         // zweite Kopie waere genau die Art Divergenz, bei der die Vorschau
         // "sieht gut aus" sagt und der Import danach scheitert.
-        let (files, meta) = try extractAndValidate(zipData: zipData)
-        return try runImport(
+        //
+        // `extractAndValidate` beruehrt kein `ModelContext`/SwiftData-Objekt —
+        // sicher per `Task.detached`, haelt den Main-Thread waehrend des
+        // potenziell teuren Entpackens (grosse Historie) responsiv.
+        let (files, meta) = try await Task.detached {
+            try extractAndValidate(zipData: zipData)
+        }.value
+        return try await runImport(
             files: files,
             meta: meta,
             context: context,
@@ -305,20 +316,43 @@ public enum DataImportService {
     /// Fuehrt den eigentlichen Import auf bereits validierten Dateien aus.
     /// Getrennt von `extractAndValidate`, damit der Dry-Run dieselbe
     /// Validierung nutzen kann, ohne diesen schreibenden Teil zu beruehren.
+    ///
+    /// Settings-Epic Phase 5 (Befund DI-09): explizit `@MainActor` — hier wird
+    /// `context` (SwiftData) geschrieben, das muss auf dessen Actor bleiben.
+    /// `async`, damit `tick(_:_:)` nach jedem Fortschritts-Tick per
+    /// `Task.yield()` den Main-Thread kurz freigibt; sonst kommt der
+    /// `progressHandler`-Tick zwar an, aber SwiftUI bekommt nie die Chance,
+    /// ihn vor dem naechsten (synchronen) Insert-Batch zu rendern — der
+    /// Fortschrittsbalken "springt" erst nach komplettem Abschluss.
+    @MainActor
     private static func runImport(
         files: [String: Data],
         meta: MetaPayload,
         context: ModelContext,
         strategy: DataImportStrategy,
         progressHandler: (@Sendable (ImportProgress) -> Void)?
-    ) throws -> DataImportResult {
+    ) async throws -> DataImportResult {
 
         // 4) ERST JETZT — nach voll-validiertem ZIP — dürfen wir die
         //    bestehenden Daten anfassen.
+        //
+        // Settings-Epic Phase 5 (Befund: ungesicherter Zwischenzustand beim
+        // destruktiven Replace): das fruehere `try context.save()` direkt
+        // nach dem Wipe ist ENTFERNT — es widersprach dem eigenen
+        // Doc-Kommentar auf `wipeAllUserData` ("Save passiert NICHT hier...
+        // ein einziges save(), das den Wipe und den Merge atomisch
+        // committet") und schuf genau die Luecke, die dieser Kommentar
+        // ausschliessen wollte: wird der Import zwischen Wipe und dem
+        // Merge-Ende abgebrochen (Crash, Force-Quit, Speicherdruck), waere
+        // der Wipe bereits dauerhaft committet, der Merge aber nicht — der
+        // Bestand waere leer UND der Import nicht abgeschlossen. Jetzt
+        // committet GENAU EIN `context.save()` (Schritt 7 unten) Wipe und
+        // Merge atomisch zusammen; schlaegt irgendetwas davor fehl, ist auf
+        // der Platte nach wie vor der alte Stand.
         if strategy == .replace {
             progressHandler?(ImportProgress(phase: "wipe", filesCompleted: 0, filesTotal: 0))
+            await Task.yield()
             try wipeAllUserData(context: context)
-            try context.save()
         }
 
         // 3) Pro-Zeile-Fehler werden hier gesammelt.
@@ -349,25 +383,31 @@ public enum DataImportService {
         var completed = 0
         let totalFiles = allFiles.count
 
-        func tick(_ filename: String, _ body: () throws -> Void) throws {
+        // Settings-Epic Phase 5 (Befund DI-09): `async` + `Task.yield()` NACH
+        // dem Tick-Signal — gibt dem Main-Thread eine echte Chance, den neuen
+        // `importProgress`-Wert zu rendern, bevor der (synchrone) Insert für
+        // diese Datei laeuft. Vorher lief alles in einem Zug durch, der
+        // Balken aktualisierte sich erst sichtbar nach dem kompletten Import.
+        func tick(_ filename: String, _ body: () throws -> Void) async throws {
             progressHandler?(ImportProgress(
                 phase: filename,
                 filesCompleted: completed,
                 filesTotal: totalFiles
             ))
+            await Task.yield()
             try body()
             completed += 1
         }
 
         // 4) PASS 1 — Roots ohne FK-Abhängigkeiten.
-        try tick("profile.csv") {
+        try await tick("profile.csv") {
             if let csv = files["profile.csv"] {
                 let (ok, dup, errs) = try importProfile(csv: csv, context: context)
                 imported["profile.csv"] = ok; skipped["profile.csv"] = dup
                 errorBuffer.append(file: "profile.csv", errors: errs)
             }
         }
-        try tick("settings.csv") {
+        try await tick("settings.csv") {
             if let csv = files["settings.csv"] {
                 // DEL-209: App-Einstellungen (Reminder, kg/lbs, Theme, ...).
                 // Whitelist-gefiltert in SettingsPortability — unbekannte
@@ -376,35 +416,35 @@ public enum DataImportService {
                 imported["settings.csv"] = ok; skipped["settings.csv"] = dup
             }
         }
-        try tick("gear.csv") {
+        try await tick("gear.csv") {
             if let csv = files["gear.csv"] {
                 let (ok, dup, errs) = try importGear(csv: csv, context: context, idMap: &idMap)
                 imported["gear.csv"] = ok; skipped["gear.csv"] = dup
                 errorBuffer.append(file: "gear.csv", errors: errs)
             }
         }
-        try tick("custom_exercises.csv") {
+        try await tick("custom_exercises.csv") {
             if let csv = files["custom_exercises.csv"] {
                 let (ok, dup, errs) = try importCustomExercises(csv: csv, context: context, idMap: &idMap)
                 imported["custom_exercises.csv"] = ok; skipped["custom_exercises.csv"] = dup
                 errorBuffer.append(file: "custom_exercises.csv", errors: errs)
             }
         }
-        try tick("plans.csv") {
+        try await tick("plans.csv") {
             if let csv = files["plans.csv"] {
                 let (ok, dup, errs) = try importPlans(csv: csv, context: context, idMap: &idMap)
                 imported["plans.csv"] = ok; skipped["plans.csv"] = dup
                 errorBuffer.append(file: "plans.csv", errors: errs)
             }
         }
-        try tick("measurements.csv") {
+        try await tick("measurements.csv") {
             if let csv = files["measurements.csv"] {
                 let (ok, dup, errs) = try importMeasurements(csv: csv, context: context)
                 imported["measurements.csv"] = ok; skipped["measurements.csv"] = dup
                 errorBuffer.append(file: "measurements.csv", errors: errs)
             }
         }
-        try tick("water_log.csv") {
+        try await tick("water_log.csv") {
             if let csv = files["water_log.csv"] {
                 let (ok, dup, errs) = try importWaterLog(csv: csv, context: context)
                 imported["water_log.csv"] = ok; skipped["water_log.csv"] = dup
@@ -413,14 +453,14 @@ public enum DataImportService {
         }
 
         // 5) PASS 2 — Objekte mit FKs in Pass-1.
-        try tick("plan_days.csv") {
+        try await tick("plan_days.csv") {
             if let csv = files["plan_days.csv"] {
                 let (ok, dup, errs) = try importPlanDays(csv: csv, context: context, idMap: &idMap)
                 imported["plan_days.csv"] = ok; skipped["plan_days.csv"] = dup
                 errorBuffer.append(file: "plan_days.csv", errors: errs)
             }
         }
-        try tick("workouts.csv") {
+        try await tick("workouts.csv") {
             if let csv = files["workouts.csv"] {
                 let (ok, dup, errs) = try importWorkouts(csv: csv, context: context, idMap: &idMap)
                 imported["workouts.csv"] = ok; skipped["workouts.csv"] = dup
@@ -429,21 +469,21 @@ public enum DataImportService {
         }
 
         // 6) PASS 3 — Children mit FKs in Pass-2.
-        try tick("plan_exercises.csv") {
+        try await tick("plan_exercises.csv") {
             if let csv = files["plan_exercises.csv"] {
                 let (ok, dup, errs) = try importPlanExercises(csv: csv, context: context, idMap: &idMap)
                 imported["plan_exercises.csv"] = ok; skipped["plan_exercises.csv"] = dup
                 errorBuffer.append(file: "plan_exercises.csv", errors: errs)
             }
         }
-        try tick("workout_sets.csv") {
+        try await tick("workout_sets.csv") {
             if let csv = files["workout_sets.csv"] {
                 let (ok, dup, errs) = try importLogs(csv: csv, context: context, idMap: idMap)
                 imported["workout_sets.csv"] = ok; skipped["workout_sets.csv"] = dup
                 errorBuffer.append(file: "workout_sets.csv", errors: errs)
             }
         }
-        try tick("personal_records.csv") {
+        try await tick("personal_records.csv") {
             if let csv = files["personal_records.csv"] {
                 let (ok, dup, errs) = try importPRs(csv: csv, context: context, idMap: idMap)
                 imported["personal_records.csv"] = ok; skipped["personal_records.csv"] = dup
@@ -452,8 +492,12 @@ public enum DataImportService {
         }
 
         progressHandler?(ImportProgress(phase: "save", filesCompleted: totalFiles, filesTotal: totalFiles))
+        await Task.yield()
 
-        // 7) Persist all changes atomically.
+        // 7) Persist all changes atomically — committet bei `.replace` den
+        // Wipe (Schritt 4 oben) UND den Merge in einem einzigen Save: schlug
+        // irgendetwas dazwischen fehl, ist das hier der einzige Punkt, an dem
+        // ueberhaupt etwas dauerhaft wird.
         try context.save()
 
         let errorsCSV: Data? = errorBuffer.totalCount > 0 ? errorBuffer.toCSV() : nil
@@ -478,33 +522,21 @@ public enum DataImportService {
     /// löschen würde nur die Custom-Eintragsdaten und User-Renames der
     /// System-Lifts beeinflussen, was wir nicht wollen.
     ///
-    /// **Cascade-Regel-konform**: per-instance delete statt
-    /// `delete(model:)`-Batch (NSBatchDeleteRequest umgeht
-    /// `@Relationship`-Cascades und löst "mandatory OTO nullify"-
-    /// Violations aus). Children-first ordering. Save passiert NICHT
-    /// hier — der eigentliche Import sammelt seine Inserts an und ruft
-    /// am Ende ein einziges `save()`, das den Wipe und den Merge atomisch
-    /// committet.
+    /// Settings-Epic Phase 5 (Befund RS-03a): die 10 Typen, deren
+    /// Loeschumfang mit `SettingsView.resetApp` identisch ist, kommen jetzt
+    /// aus der gemeinsamen `UserDataWipe.deleteSharedUserData` — nur
+    /// `ExerciseTemplate` bleibt hier (Custom-only-Filter unterscheidet sich
+    /// tatsaechlich vom reset-spezifischen Alle-loeschen-und-reseeden).
+    ///
+    /// Save passiert NICHT hier — der eigentliche Import sammelt seine
+    /// Inserts an und ruft am Ende ein einziges `save()`, das den Wipe und
+    /// den Merge atomisch committet (siehe Call-Site in `runImport`).
     private static func wipeAllUserData(context: ModelContext) throws {
-        try deleteEach(of: PersonalRecordEntry.self, in: context)
-        try deleteEach(of: ExerciseLog.self,         in: context)
-        try deleteEach(of: WorkoutSession.self,      in: context)
-        try deleteEach(of: Exercise.self,            in: context)
-        try deleteEach(of: TrainingDay.self,         in: context)
-        try deleteEach(of: TrainingPlan.self,        in: context)
+        try UserDataWipe.deleteSharedUserData(in: context)
         // Nur Custom-Templates wegräumen — System-Library kommt vom Seeder.
         let customTemplates = try context.fetch(FetchDescriptor<ExerciseTemplate>())
             .filter { $0.isCustom }
         for t in customTemplates { context.delete(t) }
-        try deleteEach(of: WaterEntry.self,          in: context)
-        try deleteEach(of: BodyMeasurement.self,     in: context)
-        try deleteEach(of: Gear.self,                in: context)
-        try deleteEach(of: UserBodyProfile.self,     in: context)
-    }
-
-    private static func deleteEach<T: PersistentModel>(of type: T.Type, in context: ModelContext) throws {
-        let items = try context.fetch(FetchDescriptor<T>())
-        for item in items { context.delete(item) }
     }
 
     // MARK: - Format version check

@@ -10,9 +10,13 @@
 //   6. Result: Zähler für Imported / Skipped / Errors pro Datei
 //   7. Wenn errors > 0: "Fehlerprotokoll teilen"-Button (errors.csv)
 //
-// **Wichtig**: Der Import läuft auf dem ModelContext des Main-Actors —
-// SwiftData ist nicht Sendable. Heavy parsing+insert kann mehrere Sekunden
-// dauern; in der Zwischenzeit zeigen wir eine ProgressView.
+// **Wichtig**: die SwiftData-Schreibphase laeuft auf dem ModelContext des
+// Main-Actors — SwiftData ist nicht Sendable. Settings-Epic Phase 5 (Befund
+// DI-03/DI-09): das vorgelagerte Entpacken/Parsen (Vorschau UND echter
+// Import) laeuft off-Main (`Task.detached`, beruehrt kein `ModelContext`);
+// die anschliessende Schreibphase bleibt `@MainActor`, yielded aber nach
+// jeder Datei-Phase, damit die ProgressView bei grosser Historie tatsaechlich
+// sichtbar mitlaeuft statt erst am Ende zu "springen".
 
 #if canImport(SwiftUI) && canImport(SwiftData)
 import SwiftUI
@@ -633,17 +637,27 @@ public struct DataImportView: View {
     /// DEL-226: Trockenlauf. Nutzt exakt dieselbe Entpack- und
     /// Validierungs-Strecke wie der echte Import (`DataImportService.preview`
     /// und `performImport` teilen `extractAndValidate`), schreibt aber nichts.
+    ///
+    /// Settings-Epic Phase 5 (Befund DI-03): Lesen + Entpacken + Parsen
+    /// beruehren kein `ModelContext`/SwiftData-Objekt (`preview(zipData:)`
+    /// nimmt gar keinen Context entgegen) — sicher per `Task.detached`, haelt
+    /// den Main-Thread bei jeder Dateiauswahl responsiv statt bei einer
+    /// grossen Historie kurz einzufrieren.
     private func loadPreview(from url: URL) {
         preview = nil
         previewFailed = false
-        do {
-            let data = try Data(contentsOf: url)
-            preview = try DataImportService.preview(zipData: data)
-            currentRecordCount = countCurrentRecords()
-        } catch {
-            // Kein Fehler-Banner: die Vorschau-Karte sagt selbst, dass die
-            // Datei nicht lesbar ist, und der Import-Button bleibt gesperrt.
-            previewFailed = true
+        currentRecordCount = countCurrentRecords()
+        Task {
+            do {
+                let result = try await Task.detached {
+                    try DataImportService.preview(zipData: try Data(contentsOf: url))
+                }.value
+                await MainActor.run { self.preview = result }
+            } catch {
+                // Kein Fehler-Banner: die Vorschau-Karte sagt selbst, dass die
+                // Datei nicht lesbar ist, und der Import-Button bleibt gesperrt.
+                await MainActor.run { self.previewFailed = true }
+            }
         }
     }
 
@@ -719,17 +733,22 @@ public struct DataImportView: View {
                 // blockieren soll — dann steht in der Vorschau-Notiz zwar ein
                 // Versprechen, das nicht eingehalten wurde, aber ein
                 // erzwungener Abbruch waere fuer den User schlimmer als ein
-                // Import ohne Netz.
-                _ = try? BackupService.createBackup(context: ctx, reason: .preImport)
+                // Import ohne Netz. Settings-Epic Phase 5: `createBackupAsync`
+                // haelt den Main-Thread waehrend ZIP-Kompression responsiv.
+                _ = try? await BackupService.createBackupAsync(context: ctx, reason: .preImport)
 
-                let zipData = try Data(contentsOf: url)
+                // Reines Datei-I/O auf der bereits lokal kopierten ZIP —
+                // sicher per `Task.detached`.
+                let zipData = try await Task.detached { try Data(contentsOf: url) }.value
                 // DEL-176: progressHandler ist @Sendable; wir reichen
                 // Updates über einen MainActor-Hop an unseren @State weiter.
-                // Der Service läuft synchron auf demselben Actor wie ctx
-                // (Main bei SwiftData iOS-17), aber wir nehmen den
-                // MainActor.run-Wrap als Defensive — falls Apple den Actor
-                // mal explizit macht.
-                let result = try DataImportService.performImport(
+                // Settings-Epic Phase 5 (Befund DI-09): der Service ist jetzt
+                // echt `async` — das Entpacken laeuft off-Main
+                // (`Task.detached`), die SwiftData-Schreibphase bleibt
+                // explizit `@MainActor` mit `Task.yield()` zwischen den
+                // Datei-Phasen, damit die Fortschrittsanzeige tatsaechlich
+                // sichtbar mitlaeuft statt erst am Ende zu "springen".
+                let result = try await DataImportService.performImport(
                     zipData: zipData,
                     context: ctx,
                     strategy: strategy,

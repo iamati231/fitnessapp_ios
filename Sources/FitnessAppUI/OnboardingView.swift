@@ -486,7 +486,11 @@ public struct OnboardingView: View {
                         // FK-/Snapshot-Lookups greifen — RootView seedet beim
                         // Launch, hier defensiv nochmal anstoßen.
                         LibrarySeeder.seedIfNeeded(in: ctx)
-                        let importResult = try DataImportService.performImport(
+                        // Settings-Epic Phase 5 (Befund DI-03/DI-09): der
+                        // Service ist jetzt `async` — Entpacken/Parsen laeuft
+                        // off-Main, die SwiftData-Schreibphase bleibt
+                        // `@MainActor`.
+                        let importResult = try await DataImportService.performImport(
                             zipData: zipData,
                             context: ctx,
                             strategy: .appendOnly
