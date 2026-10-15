@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2064 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2074 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2064 / 2064** (100%) | 0 |
-| 🇬🇧 English (EN) | **2064 / 2064** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2064 / 2064** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2074 / 2074** (100%) | 0 |
+| 🇬🇧 English (EN) | **2074 / 2074** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2074 / 2074** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -87,19 +87,26 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `activity.veryActive.description` | Tag-täglich intensives Training oder schwere körperliche Arbeit. | Daily intense training or heavy physical labor. | Her gün yoğun antrenman ya da ağır fiziksel iş. |
 | `activity.veryActive.label` | Sehr aktiv (1.9) | Very Active (1.9) | Çok Aktif (1.9) |
 
-## `backups.*`  (17 Keys)
+## `backups.*`  (24 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `backups.createNow` | Jetzt sichern | Back up now | Şimdi yedekle |
+| `backups.creating.running` | Wird gesichert … | Backing up … | Yedekleniyor … |
 | `backups.delete.action` | Löschen | Delete | Sil |
+| `backups.delete.confirm.message` | Die Sicherung vom %@ wird endgültig gelöscht. Das kann nicht rückgängig gemacht werden. | The backup from %@ will be permanently deleted. This cannot be undone. | %@ tarihli yedek kalıcı olarak silinecek. Bu işlem geri alınamaz. |
+| `backups.delete.confirm.title` | Diesen Stand löschen? | Delete this backup? | Bu yedek silinsin mi? |
+| `backups.deleting.running` | Wird gelöscht … | Deleting … | Siliniyor … |
 | `backups.empty.description` | Sobald du ein Training aufgezeichnet hast, legt Deltiq beim nächsten Verlassen der App die erste Sicherung an. | Once you've recorded a workout, Deltiq creates the first backup the next time you leave the app. | Bir antrenman kaydettiğinde, Deltiq uygulamadan bir sonraki çıkışında ilk yedeği oluşturur. |
 | `backups.empty.title` | Noch keine Backups | No backups yet | Henüz yedek yok |
 | `backups.footer` | Du findest die Backups auch in der Dateien-App unter „Auf meinem iPhone → Deltiq → Backups“. Von dort kannst du eine Sicherung nach iCloud Drive ziehen oder auf den Rechner kopieren. Der Ordner ist außerdem im iCloud-Gerätebackup enthalten. | You can also find the backups in the Files app under "On My iPhone → Deltiq → Backups". From there you can move one to iCloud Drive or copy it to a computer. The folder is also included in your iCloud device backup. | Yedekleri Dosyalar uygulamasında „iPhone'umda → Deltiq → Backups" altında da bulabilirsin. Oradan bir yedeği iCloud Drive'a taşıyabilir veya bilgisayara kopyalayabilirsin. Klasör ayrıca iCloud cihaz yedeğine dahildir. |
 | `backups.intro` | Deltiq sichert deine Daten automatisch, wenn du die App verlässt — höchstens einmal pro Tag. Die letzten fünf Sicherungen bleiben erhalten und liegen in der Dateien-App. | Deltiq backs up your data automatically when you leave the app — at most once a day. The five most recent backups are kept and stored in the Files app. | Deltiq, uygulamadan çıktığında verilerini otomatik olarak yedekler — günde en fazla bir kez. En son beş yedek saklanır ve Dosyalar uygulamasında bulunur. |
+| `backups.loadError.retry` | Erneut versuchen | Try again | Tekrar dene |
+| `backups.loadError.title` | Backups konnten nicht geladen werden | Couldn't load backups | Yedekler yüklenemedi |
 | `backups.reason.automatic` | Automatisch | Automatic | Otomatik |
 | `backups.reason.manual` | Manuell | Manual | Manuel |
 | `backups.reason.preImport` | Vor einem Import | Before an import | İçe aktarmadan önce |
+| `backups.reason.preReset` | Vor einem Zurücksetzen | Before a reset | Sıfırlamadan önce |
 | `backups.restore.action` | Wiederherstellen | Restore | Geri yükle |
 | `backups.restore.confirm.message` | Deine aktuellen Daten werden durch den Stand von %@ ersetzt. Vorher legt Deltiq automatisch eine Sicherung des JETZIGEN Stands an, damit du zurück kannst. | Your current data will be replaced with the backup from %@. Deltiq first saves a backup of your CURRENT data so you can go back. | Mevcut verilerin %@ tarihli yedekle değiştirilecek. Deltiq önce ŞU ANKİ verilerinin bir yedeğini alır, böylece geri dönebilirsin. |
 | `backups.restore.confirm.title` | Diesen Stand wiederherstellen? | Restore this backup? | Bu yedek geri yüklensin mi? |
@@ -1953,7 +1960,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (218 Keys)
+## `settings.*`  (221 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1976,6 +1983,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.dangerZone.footer` | Löscht Profil, Messungen, Pläne, Trainings-Templates und Trainings-Sessions vollständig. Die Apple-Health-Daten bleiben erhalten — die löscht du in der Health-App selber. | Deletes profile, measurements, plans, training templates, and workout sessions completely. Apple Health data is preserved — delete that from the Health app. | Profil, ölçümler, planlar, antrenman şablonları ve antrenman oturumlarını tamamen siler. Apple Health verileri korunur — onları Health uygulamasından silersin. |
 | `settings.dataExport.action.share` | Archiv teilen | Share archive | Arşivi paylaş |
 | `settings.dataExport.action.start` | Export starten | Start export | Dışa aktarmayı başlat |
+| `settings.dataExport.backupFailed` | Teilen funktioniert, aber die lokale Sicherung ist fehlgeschlagen: %@ | Sharing still works, but the local backup failed: %@ | Paylaşma hâlâ çalışıyor, ancak yerel yedekleme başarısız oldu: %@ |
 | `settings.dataExport.contents.custom` | Eigene Übungen, die du selbst angelegt hast | Custom exercises you created yourself | Kendin oluşturduğun özel egzersizler |
 | `settings.dataExport.contents.gear` | Ausrüstung (Schuhe, Bikes) und deren Kilometer | Gear (shoes, bikes) and their mileage | Ekipman (ayakkabı, bisiklet) ve kilometre bilgileri |
 | `settings.dataExport.contents.header` | Was enthalten ist | What's included | Neler dahil |
@@ -2151,6 +2159,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.reminders.section` | Erinnerungen | Reminders | Hatırlatıcılar |
 | `settings.reminders.time` | Uhrzeit | Time | Saat |
 | `settings.reminders.water` | Wasser erinnern | Water reminder | Su hatırlat |
+| `settings.reset.backupFailed` | Die Sicherung vor dem Zurücksetzen ist fehlgeschlagen: %@. Es wurde nichts gelöscht. | The backup before resetting failed: %@. Nothing was deleted. | Sıfırlamadan önceki yedekleme başarısız oldu: %@. Hiçbir şey silinmedi. |
+| `settings.reset.errorTitle` | Fehler beim Zurücksetzen | Error resetting | Sıfırlama hatası |
 | `settings.section.about` | Über | About | Hakkında |
 | `settings.section.danger_zone` | Daten-Management | Data Management | Veri Yönetimi |
 | `settings.section.more` | Weitere Einstellungen | More Settings | Diğer Ayarlar |
