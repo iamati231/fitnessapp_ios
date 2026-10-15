@@ -3,6 +3,7 @@ import SwiftUI
 import SwiftData
 import FitnessAppCore
 import FitnessAppData
+import FitnessAppActivities
 
 /// Settings-Epic Phase 3 (docs/SETTINGS_UX_AUDIT.md, Teil 3): Gruppe
 /// "App & Trainingserlebnis" — Dashboard-Anpassung, Einheiten,

@@ -271,6 +271,7 @@ public struct ExerciseLibraryView: View {
         .listRowSeparator(.hidden)
     }
 
+    @ViewBuilder
     private var customSection: some View {
         let customs = filtered.filter(\.isCustom)
         if !customs.isEmpty {

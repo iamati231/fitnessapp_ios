@@ -618,3 +618,63 @@ Fehler behoben. Ob der `testflight`-Workflow jetzt komplett durchläuft
 (inkl. Signing/Archive/Upload-Schritte danach), ist weiterhin nicht
 einsehbar — dafür wäre ein erneuter Codemagic-Lauf nötig, den nur der
 User anstoßen bzw. einsehen kann.
+
+---
+
+## Teil 11 — Codemagic-Nachtrag 2 (zwei weitere reale Compile-Fehler)
+
+Der User hat ein zweites, neueres Codemagic-Log bereitgestellt (`testflight`,
+"Run unit tests (Release-Gate)"), diesmal mit zwei neuen, voneinander
+unabhängigen Fehlern in `FitnessAppUI` — wieder ein Modul, das auf Linux nur
+geparst, nie typegecheckt wird. `.legs`-Fix aus Teil 10 taucht in diesem Log
+nicht mehr auf (behoben), stattdessen zwei neue, bisher unentdeckte Fehler:
+
+**Fund 1 — fehlender Import:** `SettingsAppExperienceView.swift` nutzt
+`PRNotificationCenter` (Zeile 18) und `ReminderScheduler` (4 Stellen,
+Zeilen 393–404), beide in `FitnessAppActivities` deklariert, importierte
+dieses Modul aber nicht (nur `SwiftUI`/`SwiftData`/`FitnessAppCore`/
+`FitnessAppData`). Die gemeldete `.onChange(of: scenePhase) { _, newPhase in`
+-Arity-Fehlermeldung (Zeile 81, "expects 1 argument, but 2 were used") ist
+eine Folgediagnose desselben Fehlers — sobald `prNotifications` nicht
+aufgeloest werden kann, destabilisiert das die Typpruefung des ganzen
+`body`, inkl. Overload-Resolution fuer das direkt danach stehende
+`.onChange`. Andere Dateien im selben Ordner (`SettingsView.swift`,
+`DataImportView.swift`, `ReminderPreferencesApplier.swift`) importieren
+`FitnessAppActivities` bereits korrekt. **Eingefuehrt in Phase 3** (Commit
+`50d7e65`, beim Herausloesen dieser Datei aus `SettingsView.swift`) — der
+Import ist beim Verschieben verlorengegangen. **Fix:** `import
+FitnessAppActivities` ergaenzt.
+
+**Fund 2 — fehlendes `@ViewBuilder`:** `ExerciseLibraryView.swift:274`,
+`customSection: some View { let customs = ...; if !customs.isEmpty {
+Section { ... } } }` — ein bloßes `if` ohne `else` als einzige Anweisung
+kann ohne `@ViewBuilder` keinen opaken Rückgabetyp herleiten (fehlt der
+Filter, gibt es keinen Rückgabewert). Beide direkten Nachbarn
+(`noResultsRow`, `muscleSection`) tragen `@ViewBuilder` bereits korrekt —
+`customSection` war die einzige Ausnahme. **Nicht Teil dieser Epic:** laut
+`git blame` stammt diese Property aus der ursprünglichen Dateierstellung,
+lange vor dem Smart-Onboarding-/Settings-Epic — ein latenter, vorbestehender
+Fehler, den erst dieser zweite echte Apple-Typecheck aufgedeckt hat. **Fix:**
+`@ViewBuilder` ergänzt.
+
+**Keine Breitenwirkung bestätigt:** vor dem Fix wurde geprüft, ob dasselbe
+Muster (computed `some View`-Property/-Funktion ohne `@ViewBuilder` mit
+riskantem `if`/`switch`-Körper) anderswo in `FitnessAppUI` vorkommt — ein
+Scan fand 26 oberflächlich ähnliche Kandidaten (u. a. in `DashboardView.swift`,
+`WorkoutSummaryView.swift`, `TimedWorkoutPlayerView.swift`,
+`PlanBuilderView.swift`). Das Log selbst widerlegt diese Kandidaten aber:
+es zeigt genau diese Dateien im selben Lauf fehlerfrei durchkompiliert (nur
+Warnungen, keine Fehler) — der echte Compiler ist hier die verlässlichere
+Quelle als ein text-basierter Scan ohne echtes Parsing. Keine ungeprüften
+Änderungen an diesen 26 Stellen vorgenommen, um kein funktionierendes
+Verhalten unnötig zu riskieren.
+
+**Linux-Kontrolle:** `swift build`/`swift test` danach erneut grün (979/979,
+unverändert — beide Fixes betreffen ausschliesslich SwiftUI/SwiftData-
+gegateten Code, auf Linux nur Syntax-geparst, nicht typegecheckt).
+
+**Status:** beide im zweiten Log sichtbaren Fehler behoben. Weiterhin keine
+Einsicht in nachfolgende Workflow-Schritte (Signing/Archive/Upload) oder ob
+ein dritter Fehler im Log weiter hinten steht, den der zweiseitige
+Log-Ausschnitt nicht zeigt — dafür bräuchte es entweder das vollständige
+Log oder einen erneuten Codemagic-Lauf.
