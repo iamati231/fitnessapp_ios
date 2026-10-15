@@ -678,3 +678,83 @@ Einsicht in nachfolgende Workflow-Schritte (Signing/Archive/Upload) oder ob
 ein dritter Fehler im Log weiter hinten steht, den der zweiseitige
 Log-Ausschnitt nicht zeigt — dafür bräuchte es entweder das vollständige
 Log oder einen erneuten Codemagic-Lauf.
+
+---
+
+## Teil 12 — Codemagic-Nachtrag 3 (erster Lauf mit echten SwiftData-Tests)
+
+Drittes Log vom User: `FitnessAppUI` kompiliert jetzt fehlerfrei — zum
+ersten Mal in dieser Epic laufen die SwiftData-Tests dieses Pakets
+tatsaechlich auf echter Apple-Hardware (`swift test --parallel`, Xcode
+26.6, macOS arm64). Ergebnis: **4 Tests stuerzten den Testprozess ab**
+(Signal 5 / SIGTRAP) und **2 Tests schlugen mit falschem Zahlenwert fehl**
+— alle 6 betreffen ausschliesslich Code, der auf Linux nie echt lief.
+
+**Root Cause der 4 Abstuerze — gefunden, nicht geraten:** alle vier
+betroffenen Tests (`testExerciseTemplateIDResolvesHistoryAfterTemplateRename`,
+`testDeletingTemplateNeverCascadesToExerciseLogsOrPRs`,
+`testBackfillConnectsOnlyUniqueNameMatches`, `testBackfillConnectsSystemExerciseByName`)
+schrieben `let ctx = try makeContainer().mainContext` — der `ModelContainer`
+wird dabei NIRGENDS gehalten, nur sein `.mainContext` wird einer Variable
+zugewiesen. Ohne eine eigene Referenz auf den Container kann dieser laut
+ARC-Semantik jederzeit freigegeben werden, waehrend `ctx` noch in Benutzung
+ist — der Context arbeitet dann auf einem eingerissenen Store, was beim
+naechsten SwiftData-Zugriff (Fetch/Save/Property-Zugriff) nicht-deterministisch
+crasht. Beweis statt Vermutung: eine Volltext-Suche ueber ALLE ca. 50+
+Container-Erzeugungen in `DataPortabilityRoundtripTests.swift` zeigt, dass
+JEDE ANDERE Stelle den Container korrekt in einer eigenen Variable haelt
+(`let source/target/container = try makeContainer()`, danach `.mainContext`
+separat) — **einzig diese zwei Stellen** weichen vom Muster ab, und beide
+sind exakt zwei der vier Absturz-Tests. Dieselbe Abweichung fand sich in
+`ExerciseTemplateIDBackfillTests.swift`, dort in BEIDEN Tests — exakt die
+anderen zwei Abstuerze. Verifiziert ueber den isolierten Retry-Lauf im Log
+(SwiftPM fuehrt jeden abgestuerzten Test danach einzeln erneut aus): jeder
+der vier crasht auch ALLEIN erneut, sofort nach "started", ohne jedes
+Testergebnis — das schliesst "Kollateralschaden durch einen Nachbartest im
+selben Worker-Prozess" aus und bestaetigt vier eigenstaendige, deterministische
+Bugs mit identischer Ursache. **Fix:** `let container = try makeContainer();
+let ctx = container.mainContext` in allen vier Tests — Container bleibt fuer
+die Testdauer durch die lokale Variable am Leben. Repo-weite Nachsuche nach
+demselben Muster (`makeContainer().mainContext`, `.mainContext` direkt an
+einem Funktionsaufruf) ergab keine weiteren Treffer.
+
+**Zweiter, unabhaengiger Bug in `testDeletingTemplateNeverCascadesToExerciseLogsOrPRs`:**
+zusaetzlich zum Container-Bug griff der Test NACH `ctx.delete(template)` +
+`try ctx.save()` noch zweimal auf `template.id` zu — ein per Web-Recherche
+unabhaengig bestaetigtes SwiftData-Verhalten: ein geloeschtes UND gespeichertes
+Model-Objekt ist invalidiert, jeder Property-Zugriff danach ist undefiniert
+(Apple-DTS-Statement dazu: "the crash comes from accessing the deleted
+object afterward"). **Fix:** `templateID` vor dem Loeschen in eine lokale
+Konstante sichern, beide Assertions darauf umstellen.
+
+**Zwei Zahlenwert-Fehler — beide vorbestehende Test-Bugs, nicht Phase-6/7:**
+- `testAsyncExportAtVolumeRoundtripsCompletely`: erwartete `1 /* profile */ +
+  1 /* plan */ + sessionCount + sessionCount * 3` = 1002, tatsaechlich
+  1004 — die Kommentar-Summe vergisst `day` und `exercise`, die der Test
+  selbst anlegt und die ebenfalls exportiert werden. **Fix:** Formel um
+  `+ 1 /* day */ + 1 /* exercise */` ergaenzt.
+- `testRestoreAfterResetLikeWipeRecoversFullState`: erwartete 2
+  `ExerciseLog`-Zeilen nach Restore, tatsaechlich 3 — die gemeinsame
+  `seed()`-Fixture legt 2 Session-Logs PLUS 1 Orphan-Log an (siehe
+  Kommentar "DEL-189-Pfad" in `seed()`). Der direkt benachbarte
+  Schwester-Test `testExportImportRoundtripRestoresAllRows`, der dieselbe
+  Fixture nutzt, erwartet an derselben Stelle bereits korrekt 3 (mit
+  Kommentar "2 Session-Logs + 1 Orphan-Log") — die "2" war ein
+  Kopier-/Zaehlfehler beim Schreiben dieses einen Tests. **Fix:** auf 3
+  korrigiert.
+
+**Linux-Kontrolle:** `swift build`/`swift test` danach erneut grün
+(979/979 — unveraendert, da alle sechs Fixes ausschliesslich SwiftData-
+gegateten Testcode betreffen, auf Linux nur geparst). Die eigentliche
+Wirksamkeit (stuerzen die vier Tests jetzt nicht mehr ab, stimmen die
+beiden Zahlen jetzt) ist aus dieser Session weiterhin nicht verifizierbar
+— das ist exakt das, was ein vierter Codemagic-Lauf zeigen wird.
+
+**Einordnung:** dies ist der bisher ergiebigste Codemagic-Lauf dieser Epic
+— zum ersten Mal lief SwiftData-Testcode statt nur geparst zu werden, und
+foerderte sofort einen echten, mehrfach wiederholten Speicherverwaltungs-
+Bug zutage, den weder Linux-Parsing noch Code-Review allein je haette finden
+koennen. Bestaetigt die in jeder vorherigen Phase wiederholte Einschaetzung:
+"Kein echtes Typechecking" auf Linux bedeutet nicht nur "ungetestete
+Geschaeftslogik", sondern auch "ungetestete Objektlebensdauer" — eine
+eigene Fehlerklasse, die Code-Review strukturell nicht abdecken kann.

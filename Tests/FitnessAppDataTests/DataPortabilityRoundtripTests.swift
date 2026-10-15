@@ -1195,7 +1195,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         try ctx.save()
 
         let bundle = try await DataExportService.makeExportAsync(context: ctx)
-        XCTAssertEqual(bundle.totalRows, 1 /* profile */ + 1 /* plan */ + sessionCount + sessionCount * 3)
+        XCTAssertEqual(bundle.totalRows, 1 /* profile */ + 1 /* plan */ + 1 /* day */ + 1 /* exercise */ + sessionCount + sessionCount * 3)
 
         let target = try makeContainer()
         let result = try await DataImportService.performImport(
@@ -1273,7 +1273,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<UserBodyProfile>()), 1)
         XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<TrainingPlan>()), 1)
         XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<WorkoutSession>()), 1)
-        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<ExerciseLog>()), 2)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<ExerciseLog>()), 3, "2 Session-Logs + 1 Orphan-Log, siehe seed()")
         XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<PersonalRecordEntry>()), 1)
         XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<Gear>()), 1)
         XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<BodyMeasurement>()), 1)
@@ -1289,7 +1289,8 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// dass ein Lookup rein über den aktuellen Namen die Historie verfehlen
     /// WUERDE, waehrend die ID sie weiterhin findet.
     func testExerciseTemplateIDResolvesHistoryAfterTemplateRename() throws {
-        let ctx = try makeContainer().mainContext
+        let container = try makeContainer()
+        let ctx = container.mainContext
         let template = ExerciseTemplate(name: "Kabelzug", equipment: .cable, primaryMuscle: .back, isCustom: true)
         ctx.insert(template)
         let exercise = Exercise(name: template.name, exerciseTemplateID: template.id, sets: 3)
@@ -1317,7 +1318,8 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// `@Relationship`, genau damit es keine Delete-Rule gibt, die das
     /// erzwingen könnte.
     func testDeletingTemplateNeverCascadesToExerciseLogsOrPRs() throws {
-        let ctx = try makeContainer().mainContext
+        let container = try makeContainer()
+        let ctx = container.mainContext
         let template = ExerciseTemplate(name: "Face Pull", equipment: .cable, primaryMuscle: .shoulders, isCustom: true)
         ctx.insert(template)
         let exercise = Exercise(name: template.name, exerciseTemplateID: template.id, sets: 3)
@@ -1332,14 +1334,18 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         ctx.insert(pr)
         try ctx.save()
 
+        // ID VOR dem Loeschen sichern — `template` nach `ctx.delete`+`save`
+        // ist ein invalidiertes SwiftData-Objekt; jeder Property-Zugriff
+        // danach (auch `template.id`) ist undefiniert/crasht.
+        let templateID = template.id
         ctx.delete(template)
         try ctx.save()
 
         XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<ExerciseLog>()), 1, "Log darf durch das Vorlagen-Loeschen nicht verschwinden")
         XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<PersonalRecordEntry>()), 1, "PR darf durch das Vorlagen-Loeschen nicht verschwinden")
         // Snapshot-Felder bleiben unveraendert — nur die Live-Vorlage ist weg.
-        XCTAssertEqual(log.exerciseTemplateIDSnapshot, template.id)
-        XCTAssertEqual(pr.exerciseTemplateID, template.id)
+        XCTAssertEqual(log.exerciseTemplateIDSnapshot, templateID)
+        XCTAssertEqual(pr.exerciseTemplateID, templateID)
     }
 
     /// CSV-/Backup-Roundtrip (häufiger Fall): Export + Import in einen

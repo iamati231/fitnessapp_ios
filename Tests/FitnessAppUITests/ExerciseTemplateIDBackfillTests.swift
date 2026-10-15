@@ -24,7 +24,8 @@ final class ExerciseTemplateIDBackfillTests: XCTestCase {
     /// NICHT geraten, und ein Eintrag ganz ohne Treffer bleibt unangetastet.
     /// Zweiter Lauf findet nichts mehr (Idempotenz).
     func testBackfillConnectsOnlyUniqueNameMatches() throws {
-        let ctx = try makeContainer().mainContext
+        let container = try makeContainer()
+        let ctx = container.mainContext
 
         let unique = ExerciseTemplate(name: "Kreuzheben", equipment: .barbell, primaryMuscle: .back)
         ctx.insert(unique)
@@ -75,7 +76,8 @@ final class ExerciseTemplateIDBackfillTests: XCTestCase {
     /// Bibliotheks-Katalog kollisionsfrei, der Backfill muss sie deshalb
     /// IMMER eindeutig verknüpfen können, nie als "mehrdeutig" einstufen.
     func testBackfillConnectsSystemExerciseByName() throws {
-        let ctx = try makeContainer().mainContext
+        let container = try makeContainer()
+        let ctx = container.mainContext
         let system = ExerciseTemplate(
             name: "Bankdruecken", equipment: .barbell, primaryMuscle: .chest,
             isCustom: false, isSystemCompound: true
