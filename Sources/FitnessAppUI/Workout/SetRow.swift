@@ -214,35 +214,11 @@ struct SetRow: View {
                     // DEL-128: KG-Label via xcstrings.
                     // Layout-Fix 2026-05-21: `.fixedSize()` zwingt das Label
                     // auf seine intrinsische Breite — sonst komprimiert
-                    // SwiftUI die Text-Labels weg, wenn der Row-Inhalt
-                    // (3-stelliges Gewicht + Plate-Button + 2 Inputs +
-                    // Labels) auf iPhone-SE-Breite knapp wird.
+                    // SwiftUI die Text-Labels weg, wenn der Row-Inhalt knapp
+                    // wird.
                     Text("unit.kg.upper", bundle: .module)
                         .deltiqLabel()
                         .fixedSize()
-                    // DEL-085: Plate-Calculator-Quick-Access.
-                    // Layout-Fix 2026-05-21 (Iteration 2): vorher per
-                    // `if weight > 0` ein-/ausgeblendet — das hat beim
-                    // Tippen einer Zahl einen Layout-Shift gemacht (Button
-                    // erscheint dynamisch, Row wird neu vermessen, die
-                    // andere Inputs ruckeln). Jetzt PERMANENT im Layout,
-                    // nur Sichtbarkeit + Tap-Empfaenglichkeit per Opacity
-                    // + allowsHitTesting gegated. Platz bleibt reserviert,
-                    // kein Sprung mehr.
-                    // Signature-Geruest 2.17: die Aufladung selbst gehoert
-                    // strukturell aus dem Layout (`if isBarbellExercise`),
-                    // nicht nur per Opacity ausgeblendet — sonst bliebe bei
-                    // Kurzhantel/Maschine/Kabel/Kettlebell/Band/Bodyweight
-                    // dauerhaft eine leere Luecke, statt dass `repsInput`
-                    // aufrueckt. `equipment` aendert sich waehrend der
-                    // Lebensdauer einer sichtbaren Row nie, also kein neuer
-                    // Jitter-Risiko wie beim `weight`-Tipp-Gate oben.
-                    if isBarbellExercise {
-                        let plateShown = (weight ?? 0) > 0 && !exercise.isTimeBased
-                        plateCalculatorButton(weight: weight ?? 0)
-                            .opacity(plateShown ? 1 : 0)
-                            .allowsHitTesting(plateShown)
-                    }
                 }
 
                 repsInput
@@ -366,12 +342,17 @@ struct SetRow: View {
         return ExerciseLibraryData.all.first { $0.name == exercise.name }?.equipment == .barbell
     }
 
-    /// DEL-085: Quick-Access-Button fuer den Plate-Calculator. Wird neben
-    /// dem KG-Feld eingeblendet, wenn ein konkretes Gewicht > 0 eingetragen
-    /// ist UND die Uebung mit einer Hantelstange ausgefuehrt wird (also
-    /// keine Bodyweight-/Cardio-/TimeBased-Lifts). Tap oeffnet ein Popover
-    /// mit der Aufladungs-Visualisierung — der eigentliche Content lebt in
-    /// `PlatePopoverContent` weiter unten.
+    /// DEL-085: Quick-Access-Button fuer den Plate-Calculator. Sitzt als
+    /// Badge auf der Gewichts-Eingabe (`weightInput`-Overlay), sichtbar wenn
+    /// ein konkretes Gewicht > 0 eingetragen ist UND die Uebung mit einer
+    /// Hantelstange ausgefuehrt wird (also keine Bodyweight-/Cardio-/
+    /// TimeBased-Lifts). Tap oeffnet ein Popover mit der Aufladungs-
+    /// Visualisierung — der eigentliche Content lebt in `PlatePopoverContent`
+    /// weiter unten.
+    ///
+    /// Bugfix (Nutzer-Feedback): 28×28 → 22×22, da das Badge nur noch als
+    /// kleiner Eck-Akzent auf `weightInput` sitzt, nicht mehr als eigenstaendiges
+    /// Element in der Eingabezeile Platz beansprucht.
     @ViewBuilder
     private func plateCalculatorButton(weight: Double) -> some View {
         Button {
@@ -380,13 +361,18 @@ struct SetRow: View {
             Image(systemName: "scalemass.fill")
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.deltiqOrange)
-                .font(.callout)
-                .frame(width: 28, height: 28)
-                .background(Color.deltiqOrange.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .font(.caption)
+                .frame(width: 22, height: 22)
+                .background(Color.deltiqOrange.opacity(0.16))
+                .clipShape(Circle())
+                // Dezenter Rand, damit das Badge sich von der dahinterliegenden
+                // `weightInput`-Fuellung absetzt, auch wenn es sie ueberlappt.
+                .overlay(Circle().strokeBorder(Color.Deltiq.background, lineWidth: 1.5))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Hantel-Aufladung anzeigen")
+        // Bugfix: war hartcodiert deutsch ("Hantel-Aufladung anzeigen"),
+        // nie uebersetzt.
+        .accessibilityLabel(Text("activeSet.plateCalculator.accessibilityLabel", bundle: .module))
         .popover(isPresented: $showingPlatePopover, arrowEdge: .top) {
             PlatePopoverContent(
                 targetWeight: weight,
@@ -431,6 +417,23 @@ struct SetRow: View {
             .onChange(of: weight) { _, newValue in
                 if let w = newValue, w > PlateCalculator.maxTargetKg {
                     weight = PlateCalculator.maxTargetKg
+                }
+            }
+            // Bugfix (Nutzer-Feedback, Screenshots Ganzkoerper B): der
+            // Aufladungs-Knopf sass vorher als eigenes HStack-Kind zwischen
+            // "KG" und `repsInput` — bei Langhantel-Uebungen beanspruchte er
+            // zusaetzliche ~34pt, die der `rirCapsule` fehlten (siehe dort)
+            // UND liess die Zeile je nach Equipment unterschiedlich breit
+            // wirken. Als Badge auf der Gewichts-Eingabe selbst braucht er
+            // keinen eigenen Platz im linearen Layout mehr — Zeile ist jetzt
+            // fuer jedes Equipment gleich aufgebaut.
+            .overlay(alignment: .topTrailing) {
+                if isBarbellExercise {
+                    let plateShown = (weight ?? 0) > 0 && !exercise.isTimeBased
+                    plateCalculatorButton(weight: weight ?? 0)
+                        .offset(x: 6, y: -6)
+                        .opacity(plateShown ? 1 : 0)
+                        .allowsHitTesting(plateShown)
                 }
             }
     }
@@ -548,41 +551,42 @@ struct SetRow: View {
     /// mehr in der Eingabezeile gebraucht (siehe Aufrufstelle dort) - lebt
     /// dann in `rirSliderRow`, wo Platz ist.
     ///
-    /// Bugfix (Nutzer-Feedback): horizontales Padding 9 → 7. Die Kapsel ist
-    /// die einzige Breite-variable Komponente der Eingabezeile (Halbschritt-
-    /// Werte wie "RIR 2,5" sind zwei Zeichen breiter als "RIR 2") und war bei
-    /// Hantelübungen (zusaetzliches Plate-Icon) genau deswegen fuer einen
-    /// Overflow der ganzen Zeile verantwortlich, siehe `compactSetRow`.
+    /// Bugfix (Nutzer-Feedback, Screenshots Ganzkoerper B): "RIR 2,5" war bei
+    /// Hantelübungen (zusaetzliches Plate-Icon in der Zeile, siehe dort)
+    /// selbst mit `.minimumScaleFactor(0.85)` nicht mehr unterzubringen - bei
+    /// echtem Overflow hat SwiftUI der Kapsel praktisch keine Breite mehr
+    /// gelassen, der Text wurde auf ein einzelnes "R" zusammengequetscht.
+    /// Der Aufladungs-Knopf ist jetzt kein eigenes HStack-Kind mehr (siehe
+    /// `weightInput`), trotzdem bleibt die Kapsel kompakt ("R3"/"R2,5" statt
+    /// "RIR 3"/"RIR 2,5") als zusaetzlicher Puffer - sie ist bei jedem
+    /// Halbschritt-Wert die einzige Komponente mit variabler Breite. Der
+    /// sichtbare Text ist bewusst kuerzer als der gesprochene: VoiceOver
+    /// hoert weiterhin die volle Form ueber `.accessibilityLabel`.
     private var rirCapsule: some View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) { rirExpanded.toggle() }
         } label: {
-            Text("RIR \(rir.formattedRIR)")
+            Text("R\(rir.formattedRIR)")
                 .font(.caption.weight(.semibold).monospacedDigit())
                 .lineLimit(1)
-                // Bugfix (README 2.36, Nutzer-Screenshots): dieselbe Befund-
-                // Familie wie 2.24/2.25 - dort brach die Kapsel zeichenweise
-                // um (variable Zeilenhoehe), behoben durch .fixedSize() +
-                // .lineLimit(1). Bei einer Langhantel-Uebung (Aufladungs-
-                // Knopf zusaetzlich in der Zeile) UND drei RIR-Halbschritten
-                // (laengerer Text wie "3,5") reicht der seither
-                // zurueckgewonnene Puffer nicht mehr - die Zeile hat nirgends
-                // mehr hin auszuweichen und wird breiter als der Bildschirm.
-                // .fixedSize() verlangt dabei immer die volle einzeilige
-                // Ideal-Breite und verhindert so genau das Schrumpfen, das
-                // .minimumScaleFactor ermoeglichen soll - deshalb entfernt,
-                // nicht nur ergaenzt. .lineLimit(1) allein verhindert weiter
-                // zuverlaessig den urspruenglichen Zeichen-Umbruch.
                 .minimumScaleFactor(0.85)
                 .foregroundStyle(rirExpanded ? .white : Color.deltiqOrange)
                 .padding(.horizontal, 7)
                 .padding(.vertical, 4)
+                // Mindestbreite statt reiner Inhaltsbreite - verhindert, dass
+                // die Kapsel bei einstelligen Werten ("R0") optisch zum
+                // Kreis statt einer Pille wird.
+                .frame(minWidth: 32)
                 .background(rirExpanded ? Color.deltiqOrange : Color.deltiqOrange.opacity(0.12))
                 .clipShape(Capsule())
         }
         .buttonStyle(.plain)
         .disabled(isCompleted)
         .opacity(isCompleted ? 0.6 : 1.0)
+        .accessibilityLabel(
+            Text(String(format: String(localized: "activeSet.rirCapsule.accessibilityLabel", bundle: .module), rir.formattedRIR))
+        )
+        .accessibilityHint(Text("activeSet.rirCapsule.accessibilityHint", bundle: .module))
     }
 
     /// UX-203: HStack-Spacing 10 → 14, plus dedizierte Slider-min-Höhe via

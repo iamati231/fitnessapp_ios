@@ -853,3 +853,72 @@ aber unbestaetigtes Risiko ergaenzt. Ob der Fix auf dem betroffenen Geraet
 tatsaechlich greift (Duplikate verschwinden nach dem Update, bleiben
 verschwunden), kann nur der naechste Start auf echtem Geraet zeigen — hier
 nicht verifizierbar.
+
+---
+
+## Teil 14 — Geraetetest-Fund: RIR-Kapsel abgeschnitten bei Langhantel-Saetzen
+
+Zweiter Geraetetest-Befund (2 Screenshots: "Kreuzheben (konventionell)" und
+"Schrägbankdrücken aufwärts (KH)" in einem laufenden Workout). Betraf
+`SetRow.swift` — die Datei dokumentiert bereits FUENF vorherige, erfolglose
+Anlaeufe fuer dieselbe Befund-Familie (README 2.24/2.25/2.36, zwei
+"Layout-Fix 2026-05-21"-Iterationen) — alle beschraenkten sich auf
+Padding-/Scale-Factor-Anpassungen an der Kapsel selbst, ohne die zweite
+Ursache (der Aufladungs-Knopf als eigenes HStack-Kind) strukturell zu
+entfernen.
+
+**Root Cause (vom User korrekt diagnostiziert):** die Eingabezeile hat bei
+Langhantel-Uebungen ein zusaetzliches Kind (`plateCalculatorButton`,
+~34pt inkl. Spacing) gegenueber Nicht-Langhantel-Uebungen. Ueberschlagsrechnung
+fuer iPhone SE (375pt): Satznummer (24) + Gewichts-Feld (72) + "KG" (~20) +
+Wdh-Feld (72) + "WDH" (~28) + RIR-Kapsel (~45) + Haekchen (~32) + Zeilen-
+Padding (16) + HStack-Spacing (~36) ≈ 345pt — passt knapp. Mit dem
+zusaetzlichen Aufladungs-Knopf (+34pt) ≈ 379pt — ueberschreitet die 375pt
+SE-Breite. Die `rirCapsule` war die einzige nicht-`.fixedSize()`-Komponente
+und bekam bei echtem Overflow praktisch keine Breite mehr zugewiesen —
+sichtbar als auf "R" zusammengequetschter Text ohne Ellipse.
+
+**Fix 1 (strukturell, behebt die Ursache):** `plateCalculatorButton` ist
+kein eigenes HStack-Kind mehr, sondern ein `.overlay(alignment: .topTrailing)`
+auf `weightInput` selbst (28×28 → 22×22, rundes Badge mit dezentem Rand
+statt eigenstaendigem Button). Macht die Eingabezeile fuer JEDES Equipment
+gleich breit — behebt damit auch den vom User genannten Layout-Sprung
+zwischen Langhantel- und Kurzhantel-Uebungen. Keine Verhaltensaenderung:
+derselbe Popover, dieselbe Sichtbarkeits-/Tap-Logik (`weight > 0 &&
+!isTimeBased`).
+
+**Fix 2 (Kapsel selbst, zusaetzlicher Puffer):** sichtbarer Text kompakter
+("RIR 3"/"RIR 2,5" → "R3"/"R2,5", wie vom User als Option vorgeschlagen),
+`.frame(minWidth: 32)` fuer eine stabile Pillenform auch bei einstelligen
+Werten. `.lineLimit(1)` + `.minimumScaleFactor(0.85)` bleiben als Sicherheitsnetz
+bestehen, `.fixedSize()` bewusst NICHT reaktiviert (war in einer fruehen
+Iteration genau wegen eines Overflows in die andere Richtung entfernt
+worden — mit Fix 1 sollte jetzt Puffer in beide Richtungen bestehen).
+
+**Accessibility (zusaetzlich, waehrend derselben Aenderung behoben):**
+der kuerzere sichtbare Text darf VoiceOver nicht verschlechtern — neues
+explizites `.accessibilityLabel("RIR <Wert>")` (volle Form, unabhaengig vom
+kompakten Sichttext) + `.accessibilityHint` ("zum Anpassen antippen") auf
+der Kapsel. Beim Beheben zusaetzlich gefunden: `plateCalculatorButton`s
+Accessibility-Label war hartcodiert deutsch (`"Hantel-Aufladung anzeigen"`,
+nie uebersetzt) — jetzt lokalisiert. 3 neue xcstrings-Keys
+(`activeSet.plateCalculator.accessibilityLabel`,
+`activeSet.rirCapsule.accessibilityLabel` [%@-Format],
+`activeSet.rirCapsule.accessibilityHint`), DE/EN/TR. Katalog 2086 → 2089
+Keys, weiterhin 0 hardcodierte Strings (automatisiert bestaetigt).
+
+**Linux-Kontrolle:** `swift build`/`swift test` gruen, 979/979 (unveraendert
+— SwiftUI-gegateter Code, auf Linux nur geparst, kein echtes Rendering
+moeglich).
+
+**Ehrliche Grenze — Punkt 3 der Vorgabe nicht erfuellbar:** "auf iPhone SE
+und normalen Displaybreiten testen" kann aus dieser Session heraus NICHT
+durchgefuehrt werden (kein Simulator-/Geraete-Zugriff, kein UI-Test-Target
+in diesem Repo, keine Preview fuer `SetRow` vorhanden). Die Breiten-
+Rechnung oben ist eine Ueberschlagsrechnung auf Basis der im Code
+dokumentierten Fixed-Width-Werte, keine tatsaechliche Messung. Ob die
+Kapsel jetzt wirklich nie mehr abschneidet (insbesondere bei "WDH"/"KG" in
+anderen Sprachen oder bei sehr grosser Dynamic-Type-Schrift, die dieses
+gesamte Fixed-Width-HStack-Muster strukturell anfaellig macht, wie die
+fuenf vorherigen Anlaeufe in der Datei-Historie bereits zeigen), kann nur
+ein echter Geraetetest zeigen.

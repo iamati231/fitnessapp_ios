@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2086 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2089 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2086 / 2086** (100%) | 0 |
-| 🇬🇧 English (EN) | **2086 / 2086** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2086 / 2086** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2089 / 2089** (100%) | 0 |
+| 🇬🇧 English (EN) | **2089 / 2089** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2089 / 2089** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -71,6 +71,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `active.summary.duration` | Dauer | Duration | Süre |
 | `active.summary.sets` | Sätze | Sets | Set |
 | `active.summary.volume` | Volumen | Volume | Hacim |
+
+## `activeSet.*`  (3 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `activeSet.plateCalculator.accessibilityLabel` | Hantelscheiben-Aufladung anzeigen | Show plate loading | Disk yükleme hesaplayıcısını göster |
+| `activeSet.rirCapsule.accessibilityHint` | Zum Anpassen antippen | Tap to adjust | Ayarlamak için dokunun |
+| `activeSet.rirCapsule.accessibilityLabel` | RIR %@ | RIR %@ | RIR %@ |
 
 ## `activity.*`  (10 Keys)
 
