@@ -1014,33 +1014,69 @@ public struct DeltiqRow: View {
 /// `UINavigationController` wieder aktiviert und sich selbst als Delegate
 /// setzt (das Verfahren ist der etablierte Community-Standard fuer dieses
 /// Problem).
+///
+/// UI-Refactor (Korrektur V7, Mehrebenen-Bug): die urspruengliche Fassung
+/// hostete einen BLOSSEN `UIViewController()` und aktivierte die Geste
+/// einmalig in `makeUIViewController` — das feuert genau EINMAL pro Push.
+/// `.navigationBarBackButtonHidden(true)`s Nebenwirkung (deaktiviert
+/// `interactivePopGestureRecognizer`) feuert dagegen bei JEDEM erneuten
+/// Sichtbarwerden eines Screens neu — auch wenn ein darueber gepushter
+/// Screen wieder weggepoppt wird und dieser Screen dadurch (ohne selbst neu
+/// gepusht zu werden) wieder ganz oben im Stack steht. Konkreter Bug: bei
+/// drei Ebenen A→B→C funktionierte Swipe-Back C→B (B's Re-Enable war gerade
+/// erst gelaufen), aber B→A nicht mehr (A's Re-Enable lag bereits laenger
+/// zurueck und wurde durch B's neuerliches Erscheinen erneut kassiert, ohne
+/// dass A je wieder reaktiviert wurde — `makeUIViewController` feuert fuer
+/// A nicht noch einmal). Fix: eine echte `UIViewController`-Subklasse statt
+/// eines bloss gehosteten Controllers — NUR eine Subklasse bekommt echte
+/// Lifecycle-Callbacks. Das Re-Enable laeuft jetzt in `viewWillAppear(_:)`,
+/// der bei JEDEM Sichtbarwerden feuert (verifiziert gegen UIKit-
+/// Referenzdokumentation + mehrere Apple-Developer-Forum-Threads zu genau
+/// diesem Pop-Reappear-Fall) — nicht nur beim allerersten Push. Die
+/// Subklasse ist direkt ihr eigener `UIGestureRecognizerDelegate` (keine
+/// separate `Coordinator`-Instanz mehr noetig: `self.navigationController`
+/// loest UIKits eigene Eltern-Traversierung bei JEDEM Aufruf frisch auf,
+/// keine gecachte/schwache Referenz mehr, die veralten koennte).
 private struct SwipeBackEnabler: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> UIViewController {
-        let controller = UIViewController()
-        controller.view.backgroundColor = .clear
-        DispatchQueue.main.async {
-            if let navigationController = controller.parent?.navigationController {
-                context.coordinator.navigationController = navigationController
-                navigationController.interactivePopGestureRecognizer?.delegate = context.coordinator
-                navigationController.interactivePopGestureRecognizer?.isEnabled = true
-            }
-        }
-        return controller
+    func makeUIViewController(context: Context) -> SwipeBackHostController {
+        SwipeBackHostController()
     }
 
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: SwipeBackHostController, context: Context) {}
 
-    func makeCoordinator() -> Coordinator { Coordinator() }
+    final class SwipeBackHostController: UIViewController, UIGestureRecognizerDelegate {
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            view.backgroundColor = .clear
+            // Absicherung fuer den allerersten Push: `parent`/`navigationController`
+            // sind bei `viewDidLoad` oft noch nicht aufgeloest (SwiftUI haengt
+            // diesen Controller asynchron in die Hierarchie ein). Der
+            // eigentliche Fix lebt in `viewWillAppear` unten - dieser Block
+            // ist nur ein zusaetzliches Sicherheitsnetz, falls `viewWillAppear`
+            // in einem noch unbekannten Einbettungsfall einmal ausbleiben sollte.
+            DispatchQueue.main.async { [weak self] in
+                self?.enableSwipeBack()
+            }
+        }
 
-    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
-        // README 2.19: der Delegate haengt am UINavigationController, nicht
-        // am Screen, und wird nie zurueckgesetzt - nach einem Pop blieb er
-        // liegen und startete die Geste auch auf der Stack-Wurzel (wo es
-        // nichts zu poppen gibt), was den Navigations-Stack in einem halben
-        // interaktiven Uebergang stehen liess. Schwache Referenz, damit der
-        // Coordinator den Controller nicht am Leben haelt.
-        weak var navigationController: UINavigationController?
+        override func viewWillAppear(_ animated: Bool) {
+            super.viewWillAppear(animated)
+            // Korrektur V7: der eigentliche Fix - feuert bei JEDEM
+            // Sichtbarwerden dieses Screens, auch nach dem Pop eines darueber
+            // gepushten Screens, nicht nur beim allerersten Push.
+            enableSwipeBack()
+        }
 
+        private func enableSwipeBack() {
+            guard let navigationController else { return }
+            navigationController.interactivePopGestureRecognizer?.delegate = self
+            navigationController.interactivePopGestureRecognizer?.isEnabled = true
+        }
+
+        // README 2.19: reicht beim Pop bis zur Stack-Wurzel (wo nichts mehr
+        // zu poppen waere) automatisch "false" zurueck, weil
+        // `viewControllers.count` dann wieder 1 ist — unabhaengig davon,
+        // welcher Screen zuletzt die Geste aktiviert hat.
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
             (navigationController?.viewControllers.count ?? 0) > 1
         }

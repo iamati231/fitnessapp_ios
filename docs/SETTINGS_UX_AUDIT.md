@@ -1288,3 +1288,395 @@ in Teil 15 so benannt, wird hier aber konkretisiert statt nur wiederholt:
 UI-Layer-Refactor plus eine neue, ebenfalls SwiftUI-gegatete Testdatei,
 die auf Linux uebersprungen wird). 3 weitere xcstrings-Keys (2092 → 2095),
 weiterhin 0 hardcodierte Strings, `TRANSLATIONS.md` regeneriert.
+
+## Teil 17 — Korrektur-Runde 3: sieben weitere fachliche Befunde
+
+User-Feedback nach Teil 16: drei gezielte Verifikations-Anfragen zum
+onChange-Fix (Reorder-Discard, Rebaseline-Granularitaet, isActive-
+Wiederherstellung) PLUS vier neue, unabhaengige Geraetetest-Funde
+(MeasurementView-Speichern, Equipment-"Weiß ich nicht"-Persistenz,
+Start-Check-Entry-Point, Mehrebenen-Swipe-Back). Alle sieben umgesetzt,
+hier einzeln dokumentiert mit dem jeweiligen konkreten Fehlerbild, Fix und
+Verifikationsstand.
+
+### V1 — Reorder (Tage/Uebungen) fehlte in Dirty-Erkennung und Discard
+
+**Befund:** `PlanEditorView.isDirty`/`DayEditorView.isDirty` verglichen nur
+`PlanMetaSnapshot`/`TrainingDaySnapshot` — beide Structs klammern die
+Tage-/Uebungs-LISTE bewusst aus (eigene, sofort wirksame Add/Delete-
+Aktionen ohne Save/Cancel-Konzept, siehe Teil 15/16). Reines Umsortieren
+per Drag&Drop ist aber WEDER ein Add noch ein Delete — es aendert nur die
+Reihenfolge bestehender Items (`TrainingDay.weekday` bzw.
+`Exercise.orderIndex`). Das fiel faelschlich durchs selbe Raster: weder
+als "dirty" erkannt noch beim Verwerfen zurueckgerollt.
+
+**Fix:** neuer, intersection-basierter Open-Snapshot pro Screen —
+`PlanEditorView.dayWeekdayAtOpen`/`DayEditorView.exerciseOrderIndexAtOpen`
+(`[PersistentIdentifier: Int]`, in `init` erfasst, da `plan`/`day` direkte
+Init-Parameter sind, kein `@Query`). "Intersection-basiert" heisst: nur
+Items, die beim Oeffnen UND aktuell noch existieren, werden verglichen/
+zurueckgesetzt — neu angelegte oder zwischenzeitlich geloeschte Items
+bleiben unangetastet (bleiben eigene, sofort wirksame Aktionen). Reine
+Pruef-/Rueckschreib-Logik als `dayOrderIsDirty(comparedTo:)`/
+`revertDayOrder(usingSnapshot:)` (PlanEditorView) bzw.
+`exerciseOrderIsDirty(comparedTo:)`/`revertExerciseOrder(usingSnapshot:)`
+(DayEditorView) ausgelagert — `internal`, expliziter Parameter statt
+direktem `@State`-Zugriff, dadurch OHNE lebende SwiftUI-/Query-Umgebung
+direkt testbar.
+
+**Getestet (echte, laufende Tests statt nur Nachlesen):**
+`PlanEditorView`/`DayEditorView` lassen sich als reine Struct-Werte ueber
+ihren oeffentlichen `init(plan:)`/`init(day:)` konstruieren und die oben
+genannten Funktionen direkt aufrufen, OHNE eine lebende SwiftUI-
+Renderumgebung zu brauchen — sie beruehren ausschliesslich den
+uebergebenen `plan`/`day` (normaler Objekt-Verweis) und ihre eigenen
+expliziten Parameter, nie `@Query`/`@Environment`-rueckgebundene
+Properties. Vier neue Tests in `EditorDiscardSnapshotTests.swift`:
+reines Umsortieren zweier Tage wird als dirty erkannt und exakt
+zurueckgerollt; ein NEU waehrenddessen angelegter Tag bleibt beim
+Reorder-Revert unangetastet (Gegenprobe fuer die Intersection-Logik);
+dieselben zwei Faelle nochmal fuer Uebungen in `DayEditorView`.
+
+### V2 — rebaselineSnapshot() bestaetigte unbeabsichtigt andere Felder mit
+
+**Befund:** `PlanEditorView.rebaselineSnapshot()` (nach einer bestaetigten
+Umgebungs-Migration, Adapt/Restore) machte ein VOLLES Re-Capture des
+gesamten `PlanMetaSnapshot`. Haette der User zu diesem Zeitpunkt noch eine
+ANDERE, unabhaengige Aenderung offen gehabt (z.B. `customName` getippt,
+aber noch nicht verlassen), waere die beim naechsten Verwerfen-Versuch
+faelschlich mit "bestaetigt" worden — die Migrations-Bestaetigung haette
+lautlos auch den Namen festgeschrieben, obwohl der User dafuer nie
+"Verwerfen"/"Speichern" gedrueckt hat.
+
+**Fix:** `rebaselineSnapshot()` → `rebaselineTargetEnvironment()`,
+schreibt NUR `snapshot.targetEnvironment = plan.targetEnvironment` fort.
+Alle anderen Snapshot-Felder bleiben unberuehrt und damit weiterhin ganz
+normal ueber `isDirty`/Verwerfen rueckrollbar.
+
+**Getestet:** `testPlanMetaSnapshotTargetedRebaselineLeavesOtherFieldsDirty`
+(`EditorDiscardSnapshotTests.swift`) — simuliert exakt das Szenario
+(gleichzeitig `customName` UND `targetEnvironment` geaendert, dann die
+gezielte Rebaseline nachgebildet) und prueft, dass `customName` danach
+weiterhin als abweichend/revertierbar gilt, waehrend `targetEnvironment`
+als bestaetigt gilt. Reiner Struct-Test auf `PlanMetaSnapshot` (bereits
+seit Teil 16 `internal`), keine View-Instanziierung noetig.
+
+### V3 — isActive-Reaktivierung sah nur den unmittelbaren Vorher-Zustand
+
+**Befund:** Szenario "Plan A ist aktiv → User oeffnet Editor fuer Plan B →
+schaltet B an (verdraengt A ueber `setActive(true)`) → schaltet B wieder
+aus (`setActive(false)` reaktiviert NIEMANDEN automatisch) → zurueck":
+`plan.isActive` ist am Ende wieder `false`, identisch zur Baseline — der
+reine Feld-Vergleich meldete faelschlich "nicht dirty", und
+`revertToSnapshot()`s Reaktivierungs-Bedingung (`wasActiveBeforeRevert`,
+der unmittelbare Zustand VOR dem Revert-Aufruf) griff ebenfalls nicht.
+Ergebnis: A blieb dauerhaft inaktiv, ohne dass der User das je sehen oder
+rueckgaengig machen konnte.
+
+**Fix:** zwei Ebenen.
+1. Neue `isOtherActivePlanStateDirty`-Pruefung: wenn dieser Plan selbst
+   (wieder) inaktiv ist UND der beim Oeffnen aktive andere Plan
+   (`otherActivePlanIDAtOpen`) aktuell NICHT mehr aktiv ist, gilt der
+   Screen als dirty — unabhaengig vom einfachen Feld-Vergleich.
+2. `revertToSnapshot()`s Reaktivierungs-Bedingung vereinfacht: reaktiviert
+   `otherActivePlanIDAtOpen` jetzt UNBEDINGT (statt nur bei
+   `wasActiveBeforeRevert`). Beweisfuehrung: `snapshot.apply(to: plan)`
+   schreibt `isActive` immer auf die Baseline zurueck; die Invariante
+   "otherActivePlanIDAtOpen ist nur gesetzt, wenn diese Baseline `false`
+   war" (von `setActive`s "hoechstens ein aktiver Plan"-Garantie erzwungen)
+   bedeutet: nach dem Zurueckschreiben ist `plan.isActive` in diesem Fall
+   immer `false` — die unbedingte Reaktivierung ist deshalb entweder
+   korrekt (genau der gemeldete Bug-Fall) oder ein folgenloses No-Op (A war
+   die ganze Zeit ueber aktiv geblieben). Beide Pfade teilen sich jetzt
+   dieselbe `planToReactivateOnDiscard(otherActivePlanIDAtOpen:
+   amongCandidates:)`-Lookup — `internal`, explizite Parameter statt
+   `@State`/`@Query`-Zugriff, direkt testbar.
+
+**Getestet:** drei neue Tests. Das gemeldete Szenario exakt nachgebildet
+(A aktiv, B an, B aus, dann `planToReactivateOnDiscard` aufgerufen — muss
+A liefern, `.isActive = true` darauf stellt den korrekten Zustand wieder
+her); Gegenprobe "anderer Plan war die ganze Zeit aktiv geblieben" (muss
+ebenfalls A liefern, Reaktivierung ist dann ein belegtes No-Op); Gegenprobe
+"kein anderer Plan war beim Oeffnen betroffen" (liefert `nil`).
+
+### V4 — MeasurementView: Haken oben rechts speicherte nie
+
+**Befund:** `MeasurementView` hatte als einziger der urspruenglich
+genannten Editoren (Teil 15/16 deckten `BodyDataEditorView`,
+`TrainingLocationEquipmentEditorView`, `ExerciseLibraryEditorSheet`,
+`ExerciseEditorView`, `DayEditorView`, `PlanEditorView`, `ProfileEditorView`
+ab — `MeasurementView` war nie Teil davon) nie das DeltiqHeader-Muster
+bekommen. Der Stift/Haken oben rechts togglete nur einen reinen Lese-/
+Editier-Modus (`isEditingEnabled`) OHNE jemals `save()` aufzurufen — ein
+User, der ihn in Erwartung eines Speicherns antippte (die seit Teil 15/16
+etablierte App-weite Konvention: Haken oben rechts = Speichern), verlor
+seine Eingabe kommentarlos, wenn er danach ueber den Chevron verliess
+(der ohne Aenderungs-Schutz sofort schloss). Die tatsaechliche Speicherung
+lief ausschliesslich ueber einen SEPARATEN Button ganz unten im Screen —
+genau das Muster, das Teil 15 fuer alle anderen Editoren bereits abgeloest
+hatte.
+
+**Fix:**
+- Separate Lese-/Editier-Modus-Unterscheidung (`isEditingEnabled`/
+  `fieldsEnabled`) komplett entfernt — eine bestehende Messung ist beim
+  Oeffnen sofort editierbar, wie jeder andere Editor dieser Epic.
+- Haken oben rechts (`headerActions`) ist jetzt die EINZIGE Speichern-
+  Aktion, in New- UND Edit-Mode, `isDisabled: !canSave(profile:)`, ruft
+  `save(profile:)` direkt auf.
+- Separater Speichern-Button unten (`actionsSection`) entfernt — Loeschen
+  bleibt unten, rot, wie vorgegeben.
+- Neuer Verwerfen-Schutz: `showingDiscardConfirm` + `discardChangesConfirmation`
+  auf dem Zurueck-Chevron (nur Edit-Mode, New-Mode bleibt Tab-Root ohne
+  Chevron), `.deltiqSwipeBackEnabled(isEditMode ? !isDirty : true)`.
+  `isDirty` vergleicht gegen einen neuen `MeasurementFieldSnapshot`
+  (9 Formularfelder, direkt nach dem Edit-Mode-Prefill erfasst). Kein
+  `apply(to:)` noetig: dieser Screen schreibt Feldaenderungen NIE direkt
+  ins SwiftData-Model (reiner Draft in `@State`, wie `BodyDataEditorView`)
+  — "Verwerfen" ist deshalb ein einfaches `dismiss()`.
+- `save()` selbst (die Logik, die die EXISTIERENDE `BodyMeasurement`
+  ueberschreibt statt eine zusaetzliche anzulegen) war inhaltlich bereits
+  korrekt und unveraendert — der Bug sass ausschliesslich in der
+  Verdrahtung, WELCHER Button sie aufruft.
+- 5 verwaiste xcstrings-Keys entfernt (`measurement.title.detail`,
+  `measurement.action.save`/`saveEdit`, `measurement.validation.missing.one`/
+  `many` — alle ohne verbleibende Swift-Referenz nach dem Umbau).
+
+**Getestet:** `MeasurementFieldSnapshot`s Equatable-Vertrag (gleicher
+Feldstand gleich, ein geaendertes Feld ungleich) und Default-Init (alle
+`nil`) — zwei neue Tests. Die eigentliche Verdrahtungs-Korrektur (Haken
+ruft jetzt `save(profile:)` statt `isEditingEnabled.toggle()` auf) ist
+reine View-Verdrahtung ohne `@Query`/`@Environment`-freie Pure-Logic-
+Stelle und bleibt — wie in Teil 16 Punkt 5 bereits fuer vergleichbare
+Faelle dokumentiert — nur per echtem Geraete-/Simulator-Test
+verifizierbar: **auf einem Geraet/Simulator muss geprueft werden, dass der
+Haken beim Bearbeiten einer bestehenden Messung tatsaechlich die
+EXISTIERENDE Zeile aktualisiert (keine zusaetzliche Zeile entsteht) und
+die Aenderung nach erneutem Oeffnen sichtbar bleibt.**
+
+### V5 — Equipment "Weiß ich nicht" (Bank/Klimmzugstange) nicht persistent
+
+**Befund (Root Cause genau lokalisiert):** `UserBodyProfile.equipmentProfile`
+persistierte `UserEquipmentProfile.availability` ueber genau ZWEI
+Rohlisten (`equipmentAvailableItemsRaw`/`equipmentUnavailableItemsRaw`) —
+ein Item landet in der einen, der anderen, oder KEINER (= `.unknown` via
+Abwesenheit). `EquipmentProfileEditor`s `BenchChoice`/`TriStateChoice`
+schreiben fuer "Weiß ich nicht" aber bewusst ein EXPLIZITES
+`availability[item] = .unknown` ins In-Memory-Struct (nicht einfach den
+Eintrag entfernen — siehe deren eigene Dokumentation, "Pflicht-Test 6").
+Der Persistenz-Setter kannte diesen dritten Fall nicht: `.unknown` passte
+in KEINEN der beiden `compactMap`-Filter und landete dadurch in KEINER
+Rohliste — exakt dieselbe Rohdarstellung wie "nie angefasst". Nach dem
+naechsten Lesen war die bewusste Aussage von einem echten Nie-Angefasst-
+Item nicht mehr unterscheidbar. Der sichtbare Schaden trat beim naechsten
+`confirmRemainingAsUnavailable()`-Aufruf auf (z.B. beim Abschluss der
+Erfassung): der pruefte `availability[item] == nil` (Dictionary-Abwesenheit)
+und kippte die bewusste "weiß ich nicht"-Aussage dadurch lautlos zu
+`.unavailable` — **nur bei Bank/Klimmzugstange ueberhaupt beobachtbar**,
+weil nur diese beiden Items im UI ueberhaupt eine dritte, explizite
+"Weiß ich nicht"-Option haben (jedes andere Item kennt nur toggle an/aus,
+"aus" bedeutet dort schon immer "entfernt" = unknown, es gibt dort gar
+keine explizite Unknown-Aussage zu verlieren).
+
+**Architektur-Trennung bereits korrekt (verifiziert, nicht neu gebaut):**
+die Gym-Planungs-Annahme (`EquipmentPlanningContext.gymDefault`, nimmt
+Bank/Klimmzugstange als "wahrscheinlich vorhanden" fuer Matching/Vorschau
+an) wird NIRGENDS in den Code-Pfaden in `UserBodyProfile.equipmentProfile`
+zurueckgeschrieben — `effectiveProfile` fliesst ausschliesslich in
+`PlanSelectionResolver.resolve`/`ProgramInstantiator.instantiate`/
+Staleness-Vergleiche, nie in einen Setter. Explizit per Grep bestaetigt:
+keine Fundstelle `profile.equipmentProfile = ...effectiveProfile`
+irgendwo im Repo. Der Bug lag ausschliesslich in der Zwei-statt-Drei-
+Listen-Persistenz, nicht in einer Vermischung von Annahme und
+gespeicherter Antwort.
+
+**Fix:** dritte Rohliste `equipmentUnknownItemsRaw: [String] = []` auf
+`UserBodyProfile` (gleiches "ein Feld pro Wert"-Array-Muster, Default
+leer → Lightweight-Migration fuer Bestand). Getter liest sie als dritten
+Durchlauf (`availability[item] = .unknown`), Setter schreibt explizites
+`.unknown` dort hinein statt es verschwinden zu lassen. CSV-Export/Import
+(`DataExportService`/`DataImportService`) um die fuenfte additive Spalte
+`equipment_unknown_items` ergaenzt — aeltere Importer/ZIPs liefern "" (=
+kein explizites Unknown aus der Zeile, identisch zum Vorher-Verhalten).
+
+**Getestet:** vier neue Tests. `UserBodyProfileTests`:
+(1) explizites Unknown landet in der neuen dritten Liste UND bleibt beim
+Lesen `.unknown` fuer genau das eine Item, waehrend ein zweites Item
+`.available` bleibt; (2) der eigentliche Kernvertrag — explizites Unknown
+fuer `.adjustableBench` ueberlebt `confirmEquipmentProfileComplete()`
+(ruft intern genau den Getter→`confirmRemainingAsUnavailable()`→Setter-
+Pfad auf, der vor dem Fix gebrochen war), waehrend ein wirklich nie
+angefasstes Item weiterhin zu `.unavailable` kippt — exakt das Gegenteil
+des gemeldeten Bugs. `DataPortabilityRoundtripTests`: derselbe Kernvertrag
+zusaetzlich durch einen ECHTEN CSV-Export/Import-Rundlauf hindurch (nicht
+nur den In-Memory-Setter/Getter) — bestaetigt, dass die neue Spalte auch
+bei Backup/Restore nicht verloren geht. Alle vier bauen auf der bereits
+bestehenden `EquipmentRequirementTests.
+testConfirmRemainingAsUnavailableNeverOverridesAnExplicitlyUnknownItem`
+(Core-Struct-Ebene, Teil des Pflicht-Test-6-Katalogs) auf, die den
+Vertrag fuer das reine `UserEquipmentProfile`-Struct schon laenger belegt
+— die neuen Tests schliessen die Luecke genau an der Stelle, wo das reine
+Struct endet und die SwiftData-Persistenz beginnt (dort sass der Bug).
+
+### V6 — Start-Check-Einstieg aus "Profil bearbeiten" entfernt
+
+**Befund:** `ProfileEditorView.coachingCard` hatte seit Teil zuvor (UX-Fix
+P3 §6) einen Wiedereinstiegs-Punkt fuer den optionalen Start-Check
+("wiederholbar jederzeit nach dem Onboarding aus Profil/Einstellungen").
+Sollte ausserhalb des Onboardings entfernt werden.
+
+**Fix:** `DeltiqRow` ("Start-Check", Status-Text, Chevron) +
+`.sheet(isPresented: $showingBaselineCheck) { BaselineCheckFlowView(...) }`
++ das zugehoerige `@State private var showingBaselineCheck` +
+`baselineCheckStatusText` vollstaendig entfernt. `profile.
+baselineAssessment` (das gespeicherte Ergebnis) und der Flow im
+Onboarding (`OnboardingView.baselineCheckStep`/`BaselineCheckFlowView`)
+sind davon komplett unberuehrt — per Grep bestaetigt, dass
+`baselineAssessment` nirgends sonst in `ProfileEditorView.swift`
+angefasst wird und `OnboardingView.swift` keine einzige Zeile geaendert
+wurde. Die danach letzte Zeile der Section (`coachingTone`-Picker)
+bekommt `showsDivider: false`, damit keine verwaiste Trennlinie vor dem
+Footer-Hinweis uebrig bleibt. 2 verwaiste xcstrings-Keys entfernt
+(`profile.coaching.baselineCheck`/`.notDone`) — `profile.coaching.footer`
+bleibt, der Text beschreibt die Goal-/Tone-Picker darueber, nicht den
+entfernten Start-Check-Einstieg.
+
+**Getestet:** keine neue Logik, reine UI-Entfernung ohne neuen Pure-Code
+— Verifikation ueber Code-Lesen + Grep (s.o.), kein neuer Unit-Test
+sinnvoll moeglich/noetig.
+
+### V7 — Swipe-Back funktionierte nur einmal ueber mehrere Navigationsebenen
+
+**Befund (Repro-Pfad im Repo konkret nachvollzogen):** `SettingsLibrary
+EquipmentView` → `ExerciseLibraryView` (Push) → `ExerciseDetailView`
+(Push ueber `.navigationDestination(item:)`) — alle drei nutzen das
+Standard-Signature-Geruest (`.navigationBarBackButtonHidden(true)` +
+`.deltiqSwipeBackEnabled()`). Swipe-Back von Ebene 3→2 funktionierte,
+aber danach 2→1 nicht mehr.
+
+**Root Cause:** `SwipeBackEnabler` (Theme.swift) hostete bisher einen
+BLOSSEN `UIViewController()` und aktivierte
+`interactivePopGestureRecognizer` einmalig in `makeUIViewController` —
+das feuert genau EINMAL pro Push. `.navigationBarBackButtonHidden(true)`s
+dokumentierte Nebenwirkung (deaktiviert denselben Gesture-Recognizer)
+feuert dagegen bei JEDEM erneuten Sichtbarwerden eines Screens neu — auch
+wenn kein neuer Push stattfindet, sondern nur ein darueber gepushter
+Screen wieder weggepoppt wird und dieser Screen dadurch wieder oben im
+Stack steht. Konkret: Ebene 2 bekam ihr Re-Enable beim eigenen Push (vor
+Ebene 3) genau einmal, dieses wurde durch Ebene 3s Push + Pop-Zyklus
+wieder kassiert, und nichts re-aktivierte es erneut, als Ebene 2 dadurch
+wieder sichtbar wurde (`makeUIViewController` feuert fuer Ebene 2 nicht
+noch einmal).
+
+**Verifikation der Hypothese (vor dem Fix, da auf Linux nicht
+kompilierbar/laufbar pruefbar):** gezielte Websuche gegen Apple-
+Developer-Forum-Threads und UIKit-Referenzdokumentation bestaetigt (a)
+`UIViewController.viewWillAppear(_:)` feuert nachweislich bei JEDEM
+Sichtbarwerden eines Screens, explizit auch nach dem Pop eines
+darueberliegenden Screens (hohe Konfidenz, mehrere unabhaengige Quellen
+inkl. UIKit-Referenztext), (b) das Symptom "Custom-Back-Button killt
+Swipe-Back nach mehreren Ebenen, Re-Enable in `.onAppear`-aequivalenten
+Hooks behebt es" ist in unabhaengigen Quellen mehrfach dokumentiert. Als
+robustere Alternative identifiziert, aber bewusst NICHT umgesetzt: den
+Gesture-Delegate einmalig zentral auf dem `UINavigationController` selbst
+zu setzen (staerkster Community-Standard-Fix) — in diesem Repo nicht
+ohne Weiteres erreichbar, da die Navigation komplett ueber SwiftUIs
+`NavigationStack` laeuft und SwiftUI den dahinterliegenden
+`UINavigationController` intern verwaltet (nicht direkt austauschbar ohne
+eine Introspection-Bibliothek wie `swiftui-introspect`, die dieses Repo
+nicht nutzt) — eine bewusste Scope-Entscheidung fuer den kleineren, bereits
+im etablierten Pro-Screen-Muster verifizierten Fix statt einer groesseren
+Architektur-Aenderung ohne Simulator-Verifikationsmoeglichkeit in dieser
+Session.
+
+**Fix:** `SwipeBackEnabler` hostet jetzt eine echte `UIViewController`-
+Subklasse (`SwipeBackHostController`) statt eines bloss gehosteten
+Controllers — nur eine Subklasse bekommt echte Lifecycle-Callbacks. Das
+Re-Enable laeuft jetzt in `viewWillAppear(_:)` (feuert bei JEDEM
+Sichtbarwerden) statt ausschliesslich in `makeUIViewController`
+(ergaenzt dort um einen zusaetzlichen, async-verzoegerten Aufruf als
+Sicherheitsnetz fuer den allerersten Push, falls `viewWillAppear` in
+einem noch unbekannten Einbettungsfall doch einmal ausbleiben sollte).
+Die Subklasse ist direkt ihr eigener `UIGestureRecognizerDelegate` — die
+separate `Coordinator`-Klasse mit ihrer `weak var navigationController`
+(potenziell veraltende, gecachte Referenz) entfaellt komplett:
+`self.navigationController` loest UIKits eigene Eltern-Traversierung bei
+JEDEM Aufruf frisch auf. Zentrale Komponente, genutzt von **26 Screens**
+im gesamten Repo (per Grep auf `.deltiqSwipeBackEnabled(` bestaetigt) —
+der Fix wirkt dadurch auf jeden
+Mehrebenen-Navigationspfad der App gleichzeitig, keine Pro-Screen-
+Aenderung noetig.
+
+**Getestet:** keine automatisierte Pruefung moeglich — reine UIKit-
+Lifecycle-/Gesture-Recognizer-Interaktion, die einen lebenden
+Navigation-Stack in einem echten Fenster braucht (XCUITest/Simulator),
+kein extrahierbarer Pure-Code-Kern wie bei V1/V3. Verifikation bislang
+ausschliesslich ueber (a) Code-Nachvollzug des exakt gemeldeten Repro-
+Pfads im Repo, (b) externe Recherche zur UIKit-Lifecycle-Garantie (s.o.).
+**Auf einem Geraet/Simulator muss geprueft werden:** Settings → Library
+&Equipment → Uebungsbibliothek → eine Uebung oeffnen → zweimal
+hintereinander per Edge-Swipe zurueckwischen (muss beide Male
+funktionieren, nicht nur einmal); dieselbe Probe auf mindestens einem
+weiteren Mehrebenen-Pfad (z.B. ueber den Plan-Tab: Plan → Trainingstag
+→ zurueck → zurueck); Gegenprobe, dass normale Menü-Seiten OHNE offene
+Aenderungen weiterhin ganz normal per Swipe verlassen werden koennen
+(`enabled: false`-Faelle wie `WorkoutSummaryView` im frischen Post-
+Finish-Modus unveraendert gesperrt); Gegenprobe, dass In-Editor-Swipes
+(TabView.page in `ActiveWorkoutView`) und Drag&Drop-Reorder (Tage/
+Uebungen) von dieser Aenderung vollstaendig unberuehrt bleiben — die
+Aenderung betrifft ausschliesslich die Navigations-Stack-Pop-Geste, nie
+ein In-Content-Gesture.
+
+### Ehrliche Grenzen dieser Korrektur-Runde (verschaerfte Fassung ggue. Teil 16)
+
+Teil 16 stellte bereits fest, dass Linux `swift build`/`swift test` die
+betroffenen Dateien nur ueberspringt. Diese Session hat das jetzt EXPLIZIT
+verifiziert statt nur angenommen: ein kleines Probe-Skript
+(`#if canImport(SwiftUI/SwiftData/UIKit)`) bestaetigt, dass alle drei in
+dieser Linux-Umgebung `false` sind. Das bedeutet konkret:
+
+- **Jede** Datei, die mit `#if canImport(SwiftUI)` beginnt — das betrifft
+  ausnahmslos ALLE `.swift`-Dateien in `FitnessAppUI` (inkl. `Theme.swift`
+  selbst, also auch V7) UND die dazugehoerigen Testdateien — kompiliert
+  auf Linux zu einer LEEREN Uebersetzungseinheit. `swift build`/`swift
+  test` gruen beweist fuer diese Dateien NICHTS ausser "der Rest des
+  Pakets kompiliert weiterhin".
+- Fuer `FitnessAppData`-Dateien (`#if canImport(SwiftData)`, kein
+  `SwiftUI`-Erfordernis) gilt dasselbe — auch `UserBodyProfile.swift`,
+  `DataExportService.swift`, `DataImportService.swift` und ihre
+  Testdateien (V5) liefen auf Linux NICHT tatsaechlich durch den
+  Compiler/Testrunner, exakt verifiziert durch denselben Probe-Befund
+  (`canImport(SwiftData) == false`) PLUS die direkte Beobachtung, dass
+  die Gesamt-Testanzahl (979) sich durch alle neuen Tests dieser Session
+  (V1, V3, V5, zusammen 13 neue Testfunktionen ueber drei Dateien) NICHT
+  veraendert hat — der beweiskraeftigste verfuegbare Beleg dafuer, dass
+  Linux sie nie ausgefuehrt hat.
+- **Was das NICHT bedeutet:** die Aenderungen sind deshalb nicht
+  ungeprueft — jede einzelne Datei wurde nach der Bearbeitung vollstaendig
+  per Hand erneut gelesen (inkl. Klammer-/Typ-Abgleich, bei
+  `DataExportService.swift` sogar manuellem Abzaehlen von Header- gegen
+  Row-Spalten, 44 gegen 44), und V5/V1/V3 haben zusaetzlich echte,
+  gezielte Tests bekommen (auch wenn sie hier nicht laufen).
+- **Reale Kompilierung/Testlauf passiert automatisch ueber Codemagic**
+  nach diesem Push — `swift-package`-Workflow auf einem `mac_mini_m2` mit
+  echtem Xcode, wo `canImport(SwiftUI/SwiftData/UIKit)` tatsaechlich
+  `true` ist: `swift test --parallel` fuehrt dort ALLE heute
+  hinzugefuegten Tests wirklich aus, PLUS `xcodebuild` fuer alle Library-
+  Targets im iOS-Simulator, PLUS der volle App+Widget-Build. Das ist
+  derselbe Mechanismus, der in dieser Epic bereits mehrfach echte Apple-
+  seitige Bugs gefangen hat. Diese Session kann den Lauf weder ausloesen
+  noch einsehen — bei einem Fehlschlag geht automatisch eine E-Mail an
+  die hinterlegte Adresse.
+- **Was auch nach einem gruenen Codemagic-Lauf offen bleibt:** JEDES der
+  vier "Auf einem Geraet/Simulator muss geprueft werden"-Elemente oben
+  (V4, V7) ist tatsaechliches UI-/Gesten-Verhalten, das `xcodebuild build`
+  (beweist Kompilierbarkeit/Typkorrektheit) nicht abdeckt — dafuer braucht
+  es einen echten Geraete-/Simulator-Durchlauf durch einen Menschen oder
+  einen UI-Test, den dieses Repo nicht hat.
+
+### Linux-Kontrolle (diese Session)
+
+`swift build`/`swift test`: gruen, 979/979 Tests — unveraendert, da V1-V7
+ausschliesslich SwiftUI-/SwiftData-/UIKit-gegatete Dateien beruehren (s.o.,
+explizit per Probe-Skript verifiziert statt nur angenommen). 7 verwaiste
+xcstrings-Keys entfernt (2095 → 2088, 5 nach V4 + 2 nach V6), weiterhin 0
+hardcodierte Strings, `TRANSLATIONS.md` regeneriert.
