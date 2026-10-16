@@ -57,6 +57,19 @@ public struct PlansListView: View {
     /// den direkten "Uebernehmen"-Button; der "Plan anpassen"-Sheet-Pfad zeigt bei diesem Fall
     /// stattdessen eine eigene Nachricht unter `PlanBuilderView`s generischem Titel (siehe dort).
     @State private var cardioAcceptErrorIsCreatedButUnresolved = false
+    /// Nachbesserung (Task #197, dritte Korrekturrunde): der tatsaechliche Operationszustand fuer
+    /// den DIREKTEN "Uebernehmen"-Button - einmal committed (Plan persistiert, nur Rueckbindung
+    /// gescheitert), ruft `attempt(...)` fuer diese Instanz NIE WIEDER `model.accept(...)` auf,
+    /// egal wie oft erneut getippt wird (siehe `PlanCreationOperation`-Typ-Doku). Genau das
+    /// verhindert den Duplikat-Fall, den ein einfaches "Flag zuruecksetzen + Button wieder
+    /// aktivieren" nicht verhindert haette.
+    @State private var acceptOperation = PlanCreationOperation()
+    /// Nachbesserung (Task #197, dritte Korrekturrunde): dieselbe Garantie wie `acceptOperation`,
+    /// aber fuer den "Plan anpassen"-Sheet-Pfad (`acceptCustom`) - eigene, unabhaengige Instanz,
+    /// weil es ein eigener, unabhaengiger Vorgang ist. Wird beim OEFFNEN des Sheets bewusst neu
+    /// erzeugt (siehe Aufrufstelle unten), damit eine neue Bearbeitungssitzung nie den
+    /// committed-Zustand einer fruiheren erbt.
+    @State private var acceptCustomOperation = PlanCreationOperation()
     /// Nachtrag "Plan anpassen": eigener Zustand, NICHT `showingPlanBuilder`
     /// wiederverwenden - der haengt am Plus-Menue mit leerem Wizard-Start,
     /// hier soll er mit dem Machbarkeits-Vorschlag vorbefuellt oeffnen.
@@ -281,42 +294,40 @@ public struct PlansListView: View {
                     guard !isAcceptingCardioFeasibility else { return }
                     isAcceptingCardioFeasibility = true
                     withAnimation {
-                        // Nachbesserung (P2.3-Review, Punkt 3): Flag im
-                        // Fehlerfall zuruecksetzen — `accept` zeigt jetzt
-                        // keinen Erfolg (Fingerprint bleibt unveraendert) mehr
-                        // bei `nil`, die Karte bleibt also sichtbar und der
-                        // Button muss wieder bedienbar sein, damit der Nutzer
-                        // es erneut versuchen kann.
-                        //
-                        // Nachbesserung (Task #197, zweite Runde): ein
-                        // tatsaechlicher Speicherfehler (jetzt ein `throw`,
-                        // nicht mehr derselbe `nil`-Pfad wie "nichts zu tun")
-                        // zeigt zusaetzlich den sichtbaren Alert mit
-                        // Wiederholungs-Moeglichkeit.
-                        do {
-                            if let plan = try model.accept(profile: profile, in: modelContext) {
-                                navigation.workoutPath.append(plan)
-                            } else {
-                                isAcceptingCardioFeasibility = false
-                            }
-                        } catch PlanGeneratorInstantiator.PlanCreationError.createdButRebindFailed {
-                            // Nachbesserung (zweite Korrekturrunde, Punkt B): der Plan WURDE
-                            // bereits gespeichert - `createPlan` hat intern bereits einen
-                            // Wiederholungsversuch unternommen (siehe dortige Doku). "Speicherfehler"
-                            // waere hier falsch.
+                        // Nachbesserung (Task #197, dritte Korrekturrunde): `acceptOperation`
+                        // ersetzt das vorherige direkte `do/catch` - einmal `.committedButUnresolved`,
+                        // ruft diese Instanz `model.accept(...)` NIE WIEDER auf, egal wie oft
+                        // dieser Button erneut getippt wird (siehe `PlanCreationOperation`-Doku).
+                        switch acceptOperation.attempt(in: modelContext, create: {
+                            try model.accept(profile: profile, in: modelContext)
+                        }) {
+                        case .success(let plan):
+                            navigation.workoutPath.append(plan)
+                        case .nothingToCreate:
+                            // Nachbesserung (P2.3-Review, Punkt 3): Flag zuruecksetzen - die Karte
+                            // bleibt sichtbar, der Button muss wieder bedienbar sein.
+                            isAcceptingCardioFeasibility = false
+                        case .committedButUnresolved:
+                            // Der Plan WURDE bereits gespeichert - "Speicherfehler" waere falsch,
+                            // Button zeigt ab jetzt "Erneut versuchen" (siehe Label unten).
                             isAcceptingCardioFeasibility = false
                             cardioAcceptErrorIsCreatedButUnresolved = true
                             cardioAcceptErrorMessage = String(localized: "cardioFeasibility.error.createdButUnresolved.message", bundle: .module)
-                        } catch {
+                        case .failedBeforeCommit:
                             isAcceptingCardioFeasibility = false
                             cardioAcceptErrorIsCreatedButUnresolved = false
                             cardioAcceptErrorMessage = String(localized: "cardioFeasibility.error.saveFailed.message", bundle: .module)
                         }
                     }
                 } label: {
-                    Text(model.verdict.feasible
-                         ? String(localized: "plans.cardioFeasibility.apply", bundle: .module)
-                         : String(localized: "plans.cardioFeasibility.acceptSuggestion", bundle: .module))
+                    // Nachbesserung (dritte Korrekturrunde, Punkt 5): im "bereits erstellt, nur
+                    // nicht aufgeloest"-Zustand kein irrefuehrendes erneutes "Uebernehmen" -
+                    // derselbe Button loest dann nur noch eine Aufloesung aus, nie eine Neuanlage.
+                    Text(acceptOperation.committedPlanID != nil
+                         ? String(localized: "plans.cardioFeasibility.retryResolve", bundle: .module)
+                         : (model.verdict.feasible
+                            ? String(localized: "plans.cardioFeasibility.apply", bundle: .module)
+                            : String(localized: "plans.cardioFeasibility.acceptSuggestion", bundle: .module)))
                         .font(.subheadline.weight(.semibold))
                 }
                 .buttonStyle(.plain)
@@ -326,6 +337,11 @@ public struct PlansListView: View {
             HStack(spacing: 20) {
                 if model.hasPlan {
                     Button {
+                        // Nachbesserung (Task #197, dritte Korrekturrunde): frische Instanz pro
+                        // Bearbeitungssitzung - eine neu geoeffnete "Plan anpassen"-Sitzung darf
+                        // NIE den committed-Zustand einer frueheren erben (siehe
+                        // `acceptCustomOperation`-Doku).
+                        acceptCustomOperation = PlanCreationOperation()
                         showingPlanAdjustSheet = true
                     } label: {
                         Text("plans.cardioFeasibility.adjustPlan", bundle: .module)
@@ -359,24 +375,27 @@ public struct PlansListView: View {
         .sheet(isPresented: $showingPlanAdjustSheet) {
             if let input = model.planInput {
                 PlanBuilderView(initialInput: input) { adjustedInput, adjustedResult in
-                    // Nachbesserung (zweite Korrekturrunde, Punkt C): `onGenerated` liefert jetzt
-                    // `String?` zurueck - `nil` = Erfolg, `PlanBuilderView` schliesst das Sheet
-                    // selbst. Ein NICHT-nil-Wert haelt das Sheet (mit dem bearbeiteten Entwurf)
-                    // OFFEN und zeigt die Nachricht unter `PlanBuilderView`s eigenem,
-                    // bereits vorhandenem Alert - kein zweiter Alert-Mechanismus noetig.
-                    do {
-                        if let plan = try model.acceptCustom(input: adjustedInput, result: adjustedResult, profile: profile, in: modelContext) {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                navigation.workoutPath.append(plan)
-                            }
+                    // Nachbesserung (Task #197, dritte Korrekturrunde): `acceptCustomOperation`
+                    // (frisch pro Sheet-Oeffnung, siehe Aufrufstelle oben) ersetzt das vorherige
+                    // direkte `do/catch` - einmal `.committedButUnresolved`, ruft diese Instanz
+                    // `model.acceptCustom(...)` NIE WIEDER auf, egal wie oft der Builder-Button
+                    // erneut getippt wird. `PlanBuilderView` leitet ihre eigene lokalisierte
+                    // Nachricht selbst aus dem zurueckgegebenen `PlanBuilderHandoffOutcome` ab -
+                    // hier wird kein fertiger Text mehr uebergeben.
+                    switch acceptCustomOperation.attempt(in: modelContext, create: {
+                        try model.acceptCustom(input: adjustedInput, result: adjustedResult, profile: profile, in: modelContext)
+                    }) {
+                    case .success(let plan):
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            navigation.workoutPath.append(plan)
                         }
-                        return nil
-                    } catch PlanGeneratorInstantiator.PlanCreationError.createdButRebindFailed {
-                        // Der Plan WURDE bereits gespeichert (siehe `createPlan`s internen Retry) -
-                        // "Speicherfehler" waere hier falsch, siehe eigener Text.
-                        return String(localized: "cardioFeasibility.error.createdButUnresolved.message", bundle: .module)
-                    } catch {
-                        return String(localized: "cardioFeasibility.error.saveFailed.message", bundle: .module)
+                        return .success
+                    case .nothingToCreate:
+                        return .success
+                    case .committedButUnresolved:
+                        return .committedButUnresolved
+                    case .failedBeforeCommit:
+                        return .failedBeforeCommit
                     }
                 }
             }

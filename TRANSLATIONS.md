@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2114 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2117 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2114 / 2114** (100%) | 0 |
-| 🇬🇧 English (EN) | **2114 / 2114** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2114 / 2114** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2117 / 2117** (100%) | 0 |
+| 🇬🇧 English (EN) | **2117 / 2117** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2117 / 2117** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1728,7 +1728,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.upperLower.name` | Upper-Lower-Split | Upper-Lower Split | Upper-Lower Split |
 | `plan.template.upperLower.tagline` | 4 Tage · Kraft & Hypertrophie | 4 Days · Strength & Hypertrophy | 4 Gün · Güç & Hipertrofi |
 
-## `planBuilder.*`  (45 Keys)
+## `planBuilder.*`  (46 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1754,6 +1754,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.result.explanation.spread` | Die Reihenfolge verteilt harte und leichte Einheiten über die Woche, statt sie zu häufen. | The order spreads hard and light sessions across the week instead of clustering them. | Sıralama, zor ve hafif antrenmanları haftaya yayar, art arda toplamaz. |
 | `planBuilder.result.loadLevel.unrated` | Nicht bewertet | Not rated | Değerlendirilmedi |
 | `planBuilder.result.recalculate` | Neu rechnen | Recalculate | Yeniden Hesapla |
+| `planBuilder.result.retryResolve` | Erneut versuchen | Try Again | Tekrar Dene |
 | `planBuilder.result.weeklyTotal` | %@ pro Woche | %@ per week | Haftada %@ |
 | `planBuilder.rhythm.fixedWeekdays` | Feste Wochentage | Fixed Weekdays | Sabit Günler |
 | `planBuilder.rhythm.orderOnly` | Nur Reihenfolge | Order Only | Sadece Sıralama |
@@ -1816,7 +1817,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planEditor.template.banner.title` | Template-Plan | Template Plan | Şablon Plan |
 | `planEditor.toggle.setActive` | Als aktiven Plan setzen | Set as Active Plan | Aktif Plan Olarak Ayarla |
 
-## `plans.*`  (23 Keys)
+## `plans.*`  (24 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1831,6 +1832,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plans.cardioFeasibility.feasibleTitle` | Dein Lauf-Ziel ist machbar | Your running goal is achievable | Koşu hedefin ulaşılabilir |
 | `plans.cardioFeasibility.infeasibleTitle` | Dein Lauf-Ziel wird eng | Your running goal is getting tight | Koşu hedefin zorlaşıyor |
 | `plans.cardioFeasibility.keepGoal` | Ziel behalten | Keep goal | Hedefi koru |
+| `plans.cardioFeasibility.retryResolve` | Erneut versuchen | Try Again | Tekrar Dene |
 | `plans.context.count.one` | %lld Plan | %lld plan | %lld plan |
 | `plans.context.count.other` | %lld Pläne | %lld plans | %lld plan |
 | `plans.create.empty` | Leerer Plan | Empty Plan | Boş Plan |
@@ -1860,7 +1862,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (79 Keys)
+## `profile.*`  (80 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1883,6 +1885,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.cardio.feasibility.feasibleHeadline` | Dein Ziel ist machbar | Your goal is achievable | Hedefin ulaşılabilir |
 | `profile.cardio.feasibility.infeasibleHeadline` | Das wird eng | This is going to be tight | Bu biraz zor olacak |
 | `profile.cardio.feasibility.keepGoal` | Ziel behalten | Keep goal | Hedefi koru |
+| `profile.cardio.feasibility.retryResolve` | Erneut versuchen | Try Again | Tekrar Dene |
 | `profile.cardio.fiveKReference` | Aktuelle 5-km-Zeit | Current 5K time | Güncel 5 km süresi |
 | `profile.cardio.footer` | Aktiviere Lauf-Coaching, um Cardio-spezifische Hinweise zu erhalten (z.B. bei zu schnell gesteigertem Laufvolumen). Deine 5-km-Zeit hilft, sinnvolle Trainings-Paces abzuleiten. | Enable running coaching to get cardio-specific insights (e.g. when your running volume ramps up too fast). Your 5K time helps derive sensible training paces. | Kardiyoya özel bilgiler almak için (örn. koşu hacmin çok hızlı artarsa) koşu koçluğunu etkinleştir. 5 km süren, anlamlı antrenman temposu türetmemize yardımcı olur. |
 | `profile.cardio.goal` | Lauf-Ziel | Running goal | Koşu hedefi |

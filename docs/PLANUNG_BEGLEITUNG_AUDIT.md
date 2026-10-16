@@ -2275,3 +2275,133 @@ Berichtseintrag.
 **Nächste Aufgabe:** unverändert P3 — Task #197 bleibt `in_progress`, bis ein echter Apple-Build/
 Testlauf (inklusive der in dieser UND der vorherigen Runde neu eingeführten SwiftData-APIs) sowie
 eine manuelle Geräteprüfung von Punkt 3 vorliegen.
+
+## Task #197-Nachbesserung, dritte Korrekturrunde (UI-Retry war noch nicht duplikatsicher)
+
+**Befund des Users, der diese Runde auslöste:** die zweite Korrekturrunde hatte
+`PlanCreationError.createdButRebindFailed(planID:)` eingeführt und `createPlan` einen internen
+Ein-Retry gegeben — aber an den UI-Aufrufstellen wurde die `planID` aus diesem Fehler NIRGENDS
+festgehalten. Nach einem dauerhaften Rebind-Fehler (Commit erfolgreich, aber auch der interne
+Retry scheitert) zeigten `PlansListView`/`ProfileEditorView`/`PlanBuilderView` nur eine
+Fehlermeldung und setzten den normalen "Übernehmen"-Button wieder scharf — ein erneuter Tap hätte
+`build`/`createPlan` ein ZWEITES Mal aufgerufen und einen echten Duplikat-Plan angelegt. Der
+Service-Test aus der zweiten Runde (`PlanGeneratorInstantiatorTests`) bewies nur, dass `createPlan`
+selbst EINEN internen Retry unternimmt — er bewies NICHT, dass ein wiederholter Button-Tap sicher
+ist, weil dieser Vertrag gar nicht am Service, sondern erst an der UI-Verdrahtung existierte (oder
+eben nicht existierte).
+
+**Neue, UI-unabhängige Zustandsmaschine `PlanCreationOperation`** (`Sources/FitnessAppData/
+PlanCreationOperation.swift`, `@MainActor final class`, SwiftData-abhängig aber KEIN SwiftUI-Import
+— exakt dasselbe Testmuster wie `PlanGeneratorInstantiatorTests`): hält `committedPlanID:
+PersistentIdentifier?` PERMANENT fest, sobald einmal bekannt. `attempt(in:create:)` ruft das
+übergebene `create()` NUR auf, solange `committedPlanID == nil` — ist es gesetzt, wird `create()`
+STRUKTURELL NICHT MEHR AUFGERUFEN, nur noch `PlanGeneratorInstantiator.resolveCreatedPlan`
+versucht. Vier Ausgänge (`Outcome`): `.success(TrainingPlan)`, `.nothingToCreate` (bestehende
+Konvention: `create()` liefert `nil`, kein Fehler), `.failedBeforeCommit` (nichts persistiert,
+voller Retry sicher) und `.committedButUnresolved` (NIE wieder `create()`, nur auflösen). Bewusst
+OHNE eigene Lokalisierung — `FitnessAppData` kennt `FitnessAppUI`s Bundle nicht, der Aufrufer leitet
+seine Nachricht aus dem typisierten `Outcome` ab, nicht umgekehrt.
+
+**`onGenerated`-Vertrag (`PlanBuilderView`) ein drittes Mal verschärft:** liefert jetzt
+`PlanBuilderHandoffOutcome` (`.success`/`.failedBeforeCommit`/`.committedButUnresolved`, OHNE
+Payload — anders als `PlanCreationOperation.Outcome`, weil die Onboarding-Entwurfsübergabe gar
+keinen `TrainingPlan` hat, nur einen Draft) statt des vorherigen `String?`. `PlanBuilderView` leitet
+ihre eigene, bereits vorhandene lokalisierte Nachricht selbst aus diesem Zustand ab — der Cardio-
+Aufrufer liefert keinen fertigen Text mehr.
+
+**Drei "Operation"-Instanzen, nicht eine globale:** jede Übernahme-Aktion bekommt ihre EIGENE
+`PlanCreationOperation` als `@State` — `PlanBuilderView`s eigener Pfad, `PlansListView`/
+`ProfileEditorView`s direkter Button (`acceptOperation`) UND deren jeweiliges "Plan anpassen"-Sheet
+(`acceptCustomOperation`, bewusst NEU erzeugt bei jedem Sheet-Öffnen, damit eine neue
+Bearbeitungssitzung nie den committed-Zustand einer früheren erbt).
+
+**Punkt 5 (kein irreführendes "Übernehmen" mehr):** alle drei Haupt-Buttons prüfen
+`operation.committedPlanID != nil` und zeigen dann "Erneut versuchen" (neuer Key
+`{planBuilder.result,plans.cardioFeasibility,profile.cardio.feasibility}.retryResolve`) statt
+"Plan übernehmen" — derselbe Button-Handler ruft strukturell ohnehin nur noch `resolveCreatedPlan`
+auf, das Label macht das jetzt auch sichtbar. Keine automatische Neuanlage nach weiterem
+Rebind-Fehler — es gibt bewusst KEINE Reset-Funktion auf `PlanCreationOperation`; ein wirklich neuer
+Versuch braucht eine neue Instanz (z.B. ein frisch geöffnetes Sheet oder ein neu geladener Screen).
+
+**Geänderte/neue Komponenten:**
+- `Sources/FitnessAppData/PlanCreationOperation.swift` — NEU.
+- `Sources/FitnessAppUI/Workout/PlanBuilderView.swift` — `PlanBuilderHandoffOutcome` (neuer
+  Top-Level-Typ), `onGenerated`-Signatur erneut geändert, `creationOperation`-State,
+  `adoptPlan()` komplett auf `creationOperation.attempt(...)` umgestellt, Haupt-Button-Label
+  bedingt auf `planBuilder.result.retryResolve`.
+- `Sources/FitnessAppUI/Workout/PlansListView.swift` / `Sources/FitnessAppUI/Settings/
+  ProfileEditorView.swift` — `acceptOperation`/`acceptCustomOperation`-State, beide
+  Aufrufstellen (direkter Button + Sheet-Closure) auf `attempt(...)` umgestellt, Button-Label
+  bedingt, `acceptCustomOperation` wird beim Öffnen des Sheets neu erzeugt.
+- `Sources/FitnessAppUI/Resources/Localizable.xcstrings` — 3 neue `.retryResolve`-Keys
+  (DE/EN/TR). Katalog jetzt 2117 Keys, weiterhin 0 hardcoded.
+
+**Tests hinzugefügt** (`Tests/FitnessAppDataTests/PlanCreationOperationTests.swift`, NEU — bewusst
+in einer eigenen Datei, nicht in `PlanGeneratorInstantiatorTests.swift`, weil ein anderer Typ
+geprüft wird):
+- `testRepeatedAttemptsAfterPermanentRebindFailureNeverCreateASecondPlan` — der geforderte
+  Regressionstest: erster Aufruf speichert genau einen Plan, Rebind scheitert DAUERHAFT
+  (`rebindOverrideForTesting` bleibt gesetzt), 3x wiederholtes `attempt(...)` ruft `create()` kein
+  einziges Mal erneut auf (per Zähler bewiesen), Anzahl persistierter Pläne bleibt bei eins über
+  alle Wiederholungen; nach Entfernen des Overrides löst ein weiterer Versuch dieselbe ID auf,
+  immer noch ohne `create()` erneut aufzurufen.
+- `testFirstAttemptSucceedsNormallyWithoutAnyRebindIssue` — Gegenprobe: Normalfall bleibt
+  `committedPlanID == nil`.
+- `testNothingToCreateDoesNotMarkAnythingAsCommitted` — ein leeres Generator-Ergebnis markiert
+  nichts als committed.
+- `testGenuineSaveFailureIsRetryableAndDoesNotMarkAnythingAsCommitted` — ein ECHTER Speicherfehler
+  (nichts persistiert) bleibt voll wiederholbar, bewusst anderer Vertrag als
+  `committedButUnresolved`.
+
+**Ausdrücklich "möglichst unabhängig von SwiftUI testbar" (User-Vorgabe) — präzise eingeordnet, NICHT
+mit "läuft auf Linux" verwechselt:** `PlanCreationOperation` und seine Tests haben keinerlei
+SwiftUI-/`@State`-/View-Abhängigkeit — reines `ModelContainer`/`ModelContext`-Setup, identisch zum
+bestehenden `PlanGeneratorInstantiatorTests`-Muster. Das ist etwas ANDERES als "läuft auf Linux":
+die Datei bleibt `#if canImport(SwiftData)`-gated, und `canImport(SwiftData)` ist auf Linux
+ebenfalls `false` — die 4 neuen Tests sind deshalb weiterhin NUR syntax-geprüft hier (bestätigt:
+`swift test` blieb bei 1033/1033, unverändert), nicht ausgeführt. Der Unterschied zu einem
+UI-Test ist aber real und für einen künftigen Apple-Lauf wichtig: auf einem echten Gerät/Simulator
+liefe dieser Test als reiner Swift-/SwiftData-Integrationstest OHNE jede UI-Interaktion nötig zu
+haben — eine ganz andere (und deutlich leichter zu automatisierende) Kategorie als "prüfe, ob ein
+Sheet sichtbar offen bleibt".
+
+**Was weiterhin NICHT automatisiert geprüft ist, ehrlich benannt:** dass die UI tatsächlich
+"Erneut versuchen" statt "Plan übernehmen" ANZEIGT, dass ein zweiter Tap wirklich NICHTS Neues auf
+dem Bildschirm auslöst, und das Sheet-Offen-Bleiben bei `.committedButUnresolved` selbst — all das
+bleibt UI-Verhalten, für das (unverändert) kein `FitnessAppUITests`-Target in diesem Repository
+existiert. Was die neue Zustandsmaschine beweist, ist der KORREKTE VERTRAG, den die UI-Views jetzt
+verwenden (sie rufen `attempt(...)` korrekt auf, codegelesen verifiziert) — nicht, dass SwiftUI das
+auch tatsächlich pixelgenau so rendert.
+
+**Tests tatsächlich ausgeführt:** `swift build`/`swift build --build-tests`: grün nach jeder
+Änderungsstufe. `swift test`: **1033/1033 grün — unverändert** (wie erwartet: alle neuen Tests
+SwiftData-gated). `python3 -I .scripts/generate_translations_md.py`: Katalog 2117/2117/2117, 0
+hardcoded Strings.
+
+**Apple-Build/CI:** weiterhin nicht durchgeführt — unverändert keine Xcode-Umgebung in diesem
+Container.
+
+**Bekannte Grenzen/Risiken (zusätzlich zu den bereits genannten):**
+- `CardioFeasibilityCardModel.accept`/`.acceptCustom`s eigener Postlude (`profile.cardioGoal =`/
+  Fingerprint-Fortschreibung) läuft NUR, wenn die jeweilige Funktion selbst bis zu ihrem `return`
+  kommt. Im seltenen Fall "committed-aber-unresolved, User tippt SPÄTER erneut, Resolve gelingt
+  jetzt" löst `PlanCreationOperation` direkt über `resolveCreatedPlan` auf, OHNE `accept`/
+  `.acceptCustom` ein zweites Mal aufzurufen (das würde ja wieder `create()` bedeuten) — der
+  Postlude bleibt in diesem spezifischen Fall aus. Bewusst akzeptierter, kosmetischer Kompromiss
+  (keine Datenkorruption, kein Duplikat): die Machbarkeits-Karte könnte dem Nutzer theoretisch
+  erneut denselben Vorschlag zeigen, obwohl faktisch schon ein Plan dafür existiert. Keine weitere
+  Architektur dafür eingeführt, wie vom User für diese Runde verlangt.
+- `PlanCreationOperation` hat bewusst keine Reset-Funktion — ein Screen, der dieselbe `@State`-
+  Instanz über sehr lange Zeit am Leben hält (z.B. nie neu geladen), bliebe nach einem einmaligen
+  `committedButUnresolved` für den Rest seiner Lebensdauer im "nur noch auflösen"-Modus. Für die
+  drei betroffenen Screens unproblematisch: jedes Sheet bekommt ohnehin eine frische Instanz pro
+  Öffnung, die beiden Direkt-Buttons leben nur so lange wie `PlansListView`/`ProfileEditorView`
+  selbst (Navigation weg und zurück erzeugt eine neue Instanz).
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
+Berichtseintrag.
+
+**Nächste Aufgabe:** unverändert P3 — Task #197 bleibt `in_progress`, bis ein echter Apple-Build/
+Testlauf UND eine manuelle Geräteprüfung (insbesondere: Sheet bleibt bei `.committedButUnresolved`
+offen, Button-Label wechselt korrekt, ein tatsächlich wiederholter Tap legt wirklich keinen
+zweiten Plan an) vorliegen.

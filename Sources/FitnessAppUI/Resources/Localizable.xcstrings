@@ -14919,6 +14919,14 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Planı Onayla" } }
       }
     },
+    "planBuilder.result.retryResolve": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Erneut versuchen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Try Again" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tekrar Dene" } }
+      }
+    },
     "planBuilder.result.empty.title": {
       "extractionState": "manual",
       "localizations": {
@@ -34831,6 +34839,14 @@
         }
       }
     },
+    "profile.cardio.feasibility.retryResolve": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Erneut versuchen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Try Again" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tekrar Dene" } }
+      }
+    },
     "profile.cardio.feasibility.acceptSuggestion": {
       "extractionState": "manual",
       "localizations": {
@@ -35253,6 +35269,14 @@
             "value": "Planı benimse"
           }
         }
+      }
+    },
+    "plans.cardioFeasibility.retryResolve": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Erneut versuchen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Try Again" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tekrar Dene" } }
       }
     },
     "plans.cardioFeasibility.acceptSuggestion": {

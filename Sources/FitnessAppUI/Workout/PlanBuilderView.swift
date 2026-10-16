@@ -29,17 +29,22 @@ import FitnessAppData
 /// selbst adoptierende Verhalten fuer `PlansListView` unveraendert.
 ///
 /// Nachbesserung (Task #197, zweite Korrekturrunde, Punkt C): `onGenerated`
-/// liefert jetzt `String?` statt `Void` zurueck - `nil` heisst "Erfolg,
-/// Sheet darf schliessen", ein NICHT-nil-Wert ist eine bereits lokalisierte
-/// Fehlermeldung, die diese View in ihrem EIGENEN, bereits vorhandenen
-/// `adoptSaveErrorMessage`-Alert zeigt UND das Sheet dabei OFFEN LAESST
-/// (Entwurf bleibt erhalten, `isAdopting` wird zurueckgesetzt). Grund: der
-/// Cardio-"Plan anpassen"-Pfad (`PlansListView`/`ProfileEditorView`) ruft
-/// innerhalb dieser Closure `CardioFeasibilityCardModel.acceptCustom(...)`
-/// auf, die wie `createPlan` werfen kann - ein Fehler dort darf den
-/// bearbeiteten Entwurf nicht kommentarlos verwerfen. Die
+/// meldet Erfolg/Fehler jetzt zurueck, statt bedingungslos zu dismissen -
+/// ein Fehler im Cardio-"Plan anpassen"-Pfad (`PlansListView`/
+/// `ProfileEditorView` rufen darin `CardioFeasibilityCardModel.acceptCustom`
+/// auf, die wie `createPlan` werfen kann) darf den bearbeiteten Entwurf
+/// nicht kommentarlos verwerfen.
+///
+/// Nachbesserung (Task #197, dritte Korrekturrunde, Punkt 4): der
+/// Rueckgabewert ist jetzt `PlanBuilderHandoffOutcome` statt `String?` -
+/// Erfolg, "vor Commit fehlgeschlagen" (sicher wiederholbar) und "bereits
+/// committed, nur Aufloesung fehlgeschlagen" (NIE wiederholt create
+/// aufrufen) muessen fuer den Aufrufer UNTERSCHEIDBAR bleiben, nicht nur als
+/// derselbe Fehlertext. Diese View leitet ihre eigene, lokalisierte
+/// Nachricht ERST aus diesem Zustand ab (siehe `adoptSaveErrorMessage`-Doku)
+/// - der Aufrufer liefert keinen fertigen Text mehr. Die
 /// Onboarding-Entwurfsuebergabe (reines `@State`-Zwischenspeichern, keine
-/// Persistenz) liefert dafuer immer `nil` - sie kann strukturell nicht
+/// Persistenz) liefert dafuer immer `.success` - sie kann strukturell nicht
 /// fehlschlagen.
 ///
 /// P2.4: Schritt 3 haelt die bearbeitete Wochenvorschau in einem `PlanDraft`
@@ -64,6 +69,25 @@ import FitnessAppData
 /// Runde erzwingt das bereits dort, wo es ohne neue P3-UI moeglich ist: kein
 /// stilles `.medium`, falls eine `loadLevel`-Zuordnung fehlt (siehe
 /// `loadLevel(for:)`/`resultDayRow`s "nicht bewertet"-Badge-Zweig).
+/// Nachbesserung (Task #197, dritte Korrekturrunde): Rueckgabewert fuer `PlanBuilderView`s
+/// `onGenerated`-Callback. Bewusst KEIN `TrainingPlan`-Payload (anders als
+/// `PlanCreationOperation.Outcome` in FitnessAppData) - im reinen Entwurfsuebergabe-Fall
+/// (`OnboardingView`) existiert zu diesem Zeitpunkt gar kein Plan, nur ein Draft. Bewusst auch
+/// KEIN fertiger Text - `PlanBuilderView` leitet ihre eigene, bereits vorhandene lokalisierte
+/// Nachricht selbst aus diesem Fall ab (siehe `adoptSaveErrorMessage`-Doku).
+public enum PlanBuilderHandoffOutcome {
+    case success
+    /// Nichts wurde committed - ein erneuter Tap auf "Plan uebernehmen" darf die volle
+    /// Operation sicher wiederholen.
+    case failedBeforeCommit
+    /// Ein Plan WURDE bereits committed, nur die Aufloesung ist (auch nach dem internen Retry
+    /// in `createPlan`) gescheitert - ein erneuter Tap darf NIEMALS `build`/`createPlan` erneut
+    /// aufrufen. Der Aufrufer (z.B. `CardioFeasibilityCardModel` ueber eine eigene
+    /// `PlanCreationOperation`) ist dafuer verantwortlich, einen weiteren Versuch nur noch ueber
+    /// `resolveCreatedPlan` aufzuloesen.
+    case committedButUnresolved
+}
+
 @available(iOS 17.0, macOS 14.0, *)
 public struct PlanBuilderView: View {
 
@@ -86,7 +110,7 @@ public struct PlanBuilderView: View {
     // Ohne die explizite Annotation muesste der Compiler das aus dem
     // lexikalischen Kontext der jeweiligen Closure-Literale ableiten - nach
     // dem @MainActor-CI-Fund an CardioFeasibilityCardModel lieber explizit.
-    private let onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> String?)?
+    private let onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> PlanBuilderHandoffOutcome)?
 
     /// Handoff "Lauf-Coaching - Machbarkeits-Check", Nachtrag "Plan
     /// anpassen": seedet Schritt 1/2 aus einem vorhandenen Input statt der
@@ -99,7 +123,7 @@ public struct PlanBuilderView: View {
     /// Input diesen Init nicht crasht.
     public init(
         initialInput: PlanGeneratorInput? = nil,
-        onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> String?)? = nil
+        onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> PlanBuilderHandoffOutcome)? = nil
     ) {
         self.onGenerated = onGenerated
         if let initialInput {
@@ -173,15 +197,23 @@ public struct PlanBuilderView: View {
     /// bleibt das Sheet offen, der Entwurf unveraendert.
     @State private var adoptSaveErrorMessage: String?
 
-    /// Nachbesserung (zweite Korrekturrunde, Punkt B): `createPlan` kann
-    /// nach einem ERFOLGREICHEN Speichervorgang trotzdem werfen, wenn NUR
-    /// die Rueckbindung scheitert (`PlanCreationError.createdButRebindFailed`)
-    /// - "Es wurde nichts geaendert" waere dann falsch. Steuert, welcher
-    /// Alert-Titel zu `adoptSaveErrorMessage` gezeigt wird. Betrifft NUR den
-    /// eigenen, direkten `createPlan`-Pfad dieser View (`onGenerated`-Fehler
-    /// nutzen immer den generischen Titel, siehe dort - die genaue Ursache
-    /// steckt dort bereits in der von `onGenerated` gelieferten Nachricht).
+    /// Nachbesserung (dritte Korrekturrunde): `creationOperation.attempt(...)` kann nach einem
+    /// ERFOLGREICHEN Speichervorgang trotzdem `.committedButUnresolved` liefern, wenn NUR die
+    /// Rueckbindung scheitert - "Es wurde nichts geaendert" waere dann falsch. Steuert, welcher
+    /// Alert-Titel zu `adoptSaveErrorMessage` gezeigt wird UND (siehe `navigationBar`) ob der
+    /// Haupt-Button noch "Plan uebernehmen" oder nur noch "Erneut versuchen" anbietet - in
+    /// diesem Zustand darf NIE wieder `create()` aufgerufen werden (siehe `creationOperation`).
+    /// Gilt sowohl fuer den direkten `createPlan`-Pfad dieser View als auch fuer jeden ueber
+    /// `onGenerated` zurueckgemeldeten `.committedButUnresolved`-Fall.
     @State private var adoptSaveErrorIsCreatedButUnresolved = false
+
+    /// Nachbesserung (Task #197, dritte Korrekturrunde): der tatsaechliche Operationszustand
+    /// fuer den EIGENEN, direkten `createPlan`-Pfad dieser View (NICHT fuer den
+    /// `onGenerated`-Pfad - der Cardio-Aufrufer haelt dafuer seine EIGENE Instanz, siehe
+    /// `PlanCreationOperation`-Typ-Doku). Einmal committed, ruft `attempt(...)` fuer diese
+    /// Instanz nie wieder `create()` auf - genau das verhindert den Duplikat-Fall, den ein
+    /// erneuter Tap auf denselben Button sonst ausloesen wuerde.
+    @State private var creationOperation = PlanCreationOperation()
 
     /// Nachbesserung (P2.3, Abnahme "keine Duplikate bei mehrfacher
     /// Bestaetigung"): `adoptPlan()` ist synchron, ohne `await` — ein
@@ -936,10 +968,23 @@ public struct PlanBuilderView: View {
                 Button {
                     adoptPlan()
                 } label: {
-                    Label {
-                        Text("planBuilder.result.adopt", bundle: .module)
-                    } icon: {
-                        Image(systemName: "checkmark.seal.fill")
+                    // Nachbesserung (dritte Korrekturrunde, Punkt 5): im "bereits erstellt,
+                    // nur nicht aufgeloest"-Zustand darf kein irrefuehrendes erneutes
+                    // "Plan uebernehmen" angeboten werden - derselbe Button loest dann nur
+                    // noch eine Aufloesung aus (siehe `creationOperation`-Doku), nie eine
+                    // Neuanlage. Label macht das sichtbar.
+                    if creationOperation.committedPlanID != nil {
+                        Label {
+                            Text("planBuilder.result.retryResolve", bundle: .module)
+                        } icon: {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    } else {
+                        Label {
+                            Text("planBuilder.result.adopt", bundle: .module)
+                        } icon: {
+                            Image(systemName: "checkmark.seal.fill")
+                        }
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -991,21 +1036,27 @@ public struct PlanBuilderView: View {
         // uebernimmt hier NICHT das Instanziieren, sondern reicht Input +
         // Ergebnis nur nach oben durch.
         //
-        // Nachbesserung (zweite Korrekturrunde, Punkt C): `dismiss()` laeuft
-        // jetzt NICHT mehr unbedingt - nur noch, wenn `onGenerated` `nil`
-        // (= Erfolg) zurueckgibt. Ein NICHT-nil-Rueckgabewert ist eine
-        // bereits lokalisierte Fehlermeldung: Sheet bleibt offen, Entwurf
-        // bleibt unveraendert, `isAdopting` wird zurueckgesetzt (Button
-        // wieder bedienbar), derselbe generische Alert-Titel wie fuer den
-        // eigenen Speicherfehler dieser View zeigt die Nachricht.
+        // Nachbesserung (zweite Korrekturrunde, Punkt C) + dritte Korrekturrunde (Punkt 4):
+        // `dismiss()` laeuft nur noch bei `.success`. `onGenerated` meldet jetzt einen
+        // TYPISIERTEN `PlanBuilderHandoffOutcome` zurueck, nicht nur einen fertigen Text - diese
+        // View leitet ihre eigene, bereits lokalisierte Nachricht selbst daraus ab. Bei
+        // `.committedButUnresolved` bleibt das Sheet (mit dem bearbeiteten Entwurf) offen UND
+        // der Haupt-Button zeigt ab jetzt "Erneut versuchen" statt "Plan uebernehmen" (siehe
+        // `navigationBar`) - die eigentliche Duplikat-Sicherheit liegt beim Aufrufer (der dafuer
+        // eine eigene `PlanCreationOperation` haelt, siehe `CardioFeasibilityCardModel`-Aufrufer).
         if let onGenerated {
-            if let failureMessage = onGenerated(currentInput, result) {
-                isAdopting = false
-                adoptSaveErrorIsCreatedButUnresolved = false
-                adoptSaveErrorMessage = failureMessage
-            } else {
+            switch onGenerated(currentInput, result) {
+            case .success:
                 isAdopting = false
                 dismiss()
+            case .failedBeforeCommit:
+                isAdopting = false
+                adoptSaveErrorIsCreatedButUnresolved = false
+                adoptSaveErrorMessage = String(localized: "planBuilder.error.saveFailed.message", bundle: .module)
+            case .committedButUnresolved:
+                isAdopting = false
+                adoptSaveErrorIsCreatedButUnresolved = true
+                adoptSaveErrorMessage = String(localized: "planBuilder.error.createdButUnresolved.message", bundle: .module)
             }
             return
         }
@@ -1025,20 +1076,19 @@ public struct PlanBuilderView: View {
         // Aufloesung + `build(...)` an einer Stelle statt hier erneut
         // `equipmentPlanningContext` separat abzufragen — siehe dortige Doku.
         //
-        // Nachbesserung (Task #197): `createPlan` wirft jetzt bei einem
-        // fehlgeschlagenen Speichervorgang, statt sich ausschliesslich auf
-        // Autosave zu verlassen - eigener, sichtbarer Fehlerzustand statt
-        // eines stillen Nichts-Passiert. `PlanGeneratorInstantiator.build`
-        // hat den gescheiterten Plan dabei bereits selbst zurueckgebaut
-        // (siehe dortige Doku), ein erneuter Tap ist also sicher.
-        do {
-            guard let plan = try PlanGeneratorInstantiator.createPlan(
+        // Nachbesserung (Task #197, dritte Korrekturrunde): `creationOperation.attempt(...)`
+        // ersetzt das vorherige direkte `do/catch` um `createPlan` - sobald einmal
+        // `.committedButUnresolved` aufgetreten ist, ruft diese Instanz `create()` NIE WIEDER
+        // auf (siehe `PlanCreationOperation`-Typ-Doku). Ein erneuter Tap auf denselben Button
+        // (jetzt als "Erneut versuchen" beschriftet, siehe `navigationBar`) loest dann
+        // ausschliesslich ueber `resolveCreatedPlan` auf - niemals ein zweiter Plan.
+        switch creationOperation.attempt(in: modelContext, create: {
+            try PlanGeneratorInstantiator.createPlan(
                 from: currentInput, result: result,
                 for: profile, generationSource: .planBuilder, in: modelContext
-            ) else {
-                isAdopting = false
-                return
-            }
+            )
+        }) {
+        case .success(let plan):
             dismiss()
             // Gleiches 0.3s-Defer-Muster wie `ProgramTemplatePickerView.instantiate`
             // - gibt der Sheet-Dismiss-Animation Zeit, bevor der Navigations-Stack
@@ -1046,17 +1096,16 @@ public struct PlanBuilderView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 navigation.workoutPath.append(plan)
             }
-        } catch PlanGeneratorInstantiator.PlanCreationError.createdButRebindFailed {
-            // Nachbesserung (zweite Korrekturrunde, Punkt B): der Plan WURDE
-            // bereits gespeichert - `createPlan` hat intern bereits einen
-            // Wiederholungsversuch unternommen (siehe dortige Doku), dieser
-            // Fehler erreicht uns also nur, wenn auch DER gescheitert ist.
-            // "Es wurde nichts geaendert" (der generische Text) waere hier
-            // falsch - eigener Titel + eigene Nachricht.
+        case .nothingToCreate:
+            isAdopting = false
+        case .committedButUnresolved:
+            // Nachbesserung (dritte Korrekturrunde, Punkt B/5): der Plan WURDE bereits
+            // gespeichert - "Es wurde nichts geaendert" (der generische Text) waere hier
+            // falsch - eigener Titel + eigene Nachricht, Button-Beschriftung aendert sich.
             adoptSaveErrorIsCreatedButUnresolved = true
             adoptSaveErrorMessage = String(localized: "planBuilder.error.createdButUnresolved.message", bundle: .module)
             isAdopting = false
-        } catch {
+        case .failedBeforeCommit:
             adoptSaveErrorIsCreatedButUnresolved = false
             adoptSaveErrorMessage = String(localized: "planBuilder.error.saveFailed.message", bundle: .module)
             isAdopting = false
