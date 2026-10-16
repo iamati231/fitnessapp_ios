@@ -822,6 +822,19 @@ Builder/Cardio-Coach erzeugter Plan hat kein eigenes `TrainingGoal`. Ein dafür 
 exakt der versteckte Default, den diese Korrektur vermeiden soll. Offene Anschlussaufgabe für P3,
 sobald der zielorientierte Builder ein echtes Ziel liefert.
 
+**Nachtrag (P2.1/P2.2-Nachbesserung) — Korrektur der Berichtssprache:** Die obige
+„Implementiert"-Formulierung („dieselbe präzise, pro-Übung-genaue Prüfung ... die der
+Template-Pfad bereits nutzt") beschreibt ausschließlich die KONTEXT-WEITERGABE
+(`environment`/`equipmentProfile` erreichen jetzt korrekt `ProgramInstantiator.instantiate`).
+Sie ist NICHT als Beleg für tatsächliche equipment-basierte Übungsauswahl/Substitution bei
+generierten Plänen zu lesen — die existiert für Builder-Pläne heute nicht (siehe „Bekannte
+Grenzen" Punkt 1: der synthetische Template hat keine `equipmentVariants`, die geprüft werden
+könnten). Die 6 neuen Tests in `PlanGeneratorInstantiatorTests.swift` belegen ausschließlich die
+korrekte `targetEnvironment`-Weitergabe, UNABHÄNGIG vom Equipment-Inhalt — nicht mehr. Diese
+Lücke ist ab sofort eine eigene, verbindlich nachverfolgte Anschlussaufgabe (nicht nur eine
+Fußnote): „Equipment-basierte Übungsauswahl/Substitution für generierte/Builder-Pläne real
+verbinden", siehe Task-Tracking. Sie gehört zu P3/P4, nicht zu P2.1.
+
 **Geänderte Komponenten:** `Sources/FitnessAppData/PlanGeneratorInstantiator.swift` (`build`,
 `makeTemplate`), `Sources/FitnessAppUI/Workout/PlanBuilderView.swift` (neue `@Query`, neue
 `equipmentPlanningContext`, Aufrufstelle), `Sources/FitnessAppUI/Cardio/
@@ -913,6 +926,11 @@ Berichtseintrag.
   das einzige Template im Katalog mit echten Lauf-Tagen (distanz-/dauerbasiert: "Easy Run",
   "Long Run"). `PlanMatchmaker.rankPlansDetailed` behandelt `targetGoals` als Scoring-Bonus, kein
   harter Filter — andere Kandidaten bleiben für `.endurance`-Nutzer weiterhin sichtbar.
+  **Nachtrag (P2.1/P2.2-Nachbesserung):** diese Tagging-Ergänzung erfüllt nur den Katalogtest
+  (jedes `TrainingGoal` braucht ≥1 Template) und ist NICHT als vollständige Ausdauerlösung zu
+  verstehen — `hybrid_balanced` bleibt ein Hybrid-Template mit Kraft- UND Lauf-Tagen, kein reines
+  Ausdauerprogramm. Zusätzlich praktisch entschärft, solange `.endurance` ohnehin UI-seitig
+  ausgeblendet ist (siehe unten).
 
 **Automatisch mit erledigt, ohne Codeänderung (wichtig zu wissen, nicht übersehen):**
 `ProfileEditorView` (Zeile ~1086) und `OnboardingView`s Coaching-Style-Schritt (Zeile ~732) iterieren
@@ -922,6 +940,12 @@ Label/Icon/Blurb, nicht als Platzhalter. Das ist eine unmittelbare, sichtbare Ve
 der bestehenden App durch diesen rein additiven Schritt, keine stille Vorbereitung für P3 — falls
 `.endurance` vor dem geplanten zielorientierten P3-Einstieg noch nicht wählbar sein soll, ist das
 jetzt zu entscheiden, nicht erst beim P3-Rollout.
+
+**Nachtrag (P2.1/P2.2-Nachbesserung):** entschieden — NICHT vor P3 sichtbar. Beide `ForEach`
+nutzen jetzt `TrainingGoal.currentlySelectableInUI` (eine gemeinsame Liste statt zwei
+unabhaengiger Filter, siehe dortiger Bericht) statt `.allCases`; `.endurance` ist dadurch aus
+beiden Oberflaechen wieder ausgeblendet, bis ein echter Ziel→Plan-Pfad existiert. Im Core bleibt
+der Fall unveraendert gueltig/getestet/katalog-angebunden.
 
 **Drei bewusst NICHT entschiedene Fragen (explizit offengelassen, keine versteckten Defaults):**
 1. `PlanMatchmaker.goalIsSupportedButNotPrimaryFocus` gibt `.weightLoss` einen Sekundär-Scoring-
@@ -940,6 +964,15 @@ jetzt zu entscheiden, nicht erst beim P3-Rollout.
    Mangel: `.functional` läuft nachweislich seit seiner Einführung identisch (0 dedizierte
    `coaching.*.functional`-Einträge im gesamten Katalog, geprüft) — etabliertes, bereits
    akzeptiertes Verhalten für ein Ziel ohne eigene Matrix-Zeilen, kein Rückschritt.
+
+   **Nachtrag (P2.1/P2.2-Nachbesserung) — Korrektur:** Die Analogie zu `.functional` war zu
+   schnell gezogen. Tatsaechliche Inhaltspruefung der `.hybrid`-Fallback-Texte (z.B.
+   `coaching.morningCardioDone.motivating.hybrid`: „Dein Hybrid-Ziel braucht auch Kraft — heb
+   heute Abend noch etwas Eisen") zeigt: diese Texte sind nicht neutral-generisch, sondern
+   schreiben aktiv Krafttraining vor — fuer ein reines Ausdauerziel inhaltlich falsch, nicht nur
+   unspezifisch. Korrigiert: `CoachingMessageProvider.message(for:tone:goal:)` schliesst
+   `.endurance` jetzt explizit vom `.hybrid`-Fallback aus; es faellt stattdessen auf den leeren
+   String (→ UI blendet die Insight-Card aus) statt auf eine inhaltlich unpassende Empfehlung.
 
 **Geänderte Komponenten:** `Sources/FitnessAppCore/Coaching/CoachingTypes.swift`,
 `Sources/FitnessAppCore/Programs/ProgramTemplates.swift` (nur `hybrid_balanced.targetGoals`),
@@ -993,5 +1026,131 @@ für später, keine Nebenwirkung dieser Korrektur.
 **Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
 Berichtseintrag.
 
-**Nächste Aufgabe:** P2.3 (gemeinsamer Adopt-Pfad) — hängt von P2.1 ab (bereits erledigt), kann
-jetzt begonnen werden. P2.4 hängt von P2.3 ab.
+**Nächste Aufgabe:** siehe P2.1/P2.2-Nachbesserung unten — fünf Nachschärfungspunkte, vor der
+weiteren UI-Anbindung erledigt. Danach P2.3 (gemeinsamer Adopt-Pfad, darf parallel laufen).
+
+## P2.1/P2.2-Nachbesserung (Profilkontext-Fehlerzustand, Equipment-Tracking, Ziel-UI-Gating,
+sportneutrale Texte, Coaching-Fallback)
+
+Review-Rückmeldung zu P2.1/P2.2 fand fünf Punkte, alle vor der weiteren UI-Anbindung behoben.
+P2.1 bleibt als Trainingsort-Korrektur akzeptiert; die Equipment-Anpassung war und ist
+ausdrücklich offen (jetzt als Task #194 verbindlich nachverfolgt, siehe Punkt 2).
+
+**Paket:** Fünf unabhängige Korrekturen auf Code- und Berichtsebene, keine neue Funktionalität.
+
+**Implementiert:**
+1. **Expliziter Fehlerzustand statt stillem `?? .gym`-Fallback im eigenständigen Builder:**
+   `PlanBuilderView.equipmentPlanningContext` liefert jetzt `EquipmentPlanningContext?` (`nil`
+   ohne Profil) statt einer erfundenen `.gym`/`UserEquipmentProfile()`-Annahme. Neuer State
+   `missingProfileErrorMessage: String?` plus `.alert(...)` (identisches Muster wie
+   `SettingsView.resetErrorMessage`) zeigen einen echten Fehlertext
+   (`planBuilder.error.noProfile.title`/`.message`, DE/EN/TR), wenn `adoptPlan()` im
+   eigenständigen Modus (kein `onGenerated`-Callback) kein Profil findet, statt kommentarlos
+   einen Plan mit geratenen Werten zu bauen. Der Onboarding-Callback-Pfad (`onGenerated != nil`)
+   ist unverändert — er kehrt bereits vorher zurück und berührt `profiles`/
+   `equipmentPlanningContext` gar nicht, braucht also kein Profil. Der bestehende, UNVERÄNDERT
+   gebliebene `?? .gym`-Fallback in `ProgramTemplatePickerView` ist davon nicht betroffen — die
+   Korrektur gilt für diesen NEU eingeführten Fall, nicht rückwirkend für das bereits bestehende
+   Muster.
+2. **Equipment-Status korrekt benannt:** siehe Nachtrag im P2.1-Bericht oben. Report-Sprache
+   korrigiert, damit sie nicht als Beleg für echte equipment-basierte Übungsauswahl gelesen werden
+   kann — nur Kontext-Weitergabe ist belegt. Neue, verbindlich nachverfolgte Aufgabe **Task #194**
+   „Equipment-basierte Übungsauswahl/Substitution für generierte/Builder-Pläne real verbinden"
+   angelegt (P3/P4-Umfeld, kein P2.1-Scope).
+3. **`TrainingGoal.endurance` bleibt im Core, UI-Auswahl gegated:** neue
+   `TrainingGoal.currentlySelectableInUI` (in `DomainEnums+Localization.swift`, EINE gemeinsame
+   Liste statt zweier unabhängiger Filterbedingungen) schließt `.endurance` aus. Sowohl
+   `OnboardingView`s Coaching-Style-Schritt als auch `ProfileEditorView`s Ziel-Picker iterieren
+   jetzt über diese Liste statt `TrainingGoal.allCases` — `.endurance` ist dadurch in beiden
+   Oberflächen wieder unsichtbar, bis ein echter Ziel→Plan-Pfad (P3) implementiert UND getestet
+   ist. Im Core bleibt der Fall unverändert gültig, RawValue-stabil, katalog-angebunden und
+   getestet. `hybrid_balanced`s `.endurance`-Tagging bleibt bestehen (erfüllt weiterhin den
+   Katalogtest), wird aber jetzt explizit NICHT als vollständige Ausdauerlösung bezeichnet (siehe
+   Nachtrag im P2.2-Bericht oben).
+4. **Zielbeschreibung sportartneutral:** `TrainingGoal.endurance`s `label` ("Laufen & Ausdauer" →
+   "Ausdauer"/"Endurance"/"Dayanıklılık") und `blurb` (lief-spezifische Formulierungen wie
+   "Laufleistung"/"running performance"/"koşu" entfernt, jetzt z.B. DE: "Aerobe
+   Leistungsfähigkeit und Grundlagenausdauer steigern, lange ruhige Einheiten plus gezielte
+   Tempoarbeit.") in `CoachingTypes.swift` UND den entsprechenden
+   `coaching.goal.endurance.label`/`.blurb`-Einträgen in `Localizable.xcstrings` (DE/EN/TR)
+   umbenannt. Lauf/Radfahren/beides (`EnduranceModality`) bleiben dadurch erkennbar getrennte
+   Folgeentscheidungen, keine Vorwegnahme durch den Zielnamen selbst. Keine automatische Kopplung
+   an `cardioCoachingEnabled`/den Laufcoach eingeführt oder entfernt — bestand vorher nicht und
+   wurde nicht neu geschaffen. Das `figure.run`-Symbol wurde **bewusst nicht geändert** — Punkt 4
+   der Vorgabe betraf die Zielbeschreibung (Text), nicht das Icon, und `figure.run` hat bereits
+   Präzedenz als generisches Cardio-Symbol (`CardioProfile.generalFitness` nutzt es ebenfalls,
+   nicht laufexklusiv). Falls das Icon ebenfalls sportneutraler wirken soll, ist das ein separater,
+   expliziter Folgeauftrag.
+5. **Coaching-Fallback inhaltlich geprüft statt per Präzedenz angenommen:** `.hybrid`s tatsächliche
+   Fallback-Texte direkt aus `Localizable.xcstrings` gelesen (nicht nur aus der `.functional`-
+   Analogie geschlossen) — sie schreiben aktiv Krafttraining vor (Beispiel siehe Nachtrag im
+   P2.2-Bericht oben), was für `.endurance` inhaltlich falsch wäre. `CoachingMessageProvider.
+   message(for:tone:goal:)`s letzte Fallback-Stufe schließt `.endurance` jetzt explizit aus
+   (`goal != .hybrid && goal != .endurance`); `.endurance` fällt stattdessen auf den bereits
+   bestehenden leeren String zurück, der die Insight-Card UI-seitig ausblendet. Keine pauschale
+   Hybrid-Zuordnung mehr für dieses Ziel.
+
+**Bewusst NICHT umgesetzt (wie vorgegeben):** kein neuer `PlanMatchmaker`-Scoring-Bonus für
+`.endurance`→Hybrid-Templates, keine neue `ExerciseSubstitutionRules`-Ausnahme für `.endurance`.
+Beide bleiben die bereits in der P2.2-Nachtrag-Liste offengelassenen Fragen — fachlicher Bedarf
+und betroffene Fälle sind nicht nachgewiesen, also nicht vorab implementiert.
+
+**Geänderte Komponenten:** `Sources/FitnessAppUI/Workout/PlanBuilderView.swift`,
+`Sources/FitnessAppCore/Coaching/CoachingTypes.swift`,
+`Sources/FitnessAppUI/Localization/DomainEnums+Localization.swift`,
+`Sources/FitnessAppUI/OnboardingView.swift`, `Sources/FitnessAppUI/Settings/ProfileEditorView.swift`,
+`Sources/FitnessAppUI/Coaching/CoachingMessageProvider.swift`,
+`Sources/FitnessAppUI/Resources/Localizable.xcstrings`, `docs/PLANUNG_BEGLEITUNG_AUDIT.md`.
+
+**Neue/geänderte Datenfelder:** keine SwiftData-Schema-Änderung. Zwei neue Lokalisierungs-Keys
+(`planBuilder.error.noProfile.title`/`.message`), zwei umbenannte (`coaching.goal.endurance.label`/
+`.blurb` — Key-Namen unverändert, nur Werte).
+
+**Bekannter, bewusst ungelöster Randfall:** sollte ein bestehendes `UserBodyProfile.trainingGoal`
+jemals `.endurance` sein (aktuell nicht erreichbar, da `.endurance` nirgends auswählbar ist und
+nicht automatisch vergeben wird), zeigt `ProfileEditorView`s Picker keine zu `.endurance`
+passende Option mehr an (`.tag(.endurance)` fehlt in der gefilterten Liste) — SwiftUI würde die
+Auswahl dann leer/nicht übereinstimmend darstellen. Bewusst nicht zusätzlich abgesichert: der Fall
+ist mit aktuellem Code nicht erreichbar, eine Behandlung dafür wäre Komplexität ohne reales
+Szenario. Festzuhalten, nicht zu verschweigen.
+
+**Tests hinzugefügt:** keine neuen Tests in diesem Nachbesserungs-Schritt — alle fünf Punkte sind
+entweder reine UI-Gating-/Text-/Fehlerzustand-Änderungen (nicht sinnvoll Linux-testbar, da
+SwiftUI-gated) oder Report-Sprache-Korrekturen ohne Codeverhalten-Änderung. Die bestehenden
+Core-Tests (`CoachingTypesTests`, `ProgramTemplatesTests`) decken `.endurance`s Katalog-/RawValue-
+Vertrag unverändert ab.
+
+**Tests tatsächlich ausgeführt — zwei Vertrauensstufen, nicht vermischen:**
+- **Core:** `swift build`/`swift test` erneut ausgeführt (siehe unten für Zahl) — bestätigt, dass
+  die `label`/`blurb`-String-Änderungen in `CoachingTypes.swift` syntaktisch UND semantisch korrekt
+  sind (Core wird auf Linux echt kompiliert), keine Regression in den 1020 bestehenden Tests.
+- **UI** (`PlanBuilderView.swift`, `DomainEnums+Localization.swift`, `OnboardingView.swift`,
+  `ProfileEditorView.swift`, `CoachingMessageProvider.swift`): NUR Syntax-Ebene via `swift build`
+  geprüft (Datei lexikalisch gültiges Swift — Klammerbalance etc.), KEINE semantische Prüfung
+  (kein Typecheck, keine Exhaustiveness-Prüfung), da alle fünf Dateien hinter
+  `#if canImport(SwiftUI)` stehen und auf diesem Linux-Toolchain zu einer leeren
+  Übersetzungseinheit kompilieren (wiederholt verifiziert: `swift /tmp/swcheck.swift` mit
+  `import SwiftUI` → „no such module 'SwiftUI'"). Verifikation dieser fünf Dateien beruht
+  ausschließlich auf manueller Zeile-für-Zeile-Prüfung (korrekte Klammerschachtelung in
+  `DomainEnums+Localization.swift` gezielt nachgelesen).
+- `Localizable.xcstrings`: JSON-Validität und Key-Anzahl nach den Edits geprüft (siehe unten).
+
+**Apple-Build/CI:** nicht durchgeführt — offen, unverändert höheres Risiko für alle fünf
+UI-Dateien dieser Nachbesserung.
+
+**UI-/Geräteprüfung:** nicht durchgeführt — offen. Insbesondere ungeprüft: zeigt der neue Alert in
+`PlanBuilderView` den Fehlertext korrekt an und blockiert zuverlässig die Plan-Erstellung;
+verschwindet "Ausdauer" tatsächlich aus beiden Zielkarten-Oberflächen; zeigt die Insight-Card für
+ein (aktuell nicht erreichbares) `.endurance`-Profil tatsächlich den Empty-State statt eines
+Absturzes.
+
+**Bekannte Grenzen/Risiken:** siehe die vier Nachträge oben (P2.1- und P2.2-Bericht) plus der
+Picker-Randfall oben. Zusätzlich: Task #194 ist angelegt, aber nicht terminiert — die
+Equipment-Substitutions-Lücke bleibt bis zur tatsächlichen Umsetzung bestehen.
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
+Berichtseintrag.
+
+**Nächste Aufgabe:** P2.3 (gemeinsamer Adopt-Pfad) — darf wie vorgegeben parallel zu allem oben
+laufen. Apple-Build und die betroffenen SwiftData-/UI-Tests bleiben für P1, P2.1 und diese
+Nachbesserung gemeinsam offen, bis ein echter Lauf vorliegt.

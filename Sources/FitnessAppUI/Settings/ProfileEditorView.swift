@@ -1083,7 +1083,10 @@ public struct ProfileEditorView: View {
                     get: { profile.trainingGoal },
                     set: { profile.trainingGoal = $0 }
                 )) {
-                    ForEach(TrainingGoal.allCases, id: \.self) { goal in
+                    // Review-Korrektur nach P2.2: `.endurance` ist noch
+                    // nicht ueber die UI waehlbar, siehe
+                    // `TrainingGoal.currentlySelectableInUI`.
+                    ForEach(TrainingGoal.currentlySelectableInUI, id: \.self) { goal in
                         Label {
                             Text(goal.localizedName)
                         } icon: {

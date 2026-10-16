@@ -234,6 +234,20 @@ public extension TrainingGoal {
         case .endurance:   LocalizedStringResource("coaching.goal.endurance.blurb",   bundle: .fitnessAppUI)
         }
     }
+
+    /// Review-Korrektur nach P2.2: `.endurance` existiert im Core
+    /// (RawValue-Vertrag, Katalog-Anbindung, Lokalisierung) und ist ab
+    /// sofort GUELTIG, aber NOCH NICHT ueber die UI waehlbar — ein
+    /// tragfaehiger Ziel→Plan-Pfad (Ausdauerform Laufen/Radfahren/beides,
+    /// Laufcoach-Trennung, siehe docs/PLANUNG_BEGLEITUNG_AUDIT.md §5) ist
+    /// weder implementiert noch getestet. `OnboardingView`s Coaching-Style-
+    /// Schritt UND `ProfileEditorView`s Zielauswahl verwenden BEIDE diese
+    /// EINE Liste statt je einer eigenen Filterbedingung, die haetten
+    /// auseinanderlaufen koennen — ein Schalter an einer Stelle, sobald P3
+    /// den Pfad liefert.
+    static var currentlySelectableInUI: [TrainingGoal] {
+        allCases.filter { $0 != .endurance }
+    }
 }
 
 public extension CardioGoal {

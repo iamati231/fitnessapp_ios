@@ -71,13 +71,25 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
     /// konsolidiert.
     case functional
     /// Planung-&-Trainingsbegleitung-Epic, P2.2 (docs/PLANUNG_BEGLEITUNG_AUDIT.md,
-    /// Konflikt 1, ENTSCHIEDEN): "Laufen & Ausdauer" als eigenständige
-    /// Zielkarte — unabhängig vom optionalen Laufcoach
-    /// (`cardioCoachingEnabled`/`CardioGoal`) und von reinen Laufeinheiten
-    /// im Plan (`TrainingTypeKind.running`/`.cycling`, bereits bestehend).
-    /// Additiv ans Ende angehängt (RawValue-Stabilität, siehe Dateikommentar
-    /// oben) — KEINE Migration, bestehende `trainingGoalRaw`-Werte bleiben
-    /// unverändert lesbar.
+    /// Konflikt 1, ENTSCHIEDEN) als eigenständige Zielkarte — unabhängig vom
+    /// optionalen Laufcoach (`cardioCoachingEnabled`/`CardioGoal`) und von
+    /// reinen Laufeinheiten im Plan (`TrainingTypeKind.running`/`.cycling`,
+    /// bereits bestehend). Additiv ans Ende angehängt (RawValue-Stabilität,
+    /// siehe Dateikommentar oben) — KEINE Migration, bestehende
+    /// `trainingGoalRaw`-Werte bleiben unverändert lesbar.
+    ///
+    /// Review-Korrektur nach P2.2: `label`/`blurb` nennen bewusst WEDER
+    /// "Laufen" NOCH "Radfahren" — welche Ausdauerform (Laufen/Radfahren/
+    /// beides, `EnduranceModality` in `PlanningContext.swift`) gilt, ist
+    /// eine eigene, spätere Entscheidung (Audit §5-Zustandstabelle), die
+    /// dieses Ziel nicht vorwegnehmen darf. Ebenso KEINE automatische
+    /// Kopplung an den Laufcoach — dieser Fall bleibt ausdrücklich optional
+    /// und getrennt.
+    ///
+    /// Zusätzlich: diese Zielkarte ist aktuell NUR im Core/in Tests
+    /// vorhanden — `DomainEnums+Localization.swift` blendet sie bewusst aus
+    /// `TrainingGoal.currentlySelectableInUI` aus, bis ein tragfähiger
+    /// Ziel→Plan-Pfad existiert (siehe dortiger Kommentar).
     case endurance
 
     public var label: String {
@@ -87,7 +99,7 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
         case .hybrid:      return "Funktionell / Hybrid"
         case .weightLoss:  return "Abnehmen / Fettabbau"
         case .functional:  return "Funktionelle Fitness"
-        case .endurance:   return "Laufen & Ausdauer"
+        case .endurance:   return "Ausdauer"
         }
     }
 
@@ -109,7 +121,7 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
         case .hybrid:      return "Kraft + Ausdauer + Mobilität — alles fließt zusammen."
         case .weightLoss:  return "Kaloriendefizit, Muskelerhalt, Alltagsbewegung."
         case .functional:  return "Alltagstaugliche Bewegungsmuster, Mobilität, kein reiner Kraft- oder Muskelfokus."
-        case .endurance:   return "Laufleistung und aerobe Basis steigern, lange ruhige Einheiten plus gezielte Tempoarbeit."
+        case .endurance:   return "Aerobe Leistungsfähigkeit und Grundlagenausdauer steigern, lange ruhige Einheiten plus gezielte Tempoarbeit."
         }
     }
 }

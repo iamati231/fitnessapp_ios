@@ -14935,6 +14935,22 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Bu ekipman ve deneyim kombinasyonu için kütüphanede uygun egzersiz yok. Farklı seçenekler dene." } }
       }
     },
+    "planBuilder.error.noProfile.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kein Profil gefunden" } },
+        "en": { "stringUnit": { "state": "translated", "value": "No Profile Found" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Profil Bulunamadı" } }
+      }
+    },
+    "planBuilder.error.noProfile.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Der Plan konnte nicht erstellt werden, weil kein Nutzerprofil gefunden wurde. Bitte starte die App neu oder wende dich an den Support, falls das Problem bestehen bleibt." } },
+        "en": { "stringUnit": { "state": "translated", "value": "The plan couldn't be created because no user profile was found. Please restart the app, or contact support if the problem persists." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kullanıcı profili bulunamadığı için plan oluşturulamadı. Lütfen uygulamayı yeniden başlat; sorun devam ederse destek ile iletişime geç." } }
+      }
+    },
     "planBuilder.nav.next": {
       "extractionState": "manual",
       "localizations": {
@@ -24030,19 +24046,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Laufleistung und aerobe Basis steigern, lange ruhige Einheiten plus gezielte Tempoarbeit."
+            "value": "Aerobe Leistungsfähigkeit und Grundlagenausdauer steigern, lange ruhige Einheiten plus gezielte Tempoarbeit."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Build running performance and aerobic base — long easy runs plus targeted tempo work."
+            "value": "Build aerobic capacity and endurance base — long easy sessions plus targeted tempo work."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Koşu performansını ve aerobik tabanı geliştir — uzun sakin koşular artı hedefli tempo çalışması."
+            "value": "Aerobik kapasiteyi ve dayanıklılık tabanını geliştir — uzun sakin birimler artı hedefli tempo çalışması."
           }
         }
       }
@@ -24191,19 +24207,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Laufen & Ausdauer"
+            "value": "Ausdauer"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Running & Endurance"
+            "value": "Endurance"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Koşu & Dayanıklılık"
+            "value": "Dayanıklılık"
           }
         }
       }

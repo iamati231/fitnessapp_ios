@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2094 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2096 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2094 / 2094** (100%) | 0 |
-| 🇬🇧 English (EN) | **2094 / 2094** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2094 / 2094** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2096 / 2096** (100%) | 0 |
+| 🇬🇧 English (EN) | **2096 / 2096** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2096 / 2096** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -435,8 +435,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.edu.strict.9` | Niemand schuldet dir Ergebnisse. Du musst sie dir verdienen — Satz für Satz. | Nobody owes you results. You earn them — set by set. | Kimse sana sonuç borçlu değil. Set set kazanırsın. |
 | `coaching.empty.message` | Aktuell ist keine Warnung oder Aktion nötig — weiter so. | No warning or action needed right now — keep it up. | Şu an uyarı veya işlem gerekmez — böyle devam et. |
 | `coaching.empty.title` | Heute kein besonderer Hinweis | No special note today | Bugün özel bir not yok |
-| `coaching.goal.endurance.blurb` | Laufleistung und aerobe Basis steigern, lange ruhige Einheiten plus gezielte Tempoarbeit. | Build running performance and aerobic base — long easy runs plus targeted tempo work. | Koşu performansını ve aerobik tabanı geliştir — uzun sakin koşular artı hedefli tempo çalışması. |
-| `coaching.goal.endurance.label` | Laufen & Ausdauer | Running & Endurance | Koşu & Dayanıklılık |
+| `coaching.goal.endurance.blurb` | Aerobe Leistungsfähigkeit und Grundlagenausdauer steigern, lange ruhige Einheiten plus gezielte Tempoarbeit. | Build aerobic capacity and endurance base — long easy sessions plus targeted tempo work. | Aerobik kapasiteyi ve dayanıklılık tabanını geliştir — uzun sakin birimler artı hedefli tempo çalışması. |
+| `coaching.goal.endurance.label` | Ausdauer | Endurance | Dayanıklılık |
 | `coaching.goal.functional.blurb` | Alltagstaugliche Bewegungsmuster, Mobilität, kein reiner Kraft- oder Muskelfokus. | Everyday movement patterns, mobility, not purely strength- or muscle-focused. | Günlük yaşama uygun hareket kalıpları, mobilite, sadece güç veya kas odaklı değil. |
 | `coaching.goal.functional.label` | Funktionelle Fitness | Functional Fitness | Fonksiyonel Fitness |
 | `coaching.goal.hybrid.blurb` | Kraft + Ausdauer + Mobilität — alles fließt zusammen. | Strength + endurance + mobility — all flowing together. | Güç + dayanıklılık + mobilite — hepsi bir arada. |
@@ -1721,7 +1721,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.upperLower.name` | Upper-Lower-Split | Upper-Lower Split | Upper-Lower Split |
 | `plan.template.upperLower.tagline` | 4 Tage · Kraft & Hypertrophie | 4 Days · Strength & Hypertrophy | 4 Gün · Güç & Hipertrofi |
 
-## `planBuilder.*`  (38 Keys)
+## `planBuilder.*`  (40 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1730,6 +1730,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.day.runTempo` | Tempolauf | Tempo Run | Tempo Koşusu |
 | `planBuilder.equipment.subtitle` | Welche Ausrüstung steht dir zur Verfügung? | What equipment do you have available? | Hangi ekipmana erişimin var? |
 | `planBuilder.equipment.title` | Ausrüstung | Equipment | Ekipman |
+| `planBuilder.error.noProfile.message` | Der Plan konnte nicht erstellt werden, weil kein Nutzerprofil gefunden wurde. Bitte starte die App neu oder wende dich an den Support, falls das Problem bestehen bleibt. | The plan couldn't be created because no user profile was found. Please restart the app, or contact support if the problem persists. | Kullanıcı profili bulunamadığı için plan oluşturulamadı. Lütfen uygulamayı yeniden başlat; sorun devam ederse destek ile iletişime geç. |
+| `planBuilder.error.noProfile.title` | Kein Profil gefunden | No Profile Found | Profil Bulunamadı |
 | `planBuilder.load.easy` | Locker | Easy | Hafif |
 | `planBuilder.load.hard` | Schwer | Hard | Ağır |
 | `planBuilder.load.medium` | Mittel | Medium | Orta |

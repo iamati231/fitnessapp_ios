@@ -96,6 +96,12 @@ public struct PlanBuilderView: View {
     // Schritt 3
     @State private var result: PlanGenerator.Result?
 
+    /// Audit-Korrektur (Review nach P2.1): treibt den expliziten Fehler-
+    /// Zustand, wenn `adoptPlan()` im eigenstaendigen Modus kein Profil
+    /// findet — siehe dortigen Kommentar. `nil` = kein Fehler/Alert nicht
+    /// sichtbar, identisches Muster wie `SettingsView.resetErrorMessage`.
+    @State private var missingProfileErrorMessage: String?
+
     public var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -127,6 +133,20 @@ public struct PlanBuilderView: View {
                         Text("common.cancel", bundle: .module)
                     }
                 }
+            }
+            // Audit-Korrektur (Review nach P2.1): expliziter Fehlerzustand
+            // statt stillem `.gym`-Fallback, siehe `adoptPlan()`. Gleiches
+            // Muster wie `SettingsView.resetErrorMessage`.
+            .alert(
+                Text("planBuilder.error.noProfile.title", bundle: .module),
+                isPresented: Binding(
+                    get: { missingProfileErrorMessage != nil },
+                    set: { if !$0 { missingProfileErrorMessage = nil } }
+                )
+            ) {
+                Button("OK") { missingProfileErrorMessage = nil }
+            } message: {
+                Text(missingProfileErrorMessage ?? "")
             }
         }
     }
@@ -568,19 +588,22 @@ public struct PlanBuilderView: View {
         )
     }
 
-    /// Audit-Korrektur P2.1: derselbe effektive Planungskontext wie
-    /// `ProgramTemplatePickerView`/`OnboardingView` (EquipmentPlanningResolver,
-    /// Smart-Onboarding-Epic Phase 6) — EINE Berechnung statt einer
-    /// eigenstaendigen, potenziell abweichenden Aufloesung. `?? .gym`/`??
-    /// UserEquipmentProfile()` nur fuer den (hier wie dort strukturell
-    /// unerwarteten) Fall, dass noch gar kein Profil existiert — PlanBuilderView
-    /// ist wie ProgramTemplatePickerView nur innerhalb der bereits
-    /// onboarded App erreichbar.
-    private var equipmentPlanningContext: EquipmentPlanningContext {
-        EquipmentPlanningResolver.resolve(
-            environment: profiles.first?.environment ?? .gym,
-            individualProfile: profiles.first?.equipmentProfile ?? UserEquipmentProfile(),
-            confirmedComplete: profiles.first?.equipmentProfileConfirmedComplete ?? false
+    /// Audit-Korrektur (Review nach P2.1): `nil`, wenn (noch) kein Profil
+    /// existiert — KEINE stille `?? .gym`/`?? UserEquipmentProfile()`-
+    /// Annahme mehr. `PlanBuilderView` wird zwar normalerweise nur innerhalb
+    /// der bereits onboarded App erreicht (gleiche Grundannahme wie
+    /// `ProgramTemplatePickerView`), aber "normalerweise" ist keine
+    /// Garantie — `adoptPlan()` behandelt `nil` unten als expliziten
+    /// Fehlerzustand statt einen erfundenen Trainingsort zu instanziieren.
+    /// Sobald ein Profil existiert, EINE Berechnung wie
+    /// `ProgramTemplatePickerView`/`OnboardingView`
+    /// (`EquipmentPlanningResolver`, Smart-Onboarding-Epic Phase 6).
+    private var equipmentPlanningContext: EquipmentPlanningContext? {
+        guard let profile = profiles.first else { return nil }
+        return EquipmentPlanningResolver.resolve(
+            environment: profile.environment,
+            individualProfile: profile.equipmentProfile,
+            confirmedComplete: profile.equipmentProfileConfirmedComplete
         )
     }
 
@@ -794,9 +817,19 @@ public struct PlanBuilderView: View {
             return
         }
 
+        // Audit-Korrektur (Review nach P2.1): kein Profil → expliziter
+        // Fehlerzustand statt einer erfundenen `.gym`-Annahme. Dieser Zweig
+        // ist nur im eigenstaendigen Modus (`onGenerated == nil`) erreichbar —
+        // der Onboarding-Callback-Pfad oben ist bereits vorher zurueckgekehrt
+        // und braucht kein Profil.
+        guard let profile = profiles.first, let equipmentPlanningContext else {
+            missingProfileErrorMessage = String(localized: "planBuilder.error.noProfile.message", bundle: .module)
+            return
+        }
+
         guard let plan = PlanGeneratorInstantiator.build(
             from: currentInput, in: modelContext,
-            environment: profiles.first?.environment ?? .gym,
+            environment: profile.environment,
             equipmentProfile: equipmentPlanningContext.effectiveProfile,
             result: result, generationSource: .planBuilder
         ) else { return }

@@ -729,7 +729,10 @@ public struct OnboardingView: View {
                             .foregroundStyle(.secondary)
                     }
                     VStack(spacing: 10) {
-                        ForEach(TrainingGoal.allCases, id: \.self) { goal in
+                        // Review-Korrektur nach P2.2: `.endurance` ist noch
+                        // nicht ueber die UI waehlbar, siehe
+                        // `TrainingGoal.currentlySelectableInUI`.
+                        ForEach(TrainingGoal.currentlySelectableInUI, id: \.self) { goal in
                             coachingCard(
                                 title: String(localized: goal.localizedName),
                                 description: String(localized: goal.localizedBlurb),
