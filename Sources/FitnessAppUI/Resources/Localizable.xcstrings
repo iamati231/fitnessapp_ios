@@ -14935,6 +14935,14 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Bu ekipman ve deneyim kombinasyonu için kütüphanede uygun egzersiz yok. Farklı seçenekler dene." } }
       }
     },
+    "planBuilder.result.loadLevel.unrated": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nicht bewertet" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Not rated" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Değerlendirilmedi" } }
+      }
+    },
     "planBuilder.error.noProfile.title": {
       "extractionState": "manual",
       "localizations": {

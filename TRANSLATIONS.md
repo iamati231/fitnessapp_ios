@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2102 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2103 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2102 / 2102** (100%) | 0 |
-| 🇬🇧 English (EN) | **2102 / 2102** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2102 / 2102** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2103 / 2103** (100%) | 0 |
+| 🇬🇧 English (EN) | **2103 / 2103** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2103 / 2103** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1721,7 +1721,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.upperLower.name` | Upper-Lower-Split | Upper-Lower Split | Upper-Lower Split |
 | `plan.template.upperLower.tagline` | 4 Tage · Kraft & Hypertrophie | 4 Days · Strength & Hypertrophy | 4 Gün · Güç & Hipertrofi |
 
-## `planBuilder.*`  (40 Keys)
+## `planBuilder.*`  (41 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1741,6 +1741,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.result.empty.message` | Für diese Kombination aus Ausrüstung und Erfahrung gibt es keine passenden Übungen in der Bibliothek. Wähle andere Optionen. | No matching exercises exist in the library for this combination of equipment and experience. Choose different options. | Bu ekipman ve deneyim kombinasyonu için kütüphanede uygun egzersiz yok. Farklı seçenekler dene. |
 | `planBuilder.result.empty.title` | Keine Übungen gefunden | No Exercises Found | Egzersiz Bulunamadı |
 | `planBuilder.result.explanation.spread` | Die Reihenfolge verteilt harte und leichte Einheiten über die Woche, statt sie zu häufen. | The order spreads hard and light sessions across the week instead of clustering them. | Sıralama, zor ve hafif antrenmanları haftaya yayar, art arda toplamaz. |
+| `planBuilder.result.loadLevel.unrated` | Nicht bewertet | Not rated | Değerlendirilmedi |
 | `planBuilder.result.recalculate` | Neu rechnen | Recalculate | Yeniden Hesapla |
 | `planBuilder.result.weeklyTotal` | %@ pro Woche | %@ per week | Haftada %@ |
 | `planBuilder.rhythm.fixedWeekdays` | Feste Wochentage | Fixed Weekdays | Sabit Günler |

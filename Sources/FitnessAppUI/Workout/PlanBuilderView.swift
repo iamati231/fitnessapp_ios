@@ -39,6 +39,17 @@ import FitnessAppData
 /// `setPositionFixed` fuer den spaeteren visuellen Editor, P3.2) - diese
 /// Anbindung fuehrt bewusst KEINE zweite Fixierungs-/Identitaets-/Reorder-
 /// Logik ein, siehe docs/PLANUNG_BEGLEITUNG_AUDIT.md (P2.4-Abschnitt).
+///
+/// Nachbesserung: `currentResult` delegiert die eigentliche Rekonstruktion
+/// an `PlanDraftResultAdapter` (Core) - derselbe Adapter, den
+/// `PlanDraftResultAdapterTests` direkt und fuer sich (ohne SwiftUI) prueft.
+/// `loadLevel`/`explanationKey` sind ABGELEITETE, generatorspezifische
+/// Angaben (siehe Adapter-Doku) - P3 MUSS sie nach einer echten
+/// Inhaltsaenderung (`replaceContent`) neu berechnen oder ausdruecklich als
+/// nicht bewertet kennzeichnen, niemals unveraendert stehen lassen. Diese
+/// Runde erzwingt das bereits dort, wo es ohne neue P3-UI moeglich ist: kein
+/// stilles `.medium`, falls eine `loadLevel`-Zuordnung fehlt (siehe
+/// `loadLevel(for:)`/`resultDayRow`s "nicht bewertet"-Badge-Zweig).
 @available(iOS 17.0, macOS 14.0, *)
 public struct PlanBuilderView: View {
 
@@ -659,8 +670,16 @@ public struct PlanBuilderView: View {
         lastGeneratedInput = input
     }
 
-    private func loadLevel(for dayID: DraftDayID) -> PlanLoadLevel {
-        loadLevelByDayID[dayID] ?? .medium
+    /// Reines Anzeige-Lookup fuer `resultDayRow`s Badge - bewusst OHNE
+    /// `.medium`-Default (Nachbesserung, "kein stilles .medium fuer
+    /// fehlende Zuordnung"). `nil` heisst "fuer diesen Tag nicht bewertet"
+    /// und wird in `resultDayRow` als eigener, neutraler Badge-Zustand
+    /// angezeigt statt eine Einordnung vorzutaeuschen, die es nicht gibt.
+    /// Heute IMMER non-nil (siehe `generatePreviewIfNeeded`: jeder Tag im
+    /// Draft bekommt dort exakt einen Eintrag) - wird erst relevant, sobald
+    /// P3 Tage ohne vollstaendige Neugenerierung aendert/einfuegt.
+    private func loadLevel(for dayID: DraftDayID) -> PlanLoadLevel? {
+        loadLevelByDayID[dayID]
     }
 
     /// P2.4 Punkt 8: die Vorschau UND die Uebergabe an `onGenerated`/
@@ -671,12 +690,21 @@ public struct PlanBuilderView: View {
     /// `draft` statt ein zweites, potenziell veraltetes `Result` separat
     /// vorzuhalten. `onGenerated`s Signatur bleibt dadurch unveraendert -
     /// siehe Typ-Doku.
+    ///
+    /// Nachbesserung: nutzt jetzt denselben `PlanDraftResultAdapter` (Core),
+    /// den auch `PlanDraftResultAdapterTests` direkt prueft - vorher war
+    /// dieselbe Rekonstruktion hier inline und fuer sich nicht testbar.
+    /// `try?`: heute sicher, weil `loadLevelByDayID` jeden Tag im Draft
+    /// abdeckt (siehe `generatePreviewIfNeeded`), der Adapter also nie
+    /// `missingLoadLevel` wirft - der Fehler ist absichtlich NICHT in einen
+    /// `.medium`-Fallback uebersetzt. Sobald P3 einen Weg einfuehrt, der
+    /// diese Abdeckung brechen kann, muss dieser Fehler sichtbar behandelt
+    /// werden statt in `nil` zu verschwinden (siehe Adapter-Doku).
     private var currentResult: PlanGenerator.Result? {
-        guard let draft, !draft.days.isEmpty else { return nil }
-        let days = zip(draft.days, draft.resolvedDaySpecs).map { draftDay, spec in
-            PlanGenerator.Result.GeneratedDay(spec: spec, loadLevel: loadLevel(for: draftDay.id))
-        }
-        return PlanGenerator.Result(days: days, explanationKey: explanationKey)
+        guard let draft else { return nil }
+        return try? PlanDraftResultAdapter.makeResult(
+            from: draft, loadLevels: loadLevelByDayID, explanationKey: explanationKey
+        )
     }
 
     private var resultStepView: some View {
@@ -741,7 +769,7 @@ public struct PlanBuilderView: View {
         }
     }
 
-    private func resultDayRow(_ day: DraftDay, loadLevel: PlanLoadLevel) -> some View {
+    private func resultDayRow(_ day: DraftDay, loadLevel: PlanLoadLevel?) -> some View {
         // `sequenceIndex` ist fuer die reine Anzeige irrelevant (weder
         // `displayName` noch `scopeLine` lesen ihn) - die tatsaechliche
         // Position liefert `draft.resolvedDaySpecs` erst bei der Uebergabe
@@ -761,14 +789,30 @@ public struct PlanBuilderView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Text(loadLevel.localizedName)
-                .font(.caption2.weight(.bold))
-                .tracking(0.6)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(loadLevelColor(loadLevel).opacity(0.16))
-                .foregroundStyle(loadLevelColor(loadLevel))
-                .clipShape(Capsule())
+            // Nachbesserung: `loadLevel == nil` ("nicht bewertet") bekommt
+            // einen eigenen, neutralen Badge statt eine Haerte-Einordnung
+            // vorzutaeuschen - siehe `loadLevel(for:)`-Doku. Heute nie
+            // sichtbar (jeder Draft-Tag hat eine Zuordnung), erst relevant
+            // ab P3.
+            if let loadLevel {
+                Text(loadLevel.localizedName)
+                    .font(.caption2.weight(.bold))
+                    .tracking(0.6)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(loadLevelColor(loadLevel).opacity(0.16))
+                    .foregroundStyle(loadLevelColor(loadLevel))
+                    .clipShape(Capsule())
+            } else {
+                Text("planBuilder.result.loadLevel.unrated", bundle: .module)
+                    .font(.caption2.weight(.bold))
+                    .tracking(0.6)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.secondary.opacity(0.16))
+                    .foregroundStyle(.secondary)
+                    .clipShape(Capsule())
+            }
         }
         .padding(12)
         .background(Color.secondary.opacity(0.06))

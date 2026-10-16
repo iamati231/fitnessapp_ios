@@ -1715,3 +1715,108 @@ beginnen, sobald Apple-Build/Gerätetest für P2.4 (und die noch offenen vorheri
 und Task #197 geklärt ist. Apple-Build und Geräteprüfung bleiben für P1, P2.1, beide
 P2.1/P2.2-Nachbesserungen, P2.3, die P2.3-Nacharbeiten und P2.4 gemeinsam offen, bis ein echter
 Lauf vorliegt.
+
+## P2.4-Nachbesserung (Draft→Result-Adapter, abgeleitete Angaben, Apple-Build-Status)
+
+**Paket:** drei der vier geforderten Punkte vor dem breiten P3-UI-Umbau. Punkt 4 (Task #197 als
+nächstes Integrationspaket) ist bewusst NICHT Teil dieses Berichts — eigener, größerer Schnitt,
+siehe eigener Abschnitt danach.
+
+**1. Draft→Result-Adapter geschaffen und produktiv angebunden.** Vorher war die Rekonstruktion
+eines `PlanGenerator.Result` aus einem `PlanDraft` inline in `PlanBuilderView.currentResult`
+implementiert — korrekt, aber nicht für sich testbar (SwiftUI-gated, auf Linux nie typgeprüft).
+Neu: `Sources/FitnessAppCore/Planning/PlanDraftResultAdapter.swift`,
+`PlanDraftResultAdapter.makeResult(from:loadLevels:explanationKey:) throws -> PlanGenerator.Result?`
+— reine Core-Funktion (keine SwiftUI-/SwiftData-Abhängigkeit, obwohl der vorherige Code zufällig in
+einer View lag). `PlanBuilderView.currentResult` ruft jetzt ausschließlich diesen Adapter auf.
+Regressionstest `testMakeResultReflectsReorderAndContentChangeCompletely`
+(`Tests/FitnessAppCoreTests/PlanDraftResultAdapterTests.swift`): generiert einen echten
+3-Tage-Plan, vertauscht Tag 1 und Tag 3 (`reorder(to:)`), ersetzt den Inhalt des jetzt an Position 0
+stehenden Tages komplett durch einen andersartigen generierten Tag (`replaceContent(of:with:)`),
+rekonstruiert dann über den Adapter — und vergleicht an allen drei Positionen die VOLLSTÄNDIGE
+Übungsliste (`XCTAssertEqual(days[i].spec.exercises, ...)`, nicht nur `.name`) UND den neu
+vergebenen `sequenceIndex`. Zusätzlich `testReorderAloneKeepsAllLoadLevelsResolvable` (reine
+Umsortierung verliert keine `loadLevel`-Zuordnung, da die Map über `DraftDayID` statt Position
+indiziert ist) und `testMakeResultReturnsNilForEmptyDraft`.
+
+**2. "Kein stilles .medium für fehlende Zuordnung" umgesetzt, Rest als verbindliche P3-Regel
+dokumentiert.** `loadLevel` und `explanationKey` sind abgeleitete, generatorspezifische Angaben
+(`loadLevel` ist relativ zu ALLEN Tagen EINES Generierungslaufs berechnet, keine Eigenschaft eines
+einzelnen Tages). Konkret umgesetzt: `PlanDraftResultAdapter.makeResult` wirft jetzt
+`AdapterError.missingLoadLevel(dayID:)`, wenn ein Tag im Draft keine `loadLevel`-Zuordnung hat —
+VORHER (im alten Inline-Code) wäre das still zu `.medium` verfallen. Regressionstest
+`testMakeResultThrowsOnMissingLoadLevelInsteadOfDefaultingSilently` deckt das ab. Dieselbe
+Disziplin auch für die reine Anzeige: `PlanBuilderView.loadLevel(for:)` liefert jetzt
+`PlanLoadLevel?` (vorher mit `?? .medium`-Fallback), `resultDayRow` zeigt bei `nil` einen eigenen,
+neutralen "Nicht bewertet"-Badge (neuer Key `planBuilder.result.loadLevel.unrated`, DE/EN/TR,
+Katalog jetzt 2103 Keys, weiterhin 0 hardcoded) statt eine Einordnung vorzutäuschen. Heute in
+BEIDEN Fällen unerreichbar (jeder Tag im Draft hat nach `generatePreviewIfNeeded` exakt eine
+Zuordnung) — die Absicherung greift erst, sobald P3 Tage ohne volle Neugenerierung ändert/einfügt.
+Als VERBINDLICHE Anforderung in der Adapter-Doku UND im `PlanBuilderView`-Typ-Kommentar
+festgehalten (nicht in dieser Runde umgesetzt, da es keinen Aufrufer dafür gibt): sobald P3
+`replaceContent(of:with:)` tatsächlich aufruft, wird die bisherige `loadLevels`-Zuordnung für die
+GESAMTE Woche stale (nicht nur für den geänderten Tag, weil die relative Einstufung sich
+mit-ändern kann) — P3 MUSS dann entweder alle Ladestufen neu berechnen oder die betroffenen
+Einträge ausdrücklich entfernen (der Adapter wirft dann `missingLoadLevel`), niemals die alte,
+jetzt falsche Einstufung unverändert weiterzeigen. Dieselbe Regel gilt für `explanationKey`: er
+beschreibt, warum der Generator eine bestimmte Auswahl getroffen hat — nach einer manuellen
+Änderung trifft das nicht mehr zu und muss entfernt/ersetzt werden, nicht stehen bleiben.
+
+**3. Apple-Build real geprüft — nicht verfügbar, genaue Lücke benannt.** Diese Session läuft in
+einem reinen Linux-Container: kein `xcodebuild`, `xcrun`, `xcode-select` (verifiziert, alle drei
+`command not found`), kein `swift` ohne den manuell nachinstallierten Linux-Toolchain im
+Scratchpad-Pfad. Es gibt in diesem Container keinen Weg, einen echten Apple-Build oder
+SwiftUI-/SwiftData-Typcheck durchzuführen — das ist eine strukturelle Eigenschaft dieser
+Umgebung, keine fehlende Konfiguration, die sich hier beheben ließe. Das Repo hat allerdings
+eine echte, bereits eingerichtete Apple-CI: `codemagic.yaml`, Workflow `swift-package`, Trigger
+"push, alle Branches", läuft auf `mac_mini_m2` mit Xcode und führt neben `swift build`/
+`swift test --parallel` explizit
+`xcodebuild -scheme FitnessAppUI -destination 'generic/platform=iOS Simulator' build` aus (ebenso
+für FitnessAppCore/-Data/-Health/-Activities) — genau der reale Typcheck, den
+`PlanBuilderView.swift` und `PlanDraftResultAdapter.swift` auf Linux nicht bekommen. Geprüft, ob
+dieser Lauf für den P2.4-Push (`fca8c01`) sichtbar ist: `mcp__github__actions_list` für den Branch
+`claude/smart-onboarding-epic` liefert **0 GitHub-Actions-Runs** (erwartet — Codemagic ist keine
+GitHub Action, das Repo hat kein `.github/workflows`); es gibt in diesem Toolset keinen Zugriff auf
+Codemagics eigenes Dashboard/API oder auf GitHub-Check-Runs ohne bekannte Check-Run-ID, also keinen
+Weg von hier aus zu sehen, ob/wie der Codemagic-Lauf für diesen Push ausgefallen ist. **Es wird
+nicht behauptet, dass ein Lauf gestartet oder erfolgreich war** — nur, dass die Infrastruktur dafür
+existiert. Benötigt, um das wirklich zu schließen: Login im Codemagic-Account, der an dieses
+GitHub-Repo gebunden ist, App "FitnessApp" öffnen, Workflow "Swift Package CI" (`swift-package`),
+Build-Historie für Branch `claude/smart-onboarding-epic` ansehen (ein Build sollte automatisch
+durch den Push getriggert worden sein, sofern die Codemagic-Anbindung aktiv ist) — Build-Log
+insbesondere auf den "Build library products for iOS Simulator"-Schritt für `FitnessAppUI` prüfen.
+Falls kein automatischer Build gelistet ist, ist entweder die Codemagic-GitHub-Anbindung nicht
+aktiv, oder der Trigger greift aus einem anderen Grund nicht — in dem Fall den Workflow manuell in
+der Codemagic-UI für diesen Branch/Commit starten.
+
+**Geänderte Komponenten:** `Sources/FitnessAppCore/Planning/PlanDraftResultAdapter.swift` (neu),
+`Sources/FitnessAppUI/Workout/PlanBuilderView.swift` (`currentResult` nutzt den Adapter,
+`loadLevel(for:)` optional, `resultDayRow`s "Nicht bewertet"-Zweig, Typ-Doku ergänzt),
+`Sources/FitnessAppUI/Resources/Localizable.xcstrings` (1 neuer Key).
+
+**Neue/geänderte Datenfelder:** keine. Ein neuer Lokalisierungs-Key.
+
+**Tests hinzugefügt:** `Tests/FitnessAppCoreTests/PlanDraftResultAdapterTests.swift` — 4 Tests
+(siehe Punkt 1/2 oben), alle ECHTE Linux-Core-Tests.
+
+**Tests tatsächlich ausgeführt:** `swift build`/`swift build --build-tests`: grün.
+`python3 -I .scripts/generate_translations_md.py`: Katalog 2103/2103/2103, **0 hardcoded Strings**.
+`swift test`: **1029/1029 grün** (1025 + 4 neue). `PlanBuilderView.swift` bleibt wie jede
+`FitnessAppUI`-Datei SwiftUI-/SwiftData-gated und damit auf Linux nur syntaktisch, nicht
+semantisch geprüft — unverändert zur Standing-Einschränkung dieser gesamten Arbeit.
+
+**Apple-Build/CI:** nicht durchgeführt und von hier aus nicht einsehbar — siehe Punkt 3 oben für
+die genaue Lücke und die benötigten Schritte.
+
+**UI-/Geräteprüfung:** nicht durchgeführt — offen. Zusätzlich zu prüfen, sobald ein echter Build
+vorliegt: der "Nicht bewertet"-Badge-Zweig ist mit dem heutigen Code-Pfad nicht erreichbar
+(bewusst, siehe Punkt 2) und kann daher nur durch Code-Review, nicht durch manuelles Antippen
+verifiziert werden.
+
+**Bekannte Grenzen/Risiken:** keine neuen gegenüber dem P2.4-Bericht oben.
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
+Berichtseintrag.
+
+**Nächste Aufgabe:** Punkt 4 — Task #197 (Commit-/Speicherfehler-Behandlung) als eigenes
+Integrationspaket, siehe eigenen Abschnitt.
