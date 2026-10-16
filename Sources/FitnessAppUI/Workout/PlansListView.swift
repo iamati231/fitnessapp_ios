@@ -64,6 +64,19 @@ public struct PlansListView: View {
     /// verhindert den Duplikat-Fall, den ein einfaches "Flag zuruecksetzen + Button wieder
     /// aktivieren" nicht verhindert haette.
     @State private var acceptOperation = PlanCreationOperation()
+    /// Task #197 (Verifikationsrunde): `acceptOperation` ist laut ihrer eigenen Typ-Doku PERMANENT
+    /// fuer ihre Lebensdauer - "ein wirklich neuer Versuch braucht eine neue Instanz". Anders als
+    /// `acceptCustomOperation` (siehe dort: frisch bei jedem Sheet-Oeffnen) lebte `acceptOperation`
+    /// bisher aber ueber die GESAMTE `PlansListView`-Lebensdauer, ohne je ausgetauscht zu werden -
+    /// auf echtem Geraet reproduziert: nach einem erfolgreich angenommenen Cardio-Vorschlag zeigte
+    /// JEDE spaetere, voellig unabhaengige Cardio-Karte (neues Ziel/Renndatum/Volumen, eigener
+    /// `CardioFeasibilityCardModel.fingerprint`) faelschlich "Erneut versuchen" statt "Vorschlag
+    /// annehmen"/"Plan uebernehmen" - UND ein Tap darauf haette nur noch den LAENGST aufgeloesten
+    /// alten Plan erneut aufzuloesen versucht, nie den neuen Vorschlag tatsaechlich angelegt.
+    /// Haelt fest, fuer welchen Fingerprint `acceptOperation` zuletzt (neu erzeugt oder committed)
+    /// stand; weicht die aktuell angezeigte Karte davon ab, ist die Instanz fuer eine ANDERE
+    /// Kombination committed (oder noch nie committed) und muss vor Gebrauch ausgetauscht werden.
+    @State private var acceptOperationFingerprint: String?
     /// Nachbesserung (Task #197, dritte Korrekturrunde): dieselbe Garantie wie `acceptOperation`,
     /// aber fuer den "Plan anpassen"-Sheet-Pfad (`acceptCustom`) - eigene, unabhaengige Instanz,
     /// weil es ein eigener, unabhaengiger Vorgang ist. Wird beim OEFFNEN des Sheets bewusst neu
@@ -292,6 +305,15 @@ public struct PlansListView: View {
             if model.hasPlan {
                 Button {
                     guard !isAcceptingCardioFeasibility else { return }
+                    // Siehe `acceptOperationFingerprint`-Doku: eine Karte fuer eine ANDERE
+                    // Ziel/Renndatum/Volumen-Kombination als die, fuer die `acceptOperation`
+                    // zuletzt stand, braucht zwingend eine frische Instanz - sonst wuerde dieser
+                    // Tap nur den alten, laengst committeten Vorgang erneut aufloesen statt den
+                    // hier tatsaechlich angezeigten, neuen Vorschlag anzulegen.
+                    if acceptOperationFingerprint != model.fingerprint {
+                        acceptOperation = PlanCreationOperation()
+                        acceptOperationFingerprint = model.fingerprint
+                    }
                     isAcceptingCardioFeasibility = true
                     withAnimation {
                         // Nachbesserung (vierte Korrekturrunde): `model.accept(...using:)` fuehrt
@@ -324,7 +346,7 @@ public struct PlansListView: View {
                     // Nachbesserung (dritte Korrekturrunde, Punkt 5): im "bereits erstellt, nur
                     // nicht aufgeloest"-Zustand kein irrefuehrendes erneutes "Uebernehmen" -
                     // derselbe Button loest dann nur noch eine Aufloesung aus, nie eine Neuanlage.
-                    Text(acceptOperation.committedPlanID != nil
+                    Text((acceptOperation.committedPlanID != nil && acceptOperationFingerprint == model.fingerprint)
                          ? String(localized: "plans.cardioFeasibility.retryResolve", bundle: .module)
                          : (model.verdict.feasible
                             ? String(localized: "plans.cardioFeasibility.apply", bundle: .module)
