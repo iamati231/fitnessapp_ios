@@ -24024,6 +24024,29 @@
         }
       }
     },
+    "coaching.goal.endurance.blurb": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laufleistung und aerobe Basis steigern, lange ruhige Einheiten plus gezielte Tempoarbeit."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Build running performance and aerobic base — long easy runs plus targeted tempo work."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu performansını ve aerobik tabanı geliştir — uzun sakin koşular artı hedefli tempo çalışması."
+          }
+        }
+      }
+    },
     "coaching.goal.strength.blurb": {
       "extractionState": "manual",
       "localizations": {
@@ -24158,6 +24181,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fonksiyonel Fitness"
+          }
+        }
+      }
+    },
+    "coaching.goal.endurance.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laufen & Ausdauer"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running & Endurance"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu & Dayanıklılık"
           }
         }
       }

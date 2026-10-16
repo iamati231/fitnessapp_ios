@@ -220,6 +220,7 @@ public extension TrainingGoal {
         case .hybrid:      LocalizedStringResource("coaching.goal.hybrid.label",      bundle: .fitnessAppUI)
         case .weightLoss:  LocalizedStringResource("coaching.goal.weightLoss.label",  bundle: .fitnessAppUI)
         case .functional:  LocalizedStringResource("coaching.goal.functional.label",  bundle: .fitnessAppUI)
+        case .endurance:   LocalizedStringResource("coaching.goal.endurance.label",   bundle: .fitnessAppUI)
         }
     }
 
@@ -230,6 +231,7 @@ public extension TrainingGoal {
         case .hybrid:      LocalizedStringResource("coaching.goal.hybrid.blurb",      bundle: .fitnessAppUI)
         case .weightLoss:  LocalizedStringResource("coaching.goal.weightLoss.blurb",  bundle: .fitnessAppUI)
         case .functional:  LocalizedStringResource("coaching.goal.functional.blurb",  bundle: .fitnessAppUI)
+        case .endurance:   LocalizedStringResource("coaching.goal.endurance.blurb",   bundle: .fitnessAppUI)
         }
     }
 }

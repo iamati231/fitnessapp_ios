@@ -178,12 +178,16 @@ struct BaselineCheckFlowView: View {
 
     // MARK: - Abgeleitete Flags
 
-    /// Epic: Cardio nur bei Lauf-/Hybrid-Ziel. `TrainingGoal` kennt kein
-    /// eigenes "Lauf"-Case (siehe Audit) — `.hybrid` ("Kraft + Ausdauer +
-    /// Mobilitaet") ist die einzige bestehende Achse mit Ausdaueranteil und
-    /// damit der naheliegendste bestehende Proxy dafuer.
+    /// Epic: Cardio nur bei Lauf-/Hybrid-Ziel. `TrainingGoal` kannte bis
+    /// P2.2 kein eigenes "Lauf"-Case (siehe Audit) — `.hybrid` ("Kraft +
+    /// Ausdauer + Mobilitaet") war deshalb der naheliegendste bestehende
+    /// Proxy dafuer. Seit P2.2 traegt `.endurance` ("Laufen & Ausdauer")
+    /// genau das urspruenglich gemeinte "Lauf-Ziel" direkt — ohne diesen
+    /// Fall haette ein `.endurance`-Nutzer den Cardio-Schritt gar nicht
+    /// mehr gesehen, obwohl die Vorgabe hier wortwoertlich "Lauf-/Hybrid-
+    /// Ziel" nennt.
     private var showsCardioStep: Bool {
-        goal == .hybrid
+        goal == .hybrid || goal == .endurance
     }
 
     /// Entrypoint `.selfAssessment` (Erfahrene oder "Selbst einschaetzen")

@@ -32,7 +32,11 @@ final class CoachingTypesTests: XCTestCase {
         // konkurrierende "Abnehmen"-Bedeutung neben `.weightLoss` (siehe
         // TrainingGoal-Doc-Kommentar). Die vier bestehenden RawValues sind
         // unveraendert, es wurde nur `functional` angehaengt.
-        XCTAssertEqual(cases, ["hypertrophy", "strength", "hybrid", "weightLoss", "functional"])
+        //
+        // Planung-&-Trainingsbegleitung-Epic P2.2: `endurance` additiv ganz
+        // ans Ende angehaengt ("Laufen & Ausdauer", Audit Konflikt 1,
+        // ENTSCHIEDEN) - alle fuenf vorherigen RawValues bleiben unveraendert.
+        XCTAssertEqual(cases, ["hypertrophy", "strength", "hybrid", "weightLoss", "functional", "endurance"])
     }
 
     /// Smart-Onboarding-Epic Leitplanke: die vier ORIGINAL-RawValues duerfen

@@ -696,7 +696,20 @@ public enum ProgramTemplates {
         targetEnvironment: .gym,
         iconSystemName: "figure.mixed.cardio",
         targetExperience: [.intermediate, .advanced],
-        targetGoals: [.hybrid],
+        // P2.2: `.endurance` ergänzt (additiv, `.hybrid` bleibt unverändert
+        // Haupt-Tag) — dieses Template hat als einziges im Katalog bereits
+        // echte Lauf-Tage mit Distanz/Dauer-Zielen ("Easy Run"/"Long Run"),
+        // deshalb hier statt bei einem neu erfundenen Inhalt angehängt.
+        // Verhindert, dass `TrainingGoal.endurance` im Template-Picker eine
+        // tote Auswahl ohne jeden Treffer ist (siehe
+        // `ProgramTemplatesTests.testEveryTrainingGoalHasAtLeastOneTemplate`).
+        // `PlanMatchmaker.rankPlansDetailed` behandelt `targetGoals` als
+        // Scoring-Bonus, keinen harten Filter — andere Kandidaten bleiben
+        // für `.endurance`-Nutzer weiterhin sichtbar. Ob `.endurance`
+        // stattdessen (auch) über den Generator-Pfad geroutet werden soll,
+        // ist eine bewusst noch offene P3-Entscheidung (siehe
+        // docs/PLANUNG_BEGLEITUNG_AUDIT.md, "Goal→Generierung-Zuordnungsregeln").
+        targetGoals: [.hybrid, .endurance],
         // DEL-170: Equipment-Varianten. Cardio-Tage bleiben unverändert (gleiche
         // Distanzen/Dauer). Strength-Tage werden auf die jeweilige Implement-
         // Familie umgemappt. RIR-Puffer + Volumen bleiben strukturell identisch

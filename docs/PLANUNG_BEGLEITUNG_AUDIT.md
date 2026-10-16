@@ -885,6 +885,113 @@ Home-Gym-Equipment erzeugter Plan auf einem echten Gerät tatsächlich mit `targ
 **Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
 Berichtseintrag.
 
-**Nächste Aufgabe:** P2.2 (`TrainingGoal.endurance` anhängen) — unabhängig, Linux-testbar, keine
-Dateiüberschneidung mit P2.1. P2.3 (gemeinsamer Adopt-Pfad) hängt von P2.1 ab und kann jetzt
-begonnen werden.
+**Nächste Aufgabe:** siehe P2.2-Abschlussbericht unten.
+
+## P2.2-Abschlussbericht (TrainingGoal.endurance angehängt)
+
+**Paket:** P2.2 — `TrainingGoal` bekommt den sechsten, additiv ans Ende angehängten Fall
+`.endurance` ("Laufen & Ausdauer", Audit Konflikt 1, ENTSCHIEDEN).
+
+**Implementiert:**
+- `CoachingTypes.swift`: `case endurance` angehängt (RawValue `"endurance"`, stabil — reiht sich
+  nach `.functional` ein, keine Umbenennung bestehender Fälle). `label`/`symbol`/`blurb` ergänzt
+  (`"Laufen & Ausdauer"`, `"figure.run"` — dasselbe Symbol, das `TrainingTypeKind.running`/
+  `CardioProfile.generalFitness` bereits durchgehend verwenden, kein neu erfundenes Icon).
+- Zwei dadurch nicht mehr kompilierende, erschöpfende `switch`-Anweisungen in
+  `DomainEnums+Localization.swift` (`TrainingGoal.localizedName`/`.localizedBlurb`) um
+  `case .endurance` ergänzt; zwei neue Localizable.xcstrings-Keys
+  `coaching.goal.endurance.label`/`.blurb` (DE/EN/TR, Katalog jetzt 2094/2094/2094/2094 Keys,
+  0 hardcoded).
+- **Stale-Proxy-Fund behoben:** `BaselineCheckFlowView.showsCardioStep` prüfte bisher nur
+  `goal == .hybrid`, mit einem Kommentar, der wörtlich erklärte, `.hybrid` diene hier nur als
+  Behelf, weil `TrainingGoal` "kein eigenes 'Lauf'-Case" kenne. Mit `.endurance` existiert dieser
+  Fall jetzt wirklich — `showsCardioStep` prüft deshalb jetzt `goal == .hybrid || goal ==
+  .endurance`, sonst hätte ein `.endurance`-Nutzer im Baseline-Check genau den Cardio-Schritt
+  NICHT mehr gesehen, den die ursprüngliche Vorgabe für "Lauf-/Hybrid-Ziel" wörtlich verlangt.
+- **Katalog-Anbindung für den Pflicht-Test:** `ProgramTemplates.swift`s `hybrid_balanced`
+  ("Hybrid Athlete — Balanced") bekommt `.endurance` zusätzlich zu `.hybrid` in `targetGoals` —
+  das einzige Template im Katalog mit echten Lauf-Tagen (distanz-/dauerbasiert: "Easy Run",
+  "Long Run"). `PlanMatchmaker.rankPlansDetailed` behandelt `targetGoals` als Scoring-Bonus, kein
+  harter Filter — andere Kandidaten bleiben für `.endurance`-Nutzer weiterhin sichtbar.
+
+**Automatisch mit erledigt, ohne Codeänderung (wichtig zu wissen, nicht übersehen):**
+`ProfileEditorView` (Zeile ~1086) und `OnboardingView`s Coaching-Style-Schritt (Zeile ~732) iterieren
+beide bereits `ForEach(TrainingGoal.allCases, ...)` dynamisch. `.endurance` erscheint dadurch **ab
+sofort** als fünfte/sechste wählbare Zielkarte in BEIDEN bestehenden Oberflächen — mit echtem
+Label/Icon/Blurb, nicht als Platzhalter. Das ist eine unmittelbare, sichtbare Verhaltensänderung
+der bestehenden App durch diesen rein additiven Schritt, keine stille Vorbereitung für P3 — falls
+`.endurance` vor dem geplanten zielorientierten P3-Einstieg noch nicht wählbar sein soll, ist das
+jetzt zu entscheiden, nicht erst beim P3-Rollout.
+
+**Drei bewusst NICHT entschiedene Fragen (explizit offengelassen, keine versteckten Defaults):**
+1. `PlanMatchmaker.goalIsSupportedButNotPrimaryFocus` gibt `.weightLoss` einen Sekundär-Scoring-
+   Bonus auf hypertrophy-/strength-getaggte Templates ("Krafttraining hilft auch beim Abnehmen").
+   Analog denkbar: ein Sekundär-Bonus für `.endurance` auf `.hybrid`-getaggte Templates, die NICHT
+   explizit `.endurance` tragen (`hybrid_beginner`, `hybrid_performance` — siehe Punkt 3). Nicht
+   umgesetzt — eigene Scoring-Policy-Entscheidung, nicht Teil von "anhängen".
+2. `ExerciseSubstitutionRules.swift` blockt zwei lastreduzierende Ersetzungen (Kniebeuge→Goblet
+   Squat, Rudern vorgebeugt→Chest Supported Row) explizit nur für `goal == .strength`. Ob
+   `.endurance`-Nutzer ebenfalls ausgenommen werden sollen (Kraft-Erhalt an Nebentagen wichtig)
+   oder wie jedes andere Nicht-Strength-Ziel behandelt werden (aktuelles, unverändertes Verhalten),
+   ist offen — nicht verändert.
+3. `CoachingMessageProvider`s Goal-Fallback-Kette fällt für fehlende `coaching.{context}.{tone}.
+   {goal}`-Einträge fest auf `.hybrid` zurück. `.endurance` hat deshalb aktuell KEINEN einzigen
+   dedizierten Coaching-Matrix-Eintrag und nutzt durchgehend `.hybrid`s Text. Das ist kein neuer
+   Mangel: `.functional` läuft nachweislich seit seiner Einführung identisch (0 dedizierte
+   `coaching.*.functional`-Einträge im gesamten Katalog, geprüft) — etabliertes, bereits
+   akzeptiertes Verhalten für ein Ziel ohne eigene Matrix-Zeilen, kein Rückschritt.
+
+**Geänderte Komponenten:** `Sources/FitnessAppCore/Coaching/CoachingTypes.swift`,
+`Sources/FitnessAppCore/Programs/ProgramTemplates.swift` (nur `hybrid_balanced.targetGoals`),
+`Sources/FitnessAppUI/Localization/DomainEnums+Localization.swift`,
+`Sources/FitnessAppUI/Baseline/BaselineCheckFlowView.swift`,
+`Sources/FitnessAppUI/Resources/Localizable.xcstrings`.
+
+**Neue/geänderte Datenfelder:** keine Migration — `TrainingGoal` bleibt `String`-RawRepresentable,
+`.endurance` ist rein additiv; bestehende `trainingGoalRaw`-Werte unverändert lesbar.
+
+**Tests hinzugefügt/angepasst:** `CoachingTypesTests.testTrainingGoalCoversAllExpectedCases`
+erweitert um `"endurance"`. `ProgramTemplatesTests.testEveryTrainingGoalHasAtLeastOneTemplate`
+unverändert im Code, lief vor der `targetGoals`-Ergänzung nachweislich mit genau der erwarteten
+Fehlermeldung durch (siehe unten) und danach grün — kein neuer Test nötig, der bestehende deckt
+die Abnahme bereits ab.
+
+**Tests tatsächlich ausgeführt — zwei unterschiedliche Vertrauensstufen, nicht vermischen:**
+- **Core (`CoachingTypes.swift`, `ProgramTemplates.swift`, beide Testdateien): echte Linux-
+  Kompilierung UND -Ausführung.** Vor der `targetGoals`-Ergänzung gezielt reproduziert:
+  `swift test --filter testEveryTrainingGoalHasAtLeastOneTemplate` schlug exakt wie erwartet fehl
+  ("TrainingGoal.endurance hat kein einziges Template — tote Quiz-Auswahl"); nach der Ergänzung
+  grün. Vollständiger Lauf `swift test` — **1020/1020 Tests grün**, keine Regression.
+- **UI (`DomainEnums+Localization.swift`, `BaselineCheckFlowView.swift`): NUR Syntax-Ebene
+  geprüft, keine echte Kompilierung.** Beide Dateien stehen hinter `#if canImport(SwiftUI)`; direkt
+  verifiziert (`swift /tmp/swuicheck.swift` mit `import SwiftUI`): „no such module 'SwiftUI'" auf
+  diesem Linux-Toolchain. `swift build` meldet zwar "Compiling FitnessAppUI
+  DomainEnums+Localization.swift" und build-complete, das beweist aber nur, dass die Datei
+  lexikalisch gültiges Swift ist (Klammerbalance etc.) — der Dateikörper selbst wird NICHT
+  semantisch geprüft (keine Typ-/Exhaustiveness-Prüfung der beiden erweiterten `switch`-
+  Anweisungen). Verifikation dieser zwei Dateien beruht ausschließlich auf manueller
+  Zeile-für-Zeile-Prüfung. Exakt dieselbe Einschränkung wie bei jeder P1-/P2.1-UI-Änderung dieser
+  Session — hier nur erstmals für dieses konkrete Paket explizit nachgewiesen statt nur behauptet.
+
+**Apple-Build/CI:** nicht durchgeführt — offen für die beiden UI-Dateien (höheres Risiko, siehe
+oben); für `CoachingTypes.swift`/`ProgramTemplates.swift` durch echten Linux-Test bereits
+abgedeckt, ein Apple-Lauf bleibt trotzdem zusätzlich sinnvoll (Integration ins Gesamt-Target).
+
+**UI-/Geräteprüfung:** nicht durchgeführt — offen. Insbesondere ungeprüft: erscheint die neue
+Zielkarte "Laufen & Ausdauer" im Onboarding/ProfileEditor korrekt mit `figure.run`-Icon und
+korrektem Text in allen drei Sprachen; führt die Auswahl zu einem sinnvollen Cardio-Schritt im
+Baseline-Check; zeigt `hybrid_balanced` im Template-Picker für ein `.endurance`-Ziel plausibel an.
+
+**Bekannte Grenzen/Risiken:** die drei offengelassenen Fragen oben; zusätzlich: `hybrid_beginner`
+und `hybrid_performance` haben ebenfalls echte, teils sogar umfangreichere Lauf-Tage (3 Läufe inkl.
+Intervallen bei `hybrid_performance`) und wurden bewusst NICHT mit `.endurance` getaggt — nur
+`hybrid_balanced`, um die Abnahme minimal und nachvollziehbar zu erfüllen. Ob die gesamte
+"Hybrid Athlete"-Familie `.endurance` tragen soll oder ob stattdessen ein eigenes, reines
+Ausdauer-Template entstehen sollte (ohne Kraft-Tage), ist eine redaktionelle Katalog-Entscheidung
+für später, keine Nebenwirkung dieser Korrektur.
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
+Berichtseintrag.
+
+**Nächste Aufgabe:** P2.3 (gemeinsamer Adopt-Pfad) — hängt von P2.1 ab (bereits erledigt), kann
+jetzt begonnen werden. P2.4 hängt von P2.3 ab.

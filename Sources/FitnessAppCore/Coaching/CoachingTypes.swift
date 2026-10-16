@@ -70,6 +70,15 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
     /// Smart-Onboarding-Epic: ehemals `GoalType.functional`, hierher
     /// konsolidiert.
     case functional
+    /// Planung-&-Trainingsbegleitung-Epic, P2.2 (docs/PLANUNG_BEGLEITUNG_AUDIT.md,
+    /// Konflikt 1, ENTSCHIEDEN): "Laufen & Ausdauer" als eigenständige
+    /// Zielkarte — unabhängig vom optionalen Laufcoach
+    /// (`cardioCoachingEnabled`/`CardioGoal`) und von reinen Laufeinheiten
+    /// im Plan (`TrainingTypeKind.running`/`.cycling`, bereits bestehend).
+    /// Additiv ans Ende angehängt (RawValue-Stabilität, siehe Dateikommentar
+    /// oben) — KEINE Migration, bestehende `trainingGoalRaw`-Werte bleiben
+    /// unverändert lesbar.
+    case endurance
 
     public var label: String {
         switch self {
@@ -78,6 +87,7 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
         case .hybrid:      return "Funktionell / Hybrid"
         case .weightLoss:  return "Abnehmen / Fettabbau"
         case .functional:  return "Funktionelle Fitness"
+        case .endurance:   return "Laufen & Ausdauer"
         }
     }
 
@@ -88,6 +98,7 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
         case .hybrid:      return "figure.mixed.cardio"
         case .weightLoss:  return "flame.fill"
         case .functional:  return "figure.cooldown"
+        case .endurance:   return "figure.run"
         }
     }
 
@@ -98,6 +109,7 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
         case .hybrid:      return "Kraft + Ausdauer + Mobilität — alles fließt zusammen."
         case .weightLoss:  return "Kaloriendefizit, Muskelerhalt, Alltagsbewegung."
         case .functional:  return "Alltagstaugliche Bewegungsmuster, Mobilität, kein reiner Kraft- oder Muskelfokus."
+        case .endurance:   return "Laufleistung und aerobe Basis steigern, lange ruhige Einheiten plus gezielte Tempoarbeit."
         }
     }
 }
