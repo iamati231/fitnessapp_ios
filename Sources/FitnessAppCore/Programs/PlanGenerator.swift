@@ -56,6 +56,20 @@ public enum PlanGenerator {
         public struct GeneratedDay: Sendable {
             public let spec: DaySpec
             public let loadLevel: PlanLoadLevel
+
+            /// P2.4: expliziter Public-Init. Ein `public struct` mit nur
+            /// `public let`-Feldern bekommt in Swift TROTZDEM nur einen
+            /// `internal` Memberwise-Init synthetisiert — ohne diesen Init
+            /// koennte `FitnessAppUI` (z.B. `PlanBuilderView`, um ein
+            /// Ergebnis aus einem bearbeiteten `PlanDraft` zu rekonstruieren,
+            /// siehe dortige Doku) keinen `GeneratedDay` bauen. Rein additiv,
+            /// identische Parameter-Reihenfolge/-Labels wie der bisherige
+            /// interne Konstruktionsaufruf in `generate(from:shuffle:)` —
+            /// kein Verhaltensunterschied fuer bestehende Aufrufer.
+            public init(spec: DaySpec, loadLevel: PlanLoadLevel) {
+                self.spec = spec
+                self.loadLevel = loadLevel
+            }
         }
         public let days: [GeneratedDay]
         /// Lokalisierungs-KEY (nicht aufgeloester Text!) fuer den einen Satz,
@@ -65,6 +79,12 @@ public enum PlanGenerator {
         /// `Bundle.module` hier) - der Aufrufer (Wizard-UI in FitnessAppUI)
         /// macht `String(localized: String.LocalizationValue(key), bundle: .module)`.
         public let explanationKey: String?
+
+        /// P2.4: siehe `GeneratedDay.init` oben — derselbe Grund.
+        public init(days: [GeneratedDay], explanationKey: String? = nil) {
+            self.days = days
+            self.explanationKey = explanationKey
+        }
     }
 
     /// Ein noch nicht platzierter, aber inhaltlich fertiger Tag samt

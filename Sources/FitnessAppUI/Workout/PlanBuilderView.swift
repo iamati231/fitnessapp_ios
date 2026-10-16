@@ -27,6 +27,18 @@ import FitnessAppData
 /// laeuft (bei `OnboardingView` erst zusammen mit dem Profil in
 /// `finishOnboarding()`). `nil` (Default) erhaelt das bisherige, sich
 /// selbst adoptierende Verhalten fuer `PlansListView` unveraendert.
+///
+/// P2.4: Schritt 3 haelt die bearbeitete Wochenvorschau in einem `PlanDraft`
+/// (Core, P2.0) statt in einem zweiten `PlanGenerator.Result`-State. Der
+/// Generator-Output wird einmal pro Generierung (`generatePreviewIfNeeded`)
+/// in den Draft uebernommen; ab da ist `draft` die massgebliche Quelle fuer
+/// Anzeige UND Uebergabe - `currentResult` rekonstruiert bei Bedarf ein
+/// `PlanGenerator.Result` daraus, damit sich am `onGenerated`-Vertrag oben
+/// nichts aendert. Reorder/Fixierung liefen schon vor P2.4 ueber keine
+/// eigene UI hier (siehe `PlanDraft.reorder(to:)`/`setContentFixed`/
+/// `setPositionFixed` fuer den spaeteren visuellen Editor, P3.2) - diese
+/// Anbindung fuehrt bewusst KEINE zweite Fixierungs-/Identitaets-/Reorder-
+/// Logik ein, siehe docs/PLANUNG_BEGLEITUNG_AUDIT.md (P2.4-Abschnitt).
 @available(iOS 17.0, macOS 14.0, *)
 public struct PlanBuilderView: View {
 
@@ -94,7 +106,26 @@ public struct PlanBuilderView: View {
     @State private var fixedWeekdays: Set<Int> = []
 
     // Schritt 3
-    @State private var result: PlanGenerator.Result?
+    /// P2.4: der generierte Wochenvorschlag wird EINMAL in einen `PlanDraft`
+    /// uebernommen (siehe Typ-Doku) und ist ab da die massgebliche Quelle
+    /// fuer die Vorschau UND die Uebergabe (`currentResult` unten) - kein
+    /// separates `PlanGenerator.Result`-State mehr. Wiederverwendet die
+    /// komplette Fixierungs-/Identitaets-/Reorder-Logik aus P2.0
+    /// (`PlanDraft`), ohne sie hier zu duplizieren.
+    @State private var draft: PlanDraft?
+    /// `loadLevel` ist bewusst NICHT Teil von `DraftDay`/Core: ein
+    /// generatorspezifisches, GESAMT-Wochen-relatives Anzeigekonzept
+    /// (`loadLevels(for:)` vergleicht alle Tage EINES Generierungslaufs
+    /// gegeneinander), keine Eigenschaft eines einzelnen Tages und keine
+    /// Fixierungs-/Identitaetsfrage - gehoert deshalb nicht in die
+    /// wiederverwendbare `PlanDraft`-Schicht. Lebt stattdessen hier, ueber
+    /// die stabile `DraftDayID` an den jeweiligen Tag gebunden.
+    @State private var loadLevelByDayID: [DraftDayID: PlanLoadLevel] = [:]
+    @State private var explanationKey: String?
+    /// Verhindert, dass ein blosses erneutes Betreten von Schritt 3 (ohne
+    /// Aenderung an Schritt 1/2) den Entwurf mit neuen `DraftDayID`s ersetzt
+    /// - siehe `generatePreviewIfNeeded`.
+    @State private var lastGeneratedInput: PlanGeneratorInput?
 
     /// Audit-Korrektur (Review nach P2.1): treibt den expliziten Fehler-
     /// Zustand, wenn `adoptPlan()` im eigenstaendigen Modus kein Profil
@@ -601,16 +632,59 @@ public struct PlanBuilderView: View {
     /// von Schritt 3 (`goToNextStep`/`.onAppear`) bleibt bewusst
     /// deterministisch (Default `false`), nur der explizite "Neu rechnen"-
     /// Tap fordert eine Variante an (siehe `resultStepView`).
-    private func recalculatePreview(shuffle: Bool = false) {
-        result = PlanGenerator.generate(from: currentInput, shuffle: shuffle)
+    ///
+    /// P2.4 Punkt 5: ein blosses erneutes Betreten von Schritt 3 (zurueck zu
+    /// Schritt 1/2 und wieder vor, OHNE dort etwas zu aendern) darf den
+    /// bestehenden Entwurf NICHT mit neuen `DraftDayID`s rekonstruieren -
+    /// deshalb der fruehe `guard`. Ein echter Input-Wechsel (Schritt 1/2
+    /// tatsaechlich geaendert) ODER ein expliziter "Neu rechnen"-Tap sind
+    /// dagegen bewusst eine NEUE Generierung (Typ-Doku Punkt 6) und bauen den
+    /// Draft komplett neu auf.
+    private func generatePreviewIfNeeded(shuffle: Bool = false) {
+        guard shuffle || draft == nil || lastGeneratedInput != currentInput else { return }
+
+        let input = currentInput
+        let generated = PlanGenerator.generate(from: input, shuffle: shuffle)
+        let newDraft = PlanDraft(generated: generated.days.map(\.spec))
+        // `PlanDraft.init(generated:)` sortiert nach `sequenceIndex` - hier
+        // identisch sortieren statt sich auf eine unausgesprochene
+        // Reihenfolge-Annahme von `generated.days` selbst zu verlassen, damit
+        // das `zip` unten garantiert Tag-zu-Tag korrekt paart.
+        let sortedBySequence = generated.days.sorted { $0.spec.sequenceIndex < $1.spec.sequenceIndex }
+        draft = newDraft
+        loadLevelByDayID = Dictionary(
+            uniqueKeysWithValues: zip(newDraft.days, sortedBySequence).map { ($0.id, $1.loadLevel) }
+        )
+        explanationKey = generated.explanationKey
+        lastGeneratedInput = input
+    }
+
+    private func loadLevel(for dayID: DraftDayID) -> PlanLoadLevel {
+        loadLevelByDayID[dayID] ?? .medium
+    }
+
+    /// P2.4 Punkt 8: die Vorschau UND die Uebergabe an `onGenerated`/
+    /// `PlanGeneratorInstantiator.createPlan` muessen den tatsaechlich
+    /// bearbeiteten `draft` darstellen - ein bearbeiteter Draft darf beim
+    /// Uebernehmen nicht durch das alte, unveraenderte Generatorresultat
+    /// ersetzt werden. Rekonstruiert deshalb bei jedem Zugriff frisch aus
+    /// `draft` statt ein zweites, potenziell veraltetes `Result` separat
+    /// vorzuhalten. `onGenerated`s Signatur bleibt dadurch unveraendert -
+    /// siehe Typ-Doku.
+    private var currentResult: PlanGenerator.Result? {
+        guard let draft, !draft.days.isEmpty else { return nil }
+        let days = zip(draft.days, draft.resolvedDaySpecs).map { draftDay, spec in
+            PlanGenerator.Result.GeneratedDay(spec: spec, loadLevel: loadLevel(for: draftDay.id))
+        }
+        return PlanGenerator.Result(days: days, explanationKey: explanationKey)
     }
 
     private var resultStepView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                if let result, !result.days.isEmpty {
-                    if let key = result.explanationKey {
-                        Text(String(localized: String.LocalizationValue(key), bundle: .module))
+                if let draft, !draft.days.isEmpty {
+                    if let explanationKey {
+                        Text(String(localized: String.LocalizationValue(explanationKey), bundle: .module))
                             .font(.callout)
                             .foregroundStyle(.secondary)
                             .padding(12)
@@ -618,8 +692,10 @@ public struct PlanBuilderView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                     }
 
-                    ForEach(Array(result.days.enumerated()), id: \.offset) { _, day in
-                        resultDayRow(day)
+                    // `DraftDay` ist `Identifiable` (stabile `DraftDayID`) -
+                    // kein `.offset`-Hilfsindex mehr noetig.
+                    ForEach(draft.days) { day in
+                        resultDayRow(day, loadLevel: loadLevel(for: day.id))
                     }
 
                     Text(String(format: String(localized: "planBuilder.result.weeklyTotal", bundle: .module), weeklyTotalTimeLabel))
@@ -636,7 +712,7 @@ public struct PlanBuilderView: View {
                         // Zeilenhoehen), selbst wenn sich die gewaehlten
                         // Uebungen im Einzelfall kaum unterscheiden.
                         withAnimation(.easeInOut(duration: 0.3)) {
-                            recalculatePreview(shuffle: true)
+                            generatePreviewIfNeeded(shuffle: true)
                         }
                     } label: {
                         Label {
@@ -658,32 +734,40 @@ public struct PlanBuilderView: View {
             .padding(.vertical, 16)
         }
         .onAppear {
-            if result == nil { recalculatePreview() }
+            // `generatePreviewIfNeeded` traegt die "nur wenn noetig"-Pruefung
+            // selbst (siehe dortige Doku) - ein erneutes `.onAppear` nach
+            // Zurueck/Vor ohne Aenderung baut den Draft deshalb nicht neu auf.
+            generatePreviewIfNeeded()
         }
     }
 
-    private func resultDayRow(_ day: PlanGenerator.Result.GeneratedDay) -> some View {
-        HStack(alignment: .top, spacing: 12) {
+    private func resultDayRow(_ day: DraftDay, loadLevel: PlanLoadLevel) -> some View {
+        // `sequenceIndex` ist fuer die reine Anzeige irrelevant (weder
+        // `displayName` noch `scopeLine` lesen ihn) - die tatsaechliche
+        // Position liefert `draft.resolvedDaySpecs` erst bei der Uebergabe
+        // (`currentResult`).
+        let spec = day.spec(sequenceIndex: 1)
+        return HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 // DEL-247: `displayName` statt `.name` - loest den seit
                 // DEL-247 gesetzten `localizationKey` auf, damit die
                 // Wizard-Vorschau selbst schon in EN/TR korrekt anzeigt statt
                 // erst nach dem Adopt (wo `TrainingDay.displayName` das
                 // ohnehin schon tat).
-                Text(day.spec.displayName)
+                Text(spec.displayName)
                     .font(.body.weight(.semibold))
-                Text(scopeLine(for: day.spec))
+                Text(scopeLine(for: spec))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Text(day.loadLevel.localizedName)
+            Text(loadLevel.localizedName)
                 .font(.caption2.weight(.bold))
                 .tracking(0.6)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
-                .background(loadLevelColor(day.loadLevel).opacity(0.16))
-                .foregroundStyle(loadLevelColor(day.loadLevel))
+                .background(loadLevelColor(loadLevel).opacity(0.16))
+                .foregroundStyle(loadLevelColor(loadLevel))
                 .clipShape(Capsule())
         }
         .padding(12)
@@ -758,7 +842,7 @@ public struct PlanBuilderView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled((result?.days.isEmpty ?? true) || isAdopting)
+                .disabled((draft?.days.isEmpty ?? true) || isAdopting)
             } else {
                 Button {
                     goToNextStep()
@@ -777,7 +861,7 @@ public struct PlanBuilderView: View {
 
     private func goToNextStep() {
         guard let next = BuilderStep(rawValue: step.rawValue + 1) else { return }
-        if next == .result { recalculatePreview() }
+        if next == .result { generatePreviewIfNeeded() }
         step = next
     }
 
@@ -787,15 +871,16 @@ public struct PlanBuilderView: View {
     }
 
     private func adoptPlan() {
-        // Bugfix (Nutzer-Feedback, "Neu rechnen"-Shuffle): das bereits in
-        // Schritt 3 angezeigte `result` wird durchgereicht statt neu zu
+        // Bugfix (Nutzer-Feedback, "Neu rechnen"-Shuffle): der bereits in
+        // Schritt 3 angezeigte Entwurf wird durchgereicht statt neu zu
         // rechnen (und damit wieder deterministisch, ohne Shuffle) - sonst
         // wuerde ein zuvor per "Neu rechnen" gefundener, dem User
         // zusagender Plan beim Uebernehmen durch die urspruengliche
-        // Variante ersetzt. Der Knopf ist disabled, solange `result` leer/
-        // nil ist (siehe `navigationBar`), das `guard` hier ist die
+        // Variante ersetzt. `currentResult` rekonstruiert dafuer IMMER aus
+        // `draft` (P2.4 Punkt 8) - der Knopf ist disabled, solange `draft`
+        // leer/nil ist (siehe `navigationBar`), das `guard` hier ist die
         // gemeinsame Absicherung fuer BEIDE Pfade unten.
-        guard let result else { return }
+        guard let result = currentResult else { return }
 
         // Nachbesserung (P2.3): Doppel-Tap-Schutz, siehe `isAdopting`-Doku.
         guard !isAdopting else { return }

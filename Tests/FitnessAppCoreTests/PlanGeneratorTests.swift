@@ -474,4 +474,39 @@ final class PlanGeneratorTests: XCTestCase {
         let decoded = try! JSONDecoder().decode(PlanGeneratorTypeSelection.self, from: Data(legacyJSON.utf8))
         XCTAssertNil(decoded.timeFormat)
     }
+
+    // MARK: - P2.4: Public Inits für externe Rekonstruktion (PlanBuilderView/PlanDraft)
+
+    /// `PlanBuilderView` haelt die bearbeitete Wochenvorschau ab P2.4 in einem
+    /// `PlanDraft` und muss daraus spaeter wieder ein `PlanGenerator.Result`
+    /// zusammensetzen (siehe dortige `currentResult`), um den unveraenderten
+    /// `onGenerated`-Vertrag zu bedienen. Vorher hatten `GeneratedDay`/`Result`
+    /// nur einen `internal` Memberwise-Init (ein `public struct` mit
+    /// ausschliesslich `public let`-Feldern bekommt in Swift trotzdem keinen
+    /// `public` Init synthetisiert). Dieser Test belegt, dass die neuen
+    /// expliziten Inits ein Resultat verlustfrei rekonstruieren.
+    func testGeneratedDayAndResultPublicInitsReconstructEquivalentResult() {
+        let original = PlanGenerator.generate(from: input([selection(.barbell, days: 3)]))
+        XCTAssertFalse(original.days.isEmpty)
+
+        let reconstructedDays = original.days.map {
+            PlanGenerator.Result.GeneratedDay(spec: $0.spec, loadLevel: $0.loadLevel)
+        }
+        let reconstructed = PlanGenerator.Result(days: reconstructedDays, explanationKey: original.explanationKey)
+
+        XCTAssertEqual(reconstructed.days.map(\.spec.name), original.days.map(\.spec.name))
+        XCTAssertEqual(reconstructed.days.map(\.spec.sequenceIndex), original.days.map(\.spec.sequenceIndex))
+        XCTAssertEqual(reconstructed.days.map(\.loadLevel), original.days.map(\.loadLevel))
+        XCTAssertEqual(reconstructed.explanationKey, original.explanationKey)
+    }
+
+    /// `explanationKey` hat im neuen Init einen Default (`nil`), damit
+    /// Aufrufer, die Tage ohne Erklaertext zusammensetzen, ihn nicht jedes
+    /// Mal angeben muessen.
+    func testResultInitExplanationKeyDefaultsToNil() {
+        let original = PlanGenerator.generate(from: input([selection(.barbell, days: 1)]))
+        let day = PlanGenerator.Result.GeneratedDay(spec: original.days[0].spec, loadLevel: original.days[0].loadLevel)
+        let result = PlanGenerator.Result(days: [day])
+        XCTAssertNil(result.explanationKey)
+    }
 }

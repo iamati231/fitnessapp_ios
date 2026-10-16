@@ -1575,3 +1575,143 @@ Keine neue UI-Übernahme-Funktionalität, bis Apple-Build diese und die vorherig
 bestätigt hat. Task #197 bleibt Voraussetzung für jede finale Wocheneditor-Übernahmefunktion.
 Apple-Build und Geräteprüfung bleiben für P1, P2.1, beide Nachbesserungen, P2.3 und diese
 Nacharbeiten gemeinsam offen, bis ein echter Lauf vorliegt.
+
+## P2.4-Abschlussbericht (PlanBuilderView an PlanDraft angebunden)
+
+**Paket:** `PlanBuilderView` (Schritt 3, die bearbeitete Wochenvorschau des Plan-bauen-Assistenten)
+verwendet jetzt `PlanDraft` (Core, P2.0) als maßgebliche Quelle statt eines eigenen,
+`PlanDraft`-unabhängigen `PlanGenerator.Result`-State. Reine Verdrahtungsaufgabe wie in der
+P2.3-Nacharbeiten-Vorprüfung erwartet — keine neue Fixierungs-/Identitäts-/Reorder-Logik, keine
+neuen persistenten Felder, keine neue Übernahmefunktion.
+
+**Welche Zustände wurden ersetzt?**
+`@State private var result: PlanGenerator.Result?` ist komplett entfernt. An seiner Stelle:
+- `draft: PlanDraft?` — der eigentliche Entwurf (Tage, Übungen, beide Fixierungs-Flags, stabile
+  `DraftDayID`/`DraftExerciseID`).
+- `loadLevelByDayID: [DraftDayID: PlanLoadLevel]` — bewusst NICHT in `PlanDraft`/Core verschoben,
+  siehe Typ-Doku: `loadLevel` ist ein generatorspezifisches, gesamt-wochen-relatives
+  Anzeigekonzept (`loadLevels(for:)` vergleicht alle Tage EINES Generierungslaufs gegeneinander),
+  keine Fixierungs-/Identitätsfrage und keine Eigenschaft eines einzelnen Tages für sich — würde
+  `PlanDraft`s generatorunabhängige Wiederverwendbarkeit (auch für Template-Auswahl/P3.2-Edit
+  bestehender Pläne) unnötig einschränken.
+- `explanationKey: String?` — vorher `result.explanationKey`, jetzt direkt gehalten.
+- `lastGeneratedInput: PlanGeneratorInput?` — neu, trägt die "nur neu generieren, wenn nötig"-Prüfung
+  (Punkt 5 der Vorgabe).
+
+**Welche Quelle ist jetzt für Vorschau und Übergabe maßgeblich?**
+`draft` ist die alleinige Quelle für die Anzeige (`resultStepView`/`resultDayRow` lesen
+ausschließlich `draft.days`, keine zweite Repräsentation parallel). Für die Übergabe an
+`onGenerated`/`PlanGeneratorInstantiator.createPlan` — deren Signatur unverändert
+`PlanGenerator.Result` erwartet (Punkt 7: kein Ripple-Effekt in `OnboardingView`,
+`CardioFeasibilityCardModel`, `PlansListView`, `ProfileEditorView`) — rekonstruiert die neue
+berechnete Property `currentResult` bei jedem Zugriff frisch aus `draft` + `loadLevelByDayID` +
+`explanationKey`. Das ist genau die Punkt-8-Absicherung: ein bearbeiteter Draft kann beim
+Übernehmen nicht mehr durch ein altes, unverändertes Generatorergebnis ersetzt werden, weil es
+dieses alte Ergebnis als separaten State gar nicht mehr gibt. `adoptPlan()` liest jetzt
+`currentResult` statt des alten `result`-State, der Rest der Funktion (Onboarding-Callback-Zweig
+kehrt vor jedem SwiftData-Zugriff zurück; eigenständiger Zweig mit Profil-Fehlerzustand,
+`createPlan`, verzögerter Navigation) ist strukturell unverändert.
+
+Diese Umstellung ermöglichte einen Korrektheitsgewinn gegenüber dem alten Code: vorher rechnete
+`goToNextStep()` bei JEDEM Eintritt in Schritt 3 unbedingt neu (`recalculatePreview()` ohne
+Bedingung), `resultStepView.onAppear` prüfte nur `result == nil` als Fallback. Jetzt prüft
+`generatePreviewIfNeeded(shuffle:)` selbst, ob sich `currentInput` seit der letzten Generierung
+geändert hat (`lastGeneratedInput != currentInput`) — ein Zurück zu Schritt 1/2 und wieder vor,
+OHNE dort etwas zu ändern, erzeugt keinen neuen Draft und damit keine neuen `DraftDayID`s mehr
+(Punkt 5). Ein echter Input-Wechsel oder ein expliziter „Neu rechnen"-Tap (`shuffle: true`) bauen
+den Draft weiterhin bewusst komplett neu auf (Punkt 6, "neue Generierung" vs. "gezielte Änderung" —
+Letztere hat mangels UI-Affordanz noch keinen Aufrufer, bleibt P3).
+
+**Was wurde aus P2.0 wiederverwendet statt neu gebaut?**
+Wie in der P2.3-Nacharbeiten-Vorprüfung vorhergesagt: die komplette Fixierungs-/Identitäts-/
+Reorder-Logik (`DraftDayID`/`DraftExerciseID`, `isContentFixed`/`isPositionFixed` samt Settern,
+`reorder(to:)`/`moveDay(_:toIndex:)` mit Schutz gegen direkte UND indirekte
+Positionsverdrängung, `replaceContent(of:with:)`) existierte bereits vollständig in
+`PlanDraft`/`DraftDay` und wurde unverändert übernommen — P2.4 hat dort NICHTS Neues
+implementiert, nur `PlanBuilderView` an die bestehende Schicht angeschlossen. Einzige echte
+Neuerung war eine Blockade auf dem Weg dorthin: `PlanGenerator.Result`/`GeneratedDay` (Core)
+hatten nur einen `internal` Memberwise-Init (ein `public struct` mit ausschließlich
+`public let`-Feldern bekommt in Swift trotzdem keinen `public` Init synthetisiert) — `FitnessAppUI`
+konnte diese Typen deshalb nicht konstruieren, um `currentResult` aus einem `PlanDraft`
+zurückzubauen. Behoben durch zwei zusätzliche, rein additive `public init`s in
+`PlanGenerator.swift`, mit exakt denselben Parametern/Labels wie die beiden einzigen bisherigen
+internen Konstruktionsstellen (verifiziert per Grep — keine weitere Konstruktionsstelle im Repo
+betroffen).
+
+**Noch keine UI-Neuerung:** `resultStepView` zeigt weiterhin eine reine Liste ohne Drag&Drop oder
+Fixierungs-Schalter — die Vorgabe „kein vollständiges P3-Redesign" wurde als Grenze gelesen, keine
+Bedienelemente für die jetzt technisch verfügbaren Fixierungen/Reorder in dieser Runde einzuführen.
+„Reorder und Fixierungen ausschließlich über die bereits vorhandenen Draft-Funktionen abwickeln"
+(Punkt 3) ist damit als VORWÄRTS GERICHTETE Einschränkung für die künftige P3.2-UI erfüllt, nicht
+als Auftrag, diese UI jetzt zu bauen.
+
+**Geänderte Komponenten:**
+- `Sources/FitnessAppCore/Programs/PlanGenerator.swift` — zwei neue `public init`s
+  (`GeneratedDay.init(spec:loadLevel:)`, `Result.init(days:explanationKey:)`), keine
+  Verhaltensänderung an `generate(from:shuffle:)`.
+- `Sources/FitnessAppUI/Workout/PlanBuilderView.swift` — State-Umstellung, neue
+  `generatePreviewIfNeeded(shuffle:)`/`loadLevel(for:)`/`currentResult`, `resultStepView`/
+  `resultDayRow` auf `DraftDay` umgestellt (`ForEach(draft.days)` statt
+  `ForEach(Array(result.days.enumerated()), id: \.offset)` — `DraftDay` ist selbst `Identifiable`),
+  `goToNextStep()`/`navigationBar`/`adoptPlan()` entsprechend angepasst.
+
+**Neue/geänderte Datenfelder:** keine SwiftData-/Persistenz-Felder. Zwei neue `public init`s in
+Core (additiv, keine Signaturänderung bestehender Konstruktionsstellen).
+
+**Tests hinzugefügt:** `Tests/FitnessAppCoreTests/PlanGeneratorTests.swift` —
+`testGeneratedDayAndResultPublicInitsReconstructEquivalentResult` (ein echtes Generator-Ergebnis
+über die neuen Inits verlustfrei nachgebaut, Namen/Sequenzindizes/Ladestufen/ExplanationKey per
+Round-Trip verglichen — genau der Mechanismus, den `currentResult` in `PlanBuilderView`
+verwendet) und `testResultInitExplanationKeyDefaultsToNil` (Default-Parameter-Verhalten).
+
+**Tests tatsächlich ausgeführt:** `swift build`/`swift build --build-tests` grün. `swift test`:
+**1025/1025 grün** (1023 + 2 neue) — die beiden neuen Tests sind ECHTE, auf Linux ausgeführte
+Core-Tests, kein Syntax-Only-Nachweis. Das ist der einzige Teil von P2.4, der tatsächlich auf
+Linux lauffähig ist: `PlanBuilderView.swift` selbst liegt hinter
+`#if canImport(SwiftUI) && canImport(SwiftData)` und wird auf dieser Plattform NIE geparst/
+typgeprüft (beide Bedingungen sind hier `false`) — der grüne `swift build` für `FitnessAppUI`
+belegt ausschließlich lexikalische Gültigkeit (Klammern balanciert, Token gültig), KEINE
+semantische Korrektheit (Typen, Bindings, SwiftUI-Datenfluss). Kein `FitnessAppUITests`-Lauf deckt
+diese Datei ab. Apple-Kompilierung/Gerätetest bleiben offen, siehe unten.
+
+**Apple-Build/CI:** nicht durchgeführt — offen, unverändert zur Standing-Regel dieser gesamten
+Arbeit.
+
+**UI-/Geräteprüfung:** nicht durchgeführt — offen. Zusätzlich zu prüfen, sobald ein echter Build
+vorliegt: Wechsel zwischen Schritt 1/2/3 mehrfach hin und her OHNE Änderung behält exakt dieselbe
+Vorschau (keine sichtbare Neuberechnung); „Neu rechnen" liefert weiterhin eine sichtbar andere
+Variante; „Plan übernehmen" übergibt in BEIDEN Modi (Onboarding-Callback und eigenständig) exakt
+die zuletzt angezeigte Vorschau, auch nach einem vorherigen „Neu rechnen".
+
+**Bekannte Grenzen/Risiken:**
+- Die Korrektheit der neuen `zip(draft.days, resolvedGenerated)`-Zuordnung in
+  `generatePreviewIfNeeded` beruht auf identischer Sortierung nach `sequenceIndex` auf beiden
+  Seiten (explizit hergestellt, nicht nur angenommen) — bei einer künftigen Änderung an
+  `PlanDraft.init(generated:)`s Sortierlogik müsste diese Stelle mitgeprüft werden.
+- Kein Drag&Drop, keine Fixierungs-Schalter in der UI — die vorhandene Core-Funktionalität ist
+  damit noch nicht für den Nutzer sichtbar/bedienbar (bleibt P3).
+- Wie jede `FitnessAppUI`-Änderung dieser Session: ausschließlich Linux-Syntax-geprüft, nicht
+  Apple-kompiliert, nicht auf einem Gerät gesehen.
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
+Berichtseintrag.
+
+**Was bleibt offen für P3 und Task #197?**
+- P3 (visueller Wochen-Editor): Drag&Drop-UI für `reorder(to:)`/`moveDay(_:toIndex:)`, sichtbare
+  Schalter für `isContentFixed`/`isPositionFixed`, die „gezielte Änderung" eines einzelnen Tages
+  über `replaceContent(of:with:)` (aktuell ohne jede UI-Affordanz) — alles bereits
+  Core-seitig vorhanden, nur noch nicht angebunden.
+- Task #197 (Commit-/Speicherfehler-Behandlung) bleibt zwingende Voraussetzung, BEVOR eine finale
+  Wocheneditor-Übernahmefunktion gebaut wird — P2.4 selbst baut keine neue Übernahmefunktion
+  (nur dieselbe, bereits bestehende `createPlan`/`onGenerated`-Übergabe mit neuem Quellinhalt),
+  ändert an dieser Abhängigkeit nichts.
+- Der Aktivierungsvertrag (ausdrückliche Trennung „nur speichern" vs. „aktivieren" für den
+  künftigen Wocheneditor, siehe P2.3-Nachbesserung) und der konservative Historien-Schutz in
+  `recalculate` (erst lockerbar nach nachgewiesenem P5-Exit-Kriterium) sind von P2.4 nicht
+  berührt und bleiben unverändert in Kraft.
+
+**Nächste Aufgabe:** P3 (A+B-Builder und Onboarding an den visuellen Wochen-Editor anbinden) kann
+beginnen, sobald Apple-Build/Gerätetest für P2.4 (und die noch offenen vorherigen Phasen) vorliegen
+und Task #197 geklärt ist. Apple-Build und Geräteprüfung bleiben für P1, P2.1, beide
+P2.1/P2.2-Nachbesserungen, P2.3, die P2.3-Nacharbeiten und P2.4 gemeinsam offen, bis ein echter
+Lauf vorliegt.
