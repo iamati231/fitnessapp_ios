@@ -128,7 +128,14 @@ public struct CardioFeasibilityCardModel {
         // eine erfolgreiche Annahme ausgesehen: Fingerprint gesetzt → Karte
         // verschwindet via `make(for:)` → kein Plan existiert, keine
         // Wiederholung moeglich, ohne dass der Nutzer das bemerkt.
-        guard let plan = PlanGeneratorInstantiator.createPlan(
+        //
+        // Nachbesserung (Task #197): `createPlan` wirft jetzt zusaetzlich bei
+        // einem fehlgeschlagenen Speichervorgang - `try?` behandelt das
+        // bewusst GENAUSO wie den bestehenden leeren Ruecksprung (beide
+        // Faelle landen im selben `nil`-Pfad, der Aufrufer setzt bereits
+        // `isAcceptingCardioFeasibility = false` zurueck und erlaubt eine
+        // Wiederholung - kein zusaetzlicher UI-Zustand noetig).
+        guard let plan = try? PlanGeneratorInstantiator.createPlan(
             from: planInput, result: planResult,
             for: profile, generationSource: .cardioCoach, in: context
         ) else { return nil }
@@ -173,7 +180,10 @@ public struct CardioFeasibilityCardModel {
         // siehe dortige Begruendung — hier ebenfalls strukturell unerreichbar
         // (der obige Leer-Check deckt `build`s einzigen nil-Pfad bereits ab),
         // aber derselbe explizite Vertrag statt stillschweigender Annahme.
-        guard let plan = PlanGeneratorInstantiator.createPlan(
+        // Nachbesserung (Task #197): `try?` behandelt einen Speicherfehler
+        // genauso wie den bestehenden `nil`-Ruecksprung, siehe
+        // `accept(profile:in:)` oben.
+        guard let plan = try? PlanGeneratorInstantiator.createPlan(
             from: input, result: result,
             for: profile, generationSource: .cardioCoach, in: context
         ) else { return nil }

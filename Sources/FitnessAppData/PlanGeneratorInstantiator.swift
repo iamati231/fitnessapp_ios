@@ -53,36 +53,59 @@ import FitnessAppCore
 /// NICHT als stille Uebernahme der heutigen impliziten
 /// Alles-oder-nichts-Automatik dieser Datei. Diese Unterscheidung ist NICHT
 /// getroffen und NICHT Teil von P2.3 — wird hier sichtbar offengehalten,
-/// damit sie nicht spaeter als bereits entschieden gilt. Siehe auch
-/// **Task #197**: eine saubere, fuer genau EINE Operation begrenzte
-/// Save-/Fehlerbehandlung (statt der heutigen reinen Autosave-Abhaengigkeit)
-/// MUSS vor einer finalen Wocheneditor-Uebernahmefunktion geklaert sein —
-/// diese Funktion wird die erste sein, bei der ein Speicherfehler fuer den
-/// Nutzer sichtbare Konsequenzen haette (heute bei `createPlan` defensiv
-/// irrelevant, da jeder Aufrufer ohnehin nur EINEN frischen Plan anlegt).
+/// damit sie nicht spaeter als bereits entschieden gilt.
 ///
-/// **Commit-/Speicherverantwortung (Nachbesserung P2.3-Review, Punkt 4):**
-/// KEINE Funktion in dieser Datei ruft `context.save()` — Inserts/Updates
-/// werden nur in den `ModelContext` gestellt, die tatsaechliche
-/// Festschreibung auf die Platte (Zeitpunkt UND Fehlerbehandlung) liegt
-/// vollstaendig bei SwiftDatas Autosave-Mechanik (`.modelContainer(...)` in
-/// der App), ausserhalb der Kontrolle dieses Codes — unveraendert zu jedem
-/// anderen Adopt-Pfad der App (`ProgramTemplatePickerView` etc. rufen
-/// ebenfalls nie `save()`). "Synchroner Code ohne Rueckkehr nach dem ersten
-/// Insert" (verifiziert fuer `build`/`instantiate`) beweist NUR, dass diese
-/// Funktion selbst keine halbe Graph-Konstruktion zurueckgibt — das ist
-/// KEIN Nachweis echter Festschreibungs-Atomizitaet (ein Absturz zwischen
-/// zwei Autosave-Zyklen bleibt ein SwiftData-Framework-Risiko, nicht etwas,
-/// das dieser Code loesen kann oder sollte). Ausdruecklich NICHT eingebaut:
-/// ein eigener `context.save()` mit Fehlerbehandlung hier, und erst recht
-/// kein `context.rollback()` bei einem Fehler — ein Rollback wirkt auf den
-/// GESAMTEN geteilten `ModelContext` und wuerde unabhaengige, an anderer
-/// Stelle bereits bestaetigte Aenderungen (z.B. ein offenes Edit auf einem
-/// anderen Screen, das denselben `modelContext` teilt) mit zerstoeren — ein
-/// klar schlechteres Ergebnis als das Problem, das es loesen sollte. Echte
-/// Speicherfehler-Behandlung fuer genau diese Operation (eigener, eng
-/// begrenzter Save-Scope) waere eine eigene, sorgfaeltig geschnittene
-/// Aufgabe, nicht Teil von P2.3.
+/// **Task #197 — Stand nach dieser Nachbesserung:** die Save-/Fehlerbehandlung fuer GENAU
+/// `build`/`createPlan` (neuer Plan) und `recalculate` (bestehender Plan) ist jetzt real geklaert
+/// (siehe Commit-/Speicherverantwortung unten) — nicht mehr die reine Autosave-Abhaengigkeit von
+/// vorher. Das ist AUSDRUECKLICH NICHT dasselbe wie die obige „nur speichern" vs. „aktivieren"-
+/// Unterscheidung: diese bleibt offen und wird erst relevant, sobald eine finale
+/// Wocheneditor-Uebernahmefunktion TATSAECHLICH existiert (P3) — diese Datei legt heute weiterhin
+/// nur neue Plaene an bzw. aktualisiert bestehende, baut aber selbst keine neue
+/// „nur speichern ohne zu aktivieren"-Operation.
+///
+/// **Commit-/Speicherverantwortung (Nachbesserung, Task #197 — ersetzt den
+/// vorherigen P2.3-Stand):** `build` UND `recalculate` rufen jetzt SELBST
+/// `context.save()` auf — EIN Aufruf pro Funktion, direkt nach den eigenen
+/// Mutationen, begrenzt auf genau diese eine Operation (kein Save, der auch
+/// nur zufaellig etwas anderes mit festschreibt). Schlaegt der Save fehl,
+/// wird das als typisierter, catchbarer Fehler nach oben geworfen
+/// (`PlanCreationError.saveFailed` / `RecalculateError.saveFailed`) — statt
+/// sich wie zuvor ausschliesslich auf SwiftDatas Autosave-Mechanik zu
+/// verlassen, die weder Zeitpunkt noch Fehlerfall sichtbar macht.
+///
+/// `build` macht auf einem Save-Fehler einen GEZIELTEN, auf die eigenen
+/// Aenderungen begrenzten Rueckbau: der gerade erst eingefuegte Plan wird
+/// geloescht (cascadet automatisch auf seine Tage/Uebungen, siehe
+/// `TrainingPlan.days`/`TrainingDay.exercises`, beide `deleteRule: .cascade`)
+/// UND die `isActive`-Flags der zuvor aktiven Plaene — die
+/// `ProgramInstantiator.instantiate` unconditional auf `false` gesetzt hatte
+/// (dortiger Side-Effect 1) — werden wiederhergestellt. Der Context landet
+/// exakt im Zustand von VOR diesem Aufruf: ein erneuter Versuch legt weder
+/// einen doppelten Plan an, noch bleibt zwischenzeitlich kein Plan aktiv.
+///
+/// `recalculate` kann NICHT auf dieselbe Weise zurueckbauen: `apply` loescht
+/// bereits bestehende, persistierte `Exercise`-Objekte — SwiftData bietet
+/// keine sichere Operation, ein bereits angestossenes Delete ohne einen
+/// Context-weiten `rollback()` wieder rueckgaengig zu machen. Trotzdem
+/// sicher: `save()` ist atomar, bei einem Fehler landet NICHTS auf der
+/// Platte; die haengengebliebenen Aenderungen werden vom naechsten
+/// erfolgreichen Save (von hier oder anderswo) einfach nachgeholt, und ein
+/// erneuter `recalculate`-Aufruf dupliziert dabei nichts — der gerade neu
+/// geschriebene Fingerprint passt bereits zum neuen Inhalt, ein zweiter
+/// Durchlauf ersetzt also wieder nur konsistent denselben Zielzustand.
+///
+/// Ausdruecklich NICHT eingebaut, in BEIDEN Funktionen: ein
+/// `context.rollback()` bei einem Fehler — das wirkt auf den GESAMTEN
+/// geteilten `ModelContext` und wuerde unabhaengige, an anderer Stelle
+/// bereits bestaetigte Aenderungen (z.B. ein offenes Edit auf einem anderen
+/// Screen, das denselben `modelContext` teilt) mit zerstoeren — ein klar
+/// schlechteres Ergebnis als das Problem, das es loesen sollte.
+///
+/// Jeder andere Pfad in dieser Datei (`makeTemplate`, `apply` fuer sich
+/// genommen) ruft weiterhin KEIN `context.save()` auf — das bleibt
+/// Verantwortung der beiden oeffentlichen Einstiegspunkte, nicht jeder
+/// internen Hilfsfunktion.
 @MainActor
 public enum PlanGeneratorInstantiator {
 
@@ -161,6 +184,9 @@ public enum PlanGeneratorInstantiator {
     /// waere genau der versteckte Default, den diese Korrektur vermeiden
     /// soll. Bleibt offene Anschlussaufgabe, sobald der zielorientierte
     /// Builder (P3) ein echtes Ziel liefert.
+    /// Nachbesserung (Task #197): wirft `PlanCreationError.saveFailed`, wenn der abschliessende
+    /// `context.save()` fehlschlaegt — siehe Typ-Doku "Commit-/Speicherverantwortung" fuer den
+    /// gezielten Rueckbau, der in diesem Fall ausgefuehrt wird.
     @discardableResult
     public static func build(
         from input: PlanGeneratorInput,
@@ -169,10 +195,18 @@ public enum PlanGeneratorInstantiator {
         equipmentProfile: UserEquipmentProfile,
         result precomputed: PlanGenerator.Result? = nil,
         generationSource: GenerationSource = .manual
-    ) -> TrainingPlan? {
+    ) throws -> TrainingPlan? {
         let result = precomputed ?? PlanGenerator.generate(from: input)
         guard !result.days.isEmpty else { return nil }
         let template = makeTemplate(from: result, environment: environment)
+
+        // Nachbesserung (Task #197): VOR `instantiate` merken, welche Plaene gerade aktiv waren -
+        // `instantiate` deaktiviert sie unconditional (dortiger Side-Effect 1). Schlaegt der Save
+        // unten fehl, muss GENAU das wiederhergestellt werden, sonst bliebe nach einem
+        // gescheiterten Versuch kein Plan mehr aktiv.
+        let previouslyActivePlans = (try? context.fetch(
+            FetchDescriptor<TrainingPlan>(predicate: #Predicate { $0.isActive == true })
+        )) ?? []
 
         let plan = ProgramInstantiator.instantiate(
             template,
@@ -196,6 +230,22 @@ public enum PlanGeneratorInstantiator {
             day.generatorSequenceIndex = generated.spec.sequenceIndex
             day.generationFingerprint = day.currentContentFingerprint
         }
+
+        do {
+            try save(context)
+        } catch {
+            // Nachbesserung (Task #197): gezielter, auf diesen Aufruf begrenzter Rueckbau statt
+            // `context.rollback()` - siehe Typ-Doku. Nur das rueckgaengig machen, was DIESER
+            // Aufruf selbst veraendert hat: den gerade erst eingefuegten Plan (cascadet per
+            // `deleteRule: .cascade` auf alle seine Tage/Uebungen) UND die `isActive`-Flags, die
+            // `instantiate` oben umgeschaltet hat.
+            context.delete(plan)
+            for previouslyActive in previouslyActivePlans {
+                previouslyActive.isActive = true
+            }
+            throw PlanCreationError.saveFailed
+        }
+
         return plan
     }
 
@@ -228,17 +278,38 @@ public enum PlanGeneratorInstantiator {
         for profile: UserBodyProfile,
         generationSource: GenerationSource,
         in context: ModelContext
-    ) -> TrainingPlan? {
+    ) throws -> TrainingPlan? {
         let effectiveProfile = EquipmentPlanningResolver.resolve(
             environment: profile.environment,
             individualProfile: profile.equipmentProfile,
             confirmedComplete: profile.equipmentProfileConfirmedComplete
         ).effectiveProfile
-        return build(
+        return try build(
             from: input, in: context,
             environment: profile.environment, equipmentProfile: effectiveProfile,
             result: precomputed, generationSource: generationSource
         )
+    }
+
+    /// Nachbesserung (Task #197): typisierter Fehler fuer einen fehlgeschlagenen `context.save()`
+    /// in `build`/`createPlan` — siehe Typ-Doku "Commit-/Speicherverantwortung".
+    public enum PlanCreationError: Error, Equatable {
+        case saveFailed
+    }
+
+    /// Nachbesserung (Task #197): DI-Seam fuer den Save-Fehlerpfad, analog
+    /// `fetchAllSessionsOverrideForTesting`. `nil` (Default) aendert nichts - `build`/`recalculate`
+    /// rufen weiterhin den echten `context.save()` auf. `@testable import FitnessAppData` kann
+    /// hier eine werfende Closure setzen, um einen echten Speicherfehler deterministisch zu
+    /// simulieren, ohne den SwiftData-Store selbst beschaedigen zu muessen.
+    static var saveOverrideForTesting: ((ModelContext) throws -> Void)?
+
+    private static func save(_ context: ModelContext) throws {
+        if let saveOverrideForTesting {
+            try saveOverrideForTesting(context)
+            return
+        }
+        try context.save()
     }
 
     /// README 2.20 "neu rechnen": rechnet den am Plan gespeicherten
@@ -272,6 +343,11 @@ public enum PlanGeneratorInstantiator {
     /// ausfallen zu lassen.
     public enum RecalculateError: Error, Equatable {
         case sessionCheckFailed
+        /// Nachbesserung (Task #197): der abschliessende `context.save()` ist fehlgeschlagen.
+        /// KEIN Rueckbau der bereits angewandten Tagesersetzungen — siehe Typ-Doku
+        /// "Commit-/Speicherverantwortung" fuer die Begruendung (kein sicheres Undelete ohne
+        /// Context-weiten Rollback) und warum das trotzdem nichts verliert/dupliziert.
+        case saveFailed
     }
 
     /// Nachbesserung (P2.3-Review): Rueckgabe von `recalculate` — getrennt
@@ -392,6 +468,21 @@ public enum PlanGeneratorInstantiator {
             )
             rewritten += 1
         }
+
+        // Nachbesserung (Task #197): echte Fehlerbehandlung statt reiner Autosave-Abhaengigkeit.
+        // Nur speichern, wenn tatsaechlich etwas geaendert wurde (begrenzter Commit-Scope, gleiches
+        // Muster wie `DeloadManager.startDeload`/`endDeload`) - reines Ueberspringen allein loest
+        // keinen Save aus. Siehe Typ-Doku "Commit-/Speicherverantwortung": anders als `build` wird
+        // hier NICHTS zurueckgebaut, falls der Save fehlschlaegt - das ist ehrlich benannt, kein
+        // verschwiegener Kompromiss.
+        if rewritten > 0 {
+            do {
+                try save(context)
+            } catch {
+                throw RecalculateError.saveFailed
+            }
+        }
+
         return RecalculateSummary(rewrittenCount: rewritten, skippedDueToHistoryCount: skippedDueToHistory)
     }
 

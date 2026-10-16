@@ -144,6 +144,15 @@ public struct PlanBuilderView: View {
     /// sichtbar, identisches Muster wie `SettingsView.resetErrorMessage`.
     @State private var missingProfileErrorMessage: String?
 
+    /// Nachbesserung (Task #197): `createPlan` wirft jetzt, wenn der
+    /// abschliessende Speichervorgang fehlschlaegt - eigener Alert statt
+    /// Wiederverwendung von `missingProfileErrorMessage` (andere Ursache,
+    /// anderer Titel, siehe `body`). `isAdopting` wird in diesem Fall
+    /// zurueckgesetzt, ein erneuter Tap auf "Plan uebernehmen" ist sicher:
+    /// `PlanGeneratorInstantiator.build` hat den fehlgeschlagenen Plan
+    /// bereits selbst zurueckgebaut (siehe dortige Doku).
+    @State private var adoptSaveErrorMessage: String?
+
     /// Nachbesserung (P2.3, Abnahme "keine Duplikate bei mehrfacher
     /// Bestaetigung"): `adoptPlan()` ist synchron, ohne `await` — ein
     /// zweiter Tap auf "Plan uebernehmen", bevor `dismiss()` den Sheet
@@ -198,6 +207,19 @@ public struct PlanBuilderView: View {
                 Button("OK") { missingProfileErrorMessage = nil }
             } message: {
                 Text(missingProfileErrorMessage ?? "")
+            }
+            // Nachbesserung (Task #197): eigener Alert fuer einen fehlgeschlagenen
+            // Speichervorgang - siehe `adoptSaveErrorMessage`-Doku.
+            .alert(
+                Text("planBuilder.error.saveFailed.title", bundle: .module),
+                isPresented: Binding(
+                    get: { adoptSaveErrorMessage != nil },
+                    set: { if !$0 { adoptSaveErrorMessage = nil } }
+                )
+            ) {
+                Button("OK") { adoptSaveErrorMessage = nil }
+            } message: {
+                Text(adoptSaveErrorMessage ?? "")
             }
         }
     }
@@ -954,19 +976,31 @@ public struct PlanBuilderView: View {
         // Nachbesserung (P2.3): `createPlan(for:)` buendelt Equipment-
         // Aufloesung + `build(...)` an einer Stelle statt hier erneut
         // `equipmentPlanningContext` separat abzufragen — siehe dortige Doku.
-        guard let plan = PlanGeneratorInstantiator.createPlan(
-            from: currentInput, result: result,
-            for: profile, generationSource: .planBuilder, in: modelContext
-        ) else {
+        //
+        // Nachbesserung (Task #197): `createPlan` wirft jetzt bei einem
+        // fehlgeschlagenen Speichervorgang, statt sich ausschliesslich auf
+        // Autosave zu verlassen - eigener, sichtbarer Fehlerzustand statt
+        // eines stillen Nichts-Passiert. `PlanGeneratorInstantiator.build`
+        // hat den gescheiterten Plan dabei bereits selbst zurueckgebaut
+        // (siehe dortige Doku), ein erneuter Tap ist also sicher.
+        do {
+            guard let plan = try PlanGeneratorInstantiator.createPlan(
+                from: currentInput, result: result,
+                for: profile, generationSource: .planBuilder, in: modelContext
+            ) else {
+                isAdopting = false
+                return
+            }
+            dismiss()
+            // Gleiches 0.3s-Defer-Muster wie `ProgramTemplatePickerView.instantiate`
+            // - gibt der Sheet-Dismiss-Animation Zeit, bevor der Navigations-Stack
+            // mutiert (sonst race zwischen dismiss + navigationDestination).
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                navigation.workoutPath.append(plan)
+            }
+        } catch {
+            adoptSaveErrorMessage = String(localized: "planBuilder.error.saveFailed.message", bundle: .module)
             isAdopting = false
-            return
-        }
-        dismiss()
-        // Gleiches 0.3s-Defer-Muster wie `ProgramTemplatePickerView.instantiate`
-        // - gibt der Sheet-Dismiss-Animation Zeit, bevor der Navigations-Stack
-        // mutiert (sonst race zwischen dismiss + navigationDestination).
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            navigation.workoutPath.append(plan)
         }
     }
 

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2103 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2105 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2103 / 2103** (100%) | 0 |
-| 🇬🇧 English (EN) | **2103 / 2103** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2103 / 2103** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2105 / 2105** (100%) | 0 |
+| 🇬🇧 English (EN) | **2105 / 2105** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2105 / 2105** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1721,7 +1721,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.upperLower.name` | Upper-Lower-Split | Upper-Lower Split | Upper-Lower Split |
 | `plan.template.upperLower.tagline` | 4 Tage · Kraft & Hypertrophie | 4 Days · Strength & Hypertrophy | 4 Gün · Güç & Hipertrofi |
 
-## `planBuilder.*`  (41 Keys)
+## `planBuilder.*`  (43 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1732,6 +1732,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.equipment.title` | Ausrüstung | Equipment | Ekipman |
 | `planBuilder.error.noProfile.message` | Der Plan konnte nicht erstellt werden, weil kein Nutzerprofil gefunden wurde. Bitte starte die App neu oder wende dich an den Support, falls das Problem bestehen bleibt. | The plan couldn't be created because no user profile was found. Please restart the app, or contact support if the problem persists. | Kullanıcı profili bulunamadığı için plan oluşturulamadı. Lütfen uygulamayı yeniden başlat; sorun devam ederse destek ile iletişime geç. |
 | `planBuilder.error.noProfile.title` | Kein Profil gefunden | No Profile Found | Profil Bulunamadı |
+| `planBuilder.error.saveFailed.message` | Beim Speichern ist ein Fehler aufgetreten. Es wurde nichts geändert — bitte versuche es erneut. | Something went wrong while saving. Nothing was changed — please try again. | Kaydederken bir sorun oluştu. Hiçbir şey değişmedi — lütfen tekrar dene. |
+| `planBuilder.error.saveFailed.title` | Plan konnte nicht gespeichert werden | Plan Couldn't Be Saved | Plan Kaydedilemedi |
 | `planBuilder.load.easy` | Locker | Easy | Hafif |
 | `planBuilder.load.hard` | Schwer | Hard | Ağır |
 | `planBuilder.load.medium` | Mittel | Medium | Orta |

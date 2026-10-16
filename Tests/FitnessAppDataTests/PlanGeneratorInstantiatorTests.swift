@@ -31,6 +31,9 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         // Mock in alle nachfolgenden Tests dieser (oder einer anderen)
         // Testklasse.
         PlanGeneratorInstantiator.fetchAllSessionsOverrideForTesting = nil
+        // Nachbesserung (Task #197): gleicher Grund wie oben - statischer
+        // Override, muss nach jedem Test zurueckgesetzt werden.
+        PlanGeneratorInstantiator.saveOverrideForTesting = nil
     }
 
     private var context: ModelContext { container.mainContext }
@@ -64,8 +67,8 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         equipmentProfile: UserEquipmentProfile = UserEquipmentProfile(),
         result precomputed: PlanGenerator.Result? = nil,
         generationSource: GenerationSource = .manual
-    ) -> TrainingPlan? {
-        PlanGeneratorInstantiator.build(
+    ) throws -> TrainingPlan? {
+        try PlanGeneratorInstantiator.build(
             from: input, in: context,
             environment: environment, equipmentProfile: equipmentProfile,
             result: precomputed, generationSource: generationSource
@@ -87,9 +90,9 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         XCTAssertEqual(sequenceIndices, [1, 2, 3], "jeder Tag muss einen eigenen, eindeutigen sequenceIndex bekommen")
     }
 
-    func testBuildReturnsNilWhenGeneratorProducesNoDays() {
+    func testBuildReturnsNilWhenGeneratorProducesNoDays() throws {
         // Kein Selections-Eintrag -> PlanGenerator.generate liefert leer.
-        XCTAssertNil(buildPlan(from: input([])))
+        XCTAssertNil(try buildPlan(from: input([])))
     }
 
     // Handoff "Lauf-Coaching - Machbarkeits-Check": generationSource wird
@@ -340,9 +343,9 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
     /// Gegenprobe zu `testBuildReturnsNilWhenGeneratorProducesNoDays`, ueber
     /// den neuen Einstiegspunkt: ein leeres Generator-Ergebnis darf auch hier
     /// nichts anlegen.
-    func testCreatePlanReturnsNilWhenGeneratorProducesNoDays() {
+    func testCreatePlanReturnsNilWhenGeneratorProducesNoDays() throws {
         let profile = makeProfile()
-        XCTAssertNil(PlanGeneratorInstantiator.createPlan(
+        XCTAssertNil(try PlanGeneratorInstantiator.createPlan(
             from: input([]), for: profile, generationSource: .manual, in: context
         ))
     }
@@ -480,6 +483,75 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
 
         XCTAssertEqual(log.resolvedExerciseName, nameBefore, "Identitaet bleibt ueber den Snapshot erhalten")
         XCTAssertEqual(log.cnsFatigueScore, 0.0, "Auswertung degradiert MESSBAR, sobald die Live-Referenz fehlt - genau der Befund, der Punkt 2 rechtfertigt")
+    }
+
+    // MARK: - Task #197: Commit-/Speicherfehler-Behandlung
+
+    private struct TestSaveError: Error {}
+
+    /// Kern-Regression: ein fehlgeschlagener Save in `build` darf den
+    /// Context NICHT in einem inkonsistenten Zustand zuruecklassen. Beweist
+    /// BEIDE Haelften des gezielten Rueckbaus — nicht nur, dass der neue
+    /// Plan verschwindet, sondern auch, dass der VORHER aktive Plan wieder
+    /// aktiv ist (ohne das bliebe nach einem gescheiterten Versuch gar kein
+    /// Plan mehr aktiv, siehe `ProgramInstantiator.instantiate`s
+    /// unconditional Deaktivierung).
+    func testBuildRollsBackNewPlanAndRestoresPreviousActivePlanWhenSaveFails() throws {
+        let planA = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
+        XCTAssertTrue(planA.isActive)
+
+        PlanGeneratorInstantiator.saveOverrideForTesting = { _ in throw TestSaveError() }
+
+        XCTAssertThrowsError(try buildPlan(from: input([selection(.dumbbell, days: 3)]))) { error in
+            XCTAssertEqual(error as? PlanGeneratorInstantiator.PlanCreationError, .saveFailed)
+        }
+
+        XCTAssertTrue(planA.isActive, "vorheriger aktiver Plan muss nach fehlgeschlagenem Save wiederhergestellt sein")
+        let allPlans = try context.fetch(FetchDescriptor<TrainingPlan>())
+        XCTAssertEqual(allPlans.count, 1, "der fehlgeschlagene zweite Plan darf nicht haengen bleiben")
+    }
+
+    /// `createPlan` muss denselben Fehler nur durchreichen, nicht
+    /// verschlucken — sie ist ein duenner Wrapper um `build`.
+    func testCreatePlanPropagatesSaveFailure() throws {
+        let profile = makeProfile()
+        PlanGeneratorInstantiator.saveOverrideForTesting = { _ in throw TestSaveError() }
+
+        XCTAssertThrowsError(try PlanGeneratorInstantiator.createPlan(
+            from: input([selection(.barbell, days: 2)]), for: profile, generationSource: .manual, in: context
+        )) { error in
+            XCTAssertEqual(error as? PlanGeneratorInstantiator.PlanCreationError, .saveFailed)
+        }
+    }
+
+    /// `recalculate` kann (anders als `build`) nicht zurueckbauen — siehe
+    /// Typ-Doku "Commit-/Speicherverantwortung". Der Fehler muss trotzdem
+    /// sichtbar geworfen werden statt in einer stillen Autosave-Abhaengigkeit
+    /// zu verschwinden.
+    func testRecalculatePropagatesSaveFailureAsThrownError() throws {
+        let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
+        PlanGeneratorInstantiator.saveOverrideForTesting = { _ in throw TestSaveError() }
+
+        XCTAssertThrowsError(try PlanGeneratorInstantiator.recalculate(plan, in: context)) { error in
+            XCTAssertEqual(error as? PlanGeneratorInstantiator.RecalculateError, .saveFailed)
+        }
+    }
+
+    /// Begrenzter Commit-Scope: wenn kein einziger Tag neu geschrieben wurde
+    /// (hier: jeder Tag durch eine Session blockiert), darf `recalculate`
+    /// erst gar keinen Save versuchen — der auf "immer werfen" gesetzte
+    /// Override darf in diesem Fall NICHT feuern.
+    func testRecalculateSkipsSaveEntirelyWhenNothingWasRewritten() throws {
+        let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
+        for day in plan.days where day.type != .rest {
+            context.insert(WorkoutSession(isCompleted: true, day: day))
+        }
+
+        PlanGeneratorInstantiator.saveOverrideForTesting = { _ in throw TestSaveError() }
+
+        let summary = try PlanGeneratorInstantiator.recalculate(plan, in: context)
+        XCTAssertEqual(summary.rewrittenCount, 0)
+        XCTAssertEqual(summary.skippedDueToHistoryCount, 2)
     }
 }
 #endif

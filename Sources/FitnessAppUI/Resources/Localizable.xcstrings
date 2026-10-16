@@ -14959,6 +14959,22 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Kullanıcı profili bulunamadığı için plan oluşturulamadı. Lütfen uygulamayı yeniden başlat; sorun devam ederse destek ile iletişime geç." } }
       }
     },
+    "planBuilder.error.saveFailed.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Plan konnte nicht gespeichert werden" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Plan Couldn't Be Saved" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Plan Kaydedilemedi" } }
+      }
+    },
+    "planBuilder.error.saveFailed.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Beim Speichern ist ein Fehler aufgetreten. Es wurde nichts geändert — bitte versuche es erneut." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Something went wrong while saving. Nothing was changed — please try again." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kaydederken bir sorun oluştu. Hiçbir şey değişmedi — lütfen tekrar dene." } }
+      }
+    },
     "planBuilder.nav.next": {
       "extractionState": "manual",
       "localizations": {

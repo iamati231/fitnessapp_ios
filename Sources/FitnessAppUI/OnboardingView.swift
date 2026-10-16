@@ -1941,10 +1941,30 @@ public struct OnboardingView: View {
             // Schritt 1) — identische Werte wie das vorherige
             // `equipmentPlanningContext.effectiveProfile`, nur einmalig statt
             // separat aufgeloest.
-            PlanGeneratorInstantiator.createPlan(
-                from: customPlanInput, result: customPlanResult,
-                for: profile, generationSource: .planBuilder, in: modelContext
-            )
+            // Nachbesserung (Task #197): `createPlan` wirft jetzt bei einem
+            // fehlgeschlagenen Speichervorgang. Profil + Messung (Schritt 1/2
+            // oben) sind zu diesem Zeitpunkt bereits inserted und MUESSEN
+            // den Onboarding-Abschluss unabhängig vom optionalen Plan
+            // erreichen (`RootView`s Query auf `UserBodyProfile` haengt
+            // ausschliesslich daran) - ein Plan ist an dieser Stelle schon
+            // immer optional (siehe `if let`/`else if let` oben: ohne
+            // Template/Builder-Ergebnis passiert hier ohnehin nichts). Ein
+            // Speicherfehler wird deshalb bewusst NICHT blockierend
+            // behandelt: der Nutzer landet mit Profil, aber ohne initialen
+            // Plan, in der App - identisch zum bereits unterstuetzten "Fertig
+            // ohne Plan"-Fall - und kann einen Plan jederzeit ueber
+            // `PlansListView`s "+" nachholen.
+            do {
+                try PlanGeneratorInstantiator.createPlan(
+                    from: customPlanInput, result: customPlanResult,
+                    for: profile, generationSource: .planBuilder, in: modelContext
+                )
+            } catch {
+                // Bewusst kein Alert hier: der Profil-Insert oben hat
+                // `RootView` moeglicherweise schon zur MainTabView
+                // umschalten lassen, ein neuer Alert-State auf dieser View
+                // koennte nie mehr sichtbar werden.
+            }
         }
 
         // 4) Notification-Präferenzen persistieren. Permission wird angefordert,

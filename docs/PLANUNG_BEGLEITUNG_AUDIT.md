@@ -1820,3 +1820,140 @@ Berichtseintrag.
 
 **Nächste Aufgabe:** Punkt 4 — Task #197 (Commit-/Speicherfehler-Behandlung) als eigenes
 Integrationspaket, siehe eigenen Abschnitt.
+
+## Task #197: Commit-/Speicherfehler-Behandlung (begrenzter Scope, Rückbau, Fehlerpropagation)
+
+**Paket:** `build`/`createPlan` (neuer Plan) und `recalculate` (bestehender Plan) rufen jetzt selbst
+`context.save()` auf und werfen einen typisierten Fehler statt sich ausschließlich auf SwiftDatas
+Autosave zu verlassen. Begrenzt auf GENAU diese beiden Operationen — keine finale
+Wocheneditor-Übernahmefunktion, die bleibt von diesem Task weiterhin unabhängig.
+
+**Implementiert (vier geforderte Punkte):**
+
+1. **Begrenzter Commit-Scope:** EIN `context.save()`-Aufruf pro Funktion, direkt nach den eigenen
+   Mutationen — kein Save, der nebenbei irgendetwas anderes mitnimmt. `recalculate` ruft `save()`
+   nur auf, wenn tatsächlich ein Tag neu geschrieben wurde (`rewritten > 0`, gleiches Muster wie
+   `DeloadManager.startDeload`/`.endDeload`) — reines Überspringen allein löst keinen Save aus
+   (durch Test `testRecalculateSkipsSaveEntirelyWhenNothingWasRewritten` belegt: ein auf "wirft
+   immer" gesetzter Save-Override feuert in diesem Fall NICHT).
+2. **Fehlerbehandlung:** neuer `PlanGeneratorInstantiator.PlanCreationError.saveFailed` (für
+   `build`/`createPlan`) und `RecalculateError.saveFailed` (neuer Case, ergänzt
+   `.sessionCheckFailed`). Beide werden geworfen statt verschluckt. Neuer DI-Seam
+   `saveOverrideForTesting` (gleiches Muster wie `fetchAllSessionsOverrideForTesting`) macht einen
+   echten Speicherfehler deterministisch simulierbar.
+3. **Wiederholbarkeit — mit einer ehrlich benannten Asymmetrie zwischen beiden Funktionen:**
+   - `build` macht auf einem Save-Fehler einen GEZIELTEN, auf die eigenen Änderungen begrenzten
+     Rückbau: der gerade erst eingefügte Plan wird gelöscht (cascadet automatisch auf seine
+     Tage/Übungen, `TrainingPlan.days`/`TrainingDay.exercises` sind beide `deleteRule: .cascade`)
+     und die `isActive`-Flags der zuvor aktiven Pläne — die `ProgramInstantiator.instantiate`
+     unconditional auf `false` gesetzt hatte — werden wiederhergestellt. Der Context landet exakt
+     im Zustand von VOR dem Aufruf; ein erneuter Versuch legt weder einen doppelten Plan an, noch
+     bleibt zwischenzeitlich kein Plan aktiv. Durch
+     `testBuildRollsBackNewPlanAndRestoresPreviousActivePlanWhenSaveFails` bewiesen (prüft BEIDE
+     Hälften: Plananzahl bleibt bei 1, UND der vorherige Plan ist wieder `isActive`).
+   - `recalculate` kann NICHT auf dieselbe Weise zurückbauen: `apply` löscht bereits bestehende,
+     persistierte `Exercise`-Objekte — SwiftData bietet keine sichere Operation, ein bereits
+     angestoßenes Delete ohne einen Context-weiten `rollback()` wieder rückgängig zu machen (siehe
+     Punkt 4 unten, warum dieser Rollback ausgeschlossen bleibt). Das ist eine echte technische
+     Grenze, kein Zeitdruck-Kompromiss — hier bewusst NICHT mit einer fragilen
+     "rekonstruiere die alten Objekte neu"-Behelfslösung umgangen (das wäre keine echte Wiederher­
+     stellung, sondern neue Objekte mit geratener Identität). Bleibt trotzdem sicher: `save()` ist
+     atomar — schlägt es fehl, landet NICHTS auf der Platte; die hängengebliebenen Änderungen
+     werden vom nächsten erfolgreichen Save (von hier oder anderswo) einfach nachgeholt, und ein
+     erneuter `recalculate`-Aufruf dupliziert nichts, weil der neu geschriebene Fingerprint bereits
+     zum neuen Inhalt passt (ein zweiter Durchlauf ersetzt also wieder nur konsistent denselben
+     Zielzustand). Durch `testRecalculatePropagatesSaveFailureAsThrownError` wird zumindest die
+     SICHTBARKEIT des Fehlers bewiesen, nicht ein vollständiger Rückbau — diese Asymmetrie steht
+     jetzt explizit in der Typ-Doku, nicht nur in diesem Bericht.
+4. **Ausdrückliche Aktivierungsentscheidung:** gelesen als Teil von Punkt 3, nicht als die separate
+   "nur speichern vs. aktivieren"-Frage für den künftigen Wocheneditor (die bleibt unverändert
+   offen, siehe unten) — die `isActive`-Seite-Effekte von `instantiate` werden im Fehlerfall nicht
+   mehr unbeachtet gelassen, sondern sind Teil des EXPLIZIT nachvollzogenen, wiederhergestellten
+   Zustands (`previouslyActivePlans` wird VOR `instantiate` bewusst erfasst, nicht erraten).
+
+**Nicht verwechseln mit der offenen Aktivierungsvertrag-Frage:** "nur speichern" (Entwurf/Änderungen
+persistieren, ohne den aktiven Plan zu wechseln) vs. "aktivieren" (zusätzlich den bisherigen aktiven
+Plan ablösen) für eine künftige Wocheneditor-Übernahmefunktion bleibt UNVERÄNDERT offen — diese
+Runde hat ausschließlich die Save-/Fehlerbehandlung der BEREITS BESTEHENDEN Operationen (neuer Plan,
+bestehenden Plan aktualisieren) real geklärt, keine neue "nur speichern ohne Aktivierung"-Funktion
+eingeführt.
+
+**Ausdrücklich NICHT eingebaut, in BEIDEN Funktionen:** ein `context.rollback()` bei einem Fehler —
+das wirkt auf den GESAMTEN geteilten `ModelContext` und würde unabhängige, an anderer Stelle bereits
+bestätigte Änderungen (z.B. ein offenes Edit auf einem anderen Screen, der denselben `modelContext`
+teilt) mit zerstören. Konkret relevant bei `OnboardingView.finishOnboarding`: `createPlan` läuft dort
+NACH bereits erfolgten `modelContext.insert(profile)`/`insert(measurement)`-Aufrufen im selben
+Context — ein `rollback()` im Fehlerfall hätte Profil UND Messung mit verworfen, nicht nur den
+fehlgeschlagenen Plan. Der gezielte Rückbau in `build` berührt `profile`/`measurement` nicht.
+
+**Geänderte Komponenten:**
+- `Sources/FitnessAppData/PlanGeneratorInstantiator.swift` — `build`/`createPlan` werfen jetzt,
+  gezielter Rückbau, `RecalculateError.saveFailed`, `saveOverrideForTesting`-DI-Seam, Typ-Doku
+  komplett überarbeitet (Commit-/Speicherverantwortung, Aktivierungsvertrag-Abschnitt).
+- `Sources/FitnessAppUI/Workout/PlanBuilderView.swift` — `adoptPlan()` fängt den neuen Fehler,
+  zeigt eigenen Alert (`adoptSaveErrorMessage`), setzt `isAdopting` zurück (Wiederholbarkeit aus
+  UI-Sicht).
+- `Sources/FitnessAppUI/Cardio/CardioFeasibilityCardModel.swift` — `accept`/`acceptCustom` nutzen
+  `try?`, behandeln einen Speicherfehler identisch zum bereits bestehenden `nil`-Pfad (bestehende
+  P2.3-Nachbesserung-UI deckt Retry/Doppeltap-Reset bereits ab, keine neue UI nötig).
+- `Sources/FitnessAppUI/OnboardingView.swift` — `finishOnboarding()` fängt den Fehler bewusst OHNE
+  Alert ab (siehe Begründung dort: Profil/Messung müssen den Onboarding-Abschluss unabhängig vom
+  optionalen Plan erreichen, ein neuer Alert-State könnte nach dem Profil-Insert nie mehr sichtbar
+  werden).
+- `Sources/FitnessAppUI/Resources/Localizable.xcstrings` — 2 neue Keys
+  (`planBuilder.error.saveFailed.title`/`.message`, DE/EN/TR, Katalog jetzt 2105 Keys, weiterhin 0
+  hardcoded).
+
+**Neue/geänderte Datenfelder:** keine.
+
+**Tests hinzugefügt:** `Tests/FitnessAppDataTests/PlanGeneratorInstantiatorTests.swift` — 4 neue
+Tests (`testBuildRollsBackNewPlanAndRestoresPreviousActivePlanWhenSaveFails`,
+`testCreatePlanPropagatesSaveFailure`, `testRecalculatePropagatesSaveFailureAsThrownError`,
+`testRecalculateSkipsSaveEntirelyWhenNothingWasRewritten`) plus Anpassung zweier bestehender Tests
+(`testBuildReturnsNilWhenGeneratorProducesNoDays`/`testCreatePlanReturnsNilWhenGeneratorProducesNoDays`
+brauchen jetzt `throws`/`try`, da `build`/`createPlan` selbst werfen).
+
+**Tests tatsächlich ausgeführt:** `swift build`/`swift build --build-tests`: grün.
+`python3 -I .scripts/generate_translations_md.py`: Katalog 2105/2105/2105, **0 hardcoded Strings**.
+`swift test`: **1029/1029 grün — UNVERÄNDERT**. Das ist hier besonders wichtig festzuhalten: KEINER
+der neuen/geänderten Tests in `PlanGeneratorInstantiatorTests.swift` läuft auf Linux, weil die
+GESAMTE Datei (wie jede `FitnessAppDataTests`-Datei) hinter `#if canImport(SwiftData)` liegt — die
+vier neuen Tests sind sorgfältig konstruiert (inklusive des `saveOverrideForTesting`-DI-Seams genau
+für diesen Zweck), aber bis zu einem echten Apple-Testlauf ausschließlich durch Code-Lesen verifiziert,
+nicht durch Ausführung. Dasselbe gilt für `PlanBuilderView.swift`/`CardioFeasibilityCardModel.swift`/
+`OnboardingView.swift` — alle drei SwiftUI-gated, auf Linux nur lexikalisch, nicht semantisch geprüft.
+
+**Apple-Build/CI:** nicht durchgeführt — siehe Punkt 3 im P2.4-Nachbesserung-Bericht oben für die
+genaue Lücke (kein Xcode/xcodebuild in diesem Container) und die benötigten Schritte über
+Codemagic. Für DIESE Änderung besonders wichtig: die vier neuen Tests sind der einzige Weg, den
+gezielten Rückbau in `build` tatsächlich zu verifizieren — bis ein echter Lauf vorliegt, ist das
+unbewiesener, nur gelesener Code.
+
+**UI-/Geräteprüfung:** nicht durchgeführt — offen. Zusätzlich zu prüfen, sobald ein echter Build
+vorliegt: der neue "Plan konnte nicht gespeichert werden"-Alert in `PlanBuilderView` (DE/EN/TR,
+inklusive erfolgreicher Wiederholung nach OK-Tap) — dieser Fall ist mit normalen Mitteln im
+Simulator nicht provozierbar (ein echter Speicherfehler erfordert z.B. vollen Speicher oder einen
+beschädigten Store), eine Device-Verifikation kann deshalb praktisch nur den Alert selbst
+(z.B. über einen temporären Test-Hook) und das Button-/Reset-Verhalten prüfen, nicht den echten
+Fehlerfall end-to-end.
+
+**Bekannte Grenzen/Risiken:**
+- `recalculate`s fehlender Rückbau (Punkt 3 oben) ist eine bewusste, dokumentierte Grenze, keine
+  Lücke, die "noch gelöst werden muss" — eine echte Lösung würde ein Undo-Log oder eine
+  Zwei-Phasen-Commit-Struktur brauchen, die für dieses konservative, bereits session-geschützte
+  Update (siehe P2.3-Nachbesserung) nicht gerechtfertigt ist.
+- `OnboardingView.finishOnboarding`s bewusst alertloser Fehlerpfad bedeutet: ein Nutzer, dessen
+  initialer Plan beim Onboarding-Abschluss nicht gespeichert werden konnte, erfährt das NICHT
+  explizit — er landet einfach ohne Plan in der App (identisch zum bereits unterstützten "Fertig
+  ohne Plan"-Fall). Bewusste Abwägung (siehe Begründung oben), aber wert, im Hinterkopf zu behalten,
+  falls spätere Analytics/Support-Daten zeigen, dass das in der Praxis verwirrt.
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
+Berichtseintrag.
+
+**Nächste Aufgabe:** P3 (A+B-Builder und Onboarding an den visuellen Wochen-Editor anbinden) kann
+jetzt beginnen — Task #197 ist für die BESTEHENDEN Operationen (neuer Plan, Aktualisierung) geklärt,
+bleibt aber weiterhin Voraussetzung dafür, dass eine FINALE Wocheneditor-Übernahmefunktion (mit der
+noch offenen "nur speichern vs. aktivieren"-Entscheidung) überhaupt gebaut werden darf. Apple-Build
+und Geräteprüfung bleiben für ALLE Phasen dieser Arbeit (P1 bis hier) gemeinsam offen, bis ein
+echter Lauf vorliegt.
