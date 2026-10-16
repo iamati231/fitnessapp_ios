@@ -22,7 +22,13 @@ public struct CardioFeasibilityCardModel {
     public let proposedGoal: CardioGoal?
     public let planInput: PlanGeneratorInput?
     public let planResult: PlanGenerator.Result?
-    private let fingerprint: String
+    /// Identifiziert, welche konkrete Ziel/Renndatum/Wochenvolumen-Kombination dieses Modell
+    /// beschreibt. Oeffentlich, damit ein Aufrufer (z.B. `PlansListView`) eine pro Vorgang
+    /// gehaltene `PlanCreationOperation` (siehe dortige Doku: "braucht eine neue Instanz")
+    /// gezielt dann austauschen kann, wenn sich die angezeigte Karte auf eine ANDERE Kombination
+    /// bezieht als die, fuer die der vorherige Vorgang committed wurde - siehe
+    /// `PlansListView.acceptOperationFingerprint`.
+    public let fingerprint: String
 
     /// `false` wenn `proposedGoal` zwar existiert, der Generator dafuer aber
     /// nichts gefunden hat (z.B. eine leere Bibliotheks-Kombination) - der
