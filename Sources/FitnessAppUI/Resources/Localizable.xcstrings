@@ -43650,6 +43650,144 @@
           }
         }
       }
+    },
+    "planEditor.recalculate.toast.none": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine unveränderten Tage zum Neu-Rechnen gefunden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No unchanged days found to recalculate"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeniden hesaplanacak değişmemiş gün bulunamadı"
+          }
+        }
+      }
+    },
+    "planEditor.recalculate.toast.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neu rechnen fehlgeschlagen — keine Änderung vorgenommen. Bitte später erneut versuchen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recalculate failed — no changes made. Please try again later."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeniden hesaplama başarısız oldu — hiçbir değişiklik yapılmadı. Lütfen daha sonra tekrar deneyin."
+          }
+        }
+      }
+    },
+    "planEditor.recalculate.toast.rewritten.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Tag neu berechnet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld day recalculated"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld gün yeniden hesaplandı"
+          }
+        }
+      }
+    },
+    "planEditor.recalculate.toast.rewritten.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Tage neu berechnet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days recalculated"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld gün yeniden hesaplandı"
+          }
+        }
+      }
+    },
+    "planEditor.recalculate.toast.skipped.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Tag wegen bestehender Trainingshistorie übersprungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld day skipped due to existing workout history"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld gün mevcut antrenman geçmişi nedeniyle atlandı"
+          }
+        }
+      }
+    },
+    "planEditor.recalculate.toast.skipped.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Tage wegen bestehender Trainingshistorie übersprungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days skipped due to existing workout history"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld gün mevcut antrenman geçmişi nedeniyle atlandı"
+          }
+        }
+      }
     }
   }
 }

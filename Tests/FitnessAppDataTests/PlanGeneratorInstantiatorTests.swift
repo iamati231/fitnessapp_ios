@@ -377,11 +377,21 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
     /// Gegenprobe: ohne Override (echter, erfolgreicher Fetch) bleibt das
     /// bisherige Verhalten erhalten — der Fail-Safe darf den Erfolgspfad
     /// nicht beeintraechtigen.
+    ///
+    /// Korrektur (Review): die vorherige Fassung erwartete faelschlich
+    /// `rewrittenCount: 0` — ein frisch gebauter Tag hat zwar denselben
+    /// Fingerprint wie bei der Erzeugung, aber GENAU DAS ist per Vertrag
+    /// "unangetastet" (siehe `recalculate`-Doku: "ersetzt NUR unangetastete
+    /// Tage") und wird deshalb neu geschrieben, NICHT uebersprungen. Ein
+    /// passender Fingerprint ERLAUBT das Ueberschreiben, er verhindert es
+    /// nicht — nur ein ABWEICHENDER Fingerprint (= echter User-Edit, siehe
+    /// `testRecalculateSkipsDayWithEditedExerciseSets`) blockiert.
     func testRecalculateSucceedsNormallyWithoutOverride() throws {
         let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
+        let workoutDayCount = plan.days.filter { $0.type != .rest }.count
         let summary = try PlanGeneratorInstantiator.recalculate(plan, in: context)
-        XCTAssertEqual(summary, .init(rewrittenCount: 0, skippedDueToHistoryCount: 0),
-                       "frisch gebaute, unveraenderte Tage haben bereits den aktuellen Fingerprint - nichts zu tun, aber kein Fehler")
+        XCTAssertEqual(summary, .init(rewrittenCount: workoutDayCount, skippedDueToHistoryCount: 0),
+                       "unangetastete Tage (passender Fingerprint, keine Session) werden neu geschrieben, nicht uebersprungen")
     }
 
     // MARK: - P2.3-Review Punkt 2: konservativer Schutz JEDER Session (nicht nur laufender)

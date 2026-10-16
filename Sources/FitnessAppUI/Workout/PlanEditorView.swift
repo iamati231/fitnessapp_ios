@@ -382,6 +382,21 @@ public struct PlanEditorView: View {
     /// `PlanGeneratorInstantiator.recalculate`) und meldet per Toast, wie
     /// viele Tage tatsaechlich ueberschrieben wurden - alle vom User seither
     /// bearbeiteten Tage bleiben unangetastet stehen.
+    /// Nachbesserung (Review nach P2.3-Nachbesserung): identisches
+    /// manuelles `.one`/`.other`-Muster wie `PlansListView.pluralizedCount`/
+    /// `WorkoutSummaryView.formatBreakdownFooter` — bewusst NICHT xcstrings
+    /// `variations.plural`, an denen Xcode 26.4.1s `GenerateStringSymbols`
+    /// sich nachweislich verschluckt (DEL-121 Build-Saga, siehe dortige
+    /// Kommentare). Lokal dupliziert statt geteilt, gleiche Begruendung wie
+    /// dort: ein gemeinsamer Helper fuer so wenige Aufrufstellen lohnt
+    /// keinen dritten Ort.
+    private func pluralizedRecalculateToast(_ baseKey: String, count: Int) -> String {
+        let suffix = count == 1 ? "one" : "other"
+        let key = String.LocalizationValue(stringLiteral: "\(baseKey).\(suffix)")
+        let raw = String(localized: key, bundle: .module)
+        return raw.replacingOccurrences(of: "%lld", with: "\(count)")
+    }
+
     private func recalculateFromGenerator() {
         // Nachbesserung (P2.3-Review, Punkt 1+2): `recalculate` wirft jetzt,
         // wenn die Session-Sicherheitspruefung selbst fehlschlaegt (keine
@@ -394,19 +409,20 @@ public struct PlanEditorView: View {
             let summary = try PlanGeneratorInstantiator.recalculate(plan, in: modelContext)
             switch (summary.rewrittenCount, summary.skippedDueToHistoryCount) {
             case (0, 0):
-                message = "Keine unveraenderten Tage zum Neu-Rechnen gefunden"
+                message = String(localized: "planEditor.recalculate.toast.none", bundle: .module)
             case (let rewritten, 0):
-                message = "\(rewritten) \(rewritten == 1 ? "Tag" : "Tage") neu berechnet"
+                message = pluralizedRecalculateToast("planEditor.recalculate.toast.rewritten", count: rewritten)
             case (0, let skipped):
-                message = "Keine Tage neu berechnet — \(skipped) \(skipped == 1 ? "Tag" : "Tage") wegen bestehender Trainingshistorie uebersprungen"
+                message = pluralizedRecalculateToast("planEditor.recalculate.toast.skipped", count: skipped)
             case (let rewritten, let skipped):
-                message = "\(rewritten) \(rewritten == 1 ? "Tag" : "Tage") neu berechnet, \(skipped) wegen bestehender Trainingshistorie uebersprungen"
+                message = pluralizedRecalculateToast("planEditor.recalculate.toast.rewritten", count: rewritten)
+                    + ", " + pluralizedRecalculateToast("planEditor.recalculate.toast.skipped", count: skipped)
             }
         } catch {
             // Fail-safe (Punkt 1): kein Tag wurde angefasst — verstaendlicher
             // Fehlerzustand statt eines stillen No-Ops oder einer falschen
             // Erfolgsmeldung.
-            message = "Neu rechnen fehlgeschlagen — keine Aenderung vorgenommen. Bitte spaeter erneut versuchen."
+            message = String(localized: "planEditor.recalculate.toast.failed", bundle: .module)
         }
         withAnimation(.easeOut(duration: 0.2)) {
             swapResultToast = message

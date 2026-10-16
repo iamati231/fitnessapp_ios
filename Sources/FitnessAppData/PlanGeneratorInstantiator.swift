@@ -42,13 +42,24 @@ import FitnessAppCore
 /// neuen aktiv an) — das ist unveraendertes Bestandsverhalten, keine neue
 /// Policy durch P2.3, und fuer das heutige Ein-aktiver-Plan-Modell
 /// akzeptabel. Es ist AUSDRUECKLICH KEIN fuer alle Zukunft geklaerter
-/// Vertrag: ein spaeterer Wocheneditor (docs/PLANUNG_BEGLEITUNG_AUDIT.md,
-/// P2.0-Nachbesserung-Vorgabe "fixierte Tage nicht still bewegen") wird
-/// vermutlich eine AUSDRUECKLICHE Aktivierungsentscheidung brauchen (z.B.
-/// "nur speichern, Plan nicht wechseln" vs. "jetzt aktiv schalten") statt
-/// der heutigen impliziten Alles-oder-nichts-Automatik. Diese Entscheidung
-/// ist NICHT getroffen und NICHT Teil von P2.3 — wird hier nur sichtbar
-/// offengehalten, damit sie nicht spaeter als bereits entschieden gilt.
+/// Vertrag.
+///
+/// **Verbindliche Anforderung (Nachbesserung, nicht nur offene Frage)**
+/// fuer den geplanten Wocheneditor: eine finale Uebernahmefunktion dort MUSS
+/// ausdruecklich zwischen „nur speichern" (Entwurf/Aenderungen am
+/// `PlanDraft` persistieren, OHNE den aktiven Plan zu wechseln) und
+/// „aktivieren" (zusaetzlich den bisherigen aktiven Plan ablösen)
+/// unterscheiden — als zwei erkennbar getrennte Operationen/Entscheidungen,
+/// NICHT als stille Uebernahme der heutigen impliziten
+/// Alles-oder-nichts-Automatik dieser Datei. Diese Unterscheidung ist NICHT
+/// getroffen und NICHT Teil von P2.3 — wird hier sichtbar offengehalten,
+/// damit sie nicht spaeter als bereits entschieden gilt. Siehe auch
+/// **Task #197**: eine saubere, fuer genau EINE Operation begrenzte
+/// Save-/Fehlerbehandlung (statt der heutigen reinen Autosave-Abhaengigkeit)
+/// MUSS vor einer finalen Wocheneditor-Uebernahmefunktion geklaert sein —
+/// diese Funktion wird die erste sein, bei der ein Speicherfehler fuer den
+/// Nutzer sichtbare Konsequenzen haette (heute bei `createPlan` defensiv
+/// irrelevant, da jeder Aufrufer ohnehin nur EINEN frischen Plan anlegt).
 ///
 /// **Commit-/Speicherverantwortung (Nachbesserung P2.3-Review, Punkt 4):**
 /// KEINE Funktion in dieser Datei ruft `context.save()` — Inserts/Updates
@@ -334,6 +345,17 @@ public enum PlanGeneratorInstantiator {
         // Tag komplett uebersprungen statt die Uebungen zu ersetzen — siehe
         // `RecalculateSummary.skippedDueToHistoryCount` fuer die sichtbare
         // Erklaerung gegenueber dem Nutzer.
+        //
+        // VERBINDLICHES Exit-Kriterium fuer eine kuenftige Lockerung dieses
+        // Schutzes (Nachbesserung): NICHT lockern, nur weil P5 irgendeine
+        // Versionierung/Snapshot-Mechanik liefert — ausschliesslich dann,
+        // wenn nachgewiesen ist, dass sie TATSAECHLICH saemtliche fuer die
+        // Auswertung benoetigten Daten erhaelt (mindestens: CNS-/Muskel-
+        // Belastungsfaktoren aequivalent zu `ExerciseLog.cnsFatigueScore`/
+        // `.localMuscleDamageScore`, nicht nur Name/Cardio/TimeBased wie
+        // die heutigen `ExerciseLog`-Snapshot-Felder). Eine Lockerung ohne
+        // diesen Nachweis waere derselbe Fehler, den dieser Schutz gerade
+        // behebt.
         let daysWithAnySession = Set(allSessions.compactMap { $0.day?.persistentModelID })
 
         let result = PlanGenerator.generate(from: input)

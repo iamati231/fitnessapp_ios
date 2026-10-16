@@ -1462,7 +1462,116 @@ fuer eine zukünftige Code-Änderung relevanten) Fehlschlag tatsächlich wieder 
 **Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
 Berichtseintrag.
 
-**Nächste Aufgabe:** P2.4 (Fixierungs-Flag im Builder-Draft, `PlanBuilderView`) — reine Draft-/
-Core-Arbeit, darf jetzt beginnen. Keine neue UI-Übernahme-Funktionalität, bis Apple-Build diese
-Nachbesserung bestätigt hat. Apple-Build und Geräteprüfung bleiben für P1, P2.1, beide
-Nachbesserungen und P2.3 gemeinsam offen, bis ein echter Lauf vorliegt.
+**Nächste Aufgabe:** siehe P2.3-Nacharbeiten unten — ein fehlerhafter Test und fehlende
+Lokalisierung, vor dem Start von P2.4 noch zu erledigen.
+
+## P2.3-Nacharbeiten (Testfix, Lokalisierung, Abhängigkeiten verbindlich)
+
+**Paket:** zwei konkrete Korrekturen plus verbindliche Dokumentation von Abhängigkeiten/
+Aktivierungs-Prinzip für künftige Arbeit. Keine Verhaltensänderung an `recalculate` selbst.
+
+**Implementiert:**
+
+1. **Testfix `testRecalculateSucceedsNormallyWithoutOverride` (Review-Fund):** der Test erwartete
+   `rewrittenCount: 0` für einen frisch gebauten, unveränderten Plan — falsch. Ein frisch gebauter
+   Tag hat exakt den Fingerprint, den `build` ihm gerade gegeben hat; das ist per Vertrag
+   ("ersetzt NUR unangetastete Tage") genau der Fall, der NEU GESCHRIEBEN wird, nicht übersprungen.
+   Ein passender Fingerprint ERLAUBT das Überschreiben, er verhindert es nicht — nur ein
+   ABWEICHENDER Fingerprint (echter User-Edit) blockiert. Korrigiert: der Test erwartet jetzt
+   `rewrittenCount: workoutDayCount` (alle Tage), konsistent mit
+   `testRecalculateSkipsDayWithEditedExerciseSets`, die das Gegenteil bereits richtig testete.
+   Keine Code-Änderung an `recalculate` — wie vorgegeben, der Test war falsch, nicht das Verhalten.
+2. **Vollständige Lokalisierung der neuen Toasts:** die vier Toast-Varianten in
+   `PlanEditorView.recalculateFromGenerator()` waren hartcodiert Deutsch (Regression gegen die
+   sonst durchgehend eingehaltene "0 hardcoded strings"-Disziplin dieses Projekts). Sechs neue
+   Catalog-Keys (`planEditor.recalculate.toast.none/.failed/.rewritten.one/.rewritten.other/
+   .skipped.one/.skipped.other`, DE/EN/TR, Katalog jetzt 2102 Keys, weiterhin 0 hardcoded).
+   Pluralisierung folgt dem bestehenden, bewusst manuellen `.one`/`.other`-Namespace-Muster
+   (`PlansListView.pluralizedCount`/`WorkoutSummaryView.formatBreakdownFooter`) — AUSDRÜCKLICH
+   NICHT xcstrings' native `variations.plural`, an denen Xcode 26.4.1s `GenerateStringSymbols`
+   nachweislich scheitert (DEL-121 Build-Saga, bereits vor dieser Session dokumentiert). Neuer
+   lokaler Helper `pluralizedRecalculateToast(_:count:)`, bewusst dupliziert statt geteilt (gleiche
+   Begründung wie die beiden Vorbilder: ein gemeinsamer Helper für so wenige Aufrufstellen lohnt
+   keinen dritten Ort). Der kombinierte Fall (Tage neu berechnet UND Tage übersprungen) setzt sich
+   jetzt aus zwei unabhängig korrekt pluralisierten Teilsätzen zusammen statt der vorherigen
+   Inkonsistenz (ein Zweig pluralisierte "Tag/Tage" für die übersprungene Zahl, der andere nicht).
+3. **Abhängigkeiten verbindlich dokumentiert** (Typ-Doku `PlanGeneratorInstantiator.swift`,
+   Task #197 aktualisiert):
+   - Task #197 (Commit-/Speicherfehler-Behandlung) muss VOR einer finalen
+     Wocheneditor-Übernahmefunktion gelöst sein — das wäre die erste Stelle, an der ein
+     Speicherfehler für den Nutzer sichtbare Konsequenzen hätte.
+   - Apple-Kompilierung und die betroffenen SwiftData-Tests bleiben Voraussetzung für die Abnahme
+     jeder P2.3/-Nachbesserung-Änderung — unverändert zur Standing-Regel dieser gesamten Arbeit,
+     hier noch einmal ausdrücklich für diese Runde festgehalten.
+   - Der konservative Historien-Schutz in `recalculate` (jede Session blockiert) darf erst
+     gelockert werden, wenn NACHGEWIESEN ist, dass eine künftige Versionierung/Snapshot-Mechanik
+     (P5) TATSÄCHLICH sämtliche für die Auswertung benötigten Daten erhält (mindestens: CNS-/
+     Muskel-Belastungsfaktoren-Äquivalente, nicht nur Name/Cardio/TimeBased wie die heutigen
+     `ExerciseLog`-Snapshot-Felder) — als verbindliches Exit-Kriterium direkt im Code dokumentiert,
+     nicht nur im Bericht.
+4. **Aktivierungs-Prinzip verschärft:** die Typ-Doku formuliert jetzt eine VERBINDLICHE Anforderung
+   statt nur einer offenen Frage: eine finale Wocheneditor-Übernahmefunktion MUSS ausdrücklich
+   zwischen „nur speichern" (Entwurf/Änderungen persistieren, ohne den aktiven Plan zu wechseln)
+   und „aktivieren" (zusätzlich den bisherigen aktiven Plan ablösen) unterscheiden — zwei erkennbar
+   getrennte Operationen, keine stille Übernahme der heutigen impliziten
+   Alles-oder-nichts-Automatik.
+
+**P2.4-Vorprüfung (wie vorgegeben, vor neuen Feldern):** `PlanDraft`/`DraftDay` (Core, P2.0,
+`Sources/FitnessAppCore/Planning/PlanDraft.swift`) wurde gezielt gelesen, bevor P2.4 beginnt.
+Ergebnis: `DraftDay` hat BEREITS `isContentFixed`/`isPositionFixed` (zwei unabhängige, pro Tag
+gesetzte Bool-Flags mit eigenen Settern `setContentFixed`/`setPositionFixed`), stabile
+`DraftDayID`/`DraftExerciseID`, und `reorder(to:)`/`moveDay(_:toIndex:)` mit vollständigem Schutz
+gegen direkte UND indirekte Positionsverdrängung (`respectsPositionFixations`, aus der
+P2.0-Nachbesserung). **Das deckt die in P2.4 benötigte Fixierungslogik bereits vollständig ab.**
+Was heute fehlt, ist NICHT eine zweite Fixierungs-Datenstruktur, sondern dass `PlanBuilderView`
+`PlanDraft` überhaupt verwendet — der Builder hat aktuell eine eigene, von `PlanDraft` unabhängige
+Repräsentation seines Schritt-3-Ergebnisses (`PlanGenerator.Result`) ohne jedes Fixierungskonzept.
+P2.4 ist damit vermutlich eher eine Verdrahtungsaufgabe (Builder auf `PlanDraft` umstellen, die
+bereits vorhandenen Setter/`reorder`-Pfade an die UI anbinden) als eine neue Core-Datenmodellierung
+— wird aber erst bei tatsächlichem Start von P2.4 im Detail entschieden, nicht hier vorweggenommen.
+Keine Code-Änderung in dieser Runde, reine Prüfung.
+
+**Bewusst NICHT umgesetzt:** P2.4 selbst wurde in dieser Runde NICHT begonnen — die Vorgabe
+erlaubte den Start parallel, verlangte ihn nicht; diese Runde deckte nur die zwei explizit
+genannten Nacharbeiten plus Dokumentation ab.
+
+**Geänderte Komponenten:** `Tests/FitnessAppDataTests/PlanGeneratorInstantiatorTests.swift`
+(Testfix), `Sources/FitnessAppUI/Workout/PlanEditorView.swift` (Lokalisierung + Helper),
+`Sources/FitnessAppUI/Resources/Localizable.xcstrings` (6 neue Keys),
+`Sources/FitnessAppData/PlanGeneratorInstantiator.swift` (Typ-Doku-Verschärfung, keine
+Verhaltensänderung).
+
+**Neue/geänderte Datenfelder:** keine. Sechs neue Lokalisierungs-Keys (siehe oben).
+
+**Tests hinzugefügt/korrigiert:** `testRecalculateSucceedsNormallyWithoutOverride` korrigiert (siehe
+Punkt 1 oben). Keine neuen Testfälle — reine Erwartungs-Korrektur.
+
+**Tests tatsächlich ausgeführt:** `python3 -I` JSON-Validierung der 6 neuen xcstrings-Keys (Parse +
+Werte DE/EN/TR geprüft, Katalog 2102/2102/2102/2102). `TRANSLATIONS.md` regeneriert — **0 hardcoded
+Strings in 0 Dateien**, bestätigt die Lokalisierung ist vollständig. `swift build`/
+`swift build --build-tests`: grün (Syntax-Ebene, unverändert dieselbe Einschränkung wie bei jeder
+FitnessAppData-/FitnessAppUI-Änderung dieser Session — `PlanEditorView.swift` ist SwiftUI-gated,
+auf Linux nicht typgeprüft). Vollständiger Lauf `swift test` — **1023/1023 grün**, keine Regression
+(der korrigierte Test selbst läuft NICHT auf Linux, da `FitnessAppDataTests` SwiftData-gated ist —
+die Korrektur ist durch Nachlesen von `recalculate`s eigener Implementierung verifiziert, nicht
+durch einen tatsächlichen Testlauf).
+
+**Apple-Build/CI:** nicht durchgeführt — offen, unverändert.
+
+**UI-/Geräteprüfung:** nicht durchgeführt — offen. Zusätzlich zu prüfen: alle vier Toast-Varianten
+(none/rewritten/skipped/kombiniert/failed) zeigen in DE/EN/TR den erwarteten, grammatisch
+korrekten Text inklusive Singular/Plural.
+
+**Bekannte Grenzen/Risiken:** keine neuen gegenüber dem P2.3-Nachbesserung-Bericht oben. Die
+P2.4-Vorprüfung ist Code-Lesen, kein Test — sollte bei tatsächlichem P2.4-Start noch einmal
+gegengeprüft werden, falls sich `PlanDraft` zwischenzeitlich geändert hat.
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
+Berichtseintrag.
+
+**Nächste Aufgabe:** P2.4 (Fixierungs-Flag im Builder-Draft) — darf jetzt beginnen, voraussichtlich
+als Verdrahtungsaufgabe (`PlanBuilderView` auf `PlanDraft` umstellen), siehe P2.4-Vorprüfung oben.
+Keine neue UI-Übernahme-Funktionalität, bis Apple-Build diese und die vorherige Nachbesserung
+bestätigt hat. Task #197 bleibt Voraussetzung für jede finale Wocheneditor-Übernahmefunktion.
+Apple-Build und Geräteprüfung bleiben für P1, P2.1, beide Nachbesserungen, P2.3 und diese
+Nacharbeiten gemeinsam offen, bis ein echter Lauf vorliegt.

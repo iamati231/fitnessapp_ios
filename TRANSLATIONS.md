@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2096 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2102 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2096 / 2096** (100%) | 0 |
-| 🇬🇧 English (EN) | **2096 / 2096** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2096 / 2096** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2102 / 2102** (100%) | 0 |
+| 🇬🇧 English (EN) | **2102 / 2102** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2102 / 2102** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1766,7 +1766,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.wizard.unitsCount.one` | %lld Einheit | %lld unit | %lld birim |
 | `planBuilder.wizard.unitsCount.other` | %lld Einheiten | %lld units | %lld birim |
 
-## `planEditor.*`  (27 Keys)
+## `planEditor.*`  (33 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1791,6 +1791,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planEditor.progressRIR.rir2` | RIR ≥ 2 | RIR ≥ 2 | RIR ≥ 2 |
 | `planEditor.progressRIR.rir3` | RIR ≥ 3 | RIR ≥ 3 | RIR ≥ 3 |
 | `planEditor.recalculate.action` | Neu rechnen | Recalculate | Yeniden Hesapla |
+| `planEditor.recalculate.toast.failed` | Neu rechnen fehlgeschlagen — keine Änderung vorgenommen. Bitte später erneut versuchen. | Recalculate failed — no changes made. Please try again later. | Yeniden hesaplama başarısız oldu — hiçbir değişiklik yapılmadı. Lütfen daha sonra tekrar deneyin. |
+| `planEditor.recalculate.toast.none` | Keine unveränderten Tage zum Neu-Rechnen gefunden | No unchanged days found to recalculate | Yeniden hesaplanacak değişmemiş gün bulunamadı |
+| `planEditor.recalculate.toast.rewritten.one` | %lld Tag neu berechnet | %lld day recalculated | %lld gün yeniden hesaplandı |
+| `planEditor.recalculate.toast.rewritten.other` | %lld Tage neu berechnet | %lld days recalculated | %lld gün yeniden hesaplandı |
+| `planEditor.recalculate.toast.skipped.one` | %lld Tag wegen bestehender Trainingshistorie übersprungen | %lld day skipped due to existing workout history | %lld gün mevcut antrenman geçmişi nedeniyle atlandı |
+| `planEditor.recalculate.toast.skipped.other` | %lld Tage wegen bestehender Trainingshistorie übersprungen | %lld days skipped due to existing workout history | %lld gün mevcut antrenman geçmişi nedeniyle atlandı |
 | `planEditor.section.info` | Plan-Info | Plan Info | Plan Bilgisi |
 | `planEditor.section.settings` | Einstellungen | Settings | Ayarlar |
 | `planEditor.section.trainingDays` | Trainings-Tage | Training Days | Antrenman Günleri |
