@@ -2831,3 +2831,103 @@ ggf. anderes Geraet/andere iOS-Version, um das Hit-Testing-Problem zu umgehen od
 zu bestaetigen). Task #197 bleibt `in_progress` - der Kern (Commit-/Speicherfehler-Vertrag inkl.
 beider Lebenszyklus-Bugs) ist jetzt real auf Apple-Hardware bestaetigt, die vollstaendige
 Simulator-Szenarioliste des Users ist es noch nicht.
+
+## Vereinbarter UI-Pruefumfang vollstaendig durchgefuehrt (neue TestingBot-Session, verifizierter Build), ein weiterer echter Geraete-Bug gefunden und behoben
+
+**Auslöser:** User verlangt explizit, das vorige Hit-Testing-Problem (siehe oben) NICHT durch einen
+App-Umbau zu umgehen, sondern den offenen UI-Pruefumfang gezielt abzuschliessen: Cardio-Vorschlag
+uebernehmen, entstandenen Plan oeffnen+pruefen, Plan-Anzahl vor/nach, uebernommenes Laufziel im Profil
+kontrollieren, Ziel erneut aendern + neuen Vorschlag sowohl im Plan-Tab als auch im Profileditor
+uebernehmen, danach "Adjust plan" und den Onboarding-Custom-Builder durchfuehren - mit Pflicht, nur
+nachweislich den eigenen Build zu verwenden (Commit/Artefakt/TestingBot-Zuordnung dokumentiert) und bei
+erneutem Automatisierungsfehler den Fall als blockiert zu melden statt die App vorsorglich umzubauen.
+
+**0. Build-Nachweis (von dieser Session selbst, nicht nur uebernommen).** Commit
+`73fa31a0fa7ebcdaac572017cc859fad4b27f066` → Codemagic `ios-app`-Build `6ad248222278e4b9b05b7c1f`
+(alle Schritte `success`) → Artefakt `FitnessApp.app.zip`, 37.570.625 Bytes, Bundle-ID
+`com.atamya.FitnessApp`, Version `0.1.0`, `MinimumOSVersion 17.0`. Frisch von Codemagic
+heruntergeladen, entpackt, Mach-O-Executable `FitnessApp.app/FitnessApp` gegen die bei TestingBot
+unter `tb://534a0efa885a30bc28e86bb1` (Storage-Dateiname `FitnessApp_73fa31a.zip`) hinterlegte
+Kopie per SHA256 verglichen: **identisch**
+(`bb38efefb67aff885686aef5c270af10a1bd56ddb0274fee33c2224215dd4b0b`). Damit nachweislich derselbe,
+echte Build - nicht wieder TestingBots Demo-Projekt wie in der vorigen Runde.
+
+**1.-5. Vereinbarter Pruefumfang, alle Punkte real am Simulator belegt (iPhone 15/iOS 17.5):**
+- **Cardio-Vorschlag uebernehmen (Plan-Tab):** Running Coaching im Profil aktiviert (10K, Renndatum
+  8. Jan 2027, Startvolumen 20 km/Woche) → echte Karte "Your running goal is achievable" im Plan-Tab
+  → "Adopt plan" getappt → navigiert zu einem neuen Plan "Individueller Plan" mit genau dem
+  angekuendigten Inhalt (Mo Intervals, Di Easy Run, Mi Bodyweight Push&Pull, Do Tempo Run, Fr
+  Bodyweight Pull&Push, Sa/So Rest).
+- **Plan-Anzahl vor/nach:** "1 PLAN" (nur "Full Body 3x") → nach der Uebernahme "2 PLANS" - per
+  Badge-Text verifiziert, nicht geschaetzt.
+- **Uebernommenes Laufziel im Profil:** `Edit Profile` zeigt weiterhin Running-Ziel "10K", Renndatum
+  "Jan 8, 2027", Startvolumen "20" - exakt die zuvor bestaetigten Werte, korrekt zurueckgespiegelt.
+  Karte erscheint fuer diese IDENTISCHE Kombination danach nicht erneut (kein Nach-Nerven,
+  konsistent mit Commit 935e0f6).
+- **Ziel erneut aendern + neuen Vorschlag uebernehmen, im Profileditor:** Ziel auf "Marathon"
+  geaendert → App erkennt real die Unmachbarkeit ("You need about 15 weeks, but only 11 are
+  available. A more realistic goal right now: Half Marathon.", Button "Accept suggestion" statt
+  "Apply") → direkt im Profileditor angenommen, OHNE zum Plan-Tab zu wechseln → Profil zeigt danach
+  korrekt "Half Marathon" (nicht das urspruenglich gewaehlte, unmachbare "Marathon") -
+  `rebaselineCardioGoal()` uebernimmt also den tatsaechlich akzeptierten Fallback-Vorschlag korrekt.
+  Plan-Anzahl danach "3 PLANS".
+- **Ziel ein drittes Mal aendern + "Adjust plan" (Plan-Tab):** Ziel auf "5K" geaendert, neue machbare
+  Karte erschien ("You need about 2 weeks, 11 are available"). "Adjust plan" oeffnet real das
+  vorausgefuellte Build-Plan-Sheet (Running 2x/Woche + Bodyweight 2x/Woche als "4 UNITS"), nach Equipment
+  (Bodyweight)/Rhythm(Order Only)/Next bis zur Vorschau durchgesteuert, "Adopt Plan" getappt →
+  navigiert zu einem vierten, eigens zusammengestellten Plan. Plan-Anzahl danach "4 PLANS".
+- **Onboarding-Custom-Builder:** App ueber "Reset App" (In-App-Funktion, keine neue TestingBot-Session
+  noetig) real auf Werkszustand zurueckgesetzt ("The app will start in onboarding", bestaetigt),
+  Onboarding bis zur Plan-Auswahl erneut durchlaufen, dort "BUILD YOUR OWN" → "Build Plan" geoeffnet,
+  Trainingstyp "Bodyweight" gewaehlt (siehe Automatisierungs-Notiz unten), Equipment/Rhythm gesetzt, bis
+  zur Vorschau durchgesteuert, "Adopt Plan" getappt → zurueck auf dem Onboarding-Auswahlbildschirm
+  zeigt "Build Plan" jetzt den Auswahl-Haken, "Football Athletic" nicht mehr ausgewaehlt. Erst nach
+  "Finish" entstand ein echter Plan: Dashboard zeigt danach "INDIVIDUELLER PLAN" mit dem exakt
+  selbstgebauten Inhalt (Bodyweight Push&Pull: Push-Up, Wide-Grip Pull-Up, Pike Push-Up, ...),
+  Plan-Tab zeigt "1 PLAN" (frischer Reset-Zustand). **Bestaetigt real am Geraet:** das Oeffnen/
+  Konfigurieren des Custom-Builders waehrend des Onboardings legt keinen Plan vorzeitig an - genau
+  einer entsteht erst beim finalen "Finish".
+
+**Automatisierungs-Notiz (kein App-Befund):** Auf dem "Training Types"-Mehrfachauswahl-Bildschirm des
+Custom-Builders registrierte ein Tap auf den umschliessenden `XCUIElementTypeButton` (z.B.
+"Bodyweight") wiederholt KEINE Aenderung - weder im Accessibility-Baum noch im Screenshot sichtbar,
+mit zwei unabhaengigen Tap-Strategien (Element-Klick, Koordinaten-Tap) reproduziert. Ein Tap auf das
+INNERE `XCUIElementTypeStaticText`-Element mit demselben Namen hat dagegen sofort funktioniert (Zeile
+wandelte sich sichtbar in eine konfigurierte "Unit"-Karte um, "Next" wurde aktiv). Auf dem strukturell
+aehnlichen "Equipment"-Mehrfachauswahl-Bildschirm (an anderer Stelle im selben Builder) hat der
+normale Button-Tap dagegen anstandslos funktioniert. Da zwei unterschiedliche Beobachtungsmethoden
+(Baum + Pixel) uebereinstimmend keine Wirkung zeigten UND ein alternativer, gleichwertiger Tap am
+selben Bildschirm sofort griff, ist das als Eigenheit dieser Automatisierungs-Interaktion (nicht als
+App-Fehlfunktion) eingeordnet - die App selbst wurde dafuer nicht veraendert, wie vom User verlangt.
+
+**6. Neuer echter Geraete-Fund (Nebenbefund waehrend Punkt 5, nicht gesucht):** Nach der ERSTEN
+erfolgreichen Cardio-Uebernahme blieb der "Adopt plan"-Button im Plan-Tab fuer die gesamte restliche
+Session dauerhaft deaktiviert (`enabled="false"`, mehrfach reproduziert, per Re-Dump nach Wartezeit
+bestaetigt kein Timing-Artefakt) - jede spaetere, voellig unabhaengige Cardio-Karte (5K, siehe oben)
+zeigte dasselbe. Root Cause (Code-Lesen): `isAcceptingCardioFeasibility` wird in BEIDEN betroffenen
+Views (`PlansListView`, `ProfileEditorView`) im `.success`-Fall des `switch` nie zurueckgesetzt - nur
+`nil`/`.nothingToCreate`/`.committedButUnresolved`/`.failedBeforeCommit` taten das. Da SwiftUIs
+`TabView` seine Kind-Views (und damit deren `@State`) ueber Tab-Wechsel hinweg am Leben haelt, blieb
+die Sperre nach einem einzigen Erfolg fuer den Rest der App-Laufzeit aktiv - einzig "Plan anpassen"
+blieb als Umweg bedienbar, da nur der primaere Button `.disabled(isAcceptingCardioFeasibility)` hat.
+Fix (Commit `3d462dd`): `isAcceptingCardioFeasibility = false` zusaetzlich im `.success`-Fall, an
+beiden Stellen.
+
+**Ausdrücklich NICHT in dieser Runde verifiziert:** ob der Fix (`3d462dd`) das Problem tatsaechlich
+behebt, ist NICHT erneut am Geraet bestaetigt - nur der Fehler selbst wurde live reproduziert, der Fix
+ist code-gelesen hergeleitet (dieselbe Lage wie bei Commit 6300fbf). Naechster Schritt: Codemagic-Test
+fuer `3d462dd` abwarten (`swift-package`, laeuft bei Abschluss dieses Eintrags), danach idealerweise ein
+weiterer TestingBot-Lauf mit genau zwei aufeinanderfolgenden, unabhaengigen Cardio-Uebernahmen, um
+zu bestaetigen, dass "Adopt plan" nach der ersten weiterhin bedienbar bleibt.
+
+**Geaenderte Komponenten:** `Sources/FitnessAppUI/Workout/PlansListView.swift`,
+`Sources/FitnessAppUI/Settings/ProfileEditorView.swift` (je eine Zeile `isAcceptingCardioFeasibility =
+false` im `.success`-Fall plus Doku-Kommentar). `swift build` lokal gruen (Syntax, beide Dateien
+`#if canImport(SwiftUI)`-gated).
+
+**Branch/Commits:** `claude/smart-onboarding-epic`, `ce9600f` (Doku-Nachtrag zu 73fa31a/935e0f6,
+vorige Runde) und `3d462dd` (dieser Fix), beide gepusht.
+
+**Naechste Aufgabe:** Codemagic-Ergebnis fuer `3d462dd` abwarten/pruefen. Danach, falls gewuenscht, der
+oben genannte gezielte Re-Test des Fixes. Szenario "Fehler vor Commit"/"Rebind-Fehler" bleiben wie
+zuvor dokumentiert per User-Entscheidung zurueckgestellt. Task #197 bleibt `in_progress`.
