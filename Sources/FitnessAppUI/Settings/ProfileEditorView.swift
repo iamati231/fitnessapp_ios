@@ -111,6 +111,15 @@ public struct ProfileEditorView: View {
     /// anpassen"-Sheets bewusst neu erzeugt (siehe Aufrufstelle unten).
     @State private var acceptOperation = PlanCreationOperation()
     @State private var acceptCustomOperation = PlanCreationOperation()
+    /// Task #197 (Verifikationsrunde): gleiches Muster wie
+    /// `PlansListView.acceptOperationFingerprint` — `acceptOperation` ist laut ihrer eigenen
+    /// Typ-Doku PERMANENT fuer ihre Lebensdauer committed, braucht also bei jeder ANDEREN
+    /// Ziel/Renndatum/Volumen-Kombination (`CardioFeasibilityCardModel.fingerprint`) eine
+    /// frische Instanz — sonst zeigt eine spaetere, unabhaengige Cardio-Karte faelschlich
+    /// "Erneut versuchen" und ein Tap darauf wuerde nur den laengst aufgeloesten alten Plan
+    /// erneut aufzuloesen versuchen statt den neuen Vorschlag anzulegen (auf echtem Geraet in
+    /// `PlansListView` reproduziert; dieselbe Stelle hier war strukturell identisch betroffen).
+    @State private var acceptOperationFingerprint: String?
 
     /// DEL-047: gehaltete `oldEnv`-Referenz fuer den Confirmation-Dialog. Wenn
     /// non-nil, wird der Dialog angezeigt; alle drei Dialog-Aktionen setzen
@@ -1035,6 +1044,13 @@ public struct ProfileEditorView: View {
                     // Formularaenderung mit bestaetigen (siehe
                     // `rebaselineCardioGoal()`-Dokumentation).
                     guard !isAcceptingCardioFeasibility else { return }
+                    // Siehe `acceptOperationFingerprint`-Doku: eine Karte fuer eine ANDERE
+                    // Kombination als die, fuer die `acceptOperation` zuletzt stand, braucht
+                    // zwingend eine frische Instanz.
+                    if acceptOperationFingerprint != model.fingerprint {
+                        acceptOperation = PlanCreationOperation()
+                        acceptOperationFingerprint = model.fingerprint
+                    }
                     isAcceptingCardioFeasibility = true
                     // Nachbesserung (P2.3-Review, Punkt 3): Baseline NUR bei
                     // tatsaechlichem Erfolg fortschreiben, Flag im Fehlerfall
@@ -1073,7 +1089,7 @@ public struct ProfileEditorView: View {
                 } label: {
                     // Nachbesserung (dritte Korrekturrunde, Punkt 5): im "bereits erstellt, nur
                     // nicht aufgeloest"-Zustand kein irrefuehrendes erneutes "Uebernehmen".
-                    Text(acceptOperation.committedPlanID != nil
+                    Text((acceptOperation.committedPlanID != nil && acceptOperationFingerprint == model.fingerprint)
                          ? String(localized: "profile.cardio.feasibility.retryResolve", bundle: .module)
                          : (model.verdict.feasible
                             ? String(localized: "profile.cardio.feasibility.apply", bundle: .module)
