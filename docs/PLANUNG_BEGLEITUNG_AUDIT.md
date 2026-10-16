@@ -2639,3 +2639,102 @@ Commit mitgeführt (reine Dokumentation, kein Produktivcode betroffen).
 `swift-package` + `ios-app`) warten — per Dashboard, E-Mail oder einem der Session bereitgestellten
 API-Token. Erst danach: Instrumentierungs-Entscheidung für die 2 offenen Simulator-Punkte, dann
 Task #197 abschliessen. Keine weitere Erweiterung bis dahin.
+
+## Echter Apple-Testlauf liefert zwei konkrete Regressionsbefunde (testflight-Build #19,
+"Run unit tests (Release-Gate)")
+
+**Auslöser:** User lädt das reale Codemagic-Build-Log des `testflight`-Workflows (Build #19,
+Schritt "Run unit tests (Release-Gate)") hoch — echtes Xcode 26.6 / macOS-SDK 26.5 /
+`arm64e-apple-macos14.0`, `swift test --parallel`, 1240 Tests selektiert. Das ist der erste Fall in
+diesem gesamten Dokument, in dem tatsächlich ausgeführter Apple-Testoutput (nicht nur
+Linux-Syntaxpruefung) vorliegt — und er enthält vier echte, deterministische Fehlschläge, kein
+Flake. Alle vier reproduzieren denselben Code-Pfad (`recalculate`), alle vier liegen in Code aus
+früheren Task-#197-Runden, alle vier waren auf Linux UNSICHTBAR, weil
+`PlanGeneratorInstantiator.swift`/-`Tests.swift` komplett hinter `#if canImport(SwiftData)` liegen
+(dort `false`) — bestätigt den immer wieder benannten Verifikationsvorbehalt dieses Dokuments ein
+weiteres Mal, diesmal mit zwei konkreten, nicht-trivialen Bugs statt nur einem Typfehler.
+
+**Fund 1 — `hasIndependentPendingChanges` blockierte `recalculate` faelschlich bei eigener
+Session-/Log-Historie (3 Fehlschläge):** `testRecalculateSkipsDayWithActiveSessionAndReportsIt`,
+`testRecalculateSkipsDayWithCompletedSessionTooAndLogStaysFullyIntact`,
+`testRecalculateSkipsSaveEntirelyWhenNothingWasRewritten` warfen alle
+`RecalculateError.independentChangesPending` statt wie erwartet zu arbeiten. Root Cause: diese
+Tests inserten eine `WorkoutSession`/einen `ExerciseLog` (fuer einen Tag/eine Uebung DES Plans) in
+denselben Context, OHNE vorher zu speichern, und rufen dann `recalculate` auf — genau das
+Szenario, das die zweite Korrekturrunde dieses Dokuments absichtlich ermoeglichen wollte (ein Tag
+mit laufender/abgeschlossener Session soll uebersprungen, nicht blockiert werden). Die Funktion
+`hasIndependentPendingChanges` (Nachbesserung, zweite Korrekturrunde, Punkt A) kannte als "eigen"
+aber nur `plan`/`days`/`exercises` — eine pendente `WorkoutSession`/ein pendenter `ExerciseLog`,
+der sich auf einen Tag/eine Uebung DIESES Plans bezieht, zaehlte faelschlich als "unabhaengig" und
+loeste denselben Block aus, den `testRecalculateBlocksWhenAnUnrelatedIndependentChangeIsPending`
+(ein WIRKLICH unabhaengiges `UserBodyProfile`) korrekt ausloest. Fix:
+`hasIndependentPendingChanges` prueft jetzt zusaetzlich, ob ein pendentes Objekt eine
+`WorkoutSession` (ueber `session.day`) oder ein `ExerciseLog` (ueber `log.exercise` ODER
+`log.session?.day`) ist, das sich auf einen Tag/eine Uebung DIESES Plans bezieht — in dem Fall
+zaehlt es nicht als unabhaengig. `PersonalRecordEntry` (hat ebenfalls `session: WorkoutSession?`)
+bewusst NICHT mit aufgenommen: `recalculate` liest/beruecksichtigt `PersonalRecordEntry` an keiner
+Stelle, ein pendenter Eintrag ist fuer diese Operation also tatsaechlich unabhaengig — anders als
+bei `WorkoutSession`/`ExerciseLog`, die `recalculate` selbst aktiv abfragt
+(`fetchAllSessions`/`daysWithAnySession`).
+
+**Fund 2 — `revert(...)` liess geloeschte, nie gespeicherte Uebungen im Tag haengen (1
+Fehlschlag):** `testRecalculateSaveFailureLeavesNoStructuralChangeEvenAfterLaterSave` verglich
+`Set(day.activeExercises.map(\.persistentModelID))` nach einem simulierten Speicherfehler gegen die
+urspruengliche Menge — die Fehlermeldung zeigte keine reine Reihenfolgen-Differenz (wie der erste
+Blick auf die `[...]`-Druckausgabe nahelegt, da `Set`s mit derselben Bracket-Syntax wie Arrays
+drucken), sondern einen echten INHALTS-Unterschied: 12 statt 6 Elemente — die 6 urspruenglichen
+PLUS 6 neu eingefuegte, nie gespeicherte Uebungen mit TEMPORAEREN `PersistentIdentifier`s, die
+`revert(...)` eigentlich per `context.delete(...)` wieder entfernt haben sollte. Root Cause: ein
+`context.delete(...)` auf einem frisch inserteten, NIE gespeicherten Objekt aktualisiert die
+Swift-seitige `day.exercises`-Relationship-Array-Darstellung auf echter Hardware (SwiftData/Core
+Data) nachweislich NICHT synchron — das geloeschte Objekt blieb bis zu einem Save/Re-Fetch in
+`day.exercises` sichtbar, obwohl es im Context bereits als geloescht markiert war. Diese
+Zeitfenster-Eigenheit existiert auf Linux nicht, weil SwiftData dort ueberhaupt nicht existiert, ist
+also NIE zuvor real getestet worden. Fix: `revert(...)` entfernt jede geloeschte Uebung jetzt
+zusaetzlich EXPLIZIT aus `day.exercises` (`day.exercises.removeAll { $0.persistentModelID ==
+exercise.persistentModelID }`), bevor `context.delete(...)` aufgerufen wird — macht den
+In-Memory-Zustand unabhaengig von dieser Relationship-Timing-Eigenheit korrekt, statt sich auf eine
+implizite Synchronisierung zu verlassen.
+
+**Warum beide Funde nicht als "nur Testartefakt" abgetan werden:** beide Szenarien (ein pendentes
+Session-/Log-Objekt im selben Context beim Aufruf von `recalculate`; ein fehlgeschlagener Save
+direkt nach einer Tagesersetzung) sind plausible reale Zeitfenster, keine rein künstlichen
+Test-Konstruktionen — SwiftDatas Autosave ist nicht synchron nach jeder Mutation, ein
+`context.save()` kann aus denselben Gruenden scheitern, die `saveOverrideForTesting` nur
+deterministisch simuliert (Disk voll, Store-Korruption, etc.). Beide Fixes schliessen echte
+Luecken in genau dem Vertrag, den Task #197 von Anfang an herstellen sollte.
+
+**Geänderte Komponenten:**
+- `Sources/FitnessAppData/PlanGeneratorInstantiator.swift` — `hasIndependentPendingChanges`
+  (Fund 1) und `revert(...)` (Fund 2) korrigiert, Doku an beiden Stellen ergaenzt. Keine neuen
+  Tests noetig — die bereits bestehenden, auf Apple real fehlgeschlagenen Tests sind die
+  Regressionstests; dieselben vier Tests muessen nach dem Fix dort gruen sein.
+
+**Ausdrücklich NICHT auf dieser Session verifizierbar:** ob die beiden Fixes die vier realen
+Apple-Fehlschläge tatsächlich beheben, kann hier NICHT geprüft werden — `PlanGeneratorInstantiator.
+swift` liegt komplett hinter `#if canImport(SwiftData)` (auf Linux `false`), `swift build`/
+`swift test` bestätigen hier deshalb erneut NUR Syntax, nicht Semantik oder tatsächliches
+Laufzeitverhalten (derselbe Vorbehalt wie beim OnboardingView-Fund der vierten Korrekturrunde).
+Beide Fixes sind durch genaues Lesen von `TrainingDay`/`WorkoutSession`/`ExerciseLog`s
+Relationship-Deklarationen und der vier fehlschlagenden Tests hergeleitet, nicht durch einen
+eigenen Apple-Testlauf bestätigt. Nächster nötiger Schritt: denselben `testflight`- oder
+`swift-package`-Workflow erneut gegen den Commit laufen lassen, der diese beiden Fixes enthält, und
+bestätigen, dass exakt diese vier Tests jetzt gruen sind (und keine neuen Fehlschläge entstanden
+sind).
+
+**Tests tatsächlich ausgeführt (diese Session):** `swift build`, `swift build --build-tests`,
+`swift test` — alle gruen, 1033/1033 unveraendert (erwartet, da beide geaenderten Funktionen
+komplett im fuer Linux inaktiven `#if canImport(SwiftData)`-Zweig liegen).
+
+**Codemagic-Connect-Frage des Users beantwortet:** kein nativer Codemagic-Connector/-Plugin in
+dieser Session verfuegbar (`SearchPlugins` liefert nichts Codemagic-Spezifisches). Der
+funktionierende Weg bleibt: User laedt ein Codemagic-Log manuell hoch (wie in dieser Runde
+geschehen, hat direkt zu zwei echten Funden gefuehrt) ODER stellt ein Read-only-API-Token als
+Network-Secret bereit.
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
+Berichtseintrag.
+
+**Nächste Aufgabe:** Fix-Commit pushen, User bittet erneut um einen Apple-Testlauf (Codemagic) fuer
+genau diesen Commit, Ergebnis der betroffenen vier Tests abwarten. Task #197 bleibt `in_progress`
+bis diese Bestaetigung vorliegt. Keine weitere Erweiterung ueber diese beiden Fixes hinaus.

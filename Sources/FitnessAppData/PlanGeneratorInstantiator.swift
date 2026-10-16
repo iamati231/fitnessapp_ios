@@ -550,6 +550,14 @@ public enum PlanGeneratorInstantiator {
     /// Korrekturrunde" Punkt A fuer die Begruendung (ein `@Bindable`-Autosave-Feld AM SELBEN Plan
     /// ist kein "fremder" Zustand). `context.hasChanges` wird trotzdem zuerst geprueft - ein
     /// Billig-Check, der im ueblichen Fall (gar nichts ausstehend) die drei Array-Zugriffe spart.
+    ///
+    /// Apple-CI-Fund (vierte Korrekturrunde, Nachlauf): eine pendente `WorkoutSession`/ein
+    /// pendenter `ExerciseLog`, der sich auf einen Tag/eine Uebung DIESES Plans bezieht, zaehlt
+    /// ebenfalls NICHT als "fremd" - `recalculate` fragt genau diese Historie selbst aktiv ab (um
+    /// betroffene Tage zu ueberspringen statt sie zu ersetzen), ein pendentes, noch ungespeichertes
+    /// Exemplar davon ist also erwarteter, kein unabhaengiger Zustand. Reale, auf Apple-Hardware
+    /// erstmals ausgefuehrte Tests (auf Linux syntax-only, da SwiftData dort nicht existiert) haben
+    /// das Fehlen dieser Ausnahme als echten Regressions-Bug aufgedeckt (siehe Implementierung).
     private static func hasIndependentPendingChanges(relativeTo plan: TrainingPlan, in context: ModelContext) -> Bool {
         guard context.hasChanges else { return false }
 
@@ -563,7 +571,30 @@ public enum PlanGeneratorInstantiator {
 
         let pendingObjects: [any PersistentModel] =
             context.insertedModelsArray + context.changedModelsArray + context.deletedModelsArray
-        return pendingObjects.contains { !ownIDs.contains($0.persistentModelID) }
+        return pendingObjects.contains { object in
+            if ownIDs.contains(object.persistentModelID) { return false }
+            // Apple-CI-Fund (vierte Korrekturrunde, Nachlauf): eine pendente `WorkoutSession`/ein
+            // pendenter `ExerciseLog`, der sich auf einen Tag/eine Uebung DIESES Plans bezieht, ist
+            // KEINE unabhaengige Aenderung — es ist genau die Historie, die `recalculate` ein paar
+            // Zeilen weiter unten selbst ueber `fetchAllSessions`/`daysWithAnySession` abfragt, um
+            // betroffene Tage bewusst zu ueberspringen (siehe dortige Doku). Die urspruengliche
+            // Fassung kannte nur `plan`/`days`/`exercises` als "eigen" und blockierte dadurch GENAU
+            // die Session-/Log-Szenarien faelschlich, die dieser Schutz nicht treffen soll — real
+            // reproduziert durch `testRecalculateSkipsDayWithActiveSessionAndReportsIt` und
+            // Geschwister auf echter Hardware (auf Linux nie ausgefuehrt, da SwiftData dort gar
+            // nicht existiert). Ein `ExerciseLog`, dessen Uebung bereits auf `nil` degradiert ist
+            // (siehe `testExerciseLogDegradesScoringButKeepsIdentityOnceOrphaned`), bleibt ueber
+            // seine `session`-Referenz trotzdem korrekt zuordenbar.
+            if let session = object as? WorkoutSession {
+                return !(session.day.map { ownIDs.contains($0.persistentModelID) } ?? false)
+            }
+            if let log = object as? ExerciseLog {
+                let belongsViaExercise = log.exercise.map { ownIDs.contains($0.persistentModelID) } ?? false
+                let belongsViaSession = log.session?.day.map { ownIDs.contains($0.persistentModelID) } ?? false
+                return !(belongsViaExercise || belongsViaSession)
+            }
+            return true
+        }
     }
 
     /// Kein-Op (Rueckgabe `rewrittenCount: 0, skippedDueToHistoryCount: 0`),
@@ -807,13 +838,24 @@ public enum PlanGeneratorInstantiator {
     /// weiteren Save-Versuch noetig machen.
     private static func revert(_ snapshots: [DayMutationSnapshot], in context: ModelContext) {
         for snapshot in snapshots {
+            let day = snapshot.day
             for exercise in snapshot.insertedExercises {
+                // Apple-CI-Fund (vierte Korrekturrunde, Nachlauf): `context.delete(...)` allein
+                // reicht hier NICHT - bei einem frisch inserteten, NIE gespeicherten Objekt
+                // (temporaere PersistentIdentifier) blieb `day.exercises` auf echter Hardware
+                // (Xcode 26.6/iOS 18 SwiftData) nachweislich noch mit dem geloeschten Objekt
+                // bestueckt, bis ein Save/Re-Fetch die Relationship-Array-Seite aktualisiert hat -
+                // `day.activeExercises` zeigte direkt nach `revert(...)` 12 statt 6 Uebungen (die
+                // urspruenglichen PLUS die eigentlich geloeschten). Auf Linux (SwiftData gar nicht
+                // verfuegbar) und damit auch bisher nie real ausgefuehrt, konnte das nicht
+                // auffallen. Die explizite Entfernung aus dem Array VOR dem Delete macht den
+                // In-Memory-Zustand unabhaengig von dieser Relationship-Timing-Eigenheit korrekt.
+                day.exercises.removeAll { $0.persistentModelID == exercise.persistentModelID }
                 context.delete(exercise)
             }
             for exercise in snapshot.archivedExercises {
                 exercise.isArchived = false
             }
-            let day = snapshot.day
             day.name = snapshot.oldName
             day.localizationKey = snapshot.oldLocalizationKey
             day.timeFormat = snapshot.oldTimeFormat
