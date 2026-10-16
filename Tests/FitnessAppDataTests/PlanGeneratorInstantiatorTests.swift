@@ -35,6 +35,8 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         // Override, muss nach jedem Test zurueckgesetzt werden.
         PlanGeneratorInstantiator.saveOverrideForTesting = nil
         PlanGeneratorInstantiator.fetchActivePlansOverrideForTesting = nil
+        // Nachbesserung (zweite Korrekturrunde): gleicher Grund wie oben - statischer Override.
+        PlanGeneratorInstantiator.rebindOverrideForTesting = nil
     }
 
     private var context: ModelContext { container.mainContext }
@@ -648,6 +650,132 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         let summary = try PlanGeneratorInstantiator.recalculate(plan, in: context)
         XCTAssertEqual(summary.rewrittenCount, 0)
         XCTAssertEqual(summary.skippedDueToHistoryCount, 2)
+    }
+
+    // MARK: - Task #197, zweite Korrekturrunde: drei eng begrenzte Vertragsluecken
+
+    /// Nachbesserung (zweite Korrekturrunde, geforderter Test "Erfolgreiche Aktivierung ist auch im
+    /// aufrufenden Context korrekt sichtbar"): ein eigener, expliziter Beweis fuer die
+    /// Scratch-Context-Rueckbindung auf dem GLUECKSPFAD (kein Fehler) - nicht nur ein Nebeneffekt
+    /// anderer Tests, die dasselbe implizit mitpruefen.
+    func testBuildReturnsAPlanThatIsVisibleAndActiveInTheCallerContext() throws {
+        let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
+        XCTAssertTrue(plan.isActive)
+
+        let fetchedPlans = try context.fetch(FetchDescriptor<TrainingPlan>())
+        XCTAssertEqual(fetchedPlans.count, 1)
+        let fetchedPlan = try XCTUnwrap(fetchedPlans.first)
+        XCTAssertEqual(fetchedPlan.persistentModelID, plan.persistentModelID)
+        XCTAssertTrue(fetchedPlan.isActive)
+        XCTAssertTrue(fetchedPlan === plan, "muss dasselbe, im Aufrufer-Context lebende Objekt sein")
+    }
+
+    /// Nachbesserung (zweite Korrekturrunde, Punkt B): ein TRANSIENTER Rueckbindungsfehler (z.B.
+    /// eine kurze Stoerung) darf nicht sofort den Aufrufer erreichen - `createPlan` versucht GENAU
+    /// EINMAL erneut aufzuloesen, BEVOR irgendein Fehler nach aussen dringt. Gelingt der zweite
+    /// Versuch, kehrt `createPlan` ganz normal mit dem Plan zurueck - der Aufrufer bemerkt nichts.
+    func testCreatePlanTransparentlyRecoversFromATransientRebindFailure() throws {
+        let profile = makeProfile()
+        var rebindAttempts = 0
+        PlanGeneratorInstantiator.rebindOverrideForTesting = { id, ctx in
+            rebindAttempts += 1
+            // Erster Versuch (innerhalb von `build`) schlaegt fehl, zweiter (`createPlan`s
+            // interner Retry) nutzt die echte Aufloesung.
+            return rebindAttempts == 1 ? nil : (ctx.model(for: id) as? TrainingPlan)
+        }
+
+        let plan = try XCTUnwrap(PlanGeneratorInstantiator.createPlan(
+            from: input([selection(.barbell, days: 2)]), for: profile, generationSource: .manual, in: context
+        ))
+        XCTAssertTrue(plan.isActive)
+        XCTAssertEqual(rebindAttempts, 2, "genau ein automatischer Wiederholungsversuch, kein weiterer")
+
+        let allPlans = try context.fetch(FetchDescriptor<TrainingPlan>())
+        XCTAssertEqual(allPlans.count, 1, "trotz des transienten Fehlers darf nur EIN Plan existieren")
+    }
+
+    /// Nachbesserung (zweite Korrekturrunde, geforderter Test "Commit erfolgreich + Rueckbindung
+    /// fehlgeschlagen -> Retry ohne Duplikat"): scheitert auch `createPlan`s interner
+    /// Wiederholungsversuch, muss `createdButRebindFailed` (NICHT `saveFailed`) geworfen werden -
+    /// der Plan ist trotzdem bereits echt persistiert (Beweis ueber einen DRITTEN, frischen
+    /// Context). Eine SPAETERE Wiederaufnahme ueber dieselbe ID (nachdem die Stoerung behoben ist)
+    /// darf NIEMALS einen zweiten Plan anlegen.
+    func testCreatePlanThrowsCreatedButRebindFailedAndLaterResolvesWithoutDuplicate() throws {
+        let profile = makeProfile()
+        PlanGeneratorInstantiator.rebindOverrideForTesting = { _, _ in nil }
+
+        var capturedPlanID: PersistentIdentifier?
+        XCTAssertThrowsError(try PlanGeneratorInstantiator.createPlan(
+            from: input([selection(.barbell, days: 2)]), for: profile, generationSource: .manual, in: context
+        )) { error in
+            guard let creationError = error as? PlanGeneratorInstantiator.PlanCreationError,
+                  case .createdButRebindFailed(let planID) = creationError else {
+                XCTFail("falscher Fehlertyp, erwartet .createdButRebindFailed: \(error)")
+                return
+            }
+            capturedPlanID = planID
+        }
+        let planID = try XCTUnwrap(capturedPlanID)
+
+        // Der Plan EXISTIERT bereits persistiert, trotz des geworfenen Fehlers - ueber einen
+        // DRITTEN, frischen Context nachgewiesen (nicht den Aufrufer-Context, dessen In-Memory-
+        // Zustand hier nichts ueber den tatsaechlichen Store-Inhalt beweist).
+        let verificationContext = ModelContext(container)
+        let persistedPlans = try verificationContext.fetch(FetchDescriptor<TrainingPlan>())
+        XCTAssertEqual(persistedPlans.count, 1, "der Plan muss trotz createdButRebindFailed bereits gespeichert sein")
+
+        // "Retry": die Stoerung ist vorbei, erneut ueber DIESELBE ID aufloesen - OHNE
+        // build/createPlan nochmal aufzurufen.
+        PlanGeneratorInstantiator.rebindOverrideForTesting = nil
+        let resolved = PlanGeneratorInstantiator.resolveCreatedPlan(id: planID, in: context)
+        XCTAssertEqual(resolved?.persistentModelID, planID, "Wiederaufnahme ueber dieselbe ID muss nach Behebung gelingen")
+
+        let allPlansAfterRetry = try context.fetch(FetchDescriptor<TrainingPlan>())
+        XCTAssertEqual(allPlansAfterRetry.count, 1, "die Wiederaufnahme darf NIE einen zweiten Plan anlegen")
+    }
+
+    /// Nachbesserung (zweite Korrekturrunde, geforderter Test "Fremde offene Aenderung ueberlebt
+    /// recalculate ungespeichert"): eine Aenderung an einem voellig unabhaengigen Objekt (hier ein
+    /// frisch inserted `UserBodyProfile`, ohne jede Beziehung zu `plan`) muss `recalculate` VOR
+    /// jeder eigenen Mutation blockieren - und darf von einem danach versuchten Save nicht
+    /// mitgenommen worden sein.
+    func testRecalculateBlocksWhenAnUnrelatedIndependentChangeIsPending() throws {
+        let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
+        let day = try XCTUnwrap(plan.days.first { $0.type != .rest })
+        let originalName = day.name
+        let originalExerciseIDs = Set(day.activeExercises.map(\.persistentModelID))
+
+        let independentProfile = UserBodyProfile(birthDate: Date(), heightCm: 180, profile: .male)
+        context.insert(independentProfile)
+        XCTAssertTrue(context.hasChanges, "Testvoraussetzung: die fremde Aenderung muss selbst noch ungespeichert sein")
+
+        XCTAssertThrowsError(try PlanGeneratorInstantiator.recalculate(plan, in: context)) { error in
+            XCTAssertEqual(error as? PlanGeneratorInstantiator.RecalculateError, .independentChangesPending)
+        }
+
+        XCTAssertEqual(day.name, originalName, "keine Mutation am Plan")
+        XCTAssertEqual(Set(day.activeExercises.map(\.persistentModelID)), originalExerciseIDs)
+
+        // Die fremde Aenderung ist WEITERHIN nur im Aufrufer-Context pending, nicht gespeichert -
+        // Gegenprobe ueber einen DRITTEN, frischen Context auf demselben Container.
+        let verificationContext = ModelContext(container)
+        let savedProfiles = try verificationContext.fetch(FetchDescriptor<UserBodyProfile>())
+        XCTAssertTrue(savedProfiles.isEmpty, "unabhaengige Aenderung darf von recalculate nicht gespeichert worden sein")
+    }
+
+    /// Regressionsschutz (zweite Korrekturrunde): eine noch nicht autogespeicherte Aenderung AM
+    /// SELBEN Plan (z.B. ein in `PlanEditorView` gerade editiertes `customName` -
+    /// `TrainingPlan` ist dort ein `@Bindable`-Autosave-Screen) ist KEIN "fremder" Zustand und
+    /// darf `recalculate` NICHT blockieren - siehe `hasIndependentPendingChanges`-Doku. Ein
+    /// simples `context.hasChanges` haette hier faelschlich abgebrochen.
+    func testRecalculateIsNotBlockedByAPendingEditOnTheSamePlan() throws {
+        let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
+        plan.customName = "Noch nicht gespeicherte Umbenennung"
+        XCTAssertTrue(context.hasChanges, "Testvoraussetzung: die eigene Aenderung muss selbst noch ungespeichert sein")
+
+        let summary = try PlanGeneratorInstantiator.recalculate(plan, in: context)
+        XCTAssertGreaterThan(summary.rewrittenCount, 0, "eine ausstehende Aenderung AM SELBEN Plan darf recalculate nicht blockieren")
+        XCTAssertEqual(plan.customName, "Noch nicht gespeicherte Umbenennung", "recalculate ruehrt plan.customName (Plan-Ebene) nicht an")
     }
 }
 #endif

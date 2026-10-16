@@ -28,6 +28,20 @@ import FitnessAppData
 /// `finishOnboarding()`). `nil` (Default) erhaelt das bisherige, sich
 /// selbst adoptierende Verhalten fuer `PlansListView` unveraendert.
 ///
+/// Nachbesserung (Task #197, zweite Korrekturrunde, Punkt C): `onGenerated`
+/// liefert jetzt `String?` statt `Void` zurueck - `nil` heisst "Erfolg,
+/// Sheet darf schliessen", ein NICHT-nil-Wert ist eine bereits lokalisierte
+/// Fehlermeldung, die diese View in ihrem EIGENEN, bereits vorhandenen
+/// `adoptSaveErrorMessage`-Alert zeigt UND das Sheet dabei OFFEN LAESST
+/// (Entwurf bleibt erhalten, `isAdopting` wird zurueckgesetzt). Grund: der
+/// Cardio-"Plan anpassen"-Pfad (`PlansListView`/`ProfileEditorView`) ruft
+/// innerhalb dieser Closure `CardioFeasibilityCardModel.acceptCustom(...)`
+/// auf, die wie `createPlan` werfen kann - ein Fehler dort darf den
+/// bearbeiteten Entwurf nicht kommentarlos verwerfen. Die
+/// Onboarding-Entwurfsuebergabe (reines `@State`-Zwischenspeichern, keine
+/// Persistenz) liefert dafuer immer `nil` - sie kann strukturell nicht
+/// fehlschlagen.
+///
 /// P2.4: Schritt 3 haelt die bearbeitete Wochenvorschau in einem `PlanDraft`
 /// (Core, P2.0) statt in einem zweiten `PlanGenerator.Result`-State. Der
 /// Generator-Output wird einmal pro Generierung (`generatePreviewIfNeeded`)
@@ -72,7 +86,7 @@ public struct PlanBuilderView: View {
     // Ohne die explizite Annotation muesste der Compiler das aus dem
     // lexikalischen Kontext der jeweiligen Closure-Literale ableiten - nach
     // dem @MainActor-CI-Fund an CardioFeasibilityCardModel lieber explizit.
-    private let onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> Void)?
+    private let onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> String?)?
 
     /// Handoff "Lauf-Coaching - Machbarkeits-Check", Nachtrag "Plan
     /// anpassen": seedet Schritt 1/2 aus einem vorhandenen Input statt der
@@ -85,7 +99,7 @@ public struct PlanBuilderView: View {
     /// Input diesen Init nicht crasht.
     public init(
         initialInput: PlanGeneratorInput? = nil,
-        onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> Void)? = nil
+        onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> String?)? = nil
     ) {
         self.onGenerated = onGenerated
         if let initialInput {
@@ -151,7 +165,23 @@ public struct PlanBuilderView: View {
     /// zurueckgesetzt, ein erneuter Tap auf "Plan uebernehmen" ist sicher:
     /// `PlanGeneratorInstantiator.build` hat den fehlgeschlagenen Plan
     /// bereits selbst zurueckgebaut (siehe dortige Doku).
+    ///
+    /// Nachbesserung (zweite Korrekturrunde, Punkt C): dient jetzt ZWEI
+    /// Zwecken - dem eigenen `createPlan`-Fehlerpfad dieser View UND jeder
+    /// ueber `onGenerated` zurueckgemeldeten Fehlermeldung (Cardio-"Plan
+    /// anpassen"-Pfad, siehe `onGenerated`-Typ-Doku). In beiden Faellen
+    /// bleibt das Sheet offen, der Entwurf unveraendert.
     @State private var adoptSaveErrorMessage: String?
+
+    /// Nachbesserung (zweite Korrekturrunde, Punkt B): `createPlan` kann
+    /// nach einem ERFOLGREICHEN Speichervorgang trotzdem werfen, wenn NUR
+    /// die Rueckbindung scheitert (`PlanCreationError.createdButRebindFailed`)
+    /// - "Es wurde nichts geaendert" waere dann falsch. Steuert, welcher
+    /// Alert-Titel zu `adoptSaveErrorMessage` gezeigt wird. Betrifft NUR den
+    /// eigenen, direkten `createPlan`-Pfad dieser View (`onGenerated`-Fehler
+    /// nutzen immer den generischen Titel, siehe dort - die genaue Ursache
+    /// steckt dort bereits in der von `onGenerated` gelieferten Nachricht).
+    @State private var adoptSaveErrorIsCreatedButUnresolved = false
 
     /// Nachbesserung (P2.3, Abnahme "keine Duplikate bei mehrfacher
     /// Bestaetigung"): `adoptPlan()` ist synchron, ohne `await` — ein
@@ -210,8 +240,13 @@ public struct PlanBuilderView: View {
             }
             // Nachbesserung (Task #197): eigener Alert fuer einen fehlgeschlagenen
             // Speichervorgang - siehe `adoptSaveErrorMessage`-Doku.
+            // Nachbesserung (zweite Korrekturrunde, Punkt B): Titel haengt vom genauen
+            // Fehlerfall ab - "konnte nicht gespeichert werden" waere falsch, wenn der
+            // Plan tatsaechlich bereits gespeichert wurde und nur die Rueckbindung scheiterte.
             .alert(
-                Text("planBuilder.error.saveFailed.title", bundle: .module),
+                Text(adoptSaveErrorIsCreatedButUnresolved
+                     ? "planBuilder.error.createdButUnresolved.title"
+                     : "planBuilder.error.saveFailed.title", bundle: .module),
                 isPresented: Binding(
                     get: { adoptSaveErrorMessage != nil },
                     set: { if !$0 { adoptSaveErrorMessage = nil } }
@@ -954,11 +989,24 @@ public struct PlanBuilderView: View {
 
         // DEL-243: siehe Typ-Doku - `onGenerated`
         // uebernimmt hier NICHT das Instanziieren, sondern reicht Input +
-        // Ergebnis nur nach oben durch. Der Aufrufer schliesst den Sheet
-        // selbst nicht extra an - `dismiss()` unten laeuft in JEDEM Fall.
+        // Ergebnis nur nach oben durch.
+        //
+        // Nachbesserung (zweite Korrekturrunde, Punkt C): `dismiss()` laeuft
+        // jetzt NICHT mehr unbedingt - nur noch, wenn `onGenerated` `nil`
+        // (= Erfolg) zurueckgibt. Ein NICHT-nil-Rueckgabewert ist eine
+        // bereits lokalisierte Fehlermeldung: Sheet bleibt offen, Entwurf
+        // bleibt unveraendert, `isAdopting` wird zurueckgesetzt (Button
+        // wieder bedienbar), derselbe generische Alert-Titel wie fuer den
+        // eigenen Speicherfehler dieser View zeigt die Nachricht.
         if let onGenerated {
-            onGenerated(currentInput, result)
-            dismiss()
+            if let failureMessage = onGenerated(currentInput, result) {
+                isAdopting = false
+                adoptSaveErrorIsCreatedButUnresolved = false
+                adoptSaveErrorMessage = failureMessage
+            } else {
+                isAdopting = false
+                dismiss()
+            }
             return
         }
 
@@ -998,7 +1046,18 @@ public struct PlanBuilderView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 navigation.workoutPath.append(plan)
             }
+        } catch PlanGeneratorInstantiator.PlanCreationError.createdButRebindFailed {
+            // Nachbesserung (zweite Korrekturrunde, Punkt B): der Plan WURDE
+            // bereits gespeichert - `createPlan` hat intern bereits einen
+            // Wiederholungsversuch unternommen (siehe dortige Doku), dieser
+            // Fehler erreicht uns also nur, wenn auch DER gescheitert ist.
+            // "Es wurde nichts geaendert" (der generische Text) waere hier
+            // falsch - eigener Titel + eigene Nachricht.
+            adoptSaveErrorIsCreatedButUnresolved = true
+            adoptSaveErrorMessage = String(localized: "planBuilder.error.createdButUnresolved.message", bundle: .module)
+            isAdopting = false
         } catch {
+            adoptSaveErrorIsCreatedButUnresolved = false
             adoptSaveErrorMessage = String(localized: "planBuilder.error.saveFailed.message", bundle: .module)
             isAdopting = false
         }

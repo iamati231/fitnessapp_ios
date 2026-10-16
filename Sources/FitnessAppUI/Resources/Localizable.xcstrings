@@ -14975,6 +14975,22 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Kaydederken bir sorun oluştu. Hiçbir şey değişmedi — lütfen tekrar dene." } }
       }
     },
+    "planBuilder.error.createdButUnresolved.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Plan wurde erstellt" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Plan Was Created" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Plan Oluşturuldu" } }
+      }
+    },
+    "planBuilder.error.createdButUnresolved.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Dein Plan wurde gespeichert, konnte aber nicht sofort geöffnet werden. Du findest ihn im Plan-Tab." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Your plan was saved, but couldn't be opened right away. You'll find it in the Plan tab." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Planın kaydedildi, ancak hemen açılamadı. Plan sekmesinde bulabilirsin." } }
+      }
+    },
     "planBuilder.nav.next": {
       "extractionState": "manual",
       "localizations": {
@@ -34969,6 +34985,22 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Kaydederken bir sorun oluştu. Hiçbir şey değişmedi — lütfen tekrar dene." } }
       }
     },
+    "cardioFeasibility.error.createdButUnresolved.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Plan wurde erstellt" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Plan Was Created" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Plan Oluşturuldu" } }
+      }
+    },
+    "cardioFeasibility.error.createdButUnresolved.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Dein Plan wurde gespeichert, konnte aber nicht sofort geöffnet werden. Du findest ihn im Plan-Tab." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Your plan was saved, but couldn't be opened right away. You'll find it in the Plan tab." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Planın kaydedildi, ancak hemen açılamadı. Plan sekmesinde bulabilirsin." } }
+      }
+    },
         "cardioFeasibility.day.interval": {
       "extractionState": "manual",
       "localizations": {
@@ -35133,17 +35165,17 @@
     "dashboard.onboardingPlanCreationFailed.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Plan konnte nicht angelegt werden" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Plan Couldn't Be Created" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Plan Oluşturulamadı" } }
+        "de": { "stringUnit": { "state": "translated", "value": "Hinweis zu deinem Trainingsplan" } },
+        "en": { "stringUnit": { "state": "translated", "value": "A Note About Your Training Plan" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Antrenman Planınla İlgili Not" } }
       }
     },
     "dashboard.onboardingPlanCreationFailed.message": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Dein Profil wurde gespeichert, aber der vorgeschlagene Trainingsplan konnte beim Abschluss des Onboardings nicht gespeichert werden. Du kannst jederzeit im Plan-Tab einen neuen Plan erstellen." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Your profile was saved, but the suggested training plan couldn't be saved when onboarding finished. You can create a new plan anytime from the Plan tab." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Profilin kaydedildi, ancak katılım tamamlanırken önerilen antrenman planı kaydedilemedi. Plan sekmesinden istediğin zaman yeni bir plan oluşturabilirsin." } }
+        "de": { "stringUnit": { "state": "translated", "value": "Dein Profil wurde gespeichert, aber beim vorgeschlagenen Trainingsplan gab es ein Problem. Bitte sieh im Plan-Tab nach, ob dein Plan vorhanden ist, und lege bei Bedarf einen neuen an." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Your profile was saved, but there was a problem with the suggested training plan. Please check the Plan tab to see if your plan is there, and create a new one if needed." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Profilin kaydedildi, ancak önerilen antrenman planında bir sorun oluştu. Lütfen Plan sekmesinden planının orada olup olmadığını kontrol et ve gerekirse yeni bir tane oluştur." } }
       }
     },
     "dashboard.onboardingPlanCreationFailed.goToPlan": {

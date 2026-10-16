@@ -136,6 +136,53 @@ import FitnessAppCore
 /// Jeder andere Pfad in dieser Datei (`makeTemplate`, `apply` fuer sich genommen) ruft weiterhin
 /// KEIN `context.save()` auf — das bleibt Verantwortung der beiden oeffentlichen Einstiegspunkte,
 /// nicht jeder internen Hilfsfunktion.
+///
+/// # Nachbesserung, zweite Korrekturrunde — drei eng begrenzte Vertragsluecken
+///
+/// **A. `recalculate` auf dem geteilten Context: ein ERFOLGREICHER Save kann weiterhin fremde,
+/// unabhaengige offene Aenderungen mitspeichern** (Punkt 1 der obigen Save-Reichweiten-Erklaerung
+/// war als Risiko benannt, aber nicht als Produktverhalten akzeptiert). Echte Operationsgrenze ist
+/// auf dem geteilten Context nicht moeglich, ohne dieselbe Context-Isolation einzufuehren, die fuer
+/// `recalculate` oben bereits explizit ausgeschlossen wurde (Live-Bindungs-Desync). Deshalb stattdessen
+/// die vom Auftrag sanktionierte Alternative: `recalculate` prueft VOR jeder eigenen Mutation, ob der
+/// Context bereits etwas AUSSERHALB des eigenen Plan-Objektgraphen (Plan selbst + seine Tage + deren
+/// Uebungen) offen haelt, und bricht in diesem Fall mit `RecalculateError.independentChangesPending`
+/// ab — kein Save versucht, keine Mutation. BEWUSST NICHT per simplem `context.hasChanges` (das
+/// waere zu grob): `TrainingPlan` ist ein `@Bindable`-Autosave-Screen
+/// (`PlanEditorView`/`PlanMetaSnapshot`) — ein noch nicht automatisch gespeichertes Feld AM
+/// SELBEN Plan (z.B. ein gerade editierter `customName`) ist kein "fremder" Zustand, sondern
+/// derselbe Bearbeitungsvorgang, und darf `recalculate` nicht blockieren. Die Pruefung nutzt
+/// stattdessen `ModelContext.insertedModelsArray`/`.changedModelsArray`/`.deletedModelsArray`
+/// (echte, oeffentliche SwiftData-API seit iOS 17.0/macOS 14.0) und vergleicht jedes dort gelistete
+/// Objekt per `persistentModelID` gegen die Menge aus `plan`, `plan.days` und deren `exercises`
+/// (aktive UND archivierte) — nur ein Objekt AUSSERHALB dieser Menge gilt als "fremd". Da die
+/// Funktion synchron auf `@MainActor` laeuft (kein `await` zwischen dieser Pruefung und dem
+/// spaeteren `save()`), kann zwischen Pruefung und eigenem Save nichts Fremdes mehr dazukommen —
+/// die Pruefung ist fuer die Dauer dieses Aufrufs verlaesslich. Kein `context.rollback()` —
+/// unveraendert ausgeschlossen (siehe Punkt 3 oben).
+///
+/// **B. Erfolgreicher Commit vs. fehlgeschlagene Rueckbindung.** Der bisherige Code warf nach einem
+/// ERFOLGREICHEN `save(scratchContext)` denselben `PlanCreationError.saveFailed` wie bei einem
+/// echten Speicherfehler, falls NUR die anschliessende `context.model(for:)`-Rueckbindung in den
+/// Aufrufer-Context scheiterte — "Es wurde nichts geaendert" waere in diesem Fall FALSCH: der Plan
+/// EXISTIERT bereits persistiert, nur die lokale Referenz fehlt. Neuer, eigener Fall
+/// `PlanCreationError.createdButRebindFailed(planID:)` traegt die bereits persistierte
+/// `PersistentIdentifier` weiter. `createPlan` (der tatsaechlich von allen vier Aufrufern genutzte
+/// Einstiegspunkt) faengt diesen Fall sofort ab und versucht GENAU EINMAL erneut aufzuloesen
+/// (`resolveCreatedPlan`, derselbe interne `rebind`-Pfad wie `build`s eigener erster Versuch) —
+/// gelingt das, kehrt `createPlan` ganz normal mit dem Plan zurueck, ohne dass der Aufrufer je etwas
+/// davon bemerkt. Schlaegt auch dieser interne Wiederholungsversuch fehl, wird derselbe
+/// `createdButRebindFailed(planID:)` an den Aufrufer weitergereicht — der kann (muss aber nicht
+/// zwingend) spaeter ERNEUT `PlanGeneratorInstantiator.resolveCreatedPlan(id:in:)` mit derselben ID
+/// aufrufen, OHNE dass dabei jemals ein zweiter Plan entsteht (diese Funktion loest nur auf, sie
+/// erzeugt nichts).
+///
+/// **C. `onGenerated`-Uebergabe (`PlanBuilderView`) muss Erfolg/Fehler zurückmelden.** Betrifft NICHT
+/// diese Datei direkt, aber denselben Fehlervertrag: ein `acceptCustom`/`createPlan`-Fehler, der
+/// innerhalb der `onGenerated`-Closure auftritt (Cardio-"Plan anpassen"-Pfad), darf das Sheet nicht
+/// mehr unbedingt schliessen — siehe `PlanBuilderView.onGenerated`-Typ-Doku fuer den neuen
+/// `String?`-Rueckgabewert-Vertrag. Die Onboarding-Entwurfsuebergabe (reines Zwischenspeichern in
+/// `@State`, keine Persistenz) bleibt davon unberuehrt — sie liefert immer `nil` (= Erfolg).
 @MainActor
 public enum PlanGeneratorInstantiator {
 
@@ -291,10 +338,39 @@ public enum PlanGeneratorInstantiator {
         // Strukturell sollte das nach einem erfolgreichen Save direkt danach nie fehlschlagen
         // (derselbe Store, dieselbe ID, keine Nebenlaeufigkeit auf `@MainActor`) - trotzdem kein
         // Force-Unwrap/Crash, sondern ein benannter, catchbarer Fehler.
-        guard let reboundPlan = context.model(for: plan.persistentModelID) as? TrainingPlan else {
-            throw PlanCreationError.saveFailed
+        //
+        // Nachbesserung (zweite Korrekturrunde, Punkt B): DER SAVE OBEN IST BEREITS ERFOLGREICH
+        // DURCHGELAUFEN - ein Scheitern HIER ist kein Speicherfehler, sondern eine reine
+        // Aufloesungs-Luecke. `.saveFailed` waere hier eine falsche Zustandsbeschreibung ("nichts
+        // geaendert"); `createdButRebindFailed` traegt stattdessen die bereits persistierte ID
+        // weiter, damit der Aufrufer (ueber `createPlan`s internen Retry oder spaeter selbst via
+        // `resolveCreatedPlan`) ohne einen zweiten Plan anzulegen wiederaufnehmen kann.
+        guard let reboundPlan = rebind(id: plan.persistentModelID, in: context) else {
+            throw PlanCreationError.createdButRebindFailed(planID: plan.persistentModelID)
         }
         return reboundPlan
+    }
+
+    /// Nachbesserung (zweite Korrekturrunde, Punkt B): DI-Seam fuer die Rueckbindungs-Aufloesung,
+    /// analog `fetchActivePlansOverrideForTesting`. `nil` (Default) aendert nichts.
+    static var rebindOverrideForTesting: ((PersistentIdentifier, ModelContext) -> TrainingPlan?)?
+
+    private static func rebind(id: PersistentIdentifier, in context: ModelContext) -> TrainingPlan? {
+        if let rebindOverrideForTesting {
+            return rebindOverrideForTesting(id, context)
+        }
+        return context.model(for: id) as? TrainingPlan
+    }
+
+    /// Nachbesserung (zweite Korrekturrunde, Punkt B): oeffentliche Wiederaufnahme fuer
+    /// `PlanCreationError.createdButRebindFailed` — der Plan WURDE bereits erfolgreich angelegt und
+    /// gespeichert, nur die Rueckbindung in `context` ist gescheitert (auch nach `createPlan`s
+    /// eigenem internen Versuch). Ruft denselben `rebind`-Pfad auf wie `build`/`createPlan` selbst —
+    /// ein Aufrufer, der das hier erneut versucht (z.B. nach einem Tipp auf "Erneut versuchen"),
+    /// LEGT NIEMALS einen zweiten Plan an: es wird nur aufgeloest, nichts erzeugt.
+    @MainActor
+    public static func resolveCreatedPlan(id: PersistentIdentifier, in context: ModelContext) -> TrainingPlan? {
+        rebind(id: id, in: context)
     }
 
     /// P2.3 — der EINE Einstiegspunkt fuer "neuen generierten Plan
@@ -332,11 +408,24 @@ public enum PlanGeneratorInstantiator {
             individualProfile: profile.equipmentProfile,
             confirmedComplete: profile.equipmentProfileConfirmedComplete
         ).effectiveProfile
-        return try build(
-            from: input, in: context,
-            environment: profile.environment, equipmentProfile: effectiveProfile,
-            result: precomputed, generationSource: generationSource
-        )
+        // Nachbesserung (zweite Korrekturrunde, Punkt B): EIN automatischer Wiederholungsversuch
+        // fuer genau den Fall "Save war erfolgreich, nur die Rueckbindung ist gescheitert" - bevor
+        // der Fehler ueberhaupt den Aufrufer erreicht. Ruft dafuer NIE erneut `build` auf (das
+        // wuerde einen zweiten Plan anlegen), nur `resolveCreatedPlan` (reine Aufloesung). Jeder der
+        // vier Aufrufer dieser Funktion bekommt diese Behandlung dadurch automatisch, ohne sie
+        // selbst duplizieren zu muessen.
+        do {
+            return try build(
+                from: input, in: context,
+                environment: profile.environment, equipmentProfile: effectiveProfile,
+                result: precomputed, generationSource: generationSource
+            )
+        } catch PlanCreationError.createdButRebindFailed(let planID) {
+            if let resolved = resolveCreatedPlan(id: planID, in: context) {
+                return resolved
+            }
+            throw PlanCreationError.createdButRebindFailed(planID: planID)
+        }
     }
 
     /// Nachbesserung (Review nach Task #197): typisierte Fehler fuer `build`/`createPlan` — siehe
@@ -345,8 +434,16 @@ public enum PlanGeneratorInstantiator {
         /// Die Pruefung, welche Plaene gerade aktiv sind (VOR jeder Mutation), ist selbst
         /// fehlgeschlagen — keine Mutation hat stattgefunden.
         case activePlanCheckFailed
-        /// Der abschliessende Save des isolierten Scratch-Context ist fehlgeschlagen.
+        /// Der abschliessende Save des isolierten Scratch-Context ist fehlgeschlagen. Es wurde
+        /// NICHTS geaendert/persistiert — anders als `createdButRebindFailed` unten.
         case saveFailed
+        /// Nachbesserung (zweite Korrekturrunde, Punkt B): der Save war ERFOLGREICH — der Plan
+        /// EXISTIERT bereits persistiert unter `planID` — nur die anschliessende Rueckbindung in
+        /// den Aufrufer-Context ist (auch nach einem internen Wiederholungsversuch in `createPlan`)
+        /// gescheitert. NIE als "nichts geaendert" behandeln; ein Aufrufer darf hierauf NIE erneut
+        /// `build`/`createPlan` aufrufen (das wuerde einen zweiten Plan anlegen) — nur
+        /// `resolveCreatedPlan(id:in:)` mit genau dieser ID ist sicher wiederholbar.
+        case createdButRebindFailed(planID: PersistentIdentifier)
     }
 
     /// Nachbesserung (Review nach Task #197): DI-Seam fuer die Aktivplan-Pruefung in `build`, analog
@@ -411,6 +508,11 @@ public enum PlanGeneratorInstantiator {
         /// "Commit-/Speicherverantwortung" fuer die Begruendung (kein sicheres Undelete ohne
         /// Context-weiten Rollback) und warum das trotzdem nichts verliert/dupliziert.
         case saveFailed
+        /// Nachbesserung (zweite Korrekturrunde, Punkt A): der geteilte Context hatte bereits VOR
+        /// diesem Aufruf unabhaengige, nicht gespeicherte Aenderungen — ein Save hier wuerde die
+        /// MIT committen (siehe Typ-Doku "Nachbesserung, zweite Korrekturrunde" Punkt A). KEINE
+        /// Mutation hat stattgefunden.
+        case independentChangesPending
     }
 
     /// Nachbesserung (P2.3-Review): Rueckgabe von `recalculate` — getrennt
@@ -440,6 +542,30 @@ public enum PlanGeneratorInstantiator {
         return try context.fetch(FetchDescriptor<WorkoutSession>())
     }
 
+    /// Nachbesserung (zweite Korrekturrunde, Punkt A): `true`, wenn `context` ein Objekt
+    /// AUSSERHALB des Objektgraphen von `plan` (der Plan selbst, seine Tage, deren Uebungen -
+    /// aktive UND archivierte) als ausstehende Aenderung haelt. Nutzt `insertedModelsArray`/
+    /// `changedModelsArray`/`deletedModelsArray` (oeffentliche SwiftData-API seit iOS 17.0/
+    /// macOS 14.0) statt des groben `hasChanges` - siehe Typ-Doku "Nachbesserung, zweite
+    /// Korrekturrunde" Punkt A fuer die Begruendung (ein `@Bindable`-Autosave-Feld AM SELBEN Plan
+    /// ist kein "fremder" Zustand). `context.hasChanges` wird trotzdem zuerst geprueft - ein
+    /// Billig-Check, der im ueblichen Fall (gar nichts ausstehend) die drei Array-Zugriffe spart.
+    private static func hasIndependentPendingChanges(relativeTo plan: TrainingPlan, in context: ModelContext) -> Bool {
+        guard context.hasChanges else { return false }
+
+        var ownIDs: Set<PersistentIdentifier> = [plan.persistentModelID]
+        for day in plan.days {
+            ownIDs.insert(day.persistentModelID)
+            for exercise in day.exercises {
+                ownIDs.insert(exercise.persistentModelID)
+            }
+        }
+
+        let pendingObjects: [any PersistentModel] =
+            context.insertedModelsArray + context.changedModelsArray + context.deletedModelsArray
+        return pendingObjects.contains { !ownIDs.contains($0.persistentModelID) }
+    }
+
     /// Kein-Op (Rueckgabe `rewrittenCount: 0, skippedDueToHistoryCount: 0`),
     /// wenn der Plan gar keinen `generatorInput` traegt (nicht ueber den
     /// Assistenten entstanden).
@@ -452,6 +578,21 @@ public enum PlanGeneratorInstantiator {
     public static func recalculate(_ plan: TrainingPlan, in context: ModelContext) throws -> RecalculateSummary {
         guard let input = plan.generatorInput else {
             return RecalculateSummary(rewrittenCount: 0, skippedDueToHistoryCount: 0)
+        }
+
+        // Nachbesserung (zweite Korrekturrunde, Punkt A): `recalculate` bleibt bewusst auf dem
+        // geteilten Context (siehe Typ-Doku Punkt 1) - ein ERFOLGREICHER Save wuerde deshalb
+        // unbemerkt jede unabhaengige, bereits VOR diesem Aufruf im selben Context offene Aenderung
+        // mitnehmen. Das wurde nicht als Produktverhalten akzeptiert. Da eine echte
+        // Operationsgrenze hier (anders als bei `build`) nicht gefahrlos moeglich ist, wird die
+        // betroffene Schreiboperation stattdessen VOR jeder eigenen Mutation blockiert, wenn der
+        // Context bereits etwas AUSSERHALB des Plans selbst offen haelt (siehe
+        // `hasIndependentPendingChanges` - bewusst NICHT der grobe `context.hasChanges`, der auch
+        // ein noch nicht autogespeichertes Feld AM SELBEN Plan faelschlich blockieren wuerde).
+        // Synchron auf `@MainActor`, kein `await` bis zum eigenen `save()` unten - zwischen dieser
+        // Pruefung und dem Save kann nichts Neues mehr von aussen dazukommen.
+        guard !hasIndependentPendingChanges(relativeTo: plan, in: context) else {
+            throw RecalculateError.independentChangesPending
         }
 
         // Nachbesserung (P2.3-Review, Punkt 1): EINMAL, VOR jeder Mutation,

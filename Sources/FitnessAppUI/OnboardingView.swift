@@ -324,10 +324,14 @@ public struct OnboardingView: View {
             // UserBodyProfile, kein DayPicker noetig (Step 2 des Builders
             // deckt Wochentage/Equipment bereits ab).
             .sheet(isPresented: $showingPlanBuilder) {
+                // Nachbesserung (zweite Korrekturrunde, Punkt C): `onGenerated` liefert jetzt
+                // `String?` zurueck (`nil` = Erfolg, siehe PlanBuilderView-Typ-Doku). Reines
+                // `@State`-Zwischenspeichern kann strukturell nicht fehlschlagen - immer `nil`.
                 PlanBuilderView { input, result in
                     customPlanInput = input
                     customPlanResult = result
                     clearSelectedTemplate()
+                    return nil
                 }
             }
             // Start-Check-Epic: Sheet fuer den optionalen "Wo stehst du

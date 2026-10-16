@@ -98,6 +98,11 @@ public struct ProfileEditorView: View {
     /// einem `_ = ...`-Discard vollstaendig zu verschwinden.
     @State private var cardioAcceptErrorMessage: String?
 
+    /// Nachbesserung (zweite Korrekturrunde, Punkt B): gleiches Muster wie
+    /// `PlansListView.cardioAcceptErrorIsCreatedButUnresolved` — steuert den Alert-Titel, wenn
+    /// `accept` nach einem ERFOLGREICHEN Speichervorgang nur an der Rueckbindung scheitert.
+    @State private var cardioAcceptErrorIsCreatedButUnresolved = false
+
     /// DEL-047: gehaltete `oldEnv`-Referenz fuer den Confirmation-Dialog. Wenn
     /// non-nil, wird der Dialog angezeigt; alle drei Dialog-Aktionen setzen
     /// das Feld wieder auf nil zurueck.
@@ -320,8 +325,12 @@ public struct ProfileEditorView: View {
         }
         // Nachbesserung (Task #197, zweite Runde): sichtbarer Fehler statt
         // stillem Discard, siehe `cardioAcceptErrorMessage`-Doku.
+        // Nachbesserung (zweite Korrekturrunde, Punkt B): Titel haengt vom Fehlerfall ab, siehe
+        // `cardioAcceptErrorIsCreatedButUnresolved`-Doku.
         .alert(
-            Text("cardioFeasibility.error.saveFailed.title", bundle: .module),
+            Text(cardioAcceptErrorIsCreatedButUnresolved
+                 ? "cardioFeasibility.error.createdButUnresolved.title"
+                 : "cardioFeasibility.error.saveFailed.title", bundle: .module),
             isPresented: Binding(
                 get: { cardioAcceptErrorMessage != nil },
                 set: { if !$0 { cardioAcceptErrorMessage = nil } }
@@ -1035,8 +1044,17 @@ public struct ProfileEditorView: View {
                             } else {
                                 isAcceptingCardioFeasibility = false
                             }
+                        } catch PlanGeneratorInstantiator.PlanCreationError.createdButRebindFailed {
+                            // Nachbesserung (zweite Korrekturrunde, Punkt B): der Plan WURDE
+                            // bereits gespeichert - `createPlan` hat intern bereits einen
+                            // Wiederholungsversuch unternommen (siehe dortige Doku).
+                            // "Speicherfehler" waere hier falsch.
+                            isAcceptingCardioFeasibility = false
+                            cardioAcceptErrorIsCreatedButUnresolved = true
+                            cardioAcceptErrorMessage = String(localized: "cardioFeasibility.error.createdButUnresolved.message", bundle: .module)
                         } catch {
                             isAcceptingCardioFeasibility = false
+                            cardioAcceptErrorIsCreatedButUnresolved = false
                             cardioAcceptErrorMessage = String(localized: "cardioFeasibility.error.saveFailed.message", bundle: .module)
                         }
                     }
@@ -1093,10 +1111,20 @@ public struct ProfileEditorView: View {
                     // Nachbesserung (Task #197, zweite Runde): der Speicherfehler
                     // wurde vorher durch `_ = ...` komplett verworfen - jetzt
                     // sichtbar via `cardioAcceptErrorMessage`.
+                    //
+                    // Nachbesserung (zweite Korrekturrunde, Punkt C): `onGenerated` liefert jetzt
+                    // `String?` zurueck - `nil` = Erfolg, PlanBuilderView schliesst das Sheet
+                    // selbst; ein NICHT-nil-Wert haelt das Sheet (mit dem bearbeiteten Entwurf)
+                    // offen und zeigt die Nachricht unter PlanBuilderViews eigenem Alert.
                     do {
                         try model.acceptCustom(input: adjustedInput, result: adjustedResult, profile: profile, in: modelContext)
+                        return nil
+                    } catch PlanGeneratorInstantiator.PlanCreationError.createdButRebindFailed {
+                        // Der Plan WURDE bereits gespeichert (siehe `createPlan`s internen Retry) -
+                        // "Speicherfehler" waere hier falsch, siehe eigener Text.
+                        return String(localized: "cardioFeasibility.error.createdButUnresolved.message", bundle: .module)
                     } catch {
-                        cardioAcceptErrorMessage = String(localized: "cardioFeasibility.error.saveFailed.message", bundle: .module)
+                        return String(localized: "cardioFeasibility.error.saveFailed.message", bundle: .module)
                     }
                 }
             }

@@ -50,6 +50,13 @@ public struct PlansListView: View {
     /// `isAcceptingCardioFeasibility` ohnehin erst nach dem Reset wieder
     /// aktiv).
     @State private var cardioAcceptErrorMessage: String?
+    /// Nachbesserung (zweite Korrekturrunde, Punkt B): `accept` kann nach einem ERFOLGREICHEN
+    /// Speichervorgang trotzdem werfen, wenn NUR die Rueckbindung scheitert
+    /// (`PlanCreationError.createdButRebindFailed`, nach bereits einem internen Retry in
+    /// `createPlan`) - "Speicherfehler" waere dann falsch. Steuert den Alert-Titel. Betrifft NUR
+    /// den direkten "Uebernehmen"-Button; der "Plan anpassen"-Sheet-Pfad zeigt bei diesem Fall
+    /// stattdessen eine eigene Nachricht unter `PlanBuilderView`s generischem Titel (siehe dort).
+    @State private var cardioAcceptErrorIsCreatedButUnresolved = false
     /// Nachtrag "Plan anpassen": eigener Zustand, NICHT `showingPlanBuilder`
     /// wiederverwenden - der haengt am Plus-Menue mit leerem Wizard-Start,
     /// hier soll er mit dem Machbarkeits-Vorschlag vorbefuellt oeffnen.
@@ -146,8 +153,12 @@ public struct PlansListView: View {
         }
         // Nachbesserung (Task #197, zweite Runde): sichtbarer Fehler statt
         // stillem nil-Pfad, siehe `cardioAcceptErrorMessage`-Doku.
+        // Nachbesserung (zweite Korrekturrunde, Punkt B): Titel haengt vom Fehlerfall ab, siehe
+        // `cardioAcceptErrorIsCreatedButUnresolved`-Doku.
         .alert(
-            Text("cardioFeasibility.error.saveFailed.title", bundle: .module),
+            Text(cardioAcceptErrorIsCreatedButUnresolved
+                 ? "cardioFeasibility.error.createdButUnresolved.title"
+                 : "cardioFeasibility.error.saveFailed.title", bundle: .module),
             isPresented: Binding(
                 get: { cardioAcceptErrorMessage != nil },
                 set: { if !$0 { cardioAcceptErrorMessage = nil } }
@@ -288,8 +299,17 @@ public struct PlansListView: View {
                             } else {
                                 isAcceptingCardioFeasibility = false
                             }
+                        } catch PlanGeneratorInstantiator.PlanCreationError.createdButRebindFailed {
+                            // Nachbesserung (zweite Korrekturrunde, Punkt B): der Plan WURDE
+                            // bereits gespeichert - `createPlan` hat intern bereits einen
+                            // Wiederholungsversuch unternommen (siehe dortige Doku). "Speicherfehler"
+                            // waere hier falsch.
+                            isAcceptingCardioFeasibility = false
+                            cardioAcceptErrorIsCreatedButUnresolved = true
+                            cardioAcceptErrorMessage = String(localized: "cardioFeasibility.error.createdButUnresolved.message", bundle: .module)
                         } catch {
                             isAcceptingCardioFeasibility = false
+                            cardioAcceptErrorIsCreatedButUnresolved = false
                             cardioAcceptErrorMessage = String(localized: "cardioFeasibility.error.saveFailed.message", bundle: .module)
                         }
                     }
@@ -339,19 +359,24 @@ public struct PlansListView: View {
         .sheet(isPresented: $showingPlanAdjustSheet) {
             if let input = model.planInput {
                 PlanBuilderView(initialInput: input) { adjustedInput, adjustedResult in
-                    // Nachbesserung (Task #197, zweite Runde): `PlanBuilderView.
-                    // adoptPlan()` ruft `dismiss()` direkt im Anschluss an diese
-                    // Closure auf (siehe dortige Doku) - der Alert haengt am
-                    // AEUSSEREN View und bleibt deshalb sichtbar, auch wenn das
-                    // Sheet hier bereits zufaellt.
+                    // Nachbesserung (zweite Korrekturrunde, Punkt C): `onGenerated` liefert jetzt
+                    // `String?` zurueck - `nil` = Erfolg, `PlanBuilderView` schliesst das Sheet
+                    // selbst. Ein NICHT-nil-Wert haelt das Sheet (mit dem bearbeiteten Entwurf)
+                    // OFFEN und zeigt die Nachricht unter `PlanBuilderView`s eigenem,
+                    // bereits vorhandenem Alert - kein zweiter Alert-Mechanismus noetig.
                     do {
                         if let plan = try model.acceptCustom(input: adjustedInput, result: adjustedResult, profile: profile, in: modelContext) {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 navigation.workoutPath.append(plan)
                             }
                         }
+                        return nil
+                    } catch PlanGeneratorInstantiator.PlanCreationError.createdButRebindFailed {
+                        // Der Plan WURDE bereits gespeichert (siehe `createPlan`s internen Retry) -
+                        // "Speicherfehler" waere hier falsch, siehe eigener Text.
+                        return String(localized: "cardioFeasibility.error.createdButUnresolved.message", bundle: .module)
                     } catch {
-                        cardioAcceptErrorMessage = String(localized: "cardioFeasibility.error.saveFailed.message", bundle: .module)
+                        return String(localized: "cardioFeasibility.error.saveFailed.message", bundle: .module)
                     }
                 }
             }

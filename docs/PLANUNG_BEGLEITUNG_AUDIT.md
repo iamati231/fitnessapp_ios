@@ -2136,3 +2136,142 @@ Berichtseintrag.
 BESTEHENDEN Operationen jetzt nach bestem Wissen auf Code-Ebene vollständig umgesetzt, bleibt aber
 erst durch einen echten Apple-Lauf tatsächlich bewiesen. Finale Wocheneditor-Übernahme bleibt bis
 dahin UND bis zur separaten "nur speichern vs. aktivieren"-Entscheidung blockiert.
+
+## Task #197-Nachbesserung, zweite Korrekturrunde (drei eng begrenzte Vertragslücken)
+
+**Task #197 bleibt `in_progress`** — der User hat die obige Nachbesserung als "sinnvolle
+Fortschritte" akzeptiert, aber NICHT als abgeschlossen geführt. Drei konkrete, eng begrenzte
+Lücken wurden benannt und in dieser Runde geschlossen.
+
+**Punkt 1 — `recalculate` kann weiterhin fremde offene Änderungen mitspeichern:** die vorherige
+Runde hatte das als bewusst akzeptierte Eigenschaft von SwiftDatas Save-Modell dokumentiert — das
+wurde vom User explizit NICHT als Produktverhalten akzeptiert. Lösung: `recalculate` prüft jetzt
+VOR jeder eigenen Mutation per neuer privater `hasIndependentPendingChanges(relativeTo:in:)`, ob
+der Context ein Objekt AUSSERHALB des Plan-Objektgraphen (Plan selbst + seine Tage + deren
+Übungen, aktiv UND archiviert) als ausstehende Änderung hält, und bricht in diesem Fall mit dem
+neuen `RecalculateError.independentChangesPending` ab — keine Mutation, kein Save-Versuch.
+
+**Bewusst NICHT per simplem `context.hasChanges`** — ein erster Entwurf dieser Korrektur hätte
+genau das getan und wäre ein eigener, neuer Bug gewesen: `TrainingPlan` ist in `PlanEditorView` ein
+`@Bindable`-Autosave-Screen (`PlanMetaSnapshot`), ein noch nicht automatisch gespeichertes Feld AM
+SELBEN Plan (z. B. ein gerade editierter `customName`) ist kein "fremder" Zustand, sondern derselbe
+Bearbeitungsvorgang — ein blankes `hasChanges` hätte das fälschlich blockiert, und hätte sogar den
+BESTEHENDEN Test `testRecalculateSkipsDayWithEditedExerciseSets` (der genau so eine
+Vor-Ort-Bearbeitung simuliert) zum Fehlschlagen gebracht. Per WebSearch-Recherche verifiziert:
+`ModelContext.insertedModelsArray`/`.changedModelsArray`/`.deletedModelsArray` sind echte,
+öffentliche, dokumentierte SwiftData-API seit iOS 17.0/macOS 14.0 (genau das Deployment-Target
+dieses Projekts, keine `@available`-Anhebung nötig) — Quelle: developer.apple.com/documentation/
+swiftdata/modelcontext/{insertedmodelsarray,changedmodelsarray,deletedmodelsarray}. Bekannter
+Caveat (Community-Quellen, nicht auf den Referenzseiten selbst): die drei Arrays leeren sich sofort
+nach einem erfolgreichen Save — irrelevant hier, da ausschließlich VOR jedem Save gelesen.
+
+**Punkt 2 — erfolgreichen Commit von fehlgeschlagener Rückbindung unterscheiden:** nach einem
+ERFOLGREICHEN `save(scratchContext)` erschien ein nachfolgender Rückbindungsfehler
+(`context.model(for:)` liefert `nil`) bisher als `PlanCreationError.saveFailed` mit der Nachricht
+"Es wurde nichts geändert" — faktisch falsch, der Plan EXISTIERT bereits persistiert. Neuer Fall
+`PlanCreationError.createdButRebindFailed(planID:)` trägt die bereits persistierte
+`PersistentIdentifier` weiter. `createPlan` (der tatsächlich von allen vier Aufrufern genutzte
+Einstiegspunkt, nicht `build` direkt) fängt diesen Fall sofort ab und versucht GENAU EINMAL erneut
+aufzulösen (neue `resolveCreatedPlan(id:in:)`, über denselben privaten `rebind`-Helfer wie `build`s
+eigener erster Versuch, mit neuem `rebindOverrideForTesting`-DI-Seam) — gelingt das, kehrt
+`createPlan` normal mit dem Plan zurück, der Aufrufer bemerkt nichts. Schlägt auch dieser interne
+Retry fehl, reicht `createPlan` denselben `createdButRebindFailed(planID:)` weiter — ein Aufrufer
+darf darauf NIE erneut `build`/`createPlan` aufrufen (zweiter Plan!), nur `resolveCreatedPlan` mit
+derselben ID ist sicher wiederholbar. Vier UI-Stellen (`PlanBuilderView`s eigener Pfad,
+`PlansListView`/`ProfileEditorView`s direkter "Übernehmen"-Button) fangen diesen Fall jetzt mit
+eigenem Titel/eigener Nachricht ("Plan wurde erstellt" statt "konnte nicht gespeichert werden") ab,
+statt die generische Save-Fehler-Meldung zu zeigen.
+
+**Punkt 3 — `onGenerated`/Builder-Callback muss Erfolg/Fehler zurückmelden:** `PlanBuilderView`s
+`adoptPlan()` rief die `onGenerated`-Closure bisher auf und dismissed danach UNBEDINGT — ein
+Fehler aus `CardioFeasibilityCardModel.acceptCustom(...)` innerhalb dieser Closure (Cardio-"Plan
+anpassen"-Pfad) hätte den bearbeiteten Entwurf kommentarlos verworfen. `onGenerated`s Signatur ist
+jetzt `(PlanGeneratorInput, PlanGenerator.Result) -> String?` statt `-> Void`: `nil` = Erfolg,
+Sheet schließt; ein Nicht-nil-Wert ist eine bereits lokalisierte Fehlermeldung, die
+`PlanBuilderView` in ihrem EIGENEN, bereits bestehenden `adoptSaveErrorMessage`-Alert zeigt UND
+dabei das Sheet (mit intaktem Entwurf) offen lässt, `isAdopting` zurückgesetzt. Die
+Onboarding-Entwurfsübergabe (`OnboardingView`, reines `@State`-Zwischenspeichern ohne Persistenz)
+liefert dafür immer `nil` — sie kann strukturell nicht fehlschlagen, unverändert ohne Persistenz.
+
+**Geänderte/neue Komponenten:**
+- `Sources/FitnessAppData/PlanGeneratorInstantiator.swift` — Typ-Doku um drei neue Punkte A/B/C
+  ergänzt; `hasIndependentPendingChanges`, `RecalculateError.independentChangesPending`;
+  `PlanCreationError.createdButRebindFailed(planID:)`, `rebind`/`rebindOverrideForTesting`,
+  `resolveCreatedPlan`, `createPlan`s interner Retry.
+- `Sources/FitnessAppUI/Workout/PlanBuilderView.swift` — `onGenerated`-Signatur auf `String?`
+  umgestellt (Typ-Doku + `init` + `adoptPlan()`); neuer `adoptSaveErrorIsCreatedButUnresolved`-Flag
+  für den eigenen direkten `createPlan`-Pfad.
+- `Sources/FitnessAppUI/Workout/PlansListView.swift` / `Sources/FitnessAppUI/Settings/
+  ProfileEditorView.swift` — beide Cardio-Aufrufstellen (direkter Button + `onGenerated`-Closure)
+  behandeln `createdButRebindFailed` jetzt eigens; neuer `cardioAcceptErrorIsCreatedButUnresolved`-
+  Flag in beiden Views.
+- `Sources/FitnessAppUI/OnboardingView.swift` — `onGenerated`-Closure liefert jetzt `return nil`.
+- `Sources/FitnessAppUI/DashboardView.swift` — keine Code-Änderung, aber die Lokalisierungs-Texte
+  unten wurden geschärft (s. u.).
+- `Sources/FitnessAppUI/Resources/Localizable.xcstrings` — 4 neue Keys
+  (`planBuilder.error.createdButUnresolved.title`/`.message`,
+  `cardioFeasibility.error.createdButUnresolved.title`/`.message`) plus eine Textkorrektur an
+  `dashboard.onboardingPlanCreationFailed.title`/`.message` (DE/EN/TR) — die ursprüngliche
+  Formulierung ("Plan konnte nicht gespeichert werden") wäre nach dieser Korrektur für den seltenen
+  `createdButRebindFailed`-Fall falsch gewesen, da `OnboardingView` diesen Fall (mangels sichtbarem
+  Alert an dieser Stelle, siehe Typ-Doku Punkt 4 oben) nicht vom echten Save-Fehler unterscheidet —
+  neuer Text ("Hinweis zu deinem Trainingsplan" / "bitte im Plan-Tab nachsehen") ist in BEIDEN
+  Fällen akkurat. Katalog jetzt 2114 Keys, weiterhin 0 hardcoded.
+
+**Tests hinzugefügt** (`Tests/FitnessAppDataTests/PlanGeneratorInstantiatorTests.swift`, alle
+syntax-only auf Linux verifiziert, SwiftData-gated):
+- `testRecalculateBlocksWhenAnUnrelatedIndependentChangeIsPending` — geforderter Test "Fremde
+  offene Änderung überlebt recalculate ungespeichert".
+- `testRecalculateIsNotBlockedByAPendingEditOnTheSamePlan` — Regressionsschutz: beweist direkt,
+  dass die PRÄZISE (nicht die grobe `hasChanges`-)Prüfung eine Änderung AM SELBEN Plan nicht
+  fälschlich blockiert.
+- `testBuildReturnsAPlanThatIsVisibleAndActiveInTheCallerContext` — geforderter Test "Erfolgreiche
+  Aktivierung ist auch im aufrufenden Context korrekt sichtbar".
+- `testCreatePlanTransparentlyRecoversFromATransientRebindFailure` — beweist den internen
+  Ein-Wiederholungsversuch in `createPlan`.
+- `testCreatePlanThrowsCreatedButRebindFailedAndLaterResolvesWithoutDuplicate` — geforderter Test
+  "Commit erfolgreich + Rückbindung fehlgeschlagen → Retry ohne Duplikat".
+
+**Punkt 3 (acceptCustom/Builder-Callback) ist NICHT durch einen automatisierten Test abgedeckt —
+ehrlich als Lücke benannt, nicht stillschweigend übergangen:** der geforderte Test "acceptCustom
+fehlgeschlagen → derselbe bearbeitete Draft bleibt offen" prüft sichtbares SwiftUI-View-Verhalten
+(Sheet bleibt offen, `@State`-Entwurf unverändert) — dieses Repository hat kein
+`FitnessAppUITests`-Target und keinerlei UI-Test-Infrastruktur (bestätigt beim Audit für das
+Übungs-GIF-Feature). Weder auf Linux noch auf einem echten Apple-Build ohne zusätzliche, hier nicht
+beauftragte Test-Infrastruktur automatisiert prüfbar. Was STATTDESSEN belegt ist: der
+`onGenerated`-Rückgabewert-Vertrag selbst (`nil`/`String?`) ist durch Code-Lesen nachvollziehbar
+korrekt verdrahtet (siehe `adoptPlan()`), und `acceptCustom`s Fehler-Durchreichung (dass sie
+tatsächlich wirft, statt den Fehler zu verschlucken) ist indirekt durch die
+`createPlan`/`PlanGeneratorInstantiator`-Tests oben abgedeckt — das tatsächliche
+UI-Offenbleiben ist bis zu einem echten Geräte-/Simulator-Test unbewiesen.
+
+**Tests tatsächlich ausgeführt:** `swift build`/`swift build --build-tests`: grün nach jeder
+Änderungsstufe. `swift test`: **1033/1033 grün — UNVERÄNDERT** gegenüber der vorherigen Runde (alle
+5 neuen `PlanGeneratorInstantiatorTests` sind SwiftData-gated, tragen auf Linux nichts zur Zählung
+bei — erwartungsgemäß, keine neuen Core-Tests in dieser Runde). `python3 -I
+.scripts/generate_translations_md.py`: Katalog 2114/2114/2114, 0 hardcoded Strings.
+
+**Apple-Build/CI:** weiterhin nicht durchgeführt. Für DIESE Runde zusätzlich relevant:
+`ModelContext.insertedModelsArray`/`.changedModelsArray`/`.deletedModelsArray` sind laut
+WebSearch-Recherche echte, dokumentierte APIs mit passendem Deployment-Target — aber wie jede
+SwiftData-API in diesem gesamten Dokument NICHT durch tatsächliches Kompilieren gegen das echte
+Framework verifiziert (Linux parst nur die Syntax des `#if canImport(SwiftData)`-Blocks, prüft
+niemals die Typen/Signaturen dagegen, siehe die entsprechende Präzisierung im vorherigen
+Berichtsabschnitt).
+
+**Bekannte Grenzen/Risiken (zusätzlich zu den bereits genannten):**
+- Punkt 3 bleibt ohne automatisierten Test (s. o.) — eine manuelle Geräteprüfung ("Plan anpassen"
+  → absichtlich einen Speicherfehler erzwingen → Sheet bleibt mit Entwurf offen, Alert zeigt
+  Fehler) ist Teil der weiterhin ausstehenden Apple-Prüfung.
+- `createPlan`s automatischer Ein-Retry (Punkt 2) könnte im sehr seltenen Fall eines dauerhaft
+  kaputten Stores wirkungslos verpuffen (beide Versuche scheitern) — in diesem Fall bleibt der Plan
+  zwar persistiert, aber in KEINER UI sichtbar, bis die App neu gestartet wird (frischer Context).
+  Bewusst nicht weiter abgesichert — ein zweiter automatischer Retry oder ein periodischer
+  Hintergrund-Check wären genau die "weitere große Architektur", die diese Runde ausschließt.
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
+Berichtseintrag.
+
+**Nächste Aufgabe:** unverändert P3 — Task #197 bleibt `in_progress`, bis ein echter Apple-Build/
+Testlauf (inklusive der in dieser UND der vorherigen Runde neu eingeführten SwiftData-APIs) sowie
+eine manuelle Geräteprüfung von Punkt 3 vorliegen.
