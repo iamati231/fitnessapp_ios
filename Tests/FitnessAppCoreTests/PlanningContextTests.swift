@@ -12,6 +12,7 @@ final class PlanningContextTests: XCTestCase {
         enduranceModality: EnduranceModality? = nil,
         runCoachEnabled: Bool = false,
         daysPerWeek: Int = 3,
+        sessionDurationMinutes: Int = 60,
         scheduling: SchedulingMode = .flexibleOrder,
         environment: EnvironmentType = .gym,
         equipmentProfile: UserEquipmentProfile = UserEquipmentProfile(),
@@ -22,7 +23,7 @@ final class PlanningContextTests: XCTestCase {
             enduranceModality: enduranceModality,
             runCoachEnabled: runCoachEnabled,
             daysPerWeek: daysPerWeek,
-            sessionDurationMinutes: 60,
+            sessionDurationMinutes: sessionDurationMinutes,
             scheduling: scheduling,
             environment: environment,
             equipmentProfile: equipmentProfile,
@@ -63,11 +64,53 @@ final class PlanningContextTests: XCTestCase {
         }
     }
 
-    // MARK: - daysPerWeek
+    // MARK: - daysPerWeek: 1...7 unterschiedliche Kalendertage, keine impliziten Mehrfacheinheiten
 
-    func testNonPositiveDaysPerWeekIsInvalid() {
+    func testZeroDaysPerWeekIsInvalid() {
         let context = makeValidContext(daysPerWeek: 0)
-        XCTAssertTrue(context.issues.contains(.daysPerWeekNotPositive(0)))
+        XCTAssertTrue(context.issues.contains(.daysPerWeekOutOfRange(0)))
+    }
+
+    func testNegativeDaysPerWeekIsInvalid() {
+        let context = makeValidContext(daysPerWeek: -1)
+        XCTAssertTrue(context.issues.contains(.daysPerWeekOutOfRange(-1)))
+    }
+
+    func testMoreThanSevenDaysPerWeekIsInvalid() {
+        // Eine Woche hat nur sieben Kalendertage - 8 "unterschiedliche
+        // Trainingstage" sind kein gueltiger Wert, auch nicht als stillschweigende
+        // Ankuendigung mehrerer Einheiten an einem Tag.
+        let context = makeValidContext(daysPerWeek: 8, scheduling: .flexibleOrder)
+        XCTAssertTrue(context.issues.contains(.daysPerWeekOutOfRange(8)))
+    }
+
+    func testOneDayPerWeekIsValid() {
+        let context = makeValidContext(daysPerWeek: 1, scheduling: .flexibleOrder)
+        XCTAssertTrue(context.issues.isEmpty)
+    }
+
+    func testSevenDaysPerWeekIsValid() {
+        // Obere Grenze: genau sieben ist noch gueltig (ein Trainingstag pro
+        // Kalendertag), erst acht ueberschreitet die Woche.
+        let context = makeValidContext(daysPerWeek: 7, scheduling: .flexibleOrder)
+        XCTAssertTrue(context.issues.isEmpty)
+    }
+
+    // MARK: - sessionDurationMinutes muss positiv sein
+
+    func testZeroSessionDurationIsInvalid() {
+        let context = makeValidContext(sessionDurationMinutes: 0)
+        XCTAssertTrue(context.issues.contains(.sessionDurationMinutesNotPositive(0)))
+    }
+
+    func testNegativeSessionDurationIsInvalid() {
+        let context = makeValidContext(sessionDurationMinutes: -15)
+        XCTAssertTrue(context.issues.contains(.sessionDurationMinutesNotPositive(-15)))
+    }
+
+    func testPositiveSessionDurationIsValid() {
+        let context = makeValidContext(sessionDurationMinutes: 1)
+        XCTAssertTrue(context.issues.isEmpty)
     }
 
     // MARK: - Abnahme 2: fixedWeekdays.count == daysPerWeek

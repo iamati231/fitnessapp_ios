@@ -105,6 +105,84 @@ final class PlanDraftTests: XCTestCase {
         XCTAssertFalse(draft.moveDay(DraftDayID(), toIndex: 0))
     }
 
+    // MARK: - Indirekte Verschiebung (Audit-Korrektur)
+
+    func testMoveDayFailsWhenItWouldIndirectlyDisplaceAPositionFixedDay() {
+        // A – B(fixiert) – C; A ans Ende verschieben darf B nicht indirekt
+        // auf einen anderen Platz verschieben. Die GESAMTE Operation muss
+        // verworfen werden, nicht nur B "gerettet" und der Rest trotzdem
+        // angewendet.
+        var draft = PlanDraft(generated: [day("A", sequenceIndex: 1), day("B", sequenceIndex: 2), day("C", sequenceIndex: 3)])
+        let idOfA = draft.days[0].id
+        let idOfB = draft.days[1].id
+        draft.setPositionFixed(true, for: idOfB)
+
+        let moved = draft.moveDay(idOfA, toIndex: 2)
+
+        XCTAssertFalse(moved)
+        XCTAssertEqual(draft.days.map(\.name), ["A", "B", "C"], "unveraendert - auch A bleibt an Ort und Stelle")
+        XCTAssertEqual(draft.index(of: idOfB), 1)
+    }
+
+    func testMoveDayFailsWhenAnEarlierDayWouldDisplaceAPositionFixedDay() {
+        // Gleiche Invariante aus der anderen Richtung: C nach vorne vor B
+        // verschieben wuerde B ebenso indirekt verdraengen.
+        var draft = PlanDraft(generated: [day("A", sequenceIndex: 1), day("B", sequenceIndex: 2), day("C", sequenceIndex: 3)])
+        let idOfB = draft.days[1].id
+        let idOfC = draft.days[2].id
+        draft.setPositionFixed(true, for: idOfB)
+
+        XCTAssertFalse(draft.moveDay(idOfC, toIndex: 0))
+        XCTAssertEqual(draft.days.map(\.name), ["A", "B", "C"])
+    }
+
+    func testMoveDaySucceedsWhenItDoesNotCrossAnyPositionFixedDay() {
+        // Eine Verschiebung, die vollstaendig VOR oder NACH dem fixierten Tag
+        // bleibt, veraendert dessen Index nicht und muss weiterhin gelingen.
+        var draft = PlanDraft(generated: [
+            day("A", sequenceIndex: 1), day("B", sequenceIndex: 2), day("C", sequenceIndex: 3), day("D", sequenceIndex: 4)
+        ])
+        let idOfB = draft.days[1].id
+        let idOfD = draft.days[3].id
+        draft.setPositionFixed(true, for: idOfB)
+
+        XCTAssertTrue(draft.moveDay(idOfD, toIndex: 2))
+        XCTAssertEqual(draft.days.map(\.name), ["A", "B", "D", "C"])
+        XCTAssertEqual(draft.index(of: idOfB), 1, "B bleibt unberuehrt, da die Verschiebung erst NACH seiner Position stattfindet")
+    }
+
+    // MARK: - reorder(to:) — gemeinsamer Pfad fuer Drag & Drop UND Neuverteilung
+
+    func testReorderSucceedsWhenAllPositionFixedDaysKeepTheirIndex() {
+        var draft = PlanDraft(generated: [
+            day("A", sequenceIndex: 1), day("B", sequenceIndex: 2), day("C", sequenceIndex: 3), day("D", sequenceIndex: 4)
+        ])
+        let ids = draft.days.map(\.id)
+        draft.setPositionFixed(true, for: ids[1])
+
+        XCTAssertTrue(draft.reorder(to: [ids[0], ids[1], ids[3], ids[2]]))
+        XCTAssertEqual(draft.days.map(\.name), ["A", "B", "D", "C"])
+    }
+
+    func testReorderFailsWhenAPositionFixedDayWouldMove() {
+        var draft = PlanDraft(generated: [day("A", sequenceIndex: 1), day("B", sequenceIndex: 2), day("C", sequenceIndex: 3)])
+        let ids = draft.days.map(\.id)
+        draft.setPositionFixed(true, for: ids[1])
+
+        XCTAssertFalse(draft.reorder(to: [ids[1], ids[0], ids[2]]))
+        XCTAssertEqual(draft.days.map(\.name), ["A", "B", "C"])
+    }
+
+    func testReorderFailsForNonPermutationInput() {
+        var draft = PlanDraft(generated: [day("A", sequenceIndex: 1), day("B", sequenceIndex: 2)])
+        let ids = draft.days.map(\.id)
+
+        XCTAssertFalse(draft.reorder(to: [ids[0]]), "zu kurz")
+        XCTAssertFalse(draft.reorder(to: [ids[0], ids[0]]), "Duplikat statt echter Permutation")
+        XCTAssertFalse(draft.reorder(to: [ids[0], DraftDayID()]), "unbekannte ID")
+        XCTAssertEqual(draft.days.map(\.name), ["A", "B"], "jeder ungueltige Versuch laesst den Entwurf unveraendert")
+    }
+
     // MARK: - replaceContent (gezielte Alternative)
 
     func testReplaceContentSwapsExercisesButKeepsIDAndFlags() {

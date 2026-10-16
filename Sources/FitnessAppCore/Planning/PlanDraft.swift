@@ -56,8 +56,16 @@ public struct DraftDay: Sendable, Hashable, Identifiable {
     /// Tagesinhalt (Uebungen) bleibt bei Neuberechnung/gezielter Alternative
     /// unangetastet — der Tag darf trotzdem weiterhin die Position wechseln.
     public var isContentFixed: Bool
-    /// Tag bleibt an seinem aktuellen Platz in der Woche — der Inhalt darf
-    /// sich trotzdem per Alternative aendern, sofern `isContentFixed == false`.
+    /// Der Array-Index dieses Tages darf sich nicht aendern — weder durch
+    /// eine direkte Verschiebung DIESES Tages, noch INDIREKT dadurch, dass
+    /// ANDERE Tage umsortiert werden (Audit-Korrektur: "A verschieben darf
+    /// B nicht indirekt verdraengen"). Durchgesetzt ausschliesslich ueber
+    /// `PlanDraft.reorder(to:)` — der gemeinsame Pruefpfad fuer Drag & Drop
+    /// (`moveDay`) UND jede kuenftige Neuverteilung (z.B. P2.4s "bleibt bei
+    /// Neuberechnung erhalten"), damit beide Aufrufer dieselbe Invariante
+    /// pruefen statt zweier moeglicherweise abweichender Implementierungen.
+    /// Der Inhalt darf sich trotzdem per Alternative aendern, sofern
+    /// `isContentFixed == false`.
     public var isPositionFixed: Bool
 
     public init(
@@ -147,17 +155,56 @@ public struct PlanDraft: Sendable, Hashable {
         days.firstIndex { $0.id == id }
     }
 
-    /// Verschiebt einen Tag an eine neue Position. Liefert `false` (Entwurf
-    /// bleibt unveraendert), wenn der Tag nicht existiert oder
-    /// positionsfixiert ist — ein Reorder-Drag in der UI darf das zusaetzlich
-    /// selbst pruefen, die Daten-Schicht erzwingt es in jedem Fall.
+    /// Ersetzt die gesamte Tagesreihenfolge durch `newOrder` (eine
+    /// Permutation der VORHANDENEN IDs) — der EINE gemeinsame Pfad fuer
+    /// Drag & Drop (`moveDay`, siehe unten) UND jede kuenftige Neuverteilung
+    /// (z.B. eine Mehrfach-Umordnung oder P2.4s "bleibt bei Neuberechnung
+    /// erhalten"), damit beide dieselbe Invariante gegen dieselbe,
+    /// VOLLSTAENDIGE Kandidaten-Reihenfolge pruefen statt zweier
+    /// moeglicherweise abweichender Implementierungen.
+    ///
+    /// Liefert `false` (Entwurf bleibt vollstaendig unveraendert), wenn
+    /// `newOrder` keine exakte Permutation der vorhandenen Tage ist, ODER
+    /// wenn irgendein positionsfixierter Tag dadurch seinen Index aendern
+    /// wuerde — AUCH wenn nicht dieser Tag selbst, sondern nur ANDERE Tage
+    /// umsortiert wurden ("indirekte Verschiebung"). Beispiel: bei
+    /// `[A, B(fixiert), C]` verschiebt `moveDay(A, toIndex: 2)` B rechnerisch
+    /// von Index 1 auf 0 — das wird hier erkannt und die GESAMTE Operation
+    /// verworfen, nicht nur B's Platz "gerettet" und der Rest trotzdem
+    /// angewendet. Eine Methode, die bei einem Konflikt automatisch eine
+    /// ALTERNATIVE Anordnung sucht, waere eine eigene UX-Entscheidung (P3) —
+    /// hier bewusst nicht eingefuehrt.
+    @discardableResult
+    public mutating func reorder(to newOrder: [DraftDayID]) -> Bool {
+        guard newOrder.count == days.count, Set(newOrder) == Set(days.map(\.id)) else { return false }
+        let byID = Dictionary(uniqueKeysWithValues: days.map { ($0.id, $0) })
+        let candidate = newOrder.map { byID[$0]! }
+        guard respectsPositionFixations(candidate) else { return false }
+        days = candidate
+        return true
+    }
+
+    /// `true`, wenn JEDER aktuell positionsfixierte Tag in `candidate`
+    /// exakt denselben Index hat wie im aktuellen `days`-Array.
+    private func respectsPositionFixations(_ candidate: [DraftDay]) -> Bool {
+        for (currentIndex, day) in days.enumerated() where day.isPositionFixed {
+            guard let candidateIndex = candidate.firstIndex(where: { $0.id == day.id }) else { return false }
+            if candidateIndex != currentIndex { return false }
+        }
+        return true
+    }
+
+    /// Verschiebt EINEN Tag an eine neue Position (Drag & Drop) — baut die
+    /// vollstaendige Kandidaten-Reihenfolge und delegiert die eigentliche
+    /// Pruefung/Anwendung an `reorder(to:)`, siehe dort fuer die Invariante.
     @discardableResult
     public mutating func moveDay(_ id: DraftDayID, toIndex newIndex: Int) -> Bool {
-        guard let oldIndex = index(of: id), !days[oldIndex].isPositionFixed else { return false }
-        let day = days.remove(at: oldIndex)
-        let clampedIndex = max(0, min(newIndex, days.count))
-        days.insert(day, at: clampedIndex)
-        return true
+        guard let oldIndex = index(of: id) else { return false }
+        var proposedIDs = days.map(\.id)
+        proposedIDs.remove(at: oldIndex)
+        let clampedIndex = max(0, min(newIndex, proposedIDs.count))
+        proposedIDs.insert(id, at: clampedIndex)
+        return reorder(to: proposedIDs)
     }
 
     /// Ersetzt den Inhalt eines Tages — die gezielte EINZEL-Alternative statt

@@ -55,7 +55,11 @@ public enum PlanningContextIssue: Sendable, Equatable {
     /// "`runCoachEnabled == true` ist ungueltig, wenn `enduranceModality`
     /// nicht `.running`/`.both` ist" (harte Invariante, Dok02-Zustandstabelle).
     case runCoachRequiresRunningOrBothModality
-    case daysPerWeekNotPositive(Int)
+    /// `daysPerWeek` zaehlt UNTERSCHIEDLICHE Kalendertage — eine Woche hat
+    /// nur sieben, also ist 1...7 der einzige gueltige Bereich (siehe
+    /// `PlanningContext.daysPerWeek`-Dokumentation).
+    case daysPerWeekOutOfRange(Int)
+    case sessionDurationMinutesNotPositive(Int)
     /// "`scheduling == .fixedWeekdays(x)` erfordert `x.count == daysPerWeek`".
     case fixedWeekdaysCountMismatch(expected: Int, actual: Int)
     case fixedWeekdaysOutOfRange([Int])
@@ -79,7 +83,18 @@ public struct PlanningContext: Sendable, Equatable {
     /// oder `.both` ist — Laufcoach bleibt ausdruecklich optional und von
     /// reinen Laufeinheiten im Plan getrennt (Audit §5, "kein Radcoach").
     public var runCoachEnabled: Bool
+    /// Anzahl UNTERSCHIEDLICHER Kalendertage mit Training in der Woche —
+    /// 1...7 (siehe `issues`), da eine Woche nur sieben Tage hat und dieser
+    /// Vertrag kein Konzept von "mehrere Einheiten an einem Tag" kennt:
+    /// jeder Trainingstag bildet genau auf einen `DraftDay`/Wochentag ab
+    /// (siehe `SchedulingMode.fixedWeekdays`). Ein Aufrufer, der mehrfache
+    /// Einheiten pro Tag abbilden will, braucht dafuer einen eigenen,
+    /// spaeteren Vertrag — dieser Typ unterstuetzt es weder stillschweigend
+    /// noch durch Abschneiden, sondern meldet einen Wert ausserhalb 1...7
+    /// explizit ueber `issues`.
     public var daysPerWeek: Int
+    /// Muss positiv sein (siehe `issues`) — eine Einheit mit 0 oder
+    /// negativer Dauer ist fachlich nicht sinnvoll.
     public var sessionDurationMinutes: Int
     public var scheduling: SchedulingMode
     public var environment: EnvironmentType
@@ -122,8 +137,11 @@ public struct PlanningContext: Sendable, Equatable {
         if runCoachEnabled, enduranceModality != .running, enduranceModality != .both {
             result.append(.runCoachRequiresRunningOrBothModality)
         }
-        if daysPerWeek <= 0 {
-            result.append(.daysPerWeekNotPositive(daysPerWeek))
+        if !(1...7).contains(daysPerWeek) {
+            result.append(.daysPerWeekOutOfRange(daysPerWeek))
+        }
+        if sessionDurationMinutes <= 0 {
+            result.append(.sessionDurationMinutesNotPositive(sessionDurationMinutes))
         }
         switch scheduling {
         case .fixedWeekdays(let weekdays):

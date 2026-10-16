@@ -552,8 +552,12 @@ und `ViewThatFits`-Breitenvergleich nutzen ausschließlich die korrigierten `wei
 zweizeiligem Fallback hätte „RIR" über leerem Platz gestanden. **Fix:** Der Header hat jetzt selbst
 einen `ViewThatFits(fullSetRowColumnHeader, reducedSetRowColumnHeader)`. Die reduzierte Variante zeigt
 nur noch Satz/kg/Wdh (exakt Zeile 1 von `twoLineInputRow`) und nutzt dieselben Spaltenbreiten wie die
-Satzzeile, wodurch beide `ViewThatFits`-Entscheidungen bei gleicher verfügbarer Breite zusammenfallen
-— kein eigenständig gepflegter Breitenwert, der hätte abweichen können. Zusätzlich bekommt
+Satzzeile — SO AUSGELEGT, dass beide `ViewThatFits` bei gleicher verfügbarer Breite zum selben
+Ergebnis kommen sollen. Das ist aber keine gemeinsame Layoutentscheidung: Header und Satzzeile sind
+zwei unabhängig ausgewertete `ViewThatFits`, jede mit ihrer eigenen tatsächlich verfügbaren Breite an
+ihrer Stelle im Layout — gleiche Konstanten verhindern nur ein eigenständig gepflegtes, abweichendes
+Zahlenpaar, sie belegen nicht, dass beide auf einem echten Gerät wirklich synchron kippen (siehe
+„Weiterhin ausdrücklich offen" unten). Zusätzlich bekommt
 `twoLineInputRow`s zweite Zeile ein eigenes Inline-„RIR"-Label direkt neben der Kapsel, sodass die
 Bedeutung in BEIDEN Fällen eindeutig ist (Vorgabe „gemeinsame Layoutentscheidung" UND „eindeutige
 lokale Beschriftung im Fallback" beide umgesetzt, nicht nur eine Option). Kein neuer Overflow-Pfad:
@@ -565,8 +569,14 @@ im Header nutzte eigenes Styling statt der Kapsel-Vorgabe. **Fix:** `ExerciseCar
 `@ScaledMetric(relativeTo: .title2)`-Property (gleiche Basis 28) wie `SetRow.checkmarkIconSize` —
 beide im selben Environment ausgewertet, garantiert identischer Wert, statt einer behaupteten
 Gleichheit zweier unabhängiger Zahlen. Neuer `SetRow.RIRValueTextStyle`-`ViewModifier` (Font/
-FixedSize/Padding/MinWidth) wird von `rirCapsule` UND dem Header-RIR-Label GEMEINSAM angewendet —
-Breitengleichheit durch identischen Code, nicht durch zwei manuell synchron gehaltene Werte.
+FixedSize/Padding/MinWidth) wird von `rirCapsule` UND dem Header-RIR-Label GEMEINSAM angewendet, damit
+beide denselben `minWidth`-Mindestwert und dieselbe Schrift bekommen — statt zwei manuell synchron
+gehaltener Werte, die hätten auseinanderlaufen können. Das beweist aber NOCH KEINE gleiche tatsächliche
+Breite: `minWidth` ist ein Mindestwert, `.fixedSize()` lässt den Inhalt darüber hinauswachsen, und „RIR"
+(drei Buchstaben) und ein formatierter RIR-Wert wie „2,5" oder „10" (Ziffern/Komma) sind unterschiedliche
+Strings, die bei identischer Schrift unterschiedlich breit sein können — insbesondere bei großen
+Dynamic-Type-Stufen, wo das ohne Gerät nicht abschätzbar ist. Identischer Code verhindert nur eine
+versehentlich auseinanderlaufende Konfiguration, er ist kein Nachweis gleicher gerenderter Breite.
 
 Geänderte Komponenten zusätzlich zum ersten P1-Commit: `SetRow.swift` (`SetRowColumns` korrigiert,
 neuer `RIRValueTextStyle`, `weightInput`/`repsInput` umgestellt, `rirCapsule` nutzt den Modifier,
@@ -654,12 +664,19 @@ Reorder inkl. Clamping, beide Fixierungen inkl. ihrer wechselseitigen Unabhängi
 **Tests tatsächlich ausgeführt:** Plattform Linux (Swift 6.0.3, `swift test`). Gezielt
 `swift test --filter "PlanningContextTests|PlanDraftTests"` — 38 Tests (inkl. der mitgefilterten
 `EquipmentPlanningContextTests`), 0 Fehlschläge. Danach vollständiger Lauf `swift test` ohne
-Filter — **1007 Tests, 0 Fehlschläge** (keine Regression im Restpaket). Dies ist der erste
-tatsächlich auf Linux kompilierte und getestete Baustein dieses Epics — anders als P1 (SwiftUI-
-gegated) ist hier „Linux grün" eine echte, vollständige Korrektheitsprüfung, kein Teil-Nachweis.
+Filter — **1007 Tests, 0 Fehlschläge** (keine Regression im Restpaket). Das ist ein Testergebnis,
+kein vollständiger Korrektheitsbeweis: es bestätigt, dass genau die hier formulierten Tests bestehen
+und dass das Restpaket weiterhin kompiliert — nicht, dass der Code frei von Fehlern ist, die kein
+Test abdeckt. Dieser Baustein ist zwar (anders als P1) frei von `canImport(SwiftUI/SwiftData/UIKit)`-
+Gates und deshalb auf Linux tatsächlich mitkompiliert und mitgetestet, nicht nur toleriert — das
+senkt das Risiko gegenüber P1, ersetzt aber nicht die Prüfung unten.
 
-**Apple-Build/CI:** nicht zutreffend — reiner Core-Code ohne `canImport(SwiftUI/SwiftData/UIKit)`-
-Gates, kompiliert identisch auf jeder Plattform. Kein separater Apple-Nachweis nötig.
+**Apple-Build/CI:** nicht durchgeführt — offen. Keine `canImport`-Gates bedeutet ein geringeres
+Risiko als bei P1 (kein SwiftUI/SwiftData-Code, der auf Linux syntaktisch ungeprüft bliebe), aber
+keinen Entfall der Prüfung: der Core-Code muss zusätzlich innerhalb des tatsächlichen,
+mehrteiligen Apple-App-Builds (Xcode/Codemagic, zusammen mit FitnessAppData/FitnessAppUI und den
+übrigen Targets) integriert kompilieren — das wurde aus dieser Session heraus nicht geprüft und
+bleibt bis zu einem geteilten Codemagic-Log offen.
 
 **UI-/Geräteprüfung:** nicht zutreffend — keine UI in diesem Paket.
 
@@ -675,6 +692,80 @@ z.B. bei App-Hintergrund sichern will, braucht es dafür eine separate Entscheid
 **Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
 Berichtseintrag (gemeinsam committet, siehe Git-Log).
 
+**Nächste Aufgabe:** siehe P2.0-Nachbesserung unten — zwei Vertragskorrekturen, vor P2.1 erledigt.
+
+## P2.0-Nachbesserung (Positionsfixierung + Basisvalidierung)
+
+Review-Rückmeldung fand zwei konkrete Vertragslücken, beide vor der weiteren Anbindung behoben.
+
+**1. Indirekte Verschiebung fixierter Tage.** `moveDay` prüfte bisher nur, ob der VERSCHOBENE Tag
+selbst positionsfixiert ist — nicht, ob das Verschieben eines ANDEREN Tages einen fixierten Tag
+rechnerisch auf einen anderen Index schiebt. Konkret: bei `[A, B(fixiert), C]` verschob
+`moveDay(A, toIndex: 2)` B unbemerkt von Index 1 auf 0, weil das Entfernen von A alle
+nachfolgenden Tage nach vorne rückt. **Fix:** neuer gemeinsamer Pfad `PlanDraft.reorder(to:)`,
+der die VOLLSTÄNDIGE vorgeschlagene Tagesreihenfolge gegen alle aktuell positionsfixierten Tage
+prüft — jeder davon muss in der Kandidaten-Reihenfolge exakt seinen bisherigen Index behalten,
+sonst wird die GESAMTE Operation verworfen (kein Teil-Erfolg, kein „B gerettet, Rest trotzdem
+angewendet"). `moveDay` baut nur noch die Kandidaten-Reihenfolge und delegiert die eigentliche
+Prüfung/Anwendung an `reorder(to:)` — EIN Prüfpfad für Drag & Drop UND jede künftige
+Neuverteilung (z.B. P2.4s „bleibt bei Neuberechnung erhalten"), nicht zwei potenziell
+abweichende. Bewusst NICHT umgesetzt: ein „intelligentes" Ausweichen auf eine alternative
+Anordnung, wenn die gewünschte mit einer Fixierung kollidiert (z.B. C automatisch woanders
+platzieren) — das wäre eine eigene UX-Entscheidung für P3/den visuellen Wochen-Editor, keine
+Dateneigenschaft; hier wird die Operation stattdessen abgelehnt und das Ergebnis bleibt
+unverändert, bis eine solche Richtlinie bewusst entschieden wird.
+
+**2. `PlanningContext`-Basisvalidierung unvollständig.** `sessionDurationMinutes` hatte gar keine
+Prüfung; `daysPerWeek` hatte nur eine Untergrenze (`> 0`), keine Obergrenze und keine dokumentierte
+Bedeutung. **Fix:** `sessionDurationMinutes <= 0` ist jetzt ein Validierungsfehler
+(`sessionDurationMinutesNotPositive`). `daysPerWeek` ist jetzt explizit als „Anzahl
+UNTERSCHIEDLICHER Kalendertage mit Training, 1...7" dokumentiert und validiert
+(`daysPerWeekOutOfRange`, ersetzt das bisherige `daysPerWeekNotPositive`) — eine Woche hat nur
+sieben Tage, und dieser Vertrag kennt kein Konzept von „mehrere Einheiten an einem Tag"; ein Wert
+außerhalb 1...7 wird als expliziter Validierungsfehler gemeldet, nie still auf 7 gekappt oder
+stillschweigend als Mehrfacheinheiten-Wunsch interpretiert.
+
+**Geänderte Komponenten:** `Sources/FitnessAppCore/Planning/PlanDraft.swift` (`reorder(to:)` neu,
+`respectsPositionFixations` privat, `moveDay` auf `reorder(to:)` umgestellt, `DraftDay.
+isPositionFixed`-Dokumentation ergänzt), `Sources/FitnessAppCore/Planning/PlanningContext.swift`
+(`PlanningContextIssue.daysPerWeekOutOfRange` ersetzt `daysPerWeekNotPositive`, neuer Fall
+`sessionDurationMinutesNotPositive`, `issues` erweitert, Feld-Dokumentation ergänzt).
+
+**Neue/geänderte Datenfelder:** keine — reine Verhaltens-/Validierungskorrektur an denselben
+Typen, keine neuen gespeicherten Felder, keine SwiftData-Änderung.
+
+**Tests hinzugefügt:** 13 neue Tests. `PlanDraftTests.swift`: der exakte Audit-Fall
+(`[A, B(fixiert), C]`, A ans Ende verschieben → verworfen, B bleibt bei Index 1, A bleibt
+ebenfalls unverändert), dieselbe Invariante aus der Gegenrichtung (C nach vorne vor B), ein
+Positiv-Fall (Verschiebung vollständig NACH dem fixierten Tag gelingt weiterhin), plus direkte
+Tests für `reorder(to:)` (gültige Permutation mit erhaltenem Fixpunkt, Ablehnung bei
+Fixpunkt-Verletzung, Ablehnung bei Nicht-Permutation: zu kurz/Duplikat/unbekannte ID).
+`PlanningContextTests.swift`: `daysPerWeek` an beiden Grenzen (0, -1, 8 ungültig; 1, 7 gültig),
+`sessionDurationMinutes` (0, -15 ungültig; 1 gültig).
+
+**Tests tatsächlich ausgeführt:** Linux (Swift 6.0.3). Gezielt `swift test --filter
+"PlanningContextTests|PlanDraftTests"` — 51 Tests, 0 Fehlschläge. Vollständiger Lauf `swift
+test` ohne Filter — **1020 Tests, 0 Fehlschläge** (1007 + 13 neue, keine Regression). Wie beim
+P2.0-Erstbericht: ein Testergebnis für die hier formulierten Fälle, kein Beweis der Abwesenheit
+anderer Fehler, und kein Ersatz für den noch offenen Apple-Build (s.o.).
+
+**Apple-Build/CI:** weiterhin nicht durchgeführt — offen, unverändert zum P2.0-Erstbericht.
+
+**UI-/Geräteprüfung:** nicht zutreffend — keine UI in diesem Paket.
+
+**Bekannte Grenzen/Risiken:** Die Entscheidung, bei einem Fixierungs-Konflikt die GESAMTE
+Operation abzulehnen statt automatisch auszuweichen, ist bewusst konservativ — falls P3s
+visueller Wochen-Editor stattdessen ein Ausweich-Verhalten für Drag & Drop erwartet (z.B. den
+gezogenen Tag automatisch vor/hinter dem Fixpunkt einrasten zu lassen), ist das eine zusätzliche,
+noch zu entscheidende UX-Schicht auf `reorder(to:)`, keine Änderung an der hier geprüften
+Invariante selbst.
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
+Berichtseintrag.
+
 **Nächste Aufgabe:** P2.1 (`targetEnvironment`-Hardcode-Bug beheben) — unabhängig von P2.0,
 kann parallel zu P3 begonnen werden. P2.2 (`TrainingGoal.endurance`) ist ebenfalls unabhängig
-und Linux-testbar. P2.3/P2.4 hängen von P2.1 ab (siehe Phasenplan oben).
+und Linux-testbar, kann parallel bearbeitet werden (beide Dateien überschneiden sich nicht:
+`PlanGeneratorInstantiator.swift` vs. `CoachingTypes.swift`). P2.3/P2.4 hängen von P2.1 ab
+(siehe Phasenplan oben). Vor P3: Goal→Generierung-Zuordnungsregeln für Hybrid/Ausdauer/Laufcoach
+explizit festlegen (keine versteckten Defaults für diese Nutzerentscheidungen).
