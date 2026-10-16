@@ -1917,7 +1917,15 @@ public struct OnboardingView: View {
             // Sheet vorberechnete Result wird 1:1 uebernommen (nicht neu
             // gerechnet) — sonst wiche der instanziierte Plan von der im
             // Wizard zuletzt gezeigten Vorschau ab (siehe PlanGeneratorInstantiatorTests).
-            PlanGeneratorInstantiator.build(from: customPlanInput, in: modelContext, result: customPlanResult, generationSource: .planBuilder)
+            // Audit-Korrektur P2.1: derselbe `environment`/`equipmentPlanningContext`
+            // wie der Template-Pfad direkt oberhalb — vorher setzte
+            // `makeTemplate` hier `.gym` hartcodiert, unabhaengig vom
+            // tatsaechlich im Onboarding gewaehlten Trainingsort.
+            PlanGeneratorInstantiator.build(
+                from: customPlanInput, in: modelContext,
+                environment: environment, equipmentProfile: equipmentPlanningContext.effectiveProfile,
+                result: customPlanResult, generationSource: .planBuilder
+            )
         }
 
         // 4) Notification-Präferenzen persistieren. Permission wird angefordert,

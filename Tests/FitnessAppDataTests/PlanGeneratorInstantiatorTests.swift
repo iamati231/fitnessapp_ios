@@ -42,10 +42,34 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         PlanGeneratorInput(selections: selections, equipmentPreferences: [], usesFixedWeekdays: false)
     }
 
+    /// Audit-Korrektur P2.1: `environment`/`equipmentProfile` sind auf
+    /// `PlanGeneratorInstantiator.build` bewusst Pflichtparameter ohne
+    /// Default (siehe dortige Dokumentation — kein versteckter Default soll
+    /// den gerade behobenen `.gym`-Hardcode durch einen anderen ersetzen).
+    /// Dieser Test-Wrapper traegt NUR einen neutralen Testwert fuer die
+    /// Mehrheit der Tests hier nach, denen Trainingsort/Equipment
+    /// gleichgueltig ist (sie pruefen Fingerprinting/Sequencing/Recalculate).
+    /// Die environment-/equipment-spezifischen Tests weiter unten rufen
+    /// `PlanGeneratorInstantiator.build` direkt mit expliziten Werten auf.
+    @discardableResult
+    private func buildPlan(
+        from input: PlanGeneratorInput,
+        environment: EnvironmentType = .gym,
+        equipmentProfile: UserEquipmentProfile = UserEquipmentProfile(),
+        result precomputed: PlanGenerator.Result? = nil,
+        generationSource: GenerationSource = .manual
+    ) -> TrainingPlan? {
+        PlanGeneratorInstantiator.build(
+            from: input, in: context,
+            environment: environment, equipmentProfile: equipmentProfile,
+            result: precomputed, generationSource: generationSource
+        )
+    }
+
     // MARK: - build()
 
     func testBuildStampsFingerprintAndSequenceIndexOnEveryWorkoutDay() throws {
-        let plan = try XCTUnwrap(PlanGeneratorInstantiator.build(from: input([selection(.barbell, days: 3)]), in: context))
+        let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 3)])))
         let workoutDays = plan.days.filter { $0.type != .rest }
         XCTAssertEqual(workoutDays.count, 3)
         for day in workoutDays {
@@ -59,7 +83,7 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
 
     func testBuildReturnsNilWhenGeneratorProducesNoDays() {
         // Kein Selections-Eintrag -> PlanGenerator.generate liefert leer.
-        XCTAssertNil(PlanGeneratorInstantiator.build(from: input([]), in: context))
+        XCTAssertNil(buildPlan(from: input([])))
     }
 
     // Handoff "Lauf-Coaching - Machbarkeits-Check": generationSource wird
@@ -69,14 +93,14 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
     // Parameter bleibt es beim Default .manual (bestehendes Verhalten aller
     // anderen Tests in dieser Datei).
     func testBuildStampsExplicitGenerationSource() throws {
-        let plan = try XCTUnwrap(PlanGeneratorInstantiator.build(
-            from: input([selection(.running, days: 2)]), in: context, generationSource: .cardioCoach
+        let plan = try XCTUnwrap(buildPlan(
+            from: input([selection(.running, days: 2)]), generationSource: .cardioCoach
         ))
         XCTAssertEqual(plan.generationSource, .cardioCoach)
     }
 
     func testBuildDefaultsGenerationSourceToManual() throws {
-        let plan = try XCTUnwrap(PlanGeneratorInstantiator.build(from: input([selection(.barbell, days: 2)]), in: context))
+        let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
         XCTAssertEqual(plan.generationSource, .manual)
     }
 
@@ -95,9 +119,7 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         let differentResult = PlanGenerator.generate(from: input([selection(.dumbbell, days: 2)]))
         XCTAssertFalse(differentResult.days.isEmpty)
 
-        let plan = try XCTUnwrap(
-            PlanGeneratorInstantiator.build(from: barbellInput, in: context, result: differentResult)
-        )
+        let plan = try XCTUnwrap(buildPlan(from: barbellInput, result: differentResult))
         let workoutDays = plan.days.filter { $0.type != .rest }
         XCTAssertEqual(workoutDays.count, differentResult.days.count)
         XCTAssertEqual(Set(workoutDays.map(\.name)), Set(differentResult.days.map { $0.spec.name }),
@@ -121,7 +143,7 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
     }
 
     func testRecalculateSkipsDayWithEditedExerciseSets() throws {
-        let plan = try XCTUnwrap(PlanGeneratorInstantiator.build(from: input([selection(.barbell, days: 2)]), in: context))
+        let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
         let workoutDays = plan.days.filter { $0.type != .rest }
         XCTAssertEqual(workoutDays.count, 2)
         let editedDay = try XCTUnwrap(workoutDays.first)
@@ -152,7 +174,7 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
             selection(.running, days: 1),
             selection(.cycling, days: 1)
         ])
-        let plan = try XCTUnwrap(PlanGeneratorInstantiator.build(from: mixedInput, in: context))
+        let plan = try XCTUnwrap(buildPlan(from: mixedInput))
         let workoutDaysBefore = PlanNavigator.sortByWeekdayMondayFirst(plan.days.filter { $0.type != .rest })
         XCTAssertEqual(workoutDaysBefore.count, 3)
 
@@ -197,7 +219,7 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
     /// Zustand herzustellen, in dem `recalculate` den Tag als unangetastet
     /// einstuft und `apply()` tatsaechlich aufruft.
     func testApplyPreservesArchivedExercisesWhenOverwritingAnUntouchedDay() throws {
-        let plan = try XCTUnwrap(PlanGeneratorInstantiator.build(from: input([selection(.barbell, days: 1)]), in: context))
+        let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 1)])))
         let day = try XCTUnwrap(plan.days.first { $0.type != .rest })
 
         let archived = try XCTUnwrap(day.activeExercises.first)
@@ -208,6 +230,69 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         XCTAssertEqual(rewritten, 1)
         XCTAssertTrue(day.archivedExercises.contains(where: { $0 === archived }),
                        "archivierte Uebung darf beim Neu-Rechnen nicht verloren gehen")
+    }
+
+    // MARK: - Audit-Korrektur P2.1: targetEnvironment kommt vom Aufrufer, nie hartcodiert
+
+    /// Die Kern-Regression: `makeTemplate` setzte vorher IMMER `.gym`,
+    /// unabhaengig vom tatsaechlichen Trainingsort. Direkter Gegenbeweis mit
+    /// einem Wert, der garantiert NICHT der alte Hardcode ist.
+    func testBuildUsesTheExplicitlyPassedEnvironmentNotAHardcodedGym() throws {
+        let plan = try XCTUnwrap(buildPlan(
+            from: input([selection(.barbell, days: 2)]), environment: .homeGym
+        ))
+        XCTAssertEqual(plan.targetEnvironment, .homeGym)
+    }
+
+    /// Szenario 1: Gym mit Kurzhanteln.
+    func testBuildGymWithDumbbellsKeepsTheExplicitGymEnvironment() throws {
+        var profile = UserEquipmentProfile()
+        profile.availability[.dumbbell] = .available
+        let plan = try XCTUnwrap(buildPlan(
+            from: input([selection(.dumbbell, days: 3)]), environment: .gym, equipmentProfile: profile
+        ))
+        XCTAssertEqual(plan.targetEnvironment, .gym)
+    }
+
+    /// Szenario 2: Home-Gym mit Langhantel — Vorgabe Punkt 2: eine fuer
+    /// "Gym" typische Langhantel darf den explizit gewaehlten Home-Gym-Ort
+    /// NICHT stillschweigend auf `.gym` "korrigieren". Equipment ist nur
+    /// fuer die Ausfuehrbarkeitspruefung da, nicht fuer die Ortswahl.
+    func testBuildHomeGymWithBarbellIsNotReinterpretedAsGym() throws {
+        var profile = UserEquipmentProfile()
+        profile.availability[.barbell] = .available
+        let plan = try XCTUnwrap(buildPlan(
+            from: input([selection(.barbell, days: 3)]), environment: .homeGym, equipmentProfile: profile
+        ))
+        XCTAssertEqual(plan.targetEnvironment, .homeGym)
+    }
+
+    /// Szenario 3: Bodyweight ohne Geraete.
+    func testBuildBodyweightWithoutEquipmentKeepsTheExplicitNoEquipmentEnvironment() throws {
+        let plan = try XCTUnwrap(buildPlan(
+            from: input([selection(.bodyweight, days: 3)]), environment: .noEquipment, equipmentProfile: UserEquipmentProfile()
+        ))
+        XCTAssertEqual(plan.targetEnvironment, .noEquipment)
+    }
+
+    /// Szenario 4: explizit bestaetigt FEHLENDES Equipment (nicht nur
+    /// unbekannt) darf den Trainingsort ebenfalls nicht verfaelschen.
+    func testBuildWithExplicitlyMissingEquipmentKeepsTheExplicitEnvironment() throws {
+        var profile = UserEquipmentProfile()
+        profile.availability[.barbell] = .unavailable
+        let plan = try XCTUnwrap(buildPlan(
+            from: input([selection(.barbell, days: 2)]), environment: .gym, equipmentProfile: profile
+        ))
+        XCTAssertEqual(plan.targetEnvironment, .gym)
+    }
+
+    /// Szenario 5: unbekannte Ausstattung (Default-Profil, kein Item
+    /// angefasst) — darf ebenso wenig zu einer anderen Ortswahl fuehren.
+    func testBuildWithUnknownEquipmentKeepsTheExplicitEnvironment() throws {
+        let plan = try XCTUnwrap(buildPlan(
+            from: input([selection(.kettlebell, days: 2)]), environment: .homeGym, equipmentProfile: UserEquipmentProfile()
+        ))
+        XCTAssertEqual(plan.targetEnvironment, .homeGym)
     }
 }
 #endif

@@ -40,22 +40,72 @@ public enum PlanGeneratorInstantiator {
     /// `PlanGenerator.Result` durch; jeder andere Aufrufer (`recalculate`
     /// unten, alle bestehenden Tests) laesst den Parameter weg und bekommt
     /// exakt das alte Verhalten.
+    ///
+    /// Audit-Korrektur P2.1 (docs/PLANUNG_BEGLEITUNG_AUDIT.md, Abschnitt 1
+    /// "Bug/Luecke"): `environment`/`equipmentProfile` sind ABSICHTLICH
+    /// PFLICHTPARAMETER OHNE DEFAULT — vorher setzte `makeTemplate`
+    /// `targetEnvironment: .gym` hartcodiert, unabhaengig von der
+    /// tatsaechlichen Equipment-/Orts-Wahl. Ein unauffaelliger Default (egal
+    /// welcher Wert) haette denselben Fehler nur versteckter wiederholt;
+    /// jeder Aufrufer MUSS jetzt explizit den schon vorhandenen,
+    /// tatsaechlich gewaehlten Trainingsort liefern.
+    ///   - `environment`: der EXPLIZITE Trainingsort (z.B.
+    ///     `UserBodyProfile.environment`) — NICHT aus `equipmentProfile`
+    ///     hergeleitet. Ort und Ausstattung sind zwei unabhaengige Angaben
+    ///     (Audit §1/§2); Equipment ersetzt den Trainingsort nie.
+    ///   - `equipmentProfile`: das EFFEKTIVE Profil, wie es
+    ///     `EquipmentPlanningResolver.resolve(environment:individualProfile:
+    ///     confirmedComplete:)` bereits an jeder bestehenden Aufrufstelle
+    ///     liefert (`OnboardingView.equipmentPlanningContext`,
+    ///     `ProgramTemplatePickerView.equipmentPlanningContext`) — der
+    ///     Aufrufer loest EINMAL auf (Gym-Annahme/bestaetigt/unbestaetigt,
+    ///     siehe dort) und reicht `.effectiveProfile` durch, statt hier eine
+    ///     zweite, potenziell abweichende Aufloesung einzufuehren. Fliesst
+    ///     als `userEquipmentProfile:` in `ProgramInstantiator.instantiate`
+    ///     — dieselbe praezise Pro-Uebung-Pruefung
+    ///     (`PlanEquipmentChecker`/`bestEquipmentCheckedVariant`), die der
+    ///     Template-Pfad bereits nutzt, statt der bisherigen groben
+    ///     `Set<Equipment>`-Legacy-Pruefung. Fehlende oder widerspruechliche
+    ///     Angaben (z.B. unbestaetigtes Profil, Gym ohne individuelle
+    ///     Einrichtung) werden dadurch genauso behandelt wie ueberall sonst
+    ///     in der App — keine zusaetzliche, abweichende Fallback-Regel hier.
+    ///
+    /// Bekannte Grenze: Der synthetische Wegwerf-Template aus `makeTemplate`
+    /// hat (anders als kuratierte Templates) nie `equipmentVariants` — die
+    /// praezise Pruefung kann deshalb heute noch NICHTS substituieren
+    /// (`bestEquipmentCheckedVariant` faellt mangels Alternativen immer auf
+    /// `days` unveraendert zurueck). Die uebergebene `equipmentProfile`
+    /// aendert den materialisierten Tagesinhalt eines Builder-Plans also
+    /// (noch) nicht sichtbar — sie verhindert aber die bisherige, aktiv
+    /// falsche `targetEnvironment`-Fixierung und macht den Pfad bereit fuer
+    /// jede kuenftige Variant-/Substitutions-Erweiterung (P3+), ohne dass
+    /// dafuer diese Stelle nochmal angefasst werden muesste. Der volle
+    /// Phase-5-Substitutions-Pfad (`PlanSelectionResolver`/
+    /// `ResolvedPlanSelection`, mit Ersatz-Uebungen) ist bewusst NICHT
+    /// angebunden: er braucht einen `SubstitutionContext(goal:
+    /// experienceTrack:)`, und ein ueber den Builder/Cardio-Coach erzeugter
+    /// Plan hat kein eigenes `TrainingGoal` — ein dafuer erfundener Wert
+    /// waere genau der versteckte Default, den diese Korrektur vermeiden
+    /// soll. Bleibt offene Anschlussaufgabe, sobald der zielorientierte
+    /// Builder (P3) ein echtes Ziel liefert.
     @discardableResult
     public static func build(
         from input: PlanGeneratorInput,
         in context: ModelContext,
+        environment: EnvironmentType,
+        equipmentProfile: UserEquipmentProfile,
         result precomputed: PlanGenerator.Result? = nil,
         generationSource: GenerationSource = .manual
     ) -> TrainingPlan? {
         let result = precomputed ?? PlanGenerator.generate(from: input)
         guard !result.days.isEmpty else { return nil }
-        let template = makeTemplate(from: result)
+        let template = makeTemplate(from: result, environment: environment)
 
         let plan = ProgramInstantiator.instantiate(
             template,
             in: context,
             selectedWeekdays: resolvedWeekdays(from: input),
-            userEquipment: input.equipmentPreferences
+            userEquipmentProfile: equipmentProfile
         )
         plan.generatorInput = input
         plan.generationSource = generationSource
@@ -200,7 +250,12 @@ public enum PlanGeneratorInstantiator {
     /// die kuratierte Liste abgleicht (`LibrarySeeder`s Backfills), behandelt
     /// eine unbekannte ID bereits konservativ als "Custom-Plan ohne
     /// Template-Origin" (gleiche Kategorie wie ein manuell angelegter Plan).
-    private static func makeTemplate(from result: PlanGenerator.Result) -> ProgramTemplate {
+    ///
+    /// Audit-Korrektur P2.1: `targetEnvironment` war hier `.gym`
+    /// hartcodiert — unabhaengig davon, was der Nutzer tatsaechlich als
+    /// Trainingsort gewaehlt hatte. `environment` kommt jetzt vom Aufrufer
+    /// (`build(environment:...)`), siehe dortige Dokumentation.
+    private static func makeTemplate(from result: PlanGenerator.Result, environment: EnvironmentType) -> ProgramTemplate {
         ProgramTemplate(
             id: "planBuilder.generated",
             name: "Individueller Plan",
@@ -209,7 +264,7 @@ public enum PlanGeneratorInstantiator {
             focus: "",
             daysPerWeek: result.days.count,
             days: result.days.map(\.spec),
-            targetEnvironment: .gym,
+            targetEnvironment: environment,
             iconSystemName: "wand.and.stars"
         )
     }

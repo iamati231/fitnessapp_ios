@@ -34,6 +34,15 @@ public struct PlanBuilderView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppNavigation.self) private var navigation
 
+    /// Audit-Korrektur P2.1: der explizite Trainingsort + das effektive
+    /// Equipment-Profil fuer `PlanGeneratorInstantiator.build` — vorher
+    /// setzte `makeTemplate` `.gym` hartcodiert. `PlanBuilderView` fragt kein
+    /// eigenes Profil ab (anders als `OnboardingView`/
+    /// `CardioFeasibilityCardModel`, die es bereits als Parameter/State
+    /// haben), deshalb hier dieselbe `@Query`, wie sie
+    /// `ProgramTemplatePickerView.profiles` bereits verwendet.
+    @Query private var profiles: [UserBodyProfile]
+
     // @MainActor explizit statt inferiert: `adoptPlan()` ruft diese Closure
     // synchron auf (kein await) und darf innerhalb selbst @MainActor-
     // isolierte Aufrufe machen (z.B. CardioFeasibilityCardModel.acceptCustom).
@@ -559,6 +568,22 @@ public struct PlanBuilderView: View {
         )
     }
 
+    /// Audit-Korrektur P2.1: derselbe effektive Planungskontext wie
+    /// `ProgramTemplatePickerView`/`OnboardingView` (EquipmentPlanningResolver,
+    /// Smart-Onboarding-Epic Phase 6) — EINE Berechnung statt einer
+    /// eigenstaendigen, potenziell abweichenden Aufloesung. `?? .gym`/`??
+    /// UserEquipmentProfile()` nur fuer den (hier wie dort strukturell
+    /// unerwarteten) Fall, dass noch gar kein Profil existiert — PlanBuilderView
+    /// ist wie ProgramTemplatePickerView nur innerhalb der bereits
+    /// onboarded App erreichbar.
+    private var equipmentPlanningContext: EquipmentPlanningContext {
+        EquipmentPlanningResolver.resolve(
+            environment: profiles.first?.environment ?? .gym,
+            individualProfile: profiles.first?.equipmentProfile ?? UserEquipmentProfile(),
+            confirmedComplete: profiles.first?.equipmentProfileConfirmedComplete ?? false
+        )
+    }
+
     /// `shuffle`: Bugfix (Nutzer-Feedback) - der erste Aufruf beim Betreten
     /// von Schritt 3 (`goToNextStep`/`.onAppear`) bleibt bewusst
     /// deterministisch (Default `false`), nur der explizite "Neu rechnen"-
@@ -769,7 +794,12 @@ public struct PlanBuilderView: View {
             return
         }
 
-        guard let plan = PlanGeneratorInstantiator.build(from: currentInput, in: modelContext, result: result, generationSource: .planBuilder) else { return }
+        guard let plan = PlanGeneratorInstantiator.build(
+            from: currentInput, in: modelContext,
+            environment: profiles.first?.environment ?? .gym,
+            equipmentProfile: equipmentPlanningContext.effectiveProfile,
+            result: result, generationSource: .planBuilder
+        ) else { return }
         dismiss()
         // Gleiches 0.3s-Defer-Muster wie `ProgramTemplatePickerView.instantiate`
         // - gibt der Sheet-Dismiss-Animation Zeit, bevor der Navigations-Stack

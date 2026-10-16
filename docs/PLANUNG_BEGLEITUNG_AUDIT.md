@@ -341,15 +341,20 @@ Linux-testbar, Builder-UI Apple-CI/Gerät.
 Komponenten: neue View (Wochenübersicht), löst `PlanEditorView.daysSection`s reine List ab/ergänzt sie.
 Abhängigkeiten: P2.4, P2.0. Abnahme: B01 (Drag&Drop + zugängliche Alternative). **Verbindlich**: die
 View bindet ausschließlich an `PlanDraft` (P2.0) — auch im Modus „bestehenden Plan bearbeiten"
-(`PlanningMode.standaloneBuilder(editing: plan)`) wird der Plan beim Öffnen EINMALIG in einen
-`PlanDraft` kopiert, alle Interaktionen (Reorder/Fixieren/Alternative) mutieren nur die Kopie. Kein
-Control der View ist direkt an ein lebendes `TrainingDay`/`Exercise`-Objekt gebunden — das
-unterscheidet sie bewusst vom bestehenden `PlanEditorView`, der live auf SwiftData bindet. Schreiben
-in den `ModelContext` passiert ausschließlich über den P2.3-Adopt-Pfad beim expliziten Bestätigen,
-nie während der Vorschau/Bearbeitung selbst (Dok00: „Vorschau/Entwurf erzeugt keine persistierten
-Pläne" gilt damit auch für den Editier-, nicht nur den Erstellungsfall). Datenmodell: keine.
-Testplattform: `PlanDraft`-Mutationslogik (Reorder/Fixieren) als reine Core-Funktionen
-**Linux-testbar**; die View selbst 0 auf Linux — nur Apple-CI (Build) + Gerät (Gesten/VoiceOver).
+(`PlanningMode.builderEdit`) wird der Plan beim Öffnen EINMALIG in einen `PlanDraft` kopiert, alle
+Interaktionen (Reorder/Fixieren/Alternative) mutieren nur die Kopie. Kein Control der View ist direkt
+an ein lebendes `TrainingDay`/`Exercise`-Objekt gebunden — das unterscheidet sie bewusst vom
+bestehenden `PlanEditorView`, der live auf SwiftData bindet. Schreiben in den `ModelContext` passiert
+ausschließlich über den P2.3-Adopt-Pfad beim expliziten Bestätigen, nie während der Vorschau/
+Bearbeitung selbst (Dok00: „Vorschau/Entwurf erzeugt keine persistierten Pläne" gilt damit auch für
+den Editier-, nicht nur den Erstellungsfall). **Verbindlich (Nachtrag P2.0-Nachbesserung)**:
+`PlanDraft.reorder(to:)`/`moveDay` lehnen eine Verschiebung GANZ ab, sobald sie — und sei es nur
+indirekt durch das Verschieben eines ANDEREN Tages — einen positionsfixierten Tag von seinem Platz
+verdrängen würde (siehe dortige Tests). Die UI MUSS eine so abgelehnte Verschiebung dem Nutzer
+verständlich anzeigen (z.B. der gezogene Tag springt sichtbar zurück, kein stilles No-Op) — ein
+fixierter Tag darf sich dabei nie unbemerkt mitbewegen. Datenmodell: keine. Testplattform:
+`PlanDraft`-Mutationslogik (Reorder/Fixieren) als reine Core-Funktionen **Linux-testbar**; die View
+selbst 0 auf Linux — nur Apple-CI (Build) + Gerät (Gesten/VoiceOver, inkl. der Ablehnungs-Rückmeldung).
 
 **P3.3 Gezielte Alternativen statt globalem Shuffle**
 Komponenten: `PlanGenerator.swift` (neue gezielte Ersatzfunktion statt `shuffle: true`),
@@ -769,3 +774,117 @@ und Linux-testbar, kann parallel bearbeitet werden (beide Dateien überschneiden
 `PlanGeneratorInstantiator.swift` vs. `CoachingTypes.swift`). P2.3/P2.4 hängen von P2.1 ab
 (siehe Phasenplan oben). Vor P3: Goal→Generierung-Zuordnungsregeln für Hybrid/Ausdauer/Laufcoach
 explizit festlegen (keine versteckten Defaults für diese Nutzerentscheidungen).
+
+## P2.1-Abschlussbericht (targetEnvironment-Hardcode-Bug behoben)
+
+**Paket:** P2.1 — `PlanGeneratorInstantiator.makeTemplate` setzte `targetEnvironment: .gym`
+hartcodiert, unabhängig vom tatsächlichen Trainingsort. Jeder über Builder/Cardio-Coach/
+Onboarding-Custom-Plan erzeugte Plan bekam dadurch IMMER `.gym`, auch bei Home-Gym/Kein-Equipment.
+
+**Implementiert:**
+- `PlanGeneratorInstantiator.build(from:in:...)` bekommt zwei neue, **absichtlich
+  pflichtige, default-lose** Parameter: `environment: EnvironmentType` und `equipmentProfile:
+  UserEquipmentProfile`. `makeTemplate` setzt `targetEnvironment` jetzt aus `environment` statt
+  `.gym`. Kein Default, damit kein neuer stiller Fehler denselben Fehler nur versteckter wiederholt
+  — jeder Aufrufer muss den Wert explizit liefern.
+- `equipmentProfile` fließt als `userEquipmentProfile:` in `ProgramInstantiator.instantiate` —
+  dieselbe präzise, pro-Übung-genaue `PlanEquipmentChecker`/`bestEquipmentCheckedVariant`-Prüfung
+  (Smart-Onboarding-Epic Phase 4), die der Template-Pfad bereits nutzt, statt der bisherigen groben
+  `Set<Equipment>`-Legacy-Prüfung (`input.equipmentPreferences` wird dafür nicht mehr übergeben —
+  sie hatte ohnehin nie einen Effekt, siehe „Bekannte Grenzen").
+- Alle drei echten Aufrufstellen liefern jetzt den tatsächlich vorhandenen, bereits aufgelösten
+  Planungskontext statt eines erfundenen Werts:
+  - `CardioFeasibilityCardModel.accept`/`.acceptCustom`: `profile.environment` +
+    `EquipmentPlanningResolver.resolve(...).effectiveProfile` aus dem bereits übergebenen `profile`.
+  - `OnboardingView.finishOnboarding` (Custom-Plan-Zweig): dieselben `environment`/
+    `equipmentPlanningContext`, die der direkt daneben stehende Template-Zweig schon verwendet —
+    vorher hatten beide Zweige unterschiedliches Verhalten, obwohl sie denselben Planungskontext
+    im selben Onboarding-Durchlauf abbilden.
+  - `PlanBuilderView.adoptPlan()`: neue `@Query private var profiles: [UserBodyProfile]` +
+    `equipmentPlanningContext` (identisches Muster wie `ProgramTemplatePickerView`/`OnboardingView`
+    — „EINE Berechnung", keine vierte, eigenständige Auflösung).
+- Fehlende/widersprüchliche Angaben (Punkt 3 der Vorgabe): werden nicht durch eine neue,
+  eigenständige Regel hier behandelt, sondern genau wie überall sonst in der App — durch
+  Wiederverwendung des bestehenden `EquipmentPlanningResolver` (Gym-Annahme ohne Bestätigung,
+  bestätigt gewinnt immer, unbestätigt bleibt roh). Einzige verbleibende Fallback-Stelle ist
+  `profiles.first?.environment ?? .gym`/`?? UserEquipmentProfile()` in `PlanBuilderView` — NICHT
+  für den behobenen Bug (ein routinemäßiges Überschreiben vorhandener Werte), sondern für den
+  strukturell unerwarteten Fall „noch kein Profil vorhanden", identisches, bereits bestehendes
+  Muster wie in `ProgramTemplatePickerView.equipmentPlanningContext`.
+- Kein bestehender Plan wird rückwirkend verändert (Punkt 6): `build` instanziiert ausschließlich
+  NEUE Pläne; nichts an `recalculate`/`apply` (die auf bereits persistierten Plänen arbeiten) wurde
+  angefasst.
+
+**Noch nicht implementiert (bewusst außerhalb von P2.1):** Der volle Phase-5-Substitutions-Pfad
+(`PlanSelectionResolver`/`ResolvedPlanSelection`, mit tatsächlichem Ersatz fehlender Übungen) ist
+NICHT angebunden — er bräuchte einen `SubstitutionContext(goal:experienceTrack:)`, und ein über
+Builder/Cardio-Coach erzeugter Plan hat kein eigenes `TrainingGoal`. Ein dafür erfundener Wert wäre
+exakt der versteckte Default, den diese Korrektur vermeiden soll. Offene Anschlussaufgabe für P3,
+sobald der zielorientierte Builder ein echtes Ziel liefert.
+
+**Geänderte Komponenten:** `Sources/FitnessAppData/PlanGeneratorInstantiator.swift` (`build`,
+`makeTemplate`), `Sources/FitnessAppUI/Workout/PlanBuilderView.swift` (neue `@Query`, neue
+`equipmentPlanningContext`, Aufrufstelle), `Sources/FitnessAppUI/Cardio/
+CardioFeasibilityCardModel.swift` (beide Aufrufstellen), `Sources/FitnessAppUI/OnboardingView.swift`
+(Custom-Plan-Aufrufstelle).
+
+**Neue/geänderte Datenfelder:** keine — reine Parameter-/Verdrahtungs-Korrektur, keine
+SwiftData-Schema-Änderung.
+
+**Tests hinzugefügt:** `Tests/FitnessAppDataTests/PlanGeneratorInstantiatorTests.swift`: neuer
+`buildPlan(...)`-Test-Wrapper (neutraler Testwert nur für die 8 bestehenden, von Environment/
+Equipment unabhängigen Tests — diese direkt mit-aktualisiert, da die Produktionssignatur jetzt
+Pflichtparameter verlangt) plus 6 neue Tests: die Kern-Regression (expliziter Wert ≠ `.gym`) und
+die 5 angeforderten Szenarien (Gym+Kurzhanteln, Home-Gym+Langhantel, Bodyweight ohne Geräte,
+explizit fehlendes Equipment, unbekannte Ausstattung) — alle prüfen, dass `targetEnvironment` exakt
+dem übergebenen Wert entspricht, UNABHÄNGIG vom Equipment-Inhalt (Punkt 2: Equipment ersetzt den
+Trainingsort nie).
+
+**Tests tatsächlich ausgeführt:** Linux Build (`swift build`) grün — beweist nur, dass die Datei
+syntaktisch gültiges Swift enthält (Klammerbilanz etc.); der Dateiinhalt selbst steht hinter
+`#if canImport(SwiftData)`/`#if canImport(SwiftUI) && canImport(SwiftData)` und kompiliert auf
+diesem Linux-Toolchain zu einer effektiv leeren Übersetzungseinheit (`swift /tmp/swcheck.swift`
+mit `import SwiftData` bestätigt: „no such module 'SwiftData'"; `swift test --filter
+PlanGeneratorInstantiatorTests` führt nachweislich 0 Tests aus). Die neuen/geänderten Tests selbst
+sind **nicht gelaufen** — weder die 8 angepassten noch die 6 neuen. Vollständiger Lauf `swift test`
+— unverändert 1020/1020 (identisch zum P2.0-Nachbesserung-Stand, keine Linux-sichtbare Regression,
+aber auch kein Nachweis für P2.1 selbst). Verifikation dieser Änderung
+beruht ausschließlich auf manueller Zeile-für-Zeile-Prüfung gegen die tatsächlichen Deklarationen
+(`UserBodyProfile.environment`/`.equipmentProfile`/`.equipmentProfileConfirmedComplete`,
+`TrainingPlan.targetEnvironment`, `ProgramInstantiator.instantiate`-Parameter-Namen, `EnvironmentType`/
+`UserEquipmentProfile`-Fälle) — kein Ersatz für einen echten Compiler-Lauf.
+
+**Apple-Build/CI:** nicht durchgeführt — offen, bis ein echter Codemagic-/Xcode-Lauf vorliegt. Das
+Risiko ist hier HÖHER als bei P2.0 (reiner Core-Code) und vergleichbar mit P1 (SwiftUI/SwiftData-
+gegatete Dateien, auf Linux nicht prüfbar).
+
+**UI-/Geräteprüfung:** nicht durchgeführt — offen. Insbesondere ungeprüft: ob `PlanBuilderView`s
+neue `@Query` sich mit den übrigen `@Query`/`@Environment`-Deklarationen der View verträgt (keine
+doppelte Registrierung, keine Reihenfolge-Abhängigkeit), und ob ein frisch über den Builder mit
+Home-Gym-Equipment erzeugter Plan auf einem echten Gerät tatsächlich mit `targetEnvironment ==
+.homeGym` erscheint (Settings/Dashboard-Anzeige, Plan-Matching-Filter).
+
+**Bekannte Grenzen/Risiken:**
+1. `equipmentProfile` ändert den materialisierten Tagesinhalt eines Builder-Plans HEUTE noch nicht
+   sichtbar — der synthetische Wegwerf-Template hat nie `equipmentVariants`, `bestEquipmentCheckedVariant`
+   fällt deshalb mangels Alternativen immer auf die unveränderten Tage zurück (verifiziert durch
+   Lesen von `PlanEquipmentCheck.swift:201-213`). Die Korrektur behebt den `targetEnvironment`-Bug
+   und macht den Pfad bereit für künftige Variant-/Substitutions-Erweiterungen, ändert aber nicht
+   schon heute sichtbar, WELCHE Übungen ein Builder-Plan bekommt.
+2. Separater, unverändert gebliebener Fund: `PlanGeneratorInput.equipmentPreferences: Set<Equipment>`
+   (Schritt-2-Checkboxen in `PlanBuilderView`) hat nachweislich (`PlanGenerator.swift` referenziert
+   das Feld nirgends) schon VOR dieser Korrektur keinerlei Effekt auf die generierten Tage gehabt —
+   weder auf die Auswahl noch auf irgendeine Variante. Nicht Teil dieses Tasks (nicht der
+   `targetEnvironment`-Bug), aber eine eigene Aufgabe wert: entweder die Checkbox-UI entfernen
+   oder sie tatsächlich mit dem Generator verbinden.
+3. `profiles.first?.environment ?? .gym` in `PlanBuilderView` bleibt ein (wie bei
+   `ProgramTemplatePickerView` bereits bestehender) Fallback für den strukturell unerwarteten Fall
+   „kein Profil vorhanden" — sollte dieser Fall auf einem Gerät doch beobachtet werden, ist das ein
+   Zeichen für ein tieferliegendes Onboarding-Problem, nicht für einen Fehler in dieser Korrektur.
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
+Berichtseintrag.
+
+**Nächste Aufgabe:** P2.2 (`TrainingGoal.endurance` anhängen) — unabhängig, Linux-testbar, keine
+Dateiüberschneidung mit P2.1. P2.3 (gemeinsamer Adopt-Pfad) hängt von P2.1 ab und kann jetzt
+begonnen werden.
