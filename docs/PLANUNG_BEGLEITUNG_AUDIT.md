@@ -2559,3 +2559,83 @@ Berichtseintrag.
 **Nächste Aufgabe (User-Vorgabe, ausdrücklich keine weitere Erweiterung von Task #197):** echter
 Apple-Build und Ausführung der Data-Tests priorisieren. P3-Finalübernahme bleibt bis dahin
 weiterhin nicht abgenommen. Task #197 bleibt `in_progress`.
+
+## Verifikationsstatus zu Commit 185b6cd: reale externe CI gefunden, von dieser Session aus nicht
+einsehbar
+
+**Auslöser:** User verlangte getrennten Nachweis (1) echte Apple-Kompilierung, (2) tatsächlich
+ausgeführte Data-Tests, (3) gezielte Simulator-/Geräteprüfung für Commit `185b6cd` — ausdrücklich
+NICHT nochmal nur Linux als Ersatz. Reine Verifikationsrunde, keine Code-Änderung an
+`PlanCreationOperation`/den UI-Aufrufstellen.
+
+**Fund: `codemagic.yaml` existiert bereits und deckt genau das ab.** Zwei der drei konfigurierten
+Workflows lösen laut `branch_patterns: {pattern: '*', include: true}` bei JEDEM Push auf JEDEN
+Branch automatisch aus, auf echten `mac_mini_m2`-Instanzen mit echtem Xcode:
+- `swift-package` — `swift build`, `swift test --parallel` (komplette Suite, echtes Xcode/macOS,
+  SwiftData/SwiftUI existieren dort wirklich — keine `#if canImport`-Leerlauf-Kompilierung mehr),
+  danach `xcodebuild build` für jedes der 5 Library-Produkte einzeln fürs iOS-Simulator-SDK
+  (`FitnessAppCore/Data/Health/Activities/UI`).
+- `ios-app` — generiert per XcodeGen das `.xcodeproj`, baut App + Widget-Extension komplett für
+  iOS Simulator.
+Beide sollten durch den Push von `185b6cd` auf `claude/smart-onboarding-epic` bereits ausgelöst
+worden sein — das ist aus dieser Session heraus NICHT bestätigbar: kein Codemagic-API-Token in
+dieser Umgebung konfiguriert (geprüft), keine GitHub-Actions-Workflows in diesem Repo (0, geprüft
+per `actions_list`), keine offene PR, keine Tool-Bridge zwischen Codemagic-Ergebnissen und
+GitHub Checks/Status in dieser Session verfügbar. Das erklärt rückwirkend auch frühere
+"Apple-CI-Fund"-Referenzen in diesem Dokument (z.B. Task #175) — diese kamen vermutlich aus genau
+dieser Codemagic-Pipeline, nicht aus einer in dieser Session je selbst ausgeführten Prüfung.
+
+**Konkret benannter externer Schritt (User-Vorgabe):**
+1. Codemagic-Dashboard, Commit `185b6cd`, Branch `claude/smart-onboarding-epic`, Workflows
+   `swift-package` + `ios-app` — Status + Build-Log.
+2. Alternativ: E-Mail an a.isik@atamya.com — `ios-app` benachrichtigt laut `codemagic.yaml` IMMER
+   (Erfolg wie Fehler), `swift-package` NUR bei Fehler.
+3. Alternativ: ein Read-only-Codemagic-API-Token als Network-Secret in dieser Umgebung hinzufügen
+   — dann kann diese Session Status/Log selbst abrufen.
+
+**Tatsächlicher Testzahlen-Abgleich (per `grep -c "func test"`, Gegenprobe exakt stimmig):**
+1240 Testfunktionen im gesamten Repository, davon 207 hinter `#if canImport(SwiftData)` bzw.
+`#if canImport(SwiftUI)` gated (1240 − 207 = 1033 = exakt der etablierte Linux-Wert — bestätigt
+die Zählmethode). Die 207 Apple-only-Funktionen verteilen sich auf 16 Dateien, darunter namentlich
+die vom User verlangten:
+- `PlanCreationOperationTests` — 7 Tests (komplett aus dritter/vierter Runde).
+- `PlanGeneratorInstantiatorTests` — 35 Tests, darunter `testCreatePlanPropagatesSaveFailure`,
+  `testFailedCreationIsRepeatableWithoutOrphanedObjects`,
+  `testCreatePlanTransparentlyRecoversFromATransientRebindFailure`,
+  `testCreatePlanThrowsCreatedButRebindFailedAndLaterResolvesWithoutDuplicate`.
+- Übrige 165 Funktionen in 14 weiteren `FitnessAppDataTests`-Dateien + 2 `FitnessAppUITests`-
+  Dateien (`EditorDiscardSnapshotTests`, `ExerciseTemplateIDBackfillTests` — Resource-/Discard-
+  Checks, nicht Task-#197-relevant).
+
+**Simulator-/Geräteprüfung — 6 geforderte Punkte gegen tatsächliche Abdeckung abgeglichen:**
+4 der 6 Punkte (Normalfall kein Duplikat, Fehler-vor-Commit wiederholbar, Commit-aber-unresolved
+löst nur dieselbe ID auf, spätere Auflösung holt den Postlude genau einmal nach) sind inhaltlich
+bereits durch die oben genannten Data-Tests automatisiert bewiesen, sobald deren Ausführung auf
+Apple bestätigt ist — über die echten Seams `rebindOverrideForTesting`/`saveOverrideForTesting`,
+nicht durch Abwarten eines zufälligen Fehlers. Die übrigen 2 Punkte (korrekter Button-/Alert-
+Zustand bei Builder/externem Cardio-Handoff; Onboarding-Entwurf erzeugt keinen vorzeitigen Plan)
+sind rein sichtbares UI-Verhalten, für das kein automatisiertes UI-Test-Target in diesem
+Repository existiert (`FitnessAppUITests` enthält nur Resource-/Discard-Unit-Tests, keine
+XCUITest-Automatisierung).
+
+**Wichtiger Befund dabei:** `rebindOverrideForTesting`/`saveOverrideForTesting` sind `internal`
+und ausdrücklich nur für `@testable import` aus In-Prozess-XCTests gedacht (siehe deren eigene
+Doku-Kommentare in `PlanGeneratorInstantiator.swift`). In der echten, kompilierten App gibt es
+AKTUELL KEINE Möglichkeit, die beiden Fehlerzustände ("Fehler vor Commit", "Rebind-Fehler")
+manuell im Simulator auszulösen — auch ein Mensch mit Xcode kann das ohne zusätzliche
+Instrumentierung nicht nachstellen. Nur der Normalfall-Teil beider UI-only-Punkte ist ohne
+Weiteres manuell im Simulator prüfbar.
+
+**User-Entscheidung (gefragt, nicht selbst entschieden):** ob für die zwei nicht auslösbaren
+Fehlerzustände eine schmale `#if DEBUG`-Instrumentierung ergänzt werden soll, bevor Task #197
+geschlossen wird. Antwort: **zurückstellen** — erst Punkt 1 (Apple-Kompilierung) und Punkt 2
+(Data-Tests) über einen der drei oben genannten externen Wege bestätigen, die
+Instrumentierungs-Entscheidung folgt danach. Kein Code in dieser Runde geändert.
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`, dieser Eintrag wird mit dem nächsten
+Commit mitgeführt (reine Dokumentation, kein Produktivcode betroffen).
+
+**Nächste Aufgabe:** auf externe Bestätigung von Codemagic (Commit `185b6cd`, Workflows
+`swift-package` + `ios-app`) warten — per Dashboard, E-Mail oder einem der Session bereitgestellten
+API-Token. Erst danach: Instrumentierungs-Entscheidung für die 2 offenen Simulator-Punkte, dann
+Task #197 abschliessen. Keine weitere Erweiterung bis dahin.
