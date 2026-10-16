@@ -323,6 +323,13 @@ public struct PlansListView: View {
                         // und wird wie `.nothingToCreate` behandelt.
                         switch model.accept(profile: profile, in: modelContext, using: acceptOperation) {
                         case .success(let plan):
+                            // Geraete-Fund (TestingBot, Task #197 UI-Pruefumfang): ohne dieses
+                            // Zuruecksetzen blieb der Button nach JEDEM erfolgreichen Uebernehmen
+                            // fuer den Rest der View-Lebensdauer dauerhaft deaktiviert - SwiftUIs
+                            // TabView haelt @State ueber Tab-Wechsel hinweg am Leben, ein spaeterer,
+                            // voellig unabhaengiger Cardio-Vorschlag war dadurch nie mehr per Tap
+                            // annehmbar (nur noch ueber den Umweg "Plan anpassen").
+                            isAcceptingCardioFeasibility = false
                             navigation.workoutPath.append(plan)
                         case nil:
                             isAcceptingCardioFeasibility = false
