@@ -2913,12 +2913,28 @@ blieb als Umweg bedienbar, da nur der primaere Button `.disabled(isAcceptingCard
 Fix (Commit `3d462dd`): `isAcceptingCardioFeasibility = false` zusaetzlich im `.success`-Fall, an
 beiden Stellen.
 
-**Ausdrücklich NICHT in dieser Runde verifiziert:** ob der Fix (`3d462dd`) das Problem tatsaechlich
-behebt, ist NICHT erneut am Geraet bestaetigt - nur der Fehler selbst wurde live reproduziert, der Fix
-ist code-gelesen hergeleitet (dieselbe Lage wie bei Commit 6300fbf). Naechster Schritt: Codemagic-Test
-fuer `3d462dd` abwarten (`swift-package`, laeuft bei Abschluss dieses Eintrags), danach idealerweise ein
-weiterer TestingBot-Lauf mit genau zwei aufeinanderfolgenden, unabhaengigen Cardio-Uebernahmen, um
-zu bestaetigen, dass "Adopt plan" nach der ersten weiterhin bedienbar bleibt.
+**Codemagic-Nachlauf fuer den Fix (von dieser Session selbst ausgeloest, da Push auf diesem Repo
+keinen automatischen Codemagic-Trigger ausloest - abweichend von der bisherigen Annahme, siehe
+Notiz unten):** `swift-package`-Build `6ad27962e8810c37ac26d788` fuer Commit `a12a4255c8126c97...`
+(= `3d462dd` + Doku-Commit `a12a425`) manuell per API getriggert. Alle Schritte `success`, inklusive
+"Run unit tests" - Fortschrittszeilen `[1/1240]` bis `[1240/1240]` lueckenlos, keine echte
+Fail-/Error-Zeile. Bestaetigt: der Fix bricht nichts in der bestehenden Suite.
+
+**Ausdrücklich WEITERHIN NICHT verifiziert:** dass der Fix das urspruengliche UI-Symptom (Button
+bleibt nach Erfolg dauerhaft deaktiviert) tatsaechlich behebt, ist NICHT per echtem erneuten
+UI-Durchlauf bestaetigt - die bestehende Testsuite enthaelt keinen Test fuer genau dieses
+`isAcceptingCardioFeasibility`-Zuruecksetzen, "1240/1240 gruen" beweist nur Abwesenheit von
+Regressionen, nicht Behebung des urspruenglichen Symptoms. Fuer die volle Bestaetigung noetig: ein
+weiterer TestingBot-Lauf mit genau zwei aufeinanderfolgenden, unabhaengigen Cardio-Uebernahmen, der
+pruefen, dass "Adopt plan" nach der ersten weiterhin bedienbar bleibt.
+
+**Korrektur einer bisherigen Annahme:** `codemagic.yaml` deklariert zwar Trigger fuer jeden Push,
+die beiden Pushes dieser Runde (`3d462dd`, `a12a425`) loesten aber ueber zehn Minuten lang KEINEN
+automatischen Build aus - erst ein manueller `POST /builds` per API hat den Lauf gestartet. Alle
+bisher in diesem Dokument als "Apple-Testlauf"/"Codemagic-Build" zitierten Laeufe fuer 6300fbf/
+935e0f6/73fa31a wurden, soweit rekonstruierbar, ebenfalls explizit angestossen (von der
+TestingBot-Hilfssession), nicht durch einen automatischen Webhook. Fuer kuenftige Runden: nach
+jedem Push aktiv `POST https://api.codemagic.io/builds` aufrufen, nicht auf Auto-Trigger warten.
 
 **Geaenderte Komponenten:** `Sources/FitnessAppUI/Workout/PlansListView.swift`,
 `Sources/FitnessAppUI/Settings/ProfileEditorView.swift` (je eine Zeile `isAcceptingCardioFeasibility =
