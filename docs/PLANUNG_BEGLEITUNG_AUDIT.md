@@ -476,9 +476,11 @@ der jeweiligen Teilaufgabe oben einzeln vermerkt — keine pauschale „alles gr
 
 ## Nächste Aufgabe
 
-P1.2 (RIR-Redesign) — einziger offener Punkt aus dem Fehler-Paket, in sich geschlossen, ohne
-Abhängigkeit zu den Konfliktfragen oder zu P2–P6. Wird als nächstes umgesetzt, sobald dieser
-präzisierte Bericht akzeptiert ist.
+Stand nach P1/P1-Nachbesserung/P2.0 (siehe jeweilige Abschlussberichte unten): P2.1
+(`targetEnvironment`-Hardcode-Bug) und P2.2 (`TrainingGoal.endurance`) sind beide unabhängig
+voneinander und von P2.0 lösbar, keine Blocker. P2.3 hängt von P2.1 ab, P2.4 von P2.3. P3
+(Builder/Onboarding-Anbindung) benötigt P2.0 (vorhanden) und sollte die in P2.0 bewusst
+offengelassene Goal→Generierung-Richtlinie klären.
 
 ## P1-Abschlussbericht
 
