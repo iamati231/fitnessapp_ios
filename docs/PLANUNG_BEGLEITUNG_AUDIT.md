@@ -584,3 +584,95 @@ Dynamic-Type-Stufe tatsächlich pixelgenau fluchten, ob `ViewThatFits` in beiden
 synchron kippt, und ob die berechneten (nicht gemessenen) Breitenwerte (`rirWidth`, ScaledMetric-Basis
 28) in der Praxis ausreichen, ist ohne Simulator/Gerät nicht feststellbar. P1 bleibt bis zu einer
 solchen Prüfung "implementiert, nicht abgenommen".
+
+## P2.0-Abschlussbericht (Datenvertrag Planungskontext/Wochenentwurf)
+
+**Paket:** P2.0 — fachlicher Datenvertragsentwurf für `PlanningContext`/`PlanDraft` (reine
+Core-Werttypen, parallel zu P1 autorisiert, ausdrücklich ohne breite UI- oder
+Persistenzumstellung).
+
+**Implementiert:**
+- `Sources/FitnessAppCore/Planning/PlanningContext.swift`: `EnduranceModality` (`.running/.cycling/.both`,
+  mit `trainingTypeKinds`-Brücke zu den bestehenden `TrainingTypeKind`-Cardio-Fällen — kein
+  Parallel-Vokabular), `SchedulingMode` (`.fixedWeekdays([Int])/.flexibleOrder`, spiegelt
+  `PlanGeneratorInput.usesFixedWeekdays/fixedWeekdays` 1:1), `PlanningMode`
+  (`.onboarding/.builderCreate/.builderEdit/.profileAdaptation`), `PlanningContext` selbst
+  sowie `PlanningContextIssue` + die berechnete `issues`/`isValid`-Validierung und
+  `effectiveEquipment` (delegiert an den bestehenden `EquipmentPlanningResolver`).
+- `Sources/FitnessAppCore/Planning/PlanDraft.swift`: `DraftDayID`/`DraftExerciseID` (UUID-basierte
+  stabile Identitäten), `DraftExercise`, `DraftDay` (mit `isContentFixed`/`isPositionFixed` je Tag),
+  `PlanDraft` mit `init(generated:)`, `resolvedDaySpecs`, `moveDay`, `replaceContent`,
+  `setContentFixed`/`setPositionFixed`.
+- Alle drei in der Audit-Abnahme benannten Invarianten sind als Code + Test umgesetzt:
+  `runCoachEnabled` erfordert `.running`/`.both`; `fixedWeekdays.count == daysPerWeek` (plus
+  Range- und Eindeutigkeits-Prüfung, über die Abnahme hinaus); Gym-Umgebung ohne Bestätigung
+  löst nachweislich die bestehende Gym-Annahme aus, nie eine stille Lücke.
+- **Drei bewusste Korrekturen gegenüber der Skizze im P2.0-Abschnitt dieses Dokuments** (beim
+  Umsetzen in echten Code gefunden, nicht Teil der ursprünglich gebilligten Skizze):
+  1. `PlanningMode.standaloneBuilder(editing: TrainingPlan?)` hätte nicht kompiliert —
+     `TrainingPlan` ist ein SwiftData-`@Model` (FitnessAppData/FitnessAppUI), Core ist
+     ausdrücklich SwiftData-frei (siehe `DaySpec.swift`-Dateikommentar). `PlanningMode` trägt
+     jetzt keine Plan-Referenz mehr, nur die Betriebsart; welcher Plan bearbeitet wird, hält
+     ausschließlich der Aufrufer. Zugleich ergänzt um den in der Vorgabe genannten, in der
+     Skizze aber fehlenden dritten Fall `.profileAdaptation` (P4).
+  2. `PlanDraft.fixedDayIDs: Set<DraftDay.ID>` / `fixedPositionIndices: Set<Int>` aus der Skizze
+     ersetzt durch zwei Bool-Felder direkt auf `DraftDay` (`isContentFixed`/`isPositionFixed`) —
+     ein `Set<Int>` über Positionen bricht still, sobald ein ANDERER Tag verschoben/entfernt wird;
+     die Vorgabe „stabile Identitäten statt volatiler Indizes" gilt damit auch für die Fixierung
+     selbst.
+  3. `PlanningContext.equipmentProfile` allein hätte die in der Abnahme geforderte
+     Gym-Annahme-Prüfung nicht ausdrücken können — ergänzt um
+     `equipmentProfileConfirmedComplete: Bool`, damit `effectiveEquipment` den bestehenden
+     `EquipmentPlanningResolver` (Smart-Onboarding-Epic Phase 6) tatsächlich aufrufen kann,
+     statt eine zweite Equipment-Auflösung einzuführen.
+
+**Noch nicht implementiert (bewusst außerhalb von P2.0):** jede Verdrahtung in Onboarding/
+Builder-UI/`ModelContext` (das ist P2.1–P2.4 und P3) — `PlanningContext`/`PlanDraft` werden
+aktuell von keinem Aufrufer referenziert. Keine Bridge-Funktion `PlanningContext ->
+PlanGeneratorInput`: die Abnahme-Kriterien dieses Dokuments verlangen nur den Datenvertrag + die
+drei Invarianten, nicht die Generator-Anbindung — eine goal-basierte Erzeugungslogik würde ohne
+mit dem User abgestimmte Richtlinie (Goal -> TrainingTypeKind/Template) vorgreifen und ist
+deshalb bewusst offengelassen für P3. `TrainingGoal.endurance` existiert weiterhin nicht
+(P2.2, separat).
+
+**Geänderte Komponenten:** zwei neue Dateien (`PlanningContext.swift`, `PlanDraft.swift`) in
+neuem Ordner `Sources/FitnessAppCore/Planning/`. Keine bestehende Datei verändert — `DaySpec`/
+`ExerciseSpec`/`EquipmentPlanningContext`/`PlanGeneratorInput` bleiben exakt unangetastet.
+
+**Neue/geänderte Datenfelder:** keine SwiftData-/Persistenzänderung. Alle neuen Typen sind reine
+In-Memory-Werttypen ohne `Codable` (bewusst konsistent mit `DaySpec`/`ExerciseSpec`, die ebenfalls
+nicht `Codable` sind — nichts verlangt aktuell Serialisierung).
+
+**Tests hinzugefügt:** `Tests/FitnessAppCoreTests/PlanningContextTests.swift` (16 Tests: alle drei
+Invarianten je mit Positiv-/Negativ-Fall, `EnduranceModality`-Brücke, Vollständig-gültig-Fall) und
+`Tests/FitnessAppCoreTests/PlanDraftTests.swift` (12 Tests: Sortierung/ID-Vergabe bei
+`init(generated:)`, `sequenceIndex`-Neuvergabe aus Array-Position, vollständiger Feld-Rundtrip,
+Reorder inkl. Clamping, beide Fixierungen inkl. ihrer wechselseitigen Unabhängigkeit, unbekannte ID).
+
+**Tests tatsächlich ausgeführt:** Plattform Linux (Swift 6.0.3, `swift test`). Gezielt
+`swift test --filter "PlanningContextTests|PlanDraftTests"` — 38 Tests (inkl. der mitgefilterten
+`EquipmentPlanningContextTests`), 0 Fehlschläge. Danach vollständiger Lauf `swift test` ohne
+Filter — **1007 Tests, 0 Fehlschläge** (keine Regression im Restpaket). Dies ist der erste
+tatsächlich auf Linux kompilierte und getestete Baustein dieses Epics — anders als P1 (SwiftUI-
+gegated) ist hier „Linux grün" eine echte, vollständige Korrektheitsprüfung, kein Teil-Nachweis.
+
+**Apple-Build/CI:** nicht zutreffend — reiner Core-Code ohne `canImport(SwiftUI/SwiftData/UIKit)`-
+Gates, kompiliert identisch auf jeder Plattform. Kein separater Apple-Nachweis nötig.
+
+**UI-/Geräteprüfung:** nicht zutreffend — keine UI in diesem Paket.
+
+**Bekannte Grenzen/Risiken:** (1) Der Datenvertrag ist noch ungenutzt — ob er für P3s
+tatsächliche Builder-/Onboarding-Anforderungen ausreicht, zeigt sich erst bei der Anbindung;
+denkbar, dass P3 zusätzliche Felder braucht (z.B. `experienceTrack`, falls der Builder ihn
+direkt aus dem Kontext statt separat lesen soll). (2) Die fehlende `PlanningContext ->
+PlanGeneratorInput`-Brücke bedeutet, dass die Goal-zu-Generierung-Richtlinie noch absichtlich
+unentschieden ist — das ist eine echte offene Design-Frage für P3, keine vergessene Arbeit.
+(3) `DraftDayID`/`DraftExerciseID` sind bewusst nicht `Codable` — sobald P3.2 den Editor-State
+z.B. bei App-Hintergrund sichern will, braucht es dafür eine separate Entscheidung.
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
+Berichtseintrag (gemeinsam committet, siehe Git-Log).
+
+**Nächste Aufgabe:** P2.1 (`targetEnvironment`-Hardcode-Bug beheben) — unabhängig von P2.0,
+kann parallel zu P3 begonnen werden. P2.2 (`TrainingGoal.endurance`) ist ebenfalls unabhängig
+und Linux-testbar. P2.3/P2.4 hängen von P2.1 ab (siehe Phasenplan oben).
