@@ -87,9 +87,13 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
     /// und getrennt.
     ///
     /// Zusätzlich: diese Zielkarte ist aktuell NUR im Core/in Tests
-    /// vorhanden — `DomainEnums+Localization.swift` blendet sie bewusst aus
-    /// `TrainingGoal.currentlySelectableInUI` aus, bis ein tragfähiger
-    /// Ziel→Plan-Pfad existiert (siehe dortiger Kommentar).
+    /// vorhanden — `TrainingGoal.currentlySelectableInUI` (unten in dieser
+    /// Datei) blendet sie bewusst aus neuen UI-Picker-Auswahlen aus, bis ein
+    /// tragfähiger Ziel→Plan-Pfad existiert. Ein BEREITS gespeichertes
+    /// `.endurance`-Profil (aus dem kurzen P2.2-Zwischenstand, in dem es
+    /// waehlbar war) bleibt davon unberuehrt: `selectableInUI(current:)`
+    /// zeigt einen solchen Bestandswert weiterhin an, siehe dortiger
+    /// Kommentar — kein Auto-Rewrite auf `.hybrid`.
     case endurance
 
     public var label: String {
@@ -123,6 +127,43 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
         case .functional:  return "Alltagstaugliche Bewegungsmuster, Mobilität, kein reiner Kraft- oder Muskelfokus."
         case .endurance:   return "Aerobe Leistungsfähigkeit und Grundlagenausdauer steigern, lange ruhige Einheiten plus gezielte Tempoarbeit."
         }
+    }
+}
+
+public extension TrainingGoal {
+    /// Review-Korrektur nach P2.2: `.endurance` existiert im Core
+    /// (RawValue-Vertrag, Katalog-Anbindung, Lokalisierung) und ist ab
+    /// sofort GUELTIG, aber NOCH NICHT ueber die UI waehlbar — ein
+    /// tragfaehiger Ziel→Plan-Pfad (Ausdauerform Laufen/Radfahren/beides,
+    /// Laufcoach-Trennung, siehe docs/PLANUNG_BEGLEITUNG_AUDIT.md §5) ist
+    /// weder implementiert noch getestet. `OnboardingView`s Coaching-Style-
+    /// Schritt UND `ProfileEditorView`s Zielauswahl verwenden BEIDE diese
+    /// EINE Liste statt je einer eigenen Filterbedingung, die haetten
+    /// auseinanderlaufen koennen — ein Schalter an einer Stelle, sobald P3
+    /// den Pfad liefert.
+    ///
+    /// Lebt bewusst HIER im Core statt im SwiftUI-gated
+    /// `DomainEnums+Localization.swift` (frueherer Ort) — reine
+    /// `CaseIterable`-Filterung ohne jede SwiftUI-Abhaengigkeit, dadurch
+    /// echt auf Linux testbar statt nur syntaktisch geprueft.
+    static var currentlySelectableInUI: [TrainingGoal] {
+        allCases.filter { $0 != .endurance }
+    }
+
+    /// Nachbesserung (P2.3-Review): fuer einen Picker, der einen BEREITS
+    /// gespeicherten Wert anzeigen muss. Ein gespeichertes `.endurance` ist
+    /// KEIN hypothetischer Fall — der Wert war im P2.2-Zwischenstand kurz
+    /// waehlbar und bleibt unabhaengig davon ein gueltiger Core-/Importwert
+    /// (`UserBodyProfile.trainingGoal` decodiert jeden bekannten RawValue
+    /// verlustfrei, kein Auto-Rewrite auf `.hybrid`). Haengt `current` an
+    /// `currentlySelectableInUI` an, wenn er dort NICHT enthalten ist —
+    /// sonst zeigt ein `.menu`-Picker ohne passenden Tag-Eintrag keine
+    /// sinnvolle Auswahl statt des tatsaechlich gespeicherten Werts. Neue
+    /// Auswahl bleibt trotzdem gesperrt: nur der BEREITS gesetzte Wert wird
+    /// ergaenzt, nicht jeder sonst gesperrte Fall pauschal freigegeben.
+    static func selectableInUI(current: TrainingGoal) -> [TrainingGoal] {
+        let base = currentlySelectableInUI
+        return base.contains(current) ? base : base + [current]
     }
 }
 

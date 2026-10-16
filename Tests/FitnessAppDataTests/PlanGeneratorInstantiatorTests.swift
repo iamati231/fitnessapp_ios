@@ -294,5 +294,103 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         ))
         XCTAssertEqual(plan.targetEnvironment, .homeGym)
     }
+
+    // MARK: - P2.3: createPlan(for:) — EIN Einstiegspunkt statt vier Kopien
+
+    private func makeProfile(
+        environment: EnvironmentType = .gym,
+        equipmentProfile: UserEquipmentProfile = UserEquipmentProfile(),
+        equipmentProfileConfirmedComplete: Bool = false
+    ) -> UserBodyProfile {
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 180,
+            profile: .male,
+            goalWeightKg: 80,
+            environment: environment
+        )
+        profile.equipmentProfile = equipmentProfile
+        profile.equipmentProfileConfirmedComplete = equipmentProfileConfirmedComplete
+        context.insert(profile)
+        return profile
+    }
+
+    /// `createPlan(for:)` muss exakt dieselbe Aufloesung liefern wie die
+    /// vorher an vier Stellen unabhaengig kopierte Resolve+Build-Sequenz:
+    /// `environment` kommt vom Profil, nicht aus dem Equipment hergeleitet
+    /// (identische Garantie wie `testBuildUsesTheExplicitlyPassedEnvironmentNotAHardcodedGym`,
+    /// hier ueber den neuen konsolidierten Einstiegspunkt).
+    func testCreatePlanResolvesEnvironmentFromProfile() throws {
+        let profile = makeProfile(environment: .homeGym)
+        let plan = try XCTUnwrap(PlanGeneratorInstantiator.createPlan(
+            from: input([selection(.barbell, days: 2)]),
+            for: profile, generationSource: .cardioCoach, in: context
+        ))
+        XCTAssertEqual(plan.targetEnvironment, .homeGym)
+        XCTAssertEqual(plan.generationSource, .cardioCoach)
+    }
+
+    /// Gegenprobe zu `testBuildReturnsNilWhenGeneratorProducesNoDays`, ueber
+    /// den neuen Einstiegspunkt: ein leeres Generator-Ergebnis darf auch hier
+    /// nichts anlegen.
+    func testCreatePlanReturnsNilWhenGeneratorProducesNoDays() {
+        let profile = makeProfile()
+        XCTAssertNil(PlanGeneratorInstantiator.createPlan(
+            from: input([]), for: profile, generationSource: .manual, in: context
+        ))
+    }
+
+    // MARK: - P2.3: recalculate() schuetzt laufende Sessions
+
+    /// Nachbesserung (P2.3, Abnahme "keine Veraenderung laufender
+    /// Sessions"): ein Tag mit einer gerade LAUFENDEN (nicht abgeschlossenen)
+    /// Session darf von "neu rechnen" nicht angefasst werden, obwohl sein
+    /// Fingerprint (der nur die Plan-STRUKTUR beschreibt) unveraendert ist
+    /// und er die bestehende Fingerprint-Pruefung allein durchlaufen wuerde.
+    func testRecalculateSkipsDayWithActiveSession() throws {
+        let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
+        let workoutDays = plan.days.filter { $0.type != .rest }
+        XCTAssertEqual(workoutDays.count, 2)
+        let dayWithActiveSession = try XCTUnwrap(workoutDays.first)
+        let originalExerciseIDs = Set(dayWithActiveSession.activeExercises.map(\.persistentModelID))
+
+        let activeSession = WorkoutSession(isCompleted: false, day: dayWithActiveSession)
+        context.insert(activeSession)
+
+        let rewritten = PlanGeneratorInstantiator.recalculate(plan, in: context)
+        XCTAssertEqual(rewritten, 1, "nur der Tag OHNE laufende Session darf neu geschrieben werden")
+        XCTAssertEqual(
+            Set(dayWithActiveSession.activeExercises.map(\.persistentModelID)),
+            originalExerciseIDs,
+            "Tag mit laufender Session darf nicht angefasst werden, obwohl sein Fingerprint unveraendert ist"
+        )
+    }
+
+    /// Eine ABGESCHLOSSENE Session blockiert "neu rechnen" dagegen NICHT
+    /// (nur laufende) — und ihr `ExerciseLog` wird beim Ersetzen der
+    /// Uebungen nicht geloescht, nur die `.exercise`-Referenz verwaist
+    /// (`Exercise.exerciseLogs`-Relationship ist `.nullify`, nicht
+    /// `.cascade`). Belegt die Abnahme "keine Veraenderung historischer
+    /// Sessions" konkret, statt sie nur aus dem Schema zu behaupten.
+    func testRecalculateReplacesExercisesButPreservesHistoricalLog() throws {
+        let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 1)])))
+        let day = try XCTUnwrap(plan.days.first { $0.type != .rest })
+        let originalExercise = try XCTUnwrap(day.activeExercises.first)
+
+        let completedSession = WorkoutSession(isCompleted: true, day: day)
+        context.insert(completedSession)
+        let log = ExerciseLog(date: Date(), setIndex: 0, weight: 60, reps: 8, rir: 2.0,
+                               exercise: originalExercise, session: completedSession)
+        context.insert(log)
+
+        let rewritten = PlanGeneratorInstantiator.recalculate(plan, in: context)
+        XCTAssertEqual(rewritten, 1, "eine ABGESCHLOSSENE Session darf 'neu rechnen' nicht blockieren")
+
+        let survivingSessions = try context.fetch(FetchDescriptor<WorkoutSession>())
+        let survivingLogs = try context.fetch(FetchDescriptor<ExerciseLog>())
+        XCTAssertEqual(survivingSessions.count, 1, "historische Session darf nicht geloescht werden")
+        XCTAssertEqual(survivingLogs.count, 1, "historischer ExerciseLog darf nicht geloescht werden")
+        XCTAssertNil(survivingLogs.first?.exercise, "verwaist korrekt (nullify), statt die ersetzte Uebung zu behalten")
+    }
 }
 #endif

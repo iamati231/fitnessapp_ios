@@ -85,6 +85,13 @@ public struct ProfileEditorView: View {
     /// mit dem aktuellen Machbarkeits-Vorschlag.
     @State private var showingPlanAdjustSheet: Bool = false
 
+    /// Nachbesserung (P2.3, Abnahme "keine Duplikate bei mehrfacher
+    /// Bestaetigung"): schuetzt NUR den direkten "Uebernehmen"-Button in
+    /// `feasibilitySection` — der Pfad ueber `PlanBuilderView` ("Plan
+    /// anpassen") ist bereits durch dessen eigenen `isAdopting`-Schutz
+    /// abgedeckt. Gleiches Muster wie `PlansListView.isAcceptingCardioFeasibility`.
+    @State private var isAcceptingCardioFeasibility = false
+
     /// DEL-047: gehaltete `oldEnv`-Referenz fuer den Confirmation-Dialog. Wenn
     /// non-nil, wird der Dialog angezeigt; alle drei Dialog-Aktionen setzen
     /// das Feld wieder auf nil zurueck.
@@ -990,6 +997,8 @@ public struct ProfileEditorView: View {
                     // Re-Snapshot wuerde umgekehrt jede andere offene
                     // Formularaenderung mit bestaetigen (siehe
                     // `rebaselineCardioGoal()`-Dokumentation).
+                    guard !isAcceptingCardioFeasibility else { return }
+                    isAcceptingCardioFeasibility = true
                     withAnimation { _ = model.accept(profile: profile, in: modelContext) }
                     rebaselineCardioGoal()
                 } label: {
@@ -1000,6 +1009,7 @@ public struct ProfileEditorView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(Color.deltiqOrange)
+                .disabled(isAcceptingCardioFeasibility)
             }
             HStack(spacing: 20) {
                 if model.hasPlan {
@@ -1083,10 +1093,12 @@ public struct ProfileEditorView: View {
                     get: { profile.trainingGoal },
                     set: { profile.trainingGoal = $0 }
                 )) {
-                    // Review-Korrektur nach P2.2: `.endurance` ist noch
-                    // nicht ueber die UI waehlbar, siehe
-                    // `TrainingGoal.currentlySelectableInUI`.
-                    ForEach(TrainingGoal.currentlySelectableInUI, id: \.self) { goal in
+                    // Nachbesserung (P2.3-Review): `selectableInUI(current:)`
+                    // statt `currentlySelectableInUI` — ein bereits
+                    // gespeichertes `.endurance` (P2.2-Zwischenstand) bleibt
+                    // sichtbar/erhalten, auch wenn es fuer eine NEUE Auswahl
+                    // gesperrt ist. Siehe Kommentar dort.
+                    ForEach(TrainingGoal.selectableInUI(current: profile.trainingGoal), id: \.self) { goal in
                         Label {
                             Text(goal.localizedName)
                         } icon: {

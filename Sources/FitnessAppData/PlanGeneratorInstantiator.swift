@@ -10,6 +10,34 @@ import FitnessAppCore
 /// delegiert die eigentliche Insert-Arbeit an `ProgramInstantiator.instantiate`,
 /// statt sie zu duplizieren - so profitiert "Plan bauen" automatisch von
 /// jeder kuenftigen Aenderung an der Instanziierungs-Logik.
+///
+/// **P2.3 — die VIER sanktionierten Pfade, mit denen ein generierter/
+/// bestehender Plan die Datenbank beruehrt** (docs/PLANUNG_BEGLEITUNG_AUDIT.md):
+///   1. **Onboarding-Entwurf**: `PlanBuilderView(onGenerated:)` liefert
+///      `PlanGeneratorInput`/`PlanGenerator.Result` nur per Closure nach
+///      oben durch — KEIN Aufruf dieser Datei, also keine Persistenz, bis
+///      `OnboardingView.finishOnboarding()` tatsaechlich committet.
+///   2. **Neuen Plan erstellen**: `createPlan(from:for:generationSource:in:)`
+///      unten — EIN Einstiegspunkt fuer alle vier Aufrufer, die vorher je
+///      eigenstaendig `EquipmentPlanningResolver.resolve(...)` + `build(...)`
+///      kombiniert hatten (`OnboardingView.finishOnboarding`,
+///      `CardioFeasibilityCardModel.accept`/`.acceptCustom`,
+///      `PlanBuilderView.adoptPlan()`).
+///   3. **Bestehenden Plan kontrolliert aktualisieren**: `recalculate(_:in:)`
+///      unten — ersetzt NUR unangetastete Tage eines bereits persistierten
+///      Plans, niemals den Plan selbst.
+///   4. **Bewusst eine neue Kopie erstellen**: `PlansListView.duplicatePlan(_:)`
+///      — Tiefkopie mit `isActive = false`, der Nutzer entscheidet bewusst
+///      ueber die Umschaltung.
+///
+/// Alle vier Pfade speichern/instanziieren AUSSCHLIESSLICH die angefragte
+/// Operation. Keiner von ihnen schliesst ein Sheet, navigiert oder trifft
+/// eine Aktivierungs-Entscheidung UEBER das hinaus, was `ProgramInstantiator.
+/// instantiate` schon immer tut (Alt-Plaene deaktivieren, neuen Plan aktiv
+/// anlegen — unveraendertes, bestehendes Verhalten, keine neue Policy durch
+/// P2.3). Schliessen/Navigieren/Fehleranzeige bleiben Aufgabe des jeweiligen
+/// Aufrufers — der kennt seinen eigenen UI-Kontext (Sheet vs. Onboarding-
+/// Flow vs. Settings-Screen), diese Datei nicht.
 @MainActor
 public enum PlanGeneratorInstantiator {
 
@@ -126,6 +154,48 @@ public enum PlanGeneratorInstantiator {
         return plan
     }
 
+    /// P2.3 — der EINE Einstiegspunkt fuer "neuen generierten Plan
+    /// erstellen", der `EquipmentPlanningResolver.resolve(...)` + `build(...)`
+    /// buendelt. Ersetzt vier vorher unabhaengige Kopien derselben zwei
+    /// Zeilen in `OnboardingView.finishOnboarding`,
+    /// `CardioFeasibilityCardModel.accept`/`.acceptCustom` und
+    /// `PlanBuilderView.adoptPlan()` — genau die Kopien, die beim P2.1-Fix
+    /// einzeln nachgezogen werden mussten, weil es noch keine gemeinsame
+    /// Stelle dafuer gab.
+    ///
+    /// Nimmt bewusst ein komplettes `UserBodyProfile` statt vorab
+    /// aufgeloester `environment`/`equipmentProfile`-Werte entgegen: alle
+    /// vier Aufrufer haben an der Call-Site bereits ein konkretes Profil
+    /// (Parameter, `@Query`, oder — bei `OnboardingView` — das gerade erst
+    /// konstruierte, zu diesem Zeitpunkt schon vollstaendig befuellte
+    /// Profil). Das Finden/Fehlen eines Profils bleibt dadurch explizit
+    /// Verantwortung des Aufrufers (z.B. `PlanBuilderView`s eigener
+    /// `missingProfileErrorMessage`-Alert) — diese Funktion verlangt ein
+    /// gueltiges Profil als Voraussetzung, sie sucht/errät keins.
+    ///
+    /// Speichert/aktiviert NICHTS ueber `build(...)` (→ `ProgramInstantiator.
+    /// instantiate`) hinaus und schliesst/navigiert nirgendwohin — siehe
+    /// Typ-Dokumentation oben.
+    @discardableResult
+    public static func createPlan(
+        from input: PlanGeneratorInput,
+        result precomputed: PlanGenerator.Result? = nil,
+        for profile: UserBodyProfile,
+        generationSource: GenerationSource,
+        in context: ModelContext
+    ) -> TrainingPlan? {
+        let effectiveProfile = EquipmentPlanningResolver.resolve(
+            environment: profile.environment,
+            individualProfile: profile.equipmentProfile,
+            confirmedComplete: profile.equipmentProfileConfirmedComplete
+        ).effectiveProfile
+        return build(
+            from: input, in: context,
+            environment: profile.environment, equipmentProfile: effectiveProfile,
+            result: precomputed, generationSource: generationSource
+        )
+    }
+
     /// README 2.20 "neu rechnen": rechnet den am Plan gespeicherten
     /// `generatorInput` neu und ersetzt NUR Tage, deren Inhalt seit der
     /// letzten (Neu-)Erzeugung unveraendert ist - "ueberschreiben, aber nur
@@ -174,6 +244,19 @@ public enum PlanGeneratorInstantiator {
                   let generatedSpec = generatedBySequenceIndex[sequenceIndex] else { continue }
             guard day.generationFingerprint != nil,
                   day.generationFingerprint == day.currentContentFingerprint else { continue }
+            // Nachbesserung (P2.3, Abnahme "keine Veraenderung laufender
+            // Sessions"): Starten/Durchfuehren eines Workouts aendert weder
+            // `generationFingerprint` noch `currentContentFingerprint` (beide
+            // beschreiben nur die PLAN-STRUKTUR, nicht geloggte Saetze) — ein
+            // Tag mit einer gerade LAUFENDEN Session wuerde die obige Pruefung
+            // also unveraendert passieren. `apply(...)` loescht dann aber
+            // `day.activeExercises` und legt sie neu an; da
+            // `WorkoutSession.day` KEIN Inverse auf eine `TrainingDay.sessions`-
+            // Collection hat, kann eine aktive Session diese Neuanlage nicht
+            // selbst bemerken und wuerde mit verwaisten/ausgetauschten
+            // Exercise-Referenzen weiterlaufen. Deshalb hier zusaetzlich
+            // explizit uebersprungen, bis der Nutzer die Session beendet hat.
+            guard !hasActiveSession(for: day, in: context) else { continue }
             apply(
                 generatedSpec,
                 to: day,
@@ -199,6 +282,23 @@ public enum PlanGeneratorInstantiator {
     /// trotzdem ALLE Uebungen geloescht, riesse das genau die archivierten
     /// Originale mit, auf die `PlanEnvironmentMigrator.restoreOriginals`
     /// beim Verlassen des Urlaubs-Modus angewiesen ist.
+    /// Nachbesserung (P2.3): simple, erprobte Abfrage-Form — EIN proven-
+    /// safe `#Predicate` (identische Form wie `DashboardView.openSessions`/
+    /// `DayEditorView.openSessions`), der Day-Abgleich laeuft bewusst als
+    /// simpler Swift-`contains`-Filter IM SPEICHER statt als Relationship-
+    /// Vergleich INNERHALB des Predicate-Makros — letzteres laesst sich auf
+    /// diesem Linux-Toolchain nicht kompilieren/pruefen (SwiftData fehlt
+    /// komplett), ein moeglicher Makro-Fehler wuerde also erst im
+    /// Apple-Build auffallen. Diese Form haelt das Risiko auf den bereits
+    /// anderswo bewaehrten Predicate-Ausschnitt begrenzt.
+    private static func hasActiveSession(for day: TrainingDay, in context: ModelContext) -> Bool {
+        let descriptor = FetchDescriptor<WorkoutSession>(
+            predicate: #Predicate<WorkoutSession> { $0.isCompleted == false }
+        )
+        let openSessions = (try? context.fetch(descriptor)) ?? []
+        return openSessions.contains { $0.day?.persistentModelID == day.persistentModelID }
+    }
+
     private static func apply(
         _ spec: DaySpec,
         to day: TrainingDay,

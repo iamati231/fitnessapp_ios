@@ -1684,7 +1684,7 @@ public struct OnboardingView: View {
                 Label(primaryActionTitle, systemImage: primaryActionIcon)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(!canAdvance)
+            .disabled(!canAdvance || isFinishingOnboarding)
         }
     }
 
@@ -1805,8 +1805,22 @@ public struct OnboardingView: View {
 
     // MARK: - Finish + save
 
+    /// Nachbesserung (P2.3): Doppel-Tap-/Doppel-Ausloesung-Schutz fuer
+    /// `finishOnboarding()`, siehe dortige Doku.
+    @State private var isFinishingOnboarding = false
+
     private func finishOnboarding() {
         guard let heightCm, let currentWeightKg else { return }
+        // Nachbesserung (P2.3, Abnahme "keine Duplikate bei mehrfacher
+        // Bestaetigung"): `finishOnboarding()` ist synchron (Profil +
+        // Messung + optionaler Plan, alles ohne `await`) und hat ZWEI
+        // Ausloeser — den Haupt-Button (`handlePrimaryAction`, dort zusaetzlich
+        // ueber `.disabled` gesperrt) UND `DayPickerSheet.onConfirm`. Der
+        // Schutz sitzt deshalb HIER, nicht nur an einem der beiden Buttons,
+        // damit wirklich jede doppelte Ausloesung abgefangen wird, egal
+        // welcher Pfad sie ausloest.
+        guard !isFinishingOnboarding else { return }
+        isFinishingOnboarding = true
         let age = Calendar.current.dateComponents([.year], from: birthDate, to: Date()).year ?? 0
 
         // 1) UserBodyProfile. DEL-101: Coaching-Style + TrainingGoal werden
@@ -1920,14 +1934,16 @@ public struct OnboardingView: View {
             // Sheet vorberechnete Result wird 1:1 uebernommen (nicht neu
             // gerechnet) — sonst wiche der instanziierte Plan von der im
             // Wizard zuletzt gezeigten Vorschau ab (siehe PlanGeneratorInstantiatorTests).
-            // Audit-Korrektur P2.1: derselbe `environment`/`equipmentPlanningContext`
-            // wie der Template-Pfad direkt oberhalb — vorher setzte
-            // `makeTemplate` hier `.gym` hartcodiert, unabhaengig vom
-            // tatsaechlich im Onboarding gewaehlten Trainingsort.
-            PlanGeneratorInstantiator.build(
-                from: customPlanInput, in: modelContext,
-                environment: environment, equipmentProfile: equipmentPlanningContext.effectiveProfile,
-                result: customPlanResult, generationSource: .planBuilder
+            // Nachbesserung (P2.3): `createPlan(for:)` statt der vorher hier
+            // separat stehenden Resolve+Build-Sequenz. `profile` ist exakt
+            // hier bereits mit `environment`/`equipmentProfile`/
+            // `equipmentProfileConfirmedComplete` befuellt (siehe oben,
+            // Schritt 1) — identische Werte wie das vorherige
+            // `equipmentPlanningContext.effectiveProfile`, nur einmalig statt
+            // separat aufgeloest.
+            PlanGeneratorInstantiator.createPlan(
+                from: customPlanInput, result: customPlanResult,
+                for: profile, generationSource: .planBuilder, in: modelContext
             )
         }
 

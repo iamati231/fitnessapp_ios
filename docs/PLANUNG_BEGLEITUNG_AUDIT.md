@@ -1154,3 +1154,153 @@ Berichtseintrag.
 **Nächste Aufgabe:** P2.3 (gemeinsamer Adopt-Pfad) — darf wie vorgegeben parallel zu allem oben
 laufen. Apple-Build und die betroffenen SwiftData-/UI-Tests bleiben für P1, P2.1 und diese
 Nachbesserung gemeinsam offen, bis ein echter Lauf vorliegt.
+
+## P2.3-Abschlussbericht (gemeinsamer Adopt-Pfad)
+
+**Paket:** P2.3 — vier bisher unabhängig geschriebene Resolve+Build-Kopien
+(`OnboardingView.finishOnboarding`, `CardioFeasibilityCardModel.accept`/`.acceptCustom`,
+`PlanBuilderView.adoptPlan()`) auf EINEN gemeinsamen Einstiegspunkt konsolidiert. Zusätzlich
+parallel erledigt: Picker-Fix für ein bestehendes `.endurance`-Profil (eigener Abschnitt unten).
+
+**Vorab geklärt — vier bewusst unterschiedene Pfade, keine Vereinheitlichung zu einem einzigen
+generischen "Adopt":**
+1. **Onboarding-Entwurf** (`PlanBuilderView(onGenerated:)`): unverändert — liefert
+   `PlanGeneratorInput`/`PlanGenerator.Result` nur per Closure zurück, ruft nichts aus
+   `PlanGeneratorInstantiator` auf. Persistenz passiert ausschließlich in `finishOnboarding()`.
+   Verifiziert durch Code-Lesen: der `onGenerated`-Zweig in `adoptPlan()` kehrt vor jedem
+   Datenbankzugriff zurück.
+2. **Neuen Plan erstellen**: neues `PlanGeneratorInstantiator.createPlan(from:result:for:
+   generationSource:in:)` — bündelt die vorher vierfach kopierte
+   `EquipmentPlanningResolver.resolve(...)`+`build(...)`-Sequenz an einer Stelle. Nimmt bewusst ein
+   `UserBodyProfile` entgegen statt vorab aufgelöster Werte — das Finden/Fehlen eines Profils bleibt
+   Verantwortung des Aufrufers (z.B. `PlanBuilderView`s `missingProfileErrorMessage`-Alert aus der
+   letzten Nachbesserung), die Funktion selbst sucht/errät kein Profil.
+3. **Bestehenden Plan kontrolliert aktualisieren**: `PlanGeneratorInstantiator.recalculate(_:in:)` —
+   unverändert in seiner Kernlogik (nur unangetastete Tage), zusätzlich um einen Schutz gegen
+   laufende Sessions ergänzt (siehe unten).
+4. **Bewusst eine neue Kopie erstellen**: `PlansListView.duplicatePlan(_:)` — unverändert, nur mit
+   Querverweis-Kommentar versehen. Bewusst NICHT in den Service verschoben: es gibt dort nur eine
+   einzige Implementierung, ein Umzug wäre Umbau ohne behobene Duplikation.
+
+**Implementiert:**
+- `PlanGeneratorInstantiator.createPlan(from:result:for:generationSource:in:)` (neu) — löst
+  Equipment einmal über `EquipmentPlanningResolver.resolve(...)` auf und delegiert an das
+  bestehende `build(...)`. Ersetzt die separaten Resolve+Build-Sequenzen in allen vier Aufrufern.
+- `CardioFeasibilityCardModel.accept`/`.acceptCustom`: rufen jetzt `createPlan(for:)` statt der
+  bisherigen Inline-Sequenz. Rückgabetyp/Verhalten für deren eigene Aufrufer unverändert.
+- `PlanBuilderView.adoptPlan()`: eigenständiger Zweig ruft `createPlan(for:)`; die jetzt überflüssige
+  eigene `equipmentPlanningContext`-Berechnung wurde entfernt (totes Duplikat nach der Umstellung).
+- `OnboardingView.finishOnboarding()`: Custom-Plan-Zweig ruft `createPlan(for:)` mit dem gerade
+  erst angelegten, zu diesem Zeitpunkt bereits vollständig befüllten `profile` — identische Werte
+  wie das vorherige `equipmentPlanningContext.effectiveProfile`, nur einmalig statt separat
+  aufgelöst. Der Template-Zweig (`ProgramInstantiator.instantiate` mit `ResolvedPlanSelection`)
+  ist NICHT Teil dieser Konsolidierung — andere Mechanik, nicht einer der vier ursprünglich
+  genannten Call-Sites.
+- **Verantwortungs-Vertrag festgelegt** (Typ-Dokumentation in `PlanGeneratorInstantiator.swift`):
+  keiner der vier Pfade speichert/aktiviert/schließt/navigiert über das hinaus, was
+  `ProgramInstantiator.instantiate` schon immer als Seiteneffekt hatte (alte Pläne deaktivieren,
+  neuen Plan aktiv anlegen — unverändertes Bestandsverhalten, keine neue Policy). Schließen,
+  Navigieren und Fehleranzeige bleiben explizit beim jeweiligen Aufrufer.
+- **Doppel-Bestätigung-Schutz** (Abnahme-Punkt "keine Duplikate bei mehrfacher Bestätigung"): fünf
+  neue `@State`-Flags mit Guard-am-Funktionsanfang + `.disabled(...)`, da alle beteiligten Aktionen
+  synchron ohne `await` laufen und ein zweiter Tap vor der sichtbaren UI-Reaktion sonst doppelt
+  ausgelöst hätte:
+  - `PlanBuilderView.isAdopting` — deckt sowohl den eigenständigen Adopt- als auch (da derselbe
+    Button) den `onGenerated`/`acceptCustom`-Weg über "Plan anpassen"-Sheets ab.
+  - `OnboardingView.isFinishingOnboarding` — sitzt IN `finishOnboarding()` selbst, weil die
+    Funktion zwei unabhängige Auslöser hat (Haupt-Button UND `DayPickerSheet.onConfirm`).
+  - `PlansListView.isAcceptingCardioFeasibility` / `ProfileEditorView.isAcceptingCardioFeasibility`
+    — je eine Instanz für den jeweils eigenen direkten "Übernehmen"-Button (der NICHT über
+    `PlanBuilderView` läuft, daher ein eigener Schutz nötig).
+- **Schutz laufender Sessions in `recalculate`** (Abnahme-Punkt "keine Veränderung laufender
+  Sessions", beim Umsetzen gefunden, nicht vorab bekannt): Starten/Ausführen eines Workouts ändert
+  weder `generationFingerprint` noch `currentContentFingerprint` (beide beschreiben nur die
+  Plan-STRUKTUR) — ein Tag mit einer laufenden Session hätte die bisherige Prüfung also
+  unverändert durchlaufen, woraufhin `apply(...)` seine Exercise-Zeilen gelöscht und neu angelegt
+  hätte. Neuer Guard `hasActiveSession(for:in:)` (einfacher, bereits anderswo bewährter
+  `#Predicate<WorkoutSession> { $0.isCompleted == false }` + Swift-seitiger `day`-Abgleich über
+  `persistentModelID`, bewusst KEIN Relationship-Vergleich innerhalb des Predicate-Makros selbst —
+  dessen Korrektheit ließe sich auf diesem Linux-Toolchain nicht prüfen) überspringt einen solchen
+  Tag jetzt zusätzlich.
+
+**Bewusst NICHT umgesetzt (wie vorgegeben):** `duplicatePlan` nicht in den Service verschoben
+(siehe oben); keine neue, fünfte Persistenz-Variante; kein neuer `PlanMatchmaker`-Scoring-Bonus,
+keine neue `ExerciseSubstitutionRules`-Ausnahme. Task #194 (Equipment-Substitution für generierte
+Pläne) bleibt unverändert offen — P2.3 hat daran nichts repariert oder verschoben, die Lücke ist
+weiterhin sichtbar und nachverfolgt.
+
+**Geänderte Komponenten:** `Sources/FitnessAppData/PlanGeneratorInstantiator.swift` (`createPlan`,
+`recalculate`-Guard, `hasActiveSession`), `Sources/FitnessAppUI/Cardio/CardioFeasibilityCardModel.swift`,
+`Sources/FitnessAppUI/Workout/PlanBuilderView.swift`, `Sources/FitnessAppUI/OnboardingView.swift`,
+`Sources/FitnessAppUI/Workout/PlansListView.swift` (Doppel-Tap-Schutz + Querverweis-Kommentare),
+`Sources/FitnessAppUI/Settings/ProfileEditorView.swift` (Doppel-Tap-Schutz).
+
+**Neue/geänderte Datenfelder:** keine — reine Verdrahtungs-/Schutz-Korrektur, keine
+SwiftData-Schema-Änderung.
+
+**Tests hinzugefügt:** `Tests/FitnessAppDataTests/PlanGeneratorInstantiatorTests.swift`:
+`testCreatePlanResolvesEnvironmentFromProfile`, `testCreatePlanReturnsNilWhenGeneratorProducesNoDays`
+(neuer Einstiegspunkt, gleiche Garantien wie die bestehenden `build`-Tests),
+`testRecalculateSkipsDayWithActiveSession` (neuer Session-Schutz: ein Tag mit laufender Session
+bleibt unverändert, der andere wird normal neu geschrieben), `testRecalculateReplacesExercisesButPreservesHistoricalLog`
+(eine ABGESCHLOSSENE Session blockiert NICHT, aber ihr `ExerciseLog` überlebt das Ersetzen der
+Übungen — Referenz wird `nil`, nicht die Zeile gelöscht).
+
+**Tests tatsächlich ausgeführt — WICHTIG, anders als bei P2.1/P2.2: P2.3 berührt KEINE einzige
+Core-Datei.** Jede Änderung dieses Pakets liegt in `FitnessAppData`/`FitnessAppUI` — beide
+Dateien UND beide neuen Testdateien stehen hinter `#if canImport(SwiftData)`
+(teils zusätzlich `canImport(SwiftUI)`) und werden auf diesem Linux-Toolchain NICHT geparst/
+typgeprüft (nachweislich: `swift build`/`swift build --build-tests` melden "Build complete", aber
+`import SwiftData` schlägt separat nachweislich mit "no such module 'SwiftData'" fehl — ein
+inaktiver `#if`-Zweig wird vom Compiler nur auf gültige Tokens, NIE auf Typkorrektheit geprüft).
+Insbesondere UNGEPRÜFT: die exakten Parameternamen/-typen von `WorkoutSession.init`/
+`ExerciseLog.init`/`UserBodyProfile.init` (gegen den tatsächlichen Dateiinhalt abgeschrieben, aber
+nicht kompiliert), die Korrektheit des neuen `#Predicate`-Ausdrucks in `hasActiveSession`, und ob
+`createPlan(for:)`s Signatur an allen vier Aufrufstellen wirklich passt. Einzige echte
+Linux-Verifikation in dieser Runde bleibt das bereits separat berichtete `CoachingTypesTests`
+(Picker-Fix, Core). Vollständiger Lauf `swift test` — **1023/1023 grün** (1020 + die 3 neuen
+`CoachingTypesTests` aus dem Picker-Fix), keine Regression unter den tatsächlich ausgeführten
+Tests — das ist kein Nachweis für P2.3 selbst.
+
+**Apple-Build/CI:** nicht durchgeführt — offen, und für dieses Paket mit HÖHEREM Gewicht als
+üblich: anders als P2.1/P2.2 gibt es hier keinen Core-Anteil, der die Grundmechanik bereits absichert.
+Der `#Predicate`/`persistentModelID`-Ausdruck in `hasActiveSession` ist die riskanteste einzelne
+neue Zeile dieser Runde.
+
+**UI-/Geräteprüfung:** nicht durchgeführt — offen. Insbesondere zu prüfen:
+1. Doppel-Tap auf "Plan übernehmen"/"Fertig"/"Übernehmen" erzeugt tatsächlich nur einen Plan.
+2. "Neu rechnen" an einem Tag mit laufendem (gestartetem, nicht beendetem) Workout überspringt
+   diesen Tag tatsächlich und zeigt dem Nutzer das nachvollziehbar an (aktuell: stiller Skip, keine
+   eigene UI-Meldung dafür — offene Frage, ob das reicht oder ein Hinweis noetig ist, siehe Grenzen).
+3. Alle vier Aufrufer von `createPlan(for:)` erzeugen weiterhin denselben `targetEnvironment`/
+   `isActive`-Zustand wie vor der Umstellung (Verhaltensgleichheit, kein Soll-Ist-Vergleich bisher
+   auf echtem Gerät gemacht).
+
+**Bekannte Grenzen/Risiken:**
+1. `recalculate` zeigt dem Nutzer aktuell KEINE explizite Meldung, wenn ein Tag wegen einer
+   laufenden Session übersprungen wird — er sieht nur, dass "neu rechnen" für diesen Tag scheinbar
+   nichts getan hat. Bewusst nicht zusätzlich gebaut (kein UI-Entry-Point für "neu rechnen"
+   überhaupt im aktuellen Scope verifiziert, siehe Punkt 2 unten) — eine eigene Aufgabe, falls
+   gewünscht.
+2. Code-Lesen zeigt `PlanGeneratorInstantiator.recalculate` als vollständig implementiert, aber
+   KEINEN verifizierten UI-Button, der es aufruft, außer dem bereits bestehenden Verweis in
+   `PlanEditorView.swift:386` (nicht Teil dieser Änderung, nur mitgelesen) — ob "neu rechnen" heute
+   tatsächlich erreichbar ist und wie, wurde in dieser Runde nicht erneut end-to-end geprüft.
+3. Atomizität ("keine unvollständigen Änderungen bei Fehlern"): `ProgramInstantiator.instantiate`
+   läuft synchron ohne Rücksprung nach `context.insert(plan)`, bis alle Tage/Übungen angelegt sind
+   (verifiziert durch Lesen) — strukturell atomar auf Code-Ebene. Echte Persistenz-Atomizität
+   (Absturz zwischen zwei `context.insert`-Aufrufen vor dem naechsten Autosave) ist
+   SwiftData-Framework-Verhalten, außerhalb der Kontrolle dieses Codes, und auf Linux nicht
+   prüfbar.
+4. Die fünf Doppel-Tap-Guards sind einfache `@State`-Flags, kein Test kann einen echten
+   Doppel-Tap auf Linux simulieren (kein SwiftUI) — die Abnahme-Garantie dafür ist Code-Review-
+   Qualität, keine automatisierte.
+5. Task #194 (Equipment-Substitution) bleibt unverändert offen — explizit sichtbar gehalten, wie
+   gefordert.
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
+Berichtseintrag.
+
+**Nächste Aufgabe:** P2.4 (Fixierungs-Flag im Builder-Draft, `PlanBuilderView`) — hängt von P2.3
+ab (jetzt erledigt). Apple-Build und Geräteprüfung bleiben für P1, P2.1, die Nachbesserung und
+P2.3 gemeinsam offen, bis ein echter Lauf vorliegt.

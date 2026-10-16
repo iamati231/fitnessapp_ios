@@ -113,19 +113,12 @@ public struct CardioFeasibilityCardModel {
               let raceDate = profile.cardioRaceDate,
               let weeklyVolume = profile.weeklyBaseVolumeKm
         else { return nil }
-        // Audit-Korrektur P2.1: expliziter Trainingsort + effektives
-        // Equipment-Profil statt des vorherigen `.gym`-Hardcodes in
-        // `PlanGeneratorInstantiator.makeTemplate` — dieselbe Aufloesung
-        // (EquipmentPlanningResolver) wie OnboardingView/ProgramTemplatePickerView.
-        let effectiveProfile = EquipmentPlanningResolver.resolve(
-            environment: profile.environment,
-            individualProfile: profile.equipmentProfile,
-            confirmedComplete: profile.equipmentProfileConfirmedComplete
-        ).effectiveProfile
-        let plan = PlanGeneratorInstantiator.build(
-            from: planInput, in: context,
-            environment: profile.environment, equipmentProfile: effectiveProfile,
-            result: planResult, generationSource: .cardioCoach
+        // Nachbesserung (P2.3): `createPlan(for:)` buendelt die vorher hier
+        // inline stehende Resolve+Build-Sequenz (siehe dortige Doku) — ein
+        // Aufruf statt vier unabhaengiger Kopien derselben zwei Zeilen.
+        let plan = PlanGeneratorInstantiator.createPlan(
+            from: planInput, result: planResult,
+            for: profile, generationSource: .cardioCoach, in: context
         )
         profile.cardioGoal = proposedGoal
         profile.cardioFeasibilityDismissedFingerprint = CardioFeasibilityCalculator.suppressionFingerprint(
@@ -163,16 +156,10 @@ public struct CardioFeasibilityCardModel {
         in context: ModelContext
     ) -> TrainingPlan? {
         guard !result.days.isEmpty else { return nil }
-        // Audit-Korrektur P2.1: siehe `accept(profile:in:)` oben.
-        let effectiveProfile = EquipmentPlanningResolver.resolve(
-            environment: profile.environment,
-            individualProfile: profile.equipmentProfile,
-            confirmedComplete: profile.equipmentProfileConfirmedComplete
-        ).effectiveProfile
-        let plan = PlanGeneratorInstantiator.build(
-            from: input, in: context,
-            environment: profile.environment, equipmentProfile: effectiveProfile,
-            result: result, generationSource: .cardioCoach
+        // Nachbesserung (P2.3): siehe `accept(profile:in:)` oben.
+        let plan = PlanGeneratorInstantiator.createPlan(
+            from: input, result: result,
+            for: profile, generationSource: .cardioCoach, in: context
         )
         profile.cardioFeasibilityDismissedFingerprint = fingerprint
         return plan

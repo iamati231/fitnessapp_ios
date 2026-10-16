@@ -34,6 +34,15 @@ public struct PlansListView: View {
 
     @State private var showingTemplatePicker = false
     @State private var showingPlanBuilder = false
+
+    /// Nachbesserung (P2.3, Abnahme "keine Duplikate bei mehrfacher
+    /// Bestaetigung"): `CardioFeasibilityCardModel.accept(profile:in:)` ist
+    /// synchron, ohne `await` — schuetzt NUR den direkten "Uebernehmen"-
+    /// Button in `cardioFeasibilitySection`. Der Pfad ueber `PlanBuilderView`
+    /// ("Plan anpassen") ist bereits durch dessen eigenen `isAdopting`-Schutz
+    /// abgedeckt (derselbe Button loest dort sowohl Adopt als auch diese
+    /// Closure aus).
+    @State private var isAcceptingCardioFeasibility = false
     /// Nachtrag "Plan anpassen": eigener Zustand, NICHT `showingPlanBuilder`
     /// wiederverwenden - der haengt am Plus-Menue mit leerem Wizard-Start,
     /// hier soll er mit dem Machbarkeits-Vorschlag vorbefuellt oeffnen.
@@ -238,6 +247,8 @@ public struct PlansListView: View {
             // behalten" folgen als gleichrangiges, leiseres Paar darunter.
             if model.hasPlan {
                 Button {
+                    guard !isAcceptingCardioFeasibility else { return }
+                    isAcceptingCardioFeasibility = true
                     withAnimation {
                         let plan = model.accept(profile: profile, in: modelContext)
                         if let plan {
@@ -252,6 +263,7 @@ public struct PlansListView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(Color.deltiqOrange)
+                .disabled(isAcceptingCardioFeasibility)
             }
             HStack(spacing: 20) {
                 if model.hasPlan {
@@ -423,6 +435,13 @@ public struct PlansListView: View {
 
     // MARK: Actions
 
+    /// P2.3: einer der vier sanktionierten Pfade, mit denen ein Plan die
+    /// Datenbank beruehrt (siehe `PlanGeneratorInstantiator`-Typ-Doku) — hier
+    /// "Neuen (leeren) Plan erstellen", ohne Generator/Template. Nutzt
+    /// bewusst KEINE eigene Aktivierungs-Logik aus `ProgramInstantiator`
+    /// (direkter Insert statt `instantiate`), da ein leerer Plan keine
+    /// Tage/Uebungen hat, die dessen Wochentag-/Equipment-Aufloesung
+    /// braeuchten.
     private func createNewPlan() {
         let plan = TrainingPlan(
             name: TrainingPlan.blankPlanName,
@@ -443,6 +462,12 @@ public struct PlansListView: View {
         }
     }
 
+    /// P2.3: einer der vier sanktionierten Pfade (siehe
+    /// `PlanGeneratorInstantiator`-Typ-Doku) — "Bewusst eine neue Kopie
+    /// erstellen". Bewusst NICHT in den dortigen Service verschoben: es gibt
+    /// hier nur EINE Implementierung (nichts zu konsolidieren), ein Umzug
+    /// waere Umbau ohne behobene Duplikation.
+    ///
     /// DEL-070: Tiefkopie des Plans inkl. Tagen, Uebungen und allen
     /// Trainings-Parametern. Die Kopie startet als `isActive = false`
     /// (User soll bewusst entscheiden, ob er auf die Variante umschaltet)

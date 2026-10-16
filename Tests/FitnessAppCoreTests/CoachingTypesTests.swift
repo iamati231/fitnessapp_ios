@@ -50,6 +50,33 @@ final class CoachingTypesTests: XCTestCase {
         XCTAssertEqual(TrainingGoal.weightLoss.rawValue, "weightLoss")
     }
 
+    /// P2.1/P2.2-Nachbesserung Punkt 3: `.endurance` bleibt im Core gueltig,
+    /// ist aber bis zu einem echten Ziel→Plan-Pfad (P3) aus neuen UI-Picker-
+    /// Auswahlen ausgeblendet. Alle anderen fuenf Faelle muessen weiterhin
+    /// waehlbar sein — ein zu breiter Filter wuerde das hier sofort zeigen.
+    func testCurrentlySelectableInUIExcludesOnlyEndurance() {
+        XCTAssertFalse(TrainingGoal.currentlySelectableInUI.contains(.endurance))
+        let expectedSelectable = TrainingGoal.allCases.filter { $0 != .endurance }
+        XCTAssertEqual(TrainingGoal.currentlySelectableInUI, expectedSelectable)
+    }
+
+    /// P2.3-Nachbesserung: ein bereits gespeichertes `.endurance`-Profil ist
+    /// kein hypothetischer Fall (kurz waehlbar im P2.2-Zwischenstand, bleibt
+    /// gueltiger Core-/Importwert) und muss in einem Picker weiterhin
+    /// auftauchen, auch wenn es fuer eine NEUE Auswahl gesperrt bleibt.
+    func testSelectableInUIKeepsAlreadyStoredEndurance() {
+        let options = TrainingGoal.selectableInUI(current: .endurance)
+        XCTAssertTrue(options.contains(.endurance), "ein bestehendes .endurance-Profil muss im Picker sichtbar bleiben")
+        XCTAssertEqual(options.count, TrainingGoal.currentlySelectableInUI.count + 1, "darf kein Duplikat erzeugen")
+    }
+
+    /// Gegenprobe: fuer einen bereits regulaer waehlbaren Wert darf
+    /// `selectableInUI` die Liste NICHT veraendern (kein verstecktes
+    /// Duplikat, keine Nebenwirkung fuer den Normalfall).
+    func testSelectableInUIIsUnchangedForRegularGoal() {
+        XCTAssertEqual(TrainingGoal.selectableInUI(current: .hybrid), TrainingGoal.currentlySelectableInUI)
+    }
+
     /// Tonfall-Cases muessen alle ein Label, ein SF-Symbol und einen
     /// Beschreibungstext liefern — sonst zerschiesst es die OnboardingCard
     /// (leere Subtitle-Zeile).

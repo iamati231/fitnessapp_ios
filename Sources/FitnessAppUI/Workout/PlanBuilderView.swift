@@ -102,6 +102,15 @@ public struct PlanBuilderView: View {
     /// sichtbar, identisches Muster wie `SettingsView.resetErrorMessage`.
     @State private var missingProfileErrorMessage: String?
 
+    /// Nachbesserung (P2.3, Abnahme "keine Duplikate bei mehrfacher
+    /// Bestaetigung"): `adoptPlan()` ist synchron, ohne `await` — ein
+    /// zweiter Tap auf "Plan uebernehmen", bevor `dismiss()` den Sheet
+    /// tatsaechlich schliesst, wuerde sonst ein zweites Mal instanziieren
+    /// (bzw. im `onGenerated`-Pfad die Closure zweimal feuern). Deckt BEIDE
+    /// Zweige von `adoptPlan()` ab (Onboarding-Callback UND eigenstaendiges
+    /// Erstellen), da der Button in `navigationBar` fuer beide derselbe ist.
+    @State private var isAdopting = false
+
     public var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -588,25 +597,6 @@ public struct PlanBuilderView: View {
         )
     }
 
-    /// Audit-Korrektur (Review nach P2.1): `nil`, wenn (noch) kein Profil
-    /// existiert — KEINE stille `?? .gym`/`?? UserEquipmentProfile()`-
-    /// Annahme mehr. `PlanBuilderView` wird zwar normalerweise nur innerhalb
-    /// der bereits onboarded App erreicht (gleiche Grundannahme wie
-    /// `ProgramTemplatePickerView`), aber "normalerweise" ist keine
-    /// Garantie — `adoptPlan()` behandelt `nil` unten als expliziten
-    /// Fehlerzustand statt einen erfundenen Trainingsort zu instanziieren.
-    /// Sobald ein Profil existiert, EINE Berechnung wie
-    /// `ProgramTemplatePickerView`/`OnboardingView`
-    /// (`EquipmentPlanningResolver`, Smart-Onboarding-Epic Phase 6).
-    private var equipmentPlanningContext: EquipmentPlanningContext? {
-        guard let profile = profiles.first else { return nil }
-        return EquipmentPlanningResolver.resolve(
-            environment: profile.environment,
-            individualProfile: profile.equipmentProfile,
-            confirmedComplete: profile.equipmentProfileConfirmedComplete
-        )
-    }
-
     /// `shuffle`: Bugfix (Nutzer-Feedback) - der erste Aufruf beim Betreten
     /// von Schritt 3 (`goToNextStep`/`.onAppear`) bleibt bewusst
     /// deterministisch (Default `false`), nur der explizite "Neu rechnen"-
@@ -768,7 +758,7 @@ public struct PlanBuilderView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(result?.days.isEmpty ?? true)
+                .disabled((result?.days.isEmpty ?? true) || isAdopting)
             } else {
                 Button {
                     goToNextStep()
@@ -807,6 +797,10 @@ public struct PlanBuilderView: View {
         // gemeinsame Absicherung fuer BEIDE Pfade unten.
         guard let result else { return }
 
+        // Nachbesserung (P2.3): Doppel-Tap-Schutz, siehe `isAdopting`-Doku.
+        guard !isAdopting else { return }
+        isAdopting = true
+
         // DEL-243: siehe Typ-Doku - `onGenerated`
         // uebernimmt hier NICHT das Instanziieren, sondern reicht Input +
         // Ergebnis nur nach oben durch. Der Aufrufer schliesst den Sheet
@@ -822,17 +816,22 @@ public struct PlanBuilderView: View {
         // ist nur im eigenstaendigen Modus (`onGenerated == nil`) erreichbar —
         // der Onboarding-Callback-Pfad oben ist bereits vorher zurueckgekehrt
         // und braucht kein Profil.
-        guard let profile = profiles.first, let equipmentPlanningContext else {
+        guard let profile = profiles.first else {
             missingProfileErrorMessage = String(localized: "planBuilder.error.noProfile.message", bundle: .module)
+            isAdopting = false
             return
         }
 
-        guard let plan = PlanGeneratorInstantiator.build(
-            from: currentInput, in: modelContext,
-            environment: profile.environment,
-            equipmentProfile: equipmentPlanningContext.effectiveProfile,
-            result: result, generationSource: .planBuilder
-        ) else { return }
+        // Nachbesserung (P2.3): `createPlan(for:)` buendelt Equipment-
+        // Aufloesung + `build(...)` an einer Stelle statt hier erneut
+        // `equipmentPlanningContext` separat abzufragen — siehe dortige Doku.
+        guard let plan = PlanGeneratorInstantiator.createPlan(
+            from: currentInput, result: result,
+            for: profile, generationSource: .planBuilder, in: modelContext
+        ) else {
+            isAdopting = false
+            return
+        }
         dismiss()
         // Gleiches 0.3s-Defer-Muster wie `ProgramTemplatePickerView.instantiate`
         // - gibt der Sheet-Dismiss-Animation Zeit, bevor der Navigations-Stack
