@@ -2738,3 +2738,96 @@ Berichtseintrag.
 **Nächste Aufgabe:** Fix-Commit pushen, User bittet erneut um einen Apple-Testlauf (Codemagic) fuer
 genau diesen Commit, Ergebnis der betroffenen vier Tests abwarten. Task #197 bleibt `in_progress`
 bis diese Bestaetigung vorliegt. Keine weitere Erweiterung ueber diese beiden Fixes hinaus.
+
+## Commit 6300fbf real auf Apple-Hardware bestaetigt, zwei weitere echte Geraete-Befunde (935e0f6, 73fa31a), TestingBot/WebDriverAgent-Grenzen dokumentiert
+
+**Auslöser:** User stellt `TESTINGBOT_KEY`/`TESTINGBOT_SECRET` und spaeter `CODEMAGIC_API_TOKEN` als
+Environment-Secrets bereit. Drei nacheinander gestartete Hilfs-Sessions (neue Umgebungsvariablen
+werden erst in einem neuen Container sichtbar) plus diese Hauptsession selbst arbeiten die vom User
+in der vierten Korrekturrunde verlangte "getrennte, konkrete" Verifikation ab.
+
+**1. Zwei falsche TestingBot-App-IDs entlarvt.** Zwei vom User genannte Storage-IDs
+(`tb://ba636a4d7c3e43478373100b`, `tb://a76ddd7b6031ff7302cbc360`) wurden heruntergeladen und per
+SHA256 verglichen: beide byte-identisch mit TestingBots eigenem Demo-Projekt `xcuitest-sample-app`
+(Quell-Zip, kein kompilierter Build), obwohl ein Storage-Eintrag "FitnessApp.app.zip" hieß. Lehre:
+Namen/Labels in TestingBots Storage nie ungeprüft übernehmen - vor Gebrauch immer den Inhalt
+verifizieren (entpacken, `Info.plist` + Mach-O-Executable `FitnessApp` in einem `*.app`-Verzeichnis
+pruefen).
+
+**2. Echter Apple-Testlauf fuer Commit 6300fbf bestaetigt, zwei weitere echte Lebenszyklus-Bugs
+gefunden und behoben.** Mit `CODEMAGIC_API_TOKEN` wurde zuerst ein `swift-package`-Build fuer den
+aktuellen HEAD ausgewertet: **1240/1240 Tests gruen**, inklusive aller vier zuvor fehlschlagenden
+(`testRecalculateSkipsDayWithActiveSessionAndReportsIt`,
+`testRecalculateSkipsDayWithCompletedSessionTooAndLogStaysFullyIntact`,
+`testRecalculateSkipsSaveEntirelyWhenNothingWasRewritten`,
+`testRecalculateSaveFailureLeavesNoStructuralChangeEvenAfterLaterSave`) - Commit 6300fbf's beiden
+Fixes (`hasIndependentPendingChanges`, `revert(...)`) sind damit **real auf Apple-Hardware
+bestaetigt**, nicht mehr nur code-gelesen. Danach wurde ein echter, verifizierter `ios-app`-Build zu
+TestingBot hochgeladen und per Appium gegen einen iOS-Simulator gefahren. Dabei auf ECHTEM Geraet
+reproduziert: `PlansListView.acceptOperation` wird einmalig als `@State` erzeugt und nie
+ausgetauscht, obwohl ihre eigene Typ-Doku eine neue Instanz pro wirklich neuem Versuch verlangt -
+nach einem angenommenen Cardio-Vorschlag zeigte jede spaetere, voellig unabhaengige Cardio-Karte
+(neues Ziel/Renndatum/Volumen) faelschlich "Erneut versuchen" statt "Vorschlag annehmen", und ein
+Tap darauf haette nur den laengst aufgeloesten alten Plan erneut aufzuloesen versucht statt den
+neuen anzulegen. Fix: `CardioFeasibilityCardModel.fingerprint` oeffentlich gemacht, `PlansListView`
+haelt jetzt einen `acceptOperationFingerprint` und tauscht `acceptOperation` gegen eine frische
+Instanz aus, sobald die angezeigte Karte zu einer anderen Kombination gehoert (Commit `935e0f6`).
+Dasselbe strukturell identische Muster wurde praeventiv auch in `ProfileEditorView` behoben (Commit
+`73fa31a`, code-gelesen uebertragen, nicht am Geraet separat reproduziert, da die Codebasis exakt
+identisch war). Ein erneuter `swift-package`-Lauf fuer `73fa31a` wurde von mir selbst (nicht nur
+berichtet) direkt per Codemagic-API nachvollzogen: Build `6ad2481c586b3da52c8d456f`, alle
+Build-Schritte `success`, Testschritt-Log zeigt die Fortschrittszeilen `[1/1240]` bis `[1240/1240]`
+lueckenlos, keine Fail-/Error-Zeile, die vier zuvor fehlschlagenden Tests namentlich enthalten und
+durchgelaufen. `swift test --parallel` laeuft unter `set -e` - ein echter Fehlschlag haette den
+Schritt sichtbar als `failed` markiert.
+
+**3. WebDriverAgent-Infrastrukturfehler bei TestingBot bestaetigt transient.** Die Appium-Session,
+die Fund 2 oben gemacht hat, scheiterte danach dreimal in Folge mit `Unable to launch
+WebDriverAgent - xcodebuild failed with code 70` (zwei verschiedene Geraete-/iOS-Kombinationen),
+unabhaengig von Code oder Build - TestingBot-seitiges Infrastrukturproblem, Retries wie angewiesen
+gestoppt. Ich habe in dieser Hauptsession (neuer Container, dieselben Secrets) selbst eine frische
+WebDriverAgent-Session gegen denselben verifizierten Build (`tb://534a0efa885a30bc28e86bb1`)
+erzeugt - **erfolgreich** (`iPhone 15`/`iOS 17.5`, echter Screenshot + Accessibility-Tree
+abgerufen). Der Infrastrukturfehler war also tatsaechlich transient, nicht dauerhaft.
+
+**4. Eigene Simulator-Durchsteuerung (diese Session): teilweise erfolgreich, ein Szenario
+ergebnisoffen wegen eines WebDriverAgent-Hit-Testing-Problems.** Selbst durchgefuehrt, real auf dem
+Simulator: komplettes Onboarding (Profil, Ziel "Functional/Hybrid", Trainingshistorie, Equipment,
+Benachrichtigungen, Abschluss) - Dashboard zeigte danach "No active plan", Plan-Tab "No plans yet"
+(**stuetzt Szenario 6**: Onboarding-Abschluss allein legt keinen Plan an, auch wenn eine Empfehlung
+vorausgewaehlt war). Danach Plan aus Vorlage ("Full Body 3x") uebernommen, in `ProfileEditorView`
+echtes Cardio-Ziel eingerichtet (Running Coaching an, 10K, Renndatum, Startvolumen) - die reale
+`CardioFeasibilityCardModel.make`-Karte ("Your running goal is achievable") erschien korrekt. Der
+Versuch, "Adopt plan" zu tappen, um Szenario 1/2 selbst erneut zu reproduzieren, blieb
+**ergebnisoffen**: Element-Klick ohne Wirkung, ein Koordinaten-Tap traf nachweislich ein anderes,
+darunterliegendes Element (Accessibility-Tree und Screenshot liefen zu diesem Zeitpunkt auseinander),
+und Appiums native `mobile: scroll {toVisible: true}`-Befehl schlug mit WebDriverAgents eigener
+Fehlermeldung `Failed to perform scroll with visible cell due to max scroll count reached` fehl -
+ein autoritatives Signal von Apples eigener Scroll-/Accessibility-Logik, keine eigene
+Koordinaten-Fehlrechnung. Ich habe daraufhin NICHT weiter geraten, um keine Schein-Bestaetigung zu
+erzeugen. Ob das ein echtes Accessibility-/Layout-Problem dieser spezifischen Taste ist oder eine
+XCUITest/SwiftUI-Interop-Eigenheit, ist ungeklaert und nicht Teil des Task-#197-Scopes - nicht
+untersucht, nicht "behoben". Szenario 1/2 bleiben damit fuer DIESEN eigenen Durchlauf unbestaetigt;
+die zugrundeliegende Code-Korrektur selbst ist unabhaengig davon durch Fund 2 oben bereits einmal
+real am Geraet bestaetigt. Szenario 3 (ProfileEditorView), 4 (Adjust plan) und 5
+(Onboarding-Custom-Builder) wurden in diesem Durchlauf nicht erreicht.
+
+**Nebenbefund, nicht behoben (ausserhalb Scope):** Der Button "Diesen Plan übernehmen" in der
+Vorlagen-Vorschau (Plan-Tab, "From Template") ist hartcodiert Deutsch, obwohl der Rest der UI in
+dieser Session durchgehend Englisch war (Geraet-/Simulator-Locale). Nur vermerkt, nicht korrigiert -
+kein Bezug zu Task #197.
+
+**Ausdrücklich NICHT in dieser Runde verifiziert:** Szenario 3/4/5 real am Geraet; die beiden
+Fehlerpfad-Szenarien (Fehler vor Commit/Rebind-Fehler) bleiben wie zuvor dokumentiert ohne
+UI-Ausloeser (DI-Seams nur In-Process-XCTest, siehe fruehere Eintraege) - unveraendert zurueckgestellt
+per User-Entscheidung.
+
+**Branch/Commits:** `claude/smart-onboarding-epic`, Commits `935e0f6` und `73fa31a` (beide bereits
+gepusht, aus Hilfs-Session `session_01UFjTwK41YkxLRZbveiFXAt`). Dieser Eintrag selbst folgt als
+eigener Dokumentations-Commit.
+
+**Naechste Aufgabe:** Szenario 1/2/3/4/5 bei Gelegenheit erneut versuchen (frische TestingBot-Session,
+ggf. anderes Geraet/andere iOS-Version, um das Hit-Testing-Problem zu umgehen oder als reproduzierbar
+zu bestaetigen). Task #197 bleibt `in_progress` - der Kern (Commit-/Speicherfehler-Vertrag inkl.
+beider Lebenszyklus-Bugs) ist jetzt real auf Apple-Hardware bestaetigt, die vollstaendige
+Simulator-Szenarioliste des Users ist es noch nicht.
