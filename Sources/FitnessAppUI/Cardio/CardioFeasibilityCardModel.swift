@@ -105,9 +105,36 @@ public struct CardioFeasibilityCardModel {
     // diesem nicht isolierten Struct-Kontext ist unter Swift 6 ein
     // Compile-Fehler. Die Aufrufer (ProfileEditorView/PlansListView-Button-
     // Actions) laufen ohnehin bereits auf dem Main Actor, kein await noetig.
+    ///
+    /// Nachbesserung (Task #197, vierte Korrekturrunde, Punkt 3): nimmt jetzt eine vom Aufrufer
+    /// gehaltene `PlanCreationOperation` entgegen, statt selbst `createPlan` direkt + `try` zu
+    /// rufen. Grund: der cardioGoal-/Fingerprint-Abschluss unten darf NICHT an die unmittelbare
+    /// Rueckkehr dieser Funktion gebunden sein - scheitert die Rueckbindung (siehe
+    /// `PlanCreationError.createdButRebindFailed`) und wird der Plan erst bei einem SPAETEREN Tap
+    /// aufgeloest, muss GENAU DIESER Abschluss (mit den HIER, JETZT bestaetigten Werten von
+    /// `proposedGoal`/`raceDate`/`weeklyVolume` - nicht mit denen eines womoeglich spaeter anders
+    /// berechneten Aufrufs) alsdann trotzdem laufen. `operation.attempt(...)` uebernimmt das:
+    /// `completion` wird als Closure UEBERGEBEN, aber nur beim allerersten erfolgreichen Abschluss
+    /// dieser `operation`-Instanz tatsaechlich ausgefuehrt (siehe `PlanCreationOperation`-Typ-Doku)
+    /// - ob das SOFORT oder erst bei einem spaeteren `attempt(...)`/`resumeIfCommitted(...)`-Aufruf
+    /// passiert, macht fuer das Ergebnis keinen Unterschied. Liefert den vollen
+    /// `PlanCreationOperation.Outcome` statt nur `TrainingPlan?` - der Aufrufer leitet Button-
+    /// Beschriftung/Fehlermeldung direkt daraus ab (siehe dortige Typ-Doku), kein `throws` mehr
+    /// noetig.
     @discardableResult
     @MainActor
-    public func accept(profile: UserBodyProfile, in context: ModelContext) throws -> TrainingPlan? {
+    public func accept(
+        profile: UserBodyProfile, in context: ModelContext, using operation: PlanCreationOperation
+    ) -> PlanCreationOperation.Outcome? {
+        // Einmal committed, ist die urspruengliche Vorbedingungspruefung hinfaellig - es wird
+        // nichts mehr NEU erzeugt (siehe `PlanCreationOperation`-Doku: `create()` ist nach dem
+        // ersten Commit fuer diese Instanz strukturell unerreichbar), nur noch eine bereits
+        // abgeschlossene Erstellung aufgeloest und ihr Abschluss ggf. nachgeholt. Ein inzwischen
+        // ggf. veraendertes `profile` (z.B. `hasPlan` waere jetzt `false`) darf diese Wiederaufnahme
+        // nicht blockieren.
+        if let resumed = operation.resumeIfCommitted(in: context) {
+            return resumed
+        }
         guard hasPlan,
               let planInput, let planResult, let proposedGoal,
               let raceDate = profile.cardioRaceDate,
@@ -116,34 +143,27 @@ public struct CardioFeasibilityCardModel {
         // Nachbesserung (P2.3): `createPlan(for:)` buendelt die vorher hier
         // inline stehende Resolve+Build-Sequenz (siehe dortige Doku) — ein
         // Aufruf statt vier unabhaengiger Kopien derselben zwei Zeilen.
-        //
-        // Nachbesserung (P2.3-Review, Punkt 3): `cardioGoal`/Fingerprint
-        // werden jetzt NUR bei TATSAECHLICHEM Erfolg fortgeschrieben — vorher
-        // liefen beide Zeilen unconditional nach diesem Aufruf, auch wenn
-        // `createPlan` `nil` zurueckgab (heute strukturell unerreichbar, weil
-        // `hasPlan` oben bereits ein nicht-leeres `planResult` garantiert,
-        // aber `build`s EINZIGER nil-Ruecksprung genau dieser leer-Check ist
-        // — dieselbe "defensiv, nie beobachtet" Disziplin wie ueberall sonst
-        // in `PlanGeneratorInstantiator`). Ein Fehlschlag haette sonst wie
-        // eine erfolgreiche Annahme ausgesehen: Fingerprint gesetzt → Karte
-        // verschwindet via `make(for:)` → kein Plan existiert, keine
-        // Wiederholung moeglich, ohne dass der Nutzer das bemerkt.
-        //
-        // Nachbesserung (Task #197, zweite Runde): ein Speicherfehler ist
-        // kein "nichts zu tun" wie der leere Ruecksprung oben - er wird
-        // deshalb nicht mehr mit try? geschluckt, sondern an den Aufrufer
-        // durchgereicht. PlansListView/ProfileEditorView zeigen dafuer einen
-        // sichtbaren Fehler mit Wiederholung; isAcceptingCardioFeasibility
-        // bleibt dort in jedem Fall (Erfolg wie Fehler) zuruecksetzbar.
-        guard let plan = try PlanGeneratorInstantiator.createPlan(
-            from: planInput, result: planResult,
-            for: profile, generationSource: .cardioCoach, in: context
-        ) else { return nil }
-        profile.cardioGoal = proposedGoal
-        profile.cardioFeasibilityDismissedFingerprint = CardioFeasibilityCalculator.suppressionFingerprint(
-            goal: proposedGoal, raceDate: raceDate, weeklyBaseVolumeKm: weeklyVolume
+        return operation.attempt(
+            in: context,
+            create: {
+                try PlanGeneratorInstantiator.createPlan(
+                    from: planInput, result: planResult,
+                    for: profile, generationSource: .cardioCoach, in: context
+                )
+            },
+            completion: {
+                // Nachbesserung (P2.3-Review, Punkt 3): `cardioGoal`/Fingerprint werden NUR bei
+                // TATSAECHLICHEM Erfolg fortgeschrieben (siehe `PlanCreationOperation.attempt`s
+                // `completion`-Vertrag: laeuft nur bei `.success`). Nutzt bewusst die HIER
+                // (zum Zeitpunkt dieses Aufrufs) bestaetigten `proposedGoal`/`raceDate`/
+                // `weeklyVolume` - nicht Werte, die ein spaeterer, erneuter `accept`-Aufruf
+                // (z.B. nach einer zwischenzeitlichen Profilaenderung) anders berechnen wuerde.
+                profile.cardioGoal = proposedGoal
+                profile.cardioFeasibilityDismissedFingerprint = CardioFeasibilityCalculator.suppressionFingerprint(
+                    goal: proposedGoal, raceDate: raceDate, weeklyBaseVolumeKm: weeklyVolume
+                )
+            }
         )
-        return plan
     }
 
     /// "Verwerfen"/"Ziel behalten": blendet die Karte aus, bis Ziel,
@@ -166,29 +186,38 @@ public struct CardioFeasibilityCardModel {
     /// `cardioGoal` hier unveraendert bleibt, ist `self.fingerprint` (aus
     /// `make(for:)`, bereits fuer den aktuellen `profile`-Stand berechnet)
     /// exakt der richtige Wert - keine Neuberechnung noetig.
+    /// Nachbesserung (Task #197, vierte Korrekturrunde, Punkt 3): gleiches Muster wie
+    /// `accept(profile:in:using:)` oben - `operation` traegt den Abschluss (hier nur der
+    /// Fingerprint, `cardioGoal` bleibt unveraendert) ueber eine moegliche spaetere
+    /// Wiederaufnahme hinweg, mit dem HIER (zum Zeitpunkt dieses Aufrufs) bereits bekannten
+    /// `self.fingerprint`.
     @discardableResult
     @MainActor
     public func acceptCustom(
         input: PlanGeneratorInput,
         result: PlanGenerator.Result,
         profile: UserBodyProfile,
-        in context: ModelContext
-    ) throws -> TrainingPlan? {
+        in context: ModelContext,
+        using operation: PlanCreationOperation
+    ) -> PlanCreationOperation.Outcome? {
+        if let resumed = operation.resumeIfCommitted(in: context) {
+            return resumed
+        }
         guard !result.days.isEmpty else { return nil }
-        // Nachbesserung (P2.3): siehe `accept(profile:in:)` oben.
-        // Nachbesserung (P2.3-Review, Punkt 3): Fingerprint nur bei Erfolg,
-        // siehe dortige Begruendung — hier ebenfalls strukturell unerreichbar
-        // (der obige Leer-Check deckt `build`s einzigen nil-Pfad bereits ab),
-        // aber derselbe explizite Vertrag statt stillschweigender Annahme.
-        // Nachbesserung (Task #197, zweite Runde): ein Speicherfehler wird
-        // durchgereicht statt mit try? geschluckt, siehe `accept(profile:in:)`
-        // oben.
-        guard let plan = try PlanGeneratorInstantiator.createPlan(
-            from: input, result: result,
-            for: profile, generationSource: .cardioCoach, in: context
-        ) else { return nil }
-        profile.cardioFeasibilityDismissedFingerprint = fingerprint
-        return plan
+        // Nachbesserung (P2.3): siehe `accept(profile:in:using:)` oben.
+        let confirmedFingerprint = fingerprint
+        return operation.attempt(
+            in: context,
+            create: {
+                try PlanGeneratorInstantiator.createPlan(
+                    from: input, result: result,
+                    for: profile, generationSource: .cardioCoach, in: context
+                )
+            },
+            completion: {
+                profile.cardioFeasibilityDismissedFingerprint = confirmedFingerprint
+            }
+        )
     }
 }
 #endif

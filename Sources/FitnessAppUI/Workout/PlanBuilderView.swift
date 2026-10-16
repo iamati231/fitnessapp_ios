@@ -215,6 +215,20 @@ public struct PlanBuilderView: View {
     /// erneuter Tap auf denselben Button sonst ausloesen wuerde.
     @State private var creationOperation = PlanCreationOperation()
 
+    /// Nachbesserung (vierte Korrekturrunde, "zusaetzlicher kleiner UI-Fix"): im
+    /// `onGenerated`-Pfad (externer Handoff, z.B. Cardio-"Plan anpassen") liegt die
+    /// tatsaechliche `PlanCreationOperation` beim AUFRUFER (siehe `creationOperation`-Doku oben) -
+    /// diese View bekommt nur den `PlanBuilderHandoffOutcome` zurueck, nie die fremde Instanz
+    /// selbst. Liefert dieser Pfad `.committedButUnresolved`, bleibt `creationOperation` (diese
+    /// Views EIGENE, im `onGenerated`-Fall ungenutzte Instanz) unveraendert `nil` - ohne dieses
+    /// Flag wuerde der Haupt-Button in `navigationBar` faelschlich weiter "Plan uebernehmen"
+    /// statt "Erneut versuchen" zeigen, obwohl der Plan extern bereits persistiert wurde. Reine
+    /// Label-Korrektur: die eigentliche Duplikat-Sicherheit fuer diesen Pfad liegt bereits
+    /// vollstaendig beim Aufrufer (dessen eigene `resumeIfCommitted`-first-Logik in
+    /// `CardioFeasibilityCardModel.acceptCustom` verhindert ein zweites `create()` unabhaengig
+    /// von dieser View). Einweg wie `creationOperation.committedPlanID` - kein Reset.
+    @State private var externalHandoffIsCommittedButUnresolved = false
+
     /// Nachbesserung (P2.3, Abnahme "keine Duplikate bei mehrfacher
     /// Bestaetigung"): `adoptPlan()` ist synchron, ohne `await` — ein
     /// zweiter Tap auf "Plan uebernehmen", bevor `dismiss()` den Sheet
@@ -973,7 +987,12 @@ public struct PlanBuilderView: View {
                     // "Plan uebernehmen" angeboten werden - derselbe Button loest dann nur
                     // noch eine Aufloesung aus (siehe `creationOperation`-Doku), nie eine
                     // Neuanlage. Label macht das sichtbar.
-                    if creationOperation.committedPlanID != nil {
+                    //
+                    // Nachbesserung (vierte Korrekturrunde): `|| externalHandoffIsCommittedButUnresolved`
+                    // deckt den `onGenerated`-Pfad ab, dessen eigentliche Operation beim Aufrufer
+                    // liegt (siehe dortige Doku) - ohne das wuerde dieser Pfad faelschlich
+                    // weiter "Plan uebernehmen" zeigen.
+                    if creationOperation.committedPlanID != nil || externalHandoffIsCommittedButUnresolved {
                         Label {
                             Text("planBuilder.result.retryResolve", bundle: .module)
                         } icon: {
@@ -1056,6 +1075,7 @@ public struct PlanBuilderView: View {
             case .committedButUnresolved:
                 isAdopting = false
                 adoptSaveErrorIsCreatedButUnresolved = true
+                externalHandoffIsCommittedButUnresolved = true
                 adoptSaveErrorMessage = String(localized: "planBuilder.error.createdButUnresolved.message", bundle: .module)
             }
             return

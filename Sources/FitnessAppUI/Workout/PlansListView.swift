@@ -294,15 +294,16 @@ public struct PlansListView: View {
                     guard !isAcceptingCardioFeasibility else { return }
                     isAcceptingCardioFeasibility = true
                     withAnimation {
-                        // Nachbesserung (Task #197, dritte Korrekturrunde): `acceptOperation`
-                        // ersetzt das vorherige direkte `do/catch` - einmal `.committedButUnresolved`,
-                        // ruft diese Instanz `model.accept(...)` NIE WIEDER auf, egal wie oft
-                        // dieser Button erneut getippt wird (siehe `PlanCreationOperation`-Doku).
-                        switch acceptOperation.attempt(in: modelContext, create: {
-                            try model.accept(profile: profile, in: modelContext)
-                        }) {
+                        // Nachbesserung (vierte Korrekturrunde): `model.accept(...using:)` fuehrt
+                        // `resumeIfCommitted`/`attempt` jetzt INTERN aus (siehe
+                        // `CardioFeasibilityCardModel`-Doku) - `nil` bedeutet, dass bereits
+                        // `accept`s eigene Vorbedingungen (z.B. `hasPlan`) nicht erfuellt sind,
+                        // und wird wie `.nothingToCreate` behandelt.
+                        switch model.accept(profile: profile, in: modelContext, using: acceptOperation) {
                         case .success(let plan):
                             navigation.workoutPath.append(plan)
+                        case nil:
+                            isAcceptingCardioFeasibility = false
                         case .nothingToCreate:
                             // Nachbesserung (P2.3-Review, Punkt 3): Flag zuruecksetzen - die Karte
                             // bleibt sichtbar, der Button muss wieder bedienbar sein.
@@ -382,13 +383,16 @@ public struct PlansListView: View {
                     // erneut getippt wird. `PlanBuilderView` leitet ihre eigene lokalisierte
                     // Nachricht selbst aus dem zurueckgegebenen `PlanBuilderHandoffOutcome` ab -
                     // hier wird kein fertiger Text mehr uebergeben.
-                    switch acceptCustomOperation.attempt(in: modelContext, create: {
-                        try model.acceptCustom(input: adjustedInput, result: adjustedResult, profile: profile, in: modelContext)
-                    }) {
+                    switch model.acceptCustom(
+                        input: adjustedInput, result: adjustedResult, profile: profile,
+                        in: modelContext, using: acceptCustomOperation
+                    ) {
                     case .success(let plan):
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                             navigation.workoutPath.append(plan)
                         }
+                        return .success
+                    case nil:
                         return .success
                     case .nothingToCreate:
                         return .success

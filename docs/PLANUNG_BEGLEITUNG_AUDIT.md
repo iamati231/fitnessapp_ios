@@ -2405,3 +2405,157 @@ Berichtseintrag.
 Testlauf UND eine manuelle Geräteprüfung (insbesondere: Sheet bleibt bei `.committedButUnresolved`
 offen, Button-Label wechselt korrekt, ein tatsächlich wiederholter Tap legt wirklich keinen
 zweiten Plan an) vorliegen.
+
+## Task #197-Nachbesserung, vierte Korrekturrunde (übersehene Aufrufstelle, Commit-Lücke bei
+Normalfall-Erfolg, Cardio-Postlude nicht länger "kosmetischer Kompromiss")
+
+**Drei eng begrenzte Korrekturen, vom User nach Prüfung der dritten Runde verlangt** — die
+Zustandsmaschine selbst wurde als richtige Richtung bestätigt, aber mit einer real übersehenen
+Aufrufstelle und zwei verbliebenen Lücken, die die dritte Runde noch nicht geschlossen hatte.
+
+**Punkt 1 — übersehene Onboarding-Aufrufstelle, UND der konkrete Beweis für die
+Linux-`#if`-Blindstelle:** als `onGenerated`s Rückgabetyp in der dritten Runde von `String?` auf
+`PlanBuilderHandoffOutcome` geändert wurde, blieb `OnboardingView.swift`s eigener
+`PlanBuilderView { ... }`-Aufruf unverändert bei `return nil` stehen — ein echter Typfehler
+(`nil` ist kein `PlanBuilderHandoffOutcome`). Das hätte ein sofortiger Kompilierfehler sein
+müssen. Es war keiner, weil `OnboardingView.swift` komplett hinter
+`#if canImport(SwiftUI) && canImport(SwiftData)` liegt — auf Linux `false` — und ein inaktiver
+`#if`-Zweig dort nachweislich nur noch LEXIKALISCH/SYNTAKTISCH geparst, nie mehr
+semantisch/typgeprüft wird. Diese Engagement-weite Einschränkung war bereits zuvor durch einen
+gezielten Syntax-Injektionstest belegt worden — hier hat sie sich zum ERSTEN MAL als Ursache
+eines ECHTEN, vom User gefundenen Bugs bestätigt, nicht nur als theoretisches Risiko. Fix:
+`return nil` → `return .success` (reine Entwurfsübergabe kann strukturell nicht fehlschlagen,
+siehe bestehende Typ-Doku). Danach alle vier `PlanBuilderView(`-Aufrufstellen im gesamten
+`Sources/`-Baum per `Grep` erneut geprüft (User-Vorgabe: "alle Callback-Aufrufstellen prüfen"):
+`ProfileEditorView.swift:1121` und `PlansListView.swift:378` (beide `acceptCustom`-Sheets) waren
+bereits korrekt auf `PlanBuilderHandoffOutcome` umgestellt, `PlansListView.swift:165` hat gar
+keinen `onGenerated`-Parameter (eigenständiger Erstellen-Pfad, unbetroffen) — `OnboardingView.swift`
+war die einzige verbliebene, jetzt behobene Stelle. **Konsequenz für die gesamte bisherige
+Verifikationsdisziplin dieses Dokuments:** jede Aussage "kompiliert auf Linux" für
+SwiftUI-/SwiftData-gated Code bedeutet ab sofort noch strikter nur "syntaktisch plausibel", NIE
+"typkorrekt" — dieser Fund ist der empirische Beleg dafür, nicht nur die Begründung.
+
+**Punkt 2 — `committedPlanID` fehlte beim ganz normalen Erfolg:** `PlanCreationOperation.attempt`
+setzte `committedPlanID` bisher NUR im `catch
+PlanGeneratorInstantiator.PlanCreationError.createdButRebindFailed`-Zweig. Ein völlig
+problemloser Erfolg (kein Rebind-Fehler) ließ `committedPlanID == nil` — ein wiederholter
+`attempt(...)`-Aufruf DANACH (z. B. durch einen nicht korrekt gesperrten Doppel-Tap-Pfad) hätte
+`create()` ein zweites Mal aufgerufen und einen echten zweiten Plan angelegt. Die
+"nie wieder `create()`"-Garantie der dritten Runde galt also faktisch nur für den
+Rebind-Fehlerfall, nicht uneingeschränkt. Fix: `committedPlanID = plan.persistentModelID` läuft
+jetzt unconditioniert im Erfolgspfad VOR dem `return .success(plan)`, nicht mehr nur im
+`catch`-Zweig — die Garantie gilt jetzt ab JEDEM Commit, exakt wie der Typname es verspricht.
+
+**Punkt 3 — Cardio-Postlude: von "akzeptierter kosmetischer Kompromiss" zu tatsächlich
+idempotent nachholbar:** die dritte Runde hatte den Umstand, dass `profile.cardioGoal =`/die
+Fingerprint-Fortschreibung bei einer SPÄTER (nach permanentem Rebind-Fehler) aufgelösten
+Übernahme NICHT nachlaufen, als akzeptables Risiko eingeordnet. Der User hat das ausdrücklich
+zurückgewiesen: der fachliche Abschluss muss von der eigentlichen Planerstellung GETRENNT, aber
+genauso idempotent wiederaufnehmbar gemacht werden, unter Verwendung der BESTÄTIGTEN Angaben des
+URSPRÜNGLICHEN Vorgangs. Umsetzung: `PlanCreationOperation.attempt(in:create:completion:)` bekam
+einen neuen optionalen `completion: (() -> Void)?`-Parameter plus private `pendingCompletion`-
+Ablage. Die beim ALLERERSTEN Aufruf, der einen Commit erreicht (egal ob sofortiger Erfolg oder
+`createdButRebindFailed`), übergebene Closure wird gespeichert und exakt einmal ausgeführt,
+sobald `resolveCreatedPlan` (ob sofort in `attempt` oder später über `resumeIfCommitted`)
+tatsächlich erfolgreich auflöst — spätere Aufrufe können eine NEUE Closure übergeben, die dann
+bewusst IGNORIERT wird (nur `pendingCompletion == nil ? completion : nichts` wird je
+übernommen), damit garantiert nur die ursprünglich bestätigten Werte verwendet werden, nie eine
+zwischenzeitlich neu berechnete. `CardioFeasibilityCardModel.accept`/`.acceptCustom` wurden
+entsprechend umgebaut: beide rufen zuerst `operation.resumeIfCommitted(in:)` auf (damit ein
+späterer Resume nicht an `accept`s eigenen Vorbedingungen wie `hasPlan` scheitert, falls sich das
+Profil zwischenzeitlich geändert hat) und reichen ihren bisherigen Postlude als `completion`-
+Closure an `operation.attempt(...)` durch — `accept` schnappt sich `proposedGoal`/`raceDate`/
+`weeklyVolume`, `acceptCustom` den `fingerprint` jeweils zum Zeitpunkt DIESES Aufrufs als lokale
+Konstanten, bevor sie in die Closure eingefangen werden. Beide Funktionen verloren dabei `throws`
+— sie geben jetzt `PlanCreationOperation.Outcome?` direkt zurück (`nil` nur, wenn ihre eigenen
+Vorbedingungen gar nicht erfüllt sind), der Aufrufer leitet alles daraus ab.
+
+**Zusätzlicher kleiner UI-Fix (vom User explizit mitverlangt):** im `onGenerated`-Pfad (externer
+Handoff, z. B. Cardios "Plan anpassen"-Sheet) liegt die tatsächliche `PlanCreationOperation` beim
+AUFRUFER (`acceptCustomOperation` in `PlansListView`/`ProfileEditorView`), nicht bei
+`PlanBuilderView`s eigener `creationOperation` — letztere blieb bei einem von außen gemeldeten
+`.committedButUnresolved` unverändert `nil`, wodurch der Haupt-Button fälschlich weiter
+"Plan übernehmen" statt "Erneut versuchen" gezeigt hätte. Neuer State
+`externalHandoffIsCommittedButUnresolved` (gesetzt im `.committedButUnresolved`-Zweig des
+`onGenerated`-Switches in `adoptPlan()`), per `||` in die Label-Bedingung in `navigationBar`
+aufgenommen. Reine Label-Korrektur — die eigentliche Duplikat-Sicherheit für diesen Pfad lag
+bereits vorher vollständig beim Aufrufer (dessen `resumeIfCommitted`-zuerst-Logik verhindert ein
+zweites `create()` unabhängig von dieser View).
+
+**Geänderte Komponenten:**
+- `Sources/FitnessAppUI/OnboardingView.swift` — `return nil` → `return .success` (Punkt 1).
+- `Sources/FitnessAppData/PlanCreationOperation.swift` — `committedPlanID` jetzt auch im
+  Erfolgspfad gesetzt (Punkt 2); neuer `completion`-Parameter + `pendingCompletion`-Ablage +
+  `runPendingCompletionIfNeeded()` (Punkt 3).
+- `Sources/FitnessAppUI/Cardio/CardioFeasibilityCardModel.swift` — `accept`/`acceptCustom` auf
+  `using operation: PlanCreationOperation` + `completion:`-Closure umgebaut, kein `throws` mehr,
+  geben `PlanCreationOperation.Outcome?` direkt zurück, rufen `resumeIfCommitted` zuerst auf.
+- `Sources/FitnessAppUI/Workout/PlansListView.swift` / `Sources/FitnessAppUI/Settings/
+  ProfileEditorView.swift` — beide Aufrufstellen (Direkt-Button + Sheet-Closure) rufen jetzt
+  `model.accept(...using:)`/`model.acceptCustom(...using:)` direkt auf, statt sie selbst in
+  einen eigenen `operation.attempt(...)`-Aufruf zu wrappen (das übernimmt `accept`/`acceptCustom`
+  jetzt intern); `switch` behandelt `nil` als eigenen Fall (Vorbedingung nicht erfüllt).
+- `Sources/FitnessAppUI/Workout/PlanBuilderView.swift` — neuer State
+  `externalHandoffIsCommittedButUnresolved`, Label-Bedingung erweitert (UI-Fix).
+- Keine neuen Lokalisierungs-Keys — alle Änderungen sind rein intern (Logik/Typen), alle
+  wiederverwendeten Strings existierten bereits aus früheren Runden. Katalog unverändert bei
+  2117/2117/2117.
+
+**Tests geändert/ergänzt** (`Tests/FitnessAppDataTests/PlanCreationOperationTests.swift`):
+- `testFirstAttemptSucceedsNormallyWithoutAnyRebindIssue` korrigiert: prüfte vorher
+  `XCTAssertNil(operation.committedPlanID, ...)` — das war nach Punkt 2 falsch geworden und
+  prüft jetzt `XCTAssertEqual(operation.committedPlanID, plan.persistentModelID, ...)`.
+- `testSuccessThenRepeatedAttemptStillCallsCreateExactlyOnce` — NEU, exakt der vom User
+  geforderte Test "Erfolg → erneuter Versuch → weiterhin genau ein create-Aufruf": erster
+  `attempt(...)` liefert `.success`, 3 weitere Wiederholungen liefern weiterhin `.success` mit
+  DERSELBEN `persistentModelID`, `createCallCount` bleibt bei 1, genau ein Plan persistiert.
+- `testCompletionRunsExactlyOnceOnImmediateSuccess` — NEU: `completion` läuft bei sofortigem
+  Erfolg genau einmal, ein wiederholter (bereits committeter) Aufruf mit neuer Closure löst sie
+  nicht nochmal aus.
+- `testCompletionFromFirstCallReplaysExactlyOnceOnLaterResolutionIgnoringNewerClosures` — NEU:
+  simuliert permanenten Rebind-Fehler (`rebindOverrideForTesting`), belegt dass die BEIM ERSTEN
+  AUFRUF übergebene `completion` weder beim ursprünglichen `.committedButUnresolved` noch bei
+  einem Zwischenversuch läuft, sondern erst bei der späteren erfolgreichen Auflösung (hier über
+  `resumeIfCommitted`, dem tatsächlichen Resume-Pfad) — und dass eine bei diesem Zwischenversuch
+  NEU übergebene Closure dabei nie ausgeführt wird, nur die ursprüngliche.
+- Bestehende vier Tests der dritten Runde unverändert grün.
+
+**Tests tatsächlich ausgeführt:** `swift build` nach jeder einzelnen Dateiänderung grün (gezielt
+mit `touch` erzwungen, um inkrementelles Caching bei reinen Signaturänderungen auszuschließen).
+`swift build --build-tests` grün. `swift test`: **1033/1033 grün — unverändert**, exakt wie
+erwartet, da `PlanCreationOperationTests.swift` weiterhin komplett `#if canImport(SwiftData)`-
+gated ist (auf Linux `false`) — alle vier neuen/geänderten Tests dort sind damit weiterhin NUR
+syntax-geprüft, nicht ausgeführt. Einzige in diesem gesamten Engagement tatsächlich auf Linux
+ausgeführte Tests bleiben `OnboardingPlanCreationNoticeTests` (reines Foundation/UserDefaults,
+aus einer früheren Runde).
+
+**Was dieser Fund für die Selbsteinschätzung bedeutet (ehrlich benannt):** Punkt 1 ist der
+Beleg, dass "kompiliert auf Linux" für jede SwiftUI-gated Datei in diesem gesamten Dokument
+IMMER nur syntaktische Plausibilität belegt hat, nie Typkorrektheit — auch wenn das an jeder
+einzelnen Stelle so benannt wurde, hat genau diese Lücke hier real einen Bug durchgelassen, den
+erst der User beim Lesen des Diffs gefunden hat. Für JEDEN bisherigen und künftigen
+SwiftUI-/SwiftData-Codeabschnitt in diesem Projekt gilt deshalb: ein manueller Review des Diffs
+durch eine Person mit Zugriff auf einen echten Swift-Compiler (Xcode/Apple-CI) ist nicht optional
+"zusätzliche Sicherheit", sondern die EINZIGE Stelle, an der Typfehler in diesem Code überhaupt
+auffallen können, solange diese Session nur auf Linux läuft.
+
+**Apple-Build/CI:** weiterhin nicht durchgeführt — unverändert keine Xcode-Umgebung in diesem
+Container. Das ist jetzt ausdrücklich die vom User gesetzte NÄCHSTE Priorität, nicht mehr nur
+eine Randbemerkung.
+
+**Bekannte Grenzen/Risiken (Rest aus der dritten Runde, soweit nicht durch diese Runde behoben):**
+- Der in der dritten Runde genannte "kosmetische Kompromiss" beim Cardio-Postlude ist durch
+  Punkt 3 dieser Runde behoben (completion läuft jetzt auch bei später aufgelöstem Resume nach) —
+  aus der Liste bekannter Grenzen entfernt.
+- `PlanCreationOperation` hat weiterhin bewusst keine Reset-Funktion — unverändert, siehe dritte
+  Runde.
+- Unverändert ungeprüft: dass die UI tatsächlich "Erneut versuchen" ANZEIGT, dass ein zweiter Tap
+  wirklich nichts Neues auslöst, und das Sheet-Offen-Bleiben bei `.committedButUnresolved` selbst
+  — weiterhin reines UI-Verhalten ohne `FitnessAppUITests`-Target in diesem Repository.
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
+Berichtseintrag.
+
+**Nächste Aufgabe (User-Vorgabe, ausdrücklich keine weitere Erweiterung von Task #197):** echter
+Apple-Build und Ausführung der Data-Tests priorisieren. P3-Finalübernahme bleibt bis dahin
+weiterhin nicht abgenommen. Task #197 bleibt `in_progress`.

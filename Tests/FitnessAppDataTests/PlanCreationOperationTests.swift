@@ -97,8 +97,12 @@ final class PlanCreationOperationTests: XCTestCase {
         XCTAssertEqual(finalPlans.count, 1)
     }
 
-    /// Gegenprobe: im Normalfall (keinerlei Rebind-Problem) bleibt `committedPlanID` `nil` —
-    /// die Zustandsmaschine greift nur ein, wenn sie tatsächlich gebraucht wird.
+    /// Nachbesserung (vierte Korrekturrunde, Punkt 2): auch ein ganz normaler, problemloser
+    /// Erfolg (kein Rebind-Problem) markiert `committedPlanID` - NICHT nur `createdButRebindFailed`
+    /// tut das. Vorher blieb `committedPlanID` hier `nil`, wodurch ein wiederholter `attempt(...)`-
+    /// Aufruf (z.B. durch einen nicht korrekt gesperrten Doppel-Tap) `create()` ein zweites Mal
+    /// aufgerufen und einen echten zweiten Plan angelegt haette (siehe
+    /// `testSuccessThenRepeatedAttemptStillCallsCreateExactlyOnce` fuer den direkten Beleg dafuer).
     func testFirstAttemptSucceedsNormallyWithoutAnyRebindIssue() throws {
         let profile = makeProfile()
         let operation = PlanCreationOperation()
@@ -109,7 +113,114 @@ final class PlanCreationOperationTests: XCTestCase {
             return XCTFail("muss im Normalfall .success liefern")
         }
         XCTAssertTrue(plan.isActive)
-        XCTAssertNil(operation.committedPlanID, "im Normalfall bleibt committedPlanID nil")
+        XCTAssertEqual(operation.committedPlanID, plan.persistentModelID,
+                        "auch ein ganz normaler Erfolg muss committedPlanID setzen")
+    }
+
+    /// Geforderter Test (vierte Korrekturrunde, Punkt 2): "Erfolg → erneuter Versuch →
+    /// weiterhin genau ein create-Aufruf". Ergaenzt
+    /// `testRepeatedAttemptsAfterPermanentRebindFailureNeverCreateASecondPlan` um den Fall OHNE
+    /// jedes Rebind-Problem - die "nie wieder create()"-Garantie gilt unconditioniert ab JEDEM
+    /// Commit, nicht nur nach einem Rebind-Fehler.
+    func testSuccessThenRepeatedAttemptStillCallsCreateExactlyOnce() throws {
+        let profile = makeProfile()
+        let input = makeInput()
+        let operation = PlanCreationOperation()
+        var createCallCount = 0
+        func create() throws -> TrainingPlan? {
+            createCallCount += 1
+            return try PlanGeneratorInstantiator.createPlan(from: input, for: profile, generationSource: .manual, in: context)
+        }
+
+        guard case .success(let firstPlan) = operation.attempt(in: context, create: create) else {
+            return XCTFail("erster Aufruf muss .success liefern")
+        }
+        XCTAssertEqual(createCallCount, 1)
+
+        for _ in 0..<3 {
+            guard case .success(let resolvedPlan) = operation.attempt(in: context, create: create) else {
+                return XCTFail("wiederholter Versuch nach normalem Erfolg muss weiterhin .success liefern")
+            }
+            XCTAssertEqual(resolvedPlan.persistentModelID, firstPlan.persistentModelID)
+        }
+        XCTAssertEqual(createCallCount, 1, "create() darf nach einem ganz normalen Erfolg NIE WIEDER aufgerufen werden")
+
+        let allPlans = try context.fetch(FetchDescriptor<TrainingPlan>())
+        XCTAssertEqual(allPlans.count, 1, "trotz mehrfacher Wiederholung darf nur genau ein Plan entstanden sein")
+    }
+
+    /// Nachbesserung (vierte Korrekturrunde, Punkt 3): `completion` laeuft bei einem SOFORTIGEN,
+    /// problemlosen Erfolg genau einmal, synchron noch vor der Rueckgabe von `attempt(...)` - ein
+    /// wiederholter Aufruf (jetzt bereits committed) darf sie nicht nochmal ausloesen.
+    func testCompletionRunsExactlyOnceOnImmediateSuccess() throws {
+        let profile = makeProfile()
+        let operation = PlanCreationOperation()
+        var completionRunCount = 0
+
+        guard case .success = operation.attempt(
+            in: context,
+            create: { try PlanGeneratorInstantiator.createPlan(from: self.makeInput(), for: profile, generationSource: .manual, in: self.context) },
+            completion: { completionRunCount += 1 }
+        ) else {
+            return XCTFail("muss im Normalfall .success liefern")
+        }
+        XCTAssertEqual(completionRunCount, 1)
+
+        _ = operation.attempt(
+            in: context,
+            create: { try PlanGeneratorInstantiator.createPlan(from: self.makeInput(), for: profile, generationSource: .manual, in: self.context) },
+            completion: { completionRunCount += 1 }
+        )
+        XCTAssertEqual(completionRunCount, 1, "completion darf nach dem ersten Lauf nie wieder ausgefuehrt werden")
+    }
+
+    /// Nachbesserung (vierte Korrekturrunde, Punkt 3): scheitert die Rueckbindung zunaechst,
+    /// laeuft die BEIM ERSTEN AUFRUF uebergebene `completion` erst bei der SPAETEREN
+    /// erfolgreichen Aufloesung — genau einmal, nicht bei jedem Zwischenversuch. Eine bei einem
+    /// spaeteren Aufruf NEU uebergebene Closure wird dabei bewusst ignoriert (siehe Typ-Doku
+    /// Punkt 3): nur die beim urspruenglichen, erfolgreichen Commit bestaetigten Werte zaehlen,
+    /// nie eine zwischenzeitlich neu berechnete Aufrufer-Closure.
+    func testCompletionFromFirstCallReplaysExactlyOnceOnLaterResolutionIgnoringNewerClosures() throws {
+        let profile = makeProfile()
+        let input = makeInput()
+        PlanGeneratorInstantiator.rebindOverrideForTesting = { _, _ in nil }
+
+        let operation = PlanCreationOperation()
+        var firstCompletionRunCount = 0
+        var laterCompletionRunCount = 0
+
+        guard case .committedButUnresolved = operation.attempt(
+            in: context,
+            create: { try PlanGeneratorInstantiator.createPlan(from: input, for: profile, generationSource: .manual, in: self.context) },
+            completion: { firstCompletionRunCount += 1 }
+        ) else {
+            return XCTFail("erster Aufruf muss .committedButUnresolved liefern")
+        }
+        XCTAssertEqual(firstCompletionRunCount, 0, "completion darf vor erfolgreicher Aufloesung nicht laufen")
+
+        // Zwischenversuch waehrend die Stoerung noch besteht - weder die urspruengliche noch
+        // eine neu uebergebene completion darf laufen.
+        _ = operation.attempt(
+            in: context,
+            create: { try PlanGeneratorInstantiator.createPlan(from: input, for: profile, generationSource: .manual, in: self.context) },
+            completion: { laterCompletionRunCount += 1 }
+        )
+        XCTAssertEqual(firstCompletionRunCount, 0)
+        XCTAssertEqual(laterCompletionRunCount, 0)
+
+        // Stoerung beheben - die naechste Aufloesung (hier ueber resumeIfCommitted, wie es ein
+        // spaeterer "Erneut versuchen"-Tap tatsaechlich ausloest) muss GENAU die ERSTE
+        // completion nachholen, nicht die zwischenzeitlich uebergebene.
+        PlanGeneratorInstantiator.rebindOverrideForTesting = nil
+        guard case .success = operation.resumeIfCommitted(in: context) else {
+            return XCTFail("nach Behebung muss die Aufloesung .success liefern")
+        }
+        XCTAssertEqual(firstCompletionRunCount, 1, "die urspruengliche completion muss jetzt genau einmal gelaufen sein")
+        XCTAssertEqual(laterCompletionRunCount, 0, "eine spaeter uebergebene, neue completion darf nie laufen")
+
+        // Weitere Aufloesung darf die bereits gelaufene completion nicht nochmal ausfuehren.
+        _ = operation.resumeIfCommitted(in: context)
+        XCTAssertEqual(firstCompletionRunCount, 1)
     }
 
     /// Ein leeres Generator-Ergebnis (`create()` liefert `nil`, kein Fehler) darf nichts als

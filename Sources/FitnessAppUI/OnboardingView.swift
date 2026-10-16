@@ -324,14 +324,23 @@ public struct OnboardingView: View {
             // UserBodyProfile, kein DayPicker noetig (Step 2 des Builders
             // deckt Wochentage/Equipment bereits ab).
             .sheet(isPresented: $showingPlanBuilder) {
-                // Nachbesserung (zweite Korrekturrunde, Punkt C): `onGenerated` liefert jetzt
-                // `String?` zurueck (`nil` = Erfolg, siehe PlanBuilderView-Typ-Doku). Reines
-                // `@State`-Zwischenspeichern kann strukturell nicht fehlschlagen - immer `nil`.
+                // Nachbesserung (dritte Korrekturrunde, Punkt 4): `onGenerated` liefert
+                // `PlanBuilderHandoffOutcome` zurueck (siehe PlanBuilderView-Typ-Doku). Reines
+                // `@State`-Zwischenspeichern kann strukturell nicht fehlschlagen - immer `.success`.
+                //
+                // Korrektur (vierte Korrekturrunde, Punkt 1): diese Aufrufstelle wurde beim
+                // Wechsel von `String?` auf `PlanBuilderHandoffOutcome` uebersehen - `return nil`
+                // kompiliert auf Linux trotzdem, weil die gesamte Datei hinter
+                // `#if canImport(SwiftUI)` liegt (auf Linux `false`) und ein inaktiver `#if`-Zweig
+                // dort nur noch syntaktisch, nie mehr semantisch/typgeprueft wird (empirisch
+                // verifiziert, siehe Typ-Doku-Praezisierung in docs/PLANUNG_BEGLEITUNG_AUDIT.md).
+                // Alle vier `PlanBuilderView(`-Aufrufstellen im Repo wurden daraufhin erneut
+                // per Grep geprueft - dies war die einzige verbleibende.
                 PlanBuilderView { input, result in
                     customPlanInput = input
                     customPlanResult = result
                     clearSelectedTemplate()
-                    return nil
+                    return .success
                 }
             }
             // Start-Check-Epic: Sheet fuer den optionalen "Wo stehst du

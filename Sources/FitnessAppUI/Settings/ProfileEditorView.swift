@@ -1042,16 +1042,20 @@ public struct ProfileEditorView: View {
                     // `nil` unveraendert, ein Re-Snapshot waere dann nur ein
                     // No-Op, aber kein unbedingtes "Fortschreiben" mehr.
                     //
-                    // Nachbesserung (Task #197, dritte Korrekturrunde): `acceptOperation`
-                    // ersetzt das vorherige direkte `do/catch` - einmal `.committedButUnresolved`,
-                    // ruft diese Instanz `model.accept(...)` NIE WIEDER auf, egal wie oft dieser
-                    // Button erneut getippt wird (siehe `PlanCreationOperation`-Typ-Doku).
+                    // Nachbesserung (vierte Korrekturrunde): `model.accept(...using:)` fuehrt
+                    // `resumeIfCommitted`/`attempt` jetzt INTERN aus (siehe
+                    // `CardioFeasibilityCardModel`-Doku); der Cardio-Postlude
+                    // (`profile.cardioGoal =`/Fingerprint) laeuft darin synchron VOR der
+                    // Rueckgabe, auch bei einem spaeter aufgeloesten `.success` -
+                    // `rebaselineCardioGoal()` sieht hier also immer den bereits
+                    // aktualisierten Wert. `nil` bedeutet, dass bereits `accept`s eigene
+                    // Vorbedingungen (z.B. `hasPlan`) nicht erfuellt sind.
                     withAnimation {
-                        switch acceptOperation.attempt(in: modelContext, create: {
-                            try model.accept(profile: profile, in: modelContext)
-                        }) {
+                        switch model.accept(profile: profile, in: modelContext, using: acceptOperation) {
                         case .success:
                             rebaselineCardioGoal()
+                        case nil:
+                            isAcceptingCardioFeasibility = false
                         case .nothingToCreate:
                             isAcceptingCardioFeasibility = false
                         case .committedButUnresolved:
@@ -1130,10 +1134,13 @@ public struct ProfileEditorView: View {
                     // eigene lokalisierte Nachricht selbst aus dem zurueckgegebenen
                     // `PlanBuilderHandoffOutcome` ab - hier wird kein fertiger Text mehr
                     // uebergeben.
-                    switch acceptCustomOperation.attempt(in: modelContext, create: {
-                        try model.acceptCustom(input: adjustedInput, result: adjustedResult, profile: profile, in: modelContext)
-                    }) {
+                    switch model.acceptCustom(
+                        input: adjustedInput, result: adjustedResult, profile: profile,
+                        in: modelContext, using: acceptCustomOperation
+                    ) {
                     case .success, .nothingToCreate:
+                        return .success
+                    case nil:
                         return .success
                     case .committedButUnresolved:
                         return .committedButUnresolved
