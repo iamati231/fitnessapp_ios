@@ -43,6 +43,13 @@ public struct PlansListView: View {
     /// abgedeckt (derselbe Button loest dort sowohl Adopt als auch diese
     /// Closure aus).
     @State private var isAcceptingCardioFeasibility = false
+    /// Nachbesserung (Task #197, zweite Runde): Speicherfehler von
+    /// `accept`/`acceptCustom` werden jetzt sichtbar gemacht statt still im
+    /// `nil`-Pfad zu verschwinden — Non-nil zeigt den Alert, "OK" setzt
+    /// zurueck und erlaubt den naechsten Versuch (der Button ist wegen
+    /// `isAcceptingCardioFeasibility` ohnehin erst nach dem Reset wieder
+    /// aktiv).
+    @State private var cardioAcceptErrorMessage: String?
     /// Nachtrag "Plan anpassen": eigener Zustand, NICHT `showingPlanBuilder`
     /// wiederverwenden - der haengt am Plus-Menue mit leerem Wizard-Start,
     /// hier soll er mit dem Machbarkeits-Vorschlag vorbefuellt oeffnen.
@@ -136,6 +143,19 @@ public struct PlansListView: View {
         }
         .sheet(isPresented: $showingPlanBuilder) {
             PlanBuilderView()
+        }
+        // Nachbesserung (Task #197, zweite Runde): sichtbarer Fehler statt
+        // stillem nil-Pfad, siehe `cardioAcceptErrorMessage`-Doku.
+        .alert(
+            Text("cardioFeasibility.error.saveFailed.title", bundle: .module),
+            isPresented: Binding(
+                get: { cardioAcceptErrorMessage != nil },
+                set: { if !$0 { cardioAcceptErrorMessage = nil } }
+            )
+        ) {
+            Button("OK") { cardioAcceptErrorMessage = nil }
+        } message: {
+            Text(cardioAcceptErrorMessage ?? "")
         }
     }
 
@@ -256,10 +276,21 @@ public struct PlansListView: View {
                         // bei `nil`, die Karte bleibt also sichtbar und der
                         // Button muss wieder bedienbar sein, damit der Nutzer
                         // es erneut versuchen kann.
-                        if let plan = model.accept(profile: profile, in: modelContext) {
-                            navigation.workoutPath.append(plan)
-                        } else {
+                        //
+                        // Nachbesserung (Task #197, zweite Runde): ein
+                        // tatsaechlicher Speicherfehler (jetzt ein `throw`,
+                        // nicht mehr derselbe `nil`-Pfad wie "nichts zu tun")
+                        // zeigt zusaetzlich den sichtbaren Alert mit
+                        // Wiederholungs-Moeglichkeit.
+                        do {
+                            if let plan = try model.accept(profile: profile, in: modelContext) {
+                                navigation.workoutPath.append(plan)
+                            } else {
+                                isAcceptingCardioFeasibility = false
+                            }
+                        } catch {
                             isAcceptingCardioFeasibility = false
+                            cardioAcceptErrorMessage = String(localized: "cardioFeasibility.error.saveFailed.message", bundle: .module)
                         }
                     }
                 } label: {
@@ -308,11 +339,19 @@ public struct PlansListView: View {
         .sheet(isPresented: $showingPlanAdjustSheet) {
             if let input = model.planInput {
                 PlanBuilderView(initialInput: input) { adjustedInput, adjustedResult in
-                    let plan = model.acceptCustom(input: adjustedInput, result: adjustedResult, profile: profile, in: modelContext)
-                    if let plan {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            navigation.workoutPath.append(plan)
+                    // Nachbesserung (Task #197, zweite Runde): `PlanBuilderView.
+                    // adoptPlan()` ruft `dismiss()` direkt im Anschluss an diese
+                    // Closure auf (siehe dortige Doku) - der Alert haengt am
+                    // AEUSSEREN View und bleibt deshalb sichtbar, auch wenn das
+                    // Sheet hier bereits zufaellt.
+                    do {
+                        if let plan = try model.acceptCustom(input: adjustedInput, result: adjustedResult, profile: profile, in: modelContext) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                navigation.workoutPath.append(plan)
+                            }
                         }
+                    } catch {
+                        cardioAcceptErrorMessage = String(localized: "cardioFeasibility.error.saveFailed.message", bundle: .module)
                     }
                 }
             }

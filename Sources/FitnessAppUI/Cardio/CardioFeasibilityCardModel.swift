@@ -107,7 +107,7 @@ public struct CardioFeasibilityCardModel {
     // Actions) laufen ohnehin bereits auf dem Main Actor, kein await noetig.
     @discardableResult
     @MainActor
-    public func accept(profile: UserBodyProfile, in context: ModelContext) -> TrainingPlan? {
+    public func accept(profile: UserBodyProfile, in context: ModelContext) throws -> TrainingPlan? {
         guard hasPlan,
               let planInput, let planResult, let proposedGoal,
               let raceDate = profile.cardioRaceDate,
@@ -129,13 +129,13 @@ public struct CardioFeasibilityCardModel {
         // verschwindet via `make(for:)` → kein Plan existiert, keine
         // Wiederholung moeglich, ohne dass der Nutzer das bemerkt.
         //
-        // Nachbesserung (Task #197): `createPlan` wirft jetzt zusaetzlich bei
-        // einem fehlgeschlagenen Speichervorgang - `try?` behandelt das
-        // bewusst GENAUSO wie den bestehenden leeren Ruecksprung (beide
-        // Faelle landen im selben `nil`-Pfad, der Aufrufer setzt bereits
-        // `isAcceptingCardioFeasibility = false` zurueck und erlaubt eine
-        // Wiederholung - kein zusaetzlicher UI-Zustand noetig).
-        guard let plan = try? PlanGeneratorInstantiator.createPlan(
+        // Nachbesserung (Task #197, zweite Runde): ein Speicherfehler ist
+        // kein "nichts zu tun" wie der leere Ruecksprung oben - er wird
+        // deshalb nicht mehr mit try? geschluckt, sondern an den Aufrufer
+        // durchgereicht. PlansListView/ProfileEditorView zeigen dafuer einen
+        // sichtbaren Fehler mit Wiederholung; isAcceptingCardioFeasibility
+        // bleibt dort in jedem Fall (Erfolg wie Fehler) zuruecksetzbar.
+        guard let plan = try PlanGeneratorInstantiator.createPlan(
             from: planInput, result: planResult,
             for: profile, generationSource: .cardioCoach, in: context
         ) else { return nil }
@@ -173,17 +173,17 @@ public struct CardioFeasibilityCardModel {
         result: PlanGenerator.Result,
         profile: UserBodyProfile,
         in context: ModelContext
-    ) -> TrainingPlan? {
+    ) throws -> TrainingPlan? {
         guard !result.days.isEmpty else { return nil }
         // Nachbesserung (P2.3): siehe `accept(profile:in:)` oben.
         // Nachbesserung (P2.3-Review, Punkt 3): Fingerprint nur bei Erfolg,
         // siehe dortige Begruendung — hier ebenfalls strukturell unerreichbar
         // (der obige Leer-Check deckt `build`s einzigen nil-Pfad bereits ab),
         // aber derselbe explizite Vertrag statt stillschweigender Annahme.
-        // Nachbesserung (Task #197): `try?` behandelt einen Speicherfehler
-        // genauso wie den bestehenden `nil`-Ruecksprung, siehe
-        // `accept(profile:in:)` oben.
-        guard let plan = try? PlanGeneratorInstantiator.createPlan(
+        // Nachbesserung (Task #197, zweite Runde): ein Speicherfehler wird
+        // durchgereicht statt mit try? geschluckt, siehe `accept(profile:in:)`
+        // oben.
+        guard let plan = try PlanGeneratorInstantiator.createPlan(
             from: input, result: result,
             for: profile, generationSource: .cardioCoach, in: context
         ) else { return nil }

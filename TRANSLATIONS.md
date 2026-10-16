@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2105 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2110 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2105 / 2105** (100%) | 0 |
-| 🇬🇧 English (EN) | **2105 / 2105** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2105 / 2105** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2110 / 2110** (100%) | 0 |
+| 🇬🇧 English (EN) | **2110 / 2110** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2110 / 2110** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -328,7 +328,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `cardioEquipment.rowingMachine` | Rudergerät | Rowing machine | Kürek makinesi |
 | `cardioEquipment.treadmill` | Laufband | Treadmill | Koşu Bandı |
 
-## `cardioFeasibility.*`  (7 Keys)
+## `cardioFeasibility.*`  (9 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -339,6 +339,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `cardioFeasibility.detail.feasible` | Du brauchst rechnerisch %1$lld Wochen, verfügbar sind %2$lld – das reicht. | You need about %1$lld weeks, %2$lld are available – that's enough. | Hesaba göre %1$lld hafta gerekiyor, %2$lld hafta mevcut – bu yeterli. |
 | `cardioFeasibility.detail.infeasibleNoSuggestion` | Du brauchst rechnerisch %1$lld Wochen, verfügbar sind nur %2$lld. Selbst ein kleineres Ziel passt nicht mehr in die verbleibende Zeit. | You need about %1$lld weeks, but only %2$lld are available. Even a smaller goal no longer fits in the remaining time. | Hesaba göre %1$lld hafta gerekiyor, ama sadece %2$lld hafta mevcut. Daha küçük bir hedef bile kalan süreye sığmıyor. |
 | `cardioFeasibility.detail.infeasibleWithSuggestion` | Du brauchst rechnerisch %1$lld Wochen, verfügbar sind nur %2$lld. Realistischer wäre aktuell: %3$@. | You need about %1$lld weeks, but only %2$lld are available. A more realistic goal right now: %3$@. | Hesaba göre %1$lld hafta gerekiyor, ama sadece %2$lld hafta mevcut. Şu an daha gerçekçi bir hedef: %3$@. |
+| `cardioFeasibility.error.saveFailed.message` | Beim Speichern ist ein Fehler aufgetreten. Es wurde nichts geändert — bitte versuche es erneut. | Something went wrong while saving. Nothing was changed — please try again. | Kaydederken bir sorun oluştu. Hiçbir şey değişmedi — lütfen tekrar dene. |
+| `cardioFeasibility.error.saveFailed.title` | Plan konnte nicht gespeichert werden | Plan Couldn't Be Saved | Plan Kaydedilemedi |
 
 ## `cardioGoal.*`  (5 Keys)
 
@@ -634,7 +636,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `customExercise.section.name` | Name | Name | Ad |
 | `customExercise.title` | Neue Übung | New exercise | Yeni hareket |
 
-## `dashboard.*`  (90 Keys)
+## `dashboard.*`  (93 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -683,6 +685,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.history.emptyDescription` | Starte dein erstes Training, um Verlauf und Fortschritt zu sehen. | Start your first workout to see history and progress. | Geçmiş ve ilerlemeyi görmek için ilk antrenmanına başla. |
 | `dashboard.history.emptyTitle` | Noch kein Training gespeichert | No workout saved yet | Henüz kayıtlı antrenman yok |
 | `dashboard.history.title` | Trainingsverlauf | Workout History | Antrenman Geçmişi |
+| `dashboard.onboardingPlanCreationFailed.goToPlan` | Zum Plan-Tab | Go to Plan Tab | Plan Sekmesine Git |
+| `dashboard.onboardingPlanCreationFailed.message` | Dein Profil wurde gespeichert, aber der vorgeschlagene Trainingsplan konnte beim Abschluss des Onboardings nicht gespeichert werden. Du kannst jederzeit im Plan-Tab einen neuen Plan erstellen. | Your profile was saved, but the suggested training plan couldn't be saved when onboarding finished. You can create a new plan anytime from the Plan tab. | Profilin kaydedildi, ancak katılım tamamlanırken önerilen antrenman planı kaydedilemedi. Plan sekmesinden istediğin zaman yeni bir plan oluşturabilirsin. |
+| `dashboard.onboardingPlanCreationFailed.title` | Plan konnte nicht angelegt werden | Plan Couldn't Be Created | Plan Oluşturulamadı |
 | `dashboard.openSession.cancel` | Abbrechen | Cancel | İptal |
 | `dashboard.openSession.dayName.unknown` | Unbekannt | Unknown | Bilinmiyor |
 | `dashboard.openSession.discardAndStart` | Altes verwerfen & Neu starten | Discard old & start new | Eskiyi sil ve yeni başlat |

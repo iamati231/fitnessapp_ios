@@ -1957,3 +1957,182 @@ bleibt aber weiterhin Voraussetzung dafür, dass eine FINALE Wocheneditor-Übern
 noch offenen "nur speichern vs. aktivieren"-Entscheidung) überhaupt gebaut werden darf. Apple-Build
 und Geräteprüfung bleiben für ALLE Phasen dieser Arbeit (P1 bis hier) gemeinsam offen, bis ein
 echter Lauf vorliegt.
+
+## Task #197-Nachbesserung (Operations-/Fehlervertrag, Scratch-Context-Isolation, sichtbare Fehlerweitergabe)
+
+**Task #197 wurde vom User explizit WIEDER GEÖFFNET** — der obige Abschlussbericht war verfrüht.
+Korrigierte Kernaussage zuerst, weil sie die Grundannahme des gesamten vorherigen Abschnitts betrifft:
+
+**Punkt 1 der Korrektur — die Behauptung "begrenzter Commit-Scope" oben (Punkt 1 im alten Bericht)
+war FALSCH.** `context.save()` committet IMMER den gesamten übergebenen `ModelContext`, nicht nur
+die eigenen Änderungen der aufrufenden Funktion — ein einzelner `save()`-Aufruf "direkt nach den
+eigenen Mutationen" ist deshalb KEIN begrenzter Operations-Scope, sondern speichert genauso jede
+andere, unabhängige, zu diesem Zeitpunkt im selben Context ausstehende Änderung mit (z.B. ein
+offenes Edit auf einem anderen Screen, der denselben `modelContext` teilt). Der alte Bericht hat das
+Risiko benannt (siehe dortiger Abschnitt zu `context.rollback()`), aber beim Save selbst fälschlich
+das Gegenteil behauptet.
+
+**Neuer, echter Operations-/Fehlervertrag (zuerst festgelegt, dann implementiert, wie vom User
+verlangt):**
+
+1. **`build`/`createPlan` (neuer Plan) — ECHTE Isolation über einen Scratch-`ModelContext`:**
+   `build` erzeugt jetzt `let scratchContext = ModelContext(context.container)` — SwiftData-Contexts
+   sind "Peers", die denselben Store teilen, aber keine Parent-Child-Beziehung haben (verifiziert per
+   WebSearch gegen hackingwithswift.com/Apple-Dokumentation, nicht durch Kompilieren, s.u.). Fetch,
+   Instanziierung UND `save()` laufen ausschließlich auf `scratchContext`. Schlägt der Save fehl,
+   bleibt der AUFRUFER-`context` (der geteilte) komplett unberührt — kein Rückbau nötig, weil nie
+   etwas dort verändert wurde. Bei Erfolg wird das Ergebnis über `context.model(for:
+   plan.persistentModelID) as? TrainingPlan` in den Context des Aufrufers zurückgeholt (die einzige
+   portable Brücke zwischen zwei SwiftData-Contexts ist die `persistentModelID`, der Zielcontext muss
+   sie explizit auflösen). Das ersetzt den gezielten Lösch-Rückbau aus dem alten Bericht komplett —
+   der ist jetzt unnötig, nicht nur verbessert.
+2. **`recalculate` (bestehenden Plan aktualisieren) — BEWUSST KEINE Context-Isolation, dafür ein
+   anderer Sicherheitsmechanismus:** anders als `build` hält der Aufrufer (typischerweise
+   `PlanEditorView` über `@Query`/`@Bindable`) bereits eine lebende Bindung an den EXISTIERENDEN Plan.
+   Eine Isolation wie bei `build` würde diese Bindung vom tatsächlich geänderten Objekt entkoppeln —
+   nach einem "erfolgreichen" Recalculate stünde eine veraltete Ansicht auf dem Bildschirm, eine neue,
+   schwerer zu findende Fehlerklasse. Stattdessen bleibt `recalculate` auf dem geteilten Context, aber
+   `apply(...)` wurde umgebaut: alte Übungen werden jetzt per `exercise.isArchived = true`
+   ARCHIVIERT statt per `context.delete()` gelöscht (Wiederverwendung des bestehenden
+   `Exercise.isArchived`-Mechanismus aus `PlanEnvironmentMigrator`s Urlaubsmodus — verifiziert durch
+   Lesen von `TrainingDay.currentContentFingerprint`, das bereits über `activeExercises`
+   [`!isArchived`] filtert, UND von `PlanEnvironmentMigrator.restoreOriginals`, das NUR über
+   `swappedFromOriginal != nil` wiederherstellt, nie über `isArchived` allein — ein von `recalculate`
+   archiviertes Objekt kann also nie versehentlich vom Migrator "zurückgeholt" werden). `apply`
+   sammelt pro Tag einen `DayMutationSnapshot` (archivierte + neu eingefügte Übungen, alte
+   Feldwerte). Schlägt `save()` fehl, ruft `recalculate` `revert(snapshots:in:)` auf: neu eingefügte
+   Übungen werden gelöscht (sie wurden nie gespeichert, ein Delete auf einem nie committeten Insert
+   ist unproblematisch), archivierte Übungen bekommen `isArchived = false` zurück, alle Feldwerte +
+   der Fingerprint werden auf den Vorzustand zurückgeschrieben — der geteilte Context landet exakt im
+   Zustand von vor dem Aufruf, OHNE dass `context.rollback()` (das unabhängige fremde Änderungen mit
+   verwerfen würde) jemals aufgerufen wird. Akzeptierter Kompromiss, bewusst nicht behoben (siehe
+   unten "keine weitere Architektur nebenher"): archivierte Übungen werden nie hart gelöscht und
+   sammeln sich bei wiederholtem "Neu rechnen" an — ein reines Speicherplatz-, kein
+   Korrektheitsproblem.
+3. **`previouslyActivePlans`-Fetch vor jeder Mutation — kein `(try? fetch) ?? []` mehr:** neue
+   `PlanGeneratorInstantiator.fetchActivePlans(in:)` (mit eigenem `fetchActivePlansOverrideForTesting`-
+   DI-Seam) wirft jetzt `PlanCreationError.activePlanCheckFailed`, wenn die Zustandsprüfung selbst
+   scheitert — VOR jeder Instanziierung/Mutation, nicht erst danach bemerkt. Dieselbe Disziplin, die
+   für `recalculate`s Session-Check schon vorher galt, jetzt auch hier.
+4. **Speicherfehler an alle Aufrufer weitergeben** — drei Call-Sites korrigiert:
+   - **Cardio** (`PlansListView.swift`, `ProfileEditorView.swift`):
+     `CardioFeasibilityCardModel.accept`/`.acceptCustom` sind wieder `throws` (die `try?`-Variante aus
+     dem allerersten Durchlauf dieser Korrektur wurde verworfen). Beide UI-Stellen fangen den Fehler
+     jetzt explizit mit `do/catch`, zeigen einen sichtbaren Alert (`cardioAcceptErrorMessage`, neue
+     Keys `cardioFeasibility.error.saveFailed.title`/`.message`) und setzen
+     `isAcceptingCardioFeasibility` in JEDEM Fall (Erfolg wie Fehler) zurück — der Button bleibt
+     bedienbar, ein erneuter Versuch ist möglich. `ProfileEditorView`s `acceptCustom`-Pfad hat bisher
+     das Ergebnis komplett verworfen (`_ = model.acceptCustom(...)`, auch den Erfolgsfall) — das
+     verschluckte vorher sowohl Erfolg als auch Fehler gleichermaßen, jetzt zumindest den Fehler
+     sichtbar. Bewusst NICHT nachgerüstet: Navigation zum neuen Plan nach Erfolg — dieser Screen hält
+     (anders als `PlansListView`) gar keine `AppNavigation`-Referenz, der direkte "Übernehmen"-Button
+     auf derselben Seite navigiert aus demselben strukturellen Grund ebenfalls nicht; das Threading
+     einer Navigationsreferenz in `ProfileEditorView` wäre genau die Art zusätzlicher Architektur, die
+     der User für diese Runde ausgeschlossen hat.
+   - **Onboarding** (`OnboardingView.swift`): kein leerer `catch {}` mehr. Neue, reine
+     `UserDefaults`-Core-Utility `OnboardingPlanCreationNotice` (`Sources/FitnessAppCore/Domain/`,
+     Muster identisch zu `HealthWritePreferences`/`ReminderPreferences`) markiert den Fehlschlag via
+     `markFailed()`. Nach wie vor KEIN Alert direkt in `OnboardingView` (unverändert korrekte
+     Begründung aus dem alten Bericht: `RootView` kann zu diesem Zeitpunkt bereits auf `MainTabView`
+     umgeschaltet haben, ein neuer Alert-State dort könnte nie mehr sichtbar werden) — aber jetzt
+     auch kein stilles Verschwinden mehr: `DashboardView` (der erste Screen nach Onboarding-Abschluss)
+     konsumiert den Hinweis über `OnboardingPlanCreationNotice.consumeIfPending()` in einem
+     zusätzlichen `.task` (gleiches "läuft bei jedem Erscheinen, aber harmlos" Muster wie das
+     bestehende `autoEndDeloadIfExpired()`-`.task` in derselben Datei) und zeigt EINMALIG einen Alert
+     mit Erklärung + direktem Sprung zum Plan-Tab (`navigation.selectedTab = .plan`, Wiederverwendung
+     des bestehenden Patterns aus der Cardio-Dashboard-Karte). "Einmalig" ist durch
+     `consumeIfPending()`s Lese-und-Lösch-in-einem-Schritt-Semantik erzwungen, nicht nur durch
+     UI-Zustand.
+
+**Warum keine der drei technischen Lösungen (1–3) als "zusätzliche große Architektur" zählt, die der
+User für diese Runde ausgeschlossen hat:** alle drei sind direkte, minimale Umsetzungen der vom User
+selbst geforderten Verhaltensweisen (echte Isolation ODER bewusst gemeinsam verantworteter Abschluss;
+kein Rollback auf dem geteilten Context; Abbruch vor Mutation bei Fetch-Fehler) — keine neue
+Abstraktion, kein neues Subsystem, keine über das Geforderte hinausgehende Verallgemeinerung.
+`OnboardingPlanCreationNotice` ist eine einzelne, ca. 15 Zeilen lange `enum`-Utility nach bereits
+etabliertem Muster, kein neues Notification-/Messaging-System.
+
+**Geänderte/neue Komponenten (zusätzlich zu den im alten Bericht genannten):**
+- `Sources/FitnessAppData/PlanGeneratorInstantiator.swift` — Typ-Doku komplett um den obigen
+  Operations-/Fehlervertrag ergänzt; `build` nutzt `scratchContext`; `fetchActivePlans(in:)` +
+  `fetchActivePlansOverrideForTesting`; `DayMutationSnapshot` + `revert(_:in:)`; `apply(...)` gibt
+  jetzt `DayMutationSnapshot` zurück und archiviert statt zu löschen.
+- `Sources/FitnessAppUI/Cardio/CardioFeasibilityCardModel.swift` — `accept`/`acceptCustom` wieder
+  `throws` statt `try?`.
+- `Sources/FitnessAppUI/Workout/PlansListView.swift` — neue `cardioAcceptErrorMessage` + `.alert`,
+  beide Aufrufstellen (`accept`, `acceptCustom` im Plan-anpassen-Sheet) auf `do/catch` umgestellt.
+- `Sources/FitnessAppUI/Settings/ProfileEditorView.swift` — identisches Muster
+  (`cardioAcceptErrorMessage` + `.alert`), siehe Navigation-Einschränkung oben.
+- `Sources/FitnessAppCore/Domain/OnboardingPlanCreationNotice.swift` — NEU.
+- `Sources/FitnessAppUI/OnboardingView.swift` — `finishOnboarding()`s leerer `catch` ruft jetzt
+  `OnboardingPlanCreationNotice.markFailed()`.
+- `Sources/FitnessAppUI/DashboardView.swift` — neues `.task` konsumiert den Hinweis, neuer Alert mit
+  Sprung zum Plan-Tab.
+- `Sources/FitnessAppUI/Resources/Localizable.xcstrings` — 5 neue Keys
+  (`cardioFeasibility.error.saveFailed.title`/`.message`,
+  `dashboard.onboardingPlanCreationFailed.title`/`.message`/`.goToPlan`, DE/EN/TR, Katalog jetzt 2110
+  Keys, weiterhin 0 hardcoded).
+
+**Tests hinzugefügt:**
+- `Tests/FitnessAppDataTests/PlanGeneratorInstantiatorTests.swift` — 4 neue Tests:
+  `testFailedCreationIsRepeatableWithoutOrphanedObjects`,
+  `testBuildAbortsBeforeAnyMutationWhenActivePlanCheckFails`,
+  `testBuildDoesNotSaveIndependentPendingChangeInCallerContext`,
+  `testRecalculateSaveFailureLeavesNoStructuralChangeEvenAfterLaterSave`. Deckt alle 5 vom User
+  geforderten Testfälle ab bis auf den Onboarding-Fall (der liegt, s.u., in einer eigenen Core-Datei).
+- `Tests/FitnessAppCoreTests/OnboardingPlanCreationNoticeTests.swift` — NEU, 4 Tests
+  (`testNothingPendingByDefault`, `testMarkFailedThenConsumeReturnsTrueOnce`,
+  `testMarkFailedIsIndependentPerDefaultsInstance`, `testRepeatedMarkFailedStillConsumesOnlyOnce`) —
+  deckt den 5. geforderten Testfall ("Onboarding-Fehler bleibt sichtbar und nachvollziehbar") für die
+  Core-Logik ab.
+
+**Tests tatsächlich ausgeführt vs. nur gelesen — diesmal mit einem präziseren Befund zur
+Linux-Build-Verifikation (siehe unten):** `swift build` und `swift build --build-tests`: grün, nach
+JEDER Änderungsstufe einzeln geprüft. `swift test`: **1033/1033 grün** (vorher 1029 — die Differenz
+sind GENAU die 4 neuen `OnboardingPlanCreationNoticeTests`, verifiziert durch gezielten
+`--filter`-Lauf). Die 4 neuen `PlanGeneratorInstantiatorTests` tragen NICHTS zur Zählung bei — exakt
+wie erwartet, weil die gesamte Datei hinter `#if canImport(SwiftData)` liegt, das auf Linux falsch
+ist. **Das heißt: von den 5 vom User geforderten Tests sind 4 bis zu einem echten Apple-Testlauf nur
+codegelesen, nicht ausgeführt; genau 1 (der Onboarding-Fall, weil er in reinem Foundation/Core liegt)
+läuft tatsächlich und grün auf Linux.**
+
+**Präzisierung der Linux-Build-Aussage (betrifft die Vertrauenswürdigkeit ALLER bisherigen
+"`swift build`: grün"-Aussagen in diesem gesamten Dokument, nicht nur diese Runde):** bisher wurde an
+mehreren Stellen "nur syntaktisch, nicht semantisch geprüft" geschrieben, ohne das genauer zu
+belegen. Diese Runde wurde das empirisch getestet: ein absichtlich eingefügter, grober Syntaxfehler
+(fehlerhafte Klammerung) INNERHALB eines inaktiven `#if canImport(SwiftData)`-Blocks wurde von
+`swift build` auf Linux tatsächlich mit exakter Zeilen-/Spaltenangabe gemeldet — die Datei danach per
+Diff gegen das Original als byte-identisch wiederhergestellt bestätigt. Ergebnis: ein inaktiver
+`#if`-Zweig wird auf Linux SEHR WOHL lexikalisch/syntaktisch geparst (grobe Fehler wie falsche
+Klammerung, kaputte Deklarationen würden auffallen), aber NIE semantisch gegen die echten
+SwiftData-/SwiftUI-APIs typgeprüft (falsche Methodennamen, falsche Signaturen, falsche
+API-Verwendung würden NICHT auffallen). Für diese Runde besonders relevant, weil `build` jetzt
+`ModelContext(container)` und `context.model(for:) as? TrainingPlan` verwendet — beides laut
+WebSearch (hackingwithswift.com, Apple-Forenbeiträge) korrekt verwendete, dokumentierte APIs, aber
+NICHT durch Kompilieren gegen die echte SwiftData-Implementierung verifiziert. Diese Einschränkung
+gilt unverändert für `CardioFeasibilityCardModel.swift`, `PlansListView.swift`,
+`ProfileEditorView.swift`, `OnboardingView.swift`, `DashboardView.swift` (alle vier SwiftUI-gated).
+
+**Apple-Build/CI:** weiterhin nicht durchgeführt — unverändert keine Xcode-/`xcodebuild`-Umgebung in
+diesem Container. Für DIESE Runde besonders wichtig: `ModelContext(container)` +
+`context.model(for:)` sind neue, in dieser gesamten Codebasis bisher nicht verwendete SwiftData-APIs
+— bis zu einem echten Build-/Testlauf ist nicht auszuschließen, dass sich hier ein Compile- oder
+Laufzeitproblem verbirgt, das von Linux aus prinzipiell nicht sichtbar gemacht werden kann.
+
+**Bekannte Grenzen/Risiken (zusätzlich zu den im alten Bericht genannten, die weiterhin gelten):**
+- Archivierte, von `recalculate` nie wieder hart gelöschte Übungen sammeln sich bei wiederholtem
+  "Neu rechnen" an (siehe Punkt 2 oben) — bewusst akzeptierter, reiner Speicherplatz-Kompromiss.
+- `ProfileEditorView`s `acceptCustom`-Pfad navigiert nach Erfolg weiterhin nicht zum neuen Plan
+  (strukturell bedingt, siehe oben) — unverändert gegenüber dem Verhalten vor dieser Korrektur, jetzt
+  aber explizit dokumentiert statt stillschweigend.
+- Task #197 gilt NICHT als sicher abgeschlossen, bis ein echter Apple-Build/Testlauf die neuen
+  SwiftData-API-Aufrufe (`ModelContext(container)`, `context.model(for:)`) und alle SwiftUI-gated
+  UI-Änderungen bestätigt hat — identisch zur Haltung des Users im Korrektur-Auftrag.
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
+Berichtseintrag.
+
+**Nächste Aufgabe:** unverändert P3, mit derselben Einschränkung wie oben — Task #197 ist für die
+BESTEHENDEN Operationen jetzt nach bestem Wissen auf Code-Ebene vollständig umgesetzt, bleibt aber
+erst durch einen echten Apple-Lauf tatsächlich bewiesen. Finale Wocheneditor-Übernahme bleibt bis
+dahin UND bis zur separaten "nur speichern vs. aktivieren"-Entscheidung blockiert.

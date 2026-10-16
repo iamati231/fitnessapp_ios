@@ -125,6 +125,15 @@ public struct DashboardView: View {
     /// Fortsetzung des abgefangenen Trainingsstarts.
     @State private var pendingComebackStart: (() -> Void)?
 
+    /// Nachbesserung (Task #197, zweite Runde): "Onboarding nicht mit leerem
+    /// catch abschliessen" - `OnboardingView.finishOnboarding()` markiert
+    /// einen gescheiterten initialen Plan nur noch ueber
+    /// `OnboardingPlanCreationNotice`, OHNE selbst einen Alert zu zeigen
+    /// (siehe dortige Begruendung: RootView kann zu diesem Zeitpunkt schon
+    /// auf MainTabView umgeschaltet haben). Das Dashboard ist der erste
+    /// Screen danach und konsumiert den Hinweis GENAU EINMAL.
+    @State private var showingOnboardingPlanCreationFailedAlert = false
+
     /// DEL-202: getappter Kalender-Tag fürs Tages-Detail-Sheet. Identifiable-
     /// Wrapper, weil `Date` selbst kein Identifiable ist und sheet(item:)
     /// eins verlangt.
@@ -252,6 +261,29 @@ public struct DashboardView: View {
         // Pfad: App nach einer Woche wieder öffnen.
         .task {
             autoEndDeloadIfExpired()
+        }
+        // Nachbesserung (Task #197, zweite Runde): siehe
+        // `showingOnboardingPlanCreationFailedAlert`-Doku. `.task` ohne
+        // `id:` laeuft wie `autoEndDeloadIfExpired()` oben bei jedem
+        // Dashboard-Erscheinen - unschaedlich, weil `consumeIfPending()`
+        // nach dem ersten `true` dauerhaft `false` liefert.
+        .task {
+            if OnboardingPlanCreationNotice.consumeIfPending() {
+                showingOnboardingPlanCreationFailedAlert = true
+            }
+        }
+        .alert(
+            Text("dashboard.onboardingPlanCreationFailed.title", bundle: .module),
+            isPresented: $showingOnboardingPlanCreationFailedAlert
+        ) {
+            Button {
+                navigation.selectedTab = .plan
+            } label: {
+                Text("dashboard.onboardingPlanCreationFailed.goToPlan", bundle: .module)
+            }
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("dashboard.onboardingPlanCreationFailed.message", bundle: .module)
         }
         // `.task` laeuft nur, wenn das Dashboard erscheint - die App bleibt aber
         // oft tagelang im Speicher und wird nur fortgesetzt. Ohne diesen Hook

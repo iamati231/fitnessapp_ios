@@ -1954,16 +1954,28 @@ public struct OnboardingView: View {
             // Plan, in der App - identisch zum bereits unterstuetzten "Fertig
             // ohne Plan"-Fall - und kann einen Plan jederzeit ueber
             // `PlansListView`s "+" nachholen.
+            //
+            // Nachbesserung (Task #197, zweite Runde): "Onboarding nicht mit
+            // leerem catch abschliessen" - kein Alert HIER (siehe Begruendung
+            // unten, unveraendert), aber auch kein stilles Verschwinden mehr.
+            // `OnboardingPlanCreationNotice.markFailed()` ist reines
+            // `UserDefaults`, unabhaengig von dieser View/ihrem Lebenszyklus -
+            // `DashboardView` liest ihn beim naechsten Erscheinen aus und
+            // erklaert die Situation im sichtbaren Folgekontext (statt
+            // "konsistent abbrechen/erneut versuchen" - das wuerde bedeuten,
+            // den bereits abgeschlossenen Profil-Insert wieder zu verwerfen,
+            // nur weil der NACHGELAGERTE, optionale Plan-Schritt scheiterte).
             do {
                 try PlanGeneratorInstantiator.createPlan(
                     from: customPlanInput, result: customPlanResult,
                     for: profile, generationSource: .planBuilder, in: modelContext
                 )
             } catch {
-                // Bewusst kein Alert hier: der Profil-Insert oben hat
+                // Bewusst kein Alert HIER: der Profil-Insert oben hat
                 // `RootView` moeglicherweise schon zur MainTabView
                 // umschalten lassen, ein neuer Alert-State auf dieser View
                 // koennte nie mehr sichtbar werden.
+                OnboardingPlanCreationNotice.markFailed()
             }
         }
 

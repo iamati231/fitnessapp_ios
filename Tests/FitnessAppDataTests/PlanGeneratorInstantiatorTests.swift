@@ -34,6 +34,7 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         // Nachbesserung (Task #197): gleicher Grund wie oben - statischer
         // Override, muss nach jedem Test zurueckgesetzt werden.
         PlanGeneratorInstantiator.saveOverrideForTesting = nil
+        PlanGeneratorInstantiator.fetchActivePlansOverrideForTesting = nil
     }
 
     private var context: ModelContext { container.mainContext }
@@ -490,12 +491,15 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
     private struct TestSaveError: Error {}
 
     /// Kern-Regression: ein fehlgeschlagener Save in `build` darf den
-    /// Context NICHT in einem inkonsistenten Zustand zuruecklassen. Beweist
-    /// BEIDE Haelften des gezielten Rueckbaus — nicht nur, dass der neue
-    /// Plan verschwindet, sondern auch, dass der VORHER aktive Plan wieder
-    /// aktiv ist (ohne das bliebe nach einem gescheiterten Versuch gar kein
-    /// Plan mehr aktiv, siehe `ProgramInstantiator.instantiate`s
-    /// unconditional Deaktivierung).
+    /// Aufrufer-Context NICHT in einem inkonsistenten Zustand zuruecklassen.
+    /// Beweist BEIDE Haelften: der neue Plan verschwindet, UND der VORHER
+    /// aktive Plan ist weiterhin aktiv (ohne das bliebe nach einem
+    /// gescheiterten Versuch gar kein Plan mehr aktiv, siehe
+    /// `ProgramInstantiator.instantiate`s unconditional Deaktivierung).
+    /// Mechanismus (Review nach Task #197): `build` arbeitet auf einem
+    /// isolierten Scratch-Context (siehe Typ-Doku Punkt 1) - `planA` (im
+    /// Aufrufer-Context) wird vom gescheiterten zweiten Versuch technisch
+    /// NIE beruehrt, nicht erst mutiert und dann zurueckgesetzt.
     func testBuildRollsBackNewPlanAndRestoresPreviousActivePlanWhenSaveFails() throws {
         let planA = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
         XCTAssertTrue(planA.isActive)
@@ -506,7 +510,7 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
             XCTAssertEqual(error as? PlanGeneratorInstantiator.PlanCreationError, .saveFailed)
         }
 
-        XCTAssertTrue(planA.isActive, "vorheriger aktiver Plan muss nach fehlgeschlagenem Save wiederhergestellt sein")
+        XCTAssertTrue(planA.isActive, "vorheriger aktiver Plan darf durch den gescheiterten Versuch nie beruehrt werden")
         let allPlans = try context.fetch(FetchDescriptor<TrainingPlan>())
         XCTAssertEqual(allPlans.count, 1, "der fehlgeschlagene zweite Plan darf nicht haengen bleiben")
     }
@@ -524,10 +528,69 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         }
     }
 
-    /// `recalculate` kann (anders als `build`) nicht zurueckbauen — siehe
-    /// Typ-Doku "Commit-/Speicherverantwortung". Der Fehler muss trotzdem
-    /// sichtbar geworfen werden statt in einer stillen Autosave-Abhaengigkeit
-    /// zu verschwinden.
+    /// Nachbesserung (Review nach Task #197, geforderter Test 4): ein
+    /// fehlgeschlagener Versuch darf einen ERNEUTEN, diesmal erfolgreichen
+    /// Versuch nicht behindern — kein verwaistes Fragment vom ersten
+    /// Versuch, kein doppelter aktiver Plan.
+    func testFailedCreationIsRepeatableWithoutOrphanedObjects() throws {
+        let planA = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
+
+        PlanGeneratorInstantiator.saveOverrideForTesting = { _ in throw TestSaveError() }
+        XCTAssertThrowsError(try buildPlan(from: input([selection(.dumbbell, days: 3)])))
+
+        PlanGeneratorInstantiator.saveOverrideForTesting = nil
+        let planB = try XCTUnwrap(buildPlan(from: input([selection(.dumbbell, days: 3)])))
+
+        XCTAssertTrue(planB.isActive)
+        XCTAssertFalse(planA.isActive, "der jetzt erfolgreiche zweite Plan muss den ersten regulaer deaktivieren")
+        let allPlans = try context.fetch(FetchDescriptor<TrainingPlan>())
+        XCTAssertEqual(allPlans.count, 2, "genau Plan A und der jetzt erfolgreiche Plan B - kein Fragment vom gescheiterten Versuch")
+    }
+
+    /// Nachbesserung (Review nach Task #197, Punkt 3 der Vorgabe): scheitert
+    /// die Pruefung, welche Plaene aktiv sind, selbst (z.B. Fetch-Fehler),
+    /// darf GAR KEINE Mutation stattgefunden haben - kein `(try? ...) ?? []`.
+    func testBuildAbortsBeforeAnyMutationWhenActivePlanCheckFails() throws {
+        let planA = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
+        XCTAssertTrue(planA.isActive)
+
+        PlanGeneratorInstantiator.fetchActivePlansOverrideForTesting = { throw TestSaveError() }
+
+        XCTAssertThrowsError(try buildPlan(from: input([selection(.dumbbell, days: 3)]))) { error in
+            XCTAssertEqual(error as? PlanGeneratorInstantiator.PlanCreationError, .activePlanCheckFailed)
+        }
+
+        XCTAssertTrue(planA.isActive, "darf unveraendert bleiben, da vor jeder Mutation abgebrochen wurde")
+        let allPlans = try context.fetch(FetchDescriptor<TrainingPlan>())
+        XCTAssertEqual(allPlans.count, 1, "kein zweiter Plan darf angelegt worden sein")
+    }
+
+    /// Nachbesserung (Review nach Task #197, geforderter Test 1): `build`
+    /// arbeitet auf einem isolierten Scratch-Context (Typ-Doku Punkt 1) -
+    /// eine unabhaengige, im Aufrufer-Context noch NICHT gespeicherte
+    /// Aenderung darf dadurch NICHT mitgespeichert werden. Prueft das direkt
+    /// gegen einen DRITTEN, frischen Verifikations-Context auf demselben
+    /// Container (nicht gegen den Aufrufer-Context selbst, dessen
+    /// In-Memory-Zustand die eigene offene Aenderung natuerlich weiterhin
+    /// zeigt) - nur so laesst sich zeigen, was TATSAECHLICH auf dem Store
+    /// gelandet ist.
+    func testBuildDoesNotSaveIndependentPendingChangeInCallerContext() throws {
+        let independentProfile = UserBodyProfile(birthDate: Date(), heightCm: 180, profile: .male)
+        context.insert(independentProfile)
+        XCTAssertTrue(context.hasChanges, "Testvoraussetzung: die unabhaengige Aenderung muss selbst noch ungespeichert sein")
+
+        let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
+        XCTAssertFalse(plan.days.isEmpty)
+
+        let verificationContext = ModelContext(container)
+        let savedProfiles = try verificationContext.fetch(FetchDescriptor<UserBodyProfile>())
+        XCTAssertTrue(savedProfiles.isEmpty, "unabhaengiges, nicht selbst gespeichertes Profil wurde faelschlich mitgespeichert")
+    }
+
+    /// `recalculate` kann (anders als `build`) nicht per Context-Isolation
+    /// zurueckbauen — siehe Typ-Doku "Operations-/Fehlervertrag" Punkt 1.
+    /// Der Fehler muss trotzdem sichtbar geworfen werden statt in einer
+    /// stillen Autosave-Abhaengigkeit zu verschwinden.
     func testRecalculatePropagatesSaveFailureAsThrownError() throws {
         let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
         PlanGeneratorInstantiator.saveOverrideForTesting = { _ in throw TestSaveError() }
@@ -535,6 +598,39 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         XCTAssertThrowsError(try PlanGeneratorInstantiator.recalculate(plan, in: context)) { error in
             XCTAssertEqual(error as? PlanGeneratorInstantiator.RecalculateError, .saveFailed)
         }
+    }
+
+    /// Nachbesserung (Review nach Task #197, geforderter Test 2): ein
+    /// Save-Fehler bei `recalculate` darf WEDER den dauerhaften (bereits
+    /// persistierten) NOCH einen anschliessend erneut gespeicherten Zustand
+    /// veraendern. Prueft explizit BEIDE Zeitpunkte - direkt nach dem
+    /// Fehler (zeigt den vollstaendigen `revert(...)`) UND nach einem
+    /// GENUINEN, spaeteren Save (zeigt, dass nichts vom gescheiterten
+    /// Versuch nachtraeglich haengen geblieben ist und still mitgenommen
+    /// wird).
+    func testRecalculateSaveFailureLeavesNoStructuralChangeEvenAfterLaterSave() throws {
+        let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
+        let day = try XCTUnwrap(plan.days.first { $0.type != .rest })
+        let originalExerciseIDs = Set(day.activeExercises.map(\.persistentModelID))
+        let originalName = day.name
+
+        PlanGeneratorInstantiator.saveOverrideForTesting = { _ in throw TestSaveError() }
+        XCTAssertThrowsError(try PlanGeneratorInstantiator.recalculate(plan, in: context))
+
+        XCTAssertEqual(day.name, originalName, "Tagesfelder muessen sofort nach dem Fehler zurueckgesetzt sein")
+        XCTAssertEqual(
+            Set(day.activeExercises.map(\.persistentModelID)), originalExerciseIDs,
+            "aktive Uebungen muessen sofort nach dem Fehler wieder exakt die urspruenglichen sein"
+        )
+
+        // Jetzt ein GENUINER Save (Override entfernt) - darf nichts vom
+        // gescheiterten Versuch nachtraeglich uebernehmen, weil `revert`
+        // bereits alles zurueckgesetzt hat, bevor dieser Save ueberhaupt
+        // startet.
+        PlanGeneratorInstantiator.saveOverrideForTesting = nil
+        try context.save()
+        XCTAssertEqual(day.name, originalName)
+        XCTAssertEqual(Set(day.activeExercises.map(\.persistentModelID)), originalExerciseIDs)
     }
 
     /// Begrenzter Commit-Scope: wenn kein einziger Tag neu geschrieben wurde

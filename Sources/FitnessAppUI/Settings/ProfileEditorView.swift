@@ -92,6 +92,12 @@ public struct ProfileEditorView: View {
     /// abgedeckt. Gleiches Muster wie `PlansListView.isAcceptingCardioFeasibility`.
     @State private var isAcceptingCardioFeasibility = false
 
+    /// Nachbesserung (Task #197, zweite Runde): gleiches Muster wie
+    /// `PlansListView.cardioAcceptErrorMessage` — ein Speicherfehler von
+    /// `accept`/`acceptCustom` wird sichtbar gemacht statt (wie vorher) in
+    /// einem `_ = ...`-Discard vollstaendig zu verschwinden.
+    @State private var cardioAcceptErrorMessage: String?
+
     /// DEL-047: gehaltete `oldEnv`-Referenz fuer den Confirmation-Dialog. Wenn
     /// non-nil, wird der Dialog angezeigt; alle drei Dialog-Aktionen setzen
     /// das Feld wieder auf nil zurueck.
@@ -311,6 +317,19 @@ public struct ProfileEditorView: View {
             }
         } message: { snapshot in
             Text(healthPullPreviewMessage(snapshot))
+        }
+        // Nachbesserung (Task #197, zweite Runde): sichtbarer Fehler statt
+        // stillem Discard, siehe `cardioAcceptErrorMessage`-Doku.
+        .alert(
+            Text("cardioFeasibility.error.saveFailed.title", bundle: .module),
+            isPresented: Binding(
+                get: { cardioAcceptErrorMessage != nil },
+                set: { if !$0 { cardioAcceptErrorMessage = nil } }
+            )
+        ) {
+            Button("OK") { cardioAcceptErrorMessage = nil }
+        } message: {
+            Text(cardioAcceptErrorMessage ?? "")
         }
         .overlay(alignment: .bottom) {
             if let msg = profileSwapToast {
@@ -1004,11 +1023,21 @@ public struct ProfileEditorView: View {
                     // zuruecksetzen — `accept` laesst `cardioGoal` jetzt bei
                     // `nil` unveraendert, ein Re-Snapshot waere dann nur ein
                     // No-Op, aber kein unbedingtes "Fortschreiben" mehr.
+                    //
+                    // Nachbesserung (Task #197, zweite Runde): ein
+                    // tatsaechlicher Speicherfehler wird jetzt geworfen (statt
+                    // wie der leere Ruecksprung nur `nil` zu liefern) und zeigt
+                    // den sichtbaren Alert mit Wiederholungs-Moeglichkeit.
                     withAnimation {
-                        if model.accept(profile: profile, in: modelContext) != nil {
-                            rebaselineCardioGoal()
-                        } else {
+                        do {
+                            if try model.accept(profile: profile, in: modelContext) != nil {
+                                rebaselineCardioGoal()
+                            } else {
+                                isAcceptingCardioFeasibility = false
+                            }
+                        } catch {
                             isAcceptingCardioFeasibility = false
+                            cardioAcceptErrorMessage = String(localized: "cardioFeasibility.error.saveFailed.message", bundle: .module)
                         }
                     }
                 } label: {
@@ -1056,7 +1085,19 @@ public struct ProfileEditorView: View {
                     // `acceptCustom` aendert ebenfalls nur `cardioFeasibility-
                     // DismissedFingerprint`, nicht `cardioGoal` — kein
                     // Rebaseline noetig (siehe `rebaselineCardioGoal()`).
-                    _ = model.acceptCustom(input: adjustedInput, result: adjustedResult, profile: profile, in: modelContext)
+                    // Keine Navigation bei Erfolg: dieser Screen haelt (anders
+                    // als `PlansListView`) gar keine `AppNavigation`-Referenz,
+                    // der direkte "Uebernehmen"-Button oben navigiert aus
+                    // demselben Grund ebenfalls nicht.
+                    //
+                    // Nachbesserung (Task #197, zweite Runde): der Speicherfehler
+                    // wurde vorher durch `_ = ...` komplett verworfen - jetzt
+                    // sichtbar via `cardioAcceptErrorMessage`.
+                    do {
+                        try model.acceptCustom(input: adjustedInput, result: adjustedResult, profile: profile, in: modelContext)
+                    } catch {
+                        cardioAcceptErrorMessage = String(localized: "cardioFeasibility.error.saveFailed.message", bundle: .module)
+                    }
                 }
             }
         }

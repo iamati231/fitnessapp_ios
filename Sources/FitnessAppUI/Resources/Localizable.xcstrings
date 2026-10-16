@@ -34953,6 +34953,22 @@
         }
       }
     },
+    "cardioFeasibility.error.saveFailed.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Plan konnte nicht gespeichert werden" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Plan Couldn't Be Saved" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Plan Kaydedilemedi" } }
+      }
+    },
+    "cardioFeasibility.error.saveFailed.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Beim Speichern ist ein Fehler aufgetreten. Es wurde nichts geändert — bitte versuche es erneut." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Something went wrong while saving. Nothing was changed — please try again." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kaydederken bir sorun oluştu. Hiçbir şey değişmedi — lütfen tekrar dene." } }
+      }
+    },
         "cardioFeasibility.day.interval": {
       "extractionState": "manual",
       "localizations": {
@@ -35112,6 +35128,30 @@
             "value": "Planı görüntüle"
           }
         }
+      }
+    },
+    "dashboard.onboardingPlanCreationFailed.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Plan konnte nicht angelegt werden" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Plan Couldn't Be Created" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Plan Oluşturulamadı" } }
+      }
+    },
+    "dashboard.onboardingPlanCreationFailed.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Dein Profil wurde gespeichert, aber der vorgeschlagene Trainingsplan konnte beim Abschluss des Onboardings nicht gespeichert werden. Du kannst jederzeit im Plan-Tab einen neuen Plan erstellen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Your profile was saved, but the suggested training plan couldn't be saved when onboarding finished. You can create a new plan anytime from the Plan tab." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Profilin kaydedildi, ancak katılım tamamlanırken önerilen antrenman planı kaydedilemedi. Plan sekmesinden istediğin zaman yeni bir plan oluşturabilirsin." } }
+      }
+    },
+    "dashboard.onboardingPlanCreationFailed.goToPlan": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Zum Plan-Tab" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Go to Plan Tab" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Plan Sekmesine Git" } }
       }
     },
     "plans.cardioFeasibility.feasibleTitle": {
