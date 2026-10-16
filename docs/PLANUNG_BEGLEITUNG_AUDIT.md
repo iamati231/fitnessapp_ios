@@ -2947,3 +2947,56 @@ vorige Runde) und `3d462dd` (dieser Fix), beide gepusht.
 **Naechste Aufgabe:** Codemagic-Ergebnis fuer `3d462dd` abwarten/pruefen. Danach, falls gewuenscht, der
 oben genannte gezielte Re-Test des Fixes. Szenario "Fehler vor Commit"/"Rebind-Fehler" bleiben wie
 zuvor dokumentiert per User-Entscheidung zurueckgestellt. Task #197 bleibt `in_progress`.
+
+## Fix-Verifikationslauf extern blockiert (TestingBot HTTP 402 "Insufficient credits") - Task #197 auf "UI-Verifikation extern blockiert" gesetzt
+
+**Status:** Der angekuendigte TestingBot-Lauf mit zwei aufeinanderfolgenden, unabhaengigen
+Cardio-Uebernahmen (Re-Test des `isAcceptingCardioFeasibility`-Fixes, siehe oben) konnte nicht
+gestartet werden. Ursache ist eine externe Abrechnungsgrenze bei TestingBot, kein App- oder
+Code-Fehler. Task #197 wird deshalb nicht laenger als `in_progress`, sondern explizit als
+**"UI-Verifikation extern blockiert"** gefuehrt.
+
+**Fehler bei der Session-Erstellung** (`POST https://hub.testingbot.com/wd/hub/session`):
+```
+HTTP 402
+{"message": "Insufficient credits. Please add credits on testingbot.com",
+ "error": "Insufficient credits. Please add credits on testingbot.com",
+ "stacktrace": "", "status": 33,
+ "value": {"error": "Insufficient credits. Please add credits on testingbot.com",
+           "message": "Insufficient credits. Please add credits on testingbot.com"}}
+```
+
+**Entscheidung (User, ausdruecklich):** Keine weiteren TestingBot-Versuche, bis wieder Guthaben
+verfuegbar ist. Keine kostenpflichtige Aufladung ohne ausdrueckliche Freigabe. Kein Code-Umbau
+wegen dieser Automatisierungs-/Abrechnungsgrenze.
+
+**Stand fuer die Wiederaufnahme, exakt festgehalten:**
+- Commit: `a2ca5ff` (reiner Dokumentations-Commit; keine Code-Aenderung gegenueber `a12a425`/
+  `3d462dd` - der `isAcceptingCardioFeasibility`-Fix ist in diesem Stand bereits enthalten).
+- TestingBot-App: `tb://e83cd69e60c1a2af906df7b5` - bereits hochgeladen, einsatzbereit fuer den
+  naechsten Lauf, sobald wieder Guthaben verfuegbar ist.
+- Codemagic `swift-package`-Build `6ad27962e8810c37ac26d788` fuer Commit
+  `a12a4255c8126c974e03b66a19c2be353bf49fb9` (= `a12a425`): alle Schritte `success`, Unit-Tests
+  lueckenlos `[1/1240]` bis `[1240/1240]` gruen, keine Regression.
+- Codemagic `ios-app`-Build `6ad27b46c1dbea563bd431e8`: `finished`, Artefakt `FitnessApp.app.zip`,
+  37.571.041 Bytes, Bundle-ID `com.atamya.FitnessApp`, Version `0.1.0`, `MinimumOSVersion 17.0` -
+  gegen den vorherigen Build per `FitnessApp.app/FitnessApp.debug.dylib`-SHA256 verglichen, Hash
+  aendert sich (Fix nachweislich im Binary enthalten, siehe Methodik-Korrektur oben). Aus diesem
+  Artefakt wurde `tb://e83cd69e60c1a2af906df7b5` erzeugt.
+
+**Noch offene Tests (gegen genau diesen Stand, sobald TestingBot wieder nutzbar ist):**
+1. Zwei aufeinanderfolgende Cardio-Uebernahmen im Plan-Tab.
+2. Derselbe Ablauf im Profileditor.
+3. "Adjust plan": gespeicherter Inhalt entspricht dem Entwurf.
+4. Onboarding-Custom-Builder: genau ein finaler Plan.
+
+**Wertung:** Die zuvor bestandenen Apple-Testlaeufe (u. a. 6300fbf, 935e0f6, 73fa31a sowie die
+1240/1240-Suite fuer `a12a425`) bleiben bestaetigt. Die vier oben genannten, noch offenen UI-Faelle
+werden **weder als bestanden noch als fehlgeschlagen** gewertet - sie sind schlicht noch nicht
+durchgefuehrt worden.
+
+**Naechste Aufgabe:** Sobald Guthaben bei TestingBot wieder verfuegbar ist, die vier offenen Tests
+gegen Commit `a2ca5ff` / TestingBot-App `tb://e83cd69e60c1a2af906df7b5` durchfuehren. Bis dahin
+keine weiteren TestingBot-Versuche, keine kostenpflichtige Aufladung ohne ausdrueckliche Freigabe,
+keine Code-Aenderungen ohne neuen, reproduzierbaren Befund. Task #197 bleibt bis zum Abschluss
+dieser vier Tests auf "UI-Verifikation extern blockiert".
