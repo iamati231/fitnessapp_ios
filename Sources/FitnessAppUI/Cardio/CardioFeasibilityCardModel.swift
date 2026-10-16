@@ -116,10 +116,22 @@ public struct CardioFeasibilityCardModel {
         // Nachbesserung (P2.3): `createPlan(for:)` buendelt die vorher hier
         // inline stehende Resolve+Build-Sequenz (siehe dortige Doku) — ein
         // Aufruf statt vier unabhaengiger Kopien derselben zwei Zeilen.
-        let plan = PlanGeneratorInstantiator.createPlan(
+        //
+        // Nachbesserung (P2.3-Review, Punkt 3): `cardioGoal`/Fingerprint
+        // werden jetzt NUR bei TATSAECHLICHEM Erfolg fortgeschrieben — vorher
+        // liefen beide Zeilen unconditional nach diesem Aufruf, auch wenn
+        // `createPlan` `nil` zurueckgab (heute strukturell unerreichbar, weil
+        // `hasPlan` oben bereits ein nicht-leeres `planResult` garantiert,
+        // aber `build`s EINZIGER nil-Ruecksprung genau dieser leer-Check ist
+        // — dieselbe "defensiv, nie beobachtet" Disziplin wie ueberall sonst
+        // in `PlanGeneratorInstantiator`). Ein Fehlschlag haette sonst wie
+        // eine erfolgreiche Annahme ausgesehen: Fingerprint gesetzt → Karte
+        // verschwindet via `make(for:)` → kein Plan existiert, keine
+        // Wiederholung moeglich, ohne dass der Nutzer das bemerkt.
+        guard let plan = PlanGeneratorInstantiator.createPlan(
             from: planInput, result: planResult,
             for: profile, generationSource: .cardioCoach, in: context
-        )
+        ) else { return nil }
         profile.cardioGoal = proposedGoal
         profile.cardioFeasibilityDismissedFingerprint = CardioFeasibilityCalculator.suppressionFingerprint(
             goal: proposedGoal, raceDate: raceDate, weeklyBaseVolumeKm: weeklyVolume
@@ -157,10 +169,14 @@ public struct CardioFeasibilityCardModel {
     ) -> TrainingPlan? {
         guard !result.days.isEmpty else { return nil }
         // Nachbesserung (P2.3): siehe `accept(profile:in:)` oben.
-        let plan = PlanGeneratorInstantiator.createPlan(
+        // Nachbesserung (P2.3-Review, Punkt 3): Fingerprint nur bei Erfolg,
+        // siehe dortige Begruendung — hier ebenfalls strukturell unerreichbar
+        // (der obige Leer-Check deckt `build`s einzigen nil-Pfad bereits ab),
+        // aber derselbe explizite Vertrag statt stillschweigender Annahme.
+        guard let plan = PlanGeneratorInstantiator.createPlan(
             from: input, result: result,
             for: profile, generationSource: .cardioCoach, in: context
-        )
+        ) else { return nil }
         profile.cardioFeasibilityDismissedFingerprint = fingerprint
         return plan
     }

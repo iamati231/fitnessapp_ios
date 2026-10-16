@@ -250,9 +250,16 @@ public struct PlansListView: View {
                     guard !isAcceptingCardioFeasibility else { return }
                     isAcceptingCardioFeasibility = true
                     withAnimation {
-                        let plan = model.accept(profile: profile, in: modelContext)
-                        if let plan {
+                        // Nachbesserung (P2.3-Review, Punkt 3): Flag im
+                        // Fehlerfall zuruecksetzen — `accept` zeigt jetzt
+                        // keinen Erfolg (Fingerprint bleibt unveraendert) mehr
+                        // bei `nil`, die Karte bleibt also sichtbar und der
+                        // Button muss wieder bedienbar sein, damit der Nutzer
+                        // es erneut versuchen kann.
+                        if let plan = model.accept(profile: profile, in: modelContext) {
                             navigation.workoutPath.append(plan)
+                        } else {
+                            isAcceptingCardioFeasibility = false
                         }
                     }
                 } label: {

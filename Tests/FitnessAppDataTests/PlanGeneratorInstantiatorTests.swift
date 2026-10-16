@@ -25,6 +25,12 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
 
     override func tearDownWithError() throws {
         container = nil
+        // Nachbesserung (P2.3-Review, Punkt 1): DI-Seam ist ein STATISCHER
+        // Override auf dem Typ, nicht Instanz-State — muss nach jedem Test
+        // zurueckgesetzt werden, sonst "leakt" ein in einem Test gesetzter
+        // Mock in alle nachfolgenden Tests dieser (oder einer anderen)
+        // Testklasse.
+        PlanGeneratorInstantiator.fetchAllSessionsOverrideForTesting = nil
     }
 
     private var context: ModelContext { container.mainContext }
@@ -134,12 +140,13 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
 
     // MARK: - recalculate() Grundfaelle
 
-    func testRecalculateIsNoOpForPlansWithoutGeneratorInput() {
+    func testRecalculateIsNoOpForPlansWithoutGeneratorInput() throws {
         let plan = TrainingPlan(name: "Custom", isActive: true)
         context.insert(plan)
         let day = TrainingDay(name: "Tag 1", weekday: 2, type: .fullBody, plan: plan)
         context.insert(day)
-        XCTAssertEqual(PlanGeneratorInstantiator.recalculate(plan, in: context), 0)
+        let summary = try PlanGeneratorInstantiator.recalculate(plan, in: context)
+        XCTAssertEqual(summary, .init(rewrittenCount: 0, skippedDueToHistoryCount: 0))
     }
 
     func testRecalculateSkipsDayWithEditedExerciseSets() throws {
@@ -151,8 +158,8 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         // Simuliert eine User-Aenderung ueber ExerciseEditorView.
         editedDay.activeExercises.first?.sets += 1
 
-        let rewritten = PlanGeneratorInstantiator.recalculate(plan, in: context)
-        XCTAssertEqual(rewritten, 1, "nur der unangetastete zweite Tag darf neu geschrieben werden")
+        let summary = try PlanGeneratorInstantiator.recalculate(plan, in: context)
+        XCTAssertEqual(summary.rewrittenCount, 1, "nur der unangetastete zweite Tag darf neu geschrieben werden")
         XCTAssertEqual(editedDay.activeExercises.count, originalExerciseCount, "editierter Tag bleibt inhaltlich stehen")
     }
 
@@ -187,8 +194,8 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         let editedDay = workoutDaysBefore[0]
         editedDay.type = .rest
 
-        let rewritten = PlanGeneratorInstantiator.recalculate(plan, in: context)
-        XCTAssertEqual(rewritten, 2)
+        let summary = try PlanGeneratorInstantiator.recalculate(plan, in: context)
+        XCTAssertEqual(summary.rewrittenCount, 2)
 
         // Der bearbeitete Tag bleibt Ruhetag - sein Fingerprint (jetzt inkl.
         // `type`) passt nicht mehr, "neu rechnen" darf ihn nicht anfassen.
@@ -226,8 +233,8 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         archived.isArchived = true
         day.generationFingerprint = day.currentContentFingerprint
 
-        let rewritten = PlanGeneratorInstantiator.recalculate(plan, in: context)
-        XCTAssertEqual(rewritten, 1)
+        let summary = try PlanGeneratorInstantiator.recalculate(plan, in: context)
+        XCTAssertEqual(summary.rewrittenCount, 1)
         XCTAssertTrue(day.archivedExercises.contains(where: { $0 === archived }),
                        "archivierte Uebung darf beim Neu-Rechnen nicht verloren gehen")
     }
@@ -340,14 +347,51 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         ))
     }
 
-    // MARK: - P2.3: recalculate() schuetzt laufende Sessions
+    // MARK: - P2.3-Review Punkt 1: Fetch-Fehler darf NIE als "keine Session" gelten
 
-    /// Nachbesserung (P2.3, Abnahme "keine Veraenderung laufender
-    /// Sessions"): ein Tag mit einer gerade LAUFENDEN (nicht abgeschlossenen)
-    /// Session darf von "neu rechnen" nicht angefasst werden, obwohl sein
-    /// Fingerprint (der nur die Plan-STRUKTUR beschreibt) unveraendert ist
-    /// und er die bestehende Fingerprint-Pruefung allein durchlaufen wuerde.
-    func testRecalculateSkipsDayWithActiveSession() throws {
+    /// Kern-Regression des Fail-Safe-Fundes: schlaegt die Session-Pruefung
+    /// selbst fehl (hier via DI-Seam simuliert), muss `recalculate` werfen
+    /// UND NICHT EINEN EINZIGEN Tag anfassen — ein `(try? ...) ?? []` im
+    /// Schutzpfad haette den Fehler still als "keine Session" gewertet und
+    /// waere ungebremst weitergelaufen.
+    func testRecalculateThrowsAndChangesNothingWhenSessionCheckFails() throws {
+        let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
+        let workoutDays = plan.days.filter { $0.type != .rest }
+        let fingerprintsBefore = workoutDays.map(\.generationFingerprint)
+        let exerciseIDsBefore = workoutDays.map { Set($0.activeExercises.map(\.persistentModelID)) }
+
+        struct SimulatedFetchFailure: Error {}
+        PlanGeneratorInstantiator.fetchAllSessionsOverrideForTesting = { throw SimulatedFetchFailure() }
+
+        XCTAssertThrowsError(try PlanGeneratorInstantiator.recalculate(plan, in: context)) { error in
+            XCTAssertEqual(error as? PlanGeneratorInstantiator.RecalculateError, .sessionCheckFailed)
+        }
+
+        // Keine Mutation — jeder Tag ist exakt wie vor dem fehlgeschlagenen Aufruf.
+        let fingerprintsAfter = workoutDays.map(\.generationFingerprint)
+        let exerciseIDsAfter = workoutDays.map { Set($0.activeExercises.map(\.persistentModelID)) }
+        XCTAssertEqual(fingerprintsAfter, fingerprintsBefore, "kein Tag darf nach einem fehlgeschlagenen Sicherheits-Check neu gestempelt sein")
+        XCTAssertEqual(exerciseIDsAfter, exerciseIDsBefore, "keine Uebung darf nach einem fehlgeschlagenen Sicherheits-Check ersetzt worden sein")
+    }
+
+    /// Gegenprobe: ohne Override (echter, erfolgreicher Fetch) bleibt das
+    /// bisherige Verhalten erhalten — der Fail-Safe darf den Erfolgspfad
+    /// nicht beeintraechtigen.
+    func testRecalculateSucceedsNormallyWithoutOverride() throws {
+        let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
+        let summary = try PlanGeneratorInstantiator.recalculate(plan, in: context)
+        XCTAssertEqual(summary, .init(rewrittenCount: 0, skippedDueToHistoryCount: 0),
+                       "frisch gebaute, unveraenderte Tage haben bereits den aktuellen Fingerprint - nichts zu tun, aber kein Fehler")
+    }
+
+    // MARK: - P2.3-Review Punkt 2: konservativer Schutz JEDER Session (nicht nur laufender)
+
+    /// Ein Tag mit einer gerade LAUFENDEN (nicht abgeschlossenen) Session
+    /// wird komplett uebersprungen, sichtbar ueber `skippedDueToHistoryCount`
+    /// — nicht nur inhaltlich unangetastet, sondern im Rueckgabewert auch
+    /// als "wegen Historie uebersprungen" auffindbar, nicht nur als
+    /// "zufaellig nicht neu geschrieben".
+    func testRecalculateSkipsDayWithActiveSessionAndReportsIt() throws {
         let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
         let workoutDays = plan.days.filter { $0.type != .rest }
         XCTAssertEqual(workoutDays.count, 2)
@@ -357,8 +401,9 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         let activeSession = WorkoutSession(isCompleted: false, day: dayWithActiveSession)
         context.insert(activeSession)
 
-        let rewritten = PlanGeneratorInstantiator.recalculate(plan, in: context)
-        XCTAssertEqual(rewritten, 1, "nur der Tag OHNE laufende Session darf neu geschrieben werden")
+        let summary = try PlanGeneratorInstantiator.recalculate(plan, in: context)
+        XCTAssertEqual(summary.rewrittenCount, 1, "nur der Tag OHNE Session darf neu geschrieben werden")
+        XCTAssertEqual(summary.skippedDueToHistoryCount, 1, "muss sichtbar als historienbedingt uebersprungen gemeldet werden")
         XCTAssertEqual(
             Set(dayWithActiveSession.activeExercises.map(\.persistentModelID)),
             originalExerciseIDs,
@@ -366,16 +411,20 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         )
     }
 
-    /// Eine ABGESCHLOSSENE Session blockiert "neu rechnen" dagegen NICHT
-    /// (nur laufende) — und ihr `ExerciseLog` wird beim Ersetzen der
-    /// Uebungen nicht geloescht, nur die `.exercise`-Referenz verwaist
-    /// (`Exercise.exerciseLogs`-Relationship ist `.nullify`, nicht
-    /// `.cascade`). Belegt die Abnahme "keine Veraenderung historischer
-    /// Sessions" konkret, statt sie nur aus dem Schema zu behaupten.
-    func testRecalculateReplacesExercisesButPreservesHistoricalLog() throws {
+    /// KORREKTUR (P2.3-Review): die urspruengliche P2.3-Fassung liess eine
+    /// ABGESCHLOSSENE Session "neu rechnen" nicht blockieren und bewies nur
+    /// "der ExerciseLog wird nicht geloescht" — das ist KEIN Nachweis
+    /// unveraenderter Historie, siehe `testExerciseLogDegradesScoringButKeepsIdentityOnceOrphaned`
+    /// unten: `cnsFatigueScore`/`localMuscleDamageScore` fallen auf 0.0
+    /// zurueck, sobald `exercise == nil` ist. Konservativ bis zur Inhalts-/
+    /// Versionsabsicherung: JEDE Session (auch abgeschlossen) blockiert jetzt
+    /// — der Tag bleibt komplett unangetastet, die Log-Referenz bleibt
+    /// vollstaendig intakt (nicht nur "ueberlebt orphan").
+    func testRecalculateSkipsDayWithCompletedSessionTooAndLogStaysFullyIntact() throws {
         let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 1)])))
         let day = try XCTUnwrap(plan.days.first { $0.type != .rest })
         let originalExercise = try XCTUnwrap(day.activeExercises.first)
+        let originalExerciseIDs = Set(day.activeExercises.map(\.persistentModelID))
 
         let completedSession = WorkoutSession(isCompleted: true, day: day)
         context.insert(completedSession)
@@ -383,14 +432,44 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
                                exercise: originalExercise, session: completedSession)
         context.insert(log)
 
-        let rewritten = PlanGeneratorInstantiator.recalculate(plan, in: context)
-        XCTAssertEqual(rewritten, 1, "eine ABGESCHLOSSENE Session darf 'neu rechnen' nicht blockieren")
+        let summary = try PlanGeneratorInstantiator.recalculate(plan, in: context)
+        XCTAssertEqual(summary.rewrittenCount, 0, "ein Tag mit JEDER Session (auch abgeschlossen) darf nicht neu geschrieben werden")
+        XCTAssertEqual(summary.skippedDueToHistoryCount, 1)
+        XCTAssertEqual(Set(day.activeExercises.map(\.persistentModelID)), originalExerciseIDs,
+                       "Uebungen bleiben unveraendert - keine Ersetzung, also auch keine Verwaisung noetig")
+        XCTAssertNotNil(log.exercise, "die Log-Referenz bleibt vollstaendig intakt, nicht nur ueberlebend-aber-verwaist")
+        XCTAssertTrue(log.exercise === originalExercise, "dieselbe Uebungs-Instanz, keine Ersetzung - Auswertung (CNS-/Muskel-Score) bleibt dadurch unveraendert korrekt")
+    }
 
-        let survivingSessions = try context.fetch(FetchDescriptor<WorkoutSession>())
-        let survivingLogs = try context.fetch(FetchDescriptor<ExerciseLog>())
-        XCTAssertEqual(survivingSessions.count, 1, "historische Session darf nicht geloescht werden")
-        XCTAssertEqual(survivingLogs.count, 1, "historischer ExerciseLog darf nicht geloescht werden")
-        XCTAssertNil(survivingLogs.first?.exercise, "verwaist korrekt (nullify), statt die ersetzte Uebung zu behalten")
+    /// Begruendet DIREKT, warum Punkt 2 konservativ JEDE Session blockiert
+    /// statt nur zu pruefen, ob der `ExerciseLog` die Loeschung ueberlebt:
+    /// Name/Cardio/TimeBased-Identitaet ueberleben einen Exercise-Delete
+    /// ueber die Snapshot-Felder (`resolvedExerciseName` etc., siehe
+    /// `ExerciseLog`-Typ-Doku) — aber `cnsFatigueScore`/
+    /// `localMuscleDamageScore` (reine `Auswertung`, keine reinen
+    /// Snapshot-Werte) fallen auf `0.0` zurueck. "Der Log existiert noch"
+    /// ist deshalb ausdruecklich KEIN Beweis fuer unveraenderte Historie.
+    func testExerciseLogDegradesScoringButKeepsIdentityOnceOrphaned() throws {
+        let plan = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 1)])))
+        let day = try XCTUnwrap(plan.days.first { $0.type != .rest })
+        let exercise = try XCTUnwrap(day.activeExercises.first)
+        XCTAssertGreaterThan(exercise.cnsDemandFactor, 0, "Testvoraussetzung: Faktor muss ungleich 0 sein, sonst beweist der Test nichts")
+
+        let log = ExerciseLog(date: Date(), setIndex: 0, weight: 60, reps: 8, rir: 2.0, exercise: exercise)
+        context.insert(log)
+
+        let nameBefore = log.resolvedExerciseName
+        let cnsBefore = log.cnsFatigueScore
+        XCTAssertGreaterThan(cnsBefore, 0, "Testvoraussetzung: mit Live-Referenz muss ein echter Score herauskommen")
+
+        // Simuliert, was ein Exercise-Delete fuer den Log bedeutet
+        // (`.nullify`-Relationship, kein Cascade) — direkt gesetzt statt
+        // `context.delete(exercise)`, um unabhaengig von `recalculate` nur
+        // diese EINE Eigenschaft von `ExerciseLog` zu pruefen.
+        log.exercise = nil
+
+        XCTAssertEqual(log.resolvedExerciseName, nameBefore, "Identitaet bleibt ueber den Snapshot erhalten")
+        XCTAssertEqual(log.cnsFatigueScore, 0.0, "Auswertung degradiert MESSBAR, sobald die Live-Referenz fehlt - genau der Befund, der Punkt 2 rechtfertigt")
     }
 }
 #endif

@@ -999,8 +999,18 @@ public struct ProfileEditorView: View {
                     // `rebaselineCardioGoal()`-Dokumentation).
                     guard !isAcceptingCardioFeasibility else { return }
                     isAcceptingCardioFeasibility = true
-                    withAnimation { _ = model.accept(profile: profile, in: modelContext) }
-                    rebaselineCardioGoal()
+                    // Nachbesserung (P2.3-Review, Punkt 3): Baseline NUR bei
+                    // tatsaechlichem Erfolg fortschreiben, Flag im Fehlerfall
+                    // zuruecksetzen — `accept` laesst `cardioGoal` jetzt bei
+                    // `nil` unveraendert, ein Re-Snapshot waere dann nur ein
+                    // No-Op, aber kein unbedingtes "Fortschreiben" mehr.
+                    withAnimation {
+                        if model.accept(profile: profile, in: modelContext) != nil {
+                            rebaselineCardioGoal()
+                        } else {
+                            isAcceptingCardioFeasibility = false
+                        }
+                    }
                 } label: {
                     Text(model.verdict.feasible
                          ? String(localized: "profile.cardio.feasibility.apply", bundle: .module)

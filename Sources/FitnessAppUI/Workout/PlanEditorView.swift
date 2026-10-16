@@ -383,10 +383,31 @@ public struct PlanEditorView: View {
     /// viele Tage tatsaechlich ueberschrieben wurden - alle vom User seither
     /// bearbeiteten Tage bleiben unangetastet stehen.
     private func recalculateFromGenerator() {
-        let rewritten = PlanGeneratorInstantiator.recalculate(plan, in: modelContext)
-        let message = rewritten == 0
-            ? "Keine unveraenderten Tage zum Neu-Rechnen gefunden"
-            : "\(rewritten) \(rewritten == 1 ? "Tag" : "Tage") neu berechnet"
+        // Nachbesserung (P2.3-Review, Punkt 1+2): `recalculate` wirft jetzt,
+        // wenn die Session-Sicherheitspruefung selbst fehlschlaegt (keine
+        // Mutation in diesem Fall) — und meldet separat, wie viele Tage
+        // wegen bestehender Trainingshistorie bewusst uebersprungen wurden
+        // (konservativ, bis es eine Inhalts-/Versionsabsicherung dafuer
+        // gibt), statt das in der Gesamtzahl verschwinden zu lassen.
+        let message: String
+        do {
+            let summary = try PlanGeneratorInstantiator.recalculate(plan, in: modelContext)
+            switch (summary.rewrittenCount, summary.skippedDueToHistoryCount) {
+            case (0, 0):
+                message = "Keine unveraenderten Tage zum Neu-Rechnen gefunden"
+            case (let rewritten, 0):
+                message = "\(rewritten) \(rewritten == 1 ? "Tag" : "Tage") neu berechnet"
+            case (0, let skipped):
+                message = "Keine Tage neu berechnet — \(skipped) \(skipped == 1 ? "Tag" : "Tage") wegen bestehender Trainingshistorie uebersprungen"
+            case (let rewritten, let skipped):
+                message = "\(rewritten) \(rewritten == 1 ? "Tag" : "Tage") neu berechnet, \(skipped) wegen bestehender Trainingshistorie uebersprungen"
+            }
+        } catch {
+            // Fail-safe (Punkt 1): kein Tag wurde angefasst — verstaendlicher
+            // Fehlerzustand statt eines stillen No-Ops oder einer falschen
+            // Erfolgsmeldung.
+            message = "Neu rechnen fehlgeschlagen — keine Aenderung vorgenommen. Bitte spaeter erneut versuchen."
+        }
         withAnimation(.easeOut(duration: 0.2)) {
             swapResultToast = message
         }

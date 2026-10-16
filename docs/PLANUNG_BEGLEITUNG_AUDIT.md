@@ -1201,6 +1201,13 @@ generischen "Adopt":**
   `ProgramInstantiator.instantiate` schon immer als Seiteneffekt hatte (alte Pläne deaktivieren,
   neuen Plan aktiv anlegen — unverändertes Bestandsverhalten, keine neue Policy). Schließen,
   Navigieren und Fehleranzeige bleiben explizit beim jeweiligen Aufrufer.
+  **Nachtrag (P2.3-Nachbesserung, Punkt 5 — Korrektur):** diese Formulierung war zu glatt — sie
+  konnte so gelesen werden, als sei der Aktivierungs-Vertrag damit abschließend geklärt. Ist er
+  NICHT: die automatische Deaktivieren-alles/Aktivieren-neu-Policy ist fuer das HEUTIGE
+  Ein-aktiver-Plan-Modell akzeptabel, aber ausdruecklich NICHT fuer alle Zukunft entschieden — ein
+  spaeterer Wocheneditor wird vermutlich eine AUSDRUECKLICHE Aktivierungsentscheidung brauchen.
+  Offen gehalten, nicht geloest — siehe Typ-Doku in `PlanGeneratorInstantiator.swift` fuer die
+  vollstaendige Begruendung.
 - **Doppel-Bestätigung-Schutz** (Abnahme-Punkt "keine Duplikate bei mehrfacher Bestätigung"): fünf
   neue `@State`-Flags mit Guard-am-Funktionsanfang + `.disabled(...)`, da alle beteiligten Aktionen
   synchron ohne `await` laufen und ein zweiter Tap vor der sichtbaren UI-Reaktion sonst doppelt
@@ -1217,11 +1224,9 @@ generischen "Adopt":**
   weder `generationFingerprint` noch `currentContentFingerprint` (beide beschreiben nur die
   Plan-STRUKTUR) — ein Tag mit einer laufenden Session hätte die bisherige Prüfung also
   unverändert durchlaufen, woraufhin `apply(...)` seine Exercise-Zeilen gelöscht und neu angelegt
-  hätte. Neuer Guard `hasActiveSession(for:in:)` (einfacher, bereits anderswo bewährter
-  `#Predicate<WorkoutSession> { $0.isCompleted == false }` + Swift-seitiger `day`-Abgleich über
-  `persistentModelID`, bewusst KEIN Relationship-Vergleich innerhalb des Predicate-Makros selbst —
-  dessen Korrektheit ließe sich auf diesem Linux-Toolchain nicht prüfen) überspringt einen solchen
-  Tag jetzt zusätzlich.
+  hätte. ~~Neuer Guard `hasActiveSession(for:in:)` (... `#Predicate<WorkoutSession> { $0.isCompleted
+  == false }` ...)~~ **durch die P2.3-Nachbesserung ersetzt — siehe dortiger Bericht:** sowohl der
+  Fetch-Fehlerpfad als auch der Schutzumfang (nur laufend vs. jede Session) waren unzureichend.
 
 **Bewusst NICHT umgesetzt (wie vorgegeben):** `duplicatePlan` nicht in den Service verschoben
 (siehe oben); keine neue, fünfte Persistenz-Variante; kein neuer `PlanMatchmaker`-Scoring-Bonus,
@@ -1240,11 +1245,16 @@ SwiftData-Schema-Änderung.
 
 **Tests hinzugefügt:** `Tests/FitnessAppDataTests/PlanGeneratorInstantiatorTests.swift`:
 `testCreatePlanResolvesEnvironmentFromProfile`, `testCreatePlanReturnsNilWhenGeneratorProducesNoDays`
-(neuer Einstiegspunkt, gleiche Garantien wie die bestehenden `build`-Tests),
-`testRecalculateSkipsDayWithActiveSession` (neuer Session-Schutz: ein Tag mit laufender Session
-bleibt unverändert, der andere wird normal neu geschrieben), `testRecalculateReplacesExercisesButPreservesHistoricalLog`
-(eine ABGESCHLOSSENE Session blockiert NICHT, aber ihr `ExerciseLog` überlebt das Ersetzen der
-Übungen — Referenz wird `nil`, nicht die Zeile gelöscht).
+(neuer Einstiegspunkt, gleiche Garantien wie die bestehenden `build`-Tests).
+**Nachtrag (P2.3-Nachbesserung):** `testRecalculateSkipsDayWithActiveSession` und
+`testRecalculateReplacesExercisesButPreservesHistoricalLog` waren unzureichend/falsch (Letzterer
+bewies nur "Zeile nicht gelöscht", nicht "Historie unverändert") und wurden durch
+`testRecalculateSkipsDayWithActiveSessionAndReportsIt`,
+`testRecalculateSkipsDayWithCompletedSessionTooAndLogStaysFullyIntact`,
+`testExerciseLogDegradesScoringButKeepsIdentityOnceOrphaned`,
+`testRecalculateThrowsAndChangesNothingWhenSessionCheckFails` und
+`testRecalculateSucceedsNormallyWithoutOverride` ersetzt/ergänzt — siehe P2.3-Nachbesserung-Bericht
+unten für die vollständige Begründung.
 
 **Tests tatsächlich ausgeführt — WICHTIG, anders als bei P2.1/P2.2: P2.3 berührt KEINE einzige
 Core-Datei.** Jede Änderung dieses Pakets liegt in `FitnessAppData`/`FitnessAppUI` — beide
@@ -1277,11 +1287,9 @@ neue Zeile dieser Runde.
    auf echtem Gerät gemacht).
 
 **Bekannte Grenzen/Risiken:**
-1. `recalculate` zeigt dem Nutzer aktuell KEINE explizite Meldung, wenn ein Tag wegen einer
-   laufenden Session übersprungen wird — er sieht nur, dass "neu rechnen" für diesen Tag scheinbar
-   nichts getan hat. Bewusst nicht zusätzlich gebaut (kein UI-Entry-Point für "neu rechnen"
-   überhaupt im aktuellen Scope verifiziert, siehe Punkt 2 unten) — eine eigene Aufgabe, falls
-   gewünscht.
+1. ~~`recalculate` zeigt dem Nutzer aktuell KEINE explizite Meldung ...~~ **behoben in der
+   P2.3-Nachbesserung:** `RecalculateSummary.skippedDueToHistoryCount` wird jetzt im
+   `PlanEditorView`-Toast explizit genannt ("sichtbar erklärt", siehe dortiger Bericht).
 2. Code-Lesen zeigt `PlanGeneratorInstantiator.recalculate` als vollständig implementiert, aber
    KEINEN verifizierten UI-Button, der es aufruft, außer dem bereits bestehenden Verweis in
    `PlanEditorView.swift:386` (nicht Teil dieser Änderung, nur mitgelesen) — ob "neu rechnen" heute
@@ -1292,6 +1300,13 @@ neue Zeile dieser Runde.
    (Absturz zwischen zwei `context.insert`-Aufrufen vor dem naechsten Autosave) ist
    SwiftData-Framework-Verhalten, außerhalb der Kontrolle dieses Codes, und auf Linux nicht
    prüfbar.
+   **Nachtrag (P2.3-Nachbesserung, Punkt 4 — Korrektur):** "synchroner Code" war als Beleg zu
+   stark formuliert — es beweist nur, dass DIESE Funktion keine halbe Graph-Konstruktion
+   zurueckgibt, NICHT echte Festschreibungs-Atomizitaet. Commit-Verantwortung jetzt explizit in
+   der Typ-Doku von `PlanGeneratorInstantiator.swift` benannt: niemand hier ruft `context.save()`,
+   Autosave entscheidet Zeitpunkt/Fehlerbehandlung, und ausdrücklich KEIN `context.rollback()` als
+   Fix — das würde unabhängige, bereits bestätigte Änderungen auf demselben geteilten Context mit
+   zerstören. Siehe P2.3-Nachbesserung-Bericht unten.
 4. Die fünf Doppel-Tap-Guards sind einfache `@State`-Flags, kein Test kann einen echten
    Doppel-Tap auf Linux simulieren (kein SwiftUI) — die Abnahme-Garantie dafür ist Code-Review-
    Qualität, keine automatisierte.
@@ -1301,6 +1316,153 @@ neue Zeile dieser Runde.
 **Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
 Berichtseintrag.
 
-**Nächste Aufgabe:** P2.4 (Fixierungs-Flag im Builder-Draft, `PlanBuilderView`) — hängt von P2.3
-ab (jetzt erledigt). Apple-Build und Geräteprüfung bleiben für P1, P2.1, die Nachbesserung und
-P2.3 gemeinsam offen, bis ein echter Lauf vorliegt.
+**Nächste Aufgabe:** siehe P2.3-Nachbesserung unten — fünf Schutzlücken, vor Abnahme von P2.3
+behoben.
+
+## P2.3-Nachbesserung (Fetch-Fail-Safe, konservativer Historien-Schutz, Übernahme-Ergebnis,
+Commit-/Aktivierungsvertrag)
+
+Review-Rückmeldung zu P2.3 fand fünf Schutzlücken, alle vor Abnahme behoben. P2.4 durfte laut
+Vorgabe parallel als reine Draft-/Core-Arbeit weiterlaufen, wurde in dieser Runde aber nicht
+begonnen (Fokus auf die fünf Punkte).
+
+**Paket:** fünf unabhängige Korrekturen an Code, Tests und Berichtssprache, keine neue
+Funktionalität.
+
+**Implementiert:**
+
+1. **Fetch-Fehler darf nicht als "keine Session" gelten:** `recalculate`s Schutzpfad nutzte
+   `(try? context.fetch(...)) ?? []` — ein echter Fetch-Fehler wäre damit still als "keine Session
+   vorhanden" gewertet worden und `apply(...)` hätte ungebremst weiterlaufen können. Korrigiert:
+   ein einziger `try fetchAllSessions(in: context)`-Aufruf GANZ AM ANFANG von `recalculate`, VOR
+   jeder Mutation (nicht mehr pro Tag in der Schleife); schlägt er fehl, wirft die Funktion
+   `PlanGeneratorInstantiator.RecalculateError.sessionCheckFailed`, OHNE auch nur einen Tag
+   anzufassen (strukturell garantiert: die erste moegliche Mutation steht erst nach dieser
+   Zeile). `PlanEditorView.recalculateFromGenerator()` faengt das jetzt ab und zeigt einen
+   verständlichen Fehler-Toast ("Neu rechnen fehlgeschlagen — keine Änderung vorgenommen")
+   statt eines stillen No-Ops oder einer falschen Erfolgsmeldung. Testbarkeit: neuer DI-Seam
+   `PlanGeneratorInstantiator.fetchAllSessionsOverrideForTesting` (statischer Override, `nil` =
+   unverändertes Verhalten), exaktes Vorbild `BackupService.backupsDirectoryOverride` — dieselbe,
+   bereits im Projekt etablierte Konvention statt einer neu erfundenen Closure-Parameter-DI.
+2. **Historientest war kein Beweis für unveränderte Historie — korrigiert, nicht nur das
+   Testergebnis angepasst:** die vorherige Behauptung "`ExerciseLog`-Zeile wird nicht gelöscht,
+   nur `.exercise` wird `nil`" ist technisch richtig, aber kein Beleg für "Historie unverändert".
+   Tatsächlich geprüft (neuer Test `testExerciseLogDegradesScoringButKeepsIdentityOnceOrphaned`):
+   `ExerciseLog.resolvedExerciseName`/`.resolvedIsCardio`/`.resolvedIsTimeBased` überleben einen
+   Exercise-Delete korrekt über eigene Snapshot-Felder (bereits bestehender, dokumentierter
+   Mechanismus) — ABER `cnsFatigueScore`/`localMuscleDamageScore` (reine Auswertung, kein
+   Snapshot) fallen MESSBAR auf `0.0` zurück, sobald `exercise == nil` ist. Ein Tag, der auch nur
+   einmal trainiert wurde, hätte durch "neu rechnen" also echte Recovery-/Fatigue-Auswertung
+   verloren, nicht nur eine Code-Zeile. Korrektur: `recalculate` überspringt jetzt JEDEN Tag mit
+   IRGENDEINER Session (abgeschlossen ODER laufend), nicht mehr nur laufende — konservativ, bis es
+   eine Inhalts-/Versionsabsicherung dafür gibt (P5). Sichtbar erklärt statt stillschweigend:
+   `RecalculateSummary.skippedDueToHistoryCount` wird im `PlanEditorView`-Toast explizit genannt
+   ("N Tage neu berechnet, M wegen bestehender Trainingshistorie übersprungen").
+3. **Übernahme-Ergebnis jetzt ausdrücklich behandelt:** `CardioFeasibilityCardModel.accept`/
+   `.acceptCustom` setzten `cardioGoal`/`cardioFeasibilityDismissedFingerprint` bisher
+   UNCONDITIONAL nach dem `createPlan`-Aufruf, auch wenn dieser `nil` zurückgab — ein Fehlschlag
+   hätte dann wie eine erfolgreiche Annahme ausgesehen (Fingerprint gesetzt → Karte verschwindet →
+   kein Plan existiert, keine Wiederholung möglich, ohne dass der Nutzer das bemerkt). Beide
+   Funktionen schreiben diese Felder jetzt NUR noch bei tatsächlichem Erfolg (`guard let plan =
+   ... else { return nil }` VOR den Profil-Mutationen). Die beiden direkten "Übernehmen"-Buttons
+   (`PlansListView`, `ProfileEditorView`) setzen ihr `isAcceptingCardioFeasibility`-Flag im
+   Fehlerfall jetzt zurück, damit der Button nach einem Fehlschlag wieder bedienbar ist
+   (Wiederholung möglich) statt dauerhaft gesperrt zu bleiben. Hinweis zur Testbarkeit: der
+   Fehlerpfad ist mit den heutigen Aufrufern strukturell UNERREICHBAR (`hasPlan`/
+   `!result.days.isEmpty` garantieren an der Call-Site bereits ein nicht-leeres Ergebnis, und das
+   ist `build`s EINZIGER nil-Rückgabepfad, verifiziert durch Lesen) — die Korrektur ist eine
+   defensive Vertragskorrektur (dieselbe Disziplin wie überall sonst in
+   `PlanGeneratorInstantiator`), kein Fix für einen heute beobachtbaren Bug. Kein künstlicher
+   Test-Seam dafür eingebaut, um keinen unreachable Pfad vorzutäuschen.
+4. **Commit-Verantwortung ehrlich dokumentiert statt Atomizität behauptet:** neuer Abschnitt in
+   `PlanGeneratorInstantiator.swift`s Typ-Dokumentation legt explizit fest: keine Funktion in
+   dieser Datei ruft `context.save()`; Zeitpunkt und Fehlerbehandlung der tatsächlichen
+   Festschreibung liegen vollständig bei SwiftDatas Autosave (unverändert zu jedem anderen
+   Adopt-Pfad der App). "Synchroner Code ohne Rücksprung nach dem ersten Insert" bewiest NUR, dass
+   `build`/`instantiate` keine halbe Graph-Konstruktion zurückgeben — KEIN Nachweis echter
+   Festschreibungs-Atomizität. Ausdrücklich NICHT eingebaut: ein eigener `context.save()` hier,
+   und erst recht kein `context.rollback()` bei einem Fehler — Letzteres wirkt auf den GESAMTEN
+   geteilten `ModelContext` und würde unabhängige, andernorts bereits bestätigte Änderungen (z.B.
+   ein offenes Edit auf einem anderen Screen mit demselben `modelContext`) mit zerstören. Echte
+   Speicherfehler-Behandlung für genau diese Operation wäre eine eigene, sorgfältig geschnittene
+   Aufgabe — **Task #197 angelegt**, nicht Teil von P2.3/dieser Nachbesserung.
+5. **Aktivierungsvertrag ehrlich benannt statt als gelöst berichtet:** Typ-Dokumentation korrigiert
+   — die automatische Deaktivieren-alles/Aktivieren-neu-Policy (über `ProgramInstantiator.
+   instantiate`, unverändertes Bestandsverhalten) ist für das HEUTIGE Ein-aktiver-Plan-Modell
+   akzeptabel, aber AUSDRÜCKLICH NICHT für alle Zukunft entschieden. Ein späterer Wocheneditor wird
+   vermutlich eine AUSDRÜCKLICHE Aktivierungsentscheidung brauchen (z.B. "nur speichern, Plan nicht
+   wechseln" vs. "jetzt aktiv schalten") statt der heutigen impliziten Alles-oder-nichts-Automatik.
+   Keine Code-Änderung — reine Berichts-/Dokumentations-Korrektur, damit diese Frage nicht
+   fälschlich als bereits entschieden gilt.
+
+**Bewusst NICHT umgesetzt:** P2.4 wurde in dieser Runde nicht begonnen (Vorgabe erlaubte es
+parallel, forderte es nicht). Keine neue UI-Übernahme-Funktionalität auf P2.3 aufgebaut, wie
+vorgegeben.
+
+**Geänderte Komponenten:** `Sources/FitnessAppData/PlanGeneratorInstantiator.swift`
+(`RecalculateError`, `RecalculateSummary`, `fetchAllSessions`, `recalculate` neu gefasst,
+Typ-Doku-Korrekturen), `Sources/FitnessAppUI/Workout/PlanEditorView.swift`
+(`recalculateFromGenerator` auf `throws`/`RecalculateSummary` umgestellt, Fehler-/Skip-Toast),
+`Sources/FitnessAppUI/Cardio/CardioFeasibilityCardModel.swift` (`accept`/`acceptCustom` guard-on-
+success), `Sources/FitnessAppUI/Workout/PlansListView.swift` + `Sources/FitnessAppUI/Settings/
+ProfileEditorView.swift` (Flag-Reset im Fehlerfall).
+
+**Neue/geänderte Datenfelder:** keine SwiftData-Schema-Änderung. Öffentliche API-Änderung:
+`recalculate(_:in:)` ist jetzt `throws` und liefert `RecalculateSummary` statt `Int` — der einzige
+bekannte Aufrufer (`PlanEditorView.swift`) wurde mitgezogen.
+
+**Tests hinzugefügt/korrigiert:** `Tests/FitnessAppDataTests/PlanGeneratorInstantiatorTests.swift`:
+`testRecalculateThrowsAndChangesNothingWhenSessionCheckFails` (Punkt 1: Fetch-Fehler → Wurf, keine
+Mutation, via DI-Seam erzwungen), `testRecalculateSucceedsNormallyWithoutOverride` (Gegenprobe:
+Erfolgspfad unverändert), `testRecalculateSkipsDayWithActiveSessionAndReportsIt` (laufende Session
+→ übersprungen UND sichtbar gemeldet), `testRecalculateSkipsDayWithCompletedSessionTooAndLogStaysFullyIntact`
+(ERSETZT den vorherigen, unzureichenden Test — eine abgeschlossene Session blockiert jetzt
+EBENFALLS, Log bleibt vollständig intakt statt nur "überlebend-aber-verwaist"),
+`testExerciseLogDegradesScoringButKeepsIdentityOnceOrphaned` (direkter Beleg für die Punkt-2-
+Begründung: Identität übersteht Exercise-Delete, Auswertung nicht). Außerdem die vier bestehenden
+`recalculate`-Tests auf die neue `throws`/`RecalculateSummary`-Signatur umgestellt (keine
+Verhaltensänderung an sich, nur Signatur-Anpassung).
+
+**Tests tatsächlich ausgeführt — unverändert zur P2.3-Einschränkung:** alle Änderungen dieser
+Runde liegen erneut in `FitnessAppData`/`FitnessAppUI`, NICHTS in Core. Jede neue/geänderte Zeile
+ist deshalb NUR syntaktisch via `swift build`/`swift build --build-tests` geprüft, NICHT
+typgeprüft — identische Einschränkung wie im P2.3-Bericht oben, hier nicht erneut ausführlich
+wiederholt. Insbesondere ungeprüft: ob `XCTAssertEqual(error as? PlanGeneratorInstantiator.
+RecalculateError, .sessionCheckFailed)` wirklich so kompiliert (Optional-Promotion eines
+Enum-Falls in einem generischen `XCTAssertEqual`-Aufruf — gaengiges, aber nicht auf diesem
+Toolchain verifizierbares Swift-Muster), ob der neue DI-Seam-Override tatsächlich greift, und ob
+`RecalculateSummary`s automatisch generierter (nicht explizit `public` deklarierter)
+Memberwise-Initializer über `@testable import` wirklich wie erwartet nutzbar ist. Vollständiger
+Lauf `swift test` — **1023/1023 grün** (unverändert zur letzten Runde, da alle neuen Tests dieser
+Nachbesserung in der nicht-ausgeführten `FitnessAppDataTests`-Gruppe liegen) — kein Nachweis für
+diese Nachbesserung selbst.
+
+**Apple-Build/CI:** nicht durchgeführt — offen, unverändert höheres Gewicht als sonst (siehe
+P2.3-Bericht oben), hier zusätzlich: der neue `throws`/`RecalculateSummary`-Vertrag und der
+DI-Seam sind komplett ungeprüfter Neuzugang.
+
+**UI-/Geräteprüfung:** nicht durchgeführt — offen. Zusätzlich zu den P2.3-Punkten oben: zeigt der
+neue Fehler-Toast bei einem simulierten Fetch-Fehler tatsächlich den vorgesehenen Text; zeigt der
+"N Tage neu berechnet, M übersprungen"-Toast bei einem Tag mit Trainingshistorie tatsächlich
+beide Zahlen korrekt; wird der direkte "Übernehmen"-Button nach einem (heute unerreichbaren, aber
+fuer eine zukünftige Code-Änderung relevanten) Fehlschlag tatsächlich wieder bedienbar.
+
+**Bekannte Grenzen/Risiken:**
+1. Task #197 (Commit-/Speicherfehler-Behandlung für Plan-Erstellung/-Aktualisierung) ist angelegt,
+   aber nicht terminiert — die Lücke bleibt bis zur tatsächlichen Umsetzung bestehen, wie bei
+   Task #194.
+2. Der Aktivierungsvertrag für einen späteren Wocheneditor ist weiterhin offen — diese
+   Nachbesserung macht das nur sichtbar, löst es nicht.
+3. `recalculate`s konservativer Historien-Schutz (Punkt 2) bedeutet: SOBALD ein Tag einmal
+   trainiert wurde, "neu rechnen" betrifft ihn nie wieder, auch nicht nach Monaten — das ist eine
+   bewusste, aber spürbare Einschränkung der Funktion, bis P5 (Versionierung) eine echte Lösung
+   liefert. Nutzer-Erwartung ("ich habe nur mal trainiert, warum wird der Tag nie wieder
+   aktualisiert") ist nicht durch UI-Text abgefedert außer dem Toast-Hinweis.
+
+**Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
+Berichtseintrag.
+
+**Nächste Aufgabe:** P2.4 (Fixierungs-Flag im Builder-Draft, `PlanBuilderView`) — reine Draft-/
+Core-Arbeit, darf jetzt beginnen. Keine neue UI-Übernahme-Funktionalität, bis Apple-Build diese
+Nachbesserung bestätigt hat. Apple-Build und Geräteprüfung bleiben für P1, P2.1, beide
+Nachbesserungen und P2.3 gemeinsam offen, bis ein echter Lauf vorliegt.

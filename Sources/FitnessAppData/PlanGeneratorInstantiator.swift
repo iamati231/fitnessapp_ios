@@ -31,13 +31,47 @@ import FitnessAppCore
 ///      ueber die Umschaltung.
 ///
 /// Alle vier Pfade speichern/instanziieren AUSSCHLIESSLICH die angefragte
-/// Operation. Keiner von ihnen schliesst ein Sheet, navigiert oder trifft
-/// eine Aktivierungs-Entscheidung UEBER das hinaus, was `ProgramInstantiator.
-/// instantiate` schon immer tut (Alt-Plaene deaktivieren, neuen Plan aktiv
-/// anlegen — unveraendertes, bestehendes Verhalten, keine neue Policy durch
-/// P2.3). Schliessen/Navigieren/Fehleranzeige bleiben Aufgabe des jeweiligen
-/// Aufrufers — der kennt seinen eigenen UI-Kontext (Sheet vs. Onboarding-
-/// Flow vs. Settings-Screen), diese Datei nicht.
+/// Operation. Keiner von ihnen schliesst ein Sheet oder navigiert — das
+/// bleibt Aufgabe des jeweiligen Aufrufers, der seinen eigenen UI-Kontext
+/// kennt (Sheet vs. Onboarding-Flow vs. Settings-Screen), diese Datei nicht.
+///
+/// **Aktivierungsvertrag (Nachbesserung P2.3-Review, Punkt 5 — ehrlich
+/// benannt, NICHT als geloest zu lesen):** alle drei schreibenden Pfade
+/// (`createPlan`, Template-Adopt) aktivieren HEUTE automatisch ueber
+/// `ProgramInstantiator.instantiate` (deaktiviert alle Alt-Plaene, legt den
+/// neuen aktiv an) — das ist unveraendertes Bestandsverhalten, keine neue
+/// Policy durch P2.3, und fuer das heutige Ein-aktiver-Plan-Modell
+/// akzeptabel. Es ist AUSDRUECKLICH KEIN fuer alle Zukunft geklaerter
+/// Vertrag: ein spaeterer Wocheneditor (docs/PLANUNG_BEGLEITUNG_AUDIT.md,
+/// P2.0-Nachbesserung-Vorgabe "fixierte Tage nicht still bewegen") wird
+/// vermutlich eine AUSDRUECKLICHE Aktivierungsentscheidung brauchen (z.B.
+/// "nur speichern, Plan nicht wechseln" vs. "jetzt aktiv schalten") statt
+/// der heutigen impliziten Alles-oder-nichts-Automatik. Diese Entscheidung
+/// ist NICHT getroffen und NICHT Teil von P2.3 — wird hier nur sichtbar
+/// offengehalten, damit sie nicht spaeter als bereits entschieden gilt.
+///
+/// **Commit-/Speicherverantwortung (Nachbesserung P2.3-Review, Punkt 4):**
+/// KEINE Funktion in dieser Datei ruft `context.save()` — Inserts/Updates
+/// werden nur in den `ModelContext` gestellt, die tatsaechliche
+/// Festschreibung auf die Platte (Zeitpunkt UND Fehlerbehandlung) liegt
+/// vollstaendig bei SwiftDatas Autosave-Mechanik (`.modelContainer(...)` in
+/// der App), ausserhalb der Kontrolle dieses Codes — unveraendert zu jedem
+/// anderen Adopt-Pfad der App (`ProgramTemplatePickerView` etc. rufen
+/// ebenfalls nie `save()`). "Synchroner Code ohne Rueckkehr nach dem ersten
+/// Insert" (verifiziert fuer `build`/`instantiate`) beweist NUR, dass diese
+/// Funktion selbst keine halbe Graph-Konstruktion zurueckgibt — das ist
+/// KEIN Nachweis echter Festschreibungs-Atomizitaet (ein Absturz zwischen
+/// zwei Autosave-Zyklen bleibt ein SwiftData-Framework-Risiko, nicht etwas,
+/// das dieser Code loesen kann oder sollte). Ausdruecklich NICHT eingebaut:
+/// ein eigener `context.save()` mit Fehlerbehandlung hier, und erst recht
+/// kein `context.rollback()` bei einem Fehler — ein Rollback wirkt auf den
+/// GESAMTEN geteilten `ModelContext` und wuerde unabhaengige, an anderer
+/// Stelle bereits bestaetigte Aenderungen (z.B. ein offenes Edit auf einem
+/// anderen Screen, das denselben `modelContext` teilt) mit zerstoeren — ein
+/// klar schlechteres Ergebnis als das Problem, das es loesen sollte. Echte
+/// Speicherfehler-Behandlung fuer genau diese Operation (eigener, eng
+/// begrenzter Save-Scope) waere eine eigene, sorgfaeltig geschnittene
+/// Aufgabe, nicht Teil von P2.3.
 @MainActor
 public enum PlanGeneratorInstantiator {
 
@@ -218,13 +252,90 @@ public enum PlanGeneratorInstantiator {
     /// von `currentContentFingerprint`, schuetzen einen so geaenderten Tag
     /// also ohnehin vor dem Ueberschreiben).
     ///
-    /// Kein-Op (Rueckgabe 0), wenn der Plan gar keinen `generatorInput`
-    /// traegt (nicht ueber den Assistenten entstanden).
+    /// Nachbesserung (P2.3-Review): Fehlerfall fuer `recalculate` — die
+    /// Sicherheitspruefung gegen Sessions konnte nicht durchgefuehrt werden
+    /// (z.B. Fetch-Fehler). OHNE diese Pruefung darf KEINE Mutation
+    /// stattfinden (Punkt 1 der Vorgabe) — der Aufrufer bekommt diesen
+    /// Fehler geworfen, BEVOR irgendein Tag angefasst wurde, und muss einen
+    /// verstaendlichen Fehlerzustand zeigen statt die Aenderung still
+    /// ausfallen zu lassen.
+    public enum RecalculateError: Error, Equatable {
+        case sessionCheckFailed
+    }
+
+    /// Nachbesserung (P2.3-Review): Rueckgabe von `recalculate` — getrennt
+    /// nach tatsaechlich neu geschriebenen und wegen bestehender
+    /// Trainingshistorie bewusst uebersprungenen Tagen (Punkt 2 der
+    /// Vorgabe: "konservatives Ueberspringen ... sofern es sichtbar erklaert
+    /// wird" — `PlanEditorView` liest `skippedDueToHistoryCount`, um das im
+    /// Toast auch tatsaechlich zu erklaeren, statt es stillschweigend in der
+    /// Gesamtzahl verschwinden zu lassen).
+    public struct RecalculateSummary: Equatable {
+        public let rewrittenCount: Int
+        public let skippedDueToHistoryCount: Int
+    }
+
+    /// Nachbesserung (P2.3-Review): DI-Seam fuer den Fehlerpfad, analog
+    /// `BackupService.backupsDirectoryOverride`. `nil` (Default) aendert
+    /// nichts — `recalculate` fetcht weiterhin ueber den echten `context`.
+    /// `@testable import FitnessAppData` kann hier eine werfende Closure
+    /// setzen, um einen echten Fetch-Fehler deterministisch zu simulieren,
+    /// ohne den SwiftData-Store selbst beschaedigen zu muessen.
+    static var fetchAllSessionsOverrideForTesting: (() throws -> [WorkoutSession])?
+
+    private static func fetchAllSessions(in context: ModelContext) throws -> [WorkoutSession] {
+        if let fetchAllSessionsOverrideForTesting {
+            return try fetchAllSessionsOverrideForTesting()
+        }
+        return try context.fetch(FetchDescriptor<WorkoutSession>())
+    }
+
+    /// Kein-Op (Rueckgabe `rewrittenCount: 0, skippedDueToHistoryCount: 0`),
+    /// wenn der Plan gar keinen `generatorInput` traegt (nicht ueber den
+    /// Assistenten entstanden).
     ///
-    /// Rueckgabe: Anzahl der tatsaechlich neu geschriebenen Tage.
+    /// Wirft `RecalculateError.sessionCheckFailed`, wenn die
+    /// Session-Sicherheitspruefung selbst fehlschlaegt — siehe dortige Doku
+    /// UND die Typ-Doku oben zur Session-/Historien-Garantie. KEINE Mutation
+    /// findet in diesem Fall statt.
     @discardableResult
-    public static func recalculate(_ plan: TrainingPlan, in context: ModelContext) -> Int {
-        guard let input = plan.generatorInput else { return 0 }
+    public static func recalculate(_ plan: TrainingPlan, in context: ModelContext) throws -> RecalculateSummary {
+        guard let input = plan.generatorInput else {
+            return RecalculateSummary(rewrittenCount: 0, skippedDueToHistoryCount: 0)
+        }
+
+        // Nachbesserung (P2.3-Review, Punkt 1): EINMAL, VOR jeder Mutation,
+        // nicht mehr pro Tag innerhalb der Schleife. `try`, NIEMALS
+        // `(try? ...) ?? []` — ein Fetch-Fehler bedeutet "wir wissen es
+        // nicht", nicht "keine Session vorhanden". Ein `(try? ...) ?? []`
+        // haette einen Fetch-Fehler STILL als sicher behandelt und waere
+        // damit genau in den Fall gelaufen, den dieser Schutz verhindern
+        // soll. Kein Tag wird angefasst, solange diese Zeile nicht
+        // erfolgreich war.
+        let allSessions: [WorkoutSession]
+        do {
+            allSessions = try fetchAllSessions(in: context)
+        } catch {
+            throw RecalculateError.sessionCheckFailed
+        }
+
+        // Nachbesserung (P2.3-Review, Punkt 2 — KONSERVATIVER als die
+        // urspruengliche P2.3-Fassung): nicht mehr nur LAUFENDE Sessions.
+        // `ExerciseLog` hat zwar Snapshot-Felder (`exerciseNameSnapshot` u.a.,
+        // siehe dortige Typ-Doku), die Name/Cardio/TimeBased-Identitaet auch
+        // nach einem Exercise-Delete korrekt wiederherstellen — ABER
+        // `ExerciseLog.cnsFatigueScore`/`.localMuscleDamageScore` fallen auf
+        // `0.0` zurueck, sobald `exercise == nil` ist (`guard let exercise
+        // else { return 0.0 }`, verifiziert durch Lesen). Ein Tag, der auch
+        // nur EINMAL trainiert wurde (abgeschlossen ODER laufend), verliert
+        // durch "neu rechnen" also echte Auswertungs-Faehigkeit (Recovery-/
+        // Fatigue-Scoring), nicht nur eine Code-Ebene-Zeile. Bis es eine
+        // Inhalts-/Versionsabsicherung dafuer gibt (P5), wird ein solcher
+        // Tag komplett uebersprungen statt die Uebungen zu ersetzen — siehe
+        // `RecalculateSummary.skippedDueToHistoryCount` fuer die sichtbare
+        // Erklaerung gegenueber dem Nutzer.
+        let daysWithAnySession = Set(allSessions.compactMap { $0.day?.persistentModelID })
+
         let result = PlanGenerator.generate(from: input)
         let generatedBySequenceIndex = Dictionary(
             uniqueKeysWithValues: result.days.map { ($0.spec.sequenceIndex, $0.spec) }
@@ -234,6 +345,7 @@ public enum PlanGeneratorInstantiator {
         let specByName = ProgramInstantiator.libraryLookupSpecs()
 
         var rewritten = 0
+        var skippedDueToHistory = 0
         for day in plan.days {
             // `daysPerWeek` kann sich seit der Erzeugung veraendert haben
             // (andere `input`-Selektion nach erneutem Wizard-Durchlauf waere
@@ -244,19 +356,10 @@ public enum PlanGeneratorInstantiator {
                   let generatedSpec = generatedBySequenceIndex[sequenceIndex] else { continue }
             guard day.generationFingerprint != nil,
                   day.generationFingerprint == day.currentContentFingerprint else { continue }
-            // Nachbesserung (P2.3, Abnahme "keine Veraenderung laufender
-            // Sessions"): Starten/Durchfuehren eines Workouts aendert weder
-            // `generationFingerprint` noch `currentContentFingerprint` (beide
-            // beschreiben nur die PLAN-STRUKTUR, nicht geloggte Saetze) — ein
-            // Tag mit einer gerade LAUFENDEN Session wuerde die obige Pruefung
-            // also unveraendert passieren. `apply(...)` loescht dann aber
-            // `day.activeExercises` und legt sie neu an; da
-            // `WorkoutSession.day` KEIN Inverse auf eine `TrainingDay.sessions`-
-            // Collection hat, kann eine aktive Session diese Neuanlage nicht
-            // selbst bemerken und wuerde mit verwaisten/ausgetauschten
-            // Exercise-Referenzen weiterlaufen. Deshalb hier zusaetzlich
-            // explizit uebersprungen, bis der Nutzer die Session beendet hat.
-            guard !hasActiveSession(for: day, in: context) else { continue }
+            if daysWithAnySession.contains(day.persistentModelID) {
+                skippedDueToHistory += 1
+                continue
+            }
             apply(
                 generatedSpec,
                 to: day,
@@ -267,7 +370,7 @@ public enum PlanGeneratorInstantiator {
             )
             rewritten += 1
         }
-        return rewritten
+        return RecalculateSummary(rewrittenCount: rewritten, skippedDueToHistoryCount: skippedDueToHistory)
     }
 
     /// Ersetzt Name + Zeitformat + Uebungen eines Tages durch einen frisch
@@ -282,23 +385,6 @@ public enum PlanGeneratorInstantiator {
     /// trotzdem ALLE Uebungen geloescht, riesse das genau die archivierten
     /// Originale mit, auf die `PlanEnvironmentMigrator.restoreOriginals`
     /// beim Verlassen des Urlaubs-Modus angewiesen ist.
-    /// Nachbesserung (P2.3): simple, erprobte Abfrage-Form — EIN proven-
-    /// safe `#Predicate` (identische Form wie `DashboardView.openSessions`/
-    /// `DayEditorView.openSessions`), der Day-Abgleich laeuft bewusst als
-    /// simpler Swift-`contains`-Filter IM SPEICHER statt als Relationship-
-    /// Vergleich INNERHALB des Predicate-Makros — letzteres laesst sich auf
-    /// diesem Linux-Toolchain nicht kompilieren/pruefen (SwiftData fehlt
-    /// komplett), ein moeglicher Makro-Fehler wuerde also erst im
-    /// Apple-Build auffallen. Diese Form haelt das Risiko auf den bereits
-    /// anderswo bewaehrten Predicate-Ausschnitt begrenzt.
-    private static func hasActiveSession(for day: TrainingDay, in context: ModelContext) -> Bool {
-        let descriptor = FetchDescriptor<WorkoutSession>(
-            predicate: #Predicate<WorkoutSession> { $0.isCompleted == false }
-        )
-        let openSessions = (try? context.fetch(descriptor)) ?? []
-        return openSessions.contains { $0.day?.persistentModelID == day.persistentModelID }
-    }
-
     private static func apply(
         _ spec: DaySpec,
         to day: TrainingDay,
