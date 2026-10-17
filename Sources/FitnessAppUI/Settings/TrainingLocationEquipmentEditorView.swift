@@ -189,15 +189,21 @@ struct TrainingLocationEquipmentEditorView: View {
             profile.confirmEquipmentProfileComplete()
         }
 
-        // Nur ein tatsaechlich GEAENDERTES Equipment-Profil (nicht jeder
-        // Trainingsort-Wechsel — der hat seinen eigenen, unveraenderten
-        // `envSwap`-Pfad in `ProfileEditorView`) kann hier ueberhaupt eine
-        // neue Luecke erzeugen. `hasAnyPlanWithEquipmentGap` prueft gezielt
-        // GEGEN das neue Profil, nicht gegen eine blosse Aenderung — ein
-        // Equipment-Upgrade (nur Items hinzugefuegt) loest den Dialog also
-        // korrekt NICHT aus.
-        if equipmentChanged, hasAnyPlanWithEquipmentGap(against: draftEquipmentProfile) {
-            pendingEquipmentAdaptation = draftEquipmentProfile
+        // Ab hier IMMER `profile.equipmentProfile` verwenden, nie mehr den
+        // lokalen `draftEquipmentProfile` — bei `equipmentTouched` hat
+        // `confirmEquipmentProfileComplete()` oben jedes noch unberuehrte
+        // Item von `.unknown` auf `.unavailable` gezogen (Pflicht-Test 6).
+        // `PlanEquipmentChecker`/`ExerciseSubstitutionEngine` ersetzen aber
+        // AUSSCHLIESSLICH definitiv `.unavailable` Luecken (`report.missing`)
+        // — ein `.unknown`-Item zaehlt nur als "ungeklaert" und wuerde nie
+        // ersetzt. Mit dem alten Draft haette der Dialog zwar erscheinen
+        // koennen (`!isAvailable` ist fuer `.unknown` ebenfalls wahr), ein
+        // Bestaetigen waere aber wirkungslos geblieben, weil `preview(...)`
+        // dieselbe (noch unbestaetigte) Uebung erneut nur als "ungeklaert"
+        // einstuft.
+        let resolvedProfile = profile.equipmentProfile
+        if equipmentChanged, hasAnyPlanWithEquipmentGap(against: resolvedProfile) {
+            pendingEquipmentAdaptation = resolvedProfile
             return
         }
         dismiss()
