@@ -262,10 +262,37 @@ umgesetzt (Task #203, 2026-10-17).
   Testpaket (4 Sessions in dieser P3.1/P3.2-Runde): weiterhin 58210s laut `/v1/user` — unveraendert
   gegenueber dem Stand vor der Runde, vermutlich Abrechnungs-Verzoegerung (bereits in der P3.1-Notiz
   vermerkt), NICHT als "kostenlos/unbegrenzt" zu interpretieren.
-  P3.2 ist damit **vollstaendig abgenommen** (Implementiert + Apple-kompiliert + Tests bestanden +
-  UI-verifiziert, alle vier getrennt bestaetigt).
-- P3.3 ✅ **vollständig abgenommen** (Commit `61ee3bb`, 2026-10-17): Implementiert + Apple-kompiliert +
-  Tests bestanden + UI-verifiziert, alle vier getrennt bestätigt.
+  **Korrektur (2026-10-17, User-Rueckmeldung):** "UI-verifiziert" deckt bislang AUSSCHLIESSLICH den
+  "Move to…"-Menuepfad ab, nicht beide Bedienwege gleichwertig — wird hier getrennt ausgewiesen statt
+  unter einem gemeinsamen Status verborgen:
+  - **Menue-Verschieben ("Move to…"): UI-verifiziert** (siehe oben, real auf TestingBot bestaetigt).
+  - **Native Drag-Geste (`List.onMove`): NICHT verifiziert, ausdruecklich offen.** Kein TestingBot-Lauf
+    hat das bisher tatsaechlich versucht (nur als plausibel beschrieben, da derselbe Code-Pfad
+    `moveDraftDay`/`PlanDraft.moveDay` greift — das ist eine Annahme, kein Beweis). Siehe Task
+    "P3.2: native Drag-Geste separat dokumentieren".
+  P3.2 ist damit **Implementiert + Apple-kompiliert + Tests bestanden + UI-verifiziert (nur
+  Menuepfad)** — NICHT "alle vier fuer beide Bedienwege vollstaendig bestaetigt", wie eine fruehere
+  Fassung dieses Abschnitts implizierte.
+- P3.3 **Korrektur (2026-10-17, User-Rueckmeldung): deckt nur EINE von DREI vereinbarten
+  Alternativaktionen ab — "vollstaendig abgenommen" war fuer P3.3 selbst zutreffend, aber eine
+  fruehere Lesart hat das faelschlich mit "die Alternativaktionen-Anforderung ist erledigt"
+  gleichgesetzt.** Drei eigenstaendige Aktionen waren vereinbart:
+  1. **Einzeltag-Alternative** — ✅ **vollstaendig abgenommen** (Commit `61ee3bb`, 2026-10-17):
+     Implementiert + Apple-kompiliert + Tests bestanden + UI-verifiziert, alle vier getrennt bestätigt
+     (Details unten unveraendert).
+  2. **"Woche anders verteilen"** (eine andere GESAMT-Verteilung der Woche, nicht nur Reorder
+     bestehender Tage) — ❌ **fehlt, nicht implementiert.** Das bestehende "Move to…"-Menu (P3.2)
+     ordnet nur bereits generierte Tage um, erzeugt keine inhaltlich andere Wochenaufteilung.
+     Eingeplant als eigenstaendige Restaufgabe (Task #205).
+  3. **"Vorschlag neu erstellen"** (kompletter neuer Gesamtvorschlag) — ❌ **fehlt, nicht
+     implementiert.** Das alte globale "Neu rechnen" (`shuffle: true`) wurde von P3.3 bewusst
+     ENTFERNT (es spuelte Fixierungen/Aenderungen an anderen Tagen stillschweigend weg, Abnahme
+     B04) — aber ERSATZLOS, ohne die als dritte Aktion vereinbarte, sichere Alternative dafuer neu
+     zu bauen. Eingeplant als eigenstaendige Restaufgabe (Task #206).
+  P3 (P3.1-P3.4) ist damit NICHT vollstaendig abgeschlossen, bis #205/#206 (und die P3.4-Korrektur
+  unten) geschlossen sind — wird parallel bzw. vor der abschliessenden Gesamtabnahme nachgeholt.
+
+  **Einzeltag-Alternative — Details (unveraendert gegenueber der urspruenglichen Abnahme):**
   - **Implementiert:** `PlanGenerator.targetedAlternatives(for:input:count:)` (Core) ersetzt den
     bisherigen globalen "Neu rechnen"-Button durch bis zu 3 verschiedene, noch nie gezeigte
     Alternativ-Inhalte fuer GENAU EINEN Tag — `matchingSelection` rekonstruiert ueber Equipment-Pool-
@@ -292,21 +319,29 @@ umgesetzt (Task #203, 2026-10-17).
     ("Choose an alternative for this day") liess sich im XML-Dump nicht wiederfinden (vermutlich
     Rendering-/Capture-Eigenheit des Action-Sheets, nicht funktional) — rein kosmetisch, aendert
     nichts an der oben bestaetigten Kernfunktion.
-- P3.4 Header/Label/Discard-Guard auf `DeltiqHeader`-Muster — **geprueft und bewusst NICHT
-  umgesetzt** (Review, 2026-10-17). `DeltiqHeader` + Checkmark/Discard-Guard ist das etablierte
-  Muster fuer EINZELNE, autosave-artige Daten-Editoren (UI-Refactor P1-P10: `ProfileEditorView`,
-  `PlanEditorView`, `DayEditorView`, `BodyDataEditorView`, `TrainingLocationEquipmentEditorView`,
-  `ExerciseLibraryEditorSheet`, `GearEditorView` - alle Screens, die man "verlaesst", nicht
-  "durchlaeuft"). `PlanBuilderView` ist dagegen explizit ein MEHRSCHRITTIGER ASSISTENT (eigener
-  Datei-Kommentar: "Struktur folgt bewusst `OnboardingView`") - und `OnboardingView` selbst, das
-  ausdruecklich genannte Vorbild, nutzt ebenfalls `.navigationTitle`+`.toolbar` statt
-  `DeltiqHeader`, nicht aus Versehen, sondern weil ein Wizard-Schritt keinen Checkmark-"Speichern"-
-  Zustand hat (es gibt "Zurueck/Weiter"+"Plan uebernehmen", kein verwerfbares Einzelfeld). Ein
-  erzwungener `DeltiqHeader`-Umbau wuerde `PlanBuilderView` vom eigenen Vorbild `OnboardingView`
-  ABKOPPELN statt die beiden konsistent zu halten - das waere eine neue Inkonsistenz, keine
-  Verbesserung. Eingestuft als veraltetet/premature Checklisten-Punkt aus einer frueheren
-  Audit-Runde, nicht als echte Produktanforderung dieser Spezifikation. P3 (P3.1-P3.4) damit
-  insgesamt abgeschlossen.
+- P3.4 Header/Label/Discard-Guard auf `DeltiqHeader`-Muster.
+  **Korrektur (2026-10-17, User-Rueckmeldung): die vorherige Einstufung "geprueft und bewusst NICHT
+  umgesetzt" war falsch und wird hiermit zurueckgenommen.** Die Begruendung von damals (Verweis auf
+  `OnboardingView` als abweichendes Vorbild fuer Mehrschritt-Assistenten) mag technisch zutreffend
+  beschrieben haben, WARUM `PlanBuilderView` bisher kein `DeltiqHeader` nutzt — das bestehende
+  Onboarding-Layout ist aber kein Grund, eine eigenstaendige, explizit vereinbarte Produktvorgabe
+  fuer DIESEN Screen fallenzulassen. Die Vorgabe bleibt verbindlich.
+  **Implementiert (Commit `63b097d`, 2026-10-17):** `PlanBuilderView` nutzt jetzt `DeltiqHeader`
+  statt `.navigationTitle`/`.toolbar`. Checkmark oben rechts (nur auf dem Ergebnis-Schritt aktiv,
+  sonst leer — es gibt vor Erreichen des Ergebnisses nichts zu "uebernehmen") ersetzt den bisherigen
+  unteren "Plan uebernehmen"/"retryResolve"-Button, identisches Icon-only-Prinzip wie
+  `PlanEditorView`/`BodyDataEditorView`. Zurueck-Chevron zeigt den etablierten
+  `discardChangesConfirmation`-Dialog, sobald eine echte Auswahl getroffen wurde (`isDirty`: ab
+  Schritt 2 immer wahr, auf Schritt 1 sobald eine Ziel-/Trainingsart-Auswahl existiert — im
+  Cardio-Handoff-Fall von Anfang an, da dort bereits vorbefuellt), statt weiterhin kommentarlos zu
+  `dismiss()`en. Sheet zusaetzlich per `interactiveDismissDisabled(isDirty)` gegen Pull-to-dismiss
+  bei ungesicherten Aenderungen geschuetzt (identisches Prinzip wie
+  `TrainingLocationEquipmentEditorView`).
+  **Linux:** `swift build` + `swift test` (1062 Tests) gruen, `dead_catalog_v3.py` bestaetigt 0
+  unused Keys (keine neuen Strings noetig — alle wiederverwendet).
+  **Apple-kompiliert / Tests bestanden / UI-verifiziert:** noch ausstehend, siehe Task #179.
+  P3 (P3.1-P3.4) ist NICHT vollstaendig abgeschlossen, solange P3.4s Apple-/UI-Verifikation UND die
+  beiden P3.3-Luecken (#205/#206) offen sind.
 
 **P4 — Onboarding-Integration, Hybrid/Laufcoach (groß, abhängig von P2.5, teils parallel zu P3):**
 - P4.1 ✅ **vollständig abgenommen** (Commit `c91583e`, 2026-10-17): Implementiert + Apple-kompiliert +
