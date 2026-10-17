@@ -3123,7 +3123,8 @@ public struct DashboardView: View {
         // Modalitaet. Laufband-Laeufe und Fahrradfahrten derselben Uebung
         // bilden getrennte Trend-Linien.
         let byName = Dictionary(grouping: allCardioLogs) { log in
-            CardioGroupKey(name: log.resolvedExerciseName ?? "—",
+            CardioGroupKey(templateID: log.resolvedExerciseTemplateID,
+                           name: log.resolvedExerciseName ?? "—",
                            equipment: log.resolvedCardioEquipment)
         }
         return byName.compactMap { (key, logs) -> CardioPaceSeries? in
@@ -3455,10 +3456,39 @@ struct CardioPaceSeries: Identifiable {
 
 /// DEL-156: Composite-Gruppierungs-Schluessel fuer den Cardio-Pace-Chart —
 /// eine Trend-Linie pro (Uebung, Equipment).
+/// P0-Audit (neue Spezifikation): Identitaet ist ID-first, analog
+/// `PRDetector.GroupKey` — ein Log mit aufloesbarer `exerciseTemplateID`
+/// gruppiert darueber (ueberlebt Umbenennen der Custom-Cardio-Uebung), ein
+/// Log ohne ID gruppiert weiterhin per Name (unveraendertes Alt-Verhalten).
+/// Niemals beides gemischt, damit ein zufaelliger Namens-Treffer nie zwei
+/// verschiedene Uebungen zusammenlegt.
 @available(iOS 17.0, macOS 14.0, *)
 private struct CardioGroupKey: Hashable {
+    enum Identity: Hashable {
+        case id(UUID)
+        case name(String)
+    }
+    let identity: Identity
+    /// Nur fuer Anzeige, NICHT Teil von Hash/Equality — sonst koennte ein
+    /// inkonsistenter Namens-Snapshot zwei Logs derselben `identity`
+    /// faelschlich auftrennen.
     let name: String
     let equipment: CardioEquipment
+
+    init(templateID: UUID?, name: String, equipment: CardioEquipment) {
+        self.identity = templateID.map(Identity.id) ?? .name(name)
+        self.name = name
+        self.equipment = equipment
+    }
+
+    static func == (lhs: CardioGroupKey, rhs: CardioGroupKey) -> Bool {
+        lhs.identity == rhs.identity && lhs.equipment == rhs.equipment
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(identity)
+        hasher.combine(equipment)
+    }
 }
 
 // MARK: - Recent-row subview
