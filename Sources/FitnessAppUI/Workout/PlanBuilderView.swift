@@ -376,9 +376,56 @@ public struct PlanBuilderView: View {
     /// Erstellen), da der Button in `navigationBar` fuer beide derselbe ist.
     @State private var isAdopting = false
 
+    /// P3.4-Nachbesserung (Header-Konvention): die Vorgabe "Haken oben
+    /// rechts, 'Trainingsplan uebernehmen', Verwerfen-Dialog" bleibt
+    /// VERBINDLICH, auch fuer einen mehrschrittigen Assistenten — eine
+    /// fruehere Audit-Runde hatte das faelschlich als "veraltete
+    /// Checklisten-Punkt" eingestuft und auf `OnboardingView`s abweichendes
+    /// Muster verwiesen; das bestehende Onboarding-Layout ist aber kein
+    /// Grund, eine eigenstaendige Produktvorgabe fuer DIESEN Screen fallen
+    /// zu lassen. Zeigt den Verwerfen-Dialog beim Zurueck-Chevron, sobald
+    /// der Nutzer bereits eine echte Auswahl getroffen hat — auf Schritt 1
+    /// zaehlt dafuer die erste Ziel-/Trainingsart-Auswahl, jeder weitere
+    /// Schritt gilt automatisch als "etwas zu verlieren" (man kommt ohne
+    /// Auswahl nicht dorthin). Im Cardio-Handoff-Fall (`isPreSeededFlow`)
+    /// ist `selectedKinds` von Anfang an vorbefuellt — das ist beabsichtigt:
+    /// der Nutzer hat diesen Anpassen-Flow bereits bewusst gestartet, ein
+    /// Abbruch soll ihn deshalb auch ohne zusaetzliche eigene Aenderung
+    /// bestaetigen muessen.
+    private var isDirty: Bool {
+        if step != .types { return true }
+        return isPreSeededFlow ? !selectedKinds.isEmpty : selectedGoalCard != nil
+    }
+
+    @State private var showingDiscardConfirm = false
+
+    /// Nur auf dem Ergebnis-Schritt vorhanden — frueheren Schritten fehlt
+    /// schlicht ein Zustand, der sich "uebernehmen" liesse (identisches
+    /// Prinzip wie der deaktivierte Checkmark in `BodyDataEditorView` bei
+    /// ungueltigem Formular, hier: noch kein Schritt mit Ergebnis erreicht).
+    private var headerActions: [DeltiqHeaderAction] {
+        guard step == .result else { return [] }
+        let isRetry = creationOperation.committedPlanID != nil || externalHandoffIsCommittedButUnresolved
+        return [
+            DeltiqHeaderAction(
+                systemImage: "checkmark",
+                isDisabled: (draft?.days.isEmpty ?? true) || isAdopting,
+                accessibilityLabel: String(localized: isRetry ? "planBuilder.result.retryResolve" : "planBuilder.result.adopt", bundle: .module)
+            ) {
+                adoptPlan()
+            }
+        ]
+    }
+
     public var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                DeltiqHeader(
+                    eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
+                    title: String(localized: "planBuilder.title", bundle: .module),
+                    onBack: { isDirty ? (showingDiscardConfirm = true) : dismiss() },
+                    actions: headerActions
+                )
                 progressIndicator
                     .padding(.horizontal)
                     .padding(.vertical, 12)
@@ -393,16 +440,19 @@ public struct PlanBuilderView: View {
                     .padding(.horizontal)
                     .padding(.vertical, 12)
             }
-            .navigationTitle(Text("planBuilder.title", bundle: .module))
+            .background(Color.Deltiq.background.ignoresSafeArea())
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: {
-                        Text("common.cancel", bundle: .module)
-                    }
-                }
+            .navigationBarBackButtonHidden(true)
+            // Sheet (nicht Push-Navigation, siehe Datei-Kommentar oben) -
+            // das Pendant zu PlanEditorViews `deltiqSwipeBackEnabled` ist
+            // hier das Sheet-eigene Pull-to-dismiss, identisches Prinzip wie
+            // TrainingLocationEquipmentEditorView: ohne Aenderungen bleibt es
+            // normal moeglich, mit Aenderungen nur ueber den Verwerfen-Dialog.
+            .interactiveDismissDisabled(isDirty)
+            .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+                dismiss()
             }
             // Audit-Korrektur (Review nach P2.1): expliziter Fehlerzustand
             // statt stillem `.gym`-Fallback, siehe `adoptPlan()`. Gleiches
@@ -1729,37 +1779,14 @@ public struct PlanBuilderView: View {
                 .buttonStyle(.bordered)
             }
             Spacer()
-            if step == .result {
-                Button {
-                    adoptPlan()
-                } label: {
-                    // Nachbesserung (dritte Korrekturrunde, Punkt 5): im "bereits erstellt,
-                    // nur nicht aufgeloest"-Zustand darf kein irrefuehrendes erneutes
-                    // "Plan uebernehmen" angeboten werden - derselbe Button loest dann nur
-                    // noch eine Aufloesung aus (siehe `creationOperation`-Doku), nie eine
-                    // Neuanlage. Label macht das sichtbar.
-                    //
-                    // Nachbesserung (vierte Korrekturrunde): `|| externalHandoffIsCommittedButUnresolved`
-                    // deckt den `onGenerated`-Pfad ab, dessen eigentliche Operation beim Aufrufer
-                    // liegt (siehe dortige Doku) - ohne das wuerde dieser Pfad faelschlich
-                    // weiter "Plan uebernehmen" zeigen.
-                    if creationOperation.committedPlanID != nil || externalHandoffIsCommittedButUnresolved {
-                        Label {
-                            Text("planBuilder.result.retryResolve", bundle: .module)
-                        } icon: {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                    } else {
-                        Label {
-                            Text("planBuilder.result.adopt", bundle: .module)
-                        } icon: {
-                            Image(systemName: "checkmark.seal.fill")
-                        }
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled((draft?.days.isEmpty ?? true) || isAdopting)
-            } else {
+            // P3.4-Nachbesserung: "Trainingsplan uebernehmen"/"retryResolve"
+            // sitzt jetzt als Haken im Header (`headerActions`) statt hier
+            // unten — identisches Prinzip wie der Checkmark-Save in
+            // `PlanEditorView`/`BodyDataEditorView`, kein zweiter,
+            // redundanter Commit-Button auf demselben Screen. Auf dem
+            // Ergebnis-Schritt bleibt rechts deshalb bewusst leer, nur
+            // "Zurueck" links bleibt erreichbar.
+            if step != .result {
                 Button {
                     goToNextStep()
                 } label: {
