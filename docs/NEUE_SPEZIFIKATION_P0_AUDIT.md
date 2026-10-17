@@ -264,7 +264,34 @@ umgesetzt (Task #203, 2026-10-17).
   vermerkt), NICHT als "kostenlos/unbegrenzt" zu interpretieren.
   P3.2 ist damit **vollstaendig abgenommen** (Implementiert + Apple-kompiliert + Tests bestanden +
   UI-verifiziert, alle vier getrennt bestaetigt).
-- P3.3 Gezielte Alternativen (zuerst Alternative 1 über `replaceContent`, dann 2 und 3) — offen.
+- P3.3 ✅ **vollständig abgenommen** (Commit `61ee3bb`, 2026-10-17): Implementiert + Apple-kompiliert +
+  Tests bestanden + UI-verifiziert, alle vier getrennt bestätigt.
+  - **Implementiert:** `PlanGenerator.targetedAlternatives(for:input:count:)` (Core) ersetzt den
+    bisherigen globalen "Neu rechnen"-Button durch bis zu 3 verschiedene, noch nie gezeigte
+    Alternativ-Inhalte fuer GENAU EINEN Tag — `matchingSelection` rekonstruiert ueber Equipment-Pool-
+    Zugehoerigkeit, welche `PlanGeneratorTypeSelection` einen Tag erzeugt hat (`DaySpec` traegt keine
+    Herkunfts-ID). Cardio-Tage und nicht zuordenbare Tage liefern `.noAlternativesAvailable` statt
+    einer stillen leeren Liste (Abnahme B05). `PlanBuilderView`: "Alternativen anzeigen" im
+    bestehenden "..."-Menu (deaktiviert bei `isContentFixed`), Auswahl ueber `.confirmationDialog`,
+    `PlanDraft.replaceContent` ruehrt ausschliesslich den gewaehlten Tag an — alle anderen (inkl.
+    Fixierungen) bleiben unangetastet (Abnahme B04). Der veraltete `loadLevel`-Badge des ersetzten
+    Tages wird entfernt statt stehen gelassen.
+  - **Apple-kompiliert:** Codemagic `ios-app` + `swift-package` (inkl. `swift test`) beide `success`
+    fuer Commit `61ee3bb` — diesmal ohne neue Linux/Apple-Divergenz (anders als P3.2).
+  - **Tests bestanden:** 8 neue Core-Tests (`PlanGeneratorTargetedAlternativesTests`) + alle
+    bestehenden — 1060 Tests gruen (lokal UND auf Codemagic).
+  - **UI-verifiziert (TestingBot, iPhone 15/iOS 18.0, App-Build aus Commit `61ee3bb`,
+    `tb://3ac2d577d777a84a5a436b04`):** realer Durchlauf bestaetigt: "Show alternatives" im Menu
+    vorhanden; Tap oeffnet einen Dialog mit einer ECHTEN, vom Original-Tag abweichenden Alternative
+    ("Bodyweight · Push & Pull" → Dialog zeigt u.a. "Bodyweight · Pull & Push"); Auswahl aendert
+    NACHWEISLICH NUR den Inhalt dieses einen Tages, der Belastungs-Badge wechselt korrekt auf "Not
+    rated" (kein stiller falscher Wert); "Lock content" auf einem ANDEREN Tag deaktiviert dort
+    korrekt "Show alternatives" (`enabled="false"` im Accessibility-Baum) — die Fixierung wird also
+    tatsaechlich respektiert, nicht nur vom `PlanDraft`-Code (bereits Core-getestet), sondern auch
+    vom UI-Gating selbst. Einzige offene Kleinigkeit: der exakte `.confirmationDialog`-Titeltext
+    ("Choose an alternative for this day") liess sich im XML-Dump nicht wiederfinden (vermutlich
+    Rendering-/Capture-Eigenheit des Action-Sheets, nicht funktional) — rein kosmetisch, aendert
+    nichts an der oben bestaetigten Kernfunktion.
 - P3.4 Header/Label/Discard-Guard auf `DeltiqHeader`-Muster umstellen — offen.
 
 **P4 — Onboarding-Integration, Hybrid/Laufcoach (groß, abhängig von P2.5, teils parallel zu P3):**
