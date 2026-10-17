@@ -31,6 +31,15 @@ import FitnessAppCore
 /// ohne dass die zwischenzeitlich ersetzte Uebung automatisch zurueckspringt;
 /// das deckt sich mit der Vorgabe (reine Vorschau/Ersatzvorschlag-Pflicht,
 /// kein Restore-Vertrag gefordert).
+///
+/// **`@MainActor`:** `apply(...)` nutzt `ProgramInstantiator.makeExercise`/
+/// `libraryLookupNames`/`libraryLookupSpecs` — `ProgramInstantiator` selbst
+/// ist `@MainActor`-isoliert. Linux' Swift-Toolchain (ohne vollstaendige
+/// Concurrency-Pruefung) hat den fehlenden Isolations-Abgleich beim ersten
+/// Anlauf NICHT erkannt; Xcode (Apple-CI-Fund) zu Recht schon. Der einzige
+/// Aufrufer (`TrainingLocationEquipmentEditorView`, eine SwiftUI-View) laeuft
+/// ohnehin bereits auf dem Main-Actor.
+@MainActor
 public enum PlanEquipmentAdaptationApplier {
 
     /// Baut eine `DaySpec` aus den AKTIVEN (nicht archivierten) Uebungen eines
