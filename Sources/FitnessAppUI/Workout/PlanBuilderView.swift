@@ -1312,7 +1312,6 @@ public struct PlanBuilderView: View {
                         }
                     }
                 }
-                .listStyle(.insetGrouped)
                 .scrollContentBackground(.hidden)
                 .overlay(alignment: .bottom) {
                     if let reorderRejectedToast {
