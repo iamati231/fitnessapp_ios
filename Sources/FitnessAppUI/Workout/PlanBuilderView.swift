@@ -280,6 +280,14 @@ public struct PlanBuilderView: View {
     /// - siehe `generatePreviewIfNeeded`.
     @State private var lastGeneratedInput: PlanGeneratorInput?
 
+    /// P3.2: sichtbares Feedback, wenn `PlanDraft.moveDay`/`reorder(to:)` eine
+    /// Verschiebung ablehnt (weil sie — direkt oder indirekt — einen
+    /// positionsfixierten Tag verdraengen wuerde). Kein stilles No-Op (Audit
+    /// B01/P3.2-Abnahme): der gezogene Tag bleibt an seinem Platz (da `draft`
+    /// unveraendert bleibt), zusaetzlich erklaert dieser Toast WARUM. Gleiches
+    /// Anzeige-Muster wie `PlanEditorView.swapResultToast`.
+    @State private var reorderRejectedToast: String?
+
     /// Audit-Korrektur (Review nach P2.1): treibt den expliziten Fehler-
     /// Zustand, wenn `adoptPlan()` im eigenstaendigen Modus kein Profil
     /// findet — siehe dortigen Kommentar. `nil` = kein Fehler/Alert nicht
@@ -1245,59 +1253,85 @@ public struct PlanBuilderView: View {
         )
     }
 
+    /// P3.2 (Audit "Wochenuebersicht-UI + Drag&Drop + 'Verschieben nach...'"):
+    /// `List`+`.onMove` statt der bisherigen reinen `ScrollView`-Liste - der
+    /// EINE native Mechanismus, der Drag&Drop UND eine darauf aufbauende
+    /// Barrierefreiheits-Alternative (VoiceOver bekommt automatisch
+    /// "nach oben/unten verschieben"-Stellvertreteraktionen fuer `.onMove`)
+    /// ohne Custom-Gesture-Code liefert - identisches Muster wie
+    /// `PlanEditorView.daysSection`/`moveDays`. Zusaetzlich zur impliziten
+    /// VoiceOver-Aktion bekommt jede Zeile ein explizites, sichtbares
+    /// "Verschieben nach..."-Menu (Abnahme verlangt eine ZUGAENGLICHE
+    /// Alternative, nicht nur eine implizite) + die Fixierungs-UI (P3.2,
+    /// Inhalt/Position getrennt, siehe `PlanDraft.setContentFixed`/
+    /// `setPositionFixed`).
     private var resultStepView: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                if let draft, !draft.days.isEmpty {
+        Group {
+            if let draft, !draft.days.isEmpty {
+                List {
                     if let explanationKey {
-                        Text(String(localized: String.LocalizationValue(explanationKey), bundle: .module))
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .padding(12)
-                            .background(Color.deltiqOrange.opacity(0.08))
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                    }
-
-                    // `DraftDay` ist `Identifiable` (stabile `DraftDayID`) -
-                    // kein `.offset`-Hilfsindex mehr noetig.
-                    ForEach(draft.days) { day in
-                        resultDayRow(day, loadLevel: loadLevel(for: day.id))
-                    }
-
-                    Text(String(format: String(localized: "planBuilder.result.weeklyTotal", bundle: .module), weeklyTotalTimeLabel))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Button {
-                        // Bugfix (Nutzer-Feedback): "Neu rechnen" fordert
-                        // jetzt explizit eine gemischte Variante an (statt
-                        // denselben `currentInput` deterministisch erneut zu
-                        // rechnen und exakt dasselbe Ergebnis zu zeigen).
-                        // `withAnimation` gibt sichtbares Feedback (Kapsel-
-                        // Farbwechsel, Erklaerungstext-Ein-/Ausblenden,
-                        // Zeilenhoehen), selbst wenn sich die gewaehlten
-                        // Uebungen im Einzelfall kaum unterscheiden.
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            generatePreviewIfNeeded(shuffle: true)
+                        Section {
+                            Text(String(localized: String.LocalizationValue(explanationKey), bundle: .module))
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
                         }
-                    } label: {
-                        Label {
-                            Text("planBuilder.result.recalculate", bundle: .module)
-                        } icon: {
-                            Image(systemName: "arrow.triangle.2.circlepath")
+                        .listRowBackground(Color.deltiqOrange.opacity(0.08))
+                    }
+
+                    Section {
+                        // `DraftDay` ist `Identifiable` (stabile `DraftDayID`)
+                        // - kein `.offset`-Hilfsindex noetig.
+                        ForEach(draft.days) { day in
+                            resultDayRow(day, loadLevel: loadLevel(for: day.id))
+                        }
+                        .onMove(perform: moveDraftDays)
+                    } footer: {
+                        Text(String(format: String(localized: "planBuilder.result.weeklyTotal", bundle: .module), weeklyTotalTimeLabel))
+                    }
+
+                    Section {
+                        Button {
+                            // Bugfix (Nutzer-Feedback): "Neu rechnen" fordert
+                            // jetzt explizit eine gemischte Variante an (statt
+                            // denselben `currentInput` deterministisch erneut
+                            // zu rechnen und exakt dasselbe Ergebnis zu
+                            // zeigen). `withAnimation` gibt sichtbares
+                            // Feedback (Kapsel-Farbwechsel, Erklaerungstext-
+                            // Ein-/Ausblenden, Zeilenhoehen), selbst wenn sich
+                            // die gewaehlten Uebungen im Einzelfall kaum
+                            // unterscheiden.
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                generatePreviewIfNeeded(shuffle: true)
+                            }
+                        } label: {
+                            Label {
+                                Text("planBuilder.result.recalculate", bundle: .module)
+                            } icon: {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                            }
                         }
                     }
-                    .buttonStyle(.bordered)
-                } else {
-                    ContentUnavailableViewCompat(
-                        title: String(localized: "planBuilder.result.empty.title", bundle: .module),
-                        message: String(localized: "planBuilder.result.empty.message", bundle: .module)
-                    )
-                    .padding(.top, 40)
                 }
+                .listStyle(.insetGrouped)
+                .scrollContentBackground(.hidden)
+                .overlay(alignment: .bottom) {
+                    if let reorderRejectedToast {
+                        Label(reorderRejectedToast, systemImage: "pin.slash.fill")
+                            .font(.caption)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                            .padding(.bottom, 24)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                }
+            } else {
+                ContentUnavailableViewCompat(
+                    title: String(localized: "planBuilder.result.empty.title", bundle: .module),
+                    message: String(localized: "planBuilder.result.empty.message", bundle: .module)
+                )
+                .padding(.top, 40)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
         }
         .onAppear {
             // `generatePreviewIfNeeded` traegt die "nur wenn noetig"-Pruefung
@@ -1307,21 +1341,91 @@ public struct PlanBuilderView: View {
         }
     }
 
+    /// `.onMove`-Handler fuer die Tages-`List` - `destination` ist (wie bei
+    /// `Array.move(fromOffsets:toOffset:)`, siehe `PlanEditorView.moveDays`
+    /// fuer das identische Muster) bereits der Ziel-Index NACH der Entnahme,
+    /// exakt die Semantik, die `PlanDraft.moveDay(_:toIndex:)` erwartet.
+    private func moveDraftDays(from source: IndexSet, to destination: Int) {
+        guard var currentDraft = draft, let sourceIndex = source.first else { return }
+        let movedDay = currentDraft.days[sourceIndex]
+        if currentDraft.moveDay(movedDay.id, toIndex: destination) {
+            draft = currentDraft
+        } else {
+            // Entwurf bleibt unveraendert (siehe `PlanDraft.reorder(to:)`) -
+            // die Zeile "springt" dadurch sichtbar an ihren alten Platz
+            // zurueck statt sich lautlos nicht zu bewegen (Abnahme B01).
+            showReorderRejectedToast()
+        }
+    }
+
+    /// Das explizite "Verschieben nach..."-Menu - die von der Abnahme
+    /// verlangte ZUGAENGLICHE Alternative zum Drag-Gesture, erreichbar per
+    /// Tap statt Long-Press/Drag (hilft z.B. bei Switch Control/Voice
+    /// Control, nicht nur VoiceOver).
+    private func moveDraftDay(_ id: DraftDayID, toIndex newIndex: Int) {
+        guard var currentDraft = draft else { return }
+        if currentDraft.moveDay(id, toIndex: newIndex) {
+            draft = currentDraft
+        } else {
+            showReorderRejectedToast()
+        }
+    }
+
+    private func showReorderRejectedToast() {
+        withAnimation {
+            reorderRejectedToast = String(localized: "planBuilder.result.reorderRejected.toast", bundle: .module)
+        }
+        Task {
+            try? await Task.sleep(nanoseconds: 2_500_000_000)
+            withAnimation { reorderRejectedToast = nil }
+        }
+    }
+
+    private func toggleContentFixed(for id: DraftDayID) {
+        guard var currentDraft = draft, let idx = currentDraft.index(of: id) else { return }
+        currentDraft.setContentFixed(!currentDraft.days[idx].isContentFixed, for: id)
+        draft = currentDraft
+    }
+
+    private func togglePositionFixed(for id: DraftDayID) {
+        guard var currentDraft = draft, let idx = currentDraft.index(of: id) else { return }
+        currentDraft.setPositionFixed(!currentDraft.days[idx].isPositionFixed, for: id)
+        draft = currentDraft
+    }
+
     private func resultDayRow(_ day: DraftDay, loadLevel: PlanLoadLevel?) -> some View {
         // `sequenceIndex` ist fuer die reine Anzeige irrelevant (weder
         // `displayName` noch `scopeLine` lesen ihn) - die tatsaechliche
         // Position liefert `draft.resolvedDaySpecs` erst bei der Uebergabe
         // (`currentResult`).
         let spec = day.spec(sequenceIndex: 1)
+        let currentIndex = draft?.index(of: day.id) ?? 0
+        let totalDays = draft?.days.count ?? 0
         return HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                // DEL-247: `displayName` statt `.name` - loest den seit
-                // DEL-247 gesetzten `localizationKey` auf, damit die
-                // Wizard-Vorschau selbst schon in EN/TR korrekt anzeigt statt
-                // erst nach dem Adopt (wo `TrainingDay.displayName` das
-                // ohnehin schon tat).
-                Text(spec.displayName)
-                    .font(.body.weight(.semibold))
+                HStack(spacing: 6) {
+                    // DEL-247: `displayName` statt `.name` - loest den seit
+                    // DEL-247 gesetzten `localizationKey` auf, damit die
+                    // Wizard-Vorschau selbst schon in EN/TR korrekt anzeigt
+                    // statt erst nach dem Adopt (wo `TrainingDay.displayName`
+                    // das ohnehin schon tat).
+                    Text(spec.displayName)
+                        .font(.body.weight(.semibold))
+                    // P3.2 Fixierungs-UI: sichtbare Badges fuer sehende
+                    // Nutzer, zusaetzlich zur Ansage in `accessibilityLabel`
+                    // unten - ein fixierter Tag soll nicht erst ueber das
+                    // Menu entdeckt werden muessen.
+                    if day.isPositionFixed {
+                        Image(systemName: "pin.fill")
+                            .font(.caption2)
+                            .foregroundStyle(Color.deltiqOrange)
+                    }
+                    if day.isContentFixed {
+                        Image(systemName: "lock.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 Text(scopeLine(for: spec))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -1351,10 +1455,83 @@ public struct PlanBuilderView: View {
                     .foregroundStyle(.secondary)
                     .clipShape(Capsule())
             }
+            // P3.2: explizites, per Tap erreichbares Menu - die von der
+            // Abnahme (B01) verlangte ZUGAENGLICHE Alternative zum Drag-
+            // Gesture (nicht nur die implizite VoiceOver-Reorder-Aktion, die
+            // `.onMove` bereits automatisch liefert), plus die Fixierungs-UI.
+            Menu {
+                if totalDays > 1 {
+                    Menu {
+                        ForEach(0..<totalDays, id: \.self) { targetIndex in
+                            if targetIndex != currentIndex {
+                                Button {
+                                    moveDraftDay(day.id, toIndex: targetIndex)
+                                } label: {
+                                    Text(String(format: String(localized: "planBuilder.result.moveTo.position", bundle: .module), targetIndex + 1))
+                                }
+                            }
+                        }
+                    } label: {
+                        Label {
+                            Text("planBuilder.result.moveTo", bundle: .module)
+                        } icon: {
+                            Image(systemName: "arrow.up.arrow.down")
+                        }
+                    }
+                }
+                Button {
+                    togglePositionFixed(for: day.id)
+                } label: {
+                    Label {
+                        Text(day.isPositionFixed ? "planBuilder.result.fixPosition.unlock" : "planBuilder.result.fixPosition.lock", bundle: .module)
+                    } icon: {
+                        Image(systemName: day.isPositionFixed ? "pin.slash" : "pin")
+                    }
+                }
+                Button {
+                    toggleContentFixed(for: day.id)
+                } label: {
+                    Label {
+                        Text(day.isContentFixed ? "planBuilder.result.fixContent.unlock" : "planBuilder.result.fixContent.lock", bundle: .module)
+                    } icon: {
+                        Image(systemName: day.isContentFixed ? "lock.open" : "lock")
+                    }
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .foregroundStyle(.secondary)
+                    .font(.system(size: 18))
+                    .padding(.leading, 4)
+            }
+            .accessibilityLabel(Text("planBuilder.result.dayActions", bundle: .module))
         }
         .padding(12)
         .background(Color.secondary.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 10))
+        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(resultDayRowAccessibilityLabel(spec: spec, day: day, loadLevel: loadLevel))
+    }
+
+    /// Fasst Name/Umfang/Belastung/Fixierungsstatus in EINER Ansage zusammen
+    /// (statt vier Einzel-Elementen, die VoiceOver-Nutzer per Swipe
+    /// nacheinander abhoeren muessten) - die Fixierungs-Icons oben sind rein
+    /// visuell (`Image(systemName:)` ohne eigenes Label), ihr Zustand muss
+    /// deshalb hier explizit in Worten stehen.
+    private func resultDayRowAccessibilityLabel(spec: DaySpec, day: DraftDay, loadLevel: PlanLoadLevel?) -> String {
+        var parts = [spec.displayName, scopeLine(for: spec)]
+        if let loadLevel {
+            parts.append(loadLevel.localizedName)
+        }
+        if day.isPositionFixed {
+            parts.append(String(localized: "planBuilder.result.fixed.position.badge", bundle: .module))
+        }
+        if day.isContentFixed {
+            parts.append(String(localized: "planBuilder.result.fixed.content.badge", bundle: .module))
+        }
+        return parts.joined(separator: ", ")
     }
 
     private func loadLevelColor(_ level: PlanLoadLevel) -> Color {
