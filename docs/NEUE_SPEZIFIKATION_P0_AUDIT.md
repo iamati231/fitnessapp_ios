@@ -309,9 +309,56 @@ umgesetzt (Task #203, 2026-10-17).
   insgesamt abgeschlossen.
 
 **P4 — Onboarding-Integration, Hybrid/Laufcoach (groß, abhängig von P2.5, teils parallel zu P3):**
-- P4.1 Separate Laufcoach-Entscheidung nach Hybrid/Laufen-Auswahl.
+- P4.1 ✅ **vollständig abgenommen** (Commit `c91583e`, 2026-10-17): Implementiert + Apple-kompiliert +
+  Tests bestanden + UI-verifiziert, alle vier getrennt bestätigt.
+  - **Implementiert:** `OnboardingView.Step` bekommt einen neuen, bedingt uebersprungenen Schritt
+    `.enduranceModality` direkt nach `.coachingStyle` (`needsEnduranceModalityStep = trainingGoal ==
+    .hybrid || trainingGoal == .endurance`), `goToNextStep`/`goToPreviousStep` ueberspringen ihn in
+    BEIDE Richtungen, `progressIndicator` filtert ihn aus `visibleSteps` passend heraus. Eigener,
+    von `customPlanEnduranceModality`/`customPlanRunCoachWanted` GETRENNTER State
+    (`enduranceModality`/`runCoachWanted`) — die bestehenden Builder-Felder wuerden sonst von
+    `clearCustomPlan()` beim Template-Wechsel stillschweigend geleert und die neue Frage ueberschreiben
+    (die urspruenglich verbotenen "konkurrierenden Schalter"). `finishOnboarding()` wendet die Antwort
+    jetzt UNABHAENGIG vom gewaehlten Plan-Pfad an (`if needsEnduranceModalityStep { ...
+    profile.setEnduranceModality(...) }`, vorher nur im Builder-Zweig) — `customPlanEnduranceModality`
+    gewinnt nur, falls der Builder fuer den tatsaechlich gebauten Plan selbst eine Wahl getroffen hat,
+    sonst gilt die neue Schritt-Antwort. Das ist exakt die Luecke aus der Spezifikation: ein
+    Hybrid-/Ausdauer-Ziel-User, der ein TEMPLATE waehlt statt den Builder, bekam die Frage vorher nie
+    gestellt und `enduranceModality`/`cardioCoachingEnabled` blieben unberuehrt.
+  - **Apple-kompiliert:** Codemagic `ios-app` + `swift-package` (inkl. `swift test`) beide `success`
+    fuer Commit `c91583e`, keine neue Linux/Apple-Divergenz.
+  - **Tests bestanden:** 1 neuer Core-Test (`testEveryEnduranceModalityHasANonEmptySymbol`,
+    `PlanningContextTests`) + alle bestehenden — 1061 Tests gruen (lokal).
+  - **UI-verifiziert (TestingBot, iPhone 15/iOS 18.0, App-Build aus Commit `c91583e`,
+    `tb://9909206b792bac8c1717867f`):** realer Durchlauf genau des vorher ungetesteten Pfads —
+    Onboarding mit explizit gewaehltem Ziel "Functional / Hybrid", danach erscheint der neue Schritt
+    ("Which endurance style?"), "Running" ausgewaehlt, Folgefrage "How do you want to structure your
+    running?" erscheint, "Work toward a goal with a run coach" ausgewaehlt, Navigation landet korrekt
+    (ohne Wiederholung/Haengenbleiben) im naechsten Schritt (Trainingshistorie). Anschliessend bewusst
+    NICHT der Builder, sondern ein TEMPLATE gewaehlt ("Football Athletic" — die vom Matcher empfohlene
+    Karte, unabhaengig vom Namen fuer diesen Test), Uebernahme ueber den (separat als Altlast
+    dokumentierten, siehe unten) hartkodierten deutschen Button "Diesen Plan wählen", DayPicker
+    vorbefuellt uebernommen ("Start Plan"), Onboarding abgeschlossen. Im Profil-Editor (More-Tab →
+    Profilzeile) zeigt die Sektion "Ausdauer" korrekt: "Endurance type"-Zeile vorhanden und zeigt
+    "Running"; Laufcoach-Switch (`accessibilityLabel`/`name`="Enable running coaching")
+    `value="1"` (AN) — exakt die zuvor fehlende Persistenz ueber den Template-Pfad ist damit real auf
+    einem Simulator bestaetigt, nicht nur im Code gelesen.
+  - **Separat notierter, NICHT in P4.1 behobener Befund (Altlast, zufaellig beim Scripten
+    entdeckt):** `OnboardingView.swift` uebergibt an die `TemplatePreviewView`-Sheet-Instanz
+    `adoptButtonTitle: "Diesen Plan wählen"` als hartkodiertes deutsches Literal (ebenso der
+    Default-Wert selbst in `ProgramTemplatePickerView.swift` — `"Diesen Plan übernehmen"`) — dieser
+    Button-Text reagiert NICHT auf die Geraete-Sprache. Vorbestehend, nicht durch P4.1 eingefuehrt und
+    nicht Teil von dessen Spezifikationsumfang; bewusst nicht im Rahmen dieser Abnahme mitgefixt
+    (Scope-Disziplin), hier nur dokumentiert, damit es nicht wieder verloren geht.
 - P4.2 Kompakte "Deine erste Trainingswoche"-Vorschau direkt nach den Onboarding-Fragen.
-- P4.3 Radfahren als geführte Ausdauerform-Option.
+- P4.3 Radfahren als geführte Ausdauerform-Option — **weitgehend bereits durch P4.1 abgedeckt**:
+  `EnduranceModality.cycling` ist bereits eine vollwertige, lokalisierte Auswahlkarte im neuen
+  `.enduranceModality`-Schritt (siehe oben, Dump bestaetigt die Karte "Cycling, Cycling is the focus
+  of your endurance sessions."); `supportsRunCoach == false` fuer `.cycling` blendet die Laufcoach-
+  Unterfrage korrekt aus (kein "Radcoach", siehe `PlanningContextTests.testRunCoachEnabledWithCyclingOnlyIsInvalid`).
+  Noch nicht eigens verifiziert: ob der reine Cycling-Pfad (ohne Running/Both) im Profil-Editor und in
+  der Plan-Generierung genauso sauber durchlaeuft wie der hier getestete Running-Pfad — offen fuer eine
+  gezielte Nachpruefung, kein bekannter Fehlerverdacht.
 
 **P5 — Equipment-Änderung → Plananpassung, Cooldown (mittel-groß, teilweise parallel zu P3/P4):**
 - P5.1 Equipment-Save in `TrainingLocationEquipmentEditorView`/`ProfileEditorView` löst
