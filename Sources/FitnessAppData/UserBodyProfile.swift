@@ -179,6 +179,43 @@ public final class UserBodyProfile {
     /// gebraucht, damit der Backfill genau einmal greift.
     public var experienceTrackRaw: String?
 
+    /// Planung-&-Trainingsbegleitung-Epic, P2.5 (docs/NEUE_SPEZIFIKATION_P0_AUDIT.md,
+    /// Vorbedingung für P3/P4): welche Ausdauerform ein `TrainingGoal.endurance`-
+    /// Profil meint (Core-Typ `EnduranceModality`, `PlanningContext.swift`).
+    /// Nil = nicht gesetzt — identisches "noch nicht beantwortet"-Signal wie
+    /// `experienceTrackRaw`, nicht nur fuer Bestandsnutzer, sondern auch fuer
+    /// jedes Profil mit einem ANDEREN `trainingGoal` (die Frage ist dort nicht
+    /// anwendbar).
+    public var enduranceModalityRaw: String?
+
+    /// P2.5: Laufcoach-Schalter — ausdruecklich UNABHAENGIG von
+    /// `cardioCoachingEnabled`/`CardioGoal` (DEL-250, bereits bestehendes
+    /// Cardio-Coaching-Feature) und von reinen Laufeinheiten im Plan (siehe
+    /// `PlanningContext.runCoachEnabled`-Doc). Default `false` — Lightweight-
+    /// Migration fuer Bestand, identisches Muster wie `cardioCoachingEnabled`.
+    public var runCoachEnabled: Bool = false
+
+    /// Typed Accessor, analog `experienceTrack`. Ungueltiger/unbekannter
+    /// Rohwert wird wie dort zu `nil`, nie zu einem erfundenen Default.
+    public var enduranceModality: EnduranceModality? {
+        get { enduranceModalityRaw.flatMap { EnduranceModality(rawValue: $0) } }
+        set { enduranceModalityRaw = newValue?.rawValue }
+    }
+
+    /// P2.5: einziger Schreibweg fuer die beiden Felder oben — erzwingt
+    /// dieselbe Invariante wie `PlanningContextIssue.
+    /// runCoachRequiresRunningOrBothModality` (ueber `EnduranceModality.
+    /// supportsRunCoach`, siehe dortige Doku): `runCoachEnabled` kann nie
+    /// `true` werden, wenn die Modalitaet das nicht hergibt (z.B. reines
+    /// Radfahren). Ein direkter Schreibzugriff auf `runCoachEnabled` bleibt
+    /// moeglich (SwiftData-`@Model`-Property), ist aber bewusst nicht der
+    /// vorgesehene Weg — jeder reale Aufrufer (ProfileEditorView) geht ueber
+    /// diese Methode.
+    public func setEnduranceModality(_ modality: EnduranceModality?, runCoachEnabled wantsRunCoach: Bool) {
+        enduranceModality = modality
+        runCoachEnabled = wantsRunCoach && (modality?.supportsRunCoach ?? false)
+    }
+
     // MARK: - Start-Check (optionaler Baseline-Check im Onboarding)
     //
     // Flaches Feld-pro-Wert-Muster (wie bei den Cardio-Feldern oben), nicht

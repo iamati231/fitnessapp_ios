@@ -7,7 +7,7 @@ import Foundation
 /// separat in P2.2). Bildet bewusst 1:1 auf die bereits bestehenden,
 /// wiederverwendeten `TrainingTypeKind`-Cardio-Faelle ab
 /// (`PlanGeneratorInput.swift`) statt ein paralleles Vokabular einzufuehren.
-public enum EnduranceModality: Sendable, Hashable, CaseIterable {
+public enum EnduranceModality: String, Sendable, Hashable, CaseIterable {
     case running
     case cycling
     case both
@@ -20,6 +20,16 @@ public enum EnduranceModality: Sendable, Hashable, CaseIterable {
         case .cycling: return [.cycling]
         case .both:    return [.running, .cycling]
         }
+    }
+
+    /// P2.5: ob `runCoachEnabled` fuer diese Modalitaet ueberhaupt gueltig
+    /// sein kann — identische Regel wie `PlanningContextIssue.
+    /// runCoachRequiresRunningOrBothModality`, hier als wiederverwendbarer
+    /// Baustein fuer Aufrufer (z.B. `UserBodyProfile.setEnduranceModality`),
+    /// die noch keinen vollstaendigen `PlanningContext` (Tage/Dauer/
+    /// Scheduling sind dort Plan-, nicht Profil-Eigenschaften) zur Hand haben.
+    public var supportsRunCoach: Bool {
+        self == .running || self == .both
     }
 }
 

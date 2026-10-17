@@ -180,6 +180,26 @@ final class PlanningContextTests: XCTestCase {
         XCTAssertEqual(EnduranceModality.both.trainingTypeKinds, [.running, .cycling])
     }
 
+    /// P2.5: `supportsRunCoach` muss exakt dieselbe Regel abbilden wie
+    /// `PlanningContextIssue.runCoachRequiresRunningOrBothModality` oben —
+    /// wiederverwendet von `UserBodyProfile.setEnduranceModality`, das keinen
+    /// vollstaendigen `PlanningContext` zur Hand hat (Tage/Dauer/Scheduling
+    /// sind Plan-, nicht Profil-Eigenschaften).
+    func testSupportsRunCoachMatchesPlanningContextInvariant() {
+        XCTAssertTrue(EnduranceModality.running.supportsRunCoach)
+        XCTAssertTrue(EnduranceModality.both.supportsRunCoach)
+        XCTAssertFalse(EnduranceModality.cycling.supportsRunCoach)
+    }
+
+    /// RawValue-Stabilitaet (P2.5): `enduranceModalityRaw` auf
+    /// `UserBodyProfile` persistiert exakt diese drei Strings — eine
+    /// zukuenftige Umbenennung eines Cases wuerde Bestandsdaten brechen.
+    func testEnduranceModalityRawValuesAreStable() {
+        XCTAssertEqual(EnduranceModality.running.rawValue, "running")
+        XCTAssertEqual(EnduranceModality.cycling.rawValue, "cycling")
+        XCTAssertEqual(EnduranceModality.both.rawValue, "both")
+    }
+
     // MARK: - Ein vollstaendig gueltiger Kontext
 
     func testFullyValidContextHasNoIssues() {

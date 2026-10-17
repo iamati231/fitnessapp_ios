@@ -360,5 +360,77 @@ final class UserBodyProfileTests: XCTestCase {
         }
         XCTAssertNil(profile.equipmentProfile.count(for: .kettlebell), "Nur-Koerpergewicht verwirft eine zuvor begonnene Teil-Auswahl vollstaendig")
     }
+
+    // MARK: - P2.5: enduranceModality + runCoachEnabled
+
+    func testEnduranceModalityAndRunCoachDefaultToNilAndFalse() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        XCTAssertNil(profile.enduranceModality)
+        XCTAssertFalse(profile.runCoachEnabled)
+    }
+
+    func testSetEnduranceModalityRoundTripsThroughRawValue() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        profile.setEnduranceModality(.both, runCoachEnabled: true)
+
+        XCTAssertEqual(profile.enduranceModalityRaw, "both")
+        XCTAssertEqual(profile.enduranceModality, .both)
+        XCTAssertTrue(profile.runCoachEnabled)
+    }
+
+    /// Kerninvariante (identisch zu `PlanningContextIssue.
+    /// runCoachRequiresRunningOrBothModality`): reines Radfahren kann den
+    /// Laufcoach nie einschalten, auch wenn der Aufrufer `true` uebergibt.
+    func testSetEnduranceModalityNeverEnablesRunCoachForCyclingOnly() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        profile.setEnduranceModality(.cycling, runCoachEnabled: true)
+
+        XCTAssertEqual(profile.enduranceModality, .cycling)
+        XCTAssertFalse(profile.runCoachEnabled, "Cycling-only erfuellt runCoachEnabled's Vorbedingung nicht")
+    }
+
+    /// Ein zuvor gesetztes `runCoachEnabled` darf nicht stehen bleiben, wenn
+    /// die Modalitaet nachtraeglich auf eine nicht-unterstuetzende Form
+    /// wechselt — sonst waere die Invariante nur beim ERSTEN Schreiben
+    /// garantiert, nicht dauerhaft.
+    func testChangingModalityToCyclingClearsPreviouslyEnabledRunCoach() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+        profile.setEnduranceModality(.running, runCoachEnabled: true)
+        XCTAssertTrue(profile.runCoachEnabled)
+
+        profile.setEnduranceModality(.cycling, runCoachEnabled: true)
+
+        XCTAssertFalse(profile.runCoachEnabled)
+    }
+
+    func testSetEnduranceModalityNilClearsRunCoachRegardlessOfRequestedValue() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+        profile.setEnduranceModality(.running, runCoachEnabled: true)
+
+        profile.setEnduranceModality(nil, runCoachEnabled: true)
+
+        XCTAssertNil(profile.enduranceModality)
+        XCTAssertFalse(profile.runCoachEnabled)
+    }
+
+    /// Gleicher Robustness-Pattern wie `experienceTrack`/`equipmentProfile`:
+    /// ein veralteter oder fremder Rohwert wird beim Lesen zu `nil`, nie zu
+    /// einem erfundenen Default-Case.
+    func testStaleEnduranceModalityRawValueReadsAsNil() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        profile.enduranceModalityRaw = "does-not-exist-anymore"
+
+        XCTAssertNil(profile.enduranceModality)
+    }
 }
 #endif
