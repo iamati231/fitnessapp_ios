@@ -49704,6 +49704,52 @@
           }
         }
       }
+    },
+    "profile.equipmentSwap.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment geändert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment Changed"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipman değişti"
+          }
+        }
+      }
+    },
+    "profile.equipmentSwap.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du hast dein Equipment aktualisiert. Sollen bestehende Trainingspläne wo möglich automatisch an die neue Ausstattung angepasst werden?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You updated your equipment. Should existing plans be auto-adjusted to the new setup where possible?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipmanını güncelledin. Mevcut antrenman planları mümkün olduğunda yeni donanıma göre otomatik uyarlansın mı?"
+          }
+        }
+      }
     }
   }
 }

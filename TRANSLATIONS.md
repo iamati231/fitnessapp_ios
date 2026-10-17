@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2161 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2163 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2161 / 2161** (100%) | 0 |
-| 🇬🇧 English (EN) | **2161 / 2161** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2161 / 2161** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2163 / 2163** (100%) | 0 |
+| 🇬🇧 English (EN) | **2163 / 2163** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2163 / 2163** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1912,7 +1912,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (79 Keys)
+## `profile.*`  (81 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1973,6 +1973,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.equipment.status.gymAssumption` | Für ein übliches Fitnessstudio geplant | Planned for a typical gym | Standart bir spor salonu için planlandı |
 | `profile.equipment.status.inProgress` | Teilweise erfasst | Partially filled in | Kısmen girildi |
 | `profile.equipment.status.notSet` | Nicht eingerichtet | Not set up | Ayarlanmadı |
+| `profile.equipmentSwap.message` | Du hast dein Equipment aktualisiert. Sollen bestehende Trainingspläne wo möglich automatisch an die neue Ausstattung angepasst werden? | You updated your equipment. Should existing plans be auto-adjusted to the new setup where possible? | Ekipmanını güncelledin. Mevcut antrenman planları mümkün olduğunda yeni donanıma göre otomatik uyarlansın mı? |
+| `profile.equipmentSwap.title` | Equipment geändert | Equipment Changed | Ekipman değişti |
 | `profile.goal.footer` | Das Zielgewicht erscheint als grüne Linie im Dashboard-Trend-Chart. Trainingsort filtert später Plan-Empfehlungen. | Goal weight shows as a green line in the dashboard trend chart. Training location filters plan recommendations. | Hedef kilo, panel trend grafiğinde yeşil çizgi olarak görünür. Antrenman yeri plan önerilerini filtreler. |
 | `profile.goal.weightPlaceholder` | z.B. 75 | e.g. 75 | örn. 75 |
 | `profile.health.denied` | Berechtigung verweigert. Aktiviere sie in iOS-Einstellungen → Datenschutz → Apple Health → Deltiq. | Permission denied. Enable it in iOS Settings → Privacy → Apple Health → Deltiq. | İzin reddedildi. iOS Ayarlar → Gizlilik → Apple Health → Deltiq'ten etkinleştir. |

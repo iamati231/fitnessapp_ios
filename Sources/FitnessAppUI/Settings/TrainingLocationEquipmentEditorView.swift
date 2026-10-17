@@ -1,5 +1,6 @@
 #if canImport(SwiftUI) && canImport(SwiftData)
 import SwiftUI
+import SwiftData
 import FitnessAppCore
 import FitnessAppData
 
@@ -24,9 +25,19 @@ struct TrainingLocationEquipmentEditorView: View {
     @Bindable var profile: UserBodyProfile
 
     @Environment(\.dismiss) private var dismiss
+    /// P5.1 (docs/NEUE_SPEZIFIKATION_P0_AUDIT.md): fuer den neuen Equipment-
+    /// Aenderungs-Trigger unten — analog zum bestehenden `envSwap`-Dialog in
+    /// `ProfileEditorView`, nur fuer ein geaendertes `UserEquipmentProfile`
+    /// statt eines geaenderten `EnvironmentType`.
+    @Environment(\.modelContext) private var modelContext
+    @Query private var plans: [TrainingPlan]
 
     @State private var draftEnvironment: EnvironmentType
     @State private var draftEquipmentProfile: UserEquipmentProfile
+    /// Non-nil zeigt den Equipment-Aenderungs-`confirmationDialog` unten —
+    /// gesetzt NACH dem eigentlichen Profil-Save, wenn mindestens ein Plan
+    /// gegen das NEUE Equipment nicht mehr `.available` ist.
+    @State private var pendingEquipmentAdaptation: UserEquipmentProfile?
     /// Analog `BodyDataEditorView.weightTouched`: nur eine tatsaechliche
     /// Interaktion mit dem Equipment-Editor darf `confirmEquipmentProfileComplete()`
     /// ausloesen — ein reiner Trainingsort-Wechsel ohne Equipment-Beruehrung
@@ -81,6 +92,37 @@ struct TrainingLocationEquipmentEditorView: View {
             // Dialog vorbei. Ohne Aenderungen (`!isDirty`) bleibt es normal
             // moeglich (direktes Schliessen).
             .interactiveDismissDisabled(isDirty)
+            // P5.1: analog `ProfileEditorView`s `envSwap`-Dialog (siehe
+            // dortige Button-Texte, hier wiederverwendet — gleiche
+            // Ja/Nein-Semantik, nur ein anderer Ausloeser). Erscheint ERST
+            // nachdem `save()` das Profil bereits geschrieben hat — die
+            // Equipment-Praeferenz selbst ist nie von dieser Entscheidung
+            // abhaengig, nur die PLAN-Anpassung ist es.
+            .confirmationDialog(
+                Text("profile.equipmentSwap.title", bundle: .module),
+                isPresented: Binding(
+                    get: { pendingEquipmentAdaptation != nil },
+                    set: { if !$0 { pendingEquipmentAdaptation = nil; dismiss() } }
+                )
+            ) {
+                Button {
+                    if let newProfile = pendingEquipmentAdaptation {
+                        applyEquipmentAdaptations(against: newProfile)
+                    }
+                    pendingEquipmentAdaptation = nil
+                    dismiss()
+                } label: {
+                    Text("profile.envSwap.confirm", bundle: .module)
+                }
+                Button(role: .cancel) {
+                    pendingEquipmentAdaptation = nil
+                    dismiss()
+                } label: {
+                    Text("profile.envSwap.keep", bundle: .module)
+                }
+            } message: {
+                Text("profile.equipmentSwap.message", bundle: .module)
+            }
         }
     }
 
@@ -137,12 +179,50 @@ struct TrainingLocationEquipmentEditorView: View {
     }
 
     private func save() {
+        // P5.1: VOR dem Schreiben erfassen — danach ist `profile.equipmentProfile`
+        // bereits der neue Wert und ein Vergleich waere immer `false`.
+        let equipmentChanged = draftEquipmentProfile != profile.equipmentProfile
+
         profile.environment = draftEnvironment
         profile.equipmentProfile = draftEquipmentProfile
         if equipmentTouched {
             profile.confirmEquipmentProfileComplete()
         }
+
+        // Nur ein tatsaechlich GEAENDERTES Equipment-Profil (nicht jeder
+        // Trainingsort-Wechsel — der hat seinen eigenen, unveraenderten
+        // `envSwap`-Pfad in `ProfileEditorView`) kann hier ueberhaupt eine
+        // neue Luecke erzeugen. `hasAnyPlanWithEquipmentGap` prueft gezielt
+        // GEGEN das neue Profil, nicht gegen eine blosse Aenderung — ein
+        // Equipment-Upgrade (nur Items hinzugefuegt) loest den Dialog also
+        // korrekt NICHT aus.
+        if equipmentChanged, hasAnyPlanWithEquipmentGap(against: draftEquipmentProfile) {
+            pendingEquipmentAdaptation = draftEquipmentProfile
+            return
+        }
         dismiss()
+    }
+
+    /// Nur nicht-leere Plaene zaehlen — leere haben nichts anzupassen
+    /// (identische Filterung wie `PlanEnvironmentMigrator.migrateAll`).
+    private func hasAnyPlanWithEquipmentGap(against newProfile: UserEquipmentProfile) -> Bool {
+        plans.contains { plan in
+            guard plan.days.contains(where: { !$0.activeExercises.isEmpty }) else { return false }
+            return !PlanEquipmentAdaptationApplier.check(plan: plan, against: newProfile).isAvailable
+        }
+    }
+
+    /// `profile.trainingGoal`/`.experienceTrack` beschreiben DIESEN User,
+    /// nicht einen frei erfundenen Plan-Kontext — derselbe Wert, den
+    /// `ProgramTemplatePickerView.instantiate`s eigener Veraltungs-Resolve-
+    /// Pfad bereits nutzt (kein neu eingefuehrtes Muster).
+    private func applyEquipmentAdaptations(against newProfile: UserEquipmentProfile) {
+        let context = SubstitutionContext(goal: profile.trainingGoal, experienceTrack: profile.experienceTrack)
+        for plan in plans where plan.days.contains(where: { !$0.activeExercises.isEmpty }) {
+            let draft = PlanEquipmentAdaptationApplier.preview(plan: plan, against: newProfile, context: context)
+            guard !draft.replacements.isEmpty else { continue }
+            PlanEquipmentAdaptationApplier.apply(plan: plan, draft: draft, modelContext: modelContext)
+        }
     }
 
     private func hintRow(_ text: String) -> some View {
