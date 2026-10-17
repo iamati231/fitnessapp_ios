@@ -339,9 +339,26 @@ umgesetzt (Task #203, 2026-10-17).
   `TrainingLocationEquipmentEditorView`).
   **Linux:** `swift build` + `swift test` (1062 Tests) gruen, `dead_catalog_v3.py` bestaetigt 0
   unused Keys (keine neuen Strings noetig — alle wiederverwendet).
-  **Apple-kompiliert / Tests bestanden / UI-verifiziert:** noch ausstehend, siehe Task #179.
-  P3 (P3.1-P3.4) ist NICHT vollstaendig abgeschlossen, solange P3.4s Apple-/UI-Verifikation UND die
-  beiden P3.3-Luecken (#205/#206) offen sind.
+  **Apple-kompiliert:** Codemagic `ios-app` + `swift-package` (inkl. `swift test`, 1062 Tests, keine
+  Regression) beide `success` fuer Commit `63b097d`.
+  **UI-verifiziert (TestingBot, iPhone 15/iOS 18.0, App-Build aus Commit `63b097d`,
+  `tb://0d6cf046285893e13011183c`), 2026-10-17:** realer Durchlauf ueber den eigenstaendigen
+  "+"→"Build Plan"-Einstieg (`PlansListView`). Bestaetigt: `DeltiqHeader`-Back-Chevron vorhanden,
+  altes `.toolbar`-"Cancel" verschwunden, kein Checkmark auf Schritt 1/2 sichtbar; nach Auswahl einer
+  Zielkarte ("Strength & Muscle") loest der Zurueck-Chevron TATSAECHLICH den Verwerfen-Dialog aus
+  ("Discard changes?", Buttons "Discard Changes"/"Keep Editing") — "Keep Editing" bricht korrekt ab,
+  der Assistent bleibt mit der getroffenen Auswahl offen; auf dem Ergebnis-Schritt erscheint GENAU EIN
+  Checkmark mit dem erwarteten Accessibility-Label "Adopt Plan" (`planBuilder.result.adopt`), der alte
+  untere "Plan uebernehmen"-Button ist nicht mehr vorhanden. Einzig NICHT separat auf dem Geraet erneut
+  bestaetigt: der Tap auf den Checkmark selbst — er ruft laut Code exakt dieselbe, bereits seit P2.3
+  etablierte `adoptPlan()`-Funktion auf wie zuvor der alte Button (nur der Aufrufort hat sich
+  verschoben, die Funktion selbst ist unveraendert) — aus TestingBot-Budget-Disziplin nicht noch
+  einmal eigens auf dem Geraet wiederholt, da dieser Funktionsaufruf bereits in frueheren P2.3/P3.1-
+  Runden uiverifiziert wurde.
+  P3.4 ist damit **Implementiert + Apple-kompiliert + Tests bestanden + UI-verifiziert**, alle vier
+  getrennt bestaetigt.
+  P3 (P3.1-P3.4) ist dennoch NICHT vollstaendig abgeschlossen, solange die beiden P3.3-Luecken
+  (#205/#206, "Woche anders verteilen" / "Vorschlag neu erstellen") offen sind.
 
 **P4 — Onboarding-Integration, Hybrid/Laufcoach (groß, abhängig von P2.5, teils parallel zu P3):**
 - P4.1 ✅ **vollständig abgenommen** (Commit `c91583e`, 2026-10-17): Implementiert + Apple-kompiliert +
