@@ -218,10 +218,27 @@ umgesetzt (Task #203, 2026-10-17).
   - Offen/vertagt: visueller Wocheneditor mit Drag&Drop (P3.2), Fixierungs-UI (P3.2), 3 gezielte
     Alternativen (P3.3), Header-Konvention (`DeltiqHeader`, Haken-Label) fuer `PlanBuilderView`
     (P3.4) — Umfang dieser Runde war explizit auf P3.1 begrenzt.
-- P3.2 Visueller Wocheneditor (Drag&Drop + "Verschieben nach…", gebunden an `PlanDraft`).
-- P3.3 Fixierungs-UI (Inhalt/Position getrennt).
-- P3.4 Gezielte Alternativen (zuerst Alternative 1 über `replaceContent`, dann 2 und 3).
-- P3.5 Header/Label/Discard-Guard auf `DeltiqHeader`-Muster umstellen.
+- P3.2 ✅ **implementiert** (Commit `6933335`, 2026-10-17), Apple-Build/Test-Status siehe unten.
+  Visueller Wocheneditor: `resultStepView` nutzt jetzt `List`+`.onMove` (identisches Muster wie
+  `PlanEditorView.daysSection`) statt der bisherigen reinen `ScrollView`-Liste — bindet weiterhin
+  ausschliesslich an `PlanDraft`, keine Persistenz waehrend der Bearbeitung. Drag&Drop ruft
+  `moveDraftDays`→`PlanDraft.moveDay`; eine wegen Positionsfixierung abgelehnte Verschiebung bleibt
+  ohne Zustandsaenderung (Tag "springt" sichtbar zurueck, siehe Abnahme B01) UND zeigt einen Toast
+  (`reorderRejectedToast`), WARUM — kein stilles No-Op. Zusaetzliches, explizites "Verschieben
+  nach…"-Menu pro Tag als zugaengliche, PER-TAP erreichbare Alternative zum Drag-Gesture (ergaenzt
+  die implizite VoiceOver-Reorder-Aktion, die `.onMove` automatisch liefert — wichtig u.a. fuer
+  Switch Control/Voice Control). Fixierungs-UI (Inhalt/Position getrennt, `PlanDraft.setContentFixed`/
+  `setPositionFixed` existierten bereits seit P2.4/P2.0-Nachbesserung): Menu-Toggles + sichtbare
+  Pin-/Lock-Badges pro Zeile, zusammengefasst in einer VoiceOver-Ansage
+  (`resultDayRowAccessibilityLabel`). 10 neue xcstrings-Keys (DE/EN/TR), `dead_catalog_v3.py`
+  bestaetigt 0 unused. `swift build` + `swift test --parallel`: 1052 Tests gruen (lokal, Linux).
+  **Noch offen:** Apple-Build-CI (Codemagic `ios-app`+`swift-package` fuer Commit `6933335` laeuft,
+  Ergebnis wird separat nachgetragen) UND TestingBot-UI-Verifikation (Drag-Geste, "Verschieben
+  nach…"-Menu, Fixierungs-Toggle + Ablehnungs-Toast lassen sich nicht ueber Linux-Tests pruefen —
+  per Vorgabe "kein Task gilt allein wegen gruener Linux-Tests als abgeschlossen"). P3.2 bleibt
+  bis dahin NICHT als vollstaendig abgenommen markiert.
+- P3.3 Gezielte Alternativen (zuerst Alternative 1 über `replaceContent`, dann 2 und 3) — offen.
+- P3.4 Header/Label/Discard-Guard auf `DeltiqHeader`-Muster umstellen — offen.
 
 **P4 — Onboarding-Integration, Hybrid/Laufcoach (groß, abhängig von P2.5, teils parallel zu P3):**
 - P4.1 Separate Laufcoach-Entscheidung nach Hybrid/Laufen-Auswahl.
