@@ -161,9 +161,22 @@ Konsolidierter Codemagic-Build über alle 4 Commits zusammen (`3da2506`, `d6710e
 (FitnessAppCore/Data/Health/Activities/UI) alle `success`. Task #202 damit vollstaendig abgeschlossen,
 Apple-seitig bestaetigt.
 
-**P2.5 — PlanningContext/EnduranceModality verdrahten (klein-mittel, Vorbedingung für P3/P4):**
-Core-Typ ist fertig und getestet, es fehlt die Persistenz (additives Feld auf `UserBodyProfile`)
-und die erste echte Instanziierung außerhalb von Tests.
+**P2.5 — PlanningContext/EnduranceModality verdrahten (klein-mittel, Vorbedingung für P3/P4):** ✅
+umgesetzt (Task #203, 2026-10-17).
+- `EnduranceModality` bekommt eine String-RawValue-Konformance + `supportsRunCoach` (Commit
+  `438c1fd`) — identische Invariante wie `PlanningContextIssue.runCoachRequiresRunningOrBothModality`,
+  aber nutzbar ohne vollstaendigen `PlanningContext` (Tage/Dauer/Scheduling sind Plan-, nicht
+  Profil-Eigenschaften).
+- `UserBodyProfile` bekommt `enduranceModalityRaw: String?` + `runCoachEnabled: Bool = false`
+  (Default-Value-Expression) und den einzigen vorgesehenen Schreibweg
+  `setEnduranceModality(_:runCoachEnabled:)`, der die Invariante erzwingt (Commit `438c1fd`).
+- `ProfileEditorView` bekommt die erste echte Instanziierung außerhalb von Tests: eine neue
+  Sektion in `coachingCard`, sichtbar NUR für ein bereits bestehendes `TrainingGoal.endurance`-
+  Profil (P2.2-Zwischenstand/Import) — die Zielkarte selbst bleibt weiterhin nicht neu waehlbar,
+  siehe `TrainingGoal.currentlySelectableInUI`-Doku. Picker (Laufen/Radfahren/Beides) + Laufcoach-
+  Toggle, 6 neue xcstrings-Keys DE/EN/TR (Commit `8fe654c`).
+- Codemagic-Builds fuer beide Commits: `6ad3be0b`-Nachfolger `6ad3c2cb` — Build+Tests+Simulator-
+  Build alle `success`. `swift test` lokal: 1035 Tests gruen.
 
 **P3 — A+B-Builder & Wocheneditor (groß, abhängig von P2.5):**
 - P3.1 Zielorientierter Einstieg (4 Zielkarten → `TrainingGoal`, inkl. Entsperrung `.endurance`).
