@@ -388,8 +388,90 @@ umgesetzt (Task #203, 2026-10-17).
   gezielte Nachpruefung, kein bekannter Fehlerverdacht.
 
 **P5 — Equipment-Änderung → Plananpassung, Cooldown (mittel-groß, teilweise parallel zu P3/P4):**
-- P5.1 Equipment-Save in `TrainingLocationEquipmentEditorView`/`ProfileEditorView` löst
-  Vorschau/Ersatzvorschlag aus (Vorbild: bestehender `envSwap`-Dialog). **Noch offen.**
+- P5.1 ✅ **vollständig abgenommen** (Commits `2901492` + `893fbb4` (Apple-CI-Fund) +
+  `744fc4d` (Logikfund vor UI-Verifikation), 2026-10-17): Implementiert + Apple-kompiliert +
+  Tests bestanden + UI-verifiziert. Equipment-Save in `TrainingLocationEquipmentEditorView`
+  löst — analog zum bestehenden `envSwap`-Dialog in `ProfileEditorView` — einen
+  Vorschau/Ersatzvorschlag für bestehende, bereits instanziierte Pläne aus.
+  Neuer Typ `PlanEquipmentAdaptationApplier` (FitnessAppData) bringt die bestehende
+  `PlanEquipmentChecker`/`ExerciseSubstitutionEngine`-Logik (Smart-Onboarding-Epic
+  Phase 5, bisher ausschliesslich VOR der Instanziierung in `TemplatePreviewView`/
+  `PlanBuilderView` genutzt) erstmals auf einen bereits LIVE gespeicherten `TrainingPlan`
+  an — die Luecke, die P5.1 schliesst. Archive-statt-Delete-Prinzip identisch zu
+  `PlanEnvironmentMigrator` (DEL-049): das Original wird `isArchived = true` statt
+  geloescht (Historie bleibt erhalten), die neue Uebung traegt `swappedFromOriginal`.
+  `save()` prueft nach dem Equipment-Schreiben, ob mindestens ein nicht-leerer Plan
+  gegen das NEUE Profil eine Luecke hat; nur dann erscheint der Dialog — ein reines
+  Equipment-Upgrade (nur Items hinzugefuegt) loest ihn korrekt nicht aus.
+  Neue xcstrings-Keys: `profile.equipmentSwap.title`/`.message` (Yes/No-Buttons
+  wiederverwenden `profile.envSwap.confirm`/`.keep` — identische Semantik, kein neuer
+  String). Neue Tests: `PlanEquipmentAdaptationApplierTests` (5 Faelle: `check()`
+  verfuegbar/nicht-verfuegbar, `apply()` archiviert+ersetzt korrekt, laesst unbeteiligte
+  Uebungen unberuehrt, tut nichts wenn bereits alles verfuegbar ist).
+  **Apple-CI-Fund (Commit `893fbb4`):** `PlanEquipmentAdaptationApplier.apply(...)` rief
+  `ProgramInstantiator.makeExercise`/`libraryLookupNames`/`libraryLookupSpecs` aus einem
+  nicht-`@MainActor`-isolierten Kontext auf — `ProgramInstantiator` selbst ist komplett
+  `@MainActor`. Linux' Swift-Toolchain hat den fehlenden Isolations-Abgleich nicht erkannt,
+  Xcode (Codemagic `ios-app` + `swift-package`) zu Recht schon: "call to main actor-isolated
+  static method ... in a synchronous nonisolated context". Gefixt durch `@MainActor` auf
+  dem gesamten `PlanEquipmentAdaptationApplier`-Enum (einziger Aufrufer ist ohnehin eine
+  SwiftUI-View, laeuft also bereits auf dem Main-Actor). Dies ist die DRITTE in dieser
+  Session gefundene, nur auf Apple-CI reproduzierbare Divergenz (nach den P3.2- und
+  P5.2-Funden) — bestaetigt erneut die Mandats-Vorgabe, Linux-Ergebnisse nie als alleinigen
+  Beweis zu akzeptieren.
+  **Logikfund vor der UI-Verifikation (Commit `744fc4d`, selbst gefunden, nicht von
+  Codemagic/TestingBot):** `save()` uebergab ursprünglich den noch UNBESTAETIGTEN
+  `draftEquipmentProfile` an `hasAnyPlanWithEquipmentGap`/`pendingEquipmentAdaptation`.
+  Ein nie beruehrtes Item (z.B. "Rack") ist darin noch `.unknown`, nicht `.unavailable` —
+  `PlanEquipmentChecker`/`ExerciseSubstitutionEngine` ersetzen aber ausschliesslich
+  definitiv `.unavailable` Luecken (`report.missing`), niemals `.unknown`-Faelle
+  (`report.uncertain`). Der Dialog waere zwar erschienen (`!isAvailable` ist fuer
+  `.unknown` ebenfalls wahr), ein Bestaetigen haette aber STILLSCHWEIGEND NICHTS
+  veraendert — ein fuer den Nutzer nicht erkennbarer, funktionaler Bruch. Gefixt, indem
+  ab dem Luecken-Check durchgehend `profile.equipmentProfile` (NACH
+  `confirmEquipmentProfileComplete()`, also vollstaendig aufgeloest) statt des Drafts
+  verwendet wird. Dieser Fund entstand aus der eigenen Code-Analyse beim Entwurf des
+  TestingBot-Testfalls, VOR dem ersten reinen UI-Lauf — exakt die Art von Fehler, die das
+  Mandat mit "gefundene Bugs werden behoben, betroffene Tests erneut ausgefuehrt" meint.
+  **Apple-kompiliert:** `ios-app` + `swift-package` beide `success` fuer den finalen
+  Commit `744fc4d` (nach allen drei oben genannten Fixes).
+  **Tests bestanden:** Codemagic-Testlog bestaetigt alle 5 neuen
+  `PlanEquipmentAdaptationApplierTests`-Faelle liefen tatsaechlich (log-grep-verifiziert:
+  `testCheckReturnsAvailableWhenProfileSupportsEveryExercise`,
+  `testCheckReturnsUnavailableWhenAnExerciseIsMissingRequiredEquipment`,
+  `testApplyArchivesTheOriginalAndInsertsAReviewedReplacement`,
+  `testApplyLeavesUnrelatedExercisesUntouched`,
+  `testApplyDoesNothingWhenEverythingIsAlreadyAvailable`), 1282 Tests gesamt auf macOS
+  gruen (Differenz zu 1277 bei P5.2 = genau die 5 neuen Tests; Differenz zu den 1062
+  Linux-Tests = alle SwiftData-Suiten, die nur dort laufen).
+  **UI-verifiziert (TestingBot, iPhone 15/iOS 18.0, App-Build aus Commit `744fc4d`,
+  `tb://e8ca6cb4aedf646c153de723`):** voller End-to-End-Durchlauf — Onboarding mit Ziel
+  "Weight loss" → Template "Cut Phase Full Body" adoptiert (enthaelt "Back Squat"
+  [EN-Anzeige von "Kniebeuge"], 3 Saetze, 6-12 Wdh., damit die reviewte Regel
+  "Kniebeuge" → "Goblet Squat" greift) → Equipment-Editor: Dumbbell + Barbell auf
+  "verfuegbar" gesetzt, Rest (inkl. Rack) bleibt unberuehrt → Speichern → Dialog
+  "Equipment Changed" erscheint TATSAECHLICH mit dem erwarteten Text ("You updated your
+  equipment. Should existing plans be auto-adjusted...") und beiden Buttons ("Yes, Adjust
+  Plans" / "No, Keep As-Is") → "Yes, Adjust Plans" angetippt → zurueck zum Tagesplan:
+  "Back Squat" ist WEG, "Goblet Squat" ist an EXAKT DERSELBEN Position (Slot 1, gleiche
+  Saetze/Wdh./Pause: 3 × 6-12 × 150s) erschienen — beweist Archivierung + korrekte
+  Positionstreue end-to-end auf echtem Geraet, nicht nur in der Core-Simulation.
+  Einzige nicht sichtbar gerenderte Komponente (kein Fehlerverdacht, erklaert):
+  der `confirmationDialog`-TITEL ("Equipment Changed") selbst erscheint auf iOS NICHT
+  als sichtbarer Text, wenn gleichzeitig eine `message:` gesetzt ist UND
+  `titleVisibility` nicht explizit auf `.visible` gesetzt wird (SwiftUI-Standardverhalten
+  `.automatic`) — identisches, bereits bestehendes Verhalten bei allen anderen
+  `confirmationDialog`-Aufrufen in `ProfileEditorView` (`envSwap`, `envRestore`,
+  `cardio.retroSync`, `health.pullConfirm`), also keine P5.1-Regression, sondern
+  bewusst beibehaltene Konsistenz mit dem Rest der App.
+  **Zusaetzliche Test-Infrastruktur-Erkenntnis (keine Produktauswirkung):** TestingBot/
+  Appium-Sessions brauchen fuer Flows mit eigenen `confirmationDialog`s
+  `"appium:autoAcceptAlerts": false` — der Default `true` tippt den Dialog automatisch
+  weg, bevor das Skript reagieren kann. Das erfordert im Gegenzug ein explizites,
+  defensives `POST .../alert/accept` direkt nach Abschluss des Onboardings (fuer die
+  System-Benachrichtigungs-Berechtigung, die sonst unsichtbar blockiert — SpringBoard-
+  Alerts erscheinen nie im App-eigenen `/source`-Baum). Dokumentiert fuer kuenftige
+  TestingBot-Skripte mit eigenen Dialogen/Action-Sheets.
 - P5.2 ✅ **vollständig abgenommen** (Commits `dc92d36` + Apple-CI-Fund-Fix `e51cad9`, 2026-10-17):
   Implementiert + Apple-kompiliert + Tests bestanden; UI-Verifikation bewusst NICHT separat
   nachgeholt (reine Core/Data-Verdrahtung ohne eigene neue UI-Interaktion ausser dem bereits mit
