@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2113 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2119 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2113 / 2113** (100%) | 0 |
-| 🇬🇧 English (EN) | **2113 / 2113** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2113 / 2113** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2119 / 2119** (100%) | 0 |
+| 🇬🇧 English (EN) | **2119 / 2119** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2119 / 2119** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -914,6 +914,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `editor.exercise.toggle.timeBased` | Zeit-basiert | Time-Based | Süre Bazlı |
 | `editor.reorder.done` | Fertig | Done | Bitti |
 | `editor.reorder.start` | Sortieren | Reorder | Sırala |
+
+## `enduranceModality.*`  (3 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `enduranceModality.both` | Beides | Both | İkisi de |
+| `enduranceModality.cycling` | Radfahren | Cycling | Bisiklet |
+| `enduranceModality.running` | Laufen | Running | Koşu |
 
 ## `environment.*`  (3 Keys)
 
@@ -1861,7 +1869,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (77 Keys)
+## `profile.*`  (80 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1901,8 +1909,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.cardio.retroSync.title` | Retro-Sync | Retro-Sync | Geriye Dönük Senkron |
 | `profile.cardio.weeklyVolume` | Start-Laufvolumen (km/Woche) | Starting volume (km/week) | Başlangıç hacmi (km/hafta) |
 | `profile.cardio.weeklyVolumePlaceholder` | z.B. 20 | e.g. 20 | örn. 20 |
+| `profile.coaching.enduranceModality` | Ausdauerform | Endurance type | Dayanıklılık türü |
 | `profile.coaching.footer` | Steuert Tonfall und Inhalt der Coaching-Insights auf dem Dashboard. Lässt sich jederzeit ändern. | Drives tone and content of coaching insights on the dashboard. Changeable any time. | Paneldeki koçluk öngörülerinin tonunu ve içeriğini yönlendirir. Her zaman değiştirilebilir. |
 | `profile.coaching.goal` | Trainingsziel | Training Goal | Antrenman Hedefi |
+| `profile.coaching.runCoach` | Laufcoach | Run coach | Koşu koçu |
+| `profile.coaching.runCoach.unavailableHint` | Der Laufcoach ist nur bei Laufen oder Beides verfügbar — nicht bei reinem Radfahren. | The run coach is only available for Running or Both — not for Cycling alone. | Koşu koçu yalnızca Koşu veya İkisi de seçiliyken kullanılabilir, yalnızca bisiklette değil. |
 | `profile.coaching.tone` | Coaching-Stil | Coaching Style | Koçluk Tarzı |
 | `profile.editor.title` | Profil bearbeiten | Edit Profile | Profili Düzenle |
 | `profile.envRestore.adjustNew` | Nein, neu anpassen | No, Re-Adjust | Hayır, Yeniden Uyarla |

@@ -1196,6 +1196,15 @@ public struct ProfileEditorView: View {
         }
     }
 
+    /// P2.5: kosmetischer Default fuer die Ausdauerform-Anzeige, solange
+    /// `profile.enduranceModality` noch `nil` ist (jedes bestehende
+    /// `.endurance`-Profil startet so, das Feld ist neu). Schreibt NICHTS —
+    /// erst ein tatsaechlicher Tap auf Picker/Toggle persistiert ueber
+    /// `setEnduranceModality`.
+    private var displayedEnduranceModality: EnduranceModality {
+        profile.enduranceModality ?? .running
+    }
+
     /// DEL-101: Nachträgliche Bearbeitung des Coaching-Stils. Bind direkt
     /// auf die Computed-Properties von `UserBodyProfile` (die sich um das
     /// rawValue-Mapping kuemmern). Picker-Style "menu" damit beide Werte
@@ -1231,6 +1240,49 @@ public struct ProfileEditorView: View {
                     EmptyView()
                 }
                 .pickerStyle(.menu)
+            }
+            // P2.5 (docs/NEUE_SPEZIFIKATION_P0_AUDIT.md, Vorbedingung fuer P3/P4):
+            // erste echte Instanziierung von EnduranceModality/runCoachEnabled
+            // ausserhalb von Tests. NICHT ueber eine neu waehlbare `.endurance`-
+            // Zielkarte erreichbar (`currentlySelectableInUI` blendet sie
+            // weiterhin bewusst aus, siehe dortige Doku: "ein Schalter an einer
+            // Stelle, sobald P3 den Pfad liefert") — nur fuer ein bereits
+            // bestehendes `.endurance`-Profil (P2.2-Zwischenstand oder Import),
+            // das sonst keine Moeglichkeit haette, diese beiden Felder je zu
+            // setzen. `displayedEnduranceModality` faellt kosmetisch auf
+            // `.running` zurueck, bevor der User das erste Mal waehlt —
+            // schreibt aber nichts, bis eine der beiden Controls unten
+            // tatsaechlich angefasst wird (siehe dortige Doku).
+            if profile.trainingGoal == .endurance {
+                DeltiqControlRow(label: String(localized: "profile.coaching.enduranceModality", bundle: .module)) {
+                    Picker(selection: Binding(
+                        get: { displayedEnduranceModality },
+                        set: { profile.setEnduranceModality($0, runCoachEnabled: profile.runCoachEnabled) }
+                    )) {
+                        ForEach(EnduranceModality.allCases, id: \.self) { modality in
+                            Text(modality.localizedName).tag(modality)
+                        }
+                    } label: {
+                        EmptyView()
+                    }
+                    .pickerStyle(.menu)
+                }
+                DeltiqControlRow(
+                    label: String(localized: "profile.coaching.runCoach", bundle: .module),
+                    showsDivider: !displayedEnduranceModality.supportsRunCoach
+                ) {
+                    Toggle("", isOn: Binding(
+                        get: { profile.runCoachEnabled },
+                        set: { profile.setEnduranceModality(displayedEnduranceModality, runCoachEnabled: $0) }
+                    ))
+                    .labelsHidden()
+                    .tint(Color.deltiqOrange)
+                    .disabled(!displayedEnduranceModality.supportsRunCoach)
+                    .accessibilityLabel(Text("profile.coaching.runCoach", bundle: .module))
+                }
+                if !displayedEnduranceModality.supportsRunCoach {
+                    hintRow(String(localized: "profile.coaching.runCoach.unavailableHint", bundle: .module))
+                }
             }
             DeltiqControlRow(label: String(localized: "profile.coaching.tone", bundle: .module), showsDivider: false) {
                 Picker(selection: Binding(
@@ -1328,6 +1380,12 @@ struct ProfileMetaSnapshot: Equatable {
     var weeklyWorkoutGoal: Int
     var trainingGoal: TrainingGoal
     var coachingTone: CoachingTone
+    /// P2.5: ueber `setEnduranceModality` als Paar geschrieben/zurueckgesetzt
+    /// (siehe `apply`) — sonst koennte ein Discard die Invariante
+    /// "runCoachEnabled nur bei running/both" durch getrenntes Zuruecksetzen
+    /// kurzzeitig verletzen.
+    var enduranceModality: EnduranceModality?
+    var runCoachEnabled: Bool
 
     static func capture(from profile: UserBodyProfile) -> ProfileMetaSnapshot {
         ProfileMetaSnapshot(
@@ -1341,7 +1399,9 @@ struct ProfileMetaSnapshot: Equatable {
             maxHeartRateBpm: profile.maxHeartRateBpm,
             weeklyWorkoutGoal: profile.weeklyWorkoutGoal,
             trainingGoal: profile.trainingGoal,
-            coachingTone: profile.coachingTone
+            coachingTone: profile.coachingTone,
+            enduranceModality: profile.enduranceModality,
+            runCoachEnabled: profile.runCoachEnabled
         )
     }
 
@@ -1357,6 +1417,7 @@ struct ProfileMetaSnapshot: Equatable {
         profile.weeklyWorkoutGoal = weeklyWorkoutGoal
         profile.trainingGoal = trainingGoal
         profile.coachingTone = coachingTone
+        profile.setEnduranceModality(enduranceModality, runCoachEnabled: runCoachEnabled)
     }
 }
 
