@@ -179,7 +179,30 @@ umgesetzt (Task #203, 2026-10-17).
   Build alle `success`. `swift test` lokal: 1035 Tests gruen.
 
 **P3 — A+B-Builder & Wocheneditor (groß, abhängig von P2.5):**
-- P3.1 Zielorientierter Einstieg (4 Zielkarten → `TrainingGoal`, inkl. Entsperrung `.endurance`).
+- P3.1 ✅ Zielorientierter Einstieg (4 Zielkarten → `TrainingGoal`, inkl. Entsperrung `.endurance`).
+  Umgesetzt 2026-10-17 (Deltiq-Weiterentwicklungsauftrag, selbststaendige Fortsetzung nach P1/P2.5):
+  - Grundlagenfix zuerst: Laufcoach-Schalter vereinheitlicht (Commit `0d0e6e4`) — `runCoachEnabled`
+    (P2.5) war ein zweiter, mit `cardioCoachingEnabled` (DEL-250) konkurrierender Schalter;
+    "Verbindliche Produktregel" des neuen Auftrags verlangt GENAU einen. `setEnduranceModality`
+    schreibt jetzt direkt in `cardioCoachingEnabled`, Invariante korrigiert (`nil`-Modalitaet blockiert
+    den Bestandsschalter nicht mehr).
+  - `GoalDrivenPlanSelectionBuilder` (Commit `1aed7e5`, Core, 17 Tests): uebersetzt Ziel +
+    Ausdauerform + Alltagsrahmen in dieselben `PlanGeneratorTypeSelection`-Eingaben des
+    unveraenderten `PlanGenerator` — `preferredStrengthKind` leitet das Kraft-Trainingsmittel aus
+    dem Equipment-Profil ab statt es erneut abzufragen.
+  - `PlanBuilderView` (Commits `f46c723`, `3f3b751`): neuer Ziel-Schritt (4 Karten, Doc02-konforme
+    Ausdauerform-/Laufcoach-Unterfragen) + neuer Alltagsrahmen-Schritt (Tage/Zeit/Erfahrung als
+    Gesamtwerte, Equipment als vorbefuellte Zusammenfassung mit "fuer diesen Plan anpassen").
+    Cardio-Machbarkeits-Handoff (`isPreSeededFlow`) behaelt die bestehende, trainingsmittel-direkte
+    UI unveraendert — kein Risiko fuer den Task-#197-getesteten Pfad. `onEnduranceModalityChosen`
+    meldet die Entscheidung an `OnboardingView` zurueck (dort existiert zur Entscheidungszeit noch
+    kein Profil); der eigenstaendige Modus (`PlansListView`s "+") schreibt direkt.
+  - Codemagic (Commit `3f3b751`, konsolidiert): Build+Tests+Simulator-Build alle `success`.
+    `swift test`: 1052 Tests lokal gruen. TestingBot-UI-Verifikation: siehe Task #179 Abschlussvermerk
+    (separat, da eigenes Budget-/Artefakt-Tracking).
+  - Offen/vertagt: visueller Wocheneditor mit Drag&Drop (P3.2), Fixierungs-UI (P3.2), 3 gezielte
+    Alternativen (P3.3), Header-Konvention (`DeltiqHeader`, Haken-Label) fuer `PlanBuilderView`
+    (P3.4) — Umfang dieser Runde war explizit auf P3.1 begrenzt.
 - P3.2 Visueller Wocheneditor (Drag&Drop + "Verschieben nach…", gebunden an `PlanDraft`).
 - P3.3 Fixierungs-UI (Inhalt/Position getrennt).
 - P3.4 Gezielte Alternativen (zuerst Alternative 1 über `replaceContent`, dann 2 und 3).
