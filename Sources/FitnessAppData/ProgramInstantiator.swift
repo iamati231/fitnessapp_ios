@@ -15,10 +15,24 @@ import FitnessAppCore
 /// angekreuzten Wochentage mit `DayType.rest` automatisch auf.
 ///
 /// Side-effects:
-///   1. Deactivates ALL existing TrainingPlans (`isActive = false`).
-///   2. Creates a new active `TrainingPlan` from the template metadata.
-///   3. Creates `TrainingDay` rows pro Workout-Tag + Auto-Rest-Days.
-///   4. Creates `Exercise` rows fuer jeden `ExerciseSpec`.
+///   1. Creates a new active `TrainingPlan` from the template metadata.
+///   2. Creates `TrainingDay` rows pro Workout-Tag + Auto-Rest-Days.
+///   3. Creates `Exercise` rows fuer jeden `ExerciseSpec`.
+///
+/// User-Entscheidung (P0-Audit neue Spezifikation): mehrere gleichzeitig
+/// aktive Plaene sind ein gewolltes Zielbild (z.B. Kraft- + Cardio-Plan
+/// parallel) - Vorbild ist der Cardio-Accept-Pfad
+/// (`PlanGeneratorInstantiator.createPlan`/`build`), der bereits ueber
+/// diese Funktion laeuft und NIE andere Plaene deaktiviert hat. Frueher
+/// deaktivierte dieser Instantiator ungefragt ALLE bestehenden Plaene -
+/// das widersprach Dok01 §5 ("Bestehenden aktiven Plan nicht ungefragt
+/// ersetzen") und war inkonsistent zum Cardio-Pfad. Der Rest der App ist
+/// bereits auf mehrere aktive Plaene vorbereitet: `DashboardView`/
+/// `PlanEditorView` fragen `isActive == true` als Array ab (DEL-050 kennt
+/// bereits einen "Multi-Plan-Sync-Prompt"), `DashboardView` liest defensiv
+/// `activePlans.first`. Ein bewusstes Ersetzen eines einzelnen aktiven
+/// Plans bleibt moeglich ueber `PlanEditorView.setActive(_:)`, wo der User
+/// explizit einen bestimmten Plan aktiviert/deaktiviert.
 @MainActor
 public enum ProgramInstantiator {
 
@@ -80,13 +94,7 @@ public enum ProgramInstantiator {
             precondition(resolvedSelection.templateID == template.id,
                          "ResolvedPlanSelection.templateID (\(resolvedSelection.templateID)) muss zum instanziierten Template (\(template.id)) passen")
         }
-        // 1) Deactivate every existing plan.
-        let allPlans = (try? context.fetch(FetchDescriptor<TrainingPlan>())) ?? []
-        for plan in allPlans {
-            plan.isActive = false
-        }
-
-        // 2) Library-Lookups fuer isTimeBased + isCompound.
+        // 1) Library-Lookups fuer isTimeBased + isCompound.
         let (timeBasedNames, compoundNames) = libraryLookupNames()
 
         // DEL-098: Library-Spec-Lookup nach Namen, damit wir die statischen
@@ -95,7 +103,7 @@ public enum ProgramInstantiator {
         // Namen in Templates) bekommen die Default-Faktoren von `Exercise.init`.
         let specByName = libraryLookupSpecs()
 
-        // 3) Create new active plan.
+        // 2) Create new active plan.
         // DEL-123: localizationKey aus dem Template-Spec propagieren, damit
         // die SwiftData-Plan-Row beim Display via TrainingPlan.displayName
         // multilingual rendert (statt das deutsche `name`-Feld zu zeigen).
@@ -111,14 +119,14 @@ public enum ProgramInstantiator {
         )
         context.insert(plan)
 
-        // 4) Wochentag-Sequenz aufloesen.
+        // 3) Wochentag-Sequenz aufloesen.
         //    - Caller liefert die User-Auswahl ODER wir fallen auf Defaults.
         //    - Sortieren in chronologischer Mo→So-Reihenfolge, damit
         //      sequenceIndex 1 immer auf den ersten ausgewaehlten Wochentag faellt.
         let rawWeekdays = selectedWeekdays ?? defaultWeekdays(for: template.daysPerWeek)
         let normalized = normalize(weekdays: rawWeekdays, expectedCount: template.daysPerWeek)
 
-        // 5) Workout-Tage mappen (sequenceIndex → realer Wochentag).
+        // 4) Workout-Tage mappen (sequenceIndex → realer Wochentag).
         // PLAN_SUBSTITUTION_ENGINE.md Abschnitt 4 / PLAN_EQUIPMENT_MATCHING_
         // AUDIT.md 5.4/13: `resolvedSelection` (Phase 5, ggf. substituiert)
         // > `bestEquipmentCheckedVariant` (Phase 4) > `resolvedDays`
@@ -166,7 +174,7 @@ public enum ProgramInstantiator {
             }
         }
 
-        // 6) Restliche Wochentage mit Auto-Rest-Days auffuellen, damit der
+        // 5) Restliche Wochentage mit Auto-Rest-Days auffuellen, damit der
         //    Plan eine vollstaendige Wochen-Ansicht hat (Plan-Editor, Dashboard-
         //    Day-Card, Calendar-Navigation alle auf 7 Tagen).
         for weekday in 1...7 where !workoutDayWeekdays.contains(weekday) {

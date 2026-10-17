@@ -495,9 +495,7 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
     /// Kern-Regression: ein fehlgeschlagener Save in `build` darf den
     /// Aufrufer-Context NICHT in einem inkonsistenten Zustand zuruecklassen.
     /// Beweist BEIDE Haelften: der neue Plan verschwindet, UND der VORHER
-    /// aktive Plan ist weiterhin aktiv (ohne das bliebe nach einem
-    /// gescheiterten Versuch gar kein Plan mehr aktiv, siehe
-    /// `ProgramInstantiator.instantiate`s unconditional Deaktivierung).
+    /// aktive Plan ist weiterhin aktiv.
     /// Mechanismus (Review nach Task #197): `build` arbeitet auf einem
     /// isolierten Scratch-Context (siehe Typ-Doku Punkt 1) - `planA` (im
     /// Aufrufer-Context) wird vom gescheiterten zweiten Versuch technisch
@@ -533,7 +531,11 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
     /// Nachbesserung (Review nach Task #197, geforderter Test 4): ein
     /// fehlgeschlagener Versuch darf einen ERNEUTEN, diesmal erfolgreichen
     /// Versuch nicht behindern — kein verwaistes Fragment vom ersten
-    /// Versuch, kein doppelter aktiver Plan.
+    /// Versuch.
+    /// User-Entscheidung (P0-Audit neue Spezifikation): mehrere gleichzeitig
+    /// aktive Plaene sind gewollt - `planA` bleibt deshalb aktiv, auch nachdem
+    /// `planB` erfolgreich erstellt wurde (siehe `ProgramInstantiator.instantiate`-
+    /// Typ-Doku).
     func testFailedCreationIsRepeatableWithoutOrphanedObjects() throws {
         let planA = try XCTUnwrap(buildPlan(from: input([selection(.barbell, days: 2)])))
 
@@ -544,7 +546,7 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         let planB = try XCTUnwrap(buildPlan(from: input([selection(.dumbbell, days: 3)])))
 
         XCTAssertTrue(planB.isActive)
-        XCTAssertFalse(planA.isActive, "der jetzt erfolgreiche zweite Plan muss den ersten regulaer deaktivieren")
+        XCTAssertTrue(planA.isActive, "mehrere gleichzeitig aktive Plaene sind gewollt - der neue Plan deaktiviert aeltere nicht")
         let allPlans = try context.fetch(FetchDescriptor<TrainingPlan>())
         XCTAssertEqual(allPlans.count, 2, "genau Plan A und der jetzt erfolgreiche Plan B - kein Fragment vom gescheiterten Versuch")
     }

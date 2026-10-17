@@ -105,8 +105,9 @@ final class ResolvedPlanSelectionInstantiationTests: XCTestCase {
 
     /// Test 21: eine bestehende, bereits instanziierte Plan-Historie bleibt
     /// unberuehrt, wenn danach ein zweiter (adaptierter) Plan instanziiert
-    /// wird — der bestehende Plan wird nur deaktiviert (isActive = false,
-    /// bestehendes Verhalten), seine Uebungen/Inhalte aendern sich nicht.
+    /// wird — der bestehende Plan bleibt aktiv (User-Entscheidung, P0-Audit
+    /// neue Spezifikation: mehrere gleichzeitig aktive Plaene sind gewollt),
+    /// seine Uebungen/Inhalte aendern sich nicht.
     func testExistingPlanContentIsUnchangedWhenANewAdaptedPlanIsInstantiated() throws {
         let firstProfile = fullyConfirmedProfile(available: [.kettlebell: nil])
         let firstSelection = PlanSelectionResolver.resolve(
@@ -122,7 +123,7 @@ final class ResolvedPlanSelectionInstantiationTests: XCTestCase {
         )
         _ = ProgramInstantiator.instantiate(secondTemplate, in: context, userEquipmentProfile: firstProfile)
 
-        XCTAssertFalse(firstPlan.isActive, "Alter Plan wird korrekt deaktiviert (bestehendes Verhalten)")
+        XCTAssertTrue(firstPlan.isActive, "mehrere gleichzeitig aktive Plaene sind gewollt - der neue Plan deaktiviert den alten nicht")
         let firstPlanExerciseNamesAfter = Set(firstPlan.days.flatMap { $0.exercises.map(\.name) })
         XCTAssertEqual(firstPlanExerciseNamesBefore, firstPlanExerciseNamesAfter, "Der INHALT des alten Plans bleibt unveraendert")
     }
