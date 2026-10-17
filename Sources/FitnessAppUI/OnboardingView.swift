@@ -323,6 +323,18 @@ public struct OnboardingView: View {
             // finishOnboarding() instanziiert den Plan zusammen mit dem
             // UserBodyProfile, kein DayPicker noetig (Step 2 des Builders
             // deckt Wochentage/Equipment bereits ab).
+            //
+            // P0-Audit (neue Spezifikation): vorher musste der User nach dem
+            // Schliessen dieses Sheets zusaetzlich noch separat den Footer-
+            // Button "Fertig" treffen — ein zweiter, uneinheitlicher
+            // Finish-Trigger gegenueber `DayPickerSheet.onConfirm` (siehe
+            // unten), das `finishOnboarding()` direkt in seinem `onConfirm`
+            // aufruft. `finishOnboarding()` jetzt ebenso direkt HIER
+            // aufzurufen vereinheitlicht beide Pfade auf eine Hauptaktion;
+            // `heightCm`/`currentWeightKg` sind an dieser Stelle immer
+            // gesetzt, da der Builder nur vom letzten Schritt
+            // (`.preferencesAndPlan`) aus erreichbar ist, dessen Vorschritt
+            // (`.personalInfo`) `canAdvance` bereits erzwungen hat.
             .sheet(isPresented: $showingPlanBuilder) {
                 // Nachbesserung (dritte Korrekturrunde, Punkt 4): `onGenerated` liefert
                 // `PlanBuilderHandoffOutcome` zurueck (siehe PlanBuilderView-Typ-Doku). Reines
@@ -336,10 +348,24 @@ public struct OnboardingView: View {
                 // verifiziert, siehe Typ-Doku-Praezisierung in docs/PLANUNG_BEGLEITUNG_AUDIT.md).
                 // Alle vier `PlanBuilderView(`-Aufrufstellen im Repo wurden daraufhin erneut
                 // per Grep geprueft - dies war die einzige verbleibende.
-                PlanBuilderView { input, result in
+                //
+                // P0-Audit (neue Spezifikation, Dok02 §1 "kein eigener
+                // Onboarding-Generator, keine doppelte Abfrage"): `selections`
+                // bleibt leer (Onboarding fragt keine Trainingsarten/Tage/
+                // Dauer ab - das bleibt Schritt 1 des Builders vorbehalten),
+                // aber `equipmentPreferences` wird aus den bereits erfassten
+                // Onboarding-Antworten vorbefuellt, damit Schritt 2 des
+                // eingebetteten Builders die Ausstattung nicht ein zweites
+                // Mal von Null abfragt.
+                PlanBuilderView(initialInput: PlanGeneratorInput(
+                    selections: [],
+                    equipmentPreferences: derivedLegacyEquipment,
+                    usesFixedWeekdays: false
+                )) { input, result in
                     customPlanInput = input
                     customPlanResult = result
                     clearSelectedTemplate()
+                    finishOnboarding()
                     return .success
                 }
             }
