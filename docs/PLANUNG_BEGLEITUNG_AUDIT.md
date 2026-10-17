@@ -3000,3 +3000,99 @@ gegen Commit `a2ca5ff` / TestingBot-App `tb://e83cd69e60c1a2af906df7b5` durchfue
 keine weiteren TestingBot-Versuche, keine kostenpflichtige Aufladung ohne ausdrueckliche Freigabe,
 keine Code-Aenderungen ohne neuen, reproduzierbaren Befund. Task #197 bleibt bis zum Abschluss
 dieser vier Tests auf "UI-Verifikation extern blockiert".
+
+## Guthaben wieder verfuegbar: alle vier offenen Fix-Verifikationstests real durchgefuehrt, alle bestanden - Task #197 abgeschlossen
+
+**Status:** Der User hat TestingBot-Guthaben aufgeladen. Alle vier oben als offen festgehaltenen
+Tests wurden in zwei TestingBot-Sessions (Simulator, iPhone 15 / iOS 18.0, echter Mac-Host) gegen
+den bereits verifizierten Build durchgefuehrt. Alle vier **bestanden**.
+
+**Session 1** (`8c67096773f0-15ebbe313e86-36dc9bd08f3d-179225783692-0577313`): endete nach einer
+laengeren Doku-Recherche-Pause (Lesen der 5 neuen Spezifikationsdokumente des Users) mit
+`HTTP 500 "Test has timed out after 138 seconds"` - ein reiner Inaktivitaets-Timeout der
+TestingBot-Infrastruktur trotz angeforderter `newCommandTimeout: 0`-Capability, keine App- oder
+Code-Ursache. In dieser Session bereits vollstaendig durchgefuehrt und dokumentiert: Test 1
+(Plan-Tab, zwei aufeinanderfolgende Cardio-Uebernahmen 5K->10K, Plananzahl 0->1->2, "Adopt plan"
+nach dem ersten Erfolg weiterhin `enabled=true`, zwei inhaltlich unterschiedliche, eigenstaendige
+Plaene an unterschiedlichen Listenpositionen bestaetigt per Roh-XML-Vergleich - der
+`extract.py`-Hilfsskript dedupliziert identische Labels und zeigte faelschlich nur eine Zeile,
+im Rohdump aber klar zwei `<XCUIElementTypeButton>`-Elemente mit `y="156"` und `y="240"`).
+
+**Session 2** (`a70d832da069-07cf5d4528cb-61b3c45432d8-179225870790-57901239`, neu erstellt nach dem
+Timeout, da Testdaten nicht persistieren): Onboarding, Cardio-Setup und alle vier Tests in einem
+durchgehenden Lauf ohne weitere Inaktivitaetspause wiederholt bzw. abgeschlossen.
+
+**1. Plan-Tab, zwei aufeinanderfolgende Cardio-Uebernahmen (erneut, in Session 2 bestaetigt):**
+Laufziel 5K mit Renndatum + Startvolumen gesetzt, im Plan-Tab "Adopt plan" getippt (Plananzahl
+0->1), Ziel auf 10K geaendert, neue, inhaltlich andere Karte ("10 weeks" statt "6 weeks",
+zusaetzlich "Tempo Run") erschien mit weiterhin `enabled="true", visible="true"` - **nicht**
+dauerhaft gesperrt. Zweite Uebernahme erfolgreich, Plananzahl 1->2, zwei echte, unterschiedliche
+Plan-Objekte bestaetigt (unterschiedliche Tagesinhalte beim Oeffnen).
+
+**2. Profileditor, zwei aufeinanderfolgende Cardio-Uebernahmen:** Direkt im Profileditor
+(ohne Umweg ueber den Plan-Tab) Ziel zunaechst auf Half Marathon geaendert - da bereits ein
+aktiver, committeter Cardio-Plan existierte (aus Test 1), erschien die Karte diesmal **inline im
+Profileditor** selbst (Fallback-Fall: "This is going to be tight... A more realistic goal right
+now: 10K", Buttons "Accept suggestion"/"Adjust plan"/"Keep goal" statt "Adopt plan"/"Adjust plan").
+"Accept suggestion" getippt (Plananzahl 2->3). Ziel erneut auf Marathon geaendert - neue,
+unabhaengige Fallback-Karte, **"Accept suggestion" weiterhin `enabled="true", visible="true"`**
+(der eigentliche Fix-Check). Zweite Uebernahme getippt, erfolgreich, Plananzahl 3->4 bestaetigt.
+Rohdump zeigt vier echte `<XCUIElementTypeButton label="Individueller Plan, ...">`-Zeilen bei
+`y="156/240/324/409"` - vier unterscheidbare Plan-Objekte, kein Duplikat, keine unterdrueckte
+Uebernahme.
+
+**3. "Adjust plan": gespeicherter Inhalt entspricht dem Entwurf:** Ziel auf 5K zurueckgesetzt
+(erzeugt gegenueber dem aktuell committeten 10K eine neue, direkt erreichbare Karte **inline im
+Profileditor** mit "Adopt plan"/"Adjust plan" - bestaetigt: sobald ein aktiver Cardio-Plan
+existiert, laeuft jede weitere Zieleanderung ueber den Profileditor, nicht mehr ueber den
+Plan-Tab). "Adjust plan" getippt statt direktem Accept, oeffnet den "Build Plan"-Assistenten
+vorbefuellt mit dem Vorschlag (Running 2x/45min + Bodyweight 2x/45min). Dauer der Lauf-Einheit
+gezielt von 45 auf 30 Minuten reduziert (3x "Decrement"), durch die restlichen Schritte bestaetigt
+- Vorschau zeigt korrekt "Easy Run · 30 min". "Adopt Plan" getippt, Plan gespeichert (Plananzahl
+4->... bzw. neue Zaehlung nach Testreihenfolge). Gespeicherten Plan geoeffnet, Tag "Easy Run" im
+Detail gepruefter: **"Estimated Duration: ~30-34 min"** - deckt sich mit der editierten
+30-Minuten-Vorgabe, nicht mit der urspruenglichen 45-Minuten-Empfehlung. Entwurfsaenderung
+nachweislich uebernommen.
+
+**4. Onboarding-Custom-Builder: genau ein finaler Plan:** App ueber "More" > "Reset App"
+zurueckgesetzt (reiner In-Session-Reset, kein neuer TestingBot-Lauf noetig, autoAcceptAlerts
+akzeptierte den Bestaetigungsdialog automatisch) und frisches Onboarding durchlaufen. Auf der
+Empfehlungsseite ("Football Athletic" vorausgewaehlt) ueber "ALTERNATIVES" > "More plans" >
+"BUILD YOUR OWN" > "Build Plan" den Custom-Builder gestartet, Trainingstyp "Bodyweight" gewaehlt,
+Equipment-Defaults uebernommen, Vorschau bestaetigt ("Adopt Plan" im Builder - dieser Schritt
+uebernimmt laut Dump nur in den Onboarding-Entwurf, "Build Plan" erscheint auf der
+Empfehlungsseite danach mit "Selected"-Markierung, es existiert zu diesem Zeitpunkt noch kein
+persistierter Plan). Erst der Onboarding-eigene "Finish"-Button erzeugt den Plan: Dashboard zeigt
+danach den neuen Plan ("Next workout: Bodyweight · Push & Pull"), Plan-Tab bestaetigt **"1 PLAN"**
+- genau ein finaler Plan, kein doppelter Insert durch die Vorschau, keine Dopplung durch Builder-
+Uebernahme + Onboarding-Abschluss.
+
+**Automatisierungs-Nebenbefunde (keine App-Fehler, der App-Code wurde dafuer nicht veraendert):**
+- TestingBot-Sessions werden nach ca. 138s Inaktivitaet serverseitig beendet, unabhaengig von der
+  angeforderten `newCommandTimeout`-Capability - fuer kuenftige Runden: keine laengeren Pausen
+  (Recherche, Rueckfragen) waehrend eine Session offen ist, sonst neue Session noetig.
+- Im Plan-Editor blieb ein per "..."-Menue geoeffnetes "Recalculate/Reorder"-Popover gegenueber
+  Taps auf andere Elemente (Back, Tab-Wechsel, Tap ins Leere) zunaechst unempfaenglich; erst ein
+  erneuter Tap auf denselben "..."-Trigger schloss es. Reines SwiftUI-Menu-Dismiss-Verhalten unter
+  synthetischen WebDriver-Taps, keine Funktionsstoerung der App selbst.
+- Einfache Koordinaten-Swipes (`/actions`-Pointer-Geste) scrollten auf der finalen
+  Onboarding-Empfehlungsseite nicht zuverlaessig; `mobile: scroll` (natives XCUITest-Kommando)
+  funktionierte sofort. Fuer kuenftige lange Listen `mobile: scroll` bevorzugen.
+- `extract.py` (eigenes Analyse-Hilfsskript, nicht Teil der App) dedupliziert Zeilen mit
+  identischem Accessibility-Label und kann dadurch mehrere echte, aber gleich beschriftete
+  Plan-Zeilen als eine einzige anzeigen - bei Plananzahl-Pruefungen immer zusaetzlich den Rohdump
+  auf unterschiedliche `x`/`y`-Koordinaten pruefen, nicht nur auf `extract.py`-Ausgabe verlassen.
+
+**Wertung:** Alle vier zuvor offenen Faelle sind jetzt real auf Apple-Simulator-Ebene verifiziert
+und **bestanden**. Der `isAcceptingCardioFeasibility`-Fix (Commit `3d462dd`/`a12a425`) ist damit
+sowohl im Plan-Tab als auch im Profileditor nachweislich wirksam: der Uebernahme-Button bleibt nach
+einem Erfolg weiterhin bedienbar, unabhaengige Folge-Vorschlaege werden korrekt als eigene Plaene
+verarbeitet. "Adjust plan" uebernimmt den editierten Entwurfsinhalt unveraendert in den
+gespeicherten Plan. Der Onboarding-Custom-Builder erzeugt zuverlaessig genau einen finalen Plan,
+kein Doppel-Insert durch Vorschau + Abschluss.
+
+**Branch/Commits:** `claude/smart-onboarding-epic`. Kein Code wurde in dieser Runde geaendert -
+reiner Verifikationslauf gegen den bereits gepushten Stand (`a2ca5ff`).
+
+**Task #197:** abgeschlossen. Alle im Rahmen dieses Tasks vereinbarten UI-Pruefungen sind
+durchgefuehrt und bestanden; keine offenen Punkte mehr unter diesem Task.
