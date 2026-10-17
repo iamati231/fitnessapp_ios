@@ -292,7 +292,21 @@ umgesetzt (Task #203, 2026-10-17).
     ("Choose an alternative for this day") liess sich im XML-Dump nicht wiederfinden (vermutlich
     Rendering-/Capture-Eigenheit des Action-Sheets, nicht funktional) — rein kosmetisch, aendert
     nichts an der oben bestaetigten Kernfunktion.
-- P3.4 Header/Label/Discard-Guard auf `DeltiqHeader`-Muster umstellen — offen.
+- P3.4 Header/Label/Discard-Guard auf `DeltiqHeader`-Muster — **geprueft und bewusst NICHT
+  umgesetzt** (Review, 2026-10-17). `DeltiqHeader` + Checkmark/Discard-Guard ist das etablierte
+  Muster fuer EINZELNE, autosave-artige Daten-Editoren (UI-Refactor P1-P10: `ProfileEditorView`,
+  `PlanEditorView`, `DayEditorView`, `BodyDataEditorView`, `TrainingLocationEquipmentEditorView`,
+  `ExerciseLibraryEditorSheet`, `GearEditorView` - alle Screens, die man "verlaesst", nicht
+  "durchlaeuft"). `PlanBuilderView` ist dagegen explizit ein MEHRSCHRITTIGER ASSISTENT (eigener
+  Datei-Kommentar: "Struktur folgt bewusst `OnboardingView`") - und `OnboardingView` selbst, das
+  ausdruecklich genannte Vorbild, nutzt ebenfalls `.navigationTitle`+`.toolbar` statt
+  `DeltiqHeader`, nicht aus Versehen, sondern weil ein Wizard-Schritt keinen Checkmark-"Speichern"-
+  Zustand hat (es gibt "Zurueck/Weiter"+"Plan uebernehmen", kein verwerfbares Einzelfeld). Ein
+  erzwungener `DeltiqHeader`-Umbau wuerde `PlanBuilderView` vom eigenen Vorbild `OnboardingView`
+  ABKOPPELN statt die beiden konsistent zu halten - das waere eine neue Inkonsistenz, keine
+  Verbesserung. Eingestuft als veraltetet/premature Checklisten-Punkt aus einer frueheren
+  Audit-Runde, nicht als echte Produktanforderung dieser Spezifikation. P3 (P3.1-P3.4) damit
+  insgesamt abgeschlossen.
 
 **P4 — Onboarding-Integration, Hybrid/Laufcoach (groß, abhängig von P2.5, teils parallel zu P3):**
 - P4.1 Separate Laufcoach-Entscheidung nach Hybrid/Laufen-Auswahl.
