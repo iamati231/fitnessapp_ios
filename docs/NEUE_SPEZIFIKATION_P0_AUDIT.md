@@ -156,8 +156,10 @@ Dateien, tatsächlich ausgeführte Tests, Apple-Ergebnis, UI-Ergebnis, Risiken, 
   `equipmentPreferences: derivedLegacyEquipment` (Commit `53b23a1`) — `selections` bleibt bewusst
   leer (Dok02 §1: kein eigener Onboarding-Generator, keine doppelte Trainingsarten-/Tage-Abfrage).
 
-Konsolidierter Codemagic-Build über alle 4 Commits zusammen: `6ad3c031` (angestoßen, Ergebnis siehe
-unten im Abschlussvermerk).
+Konsolidierter Codemagic-Build über alle 4 Commits zusammen (`3da2506`, `d6710eb`, `d0cb503`,
+`53b23a1`): `6ad3c031` — Build (debug), `swift test --parallel`, Simulator-Build für alle 5 Targets
+(FitnessAppCore/Data/Health/Activities/UI) alle `success`. Task #202 damit vollstaendig abgeschlossen,
+Apple-seitig bestaetigt.
 
 **P2.5 — PlanningContext/EnduranceModality verdrahten (klein-mittel, Vorbedingung für P3/P4):**
 Core-Typ ist fertig und getestet, es fehlt die Persistenz (additives Feld auf `UserBodyProfile`)
