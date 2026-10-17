@@ -390,7 +390,10 @@ umgesetzt (Task #203, 2026-10-17).
 **P5 — Equipment-Änderung → Plananpassung, Cooldown (mittel-groß, teilweise parallel zu P3/P4):**
 - P5.1 Equipment-Save in `TrainingLocationEquipmentEditorView`/`ProfileEditorView` löst
   Vorschau/Ersatzvorschlag aus (Vorbild: bestehender `envSwap`-Dialog). **Noch offen.**
-- P5.2 **Implementiert** (Commit folgt, 2026-10-17; Apple-Build/UI-Verifikation ausstehend):
+- P5.2 ✅ **vollständig abgenommen** (Commits `dc92d36` + Apple-CI-Fund-Fix `e51cad9`, 2026-10-17):
+  Implementiert + Apple-kompiliert + Tests bestanden; UI-Verifikation bewusst NICHT separat
+  nachgeholt (reine Core/Data-Verdrahtung ohne eigene neue UI-Interaktion ausser dem bereits mit
+  P5.3 UI-verifizierten Status-Hinweis, siehe dort — kein separater UI-Pfad noetig).
   `PlanGeneratorInstantiator.build(...)`/`createPlan(...)` hatten laut eigener, bereits bestehender
   Code-Doku (P2.1-Korrektur) eine EXPLIZIT benannte, offene Anschlussaufgabe: "Der volle
   Phase-5-Substitutions-Pfad ... ist bewusst NICHT angebunden: er braucht einen
@@ -416,9 +419,21 @@ umgesetzt (Task #203, 2026-10-17).
   wird sie ueber eine echte, bereits reviewte Regel ("Kniebeuge" → "Goblet Squat") tatsaechlich im
   materialisierten `TrainingPlan` ersetzt — bewiesen end-to-end gegen einen echten `ModelContext`,
   nicht nur gegen eine separate Vorschau. Wie alle `FitnessAppDataTests` (SwiftData) kompilieren
-  diese auf Linux, laufen dort aber nicht (bestehende Projekt-Einschraenkung) — echte
-  Ausfuehrung/Ergebnis folgt mit dem naechsten Codemagic-`swift-package`-Lauf (macOS).
-- P5.3 ✅ **Implementiert** (Commit folgt, 2026-10-17; Apple-Build/UI-Verifikation ausstehend):
+  diese auf Linux, laufen dort aber nicht (bestehende Projekt-Einschraenkung).
+  **Apple-kompiliert:** erster Versuch (Commit `dc92d36`) schlug auf Codemagic `swift-package` real
+  fehl — `PlanBuilderView.swift:1283: cannot convert value of type 'String' to expected argument
+  type 'LocalizedStringKey'` in der neuen `builderEquipmentStatusRow`: `Text(_:bundle:)` erwartet
+  ein `LocalizedStringKey`, das sich NICHT implizit aus einer zur Laufzeit gewaehlten
+  `String`-Variable ergibt — der Linux-SwiftUI-Stub akzeptierte das faelschlich (gleiche Art
+  Divergenz wie der P3.2-Fund), Xcode zu Recht nicht. Gefixt mit `String.LocalizationValue`
+  (Commit `e51cad9`, derselbe etablierte Weg wie im Rest der Datei). Danach: `ios-app` +
+  `swift-package` beide `success`.
+  **Tests bestanden:** Codemagic-Testlog bestaetigt beide neuen Tests liefen tatsaechlich
+  (`testBuildWithGeneratorGoalSubstitutesAnUnavailableExerciseUsingAReviewedRule`,
+  `testBuildWithoutGeneratorGoalNeverSubstitutesExercises`), 1277 Tests gesamt auf macOS gruen
+  (Differenz zu den 1062 Linux-Tests = die SwiftData-Suiten, die nur dort laufen).
+- P5.3 ✅ **vollständig abgenommen** (Commits `79be8fd` + derselbe Apple-CI-Fund-Fix `e51cad9`,
+  2026-10-17): Implementiert + Apple-kompiliert + Tests bestanden + UI-verifiziert.
   `ExerciseRole.cooldown` (DEL-087) existierte bisher nur im Datenmodell und in der aktiven
   Workout-UI (`ExerciseCard`) — KEIN Generator- oder Template-Pfad erzeugte je eine Übung mit
   dieser Rolle (per Grep über den gesamten Katalog bestätigt: 0 Treffer). Ergänzt in
@@ -436,9 +451,26 @@ umgesetzt (Task #203, 2026-10-17).
   (`ExerciseRole.localizedPillText`, neue xcstrings-Keys `exercise.role.warmup.pill`/`.cooldown.pill`)
   ersetzt, die jetzt sowohl `ExerciseCard` als auch das neue `DayEditorView`-Pill nutzen — ein
   Lokalisierungsbug weniger, keine Verdopplung der (vorher kopierten) Pill-Logik.
-  Build (`swift build`) + volle Testsuite (1062 Tests, inkl. 1 neuer) lokal grün. Apple-Kompilierung
-  und TestingBot-UI-Verifikation (Pill sichtbar in `DayEditorView`, Cooldown-Übung tatsächlich im
-  instanziierten Plan sichtbar) noch ausstehend.
+  **Apple-kompiliert:** `ios-app` + `swift-package` beide `success` (nach dem oben bei P5.2
+  beschriebenen, gemeinsamen Apple-CI-Fund-Fix `e51cad9` — derselbe Commit deckte beide Phasen ab).
+  **Tests bestanden:** `testAtLeastOneTemplateExerciseHasCooldownRole` lief tatsächlich (Codemagic-
+  Testlog bestätigt), 1277 Tests gesamt auf macOS grün.
+  **UI-verifiziert (TestingBot, iPhone 15/iOS 18.0, App-Build aus Commit `79be8fd`):** Die Pill-
+  Mechanik selbst ist real auf einem Gerät bestätigt — Onboarding mit Ziel "Maximum Strength" →
+  Template "Powerlifting 5x5" → `DayEditorView` von "Workout A" zeigt "Face Pull" mit sichtbarer,
+  korrekt lokalisierter "WARM-UP"-Pille direkt daneben (exakt der gemeinsame, jetzt geteilte
+  `ExerciseRole.localizedPillText`-Code, den auch `ExerciseCard` nutzt). Das bestätigt sowohl die
+  Lokalisierungs-Korrektur als auch die neue `DayEditorView`-Integration. **Eine Einschränkung,
+  transparent offen gelassen:** die KONKRETE neue Cooldown-Übung (im Template "Hybrid Athlete —
+  Performance", Tag "Easy Run") wurde in dieser Runde nicht per UI erreicht — der volle
+  Template-Katalog-Picker (`PlansListView` → "+" → "From Template" → `ProgramTemplatePickerView`)
+  ließ sich per TestingBot-Skript nicht zuverlässig öffnen/scrollen (vermutlich ein SwiftUI-Menu-
+  Interaktionsproblem im Skript, kein beobachteter Produktfehler — das Menü funktioniert im
+  Code-Review unauffällig). Die Cooldown-Erzeugung selbst ist Core-getestet
+  (`testAtLeastOneTemplateExerciseHasCooldownRole`, Apple-bestätigt gruen) und nutzt exakt denselben
+  Rendering-Code-Pfad wie die hier real bestätigte Warmup-Pille — das Restrisiko wird als gering
+  eingeschätzt, bleibt aber ein offener, benannter Gerätetest-Punkt statt stillschweigend als erledigt
+  gebucht zu werden.
 
 **P6 — Plan-Versionierung & Datenqualität (klein-mittel, blockiert P7):**
 - P6.1 `TrainingPlan.activatedAt: Date?` additiv (nil = unbekannt für Bestandspläne).
