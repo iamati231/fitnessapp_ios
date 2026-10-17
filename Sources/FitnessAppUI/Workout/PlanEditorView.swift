@@ -884,6 +884,13 @@ public struct PlanEditorView: View {
             for other in allPlans where other.persistentModelID != plan.persistentModelID {
                 other.isActive = false
             }
+            // P6.1: eine echte Re-Aktivierung ueber diesen Schalter ist ein
+            // neuer, realer Zeitpunkt — kein erfundenes Datum. Wird bei
+            // einem Discard der gesamten Editor-Sitzung zusammen mit
+            // `isActive` wieder auf den Baseline-Wert zurueckgesetzt (siehe
+            // `PlanMetaSnapshot`), ueberlebt also nur bei tatsaechlicher
+            // Bestaetigung.
+            plan.activatedAt = Date()
         }
         plan.isActive = active
     }
@@ -1071,6 +1078,11 @@ struct PlanMetaSnapshot: Equatable {
     var progressionTargetRIROverride: Float?
     var targetEnvironment: EnvironmentType
     var isActive: Bool
+    /// P6.1: muss zusammen mit `isActive` erfasst/zurueckgeschrieben werden
+    /// — sonst wuerde ein verworfener Re-Aktivierungs-Tap (`setActive(true)`
+    /// stempelt sofort `Date()`, siehe dort) beim Discard zwar `isActive`,
+    /// nicht aber den dabei gesetzten Zeitstempel zuruecksetzen.
+    var activatedAt: Date?
 
     static func capture(from plan: TrainingPlan) -> PlanMetaSnapshot {
         PlanMetaSnapshot(
@@ -1078,7 +1090,8 @@ struct PlanMetaSnapshot: Equatable {
             weeks: plan.weeks,
             progressionTargetRIROverride: plan.progressionTargetRIROverride,
             targetEnvironment: plan.targetEnvironment,
-            isActive: plan.isActive
+            isActive: plan.isActive,
+            activatedAt: plan.activatedAt
         )
     }
 
@@ -1088,6 +1101,7 @@ struct PlanMetaSnapshot: Equatable {
         plan.progressionTargetRIROverride = progressionTargetRIROverride
         plan.targetEnvironment = targetEnvironment
         plan.isActive = isActive
+        plan.activatedAt = activatedAt
     }
 }
 #endif

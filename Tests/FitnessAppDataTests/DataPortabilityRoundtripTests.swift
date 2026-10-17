@@ -1199,6 +1199,87 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(imported?.generationSource, .manual)
     }
 
+    // MARK: - P6.1 (Plan-Versionierung): activatedAt
+
+    func testActivatedAtSurvivesRoundtripForAnActivePlan() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Aktiver Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        try ctx.save()
+        let originalActivatedAt = try XCTUnwrap(plan.activatedAt, "Init muss bei isActive:true automatisch stempeln")
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
+        let importedActivatedAt = try XCTUnwrap(imported?.activatedAt)
+        XCTAssertEqual(importedActivatedAt.timeIntervalSince1970, originalActivatedAt.timeIntervalSince1970, accuracy: 1.0)
+    }
+
+    func testActivatedAtDefaultsToNilOnRoundtripForANeverActivatedPlan() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Nie aktivierter Plan", programType: "custom", isActive: false)
+        ctx.insert(plan)
+        try ctx.save()
+        XCTAssertNil(plan.activatedAt)
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
+        XCTAssertNil(imported?.activatedAt)
+    }
+
+    /// Haertet genau den Fund, der beim Entwurf dieses Felds beinahe
+    /// passiert waere: DEL-225s `mayActivate`-Regel kann einen laut Backup
+    /// aktiven Plan beim Import auf `isActive = false` zuruecksetzen (wenn
+    /// das Zielgeraet bereits einen anderen aktiven Plan hat). `activatedAt`
+    /// darf davon UNBERUEHRT bleiben — weder auf `nil` noch auf "jetzt"
+    /// zurueckfallen, sondern den echten, historischen Wert aus dem Backup
+    /// behalten, auch wenn der Plan importiert gerade inaktiv ankommt.
+    func testActivatedAtSurvivesEvenWhenImportSuppressesActivationDueToExistingActivePlan() async throws {
+        let source = try makeContainer()
+        let sourceCtx = source.mainContext
+        let historicalPlan = TrainingPlan(name: "Historisch aktiver Plan", programType: "custom", isActive: true)
+        sourceCtx.insert(historicalPlan)
+        try sourceCtx.save()
+        let historicalActivatedAt = try XCTUnwrap(historicalPlan.activatedAt)
+
+        let bundle = try DataExportService.makeExport(context: sourceCtx)
+
+        let target = try makeContainer()
+        let targetCtx = target.mainContext
+        let alreadyActiveOnTarget = TrainingPlan(name: "Bereits aktiv auf dem Zielgeraet", programType: "custom", isActive: true)
+        targetCtx.insert(alreadyActiveOnTarget)
+        try targetCtx.save()
+
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: targetCtx,
+            strategy: .appendOnly
+        )
+
+        let imported = try targetCtx.fetch(FetchDescriptor<TrainingPlan>())
+            .first { $0.name == "Historisch aktiver Plan" }
+        XCTAssertEqual(imported?.isActive, false, "mayActivate muss den Import korrekt auf inaktiv setzen")
+        let importedActivatedAt = try XCTUnwrap(imported?.activatedAt, "activatedAt darf trotz unterdrueckter Aktivierung nicht verloren gehen")
+        XCTAssertEqual(importedActivatedAt.timeIntervalSince1970, historicalActivatedAt.timeIntervalSince1970, accuracy: 1.0)
+    }
+
     // MARK: - Settings-Epic Phase 5
 
     /// Befund-Aufhaenger: "grosse Historie". Beweist, dass der neue Off-Main-

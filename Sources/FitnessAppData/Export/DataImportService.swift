@@ -983,6 +983,15 @@ public enum DataImportService {
             // Spalte fallen auf den Default `.manual` zurueck statt zu
             // crashen.
             plan.generationSourceRaw = row.optionalString("generation_source") ?? GenerationSource.manual.rawValue
+            // P6.1: additive Spalte, siehe DataExportService.buildPlans.
+            // Explizit ueberschreiben statt dem Init-Default zu vertrauen —
+            // dessen Auto-"jetzt"-Stempel (greift, wenn `isActive == true`
+            // und kein `activatedAt` explizit uebergeben wurde) waere hier
+            // falsch: ein importierter Plan kann laut Backup laengst vorher
+            // aktiviert worden sein. Fehlt die Spalte (Backup von vor P6.1)
+            // oder ist sie leer, bleibt es bewusst `nil` ("unbekannt"), nie
+            // ein erfundenes historisches Datum.
+            plan.activatedAt = row.date("activated_at_utc")
             // DEL-225: Sobald ein Plan aktiv gesetzt wurde, darf kein weiterer
             // folgen — ein Backup mit mehreren aktiven Plaenen soll nicht in
             // zwei gleichzeitig aktiven Plaenen resultieren.

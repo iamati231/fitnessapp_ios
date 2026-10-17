@@ -21,6 +21,33 @@ public final class TrainingPlan {
     public var descriptionText: String
     public var weeks: Int
     public var isActive: Bool
+
+    /// P6.1 (docs/NEUE_SPEZIFIKATION_P0_AUDIT.md, "Plan-Versionierung &
+    /// Datenqualitaet"): Zeitanker fuer den Beginn der AKTUELLEN
+    /// Aktiv-Periode dieses Plans — die Grundlage, ab der ein spaeterer
+    /// Soll-Ist-Teilnahmevergleich (P6.2) ueberhaupt erst "geplante
+    /// Gelegenheiten" zaehlen darf. `nil` heisst ausdruecklich "unbekannt",
+    /// NIEMALS "nie aktiviert" — additiv auf Bestandsplaenen vor diesem
+    /// Feld (Lightweight-Migration, identisches Prinzip wie
+    /// `localizationKey`). Es gibt bewusst KEIN erfundenes Backfill-Datum:
+    /// ein Plan, der vor P6.1 aktiviert wurde, bleibt `nil`, bis er das
+    /// naechste Mal (re-)aktiviert wird — alles andere waere ein
+    /// erfundenes historisches Startdatum.
+    ///
+    /// Mehrere gleichzeitig aktive Plaene sind im Produkt ausdruecklich
+    /// vorgesehen (Task #201/#202) — dieses Feld ist bewusst PRO PLAN, kein
+    /// globaler "seit wann laeuft der eine aktive Plan"-Zeitpunkt.
+    ///
+    /// Wird NICHT automatisch bei jedem `isActive`-Schreibzugriff
+    /// fortgeschrieben (SwiftData-`@Model`-Properties haben keine
+    /// verlaesslichen Observer) — jeder Aufrufer, der einen Plan NEU
+    /// aktiviert, muss diesen Zeitpunkt selbst setzen (siehe
+    /// `PlanEditorView.setActive(_:)` fuer die manuelle UI-Reaktivierung;
+    /// der Init unten deckt den Erzeugt-bereits-aktiv-Fall automatisch ab).
+    /// Ein Import aus einem Backup setzt das Feld explizit auf den
+    /// gespeicherten Wert (oder `nil` bei einem Backup von vor P6.1) —
+    /// NIE auf "jetzt", das waere ebenfalls ein erfundenes Datum.
+    public var activatedAt: Date?
     /// Environment this plan is designed for — used to filter recommendations (F154).
     public var targetEnvironment: EnvironmentType
 
@@ -100,7 +127,12 @@ public final class TrainingPlan {
         isTemplate: Bool = false,
         localizationKey: String? = nil,
         generatorInputRaw: String? = nil,
-        generationSource: GenerationSource = .manual
+        generationSource: GenerationSource = .manual,
+        // P6.1: explizit statt nur abgeleitet, damit ein Backup-Import den
+        // tatsaechlich gespeicherten Zeitpunkt (oder `nil` bei einem
+        // Backup von vor P6.1) durchreichen kann, ohne vom
+        // Auto-"jetzt"-Default ueberschrieben zu werden.
+        activatedAt: Date? = nil
     ) {
         self.name = name
         self.customName = customName
@@ -113,6 +145,12 @@ public final class TrainingPlan {
         self.localizationKey = localizationKey
         self.generatorInputRaw = generatorInputRaw
         self.generationSourceRaw = generationSource.rawValue
+        // P6.1: ein neu erzeugter, bereits aktiver Plan wird JETZT aktiviert
+        // — kein erfundenes Datum, sondern der tatsaechliche Erzeugungs-
+        // zeitpunkt. Ein expliziter `activatedAt`-Wert (Backup-Import) gewinnt
+        // immer, auch wenn er `nil` ist (deshalb `??`, nicht ein zweiter
+        // optionaler Parameter mit anderem Defaultverhalten).
+        self.activatedAt = activatedAt ?? (isActive ? Date() : nil)
     }
 }
 

@@ -431,11 +431,15 @@ public enum DataExportService {
         // zurueck). Gleiches additiv-rueckwaertskompatibles Muster wie DEL-203
         // (`weekly_workout_goal`): aeltere Importer/aeltere ZIPs kennen die
         // Spalte nicht, kein formatVersion-Bump noetig.
+        // P6.1: `activated_at_utc` additiv (gleiches Muster wie
+        // `generator_input_raw` oben) - ein Backup von vor P6.1 hat die
+        // Spalte nicht, der Import liest dann `nil` (unbekannt), NIE ein
+        // erfundenes "jetzt".
         var w = CSVWriter(headers: [
             "id", "name", "custom_name", "program_type", "description",
             "weeks", "is_active", "target_environment", "is_template",
             "progression_target_rir_override", "localization_key",
-            "generator_input_raw", "generation_source"
+            "generator_input_raw", "generation_source", "activated_at_utc"
         ])
         for p in items {
             w.appendRow([
@@ -451,7 +455,8 @@ public enum DataExportService {
                 p.progressionTargetRIROverride.map { CSVWriter.decimal(Double($0)) } ?? "",
                 p.localizationKey ?? "",
                 p.generatorInputRaw ?? "",
-                p.generationSourceRaw
+                p.generationSourceRaw,
+                p.activatedAt.map(CSVWriter.iso8601) ?? ""
             ])
         }
         return w.data()
