@@ -336,4 +336,18 @@ public extension SessionFeeling {
         }
     }
 }
+
+public extension ExerciseRole {
+    /// P5.3: ersetzt die bisher hartkodierten, nicht lokalisierten
+    /// "WARM-UP"/"COOL-DOWN"-Strings (vormals privat in `ExerciseCard`) durch
+    /// eine geteilte, lokalisierte Quelle — `nil` fuer `.workingSet`, da der
+    /// Normalfall keine Pill zeigt.
+    var localizedPillText: LocalizedStringResource? {
+        switch self {
+        case .warmup:     LocalizedStringResource("exercise.role.warmup.pill",   bundle: .fitnessAppUI)
+        case .cooldown:   LocalizedStringResource("exercise.role.cooldown.pill", bundle: .fitnessAppUI)
+        case .workingSet: nil
+        }
+    }
+}
 #endif

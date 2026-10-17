@@ -1317,11 +1317,27 @@ private struct ExerciseRow: View {
                 .frame(width: 22, alignment: .trailing)
 
             VStack(alignment: .leading, spacing: 2) {
-                // DEL-124: displayName resolved via Exercise+DisplayName-
-                // Library-Lookup (DEL-118). Plan-Detail-Row zeigt jetzt
-                // multilinguale Namen statt das deutsche `name`-Snapshot.
-                Text(exercise.displayName)
-                    .font(.body)
+                HStack(spacing: 6) {
+                    // DEL-124: displayName resolved via Exercise+DisplayName-
+                    // Library-Lookup (DEL-118). Plan-Detail-Row zeigt jetzt
+                    // multilinguale Namen statt das deutsche `name`-Snapshot.
+                    Text(exercise.displayName)
+                        .font(.body)
+                    // P5.3: gleiche Pill wie im aktiven Workout (`ExerciseCard`)
+                    // — vorher sah man im Editor nicht, dass eine Uebung
+                    // Warmup/Cooldown ist (keine Referenz auf `ExerciseRole`
+                    // in dieser Datei).
+                    if let pillText = exercise.role.localizedPillText {
+                        Text(pillText)
+                            .font(.caption2.weight(.bold))
+                            .tracking(0.8)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.secondary.opacity(0.18))
+                            .foregroundStyle(.secondary)
+                            .clipShape(Capsule())
+                    }
+                }
                 Text(detailLine)
                     .font(.caption)
                     .foregroundStyle(Color.Deltiq.textSecondary)

@@ -242,4 +242,17 @@ final class ProgramTemplatesTests: XCTestCase {
             XCTAssertTrue(hasTemplate, "TrainingGoal.\(goal) hat kein einziges Template — tote Quiz-Auswahl")
         }
     }
+
+    /// P5.3: `ExerciseRole.cooldown` existierte vorher nur im Datenmodell und
+    /// in der UI-Anzeige (`ExerciseCard`), wurde aber von KEINEM Generator-
+    /// oder Template-Pfad je tatsaechlich erzeugt. Regressionstest gegen ein
+    /// erneutes Leerlaufen dieser Rolle.
+    func testAtLeastOneTemplateExerciseHasCooldownRole() {
+        let hasCooldownExercise = ProgramTemplates.all.contains { template in
+            template.days.contains { day in
+                day.exercises.contains { $0.role == .cooldown }
+            }
+        }
+        XCTAssertTrue(hasCooldownExercise, "Kein einziges Template erzeugt je eine Uebung mit role == .cooldown")
+    }
 }

@@ -389,11 +389,30 @@ umgesetzt (Task #203, 2026-10-17).
 
 **P5 — Equipment-Änderung → Plananpassung, Cooldown (mittel-groß, teilweise parallel zu P3/P4):**
 - P5.1 Equipment-Save in `TrainingLocationEquipmentEditorView`/`ProfileEditorView` löst
-  Vorschau/Ersatzvorschlag aus (Vorbild: bestehender `envSwap`-Dialog).
+  Vorschau/Ersatzvorschlag aus (Vorbild: bestehender `envSwap`-Dialog). **Noch offen.**
 - P5.2 Substitutions-Pfad an Builder-generierte Pläne anbinden (abhängig von P3.1 — braucht ein
-  echtes `TrainingGoal`).
-- P5.3 Mindestens einen Generator-/Template-Pfad ergänzen, der `.cooldown` tatsächlich erzeugt;
-  Rollen-Anzeige in `DayEditorView`/`PlanEditorView` ergänzen (fehlt dort komplett).
+  echtes `TrainingGoal`, seit Commit `1aed7e5` erfüllt). **Noch offen.**
+- P5.3 ✅ **Implementiert** (Commit folgt, 2026-10-17; Apple-Build/UI-Verifikation ausstehend):
+  `ExerciseRole.cooldown` (DEL-087) existierte bisher nur im Datenmodell und in der aktiven
+  Workout-UI (`ExerciseCard`) — KEIN Generator- oder Template-Pfad erzeugte je eine Übung mit
+  dieser Rolle (per Grep über den gesamten Katalog bestätigt: 0 Treffer). Ergänzt in
+  `ProgramTemplates.swift` (`hybridPerformance`, Tag "Easy Run"): ein Cooldown-Spaziergang nach dem
+  Lauf, mit derselben Übung wie der bestehende Warmup davor ("Gehen / Einlaufen") — kein neuer
+  Katalog-Eintrag nötig. Neuer Core-Regressionstest
+  `testAtLeastOneTemplateExerciseHasCooldownRole` (`ProgramTemplatesTests`) schützt gegen erneutes
+  Leerlaufen. Zusätzlich: Rollen-Anzeige (Warmup/Cooldown-Pill) in `DayEditorView`s Übungszeile
+  ergänzt — vorher keine einzige `ExerciseRole`-Referenz in dieser Datei, User sah beim Planen/
+  Bearbeiten nicht, welche Übung Warmup/Cooldown ist. `PlanEditorView` zeigt grundsätzlich keine
+  einzelnen Übungsnamen (nur eine Tag-weite Übungs-ANZAHL) — eine Rollen-Anzeige ist dort
+  architektonisch nicht anwendbar, daher bewusst nicht nachgebaut (analog zur P3.4-Entscheidung).
+  **Nebenfund gleich mitbehoben:** `ExerciseCard.rolePillText` gab bisher hartkodierte, nicht
+  lokalisierte Strings `"WARM-UP"`/`"COOL-DOWN"` zurück — durch eine geteilte, lokalisierte Quelle
+  (`ExerciseRole.localizedPillText`, neue xcstrings-Keys `exercise.role.warmup.pill`/`.cooldown.pill`)
+  ersetzt, die jetzt sowohl `ExerciseCard` als auch das neue `DayEditorView`-Pill nutzen — ein
+  Lokalisierungsbug weniger, keine Verdopplung der (vorher kopierten) Pill-Logik.
+  Build (`swift build`) + volle Testsuite (1062 Tests, inkl. 1 neuer) lokal grün. Apple-Kompilierung
+  und TestingBot-UI-Verifikation (Pill sichtbar in `DayEditorView`, Cooldown-Übung tatsächlich im
+  instanziierten Plan sichtbar) noch ausstehend.
 
 **P6 — Plan-Versionierung & Datenqualität (klein-mittel, blockiert P7):**
 - P6.1 `TrainingPlan.activatedAt: Date?` additiv (nil = unbekannt für Bestandspläne).

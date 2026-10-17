@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2159 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2161 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2159 / 2159** (100%) | 0 |
-| 🇬🇧 English (EN) | **2159 / 2159** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2159 / 2159** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2161 / 2161** (100%) | 0 |
+| 🇬🇧 English (EN) | **2161 / 2161** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2161 / 2161** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -983,7 +983,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `equipmentItem.rack` | Rack | Rack | Squat rack |
 | `equipmentItem.resistanceBand` | Widerstandsband | Resistance band | Direnç bandı |
 
-## `exercise.*`  (245 Keys)
+## `exercise.*`  (247 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1230,6 +1230,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.zPress` | Z-Press | Z-Press | Z-Press |
 | `exercise.name.zercherSquat` | Zercher Squat | Zercher Squat | Zercher Squat |
 | `exercise.rest.label` | Pause | Rest | Mola |
+| `exercise.role.cooldown.pill` | COOLDOWN | COOL-DOWN | SOĞUMA |
+| `exercise.role.warmup.pill` | AUFWÄRMEN | WARM-UP | ISINMA |
 | `exercise.target.cardioFormat` | %1$@ • %2$@ %3$@ | %1$@ • %2$@ %3$@ | %1$@ • %2$@ %3$@ |
 | `exercise.target.strengthFormat` | %1$lld × %2$@ %3$@ • %4$@ %5$@ | %1$lld × %2$@ %3$@ • %4$@ %5$@ | %1$lld × %2$@ %3$@ • %4$@ %5$@ |
 

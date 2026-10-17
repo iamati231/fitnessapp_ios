@@ -247,8 +247,8 @@ struct ExerciseCard: View {
                     Text(exercise.displayName)
                         .font(.headline)
                     // DEL-087: Pill markiert Warmup/Cooldown-Uebungen optisch.
-                    if exercise.role != .workingSet {
-                        Text(rolePillText)
+                    if let pillText = exercise.role.localizedPillText {
+                        Text(pillText)
                             .font(.caption2.weight(.bold))
                             .tracking(0.8)
                             .padding(.horizontal, 6)
@@ -347,15 +347,6 @@ struct ExerciseCard: View {
     private var gifButtonAccessibilityText: String {
         let format = String(localized: "exercise.gif.button.a11y", bundle: .module)
         return String(format: format, exercise.displayName)
-    }
-
-    /// DEL-087: Label-Text fuer die Role-Pill im Header.
-    private var rolePillText: String {
-        switch exercise.role {
-        case .warmup:     return "WARM-UP"
-        case .cooldown:   return "COOL-DOWN"
-        case .workingSet: return ""
-        }
     }
 
     /// DEL-128: vollstaendige i18n der Card-Subtitle-Zeile.

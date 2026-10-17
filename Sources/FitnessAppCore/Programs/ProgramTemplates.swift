@@ -802,7 +802,15 @@ public enum ProgramTemplates {
             ]),
             DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
                 ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup),
-                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45)
+                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45),
+                // P5.3: erster real erzeugter `.cooldown`-Eintrag im gesamten
+                // Katalog (vorher existierte der `ExerciseRole`-Case nur im
+                // Datenmodell + UI-Handling, aber kein Generator-/Template-Pfad
+                // erzeugte ihn je). Dieselbe Uebung wie der Warmup oben
+                // ("Gehen / Einlaufen") — ein Ausklang-Spaziergang nach dem
+                // Lauf ist physiologisch dieselbe Bewegung wie das Einlaufen
+                // davor, braucht also keinen neuen Katalog-Eintrag.
+                ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .cooldown)
             ]),
             DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
                 ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 3, repsMin: 4,  repsMax: 6,  restSeconds: 210, targetRir: 3.0),
