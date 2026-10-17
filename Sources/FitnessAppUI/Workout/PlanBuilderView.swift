@@ -1280,7 +1280,14 @@ public struct PlanBuilderView: View {
         case .unavailable:  ("exclamationmark.triangle.fill", .red, "picker.plan.equipment.unavailable.title")
         }
         Label {
-            Text(titleKey, bundle: .module)
+            // `titleKey` ist ein zur Laufzeit gewaehlter Schluesselname, kein
+            // Compile-Zeit-Literal - `Text(_:bundle:)` erwartet aber ein
+            // `LocalizedStringKey`, das sich NICHT implizit aus einer
+            // Laufzeit-`String`-Variable ergibt (Apple-only Fehler, Linux
+            // SwiftUI-Stub akzeptiert das faelschlich - gleiche Art Divergenz
+            // wie der P3.2-Fund). `String.LocalizationValue` ist der
+            // etablierte Weg dafuer in dieser Datei/Codebase.
+            Text(String(localized: String.LocalizationValue(titleKey), bundle: .module))
         } icon: {
             Image(systemName: icon).foregroundStyle(tint)
         }
