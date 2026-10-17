@@ -120,7 +120,7 @@ public struct PlanBuilderView: View {
     /// erst in `finishOnboarding()` existent). Im eigenstaendigen Modus
     /// (`onGenerated == nil`, z.B. `PlansListView`s "+") schreibt diese View
     /// die Entscheidung stattdessen direkt selbst, siehe `adoptPlan()`.
-    private let onEnduranceModalityChosen: ((EnduranceModality?, Bool) -> Void)?
+    private let onEnduranceModalityChosen: (@MainActor (EnduranceModality?, Bool) -> Void)?
 
     /// Handoff "Lauf-Coaching - Machbarkeits-Check", Nachtrag "Plan
     /// anpassen": seedet Schritt 1/2 aus einem vorhandenen Input statt der
@@ -141,7 +141,7 @@ public struct PlanBuilderView: View {
     public init(
         initialInput: PlanGeneratorInput? = nil,
         onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> PlanBuilderHandoffOutcome)? = nil,
-        onEnduranceModalityChosen: ((EnduranceModality?, Bool) -> Void)? = nil
+        onEnduranceModalityChosen: (@MainActor (EnduranceModality?, Bool) -> Void)? = nil
     ) {
         self.onGenerated = onGenerated
         self.onEnduranceModalityChosen = onEnduranceModalityChosen
