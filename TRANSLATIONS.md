@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2117 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2113 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2117 / 2117** (100%) | 0 |
-| 🇬🇧 English (EN) | **2117 / 2117** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2117 / 2117** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2113 / 2113** (100%) | 0 |
+| 🇬🇧 English (EN) | **2113 / 2113** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2113 / 2113** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -935,7 +935,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `equipment.kettlebell` | Kettlebell | Kettlebell | Kettlebell |
 | `equipment.machine` | Maschine | Machine | Makine |
 
-## `equipmentEditor.*`  (18 Keys)
+## `equipmentEditor.*`  (17 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -952,7 +952,6 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `equipmentEditor.pullUpBar.no` | Nein | No | Hayır |
 | `equipmentEditor.pullUpBar.unknown` | Weiß ich noch nicht | Not sure yet | Henüz bilmiyorum |
 | `equipmentEditor.pullUpBar.yes` | Ja | Yes | Evet |
-| `equipmentEditor.section.accessories` | Zubehör & Stationen | Accessories & stations | Aksesuarlar ve istasyonlar |
 | `equipmentEditor.section.bench` | Bank | Bench | Bank |
 | `equipmentEditor.section.further` | Weitere Ausstattung | Further equipment | Diğer ekipmanlar |
 | `equipmentEditor.section.pullUpBar` | Klimmzugstange | Pull-up bar | Barfiks demiri |
@@ -1862,13 +1861,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (80 Keys)
+## `profile.*`  (77 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
-| `profile.body.footerOk` | Alle Berechnungen lesen Höhe metrisch aus dieser Quelle. | All calculations read height metrically from this source. | Tüm hesaplamalar boyu metrik olarak bu kaynaktan okur. |
 | `profile.body.heightPlaceholder` | z.B. 180 | e.g. 180 | örn. 180 |
-| `profile.body.plausible` | Plausibel: %1$lld–%2$lld cm. | Plausible: %1$lld–%2$lld cm. | Makul: %1$lld–%2$lld cm. |
 | `profile.bodyData.summary.footer` | Größe, aktuelles Gewicht und Zielgewicht an einem Ort. | Height, current weight and goal weight in one place. | Boy, güncel kilo ve hedef kilo tek yerde. |
 | `profile.bodyData.title` | Körperdaten | Body data | Vücut verileri |
 | `profile.bodyData.weight.footer` | Gewicht lässt sich hier ohne Umfänge speichern. Für Körperfett- und FFMI-Werte nutze die vollständige Messung. | You can log weight here without circumferences. For body-fat and FFMI values, use the full measurement. | Burada çevre ölçüsü olmadan kilo kaydedebilirsin. Vücut yağı ve FFMI değerleri için tam ölçümü kullan. |
@@ -1918,7 +1915,6 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.envSwap.title` | Trainingsort geändert | Training Location Changed | Antrenman Yeri Değişti |
 | `profile.equipment.footer` | Wähle aus, was du zur Verfügung hast. Nicht Ausgewähltes gilt als unbekannt, bis du bestätigst — dein Trainingsort legt dein Equipment nie automatisch fest. | Pick what you have available. Anything unselected counts as unknown until you confirm — your training location never automatically sets your equipment. | Elindeki ekipmanı seç. Seçilmeyenler onaylayana kadar bilinmiyor sayılır — antrenman yerin ekipmanını asla otomatik belirlemez. |
 | `profile.equipment.header` | Equipment-Präferenzen | Equipment preferences | Ekipman tercihleri |
-| `profile.equipment.sheet.title` | Ausrüstung | Equipment | Ekipman |
 | `profile.equipment.status.bodyweightOnly` | Nur Körpergewicht | Bodyweight only | Sadece vücut ağırlığı |
 | `profile.equipment.status.confirmed` | Bestätigt | Confirmed | Onaylandı |
 | `profile.equipment.status.gymAssumption` | Für ein übliches Fitnessstudio geplant | Planned for a typical gym | Standart bir spor salonu için planlandı |
