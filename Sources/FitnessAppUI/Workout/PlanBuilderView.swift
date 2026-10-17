@@ -1523,7 +1523,13 @@ public struct PlanBuilderView: View {
     private func resultDayRowAccessibilityLabel(spec: DaySpec, day: DraftDay, loadLevel: PlanLoadLevel?) -> String {
         var parts = [spec.displayName, scopeLine(for: spec)]
         if let loadLevel {
-            parts.append(loadLevel.localizedName)
+            // Apple-CI-Fund: `PlanLoadLevel.localizedName` liefert
+            // `LocalizedStringResource`, nicht `String` - auf Linux (dieser
+            // Datei-Toolchain) klaffte das klaffenlos zu `[String]`
+            // zusammen, Xcode (Apple-CI) lehnte es zu Recht ab. Gleiches
+            // Muster wie ueberall sonst im Code (`String(localized: env.
+            // localizedName)`, z.B. `PlanEditorView.swift:439`).
+            parts.append(String(localized: loadLevel.localizedName))
         }
         if day.isPositionFixed {
             parts.append(String(localized: "planBuilder.result.fixed.position.badge", bundle: .module))
