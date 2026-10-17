@@ -16838,29 +16838,6 @@
         }
       }
     },
-    "planBuilder.result.recalculate": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Neu rechnen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recalculate"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Yeniden Hesapla"
-          }
-        }
-      }
-    },
     "planBuilder.result.adopt": {
       "extractionState": "manual",
       "localizations": {
@@ -49471,6 +49448,75 @@
           "stringUnit": {
             "state": "translated",
             "value": "Taşınamadı: sabitlenmiş bir gün yerini kaybederdi."
+          }
+        }
+      }
+    },
+    "planBuilder.result.alternatives": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alternativen anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show alternatives"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alternatifleri göster"
+          }
+        }
+      }
+    },
+    "planBuilder.result.alternatives.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alternative für diesen Tag wählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose an alternative for this day"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu gün için bir alternatif seç"
+          }
+        }
+      }
+    },
+    "planBuilder.result.noAlternatives.toast": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für diesen Tag gibt es keine Alternative."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No alternative is available for this day."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu gün için alternatif yok."
           }
         }
       }

@@ -280,13 +280,22 @@ public struct PlanBuilderView: View {
     /// - siehe `generatePreviewIfNeeded`.
     @State private var lastGeneratedInput: PlanGeneratorInput?
 
-    /// P3.2: sichtbares Feedback, wenn `PlanDraft.moveDay`/`reorder(to:)` eine
-    /// Verschiebung ablehnt (weil sie — direkt oder indirekt — einen
-    /// positionsfixierten Tag verdraengen wuerde). Kein stilles No-Op (Audit
-    /// B01/P3.2-Abnahme): der gezogene Tag bleibt an seinem Platz (da `draft`
-    /// unveraendert bleibt), zusaetzlich erklaert dieser Toast WARUM. Gleiches
-    /// Anzeige-Muster wie `PlanEditorView.swapResultToast`.
-    @State private var reorderRejectedToast: String?
+    /// P3.2/P3.3: sichtbares Feedback fuer zwei Faelle, die sonst ein
+    /// stilles No-Op waeren - eine wegen Positionsfixierung abgelehnte
+    /// Verschiebung (Abnahme B01) UND ein Tag, fuer den `targetedAlternatives`
+    /// keine echte Alternative liefern kann (Abnahme B05 "sichtbarer
+    /// Konflikt statt abgeschnittener Einheiten"). Gleiches Anzeige-Muster
+    /// wie `PlanEditorView.swapResultToast`, nur mit austauschbarem Icon,
+    /// damit die beiden Faelle optisch unterscheidbar bleiben.
+    @State private var footerToastMessage: String?
+    @State private var footerToastSystemImage = "pin.slash.fill"
+
+    // P3.3: ausgewaehlter Tag + seine gerade angebotenen Alternativen fuer
+    // den Alternativen-Dialog (siehe `presentAlternatives`/`.confirmationDialog`
+    // in `resultStepView`). Getrennt von `draft`, weil Alternativen reine
+    // Vorschlaege sind, bevor der Nutzer eine davon uebernimmt.
+    @State private var alternativesDialogDayID: DraftDayID?
+    @State private var currentAlternativeOptions: [DaySpec] = []
 
     /// Audit-Korrektur (Review nach P2.1): treibt den expliziten Fehler-
     /// Zustand, wenn `adoptPlan()` im eigenstaendigen Modus kein Profil
@@ -1185,23 +1194,22 @@ public struct PlanBuilderView: View {
         )
     }
 
-    /// `shuffle`: Bugfix (Nutzer-Feedback) - der erste Aufruf beim Betreten
-    /// von Schritt 3 (`goToNextStep`/`.onAppear`) bleibt bewusst
-    /// deterministisch (Default `false`), nur der explizite "Neu rechnen"-
-    /// Tap fordert eine Variante an (siehe `resultStepView`).
-    ///
     /// P2.4 Punkt 5: ein blosses erneutes Betreten von Schritt 3 (zurueck zu
     /// Schritt 1/2 und wieder vor, OHNE dort etwas zu aendern) darf den
     /// bestehenden Entwurf NICHT mit neuen `DraftDayID`s rekonstruieren -
     /// deshalb der fruehe `guard`. Ein echter Input-Wechsel (Schritt 1/2
-    /// tatsaechlich geaendert) ODER ein expliziter "Neu rechnen"-Tap sind
-    /// dagegen bewusst eine NEUE Generierung (Typ-Doku Punkt 6) und bauen den
-    /// Draft komplett neu auf.
-    private func generatePreviewIfNeeded(shuffle: Bool = false) {
-        guard shuffle || draft == nil || lastGeneratedInput != currentInput else { return }
+    /// tatsaechlich geaendert) ist dagegen bewusst eine NEUE Generierung
+    /// (Typ-Doku Punkt 6) und baut den Draft komplett neu auf.
+    ///
+    /// P3.3: der fruehere `shuffle`-Parameter (fuer den globalen "Neu
+    /// rechnen"-Button) ist mit dessen Entfernung entfallen - Alternativen
+    /// laufen jetzt ausschliesslich gezielt pro Tag ueber
+    /// `PlanGenerator.targetedAlternatives`/`presentAlternatives`.
+    private func generatePreviewIfNeeded() {
+        guard draft == nil || lastGeneratedInput != currentInput else { return }
 
         let input = currentInput
-        let generated = PlanGenerator.generate(from: input, shuffle: shuffle)
+        let generated = PlanGenerator.generate(from: input)
         let newDraft = PlanDraft(generated: generated.days.map(\.spec))
         // `PlanDraft.init(generated:)` sortiert nach `sequenceIndex` - hier
         // identisch sortieren statt sich auf eine unausgesprochene
@@ -1289,33 +1297,39 @@ public struct PlanBuilderView: View {
                         Text(String(format: String(localized: "planBuilder.result.weeklyTotal", bundle: .module), weeklyTotalTimeLabel))
                     }
 
-                    Section {
-                        Button {
-                            // Bugfix (Nutzer-Feedback): "Neu rechnen" fordert
-                            // jetzt explizit eine gemischte Variante an (statt
-                            // denselben `currentInput` deterministisch erneut
-                            // zu rechnen und exakt dasselbe Ergebnis zu
-                            // zeigen). `withAnimation` gibt sichtbares
-                            // Feedback (Kapsel-Farbwechsel, Erklaerungstext-
-                            // Ein-/Ausblenden, Zeilenhoehen), selbst wenn sich
-                            // die gewaehlten Uebungen im Einzelfall kaum
-                            // unterscheiden.
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                generatePreviewIfNeeded(shuffle: true)
-                            }
-                        } label: {
-                            Label {
-                                Text("planBuilder.result.recalculate", bundle: .module)
-                            } icon: {
-                                Image(systemName: "arrow.triangle.2.circlepath")
-                            }
-                        }
-                    }
                 }
                 .scrollContentBackground(.hidden)
+                // P3.3 (Audit "Gezielte Alternativen statt globalem
+                // Shuffle"): ersetzt den frueheren globalen "Neu rechnen"-
+                // Button, der die GESAMTE Woche neu mischte und damit jede
+                // manuelle Fixierung/Aenderung an ANDEREN Tagen unsichtbar
+                // mit wegspuelte (Abnahme B04). Pro Tag jetzt ueber das
+                // "Alternativen"-Menu in `resultDayRow` erreichbar.
+                .confirmationDialog(
+                    Text("planBuilder.result.alternatives.title", bundle: .module),
+                    isPresented: Binding(
+                        get: { alternativesDialogDayID != nil },
+                        set: { if !$0 { alternativesDialogDayID = nil } }
+                    ),
+                    titleVisibility: .visible
+                ) {
+                    ForEach(Array(currentAlternativeOptions.enumerated()), id: \.offset) { _, alternative in
+                        Button(alternative.displayName) {
+                            if let dayID = alternativesDialogDayID {
+                                applyAlternative(alternative, to: dayID)
+                            }
+                            alternativesDialogDayID = nil
+                        }
+                    }
+                    Button(role: .cancel) {
+                        alternativesDialogDayID = nil
+                    } label: {
+                        Text("common.cancel", bundle: .module)
+                    }
+                }
                 .overlay(alignment: .bottom) {
-                    if let reorderRejectedToast {
-                        Label(reorderRejectedToast, systemImage: "pin.slash.fill")
+                    if let footerToastMessage {
+                        Label(footerToastMessage, systemImage: footerToastSystemImage)
                             .font(.caption)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
@@ -1371,13 +1385,54 @@ public struct PlanBuilderView: View {
     }
 
     private func showReorderRejectedToast() {
+        showFooterToast(
+            String(localized: "planBuilder.result.reorderRejected.toast", bundle: .module),
+            systemImage: "pin.slash.fill"
+        )
+    }
+
+    private func showFooterToast(_ message: String, systemImage: String) {
         withAnimation {
-            reorderRejectedToast = String(localized: "planBuilder.result.reorderRejected.toast", bundle: .module)
+            footerToastMessage = message
+            footerToastSystemImage = systemImage
         }
         Task {
             try? await Task.sleep(nanoseconds: 2_500_000_000)
-            withAnimation { reorderRejectedToast = nil }
+            withAnimation { footerToastMessage = nil }
         }
+    }
+
+    /// P3.3: zeigt bis zu 3 gezielte Alternativen fuer GENAU DIESEN Tag
+    /// (`PlanGenerator.targetedAlternatives`) ueber den `.confirmationDialog`
+    /// in `resultStepView`. `.noAlternativesAvailable` (Cardio-Tag oder zu
+    /// keiner Auswahl zuordenbar) bekommt den SICHTBAREN Konflikt-Toast
+    /// statt eines stillen No-Ops (Abnahme B05).
+    private func presentAlternatives(for day: DraftDay) {
+        let spec = day.spec(sequenceIndex: 1)
+        switch PlanGenerator.targetedAlternatives(for: spec, input: currentInput, count: 3) {
+        case .alternatives(let alternatives):
+            currentAlternativeOptions = alternatives
+            alternativesDialogDayID = day.id
+        case .noAlternativesAvailable:
+            showFooterToast(
+                String(localized: "planBuilder.result.noAlternatives.toast", bundle: .module),
+                systemImage: "exclamationmark.triangle.fill"
+            )
+        }
+    }
+
+    /// Ersetzt NUR den Inhalt von `dayID` (`PlanDraft.replaceContent`,
+    /// verweigert bereits selbst bei `isContentFixed`) - alle anderen Tage
+    /// bleiben unangetastet (Abnahme B04). `loadLevelByDayID`s bisheriger
+    /// Eintrag fuer diesen Tag bezog sich auf die ALTEN Uebungen und wird
+    /// deshalb entfernt statt stehen gelassen - ein veralteter Belastungs-
+    /// Badge waere schlimmer als der bereits unterstuetzte "nicht bewertet"-
+    /// Zustand (siehe `loadLevel(for:)`-Doku).
+    private func applyAlternative(_ alternative: DaySpec, to dayID: DraftDayID) {
+        guard var currentDraft = draft else { return }
+        guard currentDraft.replaceContent(of: dayID, with: alternative) else { return }
+        loadLevelByDayID.removeValue(forKey: dayID)
+        draft = currentDraft
     }
 
     private func toggleContentFixed(for id: DraftDayID) {
@@ -1496,6 +1551,21 @@ public struct PlanBuilderView: View {
                         Image(systemName: day.isContentFixed ? "lock.open" : "lock")
                     }
                 }
+                // P3.3: ersetzt den frueheren globalen "Neu rechnen"-Button -
+                // gezielt NUR fuer diesen einen Tag, respektiert
+                // `isContentFixed` (PlanDraft.replaceContent verweigert dort
+                // ohnehin, aber ein deaktivierter Menueeintrag zeigt das
+                // schon VOR dem Tap statt erst danach).
+                Button {
+                    presentAlternatives(for: day)
+                } label: {
+                    Label {
+                        Text("planBuilder.result.alternatives", bundle: .module)
+                    } icon: {
+                        Image(systemName: "arrow.2.squarepath")
+                    }
+                }
+                .disabled(day.isContentFixed)
             } label: {
                 Image(systemName: "ellipsis.circle")
                     .foregroundStyle(.secondary)

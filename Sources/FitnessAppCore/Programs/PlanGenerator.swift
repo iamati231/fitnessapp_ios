@@ -152,6 +152,93 @@ public enum PlanGenerator {
         return Result(days: days, explanationKey: explanationKey)
     }
 
+    /// P3.3 (Audit "Gezielte Alternativen statt globalem Shuffle"): bis zu
+    /// `count` unterschiedliche, komplette Alternativ-Inhalte fuer GENAU
+    /// EINEN Tag - ersetzt den bisherigen "Neu rechnen"-Button
+    /// (`generate(shuffle: true)`), der die GESAMTE Woche neu wuerfelte und
+    /// damit jede manuelle Fixierung/Aenderung an ANDEREN Tagen unsichtbar
+    /// mit wegspuelte (Abnahme B04 "keine stillen Verluste bei manuellen
+    /// Aenderungen + Neuberechnung"). Diese Funktion ruehrt ausschliesslich
+    /// `day` an - der Aufrufer (`PlanDraft.replaceContent`) ersetzt gezielt
+    /// NUR diesen einen Tag, alle anderen bleiben unveraendert.
+    public enum AlternativeGenerationResult: Sendable, Equatable {
+        case alternatives([DaySpec])
+        /// Dieser Tag ist Cardio (`cardioCandidates` liefert pro Zone nur
+        /// EINE feste Uebung - es gibt nichts zu variieren) ODER passt zu
+        /// keiner der `input.selections` mehr (z.B. weil sich Schritt 1/2
+        /// seither geaendert haben). Ein eigener Fall statt einer leeren
+        /// `[DaySpec]`-Liste, damit der Aufrufer einen SICHTBAREN Konflikt
+        /// zeigen kann statt einer stillen "zufaellig keine Alternativen"-
+        /// Deutung (Abnahme B05 "sichtbarer Konflikt statt abgeschnittener
+        /// Einheiten").
+        case noAlternativesAvailable
+    }
+
+    public static func targetedAlternatives(
+        for day: DaySpec,
+        input: PlanGeneratorInput,
+        count: Int = 3
+    ) -> AlternativeGenerationResult {
+        guard !day.exercises.isEmpty, !day.exercises.contains(where: \.isCardio) else {
+            return .noAlternativesAvailable
+        }
+        guard let selection = matchingSelection(for: day, in: input.selections) else {
+            return .noAlternativesAvailable
+        }
+
+        var seenExerciseSets: Set<Set<String>> = [Set(day.exercises.map(\.name))]
+        var alternatives: [DaySpec] = []
+        var attempts = 0
+        let maxAttempts = count * 8
+
+        while alternatives.count < count, attempts < maxAttempts {
+            attempts += 1
+            let candidates = strengthCandidates(for: selection, shuffle: true)
+            guard let picked = candidates.randomElement() else { break }
+            let pickedNames = Set(picked.exercises.map(\.name))
+            guard !pickedNames.isEmpty, !seenExerciseSets.contains(pickedNames) else { continue }
+            seenExerciseSets.insert(pickedNames)
+            alternatives.append(DaySpec(
+                name: picked.name,
+                localizationKey: picked.localizationKey,
+                type: day.type,
+                sequenceIndex: day.sequenceIndex,
+                exercises: picked.exercises,
+                timeFormat: picked.timeFormat,
+                timeCapMinutes: picked.timeCapMinutes
+            ))
+        }
+
+        return alternatives.isEmpty ? .noAlternativesAvailable : .alternatives(alternatives)
+    }
+
+    /// Rekonstruiert, aus welcher `PlanGeneratorTypeSelection` ein bereits
+    /// generierter Tag stammt - ueber Equipment-Pool-Zugehoerigkeit statt
+    /// einer gespeicherten Referenz (es gibt bislang keine; `DaySpec`
+    /// traegt keine Herkunfts-ID, siehe Datei-Kommentar). Zuverlaessig, weil
+    /// jede Kraft-Art einen EIGENEN, disjunkten Equipment-Filter hat
+    /// (`TrainingTypeKind.equipmentFilter`) - ein Tag mit ausschliesslich
+    /// Kurzhantel-Uebungen kann nur aus der `.dumbbell`-Auswahl stammen.
+    private static func matchingSelection(
+        for day: DaySpec,
+        in selections: [PlanGeneratorTypeSelection]
+    ) -> PlanGeneratorTypeSelection? {
+        let dayExerciseNames = Set(day.exercises.map(\.name))
+        guard !dayExerciseNames.isEmpty else { return nil }
+        for selection in selections {
+            guard let equipment = selection.kind.equipmentFilter else { continue }
+            let poolNames = Set(
+                ExerciseLibraryData.all
+                    .filter { $0.equipment == equipment && !$0.isCardio }
+                    .map(\.name)
+            )
+            if dayExerciseNames.isSubset(of: poolNames) {
+                return selection
+            }
+        }
+        return nil
+    }
+
     // MARK: - Strength candidates
 
     private static func strengthCandidates(for selection: PlanGeneratorTypeSelection, shuffle: Bool) -> [Candidate] {

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2151 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2153 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2151 / 2151** (100%) | 0 |
-| 🇬🇧 English (EN) | **2151 / 2151** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2151 / 2151** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2153 / 2153** (100%) | 0 |
+| 🇬🇧 English (EN) | **2153 / 2153** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2153 / 2153** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1735,7 +1735,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.upperLower.name` | Upper-Lower-Split | Upper-Lower Split | Upper-Lower Split |
 | `plan.template.upperLower.tagline` | 4 Tage · Kraft & Hypertrophie | 4 Days · Strength & Hypertrophy | 4 Gün · Güç & Hipertrofi |
 
-## `planBuilder.*`  (79 Keys)
+## `planBuilder.*`  (81 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1779,6 +1779,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.load.tough` | Hart | Tough | Zor |
 | `planBuilder.nav.next` | Weiter | Next | İleri |
 | `planBuilder.result.adopt` | Plan übernehmen | Adopt Plan | Planı Onayla |
+| `planBuilder.result.alternatives` | Alternativen anzeigen | Show alternatives | Alternatifleri göster |
+| `planBuilder.result.alternatives.title` | Alternative für diesen Tag wählen | Choose an alternative for this day | Bu gün için bir alternatif seç |
 | `planBuilder.result.dayActions` | Tagesoptionen | Day options | Gün seçenekleri |
 | `planBuilder.result.empty.message` | Für diese Kombination aus Ausrüstung und Erfahrung gibt es keine passenden Übungen in der Bibliothek. Wähle andere Optionen. | No matching exercises exist in the library for this combination of equipment and experience. Choose different options. | Bu ekipman ve deneyim kombinasyonu için kütüphanede uygun egzersiz yok. Farklı seçenekler dene. |
 | `planBuilder.result.empty.title` | Keine Übungen gefunden | No Exercises Found | Egzersiz Bulunamadı |
@@ -1792,7 +1794,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.result.loadLevel.unrated` | Nicht bewertet | Not rated | Değerlendirilmedi |
 | `planBuilder.result.moveTo` | Verschieben nach… | Move to… | Taşı… |
 | `planBuilder.result.moveTo.position` | Position %lld | Position %lld | Pozisyon %lld |
-| `planBuilder.result.recalculate` | Neu rechnen | Recalculate | Yeniden Hesapla |
+| `planBuilder.result.noAlternatives.toast` | Für diesen Tag gibt es keine Alternative. | No alternative is available for this day. | Bu gün için alternatif yok. |
 | `planBuilder.result.reorderRejected.toast` | Verschieben nicht möglich: ein fixierter Tag würde seine Position verlieren. | Can't move this day: a pinned day would lose its position. | Taşınamadı: sabitlenmiş bir gün yerini kaybederdi. |
 | `planBuilder.result.retryResolve` | Erneut versuchen | Try Again | Tekrar Dene |
 | `planBuilder.result.weeklyTotal` | %@ pro Woche | %@ per week | Haftada %@ |
