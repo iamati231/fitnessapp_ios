@@ -266,6 +266,24 @@ public enum PlanGeneratorInstantiator {
     /// `PlanCreationError.activePlanCheckFailed`, wenn die Zustandspruefung vor der Aktivierung
     /// selbst scheitert (KEINE Mutation in diesem Fall), und `.saveFailed`, wenn der abschliessende
     /// Save fehlschlaegt (der isolierte Scratch-Context wird dann einfach verworfen).
+    /// P5.2 (docs/NEUE_SPEZIFIKATION_P0_AUDIT.md): seit P3.1
+    /// (`GoalDrivenPlanSelectionBuilder`) liefert `PlanBuilderView`s
+    /// zielorientierter Einstieg ein ECHTES `TrainingGoal` fuer DIESE
+    /// Generierung — die Voraussetzung, die die P2.1-Korrektur oben als
+    /// fehlend benannte ("ein dafuer erfundener Wert waere genau der
+    /// versteckte Default, den diese Korrektur vermeiden soll"). `nil`
+    /// (Default, alle drei anderen Aufrufer unveraendert) behaelt exakt das
+    /// bisherige Verhalten (`userEquipmentProfile:` an `instantiate`, reine
+    /// Legacy-Variantenwahl ueber `bestEquipmentCheckedVariant`, NIE eine
+    /// Substitution). Gesetzt, laeuft stattdessen derselbe
+    /// `PlanSelectionResolver.resolve`-Pfad wie `TemplatePreviewView`
+    /// (per-Uebung-Substitution via `ExerciseSubstitutionEngine`, nicht nur
+    /// Varianten-Auswahl — der synthetische Wegwerf-Template hat zwar nie
+    /// `equipmentVariants`, `resolve` substituiert aber bereits INNERHALB der
+    /// einen Basis-Variante, das ist unabhaengig von zusaetzlichen
+    /// Varianten) — `resolvedSelection:` ist laut `ProgramInstantiator.
+    /// instantiate`-Doku bereits die "EINZIGE Quelle der Wahrheit sobald
+    /// gesetzt", exakt das hier benoetigte Verhalten.
     @discardableResult
     public static func build(
         from input: PlanGeneratorInput,
@@ -273,7 +291,9 @@ public enum PlanGeneratorInstantiator {
         environment: EnvironmentType,
         equipmentProfile: UserEquipmentProfile,
         result precomputed: PlanGenerator.Result? = nil,
-        generationSource: GenerationSource = .manual
+        generationSource: GenerationSource = .manual,
+        generatorGoal: TrainingGoal? = nil,
+        experienceTrack: ExperienceTrack? = nil
     ) throws -> TrainingPlan? {
         let result = precomputed ?? PlanGenerator.generate(from: input)
         guard !result.days.isEmpty else { return nil }
@@ -300,12 +320,27 @@ public enum PlanGeneratorInstantiator {
             throw PlanCreationError.activePlanCheckFailed
         }
 
-        let plan = ProgramInstantiator.instantiate(
-            template,
-            in: scratchContext,
-            selectedWeekdays: resolvedWeekdays(from: input),
-            userEquipmentProfile: equipmentProfile
-        )
+        let plan: TrainingPlan
+        if let generatorGoal {
+            let resolvedSelection = PlanSelectionResolver.resolve(
+                template: template,
+                profile: equipmentProfile,
+                context: SubstitutionContext(goal: generatorGoal, experienceTrack: experienceTrack)
+            )
+            plan = ProgramInstantiator.instantiate(
+                template,
+                in: scratchContext,
+                selectedWeekdays: resolvedWeekdays(from: input),
+                resolvedSelection: resolvedSelection
+            )
+        } else {
+            plan = ProgramInstantiator.instantiate(
+                template,
+                in: scratchContext,
+                selectedWeekdays: resolvedWeekdays(from: input),
+                userEquipmentProfile: equipmentProfile
+            )
+        }
         plan.generatorInput = input
         plan.generationSource = generationSource
 
@@ -401,7 +436,13 @@ public enum PlanGeneratorInstantiator {
         result precomputed: PlanGenerator.Result? = nil,
         for profile: UserBodyProfile,
         generationSource: GenerationSource,
-        in context: ModelContext
+        in context: ModelContext,
+        // P5.2: siehe `build(...)`-Doku. `experienceTrack` kommt immer vom
+        // echten, uebergebenen Profil (beschreibt den USER, nicht den Plan —
+        // anders als `generatorGoal` kein "erfundener" Wert, egal welcher
+        // Aufrufer), `generatorGoal` bleibt `nil` fuer alle Aufrufer ausser
+        // `PlanBuilderView`s zielorientiertem Einstieg.
+        generatorGoal: TrainingGoal? = nil
     ) throws -> TrainingPlan? {
         let effectiveProfile = EquipmentPlanningResolver.resolve(
             environment: profile.environment,
@@ -418,7 +459,8 @@ public enum PlanGeneratorInstantiator {
             return try build(
                 from: input, in: context,
                 environment: profile.environment, equipmentProfile: effectiveProfile,
-                result: precomputed, generationSource: generationSource
+                result: precomputed, generationSource: generationSource,
+                generatorGoal: generatorGoal, experienceTrack: profile.experienceTrack
             )
         } catch PlanCreationError.createdButRebindFailed(let planID) {
             if let resolved = resolveCreatedPlan(id: planID, in: context) {

@@ -1253,6 +1253,40 @@ public struct PlanBuilderView: View {
         loadLevelByDayID[dayID]
     }
 
+    /// P5.2 (docs/NEUE_SPEZIFIKATION_P0_AUDIT.md): nur im zielorientierten
+    /// Einstieg (`selectedTrainingGoal != nil`) relevant — das ist genau der
+    /// Pfad, der beim Uebernehmen jetzt tatsaechlich `PlanSelectionResolver.
+    /// resolve` durchlaeuft (siehe `adoptPlan()`). Zeigt den Status VOR jeder
+    /// Anpassung (reine `PlanEquipmentChecker`-Pruefung, keine Substitutions-
+    /// Simulation hier in der UI) — ehrlich als "so sieht es roh aus",
+    /// nicht als Vorwegnahme des Anpassungsergebnisses beim Adopt.
+    private var builderEquipmentStatus: PlanEquipmentStatus? {
+        guard selectedTrainingGoal != nil, let profile = profiles.first,
+              let days = currentResult?.days.map(\.spec), !days.isEmpty
+        else { return nil }
+        let effectiveProfile = EquipmentPlanningResolver.resolve(
+            environment: profile.environment,
+            individualProfile: profile.equipmentProfile,
+            confirmedComplete: profile.equipmentProfileConfirmedComplete
+        ).effectiveProfile
+        return PlanEquipmentChecker.check(days: days, against: effectiveProfile)
+    }
+
+    @ViewBuilder
+    private func builderEquipmentStatusRow(_ status: PlanEquipmentStatus) -> some View {
+        let (icon, tint, titleKey): (String, Color, String) = switch status {
+        case .available:    ("checkmark.circle.fill", .green, "picker.plan.equipment.available.title")
+        case .unknown:      ("questionmark.circle.fill", .orange, "picker.plan.equipment.unknown.title")
+        case .unavailable:  ("exclamationmark.triangle.fill", .red, "picker.plan.equipment.unavailable.title")
+        }
+        Label {
+            Text(titleKey, bundle: .module)
+        } icon: {
+            Image(systemName: icon).foregroundStyle(tint)
+        }
+        .font(.subheadline.weight(.medium))
+    }
+
     /// P2.4 Punkt 8: die Vorschau UND die Uebergabe an `onGenerated`/
     /// `PlanGeneratorInstantiator.createPlan` muessen den tatsaechlich
     /// bearbeiteten `draft` darstellen - ein bearbeiteter Draft darf beim
@@ -1301,6 +1335,12 @@ public struct PlanBuilderView: View {
                                 .foregroundStyle(.secondary)
                         }
                         .listRowBackground(Color.deltiqOrange.opacity(0.08))
+                    }
+
+                    if let builderEquipmentStatus {
+                        Section {
+                            builderEquipmentStatusRow(builderEquipmentStatus)
+                        }
                     }
 
                     Section {
@@ -1830,9 +1870,15 @@ public struct PlanBuilderView: View {
         // (jetzt als "Erneut versuchen" beschriftet, siehe `navigationBar`) loest dann
         // ausschliesslich ueber `resolveCreatedPlan` auf - niemals ein zweiter Plan.
         switch creationOperation.attempt(in: modelContext, create: {
+            // P5.2: `selectedTrainingGoal` ist nur im zielorientierten
+            // Einstieg (P3.1) non-nil — im `isPreSeededFlow`-Handoff-Pfad
+            // (z.B. CardioFeasibilityCard "Plan anpassen") bleibt es `nil`
+            // und `createPlan` verhaelt sich exakt wie vorher (kein
+            // erfundenes Ziel, siehe dortige Doku).
             try PlanGeneratorInstantiator.createPlan(
                 from: currentInput, result: result,
-                for: profile, generationSource: .planBuilder, in: modelContext
+                for: profile, generationSource: .planBuilder, in: modelContext,
+                generatorGoal: selectedTrainingGoal
             )
         }) {
         case .success(let plan):

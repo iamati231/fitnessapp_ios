@@ -69,12 +69,14 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
         environment: EnvironmentType = .gym,
         equipmentProfile: UserEquipmentProfile = UserEquipmentProfile(),
         result precomputed: PlanGenerator.Result? = nil,
-        generationSource: GenerationSource = .manual
+        generationSource: GenerationSource = .manual,
+        generatorGoal: TrainingGoal? = nil
     ) throws -> TrainingPlan? {
         try PlanGeneratorInstantiator.build(
             from: input, in: context,
             environment: environment, equipmentProfile: equipmentProfile,
-            result: precomputed, generationSource: generationSource
+            result: precomputed, generationSource: generationSource,
+            generatorGoal: generatorGoal
         )
     }
 
@@ -306,6 +308,55 @@ final class PlanGeneratorInstantiatorTests: XCTestCase {
             from: input([selection(.kettlebell, days: 2)]), environment: .homeGym, equipmentProfile: UserEquipmentProfile()
         ))
         XCTAssertEqual(plan.targetEnvironment, .homeGym)
+    }
+
+    // MARK: - P5.2: generatorGoal verbindet PlanSelectionResolver mit dem Builder-Pfad
+
+    /// P5.2: ohne `generatorGoal` (alle drei bestehenden Aufrufer unveraendert
+    /// — Onboarding, CardioFeasibilityCard, der preseeded Builder-Handoff)
+    /// bleibt das bisherige Verhalten exakt erhalten: eine Uebung, die nicht
+    /// zum Profil passt, wird NICHT ersetzt, nur die alte Legacy-Variantenwahl
+    /// laeuft (`userEquipmentProfile:` an `ProgramInstantiator.instantiate`).
+    func testBuildWithoutGeneratorGoalNeverSubstitutesExercises() throws {
+        var profile = UserEquipmentProfile()
+        profile.availability[.kettlebell] = .available
+        profile.confirmRemainingAsUnavailable()
+
+        let squat = ExerciseSpec(name: "Kniebeuge", sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90, targetRir: 2)
+        let day = DaySpec(name: "Legs", type: .legs, sequenceIndex: 1, exercises: [squat])
+        let result = PlanGenerator.Result(days: [.init(spec: day, loadLevel: .medium)])
+
+        let plan = try XCTUnwrap(buildPlan(
+            from: input([selection(.barbell, days: 1)]), equipmentProfile: profile, result: result
+        ))
+        let names = Set(plan.days.flatMap { $0.exercises.map(\.name) })
+        XCTAssertTrue(names.contains("Kniebeuge"), "Ohne generatorGoal darf sich am materialisierten Plan nichts aendern")
+    }
+
+    /// P5.2: MIT einem echten `generatorGoal` (P3.1s zielorientierter
+    /// Builder-Einstieg, `PlanBuilderView.selectedTrainingGoal`) laeuft jetzt
+    /// derselbe `PlanSelectionResolver.resolve`-Pfad wie `TemplatePreviewView`
+    /// fuer Templates — eine Uebung mit einer reviewten Substitutionsregel
+    /// ("Kniebeuge" -> "Goblet Squat" bei Nicht-Kraft-Ziel + repsMax >= 10,
+    /// siehe `ExerciseSubstitutionRules.swift`), die nicht zum Profil passt,
+    /// wird jetzt TATSAECHLICH im instanziierten Plan ersetzt, nicht nur in
+    /// einer separaten Vorschau (die Spezifikationsluecke, die P5.2 schliesst).
+    func testBuildWithGeneratorGoalSubstitutesAnUnavailableExerciseUsingAReviewedRule() throws {
+        var profile = UserEquipmentProfile()
+        profile.availability[.kettlebell] = .available
+        profile.confirmRemainingAsUnavailable()
+
+        let squat = ExerciseSpec(name: "Kniebeuge", sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90, targetRir: 2)
+        let day = DaySpec(name: "Legs", type: .legs, sequenceIndex: 1, exercises: [squat])
+        let result = PlanGenerator.Result(days: [.init(spec: day, loadLevel: .medium)])
+
+        let plan = try XCTUnwrap(buildPlan(
+            from: input([selection(.barbell, days: 1)]), equipmentProfile: profile, result: result,
+            generatorGoal: .hypertrophy
+        ))
+        let names = Set(plan.days.flatMap { $0.exercises.map(\.name) })
+        XCTAssertFalse(names.contains("Kniebeuge"), "Eine Langhantel-Uebung ohne Langhantel-Equipment darf nicht unveraendert bleiben")
+        XCTAssertTrue(names.contains("Goblet Squat"), "Die reviewte Ersatzuebung muss tatsaechlich im materialisierten Plan landen")
     }
 
     // MARK: - P2.3: createPlan(for:) — EIN Einstiegspunkt statt vier Kopien

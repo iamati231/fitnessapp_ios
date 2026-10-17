@@ -390,8 +390,34 @@ umgesetzt (Task #203, 2026-10-17).
 **P5 — Equipment-Änderung → Plananpassung, Cooldown (mittel-groß, teilweise parallel zu P3/P4):**
 - P5.1 Equipment-Save in `TrainingLocationEquipmentEditorView`/`ProfileEditorView` löst
   Vorschau/Ersatzvorschlag aus (Vorbild: bestehender `envSwap`-Dialog). **Noch offen.**
-- P5.2 Substitutions-Pfad an Builder-generierte Pläne anbinden (abhängig von P3.1 — braucht ein
-  echtes `TrainingGoal`, seit Commit `1aed7e5` erfüllt). **Noch offen.**
+- P5.2 **Implementiert** (Commit folgt, 2026-10-17; Apple-Build/UI-Verifikation ausstehend):
+  `PlanGeneratorInstantiator.build(...)`/`createPlan(...)` hatten laut eigener, bereits bestehender
+  Code-Doku (P2.1-Korrektur) eine EXPLIZIT benannte, offene Anschlussaufgabe: "Der volle
+  Phase-5-Substitutions-Pfad ... ist bewusst NICHT angebunden: er braucht einen
+  `SubstitutionContext(goal:experienceTrack:)`, und ein ueber den Builder ... erzeugter Plan hat
+  kein eigenes `TrainingGoal` ... Bleibt offene Anschlussaufgabe, sobald der zielorientierte
+  Builder (P3) ein echtes Ziel liefert." P3.1 (`GoalDrivenPlanSelectionBuilder`, Commit `1aed7e5`)
+  erfuellt diese Bedingung bereits seit Laengerem — P5.2 ist die Umsetzung dieser vorgezeichneten
+  Verbindung. Neuer optionaler Parameter `generatorGoal: TrainingGoal?` (Default `nil`, alle drei
+  bestehenden Aufrufer — Onboarding, `CardioFeasibilityCardModel`, der preseeded Builder-Handoff —
+  bleiben dadurch UNVERAENDERT, kein erfundenes Ziel). Gesetzt (ausschliesslich von
+  `PlanBuilderView.adoptPlan()`, mit `selectedTrainingGoal` — `nil` im `isPreSeededFlow`-Handoff,
+  wo es keine echte Zielfrage gab), laeuft `build(...)` jetzt denselben `PlanSelectionResolver.
+  resolve`-Pfad wie `TemplatePreviewView` fuer Templates und reicht das Ergebnis als
+  `resolvedSelection:` an `ProgramInstantiator.instantiate` durch (bereits zuvor die "EINZIGE
+  Quelle der Wahrheit sobald gesetzt" laut dortiger Doku — nur bisher nie vom Builder-Pfad benutzt).
+  `experienceTrack` kommt in `createPlan(...)` automatisch vom echten `UserBodyProfile` (beschreibt
+  den User, kein "erfundener" Wert wie ein Ziel). Zusaetzlich: `PlanBuilderView.resultStepView`
+  zeigt jetzt (nur im zielorientierten Einstieg) einen Equipment-Status-Hinweis
+  (`PlanEquipmentChecker.check`, dieselben `picker.plan.equipment.*`-Lokalisierungs-Keys wie
+  `TemplatePreviewView` — keine neuen Strings). Zwei neue Core/Data-Integrationstests
+  (`PlanGeneratorInstantiatorTests`): ohne `generatorGoal` bleibt eine equipment-inkompatible
+  Uebung unveraendert (Regressionsschutz fuer die drei unveraenderten Aufrufer); MIT `generatorGoal`
+  wird sie ueber eine echte, bereits reviewte Regel ("Kniebeuge" → "Goblet Squat") tatsaechlich im
+  materialisierten `TrainingPlan` ersetzt — bewiesen end-to-end gegen einen echten `ModelContext`,
+  nicht nur gegen eine separate Vorschau. Wie alle `FitnessAppDataTests` (SwiftData) kompilieren
+  diese auf Linux, laufen dort aber nicht (bestehende Projekt-Einschraenkung) — echte
+  Ausfuehrung/Ergebnis folgt mit dem naechsten Codemagic-`swift-package`-Lauf (macOS).
 - P5.3 ✅ **Implementiert** (Commit folgt, 2026-10-17; Apple-Build/UI-Verifikation ausstehend):
   `ExerciseRole.cooldown` (DEL-087) existierte bisher nur im Datenmodell und in der aktiven
   Workout-UI (`ExerciseCard`) — KEIN Generator- oder Template-Pfad erzeugte je eine Übung mit
