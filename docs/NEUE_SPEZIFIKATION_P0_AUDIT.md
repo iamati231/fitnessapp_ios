@@ -138,15 +138,26 @@ Kleine Aufgaben, mit Abhängigkeiten. Jede Aufgabe bekommt am Ende: umgesetzt/te
 Dateien, tatsächlich ausgeführte Tests, Apple-Ergebnis, UI-Ergebnis, Risiken, nächste Aufgabe
 (Format aus Doc04 §5) — genau wie beim Task-#197-Zyklus.
 
-**P1 — Sofort-Korrekturen (klein, keine Abhängigkeiten, vor allem anderen):**
-- P1.1 **Entscheidung einholen** (siehe oben) zum Aktivierungsverhalten, dann `ProgramInstantiator`
-  und `PlanGeneratorInstantiator` konsistent machen.
-- P1.2 Dead-Code-Audit: 4 tote xcstrings-Keys entfernen, `UNUSED: 0` wiederherstellen.
-- P1.3 `DashboardView.CardioGroupKey` auf ID-first (analog `PRDetector.GroupKey`) umstellen.
-- P1.4 Onboarding: zwei Finish-Trigger (DayPicker "Plan starten" vs. Footer "Fertig") auf eine
-  Hauptaktion vereinheitlichen.
-- P1.5 Onboarding: eingebettetem `PlanBuilderView` das bereits erfasste `initialInput` übergeben,
-  damit Equipment nicht doppelt abgefragt wird.
+**P1 — Sofort-Korrekturen (klein, keine Abhängigkeiten, vor allem anderen):** ✅ alle 5 umgesetzt
+(Task #202, 2026-10-17).
+- P1.1 ✅ **Entscheidung eingeholt**: mehrere gleichzeitig aktive Pläne sind gewollt (User-Entscheidung,
+  Task #201). `ProgramInstantiator.instantiate` deaktiviert keine anderen Pläne mehr (Commit `3da2506`);
+  `PlanGeneratorInstantiator.build`/`createPlan` ruft intern denselben Pfad auf, ist also automatisch
+  konsistent. 2 Tests entsprechend umgedreht. Codemagic Build `6ad3be0b`: Build+Tests+Simulator-Build
+  alle `success`.
+- P1.2 ✅ Dead-Code-Audit: 4 tote xcstrings-Keys entfernt (`.scripts/del144_delete_dead_keys.py`,
+  Commit `d6710eb`), `UNUSED: 0` wiederhergestellt, `TRANSLATIONS.md` regeneriert.
+- P1.3 ✅ `DashboardView.CardioGroupKey` auf ID-first umgestellt (analog `PRDetector.GroupKey`,
+  Commit `d0cb503`) — ein umbenanntes Custom-Exercise fragmentiert den Cardio-Trend nicht mehr.
+- P1.4 ✅ Onboarding: Builder-Pfad ruft jetzt wie `DayPickerSheet.onConfirm` direkt
+  `finishOnboarding()` in seinem `onGenerated`-Callback auf (Commit `53b23a1`) — kein zweiter,
+  separater Footer-Tap mehr nötig.
+- P1.5 ✅ Onboarding: eingebettetes `PlanBuilderView` bekommt `initialInput` mit
+  `equipmentPreferences: derivedLegacyEquipment` (Commit `53b23a1`) — `selections` bleibt bewusst
+  leer (Dok02 §1: kein eigener Onboarding-Generator, keine doppelte Trainingsarten-/Tage-Abfrage).
+
+Konsolidierter Codemagic-Build über alle 4 Commits zusammen: `6ad3c031` (angestoßen, Ergebnis siehe
+unten im Abschlussvermerk).
 
 **P2.5 — PlanningContext/EnduranceModality verdrahten (klein-mittel, Vorbedingung für P3/P4):**
 Core-Typ ist fertig und getestet, es fehlt die Persistenz (additives Feld auf `UserBodyProfile`)
