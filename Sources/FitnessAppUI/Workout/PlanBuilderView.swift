@@ -112,6 +112,16 @@ public struct PlanBuilderView: View {
     // dem @MainActor-CI-Fund an CardioFeasibilityCardModel lieber explizit.
     private let onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> PlanBuilderHandoffOutcome)?
 
+    /// P3.1 (Doc01 §3 Ziel-Schritt, nur im zielorientierten Pfad erreichbar -
+    /// siehe `isPreSeededFlow`): meldet eine im Ziel-Schritt getroffene
+    /// Ausdauerform-/Laufcoach-Entscheidung an den Aufrufer zurueck, der
+    /// (anders als diese View im `onGenerated`-Handoff-Fall) tatsaechlich
+    /// Zugriff auf das relevante `UserBodyProfile` hat (`OnboardingView`:
+    /// erst in `finishOnboarding()` existent). Im eigenstaendigen Modus
+    /// (`onGenerated == nil`, z.B. `PlansListView`s "+") schreibt diese View
+    /// die Entscheidung stattdessen direkt selbst, siehe `adoptPlan()`.
+    private let onEnduranceModalityChosen: ((EnduranceModality?, Bool) -> Void)?
+
     /// Handoff "Lauf-Coaching - Machbarkeits-Check", Nachtrag "Plan
     /// anpassen": seedet Schritt 1/2 aus einem vorhandenen Input statt der
     /// leeren Defaults - der Nutzer landet weiterhin bei Schritt 1, sieht
@@ -121,11 +131,20 @@ public struct PlanBuilderView: View {
     /// `uniqueKeysWithValues:` - defensiv gegen einen (hier nie auftretenden)
     /// Input mit zwei Selections derselben Kind, damit ein fremd erzeugter
     /// Input diesen Init nicht crasht.
+    ///
+    /// P3.1: ein Input MIT konkreten `selections` (dieser Handoff-Fall) ist
+    /// gleichzeitig das Signal fuer `isPreSeededFlow` - Schritt 1/2 zeigen
+    /// dann weiterhin die bestehende, trainingsmittel-direkte Auswahl
+    /// (unveraendertes Verhalten), NICHT den neuen Ziel-Schritt. Ein Input
+    /// mit LEEREN `selections` (Onboarding, `nil` fuer `PlansListView`s "+")
+    /// zeigt stattdessen den neuen zielorientierten Einstieg.
     public init(
         initialInput: PlanGeneratorInput? = nil,
-        onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> PlanBuilderHandoffOutcome)? = nil
+        onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> PlanBuilderHandoffOutcome)? = nil,
+        onEnduranceModalityChosen: ((EnduranceModality?, Bool) -> Void)? = nil
     ) {
         self.onGenerated = onGenerated
+        self.onEnduranceModalityChosen = onEnduranceModalityChosen
         if let initialInput {
             _selectedKinds = State(initialValue: initialInput.selections.map(\.kind))
             _configByKind = State(initialValue: Dictionary(
@@ -142,12 +161,97 @@ public struct PlanBuilderView: View {
         case types, equipment, result
     }
 
+    /// P3.1 (Doc01 §3): die vier Zielkarten des neuen Einstiegs. Bewusst eine
+    /// eigene, kleinere UI-Vokabel statt `TrainingGoal` direkt zu verwenden -
+    /// "Kraft & Muskelaufbau" deckt ZWEI bestehende Core-Werte ab
+    /// (`.hypertrophy`/`.strength`, siehe `strengthFocus`), und die Karte
+    /// "Allgemeine Fitness" bildet bewusst nicht-woertlich auf `.functional`
+    /// ab (Core-Blurb "Alltagstaugliche Bewegungsmuster ... kein reiner
+    /// Kraft- oder Muskelfokus" trifft die Karte am besten). `.weightLoss`
+    /// bleibt bewusst AUSSEN VOR (keine der vier Dok01-Karten benennt
+    /// Abnehmen/Fettabbau als eigene Zielkarte) - weiterhin ausschliesslich
+    /// ueber `ProfileEditorView.coachingCard`s volle Zielauswahl erreichbar.
+    enum GoalCard: CaseIterable {
+        case strengthFocus, endurance, hybrid, generalFitness
+
+        var titleKey: String {
+            switch self {
+            case .strengthFocus:  return "planBuilder.goal.strengthHypertrophy.title"
+            case .endurance:      return "planBuilder.goal.endurance.title"
+            case .hybrid:         return "planBuilder.goal.hybrid.title"
+            case .generalFitness: return "planBuilder.goal.generalFitness.title"
+            }
+        }
+
+        var blurbKey: String {
+            switch self {
+            case .strengthFocus:  return "planBuilder.goal.strengthHypertrophy.blurb"
+            case .endurance:      return "planBuilder.goal.endurance.blurb"
+            case .hybrid:         return "planBuilder.goal.hybrid.blurb"
+            case .generalFitness: return "planBuilder.goal.generalFitness.blurb"
+            }
+        }
+
+        var symbol: String {
+            switch self {
+            case .strengthFocus:  return "figure.strengthtraining.traditional"
+            case .endurance:      return "figure.run"
+            case .hybrid:         return "figure.mixed.cardio"
+            case .generalFitness: return "figure.cooldown"
+            }
+        }
+
+        /// Doc02 §2 "Nach Auswahl von Hybrid: 1. Ausdauerform klaeren" - gilt
+        /// identisch fuer die reine Ausdauerkarte.
+        var needsEnduranceModality: Bool { self == .endurance || self == .hybrid }
+    }
+
     @State private var step: BuilderStep = .types
 
-    // Schritt 1
+    // Schritt 1 (trainingsmittel-direkter Pfad - siehe `isPreSeededFlow`)
     @State private var selectedKinds: [TrainingTypeKind] = []
     @State private var configByKind: [TrainingTypeKind: PlanGeneratorTypeSelection] = [:]
     @State private var expandedKind: TrainingTypeKind?
+
+    /// P3.1: `true`, sobald `init(initialInput:)` mit NICHT-leeren `selections`
+    /// aufgerufen wurde (Cardio-Machbarkeits-"Plan anpassen"-Handoff) - dieser
+    /// Pfad behaelt die bestehende, trainingsmittel-direkte Schritt-1/2-UI
+    /// unveraendert (Doc01 §1: "Bestehende ... funktionierende Eingaenge
+    /// erhalten"). `false` zeigt stattdessen den neuen zielorientierten
+    /// Einstieg (Doc01 §3) - der Fall fuer `PlansListView`s "+" (kein Input)
+    /// und `OnboardingView`s eingebetteten Builder (Input mit LEEREN
+    /// `selections`, siehe dortige Doku).
+    private var isPreSeededFlow: Bool { !selectedKinds.isEmpty }
+
+    // Schritt 1 (zielorientierter Pfad, Doc01 §3)
+    @State private var selectedGoalCard: GoalCard?
+    /// Nur relevant, wenn `selectedGoalCard == .strengthFocus`.
+    @State private var strengthFocus: TrainingGoal = .hypertrophy
+    /// Nur relevant fuer `.endurance`/`.hybrid` - bewusst OHNE kosmetischen
+    /// Default (anders als `ProfileEditorView.displayedEnduranceModality`):
+    /// Doc02 verlangt eine EXPLIZITE Antwort ("keine unbekannte Auswahl still
+    /// in Laufen umwandeln"), ein bereits laufend selektiert wirkendes
+    /// Segment waere genau das.
+    @State private var selectedEnduranceModality: EnduranceModality?
+    /// Doc02 §3, Zustandstabelle: nur wirksam, wenn die Modalitaet Laufen
+    /// unterstuetzt (`EnduranceModality.supportsRunCoach`) - siehe
+    /// `applyEnduranceModalityChoiceIfNeeded`.
+    @State private var runCoachWanted = false
+
+    private var selectedTrainingGoal: TrainingGoal? {
+        guard let selectedGoalCard else { return nil }
+        switch selectedGoalCard {
+        case .strengthFocus:  return strengthFocus
+        case .endurance:      return .endurance
+        case .hybrid:         return .hybrid
+        case .generalFitness: return .functional
+        }
+    }
+
+    @State private var totalDaysPerWeek = 3
+    @State private var sessionDurationMinutes = 45
+    @State private var experience: DifficultyLevel = .intermediate
+    @State private var showEquipmentOverrideOptions = false
 
     // Schritt 2
     @State private var equipmentPreferences: Set<Equipment> = []
@@ -246,11 +350,7 @@ public struct PlanBuilderView: View {
                     .padding(.vertical, 12)
                 Divider()
                 Group {
-                    switch step {
-                    case .types:     typesStep
-                    case .equipment: equipmentStep
-                    case .result:    resultStepView
-                    }
+                    currentStepView
                 }
                 .frame(maxHeight: .infinity)
                 .animation(.easeInOut(duration: 0.25), value: step)
@@ -305,6 +405,22 @@ public struct PlanBuilderView: View {
         }
     }
 
+    /// P3.1: Schritt 1/2 zeigen je nach Pfad unterschiedlichen Inhalt (siehe
+    /// `isPreSeededFlow`) - der Handoff-Pfad behaelt die bestehende,
+    /// trainingsmittel-direkte UI unveraendert, der Standard-Pfad zeigt den
+    /// neuen zielorientierten Einstieg.
+    @ViewBuilder
+    private var currentStepView: some View {
+        switch step {
+        case .types:
+            if isPreSeededFlow { typesStep } else { goalStep }
+        case .equipment:
+            if isPreSeededFlow { equipmentStep } else { alltagsrahmenStep }
+        case .result:
+            resultStepView
+        }
+    }
+
     private var progressIndicator: some View {
         HStack(spacing: 6) {
             ForEach(BuilderStep.allCases, id: \.self) { s in
@@ -321,8 +437,13 @@ public struct PlanBuilderView: View {
         TrainingTypeKind.allCases.filter { !selectedKinds.contains($0) }
     }
 
+    /// P3.1: im zielorientierten Pfad (siehe `isPreSeededFlow`) gibt es keine
+    /// Pro-Kind-Tage mehr, sondern eine einzige Gesamtzahl aus dem
+    /// Alltagsrahmen-Schritt (`totalDaysPerWeek`) - `weekdayGrid`/
+    /// `weekdayRow`/`toggleWeekday` bleiben dadurch fuer BEIDE Pfade
+    /// unveraendert wiederverwendbar.
     private var totalSelectedDays: Int {
-        configByKind.values.reduce(0) { $0 + $1.daysPerWeek }
+        isPreSeededFlow ? configByKind.values.reduce(0) { $0 + $1.daysPerWeek } : totalDaysPerWeek
     }
 
     private var typesStep: some View {
@@ -602,6 +723,302 @@ public struct PlanBuilderView: View {
         }
     }
 
+    // MARK: - Schritt 1 (zielorientierter Pfad): Ziel waehlen (P3.1, Doc01 §3)
+
+    private var goalStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("planBuilder.goal.title", bundle: .module)
+                        .font(.title2.weight(.bold))
+                    Text("planBuilder.goal.subtitle", bundle: .module)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(GoalCard.allCases, id: \.self) { card in
+                    goalCardView(card)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+        }
+    }
+
+    private func goalCardView(_ card: GoalCard) -> some View {
+        let isSelected = selectedGoalCard == card
+        return VStack(alignment: .leading, spacing: 12) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    selectedGoalCard = isSelected ? nil : card
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: card.symbol)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(Color.deltiqOrange)
+                        .frame(width: 32, height: 32)
+                        .background(Circle().fill(Color.deltiqOrange.opacity(0.12)))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(String(localized: String.LocalizationValue(card.titleKey), bundle: .module))
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.primary)
+                        if !isSelected {
+                            Text(String(localized: String.LocalizationValue(card.blurbKey), bundle: .module))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Spacer()
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "chevron.down")
+                        .font(isSelected ? .body : .caption.weight(.bold))
+                        .foregroundStyle(isSelected ? Color.deltiqOrange : Color.secondary.opacity(0.6))
+                }
+            }
+            .buttonStyle(.plain)
+
+            if isSelected {
+                if card == .strengthFocus {
+                    strengthFocusPicker
+                }
+                if card.needsEnduranceModality {
+                    enduranceModalitySubflow
+                }
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(isSelected ? Color.deltiqOrange : Color.secondary.opacity(0.25),
+                        lineWidth: isSelected ? 1.5 : 1)
+        )
+    }
+
+    /// Doc01 §3: "Kraft & Muskelaufbau" deckt beide bestehenden Core-Werte ab
+    /// (`.hypertrophy`/`.strength`) - diese Karte entscheidet NUR zwischen den
+    /// beiden, ersetzt keine der zwei bestehenden Zielkarten in
+    /// `ProfileEditorView.coachingCard`.
+    private var strengthFocusPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Divider()
+            Picker("", selection: $strengthFocus) {
+                Text("planBuilder.goal.strengthFocus.hypertrophy", bundle: .module).tag(TrainingGoal.hypertrophy)
+                Text("planBuilder.goal.strengthFocus.strength", bundle: .module).tag(TrainingGoal.strength)
+            }
+            .pickerStyle(.segmented)
+        }
+    }
+
+    /// Doc02 §2/§3: Ausdauerform klaeren, danach NUR bei einer Laufen-
+    /// unterstuetzenden Modalitaet die Laufcoach-Frage zeigen (reines
+    /// Radfahren braucht sie laut Zustandstabelle gar nicht). Bewusst
+    /// auswahlbare Zeilen statt eines Segmented-Pickers mit kosmetischem
+    /// Default - Doc02: "Keine unbekannte Auswahl still in Laufen umwandeln."
+    private var enduranceModalitySubflow: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Divider()
+            VStack(alignment: .leading, spacing: 8) {
+                Text("planBuilder.goal.enduranceModality", bundle: .module)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                ForEach(EnduranceModality.allCases, id: \.self) { modality in
+                    selectableOptionRow(title: String(localized: modality.localizedName), isSelected: selectedEnduranceModality == modality) {
+                        selectedEnduranceModality = modality
+                        if !modality.supportsRunCoach { runCoachWanted = false }
+                    }
+                }
+            }
+            if let selectedEnduranceModality, selectedEnduranceModality.supportsRunCoach {
+                VStack(alignment: .leading, spacing: 8) {
+                    Divider()
+                    Text("planBuilder.goal.runCoach.question", bundle: .module)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    runCoachOptionRow(
+                        titleKey: "planBuilder.goal.runCoach.withoutCoach.title",
+                        blurbKey: "planBuilder.goal.runCoach.withoutCoach.blurb",
+                        isSelected: !runCoachWanted
+                    ) { runCoachWanted = false }
+                    runCoachOptionRow(
+                        titleKey: "planBuilder.goal.runCoach.withCoach.title",
+                        blurbKey: "planBuilder.goal.runCoach.withCoach.blurb",
+                        isSelected: runCoachWanted
+                    ) { runCoachWanted = true }
+                }
+            }
+        }
+    }
+
+    private func selectableOptionRow(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Text(title)
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(.primary)
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(Color.deltiqOrange)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(isSelected ? Color.deltiqOrange : Color.Deltiq.divider, lineWidth: isSelected ? 1.5 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func runCoachOptionRow(titleKey: String, blurbKey: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(localized: String.LocalizationValue(titleKey), bundle: .module))
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                    Text(String(localized: String.LocalizationValue(blurbKey), bundle: .module))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(Color.deltiqOrange)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(isSelected ? Color.deltiqOrange : Color.Deltiq.divider, lineWidth: isSelected ? 1.5 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// "Weiter"-Gate fuer den Ziel-Schritt: ein Ziel MUSS gewaehlt sein, und
+    /// `.endurance`/`.hybrid` brauchen zusaetzlich eine explizite
+    /// Ausdauerform-Antwort (siehe `enduranceModalitySubflow`-Doku).
+    private var canAdvanceFromGoalStep: Bool {
+        guard let card = selectedGoalCard else { return false }
+        if card.needsEnduranceModality { return selectedEnduranceModality != nil }
+        return true
+    }
+
+    // MARK: - Schritt 2 (zielorientierter Pfad): Alltagsrahmen (P3.1, Doc01 §3)
+
+    private var alltagsrahmenStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("planBuilder.context.title", bundle: .module)
+                        .font(.title2.weight(.bold))
+                    Text("planBuilder.context.subtitle", bundle: .module)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+
+                VStack(alignment: .leading, spacing: 14) {
+                    Stepper(
+                        pluralizedCount("planBuilder.wizard.daysPerWeek", count: totalDaysPerWeek),
+                        value: $totalDaysPerWeek, in: 1...7
+                    )
+                    Stepper(
+                        String(format: String(localized: "planBuilder.wizard.minutesValue", bundle: .module), sessionDurationMinutes),
+                        value: $sessionDurationMinutes, in: 15...120, step: 5
+                    )
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("planBuilder.wizard.experience", bundle: .module)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Picker("", selection: $experience) {
+                            ForEach(DifficultyLevel.allCases, id: \.self) { level in
+                                Text(level.localizedName).tag(level)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                }
+
+                Divider()
+
+                // Doc01 §3: "Trainingsort und Ausstattung als vorbefuellte
+                // Zusammenfassung ... nicht erneut vollstaendig abfragen" -
+                // Zeile statt der frueheren vollen Checkbox-Liste;
+                // "Weitere Optionen nur bei Bedarf oeffnen" via
+                // DisclosureGroup (dieselben Toggles wie zuvor, nur
+                // eingeklappt, Aenderung gilt gemaess Doc01 §3 nur fuer
+                // DIESEN Entwurf - kein globales Profilupdate).
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("planBuilder.context.equipmentSummary.title", bundle: .module)
+                        .font(.callout.weight(.semibold))
+                    Text(equipmentSummaryLine)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    DisclosureGroup(isExpanded: $showEquipmentOverrideOptions) {
+                        VStack(spacing: 8) {
+                            ForEach(Equipment.allCases, id: \.self) { equip in
+                                FilterToggleRow(
+                                    label: String(localized: equip.localizedName),
+                                    isOn: Binding(
+                                        get: { equipmentPreferences.contains(equip) },
+                                        set: { newValue in
+                                            if newValue { equipmentPreferences.insert(equip) }
+                                            else        { equipmentPreferences.remove(equip) }
+                                        }
+                                    )
+                                )
+                            }
+                        }
+                        .padding(.top, 8)
+                    } label: {
+                        Text("planBuilder.context.equipmentSummary.adjustForThisPlan", bundle: .module)
+                            .font(.caption.weight(.medium))
+                    }
+                }
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("planBuilder.rhythm.title", bundle: .module)
+                            .font(.title2.weight(.bold))
+                        Text("planBuilder.rhythm.subtitle", bundle: .module)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    Picker("", selection: $usesFixedWeekdays) {
+                        Text("planBuilder.rhythm.orderOnly", bundle: .module).tag(false)
+                        Text("planBuilder.rhythm.fixedWeekdays", bundle: .module).tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    if usesFixedWeekdays {
+                        weekdayGrid
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+        }
+    }
+
+    /// Liest den bereits erfassten Trainingsort direkt aus dem Profil (kein
+    /// eigener State hier) - `profiles` ist bereits vorhanden fuer
+    /// `adoptPlan()`s eigenstaendigen Pfad.
+    private var equipmentSummaryLine: String {
+        let envText = profiles.first.map { String(localized: $0.environment.localizedName) }
+        let equipmentNames = Equipment.allCases
+            .filter { $0 != .bodyweight && equipmentPreferences.contains($0) }
+            .map { String(localized: $0.localizedName) }
+        let equipmentText = equipmentNames.isEmpty
+            ? String(localized: "planBuilder.context.equipmentSummary.bodyweightOnly", bundle: .module)
+            : equipmentNames.joined(separator: ", ")
+        return [envText, equipmentText].compactMap { $0 }.joined(separator: " · ")
+    }
+
     // MARK: - Schritt 2: Ausruestung und Rhythmus
 
     private var equipmentStep: some View {
@@ -734,8 +1151,26 @@ public struct PlanBuilderView: View {
     // MARK: - Schritt 3: die gerechnete Woche
 
     private var currentInput: PlanGeneratorInput {
-        PlanGeneratorInput(
-            selections: selectedKinds.compactMap { configByKind[$0] },
+        let selections: [PlanGeneratorTypeSelection]
+        if isPreSeededFlow {
+            selections = selectedKinds.compactMap { configByKind[$0] }
+        } else {
+            // P3.1 (Doc01 §3 "Ziel zuerst, nicht Langhantel-/Kurzhanteltage"):
+            // `GoalDrivenPlanSelectionBuilder` uebersetzt Ziel + Alltagsrahmen
+            // in dieselben `PlanGeneratorTypeSelection`-Eingaben, die der
+            // UNVERAENDERTE `PlanGenerator` schon immer erwartet hat - siehe
+            // dortige Typ-Doku.
+            selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+                goal: selectedTrainingGoal ?? .hybrid,
+                enduranceModality: selectedEnduranceModality,
+                totalDaysPerWeek: totalDaysPerWeek,
+                sessionDurationMinutes: sessionDurationMinutes,
+                experience: experience,
+                equipmentPreferences: equipmentPreferences
+            )
+        }
+        return PlanGeneratorInput(
+            selections: selections,
             equipmentPreferences: equipmentPreferences,
             usesFixedWeekdays: usesFixedWeekdays,
             fixedWeekdays: Array(fixedWeekdays)
@@ -1019,7 +1454,7 @@ public struct PlanBuilderView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(step == .types && selectedKinds.isEmpty)
+                .disabled(step == .types && (isPreSeededFlow ? selectedKinds.isEmpty : !canAdvanceFromGoalStep))
             }
         }
     }
@@ -1033,6 +1468,13 @@ public struct PlanBuilderView: View {
     private func goToPreviousStep() {
         guard let prev = BuilderStep(rawValue: step.rawValue - 1) else { return }
         step = prev
+    }
+
+    /// Siehe `onEnduranceModalityChosen`-Doku und `adoptPlan()`s Aufrufstelle
+    /// im eigenstaendigen Modus.
+    private func applyEnduranceModalityChoiceIfNeeded(to profile: UserBodyProfile) {
+        guard !isPreSeededFlow, let goal = selectedTrainingGoal, goal == .endurance || goal == .hybrid else { return }
+        profile.setEnduranceModality(selectedEnduranceModality, runCoachEnabled: runCoachWanted)
     }
 
     private func adoptPlan() {
@@ -1050,6 +1492,16 @@ public struct PlanBuilderView: View {
         // Nachbesserung (P2.3): Doppel-Tap-Schutz, siehe `isAdopting`-Doku.
         guard !isAdopting else { return }
         isAdopting = true
+
+        // P3.1 (Doc01 §6: "Profilentscheidung und Plananpassung sind
+        // getrennt"): eine im Ziel-Schritt getroffene Ausdauerform-/
+        // Laufcoach-Entscheidung gilt unabhaengig vom Erfolg der
+        // Plan-Erstellung als vom Nutzer bestaetigt - im `onGenerated`-Pfad
+        // (kein lokaler `profile`-Zugriff, siehe Typ-Doku) meldet diese View
+        // die Entscheidung stattdessen an den Aufrufer zurueck.
+        if !isPreSeededFlow, let goal = selectedTrainingGoal, goal == .endurance || goal == .hybrid {
+            onEnduranceModalityChosen?(selectedEnduranceModality, runCoachWanted)
+        }
 
         // DEL-243: siehe Typ-Doku - `onGenerated`
         // uebernimmt hier NICHT das Instanziieren, sondern reicht Input +
@@ -1091,6 +1543,12 @@ public struct PlanBuilderView: View {
             isAdopting = false
             return
         }
+
+        // P3.1: im eigenstaendigen Modus (kein `onGenerated`, z.B.
+        // `PlansListView`s "+") gibt es keinen externen Aufrufer, der
+        // `onEnduranceModalityChosen` auswerten koennte - diese View schreibt
+        // die Entscheidung deshalb direkt selbst (siehe Doku oben).
+        applyEnduranceModalityChoiceIfNeeded(to: profile)
 
         // Nachbesserung (P2.3): `createPlan(for:)` buendelt Equipment-
         // Aufloesung + `build(...)` an einer Stelle statt hier erneut

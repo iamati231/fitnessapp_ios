@@ -173,6 +173,14 @@ public struct OnboardingView: View {
     @State private var showingPlanBuilder: Bool = false
     @State private var customPlanInput: PlanGeneratorInput?
     @State private var customPlanResult: PlanGenerator.Result?
+    /// P3.1: nur gesetzt, wenn der eingebettete Builder im neuen
+    /// zielorientierten Pfad (Doc01 §3) eine Ausdauerform-/Laufcoach-
+    /// Entscheidung getroffen hat - siehe `PlanBuilderView.
+    /// onEnduranceModalityChosen`-Doku (hier existiert anders als in der
+    /// View selbst bereits zur Entscheidungszeit noch KEIN `UserBodyProfile`,
+    /// deshalb Zwischenspeicherung bis `finishOnboarding()`).
+    @State private var customPlanEnduranceModality: EnduranceModality?
+    @State private var customPlanRunCoachWanted = false
 
     // DEL-088: Tag-Auswahl-Sheet, das nach Plan-Adopt erscheint. Sobald
     // `dayPickerTemplate != nil`, oeffnet sich das DayPickerSheet mit dem
@@ -361,13 +369,20 @@ public struct OnboardingView: View {
                     selections: [],
                     equipmentPreferences: derivedLegacyEquipment,
                     usesFixedWeekdays: false
-                )) { input, result in
+                ), onGenerated: { input, result in
                     customPlanInput = input
                     customPlanResult = result
                     clearSelectedTemplate()
                     finishOnboarding()
                     return .success
-                }
+                }, onEnduranceModalityChosen: { modality, runCoachWanted in
+                    // P3.1: feuert synchron VOR `onGenerated` (siehe
+                    // `PlanBuilderView.adoptPlan()`) - `finishOnboarding()`
+                    // oben liest beide Zwischenspeicher deshalb bereits
+                    // befuellt.
+                    customPlanEnduranceModality = modality
+                    customPlanRunCoachWanted = runCoachWanted
+                })
             }
             // Start-Check-Epic: Sheet fuer den optionalen "Wo stehst du
             // heute?"-Check. `onFinish(nil)` (Abbruch/Sheet weggewischt)
@@ -1695,6 +1710,8 @@ public struct OnboardingView: View {
     private func clearCustomPlan() {
         customPlanInput = nil
         customPlanResult = nil
+        customPlanEnduranceModality = nil
+        customPlanRunCoachWanted = false
     }
 
     private func clearSelectedTemplate() {
@@ -1969,6 +1986,14 @@ public struct OnboardingView: View {
                 resolvedSelection: freshSelection
             )
         } else if let customPlanInput, let customPlanResult {
+            // P3.1: eine im eingebetteten Builder getroffene Ausdauerform-/
+            // Laufcoach-Entscheidung (siehe `onEnduranceModalityChosen`-
+            // Wiring oben) wird HIER auf das gerade erst inserted `profile`
+            // angewendet - vorher existierte in diesem Pfad noch kein
+            // Profil, auf das `PlanBuilderView` selbst haette schreiben
+            // koennen. `nil`/`false`, wenn der Builder-Pfad kein Ausdauer-
+            // /Hybrid-Ziel gewaehlt hat (Default-Zustand, kein Effekt).
+            profile.setEnduranceModality(customPlanEnduranceModality, runCoachEnabled: customPlanRunCoachWanted)
             // DEL-243: der im Builder-
             // Sheet vorberechnete Result wird 1:1 uebernommen (nicht neu
             // gerechnet) — sonst wiche der instanziierte Plan von der im

@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2118 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2141 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2118 / 2118** (100%) | 0 |
-| 🇬🇧 English (EN) | **2118 / 2118** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2118 / 2118** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2141 / 2141** (100%) | 0 |
+| 🇬🇧 English (EN) | **2141 / 2141** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2141 / 2141** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1735,10 +1735,15 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.upperLower.name` | Upper-Lower-Split | Upper-Lower Split | Upper-Lower Split |
 | `plan.template.upperLower.tagline` | 4 Tage · Kraft & Hypertrophie | 4 Days · Strength & Hypertrophy | 4 Gün · Güç & Hipertrofi |
 
-## `planBuilder.*`  (46 Keys)
+## `planBuilder.*`  (69 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `planBuilder.context.equipmentSummary.adjustForThisPlan` | Für diesen Plan anpassen | Adjust for this plan | Bu plan için ayarla |
+| `planBuilder.context.equipmentSummary.bodyweightOnly` | Nur Körpergewicht | Bodyweight only | Sadece vücut ağırlığı |
+| `planBuilder.context.equipmentSummary.title` | Ausstattung | Equipment | Ekipman |
+| `planBuilder.context.subtitle` | Sag uns, wie viel Zeit und Struktur in deine Woche passt. | Tell us how much time and structure fits into your week. | Haftana ne kadar zaman ve düzen sığdığını bize söyle. |
+| `planBuilder.context.title` | Dein Alltag | Your everyday life | Günlük hayatın |
 | `planBuilder.day.runEasy` | Ruhiger Lauf | Easy Run | Kolay Koşu |
 | `planBuilder.day.runInterval` | Intervalle | Intervals | İnterval |
 | `planBuilder.day.runTempo` | Tempolauf | Tempo Run | Tempo Koşusu |
@@ -1750,6 +1755,24 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.error.noProfile.title` | Kein Profil gefunden | No Profile Found | Profil Bulunamadı |
 | `planBuilder.error.saveFailed.message` | Beim Speichern ist ein Fehler aufgetreten. Es wurde nichts geändert — bitte versuche es erneut. | Something went wrong while saving. Nothing was changed — please try again. | Kaydederken bir sorun oluştu. Hiçbir şey değişmedi — lütfen tekrar dene. |
 | `planBuilder.error.saveFailed.title` | Plan konnte nicht gespeichert werden | Plan Couldn't Be Saved | Plan Kaydedilemedi |
+| `planBuilder.goal.endurance.blurb` | Deine Ausdauer durch Laufen oder Radfahren verbessern. | Improve your aerobic fitness through running or cycling. | Koşu veya bisikletle aerobik kondisyonunu geliştir. |
+| `planBuilder.goal.endurance.title` | Laufen & Ausdauer | Running & Endurance | Koşu ve Dayanıklılık |
+| `planBuilder.goal.enduranceModality` | Ausdauerform | Endurance type | Dayanıklılık türü |
+| `planBuilder.goal.generalFitness.blurb` | Alltagstaugliche Bewegungsmuster und Mobilität — kein einzelner Fokus. | Everyday movement patterns and mobility — no single focus. | Günlük hareket örüntüleri ve mobilite — tek bir odak yok. |
+| `planBuilder.goal.generalFitness.title` | Allgemeine Fitness | General Fitness | Genel Fitness |
+| `planBuilder.goal.hybrid.blurb` | Kraft und Ausdauer gemeinsam in einem Plan trainieren. | Train strength and endurance together in one plan. | Güç ve dayanıklılığı tek bir planda birlikte çalış. |
+| `planBuilder.goal.hybrid.title` | Kraft & Ausdauer kombinieren | Strength & Endurance Combined | Güç ve Dayanıklılığı Birleştir |
+| `planBuilder.goal.runCoach.question` | Wie möchtest du dein Lauftraining gestalten? | How do you want to structure your running? | Koşu antrenmanını nasıl yapılandırmak istiyorsun? |
+| `planBuilder.goal.runCoach.withCoach.blurb` | Laufeinheiten erscheinen in deinem Plan, zusätzlich werden unterstützte Coaching-Funktionen aktiviert. | Running sessions appear in your plan, plus supported coaching features. | Koşu seansları planında yer alır, ayrıca desteklenen koçluk özellikleri etkinleşir. |
+| `planBuilder.goal.runCoach.withCoach.title` | Mit Laufcoach auf ein Ziel hinarbeiten | Work toward a goal with a run coach | Koşu koçuyla bir hedefe çalış |
+| `planBuilder.goal.runCoach.withoutCoach.blurb` | Laufeinheiten erscheinen in deinem Plan, ohne zusätzlichen Laufcoach. | Running sessions appear in your plan, without an additional run coach. | Koşu seansları planında yer alır, ek bir koşu koçu olmadan. |
+| `planBuilder.goal.runCoach.withoutCoach.title` | Laufen in meine Woche einplanen | Schedule running in my week | Koşuyu haftama ekle |
+| `planBuilder.goal.strengthFocus.hypertrophy` | Muskelaufbau | Muscle growth | Kas gelişimi |
+| `planBuilder.goal.strengthFocus.strength` | Maximalkraft | Maximum strength | Maksimum güç |
+| `planBuilder.goal.strengthHypertrophy.blurb` | Muskeln aufbauen oder stärker werden mit strukturiertem Krafttraining. | Build muscle or get stronger with structured strength training. | Yapılandırılmış güç antrenmanıyla kas yap veya daha güçlü ol. |
+| `planBuilder.goal.strengthHypertrophy.title` | Kraft & Muskelaufbau | Strength & Muscle | Güç ve Kas |
+| `planBuilder.goal.subtitle` | Wähle, worauf es dir gerade am meisten ankommt — alles Weitere baut darauf auf. | Choose what matters most to you right now — everything else builds on this. | Şu anda senin için en önemli olanı seç — geri kalan her şey buna dayanır. |
+| `planBuilder.goal.title` | Was ist dein Ziel? | What's your goal? | Hedefin nedir? |
 | `planBuilder.load.easy` | Locker | Easy | Hafif |
 | `planBuilder.load.hard` | Schwer | Hard | Ağır |
 | `planBuilder.load.medium` | Mittel | Medium | Orta |
