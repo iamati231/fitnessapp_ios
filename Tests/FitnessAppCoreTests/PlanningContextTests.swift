@@ -200,6 +200,14 @@ final class PlanningContextTests: XCTestCase {
         XCTAssertEqual(EnduranceModality.both.rawValue, "both")
     }
 
+    /// P4.1: jede Modalitaet braucht ein eigenes, nicht-leeres Symbol fuer
+    /// Auswahl-Karten (Onboarding-Ausdauerform-Schritt).
+    func testEveryEnduranceModalityHasANonEmptySymbol() {
+        for modality in EnduranceModality.allCases {
+            XCTAssertFalse(modality.symbol.isEmpty)
+        }
+    }
+
     // MARK: - Ein vollstaendig gueltiger Kontext
 
     func testFullyValidContextHasNoIssues() {

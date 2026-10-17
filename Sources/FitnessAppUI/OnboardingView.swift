@@ -43,10 +43,25 @@ public struct OnboardingView: View {
         case healthConnect
         case personalInfo
         case coachingStyle           // DEL-101: Goal + Tone in einem Schritt
+        // P4.1 (Doc01 "gemeinsames Onboarding mit Hybrid-Ausdauerwahl und
+        // optionalem Laufcoach"): NUR gezeigt wenn `trainingGoal` (direkt
+        // oberhalb auf `.coachingStyle` gewaehlt) `.hybrid`/`.endurance`
+        // ist - `goToNextStep`/`goToPreviousStep` ueberspringen ihn sonst.
+        // Vorher wurde diese Frage NUR gestellt, wenn der User zusaetzlich
+        // den eingebetteten Builder (`preferencesAndPlanStep`) nutzte - ein
+        // Template-waehlender Hybrid-/Ausdauer-User bekam sie nie gestellt.
+        case enduranceModality
         case trainingHistory         // Fix "doppeltes Onboarding": ExperienceTrack-Herleitung
         case equipmentPreferences    // DEL-170b: Multi-Select Equipment
         case baselineCheck           // Start-Check-Epic: optionaler "Wo stehst du heute?"-Check
         case preferencesAndPlan
+    }
+
+    /// P4.1: ob der neue Ausdauerform-/Laufcoach-Schritt ueberhaupt
+    /// angezeigt werden muss - reiner Kraft-/Allgemeine-Fitness-Fall hat
+    /// nichts zu klaeren (Doc02 §2: nur Hybrid/Laufen brauchen die Frage).
+    private var needsEnduranceModalityStep: Bool {
+        trainingGoal == .hybrid || trainingGoal == .endurance
     }
 
     @State private var step: Step = .healthConnect
@@ -175,12 +190,28 @@ public struct OnboardingView: View {
     @State private var customPlanResult: PlanGenerator.Result?
     /// P3.1: nur gesetzt, wenn der eingebettete Builder im neuen
     /// zielorientierten Pfad (Doc01 §3) eine Ausdauerform-/Laufcoach-
-    /// Entscheidung getroffen hat - siehe `PlanBuilderView.
-    /// onEnduranceModalityChosen`-Doku (hier existiert anders als in der
-    /// View selbst bereits zur Entscheidungszeit noch KEIN `UserBodyProfile`,
-    /// deshalb Zwischenspeicherung bis `finishOnboarding()`).
+    /// Entscheidung FUER DIESEN EINEN, GERADE GEBAUTEN PLAN getroffen hat -
+    /// siehe `PlanBuilderView.onEnduranceModalityChosen`-Doku. Bewusst
+    /// GETRENNT von `enduranceModality`/`runCoachWanted` (P4.1, siehe dort) -
+    /// diese beiden hier werden von `clearCustomPlan()` zurueckgesetzt,
+    /// sobald der User STATTDESSEN ein Template waehlt (beide Plan-Pfade
+    /// schliessen sich aus). Die P4.1-Antwort ist dagegen eine dauerhafte
+    /// PROFIL-Praeferenz, unabhaengig vom gewaehlten Plan-Pfad, und darf
+    /// durch einen Template-Wechsel NICHT mit verworfen werden - eine
+    /// gemeinsame Variable fuer beide Zwecke wuerde genau das tun.
     @State private var customPlanEnduranceModality: EnduranceModality?
     @State private var customPlanRunCoachWanted = false
+
+    /// P4.1 (Doc01 "gemeinsames Onboarding mit Hybrid-Ausdauerwahl und
+    /// optionalem Laufcoach"): die Antwort des NEUEN, fruehen
+    /// `.enduranceModality`-Schritts - eine dauerhafte Profil-Praeferenz,
+    /// unabhaengig davon, ob der User anschliessend ein Template oder den
+    /// Builder waehlt (siehe `customPlanEnduranceModality`-Doku fuer die
+    /// Abgrenzung). `finishOnboarding()` bevorzugt `customPlanEnduranceModality`,
+    /// FALLS der Builder fuer den tatsaechlich gebauten Plan eine eigene,
+    /// abweichende Wahl getroffen hat - sonst gilt diese hier.
+    @State private var enduranceModality: EnduranceModality?
+    @State private var runCoachWanted = false
 
     // DEL-088: Tag-Auswahl-Sheet, das nach Plan-Adopt erscheint. Sobald
     // `dayPickerTemplate != nil`, oeffnet sich das DayPickerSheet mit dem
@@ -233,6 +264,7 @@ public struct OnboardingView: View {
                     case .healthConnect:        healthConnectStep
                     case .personalInfo:         personalInfoStep
                     case .coachingStyle:        coachingStyleStep
+                    case .enduranceModality:    enduranceModalityStep
                     case .trainingHistory:      trainingHistoryStep
                     case .equipmentPreferences: equipmentPreferencesStep
                     case .baselineCheck:        baselineCheckStep
@@ -369,7 +401,9 @@ public struct OnboardingView: View {
                     selections: [],
                     equipmentPreferences: derivedLegacyEquipment,
                     usesFixedWeekdays: false
-                ), onGenerated: { input, result in
+                ), preseededEnduranceModality: enduranceModality,
+                preseededRunCoachWanted: runCoachWanted,
+                onGenerated: { input, result in
                     customPlanInput = input
                     customPlanResult = result
                     clearSelectedTemplate()
@@ -404,9 +438,17 @@ public struct OnboardingView: View {
 
     // MARK: - Progress indicator
 
+    /// P4.1: `.enduranceModality` zaehlt nur mit, wenn er fuer das aktuelle
+    /// Ziel ueberhaupt erreichbar ist (siehe `goToNextStep`/`goToPreviousStep`)
+    /// - sonst zeigte der Balken ein Segment fuer einen Schritt, den der
+    /// User nie betreten wird.
+    private var visibleSteps: [Step] {
+        Step.allCases.filter { $0 != .enduranceModality || needsEnduranceModalityStep }
+    }
+
     private var progressIndicator: some View {
         HStack(spacing: 8) {
-            ForEach(Step.allCases, id: \.self) { s in
+            ForEach(visibleSteps, id: \.self) { s in
                 Capsule()
                     .fill(s.rawValue <= step.rawValue ? Color.accentColor : Color.secondary.opacity(0.2))
                     .frame(height: 4)
@@ -848,6 +890,76 @@ public struct OnboardingView: View {
                     .padding(12)
                     .background(Color.secondary.opacity(0.08))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+        }
+    }
+
+    // MARK: - P4.1: Ausdauerform + Laufcoach (nur bei Hybrid/Ausdauer-Ziel)
+
+    /// P4.1 (Doc01 "gemeinsames Onboarding mit Hybrid-Ausdauerwahl und
+    /// optionalem Laufcoach"): fragt die Ausdauerform direkt nach der
+    /// Ziel-Auswahl (`coachingStyleStep`) ab - UNABHAENGIG davon, ob der
+    /// User anschliessend ein Template oder den Builder waehlt. Gleiche
+    /// Zeilen-Komponente (`coachingCard`) wie die Ziel-/Tone-Auswahl
+    /// oberhalb, fuer visuelle Konsistenz innerhalb des Onboardings - KEIN
+    /// Duplikat von `PlanBuilderView.enduranceModalitySubflow` (andere
+    /// Zeilen-Optik dort), aber dieselben xcstrings-Schluessel fuer die
+    /// Laufcoach-Unterfrage (eine Frage, ein Wortlaut, zwei Bildschirme).
+    @ViewBuilder
+    private var enduranceModalityStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("onboarding.enduranceModality.title", bundle: .module)
+                            .font(.title2.weight(.bold))
+                        Text("onboarding.enduranceModality.subtitle", bundle: .module)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    VStack(spacing: 10) {
+                        ForEach(EnduranceModality.allCases, id: \.self) { modality in
+                            coachingCard(
+                                title: String(localized: modality.localizedName),
+                                description: String(localized: modality.localizedBlurb),
+                                iconName: modality.symbol,
+                                isSelected: enduranceModality == modality
+                            ) {
+                                enduranceModality = modality
+                                if !modality.supportsRunCoach { runCoachWanted = false }
+                            }
+                        }
+                    }
+                }
+
+                if let enduranceModality, enduranceModality.supportsRunCoach {
+                    VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("planBuilder.goal.runCoach.question", bundle: .module)
+                                .font(.title2.weight(.bold))
+                        }
+                        VStack(spacing: 10) {
+                            coachingCard(
+                                title: String(localized: String.LocalizationValue("planBuilder.goal.runCoach.withoutCoach.title"), bundle: .module),
+                                description: String(localized: String.LocalizationValue("planBuilder.goal.runCoach.withoutCoach.blurb"), bundle: .module),
+                                iconName: "flag.checkered",
+                                isSelected: !runCoachWanted
+                            ) {
+                                runCoachWanted = false
+                            }
+                            coachingCard(
+                                title: String(localized: String.LocalizationValue("planBuilder.goal.runCoach.withCoach.title"), bundle: .module),
+                                description: String(localized: String.LocalizationValue("planBuilder.goal.runCoach.withCoach.blurb"), bundle: .module),
+                                iconName: "person.fill.checkmark",
+                                isSelected: runCoachWanted
+                            ) {
+                                runCoachWanted = true
+                            }
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 20)
@@ -1768,6 +1880,13 @@ public struct OnboardingView: View {
             // Tone + Goal haben Defaults und Cards sind tap-stateful, also
             // nie wirklich "ungeloest" — immer weiter.
             return true
+        case .enduranceModality:
+            // P4.1 (Doc02 §2 "keine stille Default-Auswahl"): die
+            // Ausdauerform selbst hat KEINEN Default und blockiert -
+            // identische Regel wie `PlanBuilderView.canAdvanceFromGoalStep`.
+            // Die Laufcoach-Unterfrage hat dagegen einen gueltigen Default
+            // ("ohne Coach") und blockiert bewusst NICHT zusaetzlich.
+            return enduranceModality != nil
         case .trainingHistory:
             // Anders als Goal/Tone hat die Hauptfrage bewusst KEINEN
             // stillen Default — ohne eine Antwort gibt es kein sinnvolles
@@ -1801,20 +1920,33 @@ public struct OnboardingView: View {
                 confirmEquipmentStepIfNeeded()
             }
             goToNextStep()
-        case .healthConnect, .personalInfo, .coachingStyle, .trainingHistory, .baselineCheck:
+        case .healthConnect, .personalInfo, .coachingStyle, .enduranceModality, .trainingHistory, .baselineCheck:
             goToNextStep()
         case .preferencesAndPlan:
             finishOnboarding()
         }
     }
 
+    /// P4.1: `.enduranceModality` wird uebersprungen, wenn
+    /// `needsEnduranceModalityStep` falsch ist (reiner Kraft-/Allgemeine-
+    /// Fitness-Fall) - in BEIDE Richtungen, damit "Zurueck" von
+    /// `.trainingHistory` aus nicht auf einem fuer das aktuelle Ziel
+    /// irrelevanten Schritt landet.
     private func goToNextStep() {
-        guard let next = Step(rawValue: step.rawValue + 1) else { return }
+        guard var next = Step(rawValue: step.rawValue + 1) else { return }
+        if next == .enduranceModality, !needsEnduranceModalityStep {
+            guard let skipped = Step(rawValue: next.rawValue + 1) else { return }
+            next = skipped
+        }
         step = next
     }
 
     private func goToPreviousStep() {
-        guard let prev = Step(rawValue: step.rawValue - 1) else { return }
+        guard var prev = Step(rawValue: step.rawValue - 1) else { return }
+        if prev == .enduranceModality, !needsEnduranceModalityStep {
+            guard let skipped = Step(rawValue: prev.rawValue - 1) else { return }
+            prev = skipped
+        }
         step = prev
     }
 
@@ -1931,6 +2063,21 @@ public struct OnboardingView: View {
         }
         modelContext.insert(profile)
 
+        // P4.1: Ausdauerform-/Laufcoach-Antwort unabhaengig vom gewaehlten
+        // Plan-Pfad (Template ODER Builder) anwenden - vorher geschah das
+        // nur im Builder-Zweig (siehe Git-History), ein Template-waehlender
+        // Hybrid-/Ausdauer-User bekam nie etwas gespeichert. `customPlanEnduranceModality`
+        // gewinnt, FALLS der Builder fuer den tatsaechlich gebauten Plan
+        // eine eigene Wahl getroffen hat (siehe dortige Feld-Doku) - sonst
+        // gilt die fruehere Antwort aus `.enduranceModality` (P4.1-Schritt).
+        // `nil`/kein Effekt, wenn das aktuelle Ziel gar keine Ausdauerform
+        // braucht (reiner Kraft-/Allgemeine-Fitness-Fall).
+        if needsEnduranceModalityStep {
+            let finalModality = customPlanEnduranceModality ?? enduranceModality
+            let finalRunCoachWanted = customPlanEnduranceModality != nil ? customPlanRunCoachWanted : runCoachWanted
+            profile.setEnduranceModality(finalModality, runCoachEnabled: finalRunCoachWanted)
+        }
+
         // 2) Initial BodyMeasurement — keeps the "first weight" visible in the
         //    Trend-Chart right after onboarding, instead of an empty dashboard
         //    until the user adds another measurement manually.
@@ -1986,14 +2133,6 @@ public struct OnboardingView: View {
                 resolvedSelection: freshSelection
             )
         } else if let customPlanInput, let customPlanResult {
-            // P3.1: eine im eingebetteten Builder getroffene Ausdauerform-/
-            // Laufcoach-Entscheidung (siehe `onEnduranceModalityChosen`-
-            // Wiring oben) wird HIER auf das gerade erst inserted `profile`
-            // angewendet - vorher existierte in diesem Pfad noch kein
-            // Profil, auf das `PlanBuilderView` selbst haette schreiben
-            // koennen. `nil`/`false`, wenn der Builder-Pfad kein Ausdauer-
-            // /Hybrid-Ziel gewaehlt hat (Default-Zustand, kein Effekt).
-            profile.setEnduranceModality(customPlanEnduranceModality, runCoachEnabled: customPlanRunCoachWanted)
             // DEL-243: der im Builder-
             // Sheet vorberechnete Result wird 1:1 uebernommen (nicht neu
             // gerechnet) — sonst wiche der instanziierte Plan von der im

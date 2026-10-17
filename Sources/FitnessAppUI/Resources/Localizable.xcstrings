@@ -49520,6 +49520,121 @@
           }
         }
       }
+    },
+    "onboarding.enduranceModality.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welche Ausdauerform?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which endurance style?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hangi dayanıklılık türü?"
+          }
+        }
+      }
+    },
+    "onboarding.enduranceModality.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du hast ein Ausdauer- oder Kombi-Ziel gewählt — das klären wir jetzt einmal, unabhängig davon, ob du gleich einen Plan auswählst oder selbst baust."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You picked an endurance or combined goal — let's settle this once now, whether you pick a plan next or build your own."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dayanıklılık veya karma bir hedef seçtin — şimdi bunu bir kez netleştirelim, sonra hazır bir plan seçsen de kendin oluştursan da fark etmez."
+          }
+        }
+      }
+    },
+    "enduranceModality.running.blurb": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laufen steht im Mittelpunkt deiner Ausdauereinheiten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running is the focus of your endurance sessions."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dayanıklılık antrenmanlarının odağı koşu."
+          }
+        }
+      }
+    },
+    "enduranceModality.cycling.blurb": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radfahren steht im Mittelpunkt deiner Ausdauereinheiten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cycling is the focus of your endurance sessions."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dayanıklılık antrenmanlarının odağı bisiklet."
+          }
+        }
+      }
+    },
+    "enduranceModality.both.blurb": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eine Mischung aus Laufen und Radfahren, je nachdem was passt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A mix of running and cycling, whichever fits."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uygun olana göre koşu ve bisiklet karışımı."
+          }
+        }
+      }
     }
   }
 }

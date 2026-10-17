@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2153 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2158 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2153 / 2153** (100%) | 0 |
-| 🇬🇧 English (EN) | **2153 / 2153** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2153 / 2153** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2158 / 2158** (100%) | 0 |
+| 🇬🇧 English (EN) | **2158 / 2158** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2158 / 2158** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -915,13 +915,16 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `editor.reorder.done` | Fertig | Done | Bitti |
 | `editor.reorder.start` | Sortieren | Reorder | Sırala |
 
-## `enduranceModality.*`  (3 Keys)
+## `enduranceModality.*`  (6 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `enduranceModality.both` | Beides | Both | İkisi de |
+| `enduranceModality.both.blurb` | Eine Mischung aus Laufen und Radfahren, je nachdem was passt. | A mix of running and cycling, whichever fits. | Uygun olana göre koşu ve bisiklet karışımı. |
 | `enduranceModality.cycling` | Radfahren | Cycling | Bisiklet |
+| `enduranceModality.cycling.blurb` | Radfahren steht im Mittelpunkt deiner Ausdauereinheiten. | Cycling is the focus of your endurance sessions. | Dayanıklılık antrenmanlarının odağı bisiklet. |
 | `enduranceModality.running` | Laufen | Running | Koşu |
+| `enduranceModality.running.blurb` | Laufen steht im Mittelpunkt deiner Ausdauereinheiten. | Running is the focus of your endurance sessions. | Dayanıklılık antrenmanlarının odağı koşu. |
 
 ## `environment.*`  (3 Keys)
 
@@ -1455,13 +1458,15 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `muscleVolume.bucket.overreaching` | Übervolumen | Overreach | Aşırı yük |
 | `muscleVolume.bucket.untrained` | Untrainiert | Untrained | Eğitilmemiş |
 
-## `onboarding.*`  (92 Keys)
+## `onboarding.*`  (94 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `onboarding.body.weightInitial` | Wird im Hintergrund als initiale Messung gespeichert. | Saved in the background as your initial measurement. | Arka planda ilk ölçüm olarak kaydedilir. |
 | `onboarding.body.weightRequired` | Pflichtfeld — wird als erste Messung gespeichert. | Required — saved as your first measurement. | Zorunlu — ilk ölçüm olarak kaydedilir. |
 | `onboarding.body.weightZero` | Gewicht muss > 0 sein. | Weight must be > 0. | Kilo > 0 olmalı. |
+| `onboarding.enduranceModality.subtitle` | Du hast ein Ausdauer- oder Kombi-Ziel gewählt — das klären wir jetzt einmal, unabhängig davon, ob du gleich einen Plan auswählst oder selbst baust. | You picked an endurance or combined goal — let's settle this once now, whether you pick a plan next or build your own. | Dayanıklılık veya karma bir hedef seçtin — şimdi bunu bir kez netleştirelim, sonra hazır bir plan seçsen de kendin oluştursan da fark etmez. |
+| `onboarding.enduranceModality.title` | Welche Ausdauerform? | Which endurance style? | Hangi dayanıklılık türü? |
 | `onboarding.environment.footnote1` | Trainingsort filtert Plan-Empfehlungen und die Equipment-Auswahl beim Übungs-Tausch. | Training location filters plan recommendations and equipment options when swapping exercises. | Antrenman yeri plan önerilerini ve hareket değiştirirken ekipman seçeneklerini filtreler. |
 | `onboarding.environment.footnote2` | Hybrid- oder reine Lauf-Athleten wählen ihren Strength-Ort — die Hybrid-Pläne enthalten ihre Run-Tage unabhängig davon. | Hybrid or pure running athletes pick their strength location — Hybrid plans include run days regardless. | Hibrit veya saf koşu sporcuları güç antrenman yerini seçer — Hibrit planlar koşu günlerini her durumda içerir. |
 | `onboarding.equipment.footer` | Du kannst diese Auswahl später jederzeit im Profil anpassen. Dein Trainingsort allein legt dein Equipment nie automatisch fest. | You can adjust this anytime later in your profile. Your training location alone never automatically sets your equipment. | Bu seçimi istediğin zaman profilinden değiştirebilirsin. Antrenman yerin tek başına ekipmanını asla otomatik belirlemez. |

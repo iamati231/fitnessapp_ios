@@ -138,8 +138,23 @@ public struct PlanBuilderView: View {
     /// (unveraendertes Verhalten), NICHT den neuen Ziel-Schritt. Ein Input
     /// mit LEEREN `selections` (Onboarding, `nil` fuer `PlansListView`s "+")
     /// zeigt stattdessen den neuen zielorientierten Einstieg.
+    /// P4.1: `preseededEnduranceModality`/`preseededRunCoachWanted` fuellen
+    /// die Ausdauerform-/Laufcoach-Unterfrage des neuen Ziel-Schritts
+    /// (`enduranceModalitySubflow`) VOR, wenn der Aufrufer die Antwort
+    /// bereits kennt - konkret: `OnboardingView`s neuer, fruehere
+    /// `.enduranceModality`-Schritt (P4.1) hat die Frage schon gestellt,
+    /// BEVOR der User ueberhaupt in den eingebetteten Builder wechselt. Ohne
+    /// Vorbefuellung muesste der User dieselbe Frage ein zweites Mal von
+    /// Null beantworten - KEIN zweiter, konkurrierender Schalter (es bleibt
+    /// derselbe `onEnduranceModalityChosen`-Rueckkanal), nur eine bequemere
+    /// Startauswahl, die der User fuer DIESEN Plan weiterhin aendern kann.
+    /// Ohne Wirkung im `isPreSeededFlow`-Pfad (dort gibt es den Ziel-Schritt
+    /// gar nicht) und im eigenstaendigen `PlansListView`-"+"-Pfad (dort gibt
+    /// es keine vorherige Antwort).
     public init(
         initialInput: PlanGeneratorInput? = nil,
+        preseededEnduranceModality: EnduranceModality? = nil,
+        preseededRunCoachWanted: Bool = false,
         onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> PlanBuilderHandoffOutcome)? = nil,
         onEnduranceModalityChosen: (@MainActor (EnduranceModality?, Bool) -> Void)? = nil
     ) {
@@ -155,6 +170,8 @@ public struct PlanBuilderView: View {
             _usesFixedWeekdays = State(initialValue: initialInput.usesFixedWeekdays)
             _fixedWeekdays = State(initialValue: Set(initialInput.fixedWeekdays))
         }
+        _selectedEnduranceModality = State(initialValue: preseededEnduranceModality)
+        _runCoachWanted = State(initialValue: preseededRunCoachWanted)
     }
 
     enum BuilderStep: Int, CaseIterable {

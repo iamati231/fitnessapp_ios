@@ -248,6 +248,17 @@ public extension EnduranceModality {
         case .both:    LocalizedStringResource("enduranceModality.both",    bundle: .fitnessAppUI)
         }
     }
+
+    /// P4.1: fuer den neuen Onboarding-Ausdauerform-Schritt (`coachingCard`
+    /// braucht Titel+Beschreibung, gleiches Muster wie `TrainingGoal.
+    /// localizedBlurb`).
+    var localizedBlurb: LocalizedStringResource {
+        switch self {
+        case .running: LocalizedStringResource("enduranceModality.running.blurb", bundle: .fitnessAppUI)
+        case .cycling: LocalizedStringResource("enduranceModality.cycling.blurb", bundle: .fitnessAppUI)
+        case .both:    LocalizedStringResource("enduranceModality.both.blurb",    bundle: .fitnessAppUI)
+        }
+    }
 }
 
 public extension CardioGoal {

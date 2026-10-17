@@ -22,6 +22,18 @@ public enum EnduranceModality: String, Sendable, Hashable, CaseIterable {
         }
     }
 
+    /// P4.1: SF-Symbol-Name fuer Auswahl-Karten (z.B. der neue Onboarding-
+    /// Ausdauerform-Schritt) - gleiches Prinzip wie `TrainingGoal.symbol`/
+    /// `CoachingTone.symbol` (beide ebenfalls in Core, reine String-
+    /// Konstanten ohne SwiftUI-Abhaengigkeit).
+    public var symbol: String {
+        switch self {
+        case .running: return "figure.run"
+        case .cycling: return "bicycle"
+        case .both:    return "arrow.triangle.2.circlepath"
+        }
+    }
+
     /// P2.5: ob `runCoachEnabled` fuer diese Modalitaet ueberhaupt gueltig
     /// sein kann — identische Regel wie `PlanningContextIssue.
     /// runCoachRequiresRunningOrBothModality`, hier als wiederverwendbarer
