@@ -232,11 +232,23 @@ umgesetzt (Task #203, 2026-10-17).
   Pin-/Lock-Badges pro Zeile, zusammengefasst in einer VoiceOver-Ansage
   (`resultDayRowAccessibilityLabel`). 10 neue xcstrings-Keys (DE/EN/TR), `dead_catalog_v3.py`
   bestaetigt 0 unused. `swift build` + `swift test --parallel`: 1052 Tests gruen (lokal, Linux).
-  **Noch offen:** Apple-Build-CI (Codemagic `ios-app`+`swift-package` fuer Commit `6933335` laeuft,
-  Ergebnis wird separat nachgetragen) UND TestingBot-UI-Verifikation (Drag-Geste, "Verschieben
-  nach…"-Menu, Fixierungs-Toggle + Ablehnungs-Toast lassen sich nicht ueber Linux-Tests pruefen —
-  per Vorgabe "kein Task gilt allein wegen gruener Linux-Tests als abgeschlossen"). P3.2 bleibt
-  bis dahin NICHT als vollstaendig abgenommen markiert.
+  **Apple-kompiliert ✅ (Commit `0976d84`, nach 2 echten Apple-CI-Funden):** der urspruengliche
+  Commit `6933335` scheiterte am `ios-app`-Workflow mit einem echten Xcode-Typfehler
+  (`loadLevel.localizedName` ist `LocalizedStringResource`, nicht `String` — auf Linux/SwiftPM
+  klaglos durchkompiliert, Xcode lehnte zu Recht ab; Fix `b12e720`: `String(localized:)`, identisches
+  Muster wie ueberall sonst im Code). Der `swift-package`-Workflow deckte DANACH einen ZWEITEN
+  echten Divergenz-Fall auf: `.listStyle(.insetGrouped)` ist unter `.macOS(.v14)` (Package.swift
+  zielt zusaetzlich auf macOS fuer Linux-/macOS-Testbarkeit) nicht verfuegbar — Fix `0976d84`: Zeile
+  entfernt, plattformgerechter Default (identisch zu `PlanEditorView.daysSection`, das ebenfalls
+  keinen expliziten `.listStyle` setzt). Beide Funde sind ein weiterer Beleg dafuer, warum dieses
+  Epos nie allein auf gruene Linux-Tests vertraut — Codemagic `ios-app` (Build app+widget fuer iOS
+  Simulator) UND `swift-package` (Build + `swift test` + Build library products fuer iOS Simulator)
+  beide `success` fuer Commit `0976d84`.
+  **Noch offen (TestingBot-UI-Verifikation):** Drag-Geste, "Verschieben nach…"-Menu,
+  Fixierungs-Toggle + Ablehnungs-Toast lassen sich nicht ueber Linux-Tests oder den reinen Build
+  pruefen — per Vorgabe "kein Task gilt allein wegen gruener Linux-Tests/Apple-Build als
+  abgeschlossen, UI-Verifikation ist ein eigener Status". P3.2 bleibt bis dahin NICHT als
+  vollstaendig abgenommen markiert.
 - P3.3 Gezielte Alternativen (zuerst Alternative 1 über `replaceContent`, dann 2 und 3) — offen.
 - P3.4 Header/Label/Discard-Guard auf `DeltiqHeader`-Muster umstellen — offen.
 
