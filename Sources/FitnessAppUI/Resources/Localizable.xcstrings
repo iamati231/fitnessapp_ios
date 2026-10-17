@@ -48693,29 +48693,6 @@
         }
       }
     },
-    "profile.coaching.runCoach": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Run coach"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Laufcoach"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Koşu koçu"
-          }
-        }
-      }
-    },
     "profile.coaching.runCoach.unavailableHint": {
       "extractionState": "manual",
       "localizations": {

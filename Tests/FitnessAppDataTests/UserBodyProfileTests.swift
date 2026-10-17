@@ -361,14 +361,14 @@ final class UserBodyProfileTests: XCTestCase {
         XCTAssertNil(profile.equipmentProfile.count(for: .kettlebell), "Nur-Koerpergewicht verwirft eine zuvor begonnene Teil-Auswahl vollstaendig")
     }
 
-    // MARK: - P2.5: enduranceModality + runCoachEnabled
+    // MARK: - P2.5 (+ Nachbesserung "ein Laufcoach-Schalter"): enduranceModality + cardioCoachingEnabled
 
-    func testEnduranceModalityAndRunCoachDefaultToNilAndFalse() throws {
+    func testEnduranceModalityDefaultsToNil() throws {
         let container = try makeContainer()
         let profile = makeProfile(in: container.mainContext)
 
         XCTAssertNil(profile.enduranceModality)
-        XCTAssertFalse(profile.runCoachEnabled)
+        XCTAssertFalse(profile.cardioCoachingEnabled)
     }
 
     func testSetEnduranceModalityRoundTripsThroughRawValue() throws {
@@ -379,46 +379,52 @@ final class UserBodyProfileTests: XCTestCase {
 
         XCTAssertEqual(profile.enduranceModalityRaw, "both")
         XCTAssertEqual(profile.enduranceModality, .both)
-        XCTAssertTrue(profile.runCoachEnabled)
+        XCTAssertTrue(profile.cardioCoachingEnabled)
     }
 
     /// Kerninvariante (identisch zu `PlanningContextIssue.
     /// runCoachRequiresRunningOrBothModality`): reines Radfahren kann den
     /// Laufcoach nie einschalten, auch wenn der Aufrufer `true` uebergibt.
-    func testSetEnduranceModalityNeverEnablesRunCoachForCyclingOnly() throws {
+    func testSetEnduranceModalityNeverEnablesCoachForCyclingOnly() throws {
         let container = try makeContainer()
         let profile = makeProfile(in: container.mainContext)
 
         profile.setEnduranceModality(.cycling, runCoachEnabled: true)
 
         XCTAssertEqual(profile.enduranceModality, .cycling)
-        XCTAssertFalse(profile.runCoachEnabled, "Cycling-only erfuellt runCoachEnabled's Vorbedingung nicht")
+        XCTAssertFalse(profile.cardioCoachingEnabled, "Cycling-only erfuellt die Laufcoach-Vorbedingung nicht")
     }
 
-    /// Ein zuvor gesetztes `runCoachEnabled` darf nicht stehen bleiben, wenn
-    /// die Modalitaet nachtraeglich auf eine nicht-unterstuetzende Form
-    /// wechselt — sonst waere die Invariante nur beim ERSTEN Schreiben
-    /// garantiert, nicht dauerhaft.
-    func testChangingModalityToCyclingClearsPreviouslyEnabledRunCoach() throws {
+    /// Ein zuvor eingeschalteter Coach darf nicht stehen bleiben, wenn die
+    /// Modalitaet nachtraeglich auf eine nicht-unterstuetzende Form wechselt
+    /// — sonst waere die Invariante nur beim ERSTEN Schreiben garantiert,
+    /// nicht dauerhaft.
+    func testChangingModalityToCyclingClearsPreviouslyEnabledCoach() throws {
         let container = try makeContainer()
         let profile = makeProfile(in: container.mainContext)
         profile.setEnduranceModality(.running, runCoachEnabled: true)
-        XCTAssertTrue(profile.runCoachEnabled)
+        XCTAssertTrue(profile.cardioCoachingEnabled)
 
         profile.setEnduranceModality(.cycling, runCoachEnabled: true)
 
-        XCTAssertFalse(profile.runCoachEnabled)
+        XCTAssertFalse(profile.cardioCoachingEnabled)
     }
 
-    func testSetEnduranceModalityNilClearsRunCoachRegardlessOfRequestedValue() throws {
+    /// Nachbesserung ("ein Laufcoach-Schalter, keine konkurrierenden
+    /// Schalter"): `nil` heisst "Ausdauerform noch nicht beantwortet", NICHT
+    /// "Radfahren" — praktisch jeder Bestandsnutzer des laengst bestehenden
+    /// `cardioCoachingEnabled`-Schalters (DEL-250) hat nie eine Modalitaet
+    /// gesetzt. Ein unbeantwortetes Profil darf den Coach deshalb weiterhin
+    /// uneingeschraenkt einschalten koennen - andernfalls waere dieser
+    /// Schalter fuer den gesamten Bestand faktisch kaputt.
+    func testSetEnduranceModalityNilLeavesCoachUnconstrained() throws {
         let container = try makeContainer()
         let profile = makeProfile(in: container.mainContext)
-        profile.setEnduranceModality(.running, runCoachEnabled: true)
 
         profile.setEnduranceModality(nil, runCoachEnabled: true)
 
         XCTAssertNil(profile.enduranceModality)
-        XCTAssertFalse(profile.runCoachEnabled)
+        XCTAssertTrue(profile.cardioCoachingEnabled, "Unbeantwortete Modalitaet darf den bestehenden Coach-Schalter nicht sperren")
     }
 
     /// Gleicher Robustness-Pattern wie `experienceTrack`/`equipmentProfile`:

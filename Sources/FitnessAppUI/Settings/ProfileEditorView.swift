@@ -771,6 +771,16 @@ public struct ProfileEditorView: View {
     /// `SettingsView.waterReminderEnabled`; Referenzzeit statt direkter
     /// Pace-Eingabe (praeziser fuer eine spaetere
     /// `cardioProgressionEarned`-Verfeinerung, siehe `PaceZoneCalculator`).
+    ///
+    /// Nachbesserung (Deltiq-Weiterentwicklung, "Verbindliche Produktregel":
+    /// "Eine eindeutige fachliche Laufcoach-Aktivierung, keine konkurrierenden
+    /// Schalter"): `cardioCoachingEnabled` IST der Laufcoach-Schalter — vorher
+    /// kurzzeitig ein zweites, eigenes `runCoachEnabled`-Feld (P2.5) PLUS eine
+    /// zweite Toggle-Instanz in `coachingCard` daneben, was genau die
+    /// verbotenen "konkurrierenden Schalter" waere. `setEnduranceModality`
+    /// schreibt jetzt direkt in `cardioCoachingEnabled`; die Ausdauerform-Frage
+    /// lebt HIER, direkt neben dem einzigen Schalter, nicht mehr in einer
+    /// zweiten Sektion.
     private var cardioCard: some View {
         DeltiqSection(String(localized: "profile.section.cardio", bundle: .module).uppercased()) {
             DeltiqControlRow(
@@ -778,10 +788,42 @@ public struct ProfileEditorView: View {
                 label: String(localized: "profile.cardio.enable", bundle: .module),
                 showsDivider: profile.cardioCoachingEnabled
             ) {
-                Toggle("", isOn: $profile.cardioCoachingEnabled)
-                    .labelsHidden()
-                    .tint(Color.deltiqOrange)
-                    .accessibilityLabel(Text("profile.cardio.enable", bundle: .module))
+                Toggle("", isOn: Binding(
+                    get: { profile.cardioCoachingEnabled },
+                    set: { profile.setEnduranceModality(profile.enduranceModality, runCoachEnabled: $0) }
+                ))
+                .labelsHidden()
+                .tint(Color.deltiqOrange)
+                .disabled(needsEnduranceModalityQuestion && !displayedEnduranceModality.supportsRunCoach)
+                .accessibilityLabel(Text("profile.cardio.enable", bundle: .module))
+            }
+            // Doc02 (Hybrid/Laufcoach-Trennung): die Ausdauerform ist auch OHNE
+            // Coach relevant (reine Laufeinheiten im Plan bleiben ohne Coach
+            // moeglich) — deshalb unabhaengig vom Toggle sichtbar, sobald das
+            // Trainingsziel eine Ausdauerform ueberhaupt verlangt. Fuer jedes
+            // andere Ziel bleibt die Frage ausgeblendet (sie waere dort
+            // bedeutungslos), der Coach-Toggle oben bleibt dafuer unabhaengig
+            // nutzbar (bestehendes DEL-250-Verhalten unveraendert).
+            if needsEnduranceModalityQuestion {
+                DeltiqControlRow(
+                    label: String(localized: "profile.coaching.enduranceModality", bundle: .module),
+                    showsDivider: profile.cardioCoachingEnabled
+                ) {
+                    Picker(selection: Binding(
+                        get: { displayedEnduranceModality },
+                        set: { profile.setEnduranceModality($0, runCoachEnabled: profile.cardioCoachingEnabled) }
+                    )) {
+                        ForEach(EnduranceModality.allCases, id: \.self) { modality in
+                            Text(modality.localizedName).tag(modality)
+                        }
+                    } label: {
+                        EmptyView()
+                    }
+                    .pickerStyle(.menu)
+                }
+                if !displayedEnduranceModality.supportsRunCoach {
+                    hintRow(String(localized: "profile.coaching.runCoach.unavailableHint", bundle: .module))
+                }
             }
             if profile.cardioCoachingEnabled {
                 // DEL-251: Retro-Sync — berechnet Wochenvolumen + Referenzpace
@@ -1200,9 +1242,23 @@ public struct ProfileEditorView: View {
     /// `profile.enduranceModality` noch `nil` ist (jedes bestehende
     /// `.endurance`-Profil startet so, das Feld ist neu). Schreibt NICHTS —
     /// erst ein tatsaechlicher Tap auf Picker/Toggle persistiert ueber
-    /// `setEnduranceModality`.
+    /// `setEnduranceModality`. Faellt bewusst auf `.running` zurueck (nicht
+    /// `.cycling`): ein bereits laengere Zeit aktiver `cardioCoachingEnabled`-
+    /// Bestandsnutzer (vor P2.5, kein `enduranceModality` gesetzt) war IMMER
+    /// ein Laufcoach-Nutzer (`CardioGoal` kennt nur Laufdistanzen) — `.running`
+    /// erhaelt dessen Toggle-Zustand unveraendert nutzbar (`supportsRunCoach
+    /// == true`), `.cycling` wuerde ihn faelschlich sperren.
     private var displayedEnduranceModality: EnduranceModality {
         profile.enduranceModality ?? .running
+    }
+
+    /// Doc02: die Ausdauerform-Frage ist immer relevant, wenn das Ziel
+    /// ueberhaupt eine Ausdauerform verlangt (`.endurance`/`.hybrid`) — AUCH
+    /// ohne Coach (reine Laufeinheiten bleiben ohne Coach moeglich) — oder
+    /// wenn der bestehende Coach-Schalter (DEL-250, zielunabhaengig nutzbar)
+    /// bereits an ist.
+    private var needsEnduranceModalityQuestion: Bool {
+        profile.trainingGoal == .endurance || profile.trainingGoal == .hybrid || profile.cardioCoachingEnabled
     }
 
     /// DEL-101: Nachträgliche Bearbeitung des Coaching-Stils. Bind direkt
@@ -1240,49 +1296,6 @@ public struct ProfileEditorView: View {
                     EmptyView()
                 }
                 .pickerStyle(.menu)
-            }
-            // P2.5 (docs/NEUE_SPEZIFIKATION_P0_AUDIT.md, Vorbedingung fuer P3/P4):
-            // erste echte Instanziierung von EnduranceModality/runCoachEnabled
-            // ausserhalb von Tests. NICHT ueber eine neu waehlbare `.endurance`-
-            // Zielkarte erreichbar (`currentlySelectableInUI` blendet sie
-            // weiterhin bewusst aus, siehe dortige Doku: "ein Schalter an einer
-            // Stelle, sobald P3 den Pfad liefert") — nur fuer ein bereits
-            // bestehendes `.endurance`-Profil (P2.2-Zwischenstand oder Import),
-            // das sonst keine Moeglichkeit haette, diese beiden Felder je zu
-            // setzen. `displayedEnduranceModality` faellt kosmetisch auf
-            // `.running` zurueck, bevor der User das erste Mal waehlt —
-            // schreibt aber nichts, bis eine der beiden Controls unten
-            // tatsaechlich angefasst wird (siehe dortige Doku).
-            if profile.trainingGoal == .endurance {
-                DeltiqControlRow(label: String(localized: "profile.coaching.enduranceModality", bundle: .module)) {
-                    Picker(selection: Binding(
-                        get: { displayedEnduranceModality },
-                        set: { profile.setEnduranceModality($0, runCoachEnabled: profile.runCoachEnabled) }
-                    )) {
-                        ForEach(EnduranceModality.allCases, id: \.self) { modality in
-                            Text(modality.localizedName).tag(modality)
-                        }
-                    } label: {
-                        EmptyView()
-                    }
-                    .pickerStyle(.menu)
-                }
-                DeltiqControlRow(
-                    label: String(localized: "profile.coaching.runCoach", bundle: .module),
-                    showsDivider: !displayedEnduranceModality.supportsRunCoach
-                ) {
-                    Toggle("", isOn: Binding(
-                        get: { profile.runCoachEnabled },
-                        set: { profile.setEnduranceModality(displayedEnduranceModality, runCoachEnabled: $0) }
-                    ))
-                    .labelsHidden()
-                    .tint(Color.deltiqOrange)
-                    .disabled(!displayedEnduranceModality.supportsRunCoach)
-                    .accessibilityLabel(Text("profile.coaching.runCoach", bundle: .module))
-                }
-                if !displayedEnduranceModality.supportsRunCoach {
-                    hintRow(String(localized: "profile.coaching.runCoach.unavailableHint", bundle: .module))
-                }
             }
             DeltiqControlRow(label: String(localized: "profile.coaching.tone", bundle: .module), showsDivider: false) {
                 Picker(selection: Binding(
@@ -1380,12 +1393,12 @@ struct ProfileMetaSnapshot: Equatable {
     var weeklyWorkoutGoal: Int
     var trainingGoal: TrainingGoal
     var coachingTone: CoachingTone
-    /// P2.5: ueber `setEnduranceModality` als Paar geschrieben/zurueckgesetzt
-    /// (siehe `apply`) — sonst koennte ein Discard die Invariante
-    /// "runCoachEnabled nur bei running/both" durch getrenntes Zuruecksetzen
-    /// kurzzeitig verletzen.
+    /// P2.5 (+ Nachbesserung "ein Laufcoach-Schalter"): `cardioCoachingEnabled`
+    /// oben IST der Laufcoach-Schalter — kein zweites Feld hier noetig.
+    /// `apply` schreibt beide ueber `setEnduranceModality` als Paar zurueck,
+    /// sonst koennte ein Discard die Invariante "Coach nur bei running/both"
+    /// durch getrenntes Zuruecksetzen kurzzeitig verletzen.
     var enduranceModality: EnduranceModality?
-    var runCoachEnabled: Bool
 
     static func capture(from profile: UserBodyProfile) -> ProfileMetaSnapshot {
         ProfileMetaSnapshot(
@@ -1400,15 +1413,13 @@ struct ProfileMetaSnapshot: Equatable {
             weeklyWorkoutGoal: profile.weeklyWorkoutGoal,
             trainingGoal: profile.trainingGoal,
             coachingTone: profile.coachingTone,
-            enduranceModality: profile.enduranceModality,
-            runCoachEnabled: profile.runCoachEnabled
+            enduranceModality: profile.enduranceModality
         )
     }
 
     func apply(to profile: UserBodyProfile) {
         profile.profile = self.profile
         profile.birthDate = birthDate
-        profile.cardioCoachingEnabled = cardioCoachingEnabled
         profile.cardioGoal = cardioGoal
         profile.current5kReferenceSeconds = current5kReferenceSeconds
         profile.cardioRaceDate = cardioRaceDate
@@ -1417,7 +1428,7 @@ struct ProfileMetaSnapshot: Equatable {
         profile.weeklyWorkoutGoal = weeklyWorkoutGoal
         profile.trainingGoal = trainingGoal
         profile.coachingTone = coachingTone
-        profile.setEnduranceModality(enduranceModality, runCoachEnabled: runCoachEnabled)
+        profile.setEnduranceModality(enduranceModality, runCoachEnabled: cardioCoachingEnabled)
     }
 }
 

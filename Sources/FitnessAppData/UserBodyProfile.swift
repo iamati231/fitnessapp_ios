@@ -188,13 +188,6 @@ public final class UserBodyProfile {
     /// anwendbar).
     public var enduranceModalityRaw: String?
 
-    /// P2.5: Laufcoach-Schalter — ausdruecklich UNABHAENGIG von
-    /// `cardioCoachingEnabled`/`CardioGoal` (DEL-250, bereits bestehendes
-    /// Cardio-Coaching-Feature) und von reinen Laufeinheiten im Plan (siehe
-    /// `PlanningContext.runCoachEnabled`-Doc). Default `false` — Lightweight-
-    /// Migration fuer Bestand, identisches Muster wie `cardioCoachingEnabled`.
-    public var runCoachEnabled: Bool = false
-
     /// Typed Accessor, analog `experienceTrack`. Ungueltiger/unbekannter
     /// Rohwert wird wie dort zu `nil`, nie zu einem erfundenen Default.
     public var enduranceModality: EnduranceModality? {
@@ -202,18 +195,33 @@ public final class UserBodyProfile {
         set { enduranceModalityRaw = newValue?.rawValue }
     }
 
-    /// P2.5: einziger Schreibweg fuer die beiden Felder oben — erzwingt
+    /// Nachbesserung (Deltiq-Weiterentwicklung, "Verbindliche Produktregel":
+    /// "Eine eindeutige fachliche Laufcoach-Aktivierung, keine konkurrierenden
+    /// Schalter"): P2.5 fuehrte kurzzeitig ein EIGENES `runCoachEnabled`-Feld
+    /// ein — das waere GENAU der verbotene zweite Schalter neben dem bereits
+    /// bestehenden `cardioCoachingEnabled` (DEL-250), das fachlich dasselbe
+    /// meint (`CardioGoal` kennt ausschliesslich Laufdistanzen, war also
+    /// faktisch schon immer der Laufcoach-Schalter). Einziger Schreibweg fuer
+    /// `enduranceModality`/`cardioCoachingEnabled` zusammen — erzwingt
     /// dieselbe Invariante wie `PlanningContextIssue.
     /// runCoachRequiresRunningOrBothModality` (ueber `EnduranceModality.
-    /// supportsRunCoach`, siehe dortige Doku): `runCoachEnabled` kann nie
-    /// `true` werden, wenn die Modalitaet das nicht hergibt (z.B. reines
-    /// Radfahren). Ein direkter Schreibzugriff auf `runCoachEnabled` bleibt
-    /// moeglich (SwiftData-`@Model`-Property), ist aber bewusst nicht der
-    /// vorgesehene Weg — jeder reale Aufrufer (ProfileEditorView) geht ueber
-    /// diese Methode.
-    public func setEnduranceModality(_ modality: EnduranceModality?, runCoachEnabled wantsRunCoach: Bool) {
+    /// supportsRunCoach`, siehe dortige Doku): der Coach kann nie `true`
+    /// bleiben, wenn die Modalitaet das nicht hergibt (z.B. reines
+    /// Radfahren). Ein direkter Schreibzugriff auf `cardioCoachingEnabled`
+    /// bleibt moeglich (SwiftData-`@Model`-Property, u.a. fuer Bestandscode
+    /// vor P2.5), ist aber fuer Aenderungen an BEIDEN Feldern zusammen nicht
+    /// der vorgesehene Weg — jeder reale Aufrufer (ProfileEditorView) geht
+    /// ueber diese Methode.
+    public func setEnduranceModality(_ modality: EnduranceModality?, runCoachEnabled wantsCoach: Bool) {
         enduranceModality = modality
-        runCoachEnabled = wantsRunCoach && (modality?.supportsRunCoach ?? false)
+        // `nil` heisst "noch nicht beantwortet", NICHT "Radfahren" - ein
+        // unbeantwortetes Profil (praktisch jeder Bestandsnutzer vor dieser
+        // Aenderung) darf den laengst bestehenden `cardioCoachingEnabled`-
+        // Schalter (DEL-250) weiterhin uneingeschraenkt nutzen. Nur eine
+        // EXPLIZIT gewaehlte, nicht unterstuetzende Modalitaet (`.cycling`)
+        // sperrt den Coach - identischer Default wie `displayedEnduranceModality`
+        // in `ProfileEditorView` (dort `?? .running`, hier aequivalent `?? true`).
+        cardioCoachingEnabled = wantsCoach && (modality?.supportsRunCoach ?? true)
     }
 
     // MARK: - Start-Check (optionaler Baseline-Check im Onboarding)
