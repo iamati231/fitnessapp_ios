@@ -198,8 +198,23 @@ umgesetzt (Task #203, 2026-10-17).
     meldet die Entscheidung an `OnboardingView` zurueck (dort existiert zur Entscheidungszeit noch
     kein Profil); der eigenstaendige Modus (`PlansListView`s "+") schreibt direkt.
   - Codemagic (Commit `3f3b751`, konsolidiert): Build+Tests+Simulator-Build alle `success`.
-    `swift test`: 1052 Tests lokal gruen. TestingBot-UI-Verifikation: siehe Task #179 Abschlussvermerk
-    (separat, da eigenes Budget-/Artefakt-Tracking).
+    `swift test`: 1052 Tests lokal gruen.
+  - **UI-verifiziert (TestingBot, iPhone 15/iOS 18.0, App-Build aus Commit `3f3b751`,
+    `tb://129e4b5d66e72bf33800340a`), 2026-10-17:** vollstaendiger Flow "+"→"Build Plan"→
+    "Strength & Endurance Combined"→"Running"→"Work toward a goal with a run coach"→Alltagsrahmen→
+    "Adopt Plan" real auf dem Simulator durchlaufen. Bestaetigt: alter trainingsmittel-direkter
+    Schritt NICHT sichtbar (Regression zum Cardio-Handoff-Pfad ausgeschlossen), 4 Zielkarten + Hybrid-
+    Ausdauerform-Unterfrage + Laufcoach-Frage erscheinen korrekt, Alltagsrahmen-Schritt (Equipment-
+    Zusammenfassung + 2 Stepper) korrekt, "Adopt Plan" erzeugt den Plan und schliesst den Builder.
+    Anschliessend ueber Profil (More-Tab) verifiziert, dass die Wahl tatsaechlich auf
+    `UserBodyProfile` landete: `cardioCoachingEnabled`-Switch-Wert `"1"` (= an) UND "Endurance type"
+    zeigt "Running" — `PlanBuilderView.applyEnduranceModalityChoiceIfNeeded(to:)` schreibt korrekt.
+    Nicht in dieser Runde TestingBot-geprueft (Linux-Tests bzw. Code-Review decken sie ab, aber
+    keine reale Apple-UI-Bestaetigung): reine Endurance-Karte ("Running & Endurance"), Hypertrophie/
+    Maximalkraft-Unterwahl der Kraft-Karte, "ohne Coach"-Option. Fehlgeschlagene Diagnose-Artefakte
+    (zwei Skript-Anlaeufe mit Session-Timeout bzw. mehrdeutigem "More"-Label-Selektor) sind in
+    `scratchpad/tb-diag/` dokumentiert, haben aber zu keinem App-Bug gefuehrt — reine Testskript-
+    Fragilitaet (zwei UI-Elemente teilen sich zufaellig das gleiche Accessibility-Label "More").
   - Offen/vertagt: visueller Wocheneditor mit Drag&Drop (P3.2), Fixierungs-UI (P3.2), 3 gezielte
     Alternativen (P3.3), Header-Konvention (`DeltiqHeader`, Haken-Label) fuer `PlanBuilderView`
     (P3.4) — Umfang dieser Runde war explizit auf P3.1 begrenzt.
