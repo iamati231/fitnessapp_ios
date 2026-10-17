@@ -350,7 +350,23 @@ umgesetzt (Task #203, 2026-10-17).
     Button-Text reagiert NICHT auf die Geraete-Sprache. Vorbestehend, nicht durch P4.1 eingefuehrt und
     nicht Teil von dessen Spezifikationsumfang; bewusst nicht im Rahmen dieser Abnahme mitgefixt
     (Scope-Disziplin), hier nur dokumentiert, damit es nicht wieder verloren geht.
-- P4.2 Kompakte "Deine erste Trainingswoche"-Vorschau direkt nach den Onboarding-Fragen.
+- P4.2 **Implementiert** (Commit folgt, 2026-10-17; Apple-Build/UI-Verifikation ausstehend):
+  `preferencesAndPlanStep` IST bereits der Schritt direkt nach allen Onboarding-Fragen — die
+  empfohlene Plan-Karte (`recommendedPlanCard`) zeigte dort bisher nur Name/Tagline/Begruendung,
+  die tatsaechliche Wochenstruktur sah der User erst nach einem zusaetzlichen Tap in
+  `TemplatePreviewView` (volle Tag-fuer-Tag-Uebungsliste). Neue `firstWeekPreview(_:)`-Zeile
+  (`OnboardingView.swift`) zeigt direkt in der empfohlenen Karte ALLE Trainingstage auf einen Blick
+  OHNE Uebungsdetails — nur Tag-Nummer + Tagtyp (`DaySpec.displayName`, bereits lokalisiert) als
+  kompakte Chips in einem `LazyVGrid` (kein verschachteltes horizontales `ScrollView` innerhalb des
+  tappbaren Karten-Buttons, um Gesten-Konflikte zu vermeiden). Nutzt `template.days` (Basis-Variante)
+  statt der equipment-aufgeloesten `ResolvedPlanSelection`, da Substitution nur Uebungen INNERHALB
+  eines Tages ersetzt, nie dessen Typ/Reihenfolge — fuer eine reine Tagtyp-Vorschau unveraendert
+  korrekt, spart aber den vollen Substitutions-Resolve nur fuers Teaser-Rendering. Neuer
+  Lokalisierungs-Key `onboarding.plan.firstWeek.title` (DE/EN/TR). Build (`swift build`) + volle
+  Testsuite (1061 Tests) lokal gruen; keine neue Core-Logik, daher kein neuer Unit-Test noetig — reine
+  UI-Komposition bestehender, bereits getesteter Daten (`ProgramTemplate.days`). Apple-Kompilierung
+  und TestingBot-UI-Verifikation (insbesondere: Chips rendern korrekt bei grosser Dynamic-Type-Stufe,
+  `LazyVGrid` bricht wie erwartet um) noch ausstehend — folgt vor Abschluss von P4.
 - P4.3 Radfahren als geführte Ausdauerform-Option — **weitgehend bereits durch P4.1 abgedeckt**:
   `EnduranceModality.cycling` ist bereits eine vollwertige, lokalisierte Auswahlkarte im neuen
   `.enduranceModality`-Schritt (siehe oben, Dump bestaetigt die Karte "Cycling, Cycling is the focus

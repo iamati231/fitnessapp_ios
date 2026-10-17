@@ -1657,6 +1657,7 @@ public struct OnboardingView: View {
                     }
                 }
                 recommendationReasonLines(reasons, template: template)
+                firstWeekPreview(template)
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1669,6 +1670,53 @@ public struct OnboardingView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    /// P4.2 (Doc01 "kompakte 'Deine erste Trainingswoche'-Vorschau direkt nach
+    /// den Onboarding-Fragen"): `preferencesAndPlanStep` IST bereits der
+    /// Schritt direkt nach allen Fragen — bisher zeigte die empfohlene Karte
+    /// aber nur Name/Tagline/Begruendung; die tatsaechliche Wochenstruktur sah
+    /// der User erst nach einem zusaetzlichen Tap in `TemplatePreviewView`
+    /// (volle Tag-fuer-Tag-Uebungsliste, bewusst NICHT "kompakt"). Diese
+    /// Zeile zeigt ALLE Trainingstage auf einen Blick, OHNE Uebungen — nur
+    /// Tag-Nummer + Tagtyp (`DaySpec.displayName`, bereits lokalisiert). Nutzt
+    /// `template.days` (Basis-Variante) statt der equipment-aufgeloesten
+    /// `ResolvedPlanSelection`: eine Substitution ersetzt ausschliesslich
+    /// Uebungen INNERHALB eines Tages, nie dessen Typ/Reihenfolge — fuer eine
+    /// reine Tagtyp-Vorschau macht das keinen Unterschied, spart hier aber den
+    /// vollen Substitutions-Resolve nur fuers Teaser-Rendering. `LazyVGrid`
+    /// statt horizontalem `ScrollView`, damit keine verschachtelte
+    /// Scroll-Geste innerhalb des tappbaren Karten-`Button` entsteht.
+    @ViewBuilder
+    private func firstWeekPreview(_ template: ProgramTemplate) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("onboarding.plan.firstWeek.title", bundle: .module)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.Deltiq.textSecondary)
+                .padding(.top, 6)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 68), spacing: 6)], alignment: .leading, spacing: 6) {
+                ForEach(template.days, id: \.sequenceIndex) { day in
+                    VStack(spacing: 2) {
+                        Text("\(day.sequenceIndex)")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 18, height: 18)
+                            .background(Color.deltiqOrange)
+                            .clipShape(Circle())
+                        Text(day.displayName)
+                            .font(.caption2)
+                            .foregroundStyle(Color.primary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                    .background(Color.Deltiq.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
     }
 
     /// Bis zu 3 einzelne Checkmark-Zeilen aus den tatsaechlichen Treffern —

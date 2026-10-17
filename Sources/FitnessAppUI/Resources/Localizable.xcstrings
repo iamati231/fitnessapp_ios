@@ -49635,6 +49635,29 @@
           }
         }
       }
+    },
+    "onboarding.plan.firstWeek.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine erste Trainingswoche"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your first training week"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İlk antrenman haftan"
+          }
+        }
+      }
     }
   }
 }

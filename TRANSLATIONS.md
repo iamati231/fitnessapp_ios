@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2158 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2159 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2158 / 2158** (100%) | 0 |
-| 🇬🇧 English (EN) | **2158 / 2158** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2158 / 2158** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2159 / 2159** (100%) | 0 |
+| 🇬🇧 English (EN) | **2159 / 2159** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2159 / 2159** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1458,7 +1458,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `muscleVolume.bucket.overreaching` | Übervolumen | Overreach | Aşırı yük |
 | `muscleVolume.bucket.untrained` | Untrainiert | Untrained | Eğitilmemiş |
 
-## `onboarding.*`  (94 Keys)
+## `onboarding.*`  (95 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1538,6 +1538,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.plan.equipmentMatch` | Equipment passend | Equipment match | Ekipman uyumlu |
 | `onboarding.plan.fallbackRecommended` | Beste verfügbare Option | Best available option | Mevcut en iyi seçenek |
 | `onboarding.plan.fallbackRecommendedFootnote` | Mit deinen aktuellen Angaben gibt es keine perfekte Übereinstimmung — das ist die naheliegendste verfügbare Option. | There's no perfect match for your current answers — this is the closest available option. | Mevcut yanıtlarınla tam uyan bir seçenek yok — bu, mevcut en yakın seçenek. |
+| `onboarding.plan.firstWeek.title` | Deine erste Trainingswoche | Your first training week | İlk antrenman haftan |
 | `onboarding.plan.goalMatch` | Passt zu deinem Ziel | Matches your goal | Hedefine uygun |
 | `onboarding.plan.levelMatch` | Level passend | Level match | Seviye uyumlu |
 | `onboarding.plan.metadataLine` | %1$lld Tage · %2$@ | %1$lld days · %2$@ | %1$lld gün · %2$@ |
