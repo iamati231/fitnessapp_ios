@@ -244,11 +244,26 @@ umgesetzt (Task #203, 2026-10-17).
   Epos nie allein auf gruene Linux-Tests vertraut — Codemagic `ios-app` (Build app+widget fuer iOS
   Simulator) UND `swift-package` (Build + `swift test` + Build library products fuer iOS Simulator)
   beide `success` fuer Commit `0976d84`.
-  **Noch offen (TestingBot-UI-Verifikation):** Drag-Geste, "Verschieben nach…"-Menu,
-  Fixierungs-Toggle + Ablehnungs-Toast lassen sich nicht ueber Linux-Tests oder den reinen Build
-  pruefen — per Vorgabe "kein Task gilt allein wegen gruener Linux-Tests/Apple-Build als
-  abgeschlossen, UI-Verifikation ist ein eigener Status". P3.2 bleibt bis dahin NICHT als
-  vollstaendig abgenommen markiert.
+  **UI-verifiziert ✅ (TestingBot, iPhone 15/iOS 18.0, App-Build aus Commit `0976d84`,
+  `tb://cebefb6dd65abbe0132c9b24`), 2026-10-17:** vollstaendiger Flow real auf dem Simulator
+  durchlaufen (5-Tage-Hybridplan ueber den Alltagsrahmen-Stepper erzeugt). Bestaetigt: alle 5 Tage
+  zeigen ein "Day options"-Menu mit "Move to…"/"Lock position"/"Lock content"; "Lock position" auf
+  Tag 1 erzeugt sichtbar das `pin.fill`-Badge UND haengt "Position locked" an die VoiceOver-Ansage
+  an; der Versuch, Tag 2 ("Easy Run") per "Move to… → Position 1" an die fixierte Position 1 zu
+  verschieben, wird korrekt ABGELEHNT — Reihenfolge bleibt unveraendert (`[Intervals, Easy Run, …]`)
+  UND der Toast "Can't move this day: a pinned day would lose its position." erscheint exakt wie im
+  Code hinterlegt; nach "Unlock position" gelingt dieselbe Verschiebung und die Reihenfolge aendert
+  sich nachweislich zu `[Easy Run, Intervals, …]`; "Lock content" erzeugt sichtbar das
+  `lock.fill`-Badge. Alle Kern-Mechaniken des Wocheneditors (Fixierung, zugaengliche
+  Verschieben-Alternative, Ablehnungs-Feedback) damit real auf Apple-Infrastruktur bestaetigt — die
+  native Drag-Geste selbst wurde NICHT separat simuliert (WebDriver-Drag fuer SwiftUI-`List.onMove`
+  ist nicht zuverlaessig scriptbar), ruft aber denselben, hier bereits verifizierten Code-Pfad
+  (`moveDraftDay`/`PlanDraft.moveDay`) auf wie das "Move to…"-Menu. TestingBot-Budget nach diesem
+  Testpaket (4 Sessions in dieser P3.1/P3.2-Runde): weiterhin 58210s laut `/v1/user` — unveraendert
+  gegenueber dem Stand vor der Runde, vermutlich Abrechnungs-Verzoegerung (bereits in der P3.1-Notiz
+  vermerkt), NICHT als "kostenlos/unbegrenzt" zu interpretieren.
+  P3.2 ist damit **vollstaendig abgenommen** (Implementiert + Apple-kompiliert + Tests bestanden +
+  UI-verifiziert, alle vier getrennt bestaetigt).
 - P3.3 Gezielte Alternativen (zuerst Alternative 1 über `replaceContent`, dann 2 und 3) — offen.
 - P3.4 Header/Label/Discard-Guard auf `DeltiqHeader`-Muster umstellen — offen.
 
