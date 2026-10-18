@@ -1347,6 +1347,139 @@ Diagnoseweg). P7 läuft bereits parallel/danach weiter.
 stehen.
 
 **P9 — Verifikation, Regression, Dokumentation (laufend):**
+
+**Priorität 1 ✅ Mehrplan-Fall vollständig geprüft UND behoben (Commits `6fd5a34`/`dc699ff`,
+2026-10-18) — echter funktionaler Bedienablauf-Fehler gefunden, nicht nur eine Berechnungsfrage:**
+
+**Befund:** die Settings-Fälligkeits-Anzeige (`FourWeekReviewDueStatus.isAnyDue`) aggregierte
+bereits korrekt über ALLE aktiven Pläne, aber `FourWeekReviewView` zeigte beim Tippen auf die
+Zeile IMMER nur den nach Name ERSTEN aktiven Plan (`FourWeekReviewAssembler`s "ein Plan"-
+Vereinfachung, ursprünglich nur für den Review-INHALT gedacht). Bei zwei aktiven Plänen, von denen
+nur der ZWEITE fällig war, landete der Nutzer beim Antippen des Fälligkeits-Hinweises
+IMMER beim ERSTEN — dessen Abschluss änderte nichts an der weiterhin bestehenden Fälligkeit des
+zweiten, und es gab KEINEN Weg, ihn über die Oberfläche zu erreichen. Code-Audit bestätigt zudem,
+dass mehrere gleichzeitig aktive Pläne über den Standard-Produktpfad real entstehen: sowohl die
+direkte Onboarding-Template-Adoption als auch `PlanBuilderView.adoptPlan()` rufen letztlich
+`ProgramInstantiator.instantiate` auf, das einen neuen Plan unconditioned `isActive: true` setzt
+— OHNE einen bereits aktiven Plan zu deaktivieren (die einzige Deaktivierungsstelle im gesamten
+Repo ist `PlanEditorView.setActive`, hier nicht durchlaufen). Ein gegenteiliger Kommentar in
+`PlanGeneratorInstantiator.swift` ("deaktiviert alle Alt-Pläne") ist nach diesem Code-Audit
+nachweislich veraltet/falsch — als separater, kleiner Doku-Fund notiert, nicht im Rahmen dieses
+Auftrags korrigiert (kein funktionaler Code-Pfad, keine Spezifikationsfrage).
+
+**Fix:** `FourWeekReviewEntryView` (neu) ist jetzt das tatsächliche `NavigationLink`-Ziel der
+"Four-week review"-Zeile. Bei 0/1 aktiven Plänen unverändertes Verhalten (direkt
+`FourWeekReviewView`, kein zusätzlicher Zwischenschritt für den weit häufigeren Fall). Bei 2+
+aktiven Plänen zeigt sie zuerst eine einfache Auswahlliste ("Choose a plan") mit je einer Zeile
+pro Plan, jede mit ihrem EIGENEN Fälligkeits-/Abschluss-Status; Auswahl navigiert zu GENAU DIESEM
+Plan. `FourWeekReviewView` nimmt jetzt optional einen expliziten Plan;
+`FourWeekReviewAssembler.assemble(in:for:)` akzeptiert denselben Plan, statt ihn erneut selbst
+auszuwählen. Abschluss eines Plans bleibt additiv PRO PLAN (bereits in P7.3 so gebaut) und
+verändert den Status des anderen Plans nicht — keine automatische Auswahl nur nach alphabetischer
+Reihenfolge mehr für die FÄLLIGKEITS-AUFLÖSUNG (die "erster Plan nach Name"-Vereinfachung bleibt
+ausschließlich für den Review-INHALT bestehen, wenn kein Plan explizit gewählt wurde — unverändert
+offen dokumentiert).
+
+**Implementiert:** `FourWeekReviewEntryView.swift` (neu), `FourWeekReviewView` (expliziter
+`plan:`-Parameter + Plan-Namens-Kontextkapsel, wenn explizit ausgewählt), `FourWeekReviewAssembler`
+(`assemble(in:for:)`, `allActivePlans(in:)`), `fourWeekReviewDueBadgeText` als geteilte
+Formatierungsfunktion (eine Quelle der Wahrheit zwischen Einzel-Screen und Liste). Bewusst KEIN
+`@Query` in `FourWeekReviewEntryView` — selbst eine verschachtelte `NavigationLink`-Destination
+(gleiche Lehre wie P6.3/P7.2), ein einmaliger `.task`-Fetch genügt; Beobachtungs-Fallback wird
+ebenfalls nur aus diesem `.task` heraus gesetzt, nie aus `body`.
+
+**Apple-kompiliert:** `ios-app` (zuletzt Build `6ad4cc6c6551fc66bf1bf0ac`) + `swift-package`
+(zuletzt Build `6ad4cc6d21e414537ae5bbf6`) beide `success`, alle Schritte grün.
+
+**Tests bestanden:** 1355/1355 auf macOS grün (1352 vor P9 + 3 neu: `testAllActivePlansReturnsOnlyActiveOnesSortedByName`,
+`testAssembleForExplicitPlanUsesThatPlansParticipationNotTheAlphabeticallyFirst`,
+`testMissingColumnEntirelyBehavesLikeAnEmptyValueForEveryTypedAccessor`). Linux: 1111/1111 grün,
+dieselbe bekannte Einschränkung (SwiftData-Tests kompilieren, laufen dort nicht real aus).
+
+**Echter Fund während der Testerstellung (korrigiert, kein Produktbug):** der erste Entwurf von
+`testAssembleForExplicitPlanUsesThatPlansParticipationNotTheAlphabeticallyFirst` scheiterte auf
+Apples Toolchain real — `realOccurrences(in:)` liest ALLE `WorkoutSession`s der Datenbank GLOBAL
+(dokumentierte, vorbestehende Einschränkung: `WorkoutSession` hat keine stabile Plan-Referenz), die
+für den zweiten Testplan eingetragenen Sessions flossen dadurch fälschlich auch in die
+Teilnahme-Auswertung des ERSTEN Plans ein. Test korrigiert: die beiden Pläne unterscheiden sich
+jetzt strukturell über die Anzahl der Trainingstage (ein Tag vs. keiner) statt über
+`WorkoutSession`-Daten — prüft weiterhin exakt `assemble(in:for:)`, nicht die separate, bereits an
+anderer Stelle (P6.2) offen dokumentierte Session-Zuordnungs-Grenze.
+
+**UI-verifiziert (TestingBot, Build `tb://679d3a5de1cfc7e98579af9a`, vollständiger
+Mehrplan-Bedienablauf — EIN gezielter Re-Lauf nötig, siehe unten):**
+- ✅ Onboarding-Adoption (Plan A, "Football Athletic") + "Build Plan"-Adoption eines ZWEITEN,
+  andersartigen Plans (Plan B, "Individueller Plan", Ziel "Strength & Muscle") — beide danach
+  real gleichzeitig `ACTIVE` (per XML-Dump bestätigt, "2 PLANS").
+- ✅ Regressions-Check "Quick check-in" (unveränderter Sibling in `SettingsAppExperienceView`):
+  öffnet weiterhin fehlerfrei — die P6.3/P7.2-Render-Endlosschleife (zwei unconditional
+  NavigationLinks unterschiedlichen Ziel-Typs als direkte Siblings) ist durch den neuen
+  `FourWeekReviewEntryView`-Zieltyp NICHT zurückgekehrt.
+- ✅ Tippen auf "Four-week review" bei 2 aktiven Plänen zeigt jetzt die Planauswahl ("Choose a
+  plan" / "Active plans": "Football Athletic", "Individueller Plan") — NICHT mehr automatisch nur
+  einen der beiden.
+- ✅ Ersten Plan ("Football Athletic") öffnen → Kontextkapsel zeigt dessen Namen, Checkmark
+  "Complete review" sichtbar.
+- ✅ Abschluss → "COMPLETED ON OCT 18, 2026"-Badge erscheint SOFORT für GENAU diesen Plan.
+- ✅ Zurück zur Auswahl → "Football Athletic" zeigt jetzt "COMPLETED ON OCT 18, 2026" in der
+  Zeile, "Individueller Plan" zeigt WEITERHIN NICHTS — Abschluss von A verändert B nachweislich
+  nicht.
+- ✅ Zweiten Plan ("Individueller Plan") öffnen → eigener Kontext, KEIN Completed-Badge, Checkmark
+  weiterhin vorhanden — vollständig unabhängig von Plan A.
+- **Diagnose-Hinweis (Testskript-Annahme, kein App-Bug):** der erste TestingBot-Lauf scheiterte an
+  einer falschen Skript-Annahme — "Adopt Plan" aus dem Builder navigiert NICHT zur Plans-Liste
+  zurück, sondern (bereits in P3.4 bestätigtes, bewusstes Verhalten) direkt in den
+  `PlanEditorView` des neu angelegten Plans. Mit einem zusätzlichen "Zurück"-Tap lief der
+  komplette Ablauf im zweiten, gezielten Re-Lauf fehlerfrei durch — ein Skript-Fix mit konkreter
+  Hypothese, keine blinde Wiederholung.
+
+**Priorität 1 ist damit sowohl als Bedienablauf geprüft als auch als funktionale Lücke behoben,
+nicht nur als Berechnung bestätigt.**
+
+**Priorität 2 — Fälligkeits-UI (`.due`-Fall) mit echtem 28+-Tage-Plan: NICHT wirtschaftlich
+geräteverifizierbar, konkrete Grenze bestätigt (keine neue Diagnose nötig, bereits in P7.3
+dokumentiert und hier erneut geprüft):** `DataImportView.swift` bindet den Restore-Weg an einen
+System-`fileImporter(UTType.zip)` — er braucht eine Datei, die bereits in der Dateien-App des
+Testgeräts liegt. Es gibt dafür keinen bestehenden, mit vertretbarem Aufwand nutzbaren
+Einspeisungsweg aus einer TestingBot-Automatisierung heraus (kein Debug-Seed-Menü im Repo
+gefunden, kein unterstützter Datei-Push in die System-Dateien-App). Ein Workaround über einen
+Safari-Download + manuelle Dateien-App-Interaktion wäre der in der Vorgabe ausdrücklich
+ausgeschlossene "breite Testinfrastruktur-Umbau" — nicht versucht. **Damit bleibt bestehen:** die
+tatsächliche "Due"-Badge-DARSTELLUNG für einen wirklich 28+ Tage aktiven Plan ist NICHT
+geräteverifiziert; die zugrundeliegende Berechnung ist vollständig Core-getestet
+(`FourWeekReviewDueCalculatorTests`: vor/genau/über Fälligkeit), und dieselbe Text-/
+Formatierungs-Codezeile (`fourWeekReviewDueBadgeText`) ist für den `.completed`-Fall bereits
+on-device als fehlerfrei bewiesen (siehe P7.3- und P9-TestingBot-Läufe). Der Completed-Fall wird
+hier ausdrücklich NICHT als Ersatzbeweis für den Due-Fall ausgegeben — beide bleiben als zwei
+getrennte Befunde ausgewiesen. **Verbleibende manuelle Abnahme:** auf einem echten Gerät mit
+einem seit 28+ Tagen aktiven Plan (oder nach Ablauf dieser Zeit in Produktion) das "Due"-Badge an
+der Settings-Zeile und im Picker einmal visuell gegenprüfen.
+
+**Priorität 3 — Restprüfungen, nach Risiko geordnet, nur tatsächlich betroffene/fehlende Pfade:**
+- ✅ **Betroffene Navigation (Quick check-in/Four-week review):** oben unter Priorität 1 bereits
+  im selben TestingBot-Lauf mitgeprüft — kein Rückfall der P6.3/P7.2-Render-Endlosschleife.
+- ✅ **Altbackup ohne neue Review-Spalten:** jetzt auf Parser-Ebene (`CSVReader`/`CSVRow`, Linux-
+  testbar) bewiesen, nicht nur durch Code-Lesung behauptet — eine in der Kopfzeile komplett
+  fehlende Spalte verhält sich für JEDEN typisierten Accessor exakt wie ein leerer Wert
+  (`testMissingColumnEntirelyBehavesLikeAnEmptyValueForEveryTypedAccessor`). Deckt rückwirkend
+  auch die bereits bestehenden additiven Spalten (`activated_at_utc` u.a.) ab, nicht nur P7.3s
+  neue.
+- ✅ **Export/Import mit mehreren unterschiedlichen Review-Zuständen:** bereits in P7.3 über
+  `DataPortabilityRoundtripTests` abgedeckt (Abschluss+Entscheidung, nie gesetzt, Beobachtungs-
+  Fallback — jeweils über einen echten Export/Import-Roundtrip, nicht nur CSV-Zeilen-Parsing).
+  Kein zusätzlicher Lauf nötig, keine neuen Änderungen an diesem Pfad in P9.
+- **Builder-Fixierungen, sichere Neugenerierung, Übernehmen (#205/#206/#207):** NICHT erneut
+  ausgeführt — diese Pfade (`PlanBuilderView`, `PlanDraft`, `PlanGenerator`) wurden durch P9 nicht
+  verändert; die bestehende, bereits dokumentierte P3-Abnahme (siehe oben im Audit) bleibt gültig
+  und wird hier nicht pauschal wiederholt.
+- **Dokumentierte Accessibility-/Dynamic-Type-/Cycling-/Cooldown-Nachprüfungen:** unverändert
+  betroffen von keiner P9-Änderung, bleiben als separate, bereits an anderer Stelle offen
+  ausgewiesene Restliste bestehen (siehe "Nicht abschließend geklärt" unten) — nicht Teil dieser
+  Runde.
+
+**P9-Historischer Hinweis:** die drei folgenden Punkte stammen aus einer FRÜHEREN Runde dieses
+Audits (vor der Vier-Wochen-Rückblick-Arbeit) und sind ausdrücklich als historisch zu lesen, nicht
+als Teil der aktuellen P9-Runde:
 - RIR-Layout auf echtem Gerät/Simulator bei größter Dynamic-Type-Stufe verifizieren (Code ist
   fertig, reine Verifikation).
 - Entscheidung zum UI-Test-Target: weiter manuelle TestingBot-Spotchecks (etabliertes, aber
