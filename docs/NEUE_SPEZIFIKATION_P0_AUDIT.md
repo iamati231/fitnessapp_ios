@@ -970,25 +970,61 @@ Diagnoseweg). P7 läuft bereits parallel/danach weiter.
   Unterschied** (~8.090 Marker in vergleichbarem Zeitfenster, der Hang bleibt). Diese Hypothese ist
   damit widerlegt, nicht die Ursache.
 
-  **Offen, nicht spekulativ behauptet:** Die tatsächliche Ursache ist noch nicht gefunden.
-  Mindestens ein weiteres `@Query private var profiles: [UserBodyProfile]` existiert eine Ebene
-  höher in `SettingsView` (der "More"-Tab-Wurzel, bleibt als Vorgänger im `NavigationStack`
-  bestehen) — ob dieses oder ein grundsätzlich anderer Mechanismus (z. B. wiederholtes
-  Re-Evaluieren von `NavigationLink`-Destination-Closures durch SwiftUI selbst, unabhängig von
-  jedem `@Query`) die Ursache ist, ist NICHT belegt und wird hier bewusst nicht behauptet. Eine
-  statische Suche nach einem wiederholten Schreiber auf `UserBodyProfile` fand keinen Treffer
-  (nur Export/Import lesen/schreiben es, beide nicht im laufenden UI-Pfad).
+  **Befund 4 (feingranulare Zähler statt NSLog-pro-Aufruf, Beleg — korrigiert Befund 2
+  methodisch):** Auf ausdrücklichen Hinweis dieser Runde wurde das Logging selbst auf einen
+  begrenzten Snapshot (ein `NSLog` alle 300 ms, nicht pro Ereignis) umgestellt, um auszuschließen,
+  dass die Messung die Last selbst erzeugt. Ergebnis: **kein 490-Hz-Dauersturm.** Stattdessen
+  zeigen sich wenige, aber lange (10–14 Sekunden) Stillstände, in denen selbst der eigene
+  300-ms-Snapshot-Timer aussetzt, gefolgt von kurzen Schüben (z. B. +9 Rekonstruktionen auf
+  einmal). Die ursprüngliche ~490/s-Zahl aus Befund 2 war wahrscheinlich ein Artefakt des dichten
+  NSLog-pro-Aufruf-Loggings selbst — das bestätigt die methodische Sorge, mit der diese Runde
+  eingeleitet wurde.
+
+  **Befund 5 (Kontrollversuch, isolierter Einstieg, Beleg — zentraler Fund):** `FourWeekReviewView`
+  wurde testweise zusätzlich DIREKT von `SettingsView` aus verlinkt, unter Umgehung von
+  `SettingsAppExperienceView`. **Ergebnis: vollständig fehlerfrei** — der Screen rendert sofort
+  korrekt (Titel, "Your plan fits – keep going!", Datenlücken-Karte), kein Stillstand. Eine
+  MINIMALE statische Kontroll-Destination (ein einzelner `Text`) an der GLEICHEN Stelle wie die
+  echte "Four-week review"-Zeile in `SettingsAppExperienceView` zeigt dagegen densel­ben
+  Stillstand wie die echte Zeile. **Damit ist zweifelsfrei belegt: `FourWeekReviewView` selbst ist
+  nicht die Ursache.** Das Problem hängt ausschließlich an `SettingsAppExperienceView` als
+  Navigationsquelle (bzw. an der Navigationstiefe: zwei verschachtelte Pushes
+  `SettingsView → SettingsAppExperienceView → Ziel` vs. nur einem `SettingsView → Ziel`).
+
+  **Befund 6 (Hypothese geprüft und widerlegt, Beleg):** `SettingsAppExperienceView` ist der
+  einzige Screen im Repo, der `.deltiqSwipeBackEnabled()` aufruft (`SwipeBackHostController`,
+  einziger UIKit-Interop-Code im Projekt, installiert bei jedem `viewWillAppear` neu den
+  `interactivePopGestureRecognizer`-Delegate). Test: genau diese eine Zeile entfernt, sonst nichts
+  geändert, neu gebaut, mit identischem Testlauf erneut geprüft. **Ergebnis: kein Unterschied** —
+  exakt dieselbe Zähler-Sequenz (0→2→11→14, Stillstände von ~14 s und ~11 s) wie im Lauf davor,
+  bis auf die Sekunde reproduzierbar. Diese Hypothese ist damit widerlegt.
+
+  **Offen, nicht spekulativ behauptet:** Die tatsächliche Ursache ist noch nicht gefunden. Beide
+  `@Query`-Ebenen (Befund 3) und die UIKit-Swipe-Back-Interop (Befund 6) sind ausgeschlossen. Die
+  fast identische Zähler-Sequenz über zwei unabhängige Code-Varianten hinweg (Befund 6) spricht
+  eher für einen von unserem Anwendungscode UNABHÄNGIGEN, deterministischen Mechanismus als für
+  einen klassischen Render-Loop im eigenen Code — zwei nicht belegte, aber plausible Kandidaten,
+  die als Hypothesen offen bleiben: (a) ein SwiftUI/`NavigationStack`-Verhalten speziell bei
+  zwei verschachtelten Pushes mit `NavigationLink`-in-`ScrollView` (statt `List`) auf der
+  mittleren Ebene, oder (b) eine periodische Hintergrundaktivität von WebDriverAgent/XCTest
+  selbst (z. B. App-Zustands-Polling), die SwiftUI zur Neuauswertung zwingt. Eine echte
+  Stack-Sample-/Time-Profiler-Aufnahme zum Hang-Zeitpunkt war in dieser Umgebung nicht möglich
+  (kein Instruments/Xcode-GUI-Zugriff, nur TestingBot-WebDriver) — diese Grenze wird hier
+  ausdrücklich benannt statt stillschweigend übergangen. Eine statische Suche nach einem
+  wiederholten Schreiber auf `UserBodyProfile` fand weiterhin keinen Treffer.
 
   **Tragweite:** Dieser Fund betrifft potenziell nicht nur die neue P7.2-Zeile, sondern den
   gesamten `SettingsAppExperienceView`-Screen — die bereits abgenommene "Quick check-in"-Zeile
-  (`PeriodicCheckInView`, P6.3) ist nach aktuellem Stand nur deshalb nicht sichtbar betroffen, weil
-  ihre Rekonstruktion seit dem P6.3-Fix "billig" ist (kein `@Query`, keine schwere Body-Konstruktion),
-  nicht weil die zugrunde liegende Render-Schleife tatsächlich beseitigt wurde.
+  (`PeriodicCheckInView`, P6.3) wurde mit der NEUEN, feingranularen Instrumentierung noch nicht
+  erneut geprüft; nach aktuellem Stand ist offen, ob sie von demselben Mechanismus betroffen, aber
+  wegen geringerer Kosten pro Rekonstruktion nicht sichtbar ist, oder ob sie tatsächlich
+  unbetroffen bleibt.
 
   **Diagnose-Zweige (temporär, enthalten nur Instrumentierung, keine Produktivänderungen):**
-  `diag-p72-fourweekreview-hang` (zwei Commits: NSLog-Instrumentierung, dann die widerlegte
-  `profiles`-Bisektion) — auf GitHub gepusht, noch nicht aufgeräumt, da die Diagnose nicht
-  abgeschlossen ist.
+  `diag-p72-fourweekreview-hang` (vier Commits: NSLog-Instrumentierung, widerlegte
+  `profiles`-Bisektion, feingranulare Zähler + Kontrollen, widerlegte
+  `deltiqSwipeBackEnabled()`-Hypothese) — auf GitHub gepusht, noch nicht aufgeräumt, da die
+  Diagnose nicht abgeschlossen ist.
 
   **P7.2 bleibt bis zur Behebung dieses Blockers UI-seitig offen.** Code/Data-Abnahme (oben) ist
   und bleibt davon unabhängig gültig.
