@@ -123,4 +123,28 @@ final class CSVRoundtripTests: XCTestCase {
         XCTAssertEqual(row.bool("c"), true)
         XCTAssertNil(row.bool("d"))
     }
+
+    // MARK: Altbestand — additive Spalten, die eine ÄLTERE CSV gar nicht kennt
+
+    /// P9-Audit-Nachweis: eine Spalte, die in der Header-Zeile komplett
+    /// FEHLT (echter Altbestand vor der Spalten-Einführung — nicht bloß ein
+    /// LEERER Wert einer bekannten Spalte), muss sich für jeden typisierten
+    /// Accessor exakt wie ein leerer Wert verhalten: `nil`, nie ein Crash,
+    /// nie ein erratener Wert. Trägt die zahlreichen "additive Spalte,
+    /// Altbestand liefert nil"-Kommentare in `DataImportService.swift`
+    /// (`activated_at_utc`, `review_completed_at_utc`, `generator_input_raw`,
+    /// …) erstmals auf Ebene des Parsers selbst nach, statt sich nur auf das
+    /// `?? ""`-Subscript-Verhalten zu verlassen.
+    func testMissingColumnEntirelyBehavesLikeAnEmptyValueForEveryTypedAccessor() throws {
+        // Bewusst OHNE "activated_at_utc"/"review_completed_at_utc"-Spalte —
+        // simuliert ein Backup von VOR deren Einführung.
+        let reader = try CSVReader("id,name\r\n1,Plan A\r\n")
+        let row = reader.rows()[0]
+        XCTAssertEqual(row["activated_at_utc"], "", "Subscript auf unbekannte Spalte muss leer sein, nie crashen")
+        XCTAssertNil(row.date("activated_at_utc"))
+        XCTAssertNil(row.int("activated_at_utc"))
+        XCTAssertNil(row.double("activated_at_utc"))
+        XCTAssertNil(row.optionalString("activated_at_utc"))
+        XCTAssertEqual(row.bool("activated_at_utc"), false, "bool() liefert fuer leer/fehlend false, nicht nil — wie fuer eine bekannte, aber leere Spalte")
+    }
 }

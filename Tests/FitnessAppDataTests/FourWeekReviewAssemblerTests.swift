@@ -147,11 +147,20 @@ final class FourWeekReviewAssemblerTests: XCTestCase {
     // MARK: - P9: explizite Planauswahl (Mehrplan-Bedienablauf)
 
     /// Beweist, dass `assemble(in:for:)` TATSÄCHLICH den übergebenen Plan
-    /// bewertet, nicht die "erster Plan nach Name"-Vereinfachung — "Alpha"
-    /// (ohne jede Session, würde `.concernsFound` liefern) sortiert
-    /// alphabetisch VOR "Beta" (vollständig eingehalten, `.keepAsIs`). Ohne
-    /// die explizite Auswahl würde dieser Test fälschlich Alphas Befund
-    /// zeigen.
+    /// bewertet, nicht die "erster Plan nach Name"-Vereinfachung. "Alpha"
+    /// (ein Trainingstag, deutlich verfehlte Teilnahme) sortiert alphabetisch
+    /// VOR "Beta" (gar keine Trainingstage — `.notReliablyEvaluable`, nie
+    /// faelschlich als `keepAsIs`-Erfolg gewertet). Ohne die explizite
+    /// Auswahl würde dieser Test fälschlich Alphas Befund zeigen.
+    ///
+    /// Bewusst OHNE `WorkoutSession`: `realOccurrences(in:)` liest ALLE
+    /// Sessions der Datenbank global, unabhaengig vom Plan (dokumentierte
+    /// Einschraenkung, `WorkoutSession` hat keine stabile Plan-Referenz) —
+    /// Sessions fuer EINEN der beiden Pläne würden fälschlich auch in die
+    /// Teilnahme-Auswertung des JEWEILS ANDEREN einfliessen und die
+    /// eigentliche Prüfung dieses Tests (wird der richtige Plan STRUKTURELL
+    /// ausgewählt) verdecken. Dieser Test prüft die Auswahl, nicht die
+    /// (separat bereits dokumentierte) Session-Zuordnungs-Einschränkung.
     func testAssembleForExplicitPlanUsesThatPlansParticipationNotTheAlphabeticallyFirst() throws {
         let container = try makeContainer()
         let context = container.mainContext
@@ -161,19 +170,11 @@ final class FourWeekReviewAssemblerTests: XCTestCase {
         context.insert(alpha)
         context.insert(TrainingDay(name: "Ganzkörper", weekday: 2, type: .fullBody, plan: alpha))
 
+        // "Beta" hat bewusst KEINEN Trainingstag -> strukturell von Alpha
+        // unterscheidbar, ohne auf globale Sessions angewiesen zu sein.
         let beta = TrainingPlan(name: "Beta", programType: "custom", isActive: true)
         beta.activatedAt = d(2024, 1, 1)
         context.insert(beta)
-        let betaDay = TrainingDay(name: "Ganzkörper", weekday: 2, type: .fullBody, plan: beta)
-        context.insert(betaDay)
-        for offset in [0, 7, 14, 21] {
-            let date = utc.date(byAdding: .day, value: offset, to: d(2024, 1, 2))!
-            context.insert(WorkoutSession(
-                startTime: date, endTime: date.addingTimeInterval(3600),
-                durationMinutes: 60, exerciseCount: 1, totalSets: 0,
-                totalVolumeKg: 0, isCompleted: true, day: betaDay
-            ))
-        }
         try context.save()
 
         // Ohne explizite Auswahl: "Alpha" (erster nach Name), keine
@@ -183,13 +184,15 @@ final class FourWeekReviewAssemblerTests: XCTestCase {
             return XCTFail("Default-Auswahl sollte weiterhin Alpha (verfehlte Teilnahme) liefern: \(defaultReview.outcome)")
         }
 
-        // Mit expliziter Auswahl von "Beta": vollständig eingehalten.
+        // Mit expliziter Auswahl von "Beta": keine Trainingstage -> nicht
+        // auswertbar, NIE faelschlich als Erfolg (`keepAsIs` OHNE Datenlücke)
+        // interpretiert.
         let betaReview = FourWeekReviewAssembler.assemble(in: context, for: beta, now: d(2024, 2, 1), calendar: utc)
-        XCTAssertEqual(betaReview.outcome, .keepAsIs, "explizite Auswahl von Beta muss Betas eigene Teilnahme bewerten, nicht Alphas")
-        guard case .evaluated(let summary) = betaReview.participation else {
-            return XCTFail("Betas Teilnahme hätte auswertbar sein müssen: \(betaReview.participation)")
-        }
-        XCTAssertEqual(summary.missedCount, 0)
+        XCTAssertEqual(betaReview.outcome, .keepAsIs, "kein Befund erfindbar ohne jede Trainingstag-Grundlage")
+        XCTAssertTrue(
+            betaReview.dataGaps.contains(.participationNotReliablyEvaluable(.planHasNoTrainingDays)),
+            "Betas fehlende Trainingstage müssen als Datenlücke sichtbar sein, nicht stillschweigend als Erfolg gelten: \(betaReview.dataGaps)"
+        )
     }
 
     func testAllActivePlansReturnsOnlyActiveOnesSortedByName() throws {
