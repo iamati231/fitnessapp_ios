@@ -168,7 +168,7 @@ public final class WorkoutSession {
     /// `TrainingDayContentSnapshotWriter.capture(for:in:)` schreibbar, nie
     /// direkt — der Writer verweigert jede Änderung, sobald `isCompleted`
     /// `true` ist.
-    @Relationship(deleteRule: .cascade, inverse: \TrainingDayContentRecord.session)
+    @Relationship(deleteRule: .nullify, inverse: \TrainingDayContentRecord.session)
     public var contentRecord: TrainingDayContentRecord?
 
     public init(
