@@ -61,12 +61,11 @@ workflows:
           BUNDLE=$(find .build -name "FitnessAppPackageTests.xctest" -maxdepth 6 | head -1)
           XCTEST_BIN=$(xcrun --find xctest)
           lldb -b \
+            -k "thread backtrace all" \
+            -k "image lookup -a \$pc -v" \
+            -k "disassemble -a \$pc -c 60" \
+            -k "register read" \
             -o "run" \
-            -o "thread backtrace all" \
-            -o "image lookup -a \$pc -v" \
-            -o "disassemble -a \$pc -c 60" \
-            -o "register read" \
-            -o "bt" \
             -- "$XCTEST_BIN" -XCTest "FitnessAppDataTests.TrainingDayContentRecordTests/testCaptureOnASessionWithoutADayDoesNothing" "$BUNDLE" \
             > lldb-crash-backtrace.log 2>&1
           sleep 1
