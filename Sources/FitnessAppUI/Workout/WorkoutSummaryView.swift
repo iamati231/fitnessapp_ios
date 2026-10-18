@@ -340,7 +340,7 @@ public struct WorkoutSummaryView: View {
                 // sein echtes Minuten-Ziel als Obergrenze, nicht ein
                 // kuenstlicher 60-Min-Mindestwert, der einen kurzen EMOM-
                 // Deckel (z.B. 12 Min) sonst aushebeln wuerde.
-                Stepper(value: completedMinuteCountBinding, in: 0...(session.day?.timeCapMinutes ?? 60)) {
+                Stepper(value: completedMinuteCountBinding, in: 0...(contentSnapshotTimeCapMinutes ?? 60)) {
                     LabeledContent {
                         Text(String(format: String(localized: "summary.durationMinutes", bundle: .module),
                                     completedMinuteCountBinding.wrappedValue))
@@ -366,7 +366,7 @@ public struct WorkoutSummaryView: View {
                 // Gleiche Obergrenze wie EMOM oben: existiert der Tag noch,
                 // ist seine tatsaechliche Rundenzahl die sinnvolle Grenze,
                 // sonst ein grosszuegiger Fallback.
-                Stepper(value: circuitRoundsCompletedBinding, in: 0...(session.day?.circuitRounds ?? 20)) {
+                Stepper(value: circuitRoundsCompletedBinding, in: 0...(contentSnapshotCircuitRounds ?? 20)) {
                     LabeledContent {
                         Text(circuitRoundsCompletedValueText)
                             .foregroundStyle(Color.Deltiq.textSecondary)
@@ -417,7 +417,7 @@ public struct WorkoutSummaryView: View {
 
     private var circuitRoundsCompletedValueText: String {
         let rounds = session.circuitRoundsCompleted ?? 0
-        guard let target = session.day?.circuitRounds else { return "\(rounds)" }
+        guard let target = contentSnapshotCircuitRounds else { return "\(rounds)" }
         return "\(rounds) / \(target)"
     }
 
@@ -1091,21 +1091,20 @@ public struct WorkoutSummaryView: View {
             SummaryStat(label: String(localized: "summary.amrap.avgPace", bundle: .module),
                         value: amrapAvgPaceText)
         case .emom:
-            // Kein Snapshot-Feld fuer den Minuten-Deckel (anders als
-            // `dayName`) - v1-Vereinfachung. Degradiert auf "—", falls der
-            // Tag inzwischen geloescht wurde (`day`-Relationship ist
-            // `.nullify`), statt eine zweite Snapshot-Spalte einzufuehren.
-            let target = session.day?.timeCapMinutes
+            // P8 Stufe-2: Minuten-Deckel jetzt snapshot-first — der Tages-
+            // Snapshot (`TrainingDayContentSnapshot.timeCapMinutes`) trägt
+            // diesen Wert. Degradiert auf "—" nur noch, wenn für diese
+            // Session gar nie ein Snapshot erfasst wurde UND der Tag
+            // inzwischen gelöscht ist (Altbestand-Grenzfall).
+            let target = contentSnapshotTimeCapMinutes
             SummaryStat(label: String(localized: "summary.stat.minuteTarget", bundle: .module),
                         value: target.map { "\($0)" } ?? "—")
         case .forTime:
             SummaryStat(label: String(localized: "summary.stat.exercises", bundle: .module),
                         value: "\(session.exerciseCount)")
         case .circuit:
-            // Gleiche "kein Snapshot-Feld"-Vereinfachung wie EMOM oben -
-            // die konfigurierte Pause ist der zweite feste Rahmenwert neben
-            // der Rundenzahl (die schon der Hero-Stat traegt).
-            let restSeconds = session.day?.circuitRestSeconds
+            // P8 Stufe-2: siehe EMOM-Fall oben — jetzt snapshot-first.
+            let restSeconds = contentSnapshotCircuitRestSeconds
             SummaryStat(label: String(localized: "summary.stat.circuitRest", bundle: .module),
                         value: restSeconds.map { "\($0)s" } ?? "—")
         }
@@ -1195,7 +1194,7 @@ public struct WorkoutSummaryView: View {
     /// Vorzeitig-gespeichert-Hero, z.B. "8:37 VON 20:00" bei einem Zeit-
     /// Deckel bzw. nur die gelaufene Zeit ohne Deckel (Auf Zeit meist ohne).
     private var earlySaveStatusText: String {
-        guard let capMinutes = session.day?.timeCapMinutes else { return elapsedTimeText }
+        guard let capMinutes = contentSnapshotTimeCapMinutes else { return elapsedTimeText }
         return String(
             format: String(localized: "summary.early.progress", bundle: .module),
             elapsedTimeText, PaceCalculator.formatDuration(capMinutes * 60)
@@ -1265,7 +1264,7 @@ public struct WorkoutSummaryView: View {
             // Rundenziel - "3/5" liest sich als Fortschritt, nicht nur als
             // Ergebnis, gerade beim vorzeitigen Speichern.
             let completed = session.circuitRoundsCompleted ?? 0
-            let value = session.day?.circuitRounds.map { "\(completed)/\($0)" } ?? "\(completed)"
+            let value = contentSnapshotCircuitRounds.map { "\(completed)/\($0)" } ?? "\(completed)"
             return HeroStat(value: value, unit: timedFormatHeroUnit("summary.hero.unit.circuitRounds"))
         }
     }
@@ -1344,8 +1343,13 @@ public struct WorkoutSummaryView: View {
             }
             .listRowSeparatorTint(Color.Deltiq.divider)
         } else {
-            ForEach(exercisesWithLogs, id: \.exercise.persistentModelID) { entry in
-                exerciseSection(for: entry.exercise, logs: entry.logs)
+            ForEach(exercisesWithLogs) { group in
+                switch group {
+                case .live(let exercise, let logs):
+                    exerciseSection(for: exercise, logs: logs)
+                case .orphaned(_, let logs):
+                    orphanedExerciseSection(logs: logs)
+                }
             }
         }
         // DEL-136 Part C: "+ Übung hinzufügen" Section nur im History-Edit-
@@ -1379,17 +1383,125 @@ public struct WorkoutSummaryView: View {
         }
     }
 
+    /// P8 Stufe-2: snapshot-first für die drei Zeitformat-/Zirkel-
+    /// Zielparameter, die bislang live von `session.day` gelesen wurden
+    /// (Obergrenzen beim Nachbearbeiten des Ergebnisses UND reine
+    /// Anzeige-Stats). Für `.unreadable` bewusst `nil` statt Live-
+    /// Fallback — sonst würde ein beschädigter Snapshot stillschweigend
+    /// durch den (ggf. inzwischen anderen) Live-Tag ersetzt.
+    private func contentSnapshotFirst<T>(
+        _ fromSnapshot: (TrainingDayContentSnapshot) -> T?,
+        liveFallback: () -> T?
+    ) -> T? {
+        switch session.contentSnapshotState {
+        case .available(let snapshot): return fromSnapshot(snapshot)
+        case .notCaptured: return liveFallback()
+        case .unreadable: return nil
+        }
+    }
+
+    private var contentSnapshotTimeCapMinutes: Int? {
+        contentSnapshotFirst({ $0.timeCapMinutes }, liveFallback: { session.day?.timeCapMinutes })
+    }
+
+    private var contentSnapshotCircuitRounds: Int? {
+        contentSnapshotFirst({ $0.circuitRounds }, liveFallback: { session.day?.circuitRounds })
+    }
+
+    private var contentSnapshotCircuitRestSeconds: Int? {
+        contentSnapshotFirst({ $0.circuitRestSeconds }, liveFallback: { session.day?.circuitRestSeconds })
+    }
+
+    /// P8 Stufe-2: einheitliche, leseseitige Sicht auf eine Zeitformat-/
+    /// Zirkel-Übung für `timedFormatCircuitSection`. `orderIndex` ist der
+    /// Identitäts-Schlüssel (nicht der Name) — zwei gleichnamige Übungen
+    /// (z. B. zwei Zirkel-Stationen mit demselben Lift) bleiben dadurch
+    /// unterscheidbar, genau wie im Snapshot selbst
+    /// (`TrainingDayContentSnapshot.ExerciseEntry`-Dokumentation).
+    private struct TimedFormatDisplayExercise {
+        let orderIndex: Int
+        let displayName: String
+        let repsMin: Int
+        let isTimeBased: Bool
+        let sets: Int
+    }
+
+    /// P8 Stufe-2: liefert die Übungsliste für `timedFormatCircuitSection`.
+    /// Bevorzugt IMMER den eingefrorenen Tages-Snapshot dieser Session —
+    /// Reihenfolge/Namen/Ziele zum Zeitpunkt der Session, nicht den
+    /// eventuell seither bearbeiteten oder gelöschten Live-Tag. Nur wenn
+    /// für diese Session NIE ein Snapshot erfasst wurde (Altbestand vor
+    /// diesem Feature), fällt es auf den Live-Tag zurück — unverändertes
+    /// Verhalten von vorher für genau diesen Altbestand-Fall, aber
+    /// `contentSnapshotUnverifiedNotice` macht das in der UI sichtbar.
+    /// Ein BESCHÄDIGTER/nicht unterstützter Snapshot liefert explizit
+    /// `nil` — wird NIE stillschweigend durch den Live-Tag ersetzt.
+    private var timedFormatDisplayExercises: [TimedFormatDisplayExercise]? {
+        switch session.contentSnapshotState {
+        case .available(let snapshot):
+            return snapshot.exercises
+                .sorted { $0.orderIndex < $1.orderIndex }
+                .map { entry in
+                    let name: String
+                    if let custom = entry.customNameSnapshot, !custom.isEmpty {
+                        name = custom
+                    } else {
+                        name = Exercise.resolvedDisplayName(forStoredName: entry.nameSnapshot)
+                    }
+                    return TimedFormatDisplayExercise(
+                        orderIndex: entry.orderIndex, displayName: name,
+                        repsMin: entry.repsMin, isTimeBased: entry.isTimeBased, sets: entry.sets
+                    )
+                }
+        case .notCaptured:
+            return (session.day?.activeExercises ?? [])
+                .sorted { $0.orderIndex < $1.orderIndex }
+                .map {
+                    TimedFormatDisplayExercise(
+                        orderIndex: $0.orderIndex, displayName: $0.displayName,
+                        repsMin: $0.repsMin, isTimeBased: $0.isTimeBased, sets: $0.sets
+                    )
+                }
+        case .unreadable:
+            return nil
+        }
+    }
+
+    /// Sichtbarer Hinweis, wenn die gezeigte Übungsliste NICHT der
+    /// verifizierte historische Stand ist (Auftrag: "fehlende Historie
+    /// sichtbar kennzeichnen" / "aktuelle Planinhalte niemals als
+    /// historischen Stand ausgeben"). Greift nur für Altbestand vor P8
+    /// (`.notCaptured`) — `.available` ist per Definition verifiziert,
+    /// `.unreadable` zeigt stattdessen `contentSnapshotUnreadableNotice`.
+    @ViewBuilder
+    private var contentSnapshotUnverifiedNotice: some View {
+        if case .notCaptured = session.contentSnapshotState {
+            Text("summary.content.noHistoricalSnapshot", bundle: .module)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
+        }
+    }
+
     /// README 2.9: Read-only Referenzliste der Zirkel-Uebungen (Name +
     /// Wdh./Runden), damit man Wochen spaeter noch sieht, WAS man gemacht
     /// hat - ohne eine Set-Historie zu erfinden, die es fuer Zeitformate
-    /// nie gab. Nur sichtbar, solange die Plan-Beziehung noch lebt
-    /// (`day` ist `.nullify` bei Tag-Loeschung); kein eigenes Snapshot-
-    /// Feld dafuer, das waere ein weiteres, nie angefragtes Datenfeld nur
-    /// fuer diese Erinnerungshilfe.
+    /// nie gab. Quelle ist der P8-Snapshot (siehe
+    /// `timedFormatDisplayExercises`), NICHT mehr der Live-Tag — eine
+    /// spätere Tag-Bearbeitung/-Löschung ändert diese Liste jetzt nicht
+    /// mehr rückwirkend.
     @ViewBuilder
     private func timedFormatCircuitSection(_ format: WorkoutTimeFormat) -> some View {
-        let exercises = (session.day?.activeExercises ?? []).sorted { $0.orderIndex < $1.orderIndex }
-        if !exercises.isEmpty {
+        if case .unreadable = session.contentSnapshotState {
+            Section {
+                Text("summary.content.unreadable", bundle: .module)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .listRowBackground(Color.Deltiq.surface)
+            } header: {
+                sectionHeader(String(localized: "summary.stat.exercises", bundle: .module))
+            }
+            .listRowSeparatorTint(Color.Deltiq.divider)
+        } else if let exercises = timedFormatDisplayExercises, !exercises.isEmpty {
             // Nutzer-Feedback 6. August: "15 Runden" allein beantwortet nicht
             // "wie viele Klimmzuege waren das insgesamt" - fuer AMRAP zeigt
             // die Zeile jetzt Gesamt-Wiederholungen statt nur dem Pro-Runde-
@@ -1398,7 +1510,7 @@ public struct WorkoutSummaryView: View {
             // hat schon eine feste Rundenzahl als Ziel selbst).
             let amrapTotals = format == .amrap ? amrapExerciseTotals(exercises) : nil
             Section {
-                ForEach(exercises, id: \.persistentModelID) { exercise in
+                ForEach(exercises, id: \.orderIndex) { exercise in
                     if let amrapTotals {
                         HStack(spacing: 8) {
                             VStack(alignment: .leading, spacing: 2) {
@@ -1408,7 +1520,7 @@ public struct WorkoutSummaryView: View {
                                 Text(
                                     String(
                                         format: String(localized: "summary.amrap.perRound", bundle: .module),
-                                        timedFormatTargetLabel(exercise)
+                                        timedFormatTargetLabel(repsMin: exercise.repsMin, isTimeBased: exercise.isTimeBased)
                                     )
                                 )
                                 .font(.system(size: 12))
@@ -1437,6 +1549,8 @@ public struct WorkoutSummaryView: View {
                 }
             } header: {
                 sectionHeader(String(localized: "summary.stat.exercises", bundle: .module))
+            } footer: {
+                contentSnapshotUnverifiedNotice
             }
             .listRowSeparatorTint(Color.Deltiq.divider)
         }
@@ -1456,14 +1570,14 @@ public struct WorkoutSummaryView: View {
     /// Namens- statt ID-Abgleich fuer `currentIndex`, weil
     /// `partialRepsExerciseName` ein Snapshot ist (gleiches Muster wie
     /// `dayName`), keine live Relationship.
-    private func amrapExerciseTotals(_ exercises: [Exercise]) -> [PersistentIdentifier: Int]? {
+    private func amrapExerciseTotals(_ exercises: [TimedFormatDisplayExercise]) -> [Int: Int]? {
         let rounds = session.roundsCompleted ?? 0
         let partial = session.partialReps ?? 0
         guard rounds > 0 || partial > 0 || session.partialRepsExerciseName != nil else { return nil }
         let currentIndex = session.partialRepsExerciseName.flatMap { name in
             exercises.firstIndex { $0.displayName == name }
         }
-        var totals: [PersistentIdentifier: Int] = [:]
+        var totals: [Int: Int] = [:]
         for (index, exercise) in exercises.enumerated() {
             var total = rounds * exercise.repsMin
             if let currentIndex {
@@ -1473,13 +1587,13 @@ public struct WorkoutSummaryView: View {
                     total += partial
                 }
             }
-            totals[exercise.persistentModelID] = total
+            totals[exercise.orderIndex] = total
         }
         return totals
     }
 
-    private func amrapTotalValueText(_ exercise: Exercise, totals: [PersistentIdentifier: Int]) -> String {
-        let total = totals[exercise.persistentModelID] ?? 0
+    private func amrapTotalValueText(_ exercise: TimedFormatDisplayExercise, totals: [Int: Int]) -> String {
+        let total = totals[exercise.orderIndex] ?? 0
         let unit = exercise.isTimeBased
             ? String(localized: "unit.seconds.short", bundle: .module)
             : String(localized: "unit.reps.short", bundle: .module)
@@ -1488,7 +1602,7 @@ public struct WorkoutSummaryView: View {
 
     /// Duenner Wrapper um das geteilte `timedFormatCircuitLabel`
     /// (TimedWorkoutPlayerView.swift) - siehe dort fuer die Begruendung.
-    private func circuitValueLabel(_ exercise: Exercise, format: WorkoutTimeFormat) -> String {
+    private func circuitValueLabel(_ exercise: TimedFormatDisplayExercise, format: WorkoutTimeFormat) -> String {
         timedFormatCircuitLabel(
             repsMin: exercise.repsMin, isTimeBased: exercise.isTimeBased,
             sets: exercise.sets, format: format
@@ -1503,7 +1617,7 @@ public struct WorkoutSummaryView: View {
             let editable = !isReadOnly || isEditingHistory
             if editable {
                 ForEach(logs) { log in
-                    SetSummaryRow(log: log, exercise: exercise, isEditable: isEditingSets)
+                    SetSummaryRow(log: log, isEditable: isEditingSets)
                 }
                 // .onDelete braucht DynamicViewContent (ForEach) - muss VOR
                 // .listRowBackground stehen, sonst erased letzteres bereits
@@ -1536,7 +1650,7 @@ public struct WorkoutSummaryView: View {
                 }
             } else {
                 ForEach(logs) { log in
-                    SetSummaryRow(log: log, exercise: exercise, isEditable: false)
+                    SetSummaryRow(log: log, isEditable: false)
                 }
                 .listRowBackground(Color.Deltiq.surface)
             }
@@ -1602,7 +1716,7 @@ public struct WorkoutSummaryView: View {
                     }
                     .textCase(nil)
                 } else if let best = bestSet(in: logs) {
-                    Text("\(String(localized: "summary.exercise.bestPrefix", bundle: .module)): \(formatSetSummary(best, exercise: exercise))")
+                    Text("\(String(localized: "summary.exercise.bestPrefix", bundle: .module)): \(formatSetSummary(best))")
                         .font(.system(size: 12))
                         .foregroundStyle(Color.Deltiq.textSecondary)
                         .textCase(nil)
@@ -1612,6 +1726,45 @@ public struct WorkoutSummaryView: View {
             Text(formatBreakdownFooter(setsCount: logs.count, volume: formatVolume(logs)))
                 .font(.system(size: 12))
                 .foregroundStyle(Color.Deltiq.textSecondary)
+        }
+        .listRowSeparatorTint(Color.Deltiq.divider)
+    }
+
+    /// P8 Stufe-2: Darstellung für Logs, deren `Exercise` inzwischen
+    /// gelöscht wurde (orphan). Read-only, UNABHÄNGIG vom History-Edit-
+    /// Mode — es gibt kein lebendes Objekt mehr, an das ein Satz-Delete,
+    /// ein "+ Satz"-Insert oder der Cardio-Equipment-Picker sicher binden
+    /// könnte. Das ist eine bewusste, kleine Einschränkung gegenüber dem
+    /// lebenden Pfad: dieser Auftrag deckt die KORREKTE Zuordnung/Anzeige
+    /// verwaister Sätze ab (sie verschwinden nicht mehr unsichtbar), nicht
+    /// ihre nachträgliche Editierbarkeit.
+    private func orphanedExerciseSection(logs: [ExerciseLog]) -> some View {
+        let name = Exercise.resolvedDisplayName(forStoredName: logs.first?.resolvedExerciseName ?? "?")
+        return Section {
+            ForEach(logs) { log in
+                SetSummaryRow(log: log, isEditable: false)
+            }
+            .listRowBackground(Color.Deltiq.surface)
+        } header: {
+            HStack {
+                Text(name)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(Color.primary)
+                Spacer()
+                if let best = bestSet(in: logs) {
+                    Text("\(String(localized: "summary.exercise.bestPrefix", bundle: .module)): \(formatSetSummary(best))")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .textCase(nil)
+                }
+            }
+        } footer: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(formatBreakdownFooter(setsCount: logs.count, volume: formatVolume(logs)))
+                Text("summary.exercise.originalDeleted", bundle: .module)
+            }
+            .font(.system(size: 12))
+            .foregroundStyle(Color.Deltiq.textSecondary)
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
     }
@@ -1658,14 +1811,61 @@ public struct WorkoutSummaryView: View {
 
     // MARK: Derived
 
-    /// Logs grouped by exercise, ordered by `Exercise.orderIndex` (matches the plan).
-    private var exercisesWithLogs: [(exercise: Exercise, logs: [ExerciseLog])] {
-        let grouped = Dictionary(grouping: session.logs) { $0.exercise?.persistentModelID }
-        return grouped.compactMap { (_, logs) -> (Exercise, [ExerciseLog])? in
-            guard let exercise = logs.first?.exercise else { return nil }
-            return (exercise, logs.sorted { $0.setIndex < $1.setIndex })
+    /// P8 Stufe-2: ein Log ohne lebende `Exercise`-Referenz (orphan, z. B.
+    /// nach Tag-/Übungslöschung) wurde hier bisher komplett herausgefiltert
+    /// (`guard let exercise = logs.first?.exercise else { return nil }`) —
+    /// der Satz blieb zwar in `session.logs`/`session.totalSets` mitgezählt,
+    /// verschwand aber unsichtbar aus der Aufschlüsselung. Jetzt werden
+    /// orphane Logs separat gruppiert (`orphanedExerciseSection`, read-only)
+    /// statt verworfen zu werden.
+    private enum ExerciseLogGroup: Identifiable {
+        case live(Exercise, [ExerciseLog])
+        case orphaned(key: String, logs: [ExerciseLog])
+
+        var id: String {
+            switch self {
+            case .live(let exercise, _): return "live-\(exercise.persistentModelID)"
+            case .orphaned(let key, _): return "orphan-\(key)"
+            }
         }
-        .sorted { $0.0.orderIndex < $1.0.orderIndex }
+
+        /// Sortierschlüssel — für orphane Gruppen der `orderIndex` zum
+        /// Logging-Zeitpunkt (`ExerciseLog.exerciseOrderIndexSnapshot`),
+        /// NICHT der Name; Alt-Logs ohne dieses Feld landen ans Ende statt
+        /// eine falsche Position zu erraten.
+        var orderIndex: Int {
+            switch self {
+            case .live(let exercise, _): return exercise.orderIndex
+            case .orphaned(_, let logs): return logs.first?.exerciseOrderIndexSnapshot ?? Int.max
+            }
+        }
+    }
+
+    /// Logs grouped by exercise, ordered by `Exercise.orderIndex` (matches the plan).
+    /// Gruppierschlüssel für orphane Logs ist `exerciseOrderIndexSnapshot`
+    /// (fehlt der bei Alt-Logs vor diesem Feld: `exerciseTemplateIDSnapshot`
+    /// + `exerciseNameSnapshot`) — NICHT allein der Name, sonst würden zwei
+    /// gleichnamige, inzwischen gelöschte Übungen (z. B. Hauptsatz +
+    /// Finisher) fälschlich zu einer Gruppe verschmolzen.
+    private var exercisesWithLogs: [ExerciseLogGroup] {
+        let liveLogs = session.logs.filter { $0.exercise != nil }
+        let orphanLogs = session.logs.filter { $0.exercise == nil }
+
+        let liveGrouped = Dictionary(grouping: liveLogs) { $0.exercise!.persistentModelID }
+        let live: [ExerciseLogGroup] = liveGrouped.compactMap { (_, logs) -> ExerciseLogGroup? in
+            guard let exercise = logs.first?.exercise else { return nil }
+            return .live(exercise, logs.sorted { $0.setIndex < $1.setIndex })
+        }
+
+        let orphanGrouped = Dictionary(grouping: orphanLogs) { log -> String in
+            if let idx = log.exerciseOrderIndexSnapshot { return "idx:\(idx)" }
+            return "key:\(log.exerciseTemplateIDSnapshot?.uuidString ?? "-")|\(log.exerciseNameSnapshot ?? "-")"
+        }
+        let orphaned: [ExerciseLogGroup] = orphanGrouped.map { (key, logs) in
+            .orphaned(key: key, logs: logs.sorted { $0.setIndex < $1.setIndex })
+        }
+
+        return (live + orphaned).sorted { $0.orderIndex < $1.orderIndex }
     }
 
     private var formattedDuration: String {
@@ -1709,13 +1909,18 @@ public struct WorkoutSummaryView: View {
             .formattedTwoDecimals
     }
 
-    private func formatSetSummary(_ log: ExerciseLog, exercise: Exercise) -> String {
+    /// P8 Stufe-2: braucht keine `Exercise` mehr — `log.resolvedIsCardio`/
+    /// `resolvedIsTimeBased` sind snapshot-first und liefern denselben Wert
+    /// wie vorher `exercise.isCardio`/`isTimeBased`, solange die Übung noch
+    /// lebt, und bleiben auch nach ihrem Löschen korrekt (siehe
+    /// `exercisesWithLogs`).
+    private func formatSetSummary(_ log: ExerciseLog) -> String {
         let secUnit = String(localized: "unit.seconds.short", bundle: .module)
         let repUnit = String(localized: "unit.reps.short", bundle: .module)
-        if exercise.isCardio {
-            return "\(log.reps) \(exercise.isTimeBased ? secUnit : repUnit)"
+        if log.resolvedIsCardio {
+            return "\(log.reps) \(log.resolvedIsTimeBased ? secUnit : repUnit)"
         }
-        if exercise.isTimeBased {
+        if log.resolvedIsTimeBased {
             return "\(log.reps) \(secUnit)"
         }
         return "\(formatWeight(log.weight)) kg × \(log.reps)"
@@ -2149,9 +2354,15 @@ private struct SummaryStat: View {
 }
 
 @available(iOS 17.0, macOS 14.0, *)
+/// P8 Stufe-2: braucht keine live `Exercise`-Referenz mehr — alle
+/// internen Verzweigungen (Cardio/TimeBased/Strength-Layout) laufen über
+/// `log.resolvedIsCardio`/`resolvedIsTimeBased` (DEL-051, snapshot-first,
+/// identisch zum vorherigen `exercise.isCardio`/`isTimeBased` solange die
+/// Übung noch lebt). Das macht diese Row auch für Logs korrekt
+/// darstellbar, deren `Exercise` inzwischen gelöscht wurde (orphan, siehe
+/// `exercisesWithLogs`).
 private struct SetSummaryRow: View {
     @Bindable var log: ExerciseLog
-    let exercise: Exercise
     /// DEL-032: im History-Edit-Mode wird die Row zu editierbaren TextFields.
     let isEditable: Bool
 
@@ -2198,12 +2409,12 @@ private struct SetSummaryRow: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(Color.Deltiq.textSecondary)
             HStack(spacing: 8) {
-                if exercise.isCardio {
+                if log.resolvedIsCardio {
                     cardioDistanceField
                     Divider().frame(height: 24)
                     cardioDurationFields
                     Spacer(minLength: 4)
-                } else if exercise.isTimeBased {
+                } else if log.resolvedIsTimeBased {
                     repsField   // labeled "Sek" via unit.seconds.short
                     Spacer(minLength: 12)
                     rirBlock
@@ -2322,7 +2533,7 @@ private struct SetSummaryRow: View {
         // DEL-126: i18n-Sek/Wdh-Labels.
         let secUnit = String(localized: "unit.seconds.short", bundle: .module)
         let repUnit = String(localized: "unit.reps.short", bundle: .module)
-        let unit = exercise.isTimeBased ? secUnit : repUnit
+        let unit = log.resolvedIsTimeBased ? secUnit : repUnit
         return VStack(alignment: .leading, spacing: 2) {
             TextField(unit, value: $log.reps, format: .number)
                 .frame(width: 48)
@@ -2351,7 +2562,7 @@ private struct SetSummaryRow: View {
     }
 
     private var rowText: String {
-        if exercise.isCardio {
+        if log.resolvedIsCardio {
             // DEL-058: Cardio-Set zeigt Distance / Duration / Pace statt
             // kg × reps. Auslassbar wenn keiner der Felder gefuellt.
             var parts: [String] = []
@@ -2367,7 +2578,7 @@ private struct SetSummaryRow: View {
             }
             return parts.isEmpty ? "—" : parts.joined(separator: " · ")
         }
-        if exercise.isTimeBased {
+        if log.resolvedIsTimeBased {
             let secUnit = String(localized: "unit.seconds.short", bundle: .module)
             return "\(log.reps) \(secUnit) (RIR \(log.rir.formattedRIR))"
         }

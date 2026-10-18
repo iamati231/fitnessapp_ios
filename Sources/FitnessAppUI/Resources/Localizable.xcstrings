@@ -51268,6 +51268,75 @@
           }
         }
       }
+    },
+    "summary.content.unreadable": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsdetails nicht lesbar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training details unreadable."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman detayları okunamıyor."
+          }
+        }
+      }
+    },
+    "summary.content.noHistoricalSnapshot": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeigt den aktuellen Planstand – kein überprüfter historischer Schnappschuss."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows the current plan state – not a verified historical snapshot."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geçerli plan durumunu gösterir – doğrulanmış geçmiş bir anlık görüntü değildir."
+          }
+        }
+      }
+    },
+    "summary.exercise.originalDeleted": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ursprüngliche Übung wurde gelöscht – nur Anzeige."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original exercise was deleted – view only."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orijinal egzersiz silindi – yalnızca görüntüleme."
+          }
+        }
+      }
     }
   }
 }
