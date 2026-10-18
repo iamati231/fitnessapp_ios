@@ -10,21 +10,19 @@ import FitnessAppCore
 /// SwiftData, Session-Isolation, Löschverhalten, Schutz vor Überschreiben
 /// eines abgeschlossenen Snapshots.
 ///
-/// **Apple-CI-Status dieser Datei: ungeklärt, siehe Abschnitt "Ergebnis
-/// Paket A+B" im Plan-Dokument.** Ein über 17 CI-Läufe hinweg
-/// reproduzierter Signal-5-Absturz wurde bis auf eine verblüffende,
-/// vollständig durch Experiment belegte Erkenntnis eingegrenzt: er trifft
-/// JEDE neu hinzugefügte Testmethode in diesem Lauf — unabhängig von
-/// Dateiname, Klassenname, Dispatch-Position und Testinhalt (auch ein
-/// Ein-Zeilen-Test ohne jeden Bezug zu diesem Feature, angehängt an eine
-/// seit Monaten stabile, bereits existierende Testklasse, stürzte
-/// identisch ab, während alle BESTEHENDEN Methoden derselben Klasse im
-/// selben Lauf fehlerfrei durchliefen). Das deutet auf ein Problem in der
-/// Apple-CI-Umgebung/Toolchain (Xcode 26.6, mac_mini_m2, Codemagic) beim
-/// Dispatch neu hinzugekommener Testmethoden hin, nicht auf einen Fehler
-/// in diesem Code. Kein eigener On-Disk-Migrationstest hier (siehe
-/// 2.2-Begründung im Plan-Dokument: zwei zusätzliche optionale Felder auf
-/// `WorkoutSession` statt eines eigenen `@Model`).
+/// **Container-Lifetime ist kein Implementierungsdetail, sondern Teil des
+/// Testvertrags:** jeder Test hält seinen `ModelContainer` in einer
+/// benannten `let`-Variable für die gesamte Testlaufzeit (über `Fixture`
+/// bzw. direkt im Testkörper) — NIE `try makeContainer().mainContext` als
+/// anonymen Ausdruck. Ein früherer Fassung dieser Datei nutzte genau dieses
+/// Muster und stürzte auf Apple-CI reproduzierbar mit Signal 5 ab
+/// (SwiftData-interner Precondition-Trap, `_SD_get_current_context_tsd`
+/// lieferte `nil`); ein gezielter Kontrolltest (`ModelContainer` per
+/// `withExtendedLifetime` gehalten) lief im selben CI-Lauf fehlerfrei
+/// durch, während alle acht Tests mit dem alten Muster weiterhin
+/// abstürzten — ein vorzeitig deallozierter `ModelContainer` ist die am
+/// besten belegte Erklärung. Siehe docs/P8_STUFE2_VERSIONIERUNG_PLAN.md,
+/// Abschnitt "Ergebnis Paket A+B", für die volle Diagnose-Historie.
 @available(iOS 17.0, macOS 14.0, *)
 @MainActor
 final class TrainingDayContentSnapshotWriterTests: XCTestCase {
@@ -46,8 +44,13 @@ final class TrainingDayContentSnapshotWriterTests: XCTestCase {
     }
 
     // MARK: - Fixture
+    //
+    // Hält den `ModelContainer` als eigenes Feld (nicht nur den daraus
+    // gezogenen `ModelContext`) — siehe Typ-Dokumentation oben. Solange ein
+    // `Fixture`-Wert lebt, lebt sein Container mit.
 
     private struct Fixture {
+        let container: ModelContainer
         let context: ModelContext
         let plan: TrainingPlan
         let day: TrainingDay
@@ -56,10 +59,11 @@ final class TrainingDayContentSnapshotWriterTests: XCTestCase {
 
     @discardableResult
     private func makeFixture(
-        in context: ModelContext,
         isCompleted: Bool = false,
         exerciseCount: Int = 2
-    ) -> Fixture {
+    ) throws -> Fixture {
+        let container = try makeContainer()
+        let context = container.mainContext
         let plan = TrainingPlan(name: "Push A", programType: "custom", isActive: true)
         context.insert(plan)
         let day = TrainingDay(name: "Push A", weekday: 2, type: .chest, plan: plan)
@@ -76,14 +80,14 @@ final class TrainingDayContentSnapshotWriterTests: XCTestCase {
             durationMinutes: 60, exerciseCount: exerciseCount, isCompleted: isCompleted, day: day
         )
         context.insert(session)
-        return Fixture(context: context, plan: plan, day: day, session: session)
+        return Fixture(container: container, context: context, plan: plan, day: day, session: session)
     }
 
     // MARK: - Roundtrip durch SwiftData
 
     func testCaptureStoresAReadableSnapshotMatchingTheLiveDayAtCaptureTime() throws {
-        let context = try makeContainer().mainContext
-        let fixture = makeFixture(in: context)
+        let fixture = try makeFixture()
+        let context = fixture.context
         try context.save()
 
         XCTAssertEqual(fixture.session.contentSnapshotState, .notCaptured, "vor dem ersten capture gibt es noch keinen Snapshot")
@@ -100,7 +104,8 @@ final class TrainingDayContentSnapshotWriterTests: XCTestCase {
     }
 
     func testCaptureOnASessionWithoutADayDoesNothing() throws {
-        let context = try makeContainer().mainContext
+        let container = try makeContainer()
+        let context = container.mainContext
         let session = WorkoutSession(
             startTime: d(2024, 1, 2), endTime: d(2024, 1, 2).addingTimeInterval(1800),
             durationMinutes: 30, exerciseCount: 0, isCompleted: true, isAdHoc: true
@@ -114,11 +119,10 @@ final class TrainingDayContentSnapshotWriterTests: XCTestCase {
     }
 
     func testCaptureOnADayWithNoActiveExercisesYieldsAValidEmptySnapshotNotAnError() throws {
-        let context = try makeContainer().mainContext
-        let fixture = makeFixture(in: context, exerciseCount: 0)
-        try context.save()
+        let fixture = try makeFixture(exerciseCount: 0)
+        try fixture.context.save()
 
-        XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context))
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: fixture.context))
         guard case .available(let snapshot) = fixture.session.contentSnapshotState else {
             return XCTFail("eine leere Übungsliste ist gültig, kein Fehler: \(fixture.session.contentSnapshotState)")
         }
@@ -128,13 +132,13 @@ final class TrainingDayContentSnapshotWriterTests: XCTestCase {
     // MARK: - Session-Isolation
 
     func testTwoSessionsGetIndependentSnapshotsNeitherAffectsTheOther() throws {
-        let context = try makeContainer().mainContext
-        let fixtureA = makeFixture(in: context, exerciseCount: 1)
-        let fixtureB = makeFixture(in: context, exerciseCount: 3)
-        try context.save()
+        let fixtureA = try makeFixture(exerciseCount: 1)
+        let fixtureB = try makeFixture(exerciseCount: 3)
+        try fixtureA.context.save()
+        try fixtureB.context.save()
 
-        XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixtureA.session, in: context))
-        XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixtureB.session, in: context))
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixtureA.session, in: fixtureA.context))
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixtureB.session, in: fixtureB.context))
 
         guard case .available(let snapshotA) = fixtureA.session.contentSnapshotState,
               case .available(let snapshotB) = fixtureB.session.contentSnapshotState else {
@@ -147,8 +151,8 @@ final class TrainingDayContentSnapshotWriterTests: XCTestCase {
     // MARK: - Schutz vor Überschreiben eines abgeschlossenen Snapshots
 
     func testCaptureAfterCompletionIsRejectedAndLeavesTheFrozenSnapshotUnchanged() throws {
-        let context = try makeContainer().mainContext
-        let fixture = makeFixture(in: context, exerciseCount: 1)
+        let fixture = try makeFixture(exerciseCount: 1)
+        let context = fixture.context
         try context.save()
 
         XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context))
@@ -179,8 +183,8 @@ final class TrainingDayContentSnapshotWriterTests: XCTestCase {
     // MARK: - Löschverhalten
 
     func testDeletingTheDayLeavesTheSnapshotFullyReadableWithNoGuessedPlanLink() throws {
-        let context = try makeContainer().mainContext
-        let fixture = makeFixture(in: context, exerciseCount: 2)
+        let fixture = try makeFixture(exerciseCount: 2)
+        let context = fixture.context
         try context.save()
         TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context)
         fixture.session.isCompleted = true
@@ -197,8 +201,8 @@ final class TrainingDayContentSnapshotWriterTests: XCTestCase {
     }
 
     func testDeletingTheSessionRemovesItsSnapshotToo() throws {
-        let context = try makeContainer().mainContext
-        let fixture = makeFixture(in: context, exerciseCount: 1)
+        let fixture = try makeFixture(exerciseCount: 1)
+        let context = fixture.context
         try context.save()
         TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context)
         try context.save()
@@ -216,8 +220,8 @@ final class TrainingDayContentSnapshotWriterTests: XCTestCase {
     // MARK: - Beschädigter / nicht unterstützter Snapshot (nie stillschweigend durch Live-Inhalt ersetzt)
 
     func testCorruptedStoredJSONSurfacesAsUnreadableNeverSilentlyReplacedByLiveContent() throws {
-        let context = try makeContainer().mainContext
-        let fixture = makeFixture(in: context, exerciseCount: 1)
+        let fixture = try makeFixture(exerciseCount: 1)
+        let context = fixture.context
         try context.save()
         TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context)
         try context.save()
