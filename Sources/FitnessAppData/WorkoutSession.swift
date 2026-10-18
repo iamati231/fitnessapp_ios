@@ -11,13 +11,6 @@ import FitnessAppCore
 /// banners on the Home screen (F72).
 @Model
 public final class WorkoutSession {
-    /// P8-Vorbereitung (Stufe-2-Versionierung): stabile Identitaet fuer die
-    /// Zuordnung von `TrainingDayContentRecord` (siehe dort) — bewusst ein
-    /// einfacher `UUID`-Scalar statt einer `@Relationship`, gleiches Muster
-    /// wie `ExerciseTemplate.id`/`Exercise.exerciseTemplateID`. Default-
-    /// Literal sorgt dafuer, dass Lightweight-Migration jeder Bestandszeile
-    /// ihre EIGENE, zufaellige ID zuweist (nicht allen dieselbe).
-    public var id: UUID = UUID()
     public var startTime: Date
     public var endTime: Date
     public var durationMinutes: Int
@@ -164,8 +157,42 @@ public final class WorkoutSession {
     @Relationship(deleteRule: .nullify, inverse: \ExerciseLog.session)
     public var logs: [ExerciseLog] = []
 
+    /// P8-Vorbereitung (Stufe-2-Versionierung,
+    /// `docs/P8_STUFE2_VERSIONIERUNG_PLAN.md`): eingefrorener Tagesinhalt
+    /// zum Zeitpunkt dieser Session, JSON-codiert (siehe
+    /// `TrainingDayContentSnapshot`). Anders als `day` (lebende Referenz,
+    /// zeigt nach einer späteren Bearbeitung des Tages den AKTUELLEN Stand)
+    /// bleibt dieser Snapshot nach Session-Abschluss unverändert. `nil` für
+    /// jede Bestandssession vor diesem Feld UND für Sessions ohne `day`
+    /// (z. B. HealthKit-Import) — "kein Snapshot verfügbar" ist ein
+    /// gültiger, niemals rückwirkend aufgefüllter Dauerzustand. Nur über
+    /// `TrainingDayContentSnapshotWriter.capture(for:in:)` schreibbar, nie
+    /// direkt — der Writer verweigert jede Änderung, sobald `isCompleted`
+    /// `true` ist.
+    ///
+    /// **Bewusst ein Feld direkt auf `WorkoutSession` statt ein separates
+    /// `@Model`:** eine erste Fassung mit einem eigenen
+    /// `TrainingDayContentRecord`-Modell (per `@Relationship` ODER per
+    /// manuellem `sessionID`-Scalar-Fremdschluessel) stuerzte auf Apple-CI
+    /// reproduzierbar mit Signal 5 ab — ein `brk #0x1`-Trap INNERHALB von
+    /// SwiftData selbst, lokalisiert per lldb bis auf die Instruktion: ein
+    /// interner `_SD_get_current_context_tsd`-Aufruf lieferte `nil` und
+    /// loeste einen harten Precondition-Trap aus, ausschliesslich beim
+    /// `ModelContext.insert(_:)` einer `WorkoutSession` INNERHALB der
+    /// Testdatei, die das neue Modell referenzierte — identisch reproduzierbar
+    /// unabhaengig von Zugriffsmodifikator, In-Memory-/On-Disk-Store,
+    /// Parallelitaet, Delete-Rule, Relationship-Existenz und Container-
+    /// Erzeugungsreihenfolge (sechs widerlegte Hypothesen, siehe Commit-
+    /// Historie). Zwei neue optionale Felder auf einem BESTEHENDEN Modell
+    /// sind dagegen exakt das in diesem Codebase tausendfach erprobte,
+    /// sichere Muster (siehe z. B. `dayName`, `timeFormatSnapshot` oben).
+    public var contentSnapshotJSON: String?
+    /// Zeitpunkt der zuletzt gespeicherten Fassung von
+    /// `contentSnapshotJSON` — wird bei jeder erfolgreichen `capture`-
+    /// Aufnahme fortgeschrieben (nicht nur beim ersten Mal).
+    public var contentSnapshotCapturedAt: Date?
+
     public init(
-        id: UUID = UUID(),
         startTime: Date = Date(),
         endTime: Date = Date(),
         durationMinutes: Int = 0,
@@ -193,7 +220,6 @@ public final class WorkoutSession {
         healthKitSampleUUID: String? = nil,
         healthKitExportedAt: Date? = nil
     ) {
-        self.id = id
         self.startTime = startTime
         self.endTime = endTime
         self.durationMinutes = durationMinutes

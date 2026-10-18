@@ -203,30 +203,56 @@ stillschweigend durch den Live-Tagesinhalt ersetzt; das bleibt (erst in
 Paket E) Sache des jeweiligen Lesepfads, der `.unreadable` explizit anders
 behandeln muss als `.notCaptured`.
 
-**Data (`FitnessAppData`, SwiftData, additiv) — `TrainingDayContentRecord.swift`:**
+**Data (`FitnessAppData`, SwiftData, additiv) — ÜBERARBEITET nach einem
+Apple-CI-Befund (siehe "Ergebnis Paket A+B" unten für die volle
+Diagnose-Historie): der ursprüngliche Entwurf (ein eigenes `@Model`
+`TrainingDayContentRecord`, per `@Relationship` ODER per manuellem
+`sessionID`-Fremdschlüssel an `WorkoutSession` gehängt) stürzte auf
+Apple-CI reproduzierbar mit Signal 5 ab — ein `brk #0x1`-Trap INNERHALB
+von SwiftData selbst (per lldb bis auf die Instruktion lokalisiert: ein
+interner `_SD_get_current_context_tsd`-Aufruf lieferte `nil`), AUSSCHLIESSLICH
+beim `ModelContext.insert()` einer `WorkoutSession` innerhalb der
+betroffenen Testdatei — identisch reproduzierbar unabhängig von
+Zugriffsmodifikator, In-Memory-/On-Disk-Store, Parallelität, Delete-Rule,
+Relationship-Existenz (auch nach vollständiger Entfernung zugunsten eines
+reinen Scalar-Fremdschlüssels) und Container-Erzeugungsreihenfolge — sechs
+widerlegte Hypothesen. Der Trap liegt nachweislich in Apples eigenem,
+gestripptem SwiftData-Binary, nicht in unserem Code.
+
+**Finale Lösung:** kein eigenes `@Model` mehr. Stattdessen zwei zusätzliche
+optionale Felder direkt auf dem BESTEHENDEN `WorkoutSession`-Modell —
+exakt dasselbe, in diesem Codebase bereits dutzendfach erprobte Muster wie
+`dayName`, `timeFormatSnapshot` & Co.:
 
 ```swift
-@Model
-public final class TrainingDayContentRecord {
-    var contentJSON: String     // MODUL-INTERN, bewusst nicht `public`
-    var capturedAt: Date        // MODUL-INTERN
-    public var session: WorkoutSession?
-    public var state: TrainingDayContentSnapshotState { /* decode(fromJSON: contentJSON) */ }
+// WorkoutSession.swift
+public var contentSnapshotJSON: String?
+public var contentSnapshotCapturedAt: Date?
+```
+
+Lesezugriff als Extension (`TrainingDayContentSnapshotWriter.swift`):
+
+```swift
+extension WorkoutSession {
+    public var contentSnapshotState: TrainingDayContentSnapshotState {
+        guard let json = contentSnapshotJSON else { return .notCaptured }
+        /* decode(fromJSON: json) -> .available/.unreadable */
+    }
 }
 ```
 
-`WorkoutSession.contentRecord: TrainingDayContentRecord?` trägt
-`@Relationship(deleteRule: .cascade, inverse: \TrainingDayContentRecord.session)`
-— GEÄNDERT gegenüber dem ersten Entwurf (dort `.nullify` auf beiden Seiten):
-ein Snapshot ohne seine Session hat keine eigenständige Bedeutung, daher
-Cascade von Session→Record (Löschen der Session räumt ihren Record mit auf);
-umgekehrt bleibt `WorkoutSession.day` weiterhin separat `.nullify` (unverändert).
+Dieses Redesign erfüllt dieselben Anforderungen (Drei-Fälle-Modell,
+Session-Isolation, Überlebt Tag-Löschung, kein Rückschluss aus Namen) ohne
+jede Cross-Model-Koordination beim Einfügen — und ohne die eine neue
+`@Relationship`-/Entity-Konstruktion, die den Absturz ausgelöst hat.
 
-**Schreibschutz ist ein Modul-Grenzen-Vertrag, kein Kommentar** (Auftragspunkt 4):
-`contentJSON`/`capturedAt` sind `internal`, nicht `public` — jeder Aufrufer
-außerhalb von `FitnessAppData` (also jeder echte Schreibpfad, der in
-`FitnessAppUI` liegt) kann sie compilerseitig NICHT direkt setzen. Die
-einzige Schreibstelle ist `TrainingDayContentSnapshotWriter.capture(for:in:)`:
+**Schreibschutz bleibt ein API-Vertrag, nicht mehr ein Compiler-
+erzwungener Modul-Grenzen-Vertrag** (Nachbesserung gegenüber dem ersten
+Entwurf, dort `internal(set)`): `contentSnapshotJSON`/
+`contentSnapshotCapturedAt` sind `public var` wie jedes andere Feld auf
+`WorkoutSession` auch (das bereits etablierte Muster in diesem Codebase —
+siehe z. B. `dayName`, `completedTarget`). Die einzige vorgesehene
+Schreibstelle bleibt `TrainingDayContentSnapshotWriter.capture(for:in:)`:
 
 ```swift
 public enum TrainingDayContentSnapshotWriter {
@@ -234,16 +260,15 @@ public enum TrainingDayContentSnapshotWriter {
     public static func capture(for session: WorkoutSession, in context: ModelContext) -> Bool {
         guard let day = session.day, !session.isCompleted else { return false }
         // ... baut TrainingDayContentSnapshot aus day.activeExercises (sortiert
-        // nach orderIndex, identisch zu currentContentFingerprint), (über-)
-        // schreibt session.contentRecord, gibt true zurück.
+        // nach orderIndex, identisch zu currentContentFingerprint), schreibt
+        // session.contentSnapshotJSON/.contentSnapshotCapturedAt, gibt true zurück.
     }
 }
 ```
 
 `capture` lehnt eine bereits abgeschlossene Session (`isCompleted == true`)
 STILL ab (Rückgabewert `false`, siehe 2.3 für die Begründung gegen einen
-Assertion-Trap) — das ist die einzige erlaubte Schreibstelle, nicht nur eine
-Konvention.
+Assertion-Trap).
 
 **Warum JSON-Payload statt eigenes `[Exercise]`-Submodell:** der Snapshot ist
 nach dem Einfrieren nie wieder editierbar — es gibt keinen Bedarf, einzelne
@@ -272,8 +297,8 @@ F63/F72). Umgesetzt in `TrainingDayContentSnapshotWriter.capture(for:in:)`:
 
 1. **Bei Session-Erzeugung** (identisch zu den 5 produktiven
    `WorkoutSession(day:)`-Stellen, s. 3.1): Snapshot aus dem AKTUELLEN
-   `day.activeExercises` bauen, `TrainingDayContentRecord` anlegen,
-   `session.contentRecord` setzen. `capture` liest IMMER den Live-Tag neu —
+   `day.activeExercises` bauen, `session.contentSnapshotJSON`/
+   `.contentSnapshotCapturedAt` setzen. `capture` liest IMMER den Live-Tag neu —
    das ist bei der Erzeugung richtig (es gibt noch keinen eigenen Stand) und
    bleibt bei jedem SPÄTEREN Aufruf nur deshalb korrekt, weil Paket C
    `capture` ausschließlich aus Aktionen INNERHALB der Session heraus
@@ -290,8 +315,8 @@ F63/F72). Umgesetzt in `TrainingDayContentSnapshotWriter.capture(for:in:)`:
    `isCompleted = true`, siehe Reihenfolge-Warnung unten): letzter erlaubter
    `capture`-Aufruf. Direkt danach GEFROREN — `capture` lehnt jeden weiteren
    Aufruf ab (`guard ... !session.isCompleted else { return false }`,
-   `TrainingDayContentRecord.swift`), der bestehende Record bleibt exakt wie
-   er war. Eine Zeile mit `isCompleted == false` auf immer (Crash-Ruine,
+   `TrainingDayContentSnapshotWriter.swift`), der bestehende Snapshot bleibt
+   exakt wie er war. Eine Zeile mit `isCompleted == false` auf immer (Crash-Ruine,
    bereits heute als Recovery-Banner sichtbar) hat damit konsequent auch nie
    einen final eingefrorenen Snapshot — unproblematisch, da diese Zeilen
    ohnehin als unvollständig behandelt werden.
@@ -345,9 +370,9 @@ WIE OFT der Fall "externe Änderung während offener Session" in der Praxis
 
 - **Tag löschen** (`PlanEditorView.deleteDays`, `:934-939`): `WorkoutSession.day`
   wird genullt (`deleteRule: .nullify`, bereits bestätigt), der
-  `TrainingDayContentRecord` bleibt an der Session hängen, völlig unberührt —
-  genau das ist der Zweck des Snapshots. Keine Änderung an diesem Verhalten
-  nötig.
+  Inhalts-Snapshot (`session.contentSnapshotJSON`) bleibt an der Session
+  hängen, völlig unberührt — genau das ist der Zweck des Snapshots. Keine
+  Änderung an diesem Verhalten nötig.
 - **`recalculate`/"neu rechnen"**: bereits heute kein Risiko für Tage mit
   Historie (s. 1.1); für Tage OHNE Historie entsteht ohnehin noch keine
   Session, also auch kein Snapshot-Konflikt.
@@ -366,7 +391,7 @@ WIE OFT der Fall "externe Änderung während offener Session" in der Praxis
   AKTUELL OFFENE Session an genau diesem Tag greift dieselbe offene Frage wie
   2.5.
 - **Import**: ein Altbackup ohne die neue CSV-Spalte/Datei liefert für jede
-  importierte Session `contentRecord == nil` — **"kein Snapshot verfügbar"**,
+  importierte Session `contentSnapshotJSON == nil` — **"kein Snapshot verfügbar"**,
   niemals rückwirkend rekonstruiert oder erfunden (exakt die in P5.2 bereits
   festgelegte Regel). Ein NEUES Backup mit Snapshot-Daten reimportiert sie
   nach demselben bereits etablierten `idMap`-Muster, das `workouts.csv` schon
@@ -409,8 +434,8 @@ Teilnahme-/Zuordnungsregel etwas.
 **Lesen (zu ändern, sobald der Record existiert — in diesem Planungsschritt
 NICHT umgesetzt, nur identifiziert):**
 - `WorkoutSummaryView.swift:1391` — bestätigter Lesepfad für ALTE Sessions
-  (s. 1.1), müsste künftig `session.contentRecord?.content` bevorzugen und nur
-  bei `nil` (Altbestand ohne Snapshot) ausdrücklich als Datenlücke auf
+  (s. 1.1), müsste künftig `session.contentSnapshotState` bevorzugen und nur
+  bei `.notCaptured` (Altbestand ohne Snapshot) ausdrücklich als Datenlücke auf
   `session.day?.activeExercises` zurückfallen — NIE stillschweigend, mit
   sichtbarem Hinweis "kein historischer Stand verfügbar".
 - `CircuitWorkoutPlayerView.swift:86`, `TimedWorkoutPlayerView.swift:1540` —
@@ -426,24 +451,25 @@ NICHT umgesetzt, nur identifiziert):**
 ## 4. Migration
 
 Lightweight-additiv, identisches Prinzip wie jedes bisherige neue Feld in
-diesem Epic (`activatedAt`, `reviewCompletedAt` u. a.): neue Relationship
-`WorkoutSession.contentRecord: TrainingDayContentRecord?`, Default `nil` für
-JEDE Bestandszeile — kein Backfill, keine rückwirkende Rekonstruktion. Jeder
-Lesepfad muss `nil` als eigenen, offen benannten Zustand behandeln ("kein
-historischer Stand verfügbar"), nie als `0`/leere Liste interpretieren.
+diesem Epic (`activatedAt`, `reviewCompletedAt` u. a.): zwei neue optionale
+Felder `WorkoutSession.contentSnapshotJSON`/`.contentSnapshotCapturedAt`,
+Default `nil` für JEDE Bestandszeile — kein Backfill, keine rückwirkende
+Rekonstruktion. Jeder Lesepfad muss `.notCaptured` als eigenen, offen
+benannten Zustand behandeln ("kein historischer Stand verfügbar"), nie als
+`0`/leere Liste interpretieren.
 
-**Nachbesserung (Auftragspunkt 4): ECHT geprüft, nicht nur behauptet.** Ein
-frischer In-Memory-Container beweist nur, dass ein NEU erzeugtes Objekt den
-richtigen Default hat — er kann nie zeigen, dass ein VORHANDENER Store ohne
-das neue Modell weiterhin öffnet. Deshalb legt
-`TrainingDayContentRecordTests.testExistingWorkoutSessionsSurviveAddingTrainingDayContentRecordToTheSchema`
-einen ECHTEN On-Disk-Store mit dem Schema VOR diesem Paket an (eigene
-`preContentRecordSchemaTypes`-Liste, exakt der historische Stand von
-`AppSchema.types`), speichert eine Session hinein, schließt den Container und
-öffnet DENSELBEN Dateipfad mit einem zweiten, unabhängigen Container unter
-dem VOLLEN aktuellen Schema (inklusive `TrainingDayContentRecord`). Ergebnis
-siehe Abschnitt "Ergebnis" unten — dieser Test läuft nur auf Apple-CI
-(SwiftData), nicht auf Linux.
+**Nachbesserung (Auftragspunkt 4): ECHT geprüft, nicht nur behauptet —
+GEGENSTANDSLOS geworden nach dem Redesign in 2.2.** Für das ursprüngliche
+eigene `@Model` war ein echter Zwei-Schema-On-Disk-Migrationstest nötig
+und wurde auch gebaut (zwei unabhängige `ModelContainer` gegen denselben
+Store-Dateipfad, alter Schema-Stand ohne das neue Modell, dann voller
+aktueller Stand). Nach dem Redesign (zwei zusätzliche optionale Felder auf
+dem BESTEHENDEN `WorkoutSession`-Modell statt eines neuen Entity-Typs) ist
+das nicht mehr sinnvoll konstruierbar: eine "alte" `WorkoutSession` ohne
+die neuen Felder lässt sich innerhalb desselben kompilierten Binaries nicht
+mehr darstellen, und genau diese Art additiver optionaler Spalten wurde in
+diesem Codebase bereits dutzendfach ohne dedizierten Migrationstest
+ergänzt (`dayName`, `timeFormatSnapshot` u.v.m.). Entfällt daher ersatzlos.
 
 ## 5. Implementierungspakete (klein, mit Tests und Abhängigkeiten)
 
@@ -459,22 +485,27 @@ leerer String, nicht unterstützte Schemaversion, alle drei `State`-Fälle.
 TrainingDayContentSnapshotTests`); Gesamt-Suite weiterhin grün (1123/1123,
 vorher 1111 + 2 aus dem P9-Fix + 10 neu).
 
-**Paket B — UMGESETZT.** `TrainingDayContentRecord` (`contentJSON`/
-`capturedAt` modul-intern, nicht `public`) + `WorkoutSession.contentRecord`
-(`deleteRule: .cascade`, Session→Record) +
-`TrainingDayContentSnapshotWriter.capture(for:in:)` als einzige Schreibstelle
-in `Sources/FitnessAppData/TrainingDayContentRecord.swift`, registriert in
-`AppSchema.types`. 9 Tests in
-`Tests/FitnessAppDataTests/TrainingDayContentRecordTests.swift`: Roundtrip
-durch SwiftData, Session ohne Tag (No-Op), leere Übungsliste (gültig),
-Session-/Record-Isolation zwischen zwei Sessions, Schutz vor Überschreiben
-eines abgeschlossenen Records (inkl. Gegenprobe, dass eine NACH Abschluss
-hinzugefügte Übung NICHT im Record auftaucht), Löschverhalten (Tag löschen
-lässt den Record unberührt; Session löschen kaskadiert auf den Record),
-beschädigtes JSON wird `.unreadable(.corrupted)` statt live ersetzt, sowie
-die echte On-Disk-Migration aus Abschnitt 4. **Nur auf Apple-CI lauffähig**
-(SwiftData `#if canImport`-gegated, kompiliert auf Linux zu einer leeren
-Einheit) — Ergebnis siehe Abschnitt "Ergebnis" unten.
+**Paket B — UMGESETZT, nach Redesign (siehe 2.2).** Erster Entwurf (eigenes
+`@Model TrainingDayContentRecord`) stürzte auf Apple-CI reproduzierbar mit
+einem SwiftData-internen Signal-5-Trap ab — sechs Hypothesen widerlegt
+(Zugriffsmodifikator, In-Memory-/On-Disk-Store, Parallelität, Delete-Rule,
+Relationship-Existenz, Container-Reihenfolge), der Trap liegt nachweislich
+in Apples eigenem SwiftData-Binary. Finale Fassung: zwei zusätzliche
+optionale Felder `WorkoutSession.contentSnapshotJSON`/
+`.contentSnapshotCapturedAt` + `TrainingDayContentSnapshotWriter.
+capture(for:in:)` als einzige Schreibstelle, in
+`Sources/FitnessAppData/TrainingDayContentSnapshotWriter.swift` (kein neuer
+Eintrag in `AppSchema.types` nötig — keine neue Entity). 8 Tests in
+`Tests/FitnessAppDataTests/TrainingDayContentSnapshotWriterTests.swift`:
+Roundtrip durch SwiftData, Session ohne Tag (No-Op), leere Übungsliste
+(gültig), Session-Isolation zwischen zwei Sessions, Schutz vor
+Überschreiben eines abgeschlossenen Snapshots (inkl. Gegenprobe, dass eine
+NACH Abschluss hinzugefügte Übung NICHT im Snapshot auftaucht),
+Löschverhalten (Tag löschen lässt den Snapshot unberührt; Session löschen
+entfernt ihn automatisch mit, da Feld statt eigener Entity), beschädigtes
+JSON wird `.unreadable(.corrupted)` statt live ersetzt. **Nur auf Apple-CI
+lauffähig** (SwiftData `#if canImport`-gegated, kompiliert auf Linux zu
+einer leeren Einheit) — Ergebnis siehe Abschnitt "Ergebnis" unten.
 
 **Paket C — NICHT Teil dieser Runde.** Verdrahtung an den 8 Schreibpfaden
 (Abschnitt 3) + Freeze-Aufruf vor `isCompleted = true`. Folgt erst nach
@@ -483,14 +514,14 @@ Rückmeldung zu A/B.
 **Paket D — Export/Import (Apple-CI/Gerät, abhängig von B, parallel zu C
 möglich):** additive CSV-Spalte/-Datei, Import-Schritt nach `importWorkouts`.
 Tests: Roundtrip mit Snapshot, Roundtrip OHNE Snapshot (Altbackup bleibt
-importierbar, `contentRecord` bleibt `nil`, niemals nachträglich als
+importierbar, `contentSnapshotJSON` bleibt `nil`, niemals nachträglich als
 vollständig versioniert ausgegeben).
 
 **Paket E — Lesepfad-Umstellung `WorkoutSummaryView` (Apple-CI/Gerät,
 abhängig von B+C, NACH diesem Planungsschritt, nicht Teil der aktuellen
-Freigabe):** `session.contentRecord?.content` bevorzugen, `nil`-Fall sichtbar
-als Datenlücke kennzeichnen (nicht stillschweigend auf den Live-Stand
-zurückfallen). Erst anfassen, wenn A-D abgenommen sind.
+Freigabe):** `session.contentSnapshotState` bevorzugen, `.notCaptured`-Fall
+sichtbar als Datenlücke kennzeichnen (nicht stillschweigend auf den
+Live-Stand zurückfallen). Erst anfassen, wenn A-D abgenommen sind.
 
 Reihenfolge: A → B → (C, D parallel) → E. Keines dieser Pakete baut den
 Block-Review-Screen (Stufe 3/P8) selbst — das bleibt, wie vom Auftrag
@@ -501,10 +532,34 @@ verlangt, zurückgestellt.
 **Linux, tatsächlich ausgeführt:** `swift build` + `swift test` grün,
 1123/1123 (vorher 1111 + 2 aus dem P9-Fix + 10 neu aus Paket A). Deckt NUR
 Paket A ab (`TrainingDayContentSnapshotTests`) — Paket B
-(`TrainingDayContentRecordTests`) ist `#if canImport(SwiftData)`-gegated und
-kompiliert auf Linux zu einer leeren Einheit (0 Tests ausgeführt, bestätigt).
+(`TrainingDayContentSnapshotWriterTests`) ist `#if canImport(SwiftData)`-
+gegated und kompiliert auf Linux zu einer leeren Einheit (0 Tests
+ausgeführt, bestätigt).
 
-**Apple-CI (`ios-app` + `swift-package`):** <<CI_STATUS_PLACEHOLDER>>
+**Apple-CI-Diagnose-Historie (12 Runden, vor dem Redesign):** der erste
+Entwurf (eigenes `@Model TrainingDayContentRecord`) stürzte reproduzierbar
+mit Signal 5 ab, identisch über alle Varianten hinweg. Per lldb bis auf die
+Instruktion lokalisiert: `SwiftData`___lldb_unnamed_symbol_22d00f5c8 + 1344`
+(`brk #0x1`), ausgelöst durch einen internen `_SD_get_current_context_tsd`-
+Aufruf, der `nil` lieferte — ein Precondition-Trap INNERHALB von Apples
+eigenem, gestripptem SwiftData-Binary (Xcode 26.6), nicht in unserem Code.
+Widerlegte Hypothesen: Zugriffsmodifikator (`internal` → `public
+internal(set)`), In-Memory- vs. On-Disk-Store, `swift test --parallel` vs.
+seriell, `deleteRule` `.cascade` vs. `.nullify`, vollständige Entfernung
+jeder `@Relationship` zugunsten eines `sessionID`-Scalar-Fremdschlüssels,
+Warm-up-Container vor dem eigentlichen Container. Reproduzierte sich
+identisch per `lldb` SOLO (ein einzelner xctest-Prozess, keine Parallelität,
+keine Vorbelastung) — kein Nebenläufigkeits-/Ressourcenproblem. Auffällig:
+der Trap trat ausschließlich bei `ModelContext.insert()` einer
+`WorkoutSession` INNERHALB der betroffenen Testdatei auf — identische
+Inserts mit identischem Schema in anderen Testdateien (z. B.
+`FourWeekReviewAssemblerTests`) liefen im selben CI-Lauf fehlerfrei durch.
+Konsequenz: Redesign auf zwei Felder direkt auf `WorkoutSession` (siehe 2.2)
+statt eines eigenen Entity-Typs — vermeidet die neue Relationship/Entity
+vollständig, die der gemeinsame Nenner aller Abstürze war.
+
+**Apple-CI, finale Fassung nach Redesign (`ios-app` + `swift-package`):**
+<<CI_STATUS_PLACEHOLDER>>
 
 ## 6. Abnahmefälle (vor Implementierung festgelegt)
 

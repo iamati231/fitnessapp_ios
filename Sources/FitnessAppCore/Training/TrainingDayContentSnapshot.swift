@@ -3,8 +3,9 @@ import Foundation
 /// P8-Vorbereitung (Stufe-2-Versionierung, siehe `docs/P8_STUFE2_VERSIONIERUNG_PLAN.md`):
 /// eingefrorener Tagesinhalt zum Zeitpunkt einer `WorkoutSession` — rein
 /// wertbasiert, kein SwiftData-Bezug, damit Encode/Decode/Gleichheit ohne
-/// Apple-Toolchain testbar sind. Die Persistenz (`TrainingDayContentRecord`,
-/// `FitnessAppData`) speichert nur das JSON, das dieser Typ erzeugt/liest.
+/// Apple-Toolchain testbar sind. Die Persistenz (`WorkoutSession.
+/// contentSnapshotJSON` + `TrainingDayContentSnapshotWriter`, `FitnessAppData`)
+/// speichert nur das JSON, das dieser Typ erzeugt/liest.
 ///
 /// **Feldauswahl bewusst NICHT nur von `TrainingDay.currentContentFingerprint`
 /// abgeleitet** (der deckt nur "was macht 'neu rechnen' ungültig", nicht
