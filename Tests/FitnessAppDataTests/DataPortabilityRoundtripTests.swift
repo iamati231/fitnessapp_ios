@@ -545,7 +545,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
             circuitRestSeconds: nil, circuitMode: nil,
             exercises: [
                 TrainingDayContentSnapshot.ExerciseEntry(
-                    orderIndex: 0, exerciseTemplateID: UUID(), nameSnapshot: "Bankdrücken",
+                    orderIndex: 0, instanceID: UUID(), exerciseTemplateID: UUID(), nameSnapshot: "Bankdrücken",
                     customNameSnapshot: nil, role: .workingSet, supersetId: nil,
                     isCardio: false, isTimeBased: false, cardioEquipment: .none,
                     sets: 3, repsMin: 6, repsMax: 10, restSeconds: 120,

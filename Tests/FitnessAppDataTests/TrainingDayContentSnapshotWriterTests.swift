@@ -302,6 +302,167 @@ final class TrainingDayContentSnapshotWriterTests: XCTestCase {
         XCTAssertEqual(snapshot.exercises.first?.orderIndex, 1, "der zweite (ebenfalls 'Bankdrücken') bleibt erhalten")
     }
 
+    // MARK: - Explizite In-Session-Änderung ("+ Satz" auf der Karte, JEDE Session)
+
+    /// Anders als `recordAdHocExercise*` gilt `recordSetCountChange` auch
+    /// für reguläre (nicht ad-hoc) Plan-Sessions — die "+ Satz"-Aktion
+    /// existiert nur als Steuerelement der laufenden Session selbst.
+    func testRecordSetCountChangeUpdatesOnlySetsEvenForARegularPlanSession() throws {
+        let fixture = try makeFixture(exerciseCount: 1)
+        let context = fixture.context
+        try context.save()
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context))
+
+        let exercise = fixture.day.activeExercises[0]
+        exercise.sets += 1
+        try context.save()
+
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.recordSetCountChange(for: exercise, in: fixture.session, context: context))
+
+        guard case .available(let snapshot) = fixture.session.contentSnapshotState else {
+            return XCTFail("Snapshot muss weiterhin lesbar sein")
+        }
+        XCTAssertEqual(snapshot.exercises.first?.sets, exercise.sets, "die '+ Satz'-Aktion muss sich im Snapshot niederschlagen, auch bei einer regulären Plan-Session")
+    }
+
+    /// Chirurgisch heißt: NUR `sets` wird übernommen. Ein zwischenzeitlich
+    /// auf einem ANDEREN Weg (DayEditorView) verändertes Feld derselben
+    /// Übung darf NICHT huckepack mit einsickern.
+    func testRecordSetCountChangeDoesNotAbsorbOtherFieldsChangedExternallyInTheMeantime() throws {
+        let fixture = try makeFixture(exerciseCount: 1)
+        let context = fixture.context
+        try context.save()
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context))
+
+        let exercise = fixture.day.activeExercises[0]
+        let originalRepsMin = exercise.repsMin
+        exercise.sets += 1
+        exercise.repsMin = originalRepsMin + 10 // simuliert eine EXTERNE Änderung desselben Objekts
+        try context.save()
+
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.recordSetCountChange(for: exercise, in: fixture.session, context: context))
+
+        guard case .available(let snapshot) = fixture.session.contentSnapshotState else {
+            return XCTFail("Snapshot muss weiterhin lesbar sein")
+        }
+        XCTAssertEqual(snapshot.exercises.first?.sets, exercise.sets, "sets wird übernommen")
+        XCTAssertEqual(snapshot.exercises.first?.repsMin, originalRepsMin, "repsMin darf NICHT huckepack mit übernommen werden")
+    }
+
+    func testRecordSetCountChangeRejectedAfterCompletion() throws {
+        let fixture = try makeFixture(exerciseCount: 1)
+        let context = fixture.context
+        try context.save()
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context))
+        let exercise = fixture.day.activeExercises[0]
+        let originalSets = exercise.sets
+
+        fixture.session.isCompleted = true
+        exercise.sets += 5
+        try context.save()
+
+        XCTAssertFalse(TrainingDayContentSnapshotWriter.recordSetCountChange(for: exercise, in: fixture.session, context: context))
+        guard case .available(let snapshot) = fixture.session.contentSnapshotState else {
+            return XCTFail("eingefrorener Snapshot muss lesbar bleiben")
+        }
+        XCTAssertEqual(snapshot.exercises.first?.sets, originalSets, "der eingefrorene Stand bleibt nach Abschluss unveränderlich")
+    }
+
+    func testRecordSetCountChangeRejectedWhenNoSnapshotWasEverCaptured() throws {
+        let fixture = try makeFixture(exerciseCount: 1)
+        let context = fixture.context
+        try context.save()
+        // Bewusst KEIN capture()-Aufruf.
+        let exercise = fixture.day.activeExercises[0]
+        exercise.sets += 1
+        try context.save()
+
+        XCTAssertFalse(
+            TrainingDayContentSnapshotWriter.recordSetCountChange(for: exercise, in: fixture.session, context: context),
+            "ohne vorherige Erst-Aufnahme darf kein Snapshot nachträglich erfunden werden"
+        )
+        XCTAssertEqual(fixture.session.contentSnapshotState, .notCaptured)
+    }
+
+    // MARK: - Explizite In-Session-Änderung (Ad-hoc, Bearbeiten einer bestehenden Übung)
+
+    func testRecordAdHocExerciseEditedUpdatesOnlyTheMatchingEntry() throws {
+        let fixture = try makeFixture(exerciseCount: 0)
+        fixture.session.isAdHoc = true
+        let context = fixture.context
+        try context.save()
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context))
+
+        let first = Exercise(name: "Bankdrücken", exerciseTemplateID: UUID(), orderIndex: 0, sets: 3, repsMin: 8, repsMax: 12, day: fixture.day)
+        let second = Exercise(name: "Kurzhantel-Rudern", exerciseTemplateID: UUID(), orderIndex: 1, sets: 3, repsMin: 8, repsMax: 12, day: fixture.day)
+        context.insert(first)
+        context.insert(second)
+        try context.save()
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.recordAdHocExerciseAdded(first, to: fixture.session, in: context))
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.recordAdHocExerciseAdded(second, to: fixture.session, in: context))
+
+        // "Ausdrücklich innerhalb der Session" bearbeitet (ExerciseEditorView via ActiveWorkoutView).
+        first.sets = 5
+        first.repsMin = 4
+        first.repsMax = 6
+        try context.save()
+
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.recordAdHocExerciseEdited(first, within: fixture.session, in: context))
+
+        guard case .available(let snapshot) = fixture.session.contentSnapshotState else {
+            return XCTFail("Snapshot muss weiterhin lesbar sein")
+        }
+        XCTAssertEqual(snapshot.exercises.count, 2, "Edit darf weder Einträge hinzufügen noch entfernen")
+        let editedEntry = snapshot.exercises.first { $0.nameSnapshot == "Bankdrücken" }
+        XCTAssertEqual(editedEntry?.sets, 5, "die bearbeitete Übung muss ihre neuen Zielwerte im Snapshot tragen")
+        XCTAssertEqual(editedEntry?.repsMin, 4)
+        let untouchedEntry = snapshot.exercises.first { $0.nameSnapshot == "Kurzhantel-Rudern" }
+        XCTAssertEqual(untouchedEntry?.sets, 3, "die NICHT bearbeitete Übung darf unverändert bleiben")
+    }
+
+    func testRecordAdHocExerciseEditedRejectedForNonAdHocSession() throws {
+        let fixture = try makeFixture(exerciseCount: 1)
+        let context = fixture.context
+        try context.save()
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context))
+
+        let exercise = fixture.day.activeExercises[0]
+        exercise.sets = 99
+        try context.save()
+
+        XCTAssertFalse(
+            TrainingDayContentSnapshotWriter.recordAdHocExerciseEdited(exercise, within: fixture.session, in: context),
+            "eine Plan-Session hat kein ihr allein gehörendes Tag — ein Edit darf hier nicht in den Snapshot einsickern"
+        )
+        guard case .available(let snapshot) = fixture.session.contentSnapshotState else {
+            return XCTFail("Snapshot muss weiterhin lesbar sein")
+        }
+        XCTAssertNotEqual(snapshot.exercises.first?.sets, 99, "die Ablehnung darf den Snapshot nicht verändert haben")
+    }
+
+    func testRecordAdHocExerciseEditedRejectedAfterCompletion() throws {
+        let fixture = try makeFixture(exerciseCount: 0)
+        fixture.session.isAdHoc = true
+        let context = fixture.context
+        try context.save()
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context))
+
+        let exercise = Exercise(name: "Bankdrücken", exerciseTemplateID: UUID(), orderIndex: 0, sets: 3, day: fixture.day)
+        context.insert(exercise)
+        try context.save()
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.recordAdHocExerciseAdded(exercise, to: fixture.session, in: context))
+
+        fixture.session.isCompleted = true
+        exercise.sets = 20
+        try context.save()
+
+        XCTAssertFalse(TrainingDayContentSnapshotWriter.recordAdHocExerciseEdited(exercise, within: fixture.session, in: context))
+        guard case .available(let snapshot) = fixture.session.contentSnapshotState else {
+            return XCTFail("eingefrorener Snapshot muss lesbar bleiben")
+        }
+        XCTAssertEqual(snapshot.exercises.first?.sets, 3, "der eingefrorene Stand bleibt nach Abschluss unveränderlich")
+    }
+
     func testRecordAdHocExerciseRejectedForNonAdHocSession() throws {
         let fixture = try makeFixture(exerciseCount: 1)
         let context = fixture.context

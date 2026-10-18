@@ -11,6 +11,7 @@ final class TrainingDayContentSnapshotTests: XCTestCase {
 
     private func makeExercise(
         orderIndex: Int,
+        instanceID: UUID? = UUID(),
         name: String = "Bankdrücken",
         templateID: UUID? = UUID(),
         customName: String? = nil,
@@ -28,7 +29,7 @@ final class TrainingDayContentSnapshotTests: XCTestCase {
         targetDurationMinutes: Int? = nil
     ) -> TrainingDayContentSnapshot.ExerciseEntry {
         .init(
-            orderIndex: orderIndex, exerciseTemplateID: templateID, nameSnapshot: name,
+            orderIndex: orderIndex, instanceID: instanceID, exerciseTemplateID: templateID, nameSnapshot: name,
             customNameSnapshot: customName, role: role, supersetId: supersetId,
             isCardio: isCardio, isTimeBased: isTimeBased, cardioEquipment: cardioEquipment,
             sets: sets, repsMin: repsMin, repsMax: repsMax, restSeconds: restSeconds,
@@ -187,6 +188,44 @@ final class TrainingDayContentSnapshotTests: XCTestCase {
         guard case .failure(.unsupportedSchemaVersion(99)) = result else {
             return XCTFail("eine unbekannte Schemaversion darf nie als aktuelle Version geraten/interpretiert werden: \(result)")
         }
+    }
+
+    // MARK: - Resume-Isolation (P8 Stufe-2-Nachbesserung): instanceID
+
+    /// `instanceID` wurde NACH dem Ausliefern von Schema-Version 1 ergaenzt.
+    /// Ein vor diesem Feld aufgenommener Snapshot (JSON ohne den Key) MUSS
+    /// weiterhin als `.available` lesbar bleiben (Optional-Synthese liest
+    /// einen fehlenden Key als `nil`, kein Schemaversions-Sprung noetig) —
+    /// sonst wuerde dieses additive Feld rueckwirkend jeden Alt-Snapshot zu
+    /// `.unreadable` machen, was der Auftrag ausdruecklich verbietet
+    /// ("keinen beschädigten Snapshot ... nie stillschweigend ersetzen").
+    func testExerciseEntryWithoutInstanceIDKeyDecodesAsNilNotAsCorrupted() {
+        let legacyJSONWithoutInstanceIDKey = """
+        {"schemaVersion":1,"dayNameSnapshot":"Push A","dayCustomNameSnapshot":null,
+        "dayLocalizationKeySnapshot":"day.pushA","weekday":2,"dayType":"chest","timeFormat":null,
+        "timeCapMinutes":null,"circuitRounds":null,"circuitRestSeconds":null,"circuitMode":null,
+        "exercises":[{"orderIndex":0,"exerciseTemplateID":null,"nameSnapshot":"Bankdrücken",
+        "customNameSnapshot":null,"role":"workingSet","supersetId":null,"isCardio":false,
+        "isTimeBased":false,"cardioEquipment":"none","sets":3,"repsMin":8,"repsMax":12,
+        "restSeconds":90,"targetRir":2,"targetDistanceKm":null,"targetDurationMinutes":null}]}
+        """
+        let result = TrainingDayContentSnapshot.decode(fromJSON: legacyJSONWithoutInstanceIDKey)
+        guard case .success(let decoded) = result else {
+            return XCTFail("ein Alt-Snapshot ohne den neuen instanceID-Key muss lesbar bleiben: \(result)")
+        }
+        XCTAssertEqual(decoded.exercises.count, 1)
+        XCTAssertNil(decoded.exercises[0].instanceID, "fehlender Key -> nil, nicht geraten/ersetzt")
+        XCTAssertEqual(decoded.exercises[0].nameSnapshot, "Bankdrücken", "alle anderen Felder bleiben unberuehrt lesbar")
+    }
+
+    func testInstanceIDRoundtripsWhenPresent() {
+        let id = UUID()
+        let snapshot = makeSnapshot(exercises: [makeExercise(orderIndex: 0, instanceID: id)])
+        guard let json = snapshot.encodedJSON(),
+              case .success(let decoded) = TrainingDayContentSnapshot.decode(fromJSON: json) else {
+            return XCTFail("Roundtrip darf nicht scheitern")
+        }
+        XCTAssertEqual(decoded.exercises[0].instanceID, id)
     }
 
     // MARK: - TrainingDayContentSnapshotState (die drei Fälle, mit denen ein Aufrufer rechnen muss)
