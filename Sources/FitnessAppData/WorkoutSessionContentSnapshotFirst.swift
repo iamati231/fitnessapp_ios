@@ -46,5 +46,27 @@ extension WorkoutSession {
     public var contentSnapshotCircuitMode: CircuitRoundMode? {
         contentSnapshotFirst({ $0.circuitMode }, liveFallback: { day?.circuitMode })
     }
+
+    /// P8 Stufe-2-Nachbesserung (Geräteabnahme-Befund, Block D): steuert,
+    /// welcher Player überhaupt geöffnet wird (`WorkoutRootView`) und,
+    /// innerhalb eines Zeitformat-Tags, welcher der vier Unterspieler
+    /// (`TimedWorkoutPlayerView`) — nicht nur eine Anzeige. Ändert ein
+    /// externer Edit das Zeitformat des Tages, während die Session offen
+    /// bleibt, darf das weder den falschen Player öffnen noch Fortschritt
+    /// falsch interpretieren.
+    ///
+    /// Bewusst NICHT über `contentSnapshotFirst` (das liefert bei
+    /// `.unreadable` `nil`): eine Routing-Entscheidung muss IMMER einen
+    /// Player ergeben, sonst zeigt `TimedWorkoutPlayerView.case nil` eine
+    /// leere Seite statt eines nutzbaren (ggf. leicht veralteten) Live-
+    /// Fallbacks. Folgt damit derselben Fallback-Politik wie
+    /// `ActiveWorkoutView.resolvedExercises` (`.notCaptured` UND
+    /// `.unreadable` fallen beide auf den Live-Tag zurück).
+    public var contentSnapshotTimeFormat: WorkoutTimeFormat? {
+        switch contentSnapshotState {
+        case .available(let snapshot): return snapshot.timeFormat
+        case .notCaptured, .unreadable: return day?.timeFormat
+        }
+    }
 }
 #endif

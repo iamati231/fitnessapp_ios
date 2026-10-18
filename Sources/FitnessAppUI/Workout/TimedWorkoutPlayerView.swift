@@ -24,7 +24,12 @@ public struct TimedWorkoutPlayerView: View {
     }
 
     public var body: some View {
-        switch session.day?.timeFormat {
+        // P8 Stufe-2-Nachbesserung (Geräteabnahme Block D): dieselbe
+        // eingefrorene Quelle wie `WorkoutRootView`s Routing-Entscheidung —
+        // sonst könnte ein externer Formatwechsel (z. B. Circuit -> AMRAP)
+        // bei offener Session den falschen Unterspieler zeigen, obwohl
+        // `WorkoutRootView` korrekt beim Zeitformat-Player geblieben ist.
+        switch session.contentSnapshotTimeFormat {
         case .amrap:   AMRAPPlayerView(session: session)
         case .emom:    EMOMPlayerView(session: session)
         case .forTime: ForTimePlayerView(session: session)
