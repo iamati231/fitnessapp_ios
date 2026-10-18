@@ -61,6 +61,9 @@ func finishTimedSession(
     let endTime = Date()
     session.endTime = endTime
     session.durationMinutes = max(0, Int(endTime.timeIntervalSince(session.startTime) / 60))
+    // P8 Stufe-2: kein erneuter capture-Aufruf — siehe
+    // ActiveWorkoutView.finishWorkout für die Begründung. Gilt für alle vier
+    // Zeitformate (AMRAP/EMOM/Auf Zeit/Circuit), die diese Funktion teilen.
     session.isCompleted = true
     // Sonst bleibt's beim init-Default 0 - ActiveWorkoutView.finishWorkout()
     // setzt das analog aus der Plan-Uebungsliste (siehe dort), Zeitformat-

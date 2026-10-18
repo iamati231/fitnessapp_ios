@@ -27,32 +27,121 @@ extension WorkoutSession {
 /// Einzige erlaubte Schreibstelle für `WorkoutSession.contentSnapshotJSON`/
 /// `.contentSnapshotCapturedAt`. Siehe Feld-Dokumentation auf
 /// `WorkoutSession` für die Begründung.
+///
+/// **Lebenszyklus-Vertrag (verbindlich, korrigiert gegenüber einer
+/// früheren Planungsfassung):** eine laufende Session behält ihren EIGENEN
+/// Inhaltsstand. `capture` liest den Live-Tag NUR EIN EINZIGES MAL — bei
+/// der Erzeugung, wenn es noch keinen eigenen Stand gibt (guard:
+/// `contentSnapshotJSON == nil`). Explizite Änderungen INNERHALB der
+/// Session (Ad-hoc-Übung hinzufügen/entfernen) aktualisieren danach gezielt
+/// NUR den eigenen, bereits bestehenden Snapshot (`recordAdHocExercise…`)
+/// — nie durch einen erneuten vollständigen Re-Read des Live-Tages, der
+/// zwischenzeitliche EXTERNE Änderungen (DayEditorView, Equipment-
+/// Anpassung) unbemerkt mit übernehmen würde. Beim Abschluss gibt es
+/// AUSDRÜCKLICH KEINEN erneuten `capture`-Aufruf — der zuletzt vorhandene
+/// Stand wird eingefroren, nicht neu erzeugt (`capture`s
+/// `!session.isCompleted`-Guard bleibt als zusätzliche Absicherung
+/// bestehen, ist aber nicht der primäre Schutz). Bei Wiederaufnahme einer
+/// offenen Session wird `capture` NIE erneut aufgerufen — der
+/// `contentSnapshotJSON == nil`-Guard würde einen zweiten Aufruf zwar
+/// ohnehin ablehnen, Aufrufer dürfen sich darauf aber nicht verlassen und
+/// müssen `capture` schlicht nur am Erzeugungs-Ort aufrufen. Für Alt-
+/// Sessions ohne Snapshot wird nie nachträglich einer erzeugt — `nil`
+/// bleibt ein gültiger Dauerzustand.
 public enum TrainingDayContentSnapshotWriter {
 
-    /// Nimmt den AKTUELLEN Stand von `session.day?.activeExercises` auf und
-    /// (über)schreibt `session.contentSnapshotJSON`. Gibt `false` zurück
-    /// und ändert NICHTS, wenn:
+    /// Initial-Aufnahme bei Session-ERZEUGUNG — der einzige Aufrufzeitpunkt,
+    /// an dem ein voller Re-Read von `session.day?.activeExercises` korrekt
+    /// ist (es gibt noch keinen eigenen Stand). Gibt `false` zurück und
+    /// ändert NICHTS, wenn:
     ///
     ///   * `session.day == nil` (z. B. HealthKit-Import ohne Plan-Tag) — es
     ///     gibt nichts, das aufgenommen werden könnte.
-    ///   * `session.isCompleted == true` — der Snapshot ist eingefroren.
-    ///     Das ist bewusst ein stiller, regulärer Rückgabewert statt eines
-    ///     Assertion-Traps: ein späterer Aufrufer (Paket C) könnte diesen
-    ///     Fall legitim erreichen (z. B. ein verspäteter Hintergrund-Call
-    ///     nach dem Abschluss) und darf dafür nicht die ganze App/den
-    ///     Testlauf zum Absturz bringen.
+    ///   * `session.isCompleted == true` — unerwartet an diesem Aufrufpunkt,
+    ///     aber defensiv abgesichert statt eines Traps.
+    ///   * `session.contentSnapshotJSON != nil` — es existiert bereits ein
+    ///     eigener Stand (erneuter Aufruf, z. B. versehentlich bei
+    ///     Wiederaufnahme). Ein zweiter `capture`-Aufruf ist IMMER ein
+    ///     No-Op, nie ein Überschreiben — das ist der technische Schutz
+    ///     hinter "bei Wiederaufnahme niemals ersetzen".
     ///
-    /// Aufrufer (Paket C, noch nicht Teil dieses Pakets): einmal bei
-    /// Session-Erzeugung, erneut bei jeder Ad-hoc-Übungsänderung
-    /// WÄHREND der Session, und ein letztes Mal unmittelbar VOR dem Setzen
-    /// von `isCompleted = true` (Reihenfolge wichtig — danach wäre der aktuelle
-    /// Call ein No-Op).
+    /// Aufrufer (Paket C): genau einmal, unmittelbar nach
+    /// `context.insert(session)` an jeder produktiven Erzeugungsstelle mit
+    /// `day != nil`.
     @discardableResult
     public static func capture(for session: WorkoutSession, in context: ModelContext) -> Bool {
-        guard let day = session.day, !session.isCompleted else { return false }
+        guard let day = session.day,
+              !session.isCompleted,
+              session.contentSnapshotJSON == nil
+        else { return false }
 
         let snapshot = buildSnapshot(from: day)
         guard let json = snapshot.encodedJSON() else { return false }
+
+        session.contentSnapshotJSON = json
+        session.contentSnapshotCapturedAt = Date()
+        return true
+    }
+
+    /// Explizite In-Session-Änderung: eine Ad-hoc-Übung wurde WÄHREND der
+    /// laufenden Session hinzugefügt (`ActiveWorkoutView.addAdHocExercise`/
+    /// `addAdHocCustomExercise`). Hängt GENAU EINEN neuen Eintrag an den
+    /// bereits bestehenden Snapshot an — liest NICHT erneut den ganzen
+    /// Live-Tag, kann also auch keine zwischenzeitliche externe Änderung
+    /// aufnehmen. Gibt `false` zurück und ändert NICHTS, wenn:
+    ///
+    ///   * `session.isCompleted == true` — eingefroren.
+    ///   * `session.isAdHoc == false` — nur Ad-hoc-Sessions haben ein
+    ///     ausschließlich ihnen gehörendes, ephemeres `day` (kein externer
+    ///     Mutationspfad erreicht es); produktiv aktuell ohnehin der
+    ///     einzige Aufrufpfad (s. `ActiveWorkoutView`: "+ Übung" nur bei
+    ///     Ad-hoc-Sessions), die Prüfung ist zusätzliche Absicherung durch
+    ///     Konstruktion statt durch Aufrufer-Disziplin allein.
+    ///   * es noch KEINEN bestehenden Snapshot gibt (`.notCaptured`) — kann
+    ///     an einer Ad-hoc-Session praktisch nicht vorkommen (`capture`
+    ///     läuft bei Erzeugung immer erfolgreich durch, auch mit leerer
+    ///     Übungsliste), wird aber nicht stillschweigend nachgeholt.
+    ///   * der bestehende Snapshot `.unreadable` ist — ein beschädigter
+    ///     Snapshot wird nie durch einen aus dem Live-Tag neu zusammen-
+    ///     gebauten ersetzt.
+    @discardableResult
+    public static func recordAdHocExerciseAdded(
+        _ exercise: Exercise,
+        to session: WorkoutSession,
+        in context: ModelContext
+    ) -> Bool {
+        guard !session.isCompleted, session.isAdHoc,
+              case .available(let existing) = session.contentSnapshotState
+        else { return false }
+
+        var exercises = existing.exercises
+        exercises.append(snapshotEntry(for: exercise))
+        let updated = existing.withExercises(exercises)
+        guard let json = updated.encodedJSON() else { return false }
+
+        session.contentSnapshotJSON = json
+        session.contentSnapshotCapturedAt = Date()
+        return true
+    }
+
+    /// Gegenstück zu `recordAdHocExerciseAdded` — entfernt GENAU den
+    /// Eintrag, dessen `orderIndex` dem der übergebenen (noch nicht
+    /// gelöschten!) `Exercise` entspricht. Aufrufer übergibt die Übung VOR
+    /// dem eigentlichen `context.delete(exercise)`. Gleiche Guards wie
+    /// `recordAdHocExerciseAdded`.
+    @discardableResult
+    public static func recordAdHocExerciseRemoved(
+        _ exercise: Exercise,
+        from session: WorkoutSession,
+        in context: ModelContext
+    ) -> Bool {
+        guard !session.isCompleted, session.isAdHoc,
+              case .available(let existing) = session.contentSnapshotState
+        else { return false }
+
+        let exercises = existing.exercises.filter { $0.orderIndex != exercise.orderIndex }
+        let updated = existing.withExercises(exercises)
+        guard let json = updated.encodedJSON() else { return false }
 
         session.contentSnapshotJSON = json
         session.contentSnapshotCapturedAt = Date()
@@ -65,26 +154,7 @@ public enum TrainingDayContentSnapshotWriter {
     private static func buildSnapshot(from day: TrainingDay) -> TrainingDayContentSnapshot {
         let exercises = day.activeExercises
             .sorted { $0.orderIndex < $1.orderIndex }
-            .map { exercise in
-                TrainingDayContentSnapshot.ExerciseEntry(
-                    orderIndex: exercise.orderIndex,
-                    exerciseTemplateID: exercise.exerciseTemplateID,
-                    nameSnapshot: exercise.name,
-                    customNameSnapshot: exercise.customName,
-                    role: exercise.role,
-                    supersetId: exercise.supersetId,
-                    isCardio: exercise.isCardio,
-                    isTimeBased: exercise.isTimeBased,
-                    cardioEquipment: exercise.cardioEquipment,
-                    sets: exercise.sets,
-                    repsMin: exercise.repsMin,
-                    repsMax: exercise.repsMax,
-                    restSeconds: exercise.restSeconds,
-                    targetRir: exercise.targetRir,
-                    targetDistanceKm: exercise.targetDistanceKm,
-                    targetDurationMinutes: exercise.targetDurationMinutes
-                )
-            }
+            .map(snapshotEntry(for:))
         return TrainingDayContentSnapshot(
             dayNameSnapshot: day.name,
             dayCustomNameSnapshot: day.customName,
@@ -97,6 +167,27 @@ public enum TrainingDayContentSnapshotWriter {
             circuitRestSeconds: day.circuitRestSeconds,
             circuitMode: day.circuitMode,
             exercises: exercises
+        )
+    }
+
+    private static func snapshotEntry(for exercise: Exercise) -> TrainingDayContentSnapshot.ExerciseEntry {
+        TrainingDayContentSnapshot.ExerciseEntry(
+            orderIndex: exercise.orderIndex,
+            exerciseTemplateID: exercise.exerciseTemplateID,
+            nameSnapshot: exercise.name,
+            customNameSnapshot: exercise.customName,
+            role: exercise.role,
+            supersetId: exercise.supersetId,
+            isCardio: exercise.isCardio,
+            isTimeBased: exercise.isTimeBased,
+            cardioEquipment: exercise.cardioEquipment,
+            sets: exercise.sets,
+            repsMin: exercise.repsMin,
+            repsMax: exercise.repsMax,
+            restSeconds: exercise.restSeconds,
+            targetRir: exercise.targetRir,
+            targetDistanceKm: exercise.targetDistanceKm,
+            targetDurationMinutes: exercise.targetDurationMinutes
         )
     }
 }

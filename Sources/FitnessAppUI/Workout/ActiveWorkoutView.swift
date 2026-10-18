@@ -968,6 +968,11 @@ public struct ActiveWorkoutView: View {
         session.recomputeTotals(
             exerciseCount: session.day.map { orderedExercises(in: $0).count } ?? 0
         )
+        // P8 Stufe-2: ABSICHTLICH KEIN erneuter
+        // `TrainingDayContentSnapshotWriter.capture`-Aufruf hier — der bei
+        // Erzeugung (bzw. durch Ad-hoc-Edits) bereits vorhandene Stand wird
+        // eingefroren, nicht aus dem (ggf. zwischenzeitlich extern
+        // veränderten) Live-Tag neu erzeugt.
         session.isCompleted = true
 
         // Persist any newly-set PRs to the Trophy Room (`PersonalRecordEntry`).
@@ -1075,6 +1080,10 @@ public struct ActiveWorkoutView: View {
             day: day
         )
         modelContext.insert(exercise)
+        // P8 Stufe-2: explizite In-Session-Änderung — hängt GENAU diese
+        // Übung an den bestehenden Snapshot an, liest NICHT den ganzen
+        // Live-Tag erneut.
+        TrainingDayContentSnapshotWriter.recordAdHocExerciseAdded(exercise, to: session, in: modelContext)
     }
 
     /// Custom-Uebung im Ad-Hoc-Flow — analog zu `DayEditorView.addCustomExercise`.
@@ -1104,6 +1113,8 @@ public struct ActiveWorkoutView: View {
             day: day
         )
         modelContext.insert(exercise)
+        // P8 Stufe-2: siehe addAdHocExercise.
+        TrainingDayContentSnapshotWriter.recordAdHocExerciseAdded(exercise, to: session, in: modelContext)
     }
 
     /// DEL-154: Entry-Point fuer das Entfernen einer Ad-Hoc-Uebung. Hat die
@@ -1133,6 +1144,10 @@ public struct ActiveWorkoutView: View {
         for log in logs {
             modelContext.delete(log)
         }
+
+        // P8 Stufe-2: VOR dem Delete aufrufen — liest `exercise.orderIndex`,
+        // um den passenden Snapshot-Eintrag zu finden.
+        TrainingDayContentSnapshotWriter.recordAdHocExerciseRemoved(exercise, from: session, in: modelContext)
 
         // 2) Uebung selbst entfernen.
         modelContext.delete(exercise)

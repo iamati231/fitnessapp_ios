@@ -81,6 +81,17 @@ public final class ExerciseLog {
     /// Nullify rather than cascade — sessions can be deleted without losing logs.
     public var session: WorkoutSession?
 
+    /// P8 Stufe-2: Snapshot von `Exercise.orderIndex` zum Logging-Zeitpunkt.
+    /// Einziger Zweck: NACH einem Exercise-Delete (`exercise` wird `nil`,
+    /// s. DEL-051 oben) zwei gleichnamige Übungen am selben Tag (z. B.
+    /// Bankdrücken als Hauptsatz UND als Finisher) weiterhin
+    /// auseinanderzuhalten — `exerciseNameSnapshot`/`exerciseTemplateIDSnapshot`
+    /// allein wären für beide identisch. `nil` für Alt-Logs vor diesem Feld;
+    /// ein `WorkoutSummaryView`-Leser ohne diesen Wert gruppiert dann
+    /// konservativ nur nach Name/Vorlagen-ID (dieselbe, bereits vorher
+    /// bestehende Grenze bei fehlendem Snapshot).
+    public var exerciseOrderIndexSnapshot: Int?
+
     public init(
         date: Date = Date(),
         setIndex: Int,
@@ -112,6 +123,7 @@ public final class ExerciseLog {
         self.exerciseTemplateIDSnapshot = exercise?.exerciseTemplateID
         self.exerciseIsCardioSnapshot   = exercise?.isCardio ?? false
         self.exerciseIsTimeBasedSnapshot = exercise?.isTimeBased ?? false
+        self.exerciseOrderIndexSnapshot = exercise?.orderIndex
         // DEL-155: Cardio-Equipment-Snapshot. Nur fuer Cardio-Logs relevant;
         // bei Strength bleibt es nil.
         self.exerciseCardioEquipmentSnapshot = (exercise?.isCardio == true)

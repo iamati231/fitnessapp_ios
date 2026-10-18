@@ -1167,6 +1167,9 @@ public struct DayEditorView: View {
             day: day
         )
         modelContext.insert(session)
+        // P8 Stufe-2: Initial-Snapshot bei Erzeugung (Plan-Tag ODER
+        // Ad-hoc-Zeitformat-Tag ueber diesen Editor-Pfad).
+        TrainingDayContentSnapshotWriter.capture(for: session, in: modelContext)
         // README 2.35: schuetzt den Ad-Hoc-Tag jetzt endgueltig vor
         // `sweepAbandonedAdHocDayIfNeeded()` - siehe Doc-Kommentar bei
         // `didStartSessionForAdHocDay`.
@@ -1214,6 +1217,8 @@ public struct DayEditorView: View {
         // hier absichtlich unangetastet — die Session traegt den Wert, den sie
         // beim Start bekommen hat.
         open.recomputeTotals()
+        // P8 Stufe-2: kein erneuter capture-Aufruf — siehe
+        // ActiveWorkoutView.finishWorkout für die Begründung.
         open.isCompleted = true
         try? modelContext.save()
         actuallyStartNewSession()

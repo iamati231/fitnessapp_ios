@@ -146,6 +146,28 @@ public struct TrainingDayContentSnapshot: Codable, Sendable, Equatable {
         self.circuitMode = circuitMode
         self.exercises = exercises
     }
+
+    /// P8 Stufe-2: Kopie mit ausgetauschter Übungsliste, alle anderen Felder
+    /// unverändert. Einzig für explizite In-Session-Änderungen gedacht
+    /// (`TrainingDayContentSnapshotWriter.recordAdHocExercise…`) — hängt
+    /// gezielt einen Eintrag an bzw. entfernt ihn, statt den gesamten
+    /// Snapshot aus dem (ggf. zwischenzeitlich extern veränderten) Live-Tag
+    /// neu zu bauen.
+    public func withExercises(_ exercises: [ExerciseEntry]) -> TrainingDayContentSnapshot {
+        TrainingDayContentSnapshot(
+            dayNameSnapshot: dayNameSnapshot,
+            dayCustomNameSnapshot: dayCustomNameSnapshot,
+            dayLocalizationKeySnapshot: dayLocalizationKeySnapshot,
+            weekday: weekday,
+            dayType: dayType,
+            timeFormat: timeFormat,
+            timeCapMinutes: timeCapMinutes,
+            circuitRounds: circuitRounds,
+            circuitRestSeconds: circuitRestSeconds,
+            circuitMode: circuitMode,
+            exercises: exercises
+        )
+    }
 }
 
 /// Warum ein gespeicherter Snapshot NICHT gelesen werden konnte — nie

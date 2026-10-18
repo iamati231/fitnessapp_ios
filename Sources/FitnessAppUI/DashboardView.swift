@@ -2244,6 +2244,10 @@ public struct DashboardView: View {
             day: day
         )
         modelContext.insert(session)
+        // P8 Stufe-2: Initial-Snapshot direkt bei Erzeugung — der einzige
+        // korrekte Zeitpunkt fuer einen vollen Re-Read des Live-Tages, siehe
+        // TrainingDayContentSnapshotWriter-Dokumentation.
+        TrainingDayContentSnapshotWriter.capture(for: session, in: modelContext)
 
         navigation.workoutPath = NavigationPath()
         navigation.workoutPath.append(plan)
@@ -2292,6 +2296,9 @@ public struct DashboardView: View {
             day: adHocDay
         )
         modelContext.insert(session)
+        // P8 Stufe-2: Initial-Snapshot — bei einem frischen Ad-hoc-Tag
+        // zunaechst eine gueltige, leere Uebungsliste (kein Fehler).
+        TrainingDayContentSnapshotWriter.capture(for: session, in: modelContext)
 
         navigation.workoutPath = NavigationPath()
         navigation.workoutPath.append(ActiveSessionRoute(session: session))
