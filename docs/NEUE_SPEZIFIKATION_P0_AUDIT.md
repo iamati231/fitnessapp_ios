@@ -607,9 +607,45 @@ umgesetzt (Task #203, 2026-10-17).
   gebucht zu werden.
 
 **P6 — Plan-Versionierung & Datenqualität (klein-mittel, blockiert P7):**
-- P6.1 `TrainingPlan.activatedAt: Date?` additiv (nil = unbekannt für Bestandspläne).
+- P6.1 ✅ **vollständig abgenommen** (Commit `ec9f1fd`, 2026-10-18): Implementiert + Apple-kompiliert
+  + Tests bestanden + UI-verifiziert (nicht zutreffend, begründet unten).
+  `TrainingPlan.activatedAt: Date?` neu, additiv. `nil` bedeutet ausdrücklich "unbekannt" — NIE
+  "nie aktiviert" und NIE ein rückwirkend erfundenes Datum (bindende Vorgabe aus dem Gesamtmandat:
+  "Keine erfundenen historischen Startdaten oder Planfassungen"). Feld ist pro Plan, nicht global,
+  weil das Produkt bereits mehrere gleichzeitig aktive Pläne zulässt (`ProgramInstantiator.
+  instantiate` deaktiviert bestehende Pläne bewusst nicht, Task #201/#202) — genau die zweite
+  bindende Vorgabe ("Mehrere aktive Pläne ... im Teilnahme-Nenner beachten") ist damit bereits in
+  der Datenmodellierung verankert, nicht erst in P6.2 nachzurüsten. Kein kalendergesteuerter
+  Automatismus irgendeiner Art beteiligt (dritte bindende Vorgabe) — das Feld wird ausschließlich
+  durch echte Nutzeraktionen gesetzt: `TrainingPlan.init` stempelt "jetzt" nur, wenn ein NEUER Plan
+  bereits aktiv erzeugt wird und kein expliziter Wert übergeben wurde; `PlanEditorView.setActive(true)`
+  (der manuelle "Aktiv"-Schalter) stempelt beim manuellen Umschalten explizit nach, da SwiftData
+  `@Model` keine zuverlässigen Property-Observer für bestehende Objekte bietet. Export/Import additiv
+  erweitert (etabliertes Muster wie `generator_input_raw`/`generation_source`): neue CSV-Spalte
+  `activated_at_utc`, Import liest sie defensiv (`row.date(...)`, nil-sicher für alte Backups ohne
+  diese Spalte) und schreibt sie IMMER explizit, unabhängig davon, ob der bestehende DEL-225-Guard
+  (`mayActivate`) die importierte `isActive`-Übernahme unterdrückt — der reale historische Zeitpunkt
+  aus dem Backup bleibt so auch dann erhalten, wenn der importierte Plan am Ziel nicht aktiv wird.
+  Drei neue Regressionstests (`DataPortabilityRoundtripTests`): Roundtrip für einen aktiven Plan,
+  `nil`-Default für einen nie aktivierten Plan, und — der gezielte Regressionsschutz gegen genau die
+  Fehlerklasse, die hier vermieden werden sollte — ein Plan, dessen Aktivierung beim Import durch den
+  DEL-225-Guard unterdrückt wird, behält trotzdem sein echtes historisches `activatedAt`.
+  **Apple-kompiliert:** `ios-app` + `swift-package` (Codemagic-Build-IDs `6ad4093daa3c963632c9d92d`/
+  `6ad4093dcb9bea65cab692f7`) beide `success`, alle Steps grün.
+  **Tests bestanden:** Codemagic-Testlog bestätigt, dass alle drei neuen Tests tatsächlich liefen
+  (`testActivatedAtSurvivesRoundtripForAnActivePlan`,
+  `testActivatedAtDefaultsToNilOnRoundtripForANeverActivatedPlan`,
+  `testActivatedAtSurvivesEvenWhenImportSuppressesActivationDueToExistingActivePlan`), 1285 Tests
+  gesamt auf macOS grün, 0 Fehler.
+  **UI-verifiziert:** nicht zutreffend — P6.1 fügt keine neue UI-Oberfläche hinzu (reines Datenmodell-
+  /Export-Feld, der einzige UI-Berührungspunkt ist der bereits bestehende, unveränderte "Aktiv"-
+  Schalter in `PlanEditorView`, dessen sichtbares Verhalten sich nicht ändert). Analog zur P5.2-
+  Handhabung wird dies hier explizit als "nicht zutreffend" dokumentiert statt stillschweigend
+  ausgelassen.
 - P6.2 Soll-Ist-Aggregator (geplante Gelegenheiten vs. tatsächliche Sessions, je nach fester/
-  flexibler Terminierung) — komplett neue Core-Logik.
+  flexibler Terminierung) — komplett neue Core-Logik. Muss die beiden oben in P6.1 verankerten
+  Vorgaben (mehrere aktive Pläne, Planänderungen im Zeitverlauf) im Teilnahme-Nenner korrekt
+  abbilden.
 - P6.3 Fehlende 4 von 5 Nutzerfeedback-Fragen (§4) erfassen (`SessionFeeling` deckt nur Belastung).
 - (Stufe-2-Inhalts-Snapshot `TrainingDayContentRecord` bewusst erst für P8 relevant, nicht P7.)
 
