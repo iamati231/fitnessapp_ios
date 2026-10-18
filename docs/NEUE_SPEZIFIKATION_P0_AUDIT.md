@@ -642,10 +642,65 @@ umgesetzt (Task #203, 2026-10-17).
   Schalter in `PlanEditorView`, dessen sichtbares Verhalten sich nicht ändert). Analog zur P5.2-
   Handhabung wird dies hier explizit als "nicht zutreffend" dokumentiert statt stillschweigend
   ausgelassen.
-- P6.2 Soll-Ist-Aggregator (geplante Gelegenheiten vs. tatsächliche Sessions, je nach fester/
-  flexibler Terminierung) — komplett neue Core-Logik. Muss die beiden oben in P6.1 verankerten
-  Vorgaben (mehrere aktive Pläne, Planänderungen im Zeitverlauf) im Teilnahme-Nenner korrekt
-  abbilden.
+- P6.2 ✅ **vollständig abgenommen** (Commit `06075eb`, 2026-10-18): Implementiert + Apple-kompiliert
+  + Tests bestanden + UI-verifiziert (nicht zutreffend, begründet unten).
+  `PlanParticipationEvaluator` (`Sources/FitnessAppCore/Analytics/`): reine, deterministische
+  Core-Funktion — kein SwiftData, kein `Date()`/`Calendar.current` im Code-Pfad, Auswertungsdatum
+  und `Calendar` werden immer injiziert. Deckt exakt die acht vom Gesamtmandat verbindlich
+  benannten Fälle ab:
+  1. **Jeder Plan einzeln** — die Funktion nimmt immer genau einen Plan entgegen; der Aufrufer
+     ruft sie pro aktivem Plan separat auf (mehrere gleichzeitig aktive Pläne bleiben ein
+     bewusstes Produktverhalten, Task #201/#202 — kein globaler Soll-Ist-Topf).
+  2. **Abgeschlossen/teilweise/nur gestartet** bleiben als `Outcome.completed/.partial/.startedOnly`
+     getrennt gezählt, nie zu einem Bit verschmolzen.
+  3. **Kein Doppel-Ausgleich** — alle Sessions eines Kalendertags werden VOR jeder Zählung auf den
+     stärksten Ausgang verdichtet (`Comparable`-Rang `startedOnly < partial < completed`). Ein
+     zweites Training am selben Tag kann dadurch nie einen anderen, fehlenden Tag kompensieren —
+     mit Regressionstests sowohl für feste Wochentage als auch für flexible Kadenz bewiesen.
+  4. **Feste Wochentage vs. flexible Reihenfolge** sind zwei getrennte Zweige: bei festen
+     Wochentagen wird eine konkrete, datumsgenaue Soll-Liste gebildet (Training an einem
+     Nicht-Plantag zählt als "extra", nie als erfüllter Termin); bei flexibler Kadenz zählt nur
+     "wie oft pro Woche", anteilig zur verstrichenen Zeit, abgerundet — exakt dasselbe
+     Trainingsmuster wird testbar unterschiedlich bewertet, je nach Terminierungsart.
+  5. **Nicht fällige Einheiten** (Datum nach dem Auswertungsdatum) fließen nie in die Soll-Zahl
+     ein — bewiesen durch einen Test, der mitten in der Woche auswertet und die noch ausstehenden
+     Plantage explizit NICHT als versäumt zählt.
+  6. **Kein erfundener historischer Soll-Zustand** — fehlt `activatedAt` (P6.1), liefert die
+     Funktion `.notReliablyEvaluable(.activationStartUnknown)` statt irgendeinen Start zu raten
+     (auch nicht aus dem frühesten geloggten Workout).
+  7. **Aktivierungswechsel/Planänderungen** — `activatedAt` ist nur der aktuelle, ununterbrochene
+     Aktivierungsanker, keine vollständige Historie (es gibt kein `deactivatedAt`). Ein aktuell
+     inaktiver Plan wird deshalb grundsätzlich NICHT bewertet
+     (`.notReliablyEvaluable(.planNotCurrentlyActive)`), weil das tatsächliche Ende seiner letzten
+     aktiven Phase unbekannt ist. Jedes ausgewertete Ergebnis legt zusätzlich offen
+     (`dataGaps`), dass es nur einen einzigen Aktivierungsanker kennt und dass Planänderungen
+     innerhalb der Periode nicht erkannt werden (die aktuelle Tagesstruktur wird für den gesamten
+     Zeitraum angenommen, mangels Versionierung).
+  8. **Unzureichende Datengrundlage** → benannte `UnreliableReason` (`activationStartUnknown`,
+     `planNotCurrentlyActive`, `evaluationBeforeActivation`, `planHasNoTrainingDays`,
+     `noOpportunityDueYet`) statt einer 0-von-0- oder sonst scheinpräzisen Quote — z.B. zeigt die
+     Funktion am Aktivierungstag selbst, bevor proportional auch nur eine Einheit fällig wurde,
+     ausdrücklich "nicht zuverlässig bewertbar" statt "0 %".
+  Ergebnis (`Summary`) enthält Zeitraum (`periodStart`/`periodEnd`), geplante/absolvierte Einheiten
+  je Kategorie, die tatsächlich angewendeten Zählregeln (`countingRules`, maschinenlesbare Enum-
+  Fälle statt freiem Text — eine spätere UI/Lokalisierung übersetzt sie 1:1) und die Datenlücken
+  (`dataGaps`) — wie gefordert nachvollziehbar, nicht nur eine nackte Zahl. Löst ausdrücklich
+  NICHTS aus: reine rückblickende Kennzahl, keine automatische Belastungssteigerung oder
+  Planänderung.
+  20 neue Tests (`PlanParticipationEvaluatorTests`), je mindestens einer pro der acht Regeln plus
+  eine Invarianten-Prüfung (`plannedCount == completed+partial+startedOnly+missed`).
+  **Apple-kompiliert:** `ios-app` + `swift-package` (Codemagic-Build-IDs `6ad40f11a15c10578929c33f`/
+  `6ad40f11aa538e3682cfa35b`) beide `success`, alle Steps grün.
+  **Tests bestanden:** Codemagic-Testlog bestätigt, dass alle 20 neuen Tests tatsächlich liefen
+  (einzeln nach Namen gegrept, z.B. `testDoubleSessionOnOneDayDoesNotOffsetAMissingDay`,
+  `testFixedWeekdaysPenalizesOffScheduleTrainingAsExtraNotAsCredit`,
+  `testInactivePlanIsNotReliablyEvaluableBecauseDeactivationTimeIsUnknown`), keine Fehlschläge,
+  1305 Tests gesamt auf macOS grün (1082 Linux-Tests zuvor + 223 reine SwiftData-Suiten, die nur
+  auf Apple laufen).
+  **UI-verifiziert:** nicht zutreffend — P6.2 ist bewusst "reine, deterministisch testbare
+  Core-Logik" ohne jede neue UI-Oberfläche (so vom User explizit verlangt); eine Anzeige der
+  Teilnahmequote ist ein separater, noch offener Folgeschritt (Datenanbindung `WorkoutSession` →
+  `PlanParticipationEvaluator.Input` + UI-Darstellung), nicht Teil dieser Abnahme.
 - P6.3 Fehlende 4 von 5 Nutzerfeedback-Fragen (§4) erfassen (`SessionFeeling` deckt nur Belastung).
 - (Stufe-2-Inhalts-Snapshot `TrainingDayContentRecord` bewusst erst für P8 relevant, nicht P7.)
 
