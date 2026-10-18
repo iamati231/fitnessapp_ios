@@ -1396,15 +1396,68 @@ ebenfalls nur aus diesem `.task` heraus gesetzt, nie aus `body`.
 `testMissingColumnEntirelyBehavesLikeAnEmptyValueForEveryTypedAccessor`). Linux: 1111/1111 grün,
 dieselbe bekannte Einschränkung (SwiftData-Tests kompilieren, laufen dort nicht real aus).
 
-**Echter Fund während der Testerstellung (korrigiert, kein Produktbug):** der erste Entwurf von
+**Historisch, ursprüngliche Einschätzung — seither korrigiert, siehe "Nachbesserung" direkt
+danach:** der erste Entwurf von
 `testAssembleForExplicitPlanUsesThatPlansParticipationNotTheAlphabeticallyFirst` scheiterte auf
-Apples Toolchain real — `realOccurrences(in:)` liest ALLE `WorkoutSession`s der Datenbank GLOBAL
-(dokumentierte, vorbestehende Einschränkung: `WorkoutSession` hat keine stabile Plan-Referenz), die
-für den zweiten Testplan eingetragenen Sessions flossen dadurch fälschlich auch in die
-Teilnahme-Auswertung des ERSTEN Plans ein. Test korrigiert: die beiden Pläne unterscheiden sich
-jetzt strukturell über die Anzahl der Trainingstage (ein Tag vs. keiner) statt über
-`WorkoutSession`-Daten — prüft weiterhin exakt `assemble(in:for:)`, nicht die separate, bereits an
-anderer Stelle (P6.2) offen dokumentierte Session-Zuordnungs-Grenze.
+Apples Toolchain real — `realOccurrences(in:)` liest ALLE `WorkoutSession`s der Datenbank GLOBAL,
+die für den zweiten Testplan eingetragenen Sessions flossen dadurch fälschlich auch in die
+Teilnahme-Auswertung des ERSTEN Plans ein. Test zunächst nur korrigiert (nicht der Produktcode):
+die beiden Pläne unterscheiden sich seither strukturell über die Anzahl der Trainingstage (ein Tag
+vs. keiner) statt über `WorkoutSession`-Daten. Diese Einstufung als "dokumentierte, vorbestehende
+Einschränkung, kein Produktbug" war — wie die Nachbesserung unten zeigt — zu großzügig: das
+zugrundeliegende Verhalten war ein echter, lebender Verstoß gegen P6.2s eigene Anforderung "kein
+globaler Soll-Ist-Topf", keine neutrale Vereinfachung.
+
+**Nachbesserung nach berechtigter Rückmeldung (Commit `8076781`, 2026-10-18): Session-Zuordnung
+war doch ein Produktbug, jetzt behoben, nicht länger "kein Produktbug":**
+- **Spezifikation geprüft (Nutzer-Punkt 2):** P6.2s bindende Akzeptanzkriterien (oben in diesem
+  Dokument) verlangen ausdrücklich "kein globaler Soll-Ist-Topf" — jeder Plan wird einzeln
+  bewertet. Die Kennzahl ist damit planbezogen gemeint (Einhaltung DES jeweiligen Plans), nicht
+  allgemeine Trainingsaktivität — keine neue Entscheidung nötig, nur korrekt gegen eine bereits
+  bestehende Vorgabe geprüft.
+- **Begründung widerlegt:** die bisherige Rechtfertigung ("WorkoutSession hat keine stabile
+  Referenz zurück auf ihren Plan") war sachlich falsch. `WorkoutSession.day: TrainingDay?` wird an
+  ALLEN drei echten Session-Erzeugungspfaden gesetzt (`DayEditorView`/`DashboardView`
+  Plan-Workout-Start, Ruhetag-Überspringen, `startAdHocWorkout`) und liefert über `day.plan` eine
+  reale, zur Erzeugungszeit korrekte Plan-Referenz.
+- **Fix:** `FourWeekReviewAssembler.realOccurrences(in:for:)` filtert jetzt nach
+  `session.day?.plan`. Drei Fälle: (1) `day.plan` ist GENAU der zu bewertende Plan → zählt; (2)
+  `day.plan` ist ein ANDERER (ggf. ebenfalls aktiver) Plan → zählt NICHT MEHR — das ist der
+  eigentliche Fix; (3) keine verwertbare Plan-Zuordnung — entweder echtes Ad-hoc-Training
+  (`day.plan == nil`, zählt bewusst weiter für jeden Plan, unveränderte Produktregel "frei
+  trainiert ist auch trainiert") oder GAR KEINE Tag-Referenz (`day == nil`: CSV-Import/Restore
+  setzt sie nie, oder ein seither gelöschter/regenerierter Tag — `deleteRule: .nullify`). Nur der
+  letzte Unterfall ist bei mehreren aktiven Plänen echte Mehrdeutigkeit (Nutzer-Punkt 4/5): statt
+  zu raten (keine Plan-/Tagesnamen-Zuordnung) oder stillschweigend anzurechnen, wird er
+  ausgeschlossen und offen ausgewiesen — neu: `PlanParticipationEvaluator.DataGap
+  .unattributableHistoryExcludedDueToMultipleActivePlans` (Core) gespiegelt auf
+  `FourWeekReviewOrchestrator.DataGap.participationHistoryPartiallyUnattributed`, UI-sichtbar in
+  der bestehenden Datenlücken-Karte des Rückblicks (DE/EN/TR lokalisiert). Bei nur einem aktiven
+  Plan besteht keine Mehrdeutigkeit — unverändertes Verhalten, kein Ausschluss.
+- **Neue Regressionstests (Nutzer-Punkt 3), mit ECHTEN, über `day:` zugeordneten Sessions statt
+  des bisherigen Strukturtests:**
+  `testParticipationIsIsolatedPerPlanWhenBothPlansHaveRealSessions` (Plan B bewusst mit MEHR
+  Sessions als Plan A — beweist, dass Plan As `completedCount`/`extraOccurrenceCount` durch Plan
+  Bs Sessions nicht mehr verfälscht wird), `testAdHocSessionsStillCountTowardEveryActivePlanWithMultiplePlansActive`,
+  `testSessionsWithoutAnyDayReferenceAreExcludedAndDisclosedWhenMultiplePlansActive` sowie die
+  Gegenprobe `testSessionsWithoutAnyDayReferenceStillCountWithOnlyOneActivePlan` (alle in
+  `FourWeekReviewAssemblerTests.swift`), plus Core-Tests für die neuen `DataGap`-Fälle
+  (`PlanParticipationEvaluatorTests.testUnattributableSessionsExcludedFlagSurfacesAsDataGap`,
+  `FourWeekReviewOrchestratorTests.testUnattributableHistoryGapIsLiftedToOrchestratorLevel`). Der
+  bisherige Test `testAssembleForExplicitPlanUsesThatPlansParticipationNotTheAlphabeticallyFirst`
+  bleibt unverändert gültig — er beweist weiterhin korrekt die STRUKTURELLE Planauswahl, nicht die
+  Teilnahme-Isolation, die jetzt der neue Test abdeckt.
+- **Umfang dieser Nachbesserung:** wie vom Nutzer vorgegeben ausschließlich Code-/
+  Spezifikationsprüfung und der daraus resultierende Core-/Data-Layer-Fix — KEIN neues
+  TestingBot-Budget verwendet. Die bereits bestandene UI-Abnahme für Planauswahl und getrennten
+  Abschluss (oben, Priorität 1) bleibt davon unberührt und gültig: sie bewies die NAVIGATION
+  (welcher Plan geöffnet/abgeschlossen wird), nicht die Teilnahme-ZAHLEN, die hier separat
+  korrigiert wurden.
+- **Apple-kompiliert/Tests bestanden:** Codemagic-Läufe für diesen Fix (Commit `8076781`,
+  `ios-app` Build `6ad4d6e10b9ff924a4732af7`, `swift-package` Build `6ad4d6e226454e55290c455f`)
+  zum Zeitpunkt dieses Commits NOCH LAUFEND — bewusst nicht vorab als "grün" behauptet. Dieser
+  Absatz wird nach Abschluss der Läufe in einem eigenen, kleinen Folge-Commit mit dem tatsächlichen
+  Ergebnis (Status + Testzahlen) ersetzt.
 
 **UI-verifiziert (TestingBot, Build `tb://679d3a5de1cfc7e98579af9a`, vollständiger
 Mehrplan-Bedienablauf — EIN gezielter Re-Lauf nötig, siehe unten):**
