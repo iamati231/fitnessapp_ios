@@ -24,9 +24,18 @@ final class TrainingDayContentRecordTests: XCTestCase {
         utc.date(from: DateComponents(year: year, month: month, day: day))!
     }
 
+    /// Bewusst ein echter On-Disk-Store statt `isStoredInMemoryOnly: true`:
+    /// Apple-CI zeigte reproduzierbar Signal-5-Abstürze in jedem Test dieser
+    /// Datei (nie in anderen Testdateien mit identischem Schema), sobald ein
+    /// In-Memory-Store zusammen mit `TrainingDayContentRecord` im Schema
+    /// verwendet wurde — der On-Disk-Migrationstest unten, der von Anfang an
+    /// echte Store-Dateien nutzte, war der einzige nie betroffene Test in
+    /// dieser Datei. Jeder Aufruf bekommt eine eigene, eindeutige Datei.
     private func makeContainer() throws -> ModelContainer {
         let schema = Schema(AppSchema.types)
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let storeURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("TrainingDayContentRecordTests-\(UUID().uuidString).store")
+        let config = ModelConfiguration(schema: schema, url: storeURL)
         return try ModelContainer(for: schema, configurations: config)
     }
 
