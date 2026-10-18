@@ -708,14 +708,20 @@ dieses Codebases: additive Spalten erhöhen die Version nicht, nur der
 Major-Teil wird beim Import geprüft). Backup/Restore nutzt denselben
 Export/Import-Pfad, ist also automatisch mitgesichert.
 
-**Paket E — Leser umgestellt, enger als befürchtet:** Recherche VOR der
-Verdrahtung (wie im Auftrag gefordert) ergab: `ActiveWorkoutView`/
-`TimedWorkoutPlayerView`/`CircuitWorkoutPlayerView` zeigen strukturell NIE
-eine bereits abgeschlossene Session (`WorkoutRootView` routet
-ausschließlich über `ActiveSessionRoute`, die nur `isCompleted == false`-
-Sessions bekommt; beim Abschluss wird sofort auf `SummaryRoute`
-umgeroutet). `WorkoutSummaryView` ist damit die EINZIGE View, die
-historische Session-Inhalte zeigt — dort wurde umgestellt:
+**Paket E — Leser umgestellt, enger als befürchtet — KORRIGIERT, siehe
+Abschnitt 10:** Recherche VOR der Verdrahtung (wie im Auftrag gefordert)
+ergab: `ActiveWorkoutView`/`TimedWorkoutPlayerView`/
+`CircuitWorkoutPlayerView` zeigen strukturell NIE eine bereits
+abgeschlossene Session (`WorkoutRootView` routet ausschließlich über
+`ActiveSessionRoute`, die nur `isCompleted == false`-Sessions bekommt;
+beim Abschluss wird sofort auf `SummaryRoute` umgeroutet). **Diese
+Begründung wurde vom Auftrag zu Recht als unzureichend zurückgewiesen:**
+sie deckt nicht ab, dass der Session-Inhaltsvertrag ausdrücklich auch für
+eine noch OFFENE, WIEDERAUFGENOMMENE Session gilt — genau diese drei
+Player lasen bei jedem (Wieder-)Rendern weiterhin direkt den Live-Tag.
+Abschnitt 10 dokumentiert die Nachbesserung. `WorkoutSummaryView` bleibt
+die einzige View für bereits ABGESCHLOSSENE Sessions — dort wurde wie
+folgt umgestellt:
 - `timedFormatCircuitSection` (AMRAP/EMOM/Auf-Zeit/Zirkel-Referenzliste)
   und die zugehörigen Zielwert-Stats (Minuten-Deckel, Zirkel-Rundenziel,
   Zirkel-Pause, Hero-Stat, Edit-Mode-Stepper-Obergrenzen) lesen jetzt
@@ -821,10 +827,193 @@ Screen, keine Blocklänge, kein neuer Coaching-Algorithmus. Due-Badge- und
 sonstige bisherige Restprüfungen bleiben separat offen.
 
 **Ist der historische Inhalts-Schutz jetzt durchgängig produktiv
-nutzbar?** Ja, mit zwei dokumentierten, bewussten Grenzen: (1) orphane
-Log-Einträge (Übung nachträglich gelöscht) sind sichtbar und korrekt
-zugeordnet, aber nicht editierbar; (2) die Migrationsprüflücke oben bleibt
-offen. Alle sieben vom Auftrag genannten Regressionsszenarien sind durch
-automatisierte Tests abgedeckt (Punkt 5 der Vorgabe), bis auf die reinen
-UI-Interaktions-Schritte, für die die manuelle Prüfanweisung oben gilt.
-Beide Apple-CI-Workflows sind grün (s. o.).
+nutzbar?** Für ABGESCHLOSSENE Sessions (`WorkoutSummaryView`): ja, mit zwei
+dokumentierten, bewussten Grenzen: (1) orphane Log-Einträge (Übung
+nachträglich gelöscht) sind sichtbar und korrekt zugeordnet, aber nicht
+editierbar; (2) die Migrationsprüflücke oben bleibt offen. Für eine noch
+OFFENE/wiederaufgenommene Session galt das zum Zeitpunkt dieses Pakets
+NICHT — siehe Abschnitt 10 für die Nachbesserung und das aktualisierte
+Gesamturteil. Alle sieben vom Auftrag genannten Regressionsszenarien für
+den historischen Fall sind durch automatisierte Tests abgedeckt (Punkt 5
+der Vorgabe), bis auf die reinen UI-Interaktions-Schritte, für die die
+manuelle Prüfanweisung oben gilt. Beide Apple-CI-Workflows waren für
+diesen Stand grün (s. o.).
+
+## 10. Nachbesserung: Wiederaufnahme-Isolation (Resume-Fall)
+
+**Auslöser:** Nutzer-Korrektur nach Paket C/D/E — die Begründung "Player
+zeigen keine abgeschlossenen Sessions" ist für die Resume-Frage irrelevant;
+der Vertrag ("eine laufende Session behält ihren eigenen Inhaltsstand")
+gilt explizit AUCH für eine noch offene, wiederaufgenommene Session, nicht
+nur für abgeschlossene. Vorgegebene Reproduktionsschritte: Session starten
+→ verlassen (offen lassen) → denselben Tag extern ändern (Übung
+hinzufügen/entfernen/umsortieren, Zielwerte ändern) → wiederaufnehmen →
+prüfen, was Player/Satzvorgaben/Logging TATSÄCHLICH verwenden (nicht nur,
+ob das Snapshot-JSON unverändert blieb) → abschließen und mit Summary
+vergleichen. Dasselbe Prinzip zusätzlich für Zeitformat/Zirkel. Zusätzlich
+gefordert: prüfen, ob der Ad-hoc-Übungseditor (nicht nur Add/Remove)
+korrekt in den Snapshot einfließt.
+
+### 10.1 Rechercheergebnis (vor jeder Code-Änderung erhoben)
+
+- **Reichweite bestätigt:** `DayEditorView` ist navigierbar, während für
+  denselben Tag eine offene Session existiert — kein Lock verhindert das;
+  `DayEditorView.openSessionForCurrentDay` (DEL-127) existiert sogar
+  eigens, um diesen Zustand zu erkennen (zeigt dann einen Resume-Button
+  statt "Training starten", blockiert aber nicht den Editor selbst).
+- **`ActiveWorkoutView.orderedExercises(in:)`** las bei JEDEM (Wieder-)
+  Rendern `day.activeExercises` live — Liste, Reihenfolge UND der
+  Warmup-Filter. `ExerciseCard`/`SetRow` lasen alle Satzvorgaben
+  (Sets/Reps/Pause/RIR/Cardio-Distanz/-Dauer/Rolle/Cardio-Zeitbasiert-
+  Klassifikation) direkt von der Live-`Exercise`. `logSet` band jeden neuen
+  `ExerciseLog` an genau die `Exercise`-Instanz, die der Live-Tag gerade
+  an dieser Position lieferte — nach einer externen Umsortierung also
+  potenziell die FALSCHE Übung. `finishWorkout`s `exerciseCount` und
+  `isSupersetRoundComplete`s Partner-Erkennung lasen ebenfalls live.
+- **`TimedWorkoutPlayerView`** (AMRAP/EMOM/Auf-Zeit) und
+  `CircuitWorkoutPlayerView`: `day?.timeCapMinutes`/`circuitRounds`/
+  `circuitRestSeconds`/`circuitMode` steuerten die TATSÄCHLICHE Timer-/
+  Rundenlogik (Deckel-Erkennung, EMOM-Minutenrotation `exercises[(minute-1)
+  % exercises.count]`, Zirkel-Rundenabschluss `.toFailure` vs.
+  `.fixedReps`), nicht nur die Anzeige. `ForTimePlayerView.totalBoxes`/
+  `exerciseRoundsRow` lasen `exercise.sets` live für die Checkbox-Anzahl.
+  Zusätzlicher, unabhängig gefundener Fund: `ForTimePlayerView`/
+  `CircuitPlayerView` persistieren den Haken-Fortschritt
+  (`forTimeCheckedRoundsRaw`/`circuitCurrentRoundCheckedRaw`) als
+  `orderIndex=Anzahl`-Paare und lasen beim Decode gegen den LIVEN
+  `exercise.orderIndex` zurück — nach einer externen Umsortierung hätte
+  das bei Wiederaufnahme den Fortschritt der FALSCHEN Übung zugeordnet.
+- **Ad-hoc-Übungseditor-Lücke bestätigt:** `ExerciseEditorView` (voll
+  editierbar für `day.plan == nil`) wird aus `ActiveWorkoutView` NUR für
+  `session.isAdHoc` geöffnet (`onEdit`-Gate) — dieser Pfad hatte keine
+  Rückkopplung zum Snapshot. Zusätzlich, über den ursprünglichen Fund
+  hinaus: `ExerciseCard.addSet()`/`removeSet(at:)` (die "+ Satz"-Aktion
+  direkt auf der Karte) mutieren `exercise.sets` live für JEDE Session
+  (nicht nur Ad-hoc) und hatten ebenfalls keine Rückkopplung.
+- **Keine stabile Instanz-Identität:** `Exercise` hatte keine vom
+  `orderIndex` (ändert sich bei Umsortierung) oder `exerciseTemplateID`
+  (von mehreren Instanzen geteilt) unabhängige, stabile ID — eine
+  Kernvoraussetzung, um einen Snapshot-Eintrag nach einer externen
+  Umsortierung zuverlässig auf sein ursprüngliches Live-Objekt
+  zurückzuführen, fehlte bislang komplett.
+
+### 10.2 Umsetzung
+
+- **`Exercise.instanceID: UUID?`** (neu, `FitnessAppData/Exercise.swift`):
+  immer frisch per `UUID()` im `init` erzeugt, nie nachträglich gesetzt.
+  `nil` nur für Alt-Zeilen vor diesem Feld (lightweight-migrationsfähig,
+  gleiches Muster wie alle bisherigen optionalen Felder in diesem Modell).
+- **`TrainingDayContentSnapshot.ExerciseEntry.instanceID: UUID?`** (neu,
+  Core): Snapshot des obigen Felds. Additiv, `schemaVersion` NICHT erhöht —
+  ein Alt-JSON ohne diesen Key dekodiert dank Codables
+  `Optional`-Synthese automatisch zu `nil` (Linux-verifiziert, siehe
+  `testExerciseEntryWithoutInstanceIDKeyDecodesAsNilNotAsCorrupted`).
+- **`SessionContentResolver`** (neu, `FitnessAppData`): einzige Stelle, die
+  einen Snapshot gegen den aktuellen Live-Tag auflöst. Matching PRIMÄR über
+  `instanceID` (übersteht externe Umsortierung), Fallback
+  `exerciseTemplateID`+`orderIndex` für Alt-Snapshots ohne `instanceID`
+  (bestmöglich, nicht schlechter als der Zustand vorher). Liefert pro
+  Snapshot-Eintrag `.live(entry, exercise)` oder `.removedFromLiveDay(entry)`
+  — ein extern gelöschtes Live-Objekt verschwindet nie still, eine extern
+  HINZUGEFÜGTE Live-Übung taucht nie auf (allein durch Konstruktion: es
+  wird über `snapshot.exercises` iteriert, nie über `liveExercises`).
+- **`recordAdHocExerciseEdited`** (neu, `TrainingDayContentSnapshotWriter`):
+  deckt den Ad-hoc-Editor-Schreibpfad ab — "ausdrücklich innerhalb der
+  Session vorgenommene Änderung", nur aus `ActiveWorkoutView`s
+  `exerciseToEdit`-Sheet (`.onDisappear`) aufgerufen, NIE aus
+  `DayEditorView`. Gleiche Guards wie `recordAdHocExerciseAdded`
+  (`!isCompleted`, `isAdHoc`, `.available`).
+- **`recordSetCountChange`** (neu, `TrainingDayContentSnapshotWriter`):
+  deckt die "+ Satz"-Karten-Aktion ab — bewusst OHNE `isAdHoc`-Guard (gilt
+  für JEDE Session, da dieses Steuerelement nur innerhalb der laufenden
+  Session selbst existiert, nie "extern"). Aktualisiert chirurgisch NUR
+  `sets`, nicht per vollem Rebuild — ein zwischenzeitlich auf einem ANDEREN
+  Weg (DayEditorView) geändertes Feld derselben Übung darf nicht huckepack
+  mit einsickern (eigener Regressionstest:
+  `testRecordSetCountChangeDoesNotAbsorbOtherFieldsChangedExternallyInTheMeantime`).
+- **`ActiveWorkoutView`**: `orderedExercises(in:)` liefert nur noch die
+  Fallback-Basis für Alt-Sessions; die neue `resolvedExercises`-Property
+  (snapshot-first über `SessionContentResolver`, Warmup-Filter auf dem
+  aufgelösten Ergebnis) ist jetzt die EINZIGE Quelle für Liste/Reihenfolge
+  in `paginatedBody`/`dayCategory`/`isCardioSession`/`activeContextRow`/
+  `isSupersetRoundComplete`/`finishWorkout`/`deleteAdHocExercise`.
+  `.removedFromLiveDay`-Einträge rendern als neue, read-only
+  `RemovedExerciseCard` (sichtbarer Hinweis, kein neues Logging möglich —
+  bewusste, dokumentierte Einschränkung, analog zu orphanen Logs in der
+  Historie). `ExerciseCard`/`SetRow` bekommen zusätzlich `content:
+  TrainingDayContentSnapshot.ExerciseEntry` und lesen ALLE Satzvorgaben
+  (Sets/Reps/Pause/RIR/Cardio-Distanz/-Dauer/Rolle/Cardio-Zeitbasiert)
+  daraus statt von der Live-Übung; `exercise` bleibt ausschließlich für
+  Logging-Identität und bewusst außerhalb des Snapshot-Vertrags belassene
+  Felder (Equipment/Barbell-Erkennung, `suggestedWeight`,
+  Name-Lookup fürs GIF) maßgeblich — diese Felder waren schon im
+  ursprünglichen Schnappschuss-Datenvertrag (Abschnitt 2) bewusst NICHT
+  aufgenommen (Coaching-/Metadaten-Konzepte, keine "was wurde trainiert"-
+  Satzvorgabe) und werden hier nicht nachträglich ergänzt.
+- **`TimedWorkoutPlayerView` (AMRAP/EMOM/Auf-Zeit) +
+  `CircuitWorkoutPlayerView`**: neue `WorkoutSession`-Extension
+  `contentSnapshotFirst`/`contentSnapshotTimeCapMinutes`/
+  `contentSnapshotCircuitRounds`/`-RestSeconds`/`-Mode`
+  (`FitnessAppData/WorkoutSessionContentSnapshotFirst.swift`, aus
+  `WorkoutSummaryView`s bisher privater, dupliziertem Helfer extrahiert und
+  dort durch Aufrufe auf `session.` ersetzt) ersetzt alle `day?.`-Lesungen,
+  die bislang echte Timer-/Rundenlogik trieben. Jeder der drei Player-
+  Typen bekommt sein eigenes `resolvedExercises`
+  (Instanz-Property + statische Variante für `init`, da `self` dort noch
+  nicht erreichbar ist) nach demselben Resolver-Muster.
+  `ForTimePlayerView`/`CircuitPlayerView`s `encodeCheckedRounds`/
+  `decodeCheckedRounds`/`encodeCheckedInRound`/`decodeCheckedInRound`
+  matchen jetzt gegen den eingefrorenen `entry.orderIndex`, nicht mehr
+  gegen den live verschiebbaren `exercise.orderIndex`.
+  `finishTimedSession`s `exerciseCount` zählt den aufgelösten
+  (`.live`-)Bestand, nicht mehr `day.activeExercises.count`.
+
+### 10.3 Bewusst nicht angefasst (keine breite Player-Neugestaltung)
+
+- **Top-Level-Routing** (`TimedWorkoutPlayerView.body`s `switch
+  session.day?.timeFormat`, welcher der vier Player-Typen überhaupt
+  gerendert wird): bleibt live. Ein externes Ändern des GESAMTEN
+  Zeitformats einer bereits laufenden Session (AMRAP → EMOM o. ä.) ist ein
+  erheblich drastischerer, seltenerer Edit als Übung/Reihenfolge/Zielwert-
+  Änderungen und hätte eine Änderung der View-Auswahl-Architektur selbst
+  erfordert — bewusste, dokumentierte Grenze, kein übersehener Fall.
+- **Equipment/`primaryMuscle`/`notes`/`suggestedWeight`/
+  `smartProgressionEnabled`/`progressionStep`**: bleiben live für ALLE
+  Leser (Player wie Summary) — waren schon in Abschnitt 2 bewusst nicht
+  Teil des Snapshot-Datenvertrags (Coaching-/Metadaten-Konzepte, keine
+  Trainings-Satzvorgabe). Entsprechend liest z. B. die Aufwärm-Rampen-
+  Erkennung (`ExerciseCard.isBarbellExercise`/`referenceWeightKg`) weiterhin
+  live — keine Erweiterung des Schnappschuss-Schemas für dieses Paket.
+- **`.removedFromLiveDay`-Einträge bleiben read-only ohne neue
+  Logging-Möglichkeit** — konsistent mit der bereits in Paket E getroffenen
+  Entscheidung für orphane Historien-Logs.
+
+### 10.4 Neue Regressionstests (vor dem Fix geschrieben, reproduzieren die Lücke)
+
+- **`SessionContentResolverTests`** (neu, `FitnessAppDataTests`): die
+  Kernregression — externe Umsortierung zweier Übungen während die Session
+  offen ist, danach muss jeder Snapshot-Eintrag weiterhin auf SEIN eigenes
+  Live-Objekt zeigen (`===`-Identitätsprüfung), nicht auf das Objekt, das
+  zufällig an der alten Position steht. Dazu: extern hinzugefügte Übung
+  bleibt unsichtbar, extern gelöschte Übung wird `.removedFromLiveDay`
+  (nicht still fallengelassen), Zielwerte bleiben trotz externer Live-Edits
+  eingefroren, Legacy-Fallback ohne `instanceID`.
+- **`TrainingDayContentSnapshotWriterTests`** (erweitert): `
+  recordSetCountChange` (Erfolg auch für reguläre Nicht-Ad-hoc-Session,
+  chirurgisch — andere Felder sickern nicht mit ein, Ablehnung nach
+  Abschluss/ohne Vor-Snapshot), `recordAdHocExerciseEdited` (Erfolg,
+  Ablehnung für Nicht-Ad-hoc, Ablehnung nach Abschluss).
+- **`TrainingDayContentSnapshotTests`** (Core, Linux-verifiziert, 12/12
+  grün): `instanceID` übersteht Encode/Decode-Roundtrip; ein Alt-JSON ohne
+  den `instanceID`-Key dekodiert zu `nil`, nicht zu `.unreadable`.
+- Alle 1125 Linux-ausführbaren Tests (Core + die beiden ungegateten
+  Export-Service-Dateien) bleiben grün — siehe Build-Protokoll dieser
+  Session.
+
+### 10.5 Verifikationsstatus
+
+<!-- P8_STUFE2_SECTION_10_5_PLACEHOLDER -->
+
+### 10.6 Gesamturteil (ersetzt das Urteil in Abschnitt 9 für den Resume-Fall)
+
+<!-- P8_STUFE2_SECTION_10_6_PLACEHOLDER -->
