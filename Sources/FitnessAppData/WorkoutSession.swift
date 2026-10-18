@@ -157,6 +157,20 @@ public final class WorkoutSession {
     @Relationship(deleteRule: .nullify, inverse: \ExerciseLog.session)
     public var logs: [ExerciseLog] = []
 
+    /// P8-Vorbereitung (Stufe-2-Versionierung,
+    /// `docs/P8_STUFE2_VERSIONIERUNG_PLAN.md`): eingefrorener Tagesinhalt
+    /// zum Zeitpunkt dieser Session — anders als `day` (lebende Referenz,
+    /// zeigt nach einer späteren Bearbeitung des Tages den AKTUELLEN Stand)
+    /// bleibt dieser Snapshot nach Session-Abschluss unverändert. `nil` für
+    /// jede Bestandssession vor diesem Feld UND für Sessions ohne `day`
+    /// (z. B. HealthKit-Import) — "kein Snapshot verfügbar" ist ein
+    /// gültiger, niemals rückwirkend aufgefüllter Dauerzustand. Nur über
+    /// `TrainingDayContentSnapshotWriter.capture(for:in:)` schreibbar, nie
+    /// direkt — der Writer verweigert jede Änderung, sobald `isCompleted`
+    /// `true` ist.
+    @Relationship(deleteRule: .cascade, inverse: \TrainingDayContentRecord.session)
+    public var contentRecord: TrainingDayContentRecord?
+
     public init(
         startTime: Date = Date(),
         endTime: Date = Date(),

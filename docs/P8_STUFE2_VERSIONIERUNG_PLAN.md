@@ -1,9 +1,12 @@
 # P8-Vorbereitung — Stufe-2-Versionierung: Umsetzungsplan
 
-Reine Planung. Kein Code geändert, kein `TestingBot`-Budget verwendet. Branch
-`claude/smart-onboarding-epic`, HEAD zum Zeitpunkt dieser Planung `600212d`.
-Baut auf dem bereits abgeschlossenen P9-Fund (`session.day?.plan` ist eine
-reale, bei jeder echten Session-Erzeugung gesetzte Plan-Referenz — siehe
+**Stand nach Nachbesserung:** Datenvertrag präzisiert, Paket A (Core) + Paket
+B (SwiftData-Modell) UMGESETZT und getestet (siehe Abschnitt 5, "Ergebnis
+Paket A+B"). Paket C/D/E sowie der Block-Review-Screen (P8/Stufe 3) selbst
+sind weiterhin NICHT Teil dieser Runde. Kein `TestingBot`-Budget verwendet.
+Branch `claude/smart-onboarding-epic`. Baut auf dem bereits abgeschlossenen
+P9-Fund (`session.day?.plan` ist eine reale, bei jeder echten
+Session-Erzeugung gesetzte Plan-Referenz — siehe
 `docs/NEUE_SPEZIFIKATION_P0_AUDIT.md`, Commit `8076781`) auf, erweitert ihn
 aber NICHT: P9 löste die Plan-**Zuordnung** einer Session; dieses Dokument
 behandelt die davon unabhängige Frage, ob der **Inhalt** (Übungen/Reihenfolge)
@@ -132,62 +135,117 @@ abschließend klären (Dokument 03 fehlt) — diese Erweiterung wird bewusst NIC
 vorweggenommen, sondern als mögliche Nacharbeit benannt, falls Stufe 3 sie
 tatsächlich braucht.
 
-### 2.2 Neues Datenmodell
+### 2.2 Neues Datenmodell — UMGESETZT (Paket A+B), Feld für Feld geprüft
 
-**Core (`FitnessAppCore`, Linux-testbar — reine Codable-Struct, kein
-SwiftData):**
+**Nachbesserung gegenüber dem ersten Entwurf (User-Korrektur, Auftragspunkt 3):**
+die Feldliste wurde NICHT einfach von `currentContentFingerprint` übernommen,
+sondern einzeln gegen `Exercise.swift`/`ExerciseLog.swift` nachgeprüft. Dabei
+fehlten im Fingerprint-Ableitung drei Konzepte, die für Summary/Player/
+Wiederaufnahme sichtbar sind und deshalb jetzt Teil des Snapshots sind:
+`Exercise.role` (DEL-087 — Warmup/Arbeitssatz/Cooldown), `Exercise.supersetId`
+(DEL-083 — A1/B1-Gruppierung), `isCardio`/`isTimeBased`/`cardioEquipment`
+(bestimmen, welche Spalten ein Player überhaupt zeigt). Umgesetzt in
+`Sources/FitnessAppCore/Training/TrainingDayContentSnapshot.swift`:
 
 ```swift
-/// Eingefrorener Tagesinhalt zum Zeitpunkt einer Session. Felder bewusst
-/// deckungsgleich mit `TrainingDay.currentContentFingerprint`
-/// (TrainingDay.swift:109-127) — dieselbe, bereits gepflegte Definition von
-/// "was zählt als Tagesinhalt", nur materialisiert statt gehasht.
 public struct TrainingDayContentSnapshot: Codable, Sendable, Equatable {
+    public static let currentSchemaVersion = 1   // explizite Payload-Version
+
     public struct ExerciseEntry: Codable, Sendable, Equatable {
-        public let orderIndex: Int
-        public let exerciseTemplateID: UUID?       // wie Exercise.exerciseTemplateID
-        public let nameSnapshot: String             // wie Exercise.name
-        public let customNameSnapshot: String?
+        public let orderIndex: Int                  // Reihenfolge UND Unterscheidung mehrfach vorkommender gleicher Übungen
+        public let exerciseTemplateID: UUID?
+        public let nameSnapshot: String
+        public let customNameSnapshot: String?       // zusätzlich zu nameSnapshot — ExerciseLog hält nur den Systemnamen, dieser Snapshot bewusst mehr
+        public let role: ExerciseRole                 // DEL-087
+        public let supersetId: UUID?                  // DEL-083
+        public let isCardio: Bool
+        public let isTimeBased: Bool
+        public let cardioEquipment: CardioEquipment
         public let sets: Int
         public let repsMin: Int
         public let repsMax: Int
         public let restSeconds: Int
-        public let targetRir: Float                 // Typ an Exercise.targetRir angleichen
+        public let targetRir: Float
         public let targetDistanceKm: Double?
         public let targetDurationMinutes: Int?
     }
-    public let dayDisplayNameSnapshot: String        // customName ?? lokalisierter Name
-    public let timeFormatRaw: String?
+
+    public let schemaVersion: Int
+    public let dayNameSnapshot: String
+    public let dayCustomNameSnapshot: String?
+    public let dayLocalizationKeySnapshot: String?
+    public let weekday: Int
+    public let dayType: DayType
+    public let timeFormat: WorkoutTimeFormat?
     public let timeCapMinutes: Int?
     public let circuitRounds: Int?
     public let circuitRestSeconds: Int?
-    public let circuitModeRaw: String?
-    public let exercises: [ExerciseEntry]
+    public let circuitMode: CircuitRoundMode?
+    public let exercises: [ExerciseEntry]            // leer ist GÜLTIG (z.B. Ad-hoc vor der ersten Übung)
 }
 ```
 
-**Data (`FitnessAppData`, SwiftData, additiv):**
+**Drei unterscheidbare Lesefälle** (Auftragspunkt 3, letzter Spiegelpunkt),
+`TrainingDayContentSnapshotState`:
+
+```swift
+public enum TrainingDayContentSnapshotState: Sendable, Equatable {
+    case notCaptured                                  // nie aufgenommen (Altbestand, Import ohne Snapshot)
+    case available(TrainingDayContentSnapshot)        // gelesen — leere exercises-Liste ist hier der "gültig leer"-Fall, kein eigener Case
+    case unreadable(TrainingDayContentSnapshotDecodeError)  // .corrupted ODER .unsupportedSchemaVersion(Int)
+}
+```
+
+`decode(fromJSON:)` prüft `schemaVersion` EXPLIZIT gegen
+`currentSchemaVersion` — eine unbekannte künftige Version wird nie als
+aktuell geraten. Ein beschädigter oder nicht unterstützter Record wird NIE
+stillschweigend durch den Live-Tagesinhalt ersetzt; das bleibt (erst in
+Paket E) Sache des jeweiligen Lesepfads, der `.unreadable` explizit anders
+behandeln muss als `.notCaptured`.
+
+**Data (`FitnessAppData`, SwiftData, additiv) — `TrainingDayContentRecord.swift`:**
 
 ```swift
 @Model
 public final class TrainingDayContentRecord {
-    public var contentJSON: String   // JSON von TrainingDayContentSnapshot
-    public var capturedAt: Date      // = session.startTime bei Erst-Anlage
-    @Relationship(deleteRule: .nullify, inverse: \WorkoutSession.contentRecord)
+    var contentJSON: String     // MODUL-INTERN, bewusst nicht `public`
+    var capturedAt: Date        // MODUL-INTERN
     public var session: WorkoutSession?
-    // computed `content: TrainingDayContentSnapshot?` — identisches
-    // Raw+Computed-Muster wie TrainingPlan.generatorInput (TrainingPlan.swift:130-142)
+    public var state: TrainingDayContentSnapshotState { /* decode(fromJSON: contentJSON) */ }
 }
 ```
 
-`WorkoutSession` bekommt additiv `contentRecord: TrainingDayContentRecord?`
-(inverse oben). `deleteRule: .nullify` auf BEIDEN Seiten, nicht `.cascade` —
-der Snapshot gehört fachlich zur Session, aber ein Datenmodell-Fehler soll nie
-eine Session mitreißen; verwaiste Records ohne Session sind unschädlich und
-könnten optional in einem Wartungslauf bereinigt werden (kein Blocker für
-dieses Paket).
+`WorkoutSession.contentRecord: TrainingDayContentRecord?` trägt
+`@Relationship(deleteRule: .cascade, inverse: \TrainingDayContentRecord.session)`
+— GEÄNDERT gegenüber dem ersten Entwurf (dort `.nullify` auf beiden Seiten):
+ein Snapshot ohne seine Session hat keine eigenständige Bedeutung, daher
+Cascade von Session→Record (Löschen der Session räumt ihren Record mit auf);
+umgekehrt bleibt `WorkoutSession.day` weiterhin separat `.nullify` (unverändert).
 
-**Warum JSON-Payload statt eigenes `[Exercise]`-Submodell:** Der Snapshot ist
+**Schreibschutz ist ein Modul-Grenzen-Vertrag, kein Kommentar** (Auftragspunkt 4):
+`contentJSON`/`capturedAt` sind `internal`, nicht `public` — jeder Aufrufer
+außerhalb von `FitnessAppData` (also jeder echte Schreibpfad, der in
+`FitnessAppUI` liegt) kann sie compilerseitig NICHT direkt setzen. Die
+einzige Schreibstelle ist `TrainingDayContentSnapshotWriter.capture(for:in:)`:
+
+```swift
+public enum TrainingDayContentSnapshotWriter {
+    @discardableResult
+    public static func capture(for session: WorkoutSession, in context: ModelContext) -> Bool {
+        guard let day = session.day, !session.isCompleted else { return false }
+        // ... baut TrainingDayContentSnapshot aus day.activeExercises (sortiert
+        // nach orderIndex, identisch zu currentContentFingerprint), (über-)
+        // schreibt session.contentRecord, gibt true zurück.
+    }
+}
+```
+
+`capture` lehnt eine bereits abgeschlossene Session (`isCompleted == true`)
+STILL ab (Rückgabewert `false`, siehe 2.3 für die Begründung gegen einen
+Assertion-Trap) — das ist die einzige erlaubte Schreibstelle, nicht nur eine
+Konvention.
+
+**Warum JSON-Payload statt eigenes `[Exercise]`-Submodell:** der Snapshot ist
 nach dem Einfrieren nie wieder editierbar — es gibt keinen Bedarf, einzelne
 Zeilen relational zu queryn. Genau dieses Muster (JSON-Rohstring + typisierter
 Computed-Zugriff) ist in diesem Codebase bereits etabliert
@@ -195,30 +253,65 @@ Computed-Zugriff) ist in diesem Codebase bereits etabliert
 `UserBodyProfile.equipmentPreferencesRaw`) — kein neues Pattern, keine dritte
 Kaskaden-Relationship, die migriert/exportiert werden müsste.
 
-### 2.3 Wann ein neuer Stand entsteht (Auftragspunkt 2, Spiegelpunkt 3)
+### 2.3 Produktregel für laufende Sessions (Auftragspunkt 1, verbindlich — ersetzt die vorherige offene Frage)
+
+**Eine gestartete Session behält ihren EIGENEN Inhaltsstand.** Externe
+Änderungen am Plan/Tag (DayEditorView, PlanEditorView, Equipment-/
+Umgebungsanpassung) gelten ab sofort NUR für künftige Sessions und dürfen
+den Stand einer bereits laufenden Session nie stillschweigend ändern.
+Explizite Änderungen INNERHALB der laufenden Session selbst (Ad-hoc-Übung
+hinzufügen/entfernen) dürfen ihren eigenen Stand dagegen aktualisieren. Beim
+Abschluss wird dieser Stand eingefroren — NICHT erneut aus dem (eventuell
+zwischenzeitlich extern veränderten) Live-Tag neu erzeugt.
 
 Lebenszyklus spiegelt bewusst den bereits etablierten Lebenszyklus von
 `WorkoutSession` selbst: "Eine Zeile wird bei Workout-**Start** mit
 `isCompleted=false` angelegt… Das finale 'Speichern' auf dem
 Summary-Screen… setzt `isCompleted=true`" (`WorkoutSession.swift:8-11`,
-F63/F72). Der Content-Record folgt demselben Muster:
+F63/F72). Umgesetzt in `TrainingDayContentSnapshotWriter.capture(for:in:)`:
 
 1. **Bei Session-Erzeugung** (identisch zu den 5 produktiven
    `WorkoutSession(day:)`-Stellen, s. 3.1): Snapshot aus dem AKTUELLEN
-   `day`/`day.activeExercises` bauen, `TrainingDayContentRecord` anlegen,
-   `session.contentRecord` setzen.
-2. **Während die Session offen ist** (`isCompleted == false`): der Record darf
-   überschrieben werden — einziger produktiver Grund dafür ist die
-   Ad-hoc-Live-Bearbeitung (`ActiveWorkoutView.addAdHocExercise`/
-   `deleteAdHocExercise`, `ActiveWorkoutView.swift:1044-1143`): jede dieser
-   Mutationen schreibt den Snapshot neu, exakt wie sie heute schon
-   `session.exerciseCount` nachführen.
-3. **Bei Session-Abschluss** (`isCompleted` wird `true`): letzter Schreibzugriff,
-   danach GEFROREN — kein Schreibpfad außerhalb dieses einen Übergangs rührt
-   den Record danach noch an. Eine Zeile mit `isCompleted == false` auf immer
-   (Crash-Ruine, bereits heute als Recovery-Banner sichtbar) hat damit
-   konsequent auch nie einen final eingefrorenen Snapshot — unproblematisch,
-   da diese Zeilen ohnehin als unvollständig behandelt werden.
+   `day.activeExercises` bauen, `TrainingDayContentRecord` anlegen,
+   `session.contentRecord` setzen. `capture` liest IMMER den Live-Tag neu —
+   das ist bei der Erzeugung richtig (es gibt noch keinen eigenen Stand) und
+   bleibt bei jedem SPÄTEREN Aufruf nur deshalb korrekt, weil Paket C
+   `capture` ausschließlich aus Aktionen INNERHALB der Session heraus
+   aufrufen darf (Punkt 2), nie aus einem externen Edit-Pfad.
+2. **Während die Session offen ist** (`isCompleted == false`): der einzige
+   produktive Grund für ein erneutes `capture` ist eine explizite Aktion
+   INNERHALB dieser Session — die Ad-hoc-Live-Bearbeitung
+   (`ActiveWorkoutView.addAdHocExercise`/`deleteAdHocExercise`,
+   `ActiveWorkoutView.swift:1044-1143`). Ein externer `DayEditorView`-/
+   `PlanEquipmentAdaptationApplier`-Edit an DEMSELBEN Tag löst `capture`
+   NICHT aus — die offene Session merkt davon nichts, exakt wie von der
+   Produktregel verlangt.
+3. **Bei Session-Abschluss** (unmittelbar VOR dem Setzen von
+   `isCompleted = true`, siehe Reihenfolge-Warnung unten): letzter erlaubter
+   `capture`-Aufruf. Direkt danach GEFROREN — `capture` lehnt jeden weiteren
+   Aufruf ab (`guard ... !session.isCompleted else { return false }`,
+   `TrainingDayContentRecord.swift`), der bestehende Record bleibt exakt wie
+   er war. Eine Zeile mit `isCompleted == false` auf immer (Crash-Ruine,
+   bereits heute als Recovery-Banner sichtbar) hat damit konsequent auch nie
+   einen final eingefrorenen Snapshot — unproblematisch, da diese Zeilen
+   ohnehin als unvollständig behandelt werden.
+
+**Reihenfolge-Warnung für Paket C** (noch nicht umgesetzt, hier nur
+festgehalten): der letzte `capture`-Aufruf muss VOR `session.isCompleted = true`
+erfolgen, nie danach — `capture` ist ab dem Moment, in dem `isCompleted` auf
+`true` steht, ein garantiertes No-Op.
+
+**"Nur für Summary" wäre keine vollständige Lösung** (Auftragspunkt 1, letzter
+Spiegelpunkt) — ausdrücklich bestätigt und in 3. unten erweitert: Paket E
+(Lesepfad-Umstellung, noch nicht Teil dieses Pakets) muss, sobald es kommt,
+NICHT nur `WorkoutSummaryView.swift:1391` umstellen, sondern JEDEN Leser des
+Tagesinhalts EINER BEREITS LAUFENDEN ODER ABGESCHLOSSENEN Session — also auch
+`ActiveWorkoutView`s eigene (nicht nur die Ad-hoc-)Anzeige sowie
+`CircuitWorkoutPlayerView.swift:86`/`TimedWorkoutPlayerView.swift:1540` bei
+Wiederaufnahme. Ob diese drei heute `session.day.activeExercises` live lesen
+(wahrscheinlich, noch nicht abschließend verifiziert) entscheidet, wie groß
+Paket E tatsächlich wird — das wird VOR der Verdrahtung geprüft, nicht erst
+währenddessen.
 
 ### 2.4 Welcher Stand beim Trainingsstart verbunden wird
 
@@ -228,26 +321,25 @@ passiert — identisch zur Quelle, die `currentContentFingerprint` ohnehin schon
 live berechnet. Für Ad-hoc: der zu Beginn leere Stand, der sich über 2.3
 Schritt 2 während der Session aufbaut.
 
-### 2.5 Laufende Session + gleichzeitige Planbearbeitung — AUSDRÜCKLICH OFFEN
+### 2.5 Laufende Session + gleichzeitige Planbearbeitung — PRODUKTREGEL ENTSCHIEDEN, EIN TECHNISCHER PUNKT BLEIBT OFFEN
 
-Es existiert heute kein Mechanismus, der eine Bearbeitung in
-`DayEditorView`/`PlanEditorView` blockiert, während anderswo eine
-`WorkoutSession` für denselben Tag läuft — die einzige vorhandene
-Session-Prüfung (`DayEditorView.swift:42-47`, DEL-042) verhindert nur den
-**Start** einer zweiten Session bei bereits offener erster, nicht das
-gleichzeitige Editieren. Ob `DayEditorView` navigationstechnisch überhaupt
-erreichbar ist, während `ActiveWorkoutView` für denselben Tag präsentiert
-wird, wurde in dieser Untersuchung NICHT geprüft. **Das bleibt eine
-ausdrücklich offene Produktentscheidung**, keine stillschweigende Annahme:
-Soll ein Edit während offener Session (a) sofort blockiert werden, (b) den
-bereits gezogenen Snapshot der offenen Session unberührt lassen (Default
-dieses Vorschlags, da Punkt 2.3 den Record nur bei Erzeugung/Ad-hoc-Edit/
-Abschluss schreibt — ein fremder `DayEditorView`-Edit löst keinen dieser drei
-Trigger aus und bliebe damit von selbst folgenlos für die offene Session),
-oder (c) etwas anderes tun? Vorschlag (b) ergibt sich bereits als Nebenprodukt
-des oben beschriebenen Schreibvertrags, ohne dass eine explizite Sperre nötig
-wäre — wird hier aber bewusst als Entscheidung benannt, nicht als Zufall
-verschwiegen.
+**Entschieden** (Auftragspunkt 1, siehe 2.3): ein `DayEditorView`-/
+`PlanEquipmentAdaptationApplier`-Edit an einem Tag mit offener Session löst
+KEINEN `capture`-Aufruf aus — die offene Session bemerkt die externe
+Änderung nicht, ihr eingefrorener/zuletzt gezogener Stand bleibt unverändert
+bestehen bis zu ihrem eigenen Abschluss. Das ist keine zufällige Nebenwirkung
+mehr, sondern die mit diesem Auftrag festgelegte Regel, bereits in
+`TrainingDayContentSnapshotWriter.capture` umgesetzt (es gibt dort keinen
+Aufrufpfad, der von einem externen Editor ausginge).
+
+**Weiterhin offen, rein technisch** (nicht Teil dieses Pakets): ob
+`DayEditorView` navigationstechnisch überhaupt erreichbar ist, während
+`ActiveWorkoutView` für denselben Tag präsentiert wird (die einzige
+vorhandene Session-Prüfung, `DayEditorView.swift:42-47`/DEL-042, verhindert
+nur den **Start** einer zweiten Session, nicht gleichzeitiges Editieren).
+Diese Frage ändert nichts an der oben entschiedenen Regel — sie betrifft nur,
+WIE OFT der Fall "externe Änderung während offener Session" in der Praxis
+überhaupt auftreten kann, nicht, was dann passieren soll.
 
 ### 2.6 Löschen, Regenerieren, Equipment-Anpassung, Import
 
@@ -340,22 +432,53 @@ JEDE Bestandszeile — kein Backfill, keine rückwirkende Rekonstruktion. Jeder
 Lesepfad muss `nil` als eigenen, offen benannten Zustand behandeln ("kein
 historischer Stand verfügbar"), nie als `0`/leere Liste interpretieren.
 
+**Nachbesserung (Auftragspunkt 4): ECHT geprüft, nicht nur behauptet.** Ein
+frischer In-Memory-Container beweist nur, dass ein NEU erzeugtes Objekt den
+richtigen Default hat — er kann nie zeigen, dass ein VORHANDENER Store ohne
+das neue Modell weiterhin öffnet. Deshalb legt
+`TrainingDayContentRecordTests.testExistingWorkoutSessionsSurviveAddingTrainingDayContentRecordToTheSchema`
+einen ECHTEN On-Disk-Store mit dem Schema VOR diesem Paket an (eigene
+`preContentRecordSchemaTypes`-Liste, exakt der historische Stand von
+`AppSchema.types`), speichert eine Session hinein, schließt den Container und
+öffnet DENSELBEN Dateipfad mit einem zweiten, unabhängigen Container unter
+dem VOLLEN aktuellen Schema (inklusive `TrainingDayContentRecord`). Ergebnis
+siehe Abschnitt "Ergebnis" unten — dieser Test läuft nur auf Apple-CI
+(SwiftData), nicht auf Linux.
+
 ## 5. Implementierungspakete (klein, mit Tests und Abhängigkeiten)
 
-**Paket A — Core-Struct + Encode/Decode (Linux-testbar, keine Abhängigkeit):**
-`TrainingDayContentSnapshot` (+ `ExerciseEntry`) in `FitnessAppCore`. Tests:
-JSON-Roundtrip, Gleichheit zweier Snapshots, Verhalten bei fehlenden
-optionalen Feldern. Kein SwiftData-Bezug.
+**Paket A — UMGESETZT.** Core-Struct + Encode/Decode, Linux-testbar, keine
+Abhängigkeit. `TrainingDayContentSnapshot`/`ExerciseEntry`/
+`TrainingDayContentSnapshotState`/`TrainingDayContentSnapshotDecodeError` in
+`Sources/FitnessAppCore/Training/TrainingDayContentSnapshot.swift`. 10 Tests
+in `Tests/FitnessAppCoreTests/TrainingDayContentSnapshotTests.swift` — JSON-
+Roundtrip (Normalfall, Duplikate am selben Tag, Superset+Rollen, Cardio/
+Time-Based, Zirkel-Parameter), gültig leerer Snapshot, beschädigtes JSON,
+leerer String, nicht unterstützte Schemaversion, alle drei `State`-Fälle.
+**Lokal auf Linux ausgeführt: 10/10 grün** (`swift test --filter
+TrainingDayContentSnapshotTests`); Gesamt-Suite weiterhin grün (1123/1123,
+vorher 1111 + 2 aus dem P9-Fix + 10 neu).
 
-**Paket B — SwiftData-Modell (Apple-CI/Gerät, abhängig von A):**
-`TrainingDayContentRecord` + `WorkoutSession.contentRecord`-Relationship,
-Raw+Computed-Zugriff (wie `generatorInput`). Migrationstest: Bestandsdatenbank
-ohne das Feld öffnen → `contentRecord == nil` für jede Zeile.
+**Paket B — UMGESETZT.** `TrainingDayContentRecord` (`contentJSON`/
+`capturedAt` modul-intern, nicht `public`) + `WorkoutSession.contentRecord`
+(`deleteRule: .cascade`, Session→Record) +
+`TrainingDayContentSnapshotWriter.capture(for:in:)` als einzige Schreibstelle
+in `Sources/FitnessAppData/TrainingDayContentRecord.swift`, registriert in
+`AppSchema.types`. 9 Tests in
+`Tests/FitnessAppDataTests/TrainingDayContentRecordTests.swift`: Roundtrip
+durch SwiftData, Session ohne Tag (No-Op), leere Übungsliste (gültig),
+Session-/Record-Isolation zwischen zwei Sessions, Schutz vor Überschreiben
+eines abgeschlossenen Records (inkl. Gegenprobe, dass eine NACH Abschluss
+hinzugefügte Übung NICHT im Record auftaucht), Löschverhalten (Tag löschen
+lässt den Record unberührt; Session löschen kaskadiert auf den Record),
+beschädigtes JSON wird `.unreadable(.corrupted)` statt live ersetzt, sowie
+die echte On-Disk-Migration aus Abschnitt 4. **Nur auf Apple-CI lauffähig**
+(SwiftData `#if canImport`-gegated, kompiliert auf Linux zu einer leeren
+Einheit) — Ergebnis siehe Abschnitt "Ergebnis" unten.
 
-**Paket C — Verdrahtung an den 8 Schreibpfaden (Apple-CI/Gerät, abhängig von
-B):** die 5 Session-Erzeugungsstellen + Ad-hoc-Resync + Freeze-bei-Abschluss.
-Tests: die Abnahmefälle aus Abschnitt 6 unten, je als eigener
-SwiftData-Regressionstest (Muster: `FourWeekReviewAssemblerTests.swift`).
+**Paket C — NICHT Teil dieser Runde.** Verdrahtung an den 8 Schreibpfaden
+(Abschnitt 3) + Freeze-Aufruf vor `isCompleted = true`. Folgt erst nach
+Rückmeldung zu A/B.
 
 **Paket D — Export/Import (Apple-CI/Gerät, abhängig von B, parallel zu C
 möglich):** additive CSV-Spalte/-Datei, Import-Schritt nach `importWorkouts`.
@@ -373,20 +496,39 @@ Reihenfolge: A → B → (C, D parallel) → E. Keines dieser Pakete baut den
 Block-Review-Screen (Stufe 3/P8) selbst — das bleibt, wie vom Auftrag
 verlangt, zurückgestellt.
 
+### Ergebnis Paket A+B (Auftragspunkt 4, Apple-CI und Testausführung GETRENNT dokumentiert)
+
+**Linux, tatsächlich ausgeführt:** `swift build` + `swift test` grün,
+1123/1123 (vorher 1111 + 2 aus dem P9-Fix + 10 neu aus Paket A). Deckt NUR
+Paket A ab (`TrainingDayContentSnapshotTests`) — Paket B
+(`TrainingDayContentRecordTests`) ist `#if canImport(SwiftData)`-gegated und
+kompiliert auf Linux zu einer leeren Einheit (0 Tests ausgeführt, bestätigt).
+
+**Apple-CI (`ios-app` + `swift-package`):** <<CI_STATUS_PLACEHOLDER>>
+
 ## 6. Abnahmefälle (vor Implementierung festgelegt)
 
 1. Session aus Plan A bleibt A zugeordnet, auch bei Namensänderung — bereits
    durch P9 (`session.day?.plan`) abgedeckt, hier nur bestätigt, nicht erneut
    gebaut.
-2. Eine spätere Änderung von Übungen/Reihenfolge verändert den
-   `TrainingDayContentRecord` einer bereits gestarteten/abgeschlossenen
-   Session nicht — Regressionstest: Session anlegen, Snapshot lesen, Tag via
-   `DayEditorView`-Äquivalent editieren, Snapshot erneut lesen → unverändert.
+2. ✅ **UMGESETZT (Paket B).** Eine spätere Änderung von Übungen/Reihenfolge
+   verändert den `TrainingDayContentRecord` einer bereits gestarteten/
+   abgeschlossenen Session nicht —
+   `testCaptureAfterCompletionIsRejectedAndLeavesTheFrozenRecordUnchanged`:
+   Session anlegen, aufnehmen, abschließen, Tag nachträglich um eine Übung
+   erweitern, erneuter Aufnahmeversuch schlägt fehl, der eingefrorene Record
+   bleibt exakt wie vor der Änderung.
 3. Plan B kann As Historie nicht beeinflussen — folgt direkt aus 1:0..1
-   Session→Record, keine zusätzliche Prüfung über Pläne hinweg nötig.
-4. Löschen/Regenerieren eines Tages zerstört die künftig gespeicherte
-   historische Zuordnung nicht — Regressionstest: Tag löschen, Session +
-   Record bleiben lesbar (`day == nil`, `contentRecord` unverändert vorhanden).
+   Session→Record, zusätzlich durch
+   `testTwoSessionsGetIndependentRecordsNeitherAffectsTheOther` (Paket B)
+   bestätigt.
+4. ✅ **UMGESETZT (Paket B).** Löschen eines Tages zerstört die bereits
+   gespeicherte historische Zuordnung nicht —
+   `testDeletingTheDayLeavesTheSnapshotFullyReadableWithNoGuessedPlanLink`:
+   Tag löschen, `session.day == nil` danach erwartungsgemäß, der
+   Inhalts-Snapshot bleibt vollständig lesbar. "Regenerieren" betrifft nur
+   Paket C (noch nicht umgesetzt) — `recalculate` selbst rührt laut Recherche
+   ohnehin keinen Tag mit Session-Historie an (Abschnitt 1.1).
 5. Vorschau und Verwerfen im Builder erzeugen keine übernommenen
    Planversionen — folgt aus 2.6 (`PlanDraft` hat keinen `ModelContext`-Zugriff),
    Regressionstest optional als Bestätigung, kein neuer Code nötig.
@@ -400,8 +542,10 @@ verlangt, zurückgestellt.
 
 ## 7. Ausdrücklich offene Produktentscheidungen (nicht erraten, nicht entschieden)
 
-- **2.5**: Verhalten bei gleichzeitiger Planbearbeitung während offener
-  Session — Default (b) vorgeschlagen, nicht final entschieden.
+- **2.5**: die Produktregel selbst ist ENTSCHIEDEN (siehe 2.3/2.5) und in
+  Paket B umgesetzt. Rein technisch offen bleibt nur, ob `DayEditorView`
+  während einer offenen `ActiveWorkoutView` für denselben Tag überhaupt
+  erreichbar ist — ändert nichts an der bereits feststehenden Regel.
 - **2.1**: Ob Stufe 3 zusätzlich eine session-unabhängige Tages-Versionshistorie
   braucht (eigene `TrainingPlan`/`TrainingDay`-UUID) — hängt vom fehlenden
   Dokument 03 ab.
