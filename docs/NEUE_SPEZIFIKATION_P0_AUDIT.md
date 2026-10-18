@@ -705,10 +705,24 @@ Geräte-UI-Bestätigung von P6.3.
   Core-Logik" ohne jede neue UI-Oberfläche (so vom User explizit verlangt); eine Anzeige der
   Teilnahmequote ist ein separater, noch offener Folgeschritt (Datenanbindung `WorkoutSession` →
   `PlanParticipationEvaluator.Input` + UI-Darstellung), nicht Teil dieser Abnahme.
-- P6.3 — **Code/Data-Abnahme ✅ abgeschlossen, UI-Abnahme ❌ offen** (Commit `92757bf`,
-  2026-10-18, löst den vorherigen Stand `063cb90` ab). Auf ausdrücklichen User-Wunsch
+- P6.3 — **Code/Data-Abnahme ✅ abgeschlossen, UI-Abnahme ❌ offen** (aktueller Stand Commit
+  `618e63e`, 2026-10-18, über `92757bf` auf `063cb90` aufbauend). Auf ausdrücklichen User-Wunsch
   ("Code-/Data-Abnahme und UI-Abnahme getrennt ausweisen") werden beide Status hier bewusst
   NICHT zu einem gemeinsamen "abgenommen" verschmolzen.
+
+  **Nachbesserung (Commit `618e63e`): periodische, echt optionale Belastungsfrage.** Nebenfund
+  #3 (unten) führte zu einer fachlichen Korrektur, kein blosses Dokumentieren der Lücke: statt
+  `WorkoutSession.sessionFeeling` (pro Session, nicht optional) bekommt `PeriodicCheckInView`
+  eine EIGENE, periodenbezogene Belastungsfrage (neues Core-Enum `ExertionFeedback`:
+  `tooEasy`/`appropriate`/`tooHard`, additives Feld `PeriodicCheckIn.exertionFeedbackRaw`, CSV-Spalte
+  `exertion_feedback`, rückwärtskompatibel wie `activated_at_utc`). Damit sind jetzt alle FÜNF
+  Fragen dieses Rückblicks (Häufigkeit/Dauer/Belastung/Beschwerden/Ziel) einzeln echt überspringbar
+  — der in Nebenfund #3 dokumentierte Unterschied ist damit behoben, nicht nur benannt. Der
+  bestehende Trainingsabschluss (`FinishWorkoutSheet`/`SessionFeeling`) bleibt unverändert.
+  **Apple-kompiliert:** `ios-app` + `swift-package` beide `success`. **Tests bestanden:** 1320/1320
+  auf macOS grün (bestehende P6.3-Roundtrip-Tests um `exertionFeedback` erweitert, keine
+  Fehlschläge). `FourWeekReviewOrchestrator.CheckInFeedback` nimmt das neue Feld als reinen
+  Durchreich-Wert auf, bewusst ohne eigene `Concern`-Logik dafür (offene, separate Entscheidung).
 
   **Code/Data-Abnahme (Implementiert + Apple-kompiliert + Tests bestanden): ✅**
   Neues eigenständiges Modell `PeriodicCheckIn` (`Sources/FitnessAppData/`) ergänzt
@@ -743,9 +757,8 @@ Geräte-UI-Bestätigung von P6.3.
   NICHT überspringbar ist — `@State private var selected: SessionFeeling = .okay` ist ein fest
   vorbelegter, nicht-optionaler Default ohne Skip-Pfad. Das ist bestehendes, von P6.3 unverändertes
   Verhalten dieser vorgelagerten Frage, nicht Teil dieses Features. Nur die 4 NEUEN Fragen
-  (Häufigkeit/Dauer/Beschwerden/Ziel) sind im strikten Sinn einzeln überspringbar. Dieser Unterschied
-  wird hier bewusst offen benannt, statt die User-Checkliste ("alle fünf Fragen ... überspringbar")
-  stillschweigend als erfüllt zu verbuchen.
+  (Häufigkeit/Dauer/Beschwerden/Ziel) waren zu diesem Zeitpunkt im strikten Sinn einzeln
+  überspringbar. **Inzwischen durch die Nachbesserung oben (Commit `618e63e`) behoben** — siehe dort.
   **Kombinierter P6-Checkpoint (P6.1+P6.2+P6.3 zusammen, ein Codemagic-Lauf):** ein Apple-CI-Fund
   aus dem kombinierten Regressionstest wurde unterwegs gefixt — `XCTAssertEqual(_:_:accuracy:)`
   erhielt ein `TimeInterval?` statt `TimeInterval` (Linux kompilierte das fälschlich durch, Apples
@@ -780,20 +793,36 @@ Geräte-UI-Bestätigung von P6.3.
     zu kurze Wartezeit (widerlegt, bis zu 12s mit mehreren erfolgreichen Zwischen-Screenshots
     abgewartet). Screenshots gelingen auch nach dem Hang weiter (schließt einen kompletten
     App-Absturz im üblichen Sinn eher aus).
-  - **Log-Analyse:** das von TestingBot bereitgestellte iOS-Gerätekonsolenlog (~55 MB,
-    dekomprimiert) wurde gezielt nach Crash-/Fatal-/Jetsam-/SIGKILL-Mustern rund um den
-    Hang-Zeitraum durchsucht — kein Absturz- oder Watchdog-Kill-Signal für
-    `com.atamya.FitnessApp` gefunden. Das entlastet die App nicht, liefert aber auch keine
-    Erklärung; die `appium`/`vm`-Logs sowie eine Bisektion gegen den Vor-Fix-Commit `063cb90`
-    (um zu klären, ob der Hang mit dem Discard-Guard-Nebenfund zusammenhängt oder bereits vorher
-    bestand) wurden aus Budget-Gründen NICHT mehr durchgeführt.
-  - **Einordnung:** ungeklärt, ob echter SwiftUI-/Navigations-Bug beim erstmaligen Aufbau von
-    `PeriodicCheckInView` unter XCTest-Accessibility-Snapshot-Last, oder ein TestingBot/XCTest-
-    Harness-spezifisches Artefakt. Wird hier bewusst als **offener Blocker** stehen gelassen,
-    statt als "UI-verifiziert" verbucht zu werden — exakt die vom User verlangte Trennung.
-  - **Empfehlung:** vor der nächsten TestingBot-Budget-Runde entweder (a) denselben Navigations-
-    Einstieg einmal manuell auf einem echten Gerät/Simulator ausprobieren (würde App-Bug vs.
-    Harness-Artefakt klären), oder (b) eine Bisektion gegen `063cb90` fahren.
+  - **Log-Analyse (iOS-Gerätekonsolenlog, ~55 MB dekomprimiert):** gezielt nach Crash-/Fatal-/
+    Jetsam-/SIGKILL-Mustern rund um den Hang-Zeitraum durchsucht — kein Absturz- oder
+    Watchdog-Kill-Signal für `com.atamya.FitnessApp` gefunden.
+  - **Log-Analyse (Appium-Log, Folgeruns dieser Runde) — konkreter Befund:** exakte
+    Zeitrekonstruktion des Hangs ergibt eine klare Reihenfolge: Scroll (01:25:23) → `source()`
+    gelingt noch normal (01:25:27, 1,5s) → Screenshot gelingt (01:25:29) → präziser
+    Koordinaten-Tap auf "Quick check-in" (01:25:30, Touch-Up ~01:25:32.7) → EIN WEITERER
+    Screenshot gelingt weiterhin schnell (01:25:34, 56ms — zeigt laut vorherigem Befund
+    unverändert die Settings-Liste) → der NÄCHSTE `source()`-Aufruf (01:25:35.5) hängt exakt
+    62066ms und scheitert mit `"XCTPerformOnMainRunLoop work timed out after 60.0s"`.
+    Diese Fehlermeldung ist ein bekanntes XCTest/WebDriverAgent-Signal dafür, dass ein Stück
+    Arbeit nicht rechtzeitig auf den MAIN RUN LOOP DER APP eingeplant werden konnte — sie
+    bedeutet üblicherweise einen echten Hänger im Haupt-Thread der App selbst, nicht primär ein
+    Harness-Timing-Problem. Zusammen mit dem Befund, dass Screenshots (laufen über die
+    Simulator-Compositor-Ebene, nicht über den App-Hauptthread) auch danach weiter gelingen,
+    ergibt sich ein stimmiges Bild: der Tap registriert vermutlich, der sichtbare Übergang
+    bleibt aber aus, und kurz danach reagiert der App-Hauptthread nicht mehr — am ehesten
+    vereinbar mit einem Hänger beim ERSTMALIGEN Aufbau/Rendern von `PeriodicCheckInView`
+    (Navigation ausgelöst, Konstruktion/erstes Rendering kommt nicht zum Abschluss), weniger
+    mit einem reinen Snapshot-Rechenaufwand (der würde fertig werden, nicht hart nach 60s
+    abreissen) oder einem reinen Harness-Artefakt.
+  - **Bisektion gegen `063cb90` mit gezielter Debug-Instrumentierung (laufend):** auf einem
+    eigenen, rein diagnostischen Zweig (`diag-p63-bisect-063cb90`, NICHT Teil der regulären
+    Historie, wird nach Abschluss der Untersuchung wieder gelöscht) wurden drei `NSLog`-Marker
+    ergänzt — beim Aufruf der `NavigationLink`-Destination-Closure, in
+    `PeriodicCheckInView.init()` und beim Betreten von `body` — um Navigation/Konstruktion/
+    Rendering gegeneinander abzugrenzen, auf dem Stand VOR dem Discard-Guard-Nebenfund dieser
+    Runde. Codemagic-Build und TestingBot-Nachlauf sind zum Zeitpunkt dieses Commits noch nicht
+    abgeschlossen; das Ergebnis wird in einem Folge-Commit ergänzt, statt hier spekulativ
+    vorweggenommen zu werden.
 - (Stufe-2-Inhalts-Snapshot `TrainingDayContentRecord` bewusst erst für P8 relevant, nicht P7.)
 
 **P7 — Vier-Wochen-Rückblick, Stufe 1 (groß, abhängig von P6):**
