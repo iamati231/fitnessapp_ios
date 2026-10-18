@@ -230,4 +230,98 @@ final class PlanDraftTests: XCTestCase {
 
         XCTAssertTrue(draft.replaceContent(of: idOfA, with: day("A (Alternative)", sequenceIndex: 1)))
     }
+
+    // MARK: - hasAnyFixation (#206 Bestaetigungs-Gate)
+
+    func testHasAnyFixationIsFalseWhenNothingIsFixed() {
+        let draft = PlanDraft(generated: [day("A", sequenceIndex: 1), day("B", sequenceIndex: 2)])
+        XCTAssertFalse(draft.hasAnyFixation)
+    }
+
+    func testHasAnyFixationIsTrueForContentFixation() {
+        var draft = PlanDraft(generated: [day("A", sequenceIndex: 1)])
+        draft.setContentFixed(true, for: draft.days[0].id)
+        XCTAssertTrue(draft.hasAnyFixation)
+    }
+
+    func testHasAnyFixationIsTrueForPositionFixation() {
+        var draft = PlanDraft(generated: [day("A", sequenceIndex: 1)])
+        draft.setPositionFixed(true, for: draft.days[0].id)
+        XCTAssertTrue(draft.hasAnyFixation)
+    }
+
+    // MARK: - redistributeUnfixedDays (#205 "Woche anders verteilen")
+
+    func testRedistributeReplacesContentOfEveryUnfixedDayInOrderWithoutChangingPositionOrID() {
+        var draft = PlanDraft(generated: [day("A", sequenceIndex: 1), day("B", sequenceIndex: 2), day("C", sequenceIndex: 3)])
+        let ids = draft.days.map(\.id)
+        let freshDays = [
+            day("A2", sequenceIndex: 1, exercises: [exercise("Neu 1")]),
+            day("B2", sequenceIndex: 2, exercises: [exercise("Neu 2")]),
+            day("C2", sequenceIndex: 3, exercises: [exercise("Neu 3")])
+        ]
+
+        let result = draft.redistributeUnfixedDays(using: freshDays)
+
+        XCTAssertTrue(result)
+        XCTAssertEqual(draft.days.map(\.name), ["A2", "B2", "C2"])
+        XCTAssertEqual(draft.days.map(\.id), ids, "stabile IDs bleiben trotz Inhaltswechsel erhalten")
+    }
+
+    func testRedistributeLeavesContentFixedDayCompletelyUntouchedButFillsOthersFromThePool() {
+        var draft = PlanDraft(generated: [day("A", sequenceIndex: 1), day("B", sequenceIndex: 2), day("C", sequenceIndex: 3)])
+        let idOfB = draft.days[1].id
+        draft.setContentFixed(true, for: idOfB)
+        // Nur 2 frische Tage noetig (A und C sind nicht fixiert, B ist es).
+        let freshDays = [
+            day("A2", sequenceIndex: 1, exercises: [exercise("Neu 1")]),
+            day("C2", sequenceIndex: 3, exercises: [exercise("Neu 2")])
+        ]
+
+        XCTAssertTrue(draft.redistributeUnfixedDays(using: freshDays))
+
+        XCTAssertEqual(draft.days.map(\.name), ["A2", "B", "C2"], "B (content-fixiert) bleibt unveraendert, A und C bekommen den Pool der Reihe nach")
+        XCTAssertEqual(draft.days[1].id, idOfB)
+    }
+
+    func testRedistributeAllowsNewContentOnAPositionFixedButNotContentFixedDay() {
+        // Identische Fixierungssemantik wie replaceContent: isPositionFixed
+        // allein schuetzt den INHALT nicht.
+        var draft = PlanDraft(generated: [day("A", sequenceIndex: 1), day("B", sequenceIndex: 2)])
+        let idOfA = draft.days[0].id
+        draft.setPositionFixed(true, for: idOfA)
+        let freshDays = [
+            day("A2", sequenceIndex: 1, exercises: [exercise("Neu 1")]),
+            day("B2", sequenceIndex: 2, exercises: [exercise("Neu 2")])
+        ]
+
+        XCTAssertTrue(draft.redistributeUnfixedDays(using: freshDays))
+
+        XCTAssertEqual(draft.days.map(\.name), ["A2", "B2"])
+        XCTAssertEqual(draft.days[0].id, idOfA)
+        XCTAssertTrue(draft.days[0].isPositionFixed, "Positions-Fixierung bleibt von einem Inhalts-Austausch unberuehrt")
+    }
+
+    func testRedistributeFailsAndLeavesDraftUnchangedWhenAllDaysAreContentFixed() {
+        var draft = PlanDraft(generated: [day("A", sequenceIndex: 1), day("B", sequenceIndex: 2)])
+        draft.setContentFixed(true, for: draft.days[0].id)
+        draft.setContentFixed(true, for: draft.days[1].id)
+        let before = draft
+
+        let result = draft.redistributeUnfixedDays(using: [day("X", sequenceIndex: 1), day("Y", sequenceIndex: 2)])
+
+        XCTAssertFalse(result, "nichts zu verteilen ist ein sichtbarer Konflikt, kein stiller Erfolg")
+        XCTAssertEqual(draft, before)
+    }
+
+    func testRedistributeFailsAndLeavesDraftUnchangedWhenNotEnoughFreshDaysAreProvided() {
+        var draft = PlanDraft(generated: [day("A", sequenceIndex: 1), day("B", sequenceIndex: 2), day("C", sequenceIndex: 3)])
+        let before = draft
+
+        // Nur 1 frischer Tag fuer 3 nicht-fixierte Tage - zu wenig.
+        let result = draft.redistributeUnfixedDays(using: [day("X", sequenceIndex: 1)])
+
+        XCTAssertFalse(result)
+        XCTAssertEqual(draft, before)
+    }
 }

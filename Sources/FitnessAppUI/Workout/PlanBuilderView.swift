@@ -399,6 +399,14 @@ public struct PlanBuilderView: View {
 
     @State private var showingDiscardConfirm = false
 
+    /// P3.3-Restaufgabe #206 ("Vorschlag neu erstellen"): nur gezeigt, wenn
+    /// `draft.hasAnyFixation` - siehe `requestFreshProposal()`. Eine
+    /// ausdrueckliche Entscheidung statt eines stillen Resets (Vorgabe
+    /// dieser Runde), weil diese Aktion anders als #205
+    /// ("Woche anders verteilen") auch fixierte/manuell geaenderte Tage
+    /// ersetzt.
+    @State private var showingFreshProposalConfirm = false
+
     /// Nur auf dem Ergebnis-Schritt vorhanden — frueheren Schritten fehlt
     /// schlicht ein Zustand, der sich "uebernehmen" liesse (identisches
     /// Prinzip wie der deaktivierte Checkmark in `BodyDataEditorView` bei
@@ -406,15 +414,44 @@ public struct PlanBuilderView: View {
     private var headerActions: [DeltiqHeaderAction] {
         guard step == .result else { return [] }
         let isRetry = creationOperation.committedPlanID != nil || externalHandoffIsCommittedButUnresolved
-        return [
-            DeltiqHeaderAction(
-                systemImage: "checkmark",
-                isDisabled: (draft?.days.isEmpty ?? true) || isAdopting,
-                accessibilityLabel: String(localized: isRetry ? "planBuilder.result.retryResolve" : "planBuilder.result.adopt", bundle: .module)
-            ) {
-                adoptPlan()
-            }
-        ]
+        var actions: [DeltiqHeaderAction] = []
+        // P3.3-Restaufgaben #205/#206: eigenstaendige Gesamt-Wochen-Aktionen,
+        // getrennt vom bestehenden Pro-Tag-"Alternativen"-Menu
+        // (`resultDayRow`) UND von `PlanEditorView.planMenuAction`s "Neu
+        // rechnen" (anderer Codepfad: dort ein bereits ADOPTIERTER,
+        // persistierter Plan via `PlanGeneratorInstantiator.recalculate` -
+        // hier ausschliesslich der noch ungespeicherte `PlanDraft`). Bewusst
+        // andere Icons/Label als dort, um beide Aktionen nicht zu verwechseln.
+        if !(draft?.days.isEmpty ?? true) {
+            actions.append(DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+                Button {
+                    redistributeWeek()
+                } label: {
+                    Label {
+                        Text("planBuilder.result.redistribute.action", bundle: .module)
+                    } icon: {
+                        Image(systemName: "shuffle")
+                    }
+                }
+                Button {
+                    requestFreshProposal()
+                } label: {
+                    Label {
+                        Text("planBuilder.result.freshProposal.action", bundle: .module)
+                    } icon: {
+                        Image(systemName: "sparkles")
+                    }
+                }
+            }))
+        }
+        actions.append(DeltiqHeaderAction(
+            systemImage: "checkmark",
+            isDisabled: (draft?.days.isEmpty ?? true) || isAdopting,
+            accessibilityLabel: String(localized: isRetry ? "planBuilder.result.retryResolve" : "planBuilder.result.adopt", bundle: .module)
+        ) {
+            adoptPlan()
+        })
+        return actions
     }
 
     public var body: some View {
@@ -453,6 +490,25 @@ public struct PlanBuilderView: View {
             .interactiveDismissDisabled(isDirty)
             .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
                 dismiss()
+            }
+            // P3.3-Restaufgabe #206: ausdrueckliche Bestaetigung statt
+            // stillem Reset, siehe `showingFreshProposalConfirm`-Doku und
+            // `requestFreshProposal()`.
+            .confirmationDialog(
+                Text("planBuilder.result.freshProposal.confirm.title", bundle: .module),
+                isPresented: $showingFreshProposalConfirm,
+                titleVisibility: .visible
+            ) {
+                Button(role: .destructive) {
+                    performFreshProposal()
+                } label: {
+                    Text("planBuilder.result.freshProposal.confirm.action", bundle: .module)
+                }
+                Button(role: .cancel) {} label: {
+                    Text("common.cancel", bundle: .module)
+                }
+            } message: {
+                Text("planBuilder.result.freshProposal.confirm.message", bundle: .module)
             }
             // Audit-Korrektur (Review nach P2.1): expliziter Fehlerzustand
             // statt stillem `.gym`-Fallback, siehe `adoptPlan()`. Gleiches
@@ -1547,6 +1603,93 @@ public struct PlanBuilderView: View {
         guard currentDraft.replaceContent(of: dayID, with: alternative) else { return }
         loadLevelByDayID.removeValue(forKey: dayID)
         draft = currentDraft
+    }
+
+    /// P3.3-Restaufgabe #205 ("Woche anders verteilen"): ruft denselben
+    /// Generator mit DEMSELBEN Input erneut auf (`shuffle: true` - identisch
+    /// zum etablierten Bugfix-Parameter, der schon fuer Einzeltag-
+    /// Alternativen den Uebungs-Pool neu mischt, siehe
+    /// `PlanGenerator.generate`-Doku) und delegiert die eigentliche,
+    /// fixierungs-sichere Anwendung an `PlanDraft.redistributeUnfixedDays` -
+    /// KEINE zweite Planungsengine, nur ein zweiter Aufruf derselben. Jeder
+    /// content-fixierte Tag bleibt dabei unangetastet; `isPositionFixed`
+    /// ist fuer diese reine Inhaltsersetzung irrelevant (kein Tag wechselt
+    /// seinen Index). Ein Fehlschlag (z.B. alle Tage content-fixiert) zeigt
+    /// denselben sichtbaren Konflikt-Toast wie eine abgelehnte Verschiebung
+    /// oder eine nicht verfuegbare Einzel-Alternative, statt eines stillen
+    /// No-Ops.
+    private func redistributeWeek() {
+        guard var currentDraft = draft else { return }
+        // Reihenfolge VOR der Mutation einfrieren - `redistributeUnfixedDays`
+        // konsumiert den `newDaySpecs`-Pool in genau dieser Array-Reihenfolge
+        // (siehe dortige Doku), damit `loadLevelByDayID` unten korrekt paart.
+        let affectedIDsInOrder = currentDraft.days.filter { !$0.isContentFixed }.map(\.id)
+        let generated = PlanGenerator.generate(from: currentInput, shuffle: true)
+        guard !generated.days.isEmpty else {
+            showWeekGenerationUnavailableToast()
+            return
+        }
+        let sortedBySequence = generated.days.sorted { $0.spec.sequenceIndex < $1.spec.sequenceIndex }
+        guard currentDraft.redistributeUnfixedDays(using: sortedBySequence.map(\.spec)) else {
+            showWeekGenerationUnavailableToast()
+            return
+        }
+        for (id, generatedDay) in zip(affectedIDsInOrder, sortedBySequence) {
+            loadLevelByDayID[id] = generatedDay.loadLevel
+        }
+        draft = currentDraft
+    }
+
+    /// Gemeinsamer Konflikt-Toast fuer #205 ("Woche anders verteilen", z.B.
+    /// alle Tage content-fixiert) UND #206 ("Vorschlag neu erstellen", z.B.
+    /// der Generator liefert fuer `currentInput` ueberraschend keine Tage
+    /// mehr) - beide sind der gleiche fachliche Fall ("kein neuer Vorschlag
+    /// moeglich"), verdienen deshalb keine zwei fast identischen Strings.
+    private func showWeekGenerationUnavailableToast() {
+        showFooterToast(
+            String(localized: "planBuilder.result.redistribute.unavailable.toast", bundle: .module),
+            systemImage: "exclamationmark.triangle.fill"
+        )
+    }
+
+    /// P3.3-Restaufgabe #206 ("Vorschlag neu erstellen"): anders als #205
+    /// ersetzt dies die GESAMTE Woche inkl. fixierter/manuell geaenderter
+    /// Tage - deshalb erst `draft.hasAnyFixation` pruefen und bei `true`
+    /// eine AUSDRUECKLICHE Bestaetigung einholen (`showingFreshProposalConfirm`,
+    /// Vorgabe dieser Runde: "keine stillen Resets"). Ohne jede Fixierung
+    /// gibt es nichts zu verlieren - dann direkt `performFreshProposal()`.
+    private func requestFreshProposal() {
+        guard let draft else { return }
+        if draft.hasAnyFixation {
+            showingFreshProposalConfirm = true
+        } else {
+            performFreshProposal()
+        }
+    }
+
+    /// Fuehrt den in `requestFreshProposal()` (ggf. nach Bestaetigung)
+    /// entschiedenen kompletten Neu-Vorschlag aus - identischer Aufbau wie
+    /// `generatePreviewIfNeeded()` (frisches `PlanDraft(generated:)`, neue
+    /// `loadLevelByDayID`-Zuordnung, neuer `explanationKey`), nur mit
+    /// `shuffle: true` statt des deterministischen Erst-Aufrufs, damit ein
+    /// wiederholter Tap tatsaechlich einen ANDEREN Vorschlag liefert statt
+    /// immer wieder denselben. `lastGeneratedInput` bleibt unveraendert -
+    /// die Trainingsart-/Equipment-Auswahl selbst hat sich nicht geaendert,
+    /// nur der daraus gezogene Vorschlag.
+    private func performFreshProposal() {
+        let input = currentInput
+        let generated = PlanGenerator.generate(from: input, shuffle: true)
+        guard !generated.days.isEmpty else {
+            showWeekGenerationUnavailableToast()
+            return
+        }
+        let sortedBySequence = generated.days.sorted { $0.spec.sequenceIndex < $1.spec.sequenceIndex }
+        let newDraft = PlanDraft(generated: sortedBySequence.map(\.spec))
+        draft = newDraft
+        loadLevelByDayID = Dictionary(
+            uniqueKeysWithValues: zip(newDraft.days, sortedBySequence).map { ($0.id, $1.loadLevel) }
+        )
+        explanationKey = generated.explanationKey
     }
 
     private func toggleContentFixed(for id: DraftDayID) {

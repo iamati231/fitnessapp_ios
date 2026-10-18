@@ -50992,6 +50992,144 @@
           }
         }
       }
+    },
+    "planBuilder.result.redistribute.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Woche anders verteilen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redistribute the week"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haftayı farklı dağıt"
+          }
+        }
+      }
+    },
+    "planBuilder.result.freshProposal.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neuen Vorschlag erstellen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a new proposal"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeni bir öneri oluştur"
+          }
+        }
+      }
+    },
+    "planBuilder.result.redistribute.unavailable.toast": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine andere Verteilung möglich."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No other distribution is possible."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başka bir dağıtım mümkün değil."
+          }
+        }
+      }
+    },
+    "planBuilder.result.freshProposal.confirm.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neuen Vorschlag erstellen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a new proposal?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeni bir öneri oluşturulsun mu?"
+          }
+        }
+      }
+    },
+    "planBuilder.result.freshProposal.confirm.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das ersetzt die gesamte Woche – auch fixierte und manuell geänderte Tage gehen dabei verloren."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This replaces the whole week — pinned and manually changed days will be lost too."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu, tüm haftayı değiştirir – sabitlenmiş ve elle değiştirilmiş günler de kaybolur."
+          }
+        }
+      }
+    },
+    "planBuilder.result.freshProposal.confirm.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neu erstellen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create New"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeniden Oluştur"
+          }
+        }
+      }
     }
   }
 }

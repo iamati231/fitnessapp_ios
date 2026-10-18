@@ -233,4 +233,52 @@ public struct PlanDraft: Sendable, Hashable {
         guard let idx = index(of: id) else { return }
         days[idx].isPositionFixed = fixed
     }
+
+    /// `true`, sobald irgendein Tag content- UND/ODER positionsfixiert ist —
+    /// das einzige heute vorhandene Signal fuer "hier steckt eine bewusste,
+    /// manuelle Entscheidung drin" (es gibt keine separate
+    /// "wurde manuell bearbeitet"-Markierung jenseits dieser beiden Flags).
+    /// Treibt die Bestaetigungs-Pflicht vor einem kompletten Neu-Vorschlag
+    /// (P3.3-Restaufgabe #206, "Vorschlag neu erstellen") — nur wenn das
+    /// hier `true` ist, gibt es ueberhaupt etwas zu verlieren.
+    public var hasAnyFixation: Bool {
+        days.contains { $0.isContentFixed || $0.isPositionFixed }
+    }
+
+    /// P3.3-Restaufgabe #205 ("Woche anders verteilen"): ersetzt den INHALT
+    /// jedes NICHT content-fixierten Tages durch eine frisch generierte
+    /// Alternative aus `newDaySpecs` — anders als `reorder(to:)` (reine
+    /// Permutation vorhandener IDs) oder `replaceContent` (genau EIN Tag)
+    /// ersetzt dies den Inhalt MEHRERER Tage auf einmal, ohne irgendeinen
+    /// Tag seinen Array-Index wechseln zu lassen. Jeder Tag behaelt dabei
+    /// seine stabile `DraftDayID` sowie `isPositionFixed` (identische
+    /// Fixierungssemantik wie `replaceContent`: nur `isContentFixed`
+    /// schuetzt vor einem Inhaltswechsel — ein positionsfixierter, aber
+    /// nicht inhaltsfixierter Tag DARF neuen Inhalt bekommen, exakt wie bei
+    /// der bereits bestehenden Einzel-Alternative).
+    ///
+    /// `newDaySpecs` muss in GENERATOR-Reihenfolge vorliegen (z.B.
+    /// `PlanGenerator.generate(from:shuffle: true).days.map(\.spec)`,
+    /// sortiert nach `sequenceIndex`) — diese Reihenfolge traegt bereits die
+    /// haerte-basierte Wochenverteilung (`spreadByHardness`), die hier
+    /// sequentiell auf die freien (nicht content-fixierten) Plaetze in ihrer
+    /// bestehenden Array-Reihenfolge uebertragen wird.
+    ///
+    /// Liefert `false` (Entwurf bleibt VOLLSTAENDIG unveraendert), wenn es
+    /// entweder KEINEN nicht-fixierten Tag gibt (alles content-fixiert —
+    /// nichts zu verteilen) ODER `newDaySpecs` nicht genug Eintraege fuer
+    /// alle nicht fixierten Tage liefert — ein sichtbarer Konflikt statt
+    /// eines stillen Teil-Updates (gleiches Prinzip wie
+    /// `AlternativeGenerationResult.noAlternativesAvailable`).
+    @discardableResult
+    public mutating func redistributeUnfixedDays(using newDaySpecs: [DaySpec]) -> Bool {
+        let replaceableCount = days.filter { !$0.isContentFixed }.count
+        guard replaceableCount > 0, newDaySpecs.count >= replaceableCount else { return false }
+        var pool = newDaySpecs.prefix(replaceableCount).makeIterator()
+        days = days.map { day in
+            guard !day.isContentFixed, let spec = pool.next() else { return day }
+            return DraftDay(id: day.id, spec: spec, isContentFixed: false, isPositionFixed: day.isPositionFixed)
+        }
+        return true
+    }
 }
