@@ -496,6 +496,170 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(importedSession?.circuitCurrentRoundCheckedRaw, "0,2")
     }
 
+    /// P8 Stufe-2, Paket D: der eingefrorene Tagesinhalts-Snapshot
+    /// (`contentSnapshotJSON`/`contentSnapshotCapturedAt`) ist additiv und
+    /// muss exakt die drei "gültigen" Fälle unterscheidbar überleben — nie
+    /// erfasst (`nil`), gültig leer, gültig gefüllt. Die beiden kaputten
+    /// Fälle (beschädigt / nicht unterstützte Version) deckt
+    /// `testCorruptedContentSnapshotPayloadSurvivesRoundtripVerbatim` /
+    /// `testUnsupportedSchemaVersionPayloadSurvivesRoundtripVerbatim` unten ab.
+    func testContentSnapshotSurvivesRoundtripNeverCapturedValidEmptyValidFilled() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Snapshot-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let day = TrainingDay(name: "Push A", weekday: 2, type: .push, plan: plan)
+        ctx.insert(day)
+
+        // Fall 1: nie erfasst.
+        let neverCaptured = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_761_000_000),
+            endTime: Date(timeIntervalSince1970: 1_761_003_600),
+            durationMinutes: 60, isCompleted: true, day: day
+        )
+        ctx.insert(neverCaptured)
+
+        // Fall 2: gültig, aber leer (z.B. Ad-hoc-Session ohne je eine
+        // Übung hinzuzufügen).
+        let emptySnapshot = TrainingDayContentSnapshot(
+            dayNameSnapshot: "Spontanes Training", dayCustomNameSnapshot: nil,
+            dayLocalizationKeySnapshot: nil, weekday: 2, dayType: .custom,
+            timeFormat: nil, timeCapMinutes: nil, circuitRounds: nil,
+            circuitRestSeconds: nil, circuitMode: nil, exercises: []
+        )
+        let validEmpty = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_761_100_000),
+            endTime: Date(timeIntervalSince1970: 1_761_101_800),
+            durationMinutes: 30, isCompleted: true, isAdHoc: true, day: day
+        )
+        validEmpty.contentSnapshotJSON = emptySnapshot.encodedJSON()
+        validEmpty.contentSnapshotCapturedAt = Date(timeIntervalSince1970: 1_761_100_000)
+        ctx.insert(validEmpty)
+
+        // Fall 3: gültig und gefüllt.
+        let filledSnapshot = TrainingDayContentSnapshot(
+            dayNameSnapshot: "Push A", dayCustomNameSnapshot: nil,
+            dayLocalizationKeySnapshot: nil, weekday: 2, dayType: .push,
+            timeFormat: nil, timeCapMinutes: nil, circuitRounds: nil,
+            circuitRestSeconds: nil, circuitMode: nil,
+            exercises: [
+                TrainingDayContentSnapshot.ExerciseEntry(
+                    orderIndex: 0, exerciseTemplateID: UUID(), nameSnapshot: "Bankdrücken",
+                    customNameSnapshot: nil, role: .workingSet, supersetId: nil,
+                    isCardio: false, isTimeBased: false, cardioEquipment: .none,
+                    sets: 3, repsMin: 6, repsMax: 10, restSeconds: 120,
+                    targetRir: 2, targetDistanceKm: nil, targetDurationMinutes: nil
+                )
+            ]
+        )
+        let validFilled = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_761_200_000),
+            endTime: Date(timeIntervalSince1970: 1_761_203_600),
+            durationMinutes: 60, isCompleted: true, day: day
+        )
+        validFilled.contentSnapshotJSON = filledSnapshot.encodedJSON()
+        validFilled.contentSnapshotCapturedAt = Date(timeIntervalSince1970: 1_761_200_000)
+        ctx.insert(validFilled)
+
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(
+            FetchDescriptor<WorkoutSession>(sortBy: [SortDescriptor(\.startTime)])
+        )
+        XCTAssertEqual(imported.count, 3)
+
+        XCTAssertEqual(imported[0].contentSnapshotState, .notCaptured, "Fall 1 (nie erfasst) darf nicht rückwirkend aufgefüllt werden")
+        XCTAssertNil(imported[0].contentSnapshotCapturedAt)
+
+        guard case .available(let restoredEmpty) = imported[1].contentSnapshotState else {
+            return XCTFail("Fall 2 (gültig leer) muss nach dem Roundtrip lesbar bleiben")
+        }
+        XCTAssertTrue(restoredEmpty.exercises.isEmpty, "eine leere Übungsliste ist gültig, kein Fehler")
+        XCTAssertNotNil(imported[1].contentSnapshotCapturedAt)
+
+        guard case .available(let restoredFilled) = imported[2].contentSnapshotState else {
+            return XCTFail("Fall 3 (gültig gefüllt) muss nach dem Roundtrip lesbar bleiben")
+        }
+        XCTAssertEqual(restoredFilled, filledSnapshot, "Payload muss exakt wiederhergestellt werden, nicht nur teilweise")
+    }
+
+    /// Eine beschädigte Payload (z.B. durch Store-Korruption VOR dem Export
+    /// entstanden) wird vom Export/Import 1:1 durchgereicht — niemals
+    /// stillschweigend gelöscht, repariert oder durch den (beim Import ggf.
+    /// ganz anderen) Live-Tag ersetzt. Erst der LESEZUGRIFF entscheidet
+    /// "unreadable", nie der Import selbst.
+    func testCorruptedContentSnapshotPayloadSurvivesRoundtripVerbatim() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+        let plan = TrainingPlan(name: "Snapshot-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let day = TrainingDay(name: "Push A", weekday: 2, type: .push, plan: plan)
+        ctx.insert(day)
+        let session = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_761_300_000),
+            endTime: Date(timeIntervalSince1970: 1_761_303_600),
+            durationMinutes: 60, isCompleted: true, day: day
+        )
+        session.contentSnapshotJSON = "{ kaputt, das ist kein JSON"
+        session.contentSnapshotCapturedAt = Date(timeIntervalSince1970: 1_761_300_000)
+        ctx.insert(session)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
+        guard case .unreadable(.corrupted) = imported?.contentSnapshotState else {
+            return XCTFail("beschädigtes JSON muss nach dem Roundtrip weiterhin als .unreadable(.corrupted) erkennbar sein, nicht verschwinden oder lesbar werden: \(String(describing: imported?.contentSnapshotState))")
+        }
+    }
+
+    /// Eine Payload mit einer (aus Sicht DIESER App-Version) zukünftigen,
+    /// nicht unterstützten `schemaVersion` darf beim Import nicht einfach
+    /// verworfen oder als "nie erfasst" behandelt werden — ein künftiges
+    /// Feld-Redesign muss ein ALTES Backup unverändert transportieren
+    /// können, bis eine App-Version kommt, die die neue Version versteht.
+    func testUnsupportedSchemaVersionPayloadSurvivesRoundtripVerbatim() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+        let plan = TrainingPlan(name: "Snapshot-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let day = TrainingDay(name: "Push A", weekday: 2, type: .push, plan: plan)
+        ctx.insert(day)
+        let session = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_761_400_000),
+            endTime: Date(timeIntervalSince1970: 1_761_403_600),
+            durationMinutes: 60, isCompleted: true, day: day
+        )
+        // Handgeschriebenes JSON mit einer absichtlich zukünftigen Version -
+        // die echten Feldnamen sind irrelevant, nur `schemaVersion` zählt.
+        session.contentSnapshotJSON = #"{"schemaVersion":999,"dayNameSnapshot":"x","weekday":2,"dayType":"push","exercises":[]}"#
+        session.contentSnapshotCapturedAt = Date(timeIntervalSince1970: 1_761_400_000)
+        ctx.insert(session)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
+        guard case .unreadable(.unsupportedSchemaVersion(999)) = imported?.contentSnapshotState else {
+            return XCTFail("eine zukünftige schemaVersion muss nach dem Roundtrip exakt als .unreadable(.unsupportedSchemaVersion(999)) erkennbar bleiben: \(String(describing: imported?.contentSnapshotState))")
+        }
+    }
+
     /// HealthKit-Import: `importSourceName`/`healthKitSampleUUID` sind die
     /// einzigen Provenienz-Marker fuer eine automatisch aus Apple Health
     /// importierte Session (z.B. Adidas Running) — ohne Roundtrip-Schutz

@@ -662,7 +662,15 @@ public enum DataExportService {
             "circuit_rounds_completed", "circuit_rest_end_date_utc",
             "circuit_current_round_checked_raw",
             "completed_target",
-            "import_source_name", "healthkit_sample_uuid"
+            "import_source_name", "healthkit_sample_uuid",
+            // P8 Stufe-2: additive Spalten fuer den eingefrorenen
+            // Tagesinhalts-Snapshot. `content_snapshot_json` traegt die
+            // komplette, bereits versionierte Payload 1:1 weiter (inkl.
+            // `schemaVersion`) - der Export entscheidet/interpretiert
+            // nichts, er sichert nur. Fehlt die Spalte in einem Altbackup,
+            // liefert der Import `nil` (= "nie erfasst"), niemals ein
+            // nachtraeglich erfundener Startzustand.
+            "content_snapshot_json", "content_snapshot_captured_at_utc"
         ])
         for s in items {
             w.appendRow([
@@ -693,7 +701,9 @@ public enum DataExportService {
                 s.circuitCurrentRoundCheckedRaw ?? "",
                 CSVWriter.bool(s.completedTarget),
                 s.importSourceName ?? "",
-                s.healthKitSampleUUID ?? ""
+                s.healthKitSampleUUID ?? "",
+                s.contentSnapshotJSON ?? "",
+                s.contentSnapshotCapturedAt.map { CSVWriter.iso8601($0) } ?? ""
             ])
         }
         return w.data()

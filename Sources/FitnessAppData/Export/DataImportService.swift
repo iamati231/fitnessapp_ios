@@ -1339,6 +1339,19 @@ public enum DataImportService {
             if let feeling = row.int("session_feeling") {
                 s.sessionFeeling = feeling
             }
+            // P8 Stufe-2: Snapshot-Payload 1:1 uebernehmen, NICHT ueber
+            // `TrainingDayContentSnapshotWriter.capture` neu erzeugen — das
+            // wuerde den damaligen Stand durch den HEUTIGEN Stand des (per
+            // idMap gleich unten verknuepften) Tages ersetzen, also genau
+            // den nachtraeglich erfundenen historischen Startzustand
+            // erzeugen, den dieses Feature verhindern soll. Eine
+            // beschaedigte oder zukuenftig-versionierte Payload wird hier
+            // bewusst NICHT geprueft/repariert — das entscheidet erst der
+            // Lesezugriff (`contentSnapshotState`), nie der Import.
+            // Fehlende Spalte (Altbackup) -> `optionalString`/`date` liefern
+            // nil -> "nie erfasst", niemals rueckwirkend aufgefuellt.
+            s.contentSnapshotJSON = row.optionalString("content_snapshot_json")
+            s.contentSnapshotCapturedAt = row.date("content_snapshot_captured_at_utc")
             // Gear/Day-Backref via idMap (lookup nur, kein Fehler wenn nicht da).
             if let gear = idMap[row["gear_id"]] as? Gear { s.gear = gear }
             if let day = idMap[row["day_id"]] as? TrainingDay { s.day = day }
