@@ -68,7 +68,21 @@ func finishTimedSession(
     // Sonst bleibt's beim init-Default 0 - ActiveWorkoutView.finishWorkout()
     // setzt das analog aus der Plan-Uebungsliste (siehe dort), Zeitformat-
     // Tage haben aber nie ExerciseLogs, aus denen es sich sonst herleiten liesse.
-    session.exerciseCount = session.day?.activeExercises.count ?? 0
+    // P8 Stufe-2: aus dem eingefrorenen Snapshot (aufgelöst gegen die noch
+    // existierenden Live-Objekte), NICHT mehr aus dem ggf. zwischenzeitlich
+    // extern veränderten Live-Tag — gleiches Prinzip wie
+    // `ActiveWorkoutView.finishWorkout`s `resolvedExercises.count`.
+    session.exerciseCount = {
+        guard let day = session.day else { return 0 }
+        switch session.contentSnapshotState {
+        case .available(let snapshot):
+            return SessionContentResolver.resolve(snapshot: snapshot, liveExercises: day.activeExercises)
+                .filter { if case .live = $0 { return true } else { return false } }
+                .count
+        case .notCaptured, .unreadable:
+            return day.activeExercises.count
+        }
+    }()
 
     let detectedPR = PersonalRecordSync.recordTimedFormatPR(for: session, in: modelContext)
     // README 2.16 (28c): gleiche Tonlage-Kopplung wie ActiveWorkoutView.finishWorkout()
@@ -424,13 +438,41 @@ private struct AMRAPPlayerView: View {
         }
     }
 
-    private var day: TrainingDay? { session.day }
-    private var exercises: [Exercise] {
-        (day?.activeExercises ?? []).sorted { $0.orderIndex < $1.orderIndex }
+    /// P8 Stufe-2 (Resume-Isolation): Mitgliedschaft/Reihenfolge/Identität
+    /// kommen aus dem eingefrorenen Snapshot dieser Session, aufgelöst
+    /// gegen die aktuell noch existierenden Live-Objekte
+    /// (`SessionContentResolver`) — eine externe Änderung am Tag seit
+    /// Session-Start (Übung hinzugefügt/entfernt/umsortiert) darf weder
+    /// die Zirkel-Liste noch die Rundenlogik (`currentExercise`/
+    /// `exercises.count`) beeinflussen. Entfernte Übungen (kein Live-
+    /// Gegenstück mehr) werden hier stillschweigend ausgelassen — anders
+    /// als `ActiveWorkoutView` erzeugt AMRAP keine `ExerciseLog`s pro
+    /// Übung, es gibt also keinen "neu loggen"-Fall, der eine sichtbare
+    /// Markierung bräuchte.
+    private var resolvedExercises: [(entry: TrainingDayContentSnapshot.ExerciseEntry, exercise: Exercise)] {
+        guard let day = session.day else { return [] }
+        switch session.contentSnapshotState {
+        case .available(let snapshot):
+            return SessionContentResolver.resolve(snapshot: snapshot, liveExercises: day.activeExercises)
+                .compactMap { item -> (TrainingDayContentSnapshot.ExerciseEntry, Exercise)? in
+                    guard case .live(let entry, let exercise) = item else { return nil }
+                    return (entry, exercise)
+                }
+        case .notCaptured, .unreadable:
+            return day.activeExercises
+                .sorted { $0.orderIndex < $1.orderIndex }
+                .map { (TrainingDayContentSnapshotWriter.snapshotEntry(for: $0), $0) }
+        }
+    }
+    private var exercises: [Exercise] { resolvedExercises.map(\.exercise) }
+    private func entry(for exercise: Exercise) -> TrainingDayContentSnapshot.ExerciseEntry {
+        resolvedExercises.first { $0.exercise.persistentModelID == exercise.persistentModelID }?.entry
+            ?? TrainingDayContentSnapshotWriter.snapshotEntry(for: exercise)
     }
     // Feature (Dauer konfigurierbar): 15 Min. ist der Default, den auch der
     // Stepper in DayEditorView anbietet, wenn `timeCapMinutes` noch nil ist.
-    private var capSeconds: Int { max(1, (day?.timeCapMinutes ?? 15)) * 60 }
+    // P8 Stufe-2: snapshot-first — steuert die tatsächliche Timer-Logik, nicht nur die Anzeige.
+    private var capSeconds: Int { max(1, (session.contentSnapshotTimeCapMinutes ?? 15)) * 60 }
 
     /// Nutzer-Feedback: aus der Wanduhr abgeleitet statt Tick-fuer-Tick
     /// hochgezaehlt - `Timer.publish` pausiert komplett, sobald die App
@@ -508,7 +550,7 @@ private struct AMRAPPlayerView: View {
                         (isFinished ? [] : [DeltiqContextItem(String(localized: "timedWorkout.running.label", bundle: .module), style: .accent)]) + [
                         DeltiqContextItem(roundsContextText, style: .accent),
                         DeltiqContextItem(
-                            String(format: String(localized: "timedWorkout.amrap.capContext", bundle: .module), (day?.timeCapMinutes ?? 15)).uppercased(),
+                            String(format: String(localized: "timedWorkout.amrap.capContext", bundle: .module), (session.contentSnapshotTimeCapMinutes ?? 15)).uppercased(),
                             style: .neutral
                         )
                     ])
@@ -553,7 +595,7 @@ private struct AMRAPPlayerView: View {
                         ForEach(Array(exercises.enumerated()), id: \.element.persistentModelID) { index, exercise in
                             DeltiqRow(
                                 label: exercise.displayName,
-                                value: timedFormatTargetLabel(exercise),
+                                value: timedFormatTargetLabel(repsMin: entry(for: exercise).repsMin, isTimeBased: entry(for: exercise).isTimeBased),
                                 showsDivider: index != exercises.count - 1
                             )
                         }
@@ -996,7 +1038,8 @@ private struct EMOMPlayerView: View {
             prerollTotal = 0
             _prerollRemaining = State(initialValue: 0)
             _completedMinutes = State(initialValue: existingCount > 0 ? Set(1...existingCount) : [])
-            let totalMinutesAtInit = max(1, session.day?.timeCapMinutes ?? 12)
+            // P8 Stufe-2: snapshot-first, konsistent mit `totalMinutes` unten.
+            let totalMinutesAtInit = max(1, session.contentSnapshotTimeCapMinutes ?? 12)
             let elapsedAtInit = max(0, Int(Date().timeIntervalSince(session.startTime)))
             _lastKnownMinute = State(initialValue: min(elapsedAtInit / 60 + 1, totalMinutesAtInit))
         } else {
@@ -1006,11 +1049,33 @@ private struct EMOMPlayerView: View {
         }
     }
 
-    private var day: TrainingDay? { session.day }
-    private var exercises: [Exercise] {
-        (day?.activeExercises ?? []).sorted { $0.orderIndex < $1.orderIndex }
+    /// P8 Stufe-2 (Resume-Isolation): siehe `AMRAPPlayerView.resolvedExercises`
+    /// für die volle Begründung — hier zusätzlich kritisch, weil
+    /// `currentExercise(atMinute:)` über `exercises.count` rotiert: eine
+    /// extern geänderte Übungszahl würde sonst verschieben, WELCHE Übung in
+    /// welcher Minute dran ist.
+    private var resolvedExercises: [(entry: TrainingDayContentSnapshot.ExerciseEntry, exercise: Exercise)] {
+        guard let day = session.day else { return [] }
+        switch session.contentSnapshotState {
+        case .available(let snapshot):
+            return SessionContentResolver.resolve(snapshot: snapshot, liveExercises: day.activeExercises)
+                .compactMap { item -> (TrainingDayContentSnapshot.ExerciseEntry, Exercise)? in
+                    guard case .live(let entry, let exercise) = item else { return nil }
+                    return (entry, exercise)
+                }
+        case .notCaptured, .unreadable:
+            return day.activeExercises
+                .sorted { $0.orderIndex < $1.orderIndex }
+                .map { (TrainingDayContentSnapshotWriter.snapshotEntry(for: $0), $0) }
+        }
     }
-    private var totalMinutes: Int { max(1, day?.timeCapMinutes ?? 12) }
+    private var exercises: [Exercise] { resolvedExercises.map(\.exercise) }
+    private func entry(for exercise: Exercise) -> TrainingDayContentSnapshot.ExerciseEntry {
+        resolvedExercises.first { $0.exercise.persistentModelID == exercise.persistentModelID }?.entry
+            ?? TrainingDayContentSnapshotWriter.snapshotEntry(for: exercise)
+    }
+    // P8 Stufe-2: snapshot-first — steuert die tatsächliche Minuten-/Rotationslogik, nicht nur die Anzeige.
+    private var totalMinutes: Int { max(1, session.contentSnapshotTimeCapMinutes ?? 12) }
     /// Nutzer-Feedback: aus der Wanduhr abgeleitet statt Tick-fuer-Tick
     /// hochgezaehlt - gleiches Muster wie bei AMRAP/Auf Zeit. `Timer.publish`
     /// pausiert komplett im Hintergrund, ein Akkumulator wuerde die
@@ -1133,7 +1198,7 @@ private struct EMOMPlayerView: View {
                                         .font(.system(size: 24, weight: .heavy, design: .rounded))
                                         .foregroundStyle(Color.primary)
                                         .multilineTextAlignment(.center)
-                                    Text(timedFormatTargetLabel(liveExercise))
+                                    Text(timedFormatTargetLabel(repsMin: entry(for: liveExercise).repsMin, isTimeBased: entry(for: liveExercise).isTimeBased))
                                         .font(.system(size: 15, weight: .semibold))
                                         .foregroundStyle(Color.deltiqOrange)
                                 }
@@ -1146,7 +1211,7 @@ private struct EMOMPlayerView: View {
                                 DeltiqRow(
                                     label: liveNextExercise.displayName,
                                     subtitle: String(localized: "timedWorkout.emom.nextMinute", bundle: .module),
-                                    value: timedFormatTargetLabel(liveNextExercise),
+                                    value: timedFormatTargetLabel(repsMin: entry(for: liveNextExercise).repsMin, isTimeBased: entry(for: liveNextExercise).isTimeBased),
                                     showsDivider: false
                                 )
                             }
@@ -1540,7 +1605,11 @@ private struct ForTimePlayerView: View {
         if let raw = session.forTimeCheckedRoundsRaw {
             prerollTotal = 0
             _prerollRemaining = State(initialValue: 0)
-            let exercisesAtInit = (session.day?.activeExercises ?? []).sorted { $0.orderIndex < $1.orderIndex }
+            // P8 Stufe-2: ueber die statische, snapshot-first Hilfsfunktion
+            // (nicht `self.resolvedExercises`, die noch nicht erreichbar
+            // waere) - schuetzt `decodeCheckedRounds` davor, nach einer
+            // externen Umsortierung des Tages die falsche Uebung zu treffen.
+            let exercisesAtInit = Self.resolvedExercises(for: session)
             _checkedRounds = State(initialValue: Self.decodeCheckedRounds(raw, exercises: exercisesAtInit))
         } else {
             let stored = storedPrerollSeconds()
@@ -1550,20 +1619,29 @@ private struct ForTimePlayerView: View {
     }
 
     /// Serialisiert `checkedRounds` (Schluessel: `Exercise.persistentModelID`,
-    /// nicht selbst speicherbar) als "orderIndex=Anzahl"-Paare, kommagetrennt
-    /// - `orderIndex` ist pro Tag eindeutig und aendert sich waehrend einer
-    /// laufenden Zeitformat-Session nicht (kein Editieren der Uebungsliste
-    /// im Player). Uebungen ohne abgehakte Runde werden weggelassen. Ergaebe
-    /// das insgesamt den leeren String (frischer Start ODER die letzte
-    /// verbliebene Markierung wurde gerade zurueckgenommen), wird statt
-    /// dessen der Platzhalter "-" zurueckgegeben - ein leerer String wuerde
-    /// beim CSV-Export/Import-Roundtrip zu `nil` normalisiert und damit
-    /// "gestartet, 0 abgehakt" faelschlich zu "Vorlauf nie durchlaufen".
-    private static func encodeCheckedRounds(_ checkedRounds: [PersistentIdentifier: Int], exercises: [Exercise]) -> String {
+    /// nicht selbst speicherbar) als "orderIndex=Anzahl"-Paare, kommagetrennt.
+    /// P8 Stufe-2-Nachbesserung: `orderIndex` ist der EINGEFRORENE
+    /// Snapshot-Wert (`entry.orderIndex`), NICHT mehr `exercise.orderIndex`
+    /// live — die ursprüngliche Annahme ("ändert sich während einer
+    /// laufenden Session nicht, kein Editieren der Übungsliste im Player")
+    /// galt nur für DIESEN Player; eine externe Umsortierung über
+    /// `DayEditorView`, während die Session offen bleibt, verschiebt den
+    /// LIVEN `orderIndex` sehr wohl — `decodeCheckedRounds` hätte dann beim
+    /// nächsten Resume die falsche Übung getroffen. Uebungen ohne abgehakte
+    /// Runde werden weggelassen. Ergaebe das insgesamt den leeren String
+    /// (frischer Start ODER die letzte verbliebene Markierung wurde gerade
+    /// zurueckgenommen), wird statt dessen der Platzhalter "-"
+    /// zurueckgegeben - ein leerer String wuerde beim CSV-Export/Import-
+    /// Roundtrip zu `nil` normalisiert und damit "gestartet, 0 abgehakt"
+    /// faelschlich zu "Vorlauf nie durchlaufen".
+    private static func encodeCheckedRounds(
+        _ checkedRounds: [PersistentIdentifier: Int],
+        exercises: [(entry: TrainingDayContentSnapshot.ExerciseEntry, exercise: Exercise)]
+    ) -> String {
         let joined = exercises
-            .compactMap { exercise -> String? in
-                guard let count = checkedRounds[exercise.persistentModelID], count > 0 else { return nil }
-                return "\(exercise.orderIndex)=\(count)"
+            .compactMap { pair -> String? in
+                guard let count = checkedRounds[pair.exercise.persistentModelID], count > 0 else { return nil }
+                return "\(pair.entry.orderIndex)=\(count)"
             }
             .joined(separator: ",")
         return joined.isEmpty ? "-" : joined
@@ -1574,23 +1652,57 @@ private struct ForTimePlayerView: View {
     /// ab - er hat kein "=" und faellt beim Parsen einfach durch) und gegen
     /// ein inzwischen entferntes `orderIndex` (kann dann keiner aktuellen
     /// Uebung mehr zugeordnet werden, faellt also ebenfalls weg statt einen
-    /// Fehlerwert zu erzeugen).
-    private static func decodeCheckedRounds(_ raw: String, exercises: [Exercise]) -> [PersistentIdentifier: Int] {
+    /// Fehlerwert zu erzeugen). Matcht gegen `entry.orderIndex` (eingefroren),
+    /// nicht gegen die ggf. extern verschobene Live-Position.
+    private static func decodeCheckedRounds(
+        _ raw: String,
+        exercises: [(entry: TrainingDayContentSnapshot.ExerciseEntry, exercise: Exercise)]
+    ) -> [PersistentIdentifier: Int] {
         guard !raw.isEmpty else { return [:] }
         var result: [PersistentIdentifier: Int] = [:]
         for pair in raw.split(separator: ",") {
             let parts = pair.split(separator: "=")
             guard parts.count == 2, let orderIndex = Int(parts[0]), let count = Int(parts[1]) else { continue }
-            if let exercise = exercises.first(where: { $0.orderIndex == orderIndex }) {
-                result[exercise.persistentModelID] = count
+            if let match = exercises.first(where: { $0.entry.orderIndex == orderIndex }) {
+                result[match.exercise.persistentModelID] = count
             }
         }
         return result
     }
 
-    private var day: TrainingDay? { session.day }
-    private var exercises: [Exercise] {
-        (day?.activeExercises ?? []).sorted { $0.orderIndex < $1.orderIndex }
+    /// P8 Stufe-2 (Resume-Isolation): siehe `AMRAPPlayerView.resolvedExercises`
+    /// — hier zusätzlich kritisch für `totalBoxes`/`exerciseRoundsRow`, die
+    /// pro Übung `sets` als Checkbox-Anzahl lesen (Satzvorgabe, nicht nur
+    /// Anzeige).
+    private var resolvedExercises: [(entry: TrainingDayContentSnapshot.ExerciseEntry, exercise: Exercise)] {
+        Self.resolvedExercises(for: session)
+    }
+    /// Statisch (statt nur Instanz-Property), damit `init` sie VOR dem
+    /// Setzen aller Stored Properties aufrufen kann (`self.resolvedExercises`
+    /// wäre dort nicht erlaubt) — identische Logik wie die Instanz-Property
+    /// oben, auch fuer `encodeCheckedRounds`/`decodeCheckedRounds` genutzt
+    /// (siehe dort: `orderIndex`-Matching muss den EINGEFRORENEN Snapshot-
+    /// Wert nutzen, nicht den live ggf. durch externe Umsortierung
+    /// verschobenen).
+    private static func resolvedExercises(for session: WorkoutSession) -> [(entry: TrainingDayContentSnapshot.ExerciseEntry, exercise: Exercise)] {
+        guard let day = session.day else { return [] }
+        switch session.contentSnapshotState {
+        case .available(let snapshot):
+            return SessionContentResolver.resolve(snapshot: snapshot, liveExercises: day.activeExercises)
+                .compactMap { item -> (TrainingDayContentSnapshot.ExerciseEntry, Exercise)? in
+                    guard case .live(let entry, let exercise) = item else { return nil }
+                    return (entry, exercise)
+                }
+        case .notCaptured, .unreadable:
+            return day.activeExercises
+                .sorted { $0.orderIndex < $1.orderIndex }
+                .map { (TrainingDayContentSnapshotWriter.snapshotEntry(for: $0), $0) }
+        }
+    }
+    private var exercises: [Exercise] { resolvedExercises.map(\.exercise) }
+    private func entry(for exercise: Exercise) -> TrainingDayContentSnapshot.ExerciseEntry {
+        resolvedExercises.first { $0.exercise.persistentModelID == exercise.persistentModelID }?.entry
+            ?? TrainingDayContentSnapshotWriter.snapshotEntry(for: exercise)
     }
     /// Nutzer-Feedback: aus der Wanduhr abgeleitet statt Tick-fuer-Tick
     /// hochgezaehlt - gleiches Muster wie bei AMRAP (siehe dortiger
@@ -1619,8 +1731,12 @@ private struct ForTimePlayerView: View {
     }
     /// Optionaler Abbruch-Deckel - anders als AMRAP/EMOM ist bei Auf Zeit
     /// meist gar keiner gesetzt, das Pensum selbst beendet den Lauf.
-    private var capSeconds: Int? { day?.timeCapMinutes.map { $0 * 60 } }
-    private var totalBoxes: Int { exercises.reduce(0) { $0 + max($1.sets, 1) } }
+    /// P8 Stufe-2: snapshot-first.
+    private var capSeconds: Int? { session.contentSnapshotTimeCapMinutes.map { $0 * 60 } }
+    // P8 Stufe-2: `entry.sets` statt `exercise.sets` — das Gesamtpensum ("wie
+    // viele Haekchen insgesamt") ist eine eingefrorene Satzvorgabe dieser
+    // Session, keine Live-Ableitung.
+    private var totalBoxes: Int { resolvedExercises.reduce(0) { $0 + max($1.entry.sets, 1) } }
     private var checkedBoxes: Int {
         exercises.reduce(0) { $0 + (checkedRounds[$1.persistentModelID] ?? 0) }
     }
@@ -1842,7 +1958,7 @@ private struct ForTimePlayerView: View {
     private func finishPreroll() {
         prerollRemaining = 0
         session.startTime = Date()
-        session.forTimeCheckedRoundsRaw = Self.encodeCheckedRounds(checkedRounds, exercises: exercises)
+        session.forTimeCheckedRoundsRaw = Self.encodeCheckedRounds(checkedRounds, exercises: resolvedExercises)
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
         startBackground()
     }
@@ -1901,14 +2017,18 @@ private struct ForTimePlayerView: View {
     }
 
     private func exerciseRoundsRow(_ exercise: Exercise) -> some View {
-        let rounds = max(exercise.sets, 1)
+        // P8 Stufe-2: Checkbox-Anzahl + Zielwert-Label kommen aus dem
+        // eingefrorenen Snapshot-Eintrag, nicht aus der ggf. extern
+        // geänderten Live-Übung.
+        let targetEntry = entry(for: exercise)
+        let rounds = max(targetEntry.sets, 1)
         let checked = checkedRounds[exercise.persistentModelID] ?? 0
         return VStack(alignment: .leading, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(exercise.displayName)
                     .font(.system(size: 15))
                     .foregroundStyle(Color.primary)
-                Text(timedFormatTargetLabel(exercise))
+                Text(timedFormatTargetLabel(repsMin: targetEntry.repsMin, isTimeBased: targetEntry.isTimeBased))
                     .font(.system(size: 12))
                     .foregroundStyle(Color.Deltiq.textSecondary)
             }
@@ -1948,7 +2068,7 @@ private struct ForTimePlayerView: View {
         // `saveNow()` - sonst wuerde "Training fortsetzen" zwischen zwei
         // Haekchen wieder auf den zuletzt GESPEICHERTEN statt den zuletzt
         // ABGEHAKTEN Stand zurueckfallen.
-        session.forTimeCheckedRoundsRaw = Self.encodeCheckedRounds(checkedRounds, exercises: exercises)
+        session.forTimeCheckedRoundsRaw = Self.encodeCheckedRounds(checkedRounds, exercises: resolvedExercises)
         DeltiqHaptics.notify(.success)
         if checkedBoxes == totalBoxes {
             isFinished = true

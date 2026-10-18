@@ -340,7 +340,7 @@ public struct WorkoutSummaryView: View {
                 // sein echtes Minuten-Ziel als Obergrenze, nicht ein
                 // kuenstlicher 60-Min-Mindestwert, der einen kurzen EMOM-
                 // Deckel (z.B. 12 Min) sonst aushebeln wuerde.
-                Stepper(value: completedMinuteCountBinding, in: 0...(contentSnapshotTimeCapMinutes ?? 60)) {
+                Stepper(value: completedMinuteCountBinding, in: 0...(session.contentSnapshotTimeCapMinutes ?? 60)) {
                     LabeledContent {
                         Text(String(format: String(localized: "summary.durationMinutes", bundle: .module),
                                     completedMinuteCountBinding.wrappedValue))
@@ -366,7 +366,7 @@ public struct WorkoutSummaryView: View {
                 // Gleiche Obergrenze wie EMOM oben: existiert der Tag noch,
                 // ist seine tatsaechliche Rundenzahl die sinnvolle Grenze,
                 // sonst ein grosszuegiger Fallback.
-                Stepper(value: circuitRoundsCompletedBinding, in: 0...(contentSnapshotCircuitRounds ?? 20)) {
+                Stepper(value: circuitRoundsCompletedBinding, in: 0...(session.contentSnapshotCircuitRounds ?? 20)) {
                     LabeledContent {
                         Text(circuitRoundsCompletedValueText)
                             .foregroundStyle(Color.Deltiq.textSecondary)
@@ -417,7 +417,7 @@ public struct WorkoutSummaryView: View {
 
     private var circuitRoundsCompletedValueText: String {
         let rounds = session.circuitRoundsCompleted ?? 0
-        guard let target = contentSnapshotCircuitRounds else { return "\(rounds)" }
+        guard let target = session.contentSnapshotCircuitRounds else { return "\(rounds)" }
         return "\(rounds) / \(target)"
     }
 
@@ -1096,7 +1096,7 @@ public struct WorkoutSummaryView: View {
             // diesen Wert. Degradiert auf "—" nur noch, wenn für diese
             // Session gar nie ein Snapshot erfasst wurde UND der Tag
             // inzwischen gelöscht ist (Altbestand-Grenzfall).
-            let target = contentSnapshotTimeCapMinutes
+            let target = session.contentSnapshotTimeCapMinutes
             SummaryStat(label: String(localized: "summary.stat.minuteTarget", bundle: .module),
                         value: target.map { "\($0)" } ?? "—")
         case .forTime:
@@ -1104,7 +1104,7 @@ public struct WorkoutSummaryView: View {
                         value: "\(session.exerciseCount)")
         case .circuit:
             // P8 Stufe-2: siehe EMOM-Fall oben — jetzt snapshot-first.
-            let restSeconds = contentSnapshotCircuitRestSeconds
+            let restSeconds = session.contentSnapshotCircuitRestSeconds
             SummaryStat(label: String(localized: "summary.stat.circuitRest", bundle: .module),
                         value: restSeconds.map { "\($0)s" } ?? "—")
         }
@@ -1194,7 +1194,7 @@ public struct WorkoutSummaryView: View {
     /// Vorzeitig-gespeichert-Hero, z.B. "8:37 VON 20:00" bei einem Zeit-
     /// Deckel bzw. nur die gelaufene Zeit ohne Deckel (Auf Zeit meist ohne).
     private var earlySaveStatusText: String {
-        guard let capMinutes = contentSnapshotTimeCapMinutes else { return elapsedTimeText }
+        guard let capMinutes = session.contentSnapshotTimeCapMinutes else { return elapsedTimeText }
         return String(
             format: String(localized: "summary.early.progress", bundle: .module),
             elapsedTimeText, PaceCalculator.formatDuration(capMinutes * 60)
@@ -1264,7 +1264,7 @@ public struct WorkoutSummaryView: View {
             // Rundenziel - "3/5" liest sich als Fortschritt, nicht nur als
             // Ergebnis, gerade beim vorzeitigen Speichern.
             let completed = session.circuitRoundsCompleted ?? 0
-            let value = contentSnapshotCircuitRounds.map { "\(completed)/\($0)" } ?? "\(completed)"
+            let value = session.contentSnapshotCircuitRounds.map { "\(completed)/\($0)" } ?? "\(completed)"
             return HeroStat(value: value, unit: timedFormatHeroUnit("summary.hero.unit.circuitRounds"))
         }
     }
@@ -1383,34 +1383,12 @@ public struct WorkoutSummaryView: View {
         }
     }
 
-    /// P8 Stufe-2: snapshot-first für die drei Zeitformat-/Zirkel-
-    /// Zielparameter, die bislang live von `session.day` gelesen wurden
-    /// (Obergrenzen beim Nachbearbeiten des Ergebnisses UND reine
-    /// Anzeige-Stats). Für `.unreadable` bewusst `nil` statt Live-
-    /// Fallback — sonst würde ein beschädigter Snapshot stillschweigend
-    /// durch den (ggf. inzwischen anderen) Live-Tag ersetzt.
-    private func contentSnapshotFirst<T>(
-        _ fromSnapshot: (TrainingDayContentSnapshot) -> T?,
-        liveFallback: () -> T?
-    ) -> T? {
-        switch session.contentSnapshotState {
-        case .available(let snapshot): return fromSnapshot(snapshot)
-        case .notCaptured: return liveFallback()
-        case .unreadable: return nil
-        }
-    }
-
-    private var contentSnapshotTimeCapMinutes: Int? {
-        contentSnapshotFirst({ $0.timeCapMinutes }, liveFallback: { session.day?.timeCapMinutes })
-    }
-
-    private var contentSnapshotCircuitRounds: Int? {
-        contentSnapshotFirst({ $0.circuitRounds }, liveFallback: { session.day?.circuitRounds })
-    }
-
-    private var contentSnapshotCircuitRestSeconds: Int? {
-        contentSnapshotFirst({ $0.circuitRestSeconds }, liveFallback: { session.day?.circuitRestSeconds })
-    }
+    // P8 Stufe-2-Nachbesserung: `contentSnapshotFirst`/
+    // `contentSnapshotTimeCapMinutes`/`contentSnapshotCircuitRounds`/
+    // `contentSnapshotCircuitRestSeconds` sind jetzt eine geteilte
+    // `WorkoutSession`-Extension (`FitnessAppData/
+    // WorkoutSessionContentSnapshotFirst.swift`) — auch die Zeitformat-/
+    // Zirkel-Player brauchen sie für die Wiederaufnahme-Isolation.
 
     /// P8 Stufe-2: einheitliche, leseseitige Sicht auf eine Zeitformat-/
     /// Zirkel-Übung für `timedFormatCircuitSection`. `orderIndex` ist der

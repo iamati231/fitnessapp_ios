@@ -83,7 +83,11 @@ struct CircuitPlayerView: View {
             _roundsCompleted = State(initialValue: existingRounds)
             _restEndDate = State(initialValue: session.circuitRestEndDate)
             if let raw = session.circuitCurrentRoundCheckedRaw {
-                let exercisesAtInit = (session.day?.activeExercises ?? []).sorted { $0.orderIndex < $1.orderIndex }
+                // P8 Stufe-2: ueber die statische, snapshot-first
+                // Hilfsfunktion (self.resolvedExercises waere hier noch
+                // nicht erreichbar) - schuetzt vor Fehlzuordnung nach einer
+                // externen Umsortierung des Tages.
+                let exercisesAtInit = Self.resolvedExercises(for: session)
                 _checkedInRound = State(initialValue: Self.decodeCheckedInRound(raw, exercises: exercisesAtInit))
             }
         } else {
@@ -94,38 +98,79 @@ struct CircuitPlayerView: View {
     }
 
     /// Serialisiert, welche Uebungen der laufenden Runde abgehakt sind, als
-    /// kommagetrennte `orderIndex`-Liste - `orderIndex` ist pro Tag
-    /// eindeutig und aendert sich waehrend einer laufenden Session nicht.
-    /// Anders als `ForTimePlayerView`s Format braucht es keine Anzahl pro
-    /// Uebung (binaer: abgehakt oder nicht), daher genuegt die reine Liste.
-    /// "-"-Platzhalter fuer "nichts abgehakt" - ein leerer String wuerde
-    /// beim CSV-Roundtrip zu `nil` normalisiert (siehe `ForTimePlayerView`s
-    /// identische Begruendung).
-    private static func encodeCheckedInRound(_ checked: [PersistentIdentifier: Int], exercises: [Exercise]) -> String {
-        let indices = exercises.compactMap { exercise -> String? in
-            guard (checked[exercise.persistentModelID] ?? 0) > 0 else { return nil }
-            return "\(exercise.orderIndex)"
+    /// kommagetrennte `orderIndex`-Liste. P8 Stufe-2-Nachbesserung:
+    /// `orderIndex` ist der EINGEFRORENE Snapshot-Wert (`entry.orderIndex`),
+    /// nicht mehr `exercise.orderIndex` live — die ursprüngliche Annahme
+    /// ("ändert sich während einer laufenden Session nicht") galt nur für
+    /// diesen Player selbst; eine externe Umsortierung über `DayEditorView`
+    /// verschiebt den LIVEN `orderIndex` sehr wohl (siehe `ForTimePlayerView`
+    /// fuer dieselbe Korrektur). Anders als `ForTimePlayerView`s Format
+    /// braucht es keine Anzahl pro Uebung (binaer: abgehakt oder nicht),
+    /// daher genuegt die reine Liste. "-"-Platzhalter fuer "nichts
+    /// abgehakt" - ein leerer String wuerde beim CSV-Roundtrip zu `nil`
+    /// normalisiert (siehe `ForTimePlayerView`s identische Begruendung).
+    private static func encodeCheckedInRound(
+        _ checked: [PersistentIdentifier: Int],
+        exercises: [(entry: TrainingDayContentSnapshot.ExerciseEntry, exercise: Exercise)]
+    ) -> String {
+        let indices = exercises.compactMap { pair -> String? in
+            guard (checked[pair.exercise.persistentModelID] ?? 0) > 0 else { return nil }
+            return "\(pair.entry.orderIndex)"
         }
         return indices.isEmpty ? "-" : indices.joined(separator: ",")
     }
 
-    private static func decodeCheckedInRound(_ raw: String, exercises: [Exercise]) -> [PersistentIdentifier: Int] {
+    private static func decodeCheckedInRound(
+        _ raw: String,
+        exercises: [(entry: TrainingDayContentSnapshot.ExerciseEntry, exercise: Exercise)]
+    ) -> [PersistentIdentifier: Int] {
         guard raw != "-", !raw.isEmpty else { return [:] }
         var result: [PersistentIdentifier: Int] = [:]
         for piece in raw.split(separator: ",") {
-            guard let orderIndex = Int(piece), let exercise = exercises.first(where: { $0.orderIndex == orderIndex }) else { continue }
-            result[exercise.persistentModelID] = 1
+            guard let orderIndex = Int(piece), let match = exercises.first(where: { $0.entry.orderIndex == orderIndex }) else { continue }
+            result[match.exercise.persistentModelID] = 1
         }
         return result
     }
 
-    private var day: TrainingDay? { session.day }
-    private var exercises: [Exercise] {
-        (day?.activeExercises ?? []).sorted { $0.orderIndex < $1.orderIndex }
+    /// P8 Stufe-2 (Resume-Isolation): Mitgliedschaft/Reihenfolge/Identität
+    /// kommen aus dem eingefrorenen Snapshot dieser Session, aufgelöst
+    /// gegen die aktuell noch existierenden Live-Objekte
+    /// (`SessionContentResolver`) — siehe `AMRAPPlayerView.resolvedExercises`
+    /// für die volle Begründung. Entfernte Übungen werden stillschweigend
+    /// ausgelassen (kein `ExerciseLog`-Pfad hier, der eine sichtbare
+    /// Markierung bräuchte).
+    private var resolvedExercises: [(entry: TrainingDayContentSnapshot.ExerciseEntry, exercise: Exercise)] {
+        Self.resolvedExercises(for: session)
     }
-    private var totalRounds: Int { day?.circuitRounds ?? defaultCircuitRounds() }
-    private var restSeconds: Int { day?.circuitRestSeconds ?? defaultCircuitRestSeconds() }
-    private var circuitMode: CircuitRoundMode { day?.circuitMode ?? .fixedReps }
+    /// Statisch, damit `init` sie vor dem Setzen aller Stored Properties
+    /// aufrufen kann (`self.resolvedExercises` wäre dort nicht erlaubt).
+    private static func resolvedExercises(for session: WorkoutSession) -> [(entry: TrainingDayContentSnapshot.ExerciseEntry, exercise: Exercise)] {
+        guard let day = session.day else { return [] }
+        switch session.contentSnapshotState {
+        case .available(let snapshot):
+            return SessionContentResolver.resolve(snapshot: snapshot, liveExercises: day.activeExercises)
+                .compactMap { item -> (TrainingDayContentSnapshot.ExerciseEntry, Exercise)? in
+                    guard case .live(let entry, let exercise) = item else { return nil }
+                    return (entry, exercise)
+                }
+        case .notCaptured, .unreadable:
+            return day.activeExercises
+                .sorted { $0.orderIndex < $1.orderIndex }
+                .map { (TrainingDayContentSnapshotWriter.snapshotEntry(for: $0), $0) }
+        }
+    }
+    private var exercises: [Exercise] { resolvedExercises.map(\.exercise) }
+    private func entry(for exercise: Exercise) -> TrainingDayContentSnapshot.ExerciseEntry {
+        resolvedExercises.first { $0.exercise.persistentModelID == exercise.persistentModelID }?.entry
+            ?? TrainingDayContentSnapshotWriter.snapshotEntry(for: exercise)
+    }
+    // P8 Stufe-2: snapshot-first — `circuitMode` steuert die TATSÄCHLICHE
+    // Rundenabschluss-Logik (`.toFailure` vs. `.fixedReps`), nicht nur die
+    // Anzeige; `totalRounds`/`restSeconds` ebenso die Timer-/Abschlusslogik.
+    private var totalRounds: Int { session.contentSnapshotCircuitRounds ?? defaultCircuitRounds() }
+    private var restSeconds: Int { session.contentSnapshotCircuitRestSeconds ?? defaultCircuitRestSeconds() }
+    private var circuitMode: CircuitRoundMode { session.contentSnapshotCircuitMode ?? .fixedReps }
 
     private var pillLabel: String {
         String(localized: "timedWorkout.circuit.pillLabel", bundle: .module)
@@ -258,7 +303,7 @@ struct CircuitPlayerView: View {
                 } else {
                     DeltiqRow(
                         label: exercise.displayName,
-                        value: timedFormatTargetLabel(exercise),
+                        value: timedFormatTargetLabel(repsMin: entry(for: exercise).repsMin, isTimeBased: entry(for: exercise).isTimeBased),
                         showsDivider: index != exercises.count - 1
                     )
                 }
@@ -274,6 +319,7 @@ struct CircuitPlayerView: View {
 
     private func exerciseCheckRow(_ exercise: Exercise, showsDivider: Bool) -> some View {
         let checked = (checkedInRound[exercise.persistentModelID] ?? 0) > 0
+        let targetEntry = entry(for: exercise)
         return VStack(spacing: 0) {
             Button {
                 toggleExerciseChecked(exercise)
@@ -283,7 +329,7 @@ struct CircuitPlayerView: View {
                         Text(exercise.displayName)
                             .font(.system(size: 15))
                             .foregroundStyle(Color.primary)
-                        Text(timedFormatTargetLabel(exercise))
+                        Text(timedFormatTargetLabel(repsMin: targetEntry.repsMin, isTimeBased: targetEntry.isTimeBased))
                             .font(.system(size: 12))
                             .foregroundStyle(Color.Deltiq.textSecondary)
                     }
@@ -434,7 +480,7 @@ struct CircuitPlayerView: View {
         let key = exercise.persistentModelID
         let alreadyChecked = (checkedInRound[key] ?? 0) > 0
         checkedInRound[key] = alreadyChecked ? 0 : 1
-        session.circuitCurrentRoundCheckedRaw = Self.encodeCheckedInRound(checkedInRound, exercises: exercises)
+        session.circuitCurrentRoundCheckedRaw = Self.encodeCheckedInRound(checkedInRound, exercises: resolvedExercises)
         DeltiqHaptics.notify(.success)
         guard !alreadyChecked else { return }   // Nur beim NEUEN Abhaken pruefen, nicht beim Zurueck-Abhaken.
         if exercises.allSatisfy({ (checkedInRound[$0.persistentModelID] ?? 0) > 0 }) {
