@@ -773,56 +773,68 @@ Geräte-UI-Bestätigung von P6.3.
   `testPeriodicCheckInPartialAnswersSurviveRoundtrip` und
   `testPeriodicCheckInFullySkippedStaysNilNotFalseAfterRoundtrip`, keine Fehlschläge.
 
-  **UI-Abnahme: ❌ offen — TestingBot-Lauf ergebnislos, echter Blocker, kein Workaround gefunden.**
-  Auf expliziten Wunsch dieser Runde wurde ein TestingBot-Durchlauf (iPhone 15/iOS 18.0,
-  App-Build aus Commit `92757bf`) gegen die 7 angeforderten Prüfpunkte versucht
-  (Erreichbarkeit/Überspringbarkeit aller Fragen, unbeantwortet≠false, Speichern korrekt,
-  erneutes Öffnen zeigt letzten Rückblick, Formular-Reset nach Speichern, Discard-Schutz,
-  kein neuer Leistungs-Start-Check). Keiner der 7 Punkte konnte bestätigt werden, weil der
-  Harness nicht einmal bis zum Öffnen von `PeriodicCheckInView` kommt:
-  - **Symptom:** Tippen auf die Zeile "Quick check-in" in Settings → App & Workout Experience
-    erzeugt sichtbar KEINEN Bildschirmwechsel (mehrere unabhängige Screenshots über bis zu 12s
-    zeigen unverändert die Settings-Liste). Der unmittelbar folgende `source()`-Aufruf schlägt
-    reproduzierbar fehl: `"stale element reference" … "XCTPerformOnMainRunLoop work timed out
-    after 60.0s"`.
-  - **Reproduziert:** identisch über 5+ unabhängige, frische TestingBot-Sessions.
-  - **Ausgeschlossene Ursachen** (jeweils gezielt widerlegt): falsches/nicht-sichtbares Tap-Ziel
-    (widerlegt durch expliziten Scroll + frischen Dump + präzisen Koordinaten-Tap auf eine
-    verifiziert sichtbare Position — identischer Hang trat trotzdem auf); ein blockierender
-    System-Alert (widerlegt, `acceptAlertIfPresent()` meldete unmittelbar davor `false`);
-    zu kurze Wartezeit (widerlegt, bis zu 12s mit mehreren erfolgreichen Zwischen-Screenshots
-    abgewartet). Screenshots gelingen auch nach dem Hang weiter (schließt einen kompletten
-    App-Absturz im üblichen Sinn eher aus).
-  - **Log-Analyse (iOS-Gerätekonsolenlog, ~55 MB dekomprimiert):** gezielt nach Crash-/Fatal-/
-    Jetsam-/SIGKILL-Mustern rund um den Hang-Zeitraum durchsucht — kein Absturz- oder
-    Watchdog-Kill-Signal für `com.atamya.FitnessApp` gefunden.
-  - **Log-Analyse (Appium-Log, Folgeruns dieser Runde) — konkreter Befund:** exakte
-    Zeitrekonstruktion des Hangs ergibt eine klare Reihenfolge: Scroll (01:25:23) → `source()`
-    gelingt noch normal (01:25:27, 1,5s) → Screenshot gelingt (01:25:29) → präziser
-    Koordinaten-Tap auf "Quick check-in" (01:25:30, Touch-Up ~01:25:32.7) → EIN WEITERER
-    Screenshot gelingt weiterhin schnell (01:25:34, 56ms — zeigt laut vorherigem Befund
-    unverändert die Settings-Liste) → der NÄCHSTE `source()`-Aufruf (01:25:35.5) hängt exakt
-    62066ms und scheitert mit `"XCTPerformOnMainRunLoop work timed out after 60.0s"`.
-    Diese Fehlermeldung ist ein bekanntes XCTest/WebDriverAgent-Signal dafür, dass ein Stück
-    Arbeit nicht rechtzeitig auf den MAIN RUN LOOP DER APP eingeplant werden konnte — sie
-    bedeutet üblicherweise einen echten Hänger im Haupt-Thread der App selbst, nicht primär ein
-    Harness-Timing-Problem. Zusammen mit dem Befund, dass Screenshots (laufen über die
-    Simulator-Compositor-Ebene, nicht über den App-Hauptthread) auch danach weiter gelingen,
-    ergibt sich ein stimmiges Bild: der Tap registriert vermutlich, der sichtbare Übergang
-    bleibt aber aus, und kurz danach reagiert der App-Hauptthread nicht mehr — am ehesten
-    vereinbar mit einem Hänger beim ERSTMALIGEN Aufbau/Rendern von `PeriodicCheckInView`
-    (Navigation ausgelöst, Konstruktion/erstes Rendering kommt nicht zum Abschluss), weniger
-    mit einem reinen Snapshot-Rechenaufwand (der würde fertig werden, nicht hart nach 60s
-    abreissen) oder einem reinen Harness-Artefakt.
-  - **Bisektion gegen `063cb90` mit gezielter Debug-Instrumentierung (laufend):** auf einem
-    eigenen, rein diagnostischen Zweig (`diag-p63-bisect-063cb90`, NICHT Teil der regulären
-    Historie, wird nach Abschluss der Untersuchung wieder gelöscht) wurden drei `NSLog`-Marker
-    ergänzt — beim Aufruf der `NavigationLink`-Destination-Closure, in
-    `PeriodicCheckInView.init()` und beim Betreten von `body` — um Navigation/Konstruktion/
-    Rendering gegeneinander abzugrenzen, auf dem Stand VOR dem Discard-Guard-Nebenfund dieser
-    Runde. Codemagic-Build und TestingBot-Nachlauf sind zum Zeitpunkt dieses Commits noch nicht
-    abgeschlossen; das Ergebnis wird in einem Folge-Commit ergänzt, statt hier spekulativ
-    vorweggenommen zu werden.
+  **UI-Abnahme: 🔶 Root Cause gefunden + Fix implementiert (Commit `ae003a6`) — erneute
+  TestingBot-Prüfung der 7 Punkte steht noch aus.** Auf expliziten Wunsch dieser Runde wurde der
+  TestingBot-Blocker gezielt untersucht, statt weitere identische Versuche ohne neue Hypothese zu
+  fahren. Ergebnis: ein **echter, reproduzierbarer App-Bug**, keine TestingBot-Eigenart.
+
+  **Diagnoseweg (in dieser Reihenfolge, wie vorgegeben):**
+  1. *Ausgeschlossene Ursachen* (bereits in der Vorrunde widerlegt): falsches/nicht-sichtbares
+     Tap-Ziel (widerlegt durch Scroll + frischen Dump + präzisen Koordinaten-Tap auf eine
+     verifiziert sichtbare Position), ein blockierender System-Alert (`acceptAlertIfPresent()`
+     meldete `false`), zu kurze Wartezeit (bis zu 12s mit erfolgreichen Zwischen-Screenshots).
+  2. *Appium-Log-Zeitrekonstruktion* (dieser Runde): Scroll → `source()` gelingt noch (1,5s) →
+     Screenshot gelingt → präziser Koordinaten-Tap auf "Quick check-in" → ein WEITERER
+     Screenshot gelingt weiterhin schnell (56ms) → der NÄCHSTE `source()`-Aufruf hängt exakt
+     62066ms und scheitert mit `"XCTPerformOnMainRunLoop work timed out after 60.0s"` — ein
+     bekanntes Signal dafür, dass der App-Hauptthread selbst nicht mehr reagiert (nicht primär
+     ein Harness-Timing-Problem).
+  3. *Bisektion gegen den Vor-Discard-Stand `063cb90`* auf einem eigenen, rein diagnostischen
+     Zweig (`diag-p63-bisect-063cb90` — lokal wieder gelöscht; der Remote-Branch auf GitHub
+     konnte mit den Push-Rechten dieser Sitzung nicht gelöscht werden und bleibt als erkennbar
+     benannter Diagnose-Rest stehen): **identischer Hang reproduziert sich 1:1** — der Bug
+     besteht unabhängig vom Discard-Guard-Nebenfund und unabhängig von jeder Änderung dieser
+     Runde, er war bereits im allerersten P6.3-Commit vorhanden.
+  4. *Gezielte `NSLog`-Instrumentierung* (auf demselben Diagnose-Zweig) an drei Stellen — Aufruf
+     der `NavigationLink`-Destination-Closure, `PeriodicCheckInView.init()`, Betreten von
+     `body` — lieferte den entscheidenden Befund: **alle drei Marker feuerten ca. 10.500 Mal
+     in 75 Sekunden (~140×/Sekunde)**, UND DIES BEGANN BEREITS BEIM BLOSSEN ÖFFNEN von
+     `SettingsAppExperienceView` (Tap auf "App & Workout Experience"), lange bevor "Quick
+     check-in" überhaupt angetippt wurde. `PeriodicCheckInView` wurde also in einer
+     Render-Endlosschleife immer wieder neu konstruiert und gerendert, was den App-Hauptthread
+     vollständig sättigte — das erklärt exakt das beobachtete Verhalten (Screenshots über die
+     Simulator-Compositor-Ebene gelingen weiter, der App-eigene Hauptthread aber reagiert auf
+     nichts mehr, inkl. keiner sichtbaren Navigation und keinem `source()`-Abruf).
+
+  **Root Cause:** `PeriodicCheckInView` deklarierte ein eigenes
+  `@Query(sort: \PeriodicCheckIn.date, order: .reverse)`. Als Destination-Closure eines
+  `NavigationLink` innerhalb von `SettingsAppExperienceView` wird dieser Closure-Typ bei jeder
+  (offenbar auch spekulativen/vorausschauenden) Neubewertung des Eltern-Views neu konstruiert —
+  und jede Neukonstruktion eines `@Query`-tragenden Views baut eine frische SwiftData-Beobachtung
+  auf. Das zum Vergleich herangezogene, bereits erfolgreich TestingBot-verifizierte
+  `dashboardCustomizationRow` (`NavigationLink { DashboardSettingsView(profile: profile) }` in
+  derselben Datei) hat dieses Problem nicht, weil `DashboardSettingsView` sein Profil als
+  Parameter bekommt statt selbst zu queryen — das ist der entscheidende Unterschied.
+
+  **Fix (Commit `ae003a6`):** `@Query` entfernt, ersetzt durch einen einmaligen
+  `FetchDescriptor`-Fetch (`fetchLimit = 1`) in `.task`, der nur beim tatsächlichen Erscheinen
+  des Screens läuft — nicht bei jeder (ggf. spekulativen) Konstruktion. `save()` aktualisiert den
+  angezeigten Wert direkt, damit "zuletzt gespeichert" weiterhin sofort reagiert. Linux: Build +
+  1094/1094 Tests grün. Apple-Kompilierprüfung für diesen Fix läuft, Ergebnis wird im nächsten
+  Commit ergänzt.
+
+  **Bewertung gegen die Vorgabe "Ursache nicht ohne Beleg TestingBot oder der App zuschreiben":**
+  die Ursache liegt klar UND belegt in der App (Render-Endlosschleife, 140 Hz, beginnt vor jedem
+  Tap auf "Quick check-in") — kein TestingBot-Artefakt. Dieser Bug hätte auch ein echter Nutzer
+  getroffen (eingefrorener Screen bei blossem Besuch von Einstellungen → App & Workout
+  Experience), es handelt sich also um einen echten Produktionsfehler, nicht nur ein
+  Test-Problem.
+
+  **Noch offen, bevor P6.3 vollständig UI-abgenommen werden kann:** ein TestingBot-Lauf mit dem
+  GEFIXTEN Build gegen genau dieselben 7 ursprünglich angeforderten Prüfpunkte (Erreichbarkeit/
+  Überspringbarkeit aller fünf Fragen, unbeantwortet≠false, Speichern korrekt, erneutes Öffnen
+  zeigt letzten Rückblick, Formular-Reset nach Speichern, Discard-Schutz, kein neuer
+  Leistungs-Start-Check) — wird direkt im Anschluss an die Apple-Kompilierbestätigung gefahren.
 - (Stufe-2-Inhalts-Snapshot `TrainingDayContentRecord` bewusst erst für P8 relevant, nicht P7.)
 
 **P7 — Vier-Wochen-Rückblick, Stufe 1 (groß, abhängig von P6):**
