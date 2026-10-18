@@ -143,5 +143,69 @@ final class FourWeekReviewAssemblerTests: XCTestCase {
         XCTAssertTrue(concerns.contains { if case .complaintsReported = $0 { return true }; return false })
         XCTAssertTrue(concerns.contains { if case .goalNoLongerCurrent = $0 { return true }; return false })
     }
+
+    // MARK: - P9: explizite Planauswahl (Mehrplan-Bedienablauf)
+
+    /// Beweist, dass `assemble(in:for:)` TATSÄCHLICH den übergebenen Plan
+    /// bewertet, nicht die "erster Plan nach Name"-Vereinfachung — "Alpha"
+    /// (ohne jede Session, würde `.concernsFound` liefern) sortiert
+    /// alphabetisch VOR "Beta" (vollständig eingehalten, `.keepAsIs`). Ohne
+    /// die explizite Auswahl würde dieser Test fälschlich Alphas Befund
+    /// zeigen.
+    func testAssembleForExplicitPlanUsesThatPlansParticipationNotTheAlphabeticallyFirst() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let alpha = TrainingPlan(name: "Alpha", programType: "custom", isActive: true)
+        alpha.activatedAt = d(2024, 1, 1)
+        context.insert(alpha)
+        context.insert(TrainingDay(name: "Ganzkörper", weekday: 2, type: .fullBody, plan: alpha))
+
+        let beta = TrainingPlan(name: "Beta", programType: "custom", isActive: true)
+        beta.activatedAt = d(2024, 1, 1)
+        context.insert(beta)
+        let betaDay = TrainingDay(name: "Ganzkörper", weekday: 2, type: .fullBody, plan: beta)
+        context.insert(betaDay)
+        for offset in [0, 7, 14, 21] {
+            let date = utc.date(byAdding: .day, value: offset, to: d(2024, 1, 2))!
+            context.insert(WorkoutSession(
+                startTime: date, endTime: date.addingTimeInterval(3600),
+                durationMinutes: 60, exerciseCount: 1, totalSets: 0,
+                totalVolumeKg: 0, isCompleted: true, day: betaDay
+            ))
+        }
+        try context.save()
+
+        // Ohne explizite Auswahl: "Alpha" (erster nach Name), keine
+        // Sessions -> deutlich verfehlte Teilnahme.
+        let defaultReview = FourWeekReviewAssembler.assemble(in: context, now: d(2024, 2, 1), calendar: utc)
+        guard case .concernsFound = defaultReview.outcome else {
+            return XCTFail("Default-Auswahl sollte weiterhin Alpha (verfehlte Teilnahme) liefern: \(defaultReview.outcome)")
+        }
+
+        // Mit expliziter Auswahl von "Beta": vollständig eingehalten.
+        let betaReview = FourWeekReviewAssembler.assemble(in: context, for: beta, now: d(2024, 2, 1), calendar: utc)
+        XCTAssertEqual(betaReview.outcome, .keepAsIs, "explizite Auswahl von Beta muss Betas eigene Teilnahme bewerten, nicht Alphas")
+        guard case .evaluated(let summary) = betaReview.participation else {
+            return XCTFail("Betas Teilnahme hätte auswertbar sein müssen: \(betaReview.participation)")
+        }
+        XCTAssertEqual(summary.missedCount, 0)
+    }
+
+    func testAllActivePlansReturnsOnlyActiveOnesSortedByName() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let zeta = TrainingPlan(name: "Zeta", programType: "custom", isActive: true)
+        let alpha = TrainingPlan(name: "Alpha", programType: "custom", isActive: true)
+        let inactive = TrainingPlan(name: "Inaktiv", programType: "custom", isActive: false)
+        context.insert(zeta)
+        context.insert(alpha)
+        context.insert(inactive)
+        try context.save()
+
+        let result = FourWeekReviewAssembler.allActivePlans(in: context)
+        XCTAssertEqual(result.map(\.name), ["Alpha", "Zeta"])
+    }
 }
 #endif

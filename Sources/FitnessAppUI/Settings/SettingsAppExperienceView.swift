@@ -239,7 +239,7 @@ public struct SettingsAppExperienceView: View {
         // ein jederzeit erreichbarer, manueller Zugang, kein automatisches
         // Verhalten.
         NavigationLink {
-            FourWeekReviewView()
+            FourWeekReviewEntryView()
         } label: {
             DeltiqRow(
                 icon: "calendar.badge.clock",

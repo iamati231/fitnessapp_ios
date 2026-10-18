@@ -35,10 +35,19 @@ public struct FourWeekReviewView: View {
     @State private var comebackAssessment: AbsenceDeload.Assessment?
     @State private var showingDeloadConfirm = false
 
+    /// P9 (Mehrplan-Bedienablauf): expliziter Plan, falls dieser Screen über
+    /// `FourWeekReviewEntryView`s Planauswahl erreicht wurde. `nil` behält
+    /// die bisherige Rückwärtskompatibilität — `reload()` fällt dann auf
+    /// `FourWeekReviewAssembler`s "erster aktiver Plan nach Name"-
+    /// Vereinfachung zurück (unverändertes Verhalten für den
+    /// Ein-Plan-Fall, der bei weitem häufigste Fall).
+    private let explicitPlan: TrainingPlan?
+
     /// P7.3: der Plan, dessen Fälligkeit/Abschluss dieser Screen anzeigt und
-    /// speichert — derselbe, den `FourWeekReviewAssembler` bereits für den
-    /// Review-INHALT bewertet (`primaryPlanForReview`), nicht erneut
-    /// eigenständig ausgewählt.
+    /// speichert — bei explizitem `explicitPlan` exakt dieser, sonst
+    /// derselbe, den `FourWeekReviewAssembler` für den Review-INHALT
+    /// bewertet (`primaryPlanForReview`) — nie eine zweite, abweichende
+    /// Auswahl.
     @State private var reviewedPlan: TrainingPlan?
     @State private var dueState: FourWeekReviewDueCalculator.State?
     /// Wird `true`, sobald innerhalb DIESER Sitzung tatsächlich eine Aktion
@@ -47,7 +56,9 @@ public struct FourWeekReviewView: View {
     /// bewusst NICHT aus gespeicherten Daten rekonstruiert.
     @State private var actionTakenThisSession = false
 
-    public init() {}
+    public init(plan: TrainingPlan? = nil) {
+        self.explicitPlan = plan
+    }
 
     public var body: some View {
         VStack(spacing: 0) {
@@ -60,8 +71,8 @@ public struct FourWeekReviewView: View {
             ScrollView {
                 VStack(spacing: 14) {
                     if let review {
-                        if let dueBadgeText {
-                            DeltiqContextRow([DeltiqContextItem(dueBadgeText, style: .neutral)])
+                        if !contextItems.isEmpty {
+                            DeltiqContextRow(contextItems)
                         }
                         reviewContent(review)
                     } else {
@@ -98,8 +109,8 @@ public struct FourWeekReviewView: View {
     // MARK: - Laden (kein @Query, siehe Typ-Dokumentation)
 
     private func reload() {
-        review = FourWeekReviewAssembler.assemble(in: modelContext)
-        let plan = FourWeekReviewAssembler.primaryPlanForReview(in: modelContext)
+        review = FourWeekReviewAssembler.assemble(in: modelContext, for: explicitPlan)
+        let plan = explicitPlan ?? FourWeekReviewAssembler.primaryPlanForReview(in: modelContext)
         reviewedPlan = plan
         dueState = plan.map { FourWeekReviewDueStatus.state(for: $0, in: modelContext) }
     }
@@ -123,17 +134,25 @@ public struct FourWeekReviewView: View {
 
     /// Rein passive Anzeige (kein Snooze/Benachrichtigung in dieser Stufe,
     /// siehe `FourWeekReviewDueCalculator`-Dokumentation) — zeigt entweder
-    /// den Abschlusszeitpunkt oder, solange offen, seit wann fällig.
+    /// den Abschlusszeitpunkt oder, solange offen, dass fällig ist.
     private var dueBadgeText: String? {
-        guard let dueState else { return nil }
-        switch dueState {
-        case .completed(let at, _):
-            return String(format: loc("fourWeekReview.status.completed"), at.formatted(date: .abbreviated, time: .omitted)).uppercased()
-        case .due:
-            return loc("fourWeekReview.status.due").uppercased()
-        case .notYetDue, .unknown:
-            return nil
+        fourWeekReviewDueBadgeText(for: dueState)
+    }
+
+    /// P9 (Mehrplan-Bedienablauf): zeigt den Plannamen NUR, wenn dieser
+    /// Screen über eine explizite Auswahl erreicht wurde
+    /// (`FourWeekReviewEntryView`s Planliste) — im bei weitem häufigsten
+    /// Ein-Plan-Fall bleibt die Zeile unverändert wie vor P9, da dort keine
+    /// Verwechslungsgefahr besteht.
+    private var contextItems: [DeltiqContextItem] {
+        var items: [DeltiqContextItem] = []
+        if let explicitPlan {
+            items.append(DeltiqContextItem(explicitPlan.displayName.uppercased(), style: .accent))
         }
+        if let dueBadgeText {
+            items.append(DeltiqContextItem(dueBadgeText, style: .neutral))
+        }
+        return items
     }
 
     private func completeReview() {
@@ -338,6 +357,26 @@ public struct FourWeekReviewView: View {
 @available(iOS 17.0, macOS 14.0, *)
 private func loc(_ key: String.LocalizationValue) -> String {
     String(localized: key, bundle: .module)
+}
+
+/// P9: geteilte Formatierung zwischen `FourWeekReviewView` (eigener Status)
+/// und `FourWeekReviewEntryView`s Planliste (Status PRO Zeile) — eine
+/// einzige Quelle der Wahrheit für den Badge-Text, statt zweier
+/// unabhängiger `switch`-Anweisungen, die auseinanderlaufen könnten.
+@available(iOS 17.0, macOS 14.0, *)
+func fourWeekReviewDueBadgeText(for dueState: FourWeekReviewDueCalculator.State?) -> String? {
+    guard let dueState else { return nil }
+    switch dueState {
+    case .completed(let at, _):
+        return String(
+            format: String(localized: "fourWeekReview.status.completed", bundle: .module),
+            at.formatted(date: .abbreviated, time: .omitted)
+        ).uppercased()
+    case .due:
+        return String(localized: "fourWeekReview.status.due", bundle: .module).uppercased()
+    case .notYetDue, .unknown:
+        return nil
+    }
 }
 
 // MARK: - Previews

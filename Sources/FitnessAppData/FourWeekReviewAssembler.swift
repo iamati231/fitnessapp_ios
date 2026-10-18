@@ -22,13 +22,24 @@ import FitnessAppCore
 @MainActor
 public enum FourWeekReviewAssembler {
 
+    /// P9 (Mehrplan-Bedienablauf): `plan` lässt den Aufrufer EXPLIZIT
+    /// festlegen, welcher Plan bewertet wird — `nil` (Default) behält die
+    /// bestehende "erster aktiver Plan nach Name"-Vereinfachung
+    /// (`primaryActivePlan`) für Aufrufer bei, die keinen Plan ausgewählt
+    /// haben (Rückwärtskompatibilität zu allen bisherigen Call-Sites/Tests).
+    /// Die Soll-Ist-Teilnahme ist das EINZIGE Signal, das sich pro Plan
+    /// unterscheidet — Deload-/Comeback-Signale bleiben bewusst global
+    /// (siehe `shouldRecommendDeload`-Dokumentation: `WorkoutSession` hat
+    /// keine stabile Plan-Referenz, eine Zuordnung zu EINEM Plan gäbe es
+    /// nirgends im Code).
     public static func assemble(
         in context: ModelContext,
+        for plan: TrainingPlan? = nil,
         now: Date = Date(),
         calendar: Calendar = .current
     ) -> FourWeekReviewOrchestrator.Review {
         let participation = PlanParticipationEvaluator.evaluate(
-            participationInput(in: context, calendar: calendar),
+            participationInput(in: context, for: plan, calendar: calendar),
             asOf: now
         )
 
@@ -60,11 +71,18 @@ public enum FourWeekReviewAssembler {
         primaryActivePlan(in: context)
     }
 
-    private static func primaryActivePlan(in context: ModelContext) -> TrainingPlan? {
+    /// P9: alle aktuell aktiven Pläne, sortiert nach Anzeigename — EINZIGE
+    /// Quelle der Wahrheit für "gibt es mehr als einen aktiven Plan", damit
+    /// UI-Picker (`FourWeekReviewEntryView`) und die Fälligkeits-Aggregation
+    /// (`FourWeekReviewDueStatus.isAnyDue`) dieselbe Grundmenge sehen.
+    public static func allActivePlans(in context: ModelContext) -> [TrainingPlan] {
         let activePlans = (try? context.fetch(FetchDescriptor<TrainingPlan>(
             predicate: #Predicate { $0.isActive == true }
         ))) ?? []
+        return activePlans.sorted { $0.name < $1.name }
+    }
 
+    private static func primaryActivePlan(in context: ModelContext) -> TrainingPlan? {
         // Bewusste Vereinfachung dieses ersten Wurfs: mehrere gleichzeitig
         // aktive Pläne sind ein zulässiger Zustand (Task #201/#202), aber
         // `WorkoutSession` hat keine stabile Referenz zurück auf ihren Plan
@@ -73,18 +91,22 @@ public enum FourWeekReviewAssembler {
         // nirgends im Code. Bei mehreren aktiven Plänen wird hier der nach
         // Name sortiert ERSTE bewertet; eine echte Mehrplan-Aufteilung bleibt
         // eine spätere, eigenständige Erweiterung — offen benannt, nicht
-        // stillschweigend verschwiegen. Gilt ausdrücklich NUR für den
-        // Review-INHALT — die P7.3-FälligkeitsAGGREGATION
-        // (`FourWeekReviewDueStatus.isAnyDue`) wertet dagegen JEDEN aktiven
-        // Plan einzeln aus, ohne diese Auswahl zu übernehmen.
-        return activePlans.sorted(by: { $0.name < $1.name }).first
+        // stillschweigend verschwiegen. Gilt ausdrücklich NUR für Aufrufer
+        // OHNE explizite Planauswahl (`assemble(in:for: nil)`); P9 ergänzt
+        // `FourWeekReviewEntryView`, das bei mehreren aktiven Plänen eine
+        // ausdrückliche Auswahl anbietet, statt sich auf diese Vereinfachung
+        // zu verlassen. Die P7.3-FälligkeitsAGGREGATION
+        // (`FourWeekReviewDueStatus.isAnyDue`) wertete bereits zuvor JEDEN
+        // aktiven Plan einzeln aus, ohne diese Auswahl zu übernehmen.
+        allActivePlans(in: context).first
     }
 
     private static func participationInput(
         in context: ModelContext,
+        for explicitPlan: TrainingPlan?,
         calendar: Calendar
     ) -> PlanParticipationEvaluator.Input {
-        guard let plan = primaryActivePlan(in: context) else {
+        guard let plan = explicitPlan ?? primaryActivePlan(in: context) else {
             return PlanParticipationEvaluator.Input(
                 activatedAt: nil,
                 isActive: false,
