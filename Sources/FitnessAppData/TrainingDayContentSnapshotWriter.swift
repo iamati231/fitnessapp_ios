@@ -49,6 +49,18 @@ extension WorkoutSession {
 /// müssen `capture` schlicht nur am Erzeugungs-Ort aufrufen. Für Alt-
 /// Sessions ohne Snapshot wird nie nachträglich einer erzeugt — `nil`
 /// bleibt ein gültiger Dauerzustand.
+///
+/// **Expliziter Save (Geräteabnahme-Befund, Stufe-2-Abnahme Block C):**
+/// jede Funktion hier ruft nach dem Setzen von `contentSnapshotJSON`/
+/// `.contentSnapshotCapturedAt` explizit `try? context.save()` auf, statt
+/// sich auf SwiftDatas impliziten Autosave zu verlassen. Ein echter
+/// TestingBot-Gerätetest hat reproduziert, dass ein Ad-hoc-Edit + "+Satz"
+/// nach einem Prozess-Kill kurz danach spurlos verloren gingen, obwohl sie
+/// vor dem Kill live sichtbar bestätigt waren — der implizite Autosave
+/// hatte schlicht noch nicht gegriffen. Folgt damit derselben Konvention
+/// wie die meisten anderen Schreibstellen in `FitnessAppData` (z. B.
+/// `DeloadManager`, `FourWeekReviewDueStatus`), die bisher nur in dieser
+/// einen, für den Session-Inhaltsvertrag zentralen Datei fehlte.
 public enum TrainingDayContentSnapshotWriter {
 
     /// Initial-Aufnahme bei Session-ERZEUGUNG — der einzige Aufrufzeitpunkt,
@@ -81,6 +93,7 @@ public enum TrainingDayContentSnapshotWriter {
 
         session.contentSnapshotJSON = json
         session.contentSnapshotCapturedAt = Date()
+        try? context.save()   // explizit, siehe Enum-Dokumentation oben.
         return true
     }
 
@@ -122,6 +135,7 @@ public enum TrainingDayContentSnapshotWriter {
 
         session.contentSnapshotJSON = json
         session.contentSnapshotCapturedAt = Date()
+        try? context.save()   // explizit, siehe Enum-Dokumentation oben.
         return true
     }
 
@@ -146,6 +160,7 @@ public enum TrainingDayContentSnapshotWriter {
 
         session.contentSnapshotJSON = json
         session.contentSnapshotCapturedAt = Date()
+        try? context.save()   // explizit, siehe Enum-Dokumentation oben.
         return true
     }
 
@@ -189,6 +204,7 @@ public enum TrainingDayContentSnapshotWriter {
 
         session.contentSnapshotJSON = json
         session.contentSnapshotCapturedAt = Date()
+        try? context.save()   // explizit, siehe Enum-Dokumentation oben.
         return true
     }
 
@@ -251,6 +267,7 @@ public enum TrainingDayContentSnapshotWriter {
 
         session.contentSnapshotJSON = json
         session.contentSnapshotCapturedAt = Date()
+        try? context.save()   // explizit, siehe Enum-Dokumentation oben.
         return true
     }
 

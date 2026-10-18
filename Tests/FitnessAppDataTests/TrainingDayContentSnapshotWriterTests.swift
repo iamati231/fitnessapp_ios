@@ -597,5 +597,165 @@ final class TrainingDayContentSnapshotWriterTests: XCTestCase {
         XCTAssertEqual(snapshot.exercises.count, 1)
         XCTAssertEqual(snapshot.exercises.first?.nameSnapshot, "Bankdrücken")
     }
+
+    // MARK: - Geräteabnahme-Befund (Stufe-2-Abnahme, Block C): expliziter Save
+
+    /// Anders als der obige Store-Neuöffnungstest ruft dieser Test NACH dem
+    /// Writer-Aufruf bewusst KEIN `context.save()` mehr auf — genau das
+    /// maskierte den Bug bisher: der vorige Test speicherte selbst direkt
+    /// nach `capture(...)` und bewies damit nur, dass EIN `save()` irgendwo
+    /// zwischen Schreiben und Store-Neuöffnung ausreicht, nicht dass
+    /// `capture` selbst persistiert. Ein echter TestingBot-Gerätetest hat
+    /// gezeigt, dass ein App-Kaltstart kurz nach einem Ad-hoc-Edit die
+    /// Änderung verliert — dieser Test bildet exakt diese Lücke nach:
+    /// Writer-Aufruf, SOFORT Container-Ende (kein weiterer Save, keine
+    /// weitere UI-Interaktion, die SwiftDatas impliziten Autosave ausgelöst
+    /// haben könnte), dann Store-Neuöffnung.
+    func testCapturePersistsWithoutAnyAdditionalCallerSave() throws {
+        let storeURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("p8-capture-explicit-save-\(UUID().uuidString)")
+            .appendingPathExtension("store")
+        defer {
+            try? FileManager.default.removeItem(at: storeURL)
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("shm"))
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("wal"))
+        }
+
+        do {
+            let schema = Schema(AppSchema.types)
+            let config = ModelConfiguration(url: storeURL)
+            let container = try ModelContainer(for: schema, configurations: config)
+            let context = container.mainContext
+
+            let plan = TrainingPlan(name: "Push A", programType: "custom", isActive: true)
+            context.insert(plan)
+            let day = TrainingDay(name: "Push A", weekday: 2, type: .chest, plan: plan)
+            context.insert(day)
+            let exercise = Exercise(name: "Bankdrücken", exerciseTemplateID: UUID(), orderIndex: 0, day: day)
+            context.insert(exercise)
+            let session = WorkoutSession(
+                startTime: d(2024, 1, 2), endTime: d(2024, 1, 2).addingTimeInterval(3600),
+                durationMinutes: 60, exerciseCount: 1, isCompleted: false, day: day
+            )
+            context.insert(session)
+            try context.save()   // Setup-Save, nicht Teil der eigentlichen Prüfung.
+
+            // KEIN `try context.save()` danach — `capture` muss selbst speichern.
+            XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: session, in: context))
+        }
+
+        let schema = Schema(AppSchema.types)
+        let reopenedContainer = try ModelContainer(for: schema, configurations: ModelConfiguration(url: storeURL))
+        let sessions = try reopenedContainer.mainContext.fetch(FetchDescriptor<WorkoutSession>())
+        guard case .available = sessions.first?.contentSnapshotState else {
+            return XCTFail("capture() muss ohne zusätzlichen Aufrufer-Save persistieren: \(String(describing: sessions.first?.contentSnapshotState))")
+        }
+    }
+
+    /// Reproduziert den konkreten Gerätebefund: Ad-hoc-Edit nach echtem
+    /// App-Kaltstart verloren, weil `recordAdHocExerciseEdited` nicht
+    /// selbst speicherte.
+    func testRecordAdHocExerciseEditedPersistsWithoutAnyAdditionalCallerSave() throws {
+        let storeURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("p8-adhoc-edit-explicit-save-\(UUID().uuidString)")
+            .appendingPathExtension("store")
+        defer {
+            try? FileManager.default.removeItem(at: storeURL)
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("shm"))
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("wal"))
+        }
+
+        do {
+            let schema = Schema(AppSchema.types)
+            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(url: storeURL))
+            let context = container.mainContext
+
+            let plan = TrainingPlan(name: "Ad-hoc", programType: "custom", isActive: true)
+            context.insert(plan)
+            let day = TrainingDay(name: "Ad-hoc", weekday: 2, type: .custom, plan: plan)
+            context.insert(day)
+            let session = WorkoutSession(
+                startTime: d(2024, 1, 2), endTime: d(2024, 1, 2).addingTimeInterval(3600),
+                durationMinutes: 0, exerciseCount: 0, isCompleted: false, isAdHoc: true, day: day
+            )
+            context.insert(session)
+            try context.save()
+            XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: session, in: context))
+
+            let exercise = Exercise(name: "Bankdrücken", exerciseTemplateID: UUID(), sets: 3, repsMin: 8, repsMax: 12, orderIndex: 0, day: day)
+            context.insert(exercise)
+            try context.save()
+            XCTAssertTrue(TrainingDayContentSnapshotWriter.recordAdHocExerciseAdded(exercise, to: session, in: context))
+
+            // Ausdrücklich innerhalb der Session bearbeitet (Ad-hoc-Editor).
+            exercise.repsMin = 11
+            exercise.repsMax = 12
+            try context.save()   // Setup-Save der Live-Exercise, nicht des Snapshots.
+
+            // KEIN weiterer `context.save()` nach diesem Aufruf.
+            XCTAssertTrue(TrainingDayContentSnapshotWriter.recordAdHocExerciseEdited(exercise, within: session, in: context))
+        }
+
+        let schema = Schema(AppSchema.types)
+        let reopenedContainer = try ModelContainer(for: schema, configurations: ModelConfiguration(url: storeURL))
+        let sessions = try reopenedContainer.mainContext.fetch(FetchDescriptor<WorkoutSession>())
+        guard case .available(let snapshot) = sessions.first?.contentSnapshotState else {
+            return XCTFail("der Snapshot selbst muss den Store-Neustart überstehen: \(String(describing: sessions.first?.contentSnapshotState))")
+        }
+        XCTAssertEqual(
+            snapshot.exercises.first?.repsMin, 11,
+            "das Ad-hoc-Edit muss ohne zusätzlichen Aufrufer-Save persistieren, nicht erst beim naechsten impliziten Autosave"
+        )
+    }
+
+    /// Reproduziert denselben Gerätebefund für die "+ Satz"-Aktion.
+    func testRecordSetCountChangePersistsWithoutAnyAdditionalCallerSave() throws {
+        let storeURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("p8-setcount-explicit-save-\(UUID().uuidString)")
+            .appendingPathExtension("store")
+        defer {
+            try? FileManager.default.removeItem(at: storeURL)
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("shm"))
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("wal"))
+        }
+
+        do {
+            let schema = Schema(AppSchema.types)
+            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(url: storeURL))
+            let context = container.mainContext
+
+            let plan = TrainingPlan(name: "Push A", programType: "custom", isActive: true)
+            context.insert(plan)
+            let day = TrainingDay(name: "Push A", weekday: 2, type: .chest, plan: plan)
+            context.insert(day)
+            let exercise = Exercise(name: "Bankdrücken", exerciseTemplateID: UUID(), sets: 3, orderIndex: 0, day: day)
+            context.insert(exercise)
+            let session = WorkoutSession(
+                startTime: d(2024, 1, 2), endTime: d(2024, 1, 2).addingTimeInterval(3600),
+                durationMinutes: 60, exerciseCount: 1, isCompleted: false, day: day
+            )
+            context.insert(session)
+            try context.save()
+            XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: session, in: context))
+
+            // "+ Satz"-Kartenaktion: Live-Feld UND Snapshot-Update.
+            exercise.sets = 4
+            try context.save()   // Setup-Save der Live-Exercise, nicht des Snapshots.
+
+            // KEIN weiterer `context.save()` nach diesem Aufruf.
+            XCTAssertTrue(TrainingDayContentSnapshotWriter.recordSetCountChange(for: exercise, in: session, context: context))
+        }
+
+        let schema = Schema(AppSchema.types)
+        let reopenedContainer = try ModelContainer(for: schema, configurations: ModelConfiguration(url: storeURL))
+        let sessions = try reopenedContainer.mainContext.fetch(FetchDescriptor<WorkoutSession>())
+        guard case .available(let snapshot) = sessions.first?.contentSnapshotState else {
+            return XCTFail("der Snapshot selbst muss den Store-Neustart überstehen: \(String(describing: sessions.first?.contentSnapshotState))")
+        }
+        XCTAssertEqual(
+            snapshot.exercises.first?.sets, 4,
+            "die '+ Satz'-Aenderung muss ohne zusätzlichen Aufrufer-Save persistieren, nicht erst beim naechsten impliziten Autosave"
+        )
+    }
 }
 #endif
