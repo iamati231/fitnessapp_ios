@@ -1012,8 +1012,72 @@ korrekt in den Snapshot einfließt.
 
 ### 10.5 Verifikationsstatus
 
-<!-- P8_STUFE2_SECTION_10_5_PLACEHOLDER -->
+Ein gebündelter Apple-CI-Lauf (`ios-app` + `swift-package`), plus ein
+einziger notwendiger Nachlauf nach einem reinen Test-Code-Tippfehler
+(kein Diagnose-Serienverbrauch):
+
+| Workflow | Build-ID | Ergebnis |
+|---|---|---|
+| `ios-app` | `6ad52fde4ac5864d3de15029` | **grün** (erster Versuch) |
+| `swift-package` | `6ad52fdad69f6dd511d4dab5` | rot — `Build (debug)` bereits grün, `Run unit tests` schlug am Testziel-Compile fehl: 3 `Exercise(...)`-Testaufrufe hatten `orderIndex:` vor `sets:` geschrieben; Swift verlangt Aufrufreihenfolge = Deklarationsreihenfolge. Kein Produktionscode betroffen. |
+| Fix | Commit `a4fff0b` | Argumentreihenfolge an den 3 Stellen korrigiert |
+| `swift-package` | `6ad5318ef5c0969964373dbc` | **grün** (zweiter Versuch) — alle Build-Schritte `success`, Testlauf erreichte `[1407/1407]`, keine echte Fehlzeile im Log (nur Testnamen, die zufällig "Failed" enthalten, z. B. `testMarkFailedThenConsumeReturnsTrueOnce`) |
+
+Damit sind `ios-app` und `swift-package` auf dem finalen Stand
+(Commits `b1f7b43`…`a4fff0b`) beide grün. TestingBot wurde für diese
+Nachbesserung nicht eingesetzt: es gab keine konkrete, über die
+automatisierten Regressionstests und die zwei grünen Apple-CI-Läufe
+hinausgehende Prüffrage (UI-Rendering, Device-spezifisches Verhalten),
+die eine manuelle/Device-Verifikation gerechtfertigt hätte.
 
 ### 10.6 Gesamturteil (ersetzt das Urteil in Abschnitt 9 für den Resume-Fall)
 
-<!-- P8_STUFE2_SECTION_10_6_PLACEHOLDER -->
+Die vom Auftrag benannte Lücke war real: `ActiveWorkoutView` und alle
+Player (Standard, Timed: AMRAP/EMOM/ForTime, Circuit) lasen bei
+Wiederaufnahme ausschließlich den Live-Tag, nie den beim Session-Start
+eingefrorenen Snapshot — der Vertrag war für den Wiederaufnahme-Fall
+faktisch nicht erfüllt, obwohl das Snapshot-JSON selbst unverändert
+blieb. Das ist jetzt behoben, mit Regressionstests reproduziert und
+Apple-CI-verifiziert:
+
+- Stabile Instanz-Identität (`Exercise.instanceID`,
+  `ExerciseEntry.instanceID`, additiv/rückwärtskompatibel) löst externe
+  Umsortierung korrekt auf — vorher hätte eine Umsortierung während
+  offener Session Sätze still gegen die falsche Übung geloggt.
+- `SessionContentResolver` ist jetzt die einzige Stelle, die Snapshot
+  gegen Live-Tag auflöst; extern hinzugefügte Übungen bleiben unsichtbar,
+  extern gelöschte erscheinen als `.removedFromLiveDay` (nie still
+  fallengelassen), Zielwerte bleiben trotz externer Live-Edits
+  eingefroren.
+- Beide bisher unadressierten Schreibpfade sind jetzt erfasst: der
+  Ad-hoc-Übungseditor (`recordAdHocExerciseEdited`, nur für Ad-hoc-
+  Sessions) und die "+ Satz"-Kartenaktion (`recordSetCountChange`, für
+  jede Session, chirurgisch auf das Satz-Feld begrenzt).
+- Snapshot-first-Verdrahtung zieht sich durch `ActiveWorkoutView`,
+  `ExerciseCard`, `SetRow` sowie alle Zeitformat-/Zirkel-Player; dabei
+  wurde ein zweiter, unabhängig gefundener Bug mitbehoben: die
+  Fortschritts-Persistenz (`encodeCheckedRounds`/`decodeCheckedRounds`,
+  `encodeCheckedInRound`/`decodeCheckedInRound`) war über den LIVE
+  `orderIndex` statt den eingefrorenen `entry.orderIndex` verschlüsselt
+  und hätte nach externer Umsortierung Fortschritt falsch zugeordnet.
+- Bewusst nicht angefasst (siehe 10.3): Top-Level-Zeitformat-Routing
+  bleibt live (zu drastische/seltene Änderung für einen
+  Architekturwechsel), Coaching-/Metadatenfelder
+  (Equipment/Notizen/Progression) bleiben außerhalb des Snapshot-
+  Vertrags, `.removedFromLiveDay`-Einträge bleiben rein lesend ohne
+  neues Logging. Keine Snapshot-Einträge wurden zu editierbaren
+  Live-Planobjekten umgedeutet, keine nachträgliche Vermischung mit
+  externen Änderungen eingeführt.
+
+**Status-Update gegenüber der eigenen Zwischenbilanz:** "Wiederaufnahme-
+Isolation noch nicht vollständig nachgewiesen" ist damit erledigt —
+implementiert, mit gezielten Regressionstests nachgewiesen und durch
+einen gebündelten, am Ende grünen Apple-CI-Lauf (`ios-app` +
+`swift-package`) bestätigt. Historische Summary und Snapshot-Sicherung
+waren bereits vorher implementiert und automatisiert geprüft.
+Offen bleiben wie dokumentiert: **Geräteabnahme** (manuelle
+Device-/Simulator-Prüfung der UI, insbesondere der neuen
+`RemovedExerciseCard`-Anzeige) und **Bestandsmigration** (Verhalten
+für echte Alt-Sessions aus der Produktionsdatenbank ohne
+`instanceID`/`contentSnapshotJSON`, über den Unit-Test-Fallback
+hinaus).
