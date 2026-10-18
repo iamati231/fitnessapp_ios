@@ -881,10 +881,66 @@ Diagnoseweg). P7 läuft bereits parallel/danach weiter.
 - (Stufe-2-Inhalts-Snapshot `TrainingDayContentRecord` bewusst erst für P8 relevant, nicht P7.)
 
 **P7 — Vier-Wochen-Rückblick, Stufe 1 (groß, abhängig von P6):**
-- P7.1 Review-Orchestrator (Core, reine Funktion wie `DeloadAdvisor`): bündelt Deload/Comeback/
-  Progression + neuen Soll-Ist-Vergleich, löst Konflikte zwischen Empfehlungen auf (F08).
-- P7.2 Review-UI ("Deine ersten vier Wochen") inkl. Snooze-Regel.
-- P7.3 Review-Zustandsfeld (zuletzt reviewed/fällig/Entscheidung).
+- P7.1 ✅ **Review-Orchestrator vollständig abgenommen** (Commit `0298041`, 2026-10-18): reine,
+  deterministische Core-Funktion (`FourWeekReviewOrchestrator`, wie `DeloadAdvisor` ohne SwiftData/
+  `Date()`/`Calendar.current` im Code-Pfad) bündelt Deload-/Comeback-/Soll-Ist-Signale und das
+  periodische Check-in-Feedback zu EINEM Befund (`keepAsIs` vollwertig, nicht nur "kein Problem
+  gefunden", oder `concernsFound([Concern])`), statt mehrere widersprüchliche Einzelempfehlungen
+  nebeneinander zu zeigen (F08). Löst selbst nichts aus — reine Auswertung. Die neu eingeführte
+  `>30%`-Teilnahmeschwelle (`significantMissedRatioThreshold`) ist ausdrücklich als **vorläufige
+  PRODUKTREGEL dokumentiert, keine wissenschaftliche Grenze**, und löst von sich aus KEINE
+  automatische Last-/Planänderung aus (bindende Vorgabe dieser Runde).
+  **Implementiert + Apple-kompiliert + Tests bestanden:** `ios-app` + `swift-package` beide
+  `success`, 1320/1320 Tests auf macOS grün. **UI-verifiziert:** nicht zutreffend — reine
+  Core-Logik ohne eigene UI-Oberfläche (die Darstellung folgt in P7.2).
+- P7.2 Review-UI "Deine ersten vier Wochen" (Commit `fbb4abe`, 2026-10-18) —
+  **Code/Data-Abnahme ✅, UI-Abnahme ⏳ noch ausstehend, getrennt ausgewiesen:**
+
+  **Code/Data-Abnahme (Implementiert + Apple-kompiliert + Tests bestanden): ✅**
+  `FourWeekReviewAssembler` (`Sources/FitnessAppData/`) übersetzt reale SwiftData-Objekte in die
+  Eingabe von `FourWeekReviewOrchestrator` (P7.1) — reiner Daten-Zubringer, trifft selbst KEINE
+  Progressions-/Deload-Entscheidung. Verwendet ausschließlich bereits bestehende, produktiv
+  genutzte Bausteine: `PlanParticipationEvaluator` (P6.2) für den Soll-Ist-Vergleich,
+  `DeloadAdvisor.shouldRecommendDeload` mit **identischer Herleitung** wie
+  `DashboardView.shouldRecommendDeload` (keine zweite, abweichende Berechnung), `AbsenceDeload.assess`
+  (bereits produktiv für den Trainings-Start-Comeback-Dialog genutzt) für das Comeback-Signal, und
+  den zuletzt gespeicherten `PeriodicCheckIn` (P6.3) — explizit **keine neue, konkurrierende
+  Progressions-/Deload-Logik**.
+  `FourWeekReviewView` (`Sources/FitnessAppUI/`) zeigt das Ergebnis. Bewusst **kein `@Query`** auf
+  dieser View — Lehre direkt aus dem gerade behobenen P6.3-Blocker (`@Query` als
+  `NavigationLink`-Destination verursachte dort die Render-Endlosschleife); stattdessen einmaliger
+  Fetch über `.task { FourWeekReviewAssembler.assemble(in:) }`. "Plan passt – beibehalten"
+  (`keepAsIsCard`) ist ein vollwertiger, positiver Kartentyp, keine blosse Leerdarstellung.
+  **Vorschläge werden nie automatisch angewendet:** Deload läuft über einen eigenen
+  Bestätigungsdialog (`showingDeloadConfirm` → `DeloadManager.startDeload`), Comeback über das
+  bereits bestehende, produktiv genutzte `ComebackPromptSheet` (dieselbe Komponente wie beim
+  Trainingsstart) → `AbsenceDeload.apply`/`.remember` — beide rufen ausschließlich bestehende
+  Apply-Funktionen auf. Neuer, rein manueller Einstiegspunkt in `SettingsAppExperienceView`
+  (automatisches Fällig-/Snooze-Verhalten bewusst P7.3 vorbehalten). 28+1 neue
+  Lokalisierungsschlüssel (`fourWeekReview.*`, `settings.fourWeekReview.row`).
+  4 neue Regressionstests (`FourWeekReviewAssemblerTests`): kein Plan vorhanden → `keepAsIs` +
+  Datenlücken statt erfundenem Befund; vollständig eingehaltener Plan → `keepAsIs`, keine
+  Datenlücken; Teilnahme deutlich unter Plan → `concernsFound` inkl. `participationBelowPlan` UND
+  `noCheckInYet` als Datenlücke (kein Check-in wird nie stillschweigend als "keine Beschwerden"
+  interpretiert); zwei `PeriodicCheckIn`-Einträge → beweist, dass der NEUERE Eintrag ausgewertet
+  wird, nicht der erstgefundene.
+  **Apple-kompiliert:** `ios-app` (Build `6ad430bcb33965d444a11384`) + `swift-package` (Build
+  `6ad430bc740edec2d1e71c39`) beide `success`, alle Steps grün.
+  **Tests bestanden:** Codemagic-Testlog bestätigt, dass alle 4 neuen Tests tatsächlich liefen
+  (`testCompliantPlanWithGoodCheckInYieldsKeepAsIs`,
+  `testHeavilyMissedParticipationIsSurfacedAsConcern`,
+  `testNoActivePlanYieldsKeepAsIsWithDataGapsNeverFabricated`,
+  `testLatestCheckInFeedbackIsAssembledFromRealData`), 1324 Tests gesamt auf macOS grün (1320 davor
+  + diese 4), keine Fehlschläge. Linux zeigt weiterhin dieselbe seit P6.3 bekannte, jetzt erneut
+  bestätigte Einschränkung: `@MainActor`-SwiftData-Testklassen kompilieren unter Linux, laufen dort
+  aber nicht aus (gegen die bestehende `DataPortabilityRoundtripTests`-Klasse cross-verifiziert) —
+  real ausgeführt wurden sie ausschließlich auf Apples Toolchain.
+
+  **UI-Abnahme: ⏳ noch ausstehend.** Für den neuen `FourWeekReviewView`-Screen wurde in dieser
+  Runde noch kein TestingBot-Lauf durchgeführt — wird vor der endgültigen Abnahme von P7.2
+  getrennt nachgereicht, statt stillschweigend mit der Code/Data-Abnahme vermischt zu werden
+  (ausdrücklicher User-Wunsch, wie bereits bei P6.3 gehandhabt).
+- P7.3 Review-Zustandsfeld (zuletzt reviewed/fällig/Entscheidung) — noch nicht begonnen.
 
 **P8 — Spätere Block-Reviews, Stufe 3** — zurückgestellt bis P7 + vollständige Stufe-2-Versionierung
 stehen.
