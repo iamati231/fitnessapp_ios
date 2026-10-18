@@ -182,6 +182,45 @@ public struct SettingsAppExperienceView: View {
         }
     }
 
+    // P7.2-Nachbesserung: eigene @ViewBuilder-Properties statt zwei direkt
+    // nebeneinanderstehender `NavigationLink`s unterschiedlichen Ziel-Typs im
+    // selben ViewBuilder-Block — siehe docs/NEUE_SPEZIFIKATION_P0_AUDIT.md,
+    // Befund 9 (Gegenprobe 1): das Entfernen eines der beiden Siblings hat
+    // den TestingBot-Hang beseitigt. Faktorisierung nach dem bereits
+    // funktionierenden Muster von `dashboardCustomizationRow` behebt das,
+    // ohne Container/Navigation/Verhalten zu aendern.
+    @ViewBuilder
+    private var periodicCheckInRow: some View {
+        // P6.3: Einstiegspunkt fuer den kurzen, ueberspringbaren Alltags-
+        // Rueckblick (Dok03 §4) — eigenstaendige Seite, kein zweiter
+        // Start-Check.
+        NavigationLink {
+            PeriodicCheckInView()
+        } label: {
+            DeltiqRow(
+                icon: "bubble.left.and.text.bubble.right",
+                label: String(localized: "settings.periodicCheckIn.row", bundle: .module),
+                showsChevron: true
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var fourWeekReviewRow: some View {
+        // P7.2: Manueller Einstiegspunkt fuer den Vier-Wochen-Rueckblick.
+        // Automatisches Faellig-/Snooze-Verhalten ist P7.3 — hier bewusst
+        // nur ein jederzeit erreichbarer, manueller Zugang.
+        NavigationLink {
+            FourWeekReviewView()
+        } label: {
+            DeltiqRow(
+                icon: "calendar.badge.clock",
+                label: String(localized: "settings.fourWeekReview.row", bundle: .module),
+                showsChevron: true
+            )
+        }
+    }
+
     private var workoutBehaviorSection: some View {
         DeltiqSection(String(localized: "settings.workout.section", bundle: .module).uppercased()) {
             DeltiqControlRow(icon: "flame.fill", label: String(localized: "settings.workout.showWarmups", bundle: .module)) {
@@ -194,30 +233,8 @@ public struct SettingsAppExperienceView: View {
                     .tint(Color.deltiqOrange)
                     .accessibilityLabel(Text("settings.training.rirTooltip.title", bundle: .module))
             }
-            // P6.3: Einstiegspunkt fuer den kurzen, ueberspringbaren Alltags-
-            // Rueckblick (Dok03 §4) — eigenstaendige Seite, kein zweiter
-            // Start-Check.
-            NavigationLink {
-                PeriodicCheckInView()
-            } label: {
-                DeltiqRow(
-                    icon: "bubble.left.and.text.bubble.right",
-                    label: String(localized: "settings.periodicCheckIn.row", bundle: .module),
-                    showsChevron: true
-                )
-            }
-            // P7.2: Manueller Einstiegspunkt fuer den Vier-Wochen-Rueckblick.
-            // Automatisches Faellig-/Snooze-Verhalten ist P7.3 — hier bewusst
-            // nur ein jederzeit erreichbarer, manueller Zugang.
-            NavigationLink {
-                FourWeekReviewView()
-            } label: {
-                DeltiqRow(
-                    icon: "calendar.badge.clock",
-                    label: String(localized: "settings.fourWeekReview.row", bundle: .module),
-                    showsChevron: true
-                )
-            }
+            periodicCheckInRow
+            fourWeekReviewRow
             DeltiqControlRow(
                 icon: "arrow.down.heart",
                 label: String(localized: "settings.deload.toggle", bundle: .module),
