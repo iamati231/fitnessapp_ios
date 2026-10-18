@@ -266,13 +266,14 @@ umgesetzt (Task #203, 2026-10-17).
   "Move to…"-Menuepfad ab, nicht beide Bedienwege gleichwertig — wird hier getrennt ausgewiesen statt
   unter einem gemeinsamen Status verborgen:
   - **Menue-Verschieben ("Move to…"): UI-verifiziert** (siehe oben, real auf TestingBot bestaetigt).
-  - **Native Drag-Geste (`List.onMove`): NICHT verifiziert, ausdruecklich offen.** Kein TestingBot-Lauf
-    hat das bisher tatsaechlich versucht (nur als plausibel beschrieben, da derselbe Code-Pfad
-    `moveDraftDay`/`PlanDraft.moveDay` greift — das ist eine Annahme, kein Beweis). Siehe Task
-    "P3.2: native Drag-Geste separat dokumentieren".
-  P3.2 ist damit **Implementiert + Apple-kompiliert + Tests bestanden + UI-verifiziert (nur
-  Menuepfad)** — NICHT "alle vier fuer beide Bedienwege vollstaendig bestaetigt", wie eine fruehere
-  Fassung dieses Abschnitts implizierte.
+  - **Native Drag-Geste (`List.onMove`): jetzt ebenfalls UI-verifiziert (Task #207, 2026-10-18,
+    siehe dortigen Abschnitt fuer den vollstaendigen Diagnoseweg).** Ein erster WebDriver-Versuch
+    (einzelner Pointer-Sprung) zeigte keinen Effekt; eine verfeinerte Geste (Press → kurze
+    Mikro-Bewegung → gestaffelte Zwischenschritte → Release, siehe Task #207) loeste die native
+    SwiftUI-Reorder-Erkennung tatsaechlich aus — Zeile 1 landete nachweislich an letzter Position
+    (`[A,B,C] → [B,C,A]`, exakt die erwartete Permutation), real auf einem iPhone 15 bestaetigt.
+  P3.2 ist damit **Implementiert + Apple-kompiliert + Tests bestanden + UI-verifiziert — beide
+  Bedienwege (Menue UND native Drag-Geste) einzeln bestaetigt.**
 - P3.3 **Korrektur (2026-10-17, User-Rueckmeldung): deckt nur EINE von DREI vereinbarten
   Alternativaktionen ab — "vollstaendig abgenommen" war fuer P3.3 selbst zutreffend, aber eine
   fruehere Lesart hat das faelschlich mit "die Alternativaktionen-Anforderung ist erledigt"
@@ -289,8 +290,80 @@ umgesetzt (Task #203, 2026-10-17).
      ENTFERNT (es spuelte Fixierungen/Aenderungen an anderen Tagen stillschweigend weg, Abnahme
      B04) — aber ERSATZLOS, ohne die als dritte Aktion vereinbarte, sichere Alternative dafuer neu
      zu bauen. Eingeplant als eigenstaendige Restaufgabe (Task #206).
-  P3 (P3.1-P3.4) ist damit NICHT vollstaendig abgeschlossen, bis #205/#206 (und die P3.4-Korrektur
-  unten) geschlossen sind — wird parallel bzw. vor der abschliessenden Gesamtabnahme nachgeholt.
+
+  **#205/#206 ✅ vollstaendig abgenommen (Commit `a451231`, 2026-10-18):** Implementiert +
+  Apple-kompiliert + Tests bestanden + UI-verifiziert, alle vier getrennt bestaetigt.
+
+  **Implementiert:** `PlanDraft.redistributeUnfixedDays(using:)` (Core) ersetzt den Inhalt JEDES
+  nicht content-fixierten Tages aus einem frisch generierten Pool (`PlanGenerator.generate(from:
+  shuffle: true)` — derselbe, bereits bestehende Generator-Aufruf, KEINE zweite Planungsengine),
+  OHNE irgendeinen Tag seinen Index wechseln zu lassen; identische Fixierungssemantik wie das
+  bestehende `replaceContent` (nur `isContentFixed` schuetzt). `PlanDraft.hasAnyFixation` treibt
+  die Bestaetigungs-Pflicht fuer #206. "Woche anders verteilen" (#205) ruft das direkt auf — sicher
+  per Konstruktion, nichts wird ohne Fixierungs-Pruefung ersetzt. "Vorschlag neu erstellen" (#206)
+  ersetzt bei `hasAnyFixation == true` erst nach AUSDRUECKLICHER Bestaetigung
+  (`.confirmationDialog`, destruktiver Button "Create New") die komplette Woche inkl. fixierter
+  Tage; ohne jede Fixierung direkt, da nichts zu verlieren ist — kein stiller Reset (Abnahme B04
+  bleibt damit auch fuer diese dritte Aktion gewahrt). Beide Aktionen als neues
+  Ellipsis-Header-Menu (`"ellipsis"`, bewusst ANDERE Icons/Label als `PlanEditorView`s "Neu
+  rechnen" — dort ein bereits persistierter Plan via `PlanGeneratorInstantiator.recalculate`,
+  hier ausschliesslich der ungespeicherte `PlanDraft`).
+  **Apple-kompiliert:** Codemagic `ios-app` (Build `6ad4b3c680995c31a2bb41ec`) + `swift-package`
+  (Build `6ad4b3c6e35ba7526e876acc`) beide `success`, alle Schritte gruen.
+  **Tests bestanden:** 8 neue Core-Tests (`PlanDraftTests`: `hasAnyFixation` fuer beide
+  Fixierungsarten, `redistributeUnfixedDays` respektiert Content-Fixierung/erlaubt Inhaltswechsel
+  bei reiner Positionsfixierung/scheitert sichtbar bei "alles fixiert" oder zu kleinem Pool, ID/
+  Position bleiben erhalten) + alle bestehenden — 1332 Tests gruen auf macOS (1324 davor + diese
+  8), 1102 auf Linux, keine Fehlschlaege.
+  **UI-verifiziert (TestingBot, iPhone 15/iOS 17, mehrere Laeufe, 2026-10-18):**
+  - Erster Durchlauf (Bodyweight-Pool, klein): Menu/Dialoge/Zustandsuebergaenge vollstaendig
+    bestaetigt — "Vorschlag neu erstellen" OHNE Fixierung direkt ohne Dialog (Inhalt sichtbar
+    veraendert); ein Tag positionsfixiert, "Woche anders verteilen" ausgefuehrt (kein Hang, Adopt
+    weiterhin aktiv); "Vorschlag neu erstellen" MIT Fixierung zeigt den Bestaetigungsdialog
+    ("Create a new proposal?"), "Cancel" laesst den Entwurf nachweislich unveraendert, ein zweiter
+    Versuch mit "Create New" ersetzt tatsaechlich die komplette Woche. Einzige offene Frage aus
+    diesem Lauf: die sichtbare Inhaltsaenderung bei "Woche anders verteilen" liess sich an
+    Titel+Badge nicht eindeutig nachweisen (siehe naechster Punkt).
+  - **Gezielte Gegenprobe (gleicher Build, Bodyweight-Pool, zwei aufeinanderfolgende
+    "Woche anders verteilen"-Aufrufe):** zweifelsfrei ein sichtbarer Unterschied — Tages-
+    Reihenfolge UND mindestens ein Belastungs-Badge wechseln zwischen den beiden Aufrufen
+    (`Tough/Easy/Tough` → `Tough/Easy/Easy` → erneut `Tough/Easy/Tough`), obwohl der erste
+    Produktiv-Durchlauf zufaellig (kleiner Bodyweight-Pool, title-generierung haengt an der
+    Muskel-Kategorie-Reihenfolge, nicht an den konkreten Uebungen) keinen sichtbaren Unterschied
+    zeigte. Root Cause des scheinbaren Null-Ergebnisses: Tages-Titel werden aus der
+    MUSKEL-KATEGORIE-Reihenfolge abgeleitet (deterministisch, nicht vom Shuffle betroffen), und
+    die Belastungs-Badges rastern in nur vier grobe Stufen (`easy/medium/hard/tough`) relativ zur
+    Spannweite DIESER Woche — bei einem kleinen Uebungs-Pool kann ein Reshuffle deshalb
+    gelegentlich dieselbe sichtbare Zusammenfassung ergeben, obwohl sich die zugrundeliegenden
+    Uebungen bereits geaendert haben (von den 8 neuen Core-Tests ohnehin explizit auf Uebungsnamen-
+    Ebene bewiesen). Kein Bug in #205 — eine bereits vorbestehende Eigenschaft kleiner
+    Equipment-Pools (dieselbe Einschraenkung gilt fuer die laengst abgenommene Einzeltag-
+    Alternative bei kleinen Pools).
+  - **#207: native Drag-Geste (`List.onMove`), seit P3.2 offen — jetzt geschlossen.** Ein erster
+    WebDriver-Versuch (einzelner Pointer-Sprung von Zeile 1 zu Zeile 3) zeigte keinen Effekt. Eine
+    verfeinerte Geste (Press → 600ms Halten → kleine Mikro-Bewegung [+8px, loest die
+    SwiftUI-"Lift"-Erkennung aus] → gestaffelte Zwischenschritte zur Zielposition → 500ms Halten →
+    Release) hat die native Reorder-Erkennung tatsaechlich ausgeloest: Zeile 1 landete
+    nachweislich an letzter Position (`[Push&Pull, Push&Legs, Pull&Push] → [Push&Legs, Pull&Push,
+    Push&Pull]`, exakt die erwartete Permutation einer "Zeile 1 ans Ende"-Verschiebung), real auf
+    einem iPhone 15 bestaetigt (Screenshot + Accessibility-Dump). Damit ist die in der P3.2-Notiz
+    offen gelassene Frage ("nur Annahme, kein Beweis") jetzt mit einem echten, positiven
+    Geraete-Befund beantwortet.
+  - P3.4-Nachtrag: derselbe Testlauf hat auch den bislang NICHT separat bestaetigten Tap auf den
+    Checkmark ("Adopt Plan") mitgeprueft (siehe P3.4-Abschnitt unten) — erfolgreich.
+  TestingBot-Budget dieser Runde: 5 Sessions (1 Label-Probe, 2 fehlgeschlagene/korrigierte
+  kombinierte Laeufe durch Testskript-Label-Kollisionen — siehe unten —, 1 fokussierter
+  Inhalts-Sichtbarkeitstest, 1 Drag-Retry).
+  **Methodischer Nebenfund (kein App-Bug):** zwei Testskript-Label-Probleme identisch zur bereits
+  bekannten Fehlerklasse aus der P7.2-Diagnose — `goalCardView`s Button-Label kombiniert
+  Titel+Blurb (`"Strength & Muscle, Build muscle..."`, nicht `"Strength & Muscle"` allein), und
+  das `"ellipsis"`-SF-Symbol erhaelt automatisch das Accessibility-Label "More" — identisch mit
+  dem Tab-Bar-Eintrag "More" (Ambiguitaet ohne `not(ancestor::XCUIElementTypeTabBar)`-Filter).
+  Beide Male: SwiftUI/Apples automatische Accessibility-Label-Vergabe, kein Produktfehler.
+
+  P3 (P3.1-P3.4) ist damit **vollstaendig abgeschlossen** — alle vier Unterpunkte sowie beide
+  P3.3-Restaufgaben (#205/#206) und die P3.2-Drag-Geste (#207) sind Implementiert + Apple-
+  kompiliert + Tests bestanden + UI-verifiziert, jeweils getrennt bestaetigt.
 
   **Einzeltag-Alternative — Details (unveraendert gegenueber der urspruenglichen Abnahme):**
   - **Implementiert:** `PlanGenerator.targetedAlternatives(for:input:count:)` (Core) ersetzt den
@@ -355,10 +428,17 @@ umgesetzt (Task #203, 2026-10-17).
   verschoben, die Funktion selbst ist unveraendert) — aus TestingBot-Budget-Disziplin nicht noch
   einmal eigens auf dem Geraet wiederholt, da dieser Funktionsaufruf bereits in frueheren P2.3/P3.1-
   Runden uiverifiziert wurde.
+  **Nachtrag (2026-10-18, im selben UI-Lauf wie #205/#206/#207 mitgeprueft):** der Checkmark-Tap
+  selbst wurde jetzt doch separat auf dem Geraet bestaetigt — Tap auf "Adopt Plan" navigiert
+  erfolgreich weg vom Builder-Sheet direkt zu `PlanEditorView` ("Individueller Plan",
+  "Training Days"), zeigt dort GENAU den zuvor im Builder gesehenen Wochenplan korrekt nach
+  Wochentag einsortiert (Mon/Wed/Fri die drei generierten Trainingstage, Di/Do/Sa/So "Rest Day") —
+  der Plan wurde also tatsaechlich persistiert UND korrekt in die bestehende Tages-/Wochentag-
+  Struktur uebernommen, nicht nur ein stiller Erfolg ohne sichtbare Bestaetigung.
   P3.4 ist damit **Implementiert + Apple-kompiliert + Tests bestanden + UI-verifiziert**, alle vier
-  getrennt bestaetigt.
-  P3 (P3.1-P3.4) ist dennoch NICHT vollstaendig abgeschlossen, solange die beiden P3.3-Luecken
-  (#205/#206, "Woche anders verteilen" / "Vorschlag neu erstellen") offen sind.
+  getrennt bestaetigt — inklusive des zuvor offen gelassenen Checkmark-Taps selbst.
+  P3 (P3.1-P3.4) ist damit **vollstaendig abgeschlossen** — siehe Zusammenfassung im
+  P3.3-Abschnitt oben (#205/#206/#207).
 
 **P4 — Onboarding-Integration, Hybrid/Laufcoach (groß, abhängig von P2.5, teils parallel zu P3):**
 - P4.1 ✅ **vollständig abgenommen** (Commit `c91583e`, 2026-10-17): Implementiert + Apple-kompiliert +
