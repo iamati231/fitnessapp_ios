@@ -1453,11 +1453,15 @@ war doch ein Produktbug, jetzt behoben, nicht länger "kein Produktbug":**
   Abschluss (oben, Priorität 1) bleibt davon unberührt und gültig: sie bewies die NAVIGATION
   (welcher Plan geöffnet/abgeschlossen wird), nicht die Teilnahme-ZAHLEN, die hier separat
   korrigiert wurden.
-- **Apple-kompiliert/Tests bestanden:** Codemagic-Läufe für diesen Fix (Commit `8076781`,
-  `ios-app` Build `6ad4d6e10b9ff924a4732af7`, `swift-package` Build `6ad4d6e226454e55290c455f`)
-  zum Zeitpunkt dieses Commits NOCH LAUFEND — bewusst nicht vorab als "grün" behauptet. Dieser
-  Absatz wird nach Abschluss der Läufe in einem eigenen, kleinen Folge-Commit mit dem tatsächlichen
-  Ergebnis (Status + Testzahlen) ersetzt.
+- **Apple-kompiliert/Tests bestanden:** `ios-app` Build `6ad4d6e10b9ff924a4732af7` und
+  `swift-package` Build `6ad4d6e226454e55290c455f` (beide Commit `8076781`) — beide `status:
+  finished`, alle Einzelschritte grün, insbesondere `swift-package`s eigener `Run unit tests`-
+  Schritt (enthält u.a. die vier neuen `FourWeekReviewAssemblerTests`-Regressionstests oben sowie
+  die zwei neuen Core-Tests in `PlanParticipationEvaluatorTests`/`FourWeekReviewOrchestratorTests`)
+  — kein einziger Testfehlschlag, keine Build-Warnung als Fehler eskaliert. Linux: Core-Tests
+  (`PlanParticipationEvaluatorTests`, `FourWeekReviewOrchestratorTests`) lokal grün; die SwiftData-
+  Tests in `FourWeekReviewAssemblerTests` kompilieren, laufen dort bekanntermaßen nicht real aus
+  (unverändert dieselbe Linux-Einschränkung wie zuvor).
 
 **UI-verifiziert (TestingBot, Build `tb://679d3a5de1cfc7e98579af9a`, vollständiger
 Mehrplan-Bedienablauf — EIN gezielter Re-Lauf nötig, siehe unten):**
