@@ -1148,7 +1148,8 @@ public enum DataImportService {
         func key(for c: PeriodicCheckIn) -> String {
             "\(Int(c.date.timeIntervalSince1970))|\(c.frequencyFeedbackRaw.map(String.init) ?? "-")|"
                 + "\(c.durationFeedbackRaw.map(String.init) ?? "-")|\(c.hadComplaints.map(String.init) ?? "-")|"
-                + "\(c.complaintsNote ?? "-")|\(c.goalStillCurrent.map(String.init) ?? "-")"
+                + "\(c.complaintsNote ?? "-")|\(c.goalStillCurrent.map(String.init) ?? "-")|"
+                + "\(c.exertionFeedbackRaw.map(String.init) ?? "-")"
         }
         var dupSet = Set(existing.map(key(for:)))
 
@@ -1167,7 +1168,8 @@ public enum DataImportService {
                 durationFeedback: row.int("duration_feedback").flatMap(DurationFeedback.init(rawValue:)),
                 hadComplaints: optionalSkippableBool(row, "had_complaints"),
                 complaintsNote: row.optionalString("complaints_note"),
-                goalStillCurrent: optionalSkippableBool(row, "goal_still_current")
+                goalStillCurrent: optionalSkippableBool(row, "goal_still_current"),
+                exertionFeedback: row.int("exertion_feedback").flatMap(ExertionFeedback.init(rawValue:))
             )
             let rowKey = key(for: checkIn)
             if dupSet.contains(rowKey) {

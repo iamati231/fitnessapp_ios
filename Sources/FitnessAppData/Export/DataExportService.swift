@@ -427,9 +427,14 @@ public enum DataExportService {
         _ items: [PeriodicCheckIn],
         id: (AnyObject) -> String
     ) -> Data {
+        // Nachbesserung: `exertion_feedback` additiv angehaengt (gleiches
+        // Rueckwaertskompatibilitaets-Muster wie `activated_at_utc` bei
+        // Plans) - ein Export von vor dieser Aenderung hat die Spalte
+        // nicht, der Import liest dann `nil`, nie einen erratenen Wert.
         var w = CSVWriter(headers: [
             "id", "date_utc", "frequency_feedback", "duration_feedback",
-            "had_complaints", "complaints_note", "goal_still_current"
+            "had_complaints", "complaints_note", "goal_still_current",
+            "exertion_feedback"
         ])
         for c in items {
             w.appendRow([
@@ -439,7 +444,8 @@ public enum DataExportService {
                 c.durationFeedbackRaw.map(String.init) ?? "",
                 c.hadComplaints.map(CSVWriter.bool) ?? "",
                 c.complaintsNote ?? "",
-                c.goalStillCurrent.map(CSVWriter.bool) ?? ""
+                c.goalStillCurrent.map(CSVWriter.bool) ?? "",
+                c.exertionFeedbackRaw.map(String.init) ?? ""
             ])
         }
         return w.data()

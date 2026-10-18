@@ -4,9 +4,16 @@ import SwiftData
 import FitnessAppCore
 import FitnessAppData
 
-/// P6.3: Kurzer, überspringbarer Alltags-Rückblick (Dok03 §4). Ergänzt
-/// `WorkoutSession.sessionFeeling` (deckt nur "Belastung" ab) um die vier
-/// fehlenden Fragen Häufigkeit/Dauer/Beschwerden/Ziel-noch-aktuell.
+/// P6.3: Kurzer, überspringbarer Alltags-Rückblick (Dok03 §4) — Häufigkeit/
+/// Dauer/Belastung/Beschwerden/Ziel-noch-aktuell, alle fünf unabhängig
+/// überspringbar.
+///
+/// Nachbesserung: "Belastung" ist eine EIGENE, periodenbezogene Frage
+/// innerhalb dieses Rückblicks (`ExertionFeedback`), NICHT
+/// `WorkoutSession.sessionFeeling` — jenes bewertet eine einzelne absolvierte
+/// Einheit, ist nicht optional und hat einen vorbelegten Default (`.okay`),
+/// also weder periodenbezogen noch echt überspringbar. Der bestehende
+/// Trainingsabschluss (`FinishWorkoutSheet`) bleibt dafür unverändert.
 ///
 /// Bewusst EIGENSTÄNDIG: kein zweiter Start-Check, keine Erweiterung von
 /// `BaselineCheckFlowView`, keine Leistungstest-Fragen (siehe
@@ -30,10 +37,16 @@ public struct PeriodicCheckInView: View {
 
     private enum FrequencyAnswer: Hashable { case skip, less, asPlanned, more }
     private enum DurationAnswer: Hashable { case skip, tooShort, justRight, tooLong }
+    private enum ExertionAnswer: Hashable { case skip, tooEasy, appropriate, tooHard }
     private enum TriBool: Hashable { case skip, yes, no }
 
     @State private var frequencyAnswer: FrequencyAnswer = .skip
     @State private var durationAnswer: DurationAnswer = .skip
+    /// Nachbesserung: periodenbezogene, echt überspringbare Belastungsfrage
+    /// (siehe `ExertionFeedback`-Dokumentation in `FitnessAppCore`) —
+    /// ausdrücklich NICHT `WorkoutSession.sessionFeeling` (das ist pro
+    /// Session, nicht optional, und hat einen vorbelegten Default).
+    @State private var exertionAnswer: ExertionAnswer = .skip
     @State private var complaintsAnswer: TriBool = .skip
     @State private var complaintsNote: String = ""
     @State private var goalAnswer: TriBool = .skip
@@ -60,6 +73,7 @@ public struct PeriodicCheckInView: View {
     private var isDirty: Bool {
         frequencyAnswer != .skip
             || durationAnswer != .skip
+            || exertionAnswer != .skip
             || complaintsAnswer != .skip
             || goalAnswer != .skip
             || !complaintsNote.isEmpty
@@ -124,6 +138,9 @@ public struct PeriodicCheckInView: View {
             }
             questionBlock(loc("periodicCheckIn.question.duration.label")) {
                 durationPicker
+            }
+            questionBlock(loc("periodicCheckIn.question.exertion.label")) {
+                exertionPicker
             }
             questionBlock(loc("periodicCheckIn.question.complaints.label")) {
                 triBoolPicker($complaintsAnswer)
@@ -202,6 +219,18 @@ public struct PeriodicCheckInView: View {
         )
     }
 
+    private var exertionPicker: some View {
+        DeltiqSegmentedPicker(
+            options: [
+                DeltiqSegmentedOption(ExertionAnswer.skip, label: loc("periodicCheckIn.answer.skip")),
+                DeltiqSegmentedOption(ExertionAnswer.tooEasy, label: loc("periodicCheckIn.answer.exertion.tooEasy")),
+                DeltiqSegmentedOption(ExertionAnswer.appropriate, label: loc("periodicCheckIn.answer.exertion.appropriate")),
+                DeltiqSegmentedOption(ExertionAnswer.tooHard, label: loc("periodicCheckIn.answer.exertion.tooHard"))
+            ],
+            selection: $exertionAnswer
+        )
+    }
+
     private func triBoolPicker(_ selection: Binding<TriBool>) -> some View {
         DeltiqSegmentedPicker(
             options: [
@@ -260,6 +289,14 @@ public struct PeriodicCheckInView: View {
                 case .yes: return true
                 case .no: return false
                 }
+            }(),
+            exertionFeedback: {
+                switch exertionAnswer {
+                case .skip: return nil
+                case .tooEasy: return .tooEasy
+                case .appropriate: return .appropriate
+                case .tooHard: return .tooHard
+                }
             }()
         )
         modelContext.insert(checkIn)
@@ -271,6 +308,7 @@ public struct PeriodicCheckInView: View {
         // verlaesst den Screen bewusst ueber den Zurueck-Chevron.
         frequencyAnswer = .skip
         durationAnswer = .skip
+        exertionAnswer = .skip
         complaintsAnswer = .skip
         complaintsNote = ""
         goalAnswer = .skip

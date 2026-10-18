@@ -49981,6 +49981,29 @@
         }
       }
     },
+    "periodicCheckIn.question.exertion.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie war die Belastung insgesamt in diesem Zeitraum?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How was the overall training load during this period?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu dönemde genel antrenman yükü nasıldı?"
+          }
+        }
+      }
+    },
     "periodicCheckIn.answer.duration.tooShort": {
       "extractionState": "manual",
       "localizations": {
@@ -50000,6 +50023,75 @@
           "stringUnit": {
             "state": "translated",
             "value": "Çok kısa"
+          }
+        }
+      }
+    },
+    "periodicCheckIn.answer.exertion.tooEasy": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zu leicht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too easy"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çok hafif"
+          }
+        }
+      }
+    },
+    "periodicCheckIn.answer.exertion.appropriate": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passend"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Just right"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tam uygun"
+          }
+        }
+      }
+    },
+    "periodicCheckIn.answer.exertion.tooHard": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zu hart"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too hard"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çok zor"
           }
         }
       }

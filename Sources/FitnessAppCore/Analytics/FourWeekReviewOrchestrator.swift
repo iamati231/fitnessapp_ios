@@ -36,17 +36,28 @@ public enum FourWeekReviewOrchestrator {
         public let durationFeedback: DurationFeedback?
         public let hadComplaints: Bool?
         public let goalStillCurrent: Bool?
+        /// Periodenbezogene, echt überspringbare Belastungsfrage aus
+        /// `PeriodicCheckIn` (Nachbesserung) — ausdrücklich NICHT
+        /// `WorkoutSession.sessionFeeling` (pro Session, nicht optional).
+        /// Wird hier nur durchgereicht; es gibt (noch) KEINE eigene
+        /// `Concern`-Logik dafür — ob "zu hart"/"zu leicht" selbst ein
+        /// eigenständiger Befund werden soll (und wie er sich zu
+        /// `DeloadAdvisor` abgrenzt), ist eine offene, bewusst noch nicht
+        /// getroffene Entscheidung, keine impliziet mitgebaute.
+        public let exertionFeedback: ExertionFeedback?
 
         public init(
             frequencyFeedback: FrequencyFeedback?,
             durationFeedback: DurationFeedback?,
             hadComplaints: Bool?,
-            goalStillCurrent: Bool?
+            goalStillCurrent: Bool?,
+            exertionFeedback: ExertionFeedback? = nil
         ) {
             self.frequencyFeedback = frequencyFeedback
             self.durationFeedback = durationFeedback
             self.hadComplaints = hadComplaints
             self.goalStillCurrent = goalStillCurrent
+            self.exertionFeedback = exertionFeedback
         }
     }
 
@@ -148,6 +159,18 @@ public enum FourWeekReviewOrchestrator {
     /// eigenständiger Befund gilt. 0.3 = mehr als 30% der fälligen Einheiten
     /// verpasst — ein einzelner Ausrutscher (z. B. 1 von 8) bleibt bewusst
     /// unterhalb der Schwelle.
+    ///
+    /// **Ausdrücklich eine vorläufige PRODUKTREGEL, keine wissenschaftliche
+    /// Grenze** — ein plausibel gewählter, aber nicht empirisch hergeleiteter
+    /// Wert, der bei echtem Nutzerfeedback angepasst werden darf/soll, ohne
+    /// dass das eine "Korrektur eines Fehlers" waere. Und, zur Klarstellung,
+    /// weil der Name das missverstehen liesse: dieser Wert loest NIEMALS von
+    /// sich aus eine automatische Last- oder Planaenderung aus — er steuert
+    /// ausschliesslich, ob `.participationBelowPlan` in der Befundliste
+    /// auftaucht, die dem Nutzer zur Ansicht vorgelegt wird (P7.2). Jede
+    /// tatsaechliche Aenderung bleibt ein separater, vom Nutzer bewusst
+    /// bestaetigter Schritt (siehe Typ-Dokumentation oben: "KEINE
+    /// apply-Methode").
     public static let significantMissedRatioThreshold: Double = 0.3
 
     // MARK: - Review

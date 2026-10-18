@@ -1294,7 +1294,8 @@ final class DataPortabilityRoundtripTests: XCTestCase {
             durationFeedback: nil,
             hadComplaints: true,
             complaintsNote: "Knie zwickt leicht",
-            goalStillCurrent: nil
+            goalStillCurrent: nil,
+            exertionFeedback: .tooHard
         )
         ctx.insert(checkIn)
         try ctx.save()
@@ -1311,6 +1312,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(imported.hadComplaints, true)
         XCTAssertEqual(imported.complaintsNote, "Knie zwickt leicht")
         XCTAssertNil(imported.goalStillCurrent)
+        XCTAssertEqual(imported.exertionFeedback, .tooHard)
     }
 
     /// Regressionsschutz fuer genau die Falle, die beim Bau vermieden werden
@@ -1318,7 +1320,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// liertes Verhalten fuer Bestandsfelder) — fuer die beiden echten
     /// Ja/Nein-Fragen dieses Features waere das eine stille Umdeutung von
     /// "uebersprungen" zu "Nein". Ein komplett uebersprungener Rueckblick
-    /// (alle vier Fragen `nil`) muss nach Export+Import weiterhin VIER MAL
+    /// (alle fuenf Fragen `nil`) muss nach Export+Import weiterhin FUENF MAL
     /// `nil` liefern, nie `false`/0.
     func testPeriodicCheckInFullySkippedStaysNilNotFalseAfterRoundtrip() async throws {
         let source = try makeContainer()
@@ -1328,6 +1330,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         try ctx.save()
         XCTAssertNil(checkIn.hadComplaints)
         XCTAssertNil(checkIn.goalStillCurrent)
+        XCTAssertNil(checkIn.exertionFeedback)
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
@@ -1341,6 +1344,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertNil(imported.hadComplaints, "darf nach dem Roundtrip nicht faelschlich 'false' werden")
         XCTAssertNil(imported.complaintsNote)
         XCTAssertNil(imported.goalStillCurrent, "darf nach dem Roundtrip nicht faelschlich 'false' werden")
+        XCTAssertNil(imported.exertionFeedback, "darf nach dem Roundtrip nicht faelschlich auf .appropriate o.ae. erraten werden")
     }
 
     /// Daten-/Exportkompatibilitäts-Checkpoint für das gesamte P6-Paket:
@@ -1361,7 +1365,8 @@ final class DataPortabilityRoundtripTests: XCTestCase {
             frequencyFeedback: .moreThanPlanned,
             durationFeedback: .justRight,
             hadComplaints: false,
-            goalStillCurrent: true
+            goalStillCurrent: true,
+            exertionFeedback: .appropriate
         )
         ctx.insert(checkIn)
         try ctx.save()
@@ -1385,6 +1390,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(importedCheckIn.durationFeedback, .justRight)
         XCTAssertEqual(importedCheckIn.hadComplaints, false, "echtes 'Nein' darf nicht mit uebersprungen (nil) verwechselt werden")
         XCTAssertEqual(importedCheckIn.goalStillCurrent, true)
+        XCTAssertEqual(importedCheckIn.exertionFeedback, .appropriate)
     }
 
     // MARK: - Settings-Epic Phase 5

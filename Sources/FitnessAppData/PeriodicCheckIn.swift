@@ -25,6 +25,10 @@ public final class PeriodicCheckIn {
     public var hadComplaints: Bool?
     public var complaintsNote: String?
     public var goalStillCurrent: Bool?
+    /// Nachbesserung: periodenbezogene, echt überspringbare Belastungsfrage
+    /// (siehe `ExertionFeedback`-Dokumentation) — additiv, ein Bestandseintrag
+    /// ohne dieses Feld liest `nil` ("unbekannt"), nie einen erratenen Wert.
+    public var exertionFeedbackRaw: Int?
 
     public init(
         date: Date = Date(),
@@ -32,7 +36,8 @@ public final class PeriodicCheckIn {
         durationFeedback: DurationFeedback? = nil,
         hadComplaints: Bool? = nil,
         complaintsNote: String? = nil,
-        goalStillCurrent: Bool? = nil
+        goalStillCurrent: Bool? = nil,
+        exertionFeedback: ExertionFeedback? = nil
     ) {
         self.date = date
         self.frequencyFeedbackRaw = frequencyFeedback?.rawValue
@@ -40,6 +45,7 @@ public final class PeriodicCheckIn {
         self.hadComplaints = hadComplaints
         self.complaintsNote = complaintsNote
         self.goalStillCurrent = goalStillCurrent
+        self.exertionFeedbackRaw = exertionFeedback?.rawValue
     }
 
     public var frequencyFeedback: FrequencyFeedback? {
@@ -50,6 +56,11 @@ public final class PeriodicCheckIn {
     public var durationFeedback: DurationFeedback? {
         get { durationFeedbackRaw.flatMap(DurationFeedback.init(rawValue:)) }
         set { durationFeedbackRaw = newValue?.rawValue }
+    }
+
+    public var exertionFeedback: ExertionFeedback? {
+        get { exertionFeedbackRaw.flatMap(ExertionFeedback.init(rawValue:)) }
+        set { exertionFeedbackRaw = newValue?.rawValue }
     }
 }
 #endif

@@ -23,3 +23,20 @@ public enum DurationFeedback: Int, Sendable, Equatable, CaseIterable, Codable {
     case justRight = 1
     case tooLong = 2
 }
+
+/// Nachbesserung (Vier-Wochen-Rückblick-Runde): subjektives Belastungs-
+/// empfinden über den GESAMTEN Rückblickzeitraum — bewusst eine eigene,
+/// optionale Frage INNERHALB `PeriodicCheckIn`, keine Wiederverwendung von
+/// `WorkoutSession.sessionFeeling`. `sessionFeeling` bewertet eine einzelne
+/// Trainingseinheit und ist dort als nicht-optionaler Pflichtwert mit
+/// vorbelegtem Default (`.okay`) modelliert (`FinishWorkoutSheet`) — für
+/// eine periodenbezogene, echt überspringbare Frage ist das weder inhaltlich
+/// (eine Session ist keine vier Wochen) noch technisch (kein Skip-Pfad, ein
+/// übergangener Wert wäre nicht von einer bewussten "Okay"-Antwort zu
+/// unterscheiden) geeignet. Der bestehende Trainingsabschluss bleibt dafür
+/// unverändert.
+public enum ExertionFeedback: Int, Sendable, Equatable, CaseIterable, Codable {
+    case tooEasy = 0
+    case appropriate = 1
+    case tooHard = 2
+}
