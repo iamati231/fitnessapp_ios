@@ -565,28 +565,34 @@ etablierte Testklasse (`FourWeekReviewAssemblerTests`) angehängt —
 stürzte IDENTISCH ab, während JEDE BESTEHENDE Methode derselben Klasse im
 selben Lauf fehlerfrei durchlief.
 
-**Schlussfolgerung:** der Signal-5-Absturz ist nachweislich unabhängig von
-Modellinhalt, Relationship-Existenz, Dateiname, Klassenname und Dispatch-
-Position — er trifft spezifisch JEDE in einem Commit neu hinzugefügte
-XCTest-Methode auf dieser Apple-CI-Umgebung (Xcode 26.6, `mac_mini_m2`,
-Codemagic), unabhängig von ihrem Inhalt. Das ist ein Befund über die
-CI-Toolchain/-Umgebung, kein Fehler in diesem Code — weder im ursprünglichen
-`@Model`-Entwurf noch im finalen Feld-Redesign. Das Feld-Redesign (2.2)
-bleibt trotzdem die bessere Lösung (kein neuer Entity-Typ, exakt das
-etablierte additive Feld-Muster), wird aber NICHT mehr als "Fix für den
-Absturz" dargestellt, da dieser nachweislich an etwas anderem liegt.
+**Zwischenstand (vorläufig, nicht abschließend):** Signal-5-Absturz in
+neuen SwiftData-Tests auf Apple-CI reproduzierbar; Ursache noch nicht
+abschließend geklärt. Alle bisher getesteten Varianten (Modellinhalt,
+Relationship-Existenz, Dateiname, Klassenname, Dispatch-Position) zeigten
+denselben Absturz, aber EINE strukturelle Gemeinsamkeit aller bisherigen
+Reproduktionen wurde noch nicht kontrolliert geprüft: jede abstürzende
+Testmethode zog den `ModelContext` per `try makeContainer().mainContext`
+in einem Ausdruck, ohne den `ModelContainer` separat in einer Variable zu
+halten — anders als JEDE bestehende, nie abstürzende Testmethode in
+`FourWeekReviewAssemblerTests`, die durchgehend `let container = try
+makeContainer()` als eigene, für die gesamte Testlaufzeit lebende Variable
+hält. Ob ein vorzeitig deallozierter `ModelContainer` (Container-
+Lifetime-Hypothese) die tatsächliche Ursache ist, wird aktuell gezielt mit
+einem einzelnen, minimalen Diagnosetest geprüft, der den Container
+explizit per `withExtendedLifetime` hält. Bis dieser Test ausgewertet ist,
+gilt NICHT die Aussage "jede neue Testmethode betroffen, unabhängig vom
+Inhalt" und NICHT "durch Quelltextänderungen unlösbar" — beide waren
+verfrüht und werden hier zurückgenommen.
 
-**Apple-CI, finale Fassung (`ios-app` + `swift-package`):** `ios-app`
-GRÜN in jedem Lauf (baut die App, führt keine SwiftData-Unit-Tests aus).
-`swift-package` bleibt ROT für `TrainingDayContentSnapshotWriterTests`
-(8 Tests) — nicht wegen eines Fehlers in diesen Tests oder im
-produktiven Code, sondern wegen des oben beschriebenen, umgebungsseitigen
-"neue Testmethode"-Absturzes. **Dies ist eine offene, nicht durch
-Quelltext-Änderungen lösbare Umgebungs-Einschränkung**, keine Aussage über
-die Korrektheit von Paket A oder B. Alle 1123 Linux-Tests (inkl. der 10
-aus Paket A) bleiben grün; Paket B ist code-/strukturreviewt und auf
-Linux kompilierfähig, aber auf Apple-Seite aktuell nicht automatisiert
-testausführbar.
+**Apple-CI, Stand bei Abschluss dieser Runde (`ios-app` + `swift-package`):**
+`ios-app` GRÜN in jedem Lauf (baut die App, führt keine SwiftData-Unit-Tests
+aus). `swift-package` bleibt ROT für `TrainingDayContentSnapshotWriterTests`
+(8 Tests) — Ursache noch nicht abschließend geklärt, siehe Zwischenstand
+oben. Alle 1123 Linux-Tests (inkl. der 10 aus Paket A) bleiben grün; Paket B
+ist code-/strukturreviewt und auf Linux kompilierfähig, auf Apple-Seite
+aktuell nicht automatisiert testausführbar — Grund wird gerade gezielt
+weiter eingegrenzt (Container-Lifetime-Hypothese), noch keine endgültige
+Diagnose.
 
 ## 6. Abnahmefälle (vor Implementierung festgelegt)
 
