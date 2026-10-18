@@ -999,6 +999,21 @@ Diagnoseweg). P7 läuft bereits parallel/danach weiter.
   exakt dieselbe Zähler-Sequenz (0→2→11→14, Stillstände von ~14 s und ~11 s) wie im Lauf davor,
   bis auf die Sekunde reproduzierbar. Diese Hypothese ist damit widerlegt.
 
+  **Befund 7 (Versuch ergebnislos, kein Beleg weder dafür noch dagegen):** Hypothese: `List`
+  garantiert lazy ausgewertete `NavigationLink`-Destinations, `ScrollView`+`VStack` nicht — daher
+  könnte die Umstellung auf `List` den Stillstand beseitigen. Test: `SettingsAppExperienceView`s
+  Container probeweise auf `List` umgestellt (Optik bewusst nicht poliert, rein diagnostisch).
+  **Ergebnis nicht auswertbar:** die so entstandene `List` (jede bestehende Sektion als EIN groß­er,
+  direkt eingebetteter Custom-View pro Zeile statt einzelner nativer `List`-Zeilen) liess sich per
+  Swipe-Geste nicht zuverlässig scrollen (10 Swipe-Versuche bewegten den sichtbaren Bereich nicht
+  über die ersten drei Sektionen hinaus) — dadurch war weder die echte "Four-week review"-Zeile
+  noch die statische Kontroll-Destination in dieser Testrunde erreichbar. Dies ist selbst ein
+  nicht-blockierender Nebenfund (ein naiver `List`-Tausch ohne echte Pro-Zeile-Struktur macht den
+  Screen potenziell unbedienbar), sagt aber NICHTS darüber aus, ob `List` den eigentlichen
+  Stillstand beheben würde. Eine echte Prüfung bräuchte eine vollständige Restrukturierung in
+  einzelne native `List`-Zeilen (kein Zeilen-Diagnose-Workaround), die über den Rahmen eines
+  schnellen Diagnoseversuchs hinausgeht.
+
   **Offen, nicht spekulativ behauptet:** Die tatsächliche Ursache ist noch nicht gefunden. Beide
   `@Query`-Ebenen (Befund 3) und die UIKit-Swipe-Back-Interop (Befund 6) sind ausgeschlossen. Die
   fast identische Zähler-Sequenz über zwei unabhängige Code-Varianten hinweg (Befund 6) spricht
