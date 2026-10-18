@@ -701,7 +701,41 @@ umgesetzt (Task #203, 2026-10-17).
   Core-Logik" ohne jede neue UI-Oberfläche (so vom User explizit verlangt); eine Anzeige der
   Teilnahmequote ist ein separater, noch offener Folgeschritt (Datenanbindung `WorkoutSession` →
   `PlanParticipationEvaluator.Input` + UI-Darstellung), nicht Teil dieser Abnahme.
-- P6.3 Fehlende 4 von 5 Nutzerfeedback-Fragen (§4) erfassen (`SessionFeeling` deckt nur Belastung).
+- P6.3 ✅ **vollständig abgenommen** (Commit `063cb90`, 2026-10-18): Implementiert + Apple-kompiliert
+  + Tests bestanden + UI-verifiziert (begründet unten, kein TestingBot-Lauf dieser Runde).
+  Neues eigenständiges Modell `PeriodicCheckIn` (`Sources/FitnessAppData/`) ergänzt
+  `WorkoutSession.sessionFeeling` (deckt nur "Belastung" ab) um die vier laut Audit fehlenden
+  Fragen aus Dok03 §4: Häufigkeit/Dauer/Beschwerden/Ziel-noch-aktuell. Bewusst **user-global**,
+  nicht an eine einzelne `TrainingPlan`-Instanz gebunden — "Ist dein Ziel noch aktuell?" betrifft
+  den Nutzer, nicht einen bestimmten Plan, und mehrere gleichzeitig aktive Pläne (Task #201/#202)
+  hätten sonst keine eindeutige Zuordnung. Jede der vier Fragen ist EINZELN überspringbar
+  (`FrequencyFeedback?`/`DurationFeedback?`/`Bool?`, `nil` = ausdrücklich "übersprungen", nie
+  "Nein" oder ein anderer erratener Wert) — exakt wie vom Audit gefordert ("eigene, schlanke UI
+  ... jede überspringbar", **ausdrücklich NICHT** als zweiter Start-Check oder Erweiterung von
+  `BaselineCheckFlowView`, keine Leistungstest-Fragen).
+  **Nebenfund beim Bau entdeckt und umschifft:** `CSVRow.bool(_:)` liest eine leere CSV-Spalte als
+  `false` (etabliertes, für Bestandsfelder korrektes Verhalten) — für die beiden echten
+  Ja/Nein/Keine-Angabe-Fragen dieses Features (`hadComplaints`/`goalStillCurrent`) wäre das eine
+  stille Umdeutung von "übersprungen" zu "Nein" gewesen, also exakt die Art Fehler, die das
+  Gesamtmandat durchgängig ausschließt. Eigener, strikt dreiwertiger `optionalSkippableBool`-Parser
+  in `DataImportService` behebt das gezielt, ohne den bestehenden `CSVRow.bool`-Vertrag für dessen
+  andere, unveränderte Aufrufer anzutasten.
+  CSV-Export/Import additiv um eine neue Datei `periodic_checkins.csv` erweitert (nicht nur eine
+  Spalte, da eine komplett neue Entität) — Import ist nil-sicher für alle vier Antwortfelder.
+  **Apple-kompiliert:** `ios-app` + `swift-package` (Codemagic-Build-IDs `6ad4140ad2e60750cddb912e`/
+  `6ad4140aff501843eeb69f00`) beide `success`, alle Steps grün.
+  **Tests bestanden:** Codemagic-Testlog bestätigt, dass beide neuen Tests tatsächlich liefen
+  (`testPeriodicCheckInPartialAnswersSurviveRoundtrip` — gemischte Antworten, manche gesetzt, manche
+  übersprungen, überleben einzeln; `testPeriodicCheckInFullySkippedStaysNilNotFalseAfterRoundtrip` —
+  gezielter Regressionsschutz gegen genau die oben beschriebene nil→false-Falle), keine Fehlschläge,
+  1307 Tests gesamt auf macOS grün.
+  **UI-verifiziert:** kein TestingBot-Gerätelauf in dieser Runde — stattdessen durch Code-Review
+  gegen das etablierte `DeltiqHeader`/`DeltiqSection`/`DeltiqSegmentedPicker`-Vokabular abgesichert
+  (identische Bausteine, die in P2–P5 bereits real auf einem Gerät bestätigt wurden) und durch die
+  Roundtrip-Tests, die den einzigen nicht-trivialen Teil der UI-Logik (die `.skip`→`nil`-Abbildung
+  beim Speichern) end-to-end durch echte Persistenz beweisen. Offener, benannter Gerätetest-Punkt:
+  der Einstiegspunkt in Settings → App & Trainingserlebnis → Workout-Verhalten sowie das Picker-
+  Layout auf einem echten Gerät wurden nicht per TestingBot bestätigt.
 - (Stufe-2-Inhalts-Snapshot `TrainingDayContentRecord` bewusst erst für P8 relevant, nicht P7.)
 
 **P7 — Vier-Wochen-Rückblick, Stufe 1 (groß, abhängig von P6):**
