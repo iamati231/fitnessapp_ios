@@ -1144,12 +1144,49 @@ Wiederaufnahme weiterhin "ROUND 1/3" (nicht 5) UND die abgehakte Übung
 bleibt markiert — eingefrorene Rundenzahl und Fortschritt überleben den
 Kaltstart korrekt.
 
-**Block C — Ad-hoc-Editor: siehe Nachtrag.** In der ersten Session nicht
-mehr erreicht (Budget durch Block-B/D-Exploration aufgezehrt, UI-
-Navigationsaussetzer). Nachgeholt in einer zweiten, gezielten
-TestingBot-Session — Ergebnis siehe unten.
-
-<!-- P8_STUFE2_SECTION_11_2_BLOCK_C_PLACEHOLDER -->
+**Block C — Ad-hoc-Editor: ECHTER BEFUND, inzwischen behoben.** Nachgeholt
+in einer zweiten, gezielten TestingBot-Session
+(`9890bb32e69d-7b5ef5ea0a7e-300b8e3e1935-179236085339-69843410`,
+derselbe verifizierte Build, kein erneuter Upload nötig). Spontanes
+Workout gestartet, eine Übung über den Ad-hoc-Editor bearbeitet (Reps-
+min 8→11, live bestätigt: "3 × 11-12 reps"), zusätzlich "+ Satz"
+verwendet (live bestätigt: "4 × 11-12 reps"). App vollständig
+terminiert und neu gestartet.
+- **FAIL:** nach Wiederaufnahme zeigte die Karte wieder den
+  URSPRÜNGLICHEN Stand ("3 × 8-12 reps", "0/3") — beide Ad-hoc-Edits
+  waren spurlos verloren, obwohl sie vor dem Kill live bestätigt waren.
+  Abschluss-Sheet und fertige Summary bestätigten denselben Verlust
+  ("Sets: 3" statt der editierten Werte).
+- **Root Cause (durch den Gerätetest selbst lokalisiert, nicht nur
+  vermutet):** keine der fünf Funktionen in
+  `TrainingDayContentSnapshotWriter` rief nach dem Setzen von
+  `contentSnapshotJSON`/`.contentSnapshotCapturedAt` explizit
+  `context.save()` auf — anders als die meisten übrigen Schreibstellen
+  in `FitnessAppData` (z. B. `DeloadManager`, `FourWeekReviewDueStatus`,
+  die beide `try context.save()` direkt nach der Mutation aufrufen). Ein
+  Prozess-Kill kurz nach der Mutation, bevor SwiftDatas impliziter
+  Autosave greift, verliert die Änderung — reproduzierbar bis in die
+  historische Summary.
+- **Fix (Commit `e95bf6f`):** `try? context.save()` in allen fünf
+  Funktionen (`capture`, `recordAdHocExerciseAdded/Removed/Edited`,
+  `recordSetCountChange`) ergänzt — dieselbe, bereits im Rest der
+  Codebase etablierte Konvention.
+- **Verifikation:** drei neue Regressionstests schreiben in einen
+  echten dateibasierten Store OHNE zusätzlichen Aufrufer-Save nach dem
+  jeweiligen Writer-Aufruf (der bisherige Store-Neuöffnungstest hatte
+  den Bug durch einen eigenen Save direkt danach unabsichtlich
+  maskiert) und öffnen anschließend einen komplett neuen Container auf
+  dieselbe Datei — exakt dieselbe Lücke wie im Gerätetest, nur
+  deterministisch statt timing-abhängig. Apple-CI für Commit `e95bf6f`:
+  `ios-app`-Build `6ad5453168658dfa50608121` und `swift-package`-Build
+  `6ad5453083b3c37d71581e44`, beide alle Schritte `success`, 1413/1413
+  Tests erreicht, keine echte Fehlzeile. Keine dritte TestingBot-Runde
+  zur erneuten Geräte-Bestätigung dieses Fixes — Regressionstest (der
+  den Mechanismus direkt prüft, nicht nur eine zufällige Beobachtung)
+  plus grüne Apple-CI entsprechen demselben Nachweisstandard, der in
+  diesem Epic durchgängig für Code-Fixes dieser Art verwendet wird
+  (siehe Block D), und vermeiden zusätzlichen, hier nicht
+  erforderlichen TestingBot-Verbrauch.
 
 **Zwei unabhängige Befunde, NICHT Teil des Resume-Isolation-Vertrags**
 (als eigene Tasks gemeldet, hier nur zur Einordnung): Swipe-Delete einer
@@ -1270,4 +1307,51 @@ nächstem Schritt, falls/wenn eine Fixture beschafft wird.
 
 ### 11.5 Gesamturteil Stufe 2
 
-<!-- P8_STUFE2_SECTION_11_5_PLACEHOLDER -->
+**Stufe 2 ist für den Session-Inhaltsvertrag (historische Summary,
+Snapshot-Sicherung, Wiederaufnahme-Isolation inkl. Zeitformat/Zirkel
+und Ad-hoc) jetzt vollständig abgenommen** — nicht mehr nur codegelesen
+oder nur unit-getestet, sondern mit echten Geräte-/Simulator-Belegen
+UND grüner Apple-CI:
+
+- Standardtraining-Wiederaufnahme (Block A) und Zirkel-Wiederaufnahme
+  (Block B): auf echtem Simulator bestanden, Build-Identität per SHA256
+  nachgewiesen.
+- Zeitformat-Routing (Block D): echter Code-Befund, minimal behoben
+  (`contentSnapshotTimeFormat`, Commit `07b917b`), Regressionstests +
+  Apple-CI grün.
+- Ad-hoc-Editor (Block C): echter Gerätebefund (Edit + "+Satz" gingen
+  nach Kaltstart verloren), Root Cause lokalisiert, minimal behoben
+  (expliziter Save, Commit `e95bf6f`), Regressionstests + Apple-CI grün.
+
+Damit ist die eigene Zwischenbilanz aus dem vorigen Auftrag — "Historische
+Summary und Snapshot-Sicherung implementiert und automatisiert geprüft.
+Wiederaufnahme-Isolation noch nicht vollständig nachgewiesen." —
+vollständig eingelöst: Wiederaufnahme-Isolation ist jetzt sowohl
+implementiert als auch mit echten Gerätebelegen nachgewiesen, und zwei
+zusätzliche, bei dieser Abnahme erst sichtbar gewordene reale Lücken
+(Zeitformat-Routing, Ad-hoc-Persistenz) sind behoben, nicht nur
+dokumentiert.
+
+**Was EXPLIZIT noch fehlt — keine Vollabnahme der gesamten App:**
+
+- **Bestandsmigration** (siehe 11.4): keine echte oder synthetische
+  Alt-Store-Fixture verfügbar. Konkrete Voraussetzung benannt (Store-
+  Datei aus einem Commit vor `842028a`/`b1f7b43`), sichere
+  Beschaffungs-/Prüfanweisung gegeben. Bleibt offen, bis eine solche
+  Fixture vorliegt — keine Vermutung, keine Ersatzverifikation.
+- **Zwei unabhängige Day-Editor-Persistenzbefunde** (Swipe-Delete,
+  Tag-Level-Stepper/Picker): echt, reproduziert, aber AUSSERHALB des
+  Session-Inhaltsvertrags — als eigene Tasks gemeldet (`task_3edd265e`,
+  `task_0d82cbba`), nicht Teil dieser Abnahme.
+- Die Block-C/D-Fixes wurden nach etabliertem Epic-Standard (gezielter
+  Regressionstest + grüne Apple-CI) verifiziert, aber NICHT noch einmal
+  eigens auf dem Gerät nachgewiesen — bewusste Entscheidung gegen
+  zusätzlichen TestingBot-Verbrauch ohne neue Prüffrage, kein
+  stillschweigend übersprungener Schritt.
+
+**Kosten/Umfang:** ein TestingBot-Account-Check (kostenlos) + zwei
+TestingBot-Sessions (~55-60 Min. + ~7 Min., sauber beendet) innerhalb
+des bereits verfügbaren Budgets; vier Apple-CI-Läufe insgesamt in
+dieser Abnahme (zwei gebündelte Paare, je eines pro notwendiger
+Code-Änderung — keine Diagnoseserie); kein Merge nach `main`, kein
+Release.
