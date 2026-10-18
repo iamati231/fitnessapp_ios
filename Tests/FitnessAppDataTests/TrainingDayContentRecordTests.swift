@@ -24,18 +24,9 @@ final class TrainingDayContentRecordTests: XCTestCase {
         utc.date(from: DateComponents(year: year, month: month, day: day))!
     }
 
-    /// Bewusst ein echter On-Disk-Store statt `isStoredInMemoryOnly: true`:
-    /// Apple-CI zeigte reproduzierbar Signal-5-Abstürze in jedem Test dieser
-    /// Datei (nie in anderen Testdateien mit identischem Schema), sobald ein
-    /// In-Memory-Store zusammen mit `TrainingDayContentRecord` im Schema
-    /// verwendet wurde — der On-Disk-Migrationstest unten, der von Anfang an
-    /// echte Store-Dateien nutzte, war der einzige nie betroffene Test in
-    /// dieser Datei. Jeder Aufruf bekommt eine eigene, eindeutige Datei.
     private func makeContainer() throws -> ModelContainer {
         let schema = Schema(AppSchema.types)
-        let storeURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("TrainingDayContentRecordTests-\(UUID().uuidString).store")
-        let config = ModelConfiguration(schema: schema, url: storeURL)
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
         return try ModelContainer(for: schema, configurations: config)
     }
 
@@ -93,12 +84,12 @@ final class TrainingDayContentRecordTests: XCTestCase {
         let fixture = makeFixture(in: context)
         try context.save()
 
-        XCTAssertEqual(fixture.session.contentSnapshotState, .notCaptured, "vor dem ersten capture gibt es noch keinen Record")
+        XCTAssertEqual(fixture.session.contentSnapshotState(in: context), .notCaptured, "vor dem ersten capture gibt es noch keinen Record")
 
         XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context))
 
-        guard case .available(let snapshot) = fixture.session.contentSnapshotState else {
-            return XCTFail("nach capture muss ein lesbarer Snapshot vorliegen: \(fixture.session.contentSnapshotState)")
+        guard case .available(let snapshot) = fixture.session.contentSnapshotState(in: context) else {
+            return XCTFail("nach capture muss ein lesbarer Snapshot vorliegen: \(fixture.session.contentSnapshotState(in: context))")
         }
         XCTAssertEqual(snapshot.exercises.count, 2)
         XCTAssertEqual(snapshot.exercises.map(\.nameSnapshot), ["Bankdrücken", "Kurzhantel-Rudern"])
@@ -115,7 +106,7 @@ final class TrainingDayContentRecordTests: XCTestCase {
         try context.save()
 
         XCTAssertFalse(TrainingDayContentSnapshotWriter.capture(for: session, in: context))
-        XCTAssertEqual(session.contentSnapshotState, .notCaptured)
+        XCTAssertEqual(session.contentSnapshotState(in: context), .notCaptured)
     }
 
     func testCaptureOnADayWithNoActiveExercisesYieldsAValidEmptySnapshotNotAnError() throws {
@@ -124,8 +115,8 @@ final class TrainingDayContentRecordTests: XCTestCase {
         try context.save()
 
         XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context))
-        guard case .available(let snapshot) = fixture.session.contentSnapshotState else {
-            return XCTFail("eine leere Übungsliste ist gültig, kein Fehler: \(fixture.session.contentSnapshotState)")
+        guard case .available(let snapshot) = fixture.session.contentSnapshotState(in: context) else {
+            return XCTFail("eine leere Übungsliste ist gültig, kein Fehler: \(fixture.session.contentSnapshotState(in: context))")
         }
         XCTAssertTrue(snapshot.exercises.isEmpty)
     }
@@ -141,14 +132,14 @@ final class TrainingDayContentRecordTests: XCTestCase {
         XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixtureA.session, in: context))
         XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixtureB.session, in: context))
 
-        guard case .available(let snapshotA) = fixtureA.session.contentSnapshotState,
-              case .available(let snapshotB) = fixtureB.session.contentSnapshotState else {
+        guard case .available(let snapshotA) = fixtureA.session.contentSnapshotState(in: context),
+              case .available(let snapshotB) = fixtureB.session.contentSnapshotState(in: context) else {
             return XCTFail("beide Sessions müssen unabhängig voneinander lesbare Snapshots haben")
         }
         XCTAssertEqual(snapshotA.exercises.count, 1)
         XCTAssertEqual(snapshotB.exercises.count, 3, "Bs Record darf nicht von As Inhalt beeinflusst sein")
         XCTAssertFalse(
-            fixtureA.session.contentRecord === fixtureB.session.contentRecord,
+            fixtureA.session.contentRecord(in: context) === fixtureB.session.contentRecord(in: context),
             "jede Session braucht ihren EIGENEN Record, kein geteiltes Objekt"
         )
     }
@@ -161,7 +152,7 @@ final class TrainingDayContentRecordTests: XCTestCase {
         try context.save()
 
         XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context))
-        guard case .available(let originalSnapshot) = fixture.session.contentSnapshotState else {
+        guard case .available(let originalSnapshot) = fixture.session.contentSnapshotState(in: context) else {
             return XCTFail("Erst-Aufnahme muss gelingen")
         }
         XCTAssertEqual(originalSnapshot.exercises.count, 1)
@@ -178,7 +169,7 @@ final class TrainingDayContentRecordTests: XCTestCase {
         let captureAfterCompletionSucceeded = TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context)
         XCTAssertFalse(captureAfterCompletionSucceeded, "ein Schreibversuch nach Abschluss darf nicht gelingen")
 
-        guard case .available(let afterAttempt) = fixture.session.contentSnapshotState else {
+        guard case .available(let afterAttempt) = fixture.session.contentSnapshotState(in: context) else {
             return XCTFail("der eingefrorene Record muss weiterhin lesbar bleiben")
         }
         XCTAssertEqual(afterAttempt, originalSnapshot, "der eingefrorene Record darf sich durch den Versuch nicht verändert haben")
@@ -199,13 +190,20 @@ final class TrainingDayContentRecordTests: XCTestCase {
         try context.save()
 
         XCTAssertNil(fixture.session.day, "die Plan-/Tag-Zuordnung fehlt danach ausdrücklich (nullify)")
-        guard case .available(let snapshot) = fixture.session.contentSnapshotState else {
+        guard case .available(let snapshot) = fixture.session.contentSnapshotState(in: context) else {
             return XCTFail("der Inhalts-Snapshot muss das Löschen des Tages unbeschadet überstehen")
         }
         XCTAssertEqual(snapshot.exercises.count, 2, "der historische Inhalt bleibt vollständig erhalten")
     }
 
-    func testDeletingTheSessionCascadesToItsContentRecord() throws {
+    /// Kein `@Relationship`-Cascade (siehe Typ-Dokumentation auf
+    /// `TrainingDayContentRecord`) — die Aufräumung ist ein expliziter
+    /// Aufruf, den ein künftiger Session-Löschpfad (Paket C) VOR
+    /// `context.delete(session)` machen muss. Dieser Test prüft genau das:
+    /// `deleteRecord(for:in:)` entfernt den Record, ein nackter
+    /// `context.delete(session)` allein wuerde ihn (bewusst) verwaist zurueck-
+    /// lassen.
+    func testDeleteRecordRemovesTheOrphanedRecordWhenCalledBeforeSessionDeletion() throws {
         let context = try makeContainer().mainContext
         let fixture = makeFixture(in: context, exerciseCount: 1)
         try context.save()
@@ -215,6 +213,7 @@ final class TrainingDayContentRecordTests: XCTestCase {
         let recordCountBefore = try context.fetchCount(FetchDescriptor<TrainingDayContentRecord>())
         XCTAssertEqual(recordCountBefore, 1)
 
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.deleteRecord(for: fixture.session, in: context))
         context.delete(fixture.session)
         try context.save()
 
@@ -234,10 +233,10 @@ final class TrainingDayContentRecordTests: XCTestCase {
         // Simuliert Store-Korruption — @testable erlaubt direkten Zugriff auf
         // das modul-interne Feld, genau wie dieser Test es braucht; kein
         // produktiver Call-Site hat diesen Zugriff.
-        fixture.session.contentRecord?.contentJSON = "{ kaputt"
+        fixture.session.contentRecord(in: context)?.contentJSON = "{ kaputt"
 
-        guard case .unreadable(.corrupted) = fixture.session.contentSnapshotState else {
-            return XCTFail("beschädigtes JSON muss als .unreadable(.corrupted) sichtbar werden: \(fixture.session.contentSnapshotState)")
+        guard case .unreadable(.corrupted) = fixture.session.contentSnapshotState(in: context) else {
+            return XCTFail("beschädigtes JSON muss als .unreadable(.corrupted) sichtbar werden: \(fixture.session.contentSnapshotState(in: context))")
         }
     }
 
@@ -292,8 +291,8 @@ final class TrainingDayContentRecordTests: XCTestCase {
             sessions.first.map { Int($0.startTime.timeIntervalSince1970) },
             Int(oldSessionStart.timeIntervalSince1970)
         )
-        XCTAssertNil(sessions.first?.contentRecord, "kein rückwirkend erfundener Snapshot für eine Session von vor diesem Feld")
-        XCTAssertEqual(sessions.first?.contentSnapshotState, .notCaptured)
+        XCTAssertNil(sessions.first?.contentRecord(in: newContext), "kein rückwirkend erfundener Snapshot für eine Session von vor diesem Feld")
+        XCTAssertEqual(sessions.first?.contentSnapshotState(in: newContext), .notCaptured)
 
         // Gegenprobe: der neue Schreibpfad funktioniert auf demselben (jetzt
         // migrierten) Store ganz normal weiter — NICHT an der Altsession
@@ -309,7 +308,7 @@ final class TrainingDayContentRecordTests: XCTestCase {
         )
         newContext.insert(newSession)
         XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: newSession, in: newContext))
-        XCTAssertNotEqual(newSession.contentSnapshotState, .notCaptured)
+        XCTAssertNotEqual(newSession.contentSnapshotState(in: newContext), .notCaptured)
     }
 }
 #endif

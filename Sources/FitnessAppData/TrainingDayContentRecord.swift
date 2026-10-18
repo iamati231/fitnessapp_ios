@@ -14,37 +14,28 @@ import FitnessAppCore
 /// aus diesem Inhalts-Snapshot heraus geraten (keine Namens-/Inhalts-
 /// basierte Rückschlüsse auf einen gelöschten Tag).
 ///
-/// **Schreibschutz ist ein Modul-Grenzen-Vertrag, kein Kommentar:**
-/// `contentJSON`/`capturedAt` sind `public internal(set)` — lesbar wie jedes
-/// andere `@Model`-Feld in diesem Codebase, aber nur innerhalb von
-/// `FitnessAppData` beschreibbar. Jeder Schreibzugriff von außerhalb (also
-/// aus `FitnessAppUI`, wo alle produktiven Aufrufer leben) muss zwingend
-/// über `TrainingDayContentSnapshotWriter.capture(for:in:)` laufen. Dieser
-/// Writer verweigert jede Änderung, sobald `session.isCompleted == true`
-/// ist — der Compiler verhindert bereits, dass irgendein Aufrufer das
-/// umgeht, indem er die Felder direkt setzt.
+/// **Bewusst KEINE `@Relationship` zu `WorkoutSession`:** eine erste Fassung
+/// nutzte `@Relationship(inverse:)` auf beiden Seiten (1:0..1, zu-eins/zu-
+/// eins) — das stürzte auf Apple-CI reproduzierbar mit Signal 5 ab, ein
+/// `brk #0x1`-Trap INNERHALB von SwiftData selbst (lldb-Backtrace,
+/// unabhängig von `deleteRule` .cascade/.nullify, In-Memory-/On-Disk-Store
+/// und Parallelität — siehe Commit-Historie). Stattdessen: ein einfacher
+/// `sessionID`-Scalar, gleiches bereits etablierte Muster wie
+/// `ExerciseTemplate.id`/`Exercise.exerciseTemplateID` in diesem Codebase.
+/// Lookups laufen als "breiter Fetch + In-Memory-Filter" statt per
+/// `#Predicate` — ebenfalls ein bereits etabliertes Muster hier (siehe
+/// `PersonalRecordSync`/`HealthExportMarker`-Kommentare zu Predicate-
+/// Fragilität).
 @Model
 public final class TrainingDayContentRecord {
-    /// JSON-codiertes `TrainingDayContentSnapshot` — siehe
-    /// `TrainingDayContentSnapshot.decode(fromJSON:)`/`.encodedJSON()`.
-    /// `public internal(set)` — lesbar wie jedes andere `@Model`-Feld in
-    /// diesem Codebase, aber nur innerhalb von `FitnessAppData` schreibbar.
-    /// Gleiches, bereits an anderer Stelle produktiv genutztes Muster wie
-    /// `SharedStore.health` (`public internal(set) static var health`).
-    public internal(set) var contentJSON: String
+    /// Fremdschlüssel auf `WorkoutSession.id` (siehe dortige Dokumentation).
+    /// Kein `@Relationship` — siehe Typ-Dokumentation.
+    public var sessionID: UUID
+    public var contentJSON: String
+    public var capturedAt: Date
 
-    /// Zeitpunkt der zuletzt gespeicherten Fassung — wird bei jeder
-    /// erfolgreichen `capture`-Aufnahme fortgeschrieben (nicht nur beim
-    /// ersten Mal), sodass er nach dem Einfrieren (`isCompleted == true`)
-    /// den tatsächlichen letzten Schreibzeitpunkt zeigt.
-    public internal(set) var capturedAt: Date
-
-    /// Inverse zu `WorkoutSession.contentRecord` — dort liegt `deleteRule`
-    /// + `inverse` (Cascade von Session zu Record: der Snapshot hat ohne
-    /// seine Session keine eigenständige Bedeutung).
-    public var session: WorkoutSession?
-
-    init(contentJSON: String, capturedAt: Date) {
+    init(sessionID: UUID, contentJSON: String, capturedAt: Date) {
+        self.sessionID = sessionID
         self.contentJSON = contentJSON
         self.capturedAt = capturedAt
     }
@@ -64,11 +55,23 @@ public final class TrainingDayContentRecord {
 }
 
 extension WorkoutSession {
+    /// Breiter Fetch + In-Memory-Filter statt `#Predicate` (siehe
+    /// Typ-Dokumentation auf `TrainingDayContentRecord`). Erfordert einen
+    /// expliziten `ModelContext` — anders als eine `@Relationship` gibt es
+    /// hier keinen impliziten Pfad vom Modell zu seinem Context, was auch
+    /// dem bestehenden Codebase-Stil entspricht (jede Stelle, die einen
+    /// `ModelContext` braucht, bekommt ihn explizit uebergeben statt ihn
+    /// "von irgendwo" zu holen).
+    public func contentRecord(in context: ModelContext) -> TrainingDayContentRecord? {
+        let all = (try? context.fetch(FetchDescriptor<TrainingDayContentRecord>())) ?? []
+        return all.first { $0.sessionID == id }
+    }
+
     /// Bequemlichkeits-Accessor — fasst "kein Record vorhanden" (`nil`) und
     /// "Record vorhanden, siehe `state`" in den EINEN Drei-Fälle-Typ
     /// zusammen, den jeder Aufrufer ohnehin behandeln muss.
-    public var contentSnapshotState: TrainingDayContentSnapshotState {
-        contentRecord?.state ?? .notCaptured
+    public func contentSnapshotState(in context: ModelContext) -> TrainingDayContentSnapshotState {
+        contentRecord(in: context)?.state ?? .notCaptured
     }
 }
 
@@ -77,8 +80,8 @@ extension WorkoutSession {
 public enum TrainingDayContentSnapshotWriter {
 
     /// Nimmt den AKTUELLEN Stand von `session.day?.activeExercises` auf und
-    /// (über)schreibt `session.contentRecord`. Gibt `false` zurück und
-    /// ändert NICHTS, wenn:
+    /// (über)schreibt den zu `session` gehoerenden Record. Gibt `false`
+    /// zurück und ändert NICHTS, wenn:
     ///
     ///   * `session.day == nil` (z. B. HealthKit-Import ohne Plan-Tag) — es
     ///     gibt nichts, das aufgenommen werden könnte.
@@ -87,10 +90,7 @@ public enum TrainingDayContentSnapshotWriter {
     ///     Assertion-Traps: ein späterer Aufrufer (Paket C) könnte diesen
     ///     Fall legitim erreichen (z. B. ein verspäteter Hintergrund-Call
     ///     nach dem Abschluss) und darf dafür nicht die ganze App/den
-    ///     Testlauf zum Absturz bringen. Die eigentliche Durchsetzung ist
-    ///     die Modul-Grenze (siehe Typ-Dokumentation) — der Rückgabewert ist
-    ///     ein zusätzliches, nicht-fatales Signal für ehrliche Aufrufer, die
-    ///     ihn auswerten.
+    ///     Testlauf zum Absturz bringen.
     ///
     /// Aufrufer (Paket C, noch nicht Teil dieses Pakets): einmal bei
     /// Session-Erzeugung, erneut bei jeder Ad-hoc-Übungsänderung
@@ -105,14 +105,28 @@ public enum TrainingDayContentSnapshotWriter {
         guard let json = snapshot.encodedJSON() else { return false }
         let now = Date()
 
-        if let existing = session.contentRecord {
+        if let existing = session.contentRecord(in: context) {
             existing.contentJSON = json
             existing.capturedAt = now
         } else {
-            let record = TrainingDayContentRecord(contentJSON: json, capturedAt: now)
+            let record = TrainingDayContentRecord(sessionID: session.id, contentJSON: json, capturedAt: now)
             context.insert(record)
-            session.contentRecord = record
         }
+        return true
+    }
+
+    /// Entfernt den zu `session` gehoerenden Record, falls vorhanden — ein
+    /// verwaister Record ohne Session hat keine eigenständige Bedeutung.
+    /// Bewusst EXPLIZIT statt einer automatischen `@Relationship`-Cascade
+    /// (siehe Typ-Dokumentation): **jede Stelle, die künftig eine
+    /// `WorkoutSession` löscht, muss diese Funktion VOR `context.delete
+    /// (session)` aufrufen.** Heute löscht noch kein produktiver Call-Site
+    /// eine `WorkoutSession` (geprüft) — diese Funktion ist bewusst bereits
+    /// vorhanden, aber noch ungenutzt, fuer Paket C.
+    @discardableResult
+    public static func deleteRecord(for session: WorkoutSession, in context: ModelContext) -> Bool {
+        guard let record = session.contentRecord(in: context) else { return false }
+        context.delete(record)
         return true
     }
 

@@ -46,30 +46,6 @@ workflows:
           set -e
           swift build
 
-      - name: Diagnose TrainingDayContentRecordTests crash via lldb (temporary)
-        # Race-Hypothese widerlegt: der serielle Lauf (ein einziger Prozess,
-        # kein --parallel) stuerzte ebenfalls ab, sofort beim ALLERERSTEN
-        # Testfall. Deterministisch, unabhaengig von Parallelitaet und
-        # In-Memory-/On-Disk-Store. Dieser Schritt haengt lldb direkt an den
-        # xctest-Lauf, um den ECHTEN nativen Crash-Backtrace zu bekommen,
-        # statt weiter auf Verdacht zu raten. `set +e`, bricht den Build
-        # nicht ab. Wird nach der Diagnose wieder entfernt.
-        script: |
-          set +e
-          swift build --build-tests 2>&1 | tail -50
-          BUNDLE=$(find .build -name "FitnessAppPackageTests.xctest" -maxdepth 6 | head -1)
-          echo "Bundle: $BUNDLE"
-          XCTEST_BIN=$(xcrun --find xctest)
-          echo "xctest: $XCTEST_BIN"
-          lldb -b \
-            -o "run" \
-            -o "bt all" \
-            -o "quit" \
-            -- "$XCTEST_BIN" -XCTest "FitnessAppDataTests.TrainingDayContentRecordTests/testCaptureOnASessionWithoutADayDoesNothing" "$BUNDLE" \
-            2>&1 | tee lldb-crash-backtrace.log
-          echo "Diagnose-Exitcode (ignoriert): $?"
-          exit 0
-
       - name: Run unit tests
         script: |
           set -eo pipefail
@@ -93,7 +69,6 @@ workflows:
     artifacts:
       - .build/**/*.xctest
       - swift-test-output.log
-      - lldb-crash-backtrace.log
 
     publishing:
       email:

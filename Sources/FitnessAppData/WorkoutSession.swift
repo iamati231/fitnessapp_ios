@@ -11,6 +11,13 @@ import FitnessAppCore
 /// banners on the Home screen (F72).
 @Model
 public final class WorkoutSession {
+    /// P8-Vorbereitung (Stufe-2-Versionierung): stabile Identitaet fuer die
+    /// Zuordnung von `TrainingDayContentRecord` (siehe dort) — bewusst ein
+    /// einfacher `UUID`-Scalar statt einer `@Relationship`, gleiches Muster
+    /// wie `ExerciseTemplate.id`/`Exercise.exerciseTemplateID`. Default-
+    /// Literal sorgt dafuer, dass Lightweight-Migration jeder Bestandszeile
+    /// ihre EIGENE, zufaellige ID zuweist (nicht allen dieselbe).
+    public var id: UUID = UUID()
     public var startTime: Date
     public var endTime: Date
     public var durationMinutes: Int
@@ -157,21 +164,8 @@ public final class WorkoutSession {
     @Relationship(deleteRule: .nullify, inverse: \ExerciseLog.session)
     public var logs: [ExerciseLog] = []
 
-    /// P8-Vorbereitung (Stufe-2-Versionierung,
-    /// `docs/P8_STUFE2_VERSIONIERUNG_PLAN.md`): eingefrorener Tagesinhalt
-    /// zum Zeitpunkt dieser Session — anders als `day` (lebende Referenz,
-    /// zeigt nach einer späteren Bearbeitung des Tages den AKTUELLEN Stand)
-    /// bleibt dieser Snapshot nach Session-Abschluss unverändert. `nil` für
-    /// jede Bestandssession vor diesem Feld UND für Sessions ohne `day`
-    /// (z. B. HealthKit-Import) — "kein Snapshot verfügbar" ist ein
-    /// gültiger, niemals rückwirkend aufgefüllter Dauerzustand. Nur über
-    /// `TrainingDayContentSnapshotWriter.capture(for:in:)` schreibbar, nie
-    /// direkt — der Writer verweigert jede Änderung, sobald `isCompleted`
-    /// `true` ist.
-    @Relationship(deleteRule: .nullify, inverse: \TrainingDayContentRecord.session)
-    public var contentRecord: TrainingDayContentRecord?
-
     public init(
+        id: UUID = UUID(),
         startTime: Date = Date(),
         endTime: Date = Date(),
         durationMinutes: Int = 0,
@@ -199,6 +193,7 @@ public final class WorkoutSession {
         healthKitSampleUUID: String? = nil,
         healthKitExportedAt: Date? = nil
     ) {
+        self.id = id
         self.startTime = startTime
         self.endTime = endTime
         self.durationMinutes = durationMinutes
