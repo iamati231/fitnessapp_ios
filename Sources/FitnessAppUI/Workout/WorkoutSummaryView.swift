@@ -1811,61 +1811,13 @@ public struct WorkoutSummaryView: View {
 
     // MARK: Derived
 
-    /// P8 Stufe-2: ein Log ohne lebende `Exercise`-Referenz (orphan, z. B.
-    /// nach Tag-/Übungslöschung) wurde hier bisher komplett herausgefiltert
-    /// (`guard let exercise = logs.first?.exercise else { return nil }`) —
-    /// der Satz blieb zwar in `session.logs`/`session.totalSets` mitgezählt,
-    /// verschwand aber unsichtbar aus der Aufschlüsselung. Jetzt werden
-    /// orphane Logs separat gruppiert (`orphanedExerciseSection`, read-only)
-    /// statt verworfen zu werden.
-    private enum ExerciseLogGroup: Identifiable {
-        case live(Exercise, [ExerciseLog])
-        case orphaned(key: String, logs: [ExerciseLog])
-
-        var id: String {
-            switch self {
-            case .live(let exercise, _): return "live-\(exercise.persistentModelID)"
-            case .orphaned(let key, _): return "orphan-\(key)"
-            }
-        }
-
-        /// Sortierschlüssel — für orphane Gruppen der `orderIndex` zum
-        /// Logging-Zeitpunkt (`ExerciseLog.exerciseOrderIndexSnapshot`),
-        /// NICHT der Name; Alt-Logs ohne dieses Feld landen ans Ende statt
-        /// eine falsche Position zu erraten.
-        var orderIndex: Int {
-            switch self {
-            case .live(let exercise, _): return exercise.orderIndex
-            case .orphaned(_, let logs): return logs.first?.exerciseOrderIndexSnapshot ?? Int.max
-            }
-        }
-    }
-
-    /// Logs grouped by exercise, ordered by `Exercise.orderIndex` (matches the plan).
-    /// Gruppierschlüssel für orphane Logs ist `exerciseOrderIndexSnapshot`
-    /// (fehlt der bei Alt-Logs vor diesem Feld: `exerciseTemplateIDSnapshot`
-    /// + `exerciseNameSnapshot`) — NICHT allein der Name, sonst würden zwei
-    /// gleichnamige, inzwischen gelöschte Übungen (z. B. Hauptsatz +
-    /// Finisher) fälschlich zu einer Gruppe verschmolzen.
+    /// Logs grouped by exercise, ordered by `Exercise.orderIndex` (matches
+    /// the plan). Gruppierlogik ausgelagert nach `FitnessAppData.
+    /// ExerciseLogGrouping` (Apple-CI-testbar, unabhängig von dieser View) —
+    /// siehe dort für orphane Logs (gelöschte `Exercise`) und die
+    /// Duplikat-Namen-Absicherung.
     private var exercisesWithLogs: [ExerciseLogGroup] {
-        let liveLogs = session.logs.filter { $0.exercise != nil }
-        let orphanLogs = session.logs.filter { $0.exercise == nil }
-
-        let liveGrouped = Dictionary(grouping: liveLogs) { $0.exercise!.persistentModelID }
-        let live: [ExerciseLogGroup] = liveGrouped.compactMap { (_, logs) -> ExerciseLogGroup? in
-            guard let exercise = logs.first?.exercise else { return nil }
-            return .live(exercise, logs.sorted { $0.setIndex < $1.setIndex })
-        }
-
-        let orphanGrouped = Dictionary(grouping: orphanLogs) { log -> String in
-            if let idx = log.exerciseOrderIndexSnapshot { return "idx:\(idx)" }
-            return "key:\(log.exerciseTemplateIDSnapshot?.uuidString ?? "-")|\(log.exerciseNameSnapshot ?? "-")"
-        }
-        let orphaned: [ExerciseLogGroup] = orphanGrouped.map { (key, logs) in
-            .orphaned(key: key, logs: logs.sorted { $0.setIndex < $1.setIndex })
-        }
-
-        return (live + orphaned).sorted { $0.orderIndex < $1.orderIndex }
+        ExerciseLogGrouping.group(session.logs)
     }
 
     private var formattedDuration: String {
