@@ -26,14 +26,32 @@ import FitnessAppData
 /// Immer ein NEUER Eintrag (kein Edit-Modus) — wie `WaterEntry`/
 /// `BodyMeasurement` ist jeder Rückblick ein eigener Zeitpunkt-Snapshot,
 /// kein einzelner, fortlaufend überschriebener Datensatz.
+///
+/// Nachbesserung (TestingBot-Diagnose): **bewusst KEIN `@Query`** mehr für
+/// das letzte-Rückblick-Datum. Per TestingBot-Bisektion + gezielter
+/// `NSLog`-Instrumentierung nachgewiesen, dass das vorherige
+/// `@Query(sort:order:)` hier — als Destination-Closure eines
+/// `NavigationLink` innerhalb von `SettingsAppExperienceView` — zu einer
+/// Endlosschleife führte: `init`/`body` dieser View wurden mit ~140 Hz
+/// erneut evaluiert, sobald `SettingsAppExperienceView` nur ERSCHIEN (schon
+/// VOR jedem Tap auf "Quick check-in"), was den App-Hauptthread saettigte
+/// und reproduzierbar zum XCTest-Fehler "XCTPerformOnMainRunLoop work timed
+/// out after 60.0s" führte — ein echter App-Bug, kein Harness-Artefakt.
+/// Reproduziert sowohl auf diesem Stand als auch auf dem urspruenglichen
+/// P6.3-Commit (`063cb90`, vor allen Nebenfunden dieser Runde). Ein einmaliger
+/// Fetch beim Erscheinen (`.task`) statt einer live beobachtenden `@Query`
+/// behebt das, weil diese View dadurch nicht mehr bei jeder (moeglicherweise
+/// spekulativen) Rekonstruktion eine neue SwiftData-Beobachtung aufbaut.
+/// Reicht inhaltlich aus: dieser Screen zeigt nur "wann war der letzte
+/// Rückblick", braucht dafuer keine Live-Aktualisierung waehrend er offen
+/// ist — `save()` aktualisiert den angezeigten Wert ohnehin direkt.
 @available(iOS 17.0, macOS 14.0, *)
 public struct PeriodicCheckInView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    @Query(sort: \PeriodicCheckIn.date, order: .reverse)
-    private var history: [PeriodicCheckIn]
+    @State private var lastCheckInDate: Date?
 
     private enum FrequencyAnswer: Hashable { case skip, less, asPlanned, more }
     private enum DurationAnswer: Hashable { case skip, tooShort, justRight, tooLong }
@@ -97,7 +115,7 @@ public struct PeriodicCheckInView: View {
 
             ScrollView {
                 VStack(spacing: 18) {
-                    if let lastDate = history.first?.date {
+                    if let lastDate = lastCheckInDate {
                         DeltiqContextRow([
                             DeltiqContextItem(
                                 loc("periodicCheckIn.lastSaved")
@@ -129,6 +147,18 @@ public struct PeriodicCheckInView: View {
         .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
             dismiss()
         }
+        .task { loadLastCheckInDate() }
+    }
+
+    /// Einmaliger Fetch statt `@Query` (siehe Typ-Dokumentation oben) —
+    /// bewusst `fetchLimit = 1`, es wird ausschliesslich das neueste Datum
+    /// gebraucht.
+    private func loadLastCheckInDate() {
+        var descriptor = FetchDescriptor<PeriodicCheckIn>(
+            sortBy: [SortDescriptor(\.date, order: .reverse)]
+        )
+        descriptor.fetchLimit = 1
+        lastCheckInDate = (try? modelContext.fetch(descriptor))?.first?.date
     }
 
     private var questionsSection: some View {
@@ -300,6 +330,11 @@ public struct PeriodicCheckInView: View {
             }()
         )
         modelContext.insert(checkIn)
+        // Ersetzt die fruehere `@Query`-Live-Aktualisierung (siehe Typ-
+        // Dokumentation): der "zuletzt gespeichert"-Hinweis zeigt den
+        // gerade gespeicherten Eintrag sofort, ohne dafuer eine neue
+        // Beobachtung aufzubauen.
+        lastCheckInDate = checkIn.date
 
         // Kein dismiss(): anders als ein klassischer Editor bestaetigt dieser
         // Screen den Speichervorgang inline und setzt das Formular zurueck,
