@@ -190,6 +190,22 @@ public final class Exercise {
 
     public var day: TrainingDay?
 
+    /// P8 Stufe-2 (Session-Inhaltsvertrag, Wiederaufnahme-Isolation):
+    /// stabile Instanz-Identitaet DIESER EINEN Exercise-Zeile — unabhaengig
+    /// von Position (`orderIndex`, aendert sich durch Umsortieren) oder
+    /// Vorlage (`exerciseTemplateID`, von mehreren Instanzen geteilt, z. B.
+    /// Hauptsatz + Finisher derselben Uebung). Einziger Zweck:
+    /// `SessionContentResolver` kann eine `TrainingDayContentSnapshot.
+    /// ExerciseEntry` nach einer EXTERNEN Umsortierung des Tages waehrend
+    /// einer offenen Session trotzdem auf GENAU dieses Live-Objekt
+    /// zurueckfuehren, statt sich auf den inzwischen verschobenen
+    /// `orderIndex` zu verlassen. Immer frisch per `UUID()` im `init`
+    /// erzeugt, nie vom Aufrufer gesetzt oder nachtraeglich veraendert.
+    /// `nil` nur fuer Alt-Zeilen vor diesem Feld — `SessionContentResolver`
+    /// faellt dort auf die bisherige `exerciseTemplateID`+`orderIndex`-
+    /// Bestmoeglichkeit zurueck.
+    public var instanceID: UUID?
+
     /// DEL-051: HEILIGE HISTORIE. Frueher `.cascade` — beim Loeschen einer
     /// Plan-Uebung (manuell oder via Day/Plan-Cascade) gingen die ExerciseLog-
     /// Eintraege gleich mit weg, was Bestleistungen vernichtet hat. Jetzt
@@ -269,6 +285,7 @@ public final class Exercise {
         self.primaryMuscleRaw = primaryMuscle?.rawValue
         self.equipmentRaw = equipment?.rawValue
         self.day = day
+        self.instanceID = UUID()
     }
 }
 #endif

@@ -35,6 +35,18 @@ public struct TrainingDayContentSnapshot: Codable, Sendable, Equatable {
         /// `orderIndex`, sind zwei verschiedene, absichtlich wiederholte
         /// Übungen — kein Duplikat, das dedupliziert werden dürfte).
         public let orderIndex: Int
+        /// P8 Stufe-2 (Wiederaufnahme-Isolation): Snapshot von
+        /// `Exercise.instanceID` — stabil ueber externe Umsortierungen des
+        /// Tages waehrend einer offenen Session hinweg, anders als
+        /// `orderIndex` (der sich dabei aendern kann). `SessionContentResolver`
+        /// (`FitnessAppData`) nutzt dieses Feld, um einen Eintrag nach
+        /// Wiederaufnahme auf GENAU das Live-Objekt zurueckzufuehren, von dem
+        /// er stammt. `nil` nur bei Snapshots, die vor diesem Feld
+        /// aufgenommen wurden (altes JSON ohne diesen Key dekodiert dank
+        /// `Optional`-Synthese automatisch zu `nil`, kein Schemaversions-
+        /// Sprung noetig) — der Resolver faellt dann auf
+        /// `exerciseTemplateID`+`orderIndex` zurueck.
+        public let instanceID: UUID?
         /// Settings-Epic Phase 6 (EXLIB-07/09) Stabil-Referenz-Muster,
         /// identisch zu `Exercise.exerciseTemplateID`/
         /// `ExerciseLog.exerciseTemplateIDSnapshot`. `nil` nur bei
@@ -69,6 +81,7 @@ public struct TrainingDayContentSnapshot: Codable, Sendable, Equatable {
 
         public init(
             orderIndex: Int,
+            instanceID: UUID?,
             exerciseTemplateID: UUID?,
             nameSnapshot: String,
             customNameSnapshot: String?,
@@ -86,6 +99,7 @@ public struct TrainingDayContentSnapshot: Codable, Sendable, Equatable {
             targetDurationMinutes: Int?
         ) {
             self.orderIndex = orderIndex
+            self.instanceID = instanceID
             self.exerciseTemplateID = exerciseTemplateID
             self.nameSnapshot = nameSnapshot
             self.customNameSnapshot = customNameSnapshot

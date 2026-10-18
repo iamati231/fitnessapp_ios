@@ -33,8 +33,9 @@ extension WorkoutSession {
 /// Inhaltsstand. `capture` liest den Live-Tag NUR EIN EINZIGES MAL — bei
 /// der Erzeugung, wenn es noch keinen eigenen Stand gibt (guard:
 /// `contentSnapshotJSON == nil`). Explizite Änderungen INNERHALB der
-/// Session (Ad-hoc-Übung hinzufügen/entfernen) aktualisieren danach gezielt
-/// NUR den eigenen, bereits bestehenden Snapshot (`recordAdHocExercise…`)
+/// Session (Ad-hoc-Übung hinzufügen/entfernen/bearbeiten) aktualisieren
+/// danach gezielt NUR den eigenen, bereits bestehenden Snapshot
+/// (`recordAdHocExercise…`)
 /// — nie durch einen erneuten vollständigen Re-Read des Live-Tages, der
 /// zwischenzeitliche EXTERNE Änderungen (DayEditorView, Equipment-
 /// Anpassung) unbemerkt mit übernehmen würde. Beim Abschluss gibt es
@@ -148,6 +149,111 @@ public enum TrainingDayContentSnapshotWriter {
         return true
     }
 
+    /// Explizite In-Session-Änderung (P8 Stufe-2, Wiederaufnahme-Isolation):
+    /// eine BESTEHENDE Ad-hoc-Übung wurde WÄHREND der laufenden Session über
+    /// den Übungseditor bearbeitet (`ActiveWorkoutView`s `exerciseToEdit`-
+    /// Sheet — NUR von dort aufgerufen, NIE aus `DayEditorView`, das
+    /// denselben Editor auch für reguläre Plan-Übungen UND unabhängig von
+    /// einer offenen Session öffnet; ein Aufruf von dort wäre exakt die
+    /// verbotene "nachträgliche Vermischung mit externen Änderungen").
+    /// Ersetzt GENAU den Eintrag, dessen Identität (`instanceID`, Fallback
+    /// `orderIndex`) der übergebenen `Exercise` entspricht, durch ihre
+    /// AKTUELLEN Feldwerte — liest nicht erneut den ganzen Live-Tag, kann
+    /// also auch keine zwischenzeitliche externe Änderung an einer ANDEREN
+    /// Übung aufnehmen. Gibt `false` zurück und ändert NICHTS bei denselben
+    /// Guards wie `recordAdHocExerciseAdded`, plus: kein Eintrag mit
+    /// passender Identität gefunden (kann an einer Ad-hoc-Session praktisch
+    /// nicht vorkommen, da jede Ad-hoc-Übung über `recordAdHocExerciseAdded`
+    /// entsteht).
+    @discardableResult
+    public static func recordAdHocExerciseEdited(
+        _ exercise: Exercise,
+        within session: WorkoutSession,
+        in context: ModelContext
+    ) -> Bool {
+        guard !session.isCompleted, session.isAdHoc,
+              case .available(let existing) = session.contentSnapshotState
+        else { return false }
+
+        guard let index = existing.exercises.firstIndex(where: { entry in
+            if let instanceID = entry.instanceID, let liveID = exercise.instanceID {
+                return instanceID == liveID
+            }
+            return entry.orderIndex == exercise.orderIndex
+        }) else { return false }
+
+        var exercises = existing.exercises
+        exercises[index] = snapshotEntry(for: exercise)
+        let updated = existing.withExercises(exercises)
+        guard let json = updated.encodedJSON() else { return false }
+
+        session.contentSnapshotJSON = json
+        session.contentSnapshotCapturedAt = Date()
+        return true
+    }
+
+    /// Explizite In-Session-Änderung (P8 Stufe-2, Wiederaufnahme-Isolation):
+    /// die "+ Satz"/Satz-entfernen-Aktion direkt auf einer `ExerciseCard`
+    /// (`ExerciseCard.addSet`/`removeSet`) mutiert `exercise.sets` live — und
+    /// zwar für JEDE Session, nicht nur Ad-hoc (anders als der
+    /// Übungseditor, der aus `ActiveWorkoutView` heraus nur für Ad-hoc
+    /// erreichbar ist). Diese Aktion ist trotzdem NIE "extern": sie existiert
+    /// ausschließlich als Steuerelement auf der Karte DIESER laufenden
+    /// Session. Deshalb — anders als `recordAdHocExercise…` — KEIN
+    /// `session.isAdHoc`-Guard hier. Aktualisiert chirurgisch NUR das
+    /// `sets`-Feld des passenden Eintrags (Matching: `instanceID`, Fallback
+    /// `orderIndex`) — NICHT per vollem `snapshotEntry(for:)`-Rebuild, damit
+    /// ein zwischenzeitlich auf einem ANDEREN Weg (DayEditorView) verändertes
+    /// Feld derselben Übung nicht unbemerkt huckepack mit übernommen wird.
+    /// Gibt `false` zurück und ändert NICHTS, wenn `session.isCompleted`,
+    /// kein Snapshot existiert (`.notCaptured`/`.unreadable`) oder keine
+    /// passende Eintrags-Identität gefunden wird.
+    @discardableResult
+    public static func recordSetCountChange(
+        for exercise: Exercise,
+        in session: WorkoutSession,
+        context: ModelContext
+    ) -> Bool {
+        guard !session.isCompleted,
+              case .available(let existing) = session.contentSnapshotState
+        else { return false }
+
+        guard let index = existing.exercises.firstIndex(where: { entry in
+            if let instanceID = entry.instanceID, let liveID = exercise.instanceID {
+                return instanceID == liveID
+            }
+            return entry.orderIndex == exercise.orderIndex
+        }) else { return false }
+
+        var exercises = existing.exercises
+        let entry = exercises[index]
+        exercises[index] = TrainingDayContentSnapshot.ExerciseEntry(
+            orderIndex: entry.orderIndex,
+            instanceID: entry.instanceID,
+            exerciseTemplateID: entry.exerciseTemplateID,
+            nameSnapshot: entry.nameSnapshot,
+            customNameSnapshot: entry.customNameSnapshot,
+            role: entry.role,
+            supersetId: entry.supersetId,
+            isCardio: entry.isCardio,
+            isTimeBased: entry.isTimeBased,
+            cardioEquipment: entry.cardioEquipment,
+            sets: exercise.sets,
+            repsMin: entry.repsMin,
+            repsMax: entry.repsMax,
+            restSeconds: entry.restSeconds,
+            targetRir: entry.targetRir,
+            targetDistanceKm: entry.targetDistanceKm,
+            targetDurationMinutes: entry.targetDurationMinutes
+        )
+        let updated = existing.withExercises(exercises)
+        guard let json = updated.encodedJSON() else { return false }
+
+        session.contentSnapshotJSON = json
+        session.contentSnapshotCapturedAt = Date()
+        return true
+    }
+
     /// Reihenfolge wie `TrainingDay.currentContentFingerprint`
     /// (`activeExercises`, sortiert nach `orderIndex`) — dieselbe, bereits
     /// gepflegte Definition von "was gehört zum sichtbaren Tagesinhalt".
@@ -170,9 +276,17 @@ public enum TrainingDayContentSnapshotWriter {
         )
     }
 
-    private static func snapshotEntry(for exercise: Exercise) -> TrainingDayContentSnapshot.ExerciseEntry {
+    /// Öffentlich (zusätzlich zur internen Nutzung in `buildSnapshot`/
+    /// `recordAdHocExercise…`): `SessionContentResolver`-Aufrufer ohne
+    /// lesbaren Snapshot (`.notCaptured`/`.unreadable`, z. B. Alt-Sessions
+    /// vor diesem Feature) synthetisieren hiermit einen äquivalenten
+    /// Eintrag aus dem AKTUELLEN Live-Tag als Fallback-Anzeigebasis — exakt
+    /// dieselbe Feldzuordnung, die auch `capture` verwendet, keine
+    /// zweite, potenziell abweichende Kopie der Logik.
+    public static func snapshotEntry(for exercise: Exercise) -> TrainingDayContentSnapshot.ExerciseEntry {
         TrainingDayContentSnapshot.ExerciseEntry(
             orderIndex: exercise.orderIndex,
+            instanceID: exercise.instanceID,
             exerciseTemplateID: exercise.exerciseTemplateID,
             nameSnapshot: exercise.name,
             customNameSnapshot: exercise.customName,
