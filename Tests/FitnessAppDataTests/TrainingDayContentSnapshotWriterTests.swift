@@ -375,5 +375,66 @@ final class TrainingDayContentSnapshotWriterTests: XCTestCase {
             return XCTFail("beschädigtes JSON muss als .unreadable(.corrupted) sichtbar werden: \(fixture.session.contentSnapshotState)")
         }
     }
+
+    // MARK: - Echte Persistenz (Store-Neuöffnung, nicht nur In-Memory-Retention)
+
+    /// Jeder andere Test in dieser Datei nutzt `isStoredInMemoryOnly: true`
+    /// — ein zweiter Lesezugriff innerhalb desselben Tests würde also auch
+    /// dann grün sein, wenn der Snapshot nur im Objektgraphen desselben
+    /// Prozesses lebte, nie wirklich auf Platte geschrieben wurde. Dieser
+    /// Test schreibt stattdessen in einen ECHTEN, dateibasierten Store,
+    /// lässt den schreibenden Container komplett aus dem Scope laufen
+    /// (`do`-Block) und öffnet danach einen VÖLLIG NEUEN Container auf
+    /// dieselbe Datei — das einzige, was einen App-Neustart ehrlich
+    /// nachbildet.
+    func testSnapshotSurvivesARealStoreCloseAndReopenNotJustInMemoryRetention() throws {
+        let storeURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("p8-snapshot-persistence-\(UUID().uuidString)")
+            .appendingPathExtension("store")
+        defer {
+            try? FileManager.default.removeItem(at: storeURL)
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("shm"))
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("wal"))
+        }
+
+        // Schreibphase: eigener Scope, Container fällt danach weg.
+        do {
+            let schema = Schema(AppSchema.types)
+            let config = ModelConfiguration(url: storeURL)
+            let container = try ModelContainer(for: schema, configurations: config)
+            let context = container.mainContext
+
+            let plan = TrainingPlan(name: "Push A", programType: "custom", isActive: true)
+            context.insert(plan)
+            let day = TrainingDay(name: "Push A", weekday: 2, type: .chest, plan: plan)
+            context.insert(day)
+            let exercise = Exercise(name: "Bankdrücken", exerciseTemplateID: UUID(), orderIndex: 0, day: day)
+            context.insert(exercise)
+            let session = WorkoutSession(
+                startTime: d(2024, 1, 2), endTime: d(2024, 1, 2).addingTimeInterval(3600),
+                durationMinutes: 60, exerciseCount: 1, isCompleted: false, day: day
+            )
+            context.insert(session)
+            try context.save()
+
+            XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: session, in: context))
+            try context.save()
+        }
+
+        // Lesephase: neuer Prozess-Zustand simuliert — frischer Container,
+        // dieselbe Datei-URL, keine gemeinsame Objektidentität mit oben.
+        let schema = Schema(AppSchema.types)
+        let reopenConfig = ModelConfiguration(url: storeURL)
+        let reopenedContainer = try ModelContainer(for: schema, configurations: reopenConfig)
+        let reopenedContext = reopenedContainer.mainContext
+
+        let sessions = try reopenedContext.fetch(FetchDescriptor<WorkoutSession>())
+        XCTAssertEqual(sessions.count, 1)
+        guard case .available(let snapshot) = sessions.first?.contentSnapshotState else {
+            return XCTFail("der Snapshot muss einen echten Store-Neustart überstehen, nicht nur In-Memory-Retention: \(String(describing: sessions.first?.contentSnapshotState))")
+        }
+        XCTAssertEqual(snapshot.exercises.count, 1)
+        XCTAssertEqual(snapshot.exercises.first?.nameSnapshot, "Bankdrücken")
+    }
 }
 #endif
