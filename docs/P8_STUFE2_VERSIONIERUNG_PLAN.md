@@ -1081,3 +1081,113 @@ Device-/Simulator-Prüfung der UI, insbesondere der neuen
 für echte Alt-Sessions aus der Produktionsdatenbank ohne
 `instanceID`/`contentSnapshotJSON`, über den Unit-Test-Fallback
 hinaus).
+
+## 11. Stufe-2-Abnahme (dieser Meilenstein)
+
+Schließt die beiden in 10.6 offen benannten Punkte (Geräteabnahme,
+Bestandsmigration) gezielt ab, ohne neuen Block-Review und ohne
+allgemeine Architekturrunde.
+
+### 11.1 Stand (geprüfter Commit, Build-IDs, Artefakt)
+
+Kein neuer Code seit Abschnitt 10 — es wird ausschließlich der bereits
+grün geprüfte Stand verwendet, kein unveränderter Code erneut gebaut:
+
+- **Branch:** `claude/smart-onboarding-epic`, HEAD `e1bc52d`.
+- **Produktionscode-Stand:** identisch zu Commit `d0d01f4` — verifiziert
+  per `git diff --stat d0d01f4..e1bc52d -- Sources/` (leer); seit
+  `d0d01f4` wurden ausschließlich Testdateien (`a4fff0b`) und Doku
+  (`1a3a07d`, `e1bc52d`) geändert.
+- **Apple-CI:** `ios-app`-Build `6ad52fde4ac5864d3de15029` (Commit
+  `d0d01f4`, alle Schritte `success`) und `swift-package`-Build
+  `6ad5318ef5c0969964373dbc` (Commit `a4fff0b`, alle Schritte
+  `success`, 1407/1407 Tests) — beide bereits in 10.5 dokumentiert,
+  hier wiederverwendet statt erneut gebaut.
+- **App-Artefakt:** `FitnessApp.app.zip` aus Build
+  `6ad52fde4ac5864d3de15029`, 39.219.328 Bytes, Bundle-ID
+  `com.atamya.FitnessApp`, Version `0.1.0`, `MinimumOSVersion 17.0`,
+  nur Simulator-Plattform (`iPhoneSimulator`). Dieses Artefakt wird für
+  die Geräte-/Simulator-Abnahme unten verwendet.
+
+### 11.2 Geräte-/Simulator-Abnahme (TestingBot, echter Simulator)
+
+<!-- P8_STUFE2_SECTION_11_2_PLACEHOLDER -->
+
+### 11.3 Live-Zeitformat-Routing bei externem Wechsel (gezielte Untersuchung)
+
+<!-- P8_STUFE2_SECTION_11_3_PLACEHOLDER -->
+
+### 11.4 Bestandsmigration (separat geprüft)
+
+**Befund:** Es existiert weder ein echter Alt-Bestand (reale
+Produktionsdatenbank eines Nutzers) noch eine im Repository
+hinterlegte synthetische Alt-Schema-Fixture. Eine Suche nach
+`*.sqlite*`/`*.store`/`*fixture*` im gesamten Repository ergab keinen
+Treffer; es gibt kein Skript, das eine solche Fixture erzeugt.
+
+**Korrektur einer bisherigen Annahme (Abschnitt 4):** Dort wurde ein
+echter On-Disk-Migrationstest als "gegenstandslos" bzw. "entfällt
+ersatzlos" eingestuft, mit der Begründung, eine alte `WorkoutSession`
+ohne die neuen Felder lasse sich im aktuellen Binary nicht mehr
+instanziieren. Das stimmt nur für In-Process-Konstruktion, beantwortet
+aber nicht die eigentliche Praxisfrage: Ein echtes Altgerät hat eine
+tatsächliche SQLite-Store-Datei, die von einem ALTEN Build geschrieben
+wurde, und die App-Store-Aktualisierung öffnet genau diese Datei mit
+dem NEUEN Binary — das ist unabhängig davon, ob der alte Typ im neuen
+Binary instanziierbar ist. Dieser Fall ist grundsätzlich testbar, nur
+nicht ohne eine echte Alt-Store-Datei. Da keine vorliegt, bleibt er
+offen — das wird hier explizit benannt statt stillschweigend als
+"bereits erledigt" behandelt.
+
+**Konkrete Voraussetzung:** eine SwiftData-Store-Datei (SQLite +
+`-wal`/`-shm`), geschrieben von einem Build VOR der jeweils zu
+prüfenden Schema-Erweiterung, mit realistischem Inhalt (aktiver Plan,
+mehrere Tage, Übungen — darunter mindestens zwei Vorkommen derselben
+Vorlage —, abgeschlossene Sessions mit Logs, mindestens eine noch
+offene Session). Zwei sinnvolle Cutoffs, je nach Prüftiefe:
+- `155a414` (letzter Commit vor `842028a`, der
+  `contentSnapshotJSON`/`contentSnapshotCapturedAt` einführte) — für
+  die volle P8-Stufe-2-Snapshot-Funktion.
+- jeder Commit vor `b1f7b43` (führte `instanceID` ein) — enger gefasst,
+  nur für die in Abschnitt 10 behobene Resume-Isolation.
+
+**Sichere Beschaffungs-/Prüfanweisung (keine Verwendung einer echten
+Produktiv-Datenbank, immer nur eine Kopie):**
+1. Den gewählten Alt-Commit auf einem Mac/Simulator bauen und
+   installieren (z. B. über denselben Codemagic-`ios-app`-Workflow wie
+   oben, nur für diesen einen Commit). In der laufenden App über die
+   normale UI (oder einen eigenen, dateibasierten statt
+   In-Memory-`ModelConfiguration`-Testaufbau) den oben beschriebenen
+   realistischen Inhalt anlegen.
+2. Die resultierenden Store-Dateien aus dem App-Container
+   herauskopieren (z. B. `xcrun simctl get_app_container` auf einem
+   echten Mac, oder die entsprechende TestingBot-Dateizugriffsfunktion)
+   und eindeutig mit dem Quell-Commit-Hash benennen — NIE das Original
+   verändern, immer mit der Kopie weiterarbeiten.
+3. Diese Kopie in den App-Container einer FRISCHEN Installation des
+   AKTUELLEN Builds (`6ad52fde4ac5864d3de15029` bzw. dessen Nachfolger)
+   einsetzen, bevor die App dort zum ersten Mal startet, dann starten.
+4. Prüfen: bestehende Pläne/Tage/Übungen/Sessions/Logs bleiben
+   vollständig und korrekt verknüpft; neue optionale Felder
+   (`instanceID`, `contentSnapshotJSON`, `contentSnapshotCapturedAt` u.
+   a.) lesen als `nil`/fehlend, ohne Absturz; keine Historie wird
+   rückwirkend erfunden (fehlende Felder bleiben leer/`.notCaptured`,
+   werden nicht mit geratenen Werten aufgefüllt); eine noch offene
+   Alt-Session lässt sich öffnen und — über den bereits unit-getesteten
+   Legacy-Fallback (`exerciseTemplateID`+`orderIndex`,
+   `testLegacySnapshotWithoutInstanceIDFallsBackToTemplateAndOrderIndexMatching`)
+   — auch tatsächlich fortsetzen.
+
+**Keine Ersatzlösung ohne diese Fixture:** Ein Alt-Backup-Import ist
+laut Auftrag kein Ersatz für eine echte Store-Migration (anderer
+Codepfad, andere Fehlerklasse). Diese Session hat weder Zugriff auf
+echten Nutzer-Altbestand noch die Mittel, auf diesem (SwiftData-losen)
+Linux-Unterbau selbst eine Store-Datei zu erzeugen oder zu öffnen — ein
+Workaround dafür wurde bewusst NICHT versucht, um keine unbelegte
+Verifikation zu behaupten. **Bestandsmigration bleibt damit explizit
+offen**, mit der oben genannten einen konkreten Voraussetzung als
+nächstem Schritt, falls/wenn eine Fixture beschafft wird.
+
+### 11.5 Gesamturteil Stufe 2
+
+<!-- P8_STUFE2_SECTION_11_5_PLACEHOLDER -->
