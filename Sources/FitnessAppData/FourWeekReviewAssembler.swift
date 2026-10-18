@@ -51,10 +51,16 @@ public enum FourWeekReviewAssembler {
 
     // MARK: - Soll-Ist-Eingabe (P6.2)
 
-    private static func participationInput(
-        in context: ModelContext,
-        calendar: Calendar
-    ) -> PlanParticipationEvaluator.Input {
+    /// Derselbe Plan, den `participationInput` für den Review-INHALT
+    /// bewertet (siehe dessen Dokumentation zur "erster Plan nach Name"-
+    /// Vereinfachung) — P7.3 nutzt dies, um Fälligkeit/Abschluss exakt für
+    /// den Plan anzuzeigen und zu speichern, der tatsächlich bewertet wurde,
+    /// statt eine zweite, abweichende Auswahl zu treffen.
+    public static func primaryPlanForReview(in context: ModelContext) -> TrainingPlan? {
+        primaryActivePlan(in: context)
+    }
+
+    private static func primaryActivePlan(in context: ModelContext) -> TrainingPlan? {
         let activePlans = (try? context.fetch(FetchDescriptor<TrainingPlan>(
             predicate: #Predicate { $0.isActive == true }
         ))) ?? []
@@ -67,8 +73,18 @@ public enum FourWeekReviewAssembler {
         // nirgends im Code. Bei mehreren aktiven Plänen wird hier der nach
         // Name sortiert ERSTE bewertet; eine echte Mehrplan-Aufteilung bleibt
         // eine spätere, eigenständige Erweiterung — offen benannt, nicht
-        // stillschweigend verschwiegen.
-        guard let plan = activePlans.sorted(by: { $0.name < $1.name }).first else {
+        // stillschweigend verschwiegen. Gilt ausdrücklich NUR für den
+        // Review-INHALT — die P7.3-FälligkeitsAGGREGATION
+        // (`FourWeekReviewDueStatus.isAnyDue`) wertet dagegen JEDEN aktiven
+        // Plan einzeln aus, ohne diese Auswahl zu übernehmen.
+        return activePlans.sorted(by: { $0.name < $1.name }).first
+    }
+
+    private static func participationInput(
+        in context: ModelContext,
+        calendar: Calendar
+    ) -> PlanParticipationEvaluator.Input {
+        guard let plan = primaryActivePlan(in: context) else {
             return PlanParticipationEvaluator.Input(
                 activatedAt: nil,
                 isActive: false,

@@ -466,11 +466,17 @@ public enum DataExportService {
         // `generator_input_raw` oben) - ein Backup von vor P6.1 hat die
         // Spalte nicht, der Import liest dann `nil` (unbekannt), NIE ein
         // erfundenes "jetzt".
+        // P7.3: `review_completed_at_utc`/`review_decision`/
+        // `review_observation_started_at_utc` additiv, gleiches Prinzip -
+        // ein Backup von vor P7.3 hat die Spalten nicht, der Import liest
+        // dann `nil` (noch nie abgeschlossen bzw. kein Beobachtungs-
+        // Fallback), NIE ein erfundenes Datum/Ergebnis.
         var w = CSVWriter(headers: [
             "id", "name", "custom_name", "program_type", "description",
             "weeks", "is_active", "target_environment", "is_template",
             "progression_target_rir_override", "localization_key",
-            "generator_input_raw", "generation_source", "activated_at_utc"
+            "generator_input_raw", "generation_source", "activated_at_utc",
+            "review_completed_at_utc", "review_decision", "review_observation_started_at_utc"
         ])
         for p in items {
             w.appendRow([
@@ -487,7 +493,10 @@ public enum DataExportService {
                 p.localizationKey ?? "",
                 p.generatorInputRaw ?? "",
                 p.generationSourceRaw,
-                p.activatedAt.map(CSVWriter.iso8601) ?? ""
+                p.activatedAt.map(CSVWriter.iso8601) ?? "",
+                p.reviewCompletedAt.map(CSVWriter.iso8601) ?? "",
+                p.reviewDecisionRaw ?? "",
+                p.reviewObservationStartedAt.map(CSVWriter.iso8601) ?? ""
             ])
         }
         return w.data()

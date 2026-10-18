@@ -1280,6 +1280,91 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(importedActivatedAt.timeIntervalSince1970, historicalActivatedAt.timeIntervalSince1970, accuracy: 1.0)
     }
 
+    // MARK: - P7.3: Review-Zustandsfeld (reviewCompletedAt/reviewDecision/reviewObservationStartedAt)
+
+    func testReviewCompletionStateSurvivesRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Abgeschlossener Rückblick", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        try ctx.save()
+        FourWeekReviewDueStatus.markCompleted(
+            for: plan,
+            decision: .actionTaken,
+            now: Date(timeIntervalSince1970: 1_700_000_000),
+            in: ctx
+        )
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
+        let importedCompletedAt = try XCTUnwrap(imported?.reviewCompletedAt)
+        XCTAssertEqual(importedCompletedAt.timeIntervalSince1970, 1_700_000_000, accuracy: 1.0)
+        XCTAssertEqual(imported?.reviewDecision, .actionTaken)
+    }
+
+    /// Ein Backup von vor P7.3 (bzw. ein Plan, dessen Rückblick nie
+    /// abgeschlossen wurde) darf NIE einen erfundenen Abschluss oder
+    /// Beobachtungsbeginn bekommen — alle drei Felder bleiben `nil`.
+    func testReviewStateFieldsDefaultToNilOnRoundtripWhenNeverReviewed() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Nie überprüft", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        try ctx.save()
+        XCTAssertNil(plan.reviewCompletedAt)
+        XCTAssertNil(plan.reviewDecision)
+        XCTAssertNil(plan.reviewObservationStartedAt)
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
+        XCTAssertNil(imported?.reviewCompletedAt)
+        XCTAssertNil(imported?.reviewDecision)
+        XCTAssertNil(imported?.reviewObservationStartedAt)
+    }
+
+    func testReviewObservationStartedAtFallbackSurvivesRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        // Simuliert einen Altbestand-Plan ohne activatedAt, fuer den bereits
+        // einmal ein Beobachtungs-Fallback angelegt wurde.
+        let plan = TrainingPlan(name: "Altbestand ohne Zeitanker", programType: "custom", isActive: true)
+        plan.activatedAt = nil
+        ctx.insert(plan)
+        try ctx.save()
+        FourWeekReviewDueStatus.establishObservationAnchorsIfNeeded(in: ctx, now: Date(timeIntervalSince1970: 1_600_000_000))
+        let originalObservationStart = try XCTUnwrap(plan.reviewObservationStartedAt)
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
+        XCTAssertNil(imported?.activatedAt)
+        let importedObservationStart = try XCTUnwrap(imported?.reviewObservationStartedAt)
+        XCTAssertEqual(importedObservationStart.timeIntervalSince1970, originalObservationStart.timeIntervalSince1970, accuracy: 1.0)
+    }
+
     // MARK: - P6.3: PeriodicCheckIn (Häufigkeit/Dauer/Beschwerden/Ziel)
 
     /// Gemischter Fall — manche Fragen beantwortet, manche bewusst

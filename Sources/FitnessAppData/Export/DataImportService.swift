@@ -1000,6 +1000,13 @@ public enum DataImportService {
             // oder ist sie leer, bleibt es bewusst `nil` ("unbekannt"), nie
             // ein erfundenes historisches Datum.
             plan.activatedAt = row.date("activated_at_utc")
+            // P7.3: additive Spalten, siehe DataExportService.buildPlans.
+            // Fehlen sie (Backup von vor P7.3) oder sind sie leer, bleibt es
+            // bewusst `nil` — "noch nie abgeschlossen" bzw. kein
+            // Beobachtungs-Fallback, NIE ein erfundenes Datum/Ergebnis.
+            plan.reviewCompletedAt = row.date("review_completed_at_utc")
+            plan.reviewDecisionRaw = row.optionalString("review_decision")
+            plan.reviewObservationStartedAt = row.date("review_observation_started_at_utc")
             // DEL-225: Sobald ein Plan aktiv gesetzt wurde, darf kein weiterer
             // folgen — ein Backup mit mehreren aktiven Plaenen soll nicht in
             // zwei gleichzeitig aktiven Plaenen resultieren.

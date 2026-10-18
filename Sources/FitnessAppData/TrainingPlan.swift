@@ -48,6 +48,36 @@ public final class TrainingPlan {
     /// gespeicherten Wert (oder `nil` bei einem Backup von vor P6.1) —
     /// NIE auf "jetzt", das waere ebenfalls ein erfundenes Datum.
     public var activatedAt: Date?
+
+    /// P7.3: Zeitpunkt, zu dem der Vier-Wochen-Rückblick für DIESEN Plan
+    /// zuletzt ausdrücklich ABGESCHLOSSEN wurde (Nutzeraktion im
+    /// Review-Screen, siehe `FourWeekReviewDueStatus.markCompleted`). `nil` =
+    /// noch nie abgeschlossen. Bewusst PRO PLAN wie `activatedAt` — mehrere
+    /// gleichzeitig aktive Pläne (Task #201/#202) haben jeweils ihren
+    /// EIGENEN Fälligkeits-/Abschlussstatus, keine stillschweigende
+    /// Auswahl nur eines Plans (docs/NEUE_SPEZIFIKATION_P0_AUDIT.md, P7.3).
+    /// Bloßes Öffnen/Verlassen des Review-Screens setzt dieses Feld NICHT.
+    public var reviewCompletedAt: Date?
+
+    /// Begleitet `reviewCompletedAt`: welche Entscheidung beim Abschluss
+    /// getroffen wurde. "Plan beibehalten" ist ein vollwertiges Ergebnis,
+    /// kein Nicht-Ereignis — siehe `FourWeekReviewDueCalculator.Decision`.
+    public var reviewDecisionRaw: String?
+
+    /// P7.3-Fallback NUR wenn `activatedAt` unbekannt ist (Altbestand vor
+    /// P6.1): der tatsächliche Zeitpunkt, an dem die Fälligkeitsbeobachtung
+    /// für DIESEN Plan real begonnen hat (erste Auswertung ohne
+    /// Zeitanker) — NIE ein erfundenes historisches Aktivierungsdatum. Wird
+    /// genau einmal gesetzt, siehe
+    /// `FourWeekReviewDueStatus.establishObservationAnchorsIfNeeded`.
+    public var reviewObservationStartedAt: Date?
+
+    /// Typisierter Zugriff auf `reviewDecisionRaw`.
+    public var reviewDecision: FourWeekReviewDueCalculator.Decision? {
+        get { reviewDecisionRaw.flatMap(FourWeekReviewDueCalculator.Decision.init(rawValue:)) }
+        set { reviewDecisionRaw = newValue?.rawValue }
+    }
+
     /// Environment this plan is designed for — used to filter recommendations (F154).
     public var targetEnvironment: EnvironmentType
 
