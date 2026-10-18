@@ -289,54 +289,47 @@ hinzufügen/entfernen) dürfen ihren eigenen Stand dagegen aktualisieren. Beim
 Abschluss wird dieser Stand eingefroren — NICHT erneut aus dem (eventuell
 zwischenzeitlich extern veränderten) Live-Tag neu erzeugt.
 
-Lebenszyklus spiegelt bewusst den bereits etablierten Lebenszyklus von
-`WorkoutSession` selbst: "Eine Zeile wird bei Workout-**Start** mit
-`isCompleted=false` angelegt… Das finale 'Speichern' auf dem
-Summary-Screen… setzt `isCompleted=true`" (`WorkoutSession.swift:8-11`,
-F63/F72). Umgesetzt in `TrainingDayContentSnapshotWriter.capture(for:in:)`:
+**KORRIGIERT gegenüber einer früheren Planungsfassung dieses Abschnitts
+(Meilenstein "Snapshots produktiv nutzbar machen", Lebenszyklus-
+Widerspruch):** die frühere Fassung sah einen letzten `capture`-Aufruf
+unmittelbar VOR `isCompleted = true` vor. `capture` liest dabei IMMER den
+Live-Tag komplett neu — das hätte eine zwischenzeitliche EXTERNE Änderung
+(DayEditorView, Equipment-Anpassung) am selben Tag unbemerkt in den
+"finalen" Snapshot übernommen, obwohl die Produktregel genau das
+verbietet. Tatsächlich umgesetzt in `TrainingDayContentSnapshotWriter`
+(siehe dort für die volle Begründung):
 
-1. **Bei Session-Erzeugung** (identisch zu den 5 produktiven
-   `WorkoutSession(day:)`-Stellen, s. 3.1): Snapshot aus dem AKTUELLEN
-   `day.activeExercises` bauen, `session.contentSnapshotJSON`/
-   `.contentSnapshotCapturedAt` setzen. `capture` liest IMMER den Live-Tag neu —
-   das ist bei der Erzeugung richtig (es gibt noch keinen eigenen Stand) und
-   bleibt bei jedem SPÄTEREN Aufruf nur deshalb korrekt, weil Paket C
-   `capture` ausschließlich aus Aktionen INNERHALB der Session heraus
-   aufrufen darf (Punkt 2), nie aus einem externen Edit-Pfad.
-2. **Während die Session offen ist** (`isCompleted == false`): der einzige
-   produktive Grund für ein erneutes `capture` ist eine explizite Aktion
-   INNERHALB dieser Session — die Ad-hoc-Live-Bearbeitung
-   (`ActiveWorkoutView.addAdHocExercise`/`deleteAdHocExercise`,
-   `ActiveWorkoutView.swift:1044-1143`). Ein externer `DayEditorView`-/
-   `PlanEquipmentAdaptationApplier`-Edit an DEMSELBEN Tag löst `capture`
-   NICHT aus — die offene Session merkt davon nichts, exakt wie von der
-   Produktregel verlangt.
-3. **Bei Session-Abschluss** (unmittelbar VOR dem Setzen von
-   `isCompleted = true`, siehe Reihenfolge-Warnung unten): letzter erlaubter
-   `capture`-Aufruf. Direkt danach GEFROREN — `capture` lehnt jeden weiteren
-   Aufruf ab (`guard ... !session.isCompleted else { return false }`,
-   `TrainingDayContentSnapshotWriter.swift`), der bestehende Snapshot bleibt
-   exakt wie er war. Eine Zeile mit `isCompleted == false` auf immer (Crash-Ruine,
-   bereits heute als Recovery-Banner sichtbar) hat damit konsequent auch nie
-   einen final eingefrorenen Snapshot — unproblematisch, da diese Zeilen
-   ohnehin als unvollständig behandelt werden.
+1. **Bei Session-Erzeugung**: `capture(for:in:)` liest den Live-Tag EIN
+   EINZIGES MAL — korrekt, weil es noch keinen eigenen Stand gibt. Guard
+   `contentSnapshotJSON == nil` macht jeden weiteren Aufruf (z. B.
+   versehentlich bei Wiederaufnahme) zu einem garantierten No-Op, nicht zu
+   einem Überschreiben.
+2. **Während die Session offen ist**: explizite In-Session-Änderungen
+   (Ad-hoc-Übung hinzufügen/entfernen, `ActiveWorkoutView.addAdHocExercise`/
+   `deleteAdHocExercise`) rufen `recordAdHocExerciseAdded`/
+   `-Removed` auf — diese hängen GEZIELT einen Snapshot-Eintrag an bzw.
+   entfernen ihn, OHNE den Live-Tag erneut vollständig zu lesen. Dadurch
+   können sie strukturell keine externe Änderung aufnehmen, auch nicht
+   versehentlich. Nur für Ad-hoc-Sessions zugelassen (eigenes, ephemeres
+   Tag ohne externen Mutationspfad).
+3. **Bei Session-Abschluss**: AUSDRÜCKLICH KEIN erneuter `capture`-Aufruf
+   mehr. Der zuletzt vorhandene Stand (aus 1. + ggf. 2.) wird eingefroren,
+   nicht neu erzeugt. Alle drei produktiven Abschluss-Stellen
+   (`ActiveWorkoutView.finishWorkout`, `DayEditorView.
+   completeOpenSessionAndStartNew`, `TimedWorkoutPlayerView.
+   finishTimedSession`) tragen dazu einen Kommentar, der das als Absicht
+   dokumentiert.
 
-**Reihenfolge-Warnung für Paket C** (noch nicht umgesetzt, hier nur
-festgehalten): der letzte `capture`-Aufruf muss VOR `session.isCompleted = true`
-erfolgen, nie danach — `capture` ist ab dem Moment, in dem `isCompleted` auf
-`true` steht, ein garantiertes No-Op.
-
-**"Nur für Summary" wäre keine vollständige Lösung** (Auftragspunkt 1, letzter
-Spiegelpunkt) — ausdrücklich bestätigt und in 3. unten erweitert: Paket E
-(Lesepfad-Umstellung, noch nicht Teil dieses Pakets) muss, sobald es kommt,
-NICHT nur `WorkoutSummaryView.swift:1391` umstellen, sondern JEDEN Leser des
-Tagesinhalts EINER BEREITS LAUFENDEN ODER ABGESCHLOSSENEN Session — also auch
-`ActiveWorkoutView`s eigene (nicht nur die Ad-hoc-)Anzeige sowie
-`CircuitWorkoutPlayerView.swift:86`/`TimedWorkoutPlayerView.swift:1540` bei
-Wiederaufnahme. Ob diese drei heute `session.day.activeExercises` live lesen
-(wahrscheinlich, noch nicht abschließend verifiziert) entscheidet, wie groß
-Paket E tatsächlich wird — das wird VOR der Verdrahtung geprüft, nicht erst
-währenddessen.
+**"Nur für Summary" wäre keine vollständige Lösung" — geprüft, Ergebnis
+enger als befürchtet:** `ActiveWorkoutView`/`TimedWorkoutPlayerView`/
+`CircuitWorkoutPlayerView` zeigen strukturell NIE eine bereits
+abgeschlossene Session — `WorkoutRootView` routet ausschließlich über
+`ActiveSessionRoute`, die von jedem produktiven Aufrufer nur für
+`isCompleted == false`-Sessions gebaut wird; beim Abschluss wird sofort auf
+`SummaryRoute` umgeroutet. `WorkoutSummaryView` ist damit tatsächlich die
+EINZIGE View, die historische Session-Inhalte zeigt — Paket E (siehe
+"Ergebnis Paket C/D/E" unten) musste dort ansetzen, nicht zusätzlich in den
+drei Playern.
 
 ### 2.4 Welcher Stand beim Trainingsstart verbunden wird
 
@@ -680,3 +673,156 @@ Geräteverifikation (P9 Priorität 2) und die dokumentierten
 Accessibility-/Dynamic-Type-Nachprüfungen — bleiben unverändert eigenständig
 offen; dieser Plan setzt sie weder als P8-Voraussetzung noch gibt er sie als
 erledigt aus.
+
+## 9. Ergebnis Paket C/D/E (Meilenstein "Snapshots produktiv nutzbar machen")
+
+**Lebenszyklus-Widerspruch (Auftragspunkt 1) behoben:** siehe Abschnitt 2.3
+oben — `capture` ist jetzt strikt einmalig (Guard `contentSnapshotJSON ==
+nil`), explizite In-Session-Änderungen laufen über zwei neue, gezielte
+Funktionen (`recordAdHocExerciseAdded`/`-Removed`), die nie den ganzen
+Live-Tag neu lesen, und es gibt keinen Re-Capture mehr vor Abschluss.
+
+**Paket C — produktiv verdrahtet:** Initial-`capture` an allen drei
+Erzeugungsstellen mit echtem Tag (`DashboardView.actuallyStartNewWorkout`/
+`startAdHocWorkout`, `DayEditorView.actuallyStartNewSession`). Rest-Tag-
+Marker (`markRestDaySkipped`, zwei Stellen) und HealthKit-Import
+(`ExternalWorkoutImportService`) bewusst NICHT verdrahtet — `capture` wäre
+dort ohnehin ein No-Op (`isCompleted` bereits `true` bzw. `day == nil`).
+`ActiveWorkoutView.addAdHocExercise`/`addAdHocCustomExercise`/
+`deleteAdHocExercise` rufen die neuen `recordAdHocExercise*`-Funktionen
+auf. Alle drei Abschluss-Stellen (`ActiveWorkoutView.finishWorkout`,
+`DayEditorView.completeOpenSessionAndStartNew`,
+`TimedWorkoutPlayerView.finishTimedSession` für alle vier Zeitformate)
+tragen einen Kommentar, der den bewusst fehlenden Re-Capture dokumentiert.
+
+**Paket D — Export/Import additiv:** zwei neue CSV-Spalten in
+`workouts.csv` (`content_snapshot_json`, `content_snapshot_captured_at_utc`),
+angehängt nach etabliertem Muster. Import übernimmt beide Felder 1:1 NACH
+der Session-Konstruktion (wie `session_feeling`) — ruft bewusst NICHT
+`TrainingDayContentSnapshotWriter.capture` auf, das würde den damaligen
+Stand durch den heutigen Stand des per `idMap` verknüpften Tages ersetzen.
+Fehlende Spalte (Altbackup) ergibt über den bestehenden
+`CSVRow`-Rückwärtskompatibilitätspfad `nil` — kein nachträglich erfundener
+Startzustand. `formatVersion` bewusst NICHT erhöht (etablierte Praxis
+dieses Codebases: additive Spalten erhöhen die Version nicht, nur der
+Major-Teil wird beim Import geprüft). Backup/Restore nutzt denselben
+Export/Import-Pfad, ist also automatisch mitgesichert.
+
+**Paket E — Leser umgestellt, enger als befürchtet:** Recherche VOR der
+Verdrahtung (wie im Auftrag gefordert) ergab: `ActiveWorkoutView`/
+`TimedWorkoutPlayerView`/`CircuitWorkoutPlayerView` zeigen strukturell NIE
+eine bereits abgeschlossene Session (`WorkoutRootView` routet
+ausschließlich über `ActiveSessionRoute`, die nur `isCompleted == false`-
+Sessions bekommt; beim Abschluss wird sofort auf `SummaryRoute`
+umgeroutet). `WorkoutSummaryView` ist damit die EINZIGE View, die
+historische Session-Inhalte zeigt — dort wurde umgestellt:
+- `timedFormatCircuitSection` (AMRAP/EMOM/Auf-Zeit/Zirkel-Referenzliste)
+  und die zugehörigen Zielwert-Stats (Minuten-Deckel, Zirkel-Rundenziel,
+  Zirkel-Pause, Hero-Stat, Edit-Mode-Stepper-Obergrenzen) lesen jetzt
+  snapshot-first. `.notCaptured` (Altbestand vor P8) fällt weiterhin auf
+  den Live-Tag zurück, zeigt dabei aber jetzt sichtbar den Hinweis
+  "Zeigt den aktuellen Planstand – kein überprüfter historischer
+  Schnappschuss" (`summary.content.noHistoricalSnapshot`). `.unreadable`
+  zeigt explizit "Trainingsdetails nicht lesbar"
+  (`summary.content.unreadable`) statt stillschweigend auf den Live-Tag
+  auszuweichen.
+- **Zweiter, unabhängig gefundener Bug** (nicht Teil des ursprünglichen
+  Auftrags, aber direkt im Weg): `exercisesWithLogs` verwarf jedes Log
+  komplett, dessen `Exercise` inzwischen gelöscht wurde (z. B. nach
+  Tag-Löschung) — der Satz blieb in `session.totalSets` mitgezählt, war in
+  der Aufschlüsselung aber unsichtbar. Behoben über die neue, öffentliche
+  `ExerciseLogGrouping.group(_:)` (FitnessAppData, Apple-CI-testbar):
+  orphane Logs werden jetzt separat gruppiert (`ExerciseLogGroup.orphaned`,
+  Schlüssel ist das neue `ExerciseLog.exerciseOrderIndexSnapshot` —
+  NICHT der Name, sonst würden zwei gleichnamige, gelöschte Übungen wie
+  Hauptsatz + Finisher fälschlich verschmolzen) und read-only angezeigt
+  (`orphanedExerciseSection`). Bewusste, dokumentierte Einschränkung:
+  orphane Einträge sind nicht editierbar (kein Delete/Add-Satz/Cardio-
+  Picker ohne lebendes Objekt) — dieser Auftrag deckt die KORREKTE
+  Zuordnung/Anzeige ab, nicht ihre nachträgliche Editierbarkeit.
+- `SetSummaryRow`/`formatSetSummary` brauchen keine live `Exercise` mehr —
+  `log.resolvedIsCardio`/`resolvedIsTimeBased` (DEL-051, snapshot-first)
+  ersetzen `exercise.isCardio`/`isTimeBased` 1:1 für den lebenden Fall und
+  funktionieren zusätzlich für orphane Logs.
+
+**Tests (neu, alle auf Apple-CI bestätigt grün — Build
+`6ad51efb1b9734c49d90a5c2` (`swift-package`) + `6ad51efc85dd782c6a8a446b`
+(`ios-app`), 1392/1392 Tests, 0 Fehler):**
+- 6 neue `TrainingDayContentSnapshotWriterTests`: kein Überschreiben bei
+  Wiederaufnahme trotz externer Tag-Änderung, Ad-hoc-Add/-Remove nimmt
+  keine externe Änderung mit, Ad-hoc-Remove trennt gleichnamige Einträge
+  korrekt, Ablehnung bei Nicht-Ad-hoc/fehlendem Vor-Snapshot/nach
+  Abschluss.
+- 1 neuer Persistenz-Test: echter dateibasierter Store, Container
+  komplett geschlossen und mit neuem Container auf dieselbe Datei wieder
+  geöffnet — trennt echte Persistenz von bloßer In-Memory-Retention
+  innerhalb eines Tests (Auftragspunkt 5).
+- 3 neue `DataPortabilityRoundtripTests`: nie erfasst/gültig leer/gültig
+  gefüllt in einem Test, beschädigte Payload und nicht unterstützte
+  Schema-Version je einzeln — alle überleben den Export/Import-Roundtrip
+  unverändert.
+- 4 neue `ExerciseLogGroupingTests`: Gruppierung lebender Übungen nach
+  Objektidentität, der explizit geforderte Gefahrenfall (zwei gleichnamige
+  GELÖSCHTE Übungen bleiben getrennt), die Kernregression (ein verwaistes
+  Log verschwindet nicht mehr), Namens-Fallback für Alt-Logs ohne
+  `exerciseOrderIndexSnapshot`.
+- Zwei Sessions beeinflussen einander nicht: bereits durch
+  `testTwoSessionsGetIndependentSnapshotsNeitherAffectsTheOther` (Paket
+  A+B) abgedeckt, unverändert gültig.
+
+**Migrationsprüflücke, ehrlich ausgewiesen (Auftragspunkt 5):** die neuen
+additiven Felder (`contentSnapshotJSON`/`-CapturedAt` aus Paket A+B,
+`ExerciseLog.exerciseOrderIndexSnapshot` aus diesem Paket) folgen demselben
+Muster wie Dutzende bereits bestehender optionaler Felder in diesem Modell
+(`dayName`, `sessionFeeling`, `timeFormatSnapshot`, …) — alle mit `nil`-
+Default, lightweight-migrationsfähig. Eine dedizierte Lightweight-
+Migrationsprüfung GEGEN EINE ECHTE, VOR DIESEM FELD ERSTELLTE
+`.store`-Datei (nicht nur ein frischer In-Memory-Container) wurde NICHT
+durchgeführt — es gibt dafür keine eingecheckte Alt-Fixture in diesem
+Repository, und das Nachbauen einer solchen Fixture wäre selbst nur eine
+Behauptung ohne echten Alt-Bestand. Das ist dieselbe, bereits in Paket A+B
+offen ausgewiesene Grenze, keine neue.
+
+**TestingBot-Verifikation: NICHT durchgeführt.** Diese Session hat keinen
+Zugriff auf ein TestingBot-Werkzeug oder eine vergleichbare Geräte-Test-
+Infrastruktur — eine Suche nach entsprechender Tooling-Anbindung in dieser
+Umgebung blieb erfolglos. Statt einer unbegründeten Wiederholungsserie
+folgt eine konkrete manuelle Prüfanweisung für den neuen historischen
+Bedienablauf:
+1. Plan-Tag mit ≥2 Übungen (davon eine doppelt, z. B. Bankdrücken als
+   Haupt- und Finisher-Satz) trainieren und abschließen.
+2. Im laufenden DayEditor denselben Tag bearbeiten: eine Übung löschen,
+   zwei weitere umsortieren, den Tag selbst löschen.
+3. Die abgeschlossene Session in der Historie (`WorkoutHistoryView` →
+   `WorkoutSummaryView`) erneut öffnen: Übungen/Reihenfolge/Ziele müssen
+   dem Stand von Schritt 1 entsprechen, NICHT dem jetzt geänderten/
+   gelöschten Tag. Die Sätze der doppelt vorkommenden Übung müssen
+   korrekt den beiden ursprünglichen Vorkommen zugeordnet bleiben (nicht
+   vermischt).
+4. Einen AMRAP/EMOM/Zirkel-Tag trainieren, danach denselben
+   Löschen/Umsortieren-Schritt wiederholen, Summary erneut öffnen: Die
+   Referenzliste + Zielwerte (Minuten-Deckel/Zirkel-Pause/Rundenziel)
+   müssen dem historischen Stand entsprechen.
+5. Export erzeugen, alle Daten löschen (Reset), importieren: die
+   historischen Sessions aus 1./4. müssen ihre Snapshots unverändert
+   zurückbekommen.
+6. Eine Ad-hoc-Session mit zwei Übungen starten, eine davon während der
+   Session wieder entfernen, abschließen: die entfernte Übung darf im
+   Summary nicht auftauchen, die verbleibende muss korrekt sein.
+
+**Umfang bewusst begrenzt (Auftragspunkt 6):** kein allgemeiner
+Relationship-Umbau — die einzige in C/D/E tatsächlich berührte Beziehung
+ist die bereits vorhandene, korrekt deklarierte `Exercise.logs`-Relation
+(`.nullify`, inverse bereits vorhanden, siehe Paket-B-Fund zu `day`/`gear`
+oben — dieser war unabhängig und ist bereits behoben). Kein Block-Review-
+Screen, keine Blocklänge, kein neuer Coaching-Algorithmus. Due-Badge- und
+sonstige bisherige Restprüfungen bleiben separat offen.
+
+**Ist der historische Inhalts-Schutz jetzt durchgängig produktiv
+nutzbar?** Ja, mit zwei dokumentierten, bewussten Grenzen: (1) orphane
+Log-Einträge (Übung nachträglich gelöscht) sind sichtbar und korrekt
+zugeordnet, aber nicht editierbar; (2) die Migrationsprüflücke oben bleibt
+offen. Alle sieben vom Auftrag genannten Regressionsszenarien sind durch
+automatisierte Tests abgedeckt (Punkt 5 der Vorgabe), bis auf die reinen
+UI-Interaktions-Schritte, für die die manuelle Prüfanweisung oben gilt.
+Beide Apple-CI-Workflows sind grün (s. o.).
