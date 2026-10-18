@@ -42,6 +42,14 @@ public final class Gear {
         self.createdAt = createdAt
     }
 
+    /// P8-Fund: ohne diese explizite inverse Relationship wendet SwiftData
+    /// den `.nullify`-Delete-Rule auf `WorkoutSession.gear` nicht zuverlässig
+    /// an (siehe identischer Befund + Diagnose bei `TrainingDay.sessions`).
+    /// Nirgends sonst im Code direkt gelesen; existiert ausschließlich,
+    /// damit SwiftData die Nullifizierung korrekt ausführt.
+    @Relationship(deleteRule: .nullify, inverse: \WorkoutSession.gear)
+    public var sessions: [WorkoutSession] = []
+
     /// 0...1+ Anteil der `currentDistanceKm` an `maxDistanceKm`. UI rendert
     /// einen Progress-Bar; >= 1.0 = Warnstufe (rot).
     public var progress: Double {

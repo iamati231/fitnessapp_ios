@@ -145,13 +145,15 @@ public final class WorkoutSession {
     public var sessionFeeling: Int?
 
     /// DEL-084: Auf welchem Gear (Schuh / Bike) wurde diese Session
-    /// gemacht? `.nullify` damit ein geloeschtes Gear die Session-Historie
-    /// nicht mit sich reisst. Nil bei reinen Strength-Sessions oder wenn
-    /// der User kein Gear gepflegt hat.
-    @Relationship(deleteRule: .nullify)
+    /// gemacht? Nullify-Delete-Rule ist auf `Gear.sessions` deklariert
+    /// (P8-Fund: inverse Relationship noetig, damit SwiftData das
+    /// zuverlaessig durchsetzt) — ein geloeschtes Gear reisst die
+    /// Session-Historie nicht mit sich. Nil bei reinen Strength-Sessions
+    /// oder wenn der User kein Gear gepflegt hat.
     public var gear: Gear?
 
-    @Relationship(deleteRule: .nullify)
+    /// Nullify-Delete-Rule ist auf `TrainingDay.sessions` deklariert (siehe
+    /// dort fuer den P8-Fund zur inversen Relationship).
     public var day: TrainingDay?
 
     @Relationship(deleteRule: .nullify, inverse: \ExerciseLog.session)
@@ -173,19 +175,20 @@ public final class WorkoutSession {
     /// **Bewusst ein Feld direkt auf `WorkoutSession` statt ein separates
     /// `@Model`:** eine erste Fassung mit einem eigenen
     /// `TrainingDayContentRecord`-Modell (per `@Relationship` ODER per
-    /// manuellem `sessionID`-Scalar-Fremdschluessel) stuerzte auf Apple-CI
-    /// reproduzierbar mit Signal 5 ab — ein `brk #0x1`-Trap INNERHALB von
-    /// SwiftData selbst, lokalisiert per lldb bis auf die Instruktion: ein
-    /// interner `_SD_get_current_context_tsd`-Aufruf lieferte `nil` und
-    /// loeste einen harten Precondition-Trap aus, ausschliesslich beim
-    /// `ModelContext.insert(_:)` einer `WorkoutSession` INNERHALB der
-    /// Testdatei, die das neue Modell referenzierte — identisch reproduzierbar
-    /// unabhaengig von Zugriffsmodifikator, In-Memory-/On-Disk-Store,
-    /// Parallelitaet, Delete-Rule, Relationship-Existenz und Container-
-    /// Erzeugungsreihenfolge (sechs widerlegte Hypothesen, siehe Commit-
-    /// Historie). Zwei neue optionale Felder auf einem BESTEHENDEN Modell
-    /// sind dagegen exakt das in diesem Codebase tausendfach erprobte,
-    /// sichere Muster (siehe z. B. `dayName`, `timeFormatSnapshot` oben).
+    /// manuellem `sessionID`-Scalar-Fremdschluessel) loeste beim Testen auf
+    /// Apple-CI reproduzierbar Signal 5 aus. Die tatsaechliche Ursache (per
+    /// kontrolliertem A/B-Test auf Apple-CI bestaetigt) lag NICHT im
+    /// Modelldesign, sondern in den Test-Fixtures selbst: `try
+    /// makeContainer().mainContext` als anonymer Ausdruck haelt den
+    /// `ModelContainer` nicht, ARC deallozierte ihn waehrend der
+    /// `ModelContext` noch in Benutzung war — ein interner SwiftData-
+    /// Precondition-Trap (`_SD_get_current_context_tsd` lieferte `nil`).
+    /// Siehe `docs/P8_STUFE2_VERSIONIERUNG_PLAN.md`, Abschnitt "Ergebnis
+    /// Paket A+B", fuer die volle Diagnose-Historie. Die Zwei-Felder-Loesung
+    /// bleibt trotzdem die richtige Wahl: zwei neue optionale Felder auf
+    /// einem BESTEHENDEN Modell sind das in diesem Codebase tausendfach
+    /// erprobte, sichere Muster (siehe z. B. `dayName`, `timeFormatSnapshot`
+    /// oben) — ein separates `@Model` haette keinen echten Vorteil geboten.
     public var contentSnapshotJSON: String?
     /// Zeitpunkt der zuletzt gespeicherten Fassung von
     /// `contentSnapshotJSON` — wird bei jeder erfolgreichen `capture`-

@@ -66,6 +66,19 @@ public final class TrainingDay {
     @Relationship(deleteRule: .cascade, inverse: \Exercise.day)
     public var exercises: [Exercise] = []
 
+    /// P8-Fund: ohne diese explizite inverse Relationship wendet SwiftData
+    /// den `.nullify`-Delete-Rule auf `WorkoutSession.day` nicht zuverlässig
+    /// an — ein bereits im Speicher gehaltenes `WorkoutSession`-Objekt behielt
+    /// auf Apple-CI nach `context.delete(day)` weiterhin seine `day`-Referenz
+    /// (reproduziert in `TrainingDayContentSnapshotWriterTests`). Ohne
+    /// deklarierte inverse Relationship kann der Objektgraph beim Löschen
+    /// nicht konsistent gehalten werden — Standardverhalten laut Apple-
+    /// Dokumentation zu Core Data/SwiftData-Relationships. Nirgends sonst im
+    /// Code direkt gelesen; existiert ausschließlich, damit SwiftData die
+    /// Nullifizierung korrekt ausführt.
+    @Relationship(deleteRule: .nullify, inverse: \WorkoutSession.day)
+    public var sessions: [WorkoutSession] = []
+
     // MARK: - DEL-049 Archive-aware accessors
 
     /// User-facing exercise list: nur Uebungen, die der User aktiv sehen und
