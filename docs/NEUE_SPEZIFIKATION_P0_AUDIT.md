@@ -936,10 +936,62 @@ Diagnoseweg). P7 läuft bereits parallel/danach weiter.
   aber nicht aus (gegen die bestehende `DataPortabilityRoundtripTests`-Klasse cross-verifiziert) —
   real ausgeführt wurden sie ausschließlich auf Apples Toolchain.
 
-  **UI-Abnahme: ⏳ noch ausstehend.** Für den neuen `FourWeekReviewView`-Screen wurde in dieser
-  Runde noch kein TestingBot-Lauf durchgeführt — wird vor der endgültigen Abnahme von P7.2
-  getrennt nachgereicht, statt stillschweigend mit der Code/Data-Abnahme vermischt zu werden
-  (ausdrücklicher User-Wunsch, wie bereits bei P6.3 gehandhabt).
+  **UI-Abnahme: ❌ blockiert — neuer, schwerwiegender Hang-Bug gefunden, Diagnose läuft, noch
+  nicht gelöst.** Der erste TestingBot-Lauf gegen `FourWeekReviewView` zeigte exakt dasselbe
+  Symptom wie der ursprüngliche P6.3-Blocker (`XCTPerformOnMainRunLoop work timed out after
+  60.0s` bei `source()`, kein sichtbarer Navigationswechsel, Screenshot bleibt auf "App & Workout
+  Experience" stehen) — diesmal beim Tippen auf die NEUE Zeile "Four-week review". Auf ausdrücklichen
+  Wunsch dieser Runde wurde NICHT einfach wiederholt getestet, sondern gezielt mit neuer werkzeuggestützter
+  Instrumentierung diagnostiziert (gleiche Methodik wie P6.3: Appium-Log-Zeitauswertung, gezielte
+  `NSLog`-Marker, Bisektion einer konkreten Hypothese).
+
+  **Befund 1 (Appium-Log, Beleg):** Der Klick auf "Four-week review" selbst dauerte 10,5 s
+  (normal: 0,8–1,1 s), der unmittelbar folgende `source()`-Aufruf hing 62 s und scheiterte mit
+  demselben `XCTPerformOnMainRunLoop`-Fehler wie bei P6.3.
+
+  **Befund 2 (gezielte `NSLog`-Instrumentierung in `FourWeekReviewView` + der
+  `NavigationLink`-Destination-Closure in `SettingsAppExperienceView`, Beleg):** Die
+  Destination-Closure sowie `FourWeekReviewView.init()`/`body` feuerten ca. 6.860 Mal in rund
+  14 Sekunden (~490 Hz) — **`reload()`/`.task` liefen dabei KEIN EINZIGES MAL** (0 Treffer für die
+  eigenen `reload-start`/`reload-end`-Marker). Die View wird also in derselben Art
+  Render-Endlosschleife wie bei P6.3 ständig neu konstruiert, OHNE jemals ihren `.task`-Lebenszyklus
+  zu erreichen. **Das widerlegt teilweise die bisherige P6.3-Diagnose:** `FourWeekReviewView`
+  deklariert bewusst KEIN `@Query` (siehe oben) — die Render-Endlosschleife tritt trotzdem auf.
+  `@Query` als alleinige/notwendige Ursache der P6.3-Bugklasse ist damit widerlegt; die eigentliche,
+  tiefere Ursache liegt an anderer Stelle im `NavigationLink`/Eltern-View-Mechanismus von
+  `SettingsAppExperienceView` und war durch den P6.3-Fix nur für `PeriodicCheckInView` *zufällig*
+  unschädlich geworden (weil dessen Rekonstruktion seither "billig" ist), nicht grundsätzlich behoben.
+
+  **Befund 3 (Bisektion, widerlegte Hypothese, ebenfalls Beleg):** `SettingsAppExperienceView`
+  hat SELBST ein bislang unbeachtetes `@Query private var profiles: [UserBodyProfile]` (verwendet
+  für `dashboardCustomizationRow`/`DashboardSettingsView`). Hypothese: dieses `@Query` sei der
+  Treiber. Test: `@Query` durch einmaligen `FetchDescriptor`-Fetch in `.task` ersetzt (identisches
+  Fix-Muster wie P6.3), neu gebaut, erneut mit TestingBot verifiziert — **Ergebnis: kein
+  Unterschied** (~8.090 Marker in vergleichbarem Zeitfenster, der Hang bleibt). Diese Hypothese ist
+  damit widerlegt, nicht die Ursache.
+
+  **Offen, nicht spekulativ behauptet:** Die tatsächliche Ursache ist noch nicht gefunden.
+  Mindestens ein weiteres `@Query private var profiles: [UserBodyProfile]` existiert eine Ebene
+  höher in `SettingsView` (der "More"-Tab-Wurzel, bleibt als Vorgänger im `NavigationStack`
+  bestehen) — ob dieses oder ein grundsätzlich anderer Mechanismus (z. B. wiederholtes
+  Re-Evaluieren von `NavigationLink`-Destination-Closures durch SwiftUI selbst, unabhängig von
+  jedem `@Query`) die Ursache ist, ist NICHT belegt und wird hier bewusst nicht behauptet. Eine
+  statische Suche nach einem wiederholten Schreiber auf `UserBodyProfile` fand keinen Treffer
+  (nur Export/Import lesen/schreiben es, beide nicht im laufenden UI-Pfad).
+
+  **Tragweite:** Dieser Fund betrifft potenziell nicht nur die neue P7.2-Zeile, sondern den
+  gesamten `SettingsAppExperienceView`-Screen — die bereits abgenommene "Quick check-in"-Zeile
+  (`PeriodicCheckInView`, P6.3) ist nach aktuellem Stand nur deshalb nicht sichtbar betroffen, weil
+  ihre Rekonstruktion seit dem P6.3-Fix "billig" ist (kein `@Query`, keine schwere Body-Konstruktion),
+  nicht weil die zugrunde liegende Render-Schleife tatsächlich beseitigt wurde.
+
+  **Diagnose-Zweige (temporär, enthalten nur Instrumentierung, keine Produktivänderungen):**
+  `diag-p72-fourweekreview-hang` (zwei Commits: NSLog-Instrumentierung, dann die widerlegte
+  `profiles`-Bisektion) — auf GitHub gepusht, noch nicht aufgeräumt, da die Diagnose nicht
+  abgeschlossen ist.
+
+  **P7.2 bleibt bis zur Behebung dieses Blockers UI-seitig offen.** Code/Data-Abnahme (oben) ist
+  und bleibt davon unabhängig gültig.
 - P7.3 Review-Zustandsfeld (zuletzt reviewed/fällig/Entscheidung) — noch nicht begonnen.
 
 **P8 — Spätere Block-Reviews, Stufe 3** — zurückgestellt bis P7 + vollständige Stufe-2-Versionierung
