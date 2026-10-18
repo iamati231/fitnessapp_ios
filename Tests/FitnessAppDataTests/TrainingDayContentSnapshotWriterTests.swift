@@ -393,8 +393,8 @@ final class TrainingDayContentSnapshotWriterTests: XCTestCase {
         try context.save()
         XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context))
 
-        let first = Exercise(name: "Bankdrücken", exerciseTemplateID: UUID(), orderIndex: 0, sets: 3, repsMin: 8, repsMax: 12, day: fixture.day)
-        let second = Exercise(name: "Kurzhantel-Rudern", exerciseTemplateID: UUID(), orderIndex: 1, sets: 3, repsMin: 8, repsMax: 12, day: fixture.day)
+        let first = Exercise(name: "Bankdrücken", exerciseTemplateID: UUID(), sets: 3, repsMin: 8, repsMax: 12, orderIndex: 0, day: fixture.day)
+        let second = Exercise(name: "Kurzhantel-Rudern", exerciseTemplateID: UUID(), sets: 3, repsMin: 8, repsMax: 12, orderIndex: 1, day: fixture.day)
         context.insert(first)
         context.insert(second)
         try context.save()
@@ -447,7 +447,7 @@ final class TrainingDayContentSnapshotWriterTests: XCTestCase {
         try context.save()
         XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: fixture.session, in: context))
 
-        let exercise = Exercise(name: "Bankdrücken", exerciseTemplateID: UUID(), orderIndex: 0, sets: 3, day: fixture.day)
+        let exercise = Exercise(name: "Bankdrücken", exerciseTemplateID: UUID(), sets: 3, orderIndex: 0, day: fixture.day)
         context.insert(exercise)
         try context.save()
         XCTAssertTrue(TrainingDayContentSnapshotWriter.recordAdHocExerciseAdded(exercise, to: fixture.session, in: context))
