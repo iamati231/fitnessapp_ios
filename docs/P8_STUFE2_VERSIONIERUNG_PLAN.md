@@ -747,7 +747,9 @@ historische Session-Inhalte zeigt — dort wurde umgestellt:
 
 **Tests (neu, alle auf Apple-CI bestätigt grün — Build
 `6ad51efb1b9734c49d90a5c2` (`swift-package`) + `6ad51efc85dd782c6a8a446b`
-(`ios-app`), 1392/1392 Tests, 0 Fehler):**
+(`ios-app`), 1392/1392 Tests, 0 Fehler; der Store-Neuöffnungs-Test kam
+danach dazu und wurde separat in Build `6ad521ae5b4fec0b065a9209`
+bestätigt, 1393/1393 Tests, 0 Fehler):**
 - 6 neue `TrainingDayContentSnapshotWriterTests`: kein Überschreiben bei
   Wiederaufnahme trotz externer Tag-Änderung, Ad-hoc-Add/-Remove nimmt
   keine externe Änderung mit, Ad-hoc-Remove trennt gleichnamige Einträge
