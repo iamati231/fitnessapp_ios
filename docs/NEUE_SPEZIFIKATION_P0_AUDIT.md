@@ -1344,7 +1344,12 @@ Diagnoseweg). P7 läuft bereits parallel/danach weiter.
   Stufe 1) insgesamt abgeschlossen** (P7.1/P7.2/P7.3 alle grün).
 
 **P8 — Spätere Block-Reviews, Stufe 3** — zurückgestellt bis P7 + vollständige Stufe-2-Versionierung
-stehen.
+stehen. **P8-Vorbereitung (2026-10-18, Commit folgt):** Stufe-2-Versionierung reine Code-/
+Spezifikationsplanung abgeschlossen, siehe `docs/P8_STUFE2_VERSIONIERUNG_PLAN.md` — Ist-Stand belegt,
+Datenvertrag (`TrainingDayContentSnapshot`/`TrainingDayContentRecord`) vorgeschlagen, Schreib-/
+Lesepfade identifiziert, Implementierungspakete A-E definiert. Noch NICHT implementiert, noch kein
+Block-Review-Screen gebaut (wie beauftragt). Quellenlücke ausdrücklich benannt: die vier
+Original-Spezifikationsdokumente liegen nicht im Repo.
 
 **P9 — Verifikation, Regression, Dokumentation (laufend):**
 
