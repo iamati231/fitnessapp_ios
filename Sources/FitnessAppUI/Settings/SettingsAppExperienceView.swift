@@ -206,6 +206,18 @@ public struct SettingsAppExperienceView: View {
                     showsChevron: true
                 )
             }
+            // P7.2: Manueller Einstiegspunkt fuer den Vier-Wochen-Rueckblick.
+            // Automatisches Faellig-/Snooze-Verhalten ist P7.3 — hier bewusst
+            // nur ein jederzeit erreichbarer, manueller Zugang.
+            NavigationLink {
+                FourWeekReviewView()
+            } label: {
+                DeltiqRow(
+                    icon: "calendar.badge.clock",
+                    label: String(localized: "settings.fourWeekReview.row", bundle: .module),
+                    showsChevron: true
+                )
+            }
             DeltiqControlRow(
                 icon: "arrow.down.heart",
                 label: String(localized: "settings.deload.toggle", bundle: .module),

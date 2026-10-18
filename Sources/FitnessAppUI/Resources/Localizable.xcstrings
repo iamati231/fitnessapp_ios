@@ -49774,6 +49774,29 @@
         }
       }
     },
+    "settings.fourWeekReview.row": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vier-Wochen-Rückblick"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Four-week review"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dört haftalık değerlendirme"
+          }
+        }
+      }
+    },
     "periodicCheckIn.header.eyebrow": {
       "extractionState": "manual",
       "localizations": {
@@ -50322,6 +50345,650 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ tarihinde kaydedildi"
+          }
+        }
+      }
+    },
+    "fourWeekReview.header.eyebrow": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DEIN RÜCKBLICK"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YOUR REVIEW"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GERİ BAKIŞIN"
+          }
+        }
+      }
+    },
+    "fourWeekReview.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine ersten vier Wochen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your first four weeks"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İlk dört haftan"
+          }
+        }
+      }
+    },
+    "fourWeekReview.keepAsIs.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Plan passt – weiter so!"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your plan fits — keep going!"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planın uyumlu — devam et!"
+          }
+        }
+      }
+    },
+    "fourWeekReview.keepAsIs.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nichts deutet darauf hin, dass sich etwas ändern sollte. Mach einfach weiter wie bisher."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing suggests a change is needed. Just keep doing what you're doing."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir değişiklik gerektiğine dair hiçbir işaret yok. Böyle devam et."
+          }
+        }
+      }
+    },
+    "fourWeekReview.concern.deload.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Belastung steigt deutlich"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your training load is climbing fast"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman yükün hızla artıyor"
+          }
+        }
+      }
+    },
+    "fourWeekReview.concern.deload.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steigende Last über drei Wochen plus mehrere sehr anstrengende Einheiten — ein Deload könnte jetzt helfen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rising load over three weeks plus several very hard sessions — a deload could help now."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üç haftadır artan yük ve birkaç çok zorlu antrenman — şimdi bir deload işe yarayabilir."
+          }
+        }
+      }
+    },
+    "fourWeekReview.concern.deload.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload-Woche einplanen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schedule a deload week"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload haftası planla"
+          }
+        }
+      }
+    },
+    "fourWeekReview.deload.confirm.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload-Woche jetzt starten?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start deload week now?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload haftası şimdi başlasın mı?"
+          }
+        }
+      }
+    },
+    "fourWeekReview.deload.confirm.apply": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ja, starten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yes, start it"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Evet, başlat"
+          }
+        }
+      }
+    },
+    "fourWeekReview.concern.comeback.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Längere Trainingspause erkannt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A longer training gap was detected"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daha uzun bir antrenman arası tespit edildi"
+          }
+        }
+      }
+    },
+    "fourWeekReview.concern.comeback.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empfehlung: Arbeitsgewichte um etwa %d %% reduzieren, bis du wieder reinkommst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommendation: reduce working weights by about %d%% while you ease back in."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öneri: tekrar alışana kadar çalışma ağırlıklarını yaklaşık %%%d azalt."
+          }
+        }
+      }
+    },
+    "fourWeekReview.concern.comeback.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anpassung ansehen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review adjustment"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayarlamayı incele"
+          }
+        }
+      }
+    },
+    "fourWeekReview.concern.participation.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teilnahme spürbar unter Plan"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Participation noticeably below plan"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Katılım plandan belirgin şekilde düşük"
+          }
+        }
+      }
+    },
+    "fourWeekReview.concern.participation.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d von %d geplanten Einheiten verpasst. Kein Vorwurf — nur eine Beobachtung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d of %d planned sessions missed. No judgment here — just an observation."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planlanan %2$d antrenmandan %1$d tanesi kaçırıldı. Bu bir eleştiri değil, sadece bir gözlem."
+          }
+        }
+      }
+    },
+    "fourWeekReview.concern.complaints.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beschwerden gemeldet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complaints reported"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şikayet bildirildi"
+          }
+        }
+      }
+    },
+    "fourWeekReview.concern.complaints.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In deinem letzten Rückblick hast du Beschwerden oder Schmerzen angegeben."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In your last check-in, you reported complaints or pain."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son check-in'inde şikayet veya ağrı bildirdin."
+          }
+        }
+      }
+    },
+    "fourWeekReview.concern.goal.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ziel möglicherweise nicht mehr aktuell"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal may no longer be current"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hedef artık güncel olmayabilir"
+          }
+        }
+      }
+    },
+    "fourWeekReview.concern.goal.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du hast zuletzt angegeben, dass dein Ziel sich geändert haben könnte. Schau in deinem Profil vorbei, wenn du es anpassen willst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You last indicated your goal may have changed. Check your profile if you'd like to update it."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son olarak hedefinin değişmiş olabileceğini belirttin. Güncellemek istersen profiline bakabilirsin."
+          }
+        }
+      }
+    },
+    "fourWeekReview.participation.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TEILNAHME"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PARTICIPATION"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KATILIM"
+          }
+        }
+      }
+    },
+    "fourWeekReview.participation.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d von %d Einheiten abgeschlossen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d of %d sessions completed."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%2$d antrenmandan %1$d tanesi tamamlandı."
+          }
+        }
+      }
+    },
+    "fourWeekReview.participation.partial": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Davon %d teilweise, %d nur begonnen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Of those, %d partial, %d only started."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bunlardan %d kısmi, %d sadece başlandı."
+          }
+        }
+      }
+    },
+    "fourWeekReview.dataGap.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UNZUREICHENDE DATENGRUNDLAGE"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "INSUFFICIENT DATA"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YETERSİZ VERİ"
+          }
+        }
+      }
+    },
+    "fourWeekReview.dataGap.noCheckIn": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch kein Alltags-Rückblick ausgefüllt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No everyday check-in filled out yet."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz bir günlük check-in doldurulmadı."
+          }
+        }
+      }
+    },
+    "fourWeekReview.dataGap.participation.activationUnknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Startdatum des Plans unbekannt — neue Beobachtungsphase ab jetzt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan start date unknown — a new observation period begins now."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan başlangıç tarihi bilinmiyor — yeni bir gözlem dönemi şimdi başlıyor."
+          }
+        }
+      }
+    },
+    "fourWeekReview.dataGap.participation.noActivePlan": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein aktuell aktiver Plan vorhanden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No currently active plan."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şu anda aktif bir plan yok."
+          }
+        }
+      }
+    },
+    "fourWeekReview.dataGap.participation.beforeActivation": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datenstand liegt vor der Planaktivierung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data predates the plan's activation."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veri, planın etkinleştirilmesinden önceye ait."
+          }
+        }
+      }
+    },
+    "fourWeekReview.dataGap.participation.noTrainingDays": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Plan hat keine Trainingstage."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This plan has no training days."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu planda antrenman günü yok."
+          }
+        }
+      }
+    },
+    "fourWeekReview.dataGap.participation.tooEarly": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch zu früh seit Planstart für eine Aussage."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Still too early since plan start to say anything."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan başlangıcından bu yana henüz bir değerlendirme için çok erken."
           }
         }
       }
