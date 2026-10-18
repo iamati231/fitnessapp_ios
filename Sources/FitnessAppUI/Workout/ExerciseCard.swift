@@ -10,6 +10,15 @@ import FitnessAppData
 @available(iOS 17.0, macOS 14.0, *)
 struct ExerciseCard: View {
     let exercise: Exercise
+    /// P8 Stufe-2 (Session-Inhaltsvertrag, Wiederaufnahme-Isolation): der
+    /// zum Session-Start (bzw. durch In-Session-Edits) eingefrorene Stand
+    /// dieser Übung — Quelle für Name/Rolle/Cardio-Zeitbasiert-Klassifikation/
+    /// Satzvorgaben (Sets/Reps/Pause/RIR/Distanz/Dauer). `exercise` bleibt
+    /// für Logging-Identität und Felder außerhalb des Snapshot-Vertrags
+    /// (Equipment/Barbell-Erkennung, `suggestedWeight`, GIF-Lookup)
+    /// maßgeblich. Siehe `ActiveWorkoutView.resolvedExercises`/
+    /// `SessionContentResolver` für die Auflösung.
+    let content: TrainingDayContentSnapshot.ExerciseEntry
     let session: WorkoutSession
     /// DEL-097 + DEL-108: Session-weiter Time-Set-Lock (Exercise × setIndex).
     /// Reicht durch zur SetRow, die den Lock claimt bzw. den eigenen
@@ -90,18 +99,19 @@ struct ExerciseCard: View {
             // jeder einzelnen SetRow. Nur fuer Strength/Bodyweight sinnvoll
             // (Cardio/TimeBased haben ein eigenes Zeilenlayout ohne diese
             // Spalten).
-            if !exercise.isCardio && !exercise.isTimeBased {
+            if !content.isCardio && !content.isTimeBased {
                 setRowColumnHeader
             }
-            ForEach(0..<exercise.sets, id: \.self) { setIndex in
+            ForEach(0..<content.sets, id: \.self) { setIndex in
                 SetRow(
                     setIndex: setIndex,
                     exercise: exercise,
+                    content: content,
                     session: session,
                     existingLog: existingLog(forSetIndex: setIndex),
                     previousLog: previousLog(forSetIndex: setIndex),
                     seedLog: seedLog(forSetIndex: setIndex),
-                    onRequestDelete: exercise.sets > 1 ? { removeSet(at: setIndex) } : nil,
+                    onRequestDelete: content.sets > 1 ? { removeSet(at: setIndex) } : nil,
                     activeTimedSet: $activeTimedSet,
                     isActiveSet: setIndex == active,
                     onLogged: { values in
@@ -113,7 +123,7 @@ struct ExerciseCard: View {
                 )
                 // DEL-157: id mit structureToken → frisches Re-Seed nach Delete.
                 .id("set-\(setIndex)-\(structureToken)")
-                if setIndex < exercise.sets - 1 {
+                if setIndex < content.sets - 1 {
                     // Signature-Geruest 1.6: Trennlinie einheitlich 6% statt
                     // der bisherigen 20% - die Active-Set-Background-Tint
                     // uebernimmt weiterhin die primaere visuelle Trennung.
@@ -121,7 +131,7 @@ struct ExerciseCard: View {
                 }
             }
 
-            if completedSetCount >= exercise.sets {
+            if completedSetCount >= content.sets {
                 Label {
                     Text("workout.allSetsDone", bundle: .module)
                 } icon: {
@@ -244,10 +254,12 @@ struct ExerciseCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     // DEL-124: Active-Workout Card-Header via displayName.
-                    Text(exercise.displayName)
+                    // P8 Stufe-2: eingefrorener Name — ein externes Umbenennen
+                    // waehrend die Session laeuft darf den Kartentitel nicht aendern.
+                    Text(displayName)
                         .font(.headline)
                     // DEL-087: Pill markiert Warmup/Cooldown-Uebungen optisch.
-                    if let pillText = exercise.role.localizedPillText {
+                    if let pillText = content.role.localizedPillText {
                         Text(pillText)
                             .font(.caption2.weight(.bold))
                             .tracking(0.8)
@@ -360,6 +372,15 @@ struct ExerciseCard: View {
     /// Format-Strings sind im Catalog als `exercise.target.cardioFormat` /
     /// `.strengthFormat` mit positionellen %1$/%2$/...-Placeholders
     /// definiert; Swift macht die Substitution via `String(format:)`.
+    /// P8 Stufe-2: eingefrorener Anzeigename — custom-first wie
+    /// `Exercise.displayName`, aber aus `content` statt der Live-Übung
+    /// gespeist (siehe `TimedFormatDisplayExercise` in `WorkoutSummaryView`
+    /// für dasselbe Muster in der Historie).
+    private var displayName: String {
+        if let custom = content.customNameSnapshot, !custom.isEmpty { return custom }
+        return Exercise.resolvedDisplayName(forStoredName: content.nameSnapshot)
+    }
+
     private var targetText: String {
         let pauseLabel = String(localized: "exercise.rest.label", bundle: .module)
         // Signature-Geruest 2.16: mm:ss statt reiner Sekundenzahl ("150s" ->
@@ -370,31 +391,34 @@ struct ExerciseCard: View {
         // Timer-Start) - `PaceCalculator.formatDuration(0)` liefert dafuer
         // "—" (gedacht fuer "keine Dauer vorhanden"), was hier faelschlich
         // nach fehlendem statt nach bewusst leerem Wert aussehen wuerde.
-        let restText = exercise.restSeconds > 0
-            ? PaceCalculator.formatDuration(exercise.restSeconds)
+        // P8 Stufe-2: Satzvorgaben kommen aus `content` (eingefroren), nicht
+        // aus der Live-Übung — eine externe Änderung während die Session
+        // offen ist darf diese Anzeige nicht beeinflussen.
+        let restText = content.restSeconds > 0
+            ? PaceCalculator.formatDuration(content.restSeconds)
             : "0:00"
-        if exercise.isCardio {
+        if content.isCardio {
             let cardioLabel = String(localized: "exercise.kind.cardio", bundle: .module)
             let fmt = String(localized: "exercise.target.cardioFormat", bundle: .module)
             return String(format: fmt, cardioLabel, restText, pauseLabel)
         }
-        let unit = exercise.isTimeBased
+        let unit = content.isTimeBased
             ? String(localized: "unit.seconds.short", bundle: .module)
             : String(localized: "unit.reps.short", bundle: .module)
-        let range = exercise.repsMin == exercise.repsMax
-            ? "\(exercise.repsMin)"
-            : "\(exercise.repsMin)-\(exercise.repsMax)"
+        let range = content.repsMin == content.repsMax
+            ? "\(content.repsMin)"
+            : "\(content.repsMin)-\(content.repsMax)"
         let fmt = String(localized: "exercise.target.strengthFormat", bundle: .module)
-        return String(format: fmt, exercise.sets, range, unit, restText, pauseLabel)
+        return String(format: fmt, content.sets, range, unit, restText, pauseLabel)
     }
 
     private var progressPill: some View {
-        Text("\(completedSetCount) / \(exercise.sets)")
+        Text("\(completedSetCount) / \(content.sets)")
             .font(.caption.weight(.bold).monospacedDigit())
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .background(progressFillColor)
-            .foregroundStyle(completedSetCount >= exercise.sets ? .green : .primary)
+            .foregroundStyle(completedSetCount >= content.sets ? .green : .primary)
             .clipShape(Capsule())
             // DEL-059: feine Lichtkante auf der Pill
             .overlay(
@@ -406,7 +430,7 @@ struct ExerciseCard: View {
     }
 
     private var progressFillColor: Color {
-        completedSetCount >= exercise.sets
+        completedSetCount >= content.sets
             ? Color.green.opacity(0.18)
             : Color.secondary.opacity(0.18)
     }
@@ -433,7 +457,7 @@ struct ExerciseCard: View {
     private var activeSetIndex: Int? {
         // Set der Logs ueber setIndex bilden — O(n) Lookup statt n×n.
         let completed = Set(sessionLogs.map(\.setIndex))
-        for i in 0..<exercise.sets where !completed.contains(i) {
+        for i in 0..<content.sets where !completed.contains(i) {
             return i
         }
         return nil
@@ -603,6 +627,11 @@ struct ExerciseCard: View {
     /// was der ExerciseEditor taete, nur ohne den Umweg.
     private func addSet() {
         exercise.sets += 1
+        // P8 Stufe-2: "+ Satz" ist eine ausdrückliche Aktion DIESER laufenden
+        // Session (gilt für jede Session, nicht nur Ad-hoc) — hält den
+        // eigenen Inhaltsstand synchron, statt beim nächsten Resolve auf den
+        // alten, eingefrorenen `sets`-Wert zurückzufallen.
+        TrainingDayContentSnapshotWriter.recordSetCountChange(for: exercise, in: session, context: modelContext)
     }
 
     /// Entfernt den Satz an `index`: loescht dessen Log (falls vorhanden),
@@ -621,6 +650,7 @@ struct ExerciseCard: View {
                 log.setIndex -= 1
             }
             exercise.sets -= 1
+            TrainingDayContentSnapshotWriter.recordSetCountChange(for: exercise, in: session, context: modelContext)
             structureToken = UUID()
         }
     }

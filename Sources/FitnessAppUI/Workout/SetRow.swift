@@ -22,6 +22,16 @@ import UIKit
 struct SetRow: View {
     let setIndex: Int
     let exercise: Exercise
+    /// P8 Stufe-2 (Session-Inhaltsvertrag, Wiederaufnahme-Isolation): der
+    /// zum Session-Start (bzw. durch In-Session-Edits) eingefrorene Stand
+    /// dieser Übung. Steuert ALLE "Satzvorgaben" (Cardio-/Time-Based-
+    /// Klassifikation, Ziel-Reps/-RIR/-Distanz/-Dauer, Hold-Sekunden) —
+    /// NIE die jeweils aktuellen Live-Felder von `exercise`, die durch eine
+    /// externe Bearbeitung während die Session offen ist abweichen könnten.
+    /// `exercise` bleibt ausschließlich für Logging-Identität, Lock-Keys
+    /// und Felder außerhalb des Snapshot-Vertrags (Equipment/Barbell-
+    /// Erkennung, `suggestedWeight`) maßgeblich.
+    let content: TrainingDayContentSnapshot.ExerciseEntry
     let session: WorkoutSession
     let existingLog: ExerciseLog?
     let previousLog: ExerciseLog?
@@ -200,11 +210,11 @@ struct SetRow: View {
 
     @ViewBuilder
     private var rowBody: some View {
-        if exercise.isCardio {
+        if content.isCardio {
             // DEL-058: dedizierte CardioSetRow mit Distanz / Dauer / Pace.
             cardioSetRow
                 .onAppear { initializeOnce() }
-        } else if exercise.isTimeBased {
+        } else if content.isTimeBased {
             // Time-based: Hold-Timer-Card mit 3-2-1 Countdown +
             // automatischem Speichern (DEL-040 + DEL-045 Schritt 4).
             timeBasedSetView
@@ -582,7 +592,7 @@ struct SetRow: View {
     /// statt der Brand-Farbe. Warmup/Cooldown bleiben auf Grau, unveraendert.
     private var checkmarkColor: Color {
         if isCompleted {
-            return exercise.role.skipsProgression
+            return content.role.skipsProgression
                 ? Color.secondary
                 : Color.Deltiq.success
         }
@@ -814,7 +824,7 @@ struct SetRow: View {
     private var isBlockedByOtherTimedExercise: Bool {
         TimedExerciseGuard.isBlockedByOther(
             candidateID: myTimedSetID,
-            candidateIsTimeBased: exercise.isTimeBased,
+            candidateIsTimeBased: content.isTimeBased,
             activeTimedExerciseID: activeTimedSet
         )
     }
@@ -920,7 +930,7 @@ struct SetRow: View {
     }
 
     private var targetHoldSeconds: Int {
-        exercise.repsMin > 0 ? exercise.repsMin : 30
+        content.repsMin > 0 ? content.repsMin : 30
     }
 
     /// 3-Sekunden-Countdown mit Per-Sekunde-Beeps. Bei 3/2/1 ertoent ein
@@ -1085,12 +1095,12 @@ struct SetRow: View {
     /// querschnittliches Thema (Eingabe, Volumen, PRs, Charts, CSV).
     private func previousLogHint(_ log: ExerciseLog) -> String {
         // DEL-128: Sek-Unit aus xcstrings.
-        if exercise.isTimeBased {
+        if content.isTimeBased {
             let secUnit = String(localized: "unit.seconds.short", bundle: .module)
             return "\(log.reps) \(secUnit)"
         }
 
-        if exercise.isCardio {
+        if content.isCardio {
             let kmUnit = String(localized: "unit.km.lower", bundle: .module)
             let distance = log.distanceKm ?? 0
             let seconds = log.durationSeconds ?? 0
@@ -1184,8 +1194,8 @@ struct SetRow: View {
             rir = seedLog.rir
         } else {
             weight = exercise.suggestedWeight
-            reps = midpoint(exercise.repsMin, exercise.repsMax)
-            rir = exercise.targetRir
+            reps = midpoint(content.repsMin, content.repsMax)
+            rir = content.targetRir
         }
     }
 
@@ -1197,7 +1207,7 @@ struct SetRow: View {
     /// kann — User soll z.B. nur eine Dauer eintragen koennen ohne Distanz
     /// (Pace bleibt dann undefined, aber das Workout zaehlt).
     private var canLog: Bool {
-        if exercise.isCardio {
+        if content.isCardio {
             let hasDistance = PaceCalculator.parseDistanceToKm(cardioDistanceText) != nil
             let hasDuration = PaceCalculator.parseDurationToSeconds(cardioDurationText) != nil
             return hasDistance || hasDuration
@@ -1212,7 +1222,7 @@ struct SetRow: View {
         // Update Punkt 3).
         dismissKeyboard()
         let values: LoggedSetValues
-        if exercise.isCardio {
+        if content.isCardio {
             // DEL-058: Cardio → Distanz/Dauer parsen, reps/weight/rir bleiben 0.
             values = LoggedSetValues(
                 weight: 0,
@@ -1223,7 +1233,7 @@ struct SetRow: View {
             )
         } else {
             // Strength (oder Time-Based hold, das ueber stopHoldAndLog laeuft).
-            let w = exercise.isTimeBased ? 0.0 : (weight ?? 0)
+            let w = content.isTimeBased ? 0.0 : (weight ?? 0)
             values = LoggedSetValues(weight: w, reps: reps, rir: rir)
         }
         onLogged(values)
@@ -1375,7 +1385,7 @@ struct SetRow: View {
 
     /// Placeholder im Distanz-Feld: target aus dem Plan, sonst leer.
     private var cardioDistancePlaceholder: String {
-        guard let target = exercise.targetDistanceKm else { return "km" }
+        guard let target = content.targetDistanceKm else { return "km" }
         return target == target.rounded()
             ? "\(Int(target))"
             : target.truncated(to: 2).formattedTwoDecimals
@@ -1383,7 +1393,7 @@ struct SetRow: View {
 
     /// Placeholder im Dauer-Feld: target aus dem Plan in MM:SS, sonst leer.
     private var cardioDurationPlaceholder: String {
-        guard let mins = exercise.targetDurationMinutes else { return "MM:SS" }
+        guard let mins = content.targetDurationMinutes else { return "MM:SS" }
         return "\(mins):00"
     }
 

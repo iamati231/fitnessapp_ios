@@ -51337,6 +51337,29 @@
           }
         }
       }
+    },
+    "active.exercise.removedDuringSession": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Übung wurde entfernt, während die Session lief – nur Anzeige."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This exercise was removed while the session was running – view only."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu egzersiz oturum devam ederken kaldırıldı – yalnızca görüntüleme."
+          }
+        }
+      }
     }
   }
 }
