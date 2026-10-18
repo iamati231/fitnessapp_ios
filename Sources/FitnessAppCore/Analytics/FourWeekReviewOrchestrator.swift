@@ -127,6 +127,16 @@ public enum FourWeekReviewOrchestrator {
     public enum DataGap: Sendable, Equatable {
         case participationNotReliablyEvaluable(PlanParticipationEvaluator.UnreliableReason)
         case noCheckInYet
+        /// Gespiegelt aus `PlanParticipationEvaluator.Summary.dataGaps`
+        /// (`.unattributableHistoryExcludedDueToMultipleActivePlans`) — bei
+        /// mehreren gleichzeitig aktiven Plänen wurde reale Trainingshistorie
+        /// ohne verlässliche Plan-Zuordnung von DIESER Auswertung
+        /// ausgeschlossen, statt sie zu erraten oder stillschweigend
+        /// anzurechnen. Eigens auf Orchestrator-Ebene gehoben (statt nur im
+        /// internen `Summary.dataGaps` zu verbleiben), weil dieser Befund —
+        /// anders als die übrigen, rein methodischen `Summary`-Datenlücken —
+        /// für die betroffene Person sichtbar sein muss.
+        case participationHistoryPartiallyUnattributed
     }
 
     public enum Outcome: Sendable, Equatable {
@@ -191,6 +201,9 @@ public enum FourWeekReviewOrchestrator {
                         plannedCount: summary.plannedCount
                     ))
                 }
+            }
+            if summary.dataGaps.contains(.unattributableHistoryExcludedDueToMultipleActivePlans) {
+                dataGaps.append(.participationHistoryPartiallyUnattributed)
             }
         }
 

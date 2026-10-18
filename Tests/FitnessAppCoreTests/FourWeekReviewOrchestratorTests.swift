@@ -11,7 +11,8 @@ final class FourWeekReviewOrchestratorTests: XCTestCase {
     private func evaluatedSummary(
         plannedCount: Int,
         completedCount: Int,
-        missedCount: Int
+        missedCount: Int,
+        dataGaps: [PlanParticipationEvaluator.DataGap] = []
     ) -> PlanParticipationEvaluator.Result {
         .evaluated(PlanParticipationEvaluator.Summary(
             periodStart: Date(timeIntervalSince1970: 0),
@@ -24,7 +25,7 @@ final class FourWeekReviewOrchestratorTests: XCTestCase {
             missedCount: missedCount,
             extraOccurrenceCount: 0,
             countingRules: [],
-            dataGaps: []
+            dataGaps: dataGaps
         ))
     }
 
@@ -77,6 +78,25 @@ final class FourWeekReviewOrchestratorTests: XCTestCase {
         ))
         XCTAssertEqual(review.outcome, .keepAsIs)
         XCTAssertEqual(review.dataGaps, [.noCheckInYet])
+    }
+
+    /// Spiegelt `PlanParticipationEvaluator.Summary.dataGaps` auf eine
+    /// Orchestrator-`DataGap` — anders als die übrigen `Summary`-Datenlücken
+    /// (z.B. `singleActivationAnchorOnly`), die bewusst intern bleiben, muss
+    /// dieser Fund sichtbar werden: er betrifft nicht die Methode, sondern
+    /// konkret fehlende/ausgeschlossene Sessions DIESER Auswertung.
+    func testUnattributableHistoryGapIsLiftedToOrchestratorLevel() {
+        let review = FourWeekReviewOrchestrator.review(.init(
+            participation: evaluatedSummary(
+                plannedCount: 12, completedCount: 12, missedCount: 0,
+                dataGaps: [.unattributableHistoryExcludedDueToMultipleActivePlans]
+            ),
+            latestCheckIn: fullCheckIn(hadComplaints: false, goalStillCurrent: true),
+            deloadRecommended: false,
+            comebackSignal: nil
+        ))
+        XCTAssertEqual(review.outcome, .keepAsIs, "ausgeschlossene Historie allein ist kein Befund")
+        XCTAssertEqual(review.dataGaps, [.participationHistoryPartiallyUnattributed])
     }
 
     // MARK: - Teilnahme-Lücke nur ab spürbarem Anteil, nicht bei jedem Ausrutscher

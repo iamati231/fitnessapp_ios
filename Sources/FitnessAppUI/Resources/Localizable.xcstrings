@@ -50993,6 +50993,29 @@
         }
       }
     },
+    "fourWeekReview.dataGap.participation.partiallyUnattributed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Teil deiner Trainingshistorie ließ sich wegen mehrerer aktiver Pläne keinem bestimmten Plan sicher zuordnen und wurde hier nicht mitgezählt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some of your training history couldn't be reliably matched to a specific plan because multiple plans are active, so it wasn't counted here."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Birden fazla plan aktif olduğu için antrenman geçmişinin bir kısmı belirli bir plana güvenilir şekilde eşlenemedi ve bu nedenle burada sayılmadı."
+          }
+        }
+      }
+    },
     "planBuilder.result.redistribute.action": {
       "extractionState": "manual",
       "localizations": {

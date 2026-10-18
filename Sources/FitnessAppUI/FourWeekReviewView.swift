@@ -313,6 +313,8 @@ public struct FourWeekReviewView: View {
         switch gap {
         case .noCheckInYet:
             return loc("fourWeekReview.dataGap.noCheckIn")
+        case .participationHistoryPartiallyUnattributed:
+            return loc("fourWeekReview.dataGap.participation.partiallyUnattributed")
         case .participationNotReliablyEvaluable(let reason):
             switch reason {
             case .activationStartUnknown:

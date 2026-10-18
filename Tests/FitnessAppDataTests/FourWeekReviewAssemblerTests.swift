@@ -195,6 +195,185 @@ final class FourWeekReviewAssemblerTests: XCTestCase {
         )
     }
 
+    // MARK: - Nachbesserung: echte Session-Zuordnung statt globalem Topf
+
+    /// Echter Regressionstest für den vom Nutzer korrigierten Fund: anders
+    /// als der strukturelle Auswahltest oben (bewusst OHNE Sessions) belegt
+    /// DIESER Test die eigentliche Teilnahme-Isolation mit ECHTEN, über
+    /// `day:` zugeordneten Sessions — genau wie `DayEditorView`/
+    /// `DashboardView` sie beim echten Workout-Start erzeugen. Plan Bs
+    /// Sessions dürfen Plan As Auswertung nicht mehr verfälschen (vorher:
+    /// `realOccurrences` las global, ohne Plan-Filter).
+    func testParticipationIsIsolatedPerPlanWhenBothPlansHaveRealSessions() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let planA = TrainingPlan(name: "Alpha", programType: "custom", isActive: true)
+        planA.activatedAt = d(2024, 1, 1)
+        context.insert(planA)
+        let dayA = TrainingDay(name: "Ganzkörper A", weekday: 2, type: .fullBody, plan: planA)
+        context.insert(dayA)
+
+        let planB = TrainingPlan(name: "Beta", programType: "custom", isActive: true)
+        planB.activatedAt = d(2024, 1, 1)
+        context.insert(planB)
+        let dayB = TrainingDay(name: "Ganzkörper B", weekday: 2, type: .fullBody, plan: planB)
+        context.insert(dayB)
+
+        // Plan A: 4 abgeschlossene Sessions -> volle Teilnahme.
+        for offset in [0, 7, 14, 21] {
+            let date = utc.date(byAdding: .day, value: offset, to: d(2024, 1, 2))!
+            context.insert(WorkoutSession(
+                startTime: date, endTime: date.addingTimeInterval(3600),
+                durationMinutes: 60, exerciseCount: 1, totalSets: 0,
+                totalVolumeKg: 0, isCompleted: true, day: dayA
+            ))
+        }
+        // Plan B: deutlich MEHR Sessions als A — würden sie faelschlich in
+        // As Auswertung einfliessen, waere As Teilnahme nicht mehr "genau
+        // erfuellt", sondern "ueberschuessig"/verzerrt.
+        for offset in [0, 3, 7, 10, 14, 17, 21, 24] {
+            let date = utc.date(byAdding: .day, value: offset, to: d(2024, 1, 2))!
+            context.insert(WorkoutSession(
+                startTime: date, endTime: date.addingTimeInterval(3600),
+                durationMinutes: 60, exerciseCount: 1, totalSets: 0,
+                totalVolumeKg: 0, isCompleted: true, day: dayB
+            ))
+        }
+        try context.save()
+
+        let reviewA = FourWeekReviewAssembler.assemble(in: context, for: planA, now: d(2024, 2, 1), calendar: utc)
+        guard case .evaluated(let summaryA) = reviewA.participation else {
+            return XCTFail("Plan A haette auswertbar sein muessen: \(reviewA.participation)")
+        }
+        XCTAssertEqual(summaryA.completedCount, 4, "nur As eigene 4 Sessions, nicht Bs 8")
+        XCTAssertEqual(summaryA.plannedCount, 4)
+        XCTAssertEqual(summaryA.missedCount, 0)
+        XCTAssertEqual(summaryA.extraOccurrenceCount, 0, "Bs Sessions duerfen bei A nicht als Ueberschuss auftauchen")
+
+        let reviewB = FourWeekReviewAssembler.assemble(in: context, for: planB, now: d(2024, 2, 1), calendar: utc)
+        guard case .evaluated(let summaryB) = reviewB.participation else {
+            return XCTFail("Plan B haette auswertbar sein muessen: \(reviewB.participation)")
+        }
+        XCTAssertEqual(summaryB.completedCount, 4, "flexible Kadenz: nur die ersten 4 faelligen Tage zaehlen, nicht alle 8 geloggten")
+        XCTAssertFalse(
+            summaryB.dataGaps.contains(.unattributableHistoryExcludedDueToMultipleActivePlans),
+            "alle Bs Sessions sind ueber day.plan korrekt zugeordnet, nichts wurde ausgeschlossen"
+        )
+    }
+
+    /// Echtes Ad-hoc-Training (ephemerer Tag ohne Plan, `day.plan == nil`,
+    /// exakt wie `DashboardView.startAdHocWorkout` ihn erzeugt) zählt
+    /// weiterhin für JEDEN aktiven Plan mit — das ist keine Regression,
+    /// sondern eine bewusst beibehaltene Produktregel ("frei trainiert ist
+    /// auch trainiert").
+    func testAdHocSessionsStillCountTowardEveryActivePlanWithMultiplePlansActive() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let planA = TrainingPlan(name: "Alpha", programType: "custom", isActive: true)
+        planA.activatedAt = d(2024, 1, 1)
+        context.insert(planA)
+        context.insert(TrainingDay(name: "Tag A", weekday: 2, type: .fullBody, plan: planA))
+
+        let planB = TrainingPlan(name: "Beta", programType: "custom", isActive: true)
+        planB.activatedAt = d(2024, 1, 1)
+        context.insert(planB)
+        context.insert(TrainingDay(name: "Tag B", weekday: 2, type: .fullBody, plan: planB))
+
+        let adHocDay = TrainingDay(name: "Spontanes Training", weekday: 2, type: .custom, plan: nil)
+        context.insert(adHocDay)
+        for offset in [0, 7, 14, 21] {
+            let date = utc.date(byAdding: .day, value: offset, to: d(2024, 1, 2))!
+            context.insert(WorkoutSession(
+                startTime: date, endTime: date.addingTimeInterval(3600),
+                durationMinutes: 60, exerciseCount: 1, totalSets: 0,
+                totalVolumeKg: 0, isCompleted: true, isAdHoc: true, day: adHocDay
+            ))
+        }
+        try context.save()
+
+        for plan in [planA, planB] {
+            let review = FourWeekReviewAssembler.assemble(in: context, for: plan, now: d(2024, 2, 1), calendar: utc)
+            guard case .evaluated(let summary) = review.participation else {
+                return XCTFail("\(plan.name) haette auswertbar sein muessen: \(review.participation)")
+            }
+            XCTAssertEqual(summary.completedCount, 4, "Ad-hoc-Training zaehlt fuer \(plan.name) mit")
+        }
+    }
+
+    /// Sessions OHNE jede Tag-Referenz (`day == nil` direkt, z.B. aus einem
+    /// CSV-Import/Restore oder einem seither geloeschten/regenerierten Tag)
+    /// lassen sich bei zwei gleichzeitig aktiven Plänen keinem der beiden
+    /// zuverlässig zuordnen. Sie dürfen weder geraten noch stillschweigend
+    /// irgendeinem Plan gutgeschrieben werden — stattdessen ausgeschlossen
+    /// UND als Datenlücke offen ausgewiesen.
+    func testSessionsWithoutAnyDayReferenceAreExcludedAndDisclosedWhenMultiplePlansActive() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let planA = TrainingPlan(name: "Alpha", programType: "custom", isActive: true)
+        planA.activatedAt = d(2024, 1, 1)
+        context.insert(planA)
+        context.insert(TrainingDay(name: "Tag A", weekday: 2, type: .fullBody, plan: planA))
+
+        let planB = TrainingPlan(name: "Beta", programType: "custom", isActive: true)
+        planB.activatedAt = d(2024, 1, 1)
+        context.insert(planB)
+        context.insert(TrainingDay(name: "Tag B", weekday: 2, type: .fullBody, plan: planB))
+
+        // Simuliert einen CSV-Import/Restore: `day` wird dort nie gesetzt.
+        let orphanDate = d(2024, 1, 2)
+        context.insert(WorkoutSession(
+            startTime: orphanDate, endTime: orphanDate.addingTimeInterval(3600),
+            durationMinutes: 60, exerciseCount: 1, totalSets: 0,
+            totalVolumeKg: 0, isCompleted: true
+        ))
+        try context.save()
+
+        let reviewA = FourWeekReviewAssembler.assemble(in: context, for: planA, now: d(2024, 2, 1), calendar: utc)
+        guard case .evaluated(let summaryA) = reviewA.participation else {
+            return XCTFail("Plan A haette auswertbar sein muessen: \(reviewA.participation)")
+        }
+        XCTAssertEqual(summaryA.completedCount, 0, "nicht zuordenbare Session darf A nicht stillschweigend gutgeschrieben werden")
+        XCTAssertTrue(summaryA.dataGaps.contains(.unattributableHistoryExcludedDueToMultipleActivePlans))
+
+        let reviewB = FourWeekReviewAssembler.assemble(in: context, for: planB, now: d(2024, 2, 1), calendar: utc)
+        guard case .evaluated(let summaryB) = reviewB.participation else {
+            return XCTFail("Plan B haette auswertbar sein muessen: \(reviewB.participation)")
+        }
+        XCTAssertEqual(summaryB.completedCount, 0, "nicht zuordenbare Session darf auch B nicht stillschweigend gutgeschrieben werden")
+        XCTAssertTrue(summaryB.dataGaps.contains(.unattributableHistoryExcludedDueToMultipleActivePlans))
+    }
+
+    /// Gegenprobe zum vorigen Test: bei nur EINEM aktiven Plan besteht keine
+    /// Mehrdeutigkeit — dieselbe Session ohne Tag-Referenz zaehlt wie bisher
+    /// fuer den einen Plan, ohne Ausschluss/Datenlücke.
+    func testSessionsWithoutAnyDayReferenceStillCountWithOnlyOneActivePlan() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let plan = TrainingPlan(name: "Alpha", programType: "custom", isActive: true)
+        plan.activatedAt = d(2024, 1, 1)
+        context.insert(plan)
+        context.insert(TrainingDay(name: "Tag A", weekday: 2, type: .fullBody, plan: plan))
+
+        let orphanDate = d(2024, 1, 2)
+        context.insert(WorkoutSession(
+            startTime: orphanDate, endTime: orphanDate.addingTimeInterval(3600),
+            durationMinutes: 60, exerciseCount: 1, totalSets: 0,
+            totalVolumeKg: 0, isCompleted: true
+        ))
+        try context.save()
+
+        let review = FourWeekReviewAssembler.assemble(in: context, for: plan, now: d(2024, 2, 1), calendar: utc)
+        guard case .evaluated(let summary) = review.participation else {
+            return XCTFail("haette auswertbar sein muessen: \(review.participation)")
+        }
+        XCTAssertEqual(summary.completedCount, 1, "bei nur einem aktiven Plan besteht keine Zuordnungs-Mehrdeutigkeit")
+        XCTAssertFalse(summary.dataGaps.contains(.unattributableHistoryExcludedDueToMultipleActivePlans))
+    }
+
     func testAllActivePlansReturnsOnlyActiveOnesSortedByName() throws {
         let container = try makeContainer()
         let context = container.mainContext

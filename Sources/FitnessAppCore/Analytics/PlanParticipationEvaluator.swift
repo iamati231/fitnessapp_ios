@@ -100,6 +100,12 @@ public enum PlanParticipationEvaluator {
         /// nicht erfasst. Wird konservativ wie `false` (flexibel) behandelt,
         /// aber als Annahme offengelegt (Regel 6/8: keine Scheinpraezision).
         public let usesFixedWeekdays: Bool?
+        /// Der Aufrufer hat beim Zusammenstellen von `occurrences` reale
+        /// Sessions herausgefiltert, die sich keinem bestimmten Plan sicher
+        /// zuordnen ließen (siehe `DataGap.unattributableHistoryExcludedDueToMultipleActivePlans`).
+        /// `false`, wenn entweder keine solchen Sessions existierten oder nur
+        /// ein Plan aktiv war (dort gibt es keine Mehrdeutigkeit).
+        public let hasUnattributableSessionsExcluded: Bool
         public let calendar: Calendar
 
         public init(
@@ -109,6 +115,7 @@ public enum PlanParticipationEvaluator {
             nonRestDayCount: Int,
             nonRestWeekdays: Set<Int>,
             usesFixedWeekdays: Bool?,
+            hasUnattributableSessionsExcluded: Bool = false,
             calendar: Calendar
         ) {
             self.activatedAt = activatedAt
@@ -117,6 +124,7 @@ public enum PlanParticipationEvaluator {
             self.nonRestDayCount = nonRestDayCount
             self.nonRestWeekdays = nonRestWeekdays
             self.usesFixedWeekdays = usesFixedWeekdays
+            self.hasUnattributableSessionsExcluded = hasUnattributableSessionsExcluded
             self.calendar = calendar
         }
     }
@@ -165,6 +173,14 @@ public enum PlanParticipationEvaluator {
         case singleActivationAnchorOnly
         case planStructureChangesDuringPeriodNotTracked
         case scheduleKindUnknownAssumedFlexible
+        /// Der Aufrufer hat reale Sessions ausgeschlossen, weil sie sich bei
+        /// mehreren gleichzeitig aktiven Plänen keinem bestimmten Plan
+        /// zuordnen ließen (z. B. aus einem Backup importierte Einheiten ohne
+        /// Tag-Referenz) — nie geraten (keine Namens-Zuordnung), nie
+        /// stillschweigend diesem oder einem anderen Plan gutgeschrieben.
+        /// Bei nur einem aktiven Plan tritt dieser Fall nicht auf, weil dort
+        /// keine Mehrdeutigkeit besteht.
+        case unattributableHistoryExcludedDueToMultipleActivePlans
     }
 
     public struct Summary: Sendable, Equatable {
@@ -264,6 +280,9 @@ public enum PlanParticipationEvaluator {
         var dataGaps: [DataGap] = [.singleActivationAnchorOnly, .planStructureChangesDuringPeriodNotTracked]
         if scheduleKindAssumed {
             dataGaps.append(.scheduleKindUnknownAssumedFlexible)
+        }
+        if input.hasUnattributableSessionsExcluded {
+            dataGaps.append(.unattributableHistoryExcludedDueToMultipleActivePlans)
         }
 
         let matchedOutcomes: [SessionOccurrence.Outcome]

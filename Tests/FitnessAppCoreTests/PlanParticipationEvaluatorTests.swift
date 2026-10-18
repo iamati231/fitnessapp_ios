@@ -30,7 +30,8 @@ final class PlanParticipationEvaluatorTests: XCTestCase {
         isActive: Bool = true,
         occurrences: [PlanParticipationEvaluator.SessionOccurrence] = [],
         weekdays: Set<Int>,
-        usesFixedWeekdays: Bool? = true
+        usesFixedWeekdays: Bool? = true,
+        hasUnattributableSessionsExcluded: Bool = false
     ) -> PlanParticipationEvaluator.Input {
         .init(
             activatedAt: activatedAt,
@@ -39,6 +40,7 @@ final class PlanParticipationEvaluatorTests: XCTestCase {
             nonRestDayCount: weekdays.count,
             nonRestWeekdays: weekdays,
             usesFixedWeekdays: usesFixedWeekdays,
+            hasUnattributableSessionsExcluded: hasUnattributableSessionsExcluded,
             calendar: utc
         )
     }
@@ -48,7 +50,8 @@ final class PlanParticipationEvaluatorTests: XCTestCase {
         isActive: Bool = true,
         occurrences: [PlanParticipationEvaluator.SessionOccurrence] = [],
         sessionsPerWeek: Int,
-        usesFixedWeekdays: Bool? = false
+        usesFixedWeekdays: Bool? = false,
+        hasUnattributableSessionsExcluded: Bool = false
     ) -> PlanParticipationEvaluator.Input {
         .init(
             activatedAt: activatedAt,
@@ -57,6 +60,7 @@ final class PlanParticipationEvaluatorTests: XCTestCase {
             nonRestDayCount: sessionsPerWeek,
             nonRestWeekdays: [],
             usesFixedWeekdays: usesFixedWeekdays,
+            hasUnattributableSessionsExcluded: hasUnattributableSessionsExcluded,
             calendar: utc
         )
     }
@@ -304,6 +308,24 @@ final class PlanParticipationEvaluatorTests: XCTestCase {
         // also flexibleWeeklyCadence(3) statt fixedWeekdays(...).
         XCTAssertEqual(summary.scheduleKindUsed, .flexibleWeeklyCadence(sessionsPerWeek: 3))
         XCTAssertTrue(summary.dataGaps.contains(.scheduleKindUnknownAssumedFlexible))
+    }
+
+    /// Der Aufrufer (`FourWeekReviewAssembler`) entscheidet, OB Sessions
+    /// unattributierbar ausgeschlossen wurden, und meldet das hier nur noch
+    /// durch — dieser Test deckt ausschliesslich die Durchreichung als
+    /// sichtbaren `DataGap` ab, nicht die Zuordnungslogik selbst (die liegt
+    /// in `FitnessAppData`, SwiftData-abhaengig, siehe
+    /// `FourWeekReviewAssemblerTests`).
+    func testUnattributableSessionsExcludedFlagSurfacesAsDataGap() {
+        let withExclusion = fixedInput(
+            activatedAt: d(1, 1), weekdays: [2, 4, 6], hasUnattributableSessionsExcluded: true
+        )
+        let summary = requireSummary(PlanParticipationEvaluator.evaluate(withExclusion, asOf: d(1, 5)))
+        XCTAssertTrue(summary.dataGaps.contains(.unattributableHistoryExcludedDueToMultipleActivePlans))
+
+        let withoutExclusion = fixedInput(activatedAt: d(1, 1), weekdays: [2, 4, 6])
+        let cleanSummary = requireSummary(PlanParticipationEvaluator.evaluate(withoutExclusion, asOf: d(1, 5)))
+        XCTAssertFalse(cleanSummary.dataGaps.contains(.unattributableHistoryExcludedDueToMultipleActivePlans))
     }
 
     // MARK: - Regel 1: mehrere aktive Plaene getrennt, ohne gegenseitige Beeinflussung
