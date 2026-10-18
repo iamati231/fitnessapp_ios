@@ -878,6 +878,19 @@ Diagnoseweg). P7 läuft bereits parallel/danach weiter.
   Remote-Branch auf GitHub konnte mit den Push-Rechten dieser Sitzung nicht gelöscht werden und
   bleibt als erkennbar benannter, inhaltsloser Diagnose-Rest bestehen (enthält nur die temporäre
   `NSLog`-Instrumentierung, keine produktiven Änderungen).
+
+  **Nachtrag (P7.2-Befund 9, Commit `43c30ab`):** Nachdem P7.2 "Four-week review" als zweite,
+  andersartige Sibling-`NavigationLink` neben "Quick check-in" hinzufügte, trat in
+  `SettingsAppExperienceView` ein NEUER, von diesem P6.3-Fix unabhängiger Stillstand auf (siehe
+  P7.2-Abschnitt, Befund 9) — derselbe `XCTPerformOnMainRunLoop`-Fehler, diesmal ausgelöst durch
+  zwei unconditional Siblings unterschiedlichen Ziel-Typs im selben `@ViewBuilder`-Block, nicht
+  durch `@Query`. Auf ausdrücklichen User-Wunsch galten P6.3 und P7.2 bis zur Klärung
+  gemeinsam UI-seitig als offen. Die obige UI-Abnahme von P6.3 (Commit `ae003a6`) bleibt für den
+  damaligen Codestand (nur "Quick check-in", kein zweiter Sibling) korrekt; nach dem P7.2-Fix
+  (Faktorisierung beider Zeilen in eigene `@ViewBuilder`-Properties) ist "Quick check-in" im
+  AKTUELLEN Codestand erneut, gemeinsam mit "Four-week review", vollständig TestingBot-verifiziert
+  (Discard- und Speichern-Pfad, siehe P7.2-Abschnitt) — P6.3 UI-Abnahme gilt damit für den
+  aktuellen Stand als bestätigt.
 - (Stufe-2-Inhalts-Snapshot `TrainingDayContentRecord` bewusst erst für P8 relevant, nicht P7.)
 
 **P7 — Vier-Wochen-Rückblick, Stufe 1 (groß, abhängig von P6):**
@@ -936,8 +949,9 @@ Diagnoseweg). P7 läuft bereits parallel/danach weiter.
   aber nicht aus (gegen die bestehende `DataPortabilityRoundtripTests`-Klasse cross-verifiziert) —
   real ausgeführt wurden sie ausschließlich auf Apples Toolchain.
 
-  **UI-Abnahme: ❌ blockiert — neuer, schwerwiegender Hang-Bug gefunden, Diagnose läuft, noch
-  nicht gelöst.** Der erste TestingBot-Lauf gegen `FourWeekReviewView` zeigte exakt dasselbe
+  **UI-Abnahme: ✅ vollständig — Root Cause gefunden (Befund 9), Fix implementiert (Commit
+  `43c30ab`), Apple-kompiliert, UND erneuter TestingBot-Lauf gegen den gefixten Build
+  erfolgreich.** Der erste TestingBot-Lauf gegen `FourWeekReviewView` zeigte exakt dasselbe
   Symptom wie der ursprüngliche P6.3-Blocker (`XCTPerformOnMainRunLoop work timed out after
   60.0s` bei `source()`, kein sichtbarer Navigationswechsel, Screenshot bleibt auf "App & Workout
   Experience" stehen) — diesmal beim Tippen auf die NEUE Zeile "Four-week review". Auf ausdrücklichen
@@ -1014,35 +1028,116 @@ Diagnoseweg). P7 läuft bereits parallel/danach weiter.
   einzelne native `List`-Zeilen (kein Zeilen-Diagnose-Workaround), die über den Rahmen eines
   schnellen Diagnoseversuchs hinausgeht.
 
-  **Offen, nicht spekulativ behauptet:** Die tatsächliche Ursache ist noch nicht gefunden. Beide
-  `@Query`-Ebenen (Befund 3) und die UIKit-Swipe-Back-Interop (Befund 6) sind ausgeschlossen. Die
-  fast identische Zähler-Sequenz über zwei unabhängige Code-Varianten hinweg (Befund 6) spricht
-  eher für einen von unserem Anwendungscode UNABHÄNGIGEN, deterministischen Mechanismus als für
-  einen klassischen Render-Loop im eigenen Code — zwei nicht belegte, aber plausible Kandidaten,
-  die als Hypothesen offen bleiben: (a) ein SwiftUI/`NavigationStack`-Verhalten speziell bei
-  zwei verschachtelten Pushes mit `NavigationLink`-in-`ScrollView` (statt `List`) auf der
-  mittleren Ebene, oder (b) eine periodische Hintergrundaktivität von WebDriverAgent/XCTest
-  selbst (z. B. App-Zustands-Polling), die SwiftUI zur Neuauswertung zwingt. Eine echte
-  Stack-Sample-/Time-Profiler-Aufnahme zum Hang-Zeitpunkt war in dieser Umgebung nicht möglich
-  (kein Instruments/Xcode-GUI-Zugriff, nur TestingBot-WebDriver) — diese Grenze wird hier
-  ausdrücklich benannt statt stillschweigend übergangen. Eine statische Suche nach einem
-  wiederholten Schreiber auf `UserBodyProfile` fand weiterhin keinen Treffer.
+  **Befund 8 (Gegenprobe 2 — Appium-/XCTest-Idle-Synchronisierung, widerlegte Hypothese, Beleg):**
+  Hypothese: WebDriverAgents eigenes Quiescence-Polling (`shouldWaitForQuiescence`, nur als
+  Session-Capability setzbar, nicht als Appium-Setting zur Laufzeit — bestätigt über das
+  Capabilities-Echo der Session-Erstellung sowie über `GET /session/:id/appium/settings`, das
+  diesen Namen nicht unter den laufzeit-änderbaren Einstellungen führt) könnte SwiftUI zu einer
+  Neuauswertung zwingen und damit selbst Teil des Problems sein. Test: neue Session mit
+  `appium:shouldWaitForQuiescence: false` gegen denselben, bereits als hängend bekannten Build.
+  **Ergebnis: kein Unterschied** — der Tap-Aufruf selbst dauerte weiterhin 10.938 ms, der
+  anschließende `source()`-Aufruf hing weiterhin 62.562 ms mit demselben
+  `XCTPerformOnMainRunLoop`-Fehler; Screenshots nach 1 s/3 s/8 s zeigten den Screen durchgehend
+  unverändert auf "App & Workout Experience" stehend. Damit ist belegt, dass der Stillstand ein
+  echtes In-App-/In-OS-Phänomen ist, kein Test-Harness-Artefakt der Synchronisierung — Kandidat
+  (b) aus der vorherigen Offen-Liste ist damit widerlegt.
 
-  **Tragweite:** Dieser Fund betrifft potenziell nicht nur die neue P7.2-Zeile, sondern den
-  gesamten `SettingsAppExperienceView`-Screen — die bereits abgenommene "Quick check-in"-Zeile
-  (`PeriodicCheckInView`, P6.3) wurde mit der NEUEN, feingranularen Instrumentierung noch nicht
-  erneut geprüft; nach aktuellem Stand ist offen, ob sie von demselben Mechanismus betroffen, aber
-  wegen geringerer Kosten pro Rekonstruktion nicht sichtbar ist, oder ob sie tatsächlich
-  unbetroffen bleibt.
+  **Befund 9 (Gegenprobe 1 — Sibling-NavigationLink entfernt, bestätigte Ursache, Beleg —
+  zentraler Fund):** Strukturvergleich mit dem bereits abgenommenen, funktionierenden
+  `dashboardCustomizationRow` (zwei Ebenen tief, selbe Eltern-View) zeigte drei Unterschiede zu den
+  beiden betroffenen Zeilen "Quick check-in"/"Four-week review": `dashboardCustomizationRow` ist
+  (a) conditional (`if let profile = profiles.first`), (b) in eine eigene, separate
+  `@ViewBuilder`-Property faktorisiert, und (c) steht ALLEIN in seiner Sektion, ohne direkten
+  Sibling eines anderen Ziel-Typs. "Quick check-in"/"Four-week review" waren dagegen beide
+  unconditional, direkt inline im selben `@ViewBuilder`-Block geschrieben, UND standen als
+  direkte Siblings unterschiedlichen Ziel-Typs nebeneinander. Test: auf einem frischen, von der
+  sauberen Epic-HEAD abgezweigten Diagnose-Branch (`diag-p72-sibling-test`, Commit `5c18957`) wurde
+  AUSSCHLIESSLICH die "Quick check-in"-`NavigationLink` entfernt — Container, Navigation und die
+  "Four-week review"-Zeile selbst blieben unverändert. **Ergebnis: der Stillstand verschwindet
+  vollständig** — Tap-Dauer sank von 10.938 ms auf 1.314 ms, der anschließende `source()`-Aufruf
+  von 62.562 ms auf 674 ms, der Screen "Your first four weeks" wird korrekt erreicht (per
+  Screenshot visuell bestätigt), ein zweiter In-/Zurück-Durchlauf im selben Testlauf war ebenfalls
+  sofort erfolgreich. Damit ist die Ursache erstmals tatsächlich eingegrenzt: zwei unconditional
+  `NavigationLink`s unterschiedlichen Ziel-Typs, direkt als Siblings im selben
+  `@ViewBuilder`-Block einer zweiten Navigationsebene, lösen den Stillstand aus — unabhängig vom
+  Inhalt der jeweiligen Destination (siehe bereits Befund 5: selbst eine triviale statische
+  Text-Destination an derselben Stelle war betroffen).
 
-  **Diagnose-Zweige (temporär, enthalten nur Instrumentierung, keine Produktivänderungen):**
-  `diag-p72-fourweekreview-hang` (vier Commits: NSLog-Instrumentierung, widerlegte
-  `profiles`-Bisektion, feingranulare Zähler + Kontrollen, widerlegte
-  `deltiqSwipeBackEnabled()`-Hypothese) — auf GitHub gepusht, noch nicht aufgeräumt, da die
-  Diagnose nicht abgeschlossen ist.
+  **Root Cause:** zwei unconditional `NavigationLink`s unterschiedlichen Ziel-Typs
+  ("Quick check-in" → `PeriodicCheckInView`, "Four-week review" → `FourWeekReviewView`) standen
+  direkt als Siblings im selben `@ViewBuilder`-Block von `workoutBehaviorSection`
+  (`SettingsAppExperienceView`). Dies erklärt auch den historischen Zeitpunkt: "Quick check-in"
+  allein (P6.3, ohne Sibling) war nach dessen eigenem `@Query`-Fix unauffällig — der Stillstand trat
+  beobachtbar erst auf, als P7.2 mit "Four-week review" einen zweiten, andersartigen Sibling
+  hinzufügte. Die genaue SwiftUI-interne Mechanik (vermutlich ein Navigations-/
+  Destination-Identitäts-Konflikt bei zwei heterogenen `NavigationLink`-Zielen im selben
+  `ViewBuilder`-Block einer verschachtelten Navigation) bleibt technisch nicht bis auf die
+  SwiftUI-Interna zurückverfolgt (kein Instruments-/Profiler-Zugriff in dieser Umgebung verfügbar
+  — diese Grenze wird hier weiterhin ausdrücklich benannt), ist aber durch Befund 9 praktisch
+  zweifelsfrei als ursächlich belegt (Gegenprobe mit einziger geänderter Variable, reproduzierbarer
+  Effekt).
 
-  **P7.2 bleibt bis zur Behebung dieses Blockers UI-seitig offen.** Code/Data-Abnahme (oben) ist
-  und bleibt davon unabhängig gültig.
+  **Fix (Commit `43c30ab`, auf `claude/smart-onboarding-epic`):** beide Zeilen nach dem bereits
+  funktionierenden Muster von `dashboardCustomizationRow` in zwei eigene, separate
+  `@ViewBuilder`-Properties (`periodicCheckInRow`, `fourWeekReviewRow`) faktorisiert — Container,
+  Navigation, Reihenfolge und Verhalten beider Zeilen unverändert. Bewusst KEIN produktiver
+  `List`-Umbau (vom User nach dem ergebnislosen Diagnoseversuch in Befund 7 ausdrücklich
+  ausgeschlossen) und keine künstliche `.id()`/`AnyView`-Typlöschung — die minimal-invasive
+  Faktorisierung genügt und bleibt im Stil der bestehenden Codebasis.
+  **Implementiert + Apple-kompiliert + Tests bestanden:** `swift build`/`swift test` lokal auf
+  Linux grün (1094/1094) vor dem Push. Codemagic `ios-app` (Build `6ad4955ae8019766cd20f7f3`)
+  `success`. Codemagic `swift-package` zeigte beim ersten Versuch (Build
+  `6ad4955ae442317cf2e0bd35`) einen `timeout`-Status nach 30 Minuten — das Log zeigt jedoch, dass
+  der eigentliche `swift build`-Schritt bereits nach 38,42 s erfolgreich mit "Build complete!"
+  durchlief und der Schritt erst DANACH (vermutlich eine Codemagic-Infrastruktur-Störung nach dem
+  eigentlichen Build, kein Code-Problem) hängen blieb; ein einmaliger Re-Run (Build
+  `6ad49dc5f8f65315b988b97e`) lief sauber in rund 4 Minuten durch, alle Schritte `success`,
+  **1324/1324 Tests** auf macOS grün (identische Testanzahl wie die P7.2-Code/Data-Abnahme, keine
+  Regression, keine neuen Fehlschläge).
+
+  **UI-verifiziert (TestingBot, gefixter Build, vollständige Prüfliste aus der Vorgabe
+  abgearbeitet):**
+  - ✅ Mehrfach hinein-/zurücknavigieren zu "Four-week review": 3 Durchläufe in Folge, Tap-Zeiten
+    1.474 ms/1.401 ms/1.364 ms, jedes Mal korrekt "Your first four weeks" erreicht.
+  - ✅ "Quick check-in" — Verwerfen-Pfad: Antwort gesetzt → Zurück → Discard-Dialog
+    ("Discard changes?") erscheint → "Keep Editing" bringt zum weiterhin ausgefüllten Formular
+    zurück → erneut Zurück → "Discard Changes" verwirft tatsächlich und verlässt den Screen.
+  - ✅ "Quick check-in" — Speichern-Pfad: Antwort gesetzt → Speichern → Bestätigung "Thanks for
+    your feedback!" erscheint → Zurück OHNE Discard-Dialog (da Formular nach Speichern korrekt
+    zurückgesetzt, `isDirty` wieder `false`) → erneutes Öffnen zeigt den "Last saved"-Hinweis.
+  - ✅ Benachbarte Settings-Navigation gegengeprüft: "Customize Dashboard"
+    (`dashboardCustomizationRow`, selbe Eltern-View, zwei Ebenen tief, unverändert vom Fix) öffnet
+    korrekt (2.020 ms, kein Hang) und zeigt den Dashboard-Anpassungsscreen; eine anschließende
+    erneute "Four-week review"-Navigation bleibt ebenfalls fehlerfrei (1.192 ms). (Zwei frühere
+    Automatisierungsversuche dieses einen Nebenchecks scheiterten zunächst an einem
+    Testskript-Fehler, nicht an der App: `DeltiqRow` kombiniert Label+Subtitle zu EINEM
+    Accessibility-Label — `"Customize Dashboard, Toggle widgets on/off and reorder"` statt des
+    angenommenen `"Customize Dashboard"` allein; mit dem korrekten, aus dem rohen XML-Dump
+    ermittelten Label funktionierte der Tap beim dritten Versuch sofort.)
+  - ✅ Apple-Build und relevante Tests ausgeführt (siehe oben, beide Codemagic-Workflows grün).
+  - ✅ Diagnose-Instrumentierung (`P72DiagCounters`, temporäre `NSLog`-Snapshots) bleibt
+    vollständig außerhalb des Produktivcodes — nur auf den Wegwerf-Branches
+    `diag-p72-fourweekreview-hang` und `diag-p72-sibling-test`, nicht Teil von Commit `43c30ab`.
+
+  **Tragweite, jetzt aufgelöst:** Der Fund betraf nicht nur die neue P7.2-Zeile, sondern denselben
+  Mechanismus, der bereits "Quick check-in" (P6.3) latent betraf, sobald ein zweiter,
+  andersartiger Sibling hinzukam — das erklärt, warum P6.3 allein (vor P7.2) unauffällig blieb.
+  Mit dem Fix sind beide Zeilen gemeinsam erneut TestingBot-verifiziert (siehe oben); P6.3s
+  UI-Abnahme-Status von `ae003a6` bleibt für den damaligen Codestand (nur "Quick check-in", kein
+  Sibling) weiterhin korrekt, gilt aber für den AKTUELLEN Codestand (mit "Four-week review" als
+  Sibling) erst durch diese erneute, gemeinsame Verifikation als bestätigt — siehe Nachtrag im
+  P6.3-Abschnitt oben.
+
+  **Diagnose-Zweige (temporär, enthalten nur Instrumentierung, keine Produktivänderungen,
+  historischer Diagnoseweg):** `diag-p72-fourweekreview-hang` (fünf Commits: NSLog-Instrumentierung,
+  widerlegte `profiles`-Bisektion, feingranulare Zähler + Kontrollen, widerlegte
+  `deltiqSwipeBackEnabled()`-Hypothese, ergebnisloser `List`-Versuch) und `diag-p72-sibling-test`
+  (ein Commit `5c18957`, Gegenprobe 1 — der Fix selbst wurde separat, sauber, ohne
+  Diagnose-Instrumentierung auf `claude/smart-onboarding-epic` committed) — beide auf GitHub
+  gepusht, bewusst nicht aufgeräumt als nachvollziehbarer Diagnoseweg.
+
+  **P7.2 ist UI-seitig abgeschlossen.** Code/Data-Abnahme (oben) und UI-Abnahme sind nun beide
+  grün, weiterhin als zwei separate Befunde ausgewiesen.
 - P7.3 Review-Zustandsfeld (zuletzt reviewed/fällig/Entscheidung) — noch nicht begonnen.
 
 **P8 — Spätere Block-Reviews, Stufe 3** — zurückgestellt bis P7 + vollständige Stufe-2-Versionierung
