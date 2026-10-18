@@ -565,34 +565,59 @@ etablierte Testklasse (`FourWeekReviewAssemblerTests`) angehängt —
 stürzte IDENTISCH ab, während JEDE BESTEHENDE Methode derselben Klasse im
 selben Lauf fehlerfrei durchlief.
 
-**Zwischenstand (vorläufig, nicht abschließend):** Signal-5-Absturz in
-neuen SwiftData-Tests auf Apple-CI reproduzierbar; Ursache noch nicht
-abschließend geklärt. Alle bisher getesteten Varianten (Modellinhalt,
-Relationship-Existenz, Dateiname, Klassenname, Dispatch-Position) zeigten
-denselben Absturz, aber EINE strukturelle Gemeinsamkeit aller bisherigen
-Reproduktionen wurde noch nicht kontrolliert geprüft: jede abstürzende
-Testmethode zog den `ModelContext` per `try makeContainer().mainContext`
-in einem Ausdruck, ohne den `ModelContainer` separat in einer Variable zu
-halten — anders als JEDE bestehende, nie abstürzende Testmethode in
-`FourWeekReviewAssemblerTests`, die durchgehend `let container = try
-makeContainer()` als eigene, für die gesamte Testlaufzeit lebende Variable
-hält. Ob ein vorzeitig deallozierter `ModelContainer` (Container-
-Lifetime-Hypothese) die tatsächliche Ursache ist, wird aktuell gezielt mit
-einem einzelnen, minimalen Diagnosetest geprüft, der den Container
-explizit per `withExtendedLifetime` hält. Bis dieser Test ausgewertet ist,
-gilt NICHT die Aussage "jede neue Testmethode betroffen, unabhängig vom
-Inhalt" und NICHT "durch Quelltextänderungen unlösbar" — beide waren
-verfrüht und werden hier zurückgenommen.
+**Bestätigter Befund (kontrolliertes A/B-Experiment, Apple-CI-Build
+`6ad510f9fea826065828844a`):** die Container-Lifetime-Hypothese ist die
+Ursache. Ein einzelner, minimaler Diagnosetest
+(`testMinimalInsertWithRetainedContainer`, `ModelContainer` explizit per
+`withExtendedLifetime` gehalten) lief im selben CI-Lauf fehlerfrei durch,
+während alle acht `TrainingDayContentSnapshotWriterTests` (altes Muster,
+`try makeContainer().mainContext` als anonymer Ausdruck) weiterhin
+abstürzten — reiner A/B-Vergleich innerhalb eines Laufs, keine
+Zusatzvariable. `try makeContainer().mainContext` haelt den
+`ModelContainer` selbst nicht; ARC deallozierte ihn, waehrend der daraus
+gezogene `ModelContext` noch in Benutzung war, was in SwiftData einen
+internen Precondition-Trap ausloeste (`_SD_get_current_context_tsd` lieferte
+`nil`). Die Aussagen "jede neue Testmethode betroffen, unabhängig vom
+Inhalt" und "durch Quelltextänderungen unlösbar" waren verfrüht und sind
+hiermit widerlegt — die Ursache lag in den Test-Fixtures, nicht im
+Modelldesign und nicht in Apples Toolchain/Runner.
 
-**Apple-CI, Stand bei Abschluss dieser Runde (`ios-app` + `swift-package`):**
-`ios-app` GRÜN in jedem Lauf (baut die App, führt keine SwiftData-Unit-Tests
-aus). `swift-package` bleibt ROT für `TrainingDayContentSnapshotWriterTests`
-(8 Tests) — Ursache noch nicht abschließend geklärt, siehe Zwischenstand
-oben. Alle 1123 Linux-Tests (inkl. der 10 aus Paket A) bleiben grün; Paket B
-ist code-/strukturreviewt und auf Linux kompilierfähig, auf Apple-Seite
-aktuell nicht automatisiert testausführbar — Grund wird gerade gezielt
-weiter eingegrenzt (Container-Lifetime-Hypothese), noch keine endgültige
-Diagnose.
+**Fix angewendet:** alle acht Tests in `TrainingDayContentSnapshotWriterTests`
+halten den `ModelContainer` jetzt durchgehend in einer benannten `let`-
+Variable (`Fixture.container`-Feld bzw. direkt im Testkörper) für die
+gesamte Testlaufzeit — identisches Muster wie die bereits bestehenden,
+nie abgestürzten Tests in `FourWeekReviewAssemblerTests`.
+
+**Zweiter, unabhängiger Fund nach dem Container-Lifetime-Fix (Apple-CI-Build
+`6ad5130f097e8eb91225a313`):** mit dem Fix lief die Suite crashfrei durch,
+aber `testDeletingTheDayLeavesTheSnapshotFullyReadableWithNoGuessedPlanLink`
+schlug mit einem echten `XCTAssertNil`-Fehler fehl —
+`session.day` war nach `context.delete(day)` + `save()` NICHT nil.
+Ursache: `WorkoutSession.day`/`.gear` hatten `deleteRule: .nullify`, aber
+keine deklarierte inverse Relationship; `TrainingDay`/`Gear` hatten keine
+Rückreferenz. Ohne inverse Relationship kann SwiftData den Objektgraphen
+beim Löschen nicht konsistent halten (Standardverhalten laut Apple-
+Dokumentation zu Core-Data-/SwiftData-Relationships) — ein vorbestehender,
+bis dahin ungetesteter Zustand, von dem bereits `FourWeekReviewAssembler.swift:197`
+abhängt (`session.day == nil`-Prüfung). Gezielt behoben (vom User
+freigegeben): `TrainingDay.sessions`/`Gear.sessions` als neue,
+inverse-deklarierende Relationships ergänzt (Muster identisch zu
+`TrainingDay.exercises` ↔ `Exercise.day`), `WorkoutSession.day`/`.gear`
+dafür auf plaine Properties ohne eigenes `@Relationship` zurückgebaut.
+
+**Finaler Apple-CI-Stand (`ios-app` + `swift-package`, Build
+`6ad514f44fc62c1058e502a3` / `6ad5162c7c9acec0cd18e2ef`):** beide Workflows
+GRÜN. `swift-package`: alle 1379 Tests (inkl. aller acht
+`TrainingDayContentSnapshotWriterTests`) ohne Fehler, kein Crash.
+`ios-app`: App + Widget bauen fehlerfrei mit den geänderten Relationships.
+Linux bleibt bei 1123/1123 grün (Paket B weiterhin `#if canImport(SwiftData)`-
+gegated, 0 Tests auf Linux ausgeführt, nur kompiliert).
+
+**Verbleibende Grenze:** die inverse-Relationship-Korrektur wurde nur für
+`day`/`gear` auf `WorkoutSession` umgesetzt (die beiden von Paket B direkt
+berührten bzw. aufgedeckten Fälle). Ob weitere `@Relationship`-Properties
+im Datenmodell denselben fehlenden-inverse-Zustand haben, wurde NICHT
+systematisch auditiert — das war nicht Teil dieses Auftrags.
 
 ## 6. Abnahmefälle (vor Implementierung festgelegt)
 
