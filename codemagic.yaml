@@ -46,6 +46,33 @@ workflows:
           set -e
           swift build
 
+      - name: Diagnose TrainingDayContentRecordTests crash via lldb (temporary)
+        # Sechs verschiedene Hypothesen (Zugriffsmodifikator, In-Memory-/On-
+        # Disk-Store, Parallelitaet, cascade/nullify, Relationship komplett
+        # entfernt, Warm-up-Container) widerlegt -- immer derselbe
+        # Signal-5-Trap an derselben Codeadresse INNERHALB von SwiftData
+        # selbst. Erster lldb-Versuch lieferte nur die automatische Stop-
+        # Meldung, "bt all" tauchte nicht im Log auf. Dieser Lauf erzwingt
+        # Backtrace + Symbol-Lookup explizit und mit mehr Kontext. `set +e`,
+        # bricht den Build nicht ab.
+        script: |
+          set +e
+          swift build --build-tests 2>&1 | tail -30
+          BUNDLE=$(find .build -name "FitnessAppPackageTests.xctest" -maxdepth 6 | head -1)
+          XCTEST_BIN=$(xcrun --find xctest)
+          lldb -b \
+            -o "run" \
+            -o "thread backtrace all" \
+            -o "image lookup -a \$pc -v" \
+            -o "disassemble -a \$pc -c 60" \
+            -o "register read" \
+            -o "bt" \
+            -- "$XCTEST_BIN" -XCTest "FitnessAppDataTests.TrainingDayContentRecordTests/testCaptureOnASessionWithoutADayDoesNothing" "$BUNDLE" \
+            > lldb-crash-backtrace.log 2>&1
+          sleep 1
+          cat lldb-crash-backtrace.log
+          exit 0
+
       - name: Run unit tests
         script: |
           set -eo pipefail
@@ -69,6 +96,7 @@ workflows:
     artifacts:
       - .build/**/*.xctest
       - swift-test-output.log
+      - lldb-crash-backtrace.log
 
     publishing:
       email:
