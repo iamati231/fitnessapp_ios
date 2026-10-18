@@ -24,7 +24,19 @@ final class TrainingDayContentRecordTests: XCTestCase {
         utc.date(from: DateComponents(year: year, month: month, day: day))!
     }
 
+    /// Diagnose (siehe Commit-Historie): baut ERST einen belanglosen,
+    /// sofort verworfenen Container OHNE `TrainingDayContentRecord` im
+    /// Schema, danach den eigentlichen Container MIT diesem Typ — exakt die
+    /// Reihenfolge, die der einzige nie abstürzende Test dieser Datei
+    /// (`testExistingWorkoutSessionsSurviveAddingTrainingDayContentRecordToTheSchema`)
+    /// bereits hat. Testet die Hypothese, dass der Signal-5-Absturz nur
+    /// auftritt, wenn ein Schema MIT `TrainingDayContentRecord` die ALLERERSTE
+    /// `ModelContainer`-Erzeugung im Prozess ist.
     private func makeContainer() throws -> ModelContainer {
+        _ = try? ModelContainer(
+            for: Schema(preContentRecordSchemaTypes),
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
         let schema = Schema(AppSchema.types)
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         return try ModelContainer(for: schema, configurations: config)
