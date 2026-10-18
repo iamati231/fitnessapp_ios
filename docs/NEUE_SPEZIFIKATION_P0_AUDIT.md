@@ -1218,7 +1218,130 @@ Diagnoseweg). P7 läuft bereits parallel/danach weiter.
 
   **P7.2 ist UI-seitig abgeschlossen.** Code/Data-Abnahme (oben) und UI-Abnahme sind nun beide
   grün, weiterhin als zwei separate Befunde ausgewiesen.
-- P7.3 Review-Zustandsfeld (zuletzt reviewed/fällig/Entscheidung) — noch nicht begonnen.
+- P7.3 ✅ **Review-Zustandsfeld vollständig abgenommen** (Commits `43da264`/`2074d2f`/`14e738d`,
+  2026-10-18): Fälligkeit/Abschluss des Vier-Wochen-Rückblicks pro Plan.
+
+  **Produktentscheidungen dieser Runde (vom Nutzer ausdrücklich festgelegt, keine erfundenen
+  Fristen):**
+  - Fälligkeits-Intervall für den ERSTEN Rückblick: **28 Tage nach `activatedAt`** — eine
+    ausdrücklich festgelegte PRODUKTREGEL (abgeleitet aus dem bereits etablierten Feature-Namen
+    "Vier-Wochen-Rückblick"/"Your first four weeks"), keine wissenschaftlich hergeleitete
+    Trainingsschwelle. Gilt nur für den ERSTEN Rückblick — kein automatischer wiederkehrender
+    28-Tage-Zyklus nach Abschluss; spätere Block-Reviews bleiben ausdrücklich P8.
+  - **Kein Snooze/Aufschub in dieser Stufe.** Es existiert kein Push/keine lokale Benachrichtigung
+    zu diesem Feature — nur eine passive Zeile in den Einstellungen. Ein Aufschub-Mechanismus ohne
+    etwas zum Aufschieben wäre eine auf Vorrat gebaute, ungenutzte Funktion mit einem erfundenen
+    Intervall. Diese Lücke ist eine bewusste Produktentscheidung für diese Stufe, kein vergessenes
+    Teilstück.
+  - Bloßes Öffnen oder Verlassen des Review-Screens schließt den Rückblick NICHT ab. Eine
+    ausdrückliche Abschlussaktion ("Complete review"/"Rückblick abschließen") ist erforderlich.
+    "Plan beibehalten" ist dabei ein vollwertiges Abschlussergebnis — der Abschluss funktioniert
+    auch ganz ohne Planänderung.
+  - Wird innerhalb derselben Sitzung tatsächlich eine Deload-/Comeback-Aktion angewendet, speichert
+    der Abschluss `reviewDecision = .actionTaken` statt `.keptAsIs` — der Abschluss selbst wendet
+    diese Vorschläge aber nie automatisch an; Deload/Comeback bleiben weiterhin separat
+    bestätigungspflichtig (unverändert seit P7.2).
+  - Bei fehlendem `activatedAt` (Altbestand vor P6.1) wird **kein historisches Aktivierungsdatum
+    erfunden** — stattdessen wird einmalig, nachvollziehbar ein Beobachtungs-Fallback
+    (`reviewObservationStartedAt`) gesetzt, ab dem die 28 Tage zählen.
+  - **Mehrere gleichzeitig aktive Pläne** (Task #201/#202): die Fälligkeits-AGGREGATION für die
+    passive Settings-Anzeige (`FourWeekReviewDueStatus.isAnyDue`) wertet JEDEN aktiven Plan
+    einzeln aus und wählt NICHT stillschweigend nur den alphabetisch ersten — bewusst ANDERS als
+    die bereits für den Review-INHALT akzeptierte, offen dokumentierte Vereinfachung
+    (`FourWeekReviewAssembler.primaryPlanForReview`, "erster Plan nach Name"), die für P7.1/P7.2
+    unverändert weiterbesteht. Fälligkeit/Abschluss selbst sind additive Felder PRO Plan
+    (`TrainingPlan.reviewCompletedAt`/`reviewDecisionRaw`/`reviewObservationStartedAt`, gleiches
+    Prinzip wie `activatedAt`), keine globale Variable.
+
+  **Implementiert:**
+  - `FourWeekReviewDueCalculator` (Core, `Sources/FitnessAppCore/Analytics/`): reine Funktion wie
+    `PlanParticipationEvaluator`/`DeloadAdvisor` — kein SwiftData/`Date()` im Code-Pfad.
+    `.due(since:)`/`.notYetDue(dueAt:)`/`.completed(at:decision:)`/`.unknown` (fehlender Zeitanker
+    — niemals stillschweigend als "nicht fällig" fehlinterpretiert, sondern explizit benannt).
+  - `TrainingPlan` (Data): drei additive Felder, identisches Migrationsprinzip wie `activatedAt`
+    (P6.1) — optionale SwiftData-Properties ohne Init-Änderung, Altbestand bekommt automatisch
+    `nil`.
+  - `FourWeekReviewDueStatus` (Data, `@MainActor`): verbindet den Calculator mit echten
+    `TrainingPlan`-Objekten. `establishObservationAnchorsIfNeeded` mutiert bewusst nur aus einem
+    einmaligen Aufruf heraus (nie aus einer SwiftUI-`body`-Auswertung), um keine neue
+    Render-Endlosschleife (siehe P6.3/P7.2-Befunde oben) zu riskieren. `isAnyDue(among:)` ist
+    dagegen ein reiner, seiteneffektfreier Lesezugriff, sicher aus `body` aufrufbar.
+  - `FourWeekReviewAssembler.primaryPlanForReview` exponiert den für den Review-INHALT bereits
+    ausgewählten Plan, damit UI-Fälligkeit/-Abschluss exakt für denselben Plan gilt, der tatsächlich
+    bewertet wird — keine zweite, abweichende Planauswahl.
+  - `FourWeekReviewView` (UI): Header-Checkmark "Complete review" (nur sichtbar solange nicht
+    abgeschlossen), Kontextzeile zeigt Fälligkeit bzw. Abschlussdatum (`DeltiqContextRow`,
+    identisches Muster wie `PeriodicCheckInView`s "Last saved"-Hinweis).
+  - `SettingsAppExperienceView` (UI): rein passive "Due"/"Fällig"-Anzeige an der bestehenden
+    "Four-week review"-Zeile, aggregiert über alle aktiven Pläne via `@Query` (dieselbe Kategorie
+    `@Query` wie das bereits unauffällige `profiles` — durch Befund 3 oben bereits als NICHT
+    ursächlich für die P6.3/P7.2-Render-Endlosschleife ausgeschlossen, deren echte Ursache Befund 9
+    war).
+  - CSV-Export/Import (`DataExportService`/`DataImportService`): drei neue additive Spalten
+    (`review_completed_at_utc`/`review_decision`/`review_observation_started_at_utc`), identisches
+    Muster wie `activated_at_utc` — ein Backup von vor P7.3 liefert beim Import `nil`, nie einen
+    erfundenen Abschluss.
+  - 6 neue Lokalisierungsschlüssel DE/EN/TR (`fourWeekReview.complete.action`,
+    `fourWeekReview.status.completed`, `fourWeekReview.status.due`, plus die bereits für P7.2
+    vorhandenen Dateien nur ergänzt, keine bestehenden Keys verändert).
+
+  **Apple-kompiliert:** `ios-app` (Build `6ad4c3bfa9ce506e09391502`) + `swift-package` (Build
+  `6ad4c3c30ff3273a7f69e60f`) beide `success`, alle Schritte grün.
+
+  **Tests bestanden:** 1352/1352 Tests auf macOS grün (1332 vor P7.3 + 20 neue: 8
+  `FourWeekReviewDueCalculatorTests`, 9 `FourWeekReviewDueStatusTests`, 3 neue
+  `DataPortabilityRoundtripTests`-Fälle). Linux: `swift build`/`swift test` lokal grün
+  (1110/1110) — dieselbe seit P6.3 bekannte Einschränkung bleibt bestehen:
+  `@MainActor`-SwiftData-Testklassen kompilieren unter Linux, laufen dort aber nicht real aus; alle
+  SwiftData-abhängigen Assertions wurden ausschließlich auf Apples Toolchain tatsächlich
+  ausgeführt. Core-Tests (`FourWeekReviewDueCalculatorTests`, reine Logik ohne SwiftData) liefen
+  echt auf BEIDEN Plattformen.
+
+  **UI-verifiziert (TestingBot, gefixter Build `tb://aa442679f3bf30bd19ab47e1`, vollständiger
+  Abschluss-Durchlauf):**
+  - ✅ Frisch aktivierter Plan (`activatedAt` = jetzt): "Four-week review"-Zeile in den
+    Einstellungen zeigt korrekt KEIN "Due"-Badge (noch nicht fällig).
+  - ✅ Review-Screen vor Abschluss: Checkmark "Complete review" sichtbar, KEIN
+    "Completed on …"-Badge.
+  - ✅ Tap auf den Checkmark: Badge "COMPLETED ON OCT 18, 2026" erscheint sofort, Checkmark
+    verschwindet — belegt per rohem XML-Dump (`fourWeekReview.status.completed` + das injizierte
+    Datum korrekt gerendert).
+  - ✅ Zurück zu den Einstellungen: "Four-week review"-Zeile weiterhin korrekt OHNE "Due"-Badge
+    (war nie fällig, ist jetzt zusätzlich abgeschlossen — beides korrekt gemeinsam abwesend/present).
+  - ✅ **Persistenz-Beweis:** Rückblick-Screen ERNEUT geöffnet (frische `FourWeekReviewView`-Instanz,
+    frisches `.task { reload() }`, kein In-Memory-Zustand wiederverwendet) — "COMPLETED ON OCT 18,
+    2026"-Badge bleibt bestehen, Checkmark bleibt verschwunden. Per rohem XML-Dump bestätigt
+    (`grep` auf `p73_review_reopened.xml`), nicht nur über das (an dieser Stelle durch einen
+    Groß-/Kleinschreibungsfehler im Testskript selbst falsch-negativen) Script-Ergebnis.
+  - **Testskript-Methodik-Hinweis:** Die automatisierten `CHECK`-Zeilen für "Completed on …"
+    meldeten an zwei Stellen fälschlich `false` — Ursache ist ein Groß-/Kleinschreibungsfehler im
+    Testskript selbst (`startsWith('Completed on')` gegen den tatsächlichen, korrekt
+    GROSSGESCHRIEBENEN Pill-Text "COMPLETED ON …", Konvention von `DeltiqPill`/`DeltiqContextRow`
+    wie bei jeder anderen Kontextkapsel im Repo), nicht die Produktebene. Direkt per `grep` auf dem
+    rohen XML-Dump verifiziert und oben als tatsächliches Ergebnis dokumentiert.
+  - **Diagnose-Hinweis (Infrastruktur, kein App-Bug):** Der erste TestingBot-Lauf dieser Runde
+    (Session `3d39208a70d4-…`) brach beim allerletzten Schritt (zweites Öffnen des
+    Rückblick-Screens) mit `"test has timed out after 138 seconds"` ab — ein
+    Session-Zeitlimit der Plattform, kein reproduzierbares App-Verhalten (alle vorherigen Schritte
+    inkl. des Abschluss-Taps liefen bereits fehlerfrei durch). Hypothese: Standard-`maxDuration`
+    des TestingBot-Plans zu knapp für den vollständigen Durchlauf. Ein einziger Re-Run mit
+    explizitem `maxDuration: 600`-Capability (Session `2569b72c82c6-…`) lief vollständig und
+    fehlerfrei durch — genau EIN gezielter Re-Run mit konkreter Hypothese, keine blinde
+    Wiederholung.
+  - **Bewusst NICHT geräte-verifiziert:** die tatsächliche "Due"-Badge-DARSTELLUNG für einen WIRKLICH
+    28+ Tage alten Plan — auf einem frischen Testgerät lässt sich `activatedAt` nicht ohne
+    unverhältnismäßigen Zusatzaufwand (z. B. ein künstlich präpariertes Backup-ZIP mit
+    zurückdatiertem `activated_at_utc`, importiert über den bestehenden Restore-Weg) realistisch
+    in die Vergangenheit versetzen. Die Berechnung selbst ist durch
+    `FourWeekReviewDueCalculatorTests` vollständig (vor/genau/über Fälligkeit) Core-getestet: die
+    exakt gleiche `dueBadgeText`-Switch-Anweisung und Datums-Formatierung wird bereits durch den
+    `.completed`-Fall oben auf dem Gerät bewiesen fehlerfrei zu rendern — das verbleibende Risiko
+    ist auf das reine Zusammenspiel von Code-Pfad und einem seit 28+ Tagen aktiven Plan beschränkt,
+    nicht auf die Darstellung selbst.
+
+  **P7.3 ist damit vollständig abgeschlossen** — Implementiert + Apple-kompiliert + Tests bestanden +
+  UI-verifiziert, alle vier getrennt ausgewiesen wie gefordert. Damit ist **P7 (Vier-Wochen-Rückblick,
+  Stufe 1) insgesamt abgeschlossen** (P7.1/P7.2/P7.3 alle grün).
 
 **P8 — Spätere Block-Reviews, Stufe 3** — zurückgestellt bis P7 + vollständige Stufe-2-Versionierung
 stehen.
