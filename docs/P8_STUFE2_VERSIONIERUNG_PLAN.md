@@ -549,17 +549,44 @@ seriell, `deleteRule` `.cascade` vs. `.nullify`, vollständige Entfernung
 jeder `@Relationship` zugunsten eines `sessionID`-Scalar-Fremdschlüssels,
 Warm-up-Container vor dem eigentlichen Container. Reproduzierte sich
 identisch per `lldb` SOLO (ein einzelner xctest-Prozess, keine Parallelität,
-keine Vorbelastung) — kein Nebenläufigkeits-/Ressourcenproblem. Auffällig:
-der Trap trat ausschließlich bei `ModelContext.insert()` einer
-`WorkoutSession` INNERHALB der betroffenen Testdatei auf — identische
-Inserts mit identischem Schema in anderen Testdateien (z. B.
-`FourWeekReviewAssemblerTests`) liefen im selben CI-Lauf fehlerfrei durch.
-Konsequenz: Redesign auf zwei Felder direkt auf `WorkoutSession` (siehe 2.2)
-statt eines eigenen Entity-Typs — vermeidet die neue Relationship/Entity
-vollständig, die der gemeinsame Nenner aller Abstürze war.
+keine Vorbelastung) — kein Nebenläufigkeits-/Ressourcenproblem.
 
-**Apple-CI, finale Fassung nach Redesign (`ios-app` + `swift-package`):**
-<<CI_STATUS_PLACEHOLDER>>
+**Finaler, entscheidender Befund (widerlegt die bis dahin naheliegendste
+Erklärung "eigenes `@Model`/Relationship ist die Ursache"):** nach dem
+Redesign auf zwei zusätzliche Felder direkt auf `WorkoutSession` (ohne
+jede neue Relationship/Entity) stürzte die Testdatei WEITERHIN ab — sogar
+ein auf ein einziges, maximal triviales Beispiel reduzierter Test (ein
+einzelner `TrainingPlan`-Insert, ohne jeden Bezug zu `WorkoutSession` oder
+diesem Feature) stürzte identisch ab. Auch eine vollständige Umbenennung
+von Datei UND Klasse (gegen einen korrumpierten Build-Cache-Verdacht)
+änderte nichts. Der entscheidende, abschließende Test: derselbe triviale
+Diagnose-Code als NEUE METHODE an eine seit Monaten stabile, bereits
+etablierte Testklasse (`FourWeekReviewAssemblerTests`) angehängt —
+stürzte IDENTISCH ab, während JEDE BESTEHENDE Methode derselben Klasse im
+selben Lauf fehlerfrei durchlief.
+
+**Schlussfolgerung:** der Signal-5-Absturz ist nachweislich unabhängig von
+Modellinhalt, Relationship-Existenz, Dateiname, Klassenname und Dispatch-
+Position — er trifft spezifisch JEDE in einem Commit neu hinzugefügte
+XCTest-Methode auf dieser Apple-CI-Umgebung (Xcode 26.6, `mac_mini_m2`,
+Codemagic), unabhängig von ihrem Inhalt. Das ist ein Befund über die
+CI-Toolchain/-Umgebung, kein Fehler in diesem Code — weder im ursprünglichen
+`@Model`-Entwurf noch im finalen Feld-Redesign. Das Feld-Redesign (2.2)
+bleibt trotzdem die bessere Lösung (kein neuer Entity-Typ, exakt das
+etablierte additive Feld-Muster), wird aber NICHT mehr als "Fix für den
+Absturz" dargestellt, da dieser nachweislich an etwas anderem liegt.
+
+**Apple-CI, finale Fassung (`ios-app` + `swift-package`):** `ios-app`
+GRÜN in jedem Lauf (baut die App, führt keine SwiftData-Unit-Tests aus).
+`swift-package` bleibt ROT für `TrainingDayContentSnapshotWriterTests`
+(8 Tests) — nicht wegen eines Fehlers in diesen Tests oder im
+produktiven Code, sondern wegen des oben beschriebenen, umgebungsseitigen
+"neue Testmethode"-Absturzes. **Dies ist eine offene, nicht durch
+Quelltext-Änderungen lösbare Umgebungs-Einschränkung**, keine Aussage über
+die Korrektheit von Paket A oder B. Alle 1123 Linux-Tests (inkl. der 10
+aus Paket A) bleiben grün; Paket B ist code-/strukturreviewt und auf
+Linux kompilierfähig, aber auf Apple-Seite aktuell nicht automatisiert
+testausführbar.
 
 ## 6. Abnahmefälle (vor Implementierung festgelegt)
 
