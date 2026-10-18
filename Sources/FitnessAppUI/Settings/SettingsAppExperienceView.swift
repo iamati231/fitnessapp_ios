@@ -19,6 +19,14 @@ public struct SettingsAppExperienceView: View {
     @Environment(PRNotificationCenter.self) private var prNotifications
 
     @Query private var profiles: [UserBodyProfile]
+    /// P7.3: reiner Lesezugriff für die passive "Fällig"-Anzeige an
+    /// `fourWeekReviewRow` — siehe `isFourWeekReviewDue`. Dieselbe Kategorie
+    /// `@Query` wie `profiles` oben, bereits durch Befund 3
+    /// (docs/NEUE_SPEZIFIKATION_P0_AUDIT.md, P7.2) als NICHT ursächlich für
+    /// den dort gefundenen Stillstand ausgeschlossen — die eigentliche
+    /// Ursache war Befund 9 (zwei unconditional Sibling-NavigationLinks),
+    /// nicht `@Query` an sich.
+    @Query(filter: #Predicate<TrainingPlan> { $0.isActive == true }) private var activePlans: [TrainingPlan]
 
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
     @AppStorage("pref_appearance") private var appearanceRaw: String = "system"
@@ -75,6 +83,15 @@ public struct SettingsAppExperienceView: View {
         // Berechtigung an (das macht ausschliesslich `rescheduleReminders()`,
         // ausgeloest durch einen echten Toggle-Tap).
         .task { await prNotifications.refreshAuthorizationStatus() }
+        // P7.3: legt bei Bedarf EINMALIG den Beobachtungs-Fallback für
+        // aktive Pläne ohne `activatedAt` an (siehe
+        // `FourWeekReviewDueStatus`-Dokumentation) — bewusst in einem
+        // eigenen, einmaligen `.task` statt in der `isFourWeekReviewDue`-
+        // Berechnung selbst, damit die `@Query`-beobachtete `TrainingPlan`-
+        // Mutation NIE aus einer `body`-Auswertung heraus passiert (genau
+        // die Fehlerklasse, die P6.3/P7.2 bereits zu Render-Endlosschleifen
+        // führte).
+        .task { FourWeekReviewDueStatus.establishObservationAnchorsIfNeeded(in: modelContext) }
         // ...und nach Rueckkehr aus den Systemeinstellungen — gleiches
         // grobkoerniges, aber bereits im Health-Bereich bewaehrtes Muster
         // (jedes Foregrounding re-checkt, nicht nur ein gezielter "kam von
@@ -205,17 +222,29 @@ public struct SettingsAppExperienceView: View {
         }
     }
 
+    /// P7.3: rein passive Anzeige — `true`, sobald MINDESTENS EIN aktiver
+    /// Plan fällig ist (`FourWeekReviewDueStatus.isAnyDue`, wertet JEDEN
+    /// aktiven Plan einzeln aus, keine stillschweigende Auswahl nur eines
+    /// Plans). Löst nichts aus, navigiert nichts automatisch — ausdrücklich
+    /// kein Snooze/Benachrichtigung in dieser Stufe (Produktentscheidung,
+    /// siehe `FourWeekReviewDueCalculator`).
+    private var isFourWeekReviewDue: Bool {
+        FourWeekReviewDueStatus.isAnyDue(among: activePlans)
+    }
+
     @ViewBuilder
     private var fourWeekReviewRow: some View {
         // P7.2: Manueller Einstiegspunkt fuer den Vier-Wochen-Rueckblick.
-        // Automatisches Faellig-/Snooze-Verhalten ist P7.3 — hier bewusst
-        // nur ein jederzeit erreichbarer, manueller Zugang.
+        // P7.3 ergaenzt eine rein passive "Fällig"-Anzeige — weiterhin nur
+        // ein jederzeit erreichbarer, manueller Zugang, kein automatisches
+        // Verhalten.
         NavigationLink {
             FourWeekReviewView()
         } label: {
             DeltiqRow(
                 icon: "calendar.badge.clock",
                 label: String(localized: "settings.fourWeekReview.row", bundle: .module),
+                value: isFourWeekReviewDue ? String(localized: "fourWeekReview.status.due", bundle: .module) : nil,
                 showsChevron: true
             )
         }

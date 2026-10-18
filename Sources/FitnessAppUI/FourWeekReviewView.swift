@@ -35,6 +35,18 @@ public struct FourWeekReviewView: View {
     @State private var comebackAssessment: AbsenceDeload.Assessment?
     @State private var showingDeloadConfirm = false
 
+    /// P7.3: der Plan, dessen Fälligkeit/Abschluss dieser Screen anzeigt und
+    /// speichert — derselbe, den `FourWeekReviewAssembler` bereits für den
+    /// Review-INHALT bewertet (`primaryPlanForReview`), nicht erneut
+    /// eigenständig ausgewählt.
+    @State private var reviewedPlan: TrainingPlan?
+    @State private var dueState: FourWeekReviewDueCalculator.State?
+    /// Wird `true`, sobald innerhalb DIESER Sitzung tatsächlich eine Aktion
+    /// (Deload/Comeback) angewendet wurde — bestimmt die gespeicherte
+    /// `reviewDecision` beim Abschluss. Startet bei jedem `reload()` neu,
+    /// bewusst NICHT aus gespeicherten Daten rekonstruiert.
+    @State private var actionTakenThisSession = false
+
     public init() {}
 
     public var body: some View {
@@ -42,11 +54,15 @@ public struct FourWeekReviewView: View {
             DeltiqHeader(
                 eyebrow: loc("fourWeekReview.header.eyebrow"),
                 title: loc("fourWeekReview.title"),
-                onBack: { dismiss() }
+                onBack: { dismiss() },
+                actions: completeAction.map { [$0] } ?? []
             )
             ScrollView {
                 VStack(spacing: 14) {
                     if let review {
+                        if let dueBadgeText {
+                            DeltiqContextRow([DeltiqContextItem(dueBadgeText, style: .neutral)])
+                        }
                         reviewContent(review)
                     } else {
                         ProgressView().padding(.top, 60)
@@ -83,6 +99,51 @@ public struct FourWeekReviewView: View {
 
     private func reload() {
         review = FourWeekReviewAssembler.assemble(in: modelContext)
+        let plan = FourWeekReviewAssembler.primaryPlanForReview(in: modelContext)
+        reviewedPlan = plan
+        dueState = plan.map { FourWeekReviewDueStatus.state(for: $0, in: modelContext) }
+    }
+
+    // MARK: - P7.3: Fälligkeit/Abschluss
+
+    /// Header-Checkmark "Rückblick abschließen" — nur sichtbar, solange ein
+    /// Plan bewertet wurde UND dieser Rückblick noch nicht abgeschlossen ist.
+    /// Bloßes Öffnen/Verlassen dieses Screens löst das NIE automatisch aus
+    /// (siehe `FourWeekReviewDueCalculator`-Dokumentation) — nur dieser
+    /// ausdrückliche Tap.
+    private var completeAction: DeltiqHeaderAction? {
+        guard reviewedPlan != nil, let dueState, !dueState.isCompleted else { return nil }
+        return DeltiqHeaderAction(
+            systemImage: "checkmark",
+            accessibilityLabel: loc("fourWeekReview.complete.action")
+        ) {
+            completeReview()
+        }
+    }
+
+    /// Rein passive Anzeige (kein Snooze/Benachrichtigung in dieser Stufe,
+    /// siehe `FourWeekReviewDueCalculator`-Dokumentation) — zeigt entweder
+    /// den Abschlusszeitpunkt oder, solange offen, seit wann fällig.
+    private var dueBadgeText: String? {
+        guard let dueState else { return nil }
+        switch dueState {
+        case .completed(let at, _):
+            return String(format: loc("fourWeekReview.status.completed"), at.formatted(date: .abbreviated, time: .omitted)).uppercased()
+        case .due:
+            return loc("fourWeekReview.status.due").uppercased()
+        case .notYetDue, .unknown:
+            return nil
+        }
+    }
+
+    private func completeReview() {
+        guard let reviewedPlan else { return }
+        FourWeekReviewDueStatus.markCompleted(
+            for: reviewedPlan,
+            decision: actionTakenThisSession ? .actionTaken : .keptAsIs,
+            in: modelContext
+        )
+        dueState = FourWeekReviewDueStatus.state(for: reviewedPlan, in: modelContext)
     }
 
     // MARK: - Inhalt
@@ -257,6 +318,7 @@ public struct FourWeekReviewView: View {
         deloadUntil = Date()
             .addingTimeInterval(TimeInterval(DeloadManager.defaultDurationDays * 24 * 3600))
             .timeIntervalSince1970
+        actionTakenThisSession = true
         reload()
     }
 
@@ -265,6 +327,7 @@ public struct FourWeekReviewView: View {
         comebackAssessment = nil
         if let factor {
             try? AbsenceDeload.apply(in: modelContext, factor: factor)
+            actionTakenThisSession = true
         } else {
             AbsenceDeload.remember(declinedAtGapDays: assessment.gapDays)
         }
