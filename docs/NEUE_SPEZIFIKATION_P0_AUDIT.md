@@ -606,7 +606,11 @@ umgesetzt (Task #203, 2026-10-17).
   eingeschätzt, bleibt aber ein offener, benannter Gerätetest-Punkt statt stillschweigend als erledigt
   gebucht zu werden.
 
-**P6 — Plan-Versionierung & Datenqualität (klein-mittel, blockiert P7):**
+**P6 — Plan-Versionierung & Datenqualität (klein-mittel, blockiert P7):** Code/Data für P6.1–P6.3
+vollständig grün (kombinierter Checkpoint, Commit `92757bf`, 1308/1308 Apple-Tests). P6.3 UI-Abnahme
+bleibt offen (TestingBot-Blocker, siehe dort). Per expliziter User-Vorgabe wird P7 trotzdem jetzt
+begonnen — die P7-Sperre bezog sich auf den Abschluss der Dokumentation, nicht auf eine erfolgreiche
+Geräte-UI-Bestätigung von P6.3.
 - P6.1 ✅ **vollständig abgenommen** (Commit `ec9f1fd`, 2026-10-18): Implementiert + Apple-kompiliert
   + Tests bestanden + UI-verifiziert (nicht zutreffend, begründet unten).
   `TrainingPlan.activatedAt: Date?` neu, additiv. `nil` bedeutet ausdrücklich "unbekannt" — NIE
@@ -701,8 +705,12 @@ umgesetzt (Task #203, 2026-10-17).
   Core-Logik" ohne jede neue UI-Oberfläche (so vom User explizit verlangt); eine Anzeige der
   Teilnahmequote ist ein separater, noch offener Folgeschritt (Datenanbindung `WorkoutSession` →
   `PlanParticipationEvaluator.Input` + UI-Darstellung), nicht Teil dieser Abnahme.
-- P6.3 ✅ **vollständig abgenommen** (Commit `063cb90`, 2026-10-18): Implementiert + Apple-kompiliert
-  + Tests bestanden + UI-verifiziert (begründet unten, kein TestingBot-Lauf dieser Runde).
+- P6.3 — **Code/Data-Abnahme ✅ abgeschlossen, UI-Abnahme ❌ offen** (Commit `92757bf`,
+  2026-10-18, löst den vorherigen Stand `063cb90` ab). Auf ausdrücklichen User-Wunsch
+  ("Code-/Data-Abnahme und UI-Abnahme getrennt ausweisen") werden beide Status hier bewusst
+  NICHT zu einem gemeinsamen "abgenommen" verschmolzen.
+
+  **Code/Data-Abnahme (Implementiert + Apple-kompiliert + Tests bestanden): ✅**
   Neues eigenständiges Modell `PeriodicCheckIn` (`Sources/FitnessAppData/`) ergänzt
   `WorkoutSession.sessionFeeling` (deckt nur "Belastung" ab) um die vier laut Audit fehlenden
   Fragen aus Dok03 §4: Häufigkeit/Dauer/Beschwerden/Ziel-noch-aktuell. Bewusst **user-global**,
@@ -722,20 +730,70 @@ umgesetzt (Task #203, 2026-10-17).
   andere, unveränderte Aufrufer anzutasten.
   CSV-Export/Import additiv um eine neue Datei `periodic_checkins.csv` erweitert (nicht nur eine
   Spalte, da eine komplett neue Entität) — Import ist nil-sicher für alle vier Antwortfelder.
-  **Apple-kompiliert:** `ios-app` + `swift-package` (Codemagic-Build-IDs `6ad4140ad2e60750cddb912e`/
-  `6ad4140aff501843eeb69f00`) beide `success`, alle Steps grün.
-  **Tests bestanden:** Codemagic-Testlog bestätigt, dass beide neuen Tests tatsächlich liefen
-  (`testPeriodicCheckInPartialAnswersSurviveRoundtrip` — gemischte Antworten, manche gesetzt, manche
-  übersprungen, überleben einzeln; `testPeriodicCheckInFullySkippedStaysNilNotFalseAfterRoundtrip` —
-  gezielter Regressionsschutz gegen genau die oben beschriebene nil→false-Falle), keine Fehlschläge,
-  1307 Tests gesamt auf macOS grün.
-  **UI-verifiziert:** kein TestingBot-Gerätelauf in dieser Runde — stattdessen durch Code-Review
-  gegen das etablierte `DeltiqHeader`/`DeltiqSection`/`DeltiqSegmentedPicker`-Vokabular abgesichert
-  (identische Bausteine, die in P2–P5 bereits real auf einem Gerät bestätigt wurden) und durch die
-  Roundtrip-Tests, die den einzigen nicht-trivialen Teil der UI-Logik (die `.skip`→`nil`-Abbildung
-  beim Speichern) end-to-end durch echte Persistenz beweisen. Offener, benannter Gerätetest-Punkt:
-  der Einstiegspunkt in Settings → App & Trainingserlebnis → Workout-Verhalten sowie das Picker-
-  Layout auf einem echten Gerät wurden nicht per TestingBot bestätigt.
+  **Nebenfund #2, bei Vorbereitung des TestingBot-Laufs dieser Runde per Code-Review entdeckt und
+  behoben:** `PeriodicCheckInView` hatte als einziger Editor-Screen im gesamten UI-Refactor-Epos
+  KEINEN Discard-Schutz — `onBack` rief bedingungslos `dismiss()`, ohne Dirty-Tracking. Behoben nach
+  dem überall sonst etablierten Muster (`isDirty`, `showingDiscardConfirm`,
+  `.discardChangesConfirmation`, `.deltiqSwipeBackEnabled(!isDirty)`); `save()` setzt das Formular
+  jetzt bewusst in-place zurück (kein `dismiss()`), mit einer kurzlebigen `didJustSave`-Bestätigung
+  statt des bis dahin toten `lastSavedAt`/Hinweis-Codes. Committed zusammen mit dem kombinierten
+  Checkpoint als `92757bf`.
+  **Nebenfund #3 — Klarstellung zu "alle fünf Fragen":** Per Code-Lesung von
+  `ActiveWorkoutView.FinishWorkoutSheet` bestätigt, dass die 5. Frage ("Belastung", `SessionFeeling`)
+  NICHT überspringbar ist — `@State private var selected: SessionFeeling = .okay` ist ein fest
+  vorbelegter, nicht-optionaler Default ohne Skip-Pfad. Das ist bestehendes, von P6.3 unverändertes
+  Verhalten dieser vorgelagerten Frage, nicht Teil dieses Features. Nur die 4 NEUEN Fragen
+  (Häufigkeit/Dauer/Beschwerden/Ziel) sind im strikten Sinn einzeln überspringbar. Dieser Unterschied
+  wird hier bewusst offen benannt, statt die User-Checkliste ("alle fünf Fragen ... überspringbar")
+  stillschweigend als erfüllt zu verbuchen.
+  **Kombinierter P6-Checkpoint (P6.1+P6.2+P6.3 zusammen, ein Codemagic-Lauf):** ein Apple-CI-Fund
+  aus dem kombinierten Regressionstest wurde unterwegs gefixt — `XCTAssertEqual(_:_:accuracy:)`
+  erhielt ein `TimeInterval?` statt `TimeInterval` (Linux kompilierte das fälschlich durch, Apples
+  Toolchain lehnte zurecht ab); behoben per `try XCTUnwrap(...)` (Commit `e7a58ff`), dem bestehenden
+  Muster der Datei folgend.
+  **Apple-kompiliert:** `ios-app` + `swift-package` beide `success`, alle Steps grün, für den
+  finalen kombinierten Stand (Commit `92757bf`, der `063cb90` + `e7a58ff` + den Discard-Fix
+  zusammenfasst).
+  **Tests bestanden:** 1308 Tests gesamt auf macOS grün (reale Ausführung auf Apples Toolchain
+  per Codemagic — NICHT unter Linux ausgeführt; Linux bestätigt in dieser Codebasis grundsätzlich
+  nur Kompilierbarkeit, wie der oben beschriebene `e7a58ff`-Fund selbst erneut zeigt). Darunter
+  `testPeriodicCheckInPartialAnswersSurviveRoundtrip` und
+  `testPeriodicCheckInFullySkippedStaysNilNotFalseAfterRoundtrip`, keine Fehlschläge.
+
+  **UI-Abnahme: ❌ offen — TestingBot-Lauf ergebnislos, echter Blocker, kein Workaround gefunden.**
+  Auf expliziten Wunsch dieser Runde wurde ein TestingBot-Durchlauf (iPhone 15/iOS 18.0,
+  App-Build aus Commit `92757bf`) gegen die 7 angeforderten Prüfpunkte versucht
+  (Erreichbarkeit/Überspringbarkeit aller Fragen, unbeantwortet≠false, Speichern korrekt,
+  erneutes Öffnen zeigt letzten Rückblick, Formular-Reset nach Speichern, Discard-Schutz,
+  kein neuer Leistungs-Start-Check). Keiner der 7 Punkte konnte bestätigt werden, weil der
+  Harness nicht einmal bis zum Öffnen von `PeriodicCheckInView` kommt:
+  - **Symptom:** Tippen auf die Zeile "Quick check-in" in Settings → App & Workout Experience
+    erzeugt sichtbar KEINEN Bildschirmwechsel (mehrere unabhängige Screenshots über bis zu 12s
+    zeigen unverändert die Settings-Liste). Der unmittelbar folgende `source()`-Aufruf schlägt
+    reproduzierbar fehl: `"stale element reference" … "XCTPerformOnMainRunLoop work timed out
+    after 60.0s"`.
+  - **Reproduziert:** identisch über 5+ unabhängige, frische TestingBot-Sessions.
+  - **Ausgeschlossene Ursachen** (jeweils gezielt widerlegt): falsches/nicht-sichtbares Tap-Ziel
+    (widerlegt durch expliziten Scroll + frischen Dump + präzisen Koordinaten-Tap auf eine
+    verifiziert sichtbare Position — identischer Hang trat trotzdem auf); ein blockierender
+    System-Alert (widerlegt, `acceptAlertIfPresent()` meldete unmittelbar davor `false`);
+    zu kurze Wartezeit (widerlegt, bis zu 12s mit mehreren erfolgreichen Zwischen-Screenshots
+    abgewartet). Screenshots gelingen auch nach dem Hang weiter (schließt einen kompletten
+    App-Absturz im üblichen Sinn eher aus).
+  - **Log-Analyse:** das von TestingBot bereitgestellte iOS-Gerätekonsolenlog (~55 MB,
+    dekomprimiert) wurde gezielt nach Crash-/Fatal-/Jetsam-/SIGKILL-Mustern rund um den
+    Hang-Zeitraum durchsucht — kein Absturz- oder Watchdog-Kill-Signal für
+    `com.atamya.FitnessApp` gefunden. Das entlastet die App nicht, liefert aber auch keine
+    Erklärung; die `appium`/`vm`-Logs sowie eine Bisektion gegen den Vor-Fix-Commit `063cb90`
+    (um zu klären, ob der Hang mit dem Discard-Guard-Nebenfund zusammenhängt oder bereits vorher
+    bestand) wurden aus Budget-Gründen NICHT mehr durchgeführt.
+  - **Einordnung:** ungeklärt, ob echter SwiftUI-/Navigations-Bug beim erstmaligen Aufbau von
+    `PeriodicCheckInView` unter XCTest-Accessibility-Snapshot-Last, oder ein TestingBot/XCTest-
+    Harness-spezifisches Artefakt. Wird hier bewusst als **offener Blocker** stehen gelassen,
+    statt als "UI-verifiziert" verbucht zu werden — exakt die vom User verlangte Trennung.
+  - **Empfehlung:** vor der nächsten TestingBot-Budget-Runde entweder (a) denselben Navigations-
+    Einstieg einmal manuell auf einem echten Gerät/Simulator ausprobieren (würde App-Bug vs.
+    Harness-Artefakt klären), oder (b) eine Bisektion gegen `063cb90` fahren.
 - (Stufe-2-Inhalts-Snapshot `TrainingDayContentRecord` bewusst erst für P8 relevant, nicht P7.)
 
 **P7 — Vier-Wochen-Rückblick, Stufe 1 (groß, abhängig von P6):**
