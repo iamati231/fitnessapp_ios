@@ -1377,7 +1377,8 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         let importedPlan = try XCTUnwrap(
             try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first { $0.name == "P6-Kombi-Plan" }
         )
-        XCTAssertEqual(importedPlan.activatedAt?.timeIntervalSince1970, activatedAt.timeIntervalSince1970, accuracy: 1.0)
+        let importedActivatedAt = try XCTUnwrap(importedPlan.activatedAt)
+        XCTAssertEqual(importedActivatedAt.timeIntervalSince1970, activatedAt.timeIntervalSince1970, accuracy: 1.0)
 
         let importedCheckIn = try XCTUnwrap(try target.mainContext.fetch(FetchDescriptor<PeriodicCheckIn>()).first)
         XCTAssertEqual(importedCheckIn.frequencyFeedback, .moreThanPlanned)
