@@ -606,11 +606,10 @@ umgesetzt (Task #203, 2026-10-17).
   eingeschätzt, bleibt aber ein offener, benannter Gerätetest-Punkt statt stillschweigend als erledigt
   gebucht zu werden.
 
-**P6 — Plan-Versionierung & Datenqualität (klein-mittel, blockiert P7):** Code/Data für P6.1–P6.3
-vollständig grün (kombinierter Checkpoint, Commit `92757bf`, 1308/1308 Apple-Tests). P6.3 UI-Abnahme
-bleibt offen (TestingBot-Blocker, siehe dort). Per expliziter User-Vorgabe wird P7 trotzdem jetzt
-begonnen — die P7-Sperre bezog sich auf den Abschluss der Dokumentation, nicht auf eine erfolgreiche
-Geräte-UI-Bestätigung von P6.3.
+**P6 — Plan-Versionierung & Datenqualität (klein-mittel, abgeschlossen):** Code/Data UND
+UI-Abnahme für P6.1–P6.3 vollständig grün (finaler Stand Commit `ae003a6`, 1320/1320 Apple-Tests;
+P6.3-TestingBot-Blocker gefunden, behoben und erneut verifiziert — siehe dort für den vollständigen
+Diagnoseweg). P7 läuft bereits parallel/danach weiter.
 - P6.1 ✅ **vollständig abgenommen** (Commit `ec9f1fd`, 2026-10-18): Implementiert + Apple-kompiliert
   + Tests bestanden + UI-verifiziert (nicht zutreffend, begründet unten).
   `TrainingPlan.activatedAt: Date?` neu, additiv. `nil` bedeutet ausdrücklich "unbekannt" — NIE
@@ -705,10 +704,11 @@ Geräte-UI-Bestätigung von P6.3.
   Core-Logik" ohne jede neue UI-Oberfläche (so vom User explizit verlangt); eine Anzeige der
   Teilnahmequote ist ein separater, noch offener Folgeschritt (Datenanbindung `WorkoutSession` →
   `PlanParticipationEvaluator.Input` + UI-Darstellung), nicht Teil dieser Abnahme.
-- P6.3 — **Code/Data-Abnahme ✅ abgeschlossen, UI-Abnahme ❌ offen** (aktueller Stand Commit
-  `618e63e`, 2026-10-18, über `92757bf` auf `063cb90` aufbauend). Auf ausdrücklichen User-Wunsch
-  ("Code-/Data-Abnahme und UI-Abnahme getrennt ausweisen") werden beide Status hier bewusst
-  NICHT zu einem gemeinsamen "abgenommen" verschmolzen.
+- P6.3 — **Code/Data-Abnahme ✅ UND UI-Abnahme ✅ — beide vollständig, getrennt ausgewiesen**
+  (aktueller Stand Commit `ae003a6`, 2026-10-18, über `618e63e`/`92757bf` auf `063cb90`
+  aufbauend). Auf ausdrücklichen User-Wunsch ("Code-/Data-Abnahme und UI-Abnahme getrennt
+  ausweisen") werden beide Status hier bewusst als zwei SEPARATE Befunde dokumentiert, auch
+  nachdem beide grün sind.
 
   **Nachbesserung (Commit `618e63e`): periodische, echt optionale Belastungsfrage.** Nebenfund
   #3 (unten) führte zu einer fachlichen Korrektur, kein blosses Dokumentieren der Lücke: statt
@@ -773,10 +773,12 @@ Geräte-UI-Bestätigung von P6.3.
   `testPeriodicCheckInPartialAnswersSurviveRoundtrip` und
   `testPeriodicCheckInFullySkippedStaysNilNotFalseAfterRoundtrip`, keine Fehlschläge.
 
-  **UI-Abnahme: 🔶 Root Cause gefunden + Fix implementiert (Commit `ae003a6`) — erneute
-  TestingBot-Prüfung der 7 Punkte steht noch aus.** Auf expliziten Wunsch dieser Runde wurde der
-  TestingBot-Blocker gezielt untersucht, statt weitere identische Versuche ohne neue Hypothese zu
-  fahren. Ergebnis: ein **echter, reproduzierbarer App-Bug**, keine TestingBot-Eigenart.
+  **UI-Abnahme: ✅ vollständig — Root Cause gefunden, Fix implementiert (Commit `ae003a6`),
+  Apple-kompiliert, UND erneuter TestingBot-Lauf gegen alle 7 ursprünglich angeforderten
+  Prüfpunkte erfolgreich.** Auf expliziten Wunsch dieser Runde wurde der TestingBot-Blocker
+  gezielt untersucht, statt weitere identische Versuche ohne neue Hypothese zu fahren. Ergebnis:
+  ein **echter, reproduzierbarer App-Bug**, keine TestingBot-Eigenart — gefunden, behoben, und
+  die Behebung real auf einem Gerät/Simulator über TestingBot bestätigt.
 
   **Diagnoseweg (in dieser Reihenfolge, wie vorgegeben):**
   1. *Ausgeschlossene Ursachen* (bereits in der Vorrunde widerlegt): falsches/nicht-sichtbares
@@ -819,9 +821,9 @@ Geräte-UI-Bestätigung von P6.3.
   **Fix (Commit `ae003a6`):** `@Query` entfernt, ersetzt durch einen einmaligen
   `FetchDescriptor`-Fetch (`fetchLimit = 1`) in `.task`, der nur beim tatsächlichen Erscheinen
   des Screens läuft — nicht bei jeder (ggf. spekulativen) Konstruktion. `save()` aktualisiert den
-  angezeigten Wert direkt, damit "zuletzt gespeichert" weiterhin sofort reagiert. Linux: Build +
-  1094/1094 Tests grün. Apple-Kompilierprüfung für diesen Fix läuft, Ergebnis wird im nächsten
-  Commit ergänzt.
+  angezeigten Wert direkt, damit "zuletzt gespeichert" weiterhin sofort reagiert.
+  **Apple-kompiliert:** `ios-app` + `swift-package` beide `success`. **Tests bestanden:**
+  1320/1320 auf macOS grün, keine Fehlschläge (Linux davor bereits 1094/1094 grün).
 
   **Bewertung gegen die Vorgabe "Ursache nicht ohne Beleg TestingBot oder der App zuschreiben":**
   die Ursache liegt klar UND belegt in der App (Render-Endlosschleife, 140 Hz, beginnt vor jedem
@@ -830,11 +832,52 @@ Geräte-UI-Bestätigung von P6.3.
   Experience), es handelt sich also um einen echten Produktionsfehler, nicht nur ein
   Test-Problem.
 
-  **Noch offen, bevor P6.3 vollständig UI-abgenommen werden kann:** ein TestingBot-Lauf mit dem
-  GEFIXTEN Build gegen genau dieselben 7 ursprünglich angeforderten Prüfpunkte (Erreichbarkeit/
-  Überspringbarkeit aller fünf Fragen, unbeantwortet≠false, Speichern korrekt, erneutes Öffnen
-  zeigt letzten Rückblick, Formular-Reset nach Speichern, Discard-Schutz, kein neuer
-  Leistungs-Start-Check) — wird direkt im Anschluss an die Apple-Kompilierbestätigung gefahren.
+  **Finaler TestingBot-Lauf mit dem gefixten Build (iPhone 15/iOS 18.0) — alle 7 ursprünglich
+  angeforderten Prüfpunkte bestätigt:**
+  - **Stabilitäts-Regressionscheck (der eigentliche Blocker):** `source()` direkt nach Erscheinen
+    von `SettingsAppExperienceView` (genau die Stelle, an der die Render-Schleife vorher sofort
+    einsetzte) dauerte **2002 ms** statt zuvor 60+ Sekunden zu hängen. Die gesamte Checkliste lief
+    danach durchgehend ohne einen einzigen Hang oder Timeout durch.
+  - ✅ Alle fünf Fragen erreichbar (Labels + 5× "Skip"-Button bestätigt im Dump).
+  - ✅ Kein neuer Leistungs-Start-Check (keine Baseline-/Leistungstest-Begriffe im Dump).
+  - ✅ Unbeantwortet bleibt unbekannt, nicht automatisch "false"/"keine Beschwerden" — bereits
+    durch die Apple-Roundtrip-Tests (`testPeriodicCheckInFullySkippedStaysNilNotFalseAfterRoundtrip`)
+    auf Datenebene bewiesen; UI-seitig zusätzlich bestätigt, dass der Screen frisch geöffnet ohne
+    "Last saved on"-Kontext erscheint und erst nach einer echten Antwort als "geändert" gilt
+    (siehe Discard-Test unten).
+  - ✅ Speichern funktioniert; Bestätigungstext "Thanks for your feedback!" UND die Kontextzeile
+    "LAST SAVED ON OCT 18, 2026" erscheinen nach dem Speichern.
+  - ✅ Erneutes Öffnen zeigt den richtigen letzten Rückblick — ein drittes Öffnen nach dem
+    Speichern zeigt weiterhin korrekt "LAST SAVED ON OCT 18, 2026".
+  - ✅ Formular nach Speichern sinnvoll zurückgesetzt — indirekt, aber eindeutig bewiesen: das
+    Verlassen des frisch zurückgesetzten Formulars löst KEINEN Discard-Dialog aus, was nur möglich
+    ist, wenn `isDirty` nach dem Reset tatsächlich wieder `false` ist (dieselbe Zustandsvariable
+    steuert auch die optische Hervorhebung der Picker).
+  - ✅ Zurück/Verwerfen-Schutz funktioniert vollständig: Antwort setzen → Zurück → Discard-Dialog
+    erscheint → "Keep Editing" bringt zum weiterhin offenen, unverändert ausgefüllten Formular
+    zurück → erneut Zurück → "Discard" verwirft tatsächlich und verlässt den Screen.
+
+  **Methodischer Nebenfund bei der Verifikation (kein App-Bug):** die erste Fassung des
+  Test-Skripts prüfte den Picker-Auswahlzustand über ein vermutetes `selected="true"`-XML-Attribut
+  und das Vorhandensein von `"Last saved on"` (Kleinschreibung) — beides schlug fehl, weil (a)
+  `DeltiqSegmentedPicker` (Theme.swift) die Auswahl rein visuell über Hintergrundfarbe vermittelt,
+  ohne eigenen Accessibility-Trait, und (b) `DeltiqContextRow` den Text tatsächlich als
+  `"LAST SAVED ON ..."` (durchgehend großgeschrieben) rendert. Mit korrigierter, direkt am
+  rohen XML-Dump verifizierter Prüflogik bestätigen sich alle obigen Punkte eindeutig.
+
+  **Separater, nicht blockierender Accessibility-Nebenfund:** weil `DeltiqSegmentedPicker` seine
+  Auswahl nur über Farbe (kein Accessibility-Trait) anzeigt, kann VoiceOver nicht erkennen, welches
+  Segment aktuell gewählt ist — betrifft die komponente app-weit, nicht nur P6.3, vorbestehend,
+  eigenständig zu beheben (siehe spawnte Aufgabe). Zusätzlich verwenden die Antworten
+  "Duration = Just right" und "Exertion = appropriate" denselben sichtbaren Text "Just right" /
+  "Passend" — für Sehende im Kontext der jeweiligen Frage eindeutig, für automatisiertes Testen
+  und VoiceOver ohne zusätzlichen Kontext aber nicht eindeutig unterscheidbar; ebenfalls als
+  eigenständige Nachbesserung vorgemerkt, kein Blocker für diese Abnahme.
+
+  **Aufräumen:** der rein diagnostische Zweig `diag-p63-bisect-063cb90` wurde lokal gelöscht; der
+  Remote-Branch auf GitHub konnte mit den Push-Rechten dieser Sitzung nicht gelöscht werden und
+  bleibt als erkennbar benannter, inhaltsloser Diagnose-Rest bestehen (enthält nur die temporäre
+  `NSLog`-Instrumentierung, keine produktiven Änderungen).
 - (Stufe-2-Inhalts-Snapshot `TrainingDayContentRecord` bewusst erst für P8 relevant, nicht P7.)
 
 **P7 — Vier-Wochen-Rückblick, Stufe 1 (groß, abhängig von P6):**
