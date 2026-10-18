@@ -1280,6 +1280,69 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(importedActivatedAt.timeIntervalSince1970, historicalActivatedAt.timeIntervalSince1970, accuracy: 1.0)
     }
 
+    // MARK: - P6.3: PeriodicCheckIn (Häufigkeit/Dauer/Beschwerden/Ziel)
+
+    /// Gemischter Fall — manche Fragen beantwortet, manche bewusst
+    /// übersprungen. Beweist, dass `nil` (übersprungen) und ein echter Wert
+    /// unabhängig voneinander pro Feld überleben, nicht alles-oder-nichts.
+    func testPeriodicCheckInPartialAnswersSurviveRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+        let checkIn = PeriodicCheckIn(
+            date: Date(timeIntervalSince1970: 1_700_000_000),
+            frequencyFeedback: .asPlanned,
+            durationFeedback: nil,
+            hadComplaints: true,
+            complaintsNote: "Knie zwickt leicht",
+            goalStillCurrent: nil
+        )
+        ctx.insert(checkIn)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        let imported = try XCTUnwrap(try target.mainContext.fetch(FetchDescriptor<PeriodicCheckIn>()).first)
+        XCTAssertEqual(imported.frequencyFeedback, .asPlanned)
+        XCTAssertNil(imported.durationFeedback, "uebersprungene Frage bleibt nil, nicht ein geratener Default")
+        XCTAssertEqual(imported.hadComplaints, true)
+        XCTAssertEqual(imported.complaintsNote, "Knie zwickt leicht")
+        XCTAssertNil(imported.goalStillCurrent)
+    }
+
+    /// Regressionsschutz fuer genau die Falle, die beim Bau vermieden werden
+    /// musste: `CSVRow.bool(_:)` liest eine leere Spalte als `false` (etab-
+    /// liertes Verhalten fuer Bestandsfelder) — fuer die beiden echten
+    /// Ja/Nein-Fragen dieses Features waere das eine stille Umdeutung von
+    /// "uebersprungen" zu "Nein". Ein komplett uebersprungener Rueckblick
+    /// (alle vier Fragen `nil`) muss nach Export+Import weiterhin VIER MAL
+    /// `nil` liefern, nie `false`/0.
+    func testPeriodicCheckInFullySkippedStaysNilNotFalseAfterRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+        let checkIn = PeriodicCheckIn(date: Date(timeIntervalSince1970: 1_700_000_000))
+        ctx.insert(checkIn)
+        try ctx.save()
+        XCTAssertNil(checkIn.hadComplaints)
+        XCTAssertNil(checkIn.goalStillCurrent)
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        let imported = try XCTUnwrap(try target.mainContext.fetch(FetchDescriptor<PeriodicCheckIn>()).first)
+        XCTAssertNil(imported.frequencyFeedback)
+        XCTAssertNil(imported.durationFeedback)
+        XCTAssertNil(imported.hadComplaints, "darf nach dem Roundtrip nicht faelschlich 'false' werden")
+        XCTAssertNil(imported.complaintsNote)
+        XCTAssertNil(imported.goalStillCurrent, "darf nach dem Roundtrip nicht faelschlich 'false' werden")
+    }
+
     // MARK: - Settings-Epic Phase 5
 
     /// Befund-Aufhaenger: "grosse Historie". Beweist, dass der neue Off-Main-

@@ -194,6 +194,18 @@ public struct SettingsAppExperienceView: View {
                     .tint(Color.deltiqOrange)
                     .accessibilityLabel(Text("settings.training.rirTooltip.title", bundle: .module))
             }
+            // P6.3: Einstiegspunkt fuer den kurzen, ueberspringbaren Alltags-
+            // Rueckblick (Dok03 §4) — eigenstaendige Seite, kein zweiter
+            // Start-Check.
+            NavigationLink {
+                PeriodicCheckInView()
+            } label: {
+                DeltiqRow(
+                    icon: "bubble.left.and.text.bubble.right",
+                    label: String(localized: "settings.periodicCheckIn.row", bundle: .module),
+                    showsChevron: true
+                )
+            }
             DeltiqControlRow(
                 icon: "arrow.down.heart",
                 label: String(localized: "settings.deload.toggle", bundle: .module),

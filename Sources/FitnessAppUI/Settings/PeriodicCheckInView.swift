@@ -1,0 +1,268 @@
+#if canImport(SwiftUI) && canImport(SwiftData)
+import SwiftUI
+import SwiftData
+import FitnessAppCore
+import FitnessAppData
+
+/// P6.3: Kurzer, überspringbarer Alltags-Rückblick (Dok03 §4). Ergänzt
+/// `WorkoutSession.sessionFeeling` (deckt nur "Belastung" ab) um die vier
+/// fehlenden Fragen Häufigkeit/Dauer/Beschwerden/Ziel-noch-aktuell.
+///
+/// Bewusst EIGENSTÄNDIG: kein zweiter Start-Check, keine Erweiterung von
+/// `BaselineCheckFlowView`, keine Leistungstest-Fragen (siehe
+/// `docs/PLANUNG_BEGLEITUNG_AUDIT.md` Abschnitt "Start-Check — unveränder-
+/// liche Grenze"). Jede Frage ist unabhängig überspringbar — jede
+/// `@State`-Antwort startet bei `.skip` und wird nur bei explizitem Antippen
+/// gesetzt; `save()` überträgt `.skip` 1:1 als `nil`, nie als "Nein" oder
+/// einen anderen erratenen Wert.
+///
+/// Immer ein NEUER Eintrag (kein Edit-Modus) — wie `WaterEntry`/
+/// `BodyMeasurement` ist jeder Rückblick ein eigener Zeitpunkt-Snapshot,
+/// kein einzelner, fortlaufend überschriebener Datensatz.
+@available(iOS 17.0, macOS 14.0, *)
+public struct PeriodicCheckInView: View {
+
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+
+    @Query(sort: \PeriodicCheckIn.date, order: .reverse)
+    private var history: [PeriodicCheckIn]
+
+    private enum FrequencyAnswer: Hashable { case skip, less, asPlanned, more }
+    private enum DurationAnswer: Hashable { case skip, tooShort, justRight, tooLong }
+    private enum TriBool: Hashable { case skip, yes, no }
+
+    @State private var frequencyAnswer: FrequencyAnswer = .skip
+    @State private var durationAnswer: DurationAnswer = .skip
+    @State private var complaintsAnswer: TriBool = .skip
+    @State private var complaintsNote: String = ""
+    @State private var goalAnswer: TriBool = .skip
+
+    /// Rein transiente Bestätigung ("Danke für dein Feedback!") — anders als
+    /// `history` (die live-Query, persistierte Wahrheit) kein Datenfeld,
+    /// nur ein UI-Signal fuer diesen einen Speichern-Tap.
+    @State private var didJustSave = false
+
+    public init() {}
+
+    public var body: some View {
+        VStack(spacing: 0) {
+            DeltiqHeader(
+                eyebrow: loc("periodicCheckIn.header.eyebrow"),
+                title: loc("periodicCheckIn.title"),
+                onBack: { dismiss() },
+                actions: [
+                    DeltiqHeaderAction(
+                        systemImage: "checkmark",
+                        accessibilityLabel: String(localized: "common.save", bundle: .module)
+                    ) {
+                        save()
+                    }
+                ]
+            )
+
+            ScrollView {
+                VStack(spacing: 18) {
+                    if let lastDate = history.first?.date {
+                        DeltiqContextRow([
+                            DeltiqContextItem(
+                                loc("periodicCheckIn.lastSaved")
+                                    .replacingOccurrences(of: "%@", with: lastDate.formatted(date: .abbreviated, time: .omitted))
+                                    .uppercased(),
+                                style: .neutral
+                            )
+                        ])
+                    }
+                    questionsSection
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 40)
+            }
+            .scrollContentBackground(.hidden)
+        }
+        .background(Color.Deltiq.background.ignoresSafeArea())
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .navigationBarBackButtonHidden(true)
+    }
+
+    private var questionsSection: some View {
+        DeltiqSection(loc("periodicCheckIn.section.title")) {
+            questionBlock(loc("periodicCheckIn.question.frequency.label")) {
+                frequencyPicker
+            }
+            questionBlock(loc("periodicCheckIn.question.duration.label")) {
+                durationPicker
+            }
+            questionBlock(loc("periodicCheckIn.question.complaints.label")) {
+                triBoolPicker($complaintsAnswer)
+                if complaintsAnswer == .yes {
+                    TextField(
+                        loc("periodicCheckIn.question.complaints.notePlaceholder"),
+                        text: $complaintsNote,
+                        prompt: Text(loc("periodicCheckIn.question.complaints.notePlaceholder"))
+                    )
+                    .font(.system(size: 15))
+                }
+            }
+            questionBlock(loc("periodicCheckIn.question.goal.label"), showsDivider: false) {
+                triBoolPicker($goalAnswer)
+            }
+            hintRow(loc("periodicCheckIn.footer"))
+            if didJustSave {
+                Text(loc("periodicCheckIn.saved.confirmation"))
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.Deltiq.success)
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 12)
+            }
+        }
+    }
+
+    /// Eine Frage als eigener Block: Label + volle Breite für das Control
+    /// darunter (anders als `DeltiqControlRow`, dessen HStack-Layout für
+    /// einen schmalen, rechtsbündigen Wert gedacht ist — ein
+    /// `DeltiqSegmentedPicker` braucht die ganze Zeilenbreite). Divider-
+    /// Konvention identisch zu `DeltiqControlRow`.
+    @ViewBuilder
+    private func questionBlock<Content: View>(
+        _ label: String,
+        showsDivider: Bool = true,
+        @ViewBuilder content: @escaping () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(label)
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.primary)
+                content()
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            if showsDivider {
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
+            }
+        }
+    }
+
+    private var frequencyPicker: some View {
+        DeltiqSegmentedPicker(
+            options: [
+                DeltiqSegmentedOption(FrequencyAnswer.skip, label: loc("periodicCheckIn.answer.skip")),
+                DeltiqSegmentedOption(FrequencyAnswer.less, label: loc("periodicCheckIn.answer.frequency.less")),
+                DeltiqSegmentedOption(FrequencyAnswer.asPlanned, label: loc("periodicCheckIn.answer.frequency.asPlanned")),
+                DeltiqSegmentedOption(FrequencyAnswer.more, label: loc("periodicCheckIn.answer.frequency.more"))
+            ],
+            selection: $frequencyAnswer
+        )
+    }
+
+    private var durationPicker: some View {
+        DeltiqSegmentedPicker(
+            options: [
+                DeltiqSegmentedOption(DurationAnswer.skip, label: loc("periodicCheckIn.answer.skip")),
+                DeltiqSegmentedOption(DurationAnswer.tooShort, label: loc("periodicCheckIn.answer.duration.tooShort")),
+                DeltiqSegmentedOption(DurationAnswer.justRight, label: loc("periodicCheckIn.answer.duration.justRight")),
+                DeltiqSegmentedOption(DurationAnswer.tooLong, label: loc("periodicCheckIn.answer.duration.tooLong"))
+            ],
+            selection: $durationAnswer
+        )
+    }
+
+    private func triBoolPicker(_ selection: Binding<TriBool>) -> some View {
+        DeltiqSegmentedPicker(
+            options: [
+                DeltiqSegmentedOption(TriBool.skip, label: loc("periodicCheckIn.answer.skip")),
+                DeltiqSegmentedOption(TriBool.yes, label: loc("periodicCheckIn.answer.yes")),
+                DeltiqSegmentedOption(TriBool.no, label: loc("periodicCheckIn.answer.no"))
+            ],
+            selection: selection
+        )
+    }
+
+    private func hintRow(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundStyle(Color.Deltiq.textSecondary)
+            .lineSpacing(4)
+            .padding(.horizontal, 14)
+            .padding(.top, 4)
+            .padding(.bottom, 8)
+    }
+
+    private func save() {
+        let checkIn = PeriodicCheckIn(
+            frequencyFeedback: {
+                switch frequencyAnswer {
+                case .skip: return nil
+                case .less: return .lessThanPlanned
+                case .asPlanned: return .asPlanned
+                case .more: return .moreThanPlanned
+                }
+            }(),
+            durationFeedback: {
+                switch durationAnswer {
+                case .skip: return nil
+                case .tooShort: return .tooShort
+                case .justRight: return .justRight
+                case .tooLong: return .tooLong
+                }
+            }(),
+            hadComplaints: {
+                switch complaintsAnswer {
+                case .skip: return nil
+                case .yes: return true
+                case .no: return false
+                }
+            }(),
+            // Eine Notiz ist nur sinnvoll, wenn tatsaechlich "Ja" beantwortet
+            // wurde — sonst koennte ein getippter, dann wieder auf "Keine
+            // Angabe"/"Nein" zurueckgenommener Text stehen bleiben.
+            complaintsNote: complaintsAnswer == .yes && !complaintsNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ? complaintsNote
+                : nil,
+            goalStillCurrent: {
+                switch goalAnswer {
+                case .skip: return nil
+                case .yes: return true
+                case .no: return false
+                }
+            }()
+        )
+        modelContext.insert(checkIn)
+
+        // Kein dismiss(): anders als ein klassischer Editor bestaetigt dieser
+        // Screen den Speichervorgang inline und setzt das Formular zurueck,
+        // damit ein versehentlicher zweiter Tap nicht denselben Eintrag
+        // doppelt anlegt (jedes Feld startet wieder bei `.skip`). Der User
+        // verlaesst den Screen bewusst ueber den Zurueck-Chevron.
+        frequencyAnswer = .skip
+        durationAnswer = .skip
+        complaintsAnswer = .skip
+        complaintsNote = ""
+        goalAnswer = .skip
+        didJustSave = true
+    }
+}
+
+@available(iOS 17.0, macOS 14.0, *)
+private func loc(_ key: String.LocalizationValue) -> String {
+    String(localized: key, bundle: .module)
+}
+
+// MARK: - Previews
+
+#if DEBUG
+@available(iOS 17.0, macOS 14.0, *)
+#Preview("Rückblick") {
+    NavigationStack {
+        PeriodicCheckInView()
+    }
+    .modelContainer(PreviewSeed.maleProfileContainer)
+}
+#endif
+#endif

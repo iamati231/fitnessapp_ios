@@ -128,6 +128,7 @@ public enum DataExportService {
         let prs         = try context.fetch(FetchDescriptor<PersonalRecordEntry>())
         let measurements = try context.fetch(FetchDescriptor<BodyMeasurement>())
         let waters      = try context.fetch(FetchDescriptor<WaterEntry>())
+        let checkIns    = try context.fetch(FetchDescriptor<PeriodicCheckIn>())
         // Custom-Exercises: alle ExerciseTemplates mit isCustom=true. Die System-
         // Library wird vom App-Bundle bei jedem Start neu seedet, exportieren wir
         // nicht.
@@ -140,6 +141,7 @@ public enum DataExportService {
         files.append(("profile.csv",          buildProfile(profiles, id: id)))
         files.append(("measurements.csv",     buildMeasurements(measurements, id: id)))
         files.append(("water_log.csv",        buildWaterLog(waters, id: id)))
+        files.append(("periodic_checkins.csv", buildPeriodicCheckIns(checkIns, id: id)))
         files.append(("plans.csv",            buildPlans(plans, id: id)))
         files.append(("plan_days.csv",        buildDays(days, id: id)))
         files.append(("plan_exercises.csv",   buildExercises(exercises, id: id)))
@@ -153,6 +155,7 @@ public enum DataExportService {
         files.append(("settings.csv",         buildSettings()))
 
         let totalRows = profiles.count + measurements.count + waters.count
+            + checkIns.count
             + plans.count + days.count + exercises.count
             + sessions.count + logs.count + prs.count
             + gears.count + customExercises.count
@@ -415,6 +418,28 @@ public enum DataExportService {
                 id(e),
                 CSVWriter.iso8601(e.date),
                 String(e.amountMl)
+            ])
+        }
+        return w.data()
+    }
+
+    private static func buildPeriodicCheckIns(
+        _ items: [PeriodicCheckIn],
+        id: (AnyObject) -> String
+    ) -> Data {
+        var w = CSVWriter(headers: [
+            "id", "date_utc", "frequency_feedback", "duration_feedback",
+            "had_complaints", "complaints_note", "goal_still_current"
+        ])
+        for c in items {
+            w.appendRow([
+                id(c),
+                CSVWriter.iso8601(c.date),
+                c.frequencyFeedbackRaw.map(String.init) ?? "",
+                c.durationFeedbackRaw.map(String.init) ?? "",
+                c.hadComplaints.map(CSVWriter.bool) ?? "",
+                c.complaintsNote ?? "",
+                c.goalStillCurrent.map(CSVWriter.bool) ?? ""
             ])
         }
         return w.data()

@@ -374,6 +374,7 @@ public enum DataImportService {
             "plans.csv",
             "measurements.csv",
             "water_log.csv",
+            "periodic_checkins.csv",
             "plan_days.csv",
             "workouts.csv",
             "plan_exercises.csv",
@@ -449,6 +450,13 @@ public enum DataImportService {
                 let (ok, dup, errs) = try importWaterLog(csv: csv, context: context)
                 imported["water_log.csv"] = ok; skipped["water_log.csv"] = dup
                 errorBuffer.append(file: "water_log.csv", errors: errs)
+            }
+        }
+        try await tick("periodic_checkins.csv") {
+            if let csv = files["periodic_checkins.csv"] {
+                let (ok, dup, errs) = try importPeriodicCheckIns(csv: csv, context: context)
+                imported["periodic_checkins.csv"] = ok; skipped["periodic_checkins.csv"] = dup
+                errorBuffer.append(file: "periodic_checkins.csv", errors: errs)
             }
         }
 
@@ -1106,6 +1114,68 @@ public enum DataImportService {
             let e = WaterEntry(date: date, amountMl: ml)
             context.insert(e)
             dupSet.insert(key)
+            imported += 1
+        }
+        return (imported, skipped, errors)
+    }
+
+    /// `CSVRow.bool(_:)` liest eine leere Spalte als `false` (etabliertes
+    /// Verhalten für bestehende Felder, deren Default historisch "false"
+    /// ist). Für eine echte, übersprungbare Ja/Nein-Frage (P6.3) wäre das
+    /// eine stille Fehlinterpretation — "übersprungen" würde zu "Nein"
+    /// werden. Deshalb ein eigener, strikt dreiwertiger Parser: leer/trimmt-
+    /// leer → `nil`, sonst wie `CSVRow.bool`.
+    private static func optionalSkippableBool(_ row: CSVRow, _ key: String) -> Bool? {
+        guard let raw = row.optionalString(key) else { return nil }
+        switch raw.lowercased() {
+        case "true", "1": return true
+        case "false", "0": return false
+        default: return nil
+        }
+    }
+
+    /// P6.3: `periodic_checkins.csv` — jede Antwortspalte ist nil-sicher
+    /// (fehlende/alte Spalte oder übersprungene Frage lesen als `nil`, nie
+    /// als ein "negativer" Default). Dedup-Key über Datum + alle Antworten,
+    /// nicht nur Datum, damit zwei inhaltlich unterschiedliche Rückblicke
+    /// am selben Tag (z.B. Backup-Merge zweier Geräte) beide erhalten bleiben.
+    private static func importPeriodicCheckIns(csv: Data, context: ModelContext) throws -> (Int, Int, [RowError]) {
+        let text = String(data: csv, encoding: .utf8) ?? ""
+        let reader: CSVReader
+        do { reader = try CSVReader(text) } catch { return (0, 0, []) }
+
+        let existing = try context.fetch(FetchDescriptor<PeriodicCheckIn>())
+        func key(for c: PeriodicCheckIn) -> String {
+            "\(Int(c.date.timeIntervalSince1970))|\(c.frequencyFeedbackRaw.map(String.init) ?? "-")|"
+                + "\(c.durationFeedbackRaw.map(String.init) ?? "-")|\(c.hadComplaints.map(String.init) ?? "-")|"
+                + "\(c.complaintsNote ?? "-")|\(c.goalStillCurrent.map(String.init) ?? "-")"
+        }
+        var dupSet = Set(existing.map(key(for:)))
+
+        var errors: [RowError] = []
+        var imported = 0
+        var skipped  = 0
+
+        for row in reader.rows() {
+            guard let date = row.date("date_utc") else {
+                errors.append(.init(line: row.lineNumber, reason: "missing date_utc"))
+                continue
+            }
+            let checkIn = PeriodicCheckIn(
+                date: date,
+                frequencyFeedback: row.int("frequency_feedback").flatMap(FrequencyFeedback.init(rawValue:)),
+                durationFeedback: row.int("duration_feedback").flatMap(DurationFeedback.init(rawValue:)),
+                hadComplaints: optionalSkippableBool(row, "had_complaints"),
+                complaintsNote: row.optionalString("complaints_note"),
+                goalStillCurrent: optionalSkippableBool(row, "goal_still_current")
+            )
+            let rowKey = key(for: checkIn)
+            if dupSet.contains(rowKey) {
+                skipped += 1
+                continue
+            }
+            context.insert(checkIn)
+            dupSet.insert(rowKey)
             imported += 1
         }
         return (imported, skipped, errors)
