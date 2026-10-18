@@ -48,8 +48,8 @@ workflows:
 
       - name: Run unit tests
         script: |
-          set -e
-          swift test --parallel
+          set -eo pipefail
+          swift test --parallel 2>&1 | tee swift-test-output.log
 
       - name: Build library products for iOS Simulator
         # Stellt sicher, dass FitnessAppData / FitnessAppHealth / FitnessAppActivities
@@ -68,6 +68,7 @@ workflows:
 
     artifacts:
       - .build/**/*.xctest
+      - swift-test-output.log
 
     publishing:
       email:
