@@ -1343,6 +1343,49 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertNil(imported.goalStillCurrent, "darf nach dem Roundtrip nicht faelschlich 'false' werden")
     }
 
+    /// Daten-/Exportkompatibilitäts-Checkpoint für das gesamte P6-Paket:
+    /// P6.1 (`TrainingPlan.activatedAt`), P6.2 (liest nur, schreibt nichts
+    /// Eigenes) und P6.3 (`PeriodicCheckIn`) wurden bisher nur isoliert in
+    /// ihren jeweils eigenen Minimal-Fixtures roundtrip-getestet. Dieser Test
+    /// exportiert einen aktiven Plan MIT `activatedAt` und einen
+    /// `PeriodicCheckIn` GEMEINSAM in einem einzigen Bundle und bestätigt,
+    /// dass beide additiven Erweiterungen nebeneinander, ohne gegenseitige
+    /// Beeinflussung, denselben Import-Lauf überstehen.
+    func testP6CombinedPlanActivationAndPeriodicCheckInCoexistInOneRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+        let plan = TrainingPlan(name: "P6-Kombi-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let checkIn = PeriodicCheckIn(
+            date: Date(timeIntervalSince1970: 1_700_000_000),
+            frequencyFeedback: .moreThanPlanned,
+            durationFeedback: .justRight,
+            hadComplaints: false,
+            goalStillCurrent: true
+        )
+        ctx.insert(checkIn)
+        try ctx.save()
+        let activatedAt = try XCTUnwrap(plan.activatedAt)
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        let result = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+        XCTAssertEqual(result.errorRows, 0)
+
+        let importedPlan = try XCTUnwrap(
+            try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first { $0.name == "P6-Kombi-Plan" }
+        )
+        XCTAssertEqual(importedPlan.activatedAt?.timeIntervalSince1970, activatedAt.timeIntervalSince1970, accuracy: 1.0)
+
+        let importedCheckIn = try XCTUnwrap(try target.mainContext.fetch(FetchDescriptor<PeriodicCheckIn>()).first)
+        XCTAssertEqual(importedCheckIn.frequencyFeedback, .moreThanPlanned)
+        XCTAssertEqual(importedCheckIn.durationFeedback, .justRight)
+        XCTAssertEqual(importedCheckIn.hadComplaints, false, "echtes 'Nein' darf nicht mit uebersprungen (nil) verwechselt werden")
+        XCTAssertEqual(importedCheckIn.goalStillCurrent, true)
+    }
+
     // MARK: - Settings-Epic Phase 5
 
     /// Befund-Aufhaenger: "grosse Historie". Beweist, dass der neue Off-Main-
