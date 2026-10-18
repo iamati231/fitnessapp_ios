@@ -43,14 +43,34 @@ public struct PeriodicCheckInView: View {
     /// nur ein UI-Signal fuer diesen einen Speichern-Tap.
     @State private var didJustSave = false
 
+    /// Nachbesserung: dieser Screen hatte ursprünglich GAR keinen Verwerfen-
+    /// Schutz — anders als jeder andere Editor dieser Epic (`MeasurementView`,
+    /// `BodyDataEditorView`, ...) konnte eine bereits begonnene, aber noch
+    /// nicht gespeicherte Antwort durch einen Tap auf den Zurück-Chevron
+    /// kommentarlos verloren gehen. Jetzt dieselbe Konvention wie überall
+    /// sonst: `isDirty` + `discardChangesConfirmation`.
+    @State private var showingDiscardConfirm = false
+
     public init() {}
+
+    /// True sobald mindestens eine Frage beantwortet oder eine Beschwerden-
+    /// Notiz getippt wurde — der reine `.skip`-Ausgangszustand ist NICHT
+    /// dirty (sonst würde ein unberührter Screen fälschlich einen Verwerfen-
+    /// Dialog zeigen, bevor der User überhaupt etwas eingegeben hat).
+    private var isDirty: Bool {
+        frequencyAnswer != .skip
+            || durationAnswer != .skip
+            || complaintsAnswer != .skip
+            || goalAnswer != .skip
+            || !complaintsNote.isEmpty
+    }
 
     public var body: some View {
         VStack(spacing: 0) {
             DeltiqHeader(
                 eyebrow: loc("periodicCheckIn.header.eyebrow"),
                 title: loc("periodicCheckIn.title"),
-                onBack: { dismiss() },
+                onBack: { isDirty ? (showingDiscardConfirm = true) : dismiss() },
                 actions: [
                     DeltiqHeaderAction(
                         systemImage: "checkmark",
@@ -86,6 +106,15 @@ public struct PeriodicCheckInView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-Fix (siehe `showingDiscardConfirm`-Dokumentation):
+        // `.navigationBarBackButtonHidden(true)` nimmt auf iOS die Swipe-
+        // Back-Geste als Nebenwirkung mit runter — bei Aenderungen bewusst
+        // AUS, sonst waere die Wisch-Geste ein ungesicherter Verlassen-Weg
+        // am Discard-Dialog vorbei (gleiches Muster wie `MeasurementView`).
+        .deltiqSwipeBackEnabled(!isDirty)
+        .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+            dismiss()
+        }
     }
 
     private var questionsSection: some View {
