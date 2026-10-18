@@ -286,12 +286,21 @@ final class TrainingDayContentRecordTests: XCTestCase {
         XCTAssertNil(sessions.first?.contentRecord, "kein rückwirkend erfundener Snapshot für eine Session von vor diesem Feld")
         XCTAssertEqual(sessions.first?.contentSnapshotState, .notCaptured)
 
-        // Gegenprobe: der neue Pfad funktioniert auf demselben (jetzt
-        // migrierten) Store ganz normal weiter.
-        if let migratedSession = sessions.first {
-            XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: migratedSession, in: newContext))
-            XCTAssertNotEqual(migratedSession.contentSnapshotState, .notCaptured)
+        // Gegenprobe: der neue Schreibpfad funktioniert auf demselben (jetzt
+        // migrierten) Store ganz normal weiter — NICHT an der Altsession
+        // selbst (die ist bereits abgeschlossen und bleibt zu Recht
+        // eingefroren/`notCaptured`), sondern an einer NEUEN, offenen Session,
+        // wie sie nach dem App-Update real entstehen würde.
+        guard let migratedDay = try newContext.fetch(FetchDescriptor<TrainingDay>()).first else {
+            return XCTFail("migrierter Tag muss weiterhin auffindbar sein")
         }
+        let newSession = WorkoutSession(
+            startTime: Date(), endTime: Date().addingTimeInterval(1800),
+            durationMinutes: 30, exerciseCount: 0, isCompleted: false, day: migratedDay
+        )
+        newContext.insert(newSession)
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: newSession, in: newContext))
+        XCTAssertNotEqual(newSession.contentSnapshotState, .notCaptured)
     }
 }
 #endif

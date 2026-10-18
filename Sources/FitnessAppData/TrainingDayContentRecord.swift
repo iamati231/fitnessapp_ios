@@ -15,10 +15,11 @@ import FitnessAppCore
 /// basierte Rückschlüsse auf einen gelöschten Tag).
 ///
 /// **Schreibschutz ist ein Modul-Grenzen-Vertrag, kein Kommentar:**
-/// `contentJSON`/`capturedAt` sind absichtlich NICHT `public` — jeder
-/// Schreibzugriff von außerhalb von `FitnessAppData` (also aus
-/// `FitnessAppUI`, wo alle produktiven Aufrufer leben) muss zwingend über
-/// `TrainingDayContentSnapshotWriter.capture(for:in:)` laufen. Dieser
+/// `contentJSON`/`capturedAt` sind `public internal(set)` — lesbar wie jedes
+/// andere `@Model`-Feld in diesem Codebase, aber nur innerhalb von
+/// `FitnessAppData` beschreibbar. Jeder Schreibzugriff von außerhalb (also
+/// aus `FitnessAppUI`, wo alle produktiven Aufrufer leben) muss zwingend
+/// über `TrainingDayContentSnapshotWriter.capture(for:in:)` laufen. Dieser
 /// Writer verweigert jede Änderung, sobald `session.isCompleted == true`
 /// ist — der Compiler verhindert bereits, dass irgendein Aufrufer das
 /// umgeht, indem er die Felder direkt setzt.
@@ -26,14 +27,17 @@ import FitnessAppCore
 public final class TrainingDayContentRecord {
     /// JSON-codiertes `TrainingDayContentSnapshot` — siehe
     /// `TrainingDayContentSnapshot.decode(fromJSON:)`/`.encodedJSON()`.
-    /// Modul-intern, bewusst NICHT `public` (siehe Typ-Dokumentation).
-    var contentJSON: String
+    /// `public internal(set)` — lesbar wie jedes andere `@Model`-Feld in
+    /// diesem Codebase, aber nur innerhalb von `FitnessAppData` schreibbar.
+    /// Gleiches, bereits an anderer Stelle produktiv genutztes Muster wie
+    /// `SharedStore.health` (`public internal(set) static var health`).
+    public internal(set) var contentJSON: String
 
     /// Zeitpunkt der zuletzt gespeicherten Fassung — wird bei jeder
     /// erfolgreichen `capture`-Aufnahme fortgeschrieben (nicht nur beim
     /// ersten Mal), sodass er nach dem Einfrieren (`isCompleted == true`)
     /// den tatsächlichen letzten Schreibzeitpunkt zeigt.
-    var capturedAt: Date
+    public internal(set) var capturedAt: Date
 
     /// Inverse zu `WorkoutSession.contentRecord` — dort liegt `deleteRule`
     /// + `inverse` (Cascade von Session zu Record: der Snapshot hat ohne
