@@ -389,5 +389,22 @@ final class FourWeekReviewAssemblerTests: XCTestCase {
         let result = FourWeekReviewAssembler.allActivePlans(in: context)
         XCTAssertEqual(result.map(\.name), ["Alpha", "Zeta"])
     }
+
+    // MARK: - Diagnose (TEMPORÄR, siehe Commit-Historie)
+    //
+    // Testet die Hypothese, dass der auf Apple-CI reproduzierbare Signal-5-
+    // Absturz (siehe docs/P8_STUFE2_VERSIONIERUNG_PLAN.md) spezifisch an
+    // einer NEUEN Testdatei/-klasse haengt, unabhaengig von deren Namen oder
+    // Dispatch-Position (beides bereits einzeln widerlegt) -- hier als neue
+    // METHODE in einer bereits lange stabilen, bestehenden Klasse statt in
+    // einer neuen Datei.
+    func testMinimalDiagnosticInsertOfUnrelatedModelInExistingClass() throws {
+        let context = try makeContainer().mainContext
+        let plan = TrainingPlan(name: "Diagnose", programType: "custom", isActive: true)
+        context.insert(plan)
+        try context.save()
+
+        XCTAssertEqual(plan.name, "Diagnose")
+    }
 }
 #endif
