@@ -46,6 +46,22 @@ workflows:
           set -e
           swift build
 
+      - name: Diagnose TrainingDayContentRecordTests serially (temporary)
+        # Isolierter Diagnose-Schritt fuer den reproduzierbaren Signal-5-Absturz
+        # von 'TrainingDayContentRecordTests' unter 'swift test --parallel'
+        # (identische 8 von 9 Tests stuerzen ab, egal ob In-Memory- oder
+        # On-Disk-Store). Verdacht: eine Racebedingung, wenn mehrere parallele
+        # xctest-Prozesse GLEICHZEITIG zum ERSTEN MAL dasselbe neue SwiftData-
+        # Schema kompilieren (8 abstuerzende Tests = Worker-Pool-Groesse des
+        # mac_mini_m2). `set +e`, damit dieser Schritt den Build NICHT
+        # abbricht, egal ob die eigentliche "Run unit tests"-Stufe spaeter
+        # faellt oder nicht. Wird nach der Diagnose wieder entfernt.
+        script: |
+          set +e
+          swift test --filter TrainingDayContentRecordTests 2>&1 | tee swift-test-targeted-serial.log
+          echo "Diagnose-Exitcode (ignoriert): $?"
+          exit 0
+
       - name: Run unit tests
         script: |
           set -eo pipefail
@@ -69,6 +85,7 @@ workflows:
     artifacts:
       - .build/**/*.xctest
       - swift-test-output.log
+      - swift-test-targeted-serial.log
 
     publishing:
       email:
