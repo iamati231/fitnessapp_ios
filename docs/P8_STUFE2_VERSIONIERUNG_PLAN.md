@@ -1111,11 +1111,91 @@ grün geprüfte Stand verwendet, kein unveränderter Code erneut gebaut:
 
 ### 11.2 Geräte-/Simulator-Abnahme (TestingBot, echter Simulator)
 
-<!-- P8_STUFE2_SECTION_11_2_PLACEHOLDER -->
+Echter Appium-Durchlauf gegen einen iOS-Simulator (iPhone 15 / iOS 18.0),
+nicht nur Code-Review. Build-Identität vor Testbeginn per SHA256
+verifiziert: lokal von Codemagic heruntergeladenes Artefakt (Build
+`6ad52fde4ac5864d3de15029`, Commit `d0d01f4`) und die bei TestingBot
+hinterlegte Kopie (`tb://c8d911abfd829a5fc9c6b5bc`,
+`FitnessApp_d0d01f4_resumeisolation.zip`) sind BYTE-IDENTISCH
+(`f4b7bc2e...4fc6f6a`). TestingBot-Session:
+`c450bc6b40ad-ceed206b8cd1-db5a5071b4a8-179235816557-36254547`.
 
-### 11.3 Live-Zeitformat-Routing bei externem Wechsel (gezielte Untersuchung)
+**Block A — Standardtraining-Wiederaufnahme: BESTANDEN.** Tag mit zwei
+Vorkommen derselben Übung (Back Squat) und bewusst unterschiedlichen
+Zielwerten angelegt, je einen Satz auf beiden geloggt, Session offen
+verlassen. Extern: Reihenfolge verändert, Zielwerte einer anderen Übung
+geändert, Löschversuch einer dritten Übung. App vollständig terminiert
+und neu gestartet, Session fortgesetzt.
+- Reihenfolge/Zielwerte bleiben beim Stand von Session-Start — bestanden.
+- Vor dem Verlassen geloggte Sätze sind nach Kaltstart noch da — bestanden.
+- Ein neuer Satz auf der einen Back-Squat-Instanz verändert die andere
+  nicht (Kern-Regressionsfall) — bestanden.
+- Entfernte Übung verständlich markiert: nicht belegbar, siehe Befund
+  unten (unabhängiger Day-Editor-Bug, Swipe-Delete persistiert nicht —
+  die Übung existierte nach Kaltstart extern unverändert weiter).
+- Abschluss/Summary: zwei getrennte "Back Squat"-Blöcke (1 bzw. 2 Sätze)
+  werden trotz identischen Namens nicht vermischt, Summary entspricht dem
+  tatsächlich Trainierten — bestanden.
 
-<!-- P8_STUFE2_SECTION_11_3_PLACEHOLDER -->
+**Block B — Zirkel-Wiederaufnahme: BESTANDEN.** Zirkel-Tag (3 Runden)
+gestartet ("ROUND 1/3"), eine Übung in Runde 1 abgehakt, Session offen
+verlassen, externe Rounds-Änderung (3→5) versucht, Kaltstart. Nach
+Wiederaufnahme weiterhin "ROUND 1/3" (nicht 5) UND die abgehakte Übung
+bleibt markiert — eingefrorene Rundenzahl und Fortschritt überleben den
+Kaltstart korrekt.
+
+**Block C — Ad-hoc-Editor: siehe Nachtrag.** In der ersten Session nicht
+mehr erreicht (Budget durch Block-B/D-Exploration aufgezehrt, UI-
+Navigationsaussetzer). Nachgeholt in einer zweiten, gezielten
+TestingBot-Session — Ergebnis siehe unten.
+
+<!-- P8_STUFE2_SECTION_11_2_BLOCK_C_PLACEHOLDER -->
+
+**Zwei unabhängige Befunde, NICHT Teil des Resume-Isolation-Vertrags**
+(als eigene Tasks gemeldet, hier nur zur Einordnung): Swipe-Delete einer
+Übung im Tageseditor persistiert nicht (zweimal reproduziert, auch ohne
+offene Session — allgemeiner Autosave-Bug), ebenso persistieren Tag-
+Level-Stepper/Picker (Circuit-Rounds, Zeitformat-Picker) nicht
+zuverlässig, während Reorder und verschachtelte Exercise-Editor-Felder
+zuverlässig speichern. Beide als eigenständige Tasks dokumentiert
+(`task_3edd265e`, `task_0d82cbba`) — explizit AUSSERHALB dieses
+Meilensteins, keine Vermischung mit dem Snapshot-Vertrag.
+
+### 11.3 Live-Zeitformat-Routing bei externem Wechsel (Block D)
+
+**Befund (Code, nicht nur vermutet):** `WorkoutRootView.swift` routete
+anhand `route.session.day?.timeFormat != nil` zwischen
+`TimedWorkoutPlayerView` und `ActiveWorkoutView`;
+`TimedWorkoutPlayerView.swift` switchte intern ERNEUT auf das live
+`session.day?.timeFormat` (AMRAP/EMOM/Auf-Zeit/Zirkel) — beide lasen den
+LIVE Tag, nicht den beim Session-Start eingefrorenen Snapshot, obwohl
+der Snapshot `timeFormat` bereits mitführt. Eine Live-Demonstration
+dieser Lücke am Gerät war durch den oben genannten Day-Editor-Bug
+(Structure-Picker persistiert nicht) nicht auslösbar — der Code-Befund
+selbst ist davon unabhängig und eindeutig.
+
+**Bewertung:** eine konkrete Vertragslücke, nicht nur ein theoretisches
+Risiko — exakt der in 10.3 benannte, bewusst live gelassene Punkt. Die
+Lösung erfordert KEINE neue Produktentscheidung: beide Stellen folgen
+jetzt demselben bereits etablierten Snapshot-first/Live-Fallback-Muster
+wie `contentSnapshotCircuitRounds`/`.../RestSeconds`/`.../CircuitMode`
+(`WorkoutSession.contentSnapshotTimeFormat`, Commit `07b917b`). Live-
+Fallback bleibt für `.notCaptured`/`.unreadable` erhalten (Alt-Sessions,
+beschädigte Snapshots) — dieselbe Politik wie
+`ActiveWorkoutView.resolvedExercises`, damit eine Routing-Entscheidung
+nie ins Leere läuft.
+
+**Verifikation:** 3 neue Regressionstests
+(`WorkoutSessionContentSnapshotFirstTests`) reproduzieren die Lücke vor
+dem Fix (externer Formatwechsel bleibt wirkungslos, Legacy-Fallback für
+nie aufgenommene Snapshots, Standardtag ohne Zeitformat). Apple-CI für
+Commit `07b917b`: `ios-app`-Build `6ad5413a95dc34f946a46e40` und
+`swift-package`-Build `6ad54139b1b5e298265ee45c`, beide alle Schritte
+`success`, 1410/1410 Tests erreicht, keine echte Fehlzeile. Keine
+weitere Geräteverifikation dieses einzelnen Fixes — der Day-Editor-Bug
+verhindert eine saubere Live-Demonstration ohnehin, und Code-Fix +
+gezielter Regressionstest + grüne Apple-CI entsprechen dem in diesem
+Epic durchgängig verwendeten Nachweisstandard für Fixes dieser Größe.
 
 ### 11.4 Bestandsmigration (separat geprüft)
 
