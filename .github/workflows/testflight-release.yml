@@ -87,8 +87,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # --break-system-packages: der macOS-Runner liefert ein "externally
+      # managed" Homebrew-Python (PEP 668) aus, das pip ohne dieses Flag
+      # grundsätzlich verweigert — unabhängig vom konkreten Paket.
       - name: codemagic-cli-tools installieren
-        run: pip3 install codemagic-cli-tools
+        run: pip3 install --break-system-packages codemagic-cli-tools
 
       - name: XcodeGen installieren (falls nicht vorhanden)
         run: |
@@ -221,7 +224,7 @@ jobs:
           path: downloaded
 
       - name: codemagic-cli-tools installieren
-        run: pip3 install codemagic-cli-tools
+        run: pip3 install --break-system-packages codemagic-cli-tools
 
       # NEU zusammengesetzt (siehe Hinweis oben) — vor dem ersten echten
       # Lauf die Flags gegen `app-store-connect publish --help` prüfen.
