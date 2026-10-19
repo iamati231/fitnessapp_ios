@@ -373,6 +373,56 @@ final class PlanMatchmakerTests: XCTestCase {
         XCTAssertTrue(ranked.allSatisfy { $0.targetEnvironment == .noEquipment })
     }
 
+    /// PLAN_CATALOG_AUDIT.md, Fallback-Reproduktion: der absolute Notfall-Pfad
+    /// (`fallback`s letzte Stufe, "ohne Track-/Equipment-Filter") darf NIEMALS
+    /// ein Template liefern, das weder zum bestaetigten Equipment noch zur
+    /// bestaetigten Starter/Returner-Eignung passt — unabhaengig davon, ob der
+    /// AKTUELLE Katalog diese Stufe zufaellig nie erreicht (er tut es nicht,
+    /// weil `bodyweight_mastery` komplett unannotiert ist und so immer
+    /// "equipment ok" durchlaeuft, siehe PLAN_CATALOG_AUDIT.md Befund 4). Ein
+    /// eigenes, synthetisches Katalog-Array umgeht genau diese zufaellige
+    /// Deckung und prueft die Garantie der Funktion selbst, nicht nur den
+    /// heutigen Datenbestand. Erwartung: lieber ein ehrlicher Leer-Treffer
+    /// (die UI zeigt dann nur noch den "Baue deinen eigenen Plan"-Einstieg)
+    /// als eine stillschweigend unpassende Empfehlung.
+    func testFallbackNeverDropsConfirmedTrackOrEquipmentEvenAsLastResort() {
+        let advancedPullUpOnlyTemplate = ProgramTemplate(
+            id: "synthetic_advanced_pullup_only",
+            name: "Synthetic Advanced Pull-up Only",
+            tagline: "",
+            descriptionText: "",
+            focus: "",
+            daysPerWeek: 3,
+            days: [
+                DaySpec(name: "Day 1", type: .fullBody, sequenceIndex: 1, exercises: [
+                    ExerciseSpec(name: "Klimmzüge", sets: 3, repsMin: 5, repsMax: 8)
+                ])
+            ],
+            targetEnvironment: .noEquipment,
+            targetExperience: [.advanced],
+            targetGoals: [.strength]
+        )
+
+        var profile = UserEquipmentProfile()
+        profile.confirmRemainingAsUnavailable() // bestaetigt u.a. KEINE Klimmzugstange
+
+        let answers = QuizAnswers(
+            goal: .strength, experience: .advanced, preferredDays: 1, environment: .noEquipment,
+            equipmentProfile: profile
+        )
+        let result = PlanMatchmaker.rankPlansDetailed(
+            for: answers,
+            templates: [advancedPullUpOnlyTemplate],
+            experienceTrack: .starter
+        )
+
+        XCTAssertTrue(result.isFallback, "Vorbedingung: Hard-Filter muessen hier leerlaufen")
+        XCTAssertTrue(result.templates.isEmpty,
+                       "Das einzige Template ist weder Starter-tauglich (advanced-only) noch equipment-passend " +
+                       "(bestaetigt fehlende Klimmzugstange) — ein ehrlicher Leer-Treffer schlaegt eine " +
+                       "stillschweigend unpassende Empfehlung.")
+    }
+
     // MARK: - UX-Fix "Empfehlung wirkt immer gleich" — Persona-Matrix
     //
     // Reproduzierbare Faelle aus ONBOARDING_MATCHING_AND_UX_FIX.md, VOR dem

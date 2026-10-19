@@ -504,12 +504,37 @@ Equipment: kettlebell (19×), bodyweight (1×)
 | Hybrid | ⛔ nicht automatisch empfehlen | Nicht explizit getaggt. |
 | Funktionell | ✅ geeignet | Komplexe Ganzkörper-Bewegungsmuster. |
 
+## Status-Abgleich gegen den aktuellen Code (Stand: nach TestFlight-Migration, vor erneuter Katalog-Arbeit)
+
+Die 6 Matcher-Befunde oben wurden historisch als offen dokumentiert. Ein erneuter Abgleich gegen `PlanMatchmaker.swift`/`ExperienceTrack.swift` zeigt: die meisten sind inzwischen implementiert — nicht erneut umsetzen, nur noch verifizieren/testen:
+
+| Befund | Status im Code | Fundstelle |
+|---|---|---|
+| 1 (Equipment-Hartfilter nur bei `equipmentVariants`) | **Erledigt.** `equipmentMatches` leitet fehlendes `equipmentVariants` über `requiredEquipment(for:)` aus den Übungen her — alle 20 Templates werden geprüft. | `PlanMatchmaker.swift` Z. 244-290 |
+| 2 (`matchReasons.equipmentMatch` nur `!isEmpty`) | **Erledigt.** Prüft jetzt dieselbe echte `equipmentMatches`-Logik wie der Hard-Filter. | `PlanMatchmaker.swift` Z. 230-241 |
+| 3 (`.intermediate` allein reicht als Starter-Freigabe) | **Erledigt.** `experienceTrackMatches` verlangt für Starter/Returner explizit `.beginner`. | `PlanMatchmaker.swift` Z. 335-354 |
+| 4 (Fallback ignoriert `preferredDays`/Equipment) | **Teilweise erledigt, jetzt gehärtet (dieser Durchgang).** Tage-Obergrenze und Equipment wurden bereits berücksichtigt, ABER die beiden striktesten Notfallstufen konnten bestätigtes Equipment UND bestätigte Track-Eignung gleichzeitig fallen lassen — mit dem heutigen Katalog nie erreicht (siehe unten), aber keine Garantie der Funktion selbst. Siehe eigener Abschnitt unten. | `PlanMatchmaker.swift`, `fallback(...)` |
+| 5 (`templateScoreBonus` pauschaler Tage-Bonus) | **Erledigt — anders als hier beschrieben.** Der implementierte Bonus ist NICHT `max(0, daysPerWeek-3)`, sondern ausschließlich der inhaltlich begründete `.advanced`-Tag-Bonus (+1, nur für `.experienced`-Track auf nicht bereits kreditierte Advanced-Templates). Kein `ScoreBreakdown`-Typ eingeführt — bislang nicht nötig, da nur noch ein einzelner, dokumentierter Bonus-Term existiert. | `ExperienceTrack.swift` Z. 91-96 |
+| 6 (Ziel-Unterstützung vs. Primärfokus) | **Erledigt.** `goalIsSupportedButNotPrimaryFocus` gibt Hypertrophie-/Kraft-Templates einen `weightLoss`-Zusatzpunkt (+2), ohne den Primärfokus-Term (+3) zu verwässern. | `PlanMatchmaker.swift` Z. 171-191 |
+
+### Fallback-Härtung (dieser Durchgang)
+
+Konkrete Prüfung des aktuellen `fallback(...)`: Die vorherige Fassung hatte vier Eskalationsstufen; die beiden strengsten ("nur Equipment, Track fällt" / "weder Track noch Equipment") konnten eine bestätigt ungeeignete Empfehlung liefern (z. B. ein reines Advanced-Template an einen Starter, oder ein Template mit bestätigt fehlendem Equipment). Mit dem heutigen Katalog war das nicht reproduzierbar, weil `bodyweight_mastery` komplett unannotiert ist und dadurch immer als "equipment ok" durchläuft, unabhängig vom Nutzerprofil — ein Zufall der Katalogdaten, keine Garantie der Funktion. Ein synthetischer Testfall (eigenes Template-Array, umgeht den Katalog-Zufall) reproduziert das Problem: `testFallbackNeverDropsConfirmedTrackOrEquipmentEvenAsLastResort` (`Tests/FitnessAppCoreTests/PlanMatchmakerTests.swift`).
+
+**Fix**: `fallback(...)` hat jetzt nur noch zwei Stufen (Tage+Track+Equipment, dann nur Track+Equipment) und liefert eine ehrliche leere Liste, statt Track oder Equipment je fallen zu lassen. `OnboardingView` behandelt eine leere Empfehlungsliste bereits sicher (`if let top = rankedTemplates.first`) — der "Baue deinen eigenen Plan"-Einstieg bleibt in diesem Fall sichtbar. Keine neue UI/Lokalisierung nötig, kein bestehender Nutzerplan betroffen (reine Empfehlungslogik vor Plan-Erstellung). Alle bisherigen Fallback-Tests bleiben unverändert grün, da keiner von ihnen die beiden entfernten Stufen tatsächlich erreichte.
+
+**Offen, bewusst nicht in diesem Durchgang angefasst** (eigene Produktentscheidungen, getrennt vorzulegen):
+- Ob es für den jetzt möglichen "ehrlichen Leer-Treffer"-Fall eine eigene Erklärtext-Sektion braucht (statt nur des stillschweigend verbleibenden Builder-Einstiegs) — UX-Entscheidung, kein Core-Logik-Fix.
+- Keine Trainingsvolumen-/Übungsänderungen an den Pro-Template-Bewertungen oben vorgenommen.
+
 ## Noch offen (nächste Schritte)
 
 Dieses Dokument deckt Abschnitt 1+2 der Vorgabe ab (Katalog-Export, inhaltliche Red Flags). Noch zu tun, in getrennten Schritten:
 - Abschnitt 3: Eingaben korrigieren (Wochenziel vs. Tage-Obergrenze; ExperienceTrack ≠ Technik-Kompetenz in der Baseline-Check-Anbindung prüfen).
-- Abschnitt 4: Die 6 oben benannten Matcher-Befunde tatsächlich beheben (Equipment-Hartfilter auf alle Templates ausweiten, Starter-Filter auf nachgewiesene Eignung statt bloßem `.intermediate`-Tag umstellen, Fallback um Tage-Obergrenze ergänzen, `templateScoreBonus` von pauschalem Tage-Bonus auf inhaltliche Kriterien umstellen, `ScoreBreakdown`-Typ einführen).
-- Abschnitt 5: Reproduktionsmatrix + die 8 konkreten Regressionsfälle als Tests.
+- Abschnitt 4: Matcher-Befunde 1/2/3/5/6 sind laut Status-Abgleich oben bereits erledigt; Befund 4 (Fallback) ist mit diesem Durchgang gehärtet. Verbleibend: keiner der 6 — ggf. erneuten Blick auf `ScoreBreakdown`-Bedarf werfen, falls weitere Bonus-Terme dazukommen.
+- Abschnitt 5: Reproduktionsmatrix + die 8 konkreten Regressionsfälle als Tests (der Fallback-Fall oben deckt einen eigenen, bisher nicht in der ursprünglichen 8er-Liste erfassten Fall ab).
 - Abschnitt 6: Lokalisierungs-Texte der 4 überclaimenden Templates in DE/EN/TR entschärfen; Apple-Build/SwiftData/UI-Tests zusätzlich zu Core.
+
+**Höher priorisiert als diese Katalog-Arbeit**: die offenen TestFlight-Crash/Wiederaufnahme-Restfragen (`docs/TESTFLIGHT_CRASH_164.md`) — hier nicht angefasst, bleiben in der Liste.
 
 **Transparenz-Hinweis**: Alle Zahlen in diesem Dokument stammen aus einem automatisierten Dump von `ProgramTemplates.all`/`ExerciseLibraryData.all` auf dem Linux-Sandbox-Toolchain (Core-Logik, keine SwiftUI-Abhängigkeit, daher dort korrekt kompilier- und testbar). Die Eignungs-Einschätzungen je Track/Ziel sind fachliche Bewertung auf Basis dieser Zahlen, kein automatisiert abgeleitetes Urteil — und noch nicht gegen ein echtes Gerät/TestFlight verifiziert.

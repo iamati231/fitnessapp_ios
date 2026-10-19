@@ -355,30 +355,30 @@ public enum PlanMatchmaker {
 
     /// Wenn die K.O.-Kriterien ALLES rausfiltern (extrem strenge Auswahl
     /// wie "Powerlifting + No-Equipment + 2 Tage"), liefern wir wenigstens
-    /// die "harmlosen" Bodyweight-Plaene zurueck statt einer leeren Liste.
-    /// Verhindert dass der Quiz-Result-Screen leer dasteht.
+    /// die "harmlosen" Bodyweight-Plaene zurueck statt einer leeren Liste —
+    /// aber NUR, solange sie tatsaechlich bestaetigt Track- und Equipment-
+    /// vertraeglich sind. Zwei Stufen, strikt in dieser Prioritaet:
+    ///   1. Tage-Obergrenze UND Track UND Equipment respektiert.
+    ///   2. Nur Track UND Equipment respektiert (Tage-Obergrenze faellt als
+    ///      einzige Praeferenz zuerst — ein laengerer, aber sicherer Plan
+    ///      schlaegt einen kurzen ungeeigneten).
     ///
-    /// Plan-Katalog-Audit Befund 4: die fruehere Fassung ignorierte
-    /// `preferredDays` komplett und konnte, falls die Track-Filterung leer
-    /// ausging, auf die KOMPLETT ungefilterte Bodyweight-Liste zurueckfallen
-    /// — die `crossfit_bodyweight_rx` (rein `.advanced`) enthaelt. Jetzt drei
-    /// Stufen, strikt in dieser Prioritaet:
-    ///   1. Tage-Obergrenze UND Track respektiert.
-    ///   2. Nur Track respektiert (ein laengerer, aber sicherer Plan schlaegt
-    ///      einen kurzen ungeeigneten — Sicherheit vor Tages-Praeferenz).
-    ///   3. Nur Track respektiert UND Equipment respektiert (Tage-Obergrenze
-    ///      faellt als erstes, Equipment bleibt laenger verbindlich).
-    ///   4. Absoluter Notfall ohne Track-/Equipment-Filter — `isFallback` ist
-    ///      in diesem Pfad ohnehin `true`, die UI zeigt bereits "Beste
-    ///      verfuegbare Option" statt "Empfohlen" (UX-Fix "Empfehlung wirkt
-    ///      immer gleich", Punkt 5).
-    ///
-    /// Smart-Onboarding-Epic Phase 4, Punkt "auch im Fallback bestaetigte
-    /// Equipment- und Tagegrenzen respektieren": vorher pruefte der Fallback
-    /// GAR KEIN Equipment (implizite Annahme "jeder Bodyweight-Plan passt
-    /// garantiert jedem" — stimmt nicht mehr fuer Templates mit z.B. einer
-    /// Klimmzugstangen-Uebung). Equipment wird deshalb als VORLETZTES
-    /// relaxt, nicht als erstes — Sicherheit vor Tages-/Track-Praeferenz.
+    /// Plan-Katalog-Audit Befund 4, verschaerft: eine fruehere Fassung hatte
+    /// zwei weitere, noch laxere Notfall-Stufen ("nur Equipment, Track faellt"
+    /// / "weder Track noch Equipment") — mit dem heutigen Katalog unerreichbar
+    /// (siehe `testFallbackNeverDropsConfirmedTrackOrEquipmentEvenAsLastResort`:
+    /// `bodyweight_mastery` ist komplett unannotiert und damit IMMER
+    /// equipment-ok, egal was der Nutzer bestaetigt hat), aber als Garantie
+    /// der Funktion selbst falsch: eine kuenftige Katalog-Aenderung (z.B. die
+    /// in PLAN_CATALOG_AUDIT.md dokumentierte Luecke "Tuerrahmen/Dip-Barren
+    /// nicht modelliert" wird irgendwann geschlossen) haette diese Stufen
+    /// scharf geschaltet und dann STILLSCHWEIGEND einen bestaetigt
+    /// ungeeigneten Plan geliefert. Gibt es also auch mit respektiertem
+    /// Track+Equipment keinen Kandidaten, liefern wir ehrlich eine leere
+    /// Liste — die UI (`OnboardingView.rankedTemplates.first`) zeigt dann
+    /// einfach keine Empfehlungs-Sektion, der "Baue deinen eigenen Plan"-
+    /// Einstieg bleibt trotzdem sichtbar. Eine stillschweigend unpassende
+    /// Empfehlung ist niemals besser als ein ehrlicher Leer-Treffer.
     private static func fallback(
         for answers: QuizAnswers,
         allTemplates: [ProgramTemplate],
@@ -398,14 +398,8 @@ public enum PlanMatchmaker {
         }
         if !daysTrackEquipment.isEmpty { return daysTrackEquipment }
 
-        let trackEquipment = bodyweight.filter {
+        return bodyweight.filter {
             experienceTrackMatches(template: $0, track: experienceTrack) && equipmentOK($0)
         }
-        if !trackEquipment.isEmpty { return trackEquipment }
-
-        let equipmentOnly = bodyweight.filter(equipmentOK)
-        if !equipmentOnly.isEmpty { return equipmentOnly }
-
-        return bodyweight
     }
 }
