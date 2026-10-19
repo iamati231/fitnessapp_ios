@@ -1307,11 +1307,16 @@ nächstem Schritt, falls/wenn eine Fixture beschafft wird.
 
 ### 11.5 Gesamturteil Stufe 2
 
-**Stufe 2 ist für den Session-Inhaltsvertrag (historische Summary,
-Snapshot-Sicherung, Wiederaufnahme-Isolation inkl. Zeitformat/Zirkel
-und Ad-hoc) jetzt vollständig abgenommen** — nicht mehr nur codegelesen
-oder nur unit-getestet, sondern mit echten Geräte-/Simulator-Belegen
-UND grüner Apple-CI:
+**Status:** Session-Inhaltsvertrag (historische Summary, Snapshot-
+Sicherung, Wiederaufnahme-Isolation inkl. Zeitformat/Zirkel und Ad-hoc)
+implementiert und gemäß dokumentierten Prüfungen abgenommen. Die
+Migration bestehender Datenbanken ist noch nicht bestätigt (siehe
+11.4) — das ist eine separate, eigenständig offene Lücke, keine
+Einschränkung der obigen Abnahme.
+
+Im Einzelnen, nicht mehr nur codegelesen oder nur unit-getestet,
+sondern mit dokumentierten Geräte-/Simulator-Belegen UND grüner
+Apple-CI:
 
 - Standardtraining-Wiederaufnahme (Block A) und Zirkel-Wiederaufnahme
   (Block B): auf echtem Simulator bestanden, Build-Identität per SHA256
@@ -1341,13 +1346,22 @@ dokumentiert.
   Fixture vorliegt — keine Vermutung, keine Ersatzverifikation.
 - **Zwei unabhängige Day-Editor-Persistenzbefunde** (Swipe-Delete,
   Tag-Level-Stepper/Picker): echt, reproduziert, aber AUSSERHALB des
-  Session-Inhaltsvertrags — als eigene Tasks gemeldet (`task_3edd265e`,
-  `task_0d82cbba`), nicht Teil dieser Abnahme.
-- Die Block-C/D-Fixes wurden nach etabliertem Epic-Standard (gezielter
-  Regressionstest + grüne Apple-CI) verifiziert, aber NICHT noch einmal
-  eigens auf dem Gerät nachgewiesen — bewusste Entscheidung gegen
-  zusätzlichen TestingBot-Verbrauch ohne neue Prüffrage, kein
-  stillschweigend übersprungener Schritt.
+  Session-Inhaltsvertrags. Bleiben als eigene, offene Tasks bestehen
+  (`task_3edd265e`, `task_0d82cbba`) — nicht Teil dieser Abnahme und
+  nicht durch sie abgedeckt.
+- **Ad-hoc-Fix `e95bf6f` (Block C) — Geräte-Kaltstartnachtest nach dem
+  Fix:** NEIN, nicht durchgeführt. Fix durch Regressionstests
+  (`TrainingDayContentSnapshotWriterTests`, drei neue Fälle, siehe 11.2)
+  und Apple-CI bestätigt (`ios-app` `6ad5453168658dfa50608121`,
+  `swift-package` `6ad5453083b3c37d71581e44`, beide Commit `e95bf6f`,
+  1413/1413 Tests); ein erneuter Geräte-Kaltstarttest NACH diesem Fix
+  ist noch offen.
+- **Zeitformat-Routing-Fix `07b917b` (Block D) — dieselbe Lage:** kein
+  Geräte-Kaltstarttest nach dem Fix. Durch Regressionstests
+  (`WorkoutSessionContentSnapshotFirstTests`) und Apple-CI bestätigt
+  (`ios-app` `6ad5413a95dc34f946a46e40`, `swift-package`
+  `6ad54139b1b5e298265ee45c`, beide Commit `07b917b`, 1410/1410 Tests);
+  Geräte-Kaltstartnachtest nach Fix ebenfalls noch offen.
 
 **Kosten/Umfang:** ein TestingBot-Account-Check (kostenlos) + zwei
 TestingBot-Sessions (~55-60 Min. + ~7 Min., sauber beendet) innerhalb
