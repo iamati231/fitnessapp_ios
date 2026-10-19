@@ -131,6 +131,23 @@ jobs:
       - name: Xcode-Projekt generieren
         run: xcodegen generate
 
+      # Diagnose ohne Geheimniswert auszugeben: viermal in Folge ist derselbe
+      # "Not a valid certificate private key"-Fehler aufgetreten. Dieser
+      # Schritt prüft das Secret direkt mit openssl, bevor die eigentliche
+      # Signing-Logik läuft — openssl gibt nie den Key-Inhalt aus, nur
+      # Gültig/Ungültig + den technischen Grund.
+      - name: Diagnose — Format von APP_STORE_CONNECT_CERTIFICATE_KEY prüfen
+        env:
+          APP_STORE_CONNECT_CERTIFICATE_KEY: ${{ secrets.APP_STORE_CONNECT_CERTIFICATE_KEY }}
+        run: |
+          echo "Zeichenlänge: ${#APP_STORE_CONNECT_CERTIFICATE_KEY}"
+          echo "Zeilenanzahl: $(printf '%s' "$APP_STORE_CONNECT_CERTIFICATE_KEY" | wc -l)"
+          printf '%s' "$APP_STORE_CONNECT_CERTIFICATE_KEY" > /tmp/cert_key_check.pem
+          echo "openssl-Prüfung (gibt nur Gültig/Fehlermeldung aus, nie den Key-Inhalt):"
+          openssl rsa -in /tmp/cert_key_check.pem -check -noout || true
+          openssl pkey -in /tmp/cert_key_check.pem -check -noout || true
+          rm -f /tmp/cert_key_check.pem
+
       # Wörtlich aus codemagic.yaml ("Set up code signing") übernommen —
       # derselbe persistente Signing-Key wie in Codemagic (laut Nutzerangabe
       # außerhalb von Codemagic noch vorhanden), erzeugt/holt dasselbe
