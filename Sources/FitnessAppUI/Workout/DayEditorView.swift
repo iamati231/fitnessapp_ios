@@ -330,14 +330,38 @@ public struct DayEditorView: View {
     #endif
 
     /// UI-Refactor (DeltiqHeader-Muster): Autosave-Screen (siehe
-    /// `ExerciseEditorView`) — kein echter Speicher-Schritt, reines
-    /// "Fertig". Kein Validitaets-Gate auf diesem Screen → kein `isDisabled`.
+    /// `ExerciseEditorView`). Kein Validitaets-Gate auf diesem Screen → kein
+    /// `isDisabled`. Ruft seit dem Day-Editor-Persistenzbugfix `saveAndDismiss()`
+    /// auf (siehe dortige Dokumentation) — vorher war das ein reines "Fertig"
+    /// ohne eigenen Speicher-Schritt.
     private var saveAction: DeltiqHeaderAction {
         DeltiqHeaderAction(
             systemImage: "checkmark",
             accessibilityLabel: String(localized: "common.done", bundle: .module)
         ) {
+            saveAndDismiss()
+        }
+    }
+
+    /// Bugfix (Day-Editor-Persistenzbug, Tag-Level-Stepper/Picker): die
+    /// `metaSection`-Felder (u.a. `timeFormat`/`circuitRounds`/
+    /// `circuitRestSeconds`, siehe `TrainingDaySnapshot`) galten laut
+    /// Typ-Doku als "autosaved direkt in SwiftData" ueber `@Bindable` —
+    /// tatsaechlich mutiert `@Bindable` nur den LIVE-Objektgraphen im
+    /// Speicher, ohne selbst `context.save()` aufzurufen. Ein reines
+    /// `dismiss()` verliess sich bislang komplett auf SwiftDatas impliziten
+    /// Autosave, der nach einem direkt anschliessenden App-Kaltstart nicht
+    /// zuverlaessig schon gelaufen sein muss (derselbe Musterfehler wie bei
+    /// `deleteExercises`, siehe dortige Dokumentation). Ein fehlgeschlagener
+    /// Save dismisst jetzt NICHT mehr — der User soll nicht glauben, seine
+    /// Aenderung sei gesichert, waehrend sie es nicht ist (sichtbarer
+    /// Fehlerhinweis statt irrefuehrendem "Fertig").
+    private func saveAndDismiss() {
+        do {
+            try modelContext.save()
             dismiss()
+        } catch {
+            showTransientToast(String(localized: "day.editor.save.failed", bundle: .module))
         }
     }
 
@@ -1099,6 +1123,32 @@ public struct DayEditorView: View {
     /// DEL-049: Loescht eine aktive Uebung UND ihren archivierten Urlaubs-
     /// Modus-Snapshot (`swappedFromOriginal`), sonst bleibt ein toter
     /// Eintrag in der Datenbank zurueck, den der User nirgendwo mehr sieht.
+    ///
+    /// Bugfix (Day-Editor-Persistenzbug, Swipe-Loeschen): Loeschen/Reorder
+    /// sind bewusst "sofort wirksame Aktionen ohne Save/Cancel-Konzept"
+    /// (siehe `snapshot`-Typ-Doku) — sie haengen deshalb NICHT am
+    /// "Fertig"-Checkmark (`saveAndDismiss()`), sondern muessen SOFORT
+    /// selbst dauerhaft werden, da weder "Fertig" noch der Zurueck-Chevron
+    /// (`isDirty` ignoriert Loeschen/Reorder ausdruecklich) danach noch
+    /// garantiert ausgeloest werden. Ohne diesen expliziten Save verliess
+    /// sich die Loeschung bislang auf SwiftDatas impliziten Context-
+    /// Autosave — ein App-Kaltstart kurz danach konnte die Loeschung
+    /// dadurch verlieren (derselbe, bereits an anderer Stelle TestingBot-
+    /// bestaetigte Musterfehler, siehe `TrainingDayContentSnapshotWriter-
+    /// Tests.testCapturePersistsWithoutAnyAdditionalCallerSave`).
+    ///
+    /// Scheitert der Save: KEIN automatischer Wiederaufbau der geloeschten
+    /// Uebung(en). Ein `context.rollback()` ist in dieser App bewusst
+    /// ausgeschlossen (wirkt auf den GESAMTEN, geteilten Context und wuerde
+    /// unabhaengige, anderswo bereits bestaetigte Aenderungen mit zerstoeren
+    /// — siehe `PlanGeneratorInstantiator`-Typ-Doku). Eine manuell neu
+    /// angelegte Ersatz-Uebung waere ebenfalls KEINE echte Wiederherstellung
+    /// — sie bekaeme eine neue `instanceID` und wuerde damit die ueber P8
+    /// Stufe-2 abgesicherte Resume-Identitaet einer eventuell gerade
+    /// offenen Session brechen. Stattdessen nur sichtbarer Fehlerhinweis
+    /// (bestehende `swapResultToast`-Konvention) — der User sieht die
+    /// geloeschte Uebung weiterhin als entfernt und kann sie bei Bedarf wie
+    /// jede andere Uebung ueber den Bibliotheks-Picker erneut hinzufuegen.
     private func deleteExercises(at offsets: IndexSet) {
         let arr = orderedExercises
         for index in offsets {
@@ -1115,6 +1165,26 @@ public struct DayEditorView: View {
         // Re-index remaining exercises so orderIndex stays a contiguous 0..n-1.
         for (i, exercise) in orderedExercises.enumerated() {
             exercise.orderIndex = i
+        }
+        do {
+            try modelContext.save()
+        } catch {
+            showTransientToast(String(localized: "day.editor.exercise.delete.saveFailed", bundle: .module))
+        }
+    }
+
+    /// Bugfix (Day-Editor-Persistenzbug): gemeinsamer Helfer fuer die
+    /// bestehende `swapResultToast`-Konvention (siehe `switchPlanEnvAndAdd`)
+    /// — vermeidet doppelten Animations-/Dispatch-Code an den zwei neuen
+    /// Fehler-Aufrufstellen (`deleteExercises`, `saveAndDismiss`).
+    private func showTransientToast(_ message: String) {
+        withAnimation(.easeOut(duration: 0.2)) {
+            swapResultToast = message
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            withAnimation(.easeIn(duration: 0.2)) {
+                swapResultToast = nil
+            }
         }
     }
 

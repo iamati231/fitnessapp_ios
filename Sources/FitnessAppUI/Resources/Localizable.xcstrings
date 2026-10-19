@@ -43449,6 +43449,52 @@
         }
       }
     },
+    "day.editor.exercise.delete.saveFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Löschen konnte nicht gespeichert werden. Bitte erneut versuchen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't save the deletion. Please try again."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Silme işlemi kaydedilemedi. Lütfen tekrar deneyin."
+          }
+        }
+      }
+    },
+    "day.editor.save.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichern fehlgeschlagen. Bitte erneut versuchen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save failed. Please try again."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydetme başarısız oldu. Lütfen tekrar deneyin."
+          }
+        }
+      }
+    },
     "timedWorkout.circuit.pauseLabel": {
       "extractionState": "manual",
       "localizations": {
