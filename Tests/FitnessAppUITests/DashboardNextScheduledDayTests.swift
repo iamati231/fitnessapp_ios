@@ -95,6 +95,22 @@ final class DashboardNextScheduledDayTests: XCTestCase {
         let allSessions = try reopenedContext.fetch(FetchDescriptor<WorkoutSession>())
         XCTAssertEqual(allSessions.count, 1, "die Session von Plan A darf durch dessen Loeschung nicht mitgeloescht werden")
 
+        // P9-Fund (Priorität 2): bisher ungeprueft war, ob die seit `4e656eb9`
+        // korrekt deklarierte Nullify-Inverse AUCH fuer eine KASKADIERTE
+        // Plan-Loeschung (TrainingPlan.days .cascade -> TrainingDay.sessions
+        // .nullify, zwei Hops) zuverlaessig greift — bisher nur fuer eine
+        // DIREKTE Tag-Loeschung belegt. `session.day` selbst zu lesen ist
+        // sicher (siehe Abschnitt 2/3 dieser Datei-Dokumentation bzw.
+        // `docs/TESTFLIGHT_CRASH_164.md`: das Risiko liegt in einer
+        // gespeicherten Eigenschaft AUF dem Ziel wie `.plan`, nicht im
+        // Erhalten der Referenz selbst) — kein neuer, isolierter CI-Lauf
+        // noetig, diese Zeile laeuft im selben gebuendelten Lauf wie alles
+        // andere aus dieser Session mit.
+        XCTAssertNil(
+            allSessions.first?.day,
+            "kaskadierte Plan-Loeschung muss die Nullify-Inverse genauso zuverlaessig anwenden wie eine direkte Tag-Loeschung"
+        )
+
         let livePlans = try reopenedContext.fetch(
             FetchDescriptor<TrainingPlan>(predicate: #Predicate<TrainingPlan> { $0.isActive == true })
         )
