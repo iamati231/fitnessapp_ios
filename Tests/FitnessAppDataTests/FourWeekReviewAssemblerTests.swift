@@ -436,7 +436,8 @@ final class FourWeekReviewAssemblerTests: XCTestCase {
         let plan = TrainingPlan(name: "Plan", programType: "custom", isActive: true)
         plan.activatedAt = d(2024, 1, 1)
         context.insert(plan)
-        context.insert(TrainingDay(name: "Ganzkörper", weekday: 2, type: .fullBody, plan: plan))
+        let day = TrainingDay(name: "Ganzkörper", weekday: 2, type: .fullBody, plan: plan)
+        context.insert(day)
         try context.save()
 
         // Check-in klar innerhalb von Block 1.
@@ -456,6 +457,21 @@ final class FourWeekReviewAssemblerTests: XCTestCase {
             calendar: utc,
             in: context
         )
+
+        // Vier abgeschlossene Sessions an allen vier Montagen INNERHALB von
+        // Block 2 (2. Februar bis 1. Maerz) — ohne diese wuerde die
+        // Teilnahme-Auswertung "0 von 4" melden und dieser Test faelschlich
+        // einen `.participationBelowPlan`-Befund statt des hier eigentlich
+        // untersuchten Check-in-Verhaltens zeigen. Isoliert so gezielt NUR
+        // die Check-in-Zuordnung (siehe Testname).
+        for date in [d(2024, 2, 5), d(2024, 2, 12), d(2024, 2, 19), d(2024, 2, 26)] {
+            context.insert(WorkoutSession(
+                startTime: date, endTime: date.addingTimeInterval(3600),
+                durationMinutes: 60, exerciseCount: 1, totalSets: 0,
+                totalVolumeKg: 0, isCompleted: true, day: day
+            ))
+        }
+        try context.save()
 
         let reviewForBlock2 = FourWeekReviewAssembler.assemble(in: context, for: plan, now: d(2024, 3, 1), calendar: utc)
         XCTAssertEqual(reviewForBlock2.outcome, .keepAsIs, "das alte Block-1-Check-in darf fuer Block 2 keine Befunde ausloesen")

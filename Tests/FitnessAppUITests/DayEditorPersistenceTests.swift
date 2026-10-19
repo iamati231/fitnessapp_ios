@@ -59,7 +59,7 @@ final class DayEditorPersistenceTests: XCTestCase {
             try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("wal"))
         }
 
-        var keptExerciseID: PersistentIdentifier!
+        var keptExerciseInstanceID: UUID!
         do {
             let container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
             let context = container.mainContext
@@ -73,7 +73,14 @@ final class DayEditorPersistenceTests: XCTestCase {
             let toKeep = Exercise(name: "Kurzhantel-Rudern", exerciseTemplateID: UUID(), orderIndex: 1, day: day)
             context.insert(toKeep)
             try context.save()
-            keptExerciseID = toKeep.persistentModelID
+            // `PersistentIdentifier` ist NICHT ueber einen Container-Neustart
+            // hinweg `==`-stabil (auf Apple-CI empirisch bestaetigt: derselbe
+            // Core-Data-Datensatz bekam nach Neuoeffnung einen anders
+            // vergleichenden Identifier) - fuer einen echten
+            // Identitaetsnachweis ueber den Neustart hinweg stattdessen die
+            // eigene, dafuer gebaute stabile `instanceID` verwenden (P8
+            // Stufe-2, siehe `Exercise.instanceID`-Dokumentation).
+            keptExerciseInstanceID = toKeep.instanceID
 
             // Exakt die Sequenz aus `deleteExercises(at:)` nach dem Fix:
             // Loeschen, Re-Indizierung, SOFORT `context.save()` — kein
@@ -87,7 +94,7 @@ final class DayEditorPersistenceTests: XCTestCase {
         let reopened = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
         let exercises = try reopened.mainContext.fetch(FetchDescriptor<Exercise>())
         XCTAssertEqual(exercises.map(\.name), ["Kurzhantel-Rudern"], "die Loeschung muss einen echten Store-Neustart ueberstehen, nicht nur In-Memory-Retention")
-        XCTAssertEqual(exercises.first?.persistentModelID, keptExerciseID)
+        XCTAssertEqual(exercises.first?.instanceID, keptExerciseInstanceID)
         XCTAssertEqual(exercises.first?.orderIndex, 0)
     }
 
