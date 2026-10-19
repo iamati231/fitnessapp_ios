@@ -1149,6 +1149,20 @@ public struct DayEditorView: View {
     /// (bestehende `swapResultToast`-Konvention) — der User sieht die
     /// geloeschte Uebung weiterhin als entfernt und kann sie bei Bedarf wie
     /// jede andere Uebung ueber den Bibliotheks-Picker erneut hinzufuegen.
+    /// Pure-Logic-Helfer fuer den Crash-Fix (Block C, TestingBot, 2/2
+    /// reproduziert): liefert die nach dem Loeschen verbleibenden Uebungen,
+    /// berechnet AUSSCHLIESSLICH aus der uebergebenen Momentaufnahme
+    /// `snapshot` (vor dem `modelContext.delete(...)` erfasst). `internal`
+    /// und ohne `modelContext`-Zugriff, daher direkt testbar — siehe
+    /// `DayEditorDeleteReindexTests`.
+    internal static func remainingAfterDeletion(
+        _ snapshot: [Exercise], removing offsets: IndexSet
+    ) -> [Exercise] {
+        snapshot.enumerated()
+            .filter { !offsets.contains($0.offset) }
+            .map(\.element)
+    }
+
     private func deleteExercises(at offsets: IndexSet) {
         let arr = orderedExercises
         for index in offsets {
@@ -1163,7 +1177,16 @@ public struct DayEditorView: View {
             modelContext.delete(exercise)
         }
         // Re-index remaining exercises so orderIndex stays a contiguous 0..n-1.
-        for (i, exercise) in orderedExercises.enumerated() {
+        // Bugfix (Crash DEL-Day-Editor-Swipe): NICHT erneut `orderedExercises`
+        // (liest `day.activeExercises` live) abfragen — SwiftData aktualisiert
+        // die In-Memory-Relationship nach `delete()` nicht garantiert synchron
+        // vor dem `save()`, wodurch die gerade geloeschte(n) Uebung(en) hier
+        // nochmal auftauchen konnten. Das Setzen von `orderIndex` auf einem
+        // bereits zum Loeschen vorgemerkten Objekt crasht den Prozess sofort
+        // (reproduziert 2/2 auf TestingBot, Block C). Stattdessen aus der
+        // bereits VOR dem Loeschen erfassten Momentaufnahme `arr` rechnen.
+        let remaining = Self.remainingAfterDeletion(arr, removing: offsets)
+        for (i, exercise) in remaining.enumerated() {
             exercise.orderIndex = i
         }
         do {
