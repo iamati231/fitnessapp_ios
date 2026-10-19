@@ -1,0 +1,256 @@
+name: TestFlight Release (manuell, signiert)
+
+# Meilenstein 2: signierte .ipa + TestFlight-Upload über GitHub Actions, als
+# Ersatznachweis für den `testflight`-Workflow in codemagic.yaml.
+#
+# Nutzt dieselben Codemagic-CLI-Tools ("codemagic-cli-tools", frei auf PyPI,
+# NICHT Codemagic-exklusiv) mit denselben Befehlen wie der bestehende
+# Codemagic-Workflow — keine Neuentwicklung der Signing-/Build-Logik. Die
+# Befehle in "Build-Nummer ermitteln", "Code-Signing einrichten" und ".ipa
+# bauen" sind wörtlich aus codemagic.yaml übernommen (dort bereits
+# produktiv bewährt).
+#
+# Der letzte Schritt (app-store-connect publish) ist NEU zusammengesetzt,
+# da Codemagic den Upload über sein eigenes publishing:-YAML erledigt statt
+# über einen CLI-Aufruf — vor dem ersten echten Lauf unbedingt die exakte
+# Flag-Syntax gegen `app-store-connect publish --help` auf dem Runner
+# gegenprüfen.
+#
+# Sicherheitsstufen:
+#   1. Nur workflow_dispatch — kein push-/tag-Trigger, keine automatische
+#      Build-Serie.
+#   2. Jede Stelle, die eines der vier Apple-Secrets braucht, läuft im
+#      GitHub-Environment "appstore-release" — das hält den Job an, bis ein
+#      Reviewer ihn in der GitHub-UI bestätigt. Dieses Environment muss der
+#      Repo-Owner selbst unter Settings → Environments anlegen (inkl.
+#      "Required reviewers") und dort die vier Secrets hinterlegen — aus
+#      dieser Session heraus weder einsehbar noch anlegbar.
+#   3. Der TestFlight-Upload ist ein eigener, NUR bei explizitem Input
+#      `upload_to_testflight: true` laufender Job — Archivieren+Signieren
+#      allein lädt nie etwas hoch, und durchläuft die Environment-Freigabe
+#      ein zweites Mal, unabhängig vom Signing-Schritt.
+#
+# Benötigte Secrets im Environment "appstore-release" (vom Nutzer in GitHub
+# angelegt — niemals hier im Code, im Chat oder in Logs ausgegeben):
+#   APP_STORE_CONNECT_KEY_IDENTIFIER
+#   APP_STORE_CONNECT_ISSUER_ID
+#   APP_STORE_CONNECT_PRIVATE_KEY       (Inhalt der .p8-Datei)
+#   APP_STORE_CONNECT_CERTIFICATE_KEY   (Signing-Key, PEM — derselbe wie in
+#                                         Codemagic, laut Nutzerangabe noch
+#                                         außerhalb von Codemagic vorhanden)
+
+on:
+  workflow_dispatch:
+    inputs:
+      marketing_version:
+        description: 'Marketing-Version (z.B. 0.1.74) — leer lässt project.yml unverändert'
+        required: false
+        default: ''
+      upload_to_testflight:
+        description: 'Nach erfolgreichem Signing zusätzlich zu TestFlight hochladen'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  XCODE_PROJECT: 'FitnessApp.xcodeproj'
+  XCODE_SCHEME: 'FitnessApp'
+  APP_STORE_APP_ID: '6768627358'
+  BUNDLE_ID: 'com.atamya.FitnessApp'
+  WIDGET_BUNDLE_ID: 'com.atamya.FitnessApp.widgets'
+
+jobs:
+  test-gate:
+    name: Release-Gate — Swift-Package-Tests
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain-Infos
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Swift-Package-Tests (muss grün sein, bevor archiviert wird)
+        run: swift test --parallel
+
+  build-and-sign:
+    name: Archivieren + Signieren (.ipa)
+    needs: test-gate
+    runs-on: macos-latest
+    environment: appstore-release
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: codemagic-cli-tools installieren
+        run: pip3 install codemagic-cli-tools
+
+      - name: XcodeGen installieren (falls nicht vorhanden)
+        run: |
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          xcodegen --version
+
+      # Wörtlich aus codemagic.yaml ("Determine build number from App Store
+      # Connect") übernommen — fragt denselben Apple-App-Record ab, damit
+      # keine Kollision mit bereits vorhandenen Codemagic-TestFlight-Builds
+      # entstehen kann.
+      - name: Build-Nummer von App Store Connect ermitteln
+        env:
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          set -e
+          NEXT=$(($(app-store-connect get-latest-build-number "$APP_STORE_APP_ID") + 1))
+          echo "Using build number: $NEXT"
+          sed -i '' "s/CURRENT_PROJECT_VERSION: '[0-9]*'/CURRENT_PROJECT_VERSION: '$NEXT'/" project.yml
+          grep CURRENT_PROJECT_VERSION project.yml
+
+      - name: Marketing-Version setzen (nur falls als Input angegeben)
+        run: |
+          set -e
+          VERSION="${{ inputs.marketing_version }}"
+          if [ -n "$VERSION" ]; then
+            sed -i '' "s/MARKETING_VERSION: '[^']*'/MARKETING_VERSION: '$VERSION'/" project.yml
+            echo "Marketing-Version gesetzt: $VERSION"
+          else
+            echo "Kein marketing_version-Input — Wert aus project.yml bleibt unveraendert"
+          fi
+          grep MARKETING_VERSION project.yml
+
+      - name: Xcode-Projekt generieren
+        run: xcodegen generate
+
+      # Wörtlich aus codemagic.yaml ("Set up code signing") übernommen —
+      # derselbe persistente Signing-Key wie in Codemagic (laut Nutzerangabe
+      # außerhalb von Codemagic noch vorhanden), erzeugt/holt dasselbe
+      # Distribution-Cert statt ein zusätzliches anzulegen.
+      - name: Code-Signing einrichten
+        env:
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          APP_STORE_CONNECT_CERTIFICATE_KEY: ${{ secrets.APP_STORE_CONNECT_CERTIFICATE_KEY }}
+        run: |
+          set -e
+          keychain initialize
+
+          app-store-connect fetch-signing-files \
+            "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key=@env:APP_STORE_CONNECT_CERTIFICATE_KEY \
+            --create
+
+          app-store-connect fetch-signing-files \
+            "$WIDGET_BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key=@env:APP_STORE_CONNECT_CERTIFICATE_KEY \
+            --create
+
+          keychain add-certificates
+          xcode-project use-profiles
+
+      - name: Swift-Package-Dependencies für das Xcode-Projekt auflösen
+        run: |
+          xcodebuild \
+            -resolvePackageDependencies \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME"
+
+      # Wörtlich aus codemagic.yaml ("Build .ipa for App Store distribution")
+      # übernommen, inkl. derselben STRING_CATALOG_GENERATE_SYMBOLS=NO-
+      # Umgehung des bekannten Xcode-26.4+-Problems mit Localizable.xcstrings.
+      - name: .ipa für App-Store-Distribution bauen
+        run: |
+          set -o pipefail
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME" \
+            --config Release \
+            --archive-flags 'STRING_CATALOG_GENERATE_SYMBOLS=NO' 2>&1 | tee build-ipa.log
+
+      - name: Lauf-Metadaten festhalten
+        if: always()
+        run: |
+          {
+            echo "Commit: ${{ github.sha }}"
+            echo "Branch/Ref: ${{ github.ref }}"
+            echo "Marketing-Version-Input: ${{ inputs.marketing_version }}"
+            echo "Workflow-Run: ${{ github.run_id }} (attempt ${{ github.run_attempt }})"
+            echo "project.yml Versionsfelder:"
+            grep -E "CURRENT_PROJECT_VERSION|MARKETING_VERSION" project.yml
+            echo "xcodebuild -version:"
+            xcodebuild -version
+            echo "swift --version:"
+            swift --version
+          } > RUN_INFO.txt
+          cat RUN_INFO.txt
+
+      - name: IPA + dSYM + Logs als Artefakte hochladen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testflight-release-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            RUN_INFO.txt
+            build-ipa.log
+            build/ios/ipa/*.ipa
+            **/*.dSYM.zip
+
+  upload-to-testflight:
+    name: TestFlight-Upload (separat freigegeben)
+    needs: build-and-sign
+    if: ${{ inputs.upload_to_testflight }}
+    runs-on: macos-latest
+    environment: appstore-release
+    timeout-minutes: 20
+    steps:
+      - name: IPA-Artefakt aus dem Signing-Job herunterladen
+        uses: actions/download-artifact@v4
+        with:
+          name: testflight-release-${{ github.sha }}
+          path: downloaded
+
+      - name: codemagic-cli-tools installieren
+        run: pip3 install codemagic-cli-tools
+
+      # NEU zusammengesetzt (siehe Hinweis oben) — vor dem ersten echten
+      # Lauf die Flags gegen `app-store-connect publish --help` prüfen.
+      - name: Zu TestFlight hochladen
+        env:
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          set -o pipefail
+          IPA_PATH=$(find downloaded -iname "*.ipa" | head -n 1)
+          if [ -z "$IPA_PATH" ]; then
+            echo "Keine .ipa im heruntergeladenen Artefakt gefunden" >&2
+            exit 1
+          fi
+          echo "Lade hoch: $IPA_PATH"
+          app-store-connect publish \
+            --path "$IPA_PATH" \
+            --api-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --testflight \
+            --beta-group "Atamya Internal" 2>&1 | tee testflight-upload.log
+
+      - name: Upload-Log als Artefakt sichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testflight-upload-log-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: testflight-upload.log
