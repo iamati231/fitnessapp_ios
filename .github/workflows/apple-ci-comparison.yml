@@ -1,0 +1,126 @@
+name: Apple CI Vergleichslauf (manuell)
+
+# Erster gleichwertiger Prüflauf auf GitHub Actions als Ersatznachweis für
+# Codemagic (dessen Auto-Trigger laut docs/P8_STUFE2_VERSIONIERUNG_PLAN.md
+# ausgefallen ist). Bewusst NUR workflow_dispatch — kein push/pull_request
+# -Trigger, also keine automatische Build-Serie bei jedem Commit. Codemagic
+# bleibt bis zu einem erfolgreichen Ersatznachweis die primäre CI.
+#
+# Mirrort die bestehenden, bereits bewährten Codemagic-Workflows
+# (codemagic.yaml: "swift-package" + "ios-app") in EINEM Job auf einem
+# Standard-GitHub-gehosteten macOS-Runner, statt einer eigenständigen
+# Neuentwicklung — dieselben Befehle, dieselbe Reihenfolge.
+#
+# "macos-latest" statt einer festen Versionsnummer: GitHub löst das stets
+# auf einen aktuell gültigen Standard-Runner auf (keine feste Zahl, die
+# irgendwann von GitHub zurückgezogen wird); welche Xcode-/macOS-Version das
+# im jeweiligen Lauf konkret war, wird im ersten Schritt protokolliert statt
+# hier geraten — das macht die Auswahl nachvollziehbar, ohne eine
+# möglicherweise veraltete Versionsnummer festzuschreiben.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  apple-build-and-test:
+    name: Swift Package + iOS-App/Widget (Vergleichslauf)
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Toolchain-Infos (nachvollziehbare Xcode-/Swift-Version)
+        run: |
+          echo "macOS: $(sw_vers -productName) $(sw_vers -productVersion)"
+          echo "Standard-Xcode (xcode-select -p):"
+          xcode-select -p
+          xcodebuild -version
+          swift --version
+          echo "Installierte Xcode-Versionen auf diesem Runner:"
+          ls /Applications | grep -i xcode || true
+
+      - name: Swift-Package-Dependencies auflösen
+        run: swift package resolve
+
+      - name: Swift-Package bauen (debug)
+        run: swift build
+
+      - name: Swift-Package-Tests ausführen (echte Apple-/SwiftData-Testausführung)
+        run: |
+          set -o pipefail
+          swift test --parallel 2>&1 | tee swift-test-output.log
+
+      - name: XcodeGen installieren (falls nicht vorhanden)
+        run: |
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          xcodegen --version
+
+      - name: Xcode-Projekt generieren
+        run: |
+          xcodegen generate
+          ls -la FitnessApp.xcodeproj
+
+      - name: Swift-Package-Dependencies für das Xcode-Projekt auflösen
+        run: |
+          xcodebuild \
+            -resolvePackageDependencies \
+            -project FitnessApp.xcodeproj \
+            -scheme FitnessApp
+
+      - name: App + Widget für iOS-Simulator bauen
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project FitnessApp.xcodeproj \
+            -scheme FitnessApp \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee xcodebuild-build.log
+
+      - name: Simulator-.app als ZIP verpacken
+        run: |
+          APP_PATH=$(find build/Build/Products -mindepth 2 -maxdepth 2 -iname "*.app" | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "Keine .app unter build/Build/Products gefunden" >&2
+            find build/Build/Products -maxdepth 3
+            exit 1
+          fi
+          echo "Gefunden: $APP_PATH"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" FitnessApp-simulator.zip
+
+      - name: Lauf-Metadaten festhalten
+        if: always()
+        run: |
+          {
+            echo "Commit: ${{ github.sha }}"
+            echo "Branch/Ref: ${{ github.ref }}"
+            echo "Workflow-Run: ${{ github.run_id }} (attempt ${{ github.run_attempt }})"
+            echo "Runner: ${{ runner.os }} / ${{ runner.arch }}"
+            echo "sw_vers: $(sw_vers -productName) $(sw_vers -productVersion)"
+            echo "xcodebuild -version:"
+            xcodebuild -version
+            echo "swift --version:"
+            swift --version
+          } > RUN_INFO.txt
+          cat RUN_INFO.txt
+
+      - name: Artefakte hochladen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-ci-comparison-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            RUN_INFO.txt
+            swift-test-output.log
+            xcodebuild-build.log
+            FitnessApp-simulator.zip
