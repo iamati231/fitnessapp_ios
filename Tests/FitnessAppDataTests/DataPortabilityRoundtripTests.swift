@@ -1453,10 +1453,17 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         let plan = TrainingPlan(name: "Abgeschlossener Rückblick", programType: "custom", isActive: true)
         ctx.insert(plan)
         try ctx.save()
-        FourWeekReviewDueStatus.markCompleted(
+        let completedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        FourWeekReviewDueStatus.completeCurrentBlock(
             for: plan,
+            expectedBlockStart: FourWeekReviewDueStatus.currentBlockStart(for: plan),
             decision: .actionTaken,
-            now: Date(timeIntervalSince1970: 1_700_000_000),
+            shownReview: FourWeekReviewOrchestrator.Review(
+                participation: .notReliablyEvaluable(.activationStartUnknown),
+                outcome: .keepAsIs,
+                dataGaps: []
+            ),
+            now: completedAt,
             in: ctx
         )
 
@@ -1472,6 +1479,42 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         let importedCompletedAt = try XCTUnwrap(imported?.reviewCompletedAt)
         XCTAssertEqual(importedCompletedAt.timeIntervalSince1970, 1_700_000_000, accuracy: 1.0)
         XCTAssertEqual(imported?.reviewDecision, .actionTaken)
+
+        // P8 Stufe 3: die Blockhistorie selbst (nicht nur die Altfelder)
+        // überlebt denselben Roundtrip.
+        let importedPlan = try XCTUnwrap(imported)
+        let importedHistory = FourWeekReviewDueStatus.history(for: importedPlan)
+        XCTAssertEqual(importedHistory.count, 1)
+        XCTAssertEqual(importedHistory[0].completedAt.timeIntervalSince1970, 1_700_000_000, accuracy: 1.0)
+        XCTAssertEqual(importedHistory[0].decision, .actionTaken)
+        XCTAssertEqual(importedHistory[0].shownOutcome, .keepAsIs)
+    }
+
+    /// Ein Backup von vor P8 Stufe 3 hat die neue Spalte nicht — der Import
+    /// darf dann weder abstürzen noch eine Blockhistorie erfinden. Die drei
+    /// Altfelder bleiben die einzige bekannte Grundlage (siehe
+    /// `FourWeekReviewDueStatus.history(for:)`).
+    func testBlockReviewHistorySurvivesRoundtripAndIsAbsentWithoutAnyCompletion() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Noch kein Block abgeschlossen", programType: "custom", isActive: true)
+        plan.activatedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        ctx.insert(plan)
+        try ctx.save()
+        XCTAssertNil(plan.blockReviewHistoryJSON)
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try XCTUnwrap(try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first)
+        XCTAssertNil(imported.blockReviewHistoryJSON)
+        XCTAssertTrue(FourWeekReviewDueStatus.history(for: imported).isEmpty, "keine erfundene Blockhistorie ohne jeden Abschluss")
     }
 
     /// Ein Backup von vor P7.3 (bzw. ein Plan, dessen Rückblick nie

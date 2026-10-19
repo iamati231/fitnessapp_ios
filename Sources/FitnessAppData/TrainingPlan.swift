@@ -51,7 +51,7 @@ public final class TrainingPlan {
 
     /// P7.3: Zeitpunkt, zu dem der Vier-Wochen-Rückblick für DIESEN Plan
     /// zuletzt ausdrücklich ABGESCHLOSSEN wurde (Nutzeraktion im
-    /// Review-Screen, siehe `FourWeekReviewDueStatus.markCompleted`). `nil` =
+    /// Review-Screen, siehe `FourWeekReviewDueStatus.completeCurrentBlock`). `nil` =
     /// noch nie abgeschlossen. Bewusst PRO PLAN wie `activatedAt` — mehrere
     /// gleichzeitig aktive Pläne (Task #201/#202) haben jeweils ihren
     /// EIGENEN Fälligkeits-/Abschlussstatus, keine stillschweigende
@@ -77,6 +77,19 @@ public final class TrainingPlan {
         get { reviewDecisionRaw.flatMap(FourWeekReviewDueCalculator.Decision.init(rawValue:)) }
         set { reviewDecisionRaw = newValue?.rawValue }
     }
+
+    /// P8 Stufe 3: JSON-codierte, chronologische Liste bereits
+    /// abgeschlossener Block-Rückblicke (`[BlockReviewRecord]`). `nil` =
+    /// noch kein Block über den NEUEN Pfad abgeschlossen — das schließt
+    /// einen Plan ein, dessen einziger Abschluss noch aus der Zeit vor
+    /// diesem Feld stammt (reine `reviewCompletedAt`/`reviewDecisionRaw`,
+    /// P7); dieser Zustand wird nie rückwirkend in dieses Feld geschrieben,
+    /// sondern beim Lesen aus den Alt-Feldern nachgebildet (siehe
+    /// `FourWeekReviewDueStatus.history(for:)`). `reviewCompletedAt`/
+    /// `.reviewDecisionRaw` bleiben parallel gepflegt (spiegeln immer den
+    /// JEWEILS LETZTEN Eintrag dieser Liste) — Rückwärtskompatibilität für
+    /// jeden Code, der weiterhin nur diese beiden Altfelder liest.
+    public var blockReviewHistoryJSON: String?
 
     /// Environment this plan is designed for — used to filter recommendations (F154).
     public var targetEnvironment: EnvironmentType

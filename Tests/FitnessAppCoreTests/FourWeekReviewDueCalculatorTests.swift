@@ -1,41 +1,36 @@
 import XCTest
 @testable import FitnessAppCore
 
-/// P7.3 — reine Fälligkeits-/Abschluss-Logik. Deckt die vom Nutzer
-/// ausdrücklich festgelegten Grenzfälle ab: vor Fälligkeit, genau fällig,
-/// überfällig, abgeschlossen, fehlender Zeitanker (`.unknown`, kein
-/// erfundenes Datum) — kein Snooze in dieser Stufe (ausdrückliche
-/// Produktentscheidung, siehe Typ-Dokumentation).
+/// P7.3/P8 Stufe 3 — reine Fälligkeits-Logik des AKTUELL offenen Blocks.
+/// Vergangene Abschlüsse sind seit P8 Stufe 3 NICHT mehr Teil dieses Typs
+/// (siehe Typ-Dokumentation) — dafür ist `FourWeekReviewDueStatus.history`
+/// (FitnessAppData) zuständig, dort auch die zugehörigen Tests.
 final class FourWeekReviewDueCalculatorTests: XCTestCase {
 
     private let calendar = Calendar(identifier: .gregorian)
     private let reference = Date(timeIntervalSince1970: 1_700_000_000) // fixer Anker, unabhängig vom Testlauf-Datum
 
-    func testNotYetDueBeforeTheTwentyEighthDay() {
-        let activatedAt = reference
-        let now = calendar.date(byAdding: .day, value: 27, to: activatedAt)!
+    func testNotYetDueBeforeTheIntervalElapses() {
+        let blockStart = reference
+        let now = calendar.date(byAdding: .day, value: 27, to: blockStart)!
         let state = FourWeekReviewDueCalculator.state(
-            activatedAt: activatedAt,
-            reviewObservationStartedAt: nil,
-            reviewCompletedAt: nil,
-            reviewDecision: nil,
+            blockStart: blockStart,
+            intervalDays: FourWeekReviewDueCalculator.dueIntervalDays,
             now: now,
             calendar: calendar
         )
         guard case .notYetDue(let dueAt) = state else {
             return XCTFail("Erwartet .notYetDue, bekommen \(state)")
         }
-        XCTAssertEqual(dueAt, calendar.date(byAdding: .day, value: 28, to: activatedAt))
+        XCTAssertEqual(dueAt, calendar.date(byAdding: .day, value: 28, to: blockStart))
     }
 
-    func testExactlyDueOnTheTwentyEighthDay() {
-        let activatedAt = reference
-        let now = calendar.date(byAdding: .day, value: 28, to: activatedAt)!
+    func testExactlyDueWhenTheIntervalHasElapsed() {
+        let blockStart = reference
+        let now = calendar.date(byAdding: .day, value: 28, to: blockStart)!
         let state = FourWeekReviewDueCalculator.state(
-            activatedAt: activatedAt,
-            reviewObservationStartedAt: nil,
-            reviewCompletedAt: nil,
-            reviewDecision: nil,
+            blockStart: blockStart,
+            intervalDays: FourWeekReviewDueCalculator.dueIntervalDays,
             now: now,
             calendar: calendar
         )
@@ -46,13 +41,11 @@ final class FourWeekReviewDueCalculatorTests: XCTestCase {
     }
 
     func testOverdueStaysDue() {
-        let activatedAt = reference
-        let now = calendar.date(byAdding: .day, value: 60, to: activatedAt)!
+        let blockStart = reference
+        let now = calendar.date(byAdding: .day, value: 60, to: blockStart)!
         let state = FourWeekReviewDueCalculator.state(
-            activatedAt: activatedAt,
-            reviewObservationStartedAt: nil,
-            reviewCompletedAt: nil,
-            reviewDecision: nil,
+            blockStart: blockStart,
+            intervalDays: FourWeekReviewDueCalculator.dueIntervalDays,
             now: now,
             calendar: calendar
         )
@@ -61,83 +54,45 @@ final class FourWeekReviewDueCalculatorTests: XCTestCase {
         }
     }
 
-    func testCompletedTakesPrecedenceOverDueRegardlessOfElapsedTime() {
-        let activatedAt = reference
-        let completedAt = calendar.date(byAdding: .day, value: 10, to: activatedAt)!
-        let farInTheFuture = calendar.date(byAdding: .day, value: 365, to: activatedAt)!
-        let state = FourWeekReviewDueCalculator.state(
-            activatedAt: activatedAt,
-            reviewObservationStartedAt: nil,
-            reviewCompletedAt: completedAt,
-            reviewDecision: .keptAsIs,
-            now: farInTheFuture,
+    /// P8 Stufe 3, ausdrückliche Produktregel: Folgeblöcke nutzen 42 statt
+    /// 28 Tage. Dieser Test verlangt dieselbe Eingabe wie
+    /// `testExactlyDueWhenTheIntervalHasElapsed`, aber erst 14 Tage später
+    /// (42 statt 28) wird fällig — ein Aufrufer, der versehentlich weiterhin
+    /// `dueIntervalDays` für einen Folgeblock nutzt, würde hier zu früh
+    /// `.due` melden.
+    func testSubsequentBlockUsesFortyTwoDaysNotTwentyEight() {
+        let blockStart = reference
+        let after28Days = calendar.date(byAdding: .day, value: 28, to: blockStart)!
+        let notYetDueState = FourWeekReviewDueCalculator.state(
+            blockStart: blockStart,
+            intervalDays: FourWeekReviewDueCalculator.subsequentBlockIntervalDays,
+            now: after28Days,
             calendar: calendar
         )
-        XCTAssertEqual(state, .completed(at: completedAt, decision: .keptAsIs))
-    }
+        guard case .notYetDue(let dueAt) = notYetDueState else {
+            return XCTFail("Ein Folgeblock darf nach 28 Tagen noch nicht fällig sein, bekommen \(notYetDueState)")
+        }
+        XCTAssertEqual(dueAt, calendar.date(byAdding: .day, value: 42, to: blockStart))
 
-    func testActionTakenDecisionIsPreservedOnCompletion() {
-        let state = FourWeekReviewDueCalculator.state(
-            activatedAt: reference,
-            reviewObservationStartedAt: nil,
-            reviewCompletedAt: reference,
-            reviewDecision: .actionTaken,
-            now: reference,
+        let after42Days = calendar.date(byAdding: .day, value: 42, to: blockStart)!
+        let dueState = FourWeekReviewDueCalculator.state(
+            blockStart: blockStart,
+            intervalDays: FourWeekReviewDueCalculator.subsequentBlockIntervalDays,
+            now: after42Days,
             calendar: calendar
         )
-        XCTAssertEqual(state, .completed(at: reference, decision: .actionTaken))
+        guard case .due = dueState else {
+            return XCTFail("Erwartet .due nach 42 Tagen, bekommen \(dueState)")
+        }
     }
 
-    func testUnknownWhenNeitherActivationNorObservationAnchorExists() {
+    func testUnknownWhenNoBlockStartExists() {
         let state = FourWeekReviewDueCalculator.state(
-            activatedAt: nil,
-            reviewObservationStartedAt: nil,
-            reviewCompletedAt: nil,
-            reviewDecision: nil,
+            blockStart: nil,
+            intervalDays: FourWeekReviewDueCalculator.dueIntervalDays,
             now: reference,
             calendar: calendar
         )
         XCTAssertEqual(state, .unknown)
-    }
-
-    /// Fallback-Anker greift NUR, wenn `activatedAt` fehlt — kein erfundenes
-    /// historisches Datum, sondern der tatsächliche, separat gespeicherte
-    /// Beobachtungsbeginn (siehe `TrainingPlan.reviewObservationStartedAt`).
-    func testObservationAnchorIsUsedOnlyWhenActivatedAtIsMissing() {
-        let observationStart = reference
-        let now = calendar.date(byAdding: .day, value: 28, to: observationStart)!
-        let state = FourWeekReviewDueCalculator.state(
-            activatedAt: nil,
-            reviewObservationStartedAt: observationStart,
-            reviewCompletedAt: nil,
-            reviewDecision: nil,
-            now: now,
-            calendar: calendar
-        )
-        guard case .due(let since) = state else {
-            return XCTFail("Erwartet .due über den Beobachtungs-Fallback, bekommen \(state)")
-        }
-        XCTAssertEqual(since, now)
-    }
-
-    /// `activatedAt` gewinnt immer gegen den Beobachtungs-Fallback, falls
-    /// ausnahmsweise beide gesetzt sind (sollte in der Praxis nicht
-    /// vorkommen — `FourWeekReviewDueStatus` setzt den Fallback nur, wenn
-    /// `activatedAt` fehlt — aber die Priorität bleibt explizit testbar).
-    func testActivatedAtTakesPriorityOverObservationAnchor() {
-        let activatedAt = reference
-        let laterObservationStart = calendar.date(byAdding: .day, value: 100, to: reference)!
-        let now = calendar.date(byAdding: .day, value: 28, to: activatedAt)!
-        let state = FourWeekReviewDueCalculator.state(
-            activatedAt: activatedAt,
-            reviewObservationStartedAt: laterObservationStart,
-            reviewCompletedAt: nil,
-            reviewDecision: nil,
-            now: now,
-            calendar: calendar
-        )
-        guard case .due = state else {
-            return XCTFail("Erwartet .due (anhand activatedAt), bekommen \(state)")
-        }
     }
 }

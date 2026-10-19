@@ -38,14 +38,29 @@ public enum FourWeekReviewAssembler {
     /// Plan zu isolieren (siehe dessen Dokumentation für die drei
     /// unterschiedenen Fälle und warum unklare Historie ausgeschlossen statt
     /// geraten wird).
+    /// P8 Stufe 3: `participation` und `latestCheckIn` sind jetzt
+    /// BLOCKBEZOGEN (seit `FourWeekReviewDueStatus.currentBlockStart(for:)`,
+    /// nicht mehr seit `plan.activatedAt` über die gesamte Planlaufzeit) —
+    /// für den ersten Block identisch zu vorher (`currentBlockStart` liefert
+    /// dort exakt `activatedAt`), für jeden Folgeblock zählt nur noch, was
+    /// SEIT dem letzten Abschluss passiert ist. Ein Check-in aus einem
+    /// vorigen Block wird dadurch nie als aktuell übernommen (siehe
+    /// `latestCheckInFeedback`). Deload/Comeback bleiben unverändert GLOBAL
+    /// (personen-, nicht blockbezogen) — eigenständige, bereits getroffene
+    /// Produktentscheidung, keine Lücke.
     public static func assemble(
         in context: ModelContext,
         for plan: TrainingPlan? = nil,
         now: Date = Date(),
         calendar: Calendar = .current
     ) -> FourWeekReviewOrchestrator.Review {
+        let resolvedPlan = plan ?? primaryActivePlan(in: context)
+        let blockStart = resolvedPlan.flatMap {
+            FourWeekReviewDueStatus.currentBlockStart(for: $0, calendar: calendar)
+        }
+
         let participation = PlanParticipationEvaluator.evaluate(
-            participationInput(in: context, for: plan, calendar: calendar),
+            participationInput(in: context, for: resolvedPlan, periodStart: blockStart, calendar: calendar),
             asOf: now
         )
 
@@ -60,7 +75,7 @@ public enum FourWeekReviewAssembler {
 
         return FourWeekReviewOrchestrator.review(.init(
             participation: participation,
-            latestCheckIn: latestCheckInFeedback(in: context),
+            latestCheckIn: latestCheckInFeedback(in: context, since: blockStart, asOf: now),
             deloadRecommended: shouldRecommendDeload(in: context, now: now, calendar: calendar),
             comebackSignal: comebackSignal
         ))
@@ -110,12 +125,21 @@ public enum FourWeekReviewAssembler {
         allActivePlans(in: context).first
     }
 
+    /// `periodStart` ist der Beginn des AKTUELL zu bewertenden Blocks
+    /// (`FourWeekReviewDueStatus.currentBlockStart(for:)`, vom Aufrufer
+    /// übergeben) — für den ersten Block identisch zu `plan.activatedAt`,
+    /// für jeden Folgeblock der Kalendertag nach dem vorigen Abschluss.
+    /// `PlanParticipationEvaluator.Input.activatedAt` ist dafür technisch
+    /// nur ein Periodenstart-Parameter, kein Zwang zur echten
+    /// Plan-Aktivierung (siehe dessen eigene Dokumentation) — kein neuer
+    /// Evaluator nötig.
     private static func participationInput(
         in context: ModelContext,
-        for explicitPlan: TrainingPlan?,
+        for plan: TrainingPlan?,
+        periodStart: Date?,
         calendar: Calendar
     ) -> PlanParticipationEvaluator.Input {
-        guard let plan = explicitPlan ?? primaryActivePlan(in: context) else {
+        guard let plan else {
             return PlanParticipationEvaluator.Input(
                 activatedAt: nil,
                 isActive: false,
@@ -137,7 +161,7 @@ public enum FourWeekReviewAssembler {
         )
 
         return PlanParticipationEvaluator.Input(
-            activatedAt: plan.activatedAt,
+            activatedAt: periodStart,
             isActive: plan.isActive,
             occurrences: occurrences,
             nonRestDayCount: nonRestDays.count,
@@ -215,12 +239,32 @@ public enum FourWeekReviewAssembler {
         return (occurrences, hasExcludedUnattributable)
     }
 
-    // MARK: - Periodisches Feedback (P6.3)
+    // MARK: - Periodisches Feedback (P6.3, P8 Stufe 3 blockbezogen)
 
-    private static func latestCheckInFeedback(in context: ModelContext) -> FourWeekReviewOrchestrator.CheckInFeedback? {
-        var descriptor = FetchDescriptor<PeriodicCheckIn>(sortBy: [SortDescriptor(\.date, order: .reverse)])
-        descriptor.fetchLimit = 1
-        guard let latest = (try? context.fetch(descriptor))?.first else { return nil }
+    /// P8 Stufe 3: nur noch ein Check-in INNERHALB des aktuell offenen
+    /// Blocks (`since`...`asOf`) zählt — ein Check-in aus einem vorigen
+    /// Block wird NIE als aktuell übernommen. `since == nil` (kein
+    /// bekannter Blockbeginn, z. B. `activatedAt` unbekannt) lässt die
+    /// Untergrenze bewusst offen, statt eine Datenlücke zu melden, wo
+    /// tatsächlich ein Check-in vorliegt — dieselbe konservative
+    /// Fallback-Haltung wie beim Teilnahme-Evaluator.
+    ///
+    /// `PeriodicCheckIn` bleibt PERSONENBEZOGEN, nicht planbezogen — bei
+    /// mehreren aktiven Plänen zählt derselbe Check-in für jeden Block
+    /// jedes Plans, der zeitlich hineinfällt (keine neue, hier eingeführte
+    /// Planbindung).
+    private static func latestCheckInFeedback(
+        in context: ModelContext,
+        since blockStart: Date?,
+        asOf: Date
+    ) -> FourWeekReviewOrchestrator.CheckInFeedback? {
+        let descriptor = FetchDescriptor<PeriodicCheckIn>(sortBy: [SortDescriptor(\.date, order: .reverse)])
+        let checkIns = (try? context.fetch(descriptor)) ?? []
+        guard let latest = checkIns.first(where: { checkIn in
+            guard checkIn.date <= asOf else { return false }
+            if let blockStart { return checkIn.date >= blockStart }
+            return true
+        }) else { return nil }
         return FourWeekReviewOrchestrator.CheckInFeedback(
             frequencyFeedback: latest.frequencyFeedback,
             durationFeedback: latest.durationFeedback,

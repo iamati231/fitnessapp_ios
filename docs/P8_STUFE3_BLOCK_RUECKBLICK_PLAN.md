@@ -262,3 +262,94 @@ Ein umsetzbarer Vorschlag liegt vor (Abschnitte 2, 3, 5). Er braucht
 vor der Umsetzung Antworten auf genau 6 Fragen (Abschnitt 4) — keine
 davon wurde von mir vorentschieden oder mit einer erfundenen Frist/
 einem erfundenen Schwellenwert gefüllt.
+
+## 8. Umsetzungsstand (nach Produktentscheidung)
+
+**Status:** Implementiert gemäß den sechs vom Auftraggeber getroffenen
+Entscheidungen (nicht mehr nur vorgeschlagen). Core-Logik auf Linux
+verifiziert (1075/1075 `FitnessAppCoreTests` grün, inkl. 5 neuer
+`BlockReviewRecordTests` + 1 neuer `FourWeekReviewDueCalculatorTests`-
+Fall). SwiftData/SwiftUI-Teile (FitnessAppData/FitnessAppUI) sind auf
+Linux nicht typprüfbar (`#if canImport(SwiftData)`/`canImport(SwiftUI)`
+evaluiert dort `false`) — verifiziert per sorgfältiger manueller
+Durchsicht + neuer gezielter Apple-CI-Tests, noch NICHT per echtem
+Geräte-/TestingBot-Lauf (siehe unten).
+
+**Entscheidung 1 (42 Tage Folgeblock):** `FourWeekReviewDueCalculator.
+subsequentBlockIntervalDays = 42`, `dueIntervalDays = 28` bleibt für den
+allerersten Block unverändert. `FourWeekReviewDueStatus.intervalDays(for:)`
+wählt anhand `history(for:).isEmpty`.
+
+**Entscheidung 2 (sofortige Folgeblock-Eröffnung, kein Extra-Schritt,
+keine künstlichen Zwischenblöcke, 42 Tage als Soll- nicht Hart-Grenze):**
+`completeCurrentBlock` schreibt die Historie, `currentBlockStart(for:)`
+leitet den nächsten Blockbeginn IMMER aus `history.last.completedAt + 1
+Tag` ab — unabhängig davon, wie spät die Fälligkeit tatsächlich
+wahrgenommen wurde. `activatedAt` wird dabei nie verändert. Reines
+Öffnen/Navigieren startet/beendet nichts (nur `completeCurrentBlock`,
+eine ausdrückliche Nutzeraktion, schreibt).
+
+**Entscheidung 3 (Blockhistorie erhalten, Export/Import inkl.
+Legacy-Backup):** `TrainingPlan.blockReviewHistoryJSON` (additiv, JSON-
+kodierte `[BlockReviewRecord]`), `history(for:)` synthetisiert für
+Alt-Daten ohne dieses Feld GENAU EINEN Eintrag aus den Legacy-Feldern
+(`reviewCompletedAt`/`reviewDecisionRaw`) — `shownOutcome`/
+`shownDataGaps` bleiben dabei bewusst `nil`, nie rückwirkend erfunden.
+Export/Import: neue Spalte `block_review_history_json`, additiv, alte
+Backups ohne diese Spalte lesen `nil` (keine Fabrikation). Ein
+abgeschlossener Block wird bei erneutem Anzeigen NIE anhand heutiger
+Daten neu bewertet (`shownOutcome`/`shownDataGaps` sind eingefroren,
+nicht neu berechnet).
+
+**Entscheidung 4 (Feedback im Blockzeitraum, Check-ins bleiben
+personenbezogen):** `FourWeekReviewAssembler.latestCheckInFeedback`
+filtert jetzt auf `checkIn.date >= blockStart && checkIn.date <= asOf`
+statt plan-weit — ein Check-in aus dem VORHERIGEN Block zählt nicht
+mehr für den aktuellen. Kein Treffer im Zeitraum → `DataGap.noCheckInYet`
+(bestehender Fall, keine neue Logik). `PeriodicCheckIn` bleibt ohne
+Plan-Fremdschlüssel (personenbezogen) — die Filterung erfolgt rein über
+den Zeitraum, nicht über eine neue Relation.
+
+**Entscheidung 5 (fünf Fragen unverändert, keine neue Logik):** keine
+Änderung an `PeriodicCheckInView`/`PeriodicCheckIn` in diesem Paket
+(abgesehen vom unabhängigen Accessibility-Fix für die Passend/Just-
+right-Doppelbelegung, siehe separater Commit `f90c25e`).
+
+**Entscheidung 6 (kein Plateau-Detektor, keine neue Engine):** nicht
+umgesetzt — `BlockReviewRecord` hält nur den bereits durch bestehende
+Advisor-Funktionen ermittelten Befund fest, keine neue Bewertungslogik.
+
+**Abnahmekriterien (Auftrag, Abschnitt "Umsetzung und Abnahme"):**
+- Blockbezogene statt seit-Aktivierung-Teilnahme: ✅ (`currentBlockStart`
+  als `periodStart` an `PlanParticipationEvaluator` durchgereicht, neuer
+  Test `testParticipationForASubsequentBlockCountsOnlySinceThatBlocksStartNotSinceActivation`).
+- Lückenlose, nicht doppelt gezählte Blockgrenzen: ✅ (`startOfDay(completedAt)
+  + 1 Tag`-Regel, einheitlich für Fälligkeit UND Teilnahme).
+- Mehrere aktive Pläne, unabhängige Blöcke/Abschlüsse: ✅ (Historie liegt
+  pro `TrainingPlan`, Test
+  `testEachActivePlanKeepsItsOwnBlockHistoryAndStatusIndependently` in
+  `FourWeekReviewDueStatusTests`).
+- Abschluss gegen Doppeltap/erneute Ausführung abgesichert: ✅
+  (`expectedBlockStart`-Vergleich, Test
+  `testCompletingTheSameBlockTwiceIsIdempotent`).
+- Historie + Export/Import getestet: ✅ (`DataPortabilityRoundtripTests`,
+  `BlockReviewRecordTests`).
+- Bestehendes P7-Verhalten erhalten: ✅ (alle vor P8 Stufe 3 bestehenden
+  `FourWeekReviewAssemblerTests`-Fälle unverändert grün — sie bilden
+  durchweg "Block 1, noch kein Abschluss" ab, verhält sich unter der
+  neuen Logik identisch).
+- DE/EN/TR für erste vs. spätere Rückblicke: ✅ (neuer Key
+  `fourWeekReview.title.laterBlock`).
+- Apple-CI gebündelt, kein Diagnose-Lauf: siehe unten.
+- **Eine konkrete Geräteprüfung Abschluss→Folgeblock→Historie: NICHT
+  durchgeführt.** Diese Session hat keinen TestingBot-/Geräte-Zugriff.
+  Ehrlich offen ausgewiesen statt stillschweigend als erledigt geführt.
+
+**Apple-CI:** mit diesem Commit gebündelt ausgelöst (Push auf
+`claude/smart-onboarding-epic` triggert `swift-package` + `ios-app`
+automatisch, siehe `codemagic.yaml`). Ergebnis zum Zeitpunkt dieses
+Dokuments noch nicht bekannt (kein Polling-Zugriff aus dieser Session).
+
+**Day-Editor-Bugs (Abschnitt 6):** mittlerweile als eigene Aufgaben
+behoben (siehe `docs/DAY_EDITOR_PERSISTENCE_FIX.md`) — unabhängig von
+diesem Paket, wie hier bereits vorab eingeordnet.

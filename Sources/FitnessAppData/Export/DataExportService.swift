@@ -471,12 +471,18 @@ public enum DataExportService {
         // ein Backup von vor P7.3 hat die Spalten nicht, der Import liest
         // dann `nil` (noch nie abgeschlossen bzw. kein Beobachtungs-
         // Fallback), NIE ein erfundenes Datum/Ergebnis.
+        // P8 Stufe 3: `block_review_history_json` additiv, gleiches Prinzip -
+        // ein Backup von vor diesem Feld hat die Spalte nicht, der Import
+        // liest dann `nil` (die drei Altfelder oben bleiben die einzige
+        // bekannte Historie, siehe `FourWeekReviewDueStatus.history(for:)`),
+        // NIE eine erfundene Blockhistorie.
         var w = CSVWriter(headers: [
             "id", "name", "custom_name", "program_type", "description",
             "weeks", "is_active", "target_environment", "is_template",
             "progression_target_rir_override", "localization_key",
             "generator_input_raw", "generation_source", "activated_at_utc",
-            "review_completed_at_utc", "review_decision", "review_observation_started_at_utc"
+            "review_completed_at_utc", "review_decision", "review_observation_started_at_utc",
+            "block_review_history_json"
         ])
         for p in items {
             w.appendRow([
@@ -496,7 +502,8 @@ public enum DataExportService {
                 p.activatedAt.map(CSVWriter.iso8601) ?? "",
                 p.reviewCompletedAt.map(CSVWriter.iso8601) ?? "",
                 p.reviewDecisionRaw ?? "",
-                p.reviewObservationStartedAt.map(CSVWriter.iso8601) ?? ""
+                p.reviewObservationStartedAt.map(CSVWriter.iso8601) ?? "",
+                p.blockReviewHistoryJSON ?? ""
             ])
         }
         return w.data()

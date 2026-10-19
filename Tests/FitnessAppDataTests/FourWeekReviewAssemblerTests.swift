@@ -374,6 +374,134 @@ final class FourWeekReviewAssemblerTests: XCTestCase {
         XCTAssertFalse(summary.dataGaps.contains(.unattributableHistoryExcludedDueToMultipleActivePlans))
     }
 
+    // MARK: - P8 Stufe 3: blockbezogener Zeitraum statt gesamter Planlaufzeit
+
+    /// Kernregression für Paket B: nach Abschluss von Block 1 zählt die
+    /// Teilnahme NUR NOCH seit Block 2s Beginn — nicht mehr seit
+    /// `plan.activatedAt` über die gesamte Planlaufzeit. Eine Session, die
+    /// klar in Block 1 fiel, darf Block 2s Auswertung nicht verfälschen.
+    func testParticipationForASubsequentBlockCountsOnlySinceThatBlocksStartNotSinceActivation() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let plan = TrainingPlan(name: "Plan", programType: "custom", isActive: true)
+        plan.activatedAt = d(2024, 1, 1)
+        context.insert(plan)
+        let day = TrainingDay(name: "Ganzkörper", weekday: 2, type: .fullBody, plan: plan)
+        context.insert(day)
+        try context.save()
+
+        // Block 1 abgeschlossen am 1. Februar -> Block 2 beginnt am 2. Februar.
+        // Durchgängig `calendar: utc` (wie `d(...)`), sonst waere dieser Test
+        // von der lokalen Zeitzone der CI-Maschine abhängig (`.current`-Default).
+        FourWeekReviewDueStatus.completeCurrentBlock(
+            for: plan,
+            expectedBlockStart: FourWeekReviewDueStatus.currentBlockStart(for: plan, calendar: utc),
+            decision: .keptAsIs,
+            shownReview: FourWeekReviewOrchestrator.Review(
+                participation: .notReliablyEvaluable(.activationStartUnknown), outcome: .keepAsIs, dataGaps: []
+            ),
+            now: d(2024, 2, 1),
+            calendar: utc,
+            in: context
+        )
+        XCTAssertEqual(FourWeekReviewDueStatus.currentBlockStart(for: plan, calendar: utc), d(2024, 2, 2))
+
+        // Vier abgeschlossene Sessions klar INNERHALB von Block 1 (Januar) —
+        // duerfen fuer Block 2 nicht mitzaehlen.
+        for offset in [1, 8, 15, 22] {
+            let date = utc.date(byAdding: .day, value: offset, to: d(2024, 1, 1))!
+            context.insert(WorkoutSession(
+                startTime: date, endTime: date.addingTimeInterval(3600),
+                durationMinutes: 60, exerciseCount: 1, totalSets: 0,
+                totalVolumeKg: 0, isCompleted: true, day: day
+            ))
+        }
+        try context.save()
+
+        let reviewForBlock2 = FourWeekReviewAssembler.assemble(in: context, for: plan, now: d(2024, 3, 1), calendar: utc)
+        guard case .evaluated(let summary) = reviewForBlock2.participation else {
+            return XCTFail("Block 2 haette auswertbar sein muessen: \(reviewForBlock2.participation)")
+        }
+        XCTAssertEqual(summary.completedCount, 0, "Block 1s Sessions duerfen Block 2 nicht gutgeschrieben werden")
+        XCTAssertEqual(summary.periodStart, d(2024, 2, 2), "Block 2 muss ab seinem EIGENEN Beginn ausgewertet werden")
+    }
+
+    /// Ein Check-in aus Block 1 zählt für Block 2 NICHT als aktuell — bleibt
+    /// stattdessen eine sichtbare Datenlücke (`noCheckInYet`).
+    func testCheckInFromAPreviousBlockDoesNotCountAsCurrentForTheNextBlock() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let plan = TrainingPlan(name: "Plan", programType: "custom", isActive: true)
+        plan.activatedAt = d(2024, 1, 1)
+        context.insert(plan)
+        context.insert(TrainingDay(name: "Ganzkörper", weekday: 2, type: .fullBody, plan: plan))
+        try context.save()
+
+        // Check-in klar innerhalb von Block 1.
+        context.insert(PeriodicCheckIn(
+            date: d(2024, 1, 20), hadComplaints: true, goalStillCurrent: false
+        ))
+        try context.save()
+
+        FourWeekReviewDueStatus.completeCurrentBlock(
+            for: plan,
+            expectedBlockStart: FourWeekReviewDueStatus.currentBlockStart(for: plan, calendar: utc),
+            decision: .keptAsIs,
+            shownReview: FourWeekReviewOrchestrator.Review(
+                participation: .notReliablyEvaluable(.activationStartUnknown), outcome: .keepAsIs, dataGaps: []
+            ),
+            now: d(2024, 2, 1),
+            calendar: utc,
+            in: context
+        )
+
+        let reviewForBlock2 = FourWeekReviewAssembler.assemble(in: context, for: plan, now: d(2024, 3, 1), calendar: utc)
+        XCTAssertEqual(reviewForBlock2.outcome, .keepAsIs, "das alte Block-1-Check-in darf fuer Block 2 keine Befunde ausloesen")
+        XCTAssertTrue(
+            reviewForBlock2.dataGaps.contains(.noCheckInYet),
+            "ohne einen Check-in SEIT Block 2s Beginn muss das als Datenlücke sichtbar sein"
+        )
+    }
+
+    /// Gegenprobe: ein Check-in NACH Block 2s Beginn zählt normal.
+    func testCheckInWithinTheCurrentBlockStillCounts() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let plan = TrainingPlan(name: "Plan", programType: "custom", isActive: true)
+        plan.activatedAt = d(2024, 1, 1)
+        context.insert(plan)
+        context.insert(TrainingDay(name: "Ganzkörper", weekday: 2, type: .fullBody, plan: plan))
+        try context.save()
+
+        FourWeekReviewDueStatus.completeCurrentBlock(
+            for: plan,
+            expectedBlockStart: FourWeekReviewDueStatus.currentBlockStart(for: plan, calendar: utc),
+            decision: .keptAsIs,
+            shownReview: FourWeekReviewOrchestrator.Review(
+                participation: .notReliablyEvaluable(.activationStartUnknown), outcome: .keepAsIs, dataGaps: []
+            ),
+            now: d(2024, 2, 1),
+            calendar: utc,
+            in: context
+        )
+
+        // Check-in klar innerhalb von Block 2 (nach dem 2. Februar).
+        context.insert(PeriodicCheckIn(
+            date: d(2024, 2, 10), hadComplaints: true, goalStillCurrent: true
+        ))
+        try context.save()
+
+        let reviewForBlock2 = FourWeekReviewAssembler.assemble(in: context, for: plan, now: d(2024, 3, 1), calendar: utc)
+        XCTAssertFalse(reviewForBlock2.dataGaps.contains(.noCheckInYet))
+        guard case .concernsFound(let concerns) = reviewForBlock2.outcome else {
+            return XCTFail("das aktuelle Check-in haette einen Befund ausloesen muessen: \(reviewForBlock2.outcome)")
+        }
+        XCTAssertTrue(concerns.contains { if case .complaintsReported = $0 { return true }; return false })
+    }
+
     func testAllActivePlansReturnsOnlyActiveOnesSortedByName() throws {
         let container = try makeContainer()
         let context = container.mainContext

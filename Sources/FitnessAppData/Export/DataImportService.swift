@@ -1007,6 +1007,13 @@ public enum DataImportService {
             plan.reviewCompletedAt = row.date("review_completed_at_utc")
             plan.reviewDecisionRaw = row.optionalString("review_decision")
             plan.reviewObservationStartedAt = row.date("review_observation_started_at_utc")
+            // P8 Stufe 3: additive Spalte, siehe DataExportService.buildPlans.
+            // Fehlt sie (Backup von vor diesem Feld) oder ist sie leer,
+            // bleibt es bewusst `nil` — die drei Altfelder oben bleiben dann
+            // die einzige bekannte Historie (siehe
+            // `FourWeekReviewDueStatus.history(for:)`), NIE eine erfundene
+            // Blockhistorie.
+            plan.blockReviewHistoryJSON = row.optionalString("block_review_history_json")
             // DEL-225: Sobald ein Plan aktiv gesetzt wurde, darf kein weiterer
             // folgen — ein Backup mit mehreren aktiven Plaenen soll nicht in
             // zwei gleichzeitig aktiven Plaenen resultieren.

@@ -94,7 +94,7 @@ public enum ComebackAdvisor {
     /// Rampen-Mechanik daneben waere ein widerspruechlicher zweiter Schreiber
     /// gewesen. Gebaut-aber-nicht-verdrahtet ist die schlimmste Sorte Code: es
     /// liest sich wie eine Zusicherung, die es nicht gibt.
-    public struct Prescription: Sendable, Equatable {
+    public struct Prescription: Sendable, Equatable, Codable {
         /// Faktor auf das Arbeitsgewicht bei Verbund-Uebungen (1.0 = keine
         /// Reduktion).
         public let compoundFactor: Double

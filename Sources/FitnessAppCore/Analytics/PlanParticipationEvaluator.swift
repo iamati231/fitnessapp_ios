@@ -138,7 +138,7 @@ public enum PlanParticipationEvaluator {
 
     /// Warum (noch) keine Aussage moeglich ist — niemals stattdessen eine
     /// 0%- oder 0-von-0-Zahl zeigen (Regel 8).
-    public enum UnreliableReason: Sendable, Equatable {
+    public enum UnreliableReason: Sendable, Equatable, Codable {
         /// `activatedAt == nil` (Regel 6).
         case activationStartUnknown
         /// `isActive == false` — kein `deactivatedAt` bekannt, also kein

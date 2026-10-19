@@ -109,7 +109,7 @@ public enum FourWeekReviewOrchestrator {
 
     /// Ein einzelner, maschinenlesbarer Befund — die UI übersetzt diese 1:1
     /// in Text, Core liefert hier keine freien Strings.
-    public enum Concern: Sendable, Equatable {
+    public enum Concern: Sendable, Equatable, Codable {
         case deloadRecommended
         case comebackSuggested(ComebackAdvisor.Prescription)
         /// Spürbar hinter dem Plan zurückgeblieben (siehe
@@ -124,7 +124,7 @@ public enum FourWeekReviewOrchestrator {
     /// Warum (Teile der) Datengrundlage fehlen — wird IMMER mitgeliefert,
     /// unabhängig vom Gesamtergebnis (Regel: unzureichende Daten offen
     /// benennen, nie verschweigen).
-    public enum DataGap: Sendable, Equatable {
+    public enum DataGap: Sendable, Equatable, Codable {
         case participationNotReliablyEvaluable(PlanParticipationEvaluator.UnreliableReason)
         case noCheckInYet
         /// Gespiegelt aus `PlanParticipationEvaluator.Summary.dataGaps`
@@ -139,7 +139,7 @@ public enum FourWeekReviewOrchestrator {
         case participationHistoryPartiallyUnattributed
     }
 
-    public enum Outcome: Sendable, Equatable {
+    public enum Outcome: Sendable, Equatable, Codable {
         /// "Plan passt – beibehalten" — vollwertiges Ergebnis, kein Fallback.
         case keepAsIs
         /// Mindestens ein Befund liegt vor. Reihenfolge ist die

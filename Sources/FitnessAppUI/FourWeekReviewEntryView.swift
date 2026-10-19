@@ -131,11 +131,13 @@ public struct FourWeekReviewEntryView: View {
     /// (der Beobachtungs-Fallback wurde bereits im `.task` oben einmalig
     /// angelegt), sicher aus der Zeilen-Darstellung heraus aufrufbar.
     private func dueValueText(for plan: TrainingPlan) -> String? {
+        // Bewusst NICHT `FourWeekReviewDueStatus.state(for:in:)` (mutiert ggf.
+        // den Beobachtungs-Fallback) — reiner Lesezugriff über
+        // `currentBlockStart`/`intervalDays` (beide seiteneffektfrei), siehe
+        // Funktionsdokumentation.
         let state = FourWeekReviewDueCalculator.state(
-            activatedAt: plan.activatedAt,
-            reviewObservationStartedAt: plan.reviewObservationStartedAt,
-            reviewCompletedAt: plan.reviewCompletedAt,
-            reviewDecision: plan.reviewDecision,
+            blockStart: FourWeekReviewDueStatus.currentBlockStart(for: plan),
+            intervalDays: FourWeekReviewDueStatus.intervalDays(for: plan),
             now: Date()
         )
         return fourWeekReviewDueBadgeText(for: state)

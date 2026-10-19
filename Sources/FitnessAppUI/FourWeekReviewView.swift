@@ -50,6 +50,16 @@ public struct FourWeekReviewView: View {
     /// Auswahl.
     @State private var reviewedPlan: TrainingPlan?
     @State private var dueState: FourWeekReviewDueCalculator.State?
+    /// P8 Stufe 3: Beginn des AKTUELL offenen Blocks, zum Ladezeitpunkt
+    /// ermittelt — wird beim Abschluss unverändert zurückgereicht
+    /// (`completeReview`), damit `completeCurrentBlock` einen inzwischen
+    /// bereits verarbeiteten Doppeltipp sicher erkennt (siehe dessen
+    /// Dokumentation).
+    @State private var currentBlockStart: Date?
+    /// P8 Stufe 3: bereits abgeschlossene Blöcke dieses Plans — `isEmpty`
+    /// entscheidet Titel/Intervall (erster Block vs. späterer Block), der
+    /// letzte Eintrag liefert den "zuletzt abgeschlossen am"-Hinweis.
+    @State private var blockHistory: [BlockReviewRecord] = []
     /// Wird `true`, sobald innerhalb DIESER Sitzung tatsächlich eine Aktion
     /// (Deload/Comeback) angewendet wurde — bestimmt die gespeicherte
     /// `reviewDecision` beim Abschluss. Startet bei jedem `reload()` neu,
@@ -64,7 +74,7 @@ public struct FourWeekReviewView: View {
         VStack(spacing: 0) {
             DeltiqHeader(
                 eyebrow: loc("fourWeekReview.header.eyebrow"),
-                title: loc("fourWeekReview.title"),
+                title: reviewTitle,
                 onBack: { dismiss() },
                 actions: completeAction.map { [$0] } ?? []
             )
@@ -113,17 +123,31 @@ public struct FourWeekReviewView: View {
         let plan = explicitPlan ?? FourWeekReviewAssembler.primaryPlanForReview(in: modelContext)
         reviewedPlan = plan
         dueState = plan.map { FourWeekReviewDueStatus.state(for: $0, in: modelContext) }
+        currentBlockStart = plan.flatMap { FourWeekReviewDueStatus.currentBlockStart(for: $0) }
+        blockHistory = plan.map { FourWeekReviewDueStatus.history(for: $0) } ?? []
     }
 
-    // MARK: - P7.3: Fälligkeit/Abschluss
+    // MARK: - P7.3/P8 Stufe 3: Fälligkeit/Abschluss
+
+    /// P8 Stufe 3: "Deine ersten vier Wochen" nur für den allerersten Block
+    /// (noch keine Historie) — jeder spätere Block bekommt einen
+    /// generischen, block-neutralen Titel statt der (dann falschen)
+    /// Zeitangabe "vier Wochen"/"erste".
+    private var reviewTitle: String {
+        blockHistory.isEmpty ? loc("fourWeekReview.title") : loc("fourWeekReview.title.laterBlock")
+    }
 
     /// Header-Checkmark "Rückblick abschließen" — nur sichtbar, solange ein
-    /// Plan bewertet wurde UND dieser Rückblick noch nicht abgeschlossen ist.
-    /// Bloßes Öffnen/Verlassen dieses Screens löst das NIE automatisch aus
-    /// (siehe `FourWeekReviewDueCalculator`-Dokumentation) — nur dieser
-    /// ausdrückliche Tap.
+    /// Plan bewertet wurde. Bloßes Öffnen/Verlassen dieses Screens löst das
+    /// NIE automatisch aus (siehe `FourWeekReviewDueCalculator`-
+    /// Dokumentation) — nur dieser ausdrückliche Tap. Anders als vor P8
+    /// Stufe 3 NICHT mehr vom Fälligkeitsstatus abhängig: ein Abschluss ist
+    /// jederzeit möglich (auch vor der eigentlichen Fälligkeit, unverändert
+    /// seit P7) und eröffnet sofort den nächsten Block — der Schutz gegen
+    /// Doppeltippen liegt jetzt in `completeCurrentBlock` selbst
+    /// (`expectedBlockStart`), nicht mehr im Ausblenden dieses Buttons.
     private var completeAction: DeltiqHeaderAction? {
-        guard reviewedPlan != nil, let dueState, !dueState.isCompleted else { return nil }
+        guard reviewedPlan != nil else { return nil }
         return DeltiqHeaderAction(
             systemImage: "checkmark",
             accessibilityLabel: loc("fourWeekReview.complete.action")
@@ -133,10 +157,23 @@ public struct FourWeekReviewView: View {
     }
 
     /// Rein passive Anzeige (kein Snooze/Benachrichtigung in dieser Stufe,
-    /// siehe `FourWeekReviewDueCalculator`-Dokumentation) — zeigt entweder
-    /// den Abschlusszeitpunkt oder, solange offen, dass fällig ist.
+    /// siehe `FourWeekReviewDueCalculator`-Dokumentation) — zeigt, solange
+    /// offen, dass der aktuelle Block fällig ist.
     private var dueBadgeText: String? {
         fourWeekReviewDueBadgeText(for: dueState)
+    }
+
+    /// P8 Stufe 3: letzter bekannter Abschluss (beliebiger vorheriger
+    /// Block) — bleibt sichtbar, auch während der nächste Block bereits
+    /// läuft, weil ein Abschluss jetzt kein Dauerzustand mehr ist, der die
+    /// Fälligkeitsanzeige ersetzt, sondern ein zusätzlicher, erhaltener
+    /// Historienpunkt.
+    private var lastCompletedText: String? {
+        guard let lastCompletedAt = blockHistory.last?.completedAt else { return nil }
+        return String(
+            format: loc("fourWeekReview.status.completed"),
+            lastCompletedAt.formatted(date: .abbreviated, time: .omitted)
+        ).uppercased()
     }
 
     /// P9 (Mehrplan-Bedienablauf): zeigt den Plannamen NUR, wenn dieser
@@ -152,17 +189,28 @@ public struct FourWeekReviewView: View {
         if let dueBadgeText {
             items.append(DeltiqContextItem(dueBadgeText, style: .neutral))
         }
+        if let lastCompletedText {
+            items.append(DeltiqContextItem(lastCompletedText, style: .neutral))
+        }
         return items
     }
 
+    /// Schließt den aktuell offenen Block ab (siehe
+    /// `FourWeekReviewDueStatus.completeCurrentBlock`-Dokumentation für die
+    /// Idempotenz-/Einfrier-Garantien) und lädt danach neu — der nächste
+    /// Block ist damit sofort sichtbar fällig/nicht-fällig, kein separater
+    /// Schritt nötig.
     private func completeReview() {
-        guard let reviewedPlan else { return }
-        FourWeekReviewDueStatus.markCompleted(
+        guard let reviewedPlan, let review else { return }
+        FourWeekReviewDueStatus.completeCurrentBlock(
             for: reviewedPlan,
+            expectedBlockStart: currentBlockStart,
             decision: actionTakenThisSession ? .actionTaken : .keptAsIs,
+            shownReview: review,
             in: modelContext
         )
-        dueState = FourWeekReviewDueStatus.state(for: reviewedPlan, in: modelContext)
+        actionTakenThisSession = false
+        reload()
     }
 
     // MARK: - Inhalt
@@ -369,11 +417,6 @@ private func loc(_ key: String.LocalizationValue) -> String {
 func fourWeekReviewDueBadgeText(for dueState: FourWeekReviewDueCalculator.State?) -> String? {
     guard let dueState else { return nil }
     switch dueState {
-    case .completed(let at, _):
-        return String(
-            format: String(localized: "fourWeekReview.status.completed", bundle: .module),
-            at.formatted(date: .abbreviated, time: .omitted)
-        ).uppercased()
     case .due:
         return String(localized: "fourWeekReview.status.due", bundle: .module).uppercased()
     case .notYetDue, .unknown:
