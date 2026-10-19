@@ -35,14 +35,13 @@ import FitnessAppCore
 /// bleibt Aufgabe des jeweiligen Aufrufers, der seinen eigenen UI-Kontext
 /// kennt (Sheet vs. Onboarding-Flow vs. Settings-Screen), diese Datei nicht.
 ///
-/// **Aktivierungsvertrag (Nachbesserung P2.3-Review, Punkt 5 — ehrlich
-/// benannt, NICHT als geloest zu lesen):** alle drei schreibenden Pfade
-/// (`createPlan`, Template-Adopt) aktivieren HEUTE automatisch ueber
-/// `ProgramInstantiator.instantiate` (deaktiviert alle Alt-Plaene, legt den
-/// neuen aktiv an) — das ist unveraendertes Bestandsverhalten, keine neue
-/// Policy durch P2.3, und fuer das heutige Ein-aktiver-Plan-Modell
-/// akzeptabel. Es ist AUSDRUECKLICH KEIN fuer alle Zukunft geklaerter
-/// Vertrag.
+/// **Aktivierungsvertrag (korrigiert — vorheriger Stand war veraltet):**
+/// alle drei schreibenden Pfade (`createPlan`, Template-Adopt) aktivieren
+/// HEUTE automatisch ueber `ProgramInstantiator.instantiate`: ein neu
+/// uebernommener Plan wird aktiviert; bereits aktive Plaene werden dabei
+/// NICHT automatisch deaktiviert. Mehrere gleichzeitig aktive Plaene sind
+/// erlaubt (siehe `ProgramInstantiator`-Typ-Doku, User-Entscheidung im
+/// P0-Audit neue Spezifikation).
 ///
 /// **Verbindliche Anforderung (Nachbesserung, nicht nur offene Frage)**
 /// fuer den geplanten Wocheneditor: eine finale Uebernahmefunktion dort MUSS
