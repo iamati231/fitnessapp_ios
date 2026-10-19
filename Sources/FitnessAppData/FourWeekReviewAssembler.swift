@@ -60,10 +60,24 @@ public enum FourWeekReviewAssembler {
             FourWeekReviewDueStatus.currentBlockStart(for: $0, calendar: calendar)
         }
 
-        let participation = PlanParticipationEvaluator.evaluate(
-            participationInput(in: context, for: resolvedPlan, periodStart: blockStart, calendar: calendar),
-            asOf: now
-        )
+        // P9-Fund: die fuer die Teilnahme-Eingabe noetigen Fetches (Plaene,
+        // Tage, Sessions, siehe `realOccurrences`) wurden bisher per `try?`
+        // stillschweigend zu "keine Ergebnisse" degradiert — ein echter
+        // Fetch-Fehler waere so als "keine Trainings" oder "kein zweiter
+        // aktiver Plan, also keine Mehrdeutigkeit" FEHLINTERPRETIERT worden,
+        // statt als das auszuweisen, was er ist: eine unvollstaendige
+        // Datengrundlage. Deshalb hier explizit abgefangen, BEVOR
+        // `PlanParticipationEvaluator.evaluate` ueberhaupt mit (potenziell
+        // unvollstaendigen) Daten aufgerufen wird — bestehende
+        // Anrechnungsregeln fuer den Normalfall (kein Fetch-Fehler) bleiben
+        // dabei unveraendert.
+        let participation: PlanParticipationEvaluator.Result
+        do {
+            let input = try participationInput(in: context, for: resolvedPlan, periodStart: blockStart, calendar: calendar)
+            participation = PlanParticipationEvaluator.evaluate(input, asOf: now)
+        } catch {
+            participation = .notReliablyEvaluable(.underlyingDataFetchFailed)
+        }
 
         let comebackSignal: FourWeekReviewOrchestrator.ComebackSignal? = AbsenceDeload
             .assess(in: context, now: now, calendar: calendar)
@@ -134,12 +148,15 @@ public enum FourWeekReviewAssembler {
     /// nur ein Periodenstart-Parameter, kein Zwang zur echten
     /// Plan-Aktivierung (siehe dessen eigene Dokumentation) — kein neuer
     /// Evaluator nötig.
+    /// Wirft (statt `try?` zu schlucken), damit `assemble` einen echten
+    /// Fetch-Fehler von einer leeren, aber erfolgreich gelesenen Datenlage
+    /// unterscheiden kann (P9-Fund, siehe `assemble`-Dokumentation).
     private static func participationInput(
         in context: ModelContext,
         for plan: TrainingPlan?,
         periodStart: Date?,
         calendar: Calendar
-    ) -> PlanParticipationEvaluator.Input {
+    ) throws -> PlanParticipationEvaluator.Input {
         guard let plan else {
             return PlanParticipationEvaluator.Input(
                 activatedAt: nil,
@@ -155,9 +172,17 @@ public enum FourWeekReviewAssembler {
         let nonRestDays = plan.days.filter { $0.type != .rest }
         // Mehrdeutigkeit (siehe `realOccurrences`) kann nur entstehen, wenn
         // es ueberhaupt mehr als einen aktiven Plan gibt, den eine
-        // Session-ohne-Tag-Referenz alternativ meinen koennte.
-        let multipleActivePlans = allActivePlans(in: context).count > 1
-        let (occurrences, excludedUnattributable) = realOccurrences(
+        // Session-ohne-Tag-Referenz alternativ meinen koennte. Bewusst ein
+        // EIGENER, werfender Fetch statt der oeffentlichen `allActivePlans(in:)`
+        // (die bleibt fuer ihre bestehenden Aufrufer — UI-Picker,
+        // `FourWeekReviewDueStatus` — unveraendert: dort IST eine leere Liste
+        // ein legitimer, sichtbarer Zustand "kein aktiver Plan"). Hier
+        // dagegen wuerde ein geschluckter Fetch-Fehler fälschlich als "kein
+        // zweiter aktiver Plan, also keine Mehrdeutigkeit" interpretiert.
+        let multipleActivePlans = try context.fetch(FetchDescriptor<TrainingPlan>(
+            predicate: #Predicate { $0.isActive == true }
+        )).count > 1
+        let (occurrences, excludedUnattributableDates) = try realOccurrences(
             in: context, for: plan, ambiguousAcrossActivePlans: multipleActivePlans
         )
 
@@ -168,7 +193,7 @@ public enum FourWeekReviewAssembler {
             nonRestDayCount: nonRestDays.count,
             nonRestWeekdays: Set(nonRestDays.map(\.weekday)),
             usesFixedWeekdays: plan.generatorInput?.usesFixedWeekdays,
-            hasUnattributableSessionsExcluded: excludedUnattributable,
+            excludedUnattributableDates: excludedUnattributableDates,
             calendar: calendar
         )
     }
@@ -218,15 +243,26 @@ public enum FourWeekReviewAssembler {
     ///      Plänen lässt sich das NICHT mehr zuverlässig auflösen. Statt über
     ///      `dayName`/Plan-Namen zu raten oder die Session irgendeinem Plan
     ///      stillschweigend gutzuschreiben, wird sie dann ausgeschlossen —
-    ///      sichtbar gemacht über `hasUnattributableSessionsExcluded` /
-    ///      `.unattributableHistoryExcludedDueToMultipleActivePlans`.
+    ///      sichtbar gemacht über `excludedUnattributableDates` /
+    ///      `.unattributableHistoryExcludedDueToMultipleActivePlans`. Das
+    ///      Datum der Session (nicht nur ein pauschales Bool) wird dabei
+    ///      mitgegeben, damit `PlanParticipationEvaluator` die Datenlücke nur
+    ///      fuer den Block zeigt, in den die ausgeschlossene Session
+    ///      tatsächlich fällt (P9-Fund gegen `fce424e`).
+    ///
+    /// Wirft (statt `try?` zu schlucken, P9-Fund): ein fehlgeschlagener
+    /// Plan-/Tage-/Session-Fetch darf nicht stillschweigend zu "keine
+    /// anderen Pläne"/"keine Tage"/"keine Sessions" werden — das würde hier
+    /// Sessions, die tatsächlich einem ANDEREN Plan gehören, fälschlich
+    /// diesem Plan gutschreiben (weil `otherPlanSessionIDs` dann faelschlich
+    /// leer wäre), statt den Fehler an `assemble` durchzureichen.
     private static func realOccurrences(
         in context: ModelContext,
         for plan: TrainingPlan,
         ambiguousAcrossActivePlans: Bool
-    ) -> (occurrences: [PlanParticipationEvaluator.SessionOccurrence], hasExcludedUnattributable: Bool) {
-        let allPlans = (try? context.fetch(FetchDescriptor<TrainingPlan>())) ?? []
-        let allDays = (try? context.fetch(FetchDescriptor<TrainingDay>())) ?? []
+    ) throws -> (occurrences: [PlanParticipationEvaluator.SessionOccurrence], excludedUnattributableDates: [Date]) {
+        let allPlans = try context.fetch(FetchDescriptor<TrainingPlan>())
+        let allDays = try context.fetch(FetchDescriptor<TrainingDay>())
 
         let ownSessionIDs = Set(plan.days.flatMap { $0.sessions.map(\.persistentModelID) })
         let otherPlanSessionIDs = Set(
@@ -236,18 +272,24 @@ public enum FourWeekReviewAssembler {
         )
         let anyDayOwnedSessionIDs = Set(allDays.flatMap { $0.sessions.map(\.persistentModelID) })
 
-        let sessions = (try? context.fetch(FetchDescriptor<WorkoutSession>(
+        let sessions = try context.fetch(FetchDescriptor<WorkoutSession>(
             predicate: #Predicate { $0.isRestDay == false }
-        ))) ?? []
+        ))
 
-        var hasExcludedUnattributable = false
+        // P9-Fund (gegen `fce424e` geprüft): NICHT mehr nur EIN Bool — das
+        // Datum jeder ausgeschlossenen Session wird mitgeführt, damit
+        // `PlanParticipationEvaluator` sie auf den aktuell bewerteten Block
+        // zeitfenstern kann. Ohne das haette eine unattribuierbare Session
+        // aus einem LAENGST VERGANGENEN Block faelschlich auch den
+        // AKTUELLEN Block als Datenluecke markiert.
+        var excludedUnattributableDates: [Date] = []
         var occurrences: [PlanParticipationEvaluator.SessionOccurrence] = []
         for session in sessions {
             let id = session.persistentModelID
             if otherPlanSessionIDs.contains(id) { continue }
             if !ownSessionIDs.contains(id) && !anyDayOwnedSessionIDs.contains(id) {
                 if ambiguousAcrossActivePlans {
-                    hasExcludedUnattributable = true
+                    excludedUnattributableDates.append(session.startTime)
                     continue
                 }
             }
@@ -264,7 +306,7 @@ public enum FourWeekReviewAssembler {
             }
             occurrences.append(.init(date: session.startTime, outcome: outcome))
         }
-        return (occurrences, hasExcludedUnattributable)
+        return (occurrences, excludedUnattributableDates)
     }
 
     // MARK: - Periodisches Feedback (P6.3, P8 Stufe 3 blockbezogen)

@@ -511,6 +511,150 @@ final class FourWeekReviewAssemblerTests: XCTestCase {
         }
     }
 
+    /// P9-Fund (bei der Pruefung von `fce424e` benannt, NICHT durch dessen
+    /// gruene CI belegt): eine unattribuierbare Session aus einem FRUEHEREN
+    /// Block darf den AKTUELL bewerteten Block nicht als Datenluecke
+    /// markieren. `realOccurrences` sammelte das Ausschluss-Flag bisher ueber
+    /// die GESAMTE Historie, waehrend `PlanParticipationEvaluator` die
+    /// `occurrences` selbst bereits korrekt auf den Block fensterte — ein
+    /// Mismatch, der Block 2 faelschlich die Datenluecke von Block 1 zeigte.
+    /// Reproduziert exakt den vom Auftrag benannten Fall: zwei aktive Plaene,
+    /// eine nicht zuordenbare Session aus Block 1, ausschliesslich korrekt
+    /// zugeordnete Trainings in Block 2.
+    func testUnattributableSessionFromAPreviousBlockDoesNotMarkTheCurrentBlockAsADataGap() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let planA = TrainingPlan(name: "Alpha", programType: "custom", isActive: true)
+        planA.activatedAt = d(2024, 1, 1)
+        context.insert(planA)
+        let dayA = TrainingDay(name: "Tag A", weekday: 2, type: .fullBody, plan: planA)
+        context.insert(dayA)
+
+        // Zweiter aktiver Plan — notwendig, damit ueberhaupt Mehrdeutigkeit
+        // entstehen kann (siehe `realOccurrences`-Dokumentation).
+        let planB = TrainingPlan(name: "Beta", programType: "custom", isActive: true)
+        planB.activatedAt = d(2024, 1, 1)
+        context.insert(planB)
+        context.insert(TrainingDay(name: "Tag B", weekday: 2, type: .fullBody, plan: planB))
+        try context.save()
+
+        // Block 1 fuer Plan A abgeschlossen am 1. Februar -> Block 2 beginnt
+        // am 2. Februar.
+        FourWeekReviewDueStatus.completeCurrentBlock(
+            for: planA,
+            expectedBlockStart: FourWeekReviewDueStatus.currentBlockStart(for: planA, calendar: utc),
+            decision: .keptAsIs,
+            shownReview: FourWeekReviewOrchestrator.Review(
+                participation: .notReliablyEvaluable(.activationStartUnknown), outcome: .keepAsIs, dataGaps: []
+            ),
+            now: d(2024, 2, 1),
+            calendar: utc,
+            in: context
+        )
+        XCTAssertEqual(FourWeekReviewDueStatus.currentBlockStart(for: planA, calendar: utc), d(2024, 2, 2))
+
+        // Nicht zuordenbare Session (keine Tag-Referenz, z.B. CSV-Import)
+        // klar INNERHALB von Block 1 (Januar) — darf Block 2 nicht betreffen.
+        let unattributableDate = d(2024, 1, 10)
+        context.insert(WorkoutSession(
+            startTime: unattributableDate, endTime: unattributableDate.addingTimeInterval(3600),
+            durationMinutes: 60, exerciseCount: 1, totalSets: 0,
+            totalVolumeKg: 0, isCompleted: true
+        ))
+
+        // Vier abgeschlossene, eindeutig Plan A zugeordnete Sessions
+        // INNERHALB von Block 2 (ab 2. Februar) — die einzigen, die fuer
+        // diese Auswertung zaehlen sollen.
+        for offset in [0, 7, 14, 21] {
+            let date = utc.date(byAdding: .day, value: offset, to: d(2024, 2, 5))!
+            context.insert(WorkoutSession(
+                startTime: date, endTime: date.addingTimeInterval(3600),
+                durationMinutes: 60, exerciseCount: 1, totalSets: 0,
+                totalVolumeKg: 0, isCompleted: true, day: dayA
+            ))
+        }
+        try context.save()
+
+        let reviewForBlock2 = FourWeekReviewAssembler.assemble(in: context, for: planA, now: d(2024, 3, 1), calendar: utc)
+        guard case .evaluated(let summary) = reviewForBlock2.participation else {
+            return XCTFail("Block 2 haette auswertbar sein muessen: \(reviewForBlock2.participation)")
+        }
+        XCTAssertFalse(
+            summary.dataGaps.contains(.unattributableHistoryExcludedDueToMultipleActivePlans),
+            "eine unattribuierbare Session aus Block 1 darf Block 2 nicht als Datenluecke markieren"
+        )
+        XCTAssertEqual(summary.completedCount, 4, "Block 2s eigene, eindeutig zugeordnete Sessions muessen unveraendert zaehlen")
+    }
+
+    /// P9-Fund (Finding B, bei der Pruefung von `fce424e` benannt): die fuer
+    /// die Teilnahme-Eingabe noetigen Fetches (`realOccurrences`,
+    /// aktive-Plan-Anzahl) nutzten bisher `try? ... ?? []` — ein echter
+    /// Fetch-Fehler waere so stillschweigend zu "keine Trainings"/"kein
+    /// zweiter aktiver Plan, also keine Mehrdeutigkeit" degradiert, statt als
+    /// unvollstaendige Datengrundlage ausgewiesen zu werden.
+    ///
+    /// Simuliert einen echten Fetch-Fehler, indem die Backing-Store-Datei
+    /// NACH dem Speichern (also NACHDEM `plan`/`day` im Speicher bereits
+    /// voll aufgeloest sind — ihre Felder werden hier nie neu gefetcht,
+    /// nur `realOccurrences`s EXPLIZITE `context.fetch(...)`-Aufrufe treffen
+    /// die danach kaputte Datei) mit ungueltigen Bytes ueberschrieben wird.
+    /// Bewusst NICHT wie beim Build-164-Fund ueber eine Relationship-
+    /// Rueckreferenz auf ein bereits bekanntes, jetzt fehlendes Objekt (das
+    /// waere der fatale, nicht abfangbare `_InvalidFutureBackingData`-Pfad,
+    /// siehe `docs/TESTFLIGHT_CRASH_164.md`) — `ModelContext.fetch(_:)`
+    /// selbst ist eine dokumentiert werfende API, ein eigener, sicher
+    /// abfangbarer Fehlerpfad.
+    ///
+    /// Ehrlich offen: ob SwiftData auf diese konkrete Art der
+    /// Store-Beschaedigung zuverlaessig per Swift-`Error` statt auf andere
+    /// Weise reagiert, ist eine Apple-Laufzeit-Frage — auf Linux nicht
+    /// pruefbar und in dieser Session ohne Geraete-/TestingBot-Zugriff nicht
+    /// empirisch auf Apple-CI bestaetigt. Belegt wird damit in erster Linie,
+    /// dass der Code-Pfad (werfende `realOccurrences`/`participationInput`,
+    /// `assemble` faengt den Fehler ab) bei einem tatsaechlichen Fetch-Fehler
+    /// korrekt verdrahtet ist.
+    func testAFailedUnderlyingFetchIsReportedAsAnExplicitDataGapNotAsZeroTrainingsOrNoAmbiguity() throws {
+        let storeURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("four-week-review-fetch-failure-\(UUID().uuidString)")
+            .appendingPathExtension("store")
+        defer {
+            try? FileManager.default.removeItem(at: storeURL)
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("shm"))
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("wal"))
+        }
+
+        let container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
+        let context = container.mainContext
+
+        let plan = TrainingPlan(name: "Plan", programType: "custom", isActive: true)
+        plan.activatedAt = d(2024, 1, 1)
+        context.insert(plan)
+        context.insert(TrainingDay(name: "Ganzkörper", weekday: 2, type: .fullBody, plan: plan))
+        try context.save()
+
+        // Store-Datei NACH dem Speichern mit ungueltigen Bytes
+        // ueberschreiben — simuliert eine auf einem echten Geraet
+        // beschaedigte/nicht lesbare Datenbankdatei. BEWUSST ohne `.atomic`
+        // (das wuerde ueber eine temporaere Datei + Rename auf einen NEUEN
+        // Inode schreiben — ein bereits offener Datei-Deskriptor der
+        // laufenden SQLite-Verbindung wuerde die alte, intakte Datei dann
+        // munter weiterlesen und die Korruption nie bemerken): ein
+        // direktes Ueberschreiben trifft denselben Inode, auf den die
+        // bestehende Verbindung bereits zeigt.
+        try Data(repeating: 0xFF, count: 4096).write(to: storeURL)
+
+        let review = FourWeekReviewAssembler.assemble(in: context, for: plan, now: d(2024, 2, 1), calendar: utc)
+        if case .notReliablyEvaluable(let reason) = review.participation {
+            XCTAssertEqual(
+                reason, .underlyingDataFetchFailed,
+                "ein echter Fetch-Fehler muss als solcher ausgewiesen werden, nicht als eine andere Datenluecke"
+            )
+        } else {
+            XCTFail("ein fehlgeschlagener Fetch darf NIE eine normale .evaluated-Bewertung liefern: \(review.participation)")
+        }
+    }
+
     // MARK: - P8 Stufe 3: blockbezogener Zeitraum statt gesamter Planlaufzeit
 
     /// Kernregression für Paket B: nach Abschluss von Block 1 zählt die

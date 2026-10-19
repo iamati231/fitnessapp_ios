@@ -31,7 +31,7 @@ final class PlanParticipationEvaluatorTests: XCTestCase {
         occurrences: [PlanParticipationEvaluator.SessionOccurrence] = [],
         weekdays: Set<Int>,
         usesFixedWeekdays: Bool? = true,
-        hasUnattributableSessionsExcluded: Bool = false
+        excludedUnattributableDates: [Date] = []
     ) -> PlanParticipationEvaluator.Input {
         .init(
             activatedAt: activatedAt,
@@ -40,7 +40,7 @@ final class PlanParticipationEvaluatorTests: XCTestCase {
             nonRestDayCount: weekdays.count,
             nonRestWeekdays: weekdays,
             usesFixedWeekdays: usesFixedWeekdays,
-            hasUnattributableSessionsExcluded: hasUnattributableSessionsExcluded,
+            excludedUnattributableDates: excludedUnattributableDates,
             calendar: utc
         )
     }
@@ -51,7 +51,7 @@ final class PlanParticipationEvaluatorTests: XCTestCase {
         occurrences: [PlanParticipationEvaluator.SessionOccurrence] = [],
         sessionsPerWeek: Int,
         usesFixedWeekdays: Bool? = false,
-        hasUnattributableSessionsExcluded: Bool = false
+        excludedUnattributableDates: [Date] = []
     ) -> PlanParticipationEvaluator.Input {
         .init(
             activatedAt: activatedAt,
@@ -60,7 +60,7 @@ final class PlanParticipationEvaluatorTests: XCTestCase {
             nonRestDayCount: sessionsPerWeek,
             nonRestWeekdays: [],
             usesFixedWeekdays: usesFixedWeekdays,
-            hasUnattributableSessionsExcluded: hasUnattributableSessionsExcluded,
+            excludedUnattributableDates: excludedUnattributableDates,
             calendar: utc
         )
     }
@@ -318,7 +318,7 @@ final class PlanParticipationEvaluatorTests: XCTestCase {
     /// `FourWeekReviewAssemblerTests`).
     func testUnattributableSessionsExcludedFlagSurfacesAsDataGap() {
         let withExclusion = fixedInput(
-            activatedAt: d(1, 1), weekdays: [2, 4, 6], hasUnattributableSessionsExcluded: true
+            activatedAt: d(1, 1), weekdays: [2, 4, 6], excludedUnattributableDates: [d(1, 3)]
         )
         let summary = requireSummary(PlanParticipationEvaluator.evaluate(withExclusion, asOf: d(1, 5)))
         XCTAssertTrue(summary.dataGaps.contains(.unattributableHistoryExcludedDueToMultipleActivePlans))
@@ -326,6 +326,49 @@ final class PlanParticipationEvaluatorTests: XCTestCase {
         let withoutExclusion = fixedInput(activatedAt: d(1, 1), weekdays: [2, 4, 6])
         let cleanSummary = requireSummary(PlanParticipationEvaluator.evaluate(withoutExclusion, asOf: d(1, 5)))
         XCTAssertFalse(cleanSummary.dataGaps.contains(.unattributableHistoryExcludedDueToMultipleActivePlans))
+    }
+
+    /// P9-Fund (gegen `fce424e` geprüft): eine ausgeschlossene, unattribu-
+    /// ierbare Session aus einem FRÜHEREN Block darf die Datenlücken-
+    /// Markierung des AKTUELL bewerteten Blocks nicht auslösen — exakt der
+    /// vom User benannte Fehlerfall ("zwei aktive Pläne, eine nicht
+    /// zuordenbare Session aus einem früheren Block, ausschließlich korrekt
+    /// zugeordnete Trainings im aktuellen Block"). `excludedUnattributable-
+    /// Dates` wird hier wie `occurrences` auf `[activatedAt...asOf]`
+    /// gefenstert (`activatedAt` dient `FourWeekReviewAssembler` als
+    /// Platzhalter für den jeweiligen Blockbeginn, siehe dessen eigene
+    /// Dokumentation).
+    func testExcludedUnattributableDateOutsideTheCurrentBlockDoesNotMarkADataGap() {
+        // Block 2 beginnt am 2. Februar; die unattribuierbare Session liegt
+        // klar in Block 1 (9. Januar) — VOR dem hier simulierten Blockbeginn.
+        let input = fixedInput(
+            activatedAt: d(2, 2),
+            occurrences: [
+                occ(d(2, 5), .completed), occ(d(2, 7), .completed), occ(d(2, 9), .completed),
+            ],
+            weekdays: [2, 4, 6],
+            excludedUnattributableDates: [d(1, 9)]
+        )
+        let summary = requireSummary(PlanParticipationEvaluator.evaluate(input, asOf: d(2, 9)))
+        XCTAssertFalse(
+            summary.dataGaps.contains(.unattributableHistoryExcludedDueToMultipleActivePlans),
+            "eine unattribuierbare Session aus einem frueheren Block darf den aktuellen Block nicht als Datenluecke markieren"
+        )
+        XCTAssertEqual(summary.completedCount, 3, "die drei echten Sessions im aktuellen Block zaehlen unveraendert")
+    }
+
+    /// Gegenprobe: liegt dasselbe ausgeschlossene Datum INNERHALB des
+    /// aktuell bewerteten Blocks, muss die Datenluecke weiterhin erscheinen
+    /// — die Fensterung darf das Signal nicht versehentlich ganz abschalten.
+    func testExcludedUnattributableDateInsideTheCurrentBlockStillMarksADataGap() {
+        let input = fixedInput(
+            activatedAt: d(2, 2),
+            occurrences: [occ(d(2, 5), .completed), occ(d(2, 7), .completed)],
+            weekdays: [2, 4, 6],
+            excludedUnattributableDates: [d(2, 9)]
+        )
+        let summary = requireSummary(PlanParticipationEvaluator.evaluate(input, asOf: d(2, 9)))
+        XCTAssertTrue(summary.dataGaps.contains(.unattributableHistoryExcludedDueToMultipleActivePlans))
     }
 
     // MARK: - Regel 1: mehrere aktive Plaene getrennt, ohne gegenseitige Beeinflussung

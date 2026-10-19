@@ -69,6 +69,25 @@ final class FourWeekReviewOrchestratorTests: XCTestCase {
         XCTAssertEqual(review.dataGaps, [.participationNotReliablyEvaluable(.activationStartUnknown)])
     }
 
+    /// P9-Fund (Finding B): ein fehlgeschlagener Fetch darf nie wie eine
+    /// normale `.evaluated`-Bewertung aussehen — die neue, eigens dafuer
+    /// eingefuehrte `.underlyingDataFetchFailed`-Ursache muss denselben Weg
+    /// gehen wie jede andere `UnreliableReason` (sichtbare Datenluecke,
+    /// niemals `.concernsFound` auf Basis erfundener Zahlen). Pure
+    /// Core-Pruefung der Durchreichung — der tatsaechliche SwiftData-
+    /// Fetch-Fehler selbst wird in `FourWeekReviewAssemblerTests`
+    /// (FitnessAppData) simuliert.
+    func testFailedUnderlyingFetchIsSurfacedAsItsOwnDistinctDataGap() {
+        let review = FourWeekReviewOrchestrator.review(.init(
+            participation: .notReliablyEvaluable(.underlyingDataFetchFailed),
+            latestCheckIn: fullCheckIn(hadComplaints: false, goalStillCurrent: true),
+            deloadRecommended: false,
+            comebackSignal: nil
+        ))
+        XCTAssertEqual(review.outcome, .keepAsIs)
+        XCTAssertEqual(review.dataGaps, [.participationNotReliablyEvaluable(.underlyingDataFetchFailed)])
+    }
+
     func testMissingCheckInIsSurfacedAsDataGapAndNeverTreatedAsNoComplaints() {
         let review = FourWeekReviewOrchestrator.review(.init(
             participation: evaluatedSummary(plannedCount: 12, completedCount: 12, missedCount: 0),

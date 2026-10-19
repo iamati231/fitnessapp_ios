@@ -100,12 +100,22 @@ public enum PlanParticipationEvaluator {
         /// nicht erfasst. Wird konservativ wie `false` (flexibel) behandelt,
         /// aber als Annahme offengelegt (Regel 6/8: keine Scheinpraezision).
         public let usesFixedWeekdays: Bool?
-        /// Der Aufrufer hat beim Zusammenstellen von `occurrences` reale
-        /// Sessions herausgefiltert, die sich keinem bestimmten Plan sicher
-        /// zuordnen ließen (siehe `DataGap.unattributableHistoryExcludedDueToMultipleActivePlans`).
-        /// `false`, wenn entweder keine solchen Sessions existierten oder nur
-        /// ein Plan aktiv war (dort gibt es keine Mehrdeutigkeit).
-        public let hasUnattributableSessionsExcluded: Bool
+        /// Kalendertage realer Sessions, die der Aufrufer beim Zusammenstellen
+        /// von `occurrences` herausgefiltert hat, weil sie sich keinem
+        /// bestimmten Plan sicher zuordnen ließen (siehe
+        /// `DataGap.unattributableHistoryExcludedDueToMultipleActivePlans`).
+        /// Leer, wenn entweder keine solchen Sessions existierten oder nur ein
+        /// Plan aktiv war (dort gibt es keine Mehrdeutigkeit).
+        ///
+        /// BEWUSST eine Datumsliste statt eines einzelnen Bool (P9-Fund,
+        /// gegen `fce424e` geprüft): `occurrences` wird unten auf
+        /// `[periodStart, periodEnd]` zeitgefenstert, bevor daraus gezählt
+        /// wird — ein einzelnes globales Bool hätte dieses Fenster ignoriert
+        /// und eine unattribuierbare Session aus einem LÄNGST VERGANGENEN
+        /// Block hätte fälschlich auch den AKTUELLEN Block als Datenlücke
+        /// markiert. `evaluate` wendet exakt dieselbe Fensterung auf diese
+        /// Liste an wie auf `occurrences`.
+        public let excludedUnattributableDates: [Date]
         public let calendar: Calendar
 
         public init(
@@ -115,7 +125,7 @@ public enum PlanParticipationEvaluator {
             nonRestDayCount: Int,
             nonRestWeekdays: Set<Int>,
             usesFixedWeekdays: Bool?,
-            hasUnattributableSessionsExcluded: Bool = false,
+            excludedUnattributableDates: [Date] = [],
             calendar: Calendar
         ) {
             self.activatedAt = activatedAt
@@ -124,7 +134,7 @@ public enum PlanParticipationEvaluator {
             self.nonRestDayCount = nonRestDayCount
             self.nonRestWeekdays = nonRestWeekdays
             self.usesFixedWeekdays = usesFixedWeekdays
-            self.hasUnattributableSessionsExcluded = hasUnattributableSessionsExcluded
+            self.excludedUnattributableDates = excludedUnattributableDates
             self.calendar = calendar
         }
     }
@@ -151,6 +161,17 @@ public enum PlanParticipationEvaluator {
         /// Seit Aktivierung ist proportional noch keine einzige Einheit
         /// faellig geworden (Regel 5) — 0 von 0 waere eine Scheinaussage.
         case noOpportunityDueYet
+        /// P9-Fund: der Aufrufer (`FourWeekReviewAssembler`) konnte die fuer
+        /// diese Auswertung noetigen SwiftData-Fetches (Plaene/Tage/Sessions)
+        /// NICHT laden — ein echter Fetch-Fehler, keine leere Datenlage.
+        /// Bisher wurde ein fehlgeschlagener Fetch stillschweigend wie "keine
+        /// Ergebnisse"/"kein zweiter aktiver Plan" behandelt, was eine
+        /// Teilnahmebewertung auf unvollstaendiger Grundlage oder eine falsche
+        /// Mehrdeutigkeits-Entscheidung erzeugen konnte. Dieser Fall wird
+        /// NICHT hier in `evaluate` ausgeloest (der Evaluator selbst fetcht
+        /// nichts) — der Aufrufer liefert direkt `.notReliablyEvaluable(.underlyingDataFetchFailed)`,
+        /// OHNE `evaluate` ueberhaupt aufzurufen.
+        case underlyingDataFetchFailed
     }
 
     /// Welche Zaehlregel tatsaechlich angewendet wurde — maschinenlesbar
@@ -281,7 +302,14 @@ public enum PlanParticipationEvaluator {
         if scheduleKindAssumed {
             dataGaps.append(.scheduleKindUnknownAssumedFlexible)
         }
-        if input.hasUnattributableSessionsExcluded {
+        // Dieselbe Fensterung wie fuer `occurrences` oben (Zeile ~271) — eine
+        // ausgeschlossene Session ausserhalb des aktuell bewerteten Blocks
+        // darf DESSEN Datenlücken-Markierung nicht auslösen.
+        let hasUnattributableInWindow = input.excludedUnattributableDates.contains { date in
+            let day = calendar.startOfDay(for: date)
+            return day >= periodStart && day <= periodEnd
+        }
+        if hasUnattributableInWindow {
             dataGaps.append(.unattributableHistoryExcludedDueToMultipleActivePlans)
         }
 

@@ -375,6 +375,8 @@ public struct FourWeekReviewView: View {
                 return loc("fourWeekReview.dataGap.participation.noTrainingDays")
             case .noOpportunityDueYet:
                 return loc("fourWeekReview.dataGap.participation.tooEarly")
+            case .underlyingDataFetchFailed:
+                return loc("fourWeekReview.dataGap.participation.dataUnavailable")
             }
         }
     }

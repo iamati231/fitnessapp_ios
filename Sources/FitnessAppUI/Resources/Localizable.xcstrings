@@ -51108,6 +51108,29 @@
         }
       }
     },
+    "fourWeekReview.dataGap.participation.dataUnavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daten für diese Auswertung konnten nicht geladen werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not load the data needed for this evaluation."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu değerlendirme için gereken veriler yüklenemedi."
+          }
+        }
+      }
+    },
     "fourWeekReview.dataGap.participation.partiallyUnattributed": {
       "extractionState": "manual",
       "localizations": {
