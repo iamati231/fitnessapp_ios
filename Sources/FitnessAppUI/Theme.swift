@@ -784,10 +784,28 @@ public struct DeltiqSegmentedOption<Value: Hashable>: Identifiable {
     public var id: Value { value }
     public let value: Value
     public let label: String
+    /// Optionaler, von `label` abweichender VoiceOver-Text — fuer Faelle, in
+    /// denen mehrere Picker auf demselben Screen denselben sichtbaren
+    /// Kurztext verwenden (z.B. "Passend"/"Just right" bei Dauer- UND
+    /// Belastungsfrage in `PeriodicCheckInView`) und das Segment ohne
+    /// zusaetzlichen Fragekontext sonst nicht eindeutig angesagt wuerde.
+    /// `nil` (Default) behaelt `label` als Accessibility-Text —
+    /// unveraendertes Verhalten fuer jeden bestehenden Aufrufer.
+    public let accessibilityLabel: String?
+    /// Optionaler, sprachunabhaengiger Identifier fuer UI-/Geraetetests —
+    /// `nil` (Default) setzt KEINEN Identifier (unveraendertes Verhalten).
+    public let accessibilityIdentifier: String?
 
-    public init(_ value: Value, label: String) {
+    public init(
+        _ value: Value,
+        label: String,
+        accessibilityLabel: String? = nil,
+        accessibilityIdentifier: String? = nil
+    ) {
         self.value = value
         self.label = label
+        self.accessibilityLabel = accessibilityLabel
+        self.accessibilityIdentifier = accessibilityIdentifier
     }
 }
 
@@ -809,22 +827,30 @@ public struct DeltiqSegmentedPicker<Value: Hashable>: View {
     public var body: some View {
         HStack(spacing: 4) {
             ForEach(options) { option in
+                let isSelected = option.value == selection
                 Button {
                     selection = option.value
                 } label: {
                     Text(option.label)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(
-                            option.value == selection
+                            isSelected
                                 ? Color(red: 0.102, green: 0.102, blue: 0.102)
                                 : Color.primary
                         )
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
-                        .background(option.value == selection ? Color.deltiqOrange : Color.clear)
+                        .background(isSelected ? Color.deltiqOrange : Color.clear)
                         .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
                 }
                 .buttonStyle(.plain)
+                // Auswahl ist bisher NUR farblich kodiert (Orange-Hintergrund +
+                // dunklerer Text) — fuer VoiceOver/Switch Control unsichtbar.
+                // `.isSelected` macht sie ueber den Accessibility-Trait
+                // nachvollziehbar, ohne das visuelle Design zu aendern.
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+                .accessibilityLabel(option.accessibilityLabel ?? option.label)
+                .accessibilityIdentifier(option.accessibilityIdentifier ?? "")
             }
         }
         .padding(4)

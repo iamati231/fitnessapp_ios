@@ -50096,6 +50096,29 @@
         }
       }
     },
+    "periodicCheckIn.answer.exertion.appropriate.a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belastung: Passend"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training load: Just right"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman yükü: Tam uygun"
+          }
+        }
+      }
+    },
     "periodicCheckIn.answer.exertion.tooHard": {
       "extractionState": "manual",
       "localizations": {
@@ -50138,6 +50161,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tam uygun"
+          }
+        }
+      }
+    },
+    "periodicCheckIn.answer.duration.justRight.a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsdauer: Passend"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duration: Just right"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman süresi: Tam uygun"
           }
         }
       }
@@ -50391,6 +50437,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "İlk dört haftan"
+          }
+        }
+      }
+    },
+    "fourWeekReview.title.laterBlock": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Block-Rückblick"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your block review"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blok değerlendirmen"
           }
         }
       }

@@ -237,25 +237,64 @@ public struct PeriodicCheckInView: View {
         )
     }
 
+    /// Nachbesserung: "Passend"/"Just right" ist DE/EN/TR identisch mit
+    /// `exertionPicker`s mittlerer Option — ohne eigenen Accessibility-Text
+    /// wuerden beide Segmente fuer VoiceOver ununterscheidbar als "Passend,
+    /// ausgewaehlt" angesagt. `accessibilityLabel` ergaenzt deshalb NUR hier
+    /// den Fragekontext knapp ("Trainingsdauer: ..." statt der kompletten,
+    /// bereits vom vorangehenden Frage-Label vorgelesenen Satzfrage — sonst
+    /// doppelte Ansage). Die anderen drei Segmente sind je fuer sich bereits
+    /// eindeutig und behalten ihren sichtbaren Kurztext 1:1 als
+    /// Accessibility-Text. `accessibilityIdentifier` macht alle vier
+    /// Segmente zusaetzlich sprachunabhaengig ansteuerbar (Geraetetests),
+    /// ohne dass der sichtbare Text dafuer veraendert werden musste.
     private var durationPicker: some View {
         DeltiqSegmentedPicker(
             options: [
-                DeltiqSegmentedOption(DurationAnswer.skip, label: loc("periodicCheckIn.answer.skip")),
-                DeltiqSegmentedOption(DurationAnswer.tooShort, label: loc("periodicCheckIn.answer.duration.tooShort")),
-                DeltiqSegmentedOption(DurationAnswer.justRight, label: loc("periodicCheckIn.answer.duration.justRight")),
-                DeltiqSegmentedOption(DurationAnswer.tooLong, label: loc("periodicCheckIn.answer.duration.tooLong"))
+                DeltiqSegmentedOption(
+                    DurationAnswer.skip, label: loc("periodicCheckIn.answer.skip"),
+                    accessibilityIdentifier: "periodicCheckIn.duration.skip"
+                ),
+                DeltiqSegmentedOption(
+                    DurationAnswer.tooShort, label: loc("periodicCheckIn.answer.duration.tooShort"),
+                    accessibilityIdentifier: "periodicCheckIn.duration.tooShort"
+                ),
+                DeltiqSegmentedOption(
+                    DurationAnswer.justRight, label: loc("periodicCheckIn.answer.duration.justRight"),
+                    accessibilityLabel: loc("periodicCheckIn.answer.duration.justRight.a11y"),
+                    accessibilityIdentifier: "periodicCheckIn.duration.justRight"
+                ),
+                DeltiqSegmentedOption(
+                    DurationAnswer.tooLong, label: loc("periodicCheckIn.answer.duration.tooLong"),
+                    accessibilityIdentifier: "periodicCheckIn.duration.tooLong"
+                )
             ],
             selection: $durationAnswer
         )
     }
 
+    /// Siehe `durationPicker`-Dokumentation — spiegelbildliche Begruendung
+    /// fuer die hier doppelt vorkommende Option "Passend"/"Just right".
     private var exertionPicker: some View {
         DeltiqSegmentedPicker(
             options: [
-                DeltiqSegmentedOption(ExertionAnswer.skip, label: loc("periodicCheckIn.answer.skip")),
-                DeltiqSegmentedOption(ExertionAnswer.tooEasy, label: loc("periodicCheckIn.answer.exertion.tooEasy")),
-                DeltiqSegmentedOption(ExertionAnswer.appropriate, label: loc("periodicCheckIn.answer.exertion.appropriate")),
-                DeltiqSegmentedOption(ExertionAnswer.tooHard, label: loc("periodicCheckIn.answer.exertion.tooHard"))
+                DeltiqSegmentedOption(
+                    ExertionAnswer.skip, label: loc("periodicCheckIn.answer.skip"),
+                    accessibilityIdentifier: "periodicCheckIn.exertion.skip"
+                ),
+                DeltiqSegmentedOption(
+                    ExertionAnswer.tooEasy, label: loc("periodicCheckIn.answer.exertion.tooEasy"),
+                    accessibilityIdentifier: "periodicCheckIn.exertion.tooEasy"
+                ),
+                DeltiqSegmentedOption(
+                    ExertionAnswer.appropriate, label: loc("periodicCheckIn.answer.exertion.appropriate"),
+                    accessibilityLabel: loc("periodicCheckIn.answer.exertion.appropriate.a11y"),
+                    accessibilityIdentifier: "periodicCheckIn.exertion.appropriate"
+                ),
+                DeltiqSegmentedOption(
+                    ExertionAnswer.tooHard, label: loc("periodicCheckIn.answer.exertion.tooHard"),
+                    accessibilityIdentifier: "periodicCheckIn.exertion.tooHard"
+                )
             ],
             selection: $exertionAnswer
         )
