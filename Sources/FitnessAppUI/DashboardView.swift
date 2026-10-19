@@ -1845,11 +1845,35 @@ public struct DashboardView: View {
 
     /// Sequential-rotation pick. Delegates to `PlanNavigator` (Core) so widgets
     /// + watch can reuse the exact same logic without dragging FitnessAppData in.
-    private func nextScheduledDay(in plan: TrainingPlan) -> TrainingDay {
+    ///
+    /// Bugfix (TestFlight-Crash Build 164, SwiftData `_InvalidFutureBackingData`
+    /// in `TrainingDay.plan.getter`, ausgeloest hier waehrend des ersten
+    /// Dashboard-Aufbaus): zaehlt NICHT mehr ueber die globale, `@Query`-
+    /// gespeiste `completedSessions` + `$0.day?.plan?.persistentModelID` —
+    /// das liest `.plan` auf einem `TrainingDay`, das ausschliesslich ueber
+    /// die RUECKWAERTIGE `WorkoutSession.day`-Relationship erreicht wird.
+    /// Zeigt diese bei einer (z.B. auf einem Bestandsgeraet noch aus der Zeit
+    /// VOR der `TrainingDay.sessions`-Nullify-Inverse-Korrektur stammenden)
+    /// Session auf einen bereits geloeschten Tag, liefert SwiftData dafuer
+    /// keinen `nil`, sondern bricht beim Lesen JEDER gespeicherten Property
+    /// dieses Tages mit einer fatalen, nicht abfangbaren Assertion ab -
+    /// weder `try?` noch optionales Verketten helfen dagegen (siehe
+    /// `docs/TESTFLIGHT_CRASH_164.md`).
+    ///
+    /// Stattdessen ausschliesslich ueber den VOM AUFRUFER bereits als lebend
+    /// bekannten `plan` vorwaerts gehen: `plan.days` (eigene, per Cascade
+    /// konsistente Kinder) -> `day.sessions` (deren eigene, direkte
+    /// Ruecktrefferliste). Eine Session, deren `day` verwaist/geloescht ist,
+    /// taucht in KEINEM `day.sessions` eines noch existierenden Tages auf
+    /// und wird so automatisch nicht mitgezaehlt - ohne die gefaehrliche
+    /// Rueckreferenz jemals zu beruehren. Identisches Ergebnis fuer jeden
+    /// unbeschaedigten Bestand (dieselbe Menge an Sessions, nur von der
+    /// anderen Seite der Relationship gezaehlt).
+    internal func nextScheduledDay(in plan: TrainingPlan) -> TrainingDay {
         let sortedDays = PlanNavigator.sortByWeekdayMondayFirst(plan.days)
-        let completedCount = completedSessions.filter {
-            $0.day?.plan?.persistentModelID == plan.persistentModelID
-        }.count
+        let completedCount = plan.days.reduce(0) { count, day in
+            count + day.sessions.filter(\.isCompleted).count
+        }
         let idx = PlanNavigator.nextScheduledIndex(
             dayCount: sortedDays.count,
             completedSessions: completedCount
