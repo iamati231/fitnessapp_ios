@@ -2045,6 +2045,20 @@ public struct OnboardingView: View {
     /// `finishOnboarding()`, siehe dortige Doku.
     @State private var isFinishingOnboarding = false
 
+    /// Welcher Plan bei „Fertig" übernommen wird. Eine explizite Auswahl
+    /// gewinnt immer — über die Vorschau+„Diesen Plan wählen" (`explicit`)
+    /// oder den Builder (`hasCustomPlan`). Nur wenn beides fehlt, wird die
+    /// bereits als große Karte gezeigte Top-Empfehlung (`recommended`)
+    /// übernommen, statt „Fertig" stillschweigend ohne jeden Plan
+    /// abzuschließen. `nil` (keine Empfehlung verfügbar, z. B. leerer
+    /// `PlanMatchmaker`-Fallback) bleibt der bestehende „Fertig ohne Plan"-
+    /// Fall.
+    static func templateToAdopt(
+        explicit: ProgramTemplate?, hasCustomPlan: Bool, recommended: ProgramTemplate?
+    ) -> ProgramTemplate? {
+        explicit ?? (hasCustomPlan ? nil : recommended)
+    }
+
     private func finishOnboarding() {
         guard let heightCm, let currentWeightKg else { return }
         // Nachbesserung (P2.3, Abnahme "keine Duplikate bei mehrfacher
@@ -2149,7 +2163,22 @@ public struct OnboardingView: View {
         // DEL-088: `selectedWeekdays` kommt aus dem DayPickerSheet. Wenn der
         //    User direkt "Fertig" ohne Plan drueckt, ist die Liste leer und
         //    der Instantiator nutzt seine Defaults (defaultWeekdays(for:)).
-        if let template = selectedTemplate {
+        //
+        // TestingBot-Regressionscheck (Deltiq-Abnahme): zweimal unabhängig
+        // reproduziert — „Fertig" auf dem Plan-Vorschlag-Screen getippt,
+        // OHNE zuvor die Vorschau zu öffnen und „Diesen Plan wählen" zu
+        // bestätigen (die einzige bisherige Stelle, die `selectedTemplate`
+        // setzt, siehe deren Doku oben). Ergebnis: Profil wird angelegt,
+        // der sichtbar empfohlene Plan aber nie — Dashboard zeigt „No
+        // active plan" ohne jeden Hinweis. `templateToAdopt(...)` schließt
+        // die Lücke: eine explizite Auswahl (Vorschau-Adopt ODER Builder)
+        // gewinnt immer, nur wenn WEDER noch NICHT passiert ist, wird die
+        // ohnehin schon als große Karte gezeigte Top-Empfehlung
+        // (`rankedTemplates.first`) übernommen — kein neuer Empfehlungsweg,
+        // dieselbe Berechnung, die der Screen längst anzeigt.
+        if let template = Self.templateToAdopt(
+            explicit: selectedTemplate, hasCustomPlan: customPlanInput != nil, recommended: rankedTemplates.first
+        ) {
             // Smart-Onboarding-Epic Phase 5.4 (PLAN_SUBSTITUTION_ENGINE.md
             // Abschnitt 4): "Before saving, recheck against the current
             // equipment snapshot and reject stale/incompatible selection."
