@@ -345,10 +345,31 @@ Advisor-Funktionen ermittelten Befund fest, keine neue Bewertungslogik.
   durchgeführt.** Diese Session hat keinen TestingBot-/Geräte-Zugriff.
   Ehrlich offen ausgewiesen statt stillschweigend als erledigt geführt.
 
-**Apple-CI:** mit diesem Commit gebündelt ausgelöst (Push auf
-`claude/smart-onboarding-epic` triggert `swift-package` + `ios-app`
-automatisch, siehe `codemagic.yaml`). Ergebnis zum Zeitpunkt dieses
-Dokuments noch nicht bekannt (kein Polling-Zugriff aus dieser Session).
+**Apple-CI (korrigiert — die vorherige Aussage unten war falsch):** Der
+Push auf `claude/smart-onboarding-epic` hat entgegen der `codemagic.yaml`-
+Konfiguration (`triggering: events: [push, pull_request]`) KEINEN
+automatischen Build ausgelöst. Für Commit `2d31e60` wurden beide Workflows
+deshalb nachträglich manuell über die Codemagic-API gestartet:
+
+- `ios-app` (Build `6ad5e800d1e008ab5a6ca278`): **erfolgreich** —
+  alle Schritte (Preparing, Fetching, XcodeGen, Projekt generieren,
+  SPM-Dependencies, "Build app + widget for iOS Simulator", Publishing,
+  Cleaning up) grün. Dieser Workflow führt keine Unit-Tests aus.
+- `swift-package` (Build `6ad5e7fdb71aec44859ab13e`): **fehlgeschlagen**
+  im Schritt "Run unit tests" — von 1426 ausgeführten Tests schlugen 2
+  fehl (`DayEditorPersistenceTests.testExerciseDeletionWithImmediate-
+  SaveSurvivesARealStoreRestart`, `FourWeekReviewAssemblerTests.test-
+  CheckInFromAPreviousBlockDoesNotCountAsCurrentForTheNextBlock`). Beide
+  Fehler waren Testkonstruktionsfehler, keine Produktionsbugs (instabiler
+  `PersistentIdentifier`-Vergleich über einen Container-Neustart hinweg
+  bzw. fehlende Fixture-Daten) — behoben in Commit `956a0fd`, erneuter
+  `swift-package`-Lauf dafür manuell ausgelöst (Build
+  `6ad5eb1595803dd10e5afb43`, Ergebnis siehe Commit-Historie/separate
+  Statusnotiz).
+
+Die automatische Trigger-Lücke wird separat als Infrastrukturthema
+untersucht (siehe Task #252-Begleitarbeit), ist aber nicht Teil dieses
+Pakets.
 
 **Day-Editor-Bugs (Abschnitt 6):** mittlerweile als eigene Aufgaben
 behoben (siehe `docs/DAY_EDITOR_PERSISTENCE_FIX.md`) — unabhängig von
