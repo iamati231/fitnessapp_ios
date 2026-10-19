@@ -243,8 +243,14 @@ jobs:
       - name: codemagic-cli-tools installieren
         run: pip3 install --break-system-packages codemagic-cli-tools
 
-      # NEU zusammengesetzt (siehe Hinweis oben) — vor dem ersten echten
-      # Lauf die Flags gegen `app-store-connect publish --help` prüfen.
+      # Erster echter Lauf (Run #10) schlug fehl: "--api-key" existiert nicht
+      # als Flag (Quelle gegengeprüft: codemagic-ci-cd/cli-tools,
+      # docs/app-store-connect/publish.md — korrekt ist --private-key).
+      # APP_STORE_CONNECT_KEY_IDENTIFIER/_ISSUER_ID/_PRIVATE_KEY werden von
+      # app-store-connect ohnehin automatisch aus denselben Env-Var-Namen
+      # gelesen (genau wie beim "Build-Nummer ermitteln"-Schritt weiter oben,
+      # der ganz ohne Auth-Flags auskommt) — die Flags sind daher überflüssig
+      # und entfernt statt nur umbenannt.
       - name: Zu TestFlight hochladen
         env:
           APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
@@ -260,9 +266,6 @@ jobs:
           echo "Lade hoch: $IPA_PATH"
           app-store-connect publish \
             --path "$IPA_PATH" \
-            --api-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
-            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --testflight \
             --beta-group "Atamya Internal" 2>&1 | tee testflight-upload.log
 
