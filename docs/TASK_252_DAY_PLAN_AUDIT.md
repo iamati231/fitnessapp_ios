@@ -1,11 +1,37 @@
-# Task #252: Audit der sieben weiteren `.day?.plan`-Lesestellen
+# Task #252: Audit der acht weiteren `.day?.plan`-Lesestellen
 
-**Status:** alle acht Stellen (die bereits in Build 164 behobene plus die
-sieben in `docs/TESTFLIGHT_CRASH_164.md` Abschnitt 6 gelisteten) einzeln
-geprüft. Vier zusätzliche Stellen waren strukturell derselben Risikoklasse
+**Status:** alle neun Einzelzugriffe (die bereits in Build 164 behobene
+Stelle plus die acht in `docs/TESTFLIGHT_CRASH_164.md` Abschnitt 6
+gelisteten) einzeln geprüft. Fünf zusätzliche Stellen (Assembler 1 +
+Dashboard 3 + Summary 1) waren strukturell derselben Risikoklasse
 zuzuordnen und wurden auf dasselbe Vorwärts-Traversal-Muster umgestellt;
-drei Stellen sind durch eine durchgängige Cascade-Delete-Kette sicher und
-blieben unverändert. Keine Stelle bleibt ungeklärt.
+drei Stellen (Editor 1 + Progression 2) sind durch eine durchgängige
+Cascade-Delete-Kette sicher und blieben unverändert. Keine Stelle bleibt
+ungeklärt.
+
+**Zählungskorrektur (P9 Priorität 3):** Die Überschrift dieses Dokuments
+sprach bisher von "sieben weiteren" Lesestellen bzw. "acht Stellen"
+insgesamt — das war eine Verwechslung von Audit-POSITIONEN (Abschnitte
+2–8, sieben benannte Positionen) mit tatsächlichen EINZELNEN
+`.day?.plan`-Zugriffsstellen, da Position "3–5" drei und Position 8 zwei
+separate Call-Sites bündelt. Die korrekte Zählung der zusätzlichen
+Einzelzugriffe, nach Gruppe benannt:
+
+| Gruppe | Fundstelle(n) | Einzelzugriffe |
+|---|---|---|
+| Assembler | `FourWeekReviewAssembler.realOccurrences` (Abschnitt 2) | 1 |
+| Dashboard | `resumeAnyOpenFromConflict`, `unrepresentedOpenSession`, `resumeOpenSession` (Abschnitt 3–5) | 3 |
+| Summary | `WorkoutSummaryView`/`ExerciseLibraryPickerSheet` (Abschnitt 6) | 1 |
+| Editor | `ExerciseEditorView.isReadOnly` (Abschnitt 7) | 1 |
+| Progression | `ProgressionApplicator.apply`/`evaluateOnly` (Abschnitt 8) | 2 |
+| **Summe zusätzlich** | | **8** |
+
+Zusammen mit der ursprünglich in Build 164 behobenen Stelle
+(`DashboardView.nextScheduledDay`, Abschnitt 1) ergibt das **neun**
+einzelne `.day?.plan`-Zugriffsstellen insgesamt, nicht acht. Die
+inhaltliche Bewertung je Stelle (Abschnitte 1–8 unten) ändert sich durch
+diese Korrektur nicht — betroffen ist ausschließlich die Gesamtzahl in
+Titel/Status.
 
 ## Methodik (wie beauftragt)
 
@@ -26,7 +52,7 @@ einer garantiert lebenden Wurzel: `plan.days` → `day.sessions`, statt
 rückwärts `session.day?.plan` oder `exercise.day?.plan`) wurde NUR dort
 wiederverwendet, wo seine Voraussetzung (ein lebendes `TrainingPlan`-/
 `TrainingDay`-Objekt als Startpunkt) tatsächlich vorlag — nicht pauschal
-auf alle acht Stellen angewendet.
+auf alle neun Stellen angewendet.
 
 ## Ergebnis je Stelle
 
@@ -145,10 +171,10 @@ Verwaisungsrisiko: bestätigt (siehe Crash-Report). Fix: `plan.days` →
 ## Bestandsdaten
 
 Wie beauftragt: kein Store-Reset, keine automatische Löschung betroffener
-Sessions, keine Entfernung historischer Logs. Alle vier Fixes (2–6) ändern
-ausschließlich LESE-Pfade — eine zuvor verwaiste Session/Tag-Referenz wird
-nach dem Fix genauso wenig geschrieben/gelöscht wie vorher, sie wird nur
-nicht mehr fatal gelesen.
+Sessions, keine Entfernung historischer Logs. Alle fünf behobenen
+Einzelzugriffe (Abschnitte 2, 3–5, 6) ändern ausschließlich LESE-Pfade —
+eine zuvor verwaiste Session/Tag-Referenz wird nach dem Fix genauso wenig
+geschrieben/gelöscht wie vorher, sie wird nur nicht mehr fatal gelesen.
 
 ## Linux-Verifikationsgrenzen (ehrlich offen)
 
