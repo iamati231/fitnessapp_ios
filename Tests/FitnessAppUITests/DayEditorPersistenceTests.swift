@@ -152,6 +152,25 @@ final class DayEditorPersistenceTests: XCTestCase {
     /// der Store-Datei angekommen. Exakt die Sequenz aus `deletePlans`
     /// nach dem Fix: Loeschen, SOFORT `context.save()`, kein weiterer
     /// Schritt.
+    ///
+    /// Nachtrag (Deltiq-Abnahme, Geraete-Nachtest desselben Fixes): der
+    /// SOFORTIGE `context.save()` direkt im `onDelete`-Handler hat auf
+    /// echtem Geraet einen ZWEITEN, bis dahin unentdeckten Crash ausgeloest
+    /// — reproduzierbar, wenn genau der geloeschte Plan die Session besitzt,
+    /// deren `ActiveSessionBanner` in DERSELBEN `List` angezeigt wird (siehe
+    /// `PlansListView.deletePlans`-Kommentar fuer den vollen Mechanismus:
+    /// zwei ueberlappende Mutationen derselben `List` in einer Transaktion).
+    /// Fix: Save um einen Runloop-Tick verzoegert (`DispatchQueue.main.async`).
+    /// Dieser Test bleibt unveraendert gueltig — er ruft `context.save()`
+    /// direkt und synchron auf (nicht die private, @Environment-gebundene
+    /// `deletePlans`-Funktion selbst) und beweist weiterhin nur die
+    /// Persistenz-Technik, nicht die UI-Timing-Reihenfolge. Der eigentliche
+    /// Crash ist ein `List`/SwiftUI-Animationstiming-Problem ohne
+    /// SwiftData-Bezug — dieses Repo hat keinen UI-Test-Harness (siehe
+    /// Typ-Doku oben), die tatsaechliche Regressionspruefung dafuer ist der
+    /// TestingBot-Geraete-Nachtest (Swipe-Delete auf den aktiven Plan mit
+    /// laufender Session, kein Crash mehr, Plan+Session-Entkopplung bleibt
+    /// nach Kaltstart korrekt).
     func testPlanDeletionWithOpenSessionAndImmediateSaveSurvivesARealStoreRestart() throws {
         let storeURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("plans-list-delete-persistence-\(UUID().uuidString)")

@@ -604,18 +604,43 @@ public struct PlansListView: View {
         for index in offsets {
             modelContext.delete(plans[index])
         }
-        // Kein `context.rollback()` bei Fehler — wirkt auf den GESAMTEN,
-        // geteilten Context und wuerde unabhaengige, anderswo bereits
-        // bestaetigte Aenderungen mit zerstoeren (siehe
+        // TestingBot-Geraetebefund (Deltiq-Abnahme, Punkt 1, Nachbesserung zum
+        // fdad04c-Fix): ein SYNCHRONER `modelContext.save()` direkt hier drin
+        // crasht auf echtem Geraet reproduzierbar, wenn der geloeschte Plan
+        // eine laufende Session besitzt, deren `ActiveSessionBanner` in
+        // DERSELBEN `List` oberhalb der Plan-Zeilen angezeigt wird: `List`s
+        // eigene `.onDelete`-Animation erwartet, das darunterliegende
+        // `@Query`-Array aendere sich GENAU EINMAL pro Swipe-Delete. Der
+        // sofortige Save loest aber VOR Abschluss dieser Animation bereits
+        // die SwiftData-Cascade/Nullify-Kette aus (Plan -> Day -> Session.day
+        // = nil) und damit eine ZWEITE, ueberlappende Aenderung an genau dem
+        // Datenbestand, den dieselbe List gerade mitten in ihrer eigenen
+        // Lösch-Animation aus der vorherigen Mutation (`delete()`) heraus
+        // neu zeichnet - zwei sich ueberschneidende List-Mutationen in einer
+        // Transaktion crashen SwiftUI. `DayEditorView.deleteExercises` und
+        // `PlanEditorView.deleteDays` haben denselben Sofort-Save, zeigen das
+        // Problem hier aber NICHT, weil in deren Repro keine andere Zeile der
+        // GLEICHEN Liste auf das geloeschte Objekt zeigte.
+        //
+        // Fix: Save einen Runloop-Tick spaeter (`DispatchQueue.main.async`) -
+        // `List` beendet ihre eigene Animation zuerst (Plan ist dann schon aus
+        // `plans` verschwunden), danach erst committed der Save. Das aendert
+        // nichts an der Kaltstart-Garantie (ein Force-Quit Millisekunden nach
+        // dem Tap ist praktisch ausgeschlossen) — nur an der Reihenfolge
+        // innerhalb desselben Frames. Kein `context.rollback()` bei Fehler —
+        // wirkt auf den GESAMTEN, geteilten Context und wuerde unabhaengige,
+        // anderswo bereits bestaetigte Aenderungen mit zerstoeren (siehe
         // `PlanGeneratorInstantiator`-Typ-Doku, gleiche Begruendung wie
         // `DayEditorView.deleteExercises`). Stattdessen nur sichtbarer
         // Fehlerhinweis — der User sieht den Plan in der Liste weiterhin
         // als entfernt, auch wenn der Save scheiterte, und kann es erneut
         // versuchen.
-        do {
-            try modelContext.save()
-        } catch {
-            deletePlanErrorMessage = error.localizedDescription
+        DispatchQueue.main.async {
+            do {
+                try modelContext.save()
+            } catch {
+                deletePlanErrorMessage = error.localizedDescription
+            }
         }
     }
 
