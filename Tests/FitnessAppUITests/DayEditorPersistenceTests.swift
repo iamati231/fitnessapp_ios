@@ -143,5 +143,61 @@ final class DayEditorPersistenceTests: XCTestCase {
         XCTAssertEqual(day.circuitRestSeconds, 45)
         XCTAssertEqual(day.circuitMode, .fixedReps)
     }
+
+    /// TestingBot-Regressionscheck (Block A, Deltiq-Abnahme): derselbe
+    /// Musterfehler wie oben, diesmal in `PlansListView.deletePlans(at:)`.
+    /// Reproduziert auf echtem Geraet: Plan mit laufender (nicht
+    /// abgeschlossener) Session loeschen, sofort Force-Quit + Kaltstart —
+    /// Plan UND Session waren danach wieder da, die Loeschung war nie auf
+    /// der Store-Datei angekommen. Exakt die Sequenz aus `deletePlans`
+    /// nach dem Fix: Loeschen, SOFORT `context.save()`, kein weiterer
+    /// Schritt.
+    func testPlanDeletionWithOpenSessionAndImmediateSaveSurvivesARealStoreRestart() throws {
+        let storeURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("plans-list-delete-persistence-\(UUID().uuidString)")
+            .appendingPathExtension("store")
+        defer {
+            try? FileManager.default.removeItem(at: storeURL)
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("shm"))
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("wal"))
+        }
+
+        var keptPlanInstanceID: PersistentIdentifier!
+        do {
+            let container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
+            let context = container.mainContext
+
+            let planToDelete = TrainingPlan(name: "Full Body 3x", programType: "custom", isActive: true)
+            context.insert(planToDelete)
+            let day = TrainingDay(name: "Ganzkörper", weekday: 2, type: .fullBody, plan: planToDelete)
+            context.insert(day)
+            // Offene (nicht abgeschlossene) Session auf diesem Tag — genau
+            // die Konstellation aus dem TestingBot-Fund.
+            let openSession = WorkoutSession(isCompleted: false, day: day)
+            context.insert(openSession)
+
+            let planToKeep = TrainingPlan(name: "Home Gym Hero", programType: "custom", isActive: true)
+            context.insert(planToKeep)
+            try context.save()
+            keptPlanInstanceID = planToKeep.persistentModelID
+
+            // Exakt die Sequenz aus `deletePlans(at:)` nach dem Fix.
+            context.delete(planToDelete)
+            try context.save()
+        }
+
+        let reopened = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
+        let plans = try reopened.mainContext.fetch(FetchDescriptor<TrainingPlan>())
+        XCTAssertEqual(plans.map(\.name), ["Home Gym Hero"],
+                        "die Plan-Loeschung muss einen echten Store-Neustart ueberstehen, nicht nur In-Memory-Retention")
+        XCTAssertEqual(plans.first?.persistentModelID, keptPlanInstanceID)
+
+        // Die nullify-Inverse (TrainingDay.sessions -> WorkoutSession.day)
+        // darf die Session nicht mit-loeschen, muss `day` aber auf nil
+        // setzen — kein dangelnder Fremdbezug auf den geloeschten Tag.
+        let sessions = try reopened.mainContext.fetch(FetchDescriptor<WorkoutSession>())
+        XCTAssertEqual(sessions.count, 1)
+        XCTAssertNil(sessions.first?.day)
+    }
 }
 #endif

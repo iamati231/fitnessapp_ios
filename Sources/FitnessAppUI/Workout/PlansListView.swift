@@ -50,6 +50,16 @@ public struct PlansListView: View {
     /// `isAcceptingCardioFeasibility` ohnehin erst nach dem Reset wieder
     /// aktiv).
     @State private var cardioAcceptErrorMessage: String?
+    /// TestingBot-Regressionscheck (Block A, Deltiq-Abnahme): `deletePlans`
+    /// verliess sich bislang rein auf SwiftDatas impliziten Context-
+    /// Autosave — derselbe Musterfehler wie bei
+    /// `DayEditorView.deleteExercises` (siehe dortige Typ-Doku,
+    /// `TrainingDayContentSnapshotWriterTests.testCapturePersistsWithoutAnyAdditionalCallerSave`).
+    /// Reproduziert: Plan mit laufender Session loeschen, sofort Force-Quit
+    /// + Kaltstart — die Loeschung war auf der Store-Datei nie angekommen,
+    /// Plan UND Session waren nach dem Neustart wieder da. Jetzt expliziter
+    /// Save direkt nach dem Delete; non-nil zeigt den Alert unten.
+    @State private var deletePlanErrorMessage: String?
     /// Nachbesserung (zweite Korrekturrunde, Punkt B): `accept` kann nach einem ERFOLGREICHEN
     /// Speichervorgang trotzdem werfen, wenn NUR die Rueckbindung scheitert
     /// (`PlanCreationError.createdButRebindFailed`, nach bereits einem internen Retry in
@@ -193,6 +203,17 @@ public struct PlansListView: View {
             Button("OK") { cardioAcceptErrorMessage = nil }
         } message: {
             Text(cardioAcceptErrorMessage ?? "")
+        }
+        .alert(
+            Text("plans.delete.error.title", bundle: .module),
+            isPresented: Binding(
+                get: { deletePlanErrorMessage != nil },
+                set: { if !$0 { deletePlanErrorMessage = nil } }
+            )
+        ) {
+            Button("OK") { deletePlanErrorMessage = nil }
+        } message: {
+            Text(deletePlanErrorMessage ?? "")
         }
     }
 
@@ -582,6 +603,19 @@ public struct PlansListView: View {
     private func deletePlans(at offsets: IndexSet) {
         for index in offsets {
             modelContext.delete(plans[index])
+        }
+        // Kein `context.rollback()` bei Fehler — wirkt auf den GESAMTEN,
+        // geteilten Context und wuerde unabhaengige, anderswo bereits
+        // bestaetigte Aenderungen mit zerstoeren (siehe
+        // `PlanGeneratorInstantiator`-Typ-Doku, gleiche Begruendung wie
+        // `DayEditorView.deleteExercises`). Stattdessen nur sichtbarer
+        // Fehlerhinweis — der User sieht den Plan in der Liste weiterhin
+        // als entfernt, auch wenn der Save scheiterte, und kann es erneut
+        // versuchen.
+        do {
+            try modelContext.save()
+        } catch {
+            deletePlanErrorMessage = error.localizedDescription
         }
     }
 

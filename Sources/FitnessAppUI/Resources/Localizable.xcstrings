@@ -51498,6 +51498,29 @@
           }
         }
       }
+    },
+    "plans.delete.error.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan konnte nicht gelöscht werden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan Couldn't Be Deleted"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan Silinemedi"
+          }
+        }
+      }
     }
   }
 }
