@@ -168,16 +168,16 @@ Core-Aenderung in diesem Fix).
   Store-Reset als Reparatur", "keine Trainingsdaten automatisch verwerfen").
   Der Fix macht den betroffenen Lesepfad stattdessen robust GEGEN eine
   solche Altlast, statt sie zu entfernen.
-- **Keine Aenderung an weiteren, strukturell gleich riskanten Lesestellen.**
-  Dieselbe `.day?.plan`-Rueckreferenz wird noch an sieben weiteren Stellen
-  gelesen: `DashboardView.swift:2041,2060,2161` (offene Sessions — deutlich
-  kurzlebiger, daher geringeres, aber nicht ausgeschlossenes Risiko),
-  `WorkoutSummaryView.swift:254`, `ExerciseEditorView.swift:63`,
-  `FourWeekReviewAssembler.swift:219`, `ProgressionApplicator.swift:102,185`.
-  Per Auftrag ("kein pauschaler Relationship-Umbau", "nur diesen Fehler
-  beheben") bewusst NICHT in dieser Runde angefasst — als separate,
-  nachgelagerte Aufgabe vorgeschlagen (`spawn_task`), da jede dieser Stellen
-  grundsaetzlich demselben Fund unterliegt.
+- **Die sieben weiteren, strukturell gleich riskanten `.day?.plan`-Lesestellen
+  wurden in einer separaten Folgeaufgabe (Task #252) einzeln geprueft** —
+  siehe `docs/TASK_252_DAY_PLAN_AUDIT.md` fuer die vollstaendige
+  Einzelfall-Analyse (Herkunft, Verwaisungsrisiko, tatsaechlich gelesene
+  Beziehung, Fix-Entscheidung je Stelle). Kurzfassung: 4 Stellen waren
+  ueber eine app-weite, ungefilterte Session-/Tag-Query erreichbar (gleiche
+  Risikoklasse wie dieser Fund) und wurden auf dasselbe Vorwaerts-Traversal-
+  Muster umgestellt; 3 Stellen (`ExerciseEditorView`, `ProgressionApplicator`
+  x2) sind durch eine durchgaengige Cascade-Delete-Kette strukturell sicher
+  und blieben unveraendert.
 - **Keine Aenderung an der Nullify-Inverse-Deklaration selbst** (war schon
   vor Build 164 korrekt) und kein Eingriff in bestehende Loeschpfade.
 

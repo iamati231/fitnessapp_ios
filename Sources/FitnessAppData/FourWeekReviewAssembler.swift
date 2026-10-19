@@ -33,9 +33,10 @@ public enum FourWeekReviewAssembler {
     /// personen-, nicht planbezogen), KEINE technische Notlösung — anders als
     /// zuvor hier dokumentiert, hat `WorkoutSession` über `day: TrainingDay?`
     /// sehr wohl eine reale, bei jedem produktiven Session-Start gesetzte
-    /// Referenz zurück zu ihrem Plan (`day.plan`). Genau diese Referenz nutzt
-    /// `realOccurrences(in:for:)` jetzt, um die Soll-Ist-Teilnahme korrekt pro
-    /// Plan zu isolieren (siehe dessen Dokumentation für die drei
+    /// Referenz zurück zu ihrem Plan. `realOccurrences(in:for:)` isoliert die
+    /// Soll-Ist-Teilnahme korrekt pro Plan, OHNE diese Referenz je rückwärts
+    /// zu lesen (seit dem Build-164-Fund per VORWÄRTS-Traversal von
+    /// `plan.days`/`day.sessions` — siehe dessen Dokumentation für die vier
     /// unterschiedenen Fälle und warum unklare Historie ausgeschlossen statt
     /// geraten wird).
     /// P8 Stufe 3: `participation` und `latestCheckIn` sind jetzt
@@ -179,36 +180,62 @@ public enum FourWeekReviewAssembler {
     /// dessen eigene Drei-Stufen-Dokumentation).
     ///
     /// P6.2 verlangt ausdrücklich "kein globaler Soll-Ist-Topf" — jeder Plan
-    /// wird einzeln bewertet. `WorkoutSession.day` (gesetzt an allen drei
-    /// echten Erzeugungspfaden: `DayEditorView`/`DashboardView`
-    /// Plan-Start, Ruhetag-Überspringen, spontanes Ad-hoc-Training) liefert
-    /// dafür über `day.plan` eine reale, zur Erzeugungszeit korrekte
-    /// Plan-Referenz. Drei Fälle, pro Session:
-    ///   1. `day.plan === plan` → zählt für GENAU diesen Plan.
-    ///   2. `day.plan` ist ein ANDERER Plan → zählt NICHT (das war der Bug:
-    ///      vorher flossen Sessions eines zweiten aktiven Plans fälschlich in
-    ///      jede Auswertung ein). Unabhängig davon, ob dieser andere Plan
-    ///      noch aktiv ist — ein Plan zählt nie Sessions, die strukturell
-    ///      einem anderen Plan gehören.
-    ///   3. `day == nil` — entweder ein echtes Ad-hoc-Training (`day` zeigt
-    ///      auf einen ephemeren Tag OHNE Plan, `day.plan == nil`: zählt
-    ///      bewusst für JEDEN aktiven Plan mit, wer frei statt nach Plan
-    ///      trainiert hat, hat an dem Tag trotzdem real trainiert) ODER die
-    ///      Session hat GAR KEINE Tag-Referenz (CSV-Import/Restore setzt sie
-    ///      nie, oder der ursprüngliche Tag wurde später gelöscht/regeneriert
-    ///      — `deleteRule: .nullify`). Bei genau einem aktiven Plan ist das
-    ///      unproblematisch (keine Alternative, der die Session gehören
-    ///      könnte); bei mehreren aktiven Plänen lässt sich das NICHT mehr
-    ///      zuverlässig auflösen. Statt über `dayName`/Plan-Namen zu raten
-    ///      oder die Session irgendeinem Plan stillschweigend gutzuschreiben,
-    ///      wird sie dann ausgeschlossen — sichtbar gemacht über
-    ///      `hasUnattributableSessionsExcluded` /
+    /// wird einzeln bewertet. Zuordnung geschieht AUSSCHLIESSLICH über
+    /// VORWÄRTS-Traversal von frisch gefetchten, garantiert lebenden
+    /// `TrainingPlan`/`TrainingDay`-Wurzeln (`plan.days` → `day.sessions`) —
+    /// NIE über eine rückwärtige `session.day?.plan`-Dereferenzierung auf
+    /// einer beliebigen, app-weit gefetchten Session. Grund (Build-164-Fund,
+    /// siehe `docs/TESTFLIGHT_CRASH_164.md`): `WorkoutSession.day` trug auf
+    /// mindestens einem Testgerät, bereits vor dem Nullify-Inverse-Fix
+    /// (`4e656eb9`), eine verwaiste Referenz auf eine längst gelöschte
+    /// `TrainingDay`-Zeile. Das Lesen von `.day` selbst crasht dabei nicht,
+    /// aber JEDES Lesen einer gespeicherten Eigenschaft auf dem Ziel (hier
+    /// `.plan`) löst `_InvalidFutureBackingData` aus — ein fataler Abbruch,
+    /// den auch optionales Verketten nicht abfängt. Diese Funktion liest
+    /// deshalb auf `WorkoutSession` nur noch EIGENE, immer sichere
+    /// Eigenschaften (`persistentModelID`, `isCompleted`, `loggedSets`,
+    /// `startTime`) und ordnet ausschließlich über zuvor vorwärts
+    /// gesammelte Mengen von Session-IDs zu. Drei Fälle, pro Session:
+    ///   1. ID in `ownSessionIDs` (über `plan.days` → `day.sessions`
+    ///      erreichbar) → zählt für GENAU diesen Plan.
+    ///   2. ID in `otherPlanSessionIDs` (über einen ANDEREN, ebenfalls
+    ///      frisch gefetchten Plan erreichbar) → zählt NICHT. Unabhängig
+    ///      davon, ob dieser andere Plan noch aktiv ist — ein Plan zählt nie
+    ///      Sessions, die strukturell einem anderen Plan gehören.
+    ///   3. Weder 1 noch 2, aber ID in `anyDayOwnedSessionIDs` (über einen
+    ///      frisch gefetchten `TrainingDay` OHNE Plan erreichbar, also ein
+    ///      echter Ad-hoc-Tag) → zählt bewusst für JEDEN aktiven Plan mit,
+    ///      wer frei statt nach Plan trainiert hat, hat an dem Tag trotzdem
+    ///      real trainiert.
+    ///   4. Weder 1 noch 2 noch 3 — die Session hat entweder GAR KEINE
+    ///      Tag-Referenz (CSV-Import/Restore setzt sie nie) ODER eine
+    ///      verwaiste Altreferenz auf eine nicht mehr existierende Zeile
+    ///      (Build-164-Szenario). Beide Unterfälle sind von hier aus bewusst
+    ///      NICHT unterscheidbar, ohne die gefährliche Rückreferenz zu
+    ///      lesen, und werden deshalb gleich behandelt: bei genau einem
+    ///      aktiven Plan unproblematisch (keine Alternative, der die Session
+    ///      gehören könnte, zählt wie echtes Ad-hoc) — bei mehreren aktiven
+    ///      Plänen lässt sich das NICHT mehr zuverlässig auflösen. Statt über
+    ///      `dayName`/Plan-Namen zu raten oder die Session irgendeinem Plan
+    ///      stillschweigend gutzuschreiben, wird sie dann ausgeschlossen —
+    ///      sichtbar gemacht über `hasUnattributableSessionsExcluded` /
     ///      `.unattributableHistoryExcludedDueToMultipleActivePlans`.
     private static func realOccurrences(
         in context: ModelContext,
         for plan: TrainingPlan,
         ambiguousAcrossActivePlans: Bool
     ) -> (occurrences: [PlanParticipationEvaluator.SessionOccurrence], hasExcludedUnattributable: Bool) {
+        let allPlans = (try? context.fetch(FetchDescriptor<TrainingPlan>())) ?? []
+        let allDays = (try? context.fetch(FetchDescriptor<TrainingDay>())) ?? []
+
+        let ownSessionIDs = Set(plan.days.flatMap { $0.sessions.map(\.persistentModelID) })
+        let otherPlanSessionIDs = Set(
+            allPlans
+                .filter { $0.persistentModelID != plan.persistentModelID }
+                .flatMap { $0.days.flatMap { $0.sessions.map(\.persistentModelID) } }
+        )
+        let anyDayOwnedSessionIDs = Set(allDays.flatMap { $0.sessions.map(\.persistentModelID) })
+
         let sessions = (try? context.fetch(FetchDescriptor<WorkoutSession>(
             predicate: #Predicate { $0.isRestDay == false }
         ))) ?? []
@@ -216,16 +243,17 @@ public enum FourWeekReviewAssembler {
         var hasExcludedUnattributable = false
         var occurrences: [PlanParticipationEvaluator.SessionOccurrence] = []
         for session in sessions {
-            if let owningPlan = session.day?.plan {
-                guard owningPlan === plan else { continue }
-            } else if session.day == nil, ambiguousAcrossActivePlans {
-                hasExcludedUnattributable = true
-                continue
+            let id = session.persistentModelID
+            if otherPlanSessionIDs.contains(id) { continue }
+            if !ownSessionIDs.contains(id) && !anyDayOwnedSessionIDs.contains(id) {
+                if ambiguousAcrossActivePlans {
+                    hasExcludedUnattributable = true
+                    continue
+                }
             }
-            // Verbleibende Fälle: `day.plan === plan` (oben bereits
-            // bestätigt), echtes Ad-hoc (`day != nil`, `day.plan == nil`),
-            // oder `day == nil` bei nur einem aktiven Plan.
-
+            // Verbleibende Fälle: eigene Session (Fall 1), Ad-hoc-Tag ohne
+            // Plan (Fall 3), oder — bei nur einem aktiven Plan — keine/
+            // verwaiste Tag-Referenz (Fall 4).
             let outcome: PlanParticipationEvaluator.SessionOccurrence.Outcome
             if session.isCompleted {
                 outcome = .completed

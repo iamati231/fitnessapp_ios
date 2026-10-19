@@ -374,6 +374,143 @@ final class FourWeekReviewAssemblerTests: XCTestCase {
         XCTAssertFalse(summary.dataGaps.contains(.unattributableHistoryExcludedDueToMultipleActivePlans))
     }
 
+    // MARK: - Task #252 (TestFlight-Crash-Audit): echte verwaiste Tag-Referenz
+
+    /// Regression fuer den Build-164-Fund (`docs/TESTFLIGHT_CRASH_164.md`),
+    /// angewendet auf `realOccurrences` (damals betraf er nur
+    /// `DashboardView.nextScheduledDay`): ein Plan samt Tag wird ECHT
+    /// geloescht (nicht nur `day: nil` konstruiert wie in den beiden Tests
+    /// oben), seine Session bleibt bestehen — exakt wie
+    /// `DashboardNextScheduledDayTests.testOrphanedSessionFromADeletedPlan-
+    /// NeverAffectsAnUnrelatedLivePlan`. Datei-basierter Store +
+    /// Container-Neuoeffnung (echter Kaltstart-Nachbau, kein In-Memory-
+    /// Artefakt), damit das Verhalten unabhaengig davon gilt, ob SwiftDatas
+    /// Nullify-Inverse die Session-Referenz beim Loeschen tatsaechlich auf
+    /// `nil` gesetzt hat oder (wie auf einem Bestandsgeraet vor Build 164)
+    /// nicht — `realOccurrences` liest `.day`/`.plan` dieser Session in
+    /// KEINEM der beiden Faelle mehr rueckwaerts, daher ist das Ergebnis in
+    /// beiden Faellen identisch und abstuerzt nie.
+    func testOrphanedSessionFromADeletedPlanCountsTowardTheSoleSurvivingActivePlanAfterARealStoreRestart() throws {
+        let storeURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("four-week-review-orphaned-session-single-\(UUID().uuidString)")
+            .appendingPathExtension("store")
+        defer {
+            try? FileManager.default.removeItem(at: storeURL)
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("shm"))
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("wal"))
+        }
+
+        do {
+            let container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
+            let context = container.mainContext
+
+            let deletedPlan = TrainingPlan(name: "Geloeschter Plan", programType: "custom", isActive: false)
+            context.insert(deletedPlan)
+            let deletedDay = TrainingDay(name: "Alter Tag", weekday: 2, type: .chest, plan: deletedPlan)
+            context.insert(deletedDay)
+            let orphanDate = d(2024, 1, 2)
+            context.insert(WorkoutSession(
+                startTime: orphanDate, endTime: orphanDate.addingTimeInterval(3600),
+                durationMinutes: 60, exerciseCount: 1, totalSets: 0,
+                totalVolumeKg: 0, isCompleted: true, day: deletedDay
+            ))
+            try context.save()
+
+            context.delete(deletedPlan)
+            try context.save()
+
+            let survivingPlan = TrainingPlan(name: "Lebender Plan", programType: "custom", isActive: true)
+            survivingPlan.activatedAt = d(2024, 1, 1)
+            context.insert(survivingPlan)
+            context.insert(TrainingDay(name: "Eigener Tag", weekday: 2, type: .fullBody, plan: survivingPlan))
+            try context.save()
+        }
+
+        let reopened = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
+        let context = reopened.mainContext
+
+        let allSessions = try context.fetch(FetchDescriptor<WorkoutSession>())
+        XCTAssertEqual(allSessions.count, 1, "die Session des geloeschten Plans darf durch dessen Loeschung nicht mitgeloescht werden")
+
+        let livePlans = try context.fetch(FetchDescriptor<TrainingPlan>(predicate: #Predicate<TrainingPlan> { $0.isActive == true }))
+        guard let survivingPlan = livePlans.first else {
+            return XCTFail("der lebende Plan muss den Store-Neustart ueberstehen")
+        }
+
+        // Der eigentliche Nachweis: kein Absturz, UND dieselbe Behandlung wie
+        // eine Session ganz ohne Tag-Referenz (siehe Test oben) — zaehlt bei
+        // nur einem aktiven Plan mit, keine Datenluecke.
+        let review = FourWeekReviewAssembler.assemble(in: context, for: survivingPlan, now: d(2024, 2, 1), calendar: utc)
+        guard case .evaluated(let summary) = review.participation else {
+            return XCTFail("haette auswertbar sein muessen: \(review.participation)")
+        }
+        XCTAssertEqual(summary.completedCount, 1, "verwaiste Session zaehlt bei nur einem aktiven Plan wie Ad-hoc-Training mit")
+        XCTAssertFalse(summary.dataGaps.contains(.unattributableHistoryExcludedDueToMultipleActivePlans))
+    }
+
+    /// Gegenprobe zum vorigen Test, diesmal mit ZWEI gleichzeitig aktiven
+    /// Plaenen nach dem Store-Neustart: dieselbe echte Altreferenz auf einen
+    /// geloeschten Plan/Tag darf keinem der beiden stillschweigend
+    /// gutgeschrieben werden — ausgeschlossen und als Datenluecke offen
+    /// ausgewiesen, identisch zu `testSessionsWithoutAnyDayReferenceAre-
+    /// ExcludedAndDisclosedWhenMultiplePlansActive`.
+    func testOrphanedSessionFromADeletedPlanIsExcludedAndDisclosedWithMultiplePlansActiveAfterARealStoreRestart() throws {
+        let storeURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("four-week-review-orphaned-session-multi-\(UUID().uuidString)")
+            .appendingPathExtension("store")
+        defer {
+            try? FileManager.default.removeItem(at: storeURL)
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("shm"))
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("wal"))
+        }
+
+        do {
+            let container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
+            let context = container.mainContext
+
+            let deletedPlan = TrainingPlan(name: "Geloeschter Plan", programType: "custom", isActive: false)
+            context.insert(deletedPlan)
+            let deletedDay = TrainingDay(name: "Alter Tag", weekday: 2, type: .chest, plan: deletedPlan)
+            context.insert(deletedDay)
+            let orphanDate = d(2024, 1, 2)
+            context.insert(WorkoutSession(
+                startTime: orphanDate, endTime: orphanDate.addingTimeInterval(3600),
+                durationMinutes: 60, exerciseCount: 1, totalSets: 0,
+                totalVolumeKg: 0, isCompleted: true, day: deletedDay
+            ))
+            try context.save()
+
+            context.delete(deletedPlan)
+            try context.save()
+
+            let planA = TrainingPlan(name: "Alpha", programType: "custom", isActive: true)
+            planA.activatedAt = d(2024, 1, 1)
+            context.insert(planA)
+            context.insert(TrainingDay(name: "Tag A", weekday: 2, type: .fullBody, plan: planA))
+
+            let planB = TrainingPlan(name: "Beta", programType: "custom", isActive: true)
+            planB.activatedAt = d(2024, 1, 1)
+            context.insert(planB)
+            context.insert(TrainingDay(name: "Tag B", weekday: 2, type: .fullBody, plan: planB))
+            try context.save()
+        }
+
+        let reopened = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
+        let context = reopened.mainContext
+
+        let livePlans = try context.fetch(FetchDescriptor<TrainingPlan>(predicate: #Predicate<TrainingPlan> { $0.isActive == true }))
+        XCTAssertEqual(livePlans.count, 2, "beide ueberlebenden Plaene muessen den Store-Neustart ueberstehen")
+
+        for plan in livePlans {
+            let review = FourWeekReviewAssembler.assemble(in: context, for: plan, now: d(2024, 2, 1), calendar: utc)
+            guard case .evaluated(let summary) = review.participation else {
+                return XCTFail("\(plan.name) haette auswertbar sein muessen: \(review.participation)")
+            }
+            XCTAssertEqual(summary.completedCount, 0, "verwaiste Session darf \(plan.name) bei mehreren aktiven Plaenen nicht stillschweigend gutgeschrieben werden")
+            XCTAssertTrue(summary.dataGaps.contains(.unattributableHistoryExcludedDueToMultipleActivePlans))
+        }
+    }
+
     // MARK: - P8 Stufe 3: blockbezogener Zeitraum statt gesamter Planlaufzeit
 
     /// Kernregression für Paket B: nach Abschluss von Block 1 zählt die

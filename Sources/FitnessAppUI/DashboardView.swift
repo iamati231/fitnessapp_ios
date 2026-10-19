@@ -2058,11 +2058,35 @@ public struct DashboardView: View {
         pendingNewStart = nil
     }
 
+    /// Task #252 (TestFlight-Crash-Audit, siehe `docs/TESTFLIGHT_CRASH_164.md`):
+    /// findet den Plan, zu dem `sessionID` ueber dessen Tag strukturell
+    /// gehoert — ausschliesslich VORWAERTS ueber `plans` (`plan.days` ->
+    /// `day.sessions`), NIE rueckwaerts ueber `session.day?.plan`. Eine
+    /// verwaiste Tag-Referenz (die urspruengliche Session existiert zwar
+    /// noch, aber keiner der uebergebenen Plaene fuehrt mehr zu ihr) liefert
+    /// hier einfach `nil` statt eines fatalen `_InvalidFutureBackingData`-
+    /// Abbruchs. Bewusst eine reine, Environment-/Query-freie statische
+    /// Funktion (wie `nextScheduledDay`), damit sie direkt regressionstestbar
+    /// ist — siehe `DashboardNextScheduledDayTests.testOwningPlan...`.
+    internal static func owningPlan(forSessionID sessionID: PersistentIdentifier, in plans: [TrainingPlan]) -> TrainingPlan? {
+        plans.first { plan in
+            plan.days.contains { $0.sessions.contains { $0.persistentModelID == sessionID } }
+        }
+    }
+
     /// Resume-Pfad fuer den Conflict-Dialog: springt in die existing Session
     /// (welche auch immer die juengste offene ist).
+    ///
+    /// `open` stammt aus `openSessions`, einer APP-WEITEN `@Query` ueber ALLE
+    /// nicht abgeschlossenen Sessions — strukturell derselbe ungefilterte
+    /// Zugriff wie `completedSessions` im urspruenglichen Crash, nur mit
+    /// (laut DEL-215-Doku) "deutlich kuerzerer Lebensdauer" — das senkt das
+    /// Risiko, schliesst es aber nicht aus (eine liegengelassene offene
+    /// Session kann beliebig lange bestehen bleiben).
     private func resumeAnyOpenFromConflict() {
         guard let open = openSessions.first else { return }
-        let plan = open.day?.plan ?? activePlans.first
+        let allPlans = (try? modelContext.fetch(FetchDescriptor<TrainingPlan>())) ?? []
+        let plan = Self.owningPlan(forSessionID: open.persistentModelID, in: allPlans) ?? activePlans.first
         if let plan {
             resumeSession(open, plan: plan)
         }
@@ -2079,10 +2103,11 @@ public struct DashboardView: View {
     /// das Dashboard die Resume-Tile direkt unter den Hero-Metrics.
     private var unrepresentedOpenSession: WorkoutSession? {
         guard let open = openSessions.first else { return nil }
+        // Task #252: `owningPlan` statt rueckwaerts `open.day?.plan` — siehe
+        // dessen Dokumentation fuer die Begruendung.
+        let activePlansList = activePlans.first.map { [$0] } ?? []
         let planCardCoversIt = activeDashboardWidgets.contains(.nextWorkout)
-            && activePlans.first.map { plan in
-                open.day?.plan?.persistentModelID == plan.persistentModelID
-            } ?? false
+            && Self.owningPlan(forSessionID: open.persistentModelID, in: activePlansList) != nil
         return planCardCoversIt ? nil : open
     }
 
@@ -2182,7 +2207,13 @@ public struct DashboardView: View {
     /// Sessions springen direkt in die ActiveWorkoutView — identisch zum
     /// Start-Pfad in `startAdHocWorkout()`.
     private func resumeOpenSession(_ session: WorkoutSession) {
-        if let plan = session.day?.plan {
+        // Task #252: `owningPlan` statt rueckwaerts `session.day?.plan`
+        // (siehe dessen Dokumentation), ALLE Plaene (nicht nur aktive) — wie
+        // zuvor kann der Owner ausdruecklich auch ein inaktiver Plan sein
+        // (DEL-215-Doku: "Session auf einem inaktiven Plan" ist einer der
+        // Faelle, die diese Resume-Tile abdeckt).
+        let allPlans = (try? modelContext.fetch(FetchDescriptor<TrainingPlan>())) ?? []
+        if let plan = Self.owningPlan(forSessionID: session.persistentModelID, in: allPlans) {
             resumeSession(session, plan: plan)
         } else {
             navigation.workoutPath = NavigationPath()

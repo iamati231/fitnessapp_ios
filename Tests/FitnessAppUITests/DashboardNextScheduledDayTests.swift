@@ -150,5 +150,80 @@ final class DashboardNextScheduledDayTests: XCTestCase {
         let next = dashboard.nextScheduledDay(in: plan)
         XCTAssertEqual(next.name, "Pull", "genau eine abgeschlossene Session fuer `plan` muss die Rotation exakt einen Schritt weiterstellen")
     }
+
+    // MARK: - Task #252: DashboardView.owningPlan (Resume-Tile-Faelle)
+
+    /// Dieselbe Regression wie oben, jetzt fuer `owningPlan(forSessionID:in:)`
+    /// — den gemeinsamen Vorwaerts-Helfer hinter `resumeAnyOpenFromConflict`,
+    /// `unrepresentedOpenSession` und `resumeOpenSession` (alle drei lesen
+    /// `openSessions`, eine APP-WEITE `@Query`, strukturell derselbe Zugriff
+    /// wie `completedSessions` im urspruenglichen Crash). Die drei Funktionen
+    /// selbst sind `private`/`@Environment`-gebunden und ohne echten
+    /// View-/UI-Test-Harness (siehe `DayEditorPersistenceTests`-Dokumentation)
+    /// nicht direkt testbar — deshalb hier, wie bei `nextScheduledDay`, die
+    /// zugrundeliegende, bewusst Environment-freie Funktion direkt.
+    func testOwningPlanNeverTouchesAnOrphanedSessionsDayAfterARealStoreRestart() throws {
+        let storeURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dashboard-owning-plan-\(UUID().uuidString)")
+            .appendingPathExtension("store")
+        defer {
+            try? FileManager.default.removeItem(at: storeURL)
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("shm"))
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("wal"))
+        }
+
+        do {
+            let container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
+            let context = container.mainContext
+
+            let deletedPlan = TrainingPlan(name: "Alt-Plan", programType: "custom", isActive: false)
+            context.insert(deletedPlan)
+            let deletedDay = TrainingDay(name: "Alter Tag", weekday: 2, type: .chest, plan: deletedPlan)
+            context.insert(deletedDay)
+            let orphanSession = WorkoutSession(
+                startTime: d(2024, 1, 1), endTime: d(2024, 1, 1).addingTimeInterval(3600),
+                durationMinutes: 60, exerciseCount: 1, isCompleted: false, day: deletedDay
+            )
+            context.insert(orphanSession)
+            try context.save()
+
+            context.delete(deletedPlan)
+            try context.save()
+
+            let planB = TrainingPlan(name: "Lebender Plan", programType: "custom", isActive: true)
+            context.insert(planB)
+            let dayB = TrainingDay(name: "Tag B", weekday: 2, type: .chest, plan: planB)
+            context.insert(dayB)
+            let sessionB = WorkoutSession(
+                startTime: d(2024, 1, 2), endTime: d(2024, 1, 2).addingTimeInterval(3600),
+                durationMinutes: 60, exerciseCount: 1, isCompleted: false, day: dayB
+            )
+            context.insert(sessionB)
+            try context.save()
+        }
+
+        let reopened = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
+        let context = reopened.mainContext
+
+        let openSessions = try context.fetch(FetchDescriptor<WorkoutSession>(
+            predicate: #Predicate<WorkoutSession> { $0.isCompleted == false }
+        ))
+        XCTAssertEqual(openSessions.count, 2, "beide offenen Sessions (auch die verwaiste) muessen den Store-Neustart ueberstehen")
+
+        let allPlans = try context.fetch(FetchDescriptor<TrainingPlan>())
+        XCTAssertEqual(allPlans.count, 1, "der geloeschte Plan darf nicht mehr existieren")
+
+        for session in openSessions {
+            // Der eigentliche Nachweis: kein Absturz fuer KEINE der beiden
+            // Sessions — weder fuer die verwaiste (muss `nil` liefern) noch
+            // fuer die echte (muss den lebenden Plan liefern).
+            let owner = DashboardView.owningPlan(forSessionID: session.persistentModelID, in: allPlans)
+            if session.startTime == d(2024, 1, 1) {
+                XCTAssertNil(owner, "die verwaiste Session darf keinem Plan gutgeschrieben werden")
+            } else {
+                XCTAssertEqual(owner?.name, "Lebender Plan")
+            }
+        }
+    }
 }
 #endif

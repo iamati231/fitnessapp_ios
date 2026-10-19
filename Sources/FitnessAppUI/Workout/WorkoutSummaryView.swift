@@ -251,7 +251,17 @@ public struct WorkoutSummaryView: View {
             // DEL-210: einheitliche Übungs-Auswahl (= Bibliothek im
             // Picker-Modus).
             ExerciseLibraryPickerSheet(
-                planEnvironment: session.day?.plan?.targetEnvironment,
+                // Task #252 (TestFlight-Crash-Audit): `session` kann hier
+                // eine BELIEBIGE, ggf. laengst vergangene Historien-Session
+                // sein (`WorkoutHistoryView`/`PRHistoryView` oeffnen diese
+                // Sheet-Variante u.a. im History-Edit-Modus, siehe
+                // `isReadOnly && isEditingHistory` weiter unten) — exakt die
+                // Art Objekt, die auf einem Bestandsgeraet eine laengst
+                // verwaiste `.day`-Referenz tragen kann (siehe
+                // `docs/TESTFLIGHT_CRASH_164.md`). Deshalb vorwaerts ueber
+                // alle Plaene gesucht statt rueckwaerts `session.day?.plan`
+                // gelesen — wie in `DashboardView.resumeOpenSession`.
+                planEnvironment: owningPlanTargetEnvironment(for: session),
                 onSelect: { template in
                     addExerciseToSession(from: template, isCustom: false)
                     showingAddExercisePicker = false
@@ -426,6 +436,20 @@ public struct WorkoutSummaryView: View {
             get: { session.finishTimeSeconds ?? 0 },
             set: { session.finishTimeSeconds = $0 }
         )
+    }
+
+    /// Task #252 (TestFlight-Crash-Audit): liefert `targetEnvironment` des
+    /// Plans, der `session` (ueber dessen Tag) tatsaechlich gehoert — OHNE
+    /// `session.day?.plan` rueckwaerts zu lesen. `session` kann hier eine
+    /// beliebige Historien-Session sein (siehe Aufrufer-Kommentar), fuer die
+    /// `.day` auf einem Bestandsgeraet eine laengst verwaiste Referenz sein
+    /// kann; `nil` (kein Treffer in `plan.days` irgendeines existierenden
+    /// Plans) wird identisch zu einem echten Ad-hoc-Training behandelt — wie
+    /// zuvor bei `day.plan == nil`, nur jetzt auch sicher bei einer
+    /// verwaisten statt einer echten nil-Referenz.
+    private func owningPlanTargetEnvironment(for session: WorkoutSession) -> EnvironmentType? {
+        let allPlans = (try? modelContext.fetch(FetchDescriptor<TrainingPlan>())) ?? []
+        return DashboardView.owningPlan(forSessionID: session.persistentModelID, in: allPlans)?.targetEnvironment
     }
 
     /// DEL-136 Part B: Loescht ALLE Logs einer bestimmten Uebung aus dieser
