@@ -199,5 +199,69 @@ final class DayEditorPersistenceTests: XCTestCase {
         XCTAssertEqual(sessions.count, 1)
         XCTAssertNil(sessions.first?.day)
     }
+
+    /// TestingBot-Regressionscheck (Block B, Deltiq-Abnahme): derselbe
+    /// Musterfehler wie oben, diesmal in den vier Zeitformat-Playern
+    /// (AMRAP/EMOM/Auf-Zeit in `TimedWorkoutPlayerView.swift`, Circuit in
+    /// `CircuitWorkoutPlayerView.swift`). Reproduziert auf echtem Geraet:
+    /// AMRAP gestartet, eine Runde per "+1 Runde" geloggt, ~16s gelaufen,
+    /// Force-Quit + Kaltstart — statt der 1 Runde + verstrichener Zeit
+    /// erschien wieder der Vorlauf-Countdown, danach "0 ROUNDS" und ein
+    /// frischer Zeit-Deckel. Root Cause: `completeRound()` (und die
+    /// analogen Live-Fortschritts-Schreibstellen `doneBar`/`toggleRound`/
+    /// `toggleExerciseChecked`) mutieren `session.roundsCompleted` zwar
+    /// SOFORT (das loest das in den dortigen Kommentaren beschriebene
+    /// "Training fortsetzen faellt auf alten Stand zurueck"-Problem),
+    /// speichern aber nie explizit — identisch zum bereits an fuenf
+    /// anderen Stellen gefundenen und behobenen Muster (siehe
+    /// `testPlanDeletionWithOpenSessionAndImmediateSaveSurvivesARealStore-
+    /// Restart` oben). `init(session:)` liest `session.roundsCompleted`
+    /// als Marker "Vorlauf schon durchlaufen" (nil = noch nicht) — ohne
+    /// explizites Save faellt der Wert nach einem echten Kaltstart auf
+    /// `nil` zurueck, der Vorlauf startet faelschlich neu UND die bereits
+    /// gezaehlte Runde ist weg. Exakt die Sequenz aus `completeRound()`
+    /// nach dem Fix: Runde zaehlen, SOFORT `context.save()`.
+    func testTimedWorkoutRoundProgressWithImmediateSaveSurvivesARealStoreRestart() throws {
+        let storeURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("timed-workout-round-persistence-\(UUID().uuidString)")
+            .appendingPathExtension("store")
+        defer {
+            try? FileManager.default.removeItem(at: storeURL)
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("shm"))
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("wal"))
+        }
+
+        do {
+            let container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
+            let context = container.mainContext
+
+            let plan = TrainingPlan(name: "Spontanes Training", programType: "custom", isActive: true)
+            context.insert(plan)
+            let day = TrainingDay(name: "AMRAP", weekday: 2, type: .custom, plan: plan, timeFormat: .amrap, timeCapMinutes: 15)
+            context.insert(day)
+            let session = WorkoutSession(isCompleted: false, day: day)
+            context.insert(session)
+            try context.save()
+
+            // Exakt die Sequenz aus `finishPreroll()` (Vorlauf -> echter
+            // Lauf) + `completeRound()` nach dem Fix: beide schreiben
+            // SOFORT, kein Sammeln bis `saveNow()`.
+            session.startTime = Date()
+            session.roundsCompleted = 0
+            try context.save()
+
+            session.roundsCompleted = 1
+            try context.save()
+        }
+
+        // `init(session:)` liest genau dieses Feld, um Vorlauf vs. Resume
+        // zu entscheiden — ein echter Store-Neustart muss den gezaehlten
+        // Stand zeigen, nicht auf `nil` (erneuter Vorlauf) zurueckfallen.
+        let reopened = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
+        let sessions = try reopened.mainContext.fetch(FetchDescriptor<WorkoutSession>())
+        XCTAssertEqual(sessions.count, 1)
+        XCTAssertEqual(sessions.first?.roundsCompleted, 1,
+                        "die gezaehlte Runde muss einen echten Store-Neustart ueberstehen, nicht nur In-Memory-Retention")
+    }
 }
 #endif

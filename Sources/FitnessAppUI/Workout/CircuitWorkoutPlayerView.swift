@@ -435,6 +435,12 @@ struct CircuitPlayerView: View {
         prerollRemaining = 0
         session.startTime = Date()
         session.circuitRoundsCompleted = 0
+        // TestingBot-Regressionscheck (Block B, Deltiq-Abnahme): ohne
+        // dieses Save faellt der Marker nach einem Kaltstart VOR der
+        // ersten Runde wieder auf `nil` zurueck - der Vorlauf wuerde
+        // faelschlich neu starten (identisches Muster wie AMRAPs
+        // `finishPreroll()` in TimedWorkoutPlayerView.swift).
+        try? modelContext.save()
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
         startBackground()
     }
@@ -480,7 +486,12 @@ struct CircuitPlayerView: View {
         let key = exercise.persistentModelID
         let alreadyChecked = (checkedInRound[key] ?? 0) > 0
         checkedInRound[key] = alreadyChecked ? 0 : 1
+        // TestingBot-Regressionscheck (Block B, Deltiq-Abnahme): ohne
+        // `context.save()` uebersteht diese Mutation keinen echten
+        // Kaltstart (siehe TimedWorkoutPlayerView.completeRound()-Doku,
+        // identisches Muster).
         session.circuitCurrentRoundCheckedRaw = Self.encodeCheckedInRound(checkedInRound, exercises: resolvedExercises)
+        try? modelContext.save()
         DeltiqHaptics.notify(.success)
         guard !alreadyChecked else { return }   // Nur beim NEUEN Abhaken pruefen, nicht beim Zurueck-Abhaken.
         if exercises.allSatisfy({ (checkedInRound[$0.persistentModelID] ?? 0) > 0 }) {
@@ -499,6 +510,11 @@ struct CircuitPlayerView: View {
     private func completeCurrentRound() {
         roundsCompleted += 1
         session.circuitRoundsCompleted = roundsCompleted
+        // TestingBot-Regressionscheck (Block B, Deltiq-Abnahme): wie
+        // `toggleExerciseChecked` oben - der Finish-Zweig unten speichert
+        // bereits ueber `saveNow()`, der Zwischenstand hier (noch nicht
+        // letzte Runde) bisher nicht.
+        try? modelContext.save()
         DeltiqHaptics.notify(.success)
         if roundsCompleted >= totalRounds {
             isFinished = true
@@ -518,6 +534,11 @@ struct CircuitPlayerView: View {
         let end = Date().addingTimeInterval(TimeInterval(restSeconds))
         restEndDate = end
         session.circuitRestEndDate = end
+        // TestingBot-Regressionscheck (Block B, Deltiq-Abnahme): wie
+        // `completeCurrentRound()` oben - ohne Save uebersteht weder das
+        // Zuruecksetzen von `circuitCurrentRoundCheckedRaw` noch der neue
+        // Pausen-Anker einen echten Kaltstart.
+        try? modelContext.save()
         hasFiredRest60 = false
         hasFiredRest30 = false
         DeltiqHaptics.notify(.warning)

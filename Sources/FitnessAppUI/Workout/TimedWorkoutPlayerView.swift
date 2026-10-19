@@ -108,6 +108,13 @@ func finishTimedSession(
         }
     }
 
+    // TestingBot-Regressionscheck (Block B, Deltiq-Abnahme): dieselbe
+    // Luecke wie bei den Live-Fortschritts-Schreibstellen (siehe
+    // `completeRound()`-Doku) - ohne explizites Save ueberstehen weder der
+    // Abschluss-Zustand noch ein schneller Kill direkt danach einen
+    // echten Kaltstart.
+    try? modelContext.save()
+
     navigation.workoutPath.append(SummaryRoute(session: session))
 }
 
@@ -133,6 +140,11 @@ func discardTimedSession(_ session: WorkoutSession, modelContext: ModelContext, 
     if let orphanedAdHocDay {
         modelContext.delete(orphanedAdHocDay)
     }
+    // TestingBot-Regressionscheck (Block B, Deltiq-Abnahme): wie bei
+    // `PlansListView.deletePlans` - ohne explizites Save kann ein
+    // Kaltstart kurz nach dem Verwerfen die geloeschte Session
+    // (und den verwaisten Ad-Hoc-Tag) wieder zurueckbringen.
+    try? modelContext.save()
     dismiss()
 }
 
@@ -746,6 +758,12 @@ private struct AMRAPPlayerView: View {
         prerollRemaining = 0
         session.startTime = Date()
         session.roundsCompleted = 0
+        // TestingBot-Regressionscheck (Block B, Deltiq-Abnahme): ohne
+        // dieses Save faellt `session.roundsCompleted` (der Marker fuer
+        // "Vorlauf schon durchlaufen", siehe `init`) nach einem Kaltstart
+        // VOR der ersten Runde wieder auf `nil` zurueck - der Vorlauf
+        // wuerde faelschlich neu starten.
+        try? modelContext.save()
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
         startBackground()
     }
@@ -831,9 +849,18 @@ private struct AMRAPPlayerView: View {
     /// JEDER Runde mitgeschrieben, nicht erst bei `saveNow()` - sonst wuerde
     /// ein "Training fortsetzen" zwischen zwei Runden wieder auf den zuletzt
     /// GESPEICHERTEN Stand zurueckfallen statt auf den zuletzt GEZAEHLTEN.
+    /// TestingBot-Regressionscheck (Block B, Deltiq-Abnahme): der
+    /// vorherige Kommentar hier loeste nur das Problem "Training
+    /// fortsetzen faellt auf den zuletzt GESPEICHERTEN Stand zurueck"
+    /// (neue View-Instanz, altes `@State`) — ein echter Kaltstart verliert
+    /// den Stand trotzdem, weil nie `context.save()` lief. `init(session:)`
+    /// liest `session.roundsCompleted` als Marker "Vorlauf schon
+    /// durchlaufen"; ohne Save faellt das nach Neustart auf `nil` zurueck,
+    /// der Vorlauf startet faelschlich neu UND die gezaehlte Runde ist weg.
     private func completeRound() {
         roundsCompleted += 1
         session.roundsCompleted = roundsCompleted
+        try? modelContext.save()
         DeltiqHaptics.notify(.success)
         syncBackground()
     }
@@ -1372,6 +1399,12 @@ private struct EMOMPlayerView: View {
         prerollRemaining = 0
         session.startTime = Date()
         session.completedMinuteCount = 0
+        // TestingBot-Regressionscheck (Block B, Deltiq-Abnahme): ohne
+        // dieses Save faellt der Marker nach einem Kaltstart VOR der
+        // ersten abgehakten Minute wieder auf `nil` zurueck - der Vorlauf
+        // wuerde faelschlich neu starten (identisches Muster wie AMRAPs
+        // `finishPreroll()`).
+        try? modelContext.save()
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
         scheduleBackgroundSignals(audioRunning: startBackground())
     }
@@ -1502,7 +1535,11 @@ private struct EMOMPlayerView: View {
                 // bei `saveNow()` - sonst wuerde "Training fortsetzen"
                 // zwischen zwei abgehakten Minuten wieder auf den zuletzt
                 // GESPEICHERTEN statt den zuletzt ABGEHAKTEN Stand zurueckfallen.
+                // TestingBot-Regressionscheck (Block B): dieselbe Mutation
+                // ohne `context.save()` uebersteht keinen echten Kaltstart
+                // (siehe `completeRound()`-Doku, identisches Muster).
                 session.completedMinuteCount = completedMinutes.count
+                try? modelContext.save()
                 DeltiqHaptics.notify(.success)
             }
         } label: {
@@ -1964,6 +2001,11 @@ private struct ForTimePlayerView: View {
         prerollRemaining = 0
         session.startTime = Date()
         session.forTimeCheckedRoundsRaw = Self.encodeCheckedRounds(checkedRounds, exercises: resolvedExercises)
+        // TestingBot-Regressionscheck (Block B, Deltiq-Abnahme): ohne
+        // dieses Save faellt der Marker nach einem Kaltstart VOR dem ersten
+        // Haekchen wieder auf `nil` zurueck - der Vorlauf wuerde faelschlich
+        // neu starten (identisches Muster wie AMRAPs `finishPreroll()`).
+        try? modelContext.save()
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
         startBackground()
     }
@@ -2073,7 +2115,11 @@ private struct ForTimePlayerView: View {
         // `saveNow()` - sonst wuerde "Training fortsetzen" zwischen zwei
         // Haekchen wieder auf den zuletzt GESPEICHERTEN statt den zuletzt
         // ABGEHAKTEN Stand zurueckfallen.
+        // TestingBot-Regressionscheck (Block B): dieselbe Mutation ohne
+        // `context.save()` uebersteht keinen echten Kaltstart (siehe
+        // `completeRound()`-Doku, identisches Muster).
         session.forTimeCheckedRoundsRaw = Self.encodeCheckedRounds(checkedRounds, exercises: resolvedExercises)
+        try? modelContext.save()
         DeltiqHaptics.notify(.success)
         if checkedBoxes == totalBoxes {
             isFinished = true
