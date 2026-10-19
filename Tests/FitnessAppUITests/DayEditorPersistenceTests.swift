@@ -162,7 +162,6 @@ final class DayEditorPersistenceTests: XCTestCase {
             try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("wal"))
         }
 
-        var keptPlanInstanceID: PersistentIdentifier!
         do {
             let container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
             let context = container.mainContext
@@ -179,18 +178,19 @@ final class DayEditorPersistenceTests: XCTestCase {
             let planToKeep = TrainingPlan(name: "Home Gym Hero", programType: "custom", isActive: true)
             context.insert(planToKeep)
             try context.save()
-            keptPlanInstanceID = planToKeep.persistentModelID
 
             // Exakt die Sequenz aus `deletePlans(at:)` nach dem Fix.
             context.delete(planToDelete)
             try context.save()
         }
 
+        // `PersistentIdentifier` ist NICHT ueber einen Container-Neustart
+        // hinweg `==`-stabil (siehe die Tests oben) — deshalb hier bewusst
+        // KEIN Identitaets-Vergleich, nur der Namens-/Inhalts-Nachweis.
         let reopened = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
         let plans = try reopened.mainContext.fetch(FetchDescriptor<TrainingPlan>())
         XCTAssertEqual(plans.map(\.name), ["Home Gym Hero"],
                         "die Plan-Loeschung muss einen echten Store-Neustart ueberstehen, nicht nur In-Memory-Retention")
-        XCTAssertEqual(plans.first?.persistentModelID, keptPlanInstanceID)
 
         // Die nullify-Inverse (TrainingDay.sessions -> WorkoutSession.day)
         // darf die Session nicht mit-loeschen, muss `day` aber auf nil
