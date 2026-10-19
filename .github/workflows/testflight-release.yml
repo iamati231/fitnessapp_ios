@@ -264,10 +264,17 @@ jobs:
             exit 1
           fi
           echo "Lade hoch: $IPA_PATH"
+          # --beta-group entfernt: "Atamya Internal" ist eine Internal-
+          # Testing-Gruppe. Apples API verbietet explizites Zuweisen von
+          # Builds zu internen Gruppen ("Cannot add internal group to a
+          # build") — interne Tester bekommen jeden verarbeiteten Build
+          # automatisch, ohne diesen Schritt. Lief in Run #12 bis genau
+          # hierhin durch (Upload + Processing erfolgreich, Build bereits
+          # "IN_BETA_TESTING"), brach nur an diesem unnötigen letzten
+          # Schritt ab.
           app-store-connect publish \
             --path "$IPA_PATH" \
-            --testflight \
-            --beta-group "Atamya Internal" 2>&1 | tee testflight-upload.log
+            --testflight 2>&1 | tee testflight-upload.log
 
       - name: Upload-Log als Artefakt sichern
         if: always()
