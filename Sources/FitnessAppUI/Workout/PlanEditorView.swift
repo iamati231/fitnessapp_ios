@@ -931,10 +931,36 @@ public struct PlanEditorView: View {
         }
     }
 
+    /// TestingBot-Regressionscheck (Block A, Deltiq-Abnahme) fand denselben
+    /// Musterfehler in `PlansListView.deletePlans` (siehe dortige Doku):
+    /// Loeschen ohne sofortigen `context.save()` verlaesst sich auf
+    /// SwiftDatas impliziten Autosave und kann einen kurz danach folgenden
+    /// Kaltstart nicht ueberstehen — ein Tag mit laufender Session nullifiziert
+    /// dabei genau wie ein ganzer Plan. Gleicher Fix, gleiche Begruendung
+    /// gegen `context.rollback()` (siehe `PlansListView.deletePlans`).
     private func deleteDays(at offsets: IndexSet) {
         let toDelete = offsets.map { orderedDays[$0] }
         for day in toDelete {
             modelContext.delete(day)
+        }
+        do {
+            try modelContext.save()
+        } catch {
+            showTransientToast(String(localized: "planEditor.day.delete.saveFailed", bundle: .module))
+        }
+    }
+
+    /// Gemeinsamer Helfer fuer die bestehende `swapResultToast`-Konvention
+    /// (siehe `switchPlanEnvAndAdd`) — identisches Muster wie
+    /// `DayEditorView.showTransientToast`.
+    private func showTransientToast(_ message: String) {
+        withAnimation(.easeOut(duration: 0.2)) {
+            swapResultToast = message
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            withAnimation(.easeIn(duration: 0.2)) {
+                swapResultToast = nil
+            }
         }
     }
 

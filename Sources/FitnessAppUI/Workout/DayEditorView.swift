@@ -749,7 +749,7 @@ public struct DayEditorView: View {
                     .listRowBackground(Color.Deltiq.surface)
                 }
             } else {
-                ForEach(Array(orderedExercises.enumerated()), id: \.element.persistentModelID) { idx, exercise in
+                ForEach(Array(orderedExercises.enumerated()), id: \.element.forEachIdentity) { idx, exercise in
                     Button {
                         exerciseToEdit = exercise
                     } label: {

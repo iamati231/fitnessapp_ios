@@ -605,9 +605,17 @@ struct ExerciseCard: View {
     /// der Rest-Timer wird *nicht* zurueckgesetzt, weil der User vermutlich
     /// nur einen Tippfehler korrigieren will, nicht die ganze Pause-Logik
     /// neu starten.
+    /// TestingBot-Regressionscheck (Block A, Deltiq-Abnahme, siehe
+    /// `PlansListView.deletePlans`-Doku): ohne sofortigen `context.save()`
+    /// verlaesst sich die Loeschung auf SwiftDatas impliziten Autosave — ein
+    /// kurz danach folgender Kaltstart konnte den Satz wieder als
+    /// abgeschlossen anzeigen. `removeSet` (unten) ist sicher, weil darauf
+    /// stets `TrainingDayContentSnapshotWriter.recordSetCountChange` folgt,
+    /// der selbst speichert — `unlogSet` hat keinen solchen Folgeaufruf.
     private func unlogSet(setIndex: Int) {
         guard let log = existingLog(forSetIndex: setIndex) else { return }
         modelContext.delete(log)
+        try? modelContext.save()
     }
 
     // MARK: - DEL-157 Dynamisches Set-Management

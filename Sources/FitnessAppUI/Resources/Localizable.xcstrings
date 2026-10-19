@@ -51521,6 +51521,29 @@
           }
         }
       }
+    },
+    "planEditor.day.delete.saveFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Löschen konnte nicht gespeichert werden. Bitte erneut versuchen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't save the deletion. Please try again."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Silme işlemi kaydedilemedi. Lütfen tekrar deneyin."
+          }
+        }
+      }
     }
   }
 }

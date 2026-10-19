@@ -206,6 +206,19 @@ public final class Exercise {
     /// Bestmoeglichkeit zurueck.
     public var instanceID: UUID?
 
+    /// swiftui-pro-Review (Deltiq-Abnahme): stabile `ForEach`/`List`-Identitaet.
+    /// `persistentModelID` ist NICHT ueber eine Objekt-Lebenszeit hinweg
+    /// `==`-stabil (ein frisch inserierter, noch nicht gespeicherter
+    /// Datensatz hat eine temporaere ID, die sich beim naechsten Save gegen
+    /// eine permanente austauscht — empirisch bestaetigt, siehe
+    /// `DayEditorPersistenceTests`-Typ-Doku). `instanceID` ist dagegen ab
+    /// dem `init` fix und wird nie veraendert — exakt dafuer gebaut (siehe
+    /// oben). Nur fuer Alt-Zeilen ohne `instanceID` faellt dies auf
+    /// `persistentModelID` zurueck.
+    public var forEachIdentity: AnyHashable {
+        instanceID.map(AnyHashable.init) ?? AnyHashable(persistentModelID)
+    }
+
     /// DEL-051: HEILIGE HISTORIE. Frueher `.cascade` — beim Loeschen einer
     /// Plan-Uebung (manuell oder via Day/Plan-Cascade) gingen die ExerciseLog-
     /// Eintraege gleich mit weg, was Bestleistungen vernichtet hat. Jetzt

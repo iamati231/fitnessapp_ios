@@ -1118,9 +1118,15 @@ public struct MeasurementView: View {
         }
     }
 
+    /// TestingBot-Regressionscheck (Block A, Deltiq-Abnahme, siehe
+    /// `PlansListView.deletePlans`-Doku): ohne sofortigen `context.save()`
+    /// verlaesst sich die Loeschung auf SwiftDatas impliziten Autosave und
+    /// kann einen kurz danach folgenden Kaltstart nicht ueberstehen — die
+    /// geloeschte Messung waere dann wieder da.
     private func deleteCurrentMeasurement() {
         guard let existing = editingMeasurement else { return }
         modelContext.delete(existing)
+        try? modelContext.save()
         dismiss()
     }
 
