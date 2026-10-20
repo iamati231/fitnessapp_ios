@@ -146,14 +146,13 @@ public final class TrainingDay {
         let timeCapPart = timeCapMinutes.map(String.init) ?? "-"
         let customNamePart = customName ?? "-"
         let circuitPart = "\(circuitRounds.map(String.init) ?? "-")|\(circuitRestSeconds.map(String.init) ?? "-")|\(circuitMode?.rawValue ?? "-")"
-        let endurancePart = [
-            enduranceWarmupDurationSeconds.map(String.init) ?? "-",
-            enduranceCooldownDurationSeconds.map(String.init) ?? "-",
-            enduranceIntervalRounds.map(String.init) ?? "-",
-            enduranceWorkDurationSeconds.map(String.init) ?? "-",
-            enduranceWorkDistanceKm.map { "\($0)" } ?? "-",
-            enduranceRestDurationSeconds.map(String.init) ?? "-"
-        ].joined(separator: "|")
+        // Als Zeichenketten-Interpolation statt Array-Literal mit gemischten
+        // `.map`-Closures aufgebaut (gleiches Muster wie `circuitPart` oben)
+        // - ein Array-Literal mit sechs verschiedenen `.map`-Ausdruecken
+        // ueberforderte den Swift-Typchecker (CI-Fund: "unable to type-check
+        // this expression in reasonable time").
+        let enduranceWorkDistancePart = enduranceWorkDistanceKm.map { "\($0)" } ?? "-"
+        let endurancePart = "\(enduranceWarmupDurationSeconds.map(String.init) ?? "-")|\(enduranceCooldownDurationSeconds.map(String.init) ?? "-")|\(enduranceIntervalRounds.map(String.init) ?? "-")|\(enduranceWorkDurationSeconds.map(String.init) ?? "-")|\(enduranceWorkDistancePart)|\(enduranceRestDurationSeconds.map(String.init) ?? "-")"
         return "\(exercisePart)#\(timeFormatPart)#\(timeCapPart)#\(customNamePart)#\(weekday)#\(type.rawValue)#\(circuitPart)#\(endurancePart)"
     }
 
