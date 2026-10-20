@@ -102,16 +102,24 @@ public enum RunCoachPlanAdjustment {
         return day.sessions.isEmpty
     }
 
+    /// Geteilte Filterung fuer `analyze` UND `CoachAdjustmentCardModel.accept`
+    /// (Leitplanke 3: `accept` berechnet die anfassbaren Tage am JETZT
+    /// aktuellen Planzustand neu, statt veraltete IDs aus `analyze`
+    /// weiterzureichen - derselbe Grundsatz wie bei der Coach-
+    /// Reaktivierungs-Pruefung).
+    public static func eligibleCardioDays(in plan: TrainingPlan) -> [TrainingDay] {
+        plan.days.filter(isCardioDay).filter(isEligibleForAdjustment)
+    }
+
     public static func analyze(plan: TrainingPlan?) -> Analysis {
         guard let plan else {
             return Analysis(cardioAvailability: .noActivePlan, legWork: .conflict)
         }
 
-        let cardioDays = plan.days.filter(isCardioDay)
-        let eligibleCardioDays = cardioDays.filter(isEligibleForAdjustment)
-        let cardioAvailability: CardioAvailability = eligibleCardioDays.isEmpty
+        let eligibleCardio = eligibleCardioDays(in: plan)
+        let cardioAvailability: CardioAvailability = eligibleCardio.isEmpty
             ? .noEligibleCardioDay
-            : .ready(eligibleCardioDays.map(\.persistentModelID))
+            : .ready(eligibleCardio.map(\.persistentModelID))
 
         let eligibleStrengthDays = plan.days.filter {
             $0.type != .rest && !isCardioDay($0) && isEligibleForAdjustment($0)
