@@ -1,28 +1,193 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-20 (siebter Durchgang: Runde 6 — A01-Code-Klärung + D06-
-Cancel-Endlosschleife gefunden und gefixt, siehe Nachtrag „Runde 6" unten),
-Branch `claude/smart-onboarding-epic`, HEAD `47678c1` (Fix-Commit dieser
-Runde: `PlanEditorView`-Cancel-Buttons lösten einen Adapt↔Restore-Dialog-
-Ping-Pong aus; davor `80eee60` reiner Dokumentations-Commit zur
-Speicherfehler-Codeprüfung, davor `1c8bf54` Fix-Commit Runde 5
+Stand: 2026-10-20 (achter Durchgang: Runde 7 — A01 korrekt neu eingeordnet
+und gefixt [doppelte Ziel-/Tage-Abfrage im eingebetteten PlanBuilder],
+autoAcceptAlerts-Einfluss auf frühere Geräte-Nachweise systematisch
+geprüft, siehe Nachtrag „Runde 7" unten), Branch `claude/smart-onboarding-
+epic`, HEAD `a4359f4` (Fix-Commit dieser Runde: `PlanBuilderView`
+preseedet jetzt auch Ziel und Tage aus den bereits gegebenen Onboarding-
+Antworten; davor `47678c1` Fix-Commit Runde 6 [D06 Cancel-Endlosschleife],
+davor `80eee60` reiner Dokumentations-Commit zur Speicherfehler-
+Codeprüfung, davor `1c8bf54` Fix-Commit Runde 5
 (`CardioGoalEditorView.save()`), davor `47ab4d6` der ursprüngliche C01-Fix,
 davor `4ea8d7b` reiner Dokumentations-Commit zu Runde 3, davor `254d669`
 Korrektur-Commit zu E05, davor `64ba455` Fix-Commit E04, davor `3e67cb8`
 ursprünglicher — per Geräte-Nachtest widerlegter — E05-Versuch, davor
-`c96bf5c`). TestingBot-Verbrauch Runde 6: 840 Sekunden (3 Sessions, alle
-aktiv beendet) von einem Restbudget von 28.007 Sekunden vor dieser Runde;
-siehe Nachtrag „Runde 6" unten für Details. Kein Merge nach `main`, kein
+`c96bf5c`). TestingBot-Verbrauch Runde 7: siehe Nachtrag „Runde 7" unten
+für Details und exakte Budget-Rekonstruktion. Kein Merge nach `main`, kein
 Release.
 
 **Gesamtstatus: A–F bearbeitet; deutliche Mehrheit bestanden, einzelne
 Fälle teilweise oder (A09/C04/E08/F04) noch offen als fachliche
 Implementierungslücken. C01 seit Runde 5 vollständig bestanden. D06 seit
 Runde 6 vollständig bestanden (isolierter Cancel-Schritt gerätebestätigt;
-dabei gefundene Dialog-Endlosschleife gefixt und gerätebestätigt). A01
-seit Runde 6 per Code-Klärung eingeordnet (kein Produktpfad für den
-beschriebenen Fall vorhanden). Gesamtabnahme weiterhin offen (kein
+dabei gefundene Dialog-Endlosschleife gefixt und gerätebestätigt). A01 seit
+Runde 7 korrekt eingeordnet und gefixt (doppelte Ziel-/Tage-Abfrage beim
+Wechsel vom Onboarding in den eingebetteten PlanBuilder, siehe dortiger
+Nachtrag für die in Runde 6 fälschlich geführte „kein Produktpfad"-
+Einordnung und ihre Rücknahme). Gesamtabnahme weiterhin offen (kein
 vollständiger Abschluss aller 45 Fälle).**
+
+## Runde 7: A01 korrekt gefixt + autoAcceptAlerts-Einfluss auf frühere Nachweise geprüft
+
+**Auftrag:** (1) D06 mit CI-/Gerätenachweis endgültig als bestanden
+festhalten (bereits in Runde 6 erledigt, hier nur bestätigt, nicht erneut
+angefasst); (2) A01 korrekt zuordnen — tatsächlicher Fall ist doppelte
+Befragung innerhalb des ersten Onboardings beim Übergang in den
+gemeinsamen PlanBuilder, nicht Re-Entry nach abgeschlossenem Profil;
+(3) Einfluss der TestingBot-Capability `autoAcceptAlerts` auf frühere
+PASS-Nachweise eingrenzen, die einen bewusst gewählten Abbrechen-/
+Ablehnen-Dialog voraussetzen — nicht pauschal verwerfen, nur betroffene
+Einzelfälle; (4) Budgetstand mit Zeitpunkten der Abfragen und Session-
+verbrauch sauber zuordnen, keine zusätzliche Gerätesession nur dafür;
+(5) danach E04-Rest/F-Rest, bekannte Infrastrukturblocker nicht ohne neue
+Hypothese erneut testen. Kein Merge, kein Release, keine reinen
+Warte-Meldungen.
+
+### D06 — bestätigt vollständig bestanden (keine erneute Prüfung)
+
+CI-Nachweis (Run `39422687588`, Commit `47678c1`, erfolgreich inkl.
+App+Widget-Build) und Geräte-Nachtest nach Fix (Build
+`7c22ceea177d36af2e2b3c20`, `autoAcceptAlerts: false`, Cancel bricht sauber
+ab, kein Folgedialog) aus Runde 6 bleiben unverändert gültig — siehe dort
+für Details. Kein neuer Schritt in dieser Runde.
+
+### A01 — korrekt bearbeitet: echter Bug gefunden und gefixt
+
+**Richtigstellung:** A01 (`docs/specifications/04_TESTS_UND_ABNAHME.md`,
+Zeile 29: "Onboarding-Ziel/Tage/Equipment bereits beantwortet" → Soll
+"Keine erneute identische Befragung") betrifft die doppelte Befragung
+INNERHALB eines einzigen Onboarding-Durchlaufs, wenn der Nutzer nach den
+eigentlichen Onboarding-Fragen (Ziel/Tage im Coaching-Step, Equipment im
+Equipment-Step) zusätzlich den eingebetteten PlanBuilder ("Build Plan")
+wählt — NICHT, wie in Runde 6 fälschlich angenommen, einen Wiedereinstieg
+ins Onboarding nach einem bereits abgeschlossenen Profil. Die
+Runde-6-Einordnung "nicht anwendbar — kein Produktpfad vorhanden" ist
+hiermit zurückgenommen.
+
+**Code-Befund:** `OnboardingView`s eigener `coachingStyleStep` fragt
+`trainingGoal` (Ziel) und `weeklyGoal` ("wie oft pro Woche", 1–7) bereits
+vor der Plan-Auswahl ab. Der anschließend über "Build Plan" erreichbare
+eingebettete `PlanBuilderView` preseedete laut einem bestehenden P0-Audit-
+Kommentar bereits `equipmentPreferences` und die Ausdauerform/Laufcoach-
+Antwort aus genau diesen Onboarding-Antworten ("damit Schritt 2 des
+eingebetteten Builders die Ausstattung nicht ein zweites Mal von Null
+abfragt") — ZIEL (`GoalCard`) und TAGE (`totalDaysPerWeek`) waren von
+dieser Vorbefüllung aber ausgenommen: `PlanBuilderView`s eigener
+Ziel-Schritt startete immer leer (`selectedGoalCard == nil`), und
+`totalDaysPerWeek` startete immer hartcodiert bei 3, unabhängig vom
+bereits gegebenen `weeklyGoal`. Der Nutzer musste beides im Builder
+identisch neu beantworten — exakt der von A01 beschriebene Verstoß.
+
+**Fix (Commit `a4359f4`):** `PlanBuilderView.GoalCard.seeded(from:
+TrainingGoal) -> GoalCard?` bildet die bereits gegebene Zielantwort auf
+die passende Builder-Zielkarte ab (hypertrophy/strength → strengthFocus,
+hybrid → hybrid, endurance → endurance, functional → generalFitness;
+weightLoss bleibt bewusst unausgewählt, da keine eigene Zielkarte dafür
+existiert — siehe `GoalCard`-Typ-Doku). Neue `init`-Parameter
+`preseededGoal`/`preseededDaysPerWeek` nutzen das für die Vorbefüllung von
+`selectedGoalCard`/`strengthFocus`/`totalDaysPerWeek`, frei weiter
+änderbar wie die bereits bestehende Equipment-/Ausdauerform-Vorbefüllung.
+`OnboardingView`s einzige `PlanBuilderView(...)`-Aufrufstelle übergibt
+jetzt zusätzlich `trainingGoal`/`weeklyGoal`. Neuer Unit-Test
+`PlanBuilderGoalSeedTests` (reine Zuordnungslogik, kein SwiftUI-State
+nötig): deckt alle fünf `TrainingGoal`-Fälle inkl. des bewusst
+unausgewählten `weightLoss`-Falls ab.
+
+**CI:** Run `39426284201` (Commit `a4359f4`), erfolgreich, alle Schritte
+grün inkl. App+Widget-Build und neuem Test.
+
+**Geräte-Nachtest (Build `tb://69c9fff4bfd115990736f838`, Commit
+`a4359f4`):** Onboarding mit Ziel "Functional/Hybrid", Ausdauerform
+"Running" + "mit Laufcoach", Wochenziel bewusst auf **5×** gesetzt (statt
+Default 3, um die Vorbefüllung eindeutig vom Default zu unterscheiden),
+Equipment Gym (unbestätigt, Default). "Build Plan" geöffnet:
+- **Ziel:** "Strength & Endurance Combined" (= Hybrid) bereits korrekt
+  vorausgewählt (Accessibility-Tree: Checkmark gesetzt).
+- **Ausdauerform/Laufcoach:** "Running" + "Work toward a goal with a run
+  coach" bereits korrekt vorausgewählt (`value="1"` im Tree) — unverändert
+  gegenüber der bereits bestehenden Vorbefüllung, keine Regression.
+- **Tage (neu gefixt):** Schritt 2 zeigte **"5 days per week"** — exakt der
+  zuvor im Coaching-Step gesetzte Wert, nicht der alte hartcodierte
+  Default 3.
+- **Equipment:** "Bodyweight only" (Default, da Gym-Equipment nicht
+  bestätigt wurde — konsistent, keine Regression).
+- Ergebnis-Schritt generierte einen 5-Tage-Plan (Intervals, Easy Run, 3×
+  Bodyweight-Kraft), Plan erfolgreich übernommen, Onboarding sauber
+  abgeschlossen (Dashboard zeigt "Individueller Plan", "Next workout:
+  Intervals", kein Crash, keine Doppelabfrage mehr).
+
+**A01 gilt damit als vollständig bestanden** (Ziel und Tage werden jetzt
+übernommen statt erneut identisch abgefragt; Equipment war bereits vorher
+korrekt). Bewusstes Bearbeiten der vorbefüllten Werte im Builder bleibt
+weiterhin möglich (keine Sperre) — das wäre keine doppelte Befragung im
+Sinne von A01, sondern eine gewollte Korrekturmöglichkeit.
+
+### autoAcceptAlerts-Einfluss auf frühere PASS-Nachweise: Audit-Ergebnis
+
+Systematische Durchsicht aller Stellen im Dokument, die einen bewusst
+gewählten Abbrechen-/Verwerfen-/Ablehnen-Dialog als Testgrundlage nutzen
+(`discardChangesConfirmation`, `confirmationDialog`, Cancel/Abbrechen-
+Buttons), mit der Frage: beweist der NACHFOLGEND beobachtete App-Zustand
+eindeutig die behauptete Wahl, unabhängig davon ob der Dialog selbst
+sichtbar war oder automatisch bestätigt wurde?
+
+- **D06 (Runde 3, vor dem Runde-6-Fix):** einzige tatsächlich betroffene
+  Stelle — bereits in Runde 6 korrekt erkannt, isoliert mit
+  `autoAcceptAlerts: false` nachgetestet und der dabei gefundene Bug
+  gefixt. Keine weitere Aktion nötig.
+- **C01/Runde 5, Prüfpunkt 1** (`discardChangesConfirmation` in
+  `CardioGoalEditorView`): `Button(role: .destructive)` ("Verwerfen") ist
+  im gemeinsam genutzten `discardChangesConfirmation`-Modifier
+  (`Theme.swift`) der ZUERST hinzugefügte Button — identisch mit dem
+  mechanischen Befund aus Runde 6 ("automatisch mit seinem ERSTEN Button
+  bestätigt"). Zusätzlich beweist der beobachtete Folgezustand (Editor
+  geschlossen, alte Werte unverändert) eindeutig NUR "Verwerfen" — hätte
+  stattdessen "Weiter bearbeiten" (zweiter Button, `role: .cancel`)
+  gefeuert, wäre der Editor offen geblieben. Nachweis bleibt bestehen,
+  unverändert.
+- **E06** (`PlanEditorView`, horizontale Wisch-Geste + Zurück-Chevron):
+  bereits im Dokument selbst korrekt als "kein expliziter Beleg für
+  Dialogtext/Button-Beschriftung" gekennzeichnet. Der beobachtete
+  Folgezustand (Plan-Liste MIT dem ursprünglichen, unveränderten Namen)
+  beweist aber eindeutig, dass tatsächlich verworfen wurde — dieselbe
+  Dialog-Definition wie oben (Verwerfen = erster Button). Nachweis bleibt
+  bestehen, Formulierung im Dokument bereits korrekt vorsichtig.
+- **D02** (Löschen+Reorder+Verwerfen): "Discard Changes?"-Dialog, gleiche
+  gemeinsame Definition, Folgezustand (6 Tage, ursprüngliche Zuordnung
+  wiederhergestellt) beweist ebenfalls eindeutig Verwerfen. Nachweis
+  bleibt bestehen.
+- Keine weiteren Stellen im Dokument gefunden, die eine Abbrechen-/
+  Ablehnen-Wahl behaupten, ohne dass der nachfolgende Zustand sie eindeutig
+  belegt.
+
+**Ergebnis: keine der bisherigen PASS-Bewertungen (außer dem bereits in
+Runde 6 behandelten D06) muss zurückgenommen oder erneut getestet werden.**
+Der Grund: der gemeinsame `discardChangesConfirmation`-Modifier
+(`Theme.swift`) hat "Verwerfen" immer als ERSTEN Button — genau das von
+`autoAcceptAlerts` automatisch gewählte Verhalten deckt sich hier mit der
+jeweils behaupteten Aktion. D06s Dialoge (`PlanEditorView`s drei
+Umgebungswechsel-Dialoge: Global-Sync/Adapt/Restore) sind strukturell
+anders aufgebaut (drei nicht-binäre Optionen, Cancel nicht an erster
+Stelle) — deshalb dort die Maskierung, hier nicht.
+
+### Budget-Rekonstruktion mit Zeitpunkten
+
+| Zeitpunkt | Quelle | Wert | Kontext |
+|---|---|---|---|
+| nach Runde 4 | Konto-API | 29.808 s | bestätigt |
+| nach Runde 5 (sofort) | Konto-API | 28.007 s | Differenz zur Session-Summe (1.978 s) = 177 s Abrechnungsverzug (1 Session noch nicht gebucht) |
+| vor Runde 6 | Konto-API (Fork-Check) | 28.007 s | unverändert — die 177 s aus Runde 5 waren zu diesem Zeitpunkt immer noch nicht gebucht |
+| nach Runde 6 (sofort, Fork) | Konto-API | 28.007 s | Runde 6s eigene 840 s ebenfalls noch nicht gebucht |
+| nach Runde 6 (eigene Nachprüfung, ~Minuten später) | Konto-API | 28.007 s | weiterhin unverändert zu diesem Zeitpunkt |
+| **2026-10-20T12:49:11Z** (vor Runde 7) | Konto-API | **26.990 s** | Abrechnungsverzug jetzt aufgeholt: 28.007 − 26.990 = 1.017 s = 177 s ausstehender Runde-5-Rest + 840 s Runde-6-Gesamtverbrauch — **exakt deckungsgleich**, keine Doppelzählung |
+| Runde 7 (1 Session, A01-Nachtest) | Session-Dauer-Summe (TestingBot-API, Test-ID 54026757) | 681 s | Onboarding-Durchlauf + Build-Plan-Verifikation, aktiv beendet (`DELETE /session`, Status `success`) |
+
+**Restbudget nach Runde 7 (Session-Summe, genauerer Wert als die ggf. noch
+nicht aufgeholte Konto-API):** 26.990 − 681 = **26.309 Sekunden** (≈ 7,3 h). Keine
+zusätzliche Session wurde nur zur Budgetprüfung gestartet — die
+26.990-Sekunden-Messung war die ohnehin fällige Vor-Runde-Prüfung, keine
+Zusatzabfrage.
 
 ## Runde 6: A01-Code-Klärung + D06-Cancel-Endlosschleife gefunden und gefixt
 
@@ -34,7 +199,18 @@ ablehnen" gezielt auslösen und beobachten, getrennt von den bereits
 bestandenen D06-Teilschritten; (3) bei verbleibendem Budget optional
 E04-Rest/F-Rest. Kein neuer allgemeiner Review, kein Merge, kein Release.
 
-### A01 — Code-Klärung: kein Produktpfad vorhanden
+**Korrektur (Runde 7): die A01-Einordnung dieser Runde war fachlich falsch
+und wird unten zurückgenommen** — A01 betrifft laut
+`docs/specifications/04_TESTS_UND_ABNAHME.md` ("Onboarding-Ziel/Tage/
+Equipment bereits beantwortet" → Soll "Keine erneute identische
+Befragung") eine doppelte Befragung INNERHALB des ersten Onboardings beim
+Wechsel in den eingebetteten PlanBuilder, nicht einen Re-Entry ins
+Onboarding nach abgeschlossenem Profil. Die Code-Recherche unten
+(RootView/Re-Entry) beantwortete damit die falsche Frage. Siehe Nachtrag
+„Runde 7" für die korrekte Bearbeitung und den dabei gefundenen und
+gefixten Bug.
+
+### A01 — Code-Klärung (Runde 6, per Runde 7 als falsch eingeordnet zurückgenommen)
 
 `RootView.swift` zeigt `OnboardingView()` ausschließlich wenn
 `profiles.isEmpty` (SwiftData-`@Query`) — sobald ein `UserBodyProfile`
@@ -963,20 +1139,22 @@ kein Fix, kein neuer CI-Lauf, kein Geräte-Nachtest nötig.
 Top-5-Geräteprüfung (E01, C06, D06, A11, D02), Runde 3 (Onboarding/
 Hybrid/Coach, Navigation, Drag&Drop, RIR, Bildschirmgröße), Runde 4
 (C01/C02-Kernfall), Runde 5 (C01-Fix-Retest inkl. Kaltstart-
-Persistenz-Bugfix) und Runde 6 (A01-Klärung + D06-Fix) abgeschlossen —
-siehe jeweilige Nachträge oben für Details. **C01 ist seit Runde 5, D06
-seit Runde 6 vollständig bestanden** (C01: Timing-Fix `47ab4d6` +
-Persistenz-Fix `1c8bf54`; D06: Cancel-Endlosschleifen-Fix `47678c1`).
-**A01 ist seit Runde 6 geklärt** (kein Produktpfad vorhanden, siehe
-dortiger Eintrag) und kein offener Prüfpunkt mehr. Offene bekannte
-Nachweislücken, in absteigender Priorität für eine künftige Runde:
+Persistenz-Bugfix), Runde 6 (D06-Fix) und Runde 7 (A01 korrekt
+eingeordnet und gefixt, autoAcceptAlerts-Audit) abgeschlossen — siehe
+jeweilige Nachträge oben für Details. **C01 ist seit Runde 5, D06 seit
+Runde 6, A01 seit Runde 7 vollständig bestanden** (C01: Timing-Fix
+`47ab4d6` + Persistenz-Fix `1c8bf54`; D06: Cancel-Endlosschleifen-Fix
+`47678c1`; A01: Ziel-/Tage-Vorbefüllungs-Fix `a4359f4`, Runde 6s
+„kein Produktpfad"-Einordnung war falsch und wurde zurückgenommen).
+Offene bekannte Nachweislücken, in absteigender Priorität für eine
+künftige Runde:
 
 1. **E04-Rest** (teilweise): Deltiq selbst in Deutsch (Automatisierung
    überlebte den Systemsprachwechsel in dieser Runde nicht) und in
    Türkisch (nicht versucht) bleiben ungeprüft; ein echtes kleineres
    Gerät wurde nicht zusätzlich zur Dynamic-Type-Vergrößerung getestet.
-   In Runde 6 aus Zeit-/Umfangsgründen zurückgestellt (siehe dortiger
-   Nachtrag), nicht erneut versucht.
+   In Runde 6 und 7 aus Zeit-/Umfangsgründen zurückgestellt, nicht erneut
+   versucht.
 2. F01–F08: nur noch der reine UI-/Geräte-Teil von F01–F03/F06–F08 sowie
    F05s Beschwerden-Abklärungsweg offen — kein genereller Blocker mehr.
 3. Verbleibende P2-Fälle ohne Gerätenachweis: A02, C05, E02, E08.
