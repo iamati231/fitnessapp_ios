@@ -97,6 +97,24 @@ Onboarding → "Build Plan" → "Strength & Endurance Combined" → Ausdauerform
    Auftrag war. Ein erfolgreicher normaler Save (siehe Punkt 3) ist dabei
    AUSDRÜCKLICH kein Beleg für einen Fehlerpfad — dieser Punkt bleibt
    mangels realistischem Fehlerfall unbeprüft, nicht "bestanden".
+
+   **Ergänzende Codeprüfung (kein ausgeführter Fehlerfall, nur
+   Code-Review):** `save()` verwendet `try? modelContext.save()` — ein
+   Fehler würde verschluckt, OHNE eigene Erfolgsmeldung (es existiert
+   keine) aber MIT unbedingtem `dismiss()` direkt danach. Da
+   `profile.cardioGoal = ...` usw. direkt das übergebene `@Bindable`-
+   Live-Objekt mutieren (keine draft-only Zuweisung), stünden die neuen
+   Werte im Arbeitsspeicher bereits, bevor `modelContext.save()` überhaupt
+   aufgerufen wird — bei einem fehlgeschlagenen Save bliebe der Editor
+   also ohne Fehlermeldung schließen UND ein danach berechneter Vorschlag
+   (`CardioFeasibilityCardModel.make(for:)`) würde die neuen, tatsächlich
+   nicht persistierten Werte verwenden. Dies ist kein auf diesen Fix
+   beschränktes Verhalten, sondern dasselbe `try?`-Muster wie an allen
+   anderen Save-Stellen der App (siehe die zwölf zuvor gefixten Stellen) —
+   keine Regression dieser Runde, sondern eine app-weite, bereits vor
+   dieser Runde bestehende Eigenschaft. Kein Fix in dieser Runde, da
+   außerhalb des gezielten Auftrags (keine bewusste Store-Beschädigung zur
+   Fehlererzeugung, keine neue allgemeine Fehlerbehandlungs-Infrastruktur).
 5. **Anpassungsvorschlag erscheint nur für den bestätigten Zustand, nicht
    bei jedem Tastendruck — bestanden, Kernfix bestätigt.** Mit dem
    infeasiblen Marathon/10-km-Woche-Ziel aus Punkt 3: solange der Editor
