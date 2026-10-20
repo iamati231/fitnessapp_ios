@@ -139,6 +139,73 @@ Teil dieses Commits):**
   "sichtbare Entscheidung" (Konflikt-Banner mit den vier Optionen) ist
   noch reine UI-Arbeit, ebenfalls zurückgestellt.
 
+## Paket 1 (Teil 3): sechs Leitplanken eingearbeitet, Komponente 3 umgesetzt
+
+**Vor dem Weiterbau geprüft und dabei ein echter Bug gefunden (Commit
+`b04b95d`):** `TrainingDay.type == .cardio` reicht NICHT aus, um Cardio-
+Tage zu erkennen — `PlanGenerator.generate` (der Ziel-geführte "Plan
+bauen"-Pfad, exakt der Pfad dieses Pakets) stempelt JEDEN generierten Tag
+hartcodiert mit `type: .fullBody`; `.cardio` setzen ausschließlich die
+kuratierten `ProgramTemplates`. `RunCoachPlanAdjustment.analyze` hätte auf
+einem typischen Wizard-Plan daher nie einen Cardio-Tag gefunden. Fix:
+Erkennung zusätzlich über `Exercise.isCardio` (deckt beide Pfade ab, neuer
+Regressionstest).
+
+**Leitplanke 1 geprüft und bestätigt:** `UserBodyProfile.
+cardioFeasibilityDismissedFingerprint` kann laut eigenem Kommentar in
+`CardioFeasibilityCardModel.swift` nicht zwischen "abgelehnt" und
+"übernommen" unterscheiden (`dismiss()` und `accept()`/`acceptCustom()`
+schreiben denselben Fingerprint-Wert). Neues, separates Feld
+`cardioPlanAdjustmentFingerprint` — ausschließlich von
+`CoachAdjustmentCardModel.accept(...)` nach tatsächlich erfolgreich
+gespeicherter Anpassung gesetzt, nie von Dismiss/Beibehalten.
+
+**Leitplanke 2 (Präferenz vs. Übernahme getrennt):** durch zwei Tests
+abgesichert (`CoachAdjustmentCardModelTests`) — `accept()` rührt
+`cardioCoachingEnabled` nie an, "beibehalten" (= `accept()` einfach nicht
+aufrufen) lässt Präferenz UND Plan unverändert.
+
+**Leitplanke 3 (Wiederholungssicherheit Merge-Pfad):** geprüft, dass
+`PlanCreationOperation` (reuse von `CardioFeasibilityCardModel`) wegen
+anderer Semantik (erzeugen vs. verändern) nicht passt — eigener Schutz
+gebaut. Dabei **einen echten Bug vor Geräteeinsatz gefunden und
+gefixt:** der erste Entwurf prüfte `self.isAlreadyApplied`, einen am
+`make`-Zeitpunkt eingefrorenen Wert — ein zweiter `accept()`-Aufruf auf
+derselben (Doppeltap-)Modellinstanz hätte das nicht erkannt und erneut
+angewendet. Fix: live gegen `profile.cardioPlanAdjustmentFingerprint`
+prüfen. Idempotenz-Test bestätigt: zweimal anwenden == einmal anwenden,
+keine zusätzlichen Tage/Übungen. Save-Fehler mitten im Anwenden nutzen den
+bereits bestehenden `apply`/`revert`-Mechanismus (reuse, kein Duplikat).
+
+**Leitplanke 4 (Fixierungs-Grenze):** Doku präzisiert —
+Fingerprint-Übereinstimmung heißt "nicht nachweislich editiert", nicht
+"vom Nutzer bewusst austauschbar belassen"; gespeicherte Pläne kennen kein
+Fixierungskonzept wie `PlanDraft.isContentFixed`/`isPositionFixed`. Keine
+Fixierungs-Unterstützung behauptet, die real nicht existiert.
+
+**Leitplanke 5 (Bein-Arbeit-Bewertung begrenzt):** Doku präzisiert — die
+Klassifikation erkennt Vorhandensein/Volumen über die bestehende
+`MuscleVolumeBucket`-Taxonomie (DEL-082, für Hypertrophie gedacht), bewertet
+NICHT Ausreichendheit für den Laufcoach-Zweck. Keine neue, unbelegte
+Schwelle erfunden.
+
+**Leitplanke 6 (Koordination mit `CardioFeasibilityCardModel`):** als
+Vertrag in `CoachAdjustmentCardModel`s Typ-Doku festgehalten (neue Karte
+hat Vorrang, sobald ein aktiver Plan existiert) — bewusst NOCH NICHT an
+den drei Aufrufstellen (ProfileEditorView/DashboardView/PlansListView)
+verdrahtet, da die Preview-UI (Komponente 4) fehlt und ein Entfernen der
+bestehenden Karte ohne Ersatz eine Regression wäre.
+
+**Komponente 3 umgesetzt (Commit `5f903a9`):** `CoachAdjustmentCardModel`
+(`make`/`accept`, Muster von `CardioFeasibilityCardModel`, mutiert aber
+den bestehenden Plan statt immer neu zu erzeugen) + 4 neue Tests.
+
+**CI:** Run für `5f903a9` ausstehend zum Zeitpunkt dieses Nachtrags.
+
+**Weiterhin offen:** Komponente 4 (`CoachAdjustmentPreviewView`,
+Vorher/Nachher-UI, drei Aktionen), Komponente 5 (`CardioGoalEditorView`-
+Anbindung), Leitplanke-6-UI-Verdrahtung, alle 9 Geräte-Nachweise.
+
 ## Paket 1 (Teil 2): Architekturfrage beantwortet, Komponenten 1+2+6 umgesetzt
 
 **Architekturfrage aus Teil 1 geklärt (keine neue Designentscheidung
