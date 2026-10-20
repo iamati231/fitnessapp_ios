@@ -487,6 +487,15 @@ struct SetRow: View {
             .multilineTextAlignment(.center)
             .disabled(isCompleted)
             .opacity(isCompleted ? 0.6 : 1.0)
+            // Bug-Fix (Deltiq-Geraeteabnahme E04): bei groesster Dynamic-Type-
+            // Einstellung (Accessibility XXXL) schnitt ein Dezimalgewicht wie
+            // "72,5" in diesem festbreiten Feld zu "7..." ab, da SwiftUI ohne
+            // Skalierungs-Erlaubnis lieber abschneidet als schrumpft.
+            // minimumScaleFactor laesst den Text bei Bedarf kleiner rendern,
+            // statt ihn zu kappen; bei normaler Textgroesse keine sichtbare
+            // Aenderung, da der Platz dort ohnehin ausreicht.
+            .minimumScaleFactor(0.5)
+            .lineLimit(1)
             // Cap 2026-05-21: hartes 500-kg-Maximum auf der Gewichts-
             // Eingabe — verhindert utopische Werte (User-Vertipper,
             // versehentlich angetippter Zahlenpad) die dann sinnlos in
