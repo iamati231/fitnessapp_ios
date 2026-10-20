@@ -168,6 +168,26 @@ public final class UserBodyProfile {
     /// Nil = noch nie unterdrueckt worden.
     public var cardioFeasibilityDismissedFingerprint: String?
 
+    /// Paket 1 (Laufcoach-Plananpassung, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+    /// separates Feld, NICHT identisch mit
+    /// `cardioFeasibilityDismissedFingerprint` oben - geprueft und
+    /// bestaetigt, dass dieses bestehende Feld fuer "wurde diese konkrete
+    /// Kombination tatsaechlich uebernommen" NICHT reicht, weil sowohl
+    /// `dismiss()` als auch `accept()`/`acceptCustom()` denselben
+    /// Fingerprint-WERT hineinschreiben (siehe eigener Kommentar oben:
+    /// "entweder weil der Nutzer sie explizit verworfen ... oder weil er
+    /// den Vorschlag bereits angenommen hat") - aus dem Feld allein ist
+    /// also NICHT ablesbar, ob eine Kombination abgelehnt oder uebernommen
+    /// wurde. Dieses Feld wird AUSSCHLIESSLICH von
+    /// `CoachAdjustmentCardModel.accept(...)` nach einer tatsaechlich
+    /// erfolgreich gespeicherten Plan-Anpassung gesetzt (niemals von
+    /// "beibehalten"/Verwerfen) - Fingerprint-Gleichheit heisst hier
+    /// eindeutig "fuer genau dieses Ziel/Renndatum/Wochenvolumen wurde
+    /// bereits eine Anpassung uebernommen", nicht "irgendetwas ist
+    /// entschieden". `cardioCoachingEnabled` (Praeferenz: Coach an/aus)
+    /// bleibt davon komplett unberuehrt - siehe dortige Doku.
+    public var cardioPlanAdjustmentFingerprint: String? = nil
+
     /// Smart-Onboarding-Epic: verhaltens-/pausenbasierte Track-Einstufung
     /// (Einstieg/Wiedereinstieg/volle Automatik) — separat von
     /// `coachingTone`/`trainingGoal`. Nil = noch nicht hergeleitet (z. B.

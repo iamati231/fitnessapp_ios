@@ -97,6 +97,26 @@ final class RunCoachPlanAdjustmentTests: XCTestCase {
         XCTAssertEqual(RunCoachPlanAdjustment.analyze(plan: plan).cardioAvailability, .noEligibleCardioDay)
     }
 
+    /// Korrektur (Paket 1, Teil 3): `PlanGenerator.generate` (der Ziel-
+    /// gefuehrte "Plan bauen"-Pfad) stempelt JEDEN Tag hartcodiert mit
+    /// `type: .fullBody`, auch reine Cardio-Tage - `.cardio` als Typ setzen
+    /// nur die kuratierten Templates. Die Erkennung muss daher auch ueber
+    /// `Exercise.isCardio` funktionieren, nicht nur ueber `TrainingDay.type`.
+    func testAnalyzeDetectsCardioDayViaExerciseFlagEvenWithFullBodyType() {
+        let plan = makePlan()
+        let day = TrainingDay(name: "Easy Run", weekday: 2, type: .fullBody, plan: plan)
+        context.insert(day)
+        let run = Exercise(name: "Easy Run", isCardio: true, day: day)
+        context.insert(run)
+        day.exercises.append(run)
+        markUntouched(day)
+        plan.days.append(day)
+        guard case .ready(let ids) = RunCoachPlanAdjustment.analyze(plan: plan).cardioAvailability else {
+            return XCTFail("expected .ready")
+        }
+        XCTAssertEqual(ids, [day.persistentModelID])
+    }
+
     func testAnalyzeWithEligibleCardioDayReturnsReadyWithItsID() {
         let plan = makePlan()
         let cardioDay = TrainingDay(name: "Run", weekday: 2, type: .cardio, plan: plan)

@@ -16,6 +16,16 @@ public enum RunCoachPlanAdjustment {
     /// (`unchanged`), ueberwiegend Oberkoerper (`addSmallAddition`),
     /// bereits umfangreich (`redistribute`), wenig Zeit/Platz
     /// (`replaceForTime`), keine tragfaehige Kombination (`conflict`).
+    ///
+    /// Wichtige Grenze (Paket 1, Leitplanke 5): diese Klassifikation
+    /// erkennt nur, ob Bein-Muskelgruppen ÜBERHAUPT in ausreichendem
+    /// Satzvolumen vorkommen (ueber die bestehende, fuer Hypertrophie-
+    /// Volumensteuerung gedachte `MuscleVolumeBucket`-Taxonomie, DEL-082).
+    /// Sie bewertet NICHT, ob dieses Volumen fuer den LAUFBEZOGENEN Zweck
+    /// (z. B. Laufoekonomie/Verletzungspraevention) tatsaechlich
+    /// ausreichend ist - dafuer existiert keine belastbare Regel im Projekt,
+    /// und es wird hier bewusst KEINE neue, unbelegte Schwelle dafuer
+    /// erfunden. "Vorhanden" ≠ "fuer den Laufcoach-Zweck ausreichend".
     public enum LegWorkRecommendation: Equatable, Sendable {
         case unchanged
         case addSmallAddition
@@ -55,8 +65,36 @@ public enum RunCoachPlanAdjustment {
     /// exakt dasselbe Prinzip wie `PlanGeneratorInstantiator.recalculate`)
     /// UND keine Trainingshistorie traegt. Manuell hinzugefuegte Tage
     /// (kein Fingerprint) oder seither editierte Tage (Fingerprint weicht
-    /// ab) sind IMMER geschuetzt - das ist der gesamte Schutzmechanismus
-    /// fuer "manuelle Aenderungen/Fixierungen", keine neue Logik noetig.
+    /// ab) sind IMMER geschuetzt.
+    ///
+    /// Wichtige Grenze (Paket 1, Leitplanke 4): "Fingerprint stimmt
+    /// ueberein" heisst nur "seit der Erzeugung NICHT NACHWEISLICH
+    /// editiert" - NICHT "der Nutzer wollte diesen Tag bewusst austauschbar
+    /// lassen". Ein gespeicherter `TrainingPlan`/`TrainingDay` kennt (anders
+    /// als `PlanDraft.isContentFixed`/`isPositionFixed`, die NUR in der
+    /// Wizard-Entwurfsschicht vor dem ersten Speichern existieren) KEIN
+    /// explizites Fixierungs-Konzept. Diese Funktion behauptet daher
+    /// ausdruecklich KEINE Fixierungs-Unterstuetzung, die es auf einem
+    /// bereits aktiven Plan real nicht gibt - "nicht erfasst" (kein
+    /// Fixierungsfeld vorhanden) ist NICHT dasselbe wie "frei ersetzbar".
+    /// Der Fingerprint-Vergleich bleibt der einzige verfuegbare,
+    /// nachweisbare Signal-Kandidat fuer "wurde seither angefasst".
+    /// Korrektur (Paket 1, Teil 3): `TrainingDay.type == .cardio` reicht
+    /// NICHT aus, um einen Cardio-Tag zu erkennen - `PlanGenerator.generate`
+    /// (der Ziel-gefuehrte "Plan bauen"-Pfad, genau der, den dieses Paket
+    /// anspricht) stempelt JEDEN generierten Tag hartcodiert mit
+    /// `type: .fullBody`, unabhaengig vom Inhalt (verifiziert durch Lesen
+    /// von `PlanGenerator.generate`). `.cardio` als Tagestyp wird
+    /// ausschliesslich von den kuratierten `ProgramTemplates` gesetzt. Die
+    /// tatsaechlich verlaessliche Erkennung laeuft daher ueber die
+    /// Uebungen selbst (`Exercise.isCardio`, von `PlanGenerator` fuer jede
+    /// Lauf-/Rad-Uebung gesetzt) - deckt BEIDE Ursprungspfade ab.
+    private static func isCardioDay(_ day: TrainingDay) -> Bool {
+        if day.type == .cardio { return true }
+        let exercises = day.activeExercises
+        return !exercises.isEmpty && exercises.allSatisfy(\.isCardio)
+    }
+
     public static func isEligibleForAdjustment(_ day: TrainingDay) -> Bool {
         guard day.generationFingerprint != nil,
               day.generationFingerprint == day.currentContentFingerprint
@@ -69,14 +107,14 @@ public enum RunCoachPlanAdjustment {
             return Analysis(cardioAvailability: .noActivePlan, legWork: .conflict)
         }
 
-        let cardioDays = plan.days.filter { $0.type == .cardio }
+        let cardioDays = plan.days.filter(isCardioDay)
         let eligibleCardioDays = cardioDays.filter(isEligibleForAdjustment)
         let cardioAvailability: CardioAvailability = eligibleCardioDays.isEmpty
             ? .noEligibleCardioDay
             : .ready(eligibleCardioDays.map(\.persistentModelID))
 
         let eligibleStrengthDays = plan.days.filter {
-            $0.type != .cardio && $0.type != .rest && isEligibleForAdjustment($0)
+            $0.type != .rest && !isCardioDay($0) && isEligibleForAdjustment($0)
         }
         let legWork = legWorkRecommendation(eligibleStrengthDays: eligibleStrengthDays)
 
