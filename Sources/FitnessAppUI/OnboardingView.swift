@@ -397,12 +397,20 @@ public struct OnboardingView: View {
                 // Onboarding-Antworten vorbefuellt, damit Schritt 2 des
                 // eingebetteten Builders die Ausstattung nicht ein zweites
                 // Mal von Null abfragt.
+                //
+                // Geraete-Abnahme (A01, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+                // dieselbe Vorbefuellung fehlte bisher fuer `trainingGoal`
+                // (Coaching-Step) und `weeklyGoal` ("wie oft pro Woche") -
+                // der Builder fragte Ziel UND Tage nochmal komplett von Null
+                // ab, obwohl beide Antworten hier bereits vorliegen.
                 PlanBuilderView(initialInput: PlanGeneratorInput(
                     selections: [],
                     equipmentPreferences: derivedLegacyEquipment,
                     usesFixedWeekdays: false
                 ), preseededEnduranceModality: enduranceModality,
                 preseededRunCoachWanted: runCoachWanted,
+                preseededGoal: trainingGoal,
+                preseededDaysPerWeek: weeklyGoal,
                 onGenerated: { input, result in
                     customPlanInput = input
                     customPlanResult = result

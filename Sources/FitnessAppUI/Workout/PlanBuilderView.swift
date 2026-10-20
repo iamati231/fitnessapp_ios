@@ -155,6 +155,8 @@ public struct PlanBuilderView: View {
         initialInput: PlanGeneratorInput? = nil,
         preseededEnduranceModality: EnduranceModality? = nil,
         preseededRunCoachWanted: Bool = false,
+        preseededGoal: TrainingGoal? = nil,
+        preseededDaysPerWeek: Int? = nil,
         onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> PlanBuilderHandoffOutcome)? = nil,
         onEnduranceModalityChosen: (@MainActor (EnduranceModality?, Bool) -> Void)? = nil
     ) {
@@ -172,6 +174,22 @@ public struct PlanBuilderView: View {
         }
         _selectedEnduranceModality = State(initialValue: preseededEnduranceModality)
         _runCoachWanted = State(initialValue: preseededRunCoachWanted)
+        // Geraete-Abnahme (A01): `trainingGoal`/`weeklyGoal` wurden im
+        // umschliessenden `OnboardingView` bereits beantwortet, BEVOR der
+        // User ueberhaupt in diesen eingebetteten Builder wechselt - ohne
+        // diese Vorbefuellung muesste er beides hier identisch nochmal
+        // beantworten (siehe `GoalCard.seeded(from:)`-Doku). Bleibt frei
+        // weiter aenderbar, genau wie die bereits bestehende
+        // Ausdauerform-/Equipment-Vorbefuellung oben.
+        if let preseededGoal, let card = GoalCard.seeded(from: preseededGoal) {
+            _selectedGoalCard = State(initialValue: card)
+            if card == .strengthFocus {
+                _strengthFocus = State(initialValue: preseededGoal)
+            }
+        }
+        if let preseededDaysPerWeek {
+            _totalDaysPerWeek = State(initialValue: preseededDaysPerWeek)
+        }
     }
 
     enum BuilderStep: Int, CaseIterable {
@@ -221,6 +239,25 @@ public struct PlanBuilderView: View {
         /// Doc02 §2 "Nach Auswahl von Hybrid: 1. Ausdauerform klaeren" - gilt
         /// identisch fuer die reine Ausdauerkarte.
         var needsEnduranceModality: Bool { self == .endurance || self == .hybrid }
+
+        /// Geraete-Abnahme (A01, docs/DELTIQ_DEVICE_ACCEPTANCE.md): die
+        /// `init(initialInput:)`-Vorbefuellung deckte bisher nur Equipment
+        /// und Ausdauerform ab (siehe dortige Doku) - `OnboardingView`s
+        /// eigener, frueherer `trainingGoal`-Schritt (Coaching-Step) blieb
+        /// dabei unberuecksichtigt: der eingebettete Builder fragte dieselbe
+        /// Zielinformation hier nochmal komplett von Null ab. `.weightLoss`
+        /// hat bewusst KEINE eigene Zielkarte (siehe Typ-Doku oben) - bleibt
+        /// dafuer unausgewaehlt, der User trifft bewusst eine neue Wahl aus
+        /// den vier Builder-Karten statt einer stillen Zuordnung.
+        static func seeded(from trainingGoal: TrainingGoal) -> GoalCard? {
+            switch trainingGoal {
+            case .hypertrophy, .strength: return .strengthFocus
+            case .hybrid: return .hybrid
+            case .endurance: return .endurance
+            case .functional: return .generalFitness
+            case .weightLoss: return nil
+            }
+        }
     }
 
     @State private var step: BuilderStep = .types
