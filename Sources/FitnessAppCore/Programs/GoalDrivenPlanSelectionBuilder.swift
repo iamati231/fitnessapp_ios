@@ -13,6 +13,60 @@ import Foundation
 /// `PlanBuilderView.init(initialInput:)`).
 public enum GoalDrivenPlanSelectionBuilder {
 
+    /// A12 (docs/DELTIQ_DEVICE_ACCEPTANCE.md, Runde 11): wie viele
+    /// unterscheidbare Disziplinen `goal`/`enduranceModality` auswaehlen -
+    /// das Minimum an Tagen, um jeder davon mindestens einen Tag zu geben,
+    /// ohne eine still verschwinden zu lassen.
+    public static func requiredMinimumDays(goal: TrainingGoal, enduranceModality: EnduranceModality?) -> Int {
+        switch goal {
+        case .hypertrophy, .strength, .functional, .weightLoss:
+            return 1
+        case .endurance:
+            return (enduranceModality ?? .running).trainingTypeKinds.count
+        case .hybrid:
+            return 1 + (enduranceModality ?? .running).trainingTypeKinds.count
+        }
+    }
+
+    /// A12: User-waehlbare Reaktion, wenn `totalDaysPerWeek` nicht reicht,
+    /// um jede gewaehlte Disziplin mit mindestens einem Tag zu bedienen -
+    /// z. B. Hybrid+"Beides" (Laufen+Radfahren) bei nur 2 Tagen/Woche (1
+    /// Kraft + 2x1 Ausdauer waeren noetig). `nil` heisst: `makeSelections`
+    /// kann alle gewaehlten Disziplinen unterbringen, kein Konflikt.
+    public struct DistributionConflict: Equatable, Sendable {
+        public enum Resolution: String, CaseIterable, Sendable {
+            /// Tage anders verteilen (z. B. eine Disziplin seltener).
+            case changeDistribution
+            /// Bewusst einen zusaetzlichen Tag/Woche erlauben.
+            case allowExtraDay
+            /// Laufziel/Sportartauswahl aendern.
+            case changeGoal
+            /// Nichts aendern, aktuellen Zustand/Plan vorerst beibehalten.
+            case keepExistingPlan
+        }
+        public let requiredDays: Int
+        public let availableDays: Int
+
+        public init(requiredDays: Int, availableDays: Int) {
+            self.requiredDays = requiredDays
+            self.availableDays = availableDays
+        }
+    }
+
+    /// A12: prueft VOR `makeSelections`, ob `totalDaysPerWeek` fuer die
+    /// gewaehlten Disziplinen reicht. Aufrufer, die eine gewaehlte Sportart
+    /// nicht still verschwinden lassen duerfen (Spec-Vorgabe A01/A12),
+    /// MUESSEN dies pruefen und bei einem Konflikt die vier `Resolution`-
+    /// Optionen anbieten, statt `makeSelections`s bestmoeglichen Kompromiss
+    /// kommentarlos zu uebernehmen.
+    public static func distributionConflict(
+        goal: TrainingGoal, enduranceModality: EnduranceModality?, totalDaysPerWeek: Int
+    ) -> DistributionConflict? {
+        let required = requiredMinimumDays(goal: goal, enduranceModality: enduranceModality)
+        guard totalDaysPerWeek < required else { return nil }
+        return DistributionConflict(requiredDays: required, availableDays: totalDaysPerWeek)
+    }
+
     /// Welches der vier Kraft-`TrainingTypeKind`s fuer ein kraftorientiertes
     /// Ziel verwendet wird — abgeleitet aus dem bereits erfassten
     /// Equipment-Profil (`UserEquipmentProfile.legacyEquipmentPreferences`),
@@ -37,7 +91,11 @@ public enum GoalDrivenPlanSelectionBuilder {
     ///   (Kraft bekommt bei ungerader Zahl den zusaetzlichen Tag) — ein
     ///   bewusster, einfacher Produktdefault fuer diese Runde; der spaetere
     ///   visuelle Wocheneditor (P3.2) macht die tatsaechliche Verteilung
-    ///   sichtbar und veraenderbar.
+    ///   sichtbar und veraenderbar. A12-Fix: reicht die Ausdauer-Haelfte
+    ///   nicht fuer jede gewaehlte Ausdauer-Disziplin (z. B. "Beides" bei
+    ///   wenigen Tagen), gibt Kraft genau so viele Tage ab wie noetig,
+    ///   statt eine Disziplin still auf 0 fallen zu lassen - siehe
+    ///   `distributionConflict` fuer den Fall, dass selbst das nicht reicht.
     /// - `.both`-Ausdauerform verteilt ebenso 50/50 auf Laufen/Radfahren
     ///   (Laufen bekommt den zusaetzlichen Tag).
     public static func makeSelections(
@@ -65,19 +123,63 @@ public enum GoalDrivenPlanSelectionBuilder {
             )
 
         case .hybrid:
-            let strengthDays = Int((Double(totalDaysPerWeek) / 2).rounded(.up))
-            let enduranceDays = totalDaysPerWeek - strengthDays
+            let modality = enduranceModality ?? .running
+            let enduranceKinds = modality.trainingTypeKinds
+            var strengthDays = Int((Double(totalDaysPerWeek) / 2).rounded(.up))
+            var enduranceDays = totalDaysPerWeek - strengthDays
+            // A12-Fix (docs/DELTIQ_DEVICE_ACCEPTANCE.md, Runde 11): die
+            // Ausdauer-Haelfte reichte bei "Beides" (2 Disziplinen) nicht
+            // immer fuer beide gewaehlten Sportarten - z. B. bei 3
+            // Default-Tagen bekam Kraft 2, Ausdauer nur 1, und
+            // `enduranceSelections` liess Radfahren dann MIT NULL Tagen
+            // komplett und ohne Meldung aus der Auswahl fallen. Fix: Kraft
+            // gibt genau so viele Tage ab, wie noetig, damit jede gewaehlte
+            // Ausdauer-Disziplin mindestens einen Tag bekommt - aber
+            // niemals auf 0 (siehe `requiredMinimumDays`-Guard unten, der
+            // diesen Fall als echten `distributionConflict` an den
+            // Aufrufer zurueckgibt statt hier stillschweigend auf 0 Kraft
+            // zu gehen). Bei genau EINER Ausdauer-Disziplin (Normalfall)
+            // greift diese Korrektur nie (enduranceDays reicht dafuer
+            // immer) - keine Verhaltensaenderung fuer A03/A06/A08.
+            if enduranceDays < enduranceKinds.count {
+                let shortfall = enduranceKinds.count - enduranceDays
+                guard strengthDays - shortfall >= 1 else {
+                    // Echter Konflikt: selbst 1 Tag Kraft + je 1 Tag pro
+                    // Ausdauer-Disziplin passt nicht in `totalDaysPerWeek`
+                    // (siehe `distributionConflict` - der Aufrufer haette
+                    // das vorher pruefen und die vier Resolution-Optionen
+                    // anbieten sollen). Bestmoeglicher Kompromiss als
+                    // Fallback, damit diese Funktion nie leer/inkonsistent
+                    // zurueckgibt.
+                    var fallback: [PlanGeneratorTypeSelection] = []
+                    if strengthDays > 0 {
+                        fallback.append(PlanGeneratorTypeSelection(
+                            kind: preferredStrengthKind(from: equipmentPreferences), daysPerWeek: strengthDays,
+                            sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                        ))
+                    }
+                    if enduranceDays > 0 {
+                        fallback.append(contentsOf: enduranceSelections(
+                            modality: modality, totalDays: enduranceDays,
+                            sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                        ))
+                    }
+                    return fallback
+                }
+                strengthDays -= shortfall
+                enduranceDays += shortfall
+            }
+
             var result: [PlanGeneratorTypeSelection] = []
             if strengthDays > 0 {
-                let kind = preferredStrengthKind(from: equipmentPreferences)
                 result.append(PlanGeneratorTypeSelection(
-                    kind: kind, daysPerWeek: strengthDays,
+                    kind: preferredStrengthKind(from: equipmentPreferences), daysPerWeek: strengthDays,
                     sessionDurationMinutes: sessionDurationMinutes, experience: experience
                 ))
             }
             if enduranceDays > 0 {
                 result.append(contentsOf: enduranceSelections(
-                    modality: enduranceModality ?? .running, totalDays: enduranceDays,
+                    modality: modality, totalDays: enduranceDays,
                     sessionDurationMinutes: sessionDurationMinutes, experience: experience
                 ))
             }
