@@ -38,23 +38,15 @@ public struct ProfileEditorView: View {
     /// `trainingLocationCard`).
     @State private var showingBodyDataEditor = false
     @State private var showingTrainingLocationEditor = false
+    /// Deltiq-Geräteabnahme (C01): gleiches Re-Entry-Muster fuer die
+    /// Cardio-/Laufziel-Felder, siehe `cardioCard`/`CardioGoalEditorView`.
+    @State private var showingCardioGoalEditor = false
 
     /// Settings-Epic Phase 3: fuer die Gewicht-mit-Datum-Zeile in
     /// `bodyDataCard`s Zusammenfassung — derselbe Query wie in
     /// `BodyDataEditorView`.
     @Query(sort: \BodyMeasurement.date, order: .reverse)
     private var bodyMeasurements: [BodyMeasurement]
-
-    /// DEL-250: MM:SS-Eingabepuffer fuer die 5-km-Referenzzeit. Bewusst ein
-    /// eigenstaendiger `@State`-String statt einer Binding<String> ueber
-    /// `profile.current5kReferenceSeconds` (Review-Fund): eine computed
-    /// Binding wuerde nach jedem Tastenanschlag sofort aus dem geparsten
-    /// Sekundenwert zurueckformatieren und das Feld dabei ueberschreiben
-    /// (z.B. "2" -> sofort "2:00"), bevor die zweite Ziffer ankommt - exakt
-    /// das Problem, das `SetRow.cardioDurationText` mit einem eigenen Puffer
-    /// vermeidet. Wird in `init` aus dem Modell vorbefuellt, geschrieben wird
-    /// nur per `.onChange` (Modell folgt der Eingabe, nicht umgekehrt).
-    @State private var fiveKReferenceText: String = ""
 
     // DEL-047: aktive Plaene laden, damit wir bei einer Trainingsort-Aenderung
     // einen Sync-Prompt anbieten koennen. Wir laden alle Plaene (auch
@@ -64,23 +56,6 @@ public struct ProfileEditorView: View {
     @Query(sort: \TrainingPlan.name)
     private var allPlans: [TrainingPlan]
 
-    /// DEL-251: Grundlage fuer den Cardio-Retro-Sync (Wochenvolumen +
-    /// Referenzpace aus bereits geloggten Laeufen). Gleiches Query-Muster
-    /// wie `DashboardView.completedSessions`.
-    @Query(filter: #Predicate<WorkoutSession> { $0.isCompleted == true },
-           sort: \WorkoutSession.startTime, order: .reverse)
-    private var completedSessions: [WorkoutSession]
-
-    /// DEL-251: Ergebnis eines Retro-Sync-Laufs, wartet auf Bestaetigung.
-    /// Non-nil zeigt den confirmationDialog; beide Dialog-Aktionen setzen
-    /// das Feld wieder auf nil zurueck (identisches Pattern wie
-    /// `pendingProfileEnvSwap`).
-    @State private var pendingCardioBaseline: CardioBaselineCalculator.Result?
-
-    /// DEL-251: true fuer einen kurzen Hinweis, wenn Retro-Sync keine
-    /// verwertbaren Laeufe findet (kein geloggter Cardio-Log ueberhaupt,
-    /// oder keiner erfuellt die Mindest-Schwellen).
-    @State private var retroSyncEmptyNoticeVisible: Bool = false
     /// Nachtrag "Plan anpassen": `PlanBuilderView` als Sheet, vorbefuellt
     /// mit dem aktuellen Machbarkeits-Vorschlag.
     @State private var showingPlanAdjustSheet: Bool = false
@@ -150,10 +125,14 @@ public struct ProfileEditorView: View {
     /// `ProfileMetaSnapshot`. Bewusst NICHT Teil davon: `heightCm`/
     /// `goalWeightKg`/Gewichtsmessungen (eigener Save/Cancel-Flow in
     /// `BodyDataEditorView`), `environment`/`equipmentProfile` (eigener Flow
-    /// in `TrainingLocationEquipmentEditorView`), sowie alles, was
-    /// `feasibilitySection`s accept/dismiss/acceptCustom anfasst (eigene,
-    /// bereits explizit bestaetigte Aktionen mit Seiteneffekten auf andere
-    /// Plaene/Tage, analog `targetEnvironment` in `PlanEditorView`).
+    /// in `TrainingLocationEquipmentEditorView`), `cardioCoachingEnabled`/
+    /// `cardioGoal`/`cardioRaceDate`/`weeklyBaseVolumeKm`/`maxHeartRateBpm`/
+    /// `current5kReferenceSeconds`/`enduranceModality` (eigener Save/Cancel-
+    /// Flow in `CardioGoalEditorView`, Deltiq-Geräteabnahme C01 — siehe
+    /// dessen Typ-Doku), sowie alles, was `feasibilitySection`s
+    /// accept/dismiss/acceptCustom anfasst (eigene, bereits explizit
+    /// bestaetigte Aktionen mit Seiteneffekten auf andere Plaene/Tage,
+    /// analog `targetEnvironment` in `PlanEditorView`).
     /// `baselineAssessment` selbst bleibt unangetastet — nur der Wieder-
     /// Einstieg DAFUER aus diesem Screen wurde entfernt (Korrektur V6), der
     /// gespeicherte Wert und sein `BaselineCheckFlowView`-Flow im Onboarding
@@ -162,9 +141,6 @@ public struct ProfileEditorView: View {
 
     public init(profile: UserBodyProfile) {
         self.profile = profile
-        _fiveKReferenceText = State(
-            initialValue: profile.current5kReferenceSeconds.map(PaceCalculator.formatDuration) ?? ""
-        )
         _snapshot = State(initialValue: ProfileMetaSnapshot.capture(from: profile))
     }
 
@@ -286,33 +262,6 @@ public struct ProfileEditorView: View {
             }
         } message: { swap in
             Text("profile.envRestore.message", bundle: .module)
-        }
-        // DEL-251: Retro-Sync-Bestaetigung — leichtgewichtiges
-        // confirmationDialog analog envSwap/envRestore oben, statt eines
-        // vollen Sheets (Nutzer-Entscheidung: nur zwei berechnete Werte,
-        // kein Review einzelner zugrunde liegender Laeufe in dieser Runde).
-        .confirmationDialog(
-            Text("profile.cardio.retroSync.title", bundle: .module),
-            isPresented: Binding(
-                get: { pendingCardioBaseline != nil },
-                set: { if !$0 { pendingCardioBaseline = nil } }
-            ),
-            titleVisibility: .visible,
-            presenting: pendingCardioBaseline
-        ) { result in
-            Button {
-                applyCardioBaseline(result)
-                pendingCardioBaseline = nil
-            } label: {
-                Text("profile.cardio.retroSync.apply", bundle: .module)
-            }
-            Button(role: .cancel) {
-                pendingCardioBaseline = nil
-            } label: {
-                Text("profile.cardio.retroSync.discard", bundle: .module)
-            }
-        } message: { result in
-            Text(cardioBaselineMessage(result))
         }
         // Settings-Epic Phase 4 (Befund PE-H1): zeigt NUR die tatsaechlich
         // verfuegbaren Felder mit ihrem konkreten Wert, bevor Geburtsdatum/
@@ -439,35 +388,12 @@ public struct ProfileEditorView: View {
         }
     }
 
-    /// Schreibt die Snapshot-Felder zurueck UND resynct den `fiveKReferenceText`-
-    /// Eingabepuffer (siehe dessen Doc-Kommentar) — sonst zeigt das Textfeld
-    /// nach einem Discard weiter den zuletzt getippten, nicht mehr gueltigen
-    /// String statt des wiederhergestellten Modellwerts.
-    ///
-    /// `internal` (statt `private`) macht die Funktion direkt per
-    /// `ProfileEditorView(profile:)`-Konstruktion testbar (siehe
-    /// Tests/FitnessAppUITests) — beruehrt kein `@Environment`/`@Query`.
+    /// Schreibt die Snapshot-Felder zurueck — `internal` (statt `private`)
+    /// macht die Funktion direkt per `ProfileEditorView(profile:)`-
+    /// Konstruktion testbar (siehe Tests/FitnessAppUITests) — beruehrt kein
+    /// `@Environment`/`@Query`.
     internal func revertToSnapshot() {
         snapshot.apply(to: profile)
-        fiveKReferenceText = snapshot.current5kReferenceSeconds.map(PaceCalculator.formatDuration) ?? ""
-    }
-
-    /// UI-Refactor (Korrektur post-Review, Finding 3): macht NUR `cardioGoal`
-    /// zur neuen Baseline — nicht das gesamte Profil. Aufgerufen direkt nach
-    /// `CardioFeasibilityCardModel.accept(profile:in:)`, dem einzigen der
-    /// drei Feasibility-Callbacks, der ueberhaupt ein `ProfileMetaSnapshot`-
-    /// Feld aendert (`cardioGoal`; `dismiss`/`acceptCustom` ruehren
-    /// ausschliesslich `cardioFeasibilityDismissedFingerprint` an, das NICHT
-    /// im Snapshot steckt — dort ist kein Rebaseline noetig, siehe die
-    /// entfernten Aufrufe an den jeweiligen Stellen). Ein voller
-    /// `ProfileMetaSnapshot.capture(from:)` wie zuvor wuerde jede andere,
-    /// noch offene Formularaenderung (z. B. den Coaching-Ton) faelschlich
-    /// mit bestaetigen und dadurch "Verwerfen" dafuer unwirksam machen
-    /// (dieselbe Problematik wie bei PlanEditorView fuer die
-    /// Umgebungs-Migration — dort bereits gezielt auf das betroffene Feld
-    /// begrenzt).
-    internal func rebaselineCardioGoal() {
-        snapshot.cardioGoal = profile.cardioGoal
     }
 
     // MARK: - Health
@@ -764,278 +690,43 @@ public struct ProfileEditorView: View {
     }
 
     /// DEL-250: Cardio-/Lauf-Ziele nachtraeglich editierbar (Post-Onboarding).
-    /// Umfang bewusst auf den Profil-Editor beschraenkt — kein neuer
-    /// Onboarding-Schritt in dieser Runde, keine neue Coaching-Trigger-
-    /// Verdrahtung (CardioCoachingAdvisor/DashboardView/PlanGenerator
-    /// unveraendert). Toggle-blendet-Sektion-Pattern analog
-    /// `SettingsView.waterReminderEnabled`; Referenzzeit statt direkter
-    /// Pace-Eingabe (praeziser fuer eine spaetere
-    /// `cardioProgressionEarned`-Verfeinerung, siehe `PaceZoneCalculator`).
-    ///
-    /// Nachbesserung (Deltiq-Weiterentwicklung, "Verbindliche Produktregel":
-    /// "Eine eindeutige fachliche Laufcoach-Aktivierung, keine konkurrierenden
-    /// Schalter"): `cardioCoachingEnabled` IST der Laufcoach-Schalter — vorher
-    /// kurzzeitig ein zweites, eigenes `runCoachEnabled`-Feld (P2.5) PLUS eine
-    /// zweite Toggle-Instanz in `coachingCard` daneben, was genau die
-    /// verbotenen "konkurrierenden Schalter" waere. `setEnduranceModality`
-    /// schreibt jetzt direkt in `cardioCoachingEnabled`; die Ausdauerform-Frage
-    /// lebt HIER, direkt neben dem einzigen Schalter, nicht mehr in einer
-    /// zweiten Sektion.
+    /// Deltiq-Geräteabnahme (C01): die Felder lagen frueher direkt hier,
+    /// live an `profile` gebunden — die gebuendelte Anpassungsvorschau
+    /// (`feasibilitySection` unten) erschien dadurch nachweislich bei JEDEM
+    /// Tastenanschlag statt wie von Dok. 01 §6 gefordert "einmalig gebuendelt
+    /// nach einem gespeicherten Update" (siehe docs/DELTIQ_DEVICE_ACCEPTANCE.md,
+    /// C01). Fix: gleiches Re-Entry-Muster wie `bodyDataCard`/
+    /// `trainingLocationCard` — nur eine Zusammenfassungs-Zeile hier, die
+    /// eigentlichen Felder (inkl. Retro-Sync) leben jetzt mit eigenem
+    /// lokalem Draft + explizitem Speichern in `CardioGoalEditorView`.
+    /// `feasibilitySection` bleibt unveraendert an das live `profile`
+    /// gebunden und aendert sich darum erst, NACHDEM dort gespeichert wurde.
     private var cardioCard: some View {
         DeltiqSection(String(localized: "profile.section.cardio", bundle: .module).uppercased()) {
-            DeltiqControlRow(
+            DeltiqRow(
                 icon: "figure.run",
-                label: String(localized: "profile.cardio.enable", bundle: .module),
-                showsDivider: profile.cardioCoachingEnabled
+                label: String(localized: "profile.section.cardio", bundle: .module),
+                value: cardioGoalSummaryText,
+                showsChevron: true,
+                showsDivider: false
             ) {
-                Toggle("", isOn: Binding(
-                    get: { profile.cardioCoachingEnabled },
-                    set: { profile.setEnduranceModality(profile.enduranceModality, runCoachEnabled: $0) }
-                ))
-                .labelsHidden()
-                .tint(Color.deltiqOrange)
-                .disabled(needsEnduranceModalityQuestion && !displayedEnduranceModality.supportsRunCoach)
-                .accessibilityLabel(Text("profile.cardio.enable", bundle: .module))
+                showingCardioGoalEditor = true
             }
-            // Doc02 (Hybrid/Laufcoach-Trennung): die Ausdauerform ist auch OHNE
-            // Coach relevant (reine Laufeinheiten im Plan bleiben ohne Coach
-            // moeglich) — deshalb unabhaengig vom Toggle sichtbar, sobald das
-            // Trainingsziel eine Ausdauerform ueberhaupt verlangt. Fuer jedes
-            // andere Ziel bleibt die Frage ausgeblendet (sie waere dort
-            // bedeutungslos), der Coach-Toggle oben bleibt dafuer unabhaengig
-            // nutzbar (bestehendes DEL-250-Verhalten unveraendert).
-            if needsEnduranceModalityQuestion {
-                DeltiqControlRow(
-                    label: String(localized: "profile.coaching.enduranceModality", bundle: .module),
-                    showsDivider: profile.cardioCoachingEnabled
-                ) {
-                    Picker(selection: Binding(
-                        get: { displayedEnduranceModality },
-                        set: { profile.setEnduranceModality($0, runCoachEnabled: profile.cardioCoachingEnabled) }
-                    )) {
-                        ForEach(EnduranceModality.allCases, id: \.self) { modality in
-                            Text(modality.localizedName).tag(modality)
-                        }
-                    } label: {
-                        EmptyView()
-                    }
-                    .pickerStyle(.menu)
-                }
-                if !displayedEnduranceModality.supportsRunCoach {
-                    hintRow(String(localized: "profile.coaching.runCoach.unavailableHint", bundle: .module))
-                }
-            }
-            if profile.cardioCoachingEnabled {
-                // DEL-251: Retro-Sync — berechnet Wochenvolumen + Referenzpace
-                // aus bereits in Deltiq geloggten Laeufen, statt der Felder
-                // unten mit 0 zu starten. Bewusst NUR In-App-Daten diese
-                // Runde (siehe Doc-Kommentar auf `CardioBaselineCalculator`) -
-                // kein HealthKit-Permission-Dialog fuer Bestandsnutzer, die
-                // das Feature nie nutzen.
-                Button {
-                    let result = computeCardioBaseline()
-                    if result.isEmpty {
-                        retroSyncEmptyNoticeVisible = true
-                    } else {
-                        retroSyncEmptyNoticeVisible = false
-                        pendingCardioBaseline = result
-                    }
-                } label: {
-                    HStack {
-                        Label {
-                            Text("profile.cardio.retroSync.button", bundle: .module)
-                        } icon: {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                        Spacer()
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .frame(minHeight: 44)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.deltiqOrange)
-                if retroSyncEmptyNoticeVisible {
-                    hintRow(String(localized: "profile.cardio.retroSync.empty", bundle: .module))
-                }
-                Rectangle()
-                    .fill(Color.Deltiq.divider)
-                    .frame(height: 1)
-                DeltiqControlRow(label: String(localized: "profile.cardio.goal", bundle: .module)) {
-                    Picker(selection: Binding(
-                        get: { profile.cardioGoal },
-                        set: { profile.cardioGoal = $0 }
-                    )) {
-                        ForEach(CardioGoal.allCases, id: \.self) { goal in
-                            Label {
-                                Text(goal.localizedName)
-                            } icon: {
-                                Image(systemName: goal.symbol)
-                            }
-                            .tag(goal)
-                        }
-                    } label: {
-                        EmptyView()
-                    }
-                    .pickerStyle(.menu)
-                }
-                DeltiqControlRow(label: String(localized: "profile.cardio.fiveKReference", bundle: .module)) {
-                    TextField("MM:SS", text: $fiveKReferenceText, prompt: Text("MM:SS"))
-                        #if os(iOS)
-                        .keyboardType(.numbersAndPunctuation)
-                        #endif
-                        .monospacedDigit()
-                        .multilineTextAlignment(.trailing)
-                        .font(.system(size: 15))
-                        .fitnessNumberStyle()
-                        .frame(maxWidth: 90)
-                        .onChange(of: fiveKReferenceText) { _, newValue in
-                            profile.current5kReferenceSeconds = PaceCalculator.parseDurationToSeconds(newValue)
-                        }
-                }
-                if let zonesSummary {
-                    hintRow(zonesSummary)
-                }
-                DeltiqControlRow(
-                    label: String(localized: "profile.cardio.raceDateToggle", bundle: .module),
-                    showsDivider: profile.cardioRaceDate != nil
-                ) {
-                    Toggle("", isOn: cardioRaceDateToggleBinding)
-                        .labelsHidden()
-                        .tint(Color.deltiqOrange)
-                        .accessibilityLabel(Text("profile.cardio.raceDateToggle", bundle: .module))
-                }
-                if profile.cardioRaceDate != nil {
-                    DeltiqControlRow(label: String(localized: "profile.cardio.raceDateValue", bundle: .module)) {
-                        DatePicker(
-                            selection: Binding(
-                                get: { profile.cardioRaceDate ?? Self.defaultRaceDate },
-                                set: { profile.cardioRaceDate = $0 }
-                            ),
-                            in: Date()...,
-                            displayedComponents: .date
-                        ) {
-                            EmptyView()
-                        }
-                        .labelsHidden()
-                    }
-                }
-                DeltiqControlRow(label: String(localized: "profile.cardio.weeklyVolume", bundle: .module)) {
-                    decimalField(
-                        String(localized: "profile.cardio.weeklyVolume", bundle: .module),
-                        value: $profile.weeklyBaseVolumeKm,
-                        placeholder: String(localized: "profile.cardio.weeklyVolumePlaceholder", bundle: .module)
-                    )
-                }
-                DeltiqControlRow(label: String(localized: "profile.cardio.maxHeartRate", bundle: .module), showsDivider: feasibilityModel != nil) {
-                    intField(
-                        String(localized: "profile.cardio.maxHeartRate", bundle: .module),
-                        value: $profile.maxHeartRateBpm,
-                        placeholder: String(localized: "profile.cardio.maxHeartRatePlaceholder", bundle: .module)
-                    )
-                }
-                if let model = feasibilityModel {
-                    feasibilitySection(model)
-                }
+            if let model = feasibilityModel {
+                feasibilitySection(model)
             }
             hintRow(String(localized: "profile.cardio.footer", bundle: .module))
         }
-    }
-
-    /// Formatierter Hinweistext mit den aus der Referenzzeit abgeleiteten
-    /// Pace-Zonen. Nil solange keine Referenzzeit gepflegt ist.
-    private var zonesSummary: String? {
-        guard let seconds = profile.current5kReferenceSeconds,
-              let easy = PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: seconds),
-              let tempo = PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: seconds)
-        else { return nil }
-        let template = String(localized: "profile.cardio.paceZones", bundle: .module)
-        return String(format: template, PaceCalculator.formatPace(easy), PaceCalculator.formatPace(tempo))
-    }
-
-    /// An/Aus-Bruecke fuers Renn-Datum: An setzt (falls noch keins gepflegt)
-    /// ein plausibles Default-Datum, Aus loescht auf nil zurueck — echtes
-    /// "kein Datum gesetzt" statt eines Platzhalter-Datums.
-    private var cardioRaceDateToggleBinding: Binding<Bool> {
-        Binding(
-            get: { profile.cardioRaceDate != nil },
-            set: { isOn in
-                profile.cardioRaceDate = isOn ? (profile.cardioRaceDate ?? Self.defaultRaceDate) : nil
-            }
-        )
-    }
-
-    /// Plausibler Default beim erstmaligen Aktivieren des Renn-Datums —
-    /// 12 Wochen im Voraus, ein gaengiger Trainings-Zyklus-Horizont.
-    private static var defaultRaceDate: Date {
-        Calendar.current.date(byAdding: .weekOfYear, value: 12, to: Date()) ?? Date()
-    }
-
-    // MARK: - DEL-251 Retro-Sync
-
-    /// Geloggte Cardio-Logs der letzten `days` Tage — identische Filter-
-    /// Kette wie `DashboardView.isCardioVolumeSpikeActive`s
-    /// `cardioKm(weeksAgo:)`: erst auf Session-Ebene nach echten,
-    /// abgeschlossenen Workouts im Zeitfenster filtern, DANN erst auf die
-    /// einzelnen Logs herunterbrechen und die Nicht-Cardio-Logs raus.
-    private func cardioLogs(sinceDaysAgo days: Int) -> [ExerciseLog] {
-        let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? .distantPast
-        return completedSessions
-            .filter { $0.isRealWorkout && $0.startTime >= cutoff }
-            .flatMap(\.logs)
-            .filter(\.resolvedIsCardio)
-    }
-
-    /// Aggregiert die Rohdaten und ruft `CardioBaselineCalculator` fuer die
-    /// eigentliche Berechnung — DashboardView/ProfileEditorView liefern nur
-    /// die SwiftData-Abfrage, die Kern-Logik bleibt in Core testbar.
-    private func computeCardioBaseline() -> CardioBaselineCalculator.Result {
-        let volumeDistancesKm = cardioLogs(sinceDaysAgo: CardioBaselineCalculator.weeklyVolumeWindowDays)
-            .compactMap(\.distanceKm)
-        let referenceRuns = cardioLogs(sinceDaysAgo: CardioBaselineCalculator.referenceWindowDays)
-            .compactMap { log -> CardioBaselineCalculator.RunSample? in
-                guard let distanceKm = log.distanceKm, let durationSeconds = log.durationSeconds else { return nil }
-                return CardioBaselineCalculator.RunSample(distanceKm: distanceKm, durationSeconds: durationSeconds)
-            }
-        return CardioBaselineCalculator.Result(
-            weeklyVolumeKm: CardioBaselineCalculator.weeklyVolumeKm(distancesKm: volumeDistancesKm),
-            referenceSeconds: CardioBaselineCalculator.fastestReferenceSeconds(from: referenceRuns)
-        )
-    }
-
-    /// Schreibt einen bestaetigten Retro-Sync in `UserBodyProfile` — nur die
-    /// Felder, fuer die tatsaechlich ein Wert ermittelt wurde; ein `nil`-Feld
-    /// im Ergebnis laesst den bestehenden Profil-Wert unangetastet, statt ihn
-    /// zu leeren. `current5kReferenceSeconds` schreibt zusaetzlich in den
-    /// MM:SS-Eingabepuffer, sonst zeigt das Textfeld den alten Wert weiter.
-    private func applyCardioBaseline(_ result: CardioBaselineCalculator.Result) {
-        if let weeklyVolumeKm = result.weeklyVolumeKm {
-            profile.weeklyBaseVolumeKm = weeklyVolumeKm
-        }
-        if let referenceSeconds = result.referenceSeconds {
-            profile.current5kReferenceSeconds = referenceSeconds
-            fiveKReferenceText = PaceCalculator.formatDuration(referenceSeconds)
+        .sheet(isPresented: $showingCardioGoalEditor) {
+            CardioGoalEditorView(profile: profile)
         }
     }
 
-    /// Baut den Dialog-Text passend zur tatsaechlich verfuegbaren
-    /// Kombination (beide Werte / nur Volumen / nur Pace) — der Aufrufer
-    /// zeigt den Dialog ohnehin nur, wenn `!result.isEmpty`.
-    private func cardioBaselineMessage(_ result: CardioBaselineCalculator.Result) -> String {
-        let volumeText = result.weeklyVolumeKm.map(\.formattedOneDecimal)
-        let paceText = result.referenceSeconds
-            .flatMap(PaceZoneCalculator.racePaceMinutesPerKm)
-            .map(PaceCalculator.formatPace)
-        switch (volumeText, paceText) {
-        case let (.some(v), .some(p)):
-            return String(format: String(localized: "profile.cardio.retroSync.messageBoth", bundle: .module), v, p)
-        case let (.some(v), nil):
-            return String(format: String(localized: "profile.cardio.retroSync.messageVolumeOnly", bundle: .module), v)
-        case let (nil, .some(p)):
-            return String(format: String(localized: "profile.cardio.retroSync.messagePaceOnly", bundle: .module), p)
-        case (nil, nil):
-            return ""
+    private var cardioGoalSummaryText: String {
+        guard profile.cardioCoachingEnabled else {
+            return String(localized: "profile.cardioGoal.summary.off", bundle: .module)
         }
+        return String(localized: profile.cardioGoal.localizedName)
     }
 
     // MARK: - Handoff "Lauf-Coaching - Machbarkeits-Check"
@@ -1075,16 +766,10 @@ public struct ProfileEditorView: View {
             // drei Text-Knoepfe in einer Zeile waeren auf Kartenbreite eng.
             if model.hasPlan {
                 Button {
-                    // UI-Refactor (Korrektur): `accept` schreibt `cardioGoal`
-                    // (das einzige betroffene Snapshot-Feld) UND legt einen
-                    // neuen Plan samt Tagen an — eine bereits abgeschlossene,
-                    // eigene Aktion, kein ausstehender Formular-Edit mehr.
-                    // Re-Snapshot NUR fuer `cardioGoal` sofort danach, sonst
-                    // wuerde "Verwerfen" es isoliert zuruecksetzen, ohne den
-                    // neuen Plan mit zu entfernen (Teil-Rollback) — ein voller
-                    // Re-Snapshot wuerde umgekehrt jede andere offene
-                    // Formularaenderung mit bestaetigen (siehe
-                    // `rebaselineCardioGoal()`-Dokumentation).
+                    // `cardioGoal` ist seit der Cardio-Editor-Auslagerung
+                    // (siehe `CardioGoalEditorView`) kein `ProfileMetaSnapshot`-
+                    // Feld mehr — ein Rebaseline nach `accept` ist darum nicht
+                    // mehr noetig, der Haupt-Screen bleibt davon unberuehrt.
                     guard !isAcceptingCardioFeasibility else { return }
                     // Siehe `acceptOperationFingerprint`-Doku: eine Karte fuer eine ANDERE
                     // Kombination als die, fuer die `acceptOperation` zuletzt stand, braucht
@@ -1094,19 +779,7 @@ public struct ProfileEditorView: View {
                         acceptOperationFingerprint = model.fingerprint
                     }
                     isAcceptingCardioFeasibility = true
-                    // Nachbesserung (P2.3-Review, Punkt 3): Baseline NUR bei
-                    // tatsaechlichem Erfolg fortschreiben, Flag im Fehlerfall
-                    // zuruecksetzen — `accept` laesst `cardioGoal` jetzt bei
-                    // `nil` unveraendert, ein Re-Snapshot waere dann nur ein
-                    // No-Op, aber kein unbedingtes "Fortschreiben" mehr.
-                    //
-                    // Nachbesserung (vierte Korrekturrunde): `model.accept(...using:)` fuehrt
-                    // `resumeIfCommitted`/`attempt` jetzt INTERN aus (siehe
-                    // `CardioFeasibilityCardModel`-Doku); der Cardio-Postlude
-                    // (`profile.cardioGoal =`/Fingerprint) laeuft darin synchron VOR der
-                    // Rueckgabe, auch bei einem spaeter aufgeloesten `.success` -
-                    // `rebaselineCardioGoal()` sieht hier also immer den bereits
-                    // aktualisierten Wert. `nil` bedeutet, dass bereits `accept`s eigene
+                    // `nil` bedeutet, dass bereits `accept`s eigene
                     // Vorbedingungen (z.B. `hasPlan`) nicht erfuellt sind.
                     withAnimation {
                         switch model.accept(profile: profile, in: modelContext, using: acceptOperation) {
@@ -1116,7 +789,6 @@ public struct ProfileEditorView: View {
                             // JEDEM erfolgreichen Uebernehmen fuer den Rest der View-Lebensdauer
                             // dauerhaft deaktiviert.
                             isAcceptingCardioFeasibility = false
-                            rebaselineCardioGoal()
                         case nil:
                             isAcceptingCardioFeasibility = false
                         case .nothingToCreate:
@@ -1183,8 +855,7 @@ public struct ProfileEditorView: View {
             if let input = model.planInput {
                 PlanBuilderView(initialInput: input) { adjustedInput, adjustedResult in
                     // `acceptCustom` aendert ebenfalls nur `cardioFeasibility-
-                    // DismissedFingerprint`, nicht `cardioGoal` — kein
-                    // Rebaseline noetig (siehe `rebaselineCardioGoal()`).
+                    // DismissedFingerprint`, nicht `cardioGoal`.
                     // Keine Navigation bei Erfolg: dieser Screen haelt (anders
                     // als `PlansListView`) gar keine `AppNavigation`-Referenz,
                     // der direkte "Uebernehmen"-Button oben navigiert aus
@@ -1236,29 +907,6 @@ public struct ProfileEditorView: View {
             }
             hintRow(String(localized: "profile.weeklyGoal.footer", bundle: .module))
         }
-    }
-
-    /// P2.5: kosmetischer Default fuer die Ausdauerform-Anzeige, solange
-    /// `profile.enduranceModality` noch `nil` ist (jedes bestehende
-    /// `.endurance`-Profil startet so, das Feld ist neu). Schreibt NICHTS —
-    /// erst ein tatsaechlicher Tap auf Picker/Toggle persistiert ueber
-    /// `setEnduranceModality`. Faellt bewusst auf `.running` zurueck (nicht
-    /// `.cycling`): ein bereits laengere Zeit aktiver `cardioCoachingEnabled`-
-    /// Bestandsnutzer (vor P2.5, kein `enduranceModality` gesetzt) war IMMER
-    /// ein Laufcoach-Nutzer (`CardioGoal` kennt nur Laufdistanzen) — `.running`
-    /// erhaelt dessen Toggle-Zustand unveraendert nutzbar (`supportsRunCoach
-    /// == true`), `.cycling` wuerde ihn faelschlich sperren.
-    private var displayedEnduranceModality: EnduranceModality {
-        profile.enduranceModality ?? .running
-    }
-
-    /// Doc02: die Ausdauerform-Frage ist immer relevant, wenn das Ziel
-    /// ueberhaupt eine Ausdauerform verlangt (`.endurance`/`.hybrid`) — AUCH
-    /// ohne Coach (reine Laufeinheiten bleiben ohne Coach moeglich) — oder
-    /// wenn der bestehende Coach-Schalter (DEL-250, zielunabhaengig nutzbar)
-    /// bereits an ist.
-    private var needsEnduranceModalityQuestion: Bool {
-        profile.trainingGoal == .endurance || profile.trainingGoal == .hybrid || profile.cardioCoachingEnabled
     }
 
     /// DEL-101: Nachträgliche Bearbeitung des Coaching-Stils. Bind direkt
@@ -1321,43 +969,6 @@ public struct ProfileEditorView: View {
 
     // MARK: - Row helpers
 
-    /// DEL-106-Muster (siehe MeasurementView.decimalField): TextField mit Decimal-
-    /// Keyboard, rechtsbuendig, `fitnessNumberStyle()`.
-    ///
-    /// Fix "70,050003"-Bug: `roundsToWeightPrecision` ist NUR fuer das
-    /// Zielgewicht `true` (die andere Aufrufstelle, Wochen-Laufvolumen in
-    /// km, bleibt unveraendert). Rundet den geschriebenen Wert sofort auf 2
-    /// Nachkommastellen statt nur kosmetisch anzuzeigen.
-    @ViewBuilder
-    private func decimalField(_ label: String, value: Binding<Double?>, placeholder: String, roundsToWeightPrecision: Bool = false) -> some View {
-        let displayValue: Binding<Double?> = roundsToWeightPrecision
-            ? Binding(get: { value.wrappedValue }, set: { value.wrappedValue = $0?.rounded(toDecimals: 2) })
-            : value
-        let style: FloatingPointFormatStyle<Double> = roundsToWeightPrecision
-            ? .number.precision(.fractionLength(0...2))
-            : .number
-        TextField(label, value: displayValue, format: style, prompt: Text(placeholder))
-            .decimalKeyboard()
-            .multilineTextAlignment(.trailing)
-            .font(.system(size: 15))
-            .fitnessNumberStyle()
-            .frame(maxWidth: 140)
-    }
-
-    /// DEL-250: Int?-Variante von `decimalField` (Maximalpuls). Kein
-    /// Dezimal-Keyboard noetig — ganzzahlige bpm-Eingabe.
-    @ViewBuilder
-    private func intField(_ label: String, value: Binding<Int?>, placeholder: String) -> some View {
-        TextField(label, value: value, format: .number, prompt: Text(placeholder))
-            #if os(iOS)
-            .keyboardType(.numberPad)
-            #endif
-            .multilineTextAlignment(.trailing)
-            .font(.system(size: 15))
-            .fitnessNumberStyle()
-            .frame(maxWidth: 140)
-    }
-
     /// DEL-106-Muster (siehe SettingsView.hintRow): Inline-Caption am Fuss einer Section.
     private func hintRow(_ text: String, color: Color = Color.Deltiq.textSecondary) -> some View {
         Text(text)
@@ -1384,51 +995,26 @@ public struct ProfileEditorView: View {
 struct ProfileMetaSnapshot: Equatable {
     var profile: BodyFormulaProfile
     var birthDate: Date
-    var cardioCoachingEnabled: Bool
-    var cardioGoal: CardioGoal
-    var current5kReferenceSeconds: Int?
-    var cardioRaceDate: Date?
-    var weeklyBaseVolumeKm: Double?
-    var maxHeartRateBpm: Int?
     var weeklyWorkoutGoal: Int
     var trainingGoal: TrainingGoal
     var coachingTone: CoachingTone
-    /// P2.5 (+ Nachbesserung "ein Laufcoach-Schalter"): `cardioCoachingEnabled`
-    /// oben IST der Laufcoach-Schalter — kein zweites Feld hier noetig.
-    /// `apply` schreibt beide ueber `setEnduranceModality` als Paar zurueck,
-    /// sonst koennte ein Discard die Invariante "Coach nur bei running/both"
-    /// durch getrenntes Zuruecksetzen kurzzeitig verletzen.
-    var enduranceModality: EnduranceModality?
 
     static func capture(from profile: UserBodyProfile) -> ProfileMetaSnapshot {
         ProfileMetaSnapshot(
             profile: profile.profile,
             birthDate: profile.birthDate,
-            cardioCoachingEnabled: profile.cardioCoachingEnabled,
-            cardioGoal: profile.cardioGoal,
-            current5kReferenceSeconds: profile.current5kReferenceSeconds,
-            cardioRaceDate: profile.cardioRaceDate,
-            weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm,
-            maxHeartRateBpm: profile.maxHeartRateBpm,
             weeklyWorkoutGoal: profile.weeklyWorkoutGoal,
             trainingGoal: profile.trainingGoal,
-            coachingTone: profile.coachingTone,
-            enduranceModality: profile.enduranceModality
+            coachingTone: profile.coachingTone
         )
     }
 
     func apply(to profile: UserBodyProfile) {
         profile.profile = self.profile
         profile.birthDate = birthDate
-        profile.cardioGoal = cardioGoal
-        profile.current5kReferenceSeconds = current5kReferenceSeconds
-        profile.cardioRaceDate = cardioRaceDate
-        profile.weeklyBaseVolumeKm = weeklyBaseVolumeKm
-        profile.maxHeartRateBpm = maxHeartRateBpm
         profile.weeklyWorkoutGoal = weeklyWorkoutGoal
         profile.trainingGoal = trainingGoal
         profile.coachingTone = coachingTone
-        profile.setEnduranceModality(enduranceModality, runCoachEnabled: cardioCoachingEnabled)
     }
 }
 

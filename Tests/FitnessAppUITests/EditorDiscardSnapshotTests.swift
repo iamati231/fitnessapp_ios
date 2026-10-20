@@ -39,7 +39,7 @@ import FitnessAppData
 /// post-Review/Finding 3): das gilt NICHT fuer eine `@State`-MUTATION, die
 /// in einem Methodenaufruf gesetzt und erst in einem SPAETEREN Aufruf auf
 /// derselben direkt konstruierten View-Instanz wieder gelesen wird (z.B.
-/// `view.rebaselineCardioGoal()` gefolgt von `view.revertToSnapshot()`).
+/// `view.rebaselineTargetEnvironment()` gefolgt von `view.revertToSnapshot()`).
 /// Ohne lebenden SwiftUI-Graph ist `@State`s `_location` `nil` — `State`s
 /// `nonmutating set` hat dann keine dauerhafte Stelle zum Schreiben, die
 /// Mutation geht beim naechsten Methodenaufruf verloren (im echten, lebenden
@@ -47,8 +47,7 @@ import FitnessAppData
 /// korrekt — reiner Pruef-Artefakt dieses Patterns, kein Produktionsbug).
 /// Betroffene Tests bilden die Funktionskoerper deshalb auf einem lokalen
 /// `var snapshot` nach (siehe `testPlanMetaSnapshotTargetedRebaselineLeaves-
-/// OtherFieldsDirty`/`testProfileEditorViewRebaselineCardioGoalLeaves-
-/// CoachingToneDiscardable`) statt die View-Methoden direkt zu verketten.
+/// OtherFieldsDirty`) statt die View-Methoden direkt zu verketten.
 /// Ein reiner LESE-Zugriff auf eine bei `init` gesetzte `@State`-Property
 /// (z.B. `dayWeekdayAtOpen` in V1) ist davon nicht betroffen — der
 /// Init-Wert steht unabhaengig von `_location` sicher zur Verfuegung.
@@ -228,11 +227,13 @@ final class EditorDiscardSnapshotTests: XCTestCase {
         XCTAssertEqual(profile.trainingGoal, .hybrid)
     }
 
-    /// Szenario aus `ProfileEditorView.revertToSnapshot()`s Doc-Kommentar:
-    /// Cardio-Felder gemeinsam geaendert, ein `apply(to:)` muss alle
-    /// zuruecksetzen (der `fiveKReferenceText`-Puffer-Resync selbst ist
-    /// View-State und bleibt hier unteilbar ungetestet, siehe Datei-Header).
-    func testProfileMetaSnapshotRevertsCardioFieldsTogether() throws {
+    /// Deltiq-Geräteabnahme (C01): Cardio-/Laufziel-Felder haben jetzt einen
+    /// eigenen Save/Cancel-Flow in `CardioGoalEditorView` (siehe dessen
+    /// Typ-Doku) — analog zu `heightCm`/`environment` sind sie deshalb NICHT
+    /// mehr Teil von `ProfileMetaSnapshot`: eine Cardio-Aenderung macht den
+    /// Haupt-Screen nicht dirty, und dessen `apply(to:)` (Verwerfen auf dem
+    /// Haupt-Screen) ruehrt sie nicht an.
+    func testProfileMetaSnapshotExcludesCardioFields() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
         let profile = UserBodyProfile(
@@ -245,14 +246,13 @@ final class EditorDiscardSnapshotTests: XCTestCase {
         profile.cardioCoachingEnabled = true
         profile.cardioGoal = .marathon
         profile.current5kReferenceSeconds = 1500
-        profile.weeklyWorkoutGoal = 6
-        XCTAssertNotEqual(snapshot, ProfileMetaSnapshot.capture(from: profile))
+        XCTAssertEqual(snapshot, ProfileMetaSnapshot.capture(from: profile),
+                       "Cardio-Aenderungen duerfen den Haupt-Screen nicht dirty machen -- eigener Save/Cancel-Flow in CardioGoalEditorView")
 
         snapshot.apply(to: profile)
-        XCTAssertFalse(profile.cardioCoachingEnabled)
-        XCTAssertEqual(profile.cardioGoal, .generalFitness)
-        XCTAssertNil(profile.current5kReferenceSeconds)
-        XCTAssertEqual(profile.weeklyWorkoutGoal, 1)
+        XCTAssertTrue(profile.cardioCoachingEnabled, "Verwerfen auf dem Haupt-Screen darf bestaetigte Cardio-Werte nicht zuruecksetzen")
+        XCTAssertEqual(profile.cardioGoal, .marathon)
+        XCTAssertEqual(profile.current5kReferenceSeconds, 1500)
     }
 
     // MARK: - Korrektur-Runde 3 (V1/V2/V3)
@@ -535,55 +535,5 @@ final class EditorDiscardSnapshotTests: XCTestCase {
         ))
     }
 
-    // MARK: - Korrektur post-Review (Finding 3: ProfileEditorView)
-
-    /// Exaktes Szenario aus dem Review: Coaching-Ton aendern (offener,
-    /// unbestaetigter Formular-Edit) -> Cardio-Aktion bestaetigen (eigene,
-    /// bereits abgeschlossene Aktion, setzt `cardioGoal` + rebaselined NUR
-    /// dieses Feld) -> Verwerfen. Der urspruengliche Bug (volles
-    /// `rebaselineSnapshot()` nach jeder Feasibility-Aktion) haette den
-    /// Coaching-Ton-Edit faelschlich mit bestaetigt; der Discard haette ihn
-    /// nicht mehr zurueckgerollt.
-    ///
-    /// Arbeitet — wie `testPlanMetaSnapshotTargetedRebaselineLeavesOther-
-    /// FieldsDirty` fuer `PlanEditorView.rebaselineTargetEnvironment()` —
-    /// bewusst auf einem lokalen `var snapshot` statt ueber zwei direkte
-    /// Aufrufe von `view.rebaselineCardioGoal()`/`view.revertToSnapshot()`:
-    /// ein per Apple-CI-Lauf bestaetigter Befund zeigte, dass eine `@State`-
-    /// Mutation aus einem Methodenaufruf auf einer direkt konstruierten
-    /// View (ohne lebenden SwiftUI-Graph, `_location == nil`) fuer einen
-    /// SPAETEREN Methodenaufruf auf derselben View-Instanz nicht sichtbar
-    /// ist — `State`s `nonmutating set` kann ohne angeschlossenen Graph
-    /// nirgends dauerhaft hinschreiben. Im echten, lebenden View-Baum (wo
-    /// `rebaselineCardioGoal()`/`revertToSnapshot()` tatsaechlich aufgerufen
-    /// werden) ist `_location` laengst verbunden, dort funktioniert die
-    /// Sequenz korrekt — das ist eine Grenze des Direkt-Konstruktion-Test-
-    /// Patterns, kein Produktionsbug. Die hier gepruefte Logik ist exakt
-    /// identisch zum jeweiligen Funktionskoerper.
-    func testProfileEditorViewRebaselineCardioGoalLeavesCoachingToneDiscardable() throws {
-        let container = try makeContainer()
-        let ctx = container.mainContext
-        let profile = UserBodyProfile(
-            birthDate: Date(timeIntervalSince1970: 0), heightCm: 180, profile: .male,
-            coachingTone: .analytical, cardioGoal: .generalFitness
-        )
-        ctx.insert(profile)
-        var snapshot = ProfileMetaSnapshot.capture(from: profile)
-
-        // Unabhaengiger, noch offener Formular-Edit:
-        profile.coachingTone = .motivating
-        // Cardio-Aktion wird ueber ihre eigene, separate CTA bestaetigt
-        // (entspricht `CardioFeasibilityCardModel.accept`):
-        profile.cardioGoal = .marathon
-        // Entspricht exakt ProfileEditorView.rebaselineCardioGoal():
-        snapshot.cardioGoal = profile.cardioGoal
-
-        // Entspricht exakt ProfileEditorView.revertToSnapshot() (ohne den
-        // reinen View-State `fiveKReferenceText`-Resync, siehe Datei-Header):
-        snapshot.apply(to: profile)
-
-        XCTAssertEqual(profile.coachingTone, .analytical, "Unabhaengiger Coaching-Ton-Edit muss beim Verwerfen zurueckgerollt werden")
-        XCTAssertEqual(profile.cardioGoal, .marathon, "Bestaetigtes cardioGoal bleibt bestehen, kein Teil-Rollback")
-    }
 }
 #endif

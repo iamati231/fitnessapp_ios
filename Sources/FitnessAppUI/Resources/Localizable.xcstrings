@@ -51567,6 +51567,29 @@
           }
         }
       }
+    },
+    "profile.cardioGoal.summary.off": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lauf-Coaching aus"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running coaching off"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu koçluğu kapalı"
+          }
+        }
+      }
     }
   }
 }

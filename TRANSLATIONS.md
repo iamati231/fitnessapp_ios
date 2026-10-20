@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2163 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2243 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2163 / 2163** (100%) | 0 |
-| 🇬🇧 English (EN) | **2163 / 2163** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2163 / 2163** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2243 / 2243** (100%) | 0 |
+| 🇬🇧 English (EN) | **2243 / 2243** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2243 / 2243** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -20,7 +20,7 @@ Quelle: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
 Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind separat aufgelistet — die haben one/other-Varianten.
 
 
-## `active.*`  (47 Keys)
+## `active.*`  (48 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -45,6 +45,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `active.exercise.removeConfirmCta` | Entfernen | Remove | Kaldır |
 | `active.exercise.removeConfirmMessage` | Die bereits geloggten Sätze dieser Übung werden mit entfernt. | The sets already logged for this exercise will be removed too. | Bu hareket için kaydedilmiş setler de kaldırılacak. |
 | `active.exercise.removeConfirmTitle` | Übung entfernen? | Remove exercise? | Hareket kaldırılsın mı? |
+| `active.exercise.removedDuringSession` | Diese Übung wurde entfernt, während die Session lief – nur Anzeige. | This exercise was removed while the session was running – view only. | Bu egzersiz oturum devam ederken kaldırıldı – yalnızca görüntüleme. |
 | `active.finish.feeling.message` | Die App nutzt das für die Progression: Wenn du am Limit warst, halten wir das Gewicht stabil — kein Zwangs-Plus. | We use this for progression: when you were at the limit, we keep the weight stable — no forced increase. | Bunu ilerleme için kullanırız: limitteydiysen ağırlığı sabit tutarız — zorla artırma yok. |
 | `active.finish.feeling.noProgression` | Kein Gewichts-Plus im nächsten Training | No weight increase next workout | Sonraki antrenmanda ağırlık artışı yok |
 | `active.finish.feeling.title` | Wie hat sich das Training angefühlt? | How did the workout feel? | Antrenman nasıl hissettirdi? |
@@ -759,7 +760,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboardSettings.section.inactive.title` | Inaktive Widgets | Inactive Widgets | Pasif Widget'lar |
 | `dashboardSettings.title` | Dashboard anpassen | Customize Dashboard | Panoyu Özelleştir |
 
-## `day.*`  (67 Keys)
+## `day.*`  (69 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -794,6 +795,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `day.editor.equipmentConflict.message` | „%1$@" erfordert Equipment, das in %2$@-Plänen normalerweise nicht verfügbar ist. Möchtest du den Plan-Typ entsprechend anpassen? | "%1$@" requires equipment that's not normally available in %2$@ plans. Want to adjust the plan type? | "%1$@" %2$@ planlarında genellikle bulunmayan ekipman gerektirir. Plan tipini değiştirmek ister misin? |
 | `day.editor.equipmentConflict.switchPlan` | Plan auf %@ umstellen | Switch plan to %@ | Planı %@ olarak değiştir |
 | `day.editor.equipmentConflict.title` | Equipment-Konflikt | Equipment Conflict | Ekipman Çakışması |
+| `day.editor.exercise.delete.saveFailed` | Löschen konnte nicht gespeichert werden. Bitte erneut versuchen. | Couldn't save the deletion. Please try again. | Silme işlemi kaydedilemedi. Lütfen tekrar deneyin. |
 | `day.editor.exercises.editHint` | Tippe eine Übung an um sie zu bearbeiten. „Bearbeiten" oben rechts aktiviert die Drag-Handles zum Umsortieren — Superset-Partner werden automatisch mit verschoben. | Tap an exercise to edit. "Edit" top-right enables drag handles for reordering — superset partners move together. | Düzenlemek için bir harekete dokun. Sağ üstteki "Düzenle" sıralama tutamaçlarını etkinleştirir — süperset eşleri birlikte hareket eder. |
 | `day.editor.exercises.empty` | Noch keine Übungen. | No exercises yet. | Henüz hareket yok. |
 | `day.editor.exercises.restDayEmpty` | Ruhetag — keine Übungen. | Rest day — no exercises. | Dinlenme günü — hareket yok. |
@@ -811,6 +813,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `day.editor.field.timeCap.noLimit` | Kein Limit | No limit | Sınırsız |
 | `day.editor.field.type` | Typ | Type | Tip |
 | `day.editor.field.weekday` | Wochentag | Weekday | Gün |
+| `day.editor.save.failed` | Speichern fehlgeschlagen. Bitte erneut versuchen. | Save failed. Please try again. | Kaydetme başarısız oldu. Lütfen tekrar deneyin. |
 | `day.editor.section.exercises` | Übungen | Exercises | Hareketler |
 | `day.editor.section.info` | Tag-Info | Day Info | Gün Bilgisi |
 | `day.editor.start.button` | Training starten | Start Workout | Antrenmanı Başlat |
@@ -1253,6 +1256,47 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `feeling.hard` | Sehr schwer | Very Hard | Çok Zor |
 | `feeling.okay` | Okay | Okay | İdare Eder |
 
+## `fourWeekReview.*`  (36 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `fourWeekReview.choosePlan.section` | Aktive Pläne | Active plans | Aktif planlar |
+| `fourWeekReview.choosePlan.title` | Plan wählen | Choose a plan | Bir plan seç |
+| `fourWeekReview.complete.action` | Rückblick abschließen | Complete review | Değerlendirmeyi tamamla |
+| `fourWeekReview.concern.comeback.action` | Anpassung ansehen | Review adjustment | Ayarlamayı incele |
+| `fourWeekReview.concern.comeback.subtitle` | Empfehlung: Arbeitsgewichte um etwa %d %% reduzieren, bis du wieder reinkommst. | Recommendation: reduce working weights by about %d%% while you ease back in. | Öneri: tekrar alışana kadar çalışma ağırlıklarını yaklaşık %%%d azalt. |
+| `fourWeekReview.concern.comeback.title` | Längere Trainingspause erkannt | A longer training gap was detected | Daha uzun bir antrenman arası tespit edildi |
+| `fourWeekReview.concern.complaints.subtitle` | In deinem letzten Rückblick hast du Beschwerden oder Schmerzen angegeben. | In your last check-in, you reported complaints or pain. | Son check-in'inde şikayet veya ağrı bildirdin. |
+| `fourWeekReview.concern.complaints.title` | Beschwerden gemeldet | Complaints reported | Şikayet bildirildi |
+| `fourWeekReview.concern.deload.action` | Deload-Woche einplanen | Schedule a deload week | Deload haftası planla |
+| `fourWeekReview.concern.deload.subtitle` | Steigende Last über drei Wochen plus mehrere sehr anstrengende Einheiten — ein Deload könnte jetzt helfen. | Rising load over three weeks plus several very hard sessions — a deload could help now. | Üç haftadır artan yük ve birkaç çok zorlu antrenman — şimdi bir deload işe yarayabilir. |
+| `fourWeekReview.concern.deload.title` | Deine Belastung steigt deutlich | Your training load is climbing fast | Antrenman yükün hızla artıyor |
+| `fourWeekReview.concern.goal.subtitle` | Du hast zuletzt angegeben, dass dein Ziel sich geändert haben könnte. Schau in deinem Profil vorbei, wenn du es anpassen willst. | You last indicated your goal may have changed. Check your profile if you'd like to update it. | Son olarak hedefinin değişmiş olabileceğini belirttin. Güncellemek istersen profiline bakabilirsin. |
+| `fourWeekReview.concern.goal.title` | Ziel möglicherweise nicht mehr aktuell | Goal may no longer be current | Hedef artık güncel olmayabilir |
+| `fourWeekReview.concern.participation.subtitle` | %d von %d geplanten Einheiten verpasst. Kein Vorwurf — nur eine Beobachtung. | %d of %d planned sessions missed. No judgment here — just an observation. | Planlanan %2$d antrenmandan %1$d tanesi kaçırıldı. Bu bir eleştiri değil, sadece bir gözlem. |
+| `fourWeekReview.concern.participation.title` | Teilnahme spürbar unter Plan | Participation noticeably below plan | Katılım plandan belirgin şekilde düşük |
+| `fourWeekReview.dataGap.noCheckIn` | Noch kein Alltags-Rückblick ausgefüllt. | No everyday check-in filled out yet. | Henüz bir günlük check-in doldurulmadı. |
+| `fourWeekReview.dataGap.participation.activationUnknown` | Startdatum des Plans unbekannt — neue Beobachtungsphase ab jetzt. | Plan start date unknown — a new observation period begins now. | Plan başlangıç tarihi bilinmiyor — yeni bir gözlem dönemi şimdi başlıyor. |
+| `fourWeekReview.dataGap.participation.beforeActivation` | Datenstand liegt vor der Planaktivierung. | Data predates the plan's activation. | Veri, planın etkinleştirilmesinden önceye ait. |
+| `fourWeekReview.dataGap.participation.dataUnavailable` | Daten für diese Auswertung konnten nicht geladen werden. | Could not load the data needed for this evaluation. | Bu değerlendirme için gereken veriler yüklenemedi. |
+| `fourWeekReview.dataGap.participation.noActivePlan` | Kein aktuell aktiver Plan vorhanden. | No currently active plan. | Şu anda aktif bir plan yok. |
+| `fourWeekReview.dataGap.participation.noTrainingDays` | Dieser Plan hat keine Trainingstage. | This plan has no training days. | Bu planda antrenman günü yok. |
+| `fourWeekReview.dataGap.participation.partiallyUnattributed` | Ein Teil deiner Trainingshistorie ließ sich wegen mehrerer aktiver Pläne keinem bestimmten Plan sicher zuordnen und wurde hier nicht mitgezählt. | Some of your training history couldn't be reliably matched to a specific plan because multiple plans are active, so it wasn't counted here. | Birden fazla plan aktif olduğu için antrenman geçmişinin bir kısmı belirli bir plana güvenilir şekilde eşlenemedi ve bu nedenle burada sayılmadı. |
+| `fourWeekReview.dataGap.participation.tooEarly` | Noch zu früh seit Planstart für eine Aussage. | Still too early since plan start to say anything. | Plan başlangıcından bu yana henüz bir değerlendirme için çok erken. |
+| `fourWeekReview.dataGap.title` | UNZUREICHENDE DATENGRUNDLAGE | INSUFFICIENT DATA | YETERSİZ VERİ |
+| `fourWeekReview.deload.confirm.apply` | Ja, starten | Yes, start it | Evet, başlat |
+| `fourWeekReview.deload.confirm.title` | Deload-Woche jetzt starten? | Start deload week now? | Deload haftası şimdi başlasın mı? |
+| `fourWeekReview.header.eyebrow` | DEIN RÜCKBLICK | YOUR REVIEW | GERİ BAKIŞIN |
+| `fourWeekReview.keepAsIs.subtitle` | Nichts deutet darauf hin, dass sich etwas ändern sollte. Mach einfach weiter wie bisher. | Nothing suggests a change is needed. Just keep doing what you're doing. | Bir değişiklik gerektiğine dair hiçbir işaret yok. Böyle devam et. |
+| `fourWeekReview.keepAsIs.title` | Dein Plan passt – weiter so! | Your plan fits — keep going! | Planın uyumlu — devam et! |
+| `fourWeekReview.participation.partial` | Davon %d teilweise, %d nur begonnen. | Of those, %d partial, %d only started. | Bunlardan %d kısmi, %d sadece başlandı. |
+| `fourWeekReview.participation.summary` | %d von %d Einheiten abgeschlossen. | %d of %d sessions completed. | %2$d antrenmandan %1$d tanesi tamamlandı. |
+| `fourWeekReview.participation.title` | TEILNAHME | PARTICIPATION | KATILIM |
+| `fourWeekReview.status.completed` | Abgeschlossen am %@ | Completed on %@ | %@ tarihinde tamamlandı |
+| `fourWeekReview.status.due` | Fällig | Due | Süresi geldi |
+| `fourWeekReview.title` | Deine ersten vier Wochen | Your first four weeks | İlk dört haftan |
+| `fourWeekReview.title.laterBlock` | Dein Block-Rückblick | Your block review | Blok değerlendirmen |
+
 ## `gear.*`  (24 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
@@ -1560,6 +1604,37 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.weeklyGoal.subtitle` | Wie oft willst du pro Woche trainieren? Dein Kalender-Streak zählt gegen dieses Ziel — wähle, was du wirklich durchhalten kannst. | How often do you want to train per week? Your calendar streak counts against this — pick what you can actually sustain. | Haftada kaç kez antrenman yapmak istiyorsun? Takvim serin bu hedefe göre sayılır — gerçekten sürdürebileceğini seç. |
 | `onboarding.weeklyGoal.title` | Dein Wochenziel | Your weekly goal | Haftalık hedefin |
 
+## `periodicCheckIn.*`  (26 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `periodicCheckIn.answer.duration.justRight` | Passend | Just right | Tam uygun |
+| `periodicCheckIn.answer.duration.justRight.a11y` | Trainingsdauer: Passend | Duration: Just right | Antrenman süresi: Tam uygun |
+| `periodicCheckIn.answer.duration.tooLong` | Zu lang | Too long | Çok uzun |
+| `periodicCheckIn.answer.duration.tooShort` | Zu kurz | Too short | Çok kısa |
+| `periodicCheckIn.answer.exertion.appropriate` | Passend | Just right | Tam uygun |
+| `periodicCheckIn.answer.exertion.appropriate.a11y` | Belastung: Passend | Training load: Just right | Antrenman yükü: Tam uygun |
+| `periodicCheckIn.answer.exertion.tooEasy` | Zu leicht | Too easy | Çok hafif |
+| `periodicCheckIn.answer.exertion.tooHard` | Zu hart | Too hard | Çok zor |
+| `periodicCheckIn.answer.frequency.asPlanned` | Wie geplant | As planned | Planlandığı gibi |
+| `periodicCheckIn.answer.frequency.less` | Seltener | Less often | Daha az |
+| `periodicCheckIn.answer.frequency.more` | Öfter | More often | Daha sık |
+| `periodicCheckIn.answer.no` | Nein | No | Hayır |
+| `periodicCheckIn.answer.skip` | Keine Angabe | Skip | Belirtmek istemiyorum |
+| `periodicCheckIn.answer.yes` | Ja | Yes | Evet |
+| `periodicCheckIn.footer` | Jede Frage ist freiwillig – überspringe, was du nicht beantworten möchtest. | Every question is optional — skip anything you'd rather not answer. | Her soru isteğe bağlıdır — yanıtlamak istemediğini atlayabilirsin. |
+| `periodicCheckIn.header.eyebrow` | RÜCKBLICK | CHECK-IN | DEĞERLENDİRME |
+| `periodicCheckIn.lastSaved` | Zuletzt gespeichert am %@ | Last saved on %@ | %@ tarihinde kaydedildi |
+| `periodicCheckIn.question.complaints.label` | Hattest du Beschwerden oder Schmerzen? | Did you have any complaints or pain? | Herhangi bir rahatsızlık ya da ağrın oldu mu? |
+| `periodicCheckIn.question.complaints.notePlaceholder` | Was genau? (optional) | What exactly? (optional) | Ne tür? (isteğe bağlı) |
+| `periodicCheckIn.question.duration.label` | Wie fanden sich die Einheiten in der Länge an? | How did the sessions feel in terms of length? | Antrenman süreleri nasıldı? |
+| `periodicCheckIn.question.exertion.label` | Wie war die Belastung insgesamt in diesem Zeitraum? | How was the overall training load during this period? | Bu dönemde genel antrenman yükü nasıldı? |
+| `periodicCheckIn.question.frequency.label` | Wie oft konntest du trainieren? | How often were you able to train? | Ne sıklıkla antrenman yapabildin? |
+| `periodicCheckIn.question.goal.label` | Ist dein Ziel noch aktuell? | Is your goal still current? | Hedefin hâlâ geçerli mi? |
+| `periodicCheckIn.saved.confirmation` | Danke für dein Feedback! | Thanks for your feedback! | Geri bildirimin için teşekkürler! |
+| `periodicCheckIn.section.title` | WIE LIEF ES? | HOW DID IT GO? | NASIL GİTTİ? |
+| `periodicCheckIn.title` | Rückblick | Check-in | Değerlendirme |
+
 ## `picker.*`  (23 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
@@ -1743,7 +1818,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.upperLower.name` | Upper-Lower-Split | Upper-Lower Split | Upper-Lower Split |
 | `plan.template.upperLower.tagline` | 4 Tage · Kraft & Hypertrophie | 4 Days · Strength & Hypertrophy | 4 Gün · Güç & Hipertrofi |
 
-## `planBuilder.*`  (81 Keys)
+## `planBuilder.*`  (87 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1799,10 +1874,16 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.result.fixPosition.unlock` | Positions-Fixierung lösen | Unlock position | Pozisyon sabitlemesini kaldır |
 | `planBuilder.result.fixed.content.badge` | Inhalt fixiert | Content locked | İçerik sabit |
 | `planBuilder.result.fixed.position.badge` | Position fixiert | Position locked | Pozisyon sabit |
+| `planBuilder.result.freshProposal.action` | Neuen Vorschlag erstellen | Create a new proposal | Yeni bir öneri oluştur |
+| `planBuilder.result.freshProposal.confirm.action` | Neu erstellen | Create New | Yeniden Oluştur |
+| `planBuilder.result.freshProposal.confirm.message` | Das ersetzt die gesamte Woche – auch fixierte und manuell geänderte Tage gehen dabei verloren. | This replaces the whole week — pinned and manually changed days will be lost too. | Bu, tüm haftayı değiştirir – sabitlenmiş ve elle değiştirilmiş günler de kaybolur. |
+| `planBuilder.result.freshProposal.confirm.title` | Neuen Vorschlag erstellen? | Create a new proposal? | Yeni bir öneri oluşturulsun mu? |
 | `planBuilder.result.loadLevel.unrated` | Nicht bewertet | Not rated | Değerlendirilmedi |
 | `planBuilder.result.moveTo` | Verschieben nach… | Move to… | Taşı… |
 | `planBuilder.result.moveTo.position` | Position %lld | Position %lld | Pozisyon %lld |
 | `planBuilder.result.noAlternatives.toast` | Für diesen Tag gibt es keine Alternative. | No alternative is available for this day. | Bu gün için alternatif yok. |
+| `planBuilder.result.redistribute.action` | Woche anders verteilen | Redistribute the week | Haftayı farklı dağıt |
+| `planBuilder.result.redistribute.unavailable.toast` | Keine andere Verteilung möglich. | No other distribution is possible. | Başka bir dağıtım mümkün değil. |
 | `planBuilder.result.reorderRejected.toast` | Verschieben nicht möglich: ein fixierter Tag würde seine Position verlieren. | Can't move this day: a pinned day would lose its position. | Taşınamadı: sabitlenmiş bir gün yerini kaybederdi. |
 | `planBuilder.result.retryResolve` | Erneut versuchen | Try Again | Tekrar Dene |
 | `planBuilder.result.weeklyTotal` | %@ pro Woche | %@ per week | Haftada %@ |
@@ -1829,10 +1910,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.wizard.unitsCount.one` | %lld Einheit | %lld unit | %lld birim |
 | `planBuilder.wizard.unitsCount.other` | %lld Einheiten | %lld units | %lld birim |
 
-## `planEditor.*`  (33 Keys)
+## `planEditor.*`  (34 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `planEditor.day.delete.saveFailed` | Löschen konnte nicht gespeichert werden. Bitte erneut versuchen. | Couldn't save the deletion. Please try again. | Silme işlemi kaydedilemedi. Lütfen tekrar deneyin. |
 | `planEditor.days.add.training` | Trainingstag | Training Day | Antrenman Günü |
 | `planEditor.days.empty.template` | Template hat keine Trainings-Tage konfiguriert (sollte nicht passieren). | Template has no training days configured (shouldn't happen). | Şablonun antrenman günleri yok (olmamalı). |
 | `planEditor.days.empty.user` | Noch keine Trainings-Tage. Tippe '+' oben rechts um deinen ersten Tag anzulegen. | No training days yet. Tap '+' top-right to add your first day. | Henüz antrenman günü yok. İlk gününü eklemek için sağ üstteki '+' simgesine dokun. |
@@ -1867,7 +1949,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planEditor.template.banner.title` | Template-Plan | Template Plan | Şablon Plan |
 | `planEditor.toggle.setActive` | Als aktiven Plan setzen | Set as Active Plan | Aktif Plan Olarak Ayarla |
 
-## `plans.*`  (24 Keys)
+## `plans.*`  (26 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1890,6 +1972,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plans.create.fromBuilder` | Plan bauen | Build Plan | Plan Oluştur |
 | `plans.create.fromTemplate` | Aus Template anlegen | From Template | Şablondan Oluştur |
 | `plans.create.fromTemplateShort` | Aus Template | From Template | Şablondan |
+| `plans.delete.blockedActiveSession` | Dieser Plan hat eine laufende Trainingseinheit. Bitte zuerst beenden, dann den Plan löschen. | This plan has a workout in progress. Finish it first, then delete the plan. | Bu planda devam eden bir antrenman var. Önce onu bitirin, sonra planı silin. |
+| `plans.delete.error.title` | Plan konnte nicht gelöscht werden | Plan Couldn't Be Deleted | Plan Silinemedi |
 | `plans.duplicate` | Duplizieren | Duplicate | Çoğalt |
 | `plans.empty.hint` | Lege deinen ersten Trainings-Plan an — Tage, Übungen, Sätze. Der Plan ist die Grundlage für jede Session. | Create your first training plan — days, exercises, sets. The plan is the foundation of every session. | İlk antrenman planını oluştur — günler, hareketler, setler. Plan, her oturumun temelidir. |
 | `plans.empty.title` | Noch kein Plan | No plans yet | Henüz plan yok |
@@ -1912,7 +1996,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (81 Keys)
+## `profile.*`  (82 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1952,6 +2036,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.cardio.retroSync.title` | Retro-Sync | Retro-Sync | Geriye Dönük Senkron |
 | `profile.cardio.weeklyVolume` | Start-Laufvolumen (km/Woche) | Starting volume (km/week) | Başlangıç hacmi (km/hafta) |
 | `profile.cardio.weeklyVolumePlaceholder` | z.B. 20 | e.g. 20 | örn. 20 |
+| `profile.cardioGoal.summary.off` | Lauf-Coaching aus | Running coaching off | Koşu koçluğu kapalı |
 | `profile.coaching.enduranceModality` | Ausdauerform | Endurance type | Dayanıklılık türü |
 | `profile.coaching.footer` | Steuert Tonfall und Inhalt der Coaching-Insights auf dem Dashboard. Lässt sich jederzeit ändern. | Drives tone and content of coaching insights on the dashboard. Changeable any time. | Paneldeki koçluk öngörülerinin tonunu ve içeriğini yönlendirir. Her zaman değiştirilebilir. |
 | `profile.coaching.goal` | Trainingsziel | Training Goal | Antrenman Hedefi |
@@ -2059,7 +2144,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (221 Keys)
+## `settings.*`  (223 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -2148,6 +2233,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.deload.endNow` | Gesenkte Gewichte zurücksetzen (%lld Übungen) | Restore lowered weights (%lld exercises) | Düşürülmüş ağırlıkları geri yükle (%lld egzersiz) |
 | `settings.deload.endNow.done` | Ursprüngliche Gewichte wiederhergestellt. | Original weights restored. | Orijinal ağırlıklar geri yüklendi. |
 | `settings.deload.toggle` | Deload-Vorschläge | Deload suggestions | Deload önerileri |
+| `settings.fourWeekReview.row` | Vier-Wochen-Rückblick | Four-week review | Dört haftalık değerlendirme |
 | `settings.group.appExperience` | App & Trainingserlebnis | App & Workout Experience | Uygulama & Antrenman Deneyimi |
 | `settings.group.dataConnections` | Daten & Verbindungen | Data & Connections | Veri & Bağlantılar |
 | `settings.group.helpInfo` | Hilfe & Informationen | Help & Information | Yardım & Bilgi |
@@ -2230,6 +2316,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.healthWrite.valueNoAccess` | Nicht freigegeben | Not allowed | İzin verilmedi |
 | `settings.healthWrite.valueOff` | Aus | Off | Kapalı |
 | `settings.healthWrite.valueStrength` | Kraft | Strength | Kuvvet |
+| `settings.periodicCheckIn.row` | Kurzer Rückblick | Quick check-in | Kısa değerlendirme |
 | `settings.preferences.exerciseLibrary` | Übungen | Exercises | Hareketler |
 | `settings.preferences.gear` | Ausrüstung & Schuhe | Gear & Shoes | Ekipman & Ayakkabı |
 | `settings.preferences.units.imperial` | Imperial | Imperial | İmperyal |
@@ -2302,7 +2389,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `substitution.reason.pullupToCableLatPulldown` | Ohne Klimmzugstange: der Latzug am Kabel trainiert dieselbe Zugrichtung mit einstellbarem Gewicht. | Without a pull-up bar: the cable lat pulldown trains the same pulling direction with adjustable weight. | Barfiks demiri olmadan: kablo lat pulldown aynı çekiş yönünü ayarlanabilir ağırlıkla çalıştırır. |
 | `substitution.reason.squatToGobletSquat` | Ohne Langhantel und Rack: Goblet Squat trainiert dieselbe Bewegung, aber mit geringerer Lastkapazität. | Without a barbell and rack: the goblet squat trains the same movement, but with lower load capacity. | Halter ve rack olmadan: Goblet Squat aynı hareketi çalıştırır, ancak daha düşük yük kapasitesiyle. |
 
-## `summary.*`  (68 Keys)
+## `summary.*`  (71 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -2321,6 +2408,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.addSet.button` | Satz hinzufügen | Add set | Set ekle |
 | `summary.amrap.avgPace` | ⌀ / Runde | ⌀ / Round | ⌀ / Tur |
 | `summary.amrap.perRound` | %@ pro Runde | %@ per round | tur başına %@ |
+| `summary.content.noHistoricalSnapshot` | Zeigt den aktuellen Planstand – kein überprüfter historischer Schnappschuss. | Shows the current plan state – not a verified historical snapshot. | Geçerli plan durumunu gösterir – doğrulanmış geçmiş bir anlık görüntü değildir. |
+| `summary.content.unreadable` | Trainingsdetails nicht lesbar. | Training details unreadable. | Antrenman detayları okunamıyor. |
 | `summary.date` | Datum | Date | Tarih |
 | `summary.deleteSession.confirmDelete` | Löschen | Delete | Sil |
 | `summary.deleteSession.confirmMessage` | Alle Sätze und das Volumen dieses Trainings werden entfernt. Diese Aktion kann nicht rückgängig gemacht werden. | All sets and the volume of this workout will be removed. This cannot be undone. | Bu antrenmanın tüm setleri ve hacmi kaldırılacak. Bu işlem geri alınamaz. |
@@ -2343,6 +2432,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.exercise.bestPrefix` | Beste | Best | En İyi |
 | `summary.exercise.footer.one` | %1$lld Satz • %2$@ kg Volumen | %1$lld set • %2$@ kg volume | %1$lld set • %2$@ kg hacim |
 | `summary.exercise.footer.other` | %1$lld Sätze • %2$@ kg Volumen | %1$lld sets • %2$@ kg volume | %1$lld set • %2$@ kg hacim |
+| `summary.exercise.originalDeleted` | Ursprüngliche Übung wurde gelöscht – nur Anzeige. | Original exercise was deleted – view only. | Orijinal egzersiz silindi – yalnızca görüntüleme. |
 | `summary.exercise.removeFromSession` | Aus Session entfernen | Remove from session | Oturumdan kaldır |
 | `summary.eyebrow` | Training | Workout | Antrenman |
 | `summary.finishFooter` | Die Session ist bereits gespeichert. Der Button schließt die Zusammenfassung und bringt dich zurück aufs Dashboard. | Session is already saved. The button closes the summary and returns you to the dashboard. | Oturum zaten kaydedildi. Buton özeti kapatır ve seni panele döndürür. |
