@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2253 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2266 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2253 / 2253** (100%) | 0 |
-| 🇬🇧 English (EN) | **2253 / 2253** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2253 / 2253** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2266 / 2266** (100%) | 0 |
+| 🇬🇧 English (EN) | **2266 / 2266** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2266 / 2266** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1998,7 +1998,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (84 Keys)
+## `profile.*`  (97 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -2014,6 +2014,19 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.bodyData.weight.lastEntry` | Zuletzt erfasst: %@ | Last recorded: %@ | Son kayıt: %@ |
 | `profile.bodyData.weight.noEntry` | Noch keine Gewichtsmessung erfasst. | No weight entry recorded yet. | Henüz kilo kaydı yok. |
 | `profile.bodyData.weight.placeholderEmpty` | Gewicht eingeben | Enter weight | Kilo gir |
+| `profile.cardio.adjustment.after` | Vorschlag | Suggested | Öneri |
+| `profile.cardio.adjustment.applied` | Anpassung übernommen | Adjustment applied | Uyarlama uygulandı |
+| `profile.cardio.adjustment.applyError.title` | Anpassung konnte nicht übernommen werden | Could not apply adjustment | Uyarlama uygulanamadı |
+| `profile.cardio.adjustment.applyToCurrentPlan` | Aktuellen Plan anpassen | Adjust current plan | Mevcut planı uyarla |
+| `profile.cardio.adjustment.before` | Bisher | Current | Mevcut |
+| `profile.cardio.adjustment.createNewPlan` | Als neuen Plan erstellen | Create new plan | Yeni plan olarak oluştur |
+| `profile.cardio.adjustment.keep` | Beibehalten | Keep as is | Olduğu gibi bırak |
+| `profile.cardio.adjustment.noEligibleDay` | Deine Laufeinheiten wurden manuell geändert und bleiben unangetastet. Erstelle stattdessen einen neuen Plan, wenn der Coach sie anpassen soll. | Your running days were changed manually and are kept as they are. Create a new plan instead if you want the coach to adjust them. | Koşu günlerin manuel olarak değiştirildi ve olduğu gibi kalıyor. Koçun bunları uyarlamasını istiyorsan bunun yerine yeni bir plan oluştur. |
+| `profile.cardio.adjustment.pending` | Coach aktiviert, Plan noch nicht angepasst | Coach activated, plan not yet adjusted | Koç etkinleştirildi, plan henüz uyarlanmadı |
+| `profile.cardio.adjustment.title` | Plan anpassen | Adjust plan | Planı uyarla |
+| `profile.cardio.coachOff.confirm` | Laufcoach ausschalten | Turn off running coach | Koşu koçunu kapat |
+| `profile.cardio.coachOff.message` | Deine Laufeinheiten und Trainingsdaten bleiben erhalten. Neue laufcoachbezogene Vorschläge und automatische Zielanpassungen werden deaktiviert. | Your running sessions and training data stay as they are. New coaching suggestions and automatic goal adjustments are turned off. | Koşu antrenmanların ve antrenman verilerin olduğu gibi kalır. Yeni koçluk önerileri ve otomatik hedef uyarlamaları kapatılır. |
+| `profile.cardio.coachOff.title` | Laufcoach ausschalten? | Turn off running coach? | Koşu koçu kapatılsın mı? |
 | `profile.cardio.enable` | Lauf-Coaching aktivieren | Enable running coaching | Koşu koçluğunu etkinleştir |
 | `profile.cardio.feasibility.acceptSuggestion` | Vorschlag annehmen | Accept suggestion | Öneriyi kabul et |
 | `profile.cardio.feasibility.adjustPlan` | Plan anpassen | Adjust plan | Planı düzenle |

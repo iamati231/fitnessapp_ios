@@ -41,6 +41,7 @@ public struct ProfileEditorView: View {
     /// Deltiq-Geräteabnahme (C01): gleiches Re-Entry-Muster fuer die
     /// Cardio-/Laufziel-Felder, siehe `cardioCard`/`CardioGoalEditorView`.
     @State private var showingCardioGoalEditor = false
+    @State private var showingCoachAdjustmentPreview = false
 
     /// Settings-Epic Phase 3: fuer die Gewicht-mit-Datum-Zeile in
     /// `bodyDataCard`s Zusammenfassung — derselbe Query wie in
@@ -719,7 +720,9 @@ public struct ProfileEditorView: View {
             ) {
                 showingCardioGoalEditor = true
             }
-            if let model = feasibilityModel {
+            if let adjustmentModel = coachAdjustmentModel {
+                coachAdjustmentSection(adjustmentModel)
+            } else if let model = feasibilityModel {
                 feasibilitySection(model)
             }
             hintRow(String(localized: "profile.cardio.footer", bundle: .module))
@@ -727,6 +730,53 @@ public struct ProfileEditorView: View {
         .sheet(isPresented: $showingCardioGoalEditor) {
             CardioGoalEditorView(profile: profile)
         }
+        .sheet(isPresented: $showingCoachAdjustmentPreview) {
+            if let activePlan {
+                CoachAdjustmentPreviewView(profile: profile, activePlan: activePlan)
+            }
+        }
+    }
+
+    /// Paket 1 (Laufcoach-Plananpassung): der erste aktive Plan, falls
+    /// einer existiert - reuse der bereits geladenen `allPlans` (DEL-047),
+    /// keine zweite Query noetig.
+    private var activePlan: TrainingPlan? {
+        allPlans.first { $0.isActive }
+    }
+
+    /// Leitplanke 6: hat Vorrang vor `feasibilityModel`, sobald ein aktiver
+    /// Plan existiert - siehe `feasibilityModel`s Guard unten und
+    /// `CoachAdjustmentCardModel`s Typ-Doku fuer den vollen Vertrag.
+    private var coachAdjustmentModel: CoachAdjustmentCardModel? {
+        CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan)
+    }
+
+    @ViewBuilder
+    private func coachAdjustmentSection(_ model: CoachAdjustmentCardModel) -> some View {
+        Rectangle()
+            .fill(Color.Deltiq.divider)
+            .frame(height: 1)
+        Button {
+            showingCoachAdjustmentPreview = true
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(model.isAlreadyApplied
+                     ? String(localized: "profile.cardio.adjustment.applied", bundle: .module)
+                     : String(localized: "profile.cardio.adjustment.pending", bundle: .module))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                Text(model.verdict.feasible
+                     ? String(localized: "profile.cardio.feasibility.feasibleHeadline", bundle: .module)
+                     : String(localized: "profile.cardio.feasibility.infeasibleHeadline", bundle: .module))
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var cardioGoalSummaryText: String {
@@ -742,7 +792,10 @@ public struct ProfileEditorView: View {
     /// Empfehlung" (2.30): Profil, Dashboard und Plan-Tab rufen alle
     /// denselben `CardioFeasibilityCardModel.make(for:)` auf.
     private var feasibilityModel: CardioFeasibilityCardModel? {
-        CardioFeasibilityCardModel.make(for: profile)
+        // Leitplanke 6: nicht gleichzeitig mit `coachAdjustmentModel` zeigen
+        // - die neue Karte hat Vorrang, sobald ein aktiver Plan existiert.
+        guard coachAdjustmentModel == nil else { return nil }
+        return CardioFeasibilityCardModel.make(for: profile)
     }
 
     @ViewBuilder

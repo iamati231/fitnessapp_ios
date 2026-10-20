@@ -26,6 +26,11 @@ struct CardioGoalEditorView: View {
            sort: \WorkoutSession.startTime, order: .reverse)
     private var completedSessions: [WorkoutSession]
 
+    /// Paket 1 (Laufcoach-Plananpassung): fuer die Preview nach dem
+    /// Aktivieren des Coachs (siehe `save()`).
+    @Query(filter: #Predicate<TrainingPlan> { $0.isActive == true })
+    private var activePlans: [TrainingPlan]
+
     @State private var draftCardioCoachingEnabled: Bool
     @State private var draftEnduranceModality: EnduranceModality?
     @State private var draftCardioGoal: CardioGoal
@@ -37,6 +42,14 @@ struct CardioGoalEditorView: View {
     @State private var showingDiscardConfirm = false
     @State private var pendingCardioBaseline: CardioBaselineCalculator.Result?
     @State private var retroSyncEmptyNoticeVisible = false
+
+    /// Paket 1 (Laufcoach-Plananpassung, Komponente 5):
+    /// "Coach aus"-Bestätigung (eigener, sofort wirksamer Weg - siehe
+    /// `cardioFields`s Toggle-Binding) und die Vorschau nach dem
+    /// Aktivieren (siehe `save()`).
+    @State private var showingCoachOffConfirm = false
+    @State private var showingAdjustmentPreview = false
+    @State private var planForAdjustmentPreview: TrainingPlan?
 
     init(profile: UserBodyProfile) {
         self.profile = profile
@@ -107,6 +120,38 @@ struct CardioGoalEditorView: View {
             } message: { result in
                 Text(cardioBaselineMessage(result))
             }
+            // Paket 1, Komponente 5: "Coach ausschalten" - sofort wirksam,
+            // ausserhalb des normalen Entwurf-Speichern-Flusses. Bestaetigt
+            // schreibt NUR `cardioCoachingEnabled = false` - Trainingsdaten/
+            // Laufeinheiten/Historie bleiben unangetastet.
+            .confirmationDialog(
+                Text("profile.cardio.coachOff.title", bundle: .module),
+                isPresented: $showingCoachOffConfirm,
+                titleVisibility: .visible
+            ) {
+                Button(role: .destructive) {
+                    profile.cardioCoachingEnabled = false
+                    try? modelContext.save()
+                    dismiss()
+                } label: {
+                    Text("profile.cardio.coachOff.confirm", bundle: .module)
+                }
+                Button(role: .cancel) {} label: {
+                    Text("common.cancel", bundle: .module)
+                }
+            } message: {
+                Text("profile.cardio.coachOff.message", bundle: .module)
+            }
+            // Paket 1, Komponente 5: nach dem Aktivieren schliesst diese
+            // View erst, NACHDEM die Vorschau geschlossen wurde (egal mit
+            // welcher Aktion) - der Nutzer landet danach wieder auf
+            // `ProfileEditorView`, nicht in diesem (bereits gespeicherten,
+            // nicht mehr dirty) Editor haengen.
+            .sheet(isPresented: $showingAdjustmentPreview, onDismiss: { dismiss() }) {
+                if let planForAdjustmentPreview {
+                    CoachAdjustmentPreviewView(profile: profile, activePlan: planForAdjustmentPreview)
+                }
+            }
         }
     }
 
@@ -123,6 +168,12 @@ struct CardioGoalEditorView: View {
     }
 
     private func save() {
+        // Paket 1, Komponente 5: nur ECHTES Aktivieren (vorher aus, jetzt
+        // an) loest die Anpassungsvorschau aus - ein Speichern, bei dem der
+        // Coach schon vorher an war (z. B. nur Renndatum geaendert), zeigt
+        // sie nicht erneut.
+        let coachJustActivated = !profile.cardioCoachingEnabled && draftCardioCoachingEnabled
+
         profile.setEnduranceModality(draftEnduranceModality, runCoachEnabled: draftCardioCoachingEnabled)
         profile.cardioGoal = draftCardioGoal
         profile.cardioRaceDate = draftCardioRaceDate
@@ -135,7 +186,13 @@ struct CardioGoalEditorView: View {
         // impliziter Autosave kam nicht reproduzierbar rechtzeitig durch) -
         // derselbe Musterfehler wie in `MeasurementPersistenceTests`/E01.
         try? modelContext.save()
-        dismiss()
+
+        if coachJustActivated, let plan = activePlans.first {
+            planForAdjustmentPreview = plan
+            showingAdjustmentPreview = true
+        } else {
+            dismiss()
+        }
     }
 
     /// Mirrors `UserBodyProfile.setEnduranceModality` auf dem lokalen Draft:
@@ -164,7 +221,19 @@ struct CardioGoalEditorView: View {
             ) {
                 Toggle("", isOn: Binding(
                     get: { draftCardioCoachingEnabled },
-                    set: { setDraftEnduranceModality(draftEnduranceModality, runCoachEnabled: $0) }
+                    set: { newValue in
+                        // Paket 1, Komponente 5: "Coach ausschalten" ist ein
+                        // eigener, SOFORT wirksamer Weg (eigene Bestätigung,
+                        // schreibt direkt auf `profile`, kein Teil des
+                        // normalen Entwurf-dann-Speichern-Flusses der
+                        // übrigen Felder hier) - siehe
+                        // `profile.cardio.coachOff.title` weiter unten.
+                        if !newValue && draftCardioCoachingEnabled {
+                            showingCoachOffConfirm = true
+                        } else {
+                            setDraftEnduranceModality(draftEnduranceModality, runCoachEnabled: newValue)
+                        }
+                    }
                 ))
                 .labelsHidden()
                 .tint(Color.deltiqOrange)
