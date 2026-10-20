@@ -1,6 +1,9 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-20 (sechzehnter Durchgang: Paket 1 — der beim
+Stand: 2026-10-20 (siebzehnter Durchgang: Zurück-Navigations-Beobachtung
+aus Durchgang 16 per vollständiger Code-Analyse aufgelöst — kein Bug,
+siehe Abschnitt „Zurück-Navigation geklärt" unten. Jetzt Beginn Paket 2
+(strukturierte Ausdauereinheiten). Davor sechzehnter Durchgang: Paket 1 — der beim
 Konfliktbanner-Nachtest entdeckte echte Bug [Übernahme war trotz
 ungelöstem `distributionConflict` nicht blockiert] gefixt und
 gerätebestätigt, HEAD `1cbffeb`, siehe Nachtrag „Übernahme-Blockade
@@ -91,6 +94,46 @@ Runde 7 korrekt eingeordnet und gefixt. Gesamtabnahme weiterhin offen
 (kein vollständiger Abschluss aller 46 Fälle). Paket 1 (Coach-Aktivierung →
 Plananpassung) ist seit der Geräteabnahme unten vollständig gerätebestätigt,
 alle 9 geforderten Nachweise bestanden, kein Bug gefunden.**
+
+## Zurück-Navigation geklärt (kein Bug, vollständige Code-Analyse statt Geräte-Session)
+
+**Beobachtung aus Durchgang 16:** "Zurück" im Ergebnis-Schritt von
+`PlanBuilderView` schien den ganzen Entwurf zu verwerfen statt nur einen
+Schritt zurückzugehen.
+
+**Analyse (alle `draft`-Mutationsstellen in `PlanBuilderView.swift`
+geprüft):** `goToPreviousStep()`/`goToNextStep()` ändern nur `step`;
+`draft` wird dabei nicht angefasst. Beim erneuten Eintritt in `.result`
+ruft `goToNextStep()` `generatePreviewIfNeeded()` auf — die regeneriert
+`draft` NUR, wenn sich `currentInput` seit der letzten Erzeugung
+geändert hat (`guard draft == nil || lastGeneratedInput != currentInput
+else { return }`). `currentInput` ist eine reine Ableitung aus
+`@State`-Skalaren/Enums (Ziel, Tage, Ausdauerform, Equipment, Erfahrung) —
+deterministisch, keine Zufalls-/Zeit-Komponente. Alle übrigen
+`draft = ...`-Zuweisungen liegen ausschließlich in explizit
+nutzerausgelösten Aktionen (`moveDraftDays` = Drag&Drop,
+`redistributeWeek()`/`requestFreshProposal()` = Menü-Aktionen) — keine
+davon wird durch bloße Navigation ausgelöst.
+
+**Schluss:** ein reines Zurück-und-wieder-Vor OHNE zwischenzeitliche
+Eingabeänderung verliert nachweislich nichts (manuelle Entwurfsänderungen
+eingeschlossen). Die beobachtete Verwerfung trat nur auf, wenn zwischen
+Zurück und Vor tatsächlich Tage/Ziel geändert wurden — das ist
+erwartetes, korrektes Verhalten (ein Layout für eine andere Tageszahl ist
+für die neue Eingabe nicht mehr gültig), kein Fehler.
+
+**Aufruf mit bestehendem aktivem Plan:** `adoptPlan()` ist der EINZIGE
+Ort, der `modelContext`/Profil mutiert (inkl. `onEnduranceModalityChosen`-
+Callback) — das passiert ausschließlich beim expliziten Übernehmen-Tap,
+nie bei Zurück/Abbrechen/Dismiss. Ein bestehender aktiver Plan kann durch
+Verwerfen des Builder-Entwurfs also strukturell nicht verändert werden,
+unabhängig vom Aufrufkontext — bestätigt durch vollständige Durchsicht
+aller Schreibzugriffe in `adoptPlan()`, kein Geräte-Nachtest nötig (reine
+deterministische Zustandslogik, keine SwiftData-Timing-Klasse von Bug wie
+die bisher gefundenen Kaltstart-Fälle).
+
+**Kein Code geändert, kein CI-Lauf, keine TestingBot-Session für diesen
+Punkt.**
 
 ## Paket 1: Geräteabnahme (9 Prüfpunkte) — vollständig bestanden
 
