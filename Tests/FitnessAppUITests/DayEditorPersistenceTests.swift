@@ -302,5 +302,65 @@ final class DayEditorPersistenceTests: XCTestCase {
         XCTAssertEqual(sessions.first?.roundsCompleted, 1,
                         "die gezaehlte Runde muss einen echten Store-Neustart ueberstehen, nicht nur In-Memory-Retention")
     }
+
+    /// TestingBot-Geraetebefund (Deltiq-Abnahme, Punkt 4): `beginRest()` in
+    /// `CircuitWorkoutPlayerView` speichert den neuen Pausen-Anker explizit
+    /// (siehe Test oben), `endRest()` (Pausenablauf UND "Skip rest") hatte
+    /// denselben Sofort-Save bisher NICHT, obwohl f2a31a5 ausdruecklich "an
+    /// allen elf Fundstellen" behoben haben wollte — eine zwoelfte wurde
+    /// uebersehen. Auf echtem Geraet reproduziert: Circuit-Runde 1
+    /// abgeschlossen (Pause beginnt, korrekt gespeichert), "Skip rest"
+    /// getippt (Runde 2 aktiv, 0 abgehakt), sofort Force-Quit + Kaltstart —
+    /// die App zeigte nach dem Neustart wieder die (laengst beendete) Pause
+    /// fuer Runde 1, weil `circuitRestEndDate` auf der Store-Datei nie auf
+    /// `nil` gesetzt wurde. Exakt die Sequenz aus `endRest()` nach dem Fix:
+    /// `circuitRestEndDate` auf `nil` setzen, SOFORT `context.save()`.
+    func testCircuitEndRestWithImmediateSaveSurvivesARealStoreRestart() throws {
+        let storeURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("circuit-endrest-persistence-\(UUID().uuidString)")
+            .appendingPathExtension("store")
+        defer {
+            try? FileManager.default.removeItem(at: storeURL)
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("shm"))
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("wal"))
+        }
+
+        do {
+            let container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
+            let context = container.mainContext
+
+            let plan = TrainingPlan(name: "Zirkel-Training", programType: "custom", isActive: true)
+            context.insert(plan)
+            let day = TrainingDay(name: "Zirkel", weekday: 2, type: .custom, plan: plan, timeFormat: .circuit, circuitRounds: 5, circuitRestSeconds: 60)
+            context.insert(day)
+            let session = WorkoutSession(isCompleted: false, day: day)
+            context.insert(session)
+            try context.save()
+
+            // Exakt die Sequenz aus `completeCurrentRound()` ->
+            // `beginRest()` -> `endRest()` ("Skip rest") nach dem Fix: jede
+            // Mutation speichert sofort, keine wartet bis `saveNow()`.
+            session.circuitRoundsCompleted = 1
+            try context.save()
+
+            session.circuitRestEndDate = Date().addingTimeInterval(60)
+            try context.save()
+
+            // "Skip rest": Pausen-Anker weg, SOFORT Save.
+            session.circuitRestEndDate = nil
+            try context.save()
+        }
+
+        // `init(session:)` liest `circuitRestEndDate`, um zu entscheiden, ob
+        // gerade eine Pause laeuft — ein echter Store-Neustart muss `nil`
+        // zeigen (Runde 2 aktiv), nicht den laengst beendeten Pausen-Anker
+        // aus Runde 1.
+        let reopened = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
+        let sessions = try reopened.mainContext.fetch(FetchDescriptor<WorkoutSession>())
+        XCTAssertEqual(sessions.count, 1)
+        XCTAssertEqual(sessions.first?.circuitRoundsCompleted, 1)
+        XCTAssertNil(sessions.first?.circuitRestEndDate,
+                      "das Pausenende muss einen echten Store-Neustart als nil ueberstehen, nicht als stehengebliebener alter Anker")
+    }
 }
 #endif

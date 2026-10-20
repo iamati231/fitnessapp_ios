@@ -551,6 +551,15 @@ struct CircuitPlayerView: View {
     private func endRest() {
         restEndDate = nil
         session.circuitRestEndDate = nil
+        // TestingBot-Geraetebefund (Deltiq-Abnahme, Punkt 4): `beginRest()`
+        // (oben) speichert den neuen Pausen-Anker explizit, `endRest()`
+        // (Pausenablauf UND "Skip rest") hatte denselben Sofort-Save bisher
+        // NICHT - auf echtem Geraet reproduziert: Pause ueberspringen, sofort
+        // Force-Quit + Kaltstart -> die App zeigte nach dem Neustart wieder
+        // die (eigentlich schon beendete) Pause an, weil `circuitRestEndDate`
+        // auf der Store-Datei nie auf `nil` gesetzt wurde. Gleiches
+        // Fix-Muster wie die uebrigen zehn Fundstellen aus f2a31a5.
+        try? modelContext.save()
         DeltiqHaptics.notify(.success)
         if timerSoundEnabled {
             TimerSoundPlayer.shared.playLong()
