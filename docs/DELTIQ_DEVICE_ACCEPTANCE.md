@@ -1,25 +1,30 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-20 (achter Durchgang: Runde 7 — A01 korrekt neu eingeordnet
-und gefixt [doppelte Ziel-/Tage-Abfrage im eingebetteten PlanBuilder],
-autoAcceptAlerts-Einfluss auf frühere Geräte-Nachweise systematisch
-geprüft, siehe Nachtrag „Runde 7" unten), Branch `claude/smart-onboarding-
-epic`, HEAD `a4359f4` (Fix-Commit dieser Runde: `PlanBuilderView`
-preseedet jetzt auch Ziel und Tage aus den bereits gegebenen Onboarding-
-Antworten; davor `47678c1` Fix-Commit Runde 6 [D06 Cancel-Endlosschleife],
-davor `80eee60` reiner Dokumentations-Commit zur Speicherfehler-
-Codeprüfung, davor `1c8bf54` Fix-Commit Runde 5
+Stand: 2026-10-20 (neunter Durchgang: Runde 8 — E04 Türkisch +
+Dezimalgewicht/Imperial-Einheiten in Deutsch, F01–F08 differenziert auf
+Erreichbarkeit ohne CSV-Export/Systemzeit geprüft, siehe Nachtrag „Runde 8"
+unten), Branch `claude/smart-onboarding-epic`, HEAD `c299c22` (reine
+Syntaxkorrektur einer fehlenden schließenden Klammer; Fix-Commit dieser
+Runde ist `872f707` — `deltiqLabel()`-Spalten-Header-Captions brachen bei
+maximaler Bedienungshilfen-Textgröße um, geräteverifiziert nach der
+Korrektur; davor `a4359f4` Fix-Commit Runde 7
+[A01 doppelte Ziel-/Tage-Abfrage], davor `47678c1` Fix-Commit Runde 6 [D06
+Cancel-Endlosschleife], davor `80eee60` reiner Dokumentations-Commit zur
+Speicherfehler-Codeprüfung, davor `1c8bf54` Fix-Commit Runde 5
 (`CardioGoalEditorView.save()`), davor `47ab4d6` der ursprüngliche C01-Fix,
 davor `4ea8d7b` reiner Dokumentations-Commit zu Runde 3, davor `254d669`
 Korrektur-Commit zu E05, davor `64ba455` Fix-Commit E04, davor `3e67cb8`
 ursprünglicher — per Geräte-Nachtest widerlegter — E05-Versuch, davor
-`c96bf5c`). TestingBot-Verbrauch Runde 7: siehe Nachtrag „Runde 7" unten
+`c96bf5c`). TestingBot-Verbrauch Runde 8: siehe Nachtrag „Runde 8" unten
 für Details und exakte Budget-Rekonstruktion. Kein Merge nach `main`, kein
 Release.
 
 **Gesamtstatus: A–F bearbeitet; deutliche Mehrheit bestanden, einzelne
 Fälle teilweise oder (A09/C04/E08/F04) noch offen als fachliche
-Implementierungslücken. C01 seit Runde 5 vollständig bestanden. D06 seit
+Implementierungslücken. Neu seit Runde 8: das kg/lbs-Einheiten-Setting
+wirkt NICHT auf das eigentliche Gewichts-Eingabefeld beim Satz-Logging
+(nur auf Hantel-Rechner/Warmup-Rampe) — echte Implementierungslücke,
+siehe dortiger Nachtrag. C01 seit Runde 5 vollständig bestanden. D06 seit
 Runde 6 vollständig bestanden (isolierter Cancel-Schritt gerätebestätigt;
 dabei gefundene Dialog-Endlosschleife gefixt und gerätebestätigt). A01 seit
 Runde 7 korrekt eingeordnet und gefixt (doppelte Ziel-/Tage-Abfrage beim
@@ -27,6 +32,202 @@ Wechsel vom Onboarding in den eingebetteten PlanBuilder, siehe dortiger
 Nachtrag für die in Runde 6 fälschlich geführte „kein Produktpfad"-
 Einordnung und ihre Rücknahme). Gesamtabnahme weiterhin offen (kein
 vollständiger Abschluss aller 45 Fälle).**
+
+## Runde 8: E04 Türkisch + Imperial-Einheiten (DE), F01–F08 Erreichbarkeit differenziert geprüft
+
+**Auftrag:** (1) E04-Rest Türkisch mit der in Runde 7 etablierten
+Locale-Capability-Methode (kein neuer Respring-Versuch), kombiniert mit noch
+offenen E04-Bedingungen (schmale Breite, große Schrift, Dezimalgewicht,
+kg/lbs) soweit sinnvoll; (2) F01–F08 pro Fall differenziert prüfen, ob der
+fehlende UI-/Geräte-Nachweis ohne CSV-Export/Systemzeit-Manipulation
+erreichbar ist, keine neue Testinfrastruktur; (3) Budget transparent als
+Session-Summe vs. Konto-API kennzeichnen, keine Zusatzabfrage/-session nur
+dafür. Kein neuer allgemeiner Review, kein Merge, kein Release.
+
+### E04 Türkisch — Standardbedingungen bestanden
+
+**Geprüft (Build `tb://69c9fff4bfd115990736f838`, Commit `a4359f4`,
+`appium:language: "tr"`/`appium:locale: "TR"`):** identische Methode wie
+Runde 7s DE-Nachweis. App startete sauber auf Türkisch, kein Respring,
+Session durchgehend stabil. Vollständiger Onboarding-Durchlauf (Willkommen
+→ Profil → Ziel/Wochenziel/Coaching-Ton → Ausdauerform → Trainingshistorie
+→ Equipment → Start-Check → Plan-Vorschlag → Dashboard), danach Settings →
+Profil → `CardioGoalEditorView` mit aktiviertem Lauf-Coaching (alle Felder:
+Ausdauerform, Ziel-Picker, 5-km-Zeit, Renndatum, Startvolumen,
+Maximalpuls). Durchgehend korrekte Übersetzung (u. a. "Antrenman Yeri",
+"Haftalık antrenman", "Dayanıklılık türü", "Kardiyo ve Koşu Hedefleri"),
+korrekte Dezimalkomma-Formatierung bei cm/kg ("178,00 cm · 75 kg"),
+Dezimaleingabe mit Komma im Wochenvolumen-Feld ("32,5") korrekt
+übernommen, kein Abschneiden, keine rohen/unübersetzten Schlüssel
+beobachtet. Speichern bestätigt (Zusammenfassungszeile wechselte zu
+"Kardiyo ve Koşu Hedefleri, Genel Fitness"), Kaltstart (Force-Quit +
+Neustart) überstand den gespeicherten Wert korrekt. **E04-Rest (TR,
+Standardbedingungen) gilt damit als bestanden.** Schmale Breite/große
+Schrift/Dezimalgewicht-kg-lbs-Kombinationen mit Türkisch wurden in dieser
+Runde NICHT zusätzlich geprüft (Zeitpriorität lag auf Deutsch, siehe
+unten) — bleiben offen.
+
+TestingBot-Session (aktiv beendet): Test-ID 54028623, 538 s.
+
+### Imperial-Einheiten (kg/lbs) in Deutsch — echte Implementierungslücke gefunden
+
+**Testaufbau:** frischer Onboarding-Durchlauf auf Deutsch (identische
+Locale-Capability-Methode, kein Respring), danach Settings → "App &
+Trainingserlebnis" → Einheiten auf "Imperial" umgestellt.
+
+**Befund:** das Einheiten-Setting wirkt NICHT einheitlich. Betroffen bzw.
+nicht betroffen:
+- **Wirkt korrekt:** Haupt-Profil-Zusammenfassungszeile in `SettingsView`
+  (Größe konvertiert zu "64,90 in", via `formattedWeight()`/analoge
+  Höhen-Konvertierung), Hantel-Rechner (`PlatePopoverContent`) und
+  Warmup-Rampen-Anzeige (`ExerciseCard.stepWeightText`/`warmupRamp`,
+  `weightUnitRaw == "lbs"`-Zweig) — alle drei bereits vor dieser Runde
+  korrekt implementiert.
+- **Wirkt NICHT, obwohl es laut App eigener Settings-Hinweistext sollte**
+  ("Die DB speichert immer metrisch. Diese Einstellung steuert nur die
+  Anzeige in Eingabe-Feldern, im Hantel-Rechner und auf den Karten" —
+  wörtlich "Eingabe-Feldern" eingeschlossen): `ProfileEditorView`s
+  `bodyDataSummaryText` (hartcodiert `" kg"`, Zeilen 643/646) und die
+  gesamte `BodyDataEditorView` (Größe/Gewicht/Zielgewicht-Eingabefelder,
+  Labels fest "(cm)"/"(kg)") zeigten weiterhin "165,00 cm · 62 kg" nach
+  Umstellung auf Imperial. **Gravierender:** `SetRow.weightInput` (das
+  eigentliche Gewichts-Eingabefeld beim Satz-Logging, E04s
+  Implementierungsstelle) bindet `$weight` direkt ohne jede
+  Einheiten-Konvertierung — ein eingegebener Zahlenwert wird immer als kg
+  interpretiert, unabhängig vom Einheiten-Setting; der Spaltenkopf
+  darüber war zusätzlich hart auf "KG" fixiert (`unit.kg.upper`, siehe
+  unten). Dashboard-Gewichts-Trend-Widget zeigte ebenfalls unverändert kg
+  ("62,0").
+
+**Einordnung:** dies ist eine echte, app-weite Implementierungslücke (wie
+A09/C04/F04), kein kleiner gezielter Bug — eine vollständige
+kg/lbs-Konvertierung am Satz-Logging-Eingabefeld selbst (Anzeige,
+Eingabe-Parsing, Rückkonvertierung zur Speicherung) wäre eine größere,
+noch nicht umgesetzte Funktionalität, kein Ein-Zeilen-Fix. Nicht in dieser
+Runde implementiert (außerhalb des gezielten Fix-Rahmens). Eingeordnet als
+neuer, sechster fachlicher Widerspruch zur Dok. 01-Beschreibung, siehe
+Abschnitt "Fachliche Widersprüche" oben.
+
+### Echter Bug gefunden und gefixt: Spalten-Header brechen bei maximaler Bedienungshilfen-Textgröße um
+
+Bei aktivierter "Größerer dynamischer Text"-Einstellung (iOS-Bedienungshilfen,
+Slider auf 100 %/AX5, über die Einstellungen-App gesetzt) zeigte ein
+Screenshot des Satz-Logging-Screens (Deutsch): der Spalten-Header "SATZ"
+brach buchstabenweise um (S/a/t/z vertikal untereinander statt einer
+Zeile), überlappend mit "KG"/"WDH"-Headern und der Tab-Leiste — die
+eigentliche Gewichts-Eingabe ("72,5", der bereits in Runde 3 gefixte
+E04-Fall) blieb zwar unverändert korrekt lesbar, aber der Header-Bereich
+darüber war visuell unbrauchbar. Root Cause: der gemeinsame
+`deltiqLabel()`-Styling-Helfer (genutzt von "KG"/"WDH"/"PACE"/"RIR"/"SATZ"
+und weiteren kurzen Captions app-weit, `Compatibility.swift`) nutzt
+`.caption2` als Dynamic-Type-Textstil ohne `.lineLimit`/
+`.minimumScaleFactor` — bei AX5 skaliert die Systemschrift ungebremst mit
+und sprengt den festbreiten Spalten-Rahmen.
+
+**Fix (Commit `c299c22`, nach einem zwischenzeitlich fehlgeschlagenen
+CI-Lauf `39437532243` durch eine fehlende schließende Klammer im ersten
+Versuch `872f707` — sofort korrigiert, siehe dortiger Commit):**
+`.lineLimit(1)` + `.minimumScaleFactor(0.5)` auf `deltiqLabel()` selbst,
+identisches Muster wie der bereits gefixte `SetRow.weightInput` (Runde 3).
+Neuer Test `DeltiqLabelScalesDownInsteadOfWrappingTests` (liest die
+Produktionsquelle direkt, prüft den `deltiqLabel()`-Funktionskörper, kein
+SwiftUI-Import nötig).
+
+**CI nach Korrektur:**
+
+| Run | Commit | Ergebnis |
+|---|---|---|
+| `39437532243` | `872f707` (erster Fix-Versuch) | ✗ fehlgeschlagen — fehlende schließende Klammer (reine Syntaxkorrektur nötig, keine funktionale Ursache) |
+| `39438015631` | `c299c22` (Klammer-Korrektur) | ✓ erfolgreich, inkl. neuem Test und App+Widget-Build |
+
+**Geräte-Nachtest (Build `tb://370b62d80443ee88ccdf376c`, Commit `c299c22`,
+Deutsch, `appium:language: "de"`, Dynamic-Type-Slider erneut auf 100 %/AX5
+gesetzt):** frischer Onboarding-Durchlauf bis zum Satz-Logging-Screen
+("Kniebeuge", Übung 1/5). Spalten-Header zeigt jetzt "KG"/"WDH" sauber
+einzeilig und vollständig lesbar, keine Überlappung mit Dateneingabezeile
+oder Tab-Leiste mehr — die zuvor beobachtete buchstabenweise Umbruch-Kette
+ist behoben. Kleine verbleibende Nuance: "SATZ" selbst wird bei dieser
+EXTREMEN Textgröße trotz `.minimumScaleFactor(0.5)` noch als "…" dargestellt
+(der zugrunde liegende Accessibility-Wert bleibt korrekt "Satz", VoiceOver
+liest ihn unverändert vor) — eine optische Verkürzung, keine Überlappung
+oder gebrochene Darstellung mehr. **Kernbefund (Überlappung/Zeilenumbruch)
+gilt als behoben und gerätebestätigt**; die "…"-Kürzung selbst wird nicht
+als eigener Fehler geführt (gleiche Kategorie wie die bereits bekannte,
+akzeptierte Tag-Namen-Kürzung aus Runde 3).
+
+**Zusätzlich beobachtet (nicht Teil dieses Fixes, nicht in dieser Runde
+behoben):** auf dem Onboarding-Profilschritt brach bei AX5 auch das Label
+"Geburtsdatum" (eine andere Textstelle, nicht `deltiqLabel()`) buchstaben-
+weise um. Strukturell derselbe Fehlerklasse, aber andere Code-Stelle außerhalb
+des Satz-Logging-Screens — als zusätzlicher, noch offener Befund vermerkt,
+nicht Teil des gezielten Fixes dieser Runde.
+
+**TestingBot-Sessions dieser Runde insgesamt (alle aktiv beendet,
+`max_concurrent=1` eingehalten):**
+
+| # | Zweck | Build/Commit | Dauer |
+|---|---|---|---|
+| 1 | E04-TR Standardbedingungen | `tb://69c9fff4bfd115990736f838` / `a4359f4` | 538 s |
+| 2 | Imperial-Einheiten + AX5-Bugfund (DE) | `tb://69c9fff4bfd115990736f838` / `a4359f4` | 712 s |
+| 3 | Fix-Nachtest Spalten-Header (DE, AX5) | `tb://370b62d80443ee88ccdf376c` / `c299c22` | 512 s |
+
+Zusätzlich 6 gescheiterte Sessionstarts (WebDriverAgent-Infra-Fehler,
+"socket hang up", 0 s Verbrauch, kein Session-Leck). Budget-Details siehe
+Abschnitt "Budget" unten.
+
+### F01–F08: Erreichbarkeit ohne CSV-Export/Systemzeit geprüft — weiterhin derselbe eine Blocker
+
+Pro Fall geprüft, ob der laut "F01–F08 differenziert geprüft"-Nachtrag
+verbleibende reine UI-/Geräte-Nachweis (der tatsächlich gerenderte
+`FourWeekReviewView`-Screen) ohne CSV-Export oder Systemzeit-Manipulation
+erreichbar ist:
+
+- **Kein alternativer Codepfad gefunden:** `FourWeekReviewView` ist nur
+  über `FourWeekReviewEntryView` erreichbar, die wiederum nur bei einem
+  tatsächlich fälligen Review (`FourWeekReviewDueStatus.isAnyDue`, basiert
+  auf `TrainingPlan.activatedAt` + echter `Date()`-Laufzeitabfrage)
+  überhaupt navigierbar ist — kein Debug-Menü, kein Developer-Flag, keine
+  `ProcessInfo`/Launch-Argument-basierte Seed-Möglichkeit im Produktcode
+  gefunden (gezielt durchsucht).
+- **CSV-Import selbst bleibt der einzige bekannte clock-freie Weg**
+  (`DataImportService` liest `activated_at_utc`/
+  `block_review_history_json` direkt, siehe Abschnitt "Block D/E" oben),
+  ist aber weiterhin am CSV-EXPORT-Schritt blockiert (reproduzierbarer
+  Hang auf dem TestingBot-Gerät, in 6 unabhängigen Sessions bestätigt).
+- **Ein manuell handgefertigtes Import-ZIP ohne vorherigen Export** (eigene
+  `plans.csv`/`profile.csv`/`workouts.csv` exakt im von
+  `DataImportService` erwarteten Schema nachgebaut, direkt auf den
+  Simulator gepusht) wurde geprüft und bewusst NICHT umgesetzt — das wäre
+  genau die in diesem Auftrag ausgeschlossene neue, umfangreiche
+  Testinfrastruktur (kein bestehendes Test-Fixture für `plans.csv`
+  vorhanden, Schema-Nachbau ungetestet und fehleranfällig), kein einfacher
+  Workaround.
+- **F05s Beschwerden-Abklärungsweg** liegt ebenfalls in `FourWeekReviewView`
+  und unterliegt damit demselben Blocker — keine separate Prüfbarkeit.
+
+**Ergebnis: kein neuer Lösungsweg gefunden, keine neue Hypothese im Sinne
+des Auftrags vorhanden.** F01, F02, F03, F06, F07, F08 bleiben exakt auf
+dem in "F01–F08 differenziert geprüft" dokumentierten Stand ("bestanden
+(Daten-/Integrationsebene)", UI-Geräte-Nachweis weiterhin konkret am
+CSV-Export-Hang blockiert — nicht pauschal "blockiert" und nicht
+fälschlich auf "bestanden" hochgestuft). Kein Gerätetest für diesen Teil
+in dieser Runde durchgeführt (wäre ohne neue Hypothese eine reine
+Wiederholung des bekannten Blockers gewesen).
+
+### Budget (Gesamtstand Runde 8, inkl. Fix-Nachtest)
+
+| Zeitpunkt | Quelle | Wert | Kontext |
+|---|---|---|---|
+| vor Runde 8 | Session-Summe (Runde 7, siehe dortige Tabelle) | 26.027 s | **Session-Summen-Wert, zu diesem Zeitpunkt NICHT Konto-API-bestätigt** — Konto-API zeigte zum Prüfzeitpunkt Runde 7 noch 26.990 s (Abrechnungsverzug der vorherigen Runden noch nicht aufgeholt) |
+| TR-Nachtest | Session-Dauer (Test-ID 54028623) | 538 s | aktiv beendet |
+| DE-Nachtest (Imperial/Dezimalgewicht/AX5, Bugfund) | Session-Dauer (Test-ID 54029640) | 712 s | aktiv beendet |
+| Fix-Nachtest (Spalten-Header, DE/AX5) | Session-Dauer (Test-ID 54030768) | 512 s | aktiv beendet |
+| 6 gescheiterte Sessionstarts (WebDriverAgent-Infra-Fehler, "socket hang up") | Session-Dauer | 0 s | keine Session zustande gekommen, kein Verbrauch laut Konto (Test-IDs 54029187/54029265/54029394/54029544/54030693/54030750) |
+
+**Restbudget nach Runde 8 (Session-Summe, weiterhin NICHT separat gegen
+die Konto-API verifiziert — nächster reguläre Abruf zu Beginn einer
+künftigen Runde gleicht ab):** 26.027 − 538 − 712 − 512 = **24.265 Sekunden**
+(≈ 6,7 h). Keine zusätzliche Session oder Abfrage nur zur Budgetprüfung.
 
 ## Runde 7: A01 korrekt gefixt + autoAcceptAlerts-Einfluss auf frühere Nachweise geprüft
 
@@ -954,6 +1155,22 @@ erneut melden statt pauschal zu wiederholen.
    Cardio-Update einen Kaltstart kurz danach nicht reproduzierbar
    überlebte — siehe C01-Zeile und Nachtrag „Runde 5" für Details. C01
    gilt seither als vollständig bestanden, kein offener Rest mehr.
+6. **E04 / Settings-Hinweistext "App & Trainingserlebnis" — NEU (Runde 8)**:
+   der Hinweistext zum Einheiten-Umschalter verspricht wörtlich "steuert
+   ... die Anzeige in Eingabe-Feldern, im Hantel-Rechner und auf den
+   Karten". Geräte-Nachweis (Runde 8, Deutsch, Imperial-Umstellung):
+   Hantel-Rechner und Warmup-Rampe respektieren das Setting korrekt: das
+   eigentliche Gewichts-Eingabefeld beim Satz-Logging (`SetRow.weightInput`)
+   bindet `$weight` jedoch ohne jede Einheiten-Konvertierung — ein Wert
+   wird immer als kg interpretiert, der Spaltenkopf war zusätzlich hart
+   auf "KG" fixiert. Auch `ProfileEditorView`/`BodyDataEditorView`
+   (Körpergewicht/Zielgewicht) und das Dashboard-Gewichts-Trend-Widget
+   zeigen durchgehend kg, unabhängig vom Setting. Echte
+   Implementierungslücke (wie A09/C04/F04), kein kleiner gezielter Fix —
+   eine vollständige kg/lbs-Konvertierung am Eingabefeld selbst
+   (Anzeige/Parsing/Rückkonvertierung) wäre eine größere, noch nicht
+   umgesetzte Funktionalität. Nicht in dieser Runde implementiert, geht
+   als offene Entscheidung an den Nutzer zurück.
 
 ## F01–F08 differenziert geprüft (Nachtrag)
 
@@ -1191,29 +1408,42 @@ kein Fix, kein neuer CI-Lauf, kein Geräte-Nachtest nötig.
 Top-5-Geräteprüfung (E01, C06, D06, A11, D02), Runde 3 (Onboarding/
 Hybrid/Coach, Navigation, Drag&Drop, RIR, Bildschirmgröße), Runde 4
 (C01/C02-Kernfall), Runde 5 (C01-Fix-Retest inkl. Kaltstart-
-Persistenz-Bugfix), Runde 6 (D06-Fix) und Runde 7 (A01 korrekt
-eingeordnet und gefixt, autoAcceptAlerts-Audit) abgeschlossen — siehe
-jeweilige Nachträge oben für Details. **C01 ist seit Runde 5, D06 seit
-Runde 6, A01 seit Runde 7 vollständig bestanden** (C01: Timing-Fix
+Persistenz-Bugfix), Runde 6 (D06-Fix), Runde 7 (A01 korrekt eingeordnet
+und gefixt, autoAcceptAlerts-Audit) und Runde 8 (E04 Türkisch,
+Imperial-Einheiten-Lücke gefunden, Spalten-Header-Umbruch-Fix,
+F01–F08-Erreichbarkeit bestätigt unverändert blockiert) abgeschlossen —
+siehe jeweilige Nachträge oben für Details. **C01 ist seit Runde 5, D06
+seit Runde 6, A01 seit Runde 7 vollständig bestanden** (C01: Timing-Fix
 `47ab4d6` + Persistenz-Fix `1c8bf54`; D06: Cancel-Endlosschleifen-Fix
 `47678c1`; A01: Ziel-/Tage-Vorbefüllungs-Fix `a4359f4`, Runde 6s
 „kein Produktpfad"-Einordnung war falsch und wurde zurückgenommen).
 Offene bekannte Nachweislücken, in absteigender Priorität für eine
 künftige Runde:
 
-1. **E04-Rest** (teilweise): Deutsch seit Runde 7 bestanden (neue
-   Hypothese — Locale-Capability bei Session-Start statt Laufzeit-
-   Sprachwechsel — behebt den Runde-3-Blocker vollständig). Türkisch
-   bleibt ungeprüft (aus Zeitgründen in Runde 7 zurückgestellt, dieselbe
-   Methode direkt übertragbar); ein echtes kleineres Gerät wurde weiterhin
-   nicht zusätzlich zur Dynamic-Type-Vergrößerung getestet.
-2. F01–F08: nur noch der reine UI-/Geräte-Teil von F01–F03/F06–F08 sowie
-   F05s Beschwerden-Abklärungsweg offen — kein genereller Blocker mehr.
-3. Verbleibende P2-Fälle ohne Gerätenachweis: A02, C05, E02, E08.
+1. **E04-Rest** (teilweise): Deutsch (Standardbedingungen) seit Runde 7,
+   Türkisch (Standardbedingungen) seit Runde 8 bestanden (Locale-
+   Capability bei Session-Start behebt den Runde-3-Respring-Blocker für
+   beide Sprachen). Weiterhin offen: schmale Breite/große Schrift/
+   Dezimalgewicht/kg-lbs jeweils kombiniert mit Deutsch oder Türkisch (nur
+   Englisch+diese Bedingungen sind aus Runde 3 bestätigt); ein echtes
+   kleineres Gerät ist auf TestingBots aktueller Geräteflotte für iOS 17+
+   nicht verfügbar (geprüft: alle schmaleren iPhone-Modelle laufen dort
+   mit iOS < 17) — strukturell nicht testbar, kein Versäumnis.
+2. **kg/lbs-Einheiten-Implementierungslücke (NEU, Runde 8)**: das
+   Einheiten-Setting wirkt nicht auf `SetRow.weightInput` (Satz-Logging),
+   `ProfileEditorView`/`BodyDataEditorView` oder das Dashboard-Gewichts-
+   Trend-Widget — nur auf Hantel-Rechner und Warmup-Rampe. Sechster
+   fachlicher Widerspruch, siehe dortiger Eintrag; offene Entscheidung an
+   den Nutzer, kein kleiner Fix.
+3. F01–F08: nur noch der reine UI-/Geräte-Teil von F01–F03/F06–F08 sowie
+   F05s Beschwerden-Abklärungsweg offen, bestätigt weiterhin ausschließlich
+   am CSV-Export-Hang blockiert (Runde 8: kein alternativer Weg ohne neue,
+   umfangreiche Testinfrastruktur gefunden).
+4. Verbleibende P2-Fälle ohne Gerätenachweis: A02, C05, E02, E08.
 
 Von den fünf ursprünglich benannten fachlichen Widersprüchen ist C01 seit
 Runde 5 behoben (siehe dortiger Eintrag, aus Nachvollziehbarkeit stehen
 gelassen statt gelöscht); die verbleibenden vier (A09, C04,
-A02-Architekturfrage, F04, sowie A04s Abhängigkeit von A09) gehen
-weiterhin als offene Entscheidungen an den Nutzer zurück, nicht
-eigenmächtig auflösen.
+A02-Architekturfrage, F04, sowie A04s Abhängigkeit von A09) sowie der neue
+sechste (kg/lbs-Einheiten, Runde 8) gehen weiterhin als offene
+Entscheidungen an den Nutzer zurück, nicht eigenmächtig auflösen.
