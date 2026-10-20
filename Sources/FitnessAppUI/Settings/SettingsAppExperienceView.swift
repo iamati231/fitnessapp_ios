@@ -278,7 +278,15 @@ public struct SettingsAppExperienceView: View {
                 .pickerStyle(.menu)
                 .labelsHidden()
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(0.5)
+                // Geraete-Abnahme (Runde 10): "Previous layout" ist laenger
+                // als die uebrigen Picker-Werte dieses Screens ("Metric",
+                // "Dark", ...) - bei AX5 reicht `DeltiqControlRow`s eigenes
+                // `.minimumScaleFactor(0.85)` NICHT aus, der Text lief ueber
+                // mehrere Zeilen in die Nachbar-Reihen hinein ueber. Eigene,
+                // engere `maxWidth` zwingt ihn, sich auf diese Spalte zu
+                // beschraenken statt zu ueberlaufen.
+                .frame(maxWidth: 150, alignment: .trailing)
                 .accessibilityLabel(Text("settings.training.displayMode.label", bundle: .module))
             }
             periodicCheckInRow
