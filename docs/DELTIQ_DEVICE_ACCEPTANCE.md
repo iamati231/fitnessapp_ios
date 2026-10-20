@@ -4,7 +4,13 @@ Stand: 2026-10-20 (fünfzehnter Durchgang: Paket 1 — Geräteabnahme der 9
 geforderten Nachweise (Coach-Aktivierung/Vorschau/Übernahme/Ablehnen/
 Coach-aus/A12/Idempotenz/Kaltstart/unabhängige Parallel-Änderung) auf
 TestingBot abgeschlossen, alle 9 bestanden, kein Bug gefunden, keine
-Codeänderung — siehe Nachtrag „Paket 1: Geräteabnahme" oben. Davor
+Codeänderung. Nachtrag direkt im Anschluss: die zunächst offen gelassene
+Konfliktbanner-Lücke (echter Tagemangel-Fall, Hybrid+Both/2 Tage) gezielt
+nachgewiesen — Banner erscheint verständlich, kein stiller Sportart-Verlust,
+kein Bypass, konsistente Übernahme bestätigt; Paket 1 gilt damit
+vollständig abgeschlossen, mit der ehrlich benannten Grenze, dass der
+Banner nur ein Hinweistext ohne die vier wählbaren Resolution-Optionen ist
+— siehe Nachtrag „Paket 1: Geräteabnahme" oben. Davor
 vierzehnter Durchgang: Paket 1, Teil 2 — die
 Architekturfrage "manuelle Änderungen/Fixierungen schützen" ist beantwortet
 (`TrainingDay.generationFingerprint == currentContentFingerprint`, siehe
@@ -173,19 +179,78 @@ Größe 180 cm/Gewicht 75 kg), Ziel „Functional / Hybrid", Ausdauerform
 
 **Kein Bug gefunden, keine Codeänderung in dieser Runde.**
 
-**Verbleibende offene Teillücke:** der `distributionConflict`-Banner
-(Komponente 1) selbst — sichtbar bei ECHTEM Tagemangel (z. B. 2 Tage für
-Hybrid+Both) — wurde in dieser Runde nicht separat am Gerät
-nachgewiesen; nur der nicht-Konflikt-Fall (3 Tage reichen) wurde geprüft.
-Bleibt für eine künftige, gezielte Ergänzung offen.
+### Nachtrag: Konfliktbanner-Lücke gezielt nachgewiesen (kein neuer CI-Lauf, kein Code geändert)
 
-**Budget:** vor dieser Runde (Session-Summe, siehe Nachtrag „Paket 1
-Teil 4"): 20.881 s. Diese Runde: 1 Session, 1.290 s (laut TestingBot-
-Test-Datensatz, genauerer Wert als die Konto-API). Restbudget danach:
-**19.591 Sekunden (Session-Summe) — Konto-API zeigte unmittelbar danach
-weiterhin 20.881 s (derselbe bereits mehrfach dokumentierte
-Abrechnungsverzug, kein neuer Fehler)**, Abgleich beim nächsten
-regulären Abruf. Keine zusätzliche Session, keine Zusatzkäufe.
+**Auftrag:** die oben offen gelassene Teillücke gezielt schließen — der
+`distributionConflict`-Banner im ECHTEN Tagemangel-Fall, nicht nur der
+Normalfall. Build/Commit unverändert (`b7ac9f1`/`8aa4e09`, identischer
+Produktivcode), daher kein neuer CI-Lauf.
+
+**Testaufbau:** frisches Onboarding, Ziel „Functional/Hybrid", Ausdauerform
+„Both", Wochenziel bewusst auf **2 Tage** reduziert (Decrement-Stepper im
+Coaching-Schritt, preseedet laut A01-Fix `PlanBuilderView.totalDaysPerWeek`),
+„Schedule running in my week" (kein Coach), restliche Schritte Default,
+dann „Build Plan" (Ziel-geführter Pfad, A01-Preseeding von Ziel „Strength &
+Endurance Combined" + Ausdauerform „Both" im Accessibility-Tree bestätigt
+— `value="1"`/„Selected" auf beiden Karten).
+
+**Ergebnis je Prüfpunkt:**
+1. **Banner verständlich, nennt die unvereinbaren Vorgaben — bestanden.**
+   Exakter Text: „Not enough days for all chosen sports: 3 days needed, 2
+   available. Go back and adjust days, or accept the closest compromise
+   shown below." — genau die vom Code berechneten Werte
+   (`requiredMinimumDays`=3 für Hybrid+Both, `totalDaysPerWeek`=2).
+2. **Keine Sportart verschwindet STILL — bestanden, mit Einordnung.** Der
+   gezeigte Kompromiss („Bodyweight · Push & Pull" + „Easy Run", KEIN
+   Cycling-Tag) lässt Cycling tatsächlich aus der konkreten Auswahl
+   fallen — das ist aber nicht mehr still: der Banner erklärt direkt
+   darüber explizit, dass die Vorgaben nicht zusammenpassen und was
+   gezeigt wird nur ein Kompromiss ist. Das entspricht exakt dem in
+   „Paket 1 (Teil 1)" dokumentierten Entwurf (Konflikt VORHER erkennbar
+   statt stillschweigend übernommen) — kein eigenständiges Options-Picker-UI
+   für die vier Resolution-Fälle gebaut, nur der erklärende Hinweis (siehe
+   Punkt 6 unten für die ehrliche Einordnung des tatsächlichen
+   Baustands).
+3. **Keine zusätzliche Einheit ohne Zustimmung — bestanden.** Weiterhin
+   genau 2 Tage im Ergebnis, kein stiller Sprung auf 3.
+4. **Kein anderer Abschlussweg umgeht den Banner — bestanden.** Banner und
+   „Adopt Plan"-Button (Accessibility-Label, Icon „checkmark") sitzen auf
+   derselben Ergebnis-Seite, keine zweite Bestätigung möglich ohne den
+   Banner gesehen zu haben.
+5. **Konsistente Übernahme — bestanden.** Nach „Adopt Plan" kehrte die
+   Ansicht zur Wochenvorschau zurück (A01/Komponente-6-Fix bestätigt: kein
+   automatisches `finishOnboarding()`), „Build Plan"-Kärtchen zeigte danach
+   einen Haken („Selected"). Nach explizitem „Finish": Dashboard zeigte
+   „Next workout: Bodyweight · Push & Pull" — identisch zum vor der
+   Übernahme in der Vorschau gezeigten ersten Tag, keine abweichende
+   Übernahme.
+6. **Tatsächlicher Baustand ehrlich festgehalten:** der Banner aus Komponente
+   1/6 ist ein reiner, nicht interaktiver Hinweistext — KEINE der vier
+   `DistributionConflict.Resolution`-Optionen (Verteilung ändern /
+   zusätzlichen Tag erlauben / Ziel ändern / Plan beibehalten) ist als
+   eigene wählbare UI gebaut. Der Nutzer kann nur zurück navigieren (Tage
+   anpassen) oder den gezeigten Kompromiss übernehmen — funktional deckt
+   das „Verteilung ändern" (zurück, Tage ändern) ab, die übrigen drei
+   Optionen sind NICHT als UI vorhanden. Kein stiller Mehranspruch — dies
+   war in Teil 1 bereits so benannt ("noch OHNE UI-Anbindung"), hier nur
+   am Gerät bestätigt statt weiter ausgebaut (außerhalb des Auftrags
+   dieses Nachtrags).
+
+**Kein Bug gefunden, keine Codeänderung.** Paket 1 gilt damit als
+vollständig abgeschlossen (Logik, UI, alle 9 Prüfpunkte plus dieser
+Nachtrag) — mit der oben unter Punkt 6 benannten, bewusst nicht
+behobenen Einschränkung (Banner ohne eigene Resolution-Aktionen) als
+bekannte Grenze dieses Pakets, nicht als Fehler.
+
+**TestingBot:** 1 Session (`b2e16eaebded-f531134a5834-f0a695fde50c-179253112504-6214298`),
+iPhone 15/iOS 18.0, Dauer 493 s (TestingBot-Test-Datensatz), aktiv beendet
+(`DELETE /session`, Status „success").
+
+**Budget:** vor diesem Nachtrag (Session-Summe): 19.591 s. Danach:
+**19.098 Sekunden (Session-Summe)** — Konto-API zeigte unmittelbar danach
+weiterhin 19.591 s (derselbe bereits mehrfach dokumentierte
+Abrechnungsverzug, kein neuer Fehler), Abgleich beim nächsten regulären
+Abruf. Keine zusätzliche Session, keine Zusatzkäufe.
 
 Kein Merge nach `main`, kein Release.
 
