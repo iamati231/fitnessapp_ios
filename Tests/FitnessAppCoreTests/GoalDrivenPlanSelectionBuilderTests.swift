@@ -143,6 +143,47 @@ final class GoalDrivenPlanSelectionBuilderTests: XCTestCase {
         XCTAssertEqual(selections.reduce(0) { $0 + $1.daysPerWeek }, 6)
     }
 
+    /// Geraete-Abnahme (Runde 11, "GoalDrivenPlanSelectionBuilder": feste
+    /// Aufteilung koennte bei "beides" eine gewaehlte Sportart ohne
+    /// sichtbaren Konflikt verlieren): `totalDaysPerWeek = 3` ist der
+    /// tatsaechliche UI-Default (`PlanBuilderView.totalDaysPerWeek`,
+    /// Slider startet bei 3) — der haeufigste, unveraenderte Fall, den ein
+    /// Nutzer erreicht, der Hybrid + "Both" (Laufen+Radfahren) waehlt, ohne
+    /// den Tage-Slider anzufassen. `strengthDays = ceil(3/2) = 2` laesst nur
+    /// 1 Tag fuer die Ausdauer-Haelfte; `enduranceSelections(.both,
+    /// totalDays: 1, ...)` kann aber nicht BEIDE Modalitaeten mit je
+    /// mindestens 1 Tag bedienen und laesst Radfahren MIT NULL Tagen
+    /// komplett aus der generierten Auswahl heraus — exakt das vom
+    /// Vorgesetzten vermutete stille Verlieren einer gewaehlten Sportart,
+    /// hier mit dem konkreten, realistischen Standard-Tageswert bestaetigt.
+    ///
+    /// Dies ist bewusst NICHT gefixt: die Spezifikation (Pruefall "zu
+    /// wenige Einheiten fuer alle gewaehlten Sportarten") verlangt eine
+    /// SICHTBARE Entscheidung/Konflikt-Anzeige statt eines stillen
+    /// Weglassens — das ist eine Produktentscheidung (neue Konflikt-UI),
+    /// keine begrenzte Code-Korrektur, und wird daher als fachlicher
+    /// Widerspruch dokumentiert (siehe docs/DELTIQ_DEVICE_ACCEPTANCE.md,
+    /// Runde 11) statt hier eigenmaechtig aufgeloest. Dieser Test PINNT das
+    /// aktuelle (spezifikationswidrige) Verhalten, damit ein kuenftiger,
+    /// bewusster Fix hier sichtbar etwas aendern MUSS, statt dass die
+    /// Luecke unbemerkt bleibt.
+    func testHybridGoalWithBothModalityAtTheDefaultThreeDaysSilentlyDropsCycling() {
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .hybrid, enduranceModality: .both, totalDaysPerWeek: 3,
+            sessionDurationMinutes: 45, experience: .intermediate, equipmentPreferences: [.barbell]
+        )
+        XCTAssertEqual(
+            selections.map(\.kind), [.barbell, .running],
+            "Bekannte Luecke (Runde 11): Radfahren wird bei 3 Default-Tagen trotz expliziter " +
+                "\"Both\"-Wahl ohne jede sichtbare Meldung komplett aus der Auswahl entfernt."
+        )
+        XCTAssertFalse(
+            selections.map(\.kind).contains(.cycling),
+            "Dieser Assert dokumentiert die Luecke, er bestaetigt sie NICHT als gewuenscht - siehe " +
+                "Testdoku oben und die Matrix-Dokumentation zu Runde 11."
+        )
+    }
+
     func testHybridGoalWithSingleDayGivesTheOnlyDayToStrength() {
         let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
             goal: .hybrid, enduranceModality: .running, totalDaysPerWeek: 1,
