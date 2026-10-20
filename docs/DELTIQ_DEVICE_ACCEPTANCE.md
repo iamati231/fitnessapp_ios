@@ -1,15 +1,16 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-20 (siebzehnter Durchgang: Zurück-Navigations-Beobachtung
-aus Durchgang 16 per vollständiger Code-Analyse aufgelöst — kein Bug,
-siehe Abschnitt „Zurück-Navigation geklärt" unten. Paket 2 (strukturierte
-Ausdauereinheiten): vollständiger Umsetzungsplan erstellt (Komponente 1
-bereits erfüllt, Komponente 2+3 als Erweiterung von `.circuit`/
-`CircuitPlayerView` entworfen, 16 betroffene Codestellen einzeln
-aufgelistet) — **Code-Umsetzung bewusst NICHT in dieser Runde begonnen**
-(zu großer, unbeaufsichtigter Eingriffsradius ohne lokale
-Compiler-Prüfung in dieser Umgebung), siehe Abschnitt „Paket 2:
-Umsetzungsplan" unten. Davor sechzehnter Durchgang: Paket 1 — der beim
+Stand: 2026-10-20 (achtzehnter Durchgang: Paket 2, Schritt 1 umgesetzt —
+Datenmodell für strukturierte Ausdauereinheiten (`WorkoutTimeFormat.
+enduranceIntervals`, `DaySpec`/`TrainingDay`-Felder, Fingerprint,
+17 betroffene Switch-Stellen inkl. einer in `App/FitnessAppWidgets/`),
+CI-grün nach zwei Fix-Runden (Typchecker-Timeout, fehlender Case in der
+Widget-Extension), HEAD `4654775`. Noch kein Geräte-Nachtest nötig (reine
+Datenmodell-Ebene, alle Eingabe-Picker schließen das neue Format weiterhin
+bewusst aus). Siehe Abschnitt „Paket 2, Schritt 1" unten. Davor
+siebzehnter Durchgang: Zurück-Navigations-Beobachtung aus Durchgang 16
+per vollständiger Code-Analyse aufgelöst — kein Bug, siehe Abschnitt
+„Zurück-Navigation geklärt" unten. Davor sechzehnter Durchgang: Paket 1 — der beim
 Konfliktbanner-Nachtest entdeckte echte Bug [Übernahme war trotz
 ungelöstem `distributionConflict` nicht blockiert] gefixt und
 gerätebestätigt, HEAD `1cbffeb`, siehe Nachtrag „Übernahme-Blockade
@@ -101,17 +102,47 @@ Runde 7 korrekt eingeordnet und gefixt. Gesamtabnahme weiterhin offen
 Plananpassung) ist seit der Geräteabnahme unten vollständig gerätebestätigt,
 alle 9 geforderten Nachweise bestanden, kein Bug gefunden.**
 
-## Paket 2: Umsetzungsplan (strukturierte Ausdauereinheiten) — Plan fertig, Umsetzung noch nicht begonnen
+## Paket 2, Schritt 1: Datenmodell umgesetzt, CI-grün (Commit `4654775`)
 
-**Wichtig:** dieser Abschnitt ist eine Planung/Recherche, KEIN Code wurde
-für Paket 2 geändert. Grund: die Recherche ergab einen deutlich größeren
-Eingriffsradius als ursprünglich angenommen (14 Stellen im Code müssen
-bei einer neuen `WorkoutTimeFormat`-Ausprägung angepasst werden, jede
-einzeln geprüft statt pauschal). Ohne lokalen Swift-Compiler in dieser
-Umgebung (reine Linux-Containerumgebung, kein `swift`-Toolchain
-installiert — jede Prüfung läuft ausschließlich über den entfernten
-macOS-CI-Lauf) ist ein unkontrolliertes Durchziehen aller 14 Stellen in
-einem einzigen, unbeaufsichtigten Schritt ein zu hohes Qualitätsrisiko.
+**Nachtrag nach dem ursprünglichen Plan unten:** auf ausdrückliche
+Anweisung umgesetzt statt weiter zurückgestellt — CI-getrieben wie der
+Rest der Session (push → GitHub Actions macOS-Runner → Ergebnis
+abwarten), kein lokaler Compiler nötig. Drei Versuche bis grün:
+
+1. `02e2fb8` — Datenmodell (`WorkoutTimeFormat.enduranceIntervals`,
+   `DaySpec`/`TrainingDay`-Felder, Fingerprint-Erweiterung,
+   Propagation/Snapshot/Revert, alle 16 im Plan gelisteten Switch-Stellen,
+   3 neue xcstrings-Keys, 1 neuer Testfall). CI-Fehler: Array-Literal mit
+   sechs gemischten `.map`-Ausdrücken in `TrainingDay.currentContentFingerprint`
+   überforderte den Swift-Typchecker ("unable to type-check this expression
+   in reasonable time").
+2. `191c4de` — Fix: auf Zeichenketten-Interpolation umgestellt (gleiches
+   Muster wie `circuitPart` direkt daneben). CI-Fehler: eine 17. Stelle
+   fehlte — `App/FitnessAppWidgets/TimedWorkoutLiveActivity.swift` liegt
+   außerhalb von `Sources/`/`Tests/`, wurde bei der ursprünglichen Suche
+   übersehen (eigener Icon-Switch der Widget-Extension).
+3. `4654775` — fehlenden Case ergänzt. **CI-Lauf `39510085874`: erfolgreich.**
+
+Alle Picker (`DayEditorView`, `PlanBuilderView`, `DashboardView`)
+schließen `.enduranceIntervals` weiterhin bewusst aus ihren Auswahllisten
+aus — das neue Format ist strukturell nirgends erreichbar, bis die
+Konfigurations-UI (Komponente 2 Rest) und der Player (Komponente 3)
+existieren. Kein Geräte-Nachtest nötig für diesen Schritt (reine
+Datenmodell-/Compile-Ebene, keine neue UI, keine Verhaltensänderung für
+bestehende Formate).
+
+**Nächster Schritt:** Konfigurations-UI zum Anlegen einer strukturierten
+Einheit (Einlaufen/Runden/Belastung/Erholung/Auslaufen editierbar machen),
+dann `EnduranceIntervalPlayerView` (Komponente 3), dann Geräte-Nachweise.
+
+## Paket 2: ursprünglicher Umsetzungsplan (strukturierte Ausdauereinheiten)
+
+**Hinweis:** Schritt 1 dieses Plans ist seit obigem Nachtrag umgesetzt
+und CI-grün. Der folgende Text ist die ursprüngliche Planungsfassung,
+unverändert aus Nachvollziehbarkeit stehen gelassen; die "14 Stellen" dort
+waren eine ungenaue Schnellzählung, tatsächlich waren es 17 (siehe
+Nachtrag oben).
+
 Diese Planung ist der vollständige, konkrete Fahrplan für die nächste
 Umsetzungsrunde.
 
