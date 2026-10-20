@@ -871,6 +871,45 @@ public enum PlanGeneratorInstantiator {
         )
     }
 
+    /// Paket 1 (Laufcoach-Plananpassung, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+    /// wendet frisch generierte Cardio-Tagesinhalte auf bereits vorhandene,
+    /// laut `RunCoachPlanAdjustment.isEligibleForAdjustment` anfassbare
+    /// Cardio-Tage an - reiner Inhalts-Ersatz, exakt dasselbe Prinzip wie
+    /// `recalculate` oben (Fingerprint-Match + keine Historie = anfassbar),
+    /// nur ausgeloest durch eine Coach-Zielaenderung statt durch "neu
+    /// rechnen". `eligibleDays` MUESSEN vorher ueber `isEligibleForAdjustment`
+    /// gefiltert worden sein - diese Funktion prueft das nicht erneut.
+    ///
+    /// Reicht `newCardioDays` nicht fuer alle `eligibleDays` (oder
+    /// umgekehrt), werden nur `min(count)` Tage in Reihenfolge ersetzt -
+    /// ueberzaehlige anfassbare Tage bleiben unveraendert (nie geloescht),
+    /// ein ueberzaehliger neuer Cardio-Tag wird NICHT eingefuegt. Tage zu
+    /// einem lebenden Plan hinzuzufuegen ist ausserhalb des Scopes von
+    /// Paket 1 (siehe dortiger Nachtrag) - der Aufrufer bietet in diesem
+    /// Fall stattdessen "als neuen Plan erstellen" an.
+    @discardableResult
+    public static func applyCoachCardioAdjustment(
+        eligibleDays: [TrainingDay], newCardioDays: [DaySpec], in context: ModelContext
+    ) throws -> Int {
+        guard !eligibleDays.isEmpty, !newCardioDays.isEmpty else { return 0 }
+        let (timeBasedNames, compoundNames) = ProgramInstantiator.libraryLookupNames()
+        let specByName = ProgramInstantiator.libraryLookupSpecs()
+        var snapshots: [DayMutationSnapshot] = []
+        for (day, spec) in zip(eligibleDays, newCardioDays) {
+            snapshots.append(apply(
+                spec, to: day, timeBasedNames: timeBasedNames,
+                compoundNames: compoundNames, specByName: specByName, in: context
+            ))
+        }
+        do {
+            try save(context)
+        } catch {
+            revert(snapshots, in: context)
+            throw error
+        }
+        return snapshots.count
+    }
+
     /// Nachbesserung (Review nach Task #197): macht `apply(...)` fuer genau die Tage rueckgaengig,
     /// die diese `recalculate`-Ausfuehrung selbst veraendert hat - siehe Typ-Doku
     /// "Operations-/Fehlervertrag" Punkt 3. Reine Zuweisungen/Deletes frisch eingefuegter,
