@@ -1,6 +1,11 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-20 (vierzehnter Durchgang: Paket 1, Teil 2 — die
+Stand: 2026-10-20 (fünfzehnter Durchgang: Paket 1 — Geräteabnahme der 9
+geforderten Nachweise (Coach-Aktivierung/Vorschau/Übernahme/Ablehnen/
+Coach-aus/A12/Idempotenz/Kaltstart/unabhängige Parallel-Änderung) auf
+TestingBot abgeschlossen, alle 9 bestanden, kein Bug gefunden, keine
+Codeänderung — siehe Nachtrag „Paket 1: Geräteabnahme" oben. Davor
+vierzehnter Durchgang: Paket 1, Teil 2 — die
 Architekturfrage "manuelle Änderungen/Fixierungen schützen" ist beantwortet
 (`TrainingDay.generationFingerprint == currentContentFingerprint`, siehe
 `PlanGeneratorInstantiator.recalculate`, kein neues Konzept nötig) und auf
@@ -76,7 +81,113 @@ PRs/Charts/CSV bleiben bewusst kg-only, siehe Nachtrag „Runde 9");
 AX5-Spalten-Header-Fix vollständig gerätebestätigt. C01 seit Runde 5
 vollständig bestanden. D06 seit Runde 6 vollständig bestanden. A01 seit
 Runde 7 korrekt eingeordnet und gefixt. Gesamtabnahme weiterhin offen
-(kein vollständiger Abschluss aller 46 Fälle).**
+(kein vollständiger Abschluss aller 46 Fälle). Paket 1 (Coach-Aktivierung →
+Plananpassung) ist seit der Geräteabnahme unten vollständig gerätebestätigt,
+alle 9 geforderten Nachweise bestanden, kein Bug gefunden.**
+
+## Paket 1: Geräteabnahme (9 Prüfpunkte) — vollständig bestanden
+
+**Auftrag:** nach Abschluss der Logik-/UI-Ebene (Teile 1–4, Commits
+`d86bf4b` bis `8aa4e09`) die vereinbarten 9 Geräte-Nachweise auf
+TestingBot durchführen. Kein neuer Code vorgesehen außer bei einem echten
+gefundenen Bug — keiner gefunden, daher reiner Testdurchgang ohne
+Codeänderung.
+
+**Build/Commit:** CI-Artefakt für Commit `b7ac9f1` (identischer
+Produktivcode wie HEAD `8aa4e09`, dazwischen nur der Doku-Commit),
+heruntergeladen aus GitHub-Actions-Run `39488838613`, als
+`FitnessApp-simulator.zip` zu TestingBot hochgeladen (`tb://6613cf64e80e4d6afcdba435`).
+
+**TestingBot-Session:** iPhone 15 / iOS 18.0, `autoAcceptAlerts: false`
+(aus Runde 6 bekannt: `true` kann Dialoge maskieren), eine Session
+(`8970e5916bc9-c71199c54f87-d591289e418c-179252813584-91326633`), Dauer
+1.290 s, aktiv beendet (`DELETE /session`, Status `success`).
+
+**Testaufbau:** frischer Onboarding-Durchlauf — Profil (Name/Geburtsdatum/
+Größe 180 cm/Gewicht 75 kg), Ziel „Functional / Hybrid", Ausdauerform
+„Both" (Laufen+Radfahren), „Work toward a goal with a run coach"
+(Coach an), Trainingshistorie „regelmäßig", Equipment-Default, dann
+„Build Plan" mit UI-Default 3 Tage/Woche.
+
+### Ergebnis je Prüfpunkt
+
+1. **Coach-Aktivierung verändert vor Übernahme keinen Plan — bestanden.**
+   Cardio-Editor: Ziel auf Marathon, Renndatum-Default (12 Jan 2027, 12
+   Wochen entfernt), Startvolumen 5 km/Woche gesetzt, Speichern-Tap →
+   Vorschau öffnete sich sofort mit Status „Coach activated, plan not yet
+   adjusted". Plan-Tab zu diesem Zeitpunkt (Vorschau noch offen bzw. per
+   „Keep as is" verlassen) weiterhin unverändert: Mo Push&Pull/6 Übungen,
+   Mi Easy Run/1, Fr Cycling/1 — identisch zum Vorher-Stand.
+2. **Übernahme erzeugt exakt die in der Vorschau gezeigten Änderungen —
+   bestanden.** Vorschau zeigte CURRENT „Ruhiger Lauf" (durchgestrichen)
+   → SUGGESTED „Ruhiger Lauf A/B", „Tempolauf", „Intervalle A/B". Nach
+   „Adjust current plan": Plan zeigte exakt Mi „Intervals A" (statt Easy
+   Run) und Fr „Easy Run B" (statt Cycling) — Mo Push&Pull unverändert
+   (geschützter, nicht angetasteter Tag).
+3. **Bestehende Läufe werden nicht dupliziert — bestanden.** Plan-Tab vor
+   und nach der Übernahme durchgehend „1 PLAN", exakt 7 Tage, keine
+   zusätzliche Cardio-Einheit angelegt — der bestehende Mi-Lauf wurde
+   ersetzt, nicht verdoppelt.
+4. **Ablehnen („Keep as is") erhält Profilentscheidung und bisherigen Plan
+   — bestanden.** Nach „Keep as is": `Enable running coaching`-Status
+   blieb aktiv (Karte „Coach activated, plan not yet adjusted" weiterhin
+   sichtbar auf `ProfileEditorView`, Leitplanke-6-Vorrang bestätigt),
+   `Cardio & Running Goals` zeigte weiterhin „Marathon" (Ziel gespeichert).
+   Plan-Tab unverändert: Mo Push&Pull/6, Mi Easy Run/1, Fr Cycling/1 —
+   keine einzige Planänderung durch die reine Zielspeicherung.
+5. **Coach aus erhält Training/Historie, beendet nur die
+   Coach-Unterstützung — bestanden.** Toggle aus → Dialog „Turn off
+   running coach?" mit exaktem vorgegebenem Text erschienen, bestätigt →
+   `Cardio & Running Goals`-Zeile zeigte danach „Running coaching off",
+   Plan-Tab weiterhin „1 PLAN" mit allen drei Originaltagen unverändert
+   (Mo/Mi/Fr), keine Coach-Karte mehr auf dem Profil sichtbar.
+6. **Hybrid+Both (3 Tage/Woche) verliert keine Sportart mehr still — A12-
+   Fix-Nachweis bestanden.** Direkt im Builder generiert: „Bodyweight ·
+   Push & Pull" + „Cycling" + „Easy Run" — exakt 1 Kraft+1 Lauf+1 Rad, wie
+   von der Spezifikation gefordert. Die 2-Tage-Konflikt-Variante
+   (`distributionConflict`-Banner) wurde in dieser Runde NICHT separat am
+   Gerät nachgestellt (Zeit-/Navigationsgrenze beim erneuten Öffnen des
+   Builders) — bleibt offene Teillücke, siehe unten.
+7. **Wiederholte Bestätigung erzeugt keine Duplikate — bestanden.** Nach
+   der Übernahme zeigte die Karte „Adjustment applied"; erneutes Öffnen
+   zeigte „Adjust current plan" korrekt `enabled="false"` (per
+   Accessibility-Tree bestätigt) — ein zweiter Tap-Versuch auf den
+   disabled Button blieb wirkungslos. Plan-Tab danach weiterhin „1 PLAN"
+   mit identischem Tagesinhalt, keine Duplikate.
+8. **Kaltstart erhält eine bestätigte Änderung — bestanden.** Nach der
+   Übernahme `mobile: terminateApp` + `mobile: activateApp` — Plan zeigte
+   nach dem Neustart weiterhin Mi „Intervalle A" / Fr „Ruhiger Lauf B"
+   (Tagesnamen jetzt auf Deutsch, Locale-Reset beim Kaltstart, inhaltlich
+   aber identisch), Mo weiterhin unverändert „Körpergewicht · Push &
+   Pull"/6 Übungen.
+9. **Eine parallele, unabhängige Änderung bleibt durch die Plananpassung
+   unverändert — bestanden.** Auf `ProfileEditorView` „Coaching Style" auf
+   „Motivating" geändert (unabhängiger, noch offener Edit, NICHT
+   gespeichert), danach Coach-Vorschau geöffnet und „Adjust current plan"
+   bestätigt — die noch offene „Motivating"-Auswahl blieb währenddessen
+   und danach unverändert sichtbar (per Accessibility-Tree bestätigt,
+   `flame.fill`-Icon weiterhin aktiv). Zusätzlich bestätigt Mo
+   Push&Pull/6 Übungen unverändert vor/nach der Anpassung, dass
+   unbeteiligte Trainingsinhalte von der Cardio-Anpassung nicht berührt
+   werden.
+
+**Kein Bug gefunden, keine Codeänderung in dieser Runde.**
+
+**Verbleibende offene Teillücke:** der `distributionConflict`-Banner
+(Komponente 1) selbst — sichtbar bei ECHTEM Tagemangel (z. B. 2 Tage für
+Hybrid+Both) — wurde in dieser Runde nicht separat am Gerät
+nachgewiesen; nur der nicht-Konflikt-Fall (3 Tage reichen) wurde geprüft.
+Bleibt für eine künftige, gezielte Ergänzung offen.
+
+**Budget:** vor dieser Runde (Session-Summe, siehe Nachtrag „Paket 1
+Teil 4"): 20.881 s. Diese Runde: 1 Session, 1.290 s (laut TestingBot-
+Test-Datensatz, genauerer Wert als die Konto-API). Restbudget danach:
+**19.591 Sekunden (Session-Summe) — Konto-API zeigte unmittelbar danach
+weiterhin 20.881 s (derselbe bereits mehrfach dokumentierte
+Abrechnungsverzug, kein neuer Fehler)**, Abgleich beim nächsten
+regulären Abruf. Keine zusätzliche Session, keine Zusatzkäufe.
+
+Kein Merge nach `main`, kein Release.
 
 ## Paket 1 (Teil 1): A12-Fix — Hybrid+„Both" verliert keine Sportart mehr still
 
@@ -2318,6 +2429,16 @@ Kaltstart). Kein Bug mit Datenverlust/stiller Planmutation gefunden, daher
 kein Fix, kein neuer CI-Lauf, kein Geräte-Nachtest nötig.
 
 ## Nächste Schritte
+
+**Paket 1 (Coach-Aktivierung → Plananpassung) ist seit der Geräteabnahme
+oben vollständig abgeschlossen** — alle 9 geforderten Nachweise bestanden,
+kein Bug, keine Codeänderung nötig. Einzige verbleibende Teillücke: der
+`distributionConflict`-Banner (Komponente 1) selbst wurde nur indirekt
+(Code+Datenmodell) bestätigt, der echte Tagemangel-Fall (z. B. 2 Tage für
+Hybrid+Both) nicht separat am Gerät gezeigt. **Paket 2** (Intervall-
+Player, strukturierter Abschnittseditor) und **Paket 3** (Coaching mit
+tatsächlichen Ergebnissen verbinden) aus dem Laufcoach-Konzept sind
+bewusst noch nicht begonnen — eigene, künftige Runden.
 
 Top-5-Geräteprüfung (E01, C06, D06, A11, D02), Runde 3 (Onboarding/
 Hybrid/Coach, Navigation, Drag&Drop, RIR, Bildschirmgröße), Runde 4
