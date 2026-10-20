@@ -1,24 +1,138 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-20 (sechster Durchgang: C01-Fix-Retest — gebündelte statt
-Live-Vorschau in einem neuen `CardioGoalEditorView`, siehe Nachtrag „Runde
-5" unten), Branch `claude/smart-onboarding-epic`, HEAD `1c8bf54` (Fix-Commit
-dieser Runde: fehlender `context.save()` in `CardioGoalEditorView.save()`;
-davor `47ab4d6` der ursprüngliche C01-Fix aus Runde 4/5-Auftrag, davor
-`4ea8d7b` reiner Dokumentations-Commit zu Runde 3, davor `254d669`
+Stand: 2026-10-20 (siebter Durchgang: Runde 6 — A01-Code-Klärung + D06-
+Cancel-Endlosschleife gefunden und gefixt, siehe Nachtrag „Runde 6" unten),
+Branch `claude/smart-onboarding-epic`, HEAD `47678c1` (Fix-Commit dieser
+Runde: `PlanEditorView`-Cancel-Buttons lösten einen Adapt↔Restore-Dialog-
+Ping-Pong aus; davor `80eee60` reiner Dokumentations-Commit zur
+Speicherfehler-Codeprüfung, davor `1c8bf54` Fix-Commit Runde 5
+(`CardioGoalEditorView.save()`), davor `47ab4d6` der ursprüngliche C01-Fix,
+davor `4ea8d7b` reiner Dokumentations-Commit zu Runde 3, davor `254d669`
 Korrektur-Commit zu E05, davor `64ba455` Fix-Commit E04, davor `3e67cb8`
 ursprünglicher — per Geräte-Nachtest widerlegter — E05-Versuch, davor
-`c96bf5c`). TestingBot-Verbrauch dieser Runde: 1.978 Sekunden (2 Sessions,
-beide aktiv/serverseitig beendet) von einem Restbudget von 29.808 Sekunden
-vor dieser Runde; siehe Nachtrag „Runde 5" unten für Details und
-Restbudget danach. Kein Merge nach `main`, kein Release.
+`c96bf5c`). TestingBot-Verbrauch Runde 6: 840 Sekunden (3 Sessions, alle
+aktiv beendet) von einem Restbudget von 28.007 Sekunden vor dieser Runde;
+siehe Nachtrag „Runde 6" unten für Details. Kein Merge nach `main`, kein
+Release.
 
 **Gesamtstatus: A–F bearbeitet; deutliche Mehrheit bestanden, einzelne
 Fälle teilweise oder (A09/C04/E08/F04) noch offen als fachliche
-Implementierungslücken. C01 nach Runde 5 vollständig bestanden (Timing-Fix
-UND dabei gefundener Persistenz-Bug gefixt und gerätebestätigt).
-Gesamtabnahme weiterhin offen (kein vollständiger Abschluss aller 45
-Fälle).**
+Implementierungslücken. C01 seit Runde 5 vollständig bestanden. D06 seit
+Runde 6 vollständig bestanden (isolierter Cancel-Schritt gerätebestätigt;
+dabei gefundene Dialog-Endlosschleife gefixt und gerätebestätigt). A01
+seit Runde 6 per Code-Klärung eingeordnet (kein Produktpfad für den
+beschriebenen Fall vorhanden). Gesamtabnahme weiterhin offen (kein
+vollständiger Abschluss aller 45 Fälle).**
+
+## Runde 6: A01-Code-Klärung + D06-Cancel-Endlosschleife gefunden und gefixt
+
+**Auftrag:** (1) A01 — klären, ob ein regulärer Produktweg existiert, mit
+einem bestehenden Profil erneut ins Onboarding einzutreten (zuerst
+Code-Recherche, nur bei echtem Pfad Geräte-Nachtest); (2) D06 — den bisher
+nie isoliert reproduzierten Einzelschritt "Migrationsdialog bewusst
+ablehnen" gezielt auslösen und beobachten, getrennt von den bereits
+bestandenen D06-Teilschritten; (3) bei verbleibendem Budget optional
+E04-Rest/F-Rest. Kein neuer allgemeiner Review, kein Merge, kein Release.
+
+### A01 — Code-Klärung: kein Produktpfad vorhanden
+
+`RootView.swift` zeigt `OnboardingView()` ausschließlich wenn
+`profiles.isEmpty` (SwiftData-`@Query`) — sobald ein `UserBodyProfile`
+existiert, ist `OnboardingView` über keinen regulären App-Pfad mehr
+erreichbar. Durchsucht: `SettingsView.swift` (keine "Onboarding erneut
+durchlaufen"-Option, kein Reset-Onboarding-Flag unabhängig vom
+Daten-Reset), keine Debug-Menü-Option, kein Deep-Link. Der einzige Weg
+zurück zu `OnboardingView` ist "Reset App" in den Einstellungen — der
+löscht dabei aber genau das bestehende Profil vollständig (inkl. Vorab-
+Backup, siehe Abschnitt "Reset-App-Befund eingeordnet" oben), erzeugt also
+NICHT den in A01 beschriebenen Fall ("bestehendes Profil aus einem
+früheren, abgebrochenen/abgeschlossenen Durchlauf, erneuter Eintritt ins
+Onboarding"). **A01 wird daher nicht länger als "teilweise" geführt,
+sondern als "nicht anwendbar — kein Produktpfad für den beschriebenen Fall
+vorhanden"** (Code-Befund, kein Automatisierungs-Artefakt). Kein
+Geräte-Nachtest nötig, kein Fix (kein Fehlverhalten, nur fehlender Pfad).
+
+### D06 — isolierter Cancel-Schritt: echte Dialog-Endlosschleife gefunden und gefixt
+
+**Testaufbau:** frischer Onboarding-Durchlauf (Gym-Equipment, Plan
+"Football Athletic"), Plan-Editor geöffnet, Trainingsort Gym→"No
+Equipment" (Adapt-Dialog bestätigt, archiviert Originale), dann zurück auf
+Gym (löst den DEL-049-"Restore Original Exercises?"-Dialog aus — exakt der
+in Runde 3 beobachtete, aber nie isoliert geprüfte Fall).
+
+**Wichtiger Befund zur bisherigen Nichtreproduzierbarkeit:** mit
+TestingBots `autoAcceptAlerts: true` (Standard-Capability aller bisherigen
+Runden) wurde dieser Dialog NIE sichtbar — er wurde von der
+XCUITest-Automatisierung automatisch mit seinem ERSTEN Button bestätigt,
+bevor er in der Accessibility-Tree-Ausgabe erschien (dieselbe Mechanik
+betraf erkennbar auch den DEL-022-Adapt-Dialog). Das erklärt die
+Unsicherheit aus Runde 3 ("ob das Produktverhalten oder ein
+Automatisierungs-Timing-Artefakt ist, bleibt unklar") — es ist ein reines
+Automatisierungs-Artefakt. Fix für diese Runde: neue Session mit
+`appium:autoAcceptAlerts: false`. Dadurch wurde zusätzlich ein System-
+Benachrichtigungs-Alert ("'Deltiq' Would Like to Send You Notifications")
+sichtbar, der außerhalb der App-Accessibility-Tree liegt und per
+`POST /alert/dismiss` (WebDriver-Alert-Endpoint, nicht per Element-Find)
+behandelt werden musste.
+
+**Mit `autoAcceptAlerts: false` erstmals isoliert beobachtet (Build
+`cf0bfe8df4ca17f5fa0b563f`, Commit `1c8bf54`, vor dem Fix dieser Runde):**
+"Cancel" im "Restore Original Exercises?"-Dialog setzte korrekt
+`plan.targetEnvironment` auf den vorherigen Wert zurück — löste dabei aber
+UNGEWOLLT sofort den ANDEREN Dialog ("Training Location Changed" /
+DEL-022-Adapt-Prompt) aus, weil die Rückschreibung selbst denselben
+`.onChange(of: plan.targetEnvironment)`-Handler erneut feuerte (kein
+Unterdrückungs-Flag gesetzt, anders als bei `revertToSnapshot()`). "Cancel"
+auf DIESEM zweiten Dialog führte wiederum zurück zum ERSTEN Dialog — ein
+**reproduzierbares Ping-Pong, aus dem "Cancel" nicht herausführte** (auf
+dem Gerät zweimal hintereinander bestätigt: Cancel → anderer Dialog →
+Cancel → ursprünglicher Dialog). Der Nutzer konnte den Umgebungswechsel
+nicht abbrechen, ohne zwangsläufig eine der destruktiven Optionen
+(Adapt/Restore/Re-Adjust) zu wählen.
+
+**Fix (Commit `47678c1`):** neue Methode `revertTargetEnvironment(to:)`
+bündelt alle drei Cancel-Pfade (Global-Sync-, Adapt- und Restore-Dialog)
+und setzt dabei `isApplyingSnapshot = true` — denselben bereits etablierten
+Unterdrückungsmechanismus wie `revertToSnapshot()` —, bevor
+`plan.targetEnvironment` zurückgeschrieben wird. Neuer Test
+`testRevertTargetEnvironmentRestoresPriorValue` (deckt nur die reine
+Rückschreibung ab; das `.onChange`-Cascade-Verhalten selbst ist nur per
+Geräte-/UI-Test prüfbar).
+
+**CI (`apple-ci-comparison.yml`):**
+
+| Run | Commit | Ergebnis |
+|---|---|---|
+| `39422687588` | `47678c1` (Fix-Commit dieser Runde) | ✓ erfolgreich, inkl. neuem Test und App+Widget-Build |
+
+**Geräte-Nachtest nach dem Fix (Build `7c22ceea177d36af2e2b3c20`, Commit
+`47678c1`, `autoAcceptAlerts: false`):** identischer Ablauf (Gym→No
+Equipment adaptiert, zurück zu Gym → Restore-Dialog → Cancel) — Cancel
+setzte "Training Location" korrekt auf "No Equipment" zurück, **kein
+Folgedialog mehr**. Einmaliger sauberer Abbruch bestätigt.
+
+**D06 gilt damit als vollständig bestanden** (Kernzusage aus Runde 3 UND
+der isolierte Cancel-Schritt, inkl. dabei gefundenem und gefixtem Bug).
+
+**TestingBot-Sessions (`max_concurrent=1` eingehalten, alle aktiv
+beendet):**
+
+| # | Zweck | Build/Commit | Dauer |
+|---|---|---|---|
+| 1 | A01-Navigation (Dashboard/Plan-Tab), erster D06-Versuch mit `autoAcceptAlerts: true` (zeigte das Automatisierungs-Artefakt) | `cf0bfe8df4ca17f5fa0b563f` / `1c8bf54` | 293 s |
+| 2 | D06 isoliert mit `autoAcceptAlerts: false` — Bug gefunden (Cancel-Ping-Pong) | `cf0bfe8df4ca17f5fa0b563f` / `1c8bf54` | 422 s |
+| 3 | D06-Fix-Nachtest — Cancel bricht jetzt sauber ab | `7c22ceea177d36af2e2b3c20` / `47678c1` | 125 s |
+
+Gesamt: **840 Sekunden** von 28.007 Sekunden Restbudget vor dieser Runde.
+Die Konto-API zeigte unmittelbar danach weiterhin `28.007` (derselbe in
+Runde 3-5 dokumentierte Abrechnungsverzug) — als genauerer Wert gilt die
+Summe der Session-Dauern; konservatives Restbudget danach: **ca. 27.167
+Sekunden**. Keine zusätzlichen Käufe.
+
+**E04-Rest/F-Rest:** in dieser Runde NICHT bearbeitet (Zeit-/Umfang-
+Priorität lag auf A01+D06; das gefundene D06-Bugfix-Review+Retest hat den
+dafür vorgesehenen Rahmen bereits ausgefüllt). Bleibt offen für eine
+künftige Runde, siehe "Nächste Schritte".
 
 ## Diese Runde (Runde 5): C01-Fix-Retest (Timing-Fix + Kaltstart-Persistenz-Bug)
 
@@ -467,7 +581,7 @@ Daten-/Logikebene beweist.
 | D03 | Name/Ton ändern, separate Aktion bestätigen → unabhängiger Edit bleibt verwerfbar | **P1** | `PlanEditorView.rebaselineTargetEnvironment()`; der Cardio-Teil läuft seit Commit `47ab4d6` NICHT mehr über eine Teil-Rebaseline in `ProfileEditorView` (`rebaselineCardioGoal()` entfiel ersatzlos), sondern über den eigenen Save/Cancel-Flow von `CardioGoalEditorView` (Cardio-Felder sind seitdem kein `ProfileMetaSnapshot`-Feld mehr) | `EditorDiscardSnapshotTests.testPlanMetaSnapshotTargetedRebaselineLeavesOtherFieldsDirty` (PlanEditorView-Teil), `testProfileMetaSnapshotExcludesCardioFields` (Cardio-Teil, ersetzt den entfallenen `testProfileEditorViewRebaselineCardioGoalLeavesCoachingToneDiscardable`-Test); zusätzlich geräteverifiziert für den Cardio-Teil als Runde-5-Edge-Case 1/2 (siehe C01-Zeile/Nachtrag „Runde 5") | Für den Cardio-Teil: Runde-5-Edge-Case 1/2 (siehe C01-Zeile) | bestanden | Für `PlanEditorView.rebaselineTargetEnvironment()` weiterhin nur Logikebene bewiesen, kein Geräte-Nachweis der UI-Sequenz. |
 | D04 | A aktiv → B an → B aus → Verwerfen → Ausgangsaktivierung wiederhergestellt | **P1** | `PlanEditorView.planToReactivateOnDiscard`/`otherActivePlanStateIsDirty` | `EditorDiscardSnapshotTests.testPlanToReactivateOnDiscardSurvivesOnOffToggleSequence`, `testOtherActivePlanStateIsDirtyDetectsOnOffToggleSequence` | kein Geräte-Nachweis vorhanden | bestanden | Nur Logikebene bewiesen. |
 | D05 | Inaktiver Plan ohne anderen aktiven Plan → unverändert nicht dirty | **P1** | `PlanEditorView.planToReactivateOnDiscard`/`otherActivePlanStateIsDirty` (nil-Fall) | `EditorDiscardSnapshotTests.testPlanToReactivateOnDiscardReturnsNilWhenNoOtherPlanWasActiveAtOpen`, `testOtherActivePlanStateIsDirtyIsFalseWhenNoOtherPlanWasActiveAtOpen` | kein Geräte-Nachweis vorhanden | bestanden | Nur Logikebene bewiesen. |
-| D06 | Rückrollen von Trainingsort → keine erneut ausgelöste Migration beim Schließen | **P1** | `PlanEditorView.revertToSnapshot()`/`isApplyingSnapshot`-Flag | `EditorDiscardSnapshotTests.testPlanMetaSnapshotRevertsEnvironmentAndActiveFlagTogether` (verwandt: prüft nur Datenmodell-Rollback) | Build/Commit `b8b8f6e`, TestingBot-Session `f3e600cd…26223308`. Beobachtet: Trainingsort Gym→„No Equipment" löste eine SOFORTIGE, automatische Anpassung mit Toast („9 ersetzt · 1 ohne Alternative · 2 unverändert") aus — OHNE einen vom Nutzer zu bestätigenden/abzulehnenden Dialog (der `pendingEnvironmentSwap`-Adapt/Verwerfen-Dialog aus dem Code kam bei diesem Übergang nicht sichtbar zur Anzeige; ein ANDERER Dialog — „Restore Original Exercises?" (DEL-049) — erschien reproduzierbar beim Zurückwechseln auf einen Ort mit bereits archivierten Originalen). Nach der Anpassung: Zurück-Navigation zeigte KEINEN Verwerfen-Dialog mehr (Änderung war bereits rebaselined), Trainingsort blieb wie zuletzt gesetzt. Erneutes Öffnen des Plan-Editors zeigte den Trainingsort unverändert, OHNE erneut ausgelöste Migration/Toast/Dialog. | teilweise | Die geprüfte Kernzusage ("kein erneuter Migrations-Dialog beim bloßen Schließen/Wiederöffnen") ist bestätigt. NICHT isoliert reproduzierbar war der im Testablauf beschriebene Einzelschritt "Dialog erscheint → bewusst ablehnen/Verwerfen, OHNE durchzulaufen" — in dieser Session lief die Anpassung bei einem echten Equipment-Konflikt automatisch durch, ohne dass eine Nutzerbestätigung abgewartet wurde; ob das Produktverhalten oder ein Automatisierungs-Timing-Artefakt ist, bleibt unklar. |
+| D06 | Rückrollen von Trainingsort → keine erneut ausgelöste Migration beim Schließen | **P1** | `PlanEditorView.revertToSnapshot()`/`revertTargetEnvironment()`/`isApplyingSnapshot`-Flag | `EditorDiscardSnapshotTests.testPlanMetaSnapshotRevertsEnvironmentAndActiveFlagTogether`, `testRevertTargetEnvironmentRestoresPriorValue` (Runde 6) | Build/Commit `b8b8f6e` (Runde 3), TestingBot-Session `f3e600cd…26223308`: Kernzusage bestätigt (siehe Historie unten). **Runde 6** (Build `cf0bfe8df4ca17f5fa0b563f`/`1c8bf54`, dann `7c22ceea177d36af2e2b3c20`/`47678c1`): isolierter Schritt "Dialog erscheint → bewusst ablehnen" erstmals nachgestellt — erfordert `appium:autoAcceptAlerts: false` (siehe Nachtrag „Runde 6": mit der bisherigen `autoAcceptAlerts: true`-Einstellung aller Vorrunden wurde der Dialog nie sichtbar, da automatisch mit seinem ersten Button bestätigt — Automatisierungs-Artefakt, nicht Produktverhalten). Dabei gefunden: "Cancel" im Restore-Dialog loeste reproduzierbar den ANDEREN Dialog (Adapt) aus, dessen Cancel wieder zurueck zum ersten fuehrte — echte Endlosschleife, aus der Cancel nicht herausfuehrte. Gefixt (`revertTargetEnvironment`, dasselbe `isApplyingSnapshot`-Muster wie `revertToSnapshot()`), CI gruen, Geraete-Nachtest nach Fix: Cancel bricht jetzt sauber ab, kein Folgedialog mehr. | **bestanden** | Kernzusage UND isolierter Cancel-Schritt jetzt beide gerätebestätigt; der dabei gefundene Bug (Cancel-Ping-Pong) ist gefixt und gerätebestätigt. Andere Trainingsort-Übergänge (z. B. Home-Gym-Zwischenstufen, Mehrfachwechsel in einer Sitzung) nicht separat geprüft. |
 | E01 | Körpermessung per Haken bearbeiten → bestehende Messung aktualisiert, kein Duplikat | **P1** | `MeasurementView.save(profile:)` (`editingMeasurement`-Zweig überschreibt das bestehende Objekt; **Fund+Fix dieser Runde:** fehlender `context.save()`, siehe Commit `89c788a`) | `MeasurementPersistenceTests.testEditedMeasurementWithImmediateSaveSurvivesARealStoreRestartWithoutDuplication` (neu, reproduziert die Fix-Technik exakt) | Build/Commit `89c788a` (nach Fix), TestingBot-Session `d5e2f4c5…03720961`. Bestehenden Verlaufseintrag (Gewicht 75,00 kg) per Haken bearbeitet → Gewicht auf 78,00 geändert, gespeichert: Verlauf zeigte danach weiterhin genau 2 Einträge (kein dritter/doppelter), der bearbeitete Eintrag zeigte 78,00 kg. Direkt danach `terminateApp` + Neustart (echter Kaltstart): Dashboard und Verlauf zeigten 78,00 kg weiterhin korrekt, weiterhin genau 2 Einträge. | bestanden | Nur der Geräte-Ablauf mit vollständigen Pflichtfeldern (Gewicht+Hals+Taille) geprüft; der "nur Gewicht nachträglich geändert, Umfänge unverändert"-Spezialfall (`isEditingWeightOnlyEntry`) wurde nicht separat auf dem Gerät durchgespielt. |
 | E02 | Cooldown vorgesehen/ausgeblendet/nicht vorhanden → jeweils nachvollziehbare Anzeige | P2 | `ActiveWorkoutView` (Warmup-/Cooldown-Sichtbarkeits-Filter), `ExerciseRole.cooldown` | `ExerciseRoleTests.testCooldownIsSkipped` (verwandt: prüft nur Progressions-Ausschluss, nicht die drei Anzeigezustände) | kein Geräte-Nachweis vorhanden | teilweise | Kein Test für die drei konkreten Anzeigezustände selbst. |
 | E03 | Alle gültigen RIR-Ganz-/Halbwerte → vollständig sichtbar und korrekt gespeichert | P2 | `SetRow.swift` (strukturelle RIR-Spalte, Zwei-Zeilen-Fallback laut Code-Kommentaren) | kein Test gefunden (kein RIR-Testfile) | Build/Commit `64ba455`, TestingBot-Session (Runde 3). Alle 11 gültigen Werte (0, 0,5, 1, 1,5, 2, 2,5, 3, 3,5, 4, 4,5, 5) im aktiven Satz-Logging nacheinander über den RIR-Regler eingestellt: jeder Wert erschien vollständig und korrekt in der RIR-Kapsel (z. B. "3,5", nicht abgeschnitten wie im Original-Bugreport "R2/R4..."), mit passendem Tooltip-Text je Stufe (z. B. "Absolute failure" bei 0). Ein Satz mit RIR 3,5 geloggt (Haken) → Wert blieb nach dem Loggen unverändert sichtbar in der (ausgegrauten) Zeile. | bestanden | Nur die Anzeige/das direkte Loggen geprüft; kein Kaltstart-Test, ob ein geloggter RIR-Wert (z. B. 3,5) auch nach einem Neustart in der Historie/Zusammenfassung weiterhin korrekt (nicht gerundet) angezeigt wird. |
@@ -848,31 +962,28 @@ kein Fix, kein neuer CI-Lauf, kein Geräte-Nachtest nötig.
 
 Top-5-Geräteprüfung (E01, C06, D06, A11, D02), Runde 3 (Onboarding/
 Hybrid/Coach, Navigation, Drag&Drop, RIR, Bildschirmgröße), Runde 4
-(C01/C02-Kernfall) und Runde 5 (C01-Fix-Retest inkl. Kaltstart-
-Persistenz-Bugfix) abgeschlossen — siehe jeweilige Nachträge oben für
-Details. **C01 ist seit Runde 5 vollständig bestanden** (Timing-Fix
-`47ab4d6` + Persistenz-Fix `1c8bf54`, siehe C01-Zeile/Nachtrag „Runde 5").
-Offene bekannte Nachweislücken, in absteigender Priorität für eine
-künftige Runde:
+(C01/C02-Kernfall), Runde 5 (C01-Fix-Retest inkl. Kaltstart-
+Persistenz-Bugfix) und Runde 6 (A01-Klärung + D06-Fix) abgeschlossen —
+siehe jeweilige Nachträge oben für Details. **C01 ist seit Runde 5, D06
+seit Runde 6 vollständig bestanden** (C01: Timing-Fix `47ab4d6` +
+Persistenz-Fix `1c8bf54`; D06: Cancel-Endlosschleifen-Fix `47678c1`).
+**A01 ist seit Runde 6 geklärt** (kein Produktpfad vorhanden, siehe
+dortiger Eintrag) und kein offener Prüfpunkt mehr. Offene bekannte
+Nachweislücken, in absteigender Priorität für eine künftige Runde:
 
-1. **A01** (P2, teilweise): die eigentliche Kernfrage — bestehendes Profil
-   aus einem früheren, abgebrochenen/abgeschlossenen Durchlauf, erneuter
-   Eintritt ins Onboarding — konnte in keiner bisherigen Runde auf dem
-   Gerät nachgestellt werden (kein gefundener regulärer Weg, das
-   Onboarding mit bestehendem Profil erneut zu starten).
-4. **E04-Rest** (teilweise): Deltiq selbst in Deutsch (Automatisierung
+1. **E04-Rest** (teilweise): Deltiq selbst in Deutsch (Automatisierung
    überlebte den Systemsprachwechsel in dieser Runde nicht) und in
    Türkisch (nicht versucht) bleiben ungeprüft; ein echtes kleineres
    Gerät wurde nicht zusätzlich zur Dynamic-Type-Vergrößerung getestet.
-5. **D06**s Einzelschritt "Migrationsdialog bewusst ablehnen" ließ sich
-   nach wie vor nicht isoliert reproduzieren; Auswirkung noch nicht
-   abschließend geprüft.
-6. F01–F08: nur noch der reine UI-/Geräte-Teil von F01–F03/F06–F08 sowie
+   In Runde 6 aus Zeit-/Umfangsgründen zurückgestellt (siehe dortiger
+   Nachtrag), nicht erneut versucht.
+2. F01–F08: nur noch der reine UI-/Geräte-Teil von F01–F03/F06–F08 sowie
    F05s Beschwerden-Abklärungsweg offen — kein genereller Blocker mehr.
-7. Verbleibende P2-Fälle ohne Gerätenachweis: A02, C05, E02, E08.
+3. Verbleibende P2-Fälle ohne Gerätenachweis: A02, C05, E02, E08.
 
-Von den fünf benannten fachlichen Widersprüchen ist C01 seit Runde 5
-behoben (siehe dortiger Eintrag, aus Nachvollziehbarkeit stehen gelassen
-statt gelöscht); die verbleibenden vier (A09, C04, A02-Architekturfrage,
-F04, sowie A04s Abhängigkeit von A09) gehen weiterhin als offene
-Entscheidungen an den Nutzer zurück, nicht eigenmächtig auflösen.
+Von den fünf ursprünglich benannten fachlichen Widersprüchen ist C01 seit
+Runde 5 behoben (siehe dortiger Eintrag, aus Nachvollziehbarkeit stehen
+gelassen statt gelöscht); die verbleibenden vier (A09, C04,
+A02-Architekturfrage, F04, sowie A04s Abhängigkeit von A09) gehen
+weiterhin als offene Entscheidungen an den Nutzer zurück, nicht
+eigenmächtig auflösen.
