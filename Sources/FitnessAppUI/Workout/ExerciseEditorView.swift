@@ -295,15 +295,21 @@ public struct ExerciseEditorView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
-        // Bug-Fix (Deltiq-Geraeteabnahme E05): .navigationBarBackButtonHidden(true)
-        // nimmt auf iOS die Swipe-Back-Geste als Nebenwirkung mit runter - siehe
-        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift. Anders als
-        // PlanEditorView/DayEditorView fehlte dieser Aufruf hier komplett, die
-        // Geste war auf dieser (dritten) Verschachtelungsebene dauerhaft tot,
-        // unabhaengig von `isDirty`. Ohne Aenderungen (`!isDirty`) funktioniert
-        // sie wieder normal; bei Aenderungen bleibt sie bewusst aus (siehe
-        // .interactiveDismissDisabled unten).
-        .deltiqSwipeBackEnabled(!isDirty)
+        // Geraete-Nachtest (Deltiq-Abnahme E05) widerlegt die vorherige Annahme
+        // hier: ExerciseEditorView wird von DayEditorView per
+        // `.sheet(item:) { NavigationStack { ExerciseEditorView(...) } }`
+        // geoeffnet, bekommt also eine EIGENE, frische NavigationStack mit nur
+        // sich selbst als Root (anders als PlanEditorView/DayEditorView, die
+        // per NavigationLink im GEMEINSAMEN Stack gepusht werden). Ein zuvor
+        // ergaenztes `.deltiqSwipeBackEnabled(...)` war hier wirkungslos, weil
+        // `SwipeBackHostController.gestureRecognizerShouldBegin` ohnehin immer
+        // `false` liefert, sobald `viewControllers.count == 1` (nichts zum
+        // Zurueckpoppen vorhanden) — zweifach auf dem Geraet bestaetigt, vor
+        // UND nach jenem Versuch identisches Verhalten. Die fuer eine Sheet-
+        // Praesentation korrekte Geste ist stattdessen das native Herunter-
+        // Wischen zum Schliessen, bereits korrekt ueber
+        // `.interactiveDismissDisabled(isDirty)` gesteuert (siehe unten) und
+        // auf dem Geraet bestaetigt funktionsfaehig.
         .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
             revertToSnapshot()
             dismiss()
