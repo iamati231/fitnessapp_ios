@@ -601,46 +601,58 @@ public struct PlansListView: View {
     }
 
     private func deletePlans(at offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(plans[index])
-        }
-        // TestingBot-Geraetebefund (Deltiq-Abnahme, Punkt 1, Nachbesserung zum
-        // fdad04c-Fix): ein SYNCHRONER `modelContext.save()` direkt hier drin
-        // crasht auf echtem Geraet reproduzierbar, wenn der geloeschte Plan
-        // eine laufende Session besitzt, deren `ActiveSessionBanner` in
-        // DERSELBEN `List` oberhalb der Plan-Zeilen angezeigt wird: `List`s
-        // eigene `.onDelete`-Animation erwartet, das darunterliegende
-        // `@Query`-Array aendere sich GENAU EINMAL pro Swipe-Delete. Der
-        // sofortige Save loest aber VOR Abschluss dieser Animation bereits
-        // die SwiftData-Cascade/Nullify-Kette aus (Plan -> Day -> Session.day
-        // = nil) und damit eine ZWEITE, ueberlappende Aenderung an genau dem
-        // Datenbestand, den dieselbe List gerade mitten in ihrer eigenen
-        // Lösch-Animation aus der vorherigen Mutation (`delete()`) heraus
-        // neu zeichnet - zwei sich ueberschneidende List-Mutationen in einer
-        // Transaktion crashen SwiftUI. `DayEditorView.deleteExercises` und
-        // `PlanEditorView.deleteDays` haben denselben Sofort-Save, zeigen das
-        // Problem hier aber NICHT, weil in deren Repro keine andere Zeile der
-        // GLEICHEN Liste auf das geloeschte Objekt zeigte.
+        let plansToDelete = offsets.map { plans[$0] }
+        // TestingBot-Geraetebefund (Deltiq-Abnahme, Punkt 1, zweite
+        // Nachbesserung zum fdad04c-Fix): Loeschen des AKTIVEN Plans bei
+        // laufender Session crashte auf echtem Geraet reproduzierbar mit
+        // einem SwiftData-Fatal-Error, nicht fangbar per do/catch (geloggt
+        // im iOS-Geraetelog): "SwiftData/BackingData.swift:296: Fatal error:
+        // Context is missing for ... TrainingDay/p6". Ursache: `TrainingDay`
+        // deklariert zwar `@Relationship(deleteRule: .nullify, inverse:
+        // \WorkoutSession.day)` extra wegen eines frueheren, verwandten
+        // Fundes (siehe `TrainingDay.sessions`-Typ-Doku, "P8-Fund") - aber
+        // genau dieselbe Unzuverlaessigkeit zeigt sich hier nochmal: ein
+        // bereits im Speicher gehaltenes `WorkoutSession`-Objekt (das
+        // `activeSessions`-@Query-Ergebnis, gerendert von
+        // `ActiveSessionBanner` in DERSELBEN Liste) kann beim Kaskaden-Delete
+        // des Plans `session.day` fuer einen Render-Moment noch auf die
+        // bereits aus ihrem Context entfernte `TrainingDay` zeigen lassen -
+        // `ActiveSessionBanner` liest dann `day.displayName`, SwiftData kann
+        // die Property nicht mehr aufloesen und crasht hart (kein werfender
+        // Fehler, `fatalError` intern).
         //
-        // Fix: Save einen Runloop-Tick spaeter (`DispatchQueue.main.async`) -
-        // `List` beendet ihre eigene Animation zuerst (Plan ist dann schon aus
-        // `plans` verschwunden), danach erst committed der Save. Das aendert
-        // nichts an der Kaltstart-Garantie (ein Force-Quit Millisekunden nach
-        // dem Tap ist praktisch ausgeschlossen) — nur an der Reihenfolge
-        // innerhalb desselben Frames. Kein `context.rollback()` bei Fehler —
-        // wirkt auf den GESAMTEN, geteilten Context und wuerde unabhaengige,
-        // anderswo bereits bestaetigte Aenderungen mit zerstoeren (siehe
+        // Fix: `session.day` fuer jede betroffene Session EXPLIZIT und
+        // VORAB nullen, bevor der Plan (und damit kaskadierend seine Tage)
+        // ueberhaupt geloescht wird - dieselbe Mutation, die SwiftData sonst
+        // selbst als Teil der Kaskade versucht, nur jetzt VOR dem Delete und
+        // damit garantiert abgeschlossen, bevor irgendeine View die
+        // geloeschte Tag-Instanz noch lesen koennte. `session.day` ist nach
+        // dieser Zeile synchron `nil`, lange bevor `ActiveSessionBanner`
+        // ueberhaupt neu rendert - der crashende `day.displayName`-Zugriff
+        // wird nie mehr erreicht.
+        for plan in plansToDelete {
+            for day in plan.days {
+                // Schnappschuss vor der Mutation: `day.sessions` ist die
+                // Inverse von `session.day` und schrumpft live, waehrend wir
+                // iterieren.
+                for session in day.sessions {
+                    session.day = nil
+                }
+            }
+            modelContext.delete(plan)
+        }
+        // Kein `context.rollback()` bei Fehler — wirkt auf den GESAMTEN,
+        // geteilten Context und wuerde unabhaengige, anderswo bereits
+        // bestaetigte Aenderungen mit zerstoeren (siehe
         // `PlanGeneratorInstantiator`-Typ-Doku, gleiche Begruendung wie
         // `DayEditorView.deleteExercises`). Stattdessen nur sichtbarer
         // Fehlerhinweis — der User sieht den Plan in der Liste weiterhin
         // als entfernt, auch wenn der Save scheiterte, und kann es erneut
         // versuchen.
-        DispatchQueue.main.async {
-            do {
-                try modelContext.save()
-            } catch {
-                deletePlanErrorMessage = error.localizedDescription
-            }
+        do {
+            try modelContext.save()
+        } catch {
+            deletePlanErrorMessage = error.localizedDescription
         }
     }
 
