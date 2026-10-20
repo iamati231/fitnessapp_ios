@@ -588,6 +588,15 @@ struct ExerciseCard: View {
     /// DEL-058: nimmt jetzt das `LoggedSetValues`-Bundle und uebernimmt
     /// auch Cardio-Felder (distanceKm/durationSeconds) in den persistierten
     /// `ExerciseLog`.
+    /// Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md, kg/lbs-
+    /// Nachtest): fehlender `context.save()` nach dem Insert hier selbst -
+    /// derselbe Musterfehler wie bereits zwoelf Mal zuvor in dieser App
+    /// gefunden und gefixt (zuletzt `CardioGoalEditorView.save()`), diesmal
+    /// im eigentlichen Satz-Logging. Auf dem Geraet reproduziert: ein gerade
+    /// geloggter Satz (gruener Haken, Volumen-Anzeige aktualisiert) ging bei
+    /// einem Kaltstart kurz danach verloren - unabhaengig von kg/lbs, betraf
+    /// auch das bereits bestehende Kaltstart-sichere `unlogSet` direkt
+    /// darunter als Gegenbeispiel (siehe dessen Doku-Kommentar).
     private func logSet(setIndex: Int, values: LoggedSetValues) {
         let log = ExerciseLog(
             date: Date(),
@@ -603,6 +612,7 @@ struct ExerciseCard: View {
             durationSeconds: values.durationSeconds
         )
         modelContext.insert(log)
+        try? modelContext.save()
         onSetLogged(setIndex)
     }
 
