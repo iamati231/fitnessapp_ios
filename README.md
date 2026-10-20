@@ -664,6 +664,8 @@ Ausführlich in [`CONTRIBUTING.md`](./CONTRIBUTING.md). Kurzfassung:
 | [`XcodeSetup.md`](./XcodeSetup.md) | manuelle Xcode-Einbindung | veraltet (heute XcodeGen) |
 | [`WidgetSetup.md`](./WidgetSetup.md) | Widget/Live-Activity-Einrichtung | teilweise veraltet |
 | [`TRANSLATIONS.md`](./TRANSLATIONS.md) | Übersetzungstabelle je Key | Kopfzeile und Tabelle sind aktuell (per `.scripts/generate_translations_md.py` erzeugt) |
+| [`docs/specifications/`](./docs/specifications/) | Fünf Original-Spezifikationsdokumente (00–04) für die Deltiq-Weiterentwicklung (Planung/Builder, Onboarding/Laufcoach, Trainingsbegleitung/Plan-Checks, Tests/Abnahme) | unverändert wie geliefert, nicht an den Implementierungsstand angepasst; maßgeblich bei Konflikten mit anderer Dokumentation |
+| [`docs/DELTIQ_DEVICE_ACCEPTANCE.md`](./docs/DELTIQ_DEVICE_ACCEPTANCE.md) | Konsolidierter Geräteabnahme-Stand (TestingBot) gegen die Testmatrix aus `docs/specifications/04_TESTS_UND_ABNAHME.md` | wird fortlaufend aktualisiert, keine Parallelliste führen |
 
 ### 8.7 Claude-Code-Agents
 
