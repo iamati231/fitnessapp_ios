@@ -116,6 +116,18 @@ public enum ProgressionApplicator {
                 action = .hold
             }
 
+            // F08-Fund (Dok. 03 §5: "nicht dieselbe Uebung gleichzeitig
+            // steigern und reduzieren"): waehrend `DeloadManager` ein
+            // reduziertes Gewicht fuer diese Uebung eingefroren haelt
+            // (`deloadOriginalWeight != nil`), darf Progression es nicht
+            // ueberschreiben — sonst wird der Deload sofort unterlaufen UND
+            // `endDeload()` wuerde den waehrenddessen erarbeiteten
+            // Fortschritt beim Zurueckschreiben des alten Originals wieder
+            // verwerfen. Deload selbst bleibt erlaubt (Sicherheitsnetz).
+            if exercise.deloadOriginalWeight != nil, case .increaseWeight = action {
+                action = .hold
+            }
+
             // Auswirkungen auf das suggestedWeight schreiben.
             let baseWeight = exercise.suggestedWeight ?? lastLoggedWeight(in: exerciseLogs)
             var newWeight: Double? = exercise.suggestedWeight
@@ -192,6 +204,12 @@ public enum ProgressionApplicator {
                 targetRIROverride: override
             )
             if feelingVetoActive, case .increaseWeight = action {
+                action = .hold
+            }
+            // Spiegelt denselben Deload-Veto wie `apply` (siehe dessen
+            // Dokumentation) — sonst wuerde dieses Replay eine Steigerung
+            // feiern, die `apply` tatsaechlich nie geschrieben hat.
+            if exercise.deloadOriginalWeight != nil, case .increaseWeight = action {
                 action = .hold
             }
             if case .hold = action { continue }
