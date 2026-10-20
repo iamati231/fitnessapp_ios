@@ -295,6 +295,15 @@ public struct ExerciseEditorView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-Fix (Deltiq-Geraeteabnahme E05): .navigationBarBackButtonHidden(true)
+        // nimmt auf iOS die Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift. Anders als
+        // PlanEditorView/DayEditorView fehlte dieser Aufruf hier komplett, die
+        // Geste war auf dieser (dritten) Verschachtelungsebene dauerhaft tot,
+        // unabhaengig von `isDirty`. Ohne Aenderungen (`!isDirty`) funktioniert
+        // sie wieder normal; bei Aenderungen bleibt sie bewusst aus (siehe
+        // .interactiveDismissDisabled unten).
+        .deltiqSwipeBackEnabled(!isDirty)
         .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
             revertToSnapshot()
             dismiss()
