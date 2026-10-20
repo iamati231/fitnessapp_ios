@@ -1082,6 +1082,16 @@ public struct MeasurementView: View {
             existing.normalizedFfmi = recomputed.normalizedFfmi
             existing.bmr = recomputed.bmr
 
+            // TestingBot-Regressionscheck E01 (Deltiq-Abnahme, derselbe
+            // Musterfehler wie `deleteCurrentMeasurement` unten und die
+            // zwoelf in `docs/DELTIQ_DEVICE_ACCEPTANCE.md` dokumentierten
+            // Faelle): ohne sofortigen `context.save()` haengt die
+            // Persistenz dieser Bearbeitung an SwiftDatas implizitem
+            // Autosave, der einen App-Kaltstart kurz danach nicht
+            // zuverlaessig schon durchlaufen haben muss — die Aenderung
+            // waere dann nach Neustart wieder auf dem alten Stand.
+            try? modelContext.save()
+
             lastSavedAt = Date()
             dismiss()
         } else {
