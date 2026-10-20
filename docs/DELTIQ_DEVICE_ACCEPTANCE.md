@@ -33,6 +33,85 @@ Nachtrag für die in Runde 6 fälschlich geführte „kein Produktpfad"-
 Einordnung und ihre Rücknahme). Gesamtabnahme weiterhin offen (kein
 vollständiger Abschluss aller 45 Fälle).**
 
+## Runde 9: AX5-Fix-Nachtest + kg/lbs-Implementierungspaket
+
+**Auftrag:** (1) AX5-Spalten-Header-Fix (`c299c22`) mit einem echten
+Geräte-Nachweis abschließen (bisher nur CI/Zwischenstand), mehr als reiner
+Zeilenumbruch-Check; (2) das in Runde 8 gefundene kg/lbs-Implementierungsloch
+für die vier benannten Stellen gezielt schließen; (3) F-Fälle/Budget
+unverändert differenziert weiterführen. E04 bleibt in Kopf-/Gesamtstatus
+"teilweise" — die neuen Nachweise schließen einzelne Lücken, nicht alle.
+
+### Vorhandener Vertrag + bewusste Scope-Grenze (VOR der Umsetzung festgehalten)
+
+**Speicherung:** durchgehend metrisch, konsistent `*Kg`-benannte Properties
+(`UserBodyProfile.goalWeightKg`, `BodyMeasurement.weightKg`,
+`PersonalRecordEntry.weightKg`, `ExerciseLog.weight` [kg]) — keine
+Schemaänderung, keine Migration.
+
+**Einstellung:** `@AppStorage("weight_unit")` (`"kg"`/`"lbs"`), vor dieser
+Runde bereits korrekt gelesen vom Hantelrechner, der Warmup-Rampe
+(`ExerciseCard.warmupRamp`) und `SettingsView.formattedHeight/formattedWeight`
+(Profil-Zusammenfassungszeile in den Einstellungen selbst — verifiziert,
+unverändert korrekt, kein Teil dieser Runde).
+
+**Bereits vorhandener fachlicher Widerspruch (Runde 8, Fachliche
+Widersprüche Nr. 6):** der Settings-Hinweistext (`settings.units.footer`)
+verspricht wörtlich Wirkung auf "Eingabe-Feldern, Hantel-Rechner und
+Karten" — `SetRow.swift` hatte dafür einen expliziten, bewussten
+Gegenkommentar (DEL-220): echte lbs-Unterstützung sei "ein eigenes,
+querschnittliches Thema (Eingabe, Volumen, PRs, Charts, CSV)".
+
+**Scope-Entscheidung dieser Runde (bewusst NICHT vollständig, benannte
+Teilmenge):** genau vier Stellen werden jetzt an `weight_unit` angebunden —
+`SetRow.weightInput` (inkl. Spaltenkopf in `ExerciseCard` und
+`previousLogHint`, da sonst ein selbst verursachter Einheiten-Mix auf
+demselben Screen entstünde), `BodyDataEditorView` (Gewicht/Zielgewicht),
+`ProfileEditorView.bodyDataSummaryText` und das Dashboard-Gewichtstrend
+(Hero-Kachel + Chart + Zielgewicht-Linie, inkl. Wochen-Delta). AUSDRÜCKLICH
+weiterhin kg-only, bewusst nicht Teil dieser Runde: Trainingsvolumen-
+Aggregation/Analytics, PR-Erkennung/-Banner, Übungs-Gewichtsverlauf-Charts
+außerhalb des Dashboards, CSV-Export/-Import — dieselbe Abgrenzung, die
+DEL-220 bereits als eigenes, größeres Thema benannt hatte. `draftHeightCm`
+in `BodyDataEditorView` bleibt ebenfalls außerhalb (cm/in ist ein separates,
+hier nicht beauftragtes Thema).
+
+### Implementierung
+
+Neuer, kleiner Typ `WeightUnit` (`Sources/FitnessAppCore/Numerics/WeightUnit.swift`,
+`enum kg/lbs` mit `fromKg(_:)`/`toKg(_:)`) ersetzt die vier zuvor
+duplizierten `kg / 0.453592`-Stellen als einzige Konvertierungsquelle für
+die neuen Stellen. Jede Anzeige/Eingabe konvertiert IMMER frisch vom
+kanonischen kg-Wert aus (nie verkettet) — Rundtrip- und Rundungsstabilität
+über `WeightUnitTests.swift` (7 Tests: Identität für kg, kg→lbs/lbs→kg
+Korrektheit, wiederholtes Umschalten ohne Eingabe erzeugt keinen Drift,
+Linearität der Konvertierung für Differenzen).
+
+Geänderte Dateien:
+- `Sources/FitnessAppUI/Workout/SetRow.swift`: `weightInput`-Binding,
+  `weightPlaceholder` ("→ KG"/"→ LBS"), `previousLogHint` (kg-fixer
+  Hint direkt neben dem jetzt umschaltbaren Feld wäre ein neuer,
+  selbstverursachter Einheiten-Mix gewesen).
+- `Sources/FitnessAppUI/Workout/ExerciseCard.swift`: Spaltenkopf
+  ("KG"/"LBS", neue Keys `unit.lbs.upper`/`unit.lbs.lower`).
+- `Sources/FitnessAppUI/Settings/BodyDataEditorView.swift`: Gewicht- und
+  Zielgewicht-Feld (Wert UND Label, neue Keys
+  `profile.bodyData.weight.label.lbs`/`profile.bodyData.goalWeight.label.lbs`).
+- `Sources/FitnessAppUI/Settings/ProfileEditorView.swift`:
+  `bodyDataSummaryText`.
+- `Sources/FitnessAppUI/DashboardView.swift`: Hero-Kachel (Wert + Delta,
+  `MetricCard` bekam dafür einen `deltaUnit`-Parameter mit kg-Default,
+  alle anderen Kachel-Typen unverändert), Trend-Chart (Linie/Punkte/
+  Prognose/Zielgewicht-Linie, neuer Key `dashboard.goal.line.lbs`).
+- `Sources/FitnessAppUI/Resources/Localizable.xcstrings`: 6 neue Keys
+  (DE/EN/TR), `dead_catalog_v3.py` bestätigt UNUSED:0,
+  `generate_translations_md.py` regeneriert `TRANSLATIONS.md`.
+
+### F01–F08 / Budget
+
+Unverändert gegenüber Runde 8 — siehe dortigen Nachtrag. Kein neuer
+Lösungsversuch für den CSV-Export-Blocker ohne neue Hypothese.
+
 ## Runde 8: E04 Türkisch + Imperial-Einheiten (DE), F01–F08 Erreichbarkeit differenziert geprüft
 
 **Auftrag:** (1) E04-Rest Türkisch mit der in Runde 7 etablierten

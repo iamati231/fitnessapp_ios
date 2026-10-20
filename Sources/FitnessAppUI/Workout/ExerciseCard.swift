@@ -193,12 +193,19 @@ struct ExerciseCard: View {
         }
     }
 
+    /// Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md, kg/lbs):
+    /// der Spaltenkopf stand hart auf "KG", obwohl `SetRow.weightInput`
+    /// darunter seit dieser Runde die gewaehlte Einheit respektiert.
+    private var weightColumnHeaderKey: LocalizedStringKey {
+        weightUnitRaw == "lbs" ? "unit.lbs.upper" : "unit.kg.upper"
+    }
+
     private var fullSetRowColumnHeader: some View {
         HStack(spacing: SetRow.SetRowColumns.spacing) {
             Text("set.column.setLabel", bundle: .module)
                 .deltiqLabel()
                 .frame(width: SetRow.SetRowColumns.setNumberWidth, alignment: .leading)
-            Text("unit.kg.upper", bundle: .module)
+            Text(weightColumnHeaderKey, bundle: .module)
                 .deltiqLabel()
                 .frame(width: SetRow.SetRowColumns.weightWidth, alignment: .center)
             Text(String(localized: "unit.reps.short", bundle: .module).uppercased())
@@ -234,7 +241,7 @@ struct ExerciseCard: View {
             Text("set.column.setLabel", bundle: .module)
                 .deltiqLabel()
                 .frame(width: SetRow.SetRowColumns.setNumberWidth, alignment: .leading)
-            Text("unit.kg.upper", bundle: .module)
+            Text(weightColumnHeaderKey, bundle: .module)
                 .deltiqLabel()
                 .frame(width: SetRow.SetRowColumns.weightWidth, alignment: .center)
             Text(String(localized: "unit.reps.short", bundle: .module).uppercased())

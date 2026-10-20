@@ -48,6 +48,11 @@ public struct ProfileEditorView: View {
     @Query(sort: \BodyMeasurement.date, order: .reverse)
     private var bodyMeasurements: [BodyMeasurement]
 
+    /// Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md, kg/lbs):
+    /// `bodyDataSummaryText` zeigte Gewicht/Zielgewicht hart als " kg", auch
+    /// nach Umstellung auf Imperial.
+    @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
+
     // DEL-047: aktive Plaene laden, damit wir bei einer Trainingsort-Aenderung
     // einen Sync-Prompt anbieten koennen. Wir laden alle Plaene (auch
     // inaktive) — der User-Erwartung nach soll sich "mein Trainingsort" auch
@@ -638,12 +643,14 @@ public struct ProfileEditorView: View {
     }
 
     private var bodyDataSummaryText: String {
+        let unit = WeightUnit(rawSetting: weightUnitRaw)
+        let unitLabel = weightUnitRaw == "lbs" ? "lbs" : "kg"
         var parts = [profile.heightCm.formattedTwoDecimals + " cm"]
         if let latest = bodyMeasurements.first {
-            parts.append(latest.weightKg.formattedWeightInput() + " kg")
+            parts.append(unit.fromKg(latest.weightKg).formattedWeightInput() + " \(unitLabel)")
         }
         if let goal = profile.goalWeightKg {
-            parts.append(String(format: String(localized: "settings.profile.goal", bundle: .module), goal.formattedWeightInput() + " kg"))
+            parts.append(String(format: String(localized: "settings.profile.goal", bundle: .module), unit.fromKg(goal).formattedWeightInput() + " \(unitLabel)"))
         }
         return parts.joined(separator: " · ")
     }

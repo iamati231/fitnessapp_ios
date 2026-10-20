@@ -27,6 +27,16 @@ struct BodyDataEditorView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
+    /// Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md, kg/lbs):
+    /// `draftWeightKg`/`draftGoalWeightKg` bleiben kanonisch kg (Speicherung,
+    /// `isDirty`, `canSave`, `save()` unveraendert) - nur Anzeige/Eingabe der
+    /// beiden Gewichtsfelder konvertiert hier in die gewaehlte Einheit.
+    /// `draftHeightCm` bleibt bewusst AUSSERHALB dieses Scopes (nicht Teil
+    /// des Settings-Hinweistexts "Eingabe-Feldern ... Hantel-Rechner ...
+    /// Karten" fuer GEWICHT; Groesse/cm-in ist ein separates, hier nicht
+    /// beauftragtes Thema).
+    @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
+
     @Query(sort: \BodyMeasurement.date, order: .reverse)
     private var measurements: [BodyMeasurement]
 
@@ -126,9 +136,9 @@ struct BodyDataEditorView: View {
     @ViewBuilder
     private var weightSection: some View {
         DeltiqSection(String(localized: "profile.bodyData.weight.header", bundle: .module).uppercased(), accentEdge: true) {
-            DeltiqControlRow(label: String(localized: "profile.bodyData.weight.label", bundle: .module), showsDivider: false) {
+            DeltiqControlRow(label: weightFieldLabel, showsDivider: false) {
                 TextField(
-                    String(localized: "profile.bodyData.weight.label", bundle: .module),
+                    weightFieldLabel,
                     value: weightFieldBinding, format: .number.precision(.fractionLength(0...2)),
                     prompt: Text(weightPlaceholder)
                 )
@@ -160,13 +170,14 @@ struct BodyDataEditorView: View {
 
     private var goalSection: some View {
         DeltiqSection(String(localized: "onboarding.section.goals", bundle: .module).uppercased()) {
-            DeltiqControlRow(label: String(localized: "onboarding.field.goalWeightKg", bundle: .module), showsDivider: false) {
+            DeltiqControlRow(label: goalWeightFieldLabel, showsDivider: false) {
+                let unit = WeightUnit(rawSetting: weightUnitRaw)
                 let displayValue = Binding<Double?>(
-                    get: { draftGoalWeightKg },
-                    set: { draftGoalWeightKg = $0?.rounded(toDecimals: 2) }
+                    get: { draftGoalWeightKg.map(unit.fromKg) },
+                    set: { draftGoalWeightKg = $0.map { unit.toKg($0).rounded(toDecimals: 2) } }
                 )
                 TextField(
-                    String(localized: "onboarding.field.goalWeightKg", bundle: .module),
+                    goalWeightFieldLabel,
                     value: displayValue, format: .number.precision(.fractionLength(0...2)),
                     prompt: Text(String(localized: "profile.goal.weightPlaceholder", bundle: .module))
                 )
@@ -182,11 +193,14 @@ struct BodyDataEditorView: View {
 
     /// Setzt `weightTouched` bei jeder tatsaechlichen Eingabe — unabhaengig
     /// davon, ob der neue Wert zufaellig mit dem Platzhalter uebereinstimmt.
+    /// `draftWeightKg` bleibt kanonisch kg - Konvertierung nur fuer die
+    /// Anzeige/Eingabe-Seite dieses Bindings (siehe `WeightUnit`-Doku).
     private var weightFieldBinding: Binding<Double?> {
-        Binding(
-            get: { draftWeightKg },
+        let unit = WeightUnit(rawSetting: weightUnitRaw)
+        return Binding(
+            get: { draftWeightKg.map(unit.fromKg) },
             set: { newValue in
-                draftWeightKg = newValue?.rounded(toDecimals: 2)
+                draftWeightKg = newValue.map { unit.toKg($0).rounded(toDecimals: 2) }
                 weightTouched = true
             }
         )
@@ -196,7 +210,19 @@ struct BodyDataEditorView: View {
         guard let latest = measurements.first else {
             return String(localized: "profile.bodyData.weight.placeholderEmpty", bundle: .module)
         }
-        return latest.weightKg.formattedWeightInput()
+        return WeightUnit(rawSetting: weightUnitRaw).fromKg(latest.weightKg).formattedWeightInput()
+    }
+
+    private var weightFieldLabel: String {
+        weightUnitRaw == "lbs"
+            ? String(localized: "profile.bodyData.weight.label.lbs", bundle: .module)
+            : String(localized: "profile.bodyData.weight.label", bundle: .module)
+    }
+
+    private var goalWeightFieldLabel: String {
+        weightUnitRaw == "lbs"
+            ? String(localized: "profile.bodyData.goalWeight.label.lbs", bundle: .module)
+            : String(localized: "onboarding.field.goalWeightKg", bundle: .module)
     }
 
     private var canSave: Bool {

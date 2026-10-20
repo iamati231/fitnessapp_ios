@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2243 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2248 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2243 / 2243** (100%) | 0 |
-| 🇬🇧 English (EN) | **2243 / 2243** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2243 / 2243** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2248 / 2248** (100%) | 0 |
+| 🇬🇧 English (EN) | **2248 / 2248** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2248 / 2248** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -639,7 +639,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `customExercise.section.name` | Name | Name | Ad |
 | `customExercise.title` | Neue Übung | New exercise | Yeni hareket |
 
-## `dashboard.*`  (93 Keys)
+## `dashboard.*`  (94 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -672,6 +672,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.exerciseList.showMore.one` | %lld weitere anzeigen | Show %lld more | %lld tane daha göster |
 | `dashboard.exerciseList.showMore.other` | %lld weitere anzeigen | Show %lld more | %lld tane daha göster |
 | `dashboard.goal.line` | Ziel %@ kg | Goal %@ kg | Hedef %@ kg |
+| `dashboard.goal.line.lbs` | Ziel %@ lbs | Goal %@ lbs | Hedef %@ lbs |
 | `dashboard.greeting.afternoon.generic` | Guten Tag | Good afternoon | İyi günler |
 | `dashboard.greeting.afternoon.named` | Guten Tag, %@ | Good afternoon, %@ | İyi günler, %@ |
 | `dashboard.greeting.evening.generic` | Guten Abend | Good evening | İyi akşamlar |
@@ -1996,17 +1997,19 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (82 Keys)
+## `profile.*`  (84 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `profile.body.heightPlaceholder` | z.B. 180 | e.g. 180 | örn. 180 |
+| `profile.bodyData.goalWeight.label.lbs` | Zielgewicht (lbs, optional) | Goal Weight (lbs, optional) | Hedef Kilo (lbs, opsiyonel) |
 | `profile.bodyData.summary.footer` | Größe, aktuelles Gewicht und Zielgewicht an einem Ort. | Height, current weight and goal weight in one place. | Boy, güncel kilo ve hedef kilo tek yerde. |
 | `profile.bodyData.title` | Körperdaten | Body data | Vücut verileri |
 | `profile.bodyData.weight.footer` | Gewicht lässt sich hier ohne Umfänge speichern. Für Körperfett- und FFMI-Werte nutze die vollständige Messung. | You can log weight here without circumferences. For body-fat and FFMI values, use the full measurement. | Burada çevre ölçüsü olmadan kilo kaydedebilirsin. Vücut yağı ve FFMI değerleri için tam ölçümü kullan. |
 | `profile.bodyData.weight.fullMeasurement` | Vollständige Messung hinzufügen | Add full measurement | Tam ölçüm ekle |
 | `profile.bodyData.weight.header` | Gewicht | Weight | Kilo |
 | `profile.bodyData.weight.label` | Aktuelles Gewicht (kg) | Current weight (kg) | Güncel kilo (kg) |
+| `profile.bodyData.weight.label.lbs` | Aktuelles Gewicht (lbs) | Current weight (lbs) | Güncel kilo (lbs) |
 | `profile.bodyData.weight.lastEntry` | Zuletzt erfasst: %@ | Last recorded: %@ | Son kayıt: %@ |
 | `profile.bodyData.weight.noEntry` | Noch keine Gewichtsmessung erfasst. | No weight entry recorded yet. | Henüz kilo kaydı yok. |
 | `profile.bodyData.weight.placeholderEmpty` | Gewicht eingeben | Enter weight | Kilo gir |
@@ -2546,13 +2549,15 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `trophy.singleEntry` | Nur ein %@-Eintrag — Trend ab 2 Rekorden. | Only one %@ entry — trend starts at 2 records. | Sadece bir %@ kaydı — trend 2 rekordan başlar. |
 | `trophy.totalRecords` | %lld Rekorde gesamt | %lld records total | Toplam %lld rekor |
 
-## `unit.*`  (6 Keys)
+## `unit.*`  (8 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `unit.kg.lower` | kg | kg | kg |
 | `unit.kg.upper` | KG | KG | KG |
 | `unit.km.lower` | km | km | km |
+| `unit.lbs.lower` | lbs | lbs | lbs |
+| `unit.lbs.upper` | LBS | LBS | LBS |
 | `unit.minutes.short` | Min | min | dk |
 | `unit.reps.short` | Wdh | reps | tkr |
 | `unit.seconds.short` | Sek | sec | sn |

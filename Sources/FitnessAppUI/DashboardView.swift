@@ -120,6 +120,12 @@ public struct DashboardView: View {
     /// Absenz-Rueckfrage — nie einen laufenden Deload.
     @AppStorage("pref_deload_enabled") private var deloadEnabled: Bool = true
 
+    /// Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md, kg/lbs):
+    /// das Gewichts-Hero-Tile (`heroMetricCard(for: .weight, ...)`) zeigte
+    /// bisher immer kg, unabhaengig vom Einheiten-Setting.
+    @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
+    private var dashboardWeightUnit: WeightUnit { WeightUnit(rawSetting: weightUnitRaw) }
+
     /// DEL-239: Bewertung der Trainingspause, solange die Rueckfrage offen ist.
     @State private var comebackAssessment: AbsenceDeload.Assessment?
     /// Fortsetzung des abgefangenen Trainingsstarts.
@@ -645,11 +651,19 @@ public struct DashboardView: View {
             // Signature-Geruest 2.16: eine Nachkommastelle statt zwei -
             // "70,00 kg" taeuschte eine Praezision vor, die eine
             // Personenwaage (100g-Aufloesung) gar nicht liefert.
+            //
+            // Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md,
+            // kg/lbs): Kachel-Wert UND Wochen-Delta zeigten bisher immer kg,
+            // unabhaengig vom Einheiten-Setting. Beide konvertieren jetzt
+            // vom kanonischen kg-Wert - das Delta ist eine reine Differenz
+            // ohne Offset, die lineare kg<->lbs-Konvertierung ist dafuer
+            // exakt genauso gueltig wie fuer einen Absolutwert.
             MetricCard(
                 label: label,
-                value: latest.weightKg.truncated(to: 1).formattedOneDecimal,
-                unit: "kg",
-                delta: weeklyWeightDelta()
+                value: dashboardWeightUnit.fromKg(latest.weightKg).truncated(to: 1).formattedOneDecimal,
+                unit: weightUnitRaw == "lbs" ? "lbs" : "kg",
+                delta: weeklyWeightDelta().map(dashboardWeightUnit.fromKg),
+                deltaUnit: weightUnitRaw == "lbs" ? "lbs" : "kg"
             )
         case .bodyFatNavy:
             let source = fallbackMeasurement(latest: latest) { $0.navyBodyFatPct != nil }
@@ -898,12 +912,18 @@ public struct DashboardView: View {
             } else if measurements.count < 3 {
                 InsufficientDataCard(currentCount: measurements.count)
             } else {
+                // Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md,
+                // kg/lbs): der Chart zeigte bisher durchgehend kg, auch wenn
+                // die Hero-Kachel darueber (siehe `heroMetricCard`) schon auf
+                // lbs umgestellt war - derselbe Screen haette dann zwei
+                // widerspruechliche Einheiten gleichzeitig gezeigt.
+                let weightSeriesLabel = weightUnitRaw == "lbs" ? "Gewicht (lbs)" : "Gewicht (kg)"
                 Chart {
                     // Historical points + connecting line.
                     ForEach(historicalPoints, id: \.date) { p in
                         LineMark(
                             x: .value("Datum", p.date),
-                            y: .value("Gewicht (kg)", p.weight),
+                            y: .value(weightSeriesLabel, p.weight),
                             series: .value("Serie", "Tatsächlich")
                         )
                         .interpolationMethod(.monotone)
@@ -911,7 +931,7 @@ public struct DashboardView: View {
 
                         PointMark(
                             x: .value("Datum", p.date),
-                            y: .value("Gewicht (kg)", p.weight)
+                            y: .value(weightSeriesLabel, p.weight)
                         )
                         .foregroundStyle(Color.deltiqOrange)
                         .symbolSize(40)
@@ -923,7 +943,7 @@ public struct DashboardView: View {
                         ForEach(forecastPoints, id: \.date) { p in
                             LineMark(
                                 x: .value("Datum", p.date),
-                                y: .value("Gewicht (kg)", p.weight),
+                                y: .value(weightSeriesLabel, p.weight),
                                 series: .value("Serie", "Prognose")
                             )
                             .foregroundStyle(.orange)
@@ -933,13 +953,15 @@ public struct DashboardView: View {
 
                     // Goal-weight reference line if the user set one in onboarding.
                     if let goal = profiles.first?.goalWeightKg {
-                        RuleMark(y: .value("Ziel", goal))
+                        let goalDisplay = dashboardWeightUnit.fromKg(goal)
+                        let goalLineKey = weightUnitRaw == "lbs" ? "dashboard.goal.line.lbs" : "dashboard.goal.line"
+                        RuleMark(y: .value("Ziel", goalDisplay))
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
                             .foregroundStyle(.green.opacity(0.7))
                             .annotation(position: .top, alignment: .leading) {
-                                Text(String(localized: "dashboard.goal.line", bundle: .module)
+                                Text(String(localized: String.LocalizationValue(goalLineKey), bundle: .module)
                                         .replacingOccurrences(of: "%@",
-                                                              with: goal.truncated(to: 1).formattedOneDecimal))
+                                                              with: goalDisplay.truncated(to: 1).formattedOneDecimal))
                                     .font(.caption2)
                                     .foregroundStyle(.green)
                             }
@@ -978,8 +1000,11 @@ public struct DashboardView: View {
     }
 
     /// Chronologically-ordered historical points (Charts wants left-to-right by date).
+    /// Geraete-Abnahme (Runde 9, kg/lbs): konvertiert fuer die Anzeige - die
+    /// zugrunde liegenden `measurements`/`BodyCalculations`-Berechnungen
+    /// unten bleiben unveraendert kg.
     private var historicalPoints: [(date: Date, weight: Double)] {
-        measurements.reversed().map { ($0.date, $0.weightKg) }
+        measurements.reversed().map { ($0.date, dashboardWeightUnit.fromKg($0.weightKg)) }
     }
 
     /// Forecast series: anchors at the last historical point, then extends to +4w (and
@@ -990,16 +1015,19 @@ public struct DashboardView: View {
               let lastHistorical = measurements.first
         else { return [] }
 
-        let anchor = (date: lastHistorical.date, weight: lastHistorical.weightKg)
+        // `BodyCalculations.projectWeightTrend` rechnet mit den kanonischen
+        // kg-`measurements` - erst das fertige Ergebnis wird fuer die
+        // Anzeige in die gewaehlte Einheit konvertiert.
+        let anchor = (date: lastHistorical.date, weight: dashboardWeightUnit.fromKg(lastHistorical.weightKg))
         let p4 = BodyCalculations.projectWeightTrend(measurements: measurements, weeksAhead: 4)
         let p8 = BodyCalculations.projectWeightTrend(measurements: measurements, weeksAhead: 8)
 
         var points: [(date: Date, weight: Double)] = [anchor]
         if let p4 {
-            points.append((date: lastHistorical.date.addingTimeInterval(4 * 7 * 24 * 3600), weight: p4))
+            points.append((date: lastHistorical.date.addingTimeInterval(4 * 7 * 24 * 3600), weight: dashboardWeightUnit.fromKg(p4)))
         }
         if let p8 {
-            points.append((date: lastHistorical.date.addingTimeInterval(8 * 7 * 24 * 3600), weight: p8))
+            points.append((date: lastHistorical.date.addingTimeInterval(8 * 7 * 24 * 3600), weight: dashboardWeightUnit.fromKg(p8)))
         }
         // Just the anchor isn't a useful "forecast line".
         return points.count >= 2 ? points : []
@@ -3626,6 +3654,10 @@ private struct MetricCard: View {
     let value: String
     let unit: String?
     let delta: Double?
+    /// Geraete-Abnahme (Runde 9, kg/lbs): Einheit fuer `deltaLabel` - war
+    /// hart "kg"; nur das Gewicht-Tile uebergibt bisher ueberhaupt ein
+    /// `delta`, Default haelt dessen frueheres Verhalten unveraendert bei.
+    var deltaUnit: String = "kg"
     /// Settings-Epic Phase 3 (docs/SETTINGS_UX_AUDIT.md, Punkt 5): gesetzt nur
     /// wenn `value` NICHT aus der neuesten Messung stammt, sondern aus einem
     /// Rueckfall auf eine aeltere Zeile mit echtem Wert — zeigt deren
@@ -3668,7 +3700,7 @@ private struct MetricCard: View {
                     }
                 }
                 if let delta {
-                    deltaLabel(delta)
+                    deltaLabel(delta, unit: deltaUnit)
                 } else if let asOfDate {
                     Text(String(format: String(localized: "dashboard.hero.asOf", bundle: .module),
                                  asOfDate.formatted(date: .abbreviated, time: .omitted)))
@@ -3694,7 +3726,7 @@ private struct MetricCard: View {
         }
     }
 
-    private func deltaLabel(_ delta: Double) -> some View {
+    private func deltaLabel(_ delta: Double, unit: String) -> some View {
         let prefix = delta > 0 ? "+" : (delta < 0 ? "" : "±")
         // Signature-Geruest 2.16: eine Nachkommastelle wie beim Gewicht selbst
         // ("+1,00 kg" -> "+1,0 kg") - gleiche Begruendung wie beim Hero-Wert.
@@ -3702,7 +3734,7 @@ private struct MetricCard: View {
         let arrow = delta > 0 ? "arrow.up" : (delta < 0 ? "arrow.down" : "minus")
         return HStack(spacing: 2) {
             Image(systemName: arrow)
-            Text("\(prefix)\(formatted) kg")
+            Text("\(prefix)\(formatted) \(unit)")
             Text("metric.weeklyDelta.suffix", bundle: .module)
                 .foregroundStyle(.secondary)
         }

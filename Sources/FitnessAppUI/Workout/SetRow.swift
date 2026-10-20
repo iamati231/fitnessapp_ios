@@ -475,7 +475,7 @@ struct SetRow: View {
         // passt selten zum neuen Bewegungsablauf. Statt eines nackten "-"-
         // oder "BW"-Placeholders zeigen wir einen klaren Hint, dass das
         // Gewicht hier neu kalibriert werden muss.
-        TextField(weightPlaceholder, value: $weight, format: .number, prompt: Text(weightPlaceholder))
+        TextField(weightPlaceholder, value: displayWeightBinding, format: .number, prompt: Text(weightPlaceholder))
             .decimalKeyboard()
             .monospacedDigit()
             .frame(width: SetRowColumns.weightFieldWidth)
@@ -510,14 +510,27 @@ struct SetRow: View {
             }
     }
 
+    /// Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md, kg/lbs):
+    /// `weight` bleibt die kanonische kg-Groesse (Cap/History/Logging oben
+    /// rechnen weiterhin in kg) - diese Binding konvertiert NUR fuer
+    /// Anzeige/Eingabe in die aktuell gewaehlte Einheit, immer ausgehend vom
+    /// kanonischen kg-Wert (nie verkettet: jedes `get` liest `weight` neu).
+    private var displayWeightBinding: Binding<Double?> {
+        let unit = WeightUnit(rawSetting: weightUnitRaw)
+        return Binding(
+            get: { weight.map(unit.fromKg) },
+            set: { weight = $0.map(unit.toKg) }
+        )
+    }
+
     /// DEL-091: dynamisches Placeholder-Wording.
-    ///   * Fresh-swap (Original archived) → "→ kg" (Pfeil signalisiert
-    ///     "neuer Wert noetig")
+    ///   * Fresh-swap (Original archived) → "→ KG"/"→ LBS" (Pfeil signalisiert
+    ///     "neuer Wert noetig", Einheit seit Runde 9 an `weightUnitRaw` gekoppelt)
     ///   * Bodyweight (kein Suggested + nichts gemerkt) → "BW"
     ///   * Standard → "—"
     private var weightPlaceholder: String {
         if exercise.swappedFromOriginal != nil, weight == nil {
-            return "→ kg"
+            return "→ \(weightUnitRaw.uppercased())"
         }
         return "BW"
     }
@@ -1097,11 +1110,16 @@ struct SetRow: View {
     ///     RIR fuehrt (nicht bei Cardio).
     ///   * **" kg" war hartkodiert** → `unit.kg.lower`.
     ///
-    /// Bewusst NICHT geaendert: die Einheit bleibt kg. Die Werte sind
-    /// projektweit in kg persistiert und das Eingabefeld daneben ist mit "KG"
-    /// beschriftet — hier "lbs" anzuzeigen wuerde einen kg-Wert falsch
-    /// etikettieren. Eine echte lbs-Unterstuetzung ist ein eigenes,
-    /// querschnittliches Thema (Eingabe, Volumen, PRs, Charts, CSV).
+    /// Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md, kg/lbs):
+    /// damals bewusst NICHT geaendert, weil das direkt daneben liegende
+    /// Eingabefeld (`weightInput`) ebenfalls hart auf kg stand — jetzt, wo
+    /// `weightInput` die gewaehlte Einheit respektiert, wuerde ein weiterhin
+    /// kg-fester Hint direkt daneben einen neuen, selbst verursachten
+    /// Einheiten-Mix erzeugen. Deshalb hier mit demselben `WeightUnit`
+    /// konvertiert. Bleibt WEITERHIN bewusst NICHT abgedeckt (eigenes,
+    /// querschnittliches Thema): Trainingsvolumen-Aggregation, PR-Erkennung/
+    /// -Banner, Uebungs-Gewichtsverlauf-Charts, CSV-Export/-Import — siehe
+    /// "Fachliche Widersprueche", Punkt 6.
     private func previousLogHint(_ log: ExerciseLog) -> String {
         // DEL-128: Sek-Unit aus xcstrings.
         if content.isTimeBased {
@@ -1131,8 +1149,9 @@ struct SetRow: View {
             }
         }
 
-        let kgUnit = String(localized: "unit.kg.lower", bundle: .module)
-        let base = "\(formatWeight(log.weight, decimals: 1)) \(kgUnit) × \(log.reps)"
+        let unit = WeightUnit(rawSetting: weightUnitRaw)
+        let unitLabel = String(localized: unit == .kg ? "unit.kg.lower" : "unit.lbs.lower", bundle: .module)
+        let base = "\(formatWeight(unit.fromKg(log.weight), decimals: 1)) \(unitLabel) × \(log.reps)"
         let rirPart = String(
             format: String(localized: "active.set.previousRIR", bundle: .module),
             log.rir.formattedRIR
