@@ -1,13 +1,20 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-20 (elfter Durchgang: Runde 10 — vom Nutzer anhand eines
-Screenshots gemeldete Punkte geprüft: Hantelrechner-Einstieg bestätigt
-unauffällig (kein Bug, nur ungesetztes Gewicht), neue optionale
-Satzanzeige „bisherige Darstellung"/„Spaltenübersicht" gebaut und
-gerätebestätigt, Gewicht/Wdh-Einzug in der Spaltenübersicht umgesetzt,
-echter Light-Mode-Tab-Icon-Bug gefunden und gefixt, gebündelter
-Geräte-Abnahme-Durchlauf — siehe Nachtrag „Runde 10" unten), Branch
-`claude/smart-onboarding-epic`, HEAD `c6f5e9c` (zweiter, am Gerät
+Stand: 2026-10-20 (zwölfter Durchgang: Runde 11 — Onboarding/Laufcoach-
+E2E-Abgleich: `GoalDrivenPlanSelectionBuilder` lässt bei Hybrid+„Both"
+(Laufen+Radfahren) am UI-Default von 3 Tagen/Woche Radfahren komplett und
+ohne jede sichtbare Meldung aus der generierten Auswahl heraus —
+gerätebestätigt, bewusst dokumentiert statt eigenmächtig gefixt (siehe
+Nachtrag „Runde 11" unten), Branch `claude/smart-onboarding-epic`, HEAD
+`9956f8e` (Regressionstest-Commit dieser Runde, pinnt das aktuelle
+Verhalten; kein Produktivcode geändert). Davor Runde 10 (elfter
+Durchgang): vom Nutzer anhand eines Screenshots gemeldete Punkte
+geprüft: Hantelrechner-Einstieg bestätigt unauffällig (kein Bug, nur
+ungesetztes Gewicht), neue optionale Satzanzeige „bisherige
+Darstellung"/„Spaltenübersicht" gebaut und gerätebestätigt, Gewicht/Wdh-
+Einzug in der Spaltenübersicht umgesetzt, echter Light-Mode-Tab-Icon-Bug
+gefunden und gefixt, gebündelter Geräte-Abnahme-Durchlauf — siehe
+Nachtrag „Runde 10" unten, HEAD davor `c6f5e9c` (zweiter, am Gerät
 verifizierter Nachbesserungs-Fix für den neuen „Set display"-Picker bei
 AX5; davor `496a0cf` erster, am Gerät als unzureichend erkannter
 Fix-Versuch derselben Stelle; davor `9b1a2d2` CI-Kompilierfix; davor
@@ -25,19 +32,27 @@ Speicherfehler-Codeprüfung, davor `1c8bf54` Fix-Commit Runde 5
 C01-Fix, davor `4ea8d7b` reiner Dokumentations-Commit zu Runde 3, davor
 `254d669` Korrektur-Commit zu E05, davor `64ba455` Fix-Commit E04, davor
 `3e67cb8` ursprünglicher — per Geräte-Nachtest widerlegter — E05-Versuch,
-davor `c96bf5c`). TestingBot-Verbrauch Runde 10: siehe Nachtrag
-„Runde 10" unten für Details und exakte Budget-Rekonstruktion. Kein
+davor `c96bf5c`). TestingBot-Verbrauch Runde 11: siehe Nachtrag
+„Runde 11" unten für Details und exakte Budget-Rekonstruktion. Kein
 Merge nach `main`, kein Release.
 
 **Gesamtstatus: A–F bearbeitet; deutliche Mehrheit bestanden, einzelne
-Fälle teilweise oder (A09/C04/E08/F04) noch offen als fachliche
-Implementierungslücken. Seit Runde 10: die vom Nutzer per Screenshot
-gemeldeten Punkte sind abgearbeitet — Hantelrechner-Einstieg war kein
-Bug (siehe Nachtrag), die Satzanzeige ist jetzt über Settings → Training
-zwischen „Spaltenübersicht" (Default, bisheriges Verhalten) und
-„bisherige Darstellung" (neu, selbst-beschriftete Felder ohne
-gemeinsamen Spaltenkopf) umschaltbar, beide Darstellungen teilen sich
-exakt dieselben Satz-Daten/Callbacks, Gewicht+Wdh sind in der
+Fälle teilweise oder (A09/A12/C04/E08/F04) noch offen als fachliche
+Implementierungslücken. Seit Runde 11: der vom Vorgesetzten vermutete
+stille Sportart-Verlust im Hybrid+„Both"-Fall des Plan-Builders ist am
+Gerät bestätigt (neue Zeile A12, siehe Nachtrag „Runde 11") — bewusst
+dokumentiert statt eigenmächtig gefixt, da die spezifikationskonforme
+Lösung eine neue Konflikt-UI erfordert und keine begrenzte Code-Korrektur
+ist; zusätzlich wurde code- und gerätebestätigt, dass `onGenerated` →
+`finishOnboarding()` (A10) unverändert und bewusst so beibehalten ist,
+und dass der Laufcoach-Zustand strukturell keinen Einfluss auf den
+PLANINHALT hat (erweitert A04/A09). Seit Runde 10: die vom Nutzer per
+Screenshot gemeldeten Punkte sind abgearbeitet — Hantelrechner-Einstieg
+war kein Bug (siehe Nachtrag), die Satzanzeige ist jetzt über
+Settings → Training zwischen „Spaltenübersicht" (Default, bisheriges
+Verhalten) und „bisherige Darstellung" (neu, selbst-beschriftete Felder
+ohne gemeinsamen Spaltenkopf) umschaltbar, beide Darstellungen teilen
+sich exakt dieselben Satz-Daten/Callbacks, Gewicht+Wdh sind in der
 Spaltenübersicht moderat eingerückt (RIR-Breite unverändert bei 44pt),
 und ein echter, geräteweit reproduzierbarer Light-Mode-Bug (inaktive
 Tab-Icons durch Weiss-auf-Weiss praktisch unsichtbar) wurde gefunden und
@@ -50,7 +65,164 @@ PRs/Charts/CSV bleiben bewusst kg-only, siehe Nachtrag „Runde 9");
 AX5-Spalten-Header-Fix vollständig gerätebestätigt. C01 seit Runde 5
 vollständig bestanden. D06 seit Runde 6 vollständig bestanden. A01 seit
 Runde 7 korrekt eingeordnet und gefixt. Gesamtabnahme weiterhin offen
-(kein vollständiger Abschluss aller 45 Fälle).**
+(kein vollständiger Abschluss aller 46 Fälle).**
+
+## Runde 11: Onboarding/Laufcoach-E2E-Abgleich (GoalDrivenPlanSelectionBuilder, PlanGeneratorInput, onGenerated/finishOnboarding)
+
+Auftrag: nachvollziehen, ob `GoalDrivenPlanSelectionBuilder` bei
+Hybrid+„Both"-Ausdauerform eine gewählte Sportart ohne sichtbaren
+Konflikt verlieren kann; klären, wie `PlanGeneratorInput` (ohne
+Laufziel-/Coach-Felder) mit `CardioCoachingAdvisor`/
+`CardioFeasibilityCalculator` zusammenhängt; klären, ob
+`OnboardingView.onGenerated` → `finishOnboarding()` Absicht oder Bug ist;
+prüfen, ob die stille `.running`-Rückfalllogik bei fehlender
+Ausdauerform zu einer falschen stillen Annahme führen kann. Dazu 10
+konkrete Prüffälle, Template- und Builder-Pfad getrennt betrachtet,
+bestehende Evidenz (A03/A06/A08 u. a.) wiederverwendet statt blind
+erneut geprüft.
+
+### Befund 1 — `GoalDrivenPlanSelectionBuilder`: Radfahren verschwindet bei Hybrid+„Both" am UI-Default still (neue Zeile A12)
+
+Code-Analyse (`Sources/FitnessAppCore/Programs/GoalDrivenPlanSelectionBuilder.swift`):
+für `.hybrid` gilt `strengthDays = ceil(totalDaysPerWeek/2)`,
+`enduranceDays = totalDaysPerWeek - strengthDays`;
+`enduranceSelections(modality: .both, totalDays:, ...)` splittet diese
+Ausdauertage wiederum in `firstDays = ceil(totalDays/2)` (Laufen) und
+`secondDays = totalDays - firstDays` (Radfahren), wobei Radfahren nur
+angehängt wird, wenn `secondDays > 0` — **kein `else`-Zweig, kein
+Rückgabewert/Signal, keine Meldung**. Bei `totalDaysPerWeek = 3` (der
+tatsächliche UI-Default in `PlanBuilderView`, Slider startet bei 3, wird
+von den meisten Nutzern nie angefasst) ergibt das `strengthDays = 2`,
+`enduranceDays = 1` → `firstDays = 1` (Laufen), `secondDays = 0`
+(Radfahren **komplett entfernt**).
+
+Regressionstest (committed, pinnt den Ist-Zustand):
+`Tests/FitnessAppCoreTests/GoalDrivenPlanSelectionBuilderTests.swift::testHybridGoalWithBothModalityAtTheDefaultThreeDaysSilentlyDropsCycling`,
+Commit `9956f8e`, CI grün (Run `39475868792`, nach zwei
+infrastrukturbedingten Queue-Timeouts beim dritten Versuch erfolgreich —
+siehe Budget-Abschnitt unten).
+
+**Geräte-Nachweis (diese Runde):** TestingBot-Session
+`7f1a4aa358fb-8ccc5c0b64ef-388a7f4cec85-179252205753-68569042`
+(iPhone 15 / iOS 18.0 Simulator, Build aus CI-Run `39475868792`, Commit
+`9956f8e`). Frisches Onboarding: Ziel „Functional/Hybrid", Ausdauerform
+„Both", Coach-Frage „Schedule running in my week" (Coach aus) — alle drei
+Werte waren beim Wechsel in „Build Plan" bereits korrekt vorbefüllt.
+Tage-Slider NICHT angefasst (blieb beim Default „3 days per week").
+Wochenvorschau zeigte genau 3 Einheiten: „Bodyweight · Push & Pull"
+(Kraft), „Easy Run" (Laufen), „Bodyweight · Pull & Push" (Kraft) —
+**keine Radfahren-Einheit, keine sichtbare Konflikt-/Hinweismeldung,
+keine Warnung jeglicher Art**. Haken „Adopt Plan" getippt: App sprang
+direkt zum Dashboard mit aktivem, persistiertem „Individueller Plan"
+(kein Zwischenschritt). Plan-Tab zeigte danach exakt „1 PLAN"; Plan-Detail
+zeigte die Trainingstage Mon=Push&Pull, Wed=Easy Run, Fri=Pull&Push, Rest
+sonst — **deckungsgleich mit der zuletzt gezeigten Vorschau**, keine
+Radfahren-Einheit nachträglich aufgetaucht, kein Duplikat.
+
+**Neue Matrixzeile A12** (siehe Tabelle unten): Status `teilweise
+bestanden` im Sinne von „Bug reproduziert und bestätigt", aber
+**bewusst nicht gefixt** — siehe Fachliche Widersprüche Punkt 7. Der
+spezifikationskonforme Soll-Zustand (Prüffall 8: „zu wenige Einheiten für
+alle gewählten Sportarten → sichtbare Entscheidung/Konflikt statt
+stillem Weglassen") verlangt eine neue Konflikt-UI, keine begrenzte
+Code-Korrektur, und geht daher als offene Entscheidung an den Nutzer
+zurück.
+
+### Befund 2 — `PlanGeneratorInput`/Coach-Zustand hat keinen Einfluss auf den Planinhalt (erweitert A04/A09)
+
+Code-Audit bestätigt, was A04/A09 bereits gerätebestätigt andeuteten, nun
+mit hartem Code-Beleg: `PlanGeneratorInput` (das tatsächlich auf
+`TrainingPlan.generatorInputRaw` persistierte Objekt) enthält
+ausschließlich `selections`, `equipmentPreferences`, `usesFixedWeekdays`,
+`fixedWeekdays` — **keine Laufziel-/Coach-Felder**.
+`GoalDrivenPlanSelectionBuilder.makeSelections` hat **keinen
+Coach-Parameter**. `cardioCoachingEnabled` wird laut Codesuche
+ausschließlich in `ProfileEditorView`, `CardioGoalEditorView`,
+`CardioFeasibilityCardModel`, `CoachingTypes`, `DataExportService`/
+`DataImportService` gelesen/geschrieben — **nie** in einer
+TrainingPlan-/TrainingDay-/Exercise-Mutation. Schlussfolgerung: „Coach
+an" im Onboarding kann strukturell keinen Unterschied im generierten
+Planinhalt bewirken, nur ein nachgelagertes, inertes Profil-Flag setzen.
+Deckt sich mit der bereits gerätebestätigten Beobachtung aus A04 (kein
+optischer Unterschied zwischen Coach an/aus in der Wochenvorschau) und
+bestätigt damit Prüffälle 1/2 sowie 4/5 der Spezifikation: der einzige
+Unterschied zwischen „mit Coach" und „ohne Coach" ist das gespeicherte
+Profil-Flag selbst — der Plan-INHALT ist identisch. Kein neuer
+Gerätetest nötig, A04s Gerätenachweis (Runde 3) deckt dies bereits ab.
+
+### Befund 3 — `onGenerated` → `finishOnboarding()`: bestätigt unverändert und bewusst so (bestätigt A10)
+
+Code-Lesung von `OnboardingView.swift` (Sheet-Block um Zeile 340-428)
+bestätigt: `onGenerated: { input, result in ...; finishOnboarding(); return .success }`
+ruft `finishOnboarding()` direkt auf. Umliegende Code-Kommentare (Zeilen
+367-377) dokumentieren dies explizit als **bewusste, bereits in einer
+früheren Audit-Runde getroffene Entscheidung** („P0-Audit, vierte
+Korrekturrunde"), die zwei vorher uneinheitliche Finish-Trigger
+(DayPickerSheet vs. Builder-Sheet) absichtlich vereinheitlicht hat. Das
+ist **kein Bug**, sondern eine dokumentierte Produktentscheidung, die
+jedoch in Spannung zu einer engen Lesart von Dok. 02 §6 Punkt 2 steht
+(„Haken übernimmt nur den Entwurf") — bereits in A10 als „teilweise"
+erfasst, hier per Geräte-Nachtest dieser Runde erneut bestätigt (siehe
+Befund 1: der Haken „Adopt Plan" führte direkt zum Dashboard, kein
+separater Vorschau-Rücksprung). Keine Änderung an A10 nötig.
+
+### Befund 4 — stille `.running`-Rückfalllogik: unerreichbar über den regulären Onboarding-Fluss
+
+`needsEnduranceModalityStep` (`trainingGoal == .hybrid || .endurance`)
+gated den Onboarding-Schritt; `canAdvance` für diesen Schritt hat ein
+hartes Gate `return enduranceModality != nil` (Code-Kommentar verweist
+explizit auf „Dok02 §2: keine stille Default-Auswahl"). Der lineare
+Onboarding-Fluss kann `finishOnboarding()` für Hybrid/Endurance-Ziele
+also nicht mit `enduranceModality == nil` erreichen — der `?? .running`-
+Fallback in `GoalDrivenPlanSelectionBuilder` ist defensiver, über die
+reguläre UI nicht erreichbarer Code. Kein Bug, kein Gerätetest nötig.
+
+### Template- vs. Builder-Pfad — bestätigt getrennt
+
+Codesuche bestätigt: `ProgramTemplate`/`DaySpec` und die übrigen
+Template-Dateien enthalten **keine** `EnduranceModality`-Referenzen —
+Templates sind fest vorgefertigte Pläne ohne dynamische Tage-Splitting-
+Logik. Der A12-Befund (Befund 1) betrifft daher **ausschließlich** den
+Builder-Pfad (`PlanBuilderView`/`GoalDrivenPlanSelectionBuilder`), auch
+wenn dieser über das Onboarding-eingebettete „Build Plan"-Sheet erreicht
+wird (`PlanBuilderView(initialInput: ..., preseededEnduranceModality: ...)`,
+`OnboardingView.swift` Zeile ~406). Device-Nachweis dieser Runde lief
+exakt über diesen Pfad.
+
+### Die 10 Prüffälle — Ergebnis
+
+| # | Fall | Ergebnis | Beleg |
+|---|---|---|---|
+| 1 | Kraft+Laufen ohne Coach | bestanden (unverändert) | A03 (Runde 3, Gerät) |
+| 2 | Kraft+Laufen mit Coach + unterstütztes Ziel | teilweise (unverändert) | A04 (Runde 3, Gerät) + Befund 2 (Code, diese Runde): kein Planinhalt-Unterschied, A09-Lücke (kein Laufziel wird erhoben) bleibt offen |
+| 3 | Kraft+Radfahren | bestanden | A05 (Runde 3, Logik/Gating); Single-Modalität ist von der A12-Rundungslücke nicht betroffen (nur „Both"-Split hat den 0-Tage-Fall) |
+| 4 | Kraft+Laufen+Radfahren ohne Coach | **Bug bestätigt (A12)** | Befund 1, diese Runde, Gerät: Radfahren fehlt bei 3-Tage-Default |
+| 5 | dieselbe Kombi mit Coach | **Bug bestätigt (A12)**, Coach ändert nichts am Inhalt | Befund 1 + Befund 2, diese Runde |
+| 6 | Coach an→aus: Laufeinheiten bleiben bestehen | teilweise (unverändert) | A07 (Runde 3, Gerät); zusätzlich Befund 2 (Code): `cardioCoachingEnabled` wird nie in Plan-/Tag-Mutationen gelesen, strukturell kann ein Toggle keine Einheit löschen |
+| 7 | Laufen→nur Radfahren: keine aktiven Laufcoach-Empfehlungen mehr | bestanden (unverändert) | A08 (Runde 3, Gerät): Coach-Frage verschwindet sauber bei Cycling-only |
+| 8 | zu wenige Einheiten für alle gewählten Sportarten: sichtbare Entscheidung statt stillem Weglassen | **nicht erfüllt — fachlicher Widerspruch (A12)** | Befund 1, diese Runde, Gerät: komplett stilles Weglassen, keine Meldung |
+| 9 | eingebetteten Editor bestätigen: nur Entwurf geändert, nicht direkt abgeschlossen | **nicht erfüllt wie spezifiziert, aber bewusst so (A10)** | Befund 3, diese Runde, Code + Gerät: Haken schließt das gesamte Onboarding direkt ab |
+| 10 | finaler Abschluss: genau der vorher gezeigte Plan wird gespeichert | bestanden | Befund 1, diese Runde, Gerät: gespeicherter Plan deckungsgleich mit Vorschau; zusätzlich `testBuildUsesThePrecomputedResultInsteadOfRecomputingFromInput` (Unit-Ebene, vorbestehend) |
+
+### Budget (Gesamtstand Runde 11)
+
+TestingBot-Minutenguthaben laut `/v1/user`: **21.769s** vor dieser Runde
+(Stand Runde 10) → **21.238s** danach → **531s (≈ 8 min 51 s)** für die
+eine Session dieser Runde verbraucht (Build-Installation, kompletter
+Onboarding-Durchlauf Builder-Pfad, Plan-Detail-Prüfung). Session aktiv
+per `DELETE /session` beendet, keine offene TestingBot-Session.
+
+### CI
+
+Workflow `apple-ci-comparison.yml`, Branch `claude/smart-onboarding-epic`,
+Commit `9956f8e`: zwei Versuche (`39471376128`, `39473586849`) blieben
+~15 Minuten in `queued` hängen und wurden ohne zugewiesenen Runner
+automatisch abgebrochen (`conclusion: cancelled`) — ein transientes,
+Runner-Kapazitäts-bedingtes GitHub-Infrastrukturproblem, kein
+Code-/Kontoproblem (keine konkurrierenden Runs, viele vorige Runs in
+dieser Session liefen normal durch). Dritter Versuch (`39475868792`)
+erhielt einen Runner und schloss **erfolgreich** ab, inkl. des neuen
+Regressionstests.
 
 ## Runde 10: Screenshot-gemeldete UI-Punkte (Hantelrechner, Satzanzeige-Umschalter, Tab-Icon-Fix, Layout-Einzug)
 
@@ -1459,6 +1631,7 @@ Daten-/Logikebene beweist.
 | A09 | Unbekannte Referenzleistung → keine erfundenen Werte/stille Nullannahme | P2 | **keine erkennbare Implementierung gefunden** im Onboarding | kein Test gefunden | kein Geräte-Nachweis vorhanden | noch nicht geprüft | **Fachlicher Konflikt** (siehe unten): Dok. 02 §4 verlangt diese Fragen im Onboarding bei aktiviertem Coach; der Code stellt sie dort nicht. |
 | A10 | Eingebetteten Wocheneditor bestätigen → nur Onboarding-Entwurf geändert | P1 | `OnboardingView.finishOnboarding()` (kein früher Plan-Insert aus der Vorschau) | kein direkter Test; `PlanCreationOperationTests.swift`/`PlanDraftResultAdapterTests.swift` decken die angrenzende Logik ab (verwandt) | Build/Commit `fc2ad39`, TestingBot-Session (Runde 3). Im eingebetteten „Build Plan"-Wocheneditor eine Einheit per Drag verschoben (Position 2→1), danach den Haken getippt: Die App sprang DIREKT zum Dashboard mit bereits aktivem, persistiertem Plan — der Haken in diesem Einstiegspfad beendet das GESAMTE Onboarding in einem Schritt (keine Rückkehr zu einer separaten, noch bearbeitbaren Onboarding-Zusammenfassung). Die vorgenommene Reorder-Änderung war im fertigen, gespeicherten Plan korrekt übernommen (gleiche Reihenfolge wie im Entwurf). Anschließend genau "1 PLAN" in der Plan-Liste (kein verwaister/doppelter Datensatz). | teilweise | Die geprüfte Garantie "kein vorzeitiger/doppelter Plan-Insert" ist erfüllt (Entwurfsänderung korrekt übernommen, nur 1 Plan). Die genaue Lesart "Haken übernimmt NUR den Entwurf und führt zur Vorschau zurück" (Dok. 02 §6, Punkt 2) trifft auf den hier getesteten „Build Plan"-Pfad NICHT zu — dort ist der Haken zugleich die Onboarding-Abschlussaktion (Punkt 3). Ob es daneben einen separaten „kompakte Wochenvorschau mit eigenem Haken + eigenem späteren Finish"-Bildschirm gibt, der dieser engeren Lesart entspricht, wurde in dieser Runde nicht gefunden/getestet. |
 | A11 | Onboarding abbrechen/mehrfach abschließen → keine verwaisten/doppelten Pläne | P1 | `OnboardingView.finishOnboarding()` (`isFinishingOnboarding`-Guard), `OnboardingPlanCreationNotice` | `OnboardingPlanCreationNoticeTests.swift`, `OnboardingFinishPlanSelectionTests.swift` (verwandt: Notice-/Auswahl-Logik, nicht der Doppel-Tap-Guard selbst) | Build/Commit `b8b8f6e`, TestingBot-Session `f3e600cd…26223308`. a) Mehrfach-Tap: 6 schnell aufeinanderfolgende Taps auf "Finish" am letzten Onboarding-Schritt → Plans-Liste zeigt danach exakt "1 PLAN" (kein Dupe), Guard bestätigt wirksam. b) Abbruch: Onboarding bis zum letzten Schritt (vor "Finish") durchlaufen, App per `terminateApp` hart beendet und neu gestartet → sauberer Neustart bei Schritt 1 ("Welcome"), kein Absturz, kein sichtbar hängender Zustand. Onboarding danach regulär bis "Finish" wiederholt und abgeschlossen → ebenfalls exakt "1 PLAN" (kein verwaister Datensatz aus dem abgebrochenen Versuch). | bestanden | Kein Negativbeweis, dass tatsächlich ein `UserBodyProfile`-Datensatz aus dem abgebrochenen Versuch im Store verblieb (nur indirekt über "1 PLAN" nach Abschluss geschlossen, kein direkter Store-/Export-Dump geprüft). |
+| A12 | Hybrid + "Both"-Ausdauerform → beide gewählten Sportarten im generierten Plan, sonst sichtbarer Konflikt statt stillem Weglassen | P2 | `GoalDrivenPlanSelectionBuilder.makeSelections`/`enduranceSelections` (rundet Ausdauertage via `ceil`/Restwert, kein `else`-Zweig wenn eine Modalität auf 0 Tage rundet) | `GoalDrivenPlanSelectionBuilderTests.testHybridGoalWithBothModalityAtTheDefaultThreeDaysSilentlyDropsCycling` (neu, Runde 11, pinnt den Ist-Zustand) | Build/Commit `9956f8e`, TestingBot-Session `7f1a4aa358fb-8ccc5c0b64ef-388a7f4cec85-179252205753-68569042` (Runde 11). Hybrid + "Both" gewählt, Coach aus, Tage-Slider NICHT angefasst (Default "3 days per week" — der von den meisten Nutzern nie geänderte Standardwert). Wochenvorschau im Builder-Pfad zeigte 3 Einheiten (2x Kraft, 1x "Easy Run") — keine Radfahren-Einheit, keine Konflikt-/Hinweismeldung. Nach Bestätigen ("Adopt Plan") war der gespeicherte Plan deckungsgleich mit der Vorschau (Mon=Push&Pull, Wed=Easy Run, Fri=Pull&Push), exakt "1 PLAN". | teilweise (Bug reproduziert und gerätebestätigt, bewusst nicht gefixt) | Spezifikationskonformer Zustand verlangt eine sichtbare Entscheidung/Konflikt-Anzeige statt stillem Weglassen — das ist eine neue Konflikt-UI (Produktentscheidung), keine begrenzte Code-Korrektur, siehe Fachliche Widersprüche Punkt 7. Nur der 3-Tage-Default geprüft; andere Tage-Zahlen mit demselben Rundungsmuster sind nicht einzeln gerätegeprüft, aber durch dieselbe Code-Stelle plausibel gleichermaßen betroffen. |
 | B01 | Wocheneditor Drag & Drop → Reihenfolge korrekt, alternative Bedienung möglich | P2 | `PlanBuilderView.resultStepView`/`moveDraftDays`, `PlanDraft.moveDay` | `PlanDraftTests.testMoveDayReordersAndPreservesStableID` u.a. (exakte Logikabdeckung) | Build/Commit `fc2ad39`, TestingBot-Session (Runde 3). BEIDE Bedienwege im selben Wocheneditor geprüft: (1) „Move to…"-Menü (alternative/zugängliche Bedienung): "Easy Run" per Menü auf "Position 1" verschoben → Reihenfolge korrekt neu sortiert, sofort sichtbar. (2) Echte Drag-Geste (langer Druck + Bewegung über mehrere Zwischenschritte): "Bodyweight · Pull & Push" von Position 3 an Position 1 gezogen → Reihenfolge erneut korrekt neu sortiert (alle 3 Einheiten korrekt neu angeordnet, keine Duplikate/Lücken). Ein einzelner schneller Swipe ohne Haltephase loeste die Drag-Geste NICHT aus (Geraete-/Gesten-Nuance, kein Produktfehler — ein echter Finger haelt beim Drag typischerweise). | bestanden | Nur ein 3-Tage-Entwurf im „Build Plan"-Pfad geprüft, nicht die eigenständige Builder-Variante außerhalb des Onboardings; beide dürften laut Code dieselbe `moveDraftDays`/`PlanDraft.moveDay`-Logik nutzen. |
 | B02 | Inhalt fixiert, Woche neu verteilen → Inhalt bleibt, Position regelkonform behandelbar | P2 | `PlanDraft.setContentFixed`/`redistribute` | `PlanDraftTests.testRedistributeLeavesContentFixedDayCompletelyUntouchedButFillsOthersFromThePool`, `testContentFixationDoesNotPreventReordering` | kein Geräte-Nachweis vorhanden | bestanden | Reine Logikprüfung ausreichend und exakt passend; kein Geräte-Nachweis der UI-Darstellung. |
 | B03 | Position fixiert, Übungen variieren → Position bleibt, erlaubter Inhalt veränderbar | P2 | `PlanDraft.setPositionFixed`/`replaceContent` | `PlanDraftTests.testPositionFixationDoesNotPreventContentReplacement`, `testRedistributeAllowsNewContentOnAPositionFixedButNotContentFixedDay` | kein Geräte-Nachweis vorhanden | bestanden | Nur Logikebene; keine UI-Geräteprüfung. |
@@ -1494,13 +1667,15 @@ Daten-/Logikebene beweist.
 | F07 | Review übernehmen → neue gültige Fassung, Historie unverändert | **P3** | `FourWeekReviewDueStatus.completeCurrentBlock`/`.history`, `BlockReviewRecord` | `FourWeekReviewDueStatusTests.testCompletingTwoBlocksInSequenceKeepsBothInHistory` (Übernahme eröffnet sofort einen neuen, gültigen Block; Block 1 bleibt in der Historie unverändert erhalten) + `.testLegacyCompletionWithoutHistoryJSONIsReadAsOneRecordWithoutFabricatedOutcome` (Altbestand wird beim Lesen nicht nachträglich umgedeutet) | kein Geräte-Nachweis vorhanden | bestanden | UI-Nachweis des tatsächlichen Wocheneditor-Vorher-/Nachher-Vergleichs beim Übernehmen fehlt. |
 | F08 | Gleichzeitige Progressions-/Deload-/Review-Hinweise → keine Widersprüche | **P3** | `FourWeekReviewOrchestrator` (Deload/Comeback-Konfliktauflösung), `ProgressionEvaluator`, `DeloadAdvisor`, `ProgressionApplicator`/`DeloadManager` (Koexistenz-Fund dieser Runde) | `FourWeekReviewOrchestratorTests.testConflictingDeloadAndComebackSignalsResolveToComebackOnly` (Review-Ebene, exakt) **PLUS echter Bug gefunden und gefixt**: `ProgressionApplicator.apply`/`.evaluateOnly` schrieben bisher `.increaseWeight` auch auf eine Übung, deren Gewicht `DeloadManager` gerade reduziert und eingefroren hatte (`deloadOriginalWeight != nil`) — direkter Verstoß gegen Dok. 03 §5 ("nicht dieselbe Übung gleichzeitig steigern und reduzieren") und eine stille Datenverlust-Falle (ein späteres `endDeload()` hätte den währenddessen erarbeiteten Fortschritt wieder verworfen). Fix: Veto auf `.hold`, solange ein Deload-Snapshot offen ist (Commit `c96bf5c`). Regressionstests: `ProgressionApplicatorDeloadConflictTests.testIncreaseWeightIsVetoedToHoldWhileAnExerciseHasAPendingDeloadSnapshot`, `.testEvaluateOnlyMirrorsTheSameDeloadVetoAsApply`, Gegenprobe `.testIncreaseWeightStillAppliesNormallyWithoutAnActiveDeload` | kein Geräte-Nachweis vorhanden | bestanden (inkl. Bugfix) | Kein Geräte-Nachweis, dass das Dashboard mehrere gleichzeitige Hinweise (Progression-Celebration, Deload-Banner, Review-Fälligkeit) auch VISUELL widerspruchsfrei anordnet — nur die zugrundeliegende Entscheidungslogik (inkl. des gefixten Konflikts) ist bewiesen. |
 
-**Status-Verteilung (45 Fälle, nach Runde 5/C01-Fix-Retest):** 30
-bestanden (A03, A05, A06, A08, A11, B01, B02, B03, B04, B05, B06, C01,
-C02, C03, D01, D02, D03, D04, D05, E01, E03, E05, E06, E07, F01, F02,
-F03, F06, F07, F08) · 11 teilweise (A01, A02, A04, A07, A10, C05, C06,
-D06, E02, E04, F05) · 4 noch nicht geprüft (A09, C04, E08, F04) · 0
-blockiert · 0 fehlgeschlagen. (Vorheriger Stand nach Runde 4: 29
-bestanden/12 teilweise, siehe Git-Historie dieses Dokuments.)
+**Status-Verteilung (46 Fälle, nach Runde 11):** 30 bestanden (A03, A05,
+A06, A08, A11, B01, B02, B03, B04, B05, B06, C01, C02, C03, D01, D02,
+D03, D04, D05, E01, E03, E05, E06, E07, F01, F02, F03, F06, F07, F08) ·
+12 teilweise (A01, A02, A04, A07, A10, A12, C05, C06, D06, E02, E04, F05)
+· 4 noch nicht geprüft (A09, C04, E08, F04) · 0 blockiert · 0
+fehlgeschlagen. (Vorheriger Stand nach Runde 5/C01-Fix-Retest: 45 Fälle,
+30 bestanden/11 teilweise/4 noch nicht geprüft; neu in Runde 11: A12.
+Stand nach Runde 4: 29 bestanden/12 teilweise, siehe Git-Historie dieses
+Dokuments.)
 
 (F01–F08 waren vor diesem Durchgang pauschal "blockiert"; siehe Nachtrag
 unten für die Einzelfallprüfung, die diese pauschale Einstufung ersetzt.)
@@ -1640,6 +1815,22 @@ erneut melden statt pauschal zu wiederholen.
    bereits als eigenes, größeres Thema benannt hatte. Diese verbleibende
    Scope-Grenze geht weiterhin als offene Entscheidung an den Nutzer
    zurück, nicht eigenmächtig erweitert.
+7. **A12 / Runde 11 — Hybrid + "Both"-Ausdauerform verliert eine gewählte
+   Sportart still.** Prüffall 8 der Runde-11-Spezifikation verlangt: "zu
+   wenige Einheiten für alle gewählten Sportarten → sichtbare Entscheidung/
+   Konflikt statt stillem Weglassen." Im Code
+   (`GoalDrivenPlanSelectionBuilder.enduranceSelections`) führt eine
+   Rundung, bei der eine der beiden Modalitäten auf 0 Tage fällt (z. B.
+   Hybrid + "Both" bei `totalDaysPerWeek = 3`, dem tatsächlichen
+   UI-Default), zum kommentarlosen Entfernen dieser Sportart aus der
+   generierten Auswahl — gerätebestätigt (Runde 11, siehe Zeile A12):
+   keine Meldung, kein Hinweis, keine Rückfrage. Die spezifikationskonforme
+   Lösung (sichtbare Entscheidung/Konflikt-Anzeige) ist eine neue
+   Konflikt-UI und keine begrenzte Code-Korrektur im Sinne der erteilten
+   Aufträge — daher hier dokumentiert statt eigenmächtig gefixt. Ein
+   Regressionstest (`testHybridGoalWithBothModalityAtTheDefaultThreeDaysSilentlyDropsCycling`)
+   pinnt den aktuellen Zustand, damit ein künftiger bewusster Fix hier
+   sichtbar etwas ändern muss.
 
 ## F01–F08 differenziert geprüft (Nachtrag)
 
