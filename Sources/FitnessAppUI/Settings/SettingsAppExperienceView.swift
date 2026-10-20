@@ -279,14 +279,22 @@ public struct SettingsAppExperienceView: View {
                 .labelsHidden()
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
-                // Geraete-Abnahme (Runde 10): "Previous layout" ist laenger
-                // als die uebrigen Picker-Werte dieses Screens ("Metric",
-                // "Dark", ...) - bei AX5 reicht `DeltiqControlRow`s eigenes
-                // `.minimumScaleFactor(0.85)` NICHT aus, der Text lief ueber
-                // mehrere Zeilen in die Nachbar-Reihen hinein ueber. Eigene,
-                // engere `maxWidth` zwingt ihn, sich auf diese Spalte zu
-                // beschraenken statt zu ueberlaufen.
-                .frame(maxWidth: 150, alignment: .trailing)
+                // Geraete-Abnahme (Runde 10, Nachbesserung): "Previous
+                // layout"/"Column overview" sind laenger als die uebrigen
+                // Picker-Werte dieses Screens ("Metric", "Dark", ...). Bei
+                // AX5 rendert `.pickerStyle(.menu)` seinen eingeklappten
+                // Wert ueber ein natives UIKit-Button-Label, das SwiftUIs
+                // `.lineLimit`/`.minimumScaleFactor` ignoriert und
+                // stattdessen selbst mehrzeilig umbricht - eine blosse
+                // `maxWidth` (erster Versuch) reichte NICHT, der Text lief
+                // weiterhin ueber mehrere Nachbar-Reihen hinweg ueber.
+                // `maxHeight` + `.clipped()` deckelt das hart: der Wert
+                // bleibt bei AX5 ggf. sichtbar unvollstaendig, aber NIE
+                // mehr faellt er in andere Settings-Reihen hinein - ein
+                // bewusster Kompromiss zwischen Eigenname-Lesbarkeit und
+                // Nicht-Ueberlappung, entschieden zugunsten Letzterem.
+                .frame(maxWidth: 150, maxHeight: 44, alignment: .trailing)
+                .clipped()
                 .accessibilityLabel(Text("settings.training.displayMode.label", bundle: .module))
             }
             periodicCheckInRow

@@ -12,14 +12,17 @@ import XCTest
 ///   2. `SetRow.SetRowColumns.rirWidth` darf durch den neuen Gewicht-Einzug
 ///      (Punkt 3) nicht verkleinert werden - die Vorgabe war explizit "RIR
 ///      mindestens erhalten, NICHT zusammenschieben".
-///   3. Geraete-Nachtest (Runde 10, AX5): der "Set display"-Picker-Wert
-///      "Previous layout" ist laenger als die uebrigen Picker-Werte dieses
-///      Screens - `DeltiqControlRow`s eigenes `.minimumScaleFactor(0.85)`
-///      reichte bei AX5 NICHT aus, der Text lief ueber mehrere Nachbar-
-///      Reihen hinweg. Fix: engere `maxWidth` + niedrigerer eigener
-///      `minimumScaleFactor`. Dieser Test prueft nur, dass die Begrenzung
-///      im Quelltext bleibt - die tatsaechliche AX5-Lesbarkeit ist nur am
-///      Geraet pruefbar (siehe Matrix).
+///   3. Geraete-Nachtest (Runde 10, AX5, ZWEI Anlaeufe): der "Set display"-
+///      Picker-Wert "Previous layout"/"Column overview" ist laenger als die
+///      uebrigen Picker-Werte dieses Screens. `.pickerStyle(.menu)` rendert
+///      seinen eingeklappten Wert bei AX5 ueber ein natives UIKit-Button-
+///      Label, das SwiftUIs `.lineLimit`/`.minimumScaleFactor` ignoriert -
+///      weder `DeltiqControlRow`s eigenes `.minimumScaleFactor(0.85)` NOCH
+///      eine blosse `maxWidth` (erster Fix-Versuch) reichten, der Text lief
+///      beide Male ueber mehrere Nachbar-Reihen hinweg. Erst `maxHeight` +
+///      `.clipped()` deckelt das hart. Dieser Test prueft nur, dass die
+///      Begrenzung im Quelltext bleibt - die tatsaechliche AX5-Lesbarkeit
+///      ist nur am Geraet pruefbar (siehe Matrix).
 final class SetDisplayModeSettingTests: XCTestCase {
     private var sourcesRoot: URL {
         URL(fileURLWithPath: #filePath)
@@ -72,9 +75,16 @@ final class SetDisplayModeSettingTests: XCTestCase {
         }
         let pickerBody = source[pickerRange.upperBound..<rowEnd.lowerBound]
         XCTAssertTrue(
-            pickerBody.contains(".frame(maxWidth:"),
-            "Der Set-display-Picker muss eine eigene maxWidth setzen, sonst lief \"Previous layout\" bei "
+            pickerBody.contains(".frame(maxWidth:") && pickerBody.contains("maxHeight:"),
+            "Der Set-display-Picker muss Breite UND Hoehe begrenzen, sonst lief \"Previous layout\" bei "
                 + "AX5 (Geraete-Nachtest Runde 10) ueber mehrere Nachbar-Reihen hinweg."
+        )
+        XCTAssertTrue(
+            pickerBody.contains(".clipped()"),
+            "Der Set-display-Picker muss .clipped() setzen - reine maxWidth/maxHeight reichte im ersten "
+                + "Fix-Versuch NICHT, da .pickerStyle(.menu) seinen eingeklappten Wert bei AX5 ueber ein "
+                + "natives UIKit-Label rendert, das SwiftUIs Frame-Begrenzung ignoriert, bis sie durch "
+                + "clipped() tatsaechlich erzwungen wird."
         )
     }
 }
