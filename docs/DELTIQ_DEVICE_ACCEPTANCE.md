@@ -139,6 +139,51 @@ Teil dieses Commits):**
   "sichtbare Entscheidung" (Konflikt-Banner mit den vier Optionen) ist
   noch reine UI-Arbeit, ebenfalls zurückgestellt.
 
+## Paket 1 (Teil 4): Komponenten 4+5 umgesetzt, Logik-/UI-Ebene vollständig
+
+**Umgesetzt (Commit `b7ac9f1`), CI grün (`39488838613`, inkl. App+Widget-Build):**
+- **`CoachAdjustmentPreviewView`** (Komponente 4): Vorher/Nachher-Liste der
+  Cardio-Tage (aktuell anfassbare Tage durchgestrichen, vorgeschlagener
+  neuer Inhalt darunter), Status-Zeile ("Anpassung übernommen" /
+  "Coach aktiviert, Plan noch nicht angepasst"), drei Aktionen je nach
+  `analysis.cardioAvailability`: "Aktuellen Plan anpassen" (nur bei
+  `.ready`), "Als neuen Plan erstellen" (reuse des bestehenden
+  `CardioFeasibilityCardModel.accept`-Pfads, keine zweite Implementierung),
+  "Beibehalten" (reines Schließen, siehe Leitplanke 2). Bei
+  `.noEligibleCardioDay` erklärender Hinweistext statt stillem Fehlen der
+  Anpassen-Option.
+- **`CardioGoalEditorView`** (Komponente 5): "Coach ausschalten" ist jetzt
+  ein eigener, sofort wirksamer `confirmationDialog` (exakt der vom Nutzer
+  vorgegebene Text), schreibt ausschließlich `cardioCoachingEnabled`,
+  Trainingsdaten/Historie/Plan bleiben unangetastet. Echtes Aktivieren
+  (vorher aus, jetzt an) zeigt beim Speichern-Tap die Anpassungsvorschau
+  statt direkt zu schließen — nur wenn ein aktiver Plan existiert, sonst
+  unveränderter Pfad über `ProfileEditorView`s bestehende Feasibility-Karte.
+- **`ProfileEditorView`**: Leitplanke-6-Vorrangregel ist jetzt tatsächlich
+  wirksam (`coachAdjustmentModel` vor `feasibilityModel`), nicht mehr nur
+  dokumentierter, ungenutzter Vertrag.
+- **Komponente 7 (Rest):** mit der jetzt existierenden Preview-UI
+  vollständig umgesetzt — der "Coach an, Anpassung noch nicht
+  übernommen"-Status wird über `CoachAdjustmentCardModel.isAlreadyApplied`
+  angezeigt, abgeleitet aus `cardioCoachingEnabled` +
+  `cardioPlanAdjustmentFingerprint`, kein zusätzliches Feld nötig über das
+  bereits in Teil 3 ergänzte hinaus.
+- 13 neue xcstrings-Keys (DE/EN/TR), `UNUSED:0` bestätigt.
+
+**Bekannte, bewusste Vereinfachung (kein Fix in diesem Paket):** wählt der
+Nutzer "Coach ausschalten", während ANDERE Felder im selben Editor noch
+unentschieden/ungespeichert sind, schließt der Dialog die View sofort und
+diese anderen Entwürfe gehen verloren (kein kombinierter Speichern+
+Ausschalten-Fluss). Eigenständiger, sofort wirksamer Pfad exakt wie vom
+Nutzer vorgegeben — als bekannte Grenze dokumentiert, nicht stillschweigend.
+
+**Damit ist die komplette Logik-/UI-Ebene von Paket 1 (Komponenten 1-7)
+umgesetzt und CI-verifiziert. Noch offen: alle 9 Geräte-Nachweise** — aus
+Kontextgründen in dieser Runde nicht mehr begonnen, siehe Abschlussbericht
+für die Empfehlung, dies als eigenen, dedizierten Geräte-Testdurchgang zu
+behandeln (entspricht dem bisherigen Muster dieses Dokuments: jede
+"Runde" war bereits ein eigener, einzelner Durchgang).
+
 ## Paket 1 (Teil 3): sechs Leitplanken eingearbeitet, Komponente 3 umgesetzt
 
 **Vor dem Weiterbau geprüft und dabei ein echter Bug gefunden (Commit
