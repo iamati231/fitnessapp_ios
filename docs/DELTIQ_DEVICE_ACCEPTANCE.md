@@ -1,11 +1,14 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-20 (zweiter Durchgang), Branch `claude/smart-onboarding-epic`,
-HEAD `89c788a` (Fix-Commit E01; davor `b8b8f6e`). TestingBot-Restbudget vor
-diesem Durchgang: 36.754 Sekunden (~10,2 h). Kein Merge nach `main`, kein
-Release.
+Stand: 2026-10-20 (dritter Durchgang: F01–F08 differenziert geprüft,
+kein neuer Geräte-/TestingBot-Lauf in dieser Runde — reine Code-/Testarbeit),
+Branch `claude/smart-onboarding-epic`, HEAD `c96bf5c` (Fix-Commit F08 +
+neue Tests für F06/F08; davor `89c788a` Fix-Commit E01, davor `b8b8f6e`).
+TestingBot-Restbudget vor diesem Durchgang unverändert (nicht verwendet,
+siehe Nachtrag unten). Kein Merge nach `main`, kein Release.
 
 **Gesamtstatus: A–E bearbeitet; teilweise bestanden, teilweise blockiert.
+F01–F08 nicht mehr pauschal blockiert, siehe Nachtrag weiter unten.
 Gesamtabnahme weiterhin offen.**
 
 ## Diese Runde: Top-5-Geräteprüfung (E01, C06, D06, A11, D02)
@@ -132,20 +135,23 @@ Daten-/Logikebene beweist.
 | E06 | Ungespeicherter Entwurf + Schließgeste → kein Umgehen des Schutzes | **P1** | Konsistentes Muster: `.interactiveDismissDisabled(isDirty)` + `.deltiqSwipeBackEnabled(!isDirty)` über alle Editoren — **blockierend**, nicht "Dialog beim Wischversuch" | `EditorDiscardSnapshotTests.swift` deckt die `isDirty`-Erkennung breit ab (verwandt); kein Test der tatsächlichen Gesten-Blockade selbst | kein Geräte-Nachweis vorhanden | teilweise | Die `isDirty`-Logik ist bewiesen; dass die Wisch-/Sheet-Dismiss-Geste dadurch auf dem Gerät wirkungslos bleibt, ist nicht verifiziert. |
 | E07 | Trainingsseiten wechseln und Listen ziehen → bestehende Gesten erhalten | P2 | `.onMove` in `PlanEditorView`, `DayEditorView`, `DashboardSettingsView` | keine dedizierte Regressionsprüfung für "nach Seitenwechsel" gefunden | kein Geräte-Nachweis vorhanden | teilweise | Kein Test/Gerätebeleg speziell für Tab-/Seitenwechsel + danach weiterhin funktionierendes Drag. |
 | E08 | Start-Check-Einstiege suchen → nur im Onboarding erreichbar | P2 | `BaselineCheckFlowView` — Codesuche bestätigt genau einen produktiven Aufrufer (`OnboardingView.swift`) | kein Test gefunden, der diese Invariante als Regression schützt | kein Geräte-Nachweis vorhanden | noch nicht geprüft | Codesuche ist kein automatisierter Regressionsschutz gegen einen künftigen zweiten Call-Site, kein Gerätenachweis. |
-| F01 | Vier Wochen mit viel/wenig Teilnahme → datenabhängige Empfehlung | **P3** | `FourWeekReviewOrchestrator`, `FourWeekReviewAssembler`, `FourWeekReviewDueCalculator` | `FourWeekReviewOrchestratorTests.swift`, `FourWeekReviewAssemblerTests.swift` (Logikebene, nicht vertieft geprüft) | kein Geräte-Nachweis vorhanden | blockiert | Zeitabhängig, bekannter Export-Hang + fehlender Zeit-Manipulationsweg (siehe Block D/E oben). Nicht erneut untersucht. |
-| F02 | Flexibler Plan/Pause/Planwechsel → keine erfundene Compliance | **P3** | `FourWeekReviewAssembler`/`BlockReviewRecord` | `BlockReviewRecordTests.swift`, `FourWeekReviewDueStatusTests.swift` (Logikebene) | kein Geräte-Nachweis vorhanden | blockiert | Siehe F01. |
-| F03 | Gute Entwicklung → „Beibehalten" als gültiges Ergebnis | **P3** | `FourWeekReviewOrchestrator` | `FourWeekReviewOrchestratorTests.swift` (Logikebene) | kein Geräte-Nachweis vorhanden | blockiert | Siehe F01. |
-| F04 | Ausgelassene Beintage/Brustschwerpunkt → Rückfrage statt Zwangswechsel | **P3** | nicht vertieft lokalisiert (Auftrag: F-Fälle nicht erneut untersuchen) | nicht geprüft | kein Geräte-Nachweis vorhanden | blockiert | Siehe F01. |
-| F05 | Beschwerden/fehlende RIR-Daten → keine Diagnose/erfundene Erholung | **P3** | nicht vertieft lokalisiert | nicht geprüft | kein Geräte-Nachweis vorhanden | blockiert | Siehe F04. |
-| F06 | Review ablehnen/aufschieben/wieder öffnen → keine Doppeländerung | **P3** | `FourWeekReviewView`/`FourWeekReviewEntryView` (vermutlich, nicht vertieft) | nicht geprüft | kein Geräte-Nachweis vorhanden | blockiert | Siehe F04. |
-| F07 | Review übernehmen → neue gültige Fassung, Historie unverändert | **P3** | `FourWeekReviewAssembler`/`BlockReviewRecord` (vermutlich, nicht vertieft) | nicht geprüft | kein Geräte-Nachweis vorhanden | blockiert | Siehe F04. |
-| F08 | Gleichzeitige Progressions-/Deload-/Review-Hinweise → keine Widersprüche | **P3** | `ProgressionEvaluator`, `DeloadAdvisor`, `FourWeekReviewOrchestrator` (vermutlich, nicht vertieft) | `ProgressionEvaluatorTests.swift`, `DeloadAdvisorTests.swift` (isoliert, kein Zusammenspiel-Test) | kein Geräte-Nachweis vorhanden | blockiert | Siehe F04; zusätzlich kein Test für gleichzeitiges Auftreten mehrerer Hinweis-Systeme. |
+| F01 | Vier Wochen mit viel/wenig Teilnahme → datenabhängige Empfehlung | **P3** | `FourWeekReviewOrchestrator`, `FourWeekReviewAssembler`, `FourWeekReviewDueCalculator` | `FourWeekReviewAssemblerTests.testCompliantPlanWithGoodCheckInYieldsKeepAsIs` (volle Teilnahme → `.keepAsIs`) und `.testHeavilyMissedParticipationIsSurfacedAsConcern` (keine Teilnahme → `.participationBelowPlan`) — beide mit echtem `ModelContainer` + `TrainingPlan.activatedAt` in der Vergangenheit über den realen Produktionspfad `FourWeekReviewAssembler.assemble`; ergänzt um `FourWeekReviewOrchestratorTests.testSingleMissedSessionBelowThresholdIsNotAConcern`/`.testSignificantlyMissedParticipationIsAConcern` (Schwellenwert-Abstufung statt starrer Steigerung) | kein Geräte-Nachweis vorhanden | bestanden (Daten-/Integrationsebene) | Reiner UI-/Geräte-Nachweis (tatsächlich gerenderter Review-Screen) fehlt weiterhin — betrifft nur die Darstellung, nicht die hier bewiesene datenabhängige Entscheidungslogik. Kein Export-Hang/Zeit-Manipulationsweg nötig, siehe Nachtrag unten. |
+| F02 | Flexibler Plan/Pause/Planwechsel → keine erfundene Compliance | **P3** | `FourWeekReviewAssembler`/`BlockReviewRecord`, `PlanParticipationEvaluator` | `PlanParticipationEvaluatorTests.testFlexibleScheduleCreditsTheSameOffWeekdayPatternThatFixedWouldReject`/`.testFlexibleCadenceSurplusSessionsDoNotCreditBeyondQuota` (flexibler Plan), `.testInactivePlanIsNotReliablyEvaluableBecauseDeactivationTimeIsUnknown` (Pause → `.notReliablyEvaluable`, keine erfundene Zahl), `.testEveryEvaluatedResultDisclosesTheSingleActivationAnchorLimitation` (Planwechsel als offen ausgewiesene Datenlücke statt falscher Nenner) — reine Core-Logiktests mit konstruierten historischen Daten | kein Geräte-Nachweis vorhanden | bestanden (Daten-/Logikebene) | UI-Anzeige der Datenlücken-Hinweise selbst nicht geräteverifiziert. |
+| F03 | Gute Entwicklung → „Beibehalten" als gültiges Ergebnis | **P3** | `FourWeekReviewOrchestrator` | `FourWeekReviewOrchestratorTests.testAllGoodYieldsKeepAsIsWithNoDataGaps` und `FourWeekReviewAssemblerTests.testCompliantPlanWithGoodCheckInYieldsKeepAsIs` (reale Teilnahme+Check-in → `.keepAsIs` als vollwertiges Ergebnis, nicht nur Abwesenheit von Problemen) | kein Geräte-Nachweis vorhanden | bestanden | UI-Darstellung der „Beibehalten"-Karte selbst nicht geräteverifiziert. |
+| F04 | Ausgelassene Beintage/Brustschwerpunkt → Rückfrage statt Zwangswechsel | **P3** | **keine erkennbare Implementierung gefunden** — `DayAnalyzer`/`DayAnalysis` liefern nur eine EINTAGES-Muskel-Fokus-Heuristik; keine wochenübergreifende Auswertung "ausgelassene Beintage"/"bewusster Brustschwerpunkt" und keine Rückfrage-/Zielvergleichslogik im Review selbst | kein Test gefunden (keine Implementierung, die zu testen wäre) | kein Geräte-Nachweis vorhanden | noch nicht geprüft | **Fachlicher Konflikt** (siehe unten, neue Kategorie analog A09/C04): Dok. 03 §6 verlangt ausdrücklich Rückfrage bzw. Zielvergleich statt Kalender-Zwangswechsel bei ausgelassenen Beintagen/bewusstem Schwerpunkt; `FourWeekReviewOrchestrator.Concern` kennt dafür keinen Fall. Echte Implementierungslücke, kein reiner Testlücken-Befund. |
+| F05 | Beschwerden/fehlende RIR-Daten → keine Diagnose/erfundene Erholung | **P3** | `FourWeekReviewOrchestrator` (`.complaintsReported`), `PeriodicCheckIn` | Beschwerden-Hälfte bestanden: `FourWeekReviewOrchestratorTests.testComplaintsReportedIsAConcern` + `FourWeekReviewAssemblerTests.testLatestCheckInFeedbackIsAssembledFromRealData` (Befund wird sichtbar; UI-Text rein beobachtend "hast du Beschwerden... angegeben", keine Diagnose). RIR-Hälfte NICHT durch einen eigenen Test bewiesen, aber per Code-Audit bestätigt: weder `PlanParticipationEvaluator.Input` noch `FourWeekReviewOrchestrator.CheckInFeedback` führen überhaupt ein RIR-Feld — der Review kann strukturell keine Erholungsaussage aus fehlenden RIR-Daten erfinden, weil RIR dort gar nicht einfließt | kein Geräte-Nachweis vorhanden | teilweise | Kein dedizierter automatisierter Nachweis für den RIR-Teil (nur Code-Audit der Abwesenheit, keine Test-Assertion); kein Geräte-Nachweis für den laut Dok. 03 §4 verlangten separaten, vorsichtigen Beschwerden-Abklärungsweg selbst. |
+| F06 | Review ablehnen/aufschieben/wieder öffnen → keine Doppeländerung | **P3** | `FourWeekReviewDueStatus.completeCurrentBlock`, `AbsenceDeload.remember`/`.assess`/`.apply` (von `FourWeekReviewView.resolveComeback`/`completeReview` aufgerufen) | `FourWeekReviewDueStatusTests.testCompletingTheSameBlockTwiceIsIdempotent` (doppelter Abschluss-Tap ändert nichts zweimal) + NEU `AbsenceDeloadReopenTests.testDecliningSuppressesTheSameBucketButReArmsAtAStrongerGap` (Ablehnen → Wieder-öffnen am selben Tag erzeugt keine erneute Rückfrage/Hinweisschleife; spürbar stärkere Lücke fragt dagegen zu Recht erneut) + `.testAcceptingPreventsASecondApplicationShortlyAfterReopening` (Übernehmen → Wieder-öffnen kurz danach verhindert zweite Anwendung) — alle mit echtem `ModelContainer` + echten `UserDefaults`, über dieselben Produktionsfunktionen, die der Review-Screen beim Tippen aufruft | kein Geräte-Nachweis vorhanden | bestanden (Daten-/Integrationsebene) | Der tatsächliche Tap auf dem Screen selbst (Bestätigungsdialog, Button-Zustände, "Später"-Verhalten rein visuell) ist nicht geräteverifiziert. |
+| F07 | Review übernehmen → neue gültige Fassung, Historie unverändert | **P3** | `FourWeekReviewDueStatus.completeCurrentBlock`/`.history`, `BlockReviewRecord` | `FourWeekReviewDueStatusTests.testCompletingTwoBlocksInSequenceKeepsBothInHistory` (Übernahme eröffnet sofort einen neuen, gültigen Block; Block 1 bleibt in der Historie unverändert erhalten) + `.testLegacyCompletionWithoutHistoryJSONIsReadAsOneRecordWithoutFabricatedOutcome` (Altbestand wird beim Lesen nicht nachträglich umgedeutet) | kein Geräte-Nachweis vorhanden | bestanden | UI-Nachweis des tatsächlichen Wocheneditor-Vorher-/Nachher-Vergleichs beim Übernehmen fehlt. |
+| F08 | Gleichzeitige Progressions-/Deload-/Review-Hinweise → keine Widersprüche | **P3** | `FourWeekReviewOrchestrator` (Deload/Comeback-Konfliktauflösung), `ProgressionEvaluator`, `DeloadAdvisor`, `ProgressionApplicator`/`DeloadManager` (Koexistenz-Fund dieser Runde) | `FourWeekReviewOrchestratorTests.testConflictingDeloadAndComebackSignalsResolveToComebackOnly` (Review-Ebene, exakt) **PLUS echter Bug gefunden und gefixt**: `ProgressionApplicator.apply`/`.evaluateOnly` schrieben bisher `.increaseWeight` auch auf eine Übung, deren Gewicht `DeloadManager` gerade reduziert und eingefroren hatte (`deloadOriginalWeight != nil`) — direkter Verstoß gegen Dok. 03 §5 ("nicht dieselbe Übung gleichzeitig steigern und reduzieren") und eine stille Datenverlust-Falle (ein späteres `endDeload()` hätte den währenddessen erarbeiteten Fortschritt wieder verworfen). Fix: Veto auf `.hold`, solange ein Deload-Snapshot offen ist (Commit `c96bf5c`). Regressionstests: `ProgressionApplicatorDeloadConflictTests.testIncreaseWeightIsVetoedToHoldWhileAnExerciseHasAPendingDeloadSnapshot`, `.testEvaluateOnlyMirrorsTheSameDeloadVetoAsApply`, Gegenprobe `.testIncreaseWeightStillAppliesNormallyWithoutAnActiveDeload` | kein Geräte-Nachweis vorhanden | bestanden (inkl. Bugfix) | Kein Geräte-Nachweis, dass das Dashboard mehrere gleichzeitige Hinweise (Progression-Celebration, Deload-Banner, Review-Fälligkeit) auch VISUELL widerspruchsfrei anordnet — nur die zugrundeliegende Entscheidungslogik (inkl. des gefixten Konflikts) ist bewiesen. |
 
-**Status-Verteilung (45 Fälle, nach diesem Durchgang):** 14 bestanden (A05,
-A11, B02, B03, B04, B05, B06, C03, D01, D02, D03, D04, D05, E01) · 17
-teilweise (A01, A02, A03, A04, A06, A07, A08, A10, B01, C01, C02, C05, C06,
-D06, E02, E06, E07) · 6 noch nicht geprüft (A09, C04, E03, E04, E05, E08) · 8
-blockiert (F01–F08) · 0 fehlgeschlagen.
+**Status-Verteilung (45 Fälle, nach diesem Durchgang):** 20 bestanden (A05,
+A11, B02, B03, B04, B05, B06, C03, D01, D02, D03, D04, D05, E01, F01, F02,
+F03, F06, F07, F08) · 18 teilweise (A01, A02, A03, A04, A06, A07, A08, A10,
+B01, C01, C02, C05, C06, D06, E02, E06, E07, F05) · 7 noch nicht geprüft
+(A09, C04, E03, E04, E05, E08, F04) · 0 blockiert · 0 fehlgeschlagen.
+
+(F01–F08 waren vor diesem Durchgang pauschal "blockiert"; siehe Nachtrag
+unten für die Einzelfallprüfung, die diese pauschale Einstufung ersetzt.)
 
 **Top-5-Geräteprüfung dieser Runde — Ergebnis:**
 
@@ -227,15 +233,91 @@ erneut melden statt pauschal zu wiederholen.
    dieselben Lokalisierungsschlüssel und dieselbe Entscheidungslogik, sind
    aber zwei separat gepflegte SwiftUI-Implementierungen — eine teilweise
    Abweichung von der nicht verhandelbaren Architekturgrenze.
+4. **F04 / Dokument 03 §6**: Die Spezifikation verlangt bei ausgelassenen
+   Beintagen bzw. einem bewusst gewählten Brustschwerpunkt ausdrücklich
+   eine Rückfrage ("beibehalten oder ändern?") bzw. einen Zielvergleich,
+   nie einen automatischen Kalender-Zwangswechsel. Im Code existiert dafür
+   **keine** Implementierung — `FourWeekReviewOrchestrator.Concern` kennt
+   nur `participationBelowPlan`/`complaintsReported`/`goalNoLongerCurrent`/
+   `deloadRecommended`/`comebackSuggested`, keinen Fall für
+   Muskelgruppen-/Schwerpunkt-Balance. `DayAnalyzer`/`DayAnalysis` liefern
+   zwar einen Muskel-Fokus, aber nur pro EINZELNEM Tag, nicht
+   wochenübergreifend und ohne jede Rückfrage-Logik. Echte
+   Implementierungslücke gegenüber einer verbindlichen Vorgabe, kein
+   reiner Testlücken-Befund (gleiche Kategorie wie A09/C04).
+
+## F01–F08 differenziert geprüft (Nachtrag)
+
+**Auftrag:** die pauschale Einstufung "F01–F08 blockiert, weil zeitabhängig
++ bekannter Export-Hang" war nicht differenziert genug — der Export-/
+Geräte-Blocker betrifft ausschließlich den Versuch, die 28-/42-Tage-
+Fälligkeit auf einem ECHTEN GERÄT über System-Uhr oder CSV-Re-Import zu
+simulieren. Er betrifft NICHT die zugrunde liegende Entscheidungslogik,
+die bereits für andere Pakete (B–E) routinemäßig über Daten-/
+Integrationstests mit konstruierten historischen Feldern bewiesen wird
+(echter `ModelContainer`, `TrainingPlan.activatedAt`/
+`blockReviewHistoryJSON` auf einen Zeitpunkt in der Vergangenheit gesetzt,
+dann der echte Produktionscode-Pfad aufgerufen — identische Technik zu
+`DayEditorPersistenceTests.swift`/`MeasurementPersistenceTests.swift`,
+keine Systemuhr, keine Produktdaten-Manipulation).
+
+**Ergebnis der Einzelfallprüfung:**
+
+* **6 von 8 Fällen (F01, F02, F03, F06, F07, F08) sind jetzt "bestanden"**
+  auf Daten-/Integrationsebene — großteils bereits durch vorhandene Tests
+  aus früheren Paketen exakt abgedeckt (`FourWeekReviewAssemblerTests`,
+  `FourWeekReviewOrchestratorTests`, `FourWeekReviewDueStatusTests`,
+  `PlanParticipationEvaluatorTests`), ergänzt um zwei neue, gezielte
+  Testdateien dieser Runde (`AbsenceDeloadReopenTests.swift`,
+  `ProgressionApplicatorDeloadConflictTests.swift`). In jedem dieser 6
+  Fälle bleibt ausschließlich der reine UI-/Geräte-Nachweis (der
+  tatsächlich gerenderte Screen, ein echter Button-Tap) offen — dafür gilt
+  weiterhin der bekannte Export-Hang-Blocker, aber nur für diesen
+  Teilaspekt, nicht für den ganzen Fall.
+* **1 Fall (F05) ist "teilweise"**: die Beschwerden-Hälfte ist
+  automatisiert bewiesen (Befund sichtbar, UI-Text rein beobachtend, keine
+  Diagnose). Die RIR-Hälfte ist nicht durch einen positiven Test, sondern
+  durch Code-Audit bestätigt — RIR fließt in keine der review-relevanten
+  Eingabetypen (`PlanParticipationEvaluator.Input`,
+  `FourWeekReviewOrchestrator.CheckInFeedback`) überhaupt ein, kann also
+  strukturell keine erfundene Erholungsaussage erzeugen.
+* **1 Fall (F04) bleibt "noch nicht geprüft"** — echte Implementierungslücke,
+  kein Testlücken-Befund: es gibt keine Review-Logik, die ausgelassene
+  Beintage oder einen bewussten Brustschwerpunkt überhaupt erkennt oder
+  dazu eine Rückfrage stellt (Dok. 03 §6). Neuer fachlicher Widerspruch
+  Nr. 4 unten.
+* **Echter Bug gefunden und gefixt (F08):** `ProgressionApplicator.apply`/
+  `.evaluateOnly` erhöhten `Exercise.suggestedWeight` auch dann, wenn
+  `DeloadManager` für genau diese Übung gerade eine reduzierte
+  Deload-Last eingefroren hatte (`deloadOriginalWeight != nil`) — ein
+  direkter Verstoß gegen Dok. 03 §5 ("nicht dieselbe Übung gleichzeitig
+  steigern und reduzieren") und eine stille Datenverlust-Falle (ein
+  späteres `endDeload()` hätte den in der Deload-Woche erarbeiteten
+  Fortschritt wieder verworfen). Fix: `.increaseWeight` wird zu `.hold`
+  vetoed, solange ein Deload-Snapshot offen ist; Deload selbst bleibt
+  weiterhin erlaubt (Sicherheitsnetz). Commit `c96bf5c`. CI
+  (`apple-ci-comparison.yml`, Run `39393513593`, macOS-Runner, echte
+  Swift-/SwiftData-Testausführung + App+Widget-Build für den
+  iOS-Simulator): **erfolgreich**, alle 1454 Package-Tests bestanden,
+  inklusive der 5 neuen Tests dieser Runde
+  (`AbsenceDeloadReopenTests.*`, `ProgressionApplicatorDeloadConflictTests.*`).
+
+**Kein Export-Hang/Zeit-Manipulationsweg wurde für diese Runde benötigt** —
+alle neuen/verwendeten Tests laufen vollständig über konstruierte
+Testdaten, nie über eine simulierte Geräte-Uhr oder einen CSV-Re-Import.
 
 ## Nächste Schritte
 
-Top-5-Geräteprüfung (E01, C06, D06, A11, D02) in dieser Runde abgeschlossen
-(4× bestanden, 1× teilweise — siehe oben). Offene bekannte Nachweislücke:
-D06s Einzelschritt "Migrationsdialog bewusst ablehnen" ließ sich in dieser
-Runde nicht isoliert reproduzieren; Auswirkung noch nicht abschließend
-geprüft. Als Nächstes: die übrigen P2-Fälle, danach F01–F08 (bleiben am
-bekannten Export-Hang/Zeit-Manipulations-Blocker, bis dieser gelöst oder
-ein anderer sanktionierter Weg gefunden ist). Die drei benannten fachlichen
-Widersprüche (A09, C04, A02) gehen als offene Entscheidungen an den
-Nutzer zurück, nicht eigenmächtig auflösen.
+Top-5-Geräteprüfung (E01, C06, D06, A11, D02) in einer früheren Runde
+abgeschlossen (4× bestanden, 1× teilweise). Offene bekannte Nachweislücke:
+D06s Einzelschritt "Migrationsdialog bewusst ablehnen" ließ sich dort nicht
+isoliert reproduzieren; Auswirkung noch nicht abschließend geprüft.
+F01–F08 sind jetzt differenziert geprüft (siehe Nachtrag oben) statt
+pauschal blockiert; nur noch der reine UI-/Geräte-Teil von F01–F03/F06–F08
+sowie F05s Beschwerden-Abklärungsweg bleiben für eine künftige
+Geräte-Session offen — kein genereller Blocker mehr für die gesamte
+Gruppe. Als Nächstes: die übrigen P2-Fälle (A–E), und F04 als eigenständige
+Implementierungsentscheidung an den Nutzer zurückgeben (siehe fachlicher
+Widerspruch Nr. 4). Die vier benannten fachlichen Widersprüche (A09, C04,
+A02, F04) gehen als offene Entscheidungen an den Nutzer zurück, nicht
+eigenmächtig auflösen.
