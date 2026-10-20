@@ -117,7 +117,7 @@ Daten-/Logikebene beweist.
 | C03 | Equipment nicht vorhanden → betroffene Übungen mit begründetem Ersatz | P2 | `PlanEquipmentCheck`, `PlanEquipmentAdaptationApplier` | `PlanEquipmentAdaptationApplierTests.testApplyArchivesTheOriginalAndInsertsAReviewedReplacement`, `PlanEquipmentCheckTests.testDumbbellWithoutConfirmedBenchIsUnknownNotUnavailable` | kein Geräte-Nachweis vorhanden | bestanden | Nur Logik-/Datenebene; keine Geräteprüfung der angezeigten Ersatz-Begründung. |
 | C04 | Nur Präferenz ändern → optionale Neugewichtung, kein Geräteverbot | P2 | **keine erkennbare Implementierung gefunden** — Equipmentmodell kennt nur `available`/`unavailable`/`unknown` | kein Test gefunden | kein Geräte-Nachweis vorhanden | noch nicht geprüft | **Fachlicher Konflikt** (siehe unten): Dok. 01 §6 verlangt 4 Zustände inkl. Präferenz-Gewichtung; Code kennt nur 3. |
 | C05 | Bank/Klimmzugstange unbekannt → bleibt nach Neustart, Bestätigung und Export/Import unbekannt | P2 | `UserEquipmentProfile`/`EquipmentRequirement`, `DataExportService`/`DataImportService` | `DataPortabilityRoundtripTests.testExplicitlyUnknownEquipmentSurvivesRoundtrip`; `EquipmentRequirementTests.testConfirmRemainingAsUnavailableNeverOverridesAnExplicitlyUnknownItem` | kein Geräte-Nachweis vorhanden | teilweise | Export/Import-Pfad exakt getestet; kein separater Store-Neustart-Test, kein Gerätenachweis. |
-| C06 | Laufende Session + Planänderung → Sessionstruktur/Logs bleiben konsistent | **P1** | `PlanGeneratorInstantiator.recalculate` (überspringt Tage mit `WorkoutSession`-Historie) | `PlanGeneratorInstantiatorTests.testRecalculateSkipsDayWithActiveSessionAndReportsIt` (exakt für Recalculate); direkte `DayEditorView`-Übungsänderung während laufender Session NICHT separat abgedeckt | Build/Commit `b8b8f6e`, TestingBot-Session `f3e600cd…26223308`. Beobachtet: Session auf "Full Body A" gestartet, Satz 1/3 von "Goblet Squat" geloggt; währenddessen im Day-Editor Satzzahl dieser Übung 3→2 reduziert und gespeichert. Laufende Session zeigte danach unverändert "1/3" mit allen 3 ursprünglichen Sätzen (Edit NICHT übernommen), geloggter Satz 1 blieb erhalten; restliche 2 Sätze wurden normal fertig geloggt ("3/3 — All sets done"), kein Crash. Tag-Editor zeigte weiterhin korrekt "2 sets" für künftige Starts. Session danach regulär verworfen (kein Rest-Zustand). | bestanden | Nur EIN konkreter Ablauf (Satzzahl-Reduktion während laufender Session) geräteverifiziert; Hinzufügen/Löschen einer ganzen Übung am laufenden Tag sowie Mehrfach-Tage-Pläne nicht separat geprüft. Die zugrundeliegende Schutz-Mechanik (Snapshot vs. Live-Referenz) ist nicht im Code lokalisiert worden — nur das Verhalten beobachtet. |
+| C06 | Laufende Session + Planänderung → Sessionstruktur/Logs bleiben konsistent | **P1** | `PlanGeneratorInstantiator.recalculate` (überspringt Tage mit `WorkoutSession`-Historie) | `PlanGeneratorInstantiatorTests.testRecalculateSkipsDayWithActiveSessionAndReportsIt` (exakt für Recalculate); direkte `DayEditorView`-Übungsänderung während laufender Session NICHT separat abgedeckt | Build/Commit `b8b8f6e`, TestingBot-Session `f3e600cd…26223308`. Beobachtet: Session auf "Full Body A" gestartet, Satz 1/3 von "Goblet Squat" geloggt; währenddessen im Day-Editor Satzzahl dieser Übung 3→2 reduziert und gespeichert. Laufende Session zeigte danach unverändert "1/3" mit allen 3 ursprünglichen Sätzen (Edit NICHT übernommen), geloggter Satz 1 blieb erhalten; restliche 2 Sätze wurden normal fertig geloggt ("3/3 — All sets done"), kein Crash. Tag-Editor zeigte weiterhin korrekt "2 sets" für künftige Starts. Session danach regulär verworfen (kein Rest-Zustand). **Ausdrücklich begrenzt auf genau diesen einen Ablauf (Satzzahl-Reduktion) — kein Nachweis für andere strukturelle Planänderungen (Übung hinzufügen/löschen, Tag löschen/umsortieren, Zeitformat-Wechsel) während einer laufenden Session an demselben Tag.** | teilweise | Nur EIN konkreter Ablauf (Satzzahl-Reduktion während laufender Session) geräteverifiziert und darf NICHT als vollständiger Nachweis für "Sessionstruktur/Logs bleiben bei jeder Planänderung konsistent" gewertet werden. Andere strukturelle Änderungen (Übung hinzufügen/löschen am laufenden Tag, Mehrfach-Tage-Pläne) sind ungeprüft; die zugrundeliegende Schutz-Mechanik (Snapshot vs. Live-Referenz) ist nicht im Code lokalisiert, nur das Verhalten für den einen Ablauf beobachtet. |
 | D01 | Reines Reorder + Verwerfen → Originalreihenfolge wiederhergestellt | **P1** | `PlanEditorView.revertDayOrder`/`dayOrderIsDirty`, `DayEditorView.revertExerciseOrder`/`exerciseOrderIsDirty` | `EditorDiscardSnapshotTests.testPlanEditorViewDetectsAndRevertsDayReorder`, `testDayEditorViewDetectsAndRevertsExerciseReorder` | kein Geräte-Nachweis vorhanden | bestanden | Nur die Datenlogik ist exakt bewiesen; die physische Drag-Geste selbst ist unter B01 vermerkt. |
 | D02 | Add/Delete + Reorder + Verwerfen → definiertes Verhalten, keine Sortierkollision | **P1** | Hinzufügen/Löschen sind bewusst sofort wirksame, nicht per Discard rückrollbare Aktionen | `EditorDiscardSnapshotTests.testPlanEditorViewIgnoresNewlyAddedDayInReorderRevert`, `testDayEditorViewIgnoresNewlyAddedExerciseInReorderRevert` (verwandt: deckt nur "neu hinzugefügt" ab, nicht die volle Kombination) | Build/Commit `b8b8f6e`, TestingBot-Session `f3e600cd…26223308`. Beobachtet: Tag "Fri/Full Body C" gelöscht, danach "Mon/Full Body A" per Drag an Position 3 verschoben (beides in derselben Editor-Sitzung), dann ohne Speichern zurücknavigiert → "Discard Changes?"-Dialog bestätigt. Ergebnis beim Wiederöffnen: 6 Tage (Fr korrekt entfernt geblieben, da sofort wirksam), Mon/Tue/Wed/Thu/Sat/Sun je genau einmal vorhanden mit der ursprünglichen Inhalt-Wochentag-Zuordnung (Mon=Full Body A, Wed=Full Body B) wiederhergestellt — die Reorder-Änderung wurde sauber zurückgerollt, keine doppelten Wochentage, keine Indexlücken/-kollisionen. | bestanden | Nur eine Lösch+Reorder-Kombination in einer Sitzung geprüft (nicht z. B. Hinzufügen+Löschen+Reorder gleichzeitig oder mehrfaches Reorder nach dem Löschen). |
 | D03 | Name/Ton ändern, separate Aktion bestätigen → unabhängiger Edit bleibt verwerfbar | **P1** | `PlanEditorView.rebaselineTargetEnvironment()`, `ProfileEditorView.rebaselineCardioGoal()` | `EditorDiscardSnapshotTests.testPlanMetaSnapshotTargetedRebaselineLeavesOtherFieldsDirty`, `testProfileEditorViewRebaselineCardioGoalLeavesCoachingToneDiscardable` | kein Geräte-Nachweis vorhanden | bestanden | Nur Logikebene bewiesen, kein Geräte-Nachweis der UI-Sequenz. |
@@ -141,10 +141,10 @@ Daten-/Logikebene beweist.
 | F07 | Review übernehmen → neue gültige Fassung, Historie unverändert | **P3** | `FourWeekReviewAssembler`/`BlockReviewRecord` (vermutlich, nicht vertieft) | nicht geprüft | kein Geräte-Nachweis vorhanden | blockiert | Siehe F04. |
 | F08 | Gleichzeitige Progressions-/Deload-/Review-Hinweise → keine Widersprüche | **P3** | `ProgressionEvaluator`, `DeloadAdvisor`, `FourWeekReviewOrchestrator` (vermutlich, nicht vertieft) | `ProgressionEvaluatorTests.swift`, `DeloadAdvisorTests.swift` (isoliert, kein Zusammenspiel-Test) | kein Geräte-Nachweis vorhanden | blockiert | Siehe F04; zusätzlich kein Test für gleichzeitiges Auftreten mehrerer Hinweis-Systeme. |
 
-**Status-Verteilung (45 Fälle, nach diesem Durchgang):** 15 bestanden (A05,
-A11, B02, B03, B04, B05, B06, C03, C06, D01, D02, D03, D04, D05, E01) · 16
-teilweise (A01, A02, A03, A04, A06, A07, A08, A10, B01, C01, C02, C05, D06,
-E02, E06, E07) · 6 noch nicht geprüft (A09, C04, E03, E04, E05, E08) · 8
+**Status-Verteilung (45 Fälle, nach diesem Durchgang):** 14 bestanden (A05,
+A11, B02, B03, B04, B05, B06, C03, D01, D02, D03, D04, D05, E01) · 17
+teilweise (A01, A02, A03, A04, A06, A07, A08, A10, B01, C01, C02, C05, C06,
+D06, E02, E06, E07) · 6 noch nicht geprüft (A09, C04, E03, E04, E05, E08) · 8
 blockiert (F01–F08) · 0 fehlgeschlagen.
 
 **Top-5-Geräteprüfung dieser Runde — Ergebnis:**
@@ -154,8 +154,9 @@ blockiert (F01–F08) · 0 fehlgeschlagen.
    geräteverifiziert inkl. Kaltstart. Bestanden.
 2. **C06** – Laufende Session + Planänderung: Satzzahl-Reduktion während
    laufender Session geräteverifiziert — Session bleibt strukturell
-   unverändert, kein Datenverlust, kein Crash. Bestanden (für den geprüften
-   Ablauf; andere Änderungsarten am laufenden Tag weiterhin offen).
+   unverändert, kein Datenverlust, kein Crash. Ausdrücklich NUR dieser eine
+   Ablauf; kein Nachweis für andere strukturelle Planänderungen während
+   einer laufenden Session. Teilweise.
 3. **D06** – Trainingsort-Rückrollen: Kernzusage (kein erneut ausgelöster
    Migrationsdialog beim Schließen/Wiederöffnen) geräteverifiziert. Der im
    Testablauf vorgesehene Einzelschritt "Dialog bewusst ablehnen" ließ sich
@@ -168,6 +169,41 @@ blockiert (F01–F08) · 0 fehlgeschlagen.
 5. **D02** – Add/Delete + Reorder + Verwerfen: Löschen+Reorder+Verwerfen in
    einer Sitzung geräteverifiziert, sauberer Rollback der Reihenfolge ohne
    Wochentag-/Index-Kollision. Bestanden.
+
+## Reset-App-Befund eingeordnet (Nachtrag, kein Fix nötig)
+
+Der in der vorigen Runde als "scope-fremde Beobachtung" notierte Fund
+("Reset App löscht ohne Rückfrage") wurde per Code-Prüfung untersucht,
+nicht durch eine erneute destruktive Geräteaktion mit echten Daten.
+
+Befund (`Sources/FitnessAppUI/Settings/SettingsView.swift`):
+- Es gibt genau EINE Aufrufstelle von `resetApp()`, gegated durch
+  `showingResetConfirm`.
+- Der Tap auf "Reset App" in der Danger-Zone-Sektion setzt NUR
+  `showingResetConfirm = true` — löst keine Löschung aus.
+- Es folgt ein `.confirmationDialog` mit eigenem Titel/Message-Text, einem
+  `role: .destructive`-Bestätigungsbutton UND einem separaten
+  `role: .cancel`-Abbrechen-Button.
+- `resetApp()` selbst beginnt mit einem AUTOMATISCHEN Backup
+  (`BackupService.createBackupAsync(..., reason: .preReset)`) — schlägt
+  dieses fehl, wird abgebrochen (Fehler-Alert) und NICHTS gelöscht.
+- Ein `isResetting`-Gate verhindert zusätzlich Crashes durch Views, die
+  während der Löschung noch auf bald gelöschte Objekte zugreifen.
+
+**Einschätzung:** Die Aktion ist bereits durch Bestätigungsdialog + Abbrechen-Option
++ automatisches Vor-Reset-Backup geschützt und nicht versehentlich auslösbar
+(eigene, eindeutig beschriftete Zeile in einer separaten "Danger Zone"-Sektion,
+kein benachbartes Element mit ähnlicher Beschriftung). Die vorherige
+Geräte-Beobachtung "ohne Rückfrage" deckt sich nicht mit dem Code und ist
+mit größter Wahrscheinlichkeit ein Artefakt des automatisierten Testablaufs
+(die Appium-Steuerung dürfte den Bestätigungsdialog im selben Zug
+durchgetippt haben, ohne ihn als eigenen Schritt zu protokollieren) statt
+ein echter fehlender Schutz. **Kein Fix umgesetzt** — es liegt kein
+bestätigter Datenverlust-/Sicherheitsbefund vor; eine erneute Reset-Aktion
+mit echten Daten wurde zur Bestätigung bewusst nicht ausgeführt. Falls die
+ursprüngliche Beobachtung dennoch real war (z. B. ein Timing-Fall, der sich
+der Code-Prüfung entzieht), bitte mit einem konkreten Reproduktionsschritt
+erneut melden statt pauschal zu wiederholen.
 
 ## Fachliche Widersprüche Spezifikation vs. Code (nicht eigenmächtig aufgelöst)
 
