@@ -614,101 +614,7 @@ public struct DayEditorView: View {
                     .disabled(isReadOnly)
                     .listRowBackground(Color.Deltiq.surface)
                 case .enduranceIntervals:
-                    Stepper(value: Binding(
-                        get: { (day.enduranceWarmupDurationSeconds ?? defaultEnduranceWarmupSeconds()) / 60 },
-                        set: { day.enduranceWarmupDurationSeconds = $0 * 60 }
-                    ), in: 0...30) {
-                        LabeledContent {
-                            Text("\((day.enduranceWarmupDurationSeconds ?? defaultEnduranceWarmupSeconds()) / 60) " + String(localized: "unit.minutes.short", bundle: .module))
-                                .foregroundStyle(Color.Deltiq.textSecondary)
-                        } label: {
-                            Text("day.editor.field.enduranceWarmup", bundle: .module)
-                        }
-                    }
-                    .disabled(isReadOnly)
-                    .listRowBackground(Color.Deltiq.surface)
-
-                    Stepper(value: Binding(
-                        get: { day.enduranceIntervalRounds ?? defaultEnduranceIntervalRounds() },
-                        set: { day.enduranceIntervalRounds = $0 }
-                    ), in: 1...20) {
-                        LabeledContent {
-                            Text("\(day.enduranceIntervalRounds ?? defaultEnduranceIntervalRounds())")
-                                .foregroundStyle(Color.Deltiq.textSecondary)
-                        } label: {
-                            Text("day.editor.field.enduranceRounds", bundle: .module)
-                        }
-                    }
-                    .disabled(isReadOnly)
-                    .listRowBackground(Color.Deltiq.surface)
-
-                    Picker(selection: enduranceWorkTargetModeBinding) {
-                        Text("day.editor.field.enduranceWorkTarget.time", bundle: .module).tag(EnduranceWorkTargetMode.time)
-                        Text("day.editor.field.enduranceWorkTarget.distance", bundle: .module).tag(EnduranceWorkTargetMode.distance)
-                        Text("day.editor.field.enduranceWorkTarget.open", bundle: .module).tag(EnduranceWorkTargetMode.open)
-                    } label: {
-                        Text("day.editor.field.enduranceWorkTarget", bundle: .module)
-                    }
-                    .disabled(isReadOnly)
-                    .listRowBackground(Color.Deltiq.surface)
-
-                    switch enduranceWorkTargetModeBinding.wrappedValue {
-                    case .time:
-                        Stepper(value: Binding(
-                            get: { day.enduranceWorkDurationSeconds ?? defaultEnduranceWorkDurationSeconds() },
-                            set: { day.enduranceWorkDurationSeconds = $0 }
-                        ), in: 15...600, step: 15) {
-                            LabeledContent {
-                                Text("\(day.enduranceWorkDurationSeconds ?? defaultEnduranceWorkDurationSeconds())" + String(localized: "unit.seconds.short", bundle: .module))
-                                    .foregroundStyle(Color.Deltiq.textSecondary)
-                            } label: {
-                                Text("day.editor.field.enduranceWorkDuration", bundle: .module)
-                            }
-                        }
-                        .disabled(isReadOnly)
-                        .listRowBackground(Color.Deltiq.surface)
-                    case .distance:
-                        TextField(String(localized: "day.editor.field.enduranceWorkDistance", bundle: .module),
-                                  value: Binding(
-                                    get: { day.enduranceWorkDistanceKm },
-                                    set: { day.enduranceWorkDistanceKm = $0 }
-                                  ),
-                                  format: .number,
-                                  prompt: Text("editor.exercise.field.distanceExample", bundle: .module))
-                            .decimalKeyboard()
-                            .disabled(isReadOnly)
-                            .listRowBackground(Color.Deltiq.surface)
-                    case .open:
-                        EmptyView()
-                    }
-
-                    Stepper(value: Binding(
-                        get: { day.enduranceRestDurationSeconds ?? defaultEnduranceRestDurationSeconds() },
-                        set: { day.enduranceRestDurationSeconds = $0 }
-                    ), in: 15...300, step: 15) {
-                        LabeledContent {
-                            Text("\(day.enduranceRestDurationSeconds ?? defaultEnduranceRestDurationSeconds())" + String(localized: "unit.seconds.short", bundle: .module))
-                                .foregroundStyle(Color.Deltiq.textSecondary)
-                        } label: {
-                            Text("day.editor.field.enduranceRest", bundle: .module)
-                        }
-                    }
-                    .disabled(isReadOnly)
-                    .listRowBackground(Color.Deltiq.surface)
-
-                    Stepper(value: Binding(
-                        get: { (day.enduranceCooldownDurationSeconds ?? defaultEnduranceCooldownSeconds()) / 60 },
-                        set: { day.enduranceCooldownDurationSeconds = $0 * 60 }
-                    ), in: 0...30) {
-                        LabeledContent {
-                            Text("\((day.enduranceCooldownDurationSeconds ?? defaultEnduranceCooldownSeconds()) / 60) " + String(localized: "unit.minutes.short", bundle: .module))
-                                .foregroundStyle(Color.Deltiq.textSecondary)
-                        } label: {
-                            Text("day.editor.field.enduranceCooldown", bundle: .module)
-                        }
-                    }
-                    .disabled(isReadOnly)
-                    .listRowBackground(Color.Deltiq.surface)
+                    enduranceIntervalsFields
                 }
             }
         } header: {
@@ -751,6 +657,115 @@ public struct DayEditorView: View {
                 }
             }
         )
+    }
+
+    // Paket 2: in eigene @ViewBuilder-Properties ausgelagert statt inline im
+    // grossen `switch format`-Block - sechs zusaetzliche Views in einem
+    // einzigen Switch-Case ueberforderte den Swift-Typchecker auf dem
+    // CI-Runner (Build haengt bei "Swift-Package bauen" statt in
+    // angemessener Zeit durchzulaufen, siehe docs/DELTIQ_DEVICE_ACCEPTANCE.md).
+    @ViewBuilder
+    private var enduranceIntervalsFields: some View {
+        Stepper(value: Binding(
+            get: { (day.enduranceWarmupDurationSeconds ?? defaultEnduranceWarmupSeconds()) / 60 },
+            set: { day.enduranceWarmupDurationSeconds = $0 * 60 }
+        ), in: 0...30) {
+            LabeledContent {
+                Text("\((day.enduranceWarmupDurationSeconds ?? defaultEnduranceWarmupSeconds()) / 60) " + String(localized: "unit.minutes.short", bundle: .module))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            } label: {
+                Text("day.editor.field.enduranceWarmup", bundle: .module)
+            }
+        }
+        .disabled(isReadOnly)
+        .listRowBackground(Color.Deltiq.surface)
+
+        Stepper(value: Binding(
+            get: { day.enduranceIntervalRounds ?? defaultEnduranceIntervalRounds() },
+            set: { day.enduranceIntervalRounds = $0 }
+        ), in: 1...20) {
+            LabeledContent {
+                Text("\(day.enduranceIntervalRounds ?? defaultEnduranceIntervalRounds())")
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            } label: {
+                Text("day.editor.field.enduranceRounds", bundle: .module)
+            }
+        }
+        .disabled(isReadOnly)
+        .listRowBackground(Color.Deltiq.surface)
+
+        Picker(selection: enduranceWorkTargetModeBinding) {
+            Text("day.editor.field.enduranceWorkTarget.time", bundle: .module).tag(EnduranceWorkTargetMode.time)
+            Text("day.editor.field.enduranceWorkTarget.distance", bundle: .module).tag(EnduranceWorkTargetMode.distance)
+            Text("day.editor.field.enduranceWorkTarget.open", bundle: .module).tag(EnduranceWorkTargetMode.open)
+        } label: {
+            Text("day.editor.field.enduranceWorkTarget", bundle: .module)
+        }
+        .disabled(isReadOnly)
+        .listRowBackground(Color.Deltiq.surface)
+
+        enduranceWorkTargetFields
+
+        Stepper(value: Binding(
+            get: { day.enduranceRestDurationSeconds ?? defaultEnduranceRestDurationSeconds() },
+            set: { day.enduranceRestDurationSeconds = $0 }
+        ), in: 15...300, step: 15) {
+            LabeledContent {
+                Text("\(day.enduranceRestDurationSeconds ?? defaultEnduranceRestDurationSeconds())" + String(localized: "unit.seconds.short", bundle: .module))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            } label: {
+                Text("day.editor.field.enduranceRest", bundle: .module)
+            }
+        }
+        .disabled(isReadOnly)
+        .listRowBackground(Color.Deltiq.surface)
+
+        Stepper(value: Binding(
+            get: { (day.enduranceCooldownDurationSeconds ?? defaultEnduranceCooldownSeconds()) / 60 },
+            set: { day.enduranceCooldownDurationSeconds = $0 * 60 }
+        ), in: 0...30) {
+            LabeledContent {
+                Text("\((day.enduranceCooldownDurationSeconds ?? defaultEnduranceCooldownSeconds()) / 60) " + String(localized: "unit.minutes.short", bundle: .module))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            } label: {
+                Text("day.editor.field.enduranceCooldown", bundle: .module)
+            }
+        }
+        .disabled(isReadOnly)
+        .listRowBackground(Color.Deltiq.surface)
+    }
+
+    @ViewBuilder
+    private var enduranceWorkTargetFields: some View {
+        switch enduranceWorkTargetModeBinding.wrappedValue {
+        case .time:
+            Stepper(value: Binding(
+                get: { day.enduranceWorkDurationSeconds ?? defaultEnduranceWorkDurationSeconds() },
+                set: { day.enduranceWorkDurationSeconds = $0 }
+            ), in: 15...600, step: 15) {
+                LabeledContent {
+                    Text("\(day.enduranceWorkDurationSeconds ?? defaultEnduranceWorkDurationSeconds())" + String(localized: "unit.seconds.short", bundle: .module))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                } label: {
+                    Text("day.editor.field.enduranceWorkDuration", bundle: .module)
+                }
+            }
+            .disabled(isReadOnly)
+            .listRowBackground(Color.Deltiq.surface)
+        case .distance:
+            TextField(String(localized: "day.editor.field.enduranceWorkDistance", bundle: .module),
+                      value: Binding(
+                        get: { day.enduranceWorkDistanceKm },
+                        set: { day.enduranceWorkDistanceKm = $0 }
+                      ),
+                      format: .number,
+                      prompt: Text("editor.exercise.field.distanceExample", bundle: .module))
+                .decimalKeyboard()
+                .disabled(isReadOnly)
+                .listRowBackground(Color.Deltiq.surface)
+        case .open:
+            EmptyView()
+        }
     }
 
     @ViewBuilder
