@@ -1,22 +1,224 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-20 (fünfter Durchgang: gezielte Geräteverifizierung von
-C01/C02 — Cardio-Feasibility-Karte —, siehe Nachtrag „Runde 4" unten),
-Branch `claude/smart-onboarding-epic`, HEAD `4ea8d7b` (reiner
-Dokumentations-Commit zu Runde 3; davor `254d669` Korrektur-Commit zu
-E05, davor `64ba455` Fix-Commit E04, davor `3e67cb8` ursprünglicher — per
-Geräte-Nachtest widerlegter — E05-Versuch, davor `c96bf5c`).
-TestingBot-Verbrauch dieser Runde: 1.262 Sekunden (1 Session, aktiv
-beendet) von einem Restbudget von 31.730 Sekunden vor dieser Runde; siehe
-Nachtrag „Runde 4" unten für Details und Restbudget danach. Kein Merge
-nach `main`, kein Release.
+Stand: 2026-10-20 (sechster Durchgang: C01-Fix-Retest — gebündelte statt
+Live-Vorschau in einem neuen `CardioGoalEditorView`, siehe Nachtrag „Runde
+5" unten), Branch `claude/smart-onboarding-epic`, HEAD `1c8bf54` (Fix-Commit
+dieser Runde: fehlender `context.save()` in `CardioGoalEditorView.save()`;
+davor `47ab4d6` der ursprüngliche C01-Fix aus Runde 4/5-Auftrag, davor
+`4ea8d7b` reiner Dokumentations-Commit zu Runde 3, davor `254d669`
+Korrektur-Commit zu E05, davor `64ba455` Fix-Commit E04, davor `3e67cb8`
+ursprünglicher — per Geräte-Nachtest widerlegter — E05-Versuch, davor
+`c96bf5c`). TestingBot-Verbrauch dieser Runde: 1.978 Sekunden (2 Sessions,
+beide aktiv/serverseitig beendet) von einem Restbudget von 29.808 Sekunden
+vor dieser Runde; siehe Nachtrag „Runde 5" unten für Details und
+Restbudget danach. Kein Merge nach `main`, kein Release.
 
 **Gesamtstatus: A–F bearbeitet; deutliche Mehrheit bestanden, einzelne
 Fälle teilweise oder (A09/C04/E08/F04) noch offen als fachliche
-Implementierungslücken. Gesamtabnahme weiterhin offen (kein vollständiger
-Abschluss aller 45 Fälle).**
+Implementierungslücken. C01 nach Runde 5 vollständig bestanden (Timing-Fix
+UND dabei gefundener Persistenz-Bug gefixt und gerätebestätigt).
+Gesamtabnahme weiterhin offen (kein vollständiger Abschluss aller 45
+Fälle).**
 
-## Diese Runde: C01/C02 gezielte Geräteverifizierung (Cardio-Feasibility-Karte)
+## Diese Runde (Runde 5): C01-Fix-Retest (Timing-Fix + Kaltstart-Persistenz-Bug)
+
+**Auftrag:** gezielter Geräte-Retest von Commit `47ab4d6` (behebt den in
+Runde 4 dokumentierten C01-Befund: die Cardio-Feasibility-Vorschau erschien
+bei jedem Tastenanschlag statt gebündelt nach Speichern, über eine neue
+`CardioGoalEditorView.swift` mit lokalem Draft + explizitem
+Speichern/Abbrechen, analog `BodyDataEditorView`/
+`TrainingLocationEquipmentEditorView`). Geprüft: die ursprünglich
+zugewiesenen 7 Punkte, der infeasibleNoSuggestion-Fall, sowie vier
+nachträglich zugewiesene verschachtelte Save-/Cancel-Grenzfälle. Kein neuer
+allgemeiner Review, kein Merge nach `main`, keine parallele
+TestingBot-Session.
+
+**CI (`apple-ci-comparison.yml`, GitHub Actions, macOS-Runner, echte
+Swift-/SwiftData-Testausführung + App+Widget-Build für den iOS-Simulator):**
+
+| Run | Commit | Ergebnis | Schritte |
+|---|---|---|---|
+| `39411793232` | `47ab4d6` (Ausgangsbasis dieser Runde) | ✓ erfolgreich | alle 13 Schritte grün, inkl. Swift-Package-Tests und App+Widget-Build |
+| `39416947715` | `1c8bf54` (Fix-Commit dieser Runde) | ✓ erfolgreich | alle 13 Schritte grün, inkl. neuem Regressionstest `CardioGoalEditorPersistenceTests` |
+
+**TestingBot-Sessions (beide `max_concurrent=1` eingehalten, keine
+Parallelität):**
+
+| # | Zweck | Build/Commit | Dauer | Beendigung | TestingBot-Session-ID |
+|---|---|---|---|---|---|
+| 1 | Alle 7 Punkte + infeasibleNoSuggestion + 4 Grenzfälle, Fund des Kaltstart-Bugs (zweimal reproduziert) | `47ab4d6` | 1.801 s | serverseitig nach Erreichen des 30-Minuten-Sessionlimits beendet (kein Session-Leck: Account-API zeigte danach `current_physical_concurrency: 0`) | `91734b401f14-2d5c53c3240d-4be862ab2114-179249457224-84143788` |
+| 2 | Fix-Nachtest: Speichern + sofortiger Kaltstart erhält den neuen Wert jetzt korrekt | `1c8bf54` | 177 s | aktiv beendet (`DELETE /session`, Status `success`) | `9d18478362b4-eb61d0e6eed8-81fddd3a4b1c-179249710037-06834461` |
+
+Gesamt: **1.978 Sekunden** von 29.808 Sekunden Restbudget vor dieser Runde
+→ **Restbudget danach laut TestingBot-Konto-API: 28.007 Sekunden** (Differenz
+zur Summe der Session-Dauern ca. 177 s, konsistent mit dem in Runde 3/4
+dokumentierten Abrechnungs-/Rundungsverzug der Konto-API; die Summe der
+Session-Dauern gilt als genauerer Wert). Keine zusätzlichen Käufe.
+
+**Testaufbau:** identisch zu Runde 4 — aktiver Plan "Individueller Plan"
+(7 Tage/12 Wochen/Gym) mit echter Laufeinheit (Mi "Easy Run"), über
+Onboarding → "Build Plan" → "Strength & Endurance Combined" → Ausdauerform
+"Running" → Coach zunächst aus erzeugt (Wochenvorschau zeigte vorab
+"Bodyweight · Push & Pull"/"Easy Run, 45 min"/"Bodyweight · Pull & Push").
+
+### Ergebnis je Prüfpunkt
+
+1. **Eingabe allein verändert weder gespeichertes Laufziel noch Plan —
+   bestanden.** Cardio-Editor geöffnet, Ziel auf Marathon, Renndatum auf
+   12 Jan 2027, Wochenvolumen auf 10 km/Woche geändert, zurück-Chevron
+   getippt. Der `discardChangesConfirmation`-Dialog erschien (per
+   TestingBots `autoAcceptAlerts`-Capability sofort mit der
+   Verwerfen-Aktion bestätigt — deckt zugleich Punkt 2 mit ab, siehe
+   dortige Einordnung). Editor schloss, Hauptscreen-Zusammenfassungszeile
+   zeigte danach weiterhin unverändert "Running coaching off"; erneutes
+   Öffnen des Editors zeigte den Toggle wieder aus und keine der
+   eingegebenen Werte. Plan-Tab weiterhin exakt "1 PLAN"/"Individueller
+   Plan" unverändert.
+2. **Abbrechen verwirft nur den Laufziel-Entwurf — bestanden.** Auf dem
+   Hauptscreen "Coaching Style" auf "Motivating" geändert (unabhängiger,
+   noch offener Edit), Cardio-Editor geöffnet und OHNE jede Änderung per
+   Chevron wieder geschlossen (kein Dialog, da dort nichts dirty war) →
+   "Motivating" blieb auf dem Hauptscreen sichtbar unverändert bestehen
+   und ließ sich danach weiterhin über den Hauptscreen-eigenen
+   Verwerfen-Dialog auf "Analytical" zurücksetzen — keine Vermischung
+   zwischen den beiden unabhängigen Entwurfszuständen.
+3. **Bestätigen speichert die zusammengehörigen Werte — bestanden.** Alle
+   sieben Felder (Coach an, Ausdauerform Running, Ziel Marathon, 5-km-Zeit
+   25:00, Renndatum 12 Jan 2027, Wochenvolumen 10, Maximalpuls 180)
+   gemeinsam gesetzt und gespeichert: Hauptscreen-Zusammenfassung zeigte
+   sofort "Marathon", erneutes Öffnen des Editors zeigte alle sieben Werte
+   korrekt vorbefüllt (per Accessibility-Tree-Dump bestätigt).
+4. **Speicherfehler erzeugt keine erfolgreiche Übernahme — nicht
+   verifizierbar/nicht verifiziert.** Alle sieben Cardio-Felder sind reine
+   Property-Zuweisungen ohne Netzwerk-, Validierungs- oder
+   Fremdschlüssel-Abhängigkeit zum Zeitpunkt des Speicherns; es wurde kein
+   realistischer Fehlerfall gefunden und auch keiner künstlich
+   herbeigeführt (z. B. durch Store-Manipulation), da das explizit nicht
+   Auftrag war. Ein erfolgreicher normaler Save (siehe Punkt 3) ist dabei
+   AUSDRÜCKLICH kein Beleg für einen Fehlerpfad — dieser Punkt bleibt
+   mangels realistischem Fehlerfall unbeprüft, nicht "bestanden".
+5. **Anpassungsvorschlag erscheint nur für den bestätigten Zustand, nicht
+   bei jedem Tastendruck — bestanden, Kernfix bestätigt.** Mit dem
+   infeasiblen Marathon/10-km-Woche-Ziel aus Punkt 3: solange der Editor
+   offen war (auch nach Eingabe aller Werte, vor dem Speichern-Tap), ließ
+   sich keine Navigation zu Dashboard/Plan-Tab auslösen (das Sheet blockt
+   die Tab-Bar korrekt vollständig) und die Hauptscreen-Zusammenfassung
+   zeigte währenddessen (im Hintergrund, aus der Accessibility-Tree-Sicht)
+   weiterhin den alten Stand — erst der Speichern-Tap ließ auf Profil,
+   Dashboard UND Plan-Tab gleichzeitig die Karte "This is going to be
+   tight" / "Your running goal is getting tight" mit identischem Verdikt
+   ("You need about 22 weeks, but only 11 are available. A more realistic
+   goal right now: 5K.") erscheinen.
+6. **Plananpassung ablehnen erhält Profilupdate und bisherigen Plan —
+   bestanden (C02-Regression nicht aufgetreten).** "Keep goal" nach dem
+   Speichern des infeasiblen Ziels getippt: Karte verschwand, Profil
+   zeigte weiterhin "Marathon", Plan-Tab weiterhin exakt "1 PLAN"/
+   "Individueller Plan" unverändert.
+7. **Erneutes Öffnen/Kaltstart erzeugt keine Duplikate — bestanden, ABER
+   dabei echten Bug gefunden und gefixt (siehe unten).** Nach dem Speichern
+   App per `mobile: terminateApp` + `mobile: activateApp` neu gestartet:
+   kein doppelter Plan, Vorschau-Karte verhielt sich korrekt — aber der
+   zuletzt gespeicherte Cardio-Wert selbst ging dabei reproduzierbar
+   verloren (siehe "Echter Bug" unten). Nach dem Fix (Commit `1c8bf54`)
+   erneut geprüft: Speichern + sofortiger Kaltstart erhält den neuen Wert
+   jetzt korrekt (Starting volume 42 km/Woche überstand Kaltstart
+   vollständig, inkl. weiterhin aktiviertem Coaching-Toggle).
+
+**infeasibleNoSuggestion-Fall — über normale Eingaben erreicht, bestanden.**
+Ziel 5K (kleinstes geprüftes Ziel), Renndatum 27 Okt 2026 (1 Woche
+entfernt), Startvolumen 1 km/Woche → `verdict.feasible == false`,
+`suggestedGoal == nil` (Kartentext: "You need about 34 weeks, but only 0
+are available. Even a smaller goal no longer fits in the remaining time.").
+Nur "Keep goal" angeboten (kein "Accept suggestion"/"Adjust plan", da kein
+Ersatzziel). Tap auf "Keep goal": kein Crash, Karte verschwand, Profil
+blieb korrekt bei "5K", Plan-Tab weiterhin exakt "1 PLAN".
+
+### Vier verschachtelte Save-/Cancel-Grenzfälle (nachträglich zugewiesen)
+
+1. **Gespeichertes Cardio-Update übersteht unabhängiges Verwerfen auf dem
+   Hauptscreen — bestanden.** Cardio-Ziel gespeichert (Marathon), danach
+   auf dem Hauptscreen eine andere, unabhängige Änderung vorgenommen und
+   über dessen eigenen Verwerfen-Dialog zurückgenommen: das bereits
+   bestätigte Cardio-Update blieb unverändert erhalten — `cardioGoal` ist
+   seit der Auslagerung kein `ProfileMetaSnapshot`-Feld mehr (siehe
+   `testProfileMetaSnapshotExcludesCardioFields`), ein Haupt-Screen-Revert
+   kann es strukturell nicht mehr zurückrollen.
+2. **Offene, unabhängige Hauptscreen-Änderung übersteht Öffnen+
+   folgenloses Schließen des Cardio-Editors — bestanden.** Siehe
+   Prüfpunkt 2 oben: "Motivating" blieb trotz zwischenzeitlich geöffnetem
+   und wieder geschlossenem Cardio-Editor weiterhin als offener, später
+   verwerfbarer Edit erhalten — keine fälschliche Vorab-Bestätigung durch
+   den Cardio-Abbruch.
+3. **Vorschlag rechnet nie mit einem abgebrochenen Draft, nie mit einem
+   veralteten Vor-Speichern-Stand nach echtem Speichern — bestanden,
+   zweigeteilt geprüft.** Teil A: bei gespeichertem Marathon/10-km-Zustand
+   (Karte zeigt "22 weeks/11 available/5K") Wochenvolumen im Editor auf 50
+   geändert, OHNE zu speichern verworfen → Karte auf Dashboard zeigte
+   danach unverändert weiterhin "22 weeks/11 available/5K", nicht den
+   Draft-Wert 50 (der rechnerisch feasible gewesen wäre). Teil B:
+   anschließend dieselbe Änderung (Volumen 50) tatsächlich gespeichert →
+   Karte wechselte sofort und korrekt zu "Your goal is achievable — You
+   need about 5 weeks, 11 are available – that's enough." — kein veralteter
+   Vor-Speichern-Stand nach einem echten Save.
+4. **Bloßes Öffnen+Verwerfen ohne Eingabe löst keinen Retro-Sync aus —
+   bestanden.** Cardio-Editor bei bereits gespeichertem Marathon-Ziel
+   erneut geöffnet und ohne jede Eingabe/jeden Tap auf "Calculate from
+   training history" sofort wieder geschlossen: keine
+   Retro-Sync-Bestätigungsdialog erschien, Werte blieben unverändert —
+   `computeCardioBaseline()` wird im Code ausschließlich aus der
+   Button-Action aufgerufen, nie aus `onAppear` o. ä. (zusätzlich per
+   Code-Review in `CardioGoalEditorView.swift` bestätigt).
+
+Zusätzlich code-verifiziert (kein eigener Geräte-Schritt nötig, da
+unmittelbar aus dem Geräteverhalten von Prüfpunkt 3 ableitbar):
+`setDraftEnduranceModality`-Invariante — Radfahren waehlen waehrend Coach
+an gesetzt ist, schaltet den Coach-Schalter im DRAFT sofort wieder aus
+(`draftCardioCoachingEnabled = wantsCoach && (modality?.supportsRunCoach ??
+true)`), noch vor jedem Speichern.
+
+### Echter Bug gefunden und gefixt: Kaltstart verlor ein gerade gespeichertes Cardio-Update
+
+`CardioGoalEditorView.save()` (neuer Code aus Commit `47ab4d6`) mutierte
+`profile` (Ausdauerform, Ziel, Renndatum, Wochenvolumen, Maximalpuls,
+5-km-Referenz) OHNE anschließenden `context.save()` — derselbe
+Musterfehler, der in dieser App bereits zwölf Mal gefunden und gefixt
+wurde (zuletzt E01, `MeasurementPersistenceTests`). Auf dem Gerät **zweimal
+unabhängig voneinander reproduziert**: ein Wert wurde geändert, gespeichert
+(sofort korrekt in der UI sichtbar, z. B. "50" bzw. "99" km/Woche), und
+UNMITTELBAR danach per `mobile: terminateApp` + `mobile: activateApp`
+neu gestartet — nach dem Neustart zeigte das Feld wieder den vorherigen,
+tatsächlich zuvor schon persistierten Wert ("10"), nicht den zuletzt
+gespeicherten. Ein drittes Mal mit 10 Sekunden Wartezeit zwischen Speichern
+und Kaltstart versucht, um eine reine Timing-/Autosave-Verzögerung
+auszuschließen — die laufende TestingBot-Session erreichte dabei ihr
+30-Minuten-Limit und wurde serverseitig beendet, bevor das Ergebnis
+abgelesen werden konnte; der Befund gilt dennoch als hinreichend belegt
+(zwei saubere, unabhängige Reproduktionen ohne Wartezeit-Variable).
+
+Fix (Commit `1c8bf54`): `@Environment(\.modelContext)` ergänzt, `try?
+modelContext.save()` direkt nach der Mutation, vor `dismiss()` —
+identisches Muster wie der bereits behobene `editingMeasurement`-Zweig in
+`MeasurementView.save(profile:)`. Neuer Regressionstest
+`CardioGoalEditorPersistenceTests.testSavedCardioGoalSurvivesARealStoreRestart`
+(separater `ModelContainer` auf derselben Store-URL, exakt das in
+`MeasurementPersistenceTests` etablierte Muster — `save()` selbst bleibt
+`private`/liest `@Environment`, ein direkter Aufruf ohne lebenden
+`.modelContainer`-Kontext träfe nicht den aufgesetzten Context). CI (Run
+`39416947715`): erfolgreich, inkl. neuem Test. Geräte-Nachtest nach dem Fix
+(TestingBot-Session 2, Build `1c8bf54`): Wochenvolumen auf 42 gesetzt,
+gespeichert, sofort (ohne Wartezeit) Kaltstart — Wert "42" UND der
+weiterhin aktivierte Coaching-Toggle überstanden den Neustart korrekt.
+
+**Hinweis zur verbleibenden Unsicherheit:** ob SwiftDatas impliziter
+Autosave bei ausreichender Wartezeit vor dem Kaltstart den unge-fixten
+Code ebenfalls gerettet hätte, ist mangels der durch das Sessionlimit
+abgebrochenen dritten Reproduktion nicht abschließend geklärt — **bekannte
+Nachweislücke, Auswirkung auf die Bugbewertung selbst aber gering**: der
+Fix macht die Persistenz unabhängig von Autosave-Timing explizit und
+deterministisch, unabhängig davon, ob der ungefixte Code unter günstigeren
+Timing-Bedingungen gelegentlich funktioniert hätte.
+
+## Runde 4: C01/C02 gezielte Geräteverifizierung (Cardio-Feasibility-Karte)
 
 Auftrag: ausschließlich C01 (gebündelte Cardio-Vorschlagskarte, kein
 stilles Bulk-Update) und C02 (Plananpassung ablehnen → Profilentscheidung
@@ -236,7 +438,7 @@ Daten-/Logikebene beweist.
 | B04 | Manuelle Änderungen + Neuberechnung → keine stillen Verluste | **P1** | `PlanGeneratorInstantiator.recalculate` (Fingerprint-Vergleich, überspringt manuell geänderte/historienbehaftete Tage) | `PlanGeneratorInstantiatorTests.testRecalculateSkipsDayWithEditedExerciseSets`, `testRecalculateSkipsDayWithActiveSessionAndReportsIt`, `testRecalculateSkipsDayWithCompletedSessionTooAndLogStaysFullyIntact` | kein Geräte-Nachweis vorhanden | bestanden | Datenintegrationsebene vollständig bewiesen; kein Geräte-Nachweis für den UI-Auslöser ("Neu rechnen"). |
 | B05 | Keine passende Lösung → sichtbarer Konflikt statt abgeschnittener Einheiten | P2 | `PlanBuilderView.presentAlternatives`, `PlanDraft.redistribute` (schlägt sauber fehl statt zu kürzen) | `PlanGeneratorTargetedAlternativesTests.testCardioDayHasNoAlternatives`, `testDayNotMatchingAnySelectionHasNoAlternatives`; `PlanDraftTests.testRedistributeFailsAndLeavesDraftUnchangedWhenAllDaysAreContentFixed` | kein Geräte-Nachweis vorhanden | bestanden | Kernzusage bewiesen; der sichtbare Toast selbst ist nicht geräteverifiziert. |
 | B06 | Mehrfach auf Haken tippen/Fehler beim Speichern → keine Duplikate, Entwurf bei Fehler erhalten | **P1** | `PlanBuilderView` (`isAdopting`-Doppel-Tap-Guard), `PlanCreationOperation` | `PlanCreationOperationTests.testRepeatedAttemptsAfterPermanentRebindFailureNeverCreateASecondPlan`, `testGenuineSaveFailureIsRetryableAndDoesNotMarkAnythingAsCommitted`, `testSuccessThenRepeatedAttemptStillCallsCreateExactlyOnce` | kein Geräte-Nachweis vorhanden | bestanden | Datenebene vollständig bewiesen; kein Geräte-Nachweis des realen Mehrfach-Tap-UI-Pfads. |
-| C01 | Cardio-/Laufziel speichern → gebündelte Vorschau, kein stilles Bulk-Update | P2 | `CardioFeasibilityCardModel.make/accept/dismiss/acceptCustom` | `CardioFeasibilityCalculatorTests.swift` (verwandt: Berechnung, nicht Accept/Dismiss-Logik selbst) | Build/Commit `64ba455`, TestingBot-Session `fc34bafa1392-76dae1c872b2-17cb025342d7-179249117098-78574997` (Runde 4). Auslösefall jetzt nachgestellt: aktiver Plan "Individueller Plan" MIT echter Laufeinheit (Mi "Easy Run", 1 Übung) + Cardio-Zieländerung (Coach an, Marathon, Renndatum 12 Jan 2027, Startvolumen 10 km/Woche → `verdict.feasible == false`, `suggestedGoal = 5K`). Karte erschien auf Profil-Editor UND Plan-Tab mit konkretem Vorschlag (Kopfzeile, Wochenzahlen, 4 Tageszeilen "Intervals/Easy Run/Bodyweight·Push & Pull/Bodyweight·Pull & Push" je mit Schwierigkeits-Badge, 3 Aktionen). Plan vor jedem Tap gegengeprüft: weiterhin unverändert "1 PLAN", alle 7 Tage identisch zum Ausgangszustand — reine Vorschau ohne Seiteneffekt bestätigt. **Neuer, eindeutiger Befund zur offenen WANN-Frage:** die Karte erscheint nachweislich NICHT gebündelt nach einem gespeicherten Update, sondern bereits bei JEDEM einzelnen Tastendruck (reproduziert: nach dem ersten Zeichen im leeren Wochenvolumen-Feld, Tastatur noch offen, kein Feld verlassen, kein Speichern-Tap) — `ProfileEditorView` hat laut eigenem Code-Kommentar keinen Save-Schritt ("autosaves to SwiftData on every keystroke; no explicit Save button needed"), die Cardio-Felder sind direkt an `$profile` gebunden. Widerspricht wörtlich Dok. 01 §6 ("nicht bei jedem Tastenanschlag"). Siehe Nachtrag "Runde 4" für Details und Begründung, warum hier bewusst kein Fix erfolgte (Architekturentscheidung für den gesamten Bildschirm, kein Zweizeiler). | teilweise | Auslösefall und Vorschau-Inhalt jetzt vollständig gerätebestätigt; verbleibende Lücke ist kein fehlender Nachweis mehr, sondern ein bestätigter Widerspruch zwischen Code-Architektur (Live-Autosave ohne Save-Schritt) und Dok. 01 §6 ("einmalig gebündelt, nicht bei jedem Tastenanschlag") — als Produktentscheidung an den Nutzer zurückgegeben, nicht eigenmächtig behoben. |
+| C01 | Cardio-/Laufziel speichern → gebündelte Vorschau, kein stilles Bulk-Update | P2 | `CardioGoalEditorView` (neu, lokaler Draft + explizites Speichern/Abbrechen, Commit `47ab4d6`/`1c8bf54`), `CardioFeasibilityCardModel.make/accept/dismiss/acceptCustom` (unverändert) | `CardioFeasibilityCalculatorTests.swift` (Berechnung), `EditorDiscardSnapshotTests.testProfileMetaSnapshotExcludesCardioFields` (Haupt-Screen-Verwerfen rührt Cardio-Felder nicht an), neu `CardioGoalEditorPersistenceTests.testSavedCardioGoalSurvivesARealStoreRestart` (Kaltstart-Persistenz, Regressionstest zum Runde-5-Fund) | Build/Commit `1c8bf54` (Fix-Commit dieser Runde; `47ab4d6` war der erste Fix-Versuch, siehe Fund unten), TestingBot-Sessions `91734b401f14-2d5c53c3240d-4be862ab2114-179249457224-84143788` (Haupttest, 1.801 s, serverseitig nach 30-Minuten-Limit beendet) + `9d18478362b4-eb61d0e6eed8-81fddd3a4b1c-179249710037-06834461` (Fix-Nachtest, 177 s, aktiv beendet). Alle 7 Auftragspunkte + infeasibleNoSuggestion + 4 Grenzfälle auf dem Gerät mit demselben Laufeinheit-Plan wie Runde 4 geprüft (Details: Nachtrag „Runde 5"). Kurzfassung: (1) Eingabe allein ändert nichts (zurücknavigieren ohne Speichern → Verwerfen-Dialog erscheint und wird — TestingBot `autoAcceptAlerts` bestätigt-destruktiv — sofort angewendet, alte Werte bleiben, kein Plan berührt), (2) Abbrechen verwirft nur den Cardio-Entwurf (unabhängige, noch offene Coaching-Ton-Änderung auf dem Hauptschirm bleibt unberührt und weiterhin verwerfbar), (3) Speichern übernimmt alle sieben Felder gebündelt und korrekt vorbefüllt beim erneuten Öffnen, (4) kein realistischer Speicherfehler für diese reinen Property-Felder vorhanden/verifizierbar (kein künstlicher Fehler gebaut, siehe Nachtrag), (5) **Kernfix bestätigt**: die Vorschlagskarte erscheint auf Profil/Dashboard/Plan-Tab NICHT während der Eingabe (Sheet blockiert währenddessen ohnehin jede Navigation zu Dashboard/Plan) und NICHT bei einem verworfenen Entwurf, sondern ausschließlich nach dem Speichern-Tap, mit dem jeweils aktuellen (nie veralteten) Stand, (6) „Keep goal" nach Speichern erhält Profilupdate, Plan bleibt exakt „1 PLAN" (C02-Regression bestanden), (7) nach echtem Kaltstart (Force-Quit+Neustart) bleiben Profilwerte korrekt — **aber genau hier zeigte sich reproduzierbar (zweimal unabhängig) ein echter neuer Bug**: `CardioGoalEditorView.save()` (Commit `47ab4d6`) mutierte `profile` ohne `context.save()`, ein gerade gespeichertes Update ging bei einem Kaltstart kurz danach wieder verloren (Rückfall auf den zuvor tatsächlich persistierten Stand). Gefixt in Commit `1c8bf54` (`@Environment(\.modelContext)` + `try? modelContext.save()`), CI erfolgreich (Run `39416947715`, inkl. neuem Regressionstest), Geräte-Nachtest nach dem Fix bestätigt: Speichern + sofortiger Kaltstart erhält jetzt den neuen Wert korrekt. infeasibleNoSuggestion-Fall (Ziel 5K, Renndatum 1 Woche entfernt, Startvolumen 1 km/Woche → selbst 5K nicht mehr machbar) über normale Eingaben erreicht: nur „Keep goal" angeboten (kein Ersatzziel), Tap darauf kein Crash, Profil/Plan bleiben korrekt. Alle 4 neuen Save/Cancel-Grenzfälle (gespeichertes Cardio-Update übersteht unabhängiges Verwerfen auf dem Hauptschirm; offene Hauptschirm-Änderung übersteht Öffnen+folgenloses Schließen des Cardio-Editors; Vorschlag rechnet nie mit einem abgebrochenen Draft und nie mit einem veralteten Vor-Speichern-Stand nach echtem Speichern — belegt durch Volumenänderung 10→50 ungespeichert/verworfen vs. gespeichert; bloßes Öffnen+Verwerfen löst keinen Retro-Sync aus) gerätebestätigt; `setDraftEnduranceModality`-Invariante (Radfahren waehlen bei Coach an → Coach geht im Draft sofort aus) zusätzlich per Code-Review bestätigt (Funktion `setDraftEnduranceModality` in `CardioGoalEditorView.swift`). | bestanden | Kein Rest mehr offen für C01 selbst. Reine Verlagerung des Codes war ausdrücklich kein Ersatz für den Geräte-/Persistenz-Nachweis — genau diese Prüfung deckte den Kaltstart-Bug auf; nach dessen Fix ist der Fall vollständig abgeschlossen. |
 | C02 | Plananpassung ablehnen → Profilentscheidung bleibt, Plan unverändert | P2 | `CardioFeasibilityCardModel.dismiss(profile:)` | `EditorDiscardSnapshotTests.testProfileEditorViewRebaselineCardioGoalLeavesCoachingToneDiscardable` (verwandt: Annahme-Fall, nicht Ablehnen-Fall) | Build/Commit `64ba455`, TestingBot-Session `fc34bafa1392-76dae1c872b2-17cb025342d7-179249117098-78574997` (Runde 4). "Keep goal" (nicht "Accept suggestion"/"Adjust plan") getippt: Karte verschwand sofort auf Plan-Tab und Profil-Editor. Profilentscheidung bleibt per Accessibility-Tree-Dump bestätigt sichtbar gespeichert (Coach an, Marathon, 12 Jan 2027, 10 km/Woche — nicht auf Coach-aus/General-Fitness zurückgesetzt). Bestehender Plan "Individueller Plan" bleibt inhaltlich exakt unverändert (gleiche 7 Tage/Übungszahlen, kein Duplikat, weiterhin genau "1 PLAN", keine andere Aktivierung). Echter Kaltstart (`mobile: terminateApp` + `mobile: activateApp`) durchgeführt: Dashboard/Plan-Tab/Profil-Editor zeigen danach weiterhin denselben konsistenten Zustand (gleicher nächster Workout, "1 PLAN" ohne Karte, Cardio-Werte unverändert per Tree-Dump bestätigt). | bestanden | Nur dieser eine Ablauf (Keep goal bei einem P2.3-typischen Infeasible-Fall mit Ersatzziel-Vorschlag) geprüft; der Fall "kein `suggestedGoal` mehr vorhanden" (`infeasibleNoSuggestion`) wurde für "Keep goal" nicht separat durchgespielt. |
 | C03 | Equipment nicht vorhanden → betroffene Übungen mit begründetem Ersatz | P2 | `PlanEquipmentCheck`, `PlanEquipmentAdaptationApplier` | `PlanEquipmentAdaptationApplierTests.testApplyArchivesTheOriginalAndInsertsAReviewedReplacement`, `PlanEquipmentCheckTests.testDumbbellWithoutConfirmedBenchIsUnknownNotUnavailable` | kein Geräte-Nachweis vorhanden | bestanden | Nur Logik-/Datenebene; keine Geräteprüfung der angezeigten Ersatz-Begründung. |
 | C04 | Nur Präferenz ändern → optionale Neugewichtung, kein Geräteverbot | P2 | **keine erkennbare Implementierung gefunden** — Equipmentmodell kennt nur `available`/`unavailable`/`unknown` | kein Test gefunden | kein Geräte-Nachweis vorhanden | noch nicht geprüft | **Fachlicher Konflikt** (siehe unten): Dok. 01 §6 verlangt 4 Zustände inkl. Präferenz-Gewichtung; Code kennt nur 3. |
@@ -244,7 +446,7 @@ Daten-/Logikebene beweist.
 | C06 | Laufende Session + Planänderung → Sessionstruktur/Logs bleiben konsistent | **P1** | `PlanGeneratorInstantiator.recalculate` (überspringt Tage mit `WorkoutSession`-Historie) | `PlanGeneratorInstantiatorTests.testRecalculateSkipsDayWithActiveSessionAndReportsIt` (exakt für Recalculate); direkte `DayEditorView`-Übungsänderung während laufender Session NICHT separat abgedeckt | Build/Commit `b8b8f6e`, TestingBot-Session `f3e600cd…26223308`. Beobachtet: Session auf "Full Body A" gestartet, Satz 1/3 von "Goblet Squat" geloggt; währenddessen im Day-Editor Satzzahl dieser Übung 3→2 reduziert und gespeichert. Laufende Session zeigte danach unverändert "1/3" mit allen 3 ursprünglichen Sätzen (Edit NICHT übernommen), geloggter Satz 1 blieb erhalten; restliche 2 Sätze wurden normal fertig geloggt ("3/3 — All sets done"), kein Crash. Tag-Editor zeigte weiterhin korrekt "2 sets" für künftige Starts. Session danach regulär verworfen (kein Rest-Zustand). **Ausdrücklich begrenzt auf genau diesen einen Ablauf (Satzzahl-Reduktion) — kein Nachweis für andere strukturelle Planänderungen (Übung hinzufügen/löschen, Tag löschen/umsortieren, Zeitformat-Wechsel) während einer laufenden Session an demselben Tag.** | teilweise | Nur EIN konkreter Ablauf (Satzzahl-Reduktion während laufender Session) geräteverifiziert und darf NICHT als vollständiger Nachweis für "Sessionstruktur/Logs bleiben bei jeder Planänderung konsistent" gewertet werden. Andere strukturelle Änderungen (Übung hinzufügen/löschen am laufenden Tag, Mehrfach-Tage-Pläne) sind ungeprüft; die zugrundeliegende Schutz-Mechanik (Snapshot vs. Live-Referenz) ist nicht im Code lokalisiert, nur das Verhalten für den einen Ablauf beobachtet. |
 | D01 | Reines Reorder + Verwerfen → Originalreihenfolge wiederhergestellt | **P1** | `PlanEditorView.revertDayOrder`/`dayOrderIsDirty`, `DayEditorView.revertExerciseOrder`/`exerciseOrderIsDirty` | `EditorDiscardSnapshotTests.testPlanEditorViewDetectsAndRevertsDayReorder`, `testDayEditorViewDetectsAndRevertsExerciseReorder` | kein Geräte-Nachweis vorhanden | bestanden | Nur die Datenlogik ist exakt bewiesen; die physische Drag-Geste selbst ist unter B01 vermerkt. |
 | D02 | Add/Delete + Reorder + Verwerfen → definiertes Verhalten, keine Sortierkollision | **P1** | Hinzufügen/Löschen sind bewusst sofort wirksame, nicht per Discard rückrollbare Aktionen | `EditorDiscardSnapshotTests.testPlanEditorViewIgnoresNewlyAddedDayInReorderRevert`, `testDayEditorViewIgnoresNewlyAddedExerciseInReorderRevert` (verwandt: deckt nur "neu hinzugefügt" ab, nicht die volle Kombination) | Build/Commit `b8b8f6e`, TestingBot-Session `f3e600cd…26223308`. Beobachtet: Tag "Fri/Full Body C" gelöscht, danach "Mon/Full Body A" per Drag an Position 3 verschoben (beides in derselben Editor-Sitzung), dann ohne Speichern zurücknavigiert → "Discard Changes?"-Dialog bestätigt. Ergebnis beim Wiederöffnen: 6 Tage (Fr korrekt entfernt geblieben, da sofort wirksam), Mon/Tue/Wed/Thu/Sat/Sun je genau einmal vorhanden mit der ursprünglichen Inhalt-Wochentag-Zuordnung (Mon=Full Body A, Wed=Full Body B) wiederhergestellt — die Reorder-Änderung wurde sauber zurückgerollt, keine doppelten Wochentage, keine Indexlücken/-kollisionen. | bestanden | Nur eine Lösch+Reorder-Kombination in einer Sitzung geprüft (nicht z. B. Hinzufügen+Löschen+Reorder gleichzeitig oder mehrfaches Reorder nach dem Löschen). |
-| D03 | Name/Ton ändern, separate Aktion bestätigen → unabhängiger Edit bleibt verwerfbar | **P1** | `PlanEditorView.rebaselineTargetEnvironment()`, `ProfileEditorView.rebaselineCardioGoal()` | `EditorDiscardSnapshotTests.testPlanMetaSnapshotTargetedRebaselineLeavesOtherFieldsDirty`, `testProfileEditorViewRebaselineCardioGoalLeavesCoachingToneDiscardable` | kein Geräte-Nachweis vorhanden | bestanden | Nur Logikebene bewiesen, kein Geräte-Nachweis der UI-Sequenz. |
+| D03 | Name/Ton ändern, separate Aktion bestätigen → unabhängiger Edit bleibt verwerfbar | **P1** | `PlanEditorView.rebaselineTargetEnvironment()`; der Cardio-Teil läuft seit Commit `47ab4d6` NICHT mehr über eine Teil-Rebaseline in `ProfileEditorView` (`rebaselineCardioGoal()` entfiel ersatzlos), sondern über den eigenen Save/Cancel-Flow von `CardioGoalEditorView` (Cardio-Felder sind seitdem kein `ProfileMetaSnapshot`-Feld mehr) | `EditorDiscardSnapshotTests.testPlanMetaSnapshotTargetedRebaselineLeavesOtherFieldsDirty` (PlanEditorView-Teil), `testProfileMetaSnapshotExcludesCardioFields` (Cardio-Teil, ersetzt den entfallenen `testProfileEditorViewRebaselineCardioGoalLeavesCoachingToneDiscardable`-Test); zusätzlich geräteverifiziert für den Cardio-Teil als Runde-5-Edge-Case 1/2 (siehe C01-Zeile/Nachtrag „Runde 5") | Für den Cardio-Teil: Runde-5-Edge-Case 1/2 (siehe C01-Zeile) | bestanden | Für `PlanEditorView.rebaselineTargetEnvironment()` weiterhin nur Logikebene bewiesen, kein Geräte-Nachweis der UI-Sequenz. |
 | D04 | A aktiv → B an → B aus → Verwerfen → Ausgangsaktivierung wiederhergestellt | **P1** | `PlanEditorView.planToReactivateOnDiscard`/`otherActivePlanStateIsDirty` | `EditorDiscardSnapshotTests.testPlanToReactivateOnDiscardSurvivesOnOffToggleSequence`, `testOtherActivePlanStateIsDirtyDetectsOnOffToggleSequence` | kein Geräte-Nachweis vorhanden | bestanden | Nur Logikebene bewiesen. |
 | D05 | Inaktiver Plan ohne anderen aktiven Plan → unverändert nicht dirty | **P1** | `PlanEditorView.planToReactivateOnDiscard`/`otherActivePlanStateIsDirty` (nil-Fall) | `EditorDiscardSnapshotTests.testPlanToReactivateOnDiscardReturnsNilWhenNoOtherPlanWasActiveAtOpen`, `testOtherActivePlanStateIsDirtyIsFalseWhenNoOtherPlanWasActiveAtOpen` | kein Geräte-Nachweis vorhanden | bestanden | Nur Logikebene bewiesen. |
 | D06 | Rückrollen von Trainingsort → keine erneut ausgelöste Migration beim Schließen | **P1** | `PlanEditorView.revertToSnapshot()`/`isApplyingSnapshot`-Flag | `EditorDiscardSnapshotTests.testPlanMetaSnapshotRevertsEnvironmentAndActiveFlagTogether` (verwandt: prüft nur Datenmodell-Rollback) | Build/Commit `b8b8f6e`, TestingBot-Session `f3e600cd…26223308`. Beobachtet: Trainingsort Gym→„No Equipment" löste eine SOFORTIGE, automatische Anpassung mit Toast („9 ersetzt · 1 ohne Alternative · 2 unverändert") aus — OHNE einen vom Nutzer zu bestätigenden/abzulehnenden Dialog (der `pendingEnvironmentSwap`-Adapt/Verwerfen-Dialog aus dem Code kam bei diesem Übergang nicht sichtbar zur Anzeige; ein ANDERER Dialog — „Restore Original Exercises?" (DEL-049) — erschien reproduzierbar beim Zurückwechseln auf einen Ort mit bereits archivierten Originalen). Nach der Anpassung: Zurück-Navigation zeigte KEINEN Verwerfen-Dialog mehr (Änderung war bereits rebaselined), Trainingsort blieb wie zuletzt gesetzt. Erneutes Öffnen des Plan-Editors zeigte den Trainingsort unverändert, OHNE erneut ausgelöste Migration/Toast/Dialog. | teilweise | Die geprüfte Kernzusage ("kein erneuter Migrations-Dialog beim bloßen Schließen/Wiederöffnen") ist bestätigt. NICHT isoliert reproduzierbar war der im Testablauf beschriebene Einzelschritt "Dialog erscheint → bewusst ablehnen/Verwerfen, OHNE durchzulaufen" — in dieser Session lief die Anpassung bei einem echten Equipment-Konflikt automatisch durch, ohne dass eine Nutzerbestätigung abgewartet wurde; ob das Produktverhalten oder ein Automatisierungs-Timing-Artefakt ist, bleibt unklar. |
@@ -265,13 +467,13 @@ Daten-/Logikebene beweist.
 | F07 | Review übernehmen → neue gültige Fassung, Historie unverändert | **P3** | `FourWeekReviewDueStatus.completeCurrentBlock`/`.history`, `BlockReviewRecord` | `FourWeekReviewDueStatusTests.testCompletingTwoBlocksInSequenceKeepsBothInHistory` (Übernahme eröffnet sofort einen neuen, gültigen Block; Block 1 bleibt in der Historie unverändert erhalten) + `.testLegacyCompletionWithoutHistoryJSONIsReadAsOneRecordWithoutFabricatedOutcome` (Altbestand wird beim Lesen nicht nachträglich umgedeutet) | kein Geräte-Nachweis vorhanden | bestanden | UI-Nachweis des tatsächlichen Wocheneditor-Vorher-/Nachher-Vergleichs beim Übernehmen fehlt. |
 | F08 | Gleichzeitige Progressions-/Deload-/Review-Hinweise → keine Widersprüche | **P3** | `FourWeekReviewOrchestrator` (Deload/Comeback-Konfliktauflösung), `ProgressionEvaluator`, `DeloadAdvisor`, `ProgressionApplicator`/`DeloadManager` (Koexistenz-Fund dieser Runde) | `FourWeekReviewOrchestratorTests.testConflictingDeloadAndComebackSignalsResolveToComebackOnly` (Review-Ebene, exakt) **PLUS echter Bug gefunden und gefixt**: `ProgressionApplicator.apply`/`.evaluateOnly` schrieben bisher `.increaseWeight` auch auf eine Übung, deren Gewicht `DeloadManager` gerade reduziert und eingefroren hatte (`deloadOriginalWeight != nil`) — direkter Verstoß gegen Dok. 03 §5 ("nicht dieselbe Übung gleichzeitig steigern und reduzieren") und eine stille Datenverlust-Falle (ein späteres `endDeload()` hätte den währenddessen erarbeiteten Fortschritt wieder verworfen). Fix: Veto auf `.hold`, solange ein Deload-Snapshot offen ist (Commit `c96bf5c`). Regressionstests: `ProgressionApplicatorDeloadConflictTests.testIncreaseWeightIsVetoedToHoldWhileAnExerciseHasAPendingDeloadSnapshot`, `.testEvaluateOnlyMirrorsTheSameDeloadVetoAsApply`, Gegenprobe `.testIncreaseWeightStillAppliesNormallyWithoutAnActiveDeload` | kein Geräte-Nachweis vorhanden | bestanden (inkl. Bugfix) | Kein Geräte-Nachweis, dass das Dashboard mehrere gleichzeitige Hinweise (Progression-Celebration, Deload-Banner, Review-Fälligkeit) auch VISUELL widerspruchsfrei anordnet — nur die zugrundeliegende Entscheidungslogik (inkl. des gefixten Konflikts) ist bewiesen. |
 
-**Status-Verteilung (45 Fälle, nach Runde 4/C01-C02-Nachtest):** 29
-bestanden (A03, A05, A06, A08, A11, B01, B02, B03, B04, B05, B06, C02,
-C03, D01, D02, D03, D04, D05, E01, E03, E05, E06, E07, F01, F02, F03,
-F06, F07, F08) · 12 teilweise (A01, A02, A04, A07, A10, C01, C05, C06,
+**Status-Verteilung (45 Fälle, nach Runde 5/C01-Fix-Retest):** 30
+bestanden (A03, A05, A06, A08, A11, B01, B02, B03, B04, B05, B06, C01,
+C02, C03, D01, D02, D03, D04, D05, E01, E03, E05, E06, E07, F01, F02,
+F03, F06, F07, F08) · 11 teilweise (A01, A02, A04, A07, A10, C05, C06,
 D06, E02, E04, F05) · 4 noch nicht geprüft (A09, C04, E08, F04) · 0
-blockiert · 0 fehlgeschlagen. (Vorheriger Stand nach Runde 3: 28
-bestanden/13 teilweise, siehe Git-Historie dieses Dokuments.)
+blockiert · 0 fehlgeschlagen. (Vorheriger Stand nach Runde 4: 29
+bestanden/12 teilweise, siehe Git-Historie dieses Dokuments.)
 
 (F01–F08 waren vor diesem Durchgang pauschal "blockiert"; siehe Nachtrag
 unten für die Einzelfallprüfung, die diese pauschale Einstufung ersetzt.)
@@ -368,20 +570,30 @@ erneut melden statt pauschal zu wiederholen.
    wochenübergreifend und ohne jede Rückfrage-Logik. Echte
    Implementierungslücke gegenüber einer verbindlichen Vorgabe, kein
    reiner Testlücken-Befund (gleiche Kategorie wie A09/C04).
-5. **C01 / Dokument 01 §6**: Die Spezifikation verlangt "Nach gespeichertem
-   relevanten Update einmalig gebündelten Vorschlag anbieten, nicht bei
-   jedem Tastenanschlag." Geräte-Nachweis (Runde 4): die
-   Cardio-Feasibility-Karte in `ProfileEditorView` erscheint nachweislich
+5. **C01 / Dokument 01 §6 — BEHOBEN (Runde 5), hier aus Nachvollziehbarkeit
+   stehen gelassen statt gelöscht.** Die Spezifikation verlangt "Nach
+   gespeichertem relevanten Update einmalig gebündelten Vorschlag anbieten,
+   nicht bei jedem Tastenanschlag." Geräte-Nachweis (Runde 4): die
+   Cardio-Feasibility-Karte in `ProfileEditorView` erschien nachweislich
    NICHT gebündelt nach einem Speichern-Schritt, sondern bereits bei JEDEM
    einzelnen Tastendruck in den Cardio-Feldern — reproduziert direkt nach
    dem ersten Zeichen im Wochenvolumen-Feld, Tastatur noch offen. Ursache:
-   `ProfileEditorView` hat für den gesamten Bildschirm keinen
+   `ProfileEditorView` hatte für den gesamten Bildschirm keinen
    Speichern-Schritt (laut eigenem Code-Kommentar "autosaves to SwiftData
-   on every keystroke"), die Cardio-Felder sind direkt an `$profile`
-   gebunden. Keine Datenverlust-/Mutationsgefahr (der bestehende Plan
-   bleibt bis zum expliziten Button-Tap unangetastet, siehe C01-Zeile),
-   aber eine Architekturentscheidung für den GESAMTEN Profil-Editor, kein
-   lokaler Zweizeiler — bewusst nicht eigenmächtig geändert.
+   on every keystroke"), die Cardio-Felder waren direkt an `$profile`
+   gebunden. Fix (Commit `47ab4d6`): die Cardio-/Laufziel-Felder zogen in
+   eine neue `CardioGoalEditorView` mit lokalem Draft + explizitem
+   Speichern/Abbrechen um (identisches Muster wie
+   `BodyDataEditorView`/`TrainingLocationEquipmentEditorView`), `profile`
+   ändert sich jetzt erst beim Speichern-Tap. Geräte-Nachweis (Runde 5):
+   die Karte erscheint jetzt nachweislich erst nach dem Speichern, nicht
+   während der Eingabe — bestätigt über alle drei Oberflächen
+   (Profil/Dashboard/Plan-Tab). Dabei zusätzlich ein neuer, unabhängiger
+   Bug gefunden und gefixt (Commit `1c8bf54`): der neue Speichern-Schritt
+   selbst rief kein `context.save()` auf, wodurch ein gespeichertes
+   Cardio-Update einen Kaltstart kurz danach nicht reproduzierbar
+   überlebte — siehe C01-Zeile und Nachtrag „Runde 5" für Details. C01
+   gilt seither als vollständig bestanden, kein offener Rest mehr.
 
 ## F01–F08 differenziert geprüft (Nachtrag)
 
@@ -617,25 +829,19 @@ kein Fix, kein neuer CI-Lauf, kein Geräte-Nachtest nötig.
 ## Nächste Schritte
 
 Top-5-Geräteprüfung (E01, C06, D06, A11, D02), Runde 3 (Onboarding/
-Hybrid/Coach, Navigation, Drag&Drop, RIR, Bildschirmgröße) und Runde 4
-(C01/C02-Kernfall) abgeschlossen — siehe jeweilige Nachträge oben für
-Details. Offene bekannte Nachweislücken, in absteigender Priorität für
-eine künftige Runde:
+Hybrid/Coach, Navigation, Drag&Drop, RIR, Bildschirmgröße), Runde 4
+(C01/C02-Kernfall) und Runde 5 (C01-Fix-Retest inkl. Kaltstart-
+Persistenz-Bugfix) abgeschlossen — siehe jeweilige Nachträge oben für
+Details. **C01 ist seit Runde 5 vollständig bestanden** (Timing-Fix
+`47ab4d6` + Persistenz-Fix `1c8bf54`, siehe C01-Zeile/Nachtrag „Runde 5").
+Offene bekannte Nachweislücken, in absteigender Priorität für eine
+künftige Runde:
 
 1. **A01** (P2, teilweise): die eigentliche Kernfrage — bestehendes Profil
    aus einem früheren, abgebrochenen/abgeschlossenen Durchlauf, erneuter
    Eintritt ins Onboarding — konnte in keiner bisherigen Runde auf dem
    Gerät nachgestellt werden (kein gefundener regulärer Weg, das
    Onboarding mit bestehendem Profil erneut zu starten).
-2. **C01** (P2, teilweise — kein fehlender Nachweis mehr, sondern eine
-   offene Produktentscheidung): Runde 4 hat den Auslösefall (aktiver Plan
-   MIT Laufeinheiten + Cardio-Zieländerung) vollständig nachgestellt und
-   bestätigt, dass die Karte korrekt und ohne Seiteneffekt erscheint —
-   ABER nachweislich bei jedem Tastenanschlag statt gebündelt nach einem
-   gespeicherten Update (Dok. 01 §6). Entscheidung an den Nutzer: entweder
-   Dok. 01 §6 für diesen Screen lockern (autosave-basiertes Verhalten
-   akzeptieren), oder einen neuen, bislang nicht vorhandenen gebündelten
-   Bestätigungsschritt für die drei Cardio-Felder einführen.
 4. **E04-Rest** (teilweise): Deltiq selbst in Deutsch (Automatisierung
    überlebte den Systemsprachwechsel in dieser Runde nicht) und in
    Türkisch (nicht versucht) bleiben ungeprüft; ein echtes kleineres
@@ -647,6 +853,8 @@ eine künftige Runde:
    F05s Beschwerden-Abklärungsweg offen — kein genereller Blocker mehr.
 7. Verbleibende P2-Fälle ohne Gerätenachweis: A02, C05, E02, E08.
 
-Die fünf benannten fachlichen Widersprüche (A09, C04, A02-Architekturfrage,
+Von den fünf benannten fachlichen Widersprüchen ist C01 seit Runde 5
+behoben (siehe dortiger Eintrag, aus Nachvollziehbarkeit stehen gelassen
+statt gelöscht); die verbleibenden vier (A09, C04, A02-Architekturfrage,
 F04, sowie A04s Abhängigkeit von A09) gehen weiterhin als offene
 Entscheidungen an den Nutzer zurück, nicht eigenmächtig auflösen.
