@@ -483,7 +483,13 @@ public struct PlanBuilderView: View {
         }
         actions.append(DeltiqHeaderAction(
             systemImage: "checkmark",
-            isDisabled: (draft?.days.isEmpty ?? true) || isAdopting,
+            // A12 (Paket 1): ein ungeloester distributionConflict (z. B.
+            // Hybrid+Both bei zu wenigen Tagen) darf nicht durch einen
+            // allgemeinen Uebernehmen-Tap stillschweigend als "Kompromiss
+            // akzeptiert" gelten - Uebernahme bleibt blockiert, bis der
+            // Nutzer ueber die Tage- oder Ziel-/Ausdauerform-Auswahl aktiv
+            // etwas aendert (beide bereits bestehende Schritte).
+            isDisabled: (draft?.days.isEmpty ?? true) || isAdopting || distributionConflict != nil,
             accessibilityLabel: String(localized: isRetry ? "planBuilder.result.retryResolve" : "planBuilder.result.adopt", bundle: .module)
         ) {
             adoptPlan()
@@ -1463,10 +1469,16 @@ public struct PlanBuilderView: View {
     }
 
     /// A12 (Paket 1, docs/DELTIQ_DEVICE_ACCEPTANCE.md): sichtbarer Hinweis
-    /// statt des stillen Weglassens einer gewaehlten Sportart. Nur im
-    /// Ziel-gefuehrten Pfad relevant (`isPreSeededFlow` waehlt Tage/Art
-    /// direkt, kein Disziplinen-Konflikt moeglich). `nil`, solange kein
-    /// Ziel/keine Ausdauerform gewaehlt ist - derselbe Default-Fallback wie
+    /// statt des stillen Weglassens einer gewaehlten Sportart - UND blockiert
+    /// die Uebernahme (siehe `headerActions`s Checkmark-`isDisabled`), bis
+    /// der Nutzer aktiv etwas aendert (Tage ueber `alltagsrahmenStep`, oder
+    /// Ziel/Ausdauerform ueber `goalStep` - beide ueber die bestehende
+    /// Zurueck-Navigation erreichbar, kein eigener Konflikt-Assistent
+    /// noetig). Keine Sportart gilt allein durch einen allgemeinen
+    /// Uebernehmen-Tap als abgewaehlt. Nur im Ziel-gefuehrten Pfad relevant
+    /// (`isPreSeededFlow` waehlt Tage/Art direkt, kein Disziplinen-Konflikt
+    /// moeglich). `nil`, solange kein Ziel/keine Ausdauerform gewaehlt ist -
+    /// derselbe Default-Fallback wie
     /// `GoalDrivenPlanSelectionBuilder.makeSelections` selbst.
     private var distributionConflict: GoalDrivenPlanSelectionBuilder.DistributionConflict? {
         guard !isPreSeededFlow, let goal = selectedTrainingGoal else { return nil }
