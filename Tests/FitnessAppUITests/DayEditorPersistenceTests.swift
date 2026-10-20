@@ -155,25 +155,31 @@ final class DayEditorPersistenceTests: XCTestCase {
     /// urspruengliche Fix (Loeschen + sofort `context.save()`, sonst nichts)
     /// loeste auf echtem Geraet einen ZWEITEN, bis dahin unentdeckten
     /// Absturz aus, reproduzierbar beim Loeschen des Plans, der die laufende
-    /// Session besitzt. ZWEI Fix-Versuche danach (Save per
-    /// `DispatchQueue.main.async` verzoegern; `session.day` vorab nullen)
-    /// haben den Crash NACHWEISLICH NICHT behoben — beide auf dem Geraet
-    /// erneut reproduziert, identischer Fehler im iOS-Geraetelog:
-    /// `SwiftData/BackingData.swift:296: Fatal error: Context is missing for
-    /// ... TrainingDay/pN`, ausgeloest WAEHREND SwiftData selbst den
-    /// "CoreData: Executing write request" verarbeitet (nicht beim
-    /// naechsten SwiftUI-Render). Gezielter Geraete-Vergleich: derselbe Tag
-    /// (mit derselben laufenden Session) DIREKT geloescht
-    /// (`PlanEditorView.deleteDays`, EIN Cascade-Level: Day -> nullify
-    /// Session) crasht NICHT. Nur der ZWEISTUFIGE Cascade (Plan -> Day ->
-    /// [cascade Exercises + nullify Sessions], alles in einer Transaktion)
-    /// loest den SwiftData-internen Fehler aus.
+    /// Session besitzt. DREI Fix-Versuche danach — (1) Save per
+    /// `DispatchQueue.main.async` verzoegern, (2) `session.day` vorab nullen,
+    /// (3) jeden Tag einzeln statt per Plan-Cascade loeschen, aber NOCH im
+    /// selben `save()` wie der Plan — haben den Crash NACHWEISLICH NICHT
+    /// behoben, alle drei auf dem Geraet erneut reproduziert, identischer
+    /// Fehler im iOS-Geraetelog: `SwiftData/BackingData.swift:296: Fatal
+    /// error: Context is missing for ... TrainingDay/pN`, ausgeloest
+    /// WAEHREND SwiftData selbst den "CoreData: Executing write request"
+    /// verarbeitet.
     ///
-    /// Fix: den zweistufigen Cascade vermeiden — jeder Tag des Plans wird
-    /// EINZELN geloescht (derselbe, auf dem Geraet bestaetigt sichere Pfad
-    /// wie `PlanEditorView.deleteDays`), bevor der jetzt tage-lose Plan
-    /// selbst geloescht wird; beides im selben `save()`. Dieser Test bildet
-    /// exakt diese Sequenz nach.
+    /// Entscheidender Geraete-Befund: `PlanEditorView.deleteDays` loescht
+    /// denselben Tag DIREKT, OHNE dass im selben `save()` zusaetzlich der
+    /// Plan geloescht wird — das crasht NICHT. Versuch 3 loeschte Tag UND
+    /// Plan einzeln, aber IMMER NOCH im selben `save()` — und crashte
+    /// trotzdem identisch. Schluss: `delete(day)` + `delete(plan)`
+    /// (plan.days deleteRule: .cascade) im SELBEN Save lassen SwiftData den
+    /// bereits einzeln markierten Tag ein zweites Mal ueber den Plan
+    /// verarbeiten — dieses Doppel-Processing in einer Transaktion ist der
+    /// Ausloeser, nicht die Reihenfolge der `delete()`-Aufrufe an sich.
+    ///
+    /// Fix: Tag-Loeschung und Plan-Loeschung in ZWEI GETRENNTE, nacheinander
+    /// committete `save()`-Aufrufe aufteilen — nach dem ersten ist der Tag
+    /// bereits vollstaendig entfernt, bevor der (jetzt tage-lose) Plan
+    /// ueberhaupt zum Loeschen markiert wird. Dieser Test bildet exakt diese
+    /// Sequenz nach.
     ///
     /// Dieser Test beweist weiterhin nur die Persistenz-Technik (Session
     /// entkoppelt + Plan weg nach echtem Store-Neustart), nicht den
@@ -209,10 +215,11 @@ final class DayEditorPersistenceTests: XCTestCase {
             context.insert(planToKeep)
             try context.save()
 
-            // Exakt die Sequenz aus `deletePlans(at:)` nach dem Fix: jeden
-            // Tag EINZELN loeschen (kein zweistufiger Plan->Day-Cascade),
-            // dann den jetzt tage-losen Plan, dann EIN gemeinsamer Save.
+            // Exakt die Sequenz aus `deletePlans(at:)` nach dem Fix: den Tag
+            // loeschen und committen, ERST DANACH den jetzt tage-losen Plan
+            // in einem ZWEITEN, getrennten Save loeschen.
             context.delete(day)
+            try context.save()
             context.delete(planToDelete)
             try context.save()
         }

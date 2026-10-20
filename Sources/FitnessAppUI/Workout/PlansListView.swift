@@ -602,37 +602,47 @@ public struct PlansListView: View {
 
     private func deletePlans(at offsets: IndexSet) {
         let plansToDelete = offsets.map { plans[$0] }
-        // TestingBot-Geraetebefund (Deltiq-Abnahme, Punkt 1, DRITTE
-        // Nachbesserung zum fdad04c-Fix — die ersten beiden Versuche
-        // (Save per `DispatchQueue.main.async` verzoegern; `session.day`
-        // vorab nullen) haben den Crash auf echtem Geraet NACHWEISLICH NICHT
-        // behoben, beide erneut reproduziert mit identischem Fehler im
-        // iOS-Geraetelog: "SwiftData/BackingData.swift:296: Fatal error:
-        // Context is missing for ... TrainingDay/pN" - waehrend SwiftData
-        // selbst den "CoreData: Executing write request" verarbeitet, NICHT
-        // beim naechsten SwiftUI-Render. Gezielter Diagnose-Vergleich auf dem
-        // Geraet: `PlanEditorView.deleteDays` loescht denselben Tag (mit
-        // derselben laufenden Session) DIREKT (`context.delete(day)`, ein
-        // Level, kein weiterer Cascade-Schritt danach) - das crasht NICHT.
-        // Nur der ZWEISTUFIGE Cascade (Plan loescht -> cascadet auf Day ->
-        // der wiederum cascadet auf Exercises UND nullifiziert Sessions, ALLES
-        // in einer Transaktion) loest den SwiftData-internen Fehler aus. Ein
-        // bekanntes SwiftData-Verhalten: mehrstufige Cascade+Nullify-Ketten in
-        // EINER Transaktion sind unzuverlaessiger als ein flacher, direkter
-        // Delete-Schritt (vgl. bereits die existierende explizite inverse
-        // Relationship auf `TrainingDay.sessions`, dort "P8-Fund" genannt, fuer
-        // dieselbe Problemfamilie).
+        // TestingBot-Geraetebefund (Deltiq-Abnahme, Punkt 1, VIERTE
+        // Nachbesserung zum fdad04c-Fix — drei vorherige Versuche (Save per
+        // `DispatchQueue.main.async` verzoegern; `session.day` vorab nullen;
+        // Tage einzeln statt per Plan-Cascade loeschen, aber noch im selben
+        // `save()` wie der Plan) haben den Crash auf echtem Geraet
+        // NACHWEISLICH NICHT behoben — alle drei erneut reproduziert,
+        // identischer Fehler im iOS-Geraetelog: "SwiftData/BackingData.
+        // swift:296: Fatal error: Context is missing for ... TrainingDay/pN",
+        // ausgeloest WAEHREND SwiftData selbst den "CoreData: Executing write
+        // request" verarbeitet.
         //
-        // Fix: den zweistufigen Cascade vermeiden, indem jeder Tag des Plans
-        // EINZELN geloescht wird (exakt derselbe, auf dem Geraet bestaetigt
-        // sichere Pfad wie `PlanEditorView.deleteDays`), bevor der jetzt
-        // tage-lose Plan selbst geloescht wird - beides in derselben
-        // Transaktion/demselben Save, aber ohne dass SwiftData selbst eine
-        // mehrstufige Cascade ausfuehren muss.
+        // Entscheidender Geraete-Befund: `PlanEditorView.deleteDays` loescht
+        // denselben Tag (mit derselben laufenden Session) DIREKT, OHNE dass
+        // im selben `save()` zusaetzlich der Plan geloescht wird — das crasht
+        // NICHT. Der dritte Versuch hier loeschte Tag UND Plan EINZELN, aber
+        // IMMER NOCH im selben `save()` — und crashte trotzdem identisch.
+        // Schlussfolgerung: SwiftData verarbeitet `delete(day)` UND
+        // `delete(plan)` (plan.days deleteRule: .cascade) im SELBEN Save
+        // weiterhin als EINE Kaskade und versucht den bereits einzeln zum
+        // Loeschen markierten Tag ein zweites Mal ueber den Plan zu
+        // verarbeiten — das inkonsistente Doppel-Processing desselben Tages
+        // in einer Transaktion ist der eigentliche Ausloeser, nicht die
+        // Reihenfolge der `delete()`-Aufrufe an sich.
+        //
+        // Fix: Tag-Loeschung und Plan-Loeschung in ZWEI GETRENNTE, nacheinander
+        // committete Saves aufteilen. Nach dem ersten `save()` ist der Tag
+        // bereits vollstaendig und bestaetigt aus dem Store entfernt, bevor
+        // der (jetzt tage-lose) Plan ueberhaupt zum Loeschen markiert wird —
+        // SwiftData hat dann nichts mehr zu kaskadieren.
         for plan in plansToDelete {
             for day in plan.days {
                 modelContext.delete(day)
             }
+        }
+        do {
+            try modelContext.save()
+        } catch {
+            deletePlanErrorMessage = error.localizedDescription
+            return
+        }
+        for plan in plansToDelete {
             modelContext.delete(plan)
         }
         // Kein `context.rollback()` bei Fehler — wirkt auf den GESAMTEN,
