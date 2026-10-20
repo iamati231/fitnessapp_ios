@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2248 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2252 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2248 / 2248** (100%) | 0 |
-| 🇬🇧 English (EN) | **2248 / 2248** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2248 / 2248** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2252 / 2252** (100%) | 0 |
+| 🇬🇧 English (EN) | **2252 / 2252** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2252 / 2252** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -2147,7 +2147,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (223 Keys)
+## `settings.*`  (227 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -2368,6 +2368,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.timer.section` | Pausen-Timer-Feedback | Rest Timer Feedback | Mola Zamanlayıcı Geri Bildirimi |
 | `settings.timer.sound` | Ton abspielen | Play sound | Ses çal |
 | `settings.title` | Einstellungen | Settings | Ayarlar |
+| `settings.training.displayMode.classic` | Bisherige Darstellung | Previous layout | Önceki görünüm |
+| `settings.training.displayMode.column` | Spaltenübersicht | Column overview | Sütun görünümü |
+| `settings.training.displayMode.footer` | Bestimmt, wie Gewicht, Wiederholungen und RIR beim Satz-Logging angezeigt werden. | Controls how weight, reps and RIR are shown while logging sets. | Set kaydederken ağırlık, tekrar ve RIR'ın nasıl gösterileceğini belirler. |
+| `settings.training.displayMode.label` | Satzanzeige | Set display | Set görünümü |
 | `settings.training.rirTooltip.description` | Zeigt kurze Erklärungen beim Einstellen der Intensität (Reps in Reserve). | Shows short explanations when setting intensity (Reps in Reserve). | Yoğunluk ayarlanırken kısa açıklamalar gösterir (Reps in Reserve). |
 | `settings.training.rirTooltip.title` | RIR-Hilfstexte anzeigen | Show RIR helper texts | RIR yardım metinlerini göster |
 | `settings.units.footer` | Die DB speichert immer metrisch. Diese Einstellung steuert nur die Anzeige in Eingabe-Feldern, im Hantel-Rechner und auf den Karten. | DB always stores metric. This setting only changes display in inputs, the plate calculator, and cards. | Veritabanı her zaman metrik kaydeder. Bu ayar sadece giriş alanlarında, plaka hesabında ve kartlarda görünümü değiştirir. |

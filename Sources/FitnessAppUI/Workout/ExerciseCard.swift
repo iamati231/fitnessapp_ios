@@ -50,6 +50,11 @@ struct ExerciseCard: View {
     // (DEL-092) — wer Warmups global abschaltet, will auch keine Ramp-Hints.
     @AppStorage("pref_show_warmups") private var showWarmups: Bool = true
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
+    /// Runde 10 (Settings → Training): identischer Key/Default wie
+    /// `SetRow.setDisplayModeRaw` — der gemeinsame Spaltenkopf ergibt nur im
+    /// "column"-Modus Sinn, "classic" beschriftet jedes Feld stattdessen
+    /// direkt in der Satzzeile selbst (siehe `SetRow.labeledField`).
+    @AppStorage("pref_set_display_mode") private var setDisplayModeRaw: String = "column"
     @State private var rampExpanded = false
 
     /// Bugfix "Workout-GIF-Overlay": frueher war hier ein animiertes
@@ -99,7 +104,7 @@ struct ExerciseCard: View {
             // jeder einzelnen SetRow. Nur fuer Strength/Bodyweight sinnvoll
             // (Cardio/TimeBased haben ein eigenes Zeilenlayout ohne diese
             // Spalten).
-            if !content.isCardio && !content.isTimeBased {
+            if !content.isCardio && !content.isTimeBased && setDisplayModeRaw != "classic" {
                 setRowColumnHeader
             }
             ForEach(0..<content.sets, id: \.self) { setIndex in
@@ -205,6 +210,7 @@ struct ExerciseCard: View {
             Text("set.column.setLabel", bundle: .module)
                 .deltiqLabel()
                 .frame(width: SetRow.SetRowColumns.setNumberWidth, alignment: .leading)
+            Color.clear.frame(width: SetRow.SetRowColumns.weightGroupLeadingInset, height: 1)
             Text(weightColumnHeaderKey, bundle: .module)
                 .deltiqLabel()
                 .frame(width: SetRow.SetRowColumns.weightWidth, alignment: .center)
@@ -241,6 +247,7 @@ struct ExerciseCard: View {
             Text("set.column.setLabel", bundle: .module)
                 .deltiqLabel()
                 .frame(width: SetRow.SetRowColumns.setNumberWidth, alignment: .leading)
+            Color.clear.frame(width: SetRow.SetRowColumns.weightGroupLeadingInset, height: 1)
             Text(weightColumnHeaderKey, bundle: .module)
                 .deltiqLabel()
                 .frame(width: SetRow.SetRowColumns.weightWidth, alignment: .center)

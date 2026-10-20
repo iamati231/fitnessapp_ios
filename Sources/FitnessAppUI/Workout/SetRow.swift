@@ -103,6 +103,12 @@ struct SetRow: View {
     @State private var showingPlatePopover = false
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
     @AppStorage("pref_bar_weight_kg") private var barWeightKgRaw: Double = 20
+    /// Runde 10 (Settings → Training): "column" (Default, bisheriges
+    /// Verhalten unveraendert) vs. "classic" (neue, selbst-beschriftete
+    /// Darstellung ohne gemeinsamen Spaltenkopf). Gleicher Persistenz-
+    /// Mechanismus wie `weight_unit` — ueberlebt per `@AppStorage`/
+    /// `UserDefaults` jeden Kaltstart.
+    @AppStorage("pref_set_display_mode") private var setDisplayModeRaw: String = "column"
 
     enum HoldState: Equatable {
         case idle
@@ -157,6 +163,13 @@ struct SetRow: View {
         /// — Satznummer-Spalte + ein Spacing, damit sie unter dem
         /// Dateninhalt (nicht der Satznummer) beginnen.
         static let secondaryLineIndent: CGFloat = setNumberWidth + spacing
+        /// Runde 10 (Spaltenuebersicht-Layout): moderater Einzug zwischen
+        /// Satznummer- und Gewicht-Spalte, damit Gewicht+Wdh als Gruppe
+        /// erkennbar von der Satznummer abgesetzt sind. Wirkt als fixer
+        /// `Color.clear`-Spacer VOR `weightInput`/dem Gewicht-Spaltenkopf —
+        /// RIR-Spalte (`rirWidth`) bleibt davon unberuehrt, der zusaetzliche
+        /// Platz wird vom `Spacer` vor der RIR-Kapsel aufgefangen.
+        static let weightGroupLeadingInset: CGFloat = 10
     }
 
     /// Geteilte Schrift-/Breitenvorgabe fuer den reinen RIR-Wert-Text. Von
@@ -257,10 +270,7 @@ struct SetRow: View {
     ///   * upcoming  → neutral, kein Background, kein Akzent
     private var compactSetRow: some View {
         VStack(alignment: .leading, spacing: 4) {
-            ViewThatFits(in: .horizontal) {
-                singleLineInputRow
-                twoLineInputRow
-            }
+            inputRow
 
             // Die Kapsel bleibt beim Aufklappen an ihrer festen Spalten-
             // Position stehen (siehe `rirCapsule`) — der Regler erscheint
@@ -349,6 +359,52 @@ struct SetRow: View {
             .frame(width: SetRowColumns.setNumberWidth, alignment: .leading)
     }
 
+    /// Runde 10 (Settings → Training, "bisherige Darstellung" vs.
+    /// "Spaltenuebersicht"): waehlt zwischen dem Spalten-Layout (Header-Zeile
+    /// lebt in `ExerciseCard.setRowColumnHeader`, siehe dort) und der
+    /// klassischen, selbst-beschrifteten Darstellung (`classicInputRow`),
+    /// in der jedes Feld seine Beschriftung direkt ueber sich traegt statt
+    /// sich auf einen gemeinsamen Spaltenkopf zu verlassen. BEIDE Varianten
+    /// nutzen exakt dieselben `@State`-Werte (`weight`/`reps`/`rir`) und
+    /// Callbacks (`onLogged`/`onUnlog`) — reines Umschalten der Darstellung,
+    /// kein zweites Logging-Modell, kein Datenwechsel.
+    @ViewBuilder
+    private var inputRow: some View {
+        if setDisplayModeRaw == "classic" {
+            ViewThatFits(in: .horizontal) {
+                classicSingleLineRow
+                classicTwoLineRow
+            }
+        } else {
+            ViewThatFits(in: .horizontal) {
+                singleLineInputRow
+                twoLineInputRow
+            }
+        }
+    }
+
+    /// Geteilte zweite Zeile der schmalen Fallbacks (`twoLineInputRow` UND
+    /// `classicTwoLineRow`) — Plate-Button/RIR-Kapsel/Haekchen sind in BEIDEN
+    /// Darstellungen identisch, nur Zeile 1 (Gewicht/Wdh) unterscheidet sich.
+    private var inputRowSecondaryLine: some View {
+        HStack(spacing: SetRowColumns.spacing) {
+            Color.clear.frame(width: SetRowColumns.setNumberWidth, height: 1)
+                .accessibilityHidden(true)
+            plateColumn
+            Spacer(minLength: 6)
+            // Korrektur post-Review: in diesem Fallback zeigt der Header
+            // darueber NUR noch Satz/kg/Wdh (siehe ExerciseCard.
+            // reducedSetRowColumnHeader) - "RIR" steht hier deshalb als
+            // eigenes, unmittelbar angrenzendes Inline-Label, damit die
+            // Kapsel-Bedeutung ohne den (jetzt nicht mehr passenden)
+            // Header-Platz eindeutig bleibt.
+            Text("set.column.rirLabel", bundle: .module)
+                .deltiqLabel()
+            rirCapsule
+            checkmarkButton
+        }
+    }
+
     /// Bevorzugtes Layout: alle Eingaben in einer Zeile. `ViewThatFits`
     /// (siehe `compactSetRow`) faellt automatisch auf `twoLineInputRow`
     /// zurueck, wenn das bei der aktuellen Breite/Schriftgroesse nicht
@@ -358,6 +414,8 @@ struct SetRow: View {
     private var singleLineInputRow: some View {
         HStack(spacing: SetRowColumns.spacing) {
             setNumberLabel
+            Color.clear.frame(width: SetRowColumns.weightGroupLeadingInset, height: 1)
+                .accessibilityHidden(true)
             weightInput
             repsInput
             plateColumn
@@ -376,27 +434,75 @@ struct SetRow: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: SetRowColumns.spacing) {
                 setNumberLabel
+                Color.clear.frame(width: SetRowColumns.weightGroupLeadingInset, height: 1)
+                    .accessibilityHidden(true)
                 weightInput
                 repsInput
                 Spacer(minLength: 0)
             }
-            HStack(spacing: SetRowColumns.spacing) {
-                Color.clear.frame(width: SetRowColumns.setNumberWidth, height: 1)
-                    .accessibilityHidden(true)
-                plateColumn
-                Spacer(minLength: 6)
-                // Korrektur post-Review: in diesem Fallback zeigt der Header
-                // darueber NUR noch Satz/kg/Wdh (siehe ExerciseCard.
-                // reducedSetRowColumnHeader) - "RIR" steht hier deshalb als
-                // eigenes, unmittelbar angrenzendes Inline-Label, damit die
-                // Kapsel-Bedeutung ohne den (jetzt nicht mehr passenden)
-                // Header-Platz eindeutig bleibt.
-                Text("set.column.rirLabel", bundle: .module)
-                    .deltiqLabel()
-                rirCapsule
-                checkmarkButton
-            }
+            inputRowSecondaryLine
         }
+    }
+
+    // MARK: - Runde 10 Klassische Darstellung (Settings → Training)
+
+    /// Selbst-beschriftete Variante von `singleLineInputRow`: jedes Feld
+    /// traegt seine Einheit/Bezeichnung direkt ueber sich (siehe
+    /// `labeledField`), statt sich auf `ExerciseCard.setRowColumnHeader`
+    /// zu verlassen — die "bisherige Darstellung" zeigt deshalb bewusst
+    /// KEINEN gemeinsamen Spaltenkopf (`ExerciseCard` blendet ihn in diesem
+    /// Modus aus). Identischer `weightInput`/`repsInput`/`plateColumn`/
+    /// `rirCapsule`/`checkmarkButton` wie im Spalten-Layout — keine zweite
+    /// Eingabe-Implementierung.
+    private var classicSingleLineRow: some View {
+        HStack(spacing: SetRowColumns.spacing) {
+            setNumberLabel
+            labeledField(weightCaptionText) { weightInput }
+            labeledField(repsCaptionText) { repsInput }
+            plateColumn
+            Spacer(minLength: 6)
+            rirCapsule
+            checkmarkButton
+        }
+        .frame(minHeight: 44)
+    }
+
+    /// Schmaler Fallback der klassischen Darstellung — gleiche zweite Zeile
+    /// wie `twoLineInputRow` (`inputRowSecondaryLine`), nur Zeile 1 traegt
+    /// zusaetzlich die Feld-Beschriftungen.
+    private var classicTwoLineRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: SetRowColumns.spacing) {
+                setNumberLabel
+                labeledField(weightCaptionText) { weightInput }
+                labeledField(repsCaptionText) { repsInput }
+                Spacer(minLength: 0)
+            }
+            inputRowSecondaryLine
+        }
+    }
+
+    /// Kleine Caption direkt ueber einem Eingabefeld — das namensgebende
+    /// Merkmal der "bisherigen Darstellung" gegenueber dem gemeinsamen
+    /// Spaltenkopf der Spaltenuebersicht. Nutzt `.deltiqLabel()` statt
+    /// einer eigenen statischen Schriftgroesse — derselbe bereits
+    /// AX5-gehaertete Stil (Runde 8, E04: `.lineLimit(1)` +
+    /// `.minimumScaleFactor(0.5)`), den auch `ExerciseCard`s Spaltenkopf
+    /// nutzt, statt hier erneut eine Dynamic-Type-Regression zu riskieren.
+    @ViewBuilder
+    private func labeledField<Content: View>(_ caption: Text, @ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 2) {
+            caption.deltiqLabel()
+            content()
+        }
+    }
+
+    private var weightCaptionText: Text {
+        Text(weightUnitRaw == "lbs" ? "unit.lbs.upper" : "unit.kg.upper", bundle: .module)
+    }
+
+    private var repsCaptionText: Text {
+        Text("unit.reps.short", bundle: .module).textCase(.uppercase)
     }
 
     /// Eigene schmale Spalte statt Overlay auf `weightInput` (Korrektur

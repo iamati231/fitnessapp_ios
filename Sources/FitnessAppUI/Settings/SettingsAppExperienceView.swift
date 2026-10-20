@@ -41,6 +41,11 @@ public struct SettingsAppExperienceView: View {
     @AppStorage("pref_measurement_reminder_weekday") private var measurementWeekday: Int = 1
     @AppStorage("pref_measurement_reminder_hour") private var measurementHour: Int = 8
     @AppStorage("pref_show_warmups") private var showWarmups: Bool = true
+    /// Runde 10: identischer Key wie `SetRow.setDisplayModeRaw` /
+    /// `ExerciseCard.setDisplayModeRaw` — "column" (Default, bisheriges
+    /// Verhalten) vs. "classic" (neue, selbst-beschriftete Darstellung ohne
+    /// gemeinsamen Spaltenkopf).
+    @AppStorage("pref_set_display_mode") private var setDisplayModeRaw: String = "column"
     @AppStorage("showRirTooltips") private var showRirTooltips: Bool = true
     @AppStorage("pref_deload_enabled") private var deloadEnabled: Bool = true
 
@@ -262,6 +267,20 @@ public struct SettingsAppExperienceView: View {
                     .tint(Color.deltiqOrange)
                     .accessibilityLabel(Text("settings.training.rirTooltip.title", bundle: .module))
             }
+            DeltiqControlRow(
+                icon: "square.split.2x1",
+                label: String(localized: "settings.training.displayMode.label", bundle: .module)
+            ) {
+                Picker(selection: $setDisplayModeRaw) {
+                    Text("settings.training.displayMode.column", bundle: .module).tag("column")
+                    Text("settings.training.displayMode.classic", bundle: .module).tag("classic")
+                } label: { EmptyView() }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .accessibilityLabel(Text("settings.training.displayMode.label", bundle: .module))
+            }
             periodicCheckInRow
             fourWeekReviewRow
             DeltiqControlRow(
@@ -299,6 +318,7 @@ public struct SettingsAppExperienceView: View {
                 [
                     String(localized: "settings.workout.footer", bundle: .module),
                     String(localized: "settings.training.rirTooltip.description", bundle: .module),
+                    String(localized: "settings.training.displayMode.footer", bundle: .module),
                     String(localized: "settings.deload.description", bundle: .module)
                 ].joined(separator: "\n")
             )
