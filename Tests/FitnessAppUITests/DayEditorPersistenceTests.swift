@@ -151,43 +151,42 @@ final class DayEditorPersistenceTests: XCTestCase {
     /// Plan UND Session waren danach wieder da, die Loeschung war nie auf
     /// der Store-Datei angekommen.
     ///
-    /// Nachtrag (Deltiq-Abnahme, Geraete-Nachtest desselben Fixes): der
-    /// urspruengliche Fix (Loeschen + sofort `context.save()`, sonst nichts)
-    /// loeste auf echtem Geraet einen ZWEITEN, bis dahin unentdeckten
-    /// Absturz aus, reproduzierbar beim Loeschen des Plans, der die laufende
-    /// Session besitzt. DREI Fix-Versuche danach — (1) Save per
-    /// `DispatchQueue.main.async` verzoegern, (2) `session.day` vorab nullen,
-    /// (3) jeden Tag einzeln statt per Plan-Cascade loeschen, aber NOCH im
-    /// selben `save()` wie der Plan — haben den Crash NACHWEISLICH NICHT
-    /// behoben, alle drei auf dem Geraet erneut reproduziert, identischer
-    /// Fehler im iOS-Geraetelog: `SwiftData/BackingData.swift:296: Fatal
-    /// error: Context is missing for ... TrainingDay/pN`, ausgeloest
-    /// WAEHREND SwiftData selbst den "CoreData: Executing write request"
-    /// verarbeitet.
-    ///
-    /// Entscheidender Geraete-Befund: `PlanEditorView.deleteDays` loescht
-    /// denselben Tag DIREKT, OHNE dass im selben `save()` zusaetzlich der
-    /// Plan geloescht wird — das crasht NICHT. Versuch 3 loeschte Tag UND
-    /// Plan einzeln, aber IMMER NOCH im selben `save()` — und crashte
-    /// trotzdem identisch. Schluss: `delete(day)` + `delete(plan)`
-    /// (plan.days deleteRule: .cascade) im SELBEN Save lassen SwiftData den
-    /// bereits einzeln markierten Tag ein zweites Mal ueber den Plan
-    /// verarbeiten — dieses Doppel-Processing in einer Transaktion ist der
-    /// Ausloeser, nicht die Reihenfolge der `delete()`-Aufrufe an sich.
-    ///
-    /// Fix: Tag-Loeschung und Plan-Loeschung in ZWEI GETRENNTE, nacheinander
-    /// committete `save()`-Aufrufe aufteilen — nach dem ersten ist der Tag
-    /// bereits vollstaendig entfernt, bevor der (jetzt tage-lose) Plan
-    /// ueberhaupt zum Loeschen markiert wird. Dieser Test bildet exakt diese
-    /// Sequenz nach.
+    /// Nachtrag (Deltiq-Abnahme, Geraete-Nachtest desselben Fixes) — EHRLICH
+    /// OFFENER STATUS, NICHT behoben: der urspruengliche Fix (Loeschen +
+    /// sofort `context.save()`, sonst nichts) loeste auf echtem Geraet einen
+    /// ZWEITEN, bis dahin unentdeckten Absturz aus, reproduzierbar beim
+    /// Loeschen des Plans, der die laufende Session besitzt (ein
+    /// SwiftData-interner, nicht fangbarer Fatal-Error: `SwiftData/
+    /// BackingData.swift:296: Fatal error: Context is missing for ...
+    /// TrainingDay/pN`). VIER verschiedene, jeweils auf dem Geraet
+    /// gegengeprueftete Fix-Versuche haben das NICHT geloest:
+    ///   1. Save per `DispatchQueue.main.async` verzoegern.
+    ///   2. `session.day` vorab explizit nullen.
+    ///   3. Jeden Tag einzeln statt per Plan-Cascade loeschen, aber noch im
+    ///      selben `save()` wie der Plan.
+    ///   4. Tag- und Plan-Loeschung in zwei GETRENNTE Saves aufteilen
+    ///      (das bildet dieser Test unten nach) — Geraetelog zeigt bei
+    ///      diesem Versuch zwei abgeschlossene, separate "CoreData:
+    ///      Executing write request"-Bloecke VOR dem Fatal Error; der Crash
+    ///      passiert also NACH beiden erfolgreichen Saves, nicht waehrend
+    ///      einer SwiftData-Kaskade selbst.
+    /// Bekannter, gegengeprueft sicherer Vergleichsfall: derselbe Tag,
+    /// dieselbe Session, direkt ueber `PlanEditorView.deleteDays` geloescht
+    /// (ohne `PlansListView`s `activeSessions`-@Query/`ActiveSessionBanner`
+    /// auf demselben Screen) — crasht NICHT. Die tatsaechliche Ursache liegt
+    /// vermutlich in der Interaktion zwischen dieser Kaskade und der auf
+    /// demselben Screen aktiven Live-Query, ist aber mit den hier
+    /// verfuegbaren Mitteln (kein symbolisierter Crash-Stacktrace) nicht
+    /// abschliessend lokalisiert. Weitere Fix-Versuche wurden bewusst nicht
+    /// unternommen, um nicht in unbegruendetes Raten zu verfallen.
     ///
     /// Dieser Test beweist weiterhin nur die Persistenz-Technik (Session
-    /// entkoppelt + Plan weg nach echtem Store-Neustart), nicht den
-    /// SwiftUI-/SwiftData-Crash selbst — dafuer fehlt in diesem Repo ein
-    /// UI-Test-Harness (siehe Typ-Doku oben). Die tatsaechliche
-    /// Regressionspruefung fuer den Crash ist der TestingBot-Geraete-
-    /// Nachtest (Swipe-Delete auf den aktiven Plan mit laufender Session,
-    /// kein Crash mehr).
+    /// entkoppelt + Plan weg nach echtem Store-Neustart) — NICHT, dass der
+    /// SwiftUI-/SwiftData-Crash behoben ist (er ist es NICHT, siehe oben).
+    /// Fuer den Crash selbst fehlt in diesem Repo ein UI-Test-Harness (siehe
+    /// Typ-Doku oben); der TestingBot-Geraete-Nachtest (Swipe-Delete auf den
+    /// aktiven Plan mit laufender Session) bleibt der einzige Nachweis und
+    /// zeigt den Crash aktuell weiterhin.
     func testPlanDeletionWithOpenSessionAndImmediateSaveSurvivesARealStoreRestart() throws {
         let storeURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("plans-list-delete-persistence-\(UUID().uuidString)")
