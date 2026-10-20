@@ -1,16 +1,17 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-20 (fünfzehnter Durchgang: Paket 1 — Geräteabnahme der 9
+Stand: 2026-10-20 (sechzehnter Durchgang: Paket 1 — der beim
+Konfliktbanner-Nachtest entdeckte echte Bug [Übernahme war trotz
+ungelöstem `distributionConflict` nicht blockiert] gefixt und
+gerätebestätigt, HEAD `1cbffeb`, siehe Nachtrag „Übernahme-Blockade
+nachgerüstet" oben. **Paket 1 gilt jetzt vollständig und ohne offenen
+Bug abgeschlossen** — verbleibend bewusst außerhalb des Scopes: die vier
+Resolution-Fälle als eigene wählbare UI, ein kleiner
+Navigations-Beobachtungspunkt beim Zurück-Button. Davor fünfzehnter
+Durchgang: Paket 1 — Geräteabnahme der 9
 geforderten Nachweise (Coach-Aktivierung/Vorschau/Übernahme/Ablehnen/
 Coach-aus/A12/Idempotenz/Kaltstart/unabhängige Parallel-Änderung) auf
-TestingBot abgeschlossen, alle 9 bestanden, kein Bug gefunden, keine
-Codeänderung. Nachtrag direkt im Anschluss: die zunächst offen gelassene
-Konfliktbanner-Lücke (echter Tagemangel-Fall, Hybrid+Both/2 Tage) gezielt
-nachgewiesen — Banner erscheint verständlich, kein stiller Sportart-Verlust,
-kein Bypass, konsistente Übernahme bestätigt; Paket 1 gilt damit
-vollständig abgeschlossen, mit der ehrlich benannten Grenze, dass der
-Banner nur ein Hinweistext ohne die vier wählbaren Resolution-Optionen ist
-— siehe Nachtrag „Paket 1: Geräteabnahme" oben. Davor
+TestingBot abgeschlossen, alle 9 bestanden. Davor
 vierzehnter Durchgang: Paket 1, Teil 2 — die
 Architekturfrage "manuelle Änderungen/Fixierungen schützen" ist beantwortet
 (`TrainingDay.generationFingerprint == currentContentFingerprint`, siehe
@@ -251,6 +252,81 @@ iPhone 15/iOS 18.0, Dauer 493 s (TestingBot-Test-Datensatz), aktiv beendet
 weiterhin 19.591 s (derselbe bereits mehrfach dokumentierte
 Abrechnungsverzug, kein neuer Fehler), Abgleich beim nächsten regulären
 Abruf. Keine zusätzliche Session, keine Zusatzkäufe.
+
+Kein Merge nach `main`, kein Release.
+
+### Nachtrag: Übernahme-Blockade nachgerüstet (echter Fund, gefixt)
+
+**Befund (vor diesem Fix):** der oben unter Punkt 6 als "Grenze" geführte
+Zustand war tatsächlich ein echter Bug, kein bloß unvollständiges Feature:
+`headerActions`' Checkmark-Action (`Adopt Plan`) war nur bei leerem Entwurf
+oder während des Übernehmens deaktiviert — ein ungelöster
+`distributionConflict` blockierte die Übernahme NICHT. Der Banner-Text
+lud sogar explizit dazu ein ("...or accept the closest compromise shown
+below"), obwohl die Vorgabe lautet: keine Sportart gilt allein durch einen
+allgemeinen Übernehmen-Tap als abgewählt.
+
+**Fix (Commit `1cbffeb`):** `isDisabled` prüft jetzt zusätzlich
+`distributionConflict != nil` — Übernahme bleibt blockiert, bis der Nutzer
+aktiv über die bestehende Tage- oder Ziel-/Ausdauerform-Auswahl etwas
+ändert. Banner-Text (DE/EN/TR) umformuliert, verweist auf die beiden
+tatsächlich vorhandenen Rückwege statt auf einen "Kompromiss übernehmen".
+Kein neuer Konflikt-Assistent gebaut — bewusste Wiederverwendung der
+bestehenden Zurück-Navigation. Der generische "Änderungen verwerfen?"-
+Dialog (`Theme.swift`) wurde geprüft und ist bereits korrekt neutral
+formuliert (kein Fix nötig).
+
+**CI:** Run `39503236945`, Commit `1cbffeb`, erfolgreich.
+
+**Geräte-Nachtest (Build `tb://5a25e5292e04af866f408e6d`, Commit
+`1cbffeb`, iPhone 15/iOS 18.0):** frisches Onboarding, Hybrid+Both, 2
+Tage, „Build Plan":
+1. **Ungelöster Konflikt verhindert Übernahme — bestanden.** Banner
+   identisch zu vorher ("3 days needed, 2 available..."), „Adopt Plan"
+   jetzt `enabled="false"` (Accessibility-Tree bestätigt). Tap auf den
+   deaktivierten Button hatte keine Wirkung — kein Bypass.
+2. **Eine tatsächlich angebotene Lösung ist bedienbar und wirksam —
+   bestanden.** Erneuter Durchlauf mit 3 Tagen (derselbe, bereits
+   bestehende Tage-Stepper): Banner verschwand vollständig, „Adopt Plan"
+   wurde `enabled="true"`.
+3. **Vorschau entspricht der bewussten Auswahl — bestanden.** Ergebnis
+   zeigte exakt „Bodyweight · Push & Pull" + „Easy Run" + „Cycling" (1
+   Kraft + 1 Laufen + 1 Radfahren). Nach „Adopt Plan" → Wochenvorschau →
+   „Finish": der persistierte Plan zeigt exakt Mon=Bodyweight Push&Pull,
+   Wed=Easy Run, Fri=Cycling, restliche Tage Rest Day — deckungsgleich mit
+   der Vorschau, „1 PLAN" (kein Duplikat).
+4. **Abbrechen lässt bestehende Daten unverändert — bestanden, mit
+   Beobachtung.** Im ungelösten 2-Tage-Konfliktfall (Prüfpunkt 1) wurde
+   nichts übernommen, kein Plan erzeugt. Zusätzlich beobachtet: der
+   bodenständige „Back"-Button auf dem Ergebnis-Schritt verwirft beim
+   Zurückgehen den gesamten Entwurf bis zur Onboarding-Planauswahl (nicht
+   nur einen Schritt zurück zum Tage-Screen) — im reinen Onboarding-Fall
+   ohne bestehenden Plan ist das unschädlich (nichts wird zerstört, die
+   Ziel-/Ausdauerform-Antworten aus dem Onboarding selbst bleiben über das
+   A01-Preseeding erhalten, ein erneutes „Build Plan" zeigt sofort wieder
+   denselben Stand), aber abweichend von der Banner-Formulierung "Go back
+   to change the days" (die eher einen Ein-Schritt-Rücksprung suggeriert).
+   Kein Datenverlust, daher kein Fix in diesem Umfang — als kleine,
+   benannte Beobachtung für eine künftige Runde vermerkt, kein
+   Blocker für den Abschluss von Paket 1.
+
+**TestingBot:** 1 Session (`906f55f2865a-ddf42c4b7cb4-8f6359485c4c-179253343346-56573618`),
+iPhone 15/iOS 18.0, Dauer 605 s, aktiv beendet (`DELETE /session`, Status
+„success").
+
+**Budget:** vor diesem Nachtrag (Session-Summe): 19.098 s. Danach:
+**18.493 Sekunden (Session-Summe)** — Konto-API zeigte unmittelbar danach
+weiterhin 19.591 s (Abrechnungsverzug über mehrere Runden hinweg, siehe
+etablierte Reihe in den Vorrunden), Abgleich beim nächsten regulären
+Abruf.
+
+**Damit ist Paket 1 (Coach-Aktivierung, Plananpassungs-Vorschau, A12-Fix
+inkl. Übernahme-Blockade, alle Leitplanken) vollständig abgeschlossen und
+gerätebestätigt.** Verbleibend offen (bewusst außerhalb des Scopes, siehe
+oben): die vier `Resolution`-Fälle als eigene wählbare UI, der kleine
+Navigations-Beobachtungspunkt (Punkt 4 oben). Pakete 2 (strukturierte
+Ausdauereinheiten) und 3 (Coaching mit echten Ergebnissen verbinden)
+bleiben offen für künftige Runden.
 
 Kein Merge nach `main`, kein Release.
 
