@@ -1,7 +1,16 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-20 (dreizehnter Durchgang: Paket 1, Teil 1 — A12-Fix,
-siehe Nachtrag „Paket 1 (Teil 1)" unten, HEAD `5146bfe`), davor zwölfter
+Stand: 2026-10-20 (vierzehnter Durchgang: Paket 1, Teil 2 — die
+Architekturfrage "manuelle Änderungen/Fixierungen schützen" ist beantwortet
+(`TrainingDay.generationFingerprint == currentContentFingerprint`, siehe
+`PlanGeneratorInstantiator.recalculate`, kein neues Konzept nötig) und auf
+dieser Basis umgesetzt: `RunCoachPlanAdjustment` (Komponente 2, reine
+Analyse) + `PlanGeneratorInstantiator.applyCoachCardioAdjustment`
+(Mutation, reuse von `apply`/`revert`), Onboarding-Finish getrennt
+(Komponente 6) und `distributionConflict` sichtbar in der
+Plan-Builder-Wochenvorschau verdrahtet (Komponente 1 abgeschlossen) — HEAD
+`5bc8e5b`, siehe Nachtrag „Paket 1 (Teil 2)" unten. Davor dreizehnter
+Durchgang: Paket 1, Teil 1 — A12-Fix (Commit `5146bfe`). Davor zwölfter
 Durchgang: Runde 11 — Onboarding/Laufcoach-
 E2E-Abgleich: `GoalDrivenPlanSelectionBuilder` lässt bei Hybrid+„Both"
 (Laufen+Radfahren) am UI-Default von 3 Tagen/Woche Radfahren komplett und
@@ -129,6 +138,70 @@ Teil dieses Commits):**
   (Schritt 3, die Wochenvorschau) verdrahtet — die eigentliche
   "sichtbare Entscheidung" (Konflikt-Banner mit den vier Optionen) ist
   noch reine UI-Arbeit, ebenfalls zurückgestellt.
+
+## Paket 1 (Teil 2): Architekturfrage beantwortet, Komponenten 1+2+6 umgesetzt
+
+**Architekturfrage aus Teil 1 geklärt (keine neue Designentscheidung
+nötig):** `TrainingDay.generationFingerprint == currentContentFingerprint`
+(+ keine Session-Historie) ist der bereits bestehende Schutzmechanismus
+für "manuelle Änderungen/Fixierungen" — exakt das Prinzip, das
+`PlanGeneratorInstantiator.recalculate` für "neu rechnen" bereits nutzt.
+Ein Tag ohne Fingerprint (manuell hinzugefügt) oder mit abweichendem
+Fingerprint (seit Erzeugung editiert) ist immer geschützt. Keine neue
+Fixierungs-Logik gebaut.
+
+**Umgesetzt (Commits `d86bf4b`, `5bc8e5b`):**
+- **`RunCoachPlanAdjustment`** (`Sources/FitnessAppData/`, neu): reine
+  Analyse, welche Cardio-/Kraft-Tage eines aktiven Plans anfassbar sind
+  (`isEligibleForAdjustment`), und ob die vorhandene Bein-Kraftarbeit zum
+  Laufziel passt — fünf Fälle (`unchanged`/`addSmallAddition`/
+  `redistribute`/`replaceForTime`/`conflict`), klassifiziert über die
+  bestehende `MuscleVolumeBucket`-Taxonomie (keine neuen Schwellenwerte).
+  "Wenig Zeit" (`replaceForTime`) nutzt eine bewusst einfache,
+  kommentierte Faustregel (Tag mit ≥6 Übungen gilt als voll) statt einer
+  erfundenen wissenschaftlichen Regel.
+- **`PlanGeneratorInstantiator.applyCoachCardioAdjustment`**: wendet
+  frisch generierte Cardio-Tagesinhalte auf die als anfassbar erkannten
+  Tage an — reiner Reuse von `apply`/`revert` (derselben Infrastruktur,
+  die `recalculate` nutzt), kein Duplikat. Ersetzt nur `min(anfassbare
+  Tage, neue Tage)` — überzählige anfassbare Tage bleiben unverändert,
+  ein überzähliger neuer Cardio-Tag wird NICHT eingefügt (Tage zu einem
+  lebenden Plan hinzuzufügen bleibt außerhalb des Paket-1-Scopes, siehe
+  „Offen" unten).
+- **`RunCoachPlanAdjustmentTests`** (10 Tests): Eligibility (manuell/
+  editiert/mit Historie = geschützt, unberührter Wizard-Tag = anfassbar),
+  alle fünf Bein-Arbeit-Fälle, `noActivePlan`/`noEligibleCardioDay`.
+- **Komponente 6 (Onboarding):** `OnboardingView.onGenerated` ruft
+  `finishOnboarding()` nicht mehr direkt auf — übernimmt nur den Entwurf
+  und kehrt zur Wochenvorschau zurück (A10-konform). Die Vorschau hatte
+  die nötige Infrastruktur bereits (Haken auf dem "Build Plan"-Kärtchen
+  sobald ein Entwurf vorliegt, ein eigener "Fertig"-Button, der
+  `finishOnboarding()` selbst aufruft) — der Fix war eine einzige Zeile.
+  Fehlende Ausdauerform: bereits vorher korrekt validiert
+  (`canAdvance` blockt ohne Auswahl), kein zusätzlicher Fix nötig.
+- **Komponente 1 abgeschlossen:** `distributionConflict` (aus Teil 1) ist
+  jetzt sichtbar als Banner in `PlanBuilderView`s Wochenvorschau verdrahtet
+  — die "sichtbare Entscheidung statt stillem Weglassen" aus der
+  A12-Spezifikation. Neuer xcstrings-Key (DE/EN/TR), `UNUSED:0` bestätigt.
+- **CI:** Run `39484775116` ausstehend zum Zeitpunkt dieses Nachtrags (CI-
+  Warteschlange bei GitHub ungewöhnlich lang, >10 Min) — Ergebnis siehe
+  nächster Nachtrag/Abschlussbericht.
+
+**Bewusst weiterhin NICHT umgesetzt (Komponenten 3–5, Rest von 7, alle 9
+Geräte-Nachweise):**
+- `CoachAdjustmentCardModel`/`CoachAdjustmentPreviewView` (UI-Schicht:
+  Vorher/Nachher-Vorschau, drei Aktionen, Coach-aus-Bestätigungsdialog)
+  und die Anbindung in `CardioGoalEditorView` — das ist die größte
+  verbleibende UI-Arbeit und wurde in diesem Durchgang aus
+  Kontext-/Zeitgründen zurückgestellt, um die bereits gebaute Analyse-
+  Logik (Komponente 2) nicht unter Zeitdruck an eine unausgereifte UI zu
+  koppeln.
+- Der "Coach an, Anpassung noch nicht übernommen"-Status (Komponente 7)
+  ist konzeptionell geklärt (aus `cardioCoachingEnabled` + Abwesenheit
+  eines passenden `cardioCoach`-Plans ableitbar, kein neues Feld nötig),
+  aber erst mit der Preview-UI tatsächlich verdrahtbar.
+- Alle 9 Geräte-Nachweise brauchen die UI-Schicht und sind daher noch
+  offen.
 
 ## Runde 11: Onboarding/Laufcoach-E2E-Abgleich (GoalDrivenPlanSelectionBuilder, PlanGeneratorInput, onGenerated/finishOnboarding)
 
