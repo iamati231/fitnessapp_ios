@@ -502,7 +502,7 @@ struct SetRow: View {
     }
 
     private var repsCaptionText: Text {
-        Text("unit.reps.short", bundle: .module).textCase(.uppercase)
+        Text(String(localized: "unit.reps.short", bundle: .module).uppercased())
     }
 
     /// Eigene schmale Spalte statt Overlay auf `weightInput` (Korrektur
