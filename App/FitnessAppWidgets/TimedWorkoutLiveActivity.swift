@@ -79,6 +79,7 @@ private enum TimedLook {
         case .emom:    return "timer"
         case .forTime: return "stopwatch.fill"
         case .circuit: return "arrow.triangle.2.circlepath"
+        case .enduranceIntervals: return "figure.run"
         }
     }
 
