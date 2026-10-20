@@ -287,6 +287,28 @@ final class EditorDiscardSnapshotTests: XCTestCase {
         XCTAssertEqual(plan.targetEnvironment, .homeGym, "targetEnvironment bleibt bestaetigt, kein Rollback")
     }
 
+    /// Geraete-Nachtest (Runde 6, docs/DELTIQ_DEVICE_ACCEPTANCE.md, D06):
+    /// "Cancel" in den drei Umgebungswechsel-Dialogen schrieb bisher direkt
+    /// `plan.targetEnvironment = swap.oldEnv`, was denselben `.onChange`-
+    /// Handler erneut feuerte und reproduzierbar in einen Adapt<->Restore-
+    /// Dialog-Ping-Pong lief, aus dem Cancel nicht herausfuehrte (zweimal
+    /// unabhaengig auf dem Geraet reproduziert). Fix: `revertTargetEnvironment`
+    /// nutzt denselben `isApplyingSnapshot`-Unterdrueckungsmechanismus wie
+    /// `revertToSnapshot()`. Dieser Test deckt nur die reine Rueckschreibung
+    /// ab — das eigentliche Cascade-Verhalten haengt an SwiftUIs `.onChange`
+    /// und ist nur per Geraete-/UI-Test pruefbar (siehe Dokument, Runde 6).
+    func testRevertTargetEnvironmentRestoresPriorValue() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: false, targetEnvironment: .gym)
+        ctx.insert(plan)
+
+        let view = PlanEditorView(plan: plan)
+        plan.targetEnvironment = .noEquipment
+        view.revertTargetEnvironment(to: .gym)
+        XCTAssertEqual(plan.targetEnvironment, .gym)
+    }
+
     /// Korrektur V1 (PlanEditorView): reines Umsortieren der Tage (Wochentage
     /// rotiert, siehe `moveDays`) OHNE jede andere Aenderung muss als dirty
     /// erkannt und exakt zurueckgerollt werden.

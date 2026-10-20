@@ -233,7 +233,7 @@ public struct PlanEditorView: View {
                 Text("planEditor.globalSync.thisOnly", bundle: .module)
             }
             Button(role: .cancel) {
-                plan.targetEnvironment = swap.oldEnv
+                revertTargetEnvironment(to: swap.oldEnv)
                 pendingGlobalSync = nil
             } label: {
                 Text("common.cancel", bundle: .module)
@@ -263,7 +263,7 @@ public struct PlanEditorView: View {
             }
             Button(role: .cancel) {
                 // Picker rueckgaengig machen
-                plan.targetEnvironment = swap.oldEnv
+                revertTargetEnvironment(to: swap.oldEnv)
                 pendingEnvironmentSwap = nil
             } label: {
                 Text("common.cancel", bundle: .module)
@@ -294,7 +294,7 @@ public struct PlanEditorView: View {
                 Text("profile.envRestore.adjustNew", bundle: .module)
             }
             Button(role: .cancel) {
-                plan.targetEnvironment = swap.oldEnv
+                revertTargetEnvironment(to: swap.oldEnv)
                 pendingEnvironmentRestore = nil
             } label: {
                 Text("common.cancel", bundle: .module)
@@ -343,6 +343,24 @@ public struct PlanEditorView: View {
         } else {
             pendingEnvironmentSwap = swap
         }
+    }
+
+    /// Geraete-Nachtest (Runde 6, docs/DELTIQ_DEVICE_ACCEPTANCE.md, D06):
+    /// "Cancel" in den drei Umgebungswechsel-Dialogen oben schrieb bisher
+    /// direkt `plan.targetEnvironment = swap.oldEnv` OHNE das
+    /// `isApplyingSnapshot`-Flag zu setzen — diese synthetische Rueckschreibung
+    /// loeste denselben `.onChange`-Handler erneut aus wie ein echter
+    /// User-Edit und zeigte prompt den jeweils ANDEREN Dialog (Adapt
+    /// <-> Restore), dessen eigener Cancel wiederum zurueck zum ersten
+    /// Dialog fuehrte — ein Endlos-Ping-Pong, aus dem "Cancel" nicht
+    /// herausfuehrte. Fix: denselben Unterdrueckungs-Mechanismus wie
+    /// `revertToSnapshot()` verwenden (nur scharf schalten, wenn sich der
+    /// Wert tatsaechlich aendert, sonst bliebe das Flag faelschlich haengen).
+    internal func revertTargetEnvironment(to oldEnv: EnvironmentType) {
+        if plan.targetEnvironment != oldEnv {
+            isApplyingSnapshot = true
+        }
+        plan.targetEnvironment = oldEnv
     }
 
     /// User hat "Fuer alle anpassen" gewaehlt → globaler Trainingsort UND
