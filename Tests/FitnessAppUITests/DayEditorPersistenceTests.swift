@@ -362,5 +362,56 @@ final class DayEditorPersistenceTests: XCTestCase {
         XCTAssertNil(sessions.first?.circuitRestEndDate,
                       "das Pausenende muss einen echten Store-Neustart als nil ueberstehen, nicht als stehengebliebener alter Anker")
     }
+
+    /// TestingBot-Geraetebefund (Deltiq-Abnahme, Punkt 1): Loeschen eines
+    /// Plans mit laufender Session crasht auf echtem Geraet reproduzierbar
+    /// mit einem SwiftData-internen, nicht fangbaren Fatal Error ("Context
+    /// is missing for ... TrainingDay/pN"). Vier gerätegetestete interne
+    /// Fixes (siehe Git-Historie `PlansListView.deletePlans`) haben das
+    /// NICHT behoben — Nutzerentscheid: die Loeschung per UI-Guard
+    /// verhindern (`PlansListView.plansBlockedByActiveSession`), statt den
+    /// SwiftData-Fehler weiter zu suchen. Testet die reine Entscheidungs-
+    /// funktion dahinter.
+    func testPlanWithActiveSessionIsBlockedFromDeletion() throws {
+        let container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let context = container.mainContext
+
+        let plan = TrainingPlan(name: "Push Pull Legs", programType: "custom", isActive: true)
+        context.insert(plan)
+        let day = TrainingDay(name: "Push", weekday: 2, type: .chest, plan: plan)
+        context.insert(day)
+        let session = WorkoutSession(isCompleted: false, day: day)
+        context.insert(session)
+        try context.save()
+
+        XCTAssertEqual(PlansListView.plansBlockedByActiveSession([plan]).map(\.name), ["Push Pull Legs"])
+    }
+
+    func testPlanWithOnlyCompletedSessionsIsNotBlockedFromDeletion() throws {
+        let container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let context = container.mainContext
+
+        let plan = TrainingPlan(name: "5x5", programType: "custom", isActive: true)
+        context.insert(plan)
+        let day = TrainingDay(name: "Tag A", weekday: 2, type: .fullBody, plan: plan)
+        context.insert(day)
+        let session = WorkoutSession(isCompleted: true, day: day)
+        context.insert(session)
+        try context.save()
+
+        XCTAssertTrue(PlansListView.plansBlockedByActiveSession([plan]).isEmpty,
+                      "ein abgeschlossenes Training darf eine Planloeschung nicht blockieren")
+    }
+
+    func testPlanWithoutAnySessionsIsNotBlockedFromDeletion() throws {
+        let container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let context = container.mainContext
+
+        let plan = TrainingPlan(name: "Leerer Plan", programType: "custom", isActive: false)
+        context.insert(plan)
+        try context.save()
+
+        XCTAssertTrue(PlansListView.plansBlockedByActiveSession([plan]).isEmpty)
+    }
 }
 #endif

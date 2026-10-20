@@ -600,42 +600,26 @@ public struct PlansListView: View {
         navigation.workoutPath.append(plan)
     }
 
+    /// TestingBot-Geraetebefund (Deltiq-Abnahme, Punkt 1): Loeschen eines
+    /// Plans mit laufender (nicht abgeschlossener) Session crasht auf
+    /// echtem Geraet reproduzierbar mit einem SwiftData-internen, nicht
+    /// per do/catch fangbaren Fatal-Error ("Context is missing for ...
+    /// TrainingDay/pN"). Vier gerätegetestete interne Fixes haben das NICHT
+    /// behoben (siehe Git-Historie `deletePlans`-Commits) — Nutzerentscheid:
+    /// die Loeschung stattdessen auf UI-Ebene verhindern, statt den
+    /// SwiftData-Fehler weiter zu suchen.
+    internal static func plansBlockedByActiveSession(_ plans: [TrainingPlan]) -> [TrainingPlan] {
+        plans.filter { plan in
+            plan.days.contains { day in day.sessions.contains { !$0.isCompleted } }
+        }
+    }
+
     private func deletePlans(at offsets: IndexSet) {
         let plansToDelete = offsets.map { plans[$0] }
-        // TestingBot-Geraetebefund (Deltiq-Abnahme, Punkt 1) — EHRLICH OFFENER
-        // STATUS, NICHT behoben: Loeschen des AKTIVEN Plans bei laufender
-        // Session (der Session, die `PlansListView`s eigener
-        // `ActiveSessionBanner` in DERSELBEN Liste anzeigt) crasht auf
-        // echtem Geraet reproduzierbar mit einem SwiftData-internen,
-        // nicht per do/catch fangbaren Fatal-Error (iOS-Geraetelog):
-        // "SwiftData/BackingData.swift:296: Fatal error: Context is missing
-        // for ... TrainingDay/pN". VIER verschiedene, jeweils auf dem
-        // Geraet GEGENGEPRUEFTE Fix-Versuche haben das NICHT geloest:
-        //   1. Save per `DispatchQueue.main.async` verzoegern.
-        //   2. `session.day` vorab explizit auf nil setzen.
-        //   3. Jeden Tag einzeln statt per Plan-Cascade loeschen, aber noch
-        //      im selben `save()` wie der Plan.
-        //   4. Tag-Loeschung und Plan-Loeschung in zwei GETRENNTE,
-        //      nacheinander committete Saves aufteilen (aktueller Code
-        //      unten) — Geraetelog zeigt bei diesem Versuch zwei separate
-        //      abgeschlossene "CoreData: Executing write request"-Blöcke
-        //      VOR dem Fatal Error, der Crash passiert also NACH beiden
-        //      erfolgreichen Saves, nicht waehrend der SwiftData-Kaskade
-        //      selbst — widerlegt auch die Kaskade-Theorie von Versuch 3.
-        // Bekannter, gegengeprueft sicherer Vergleichsfall: derselbe Tag,
-        // dieselbe Session, direkt ueber `PlanEditorView.deleteDays`
-        // geloescht (ohne `PlansListView`s `activeSessions`-@Query/
-        // `ActiveSessionBanner` auf demselben Screen) — crasht NICHT. Die
-        // tatsaechliche Ursache liegt vermutlich in der Interaktion
-        // zwischen dieser Kaskade und der auf demselben Screen aktiven
-        // `@Query`/`ActiveSessionBanner`, ist aber mit den hier verfuegbaren
-        // Mitteln (kein symbolisierter Crash-Stacktrace, nur die
-        // Fehlermeldung selbst) nicht abschliessend lokalisiert. Weitere
-        // Versuche wurden bewusst NICHT unternommen, um nicht in
-        // unbegruendetes Raten zu verfallen (siehe Abnahmebericht).
-        // Der folgende Code (getrennte Saves) ist nicht schaedlicher als
-        // die vorherigen Versuche und bleibt als derzeit bester bekannter
-        // Stand stehen — er behebt den Crash NICHT, siehe oben.
+        guard Self.plansBlockedByActiveSession(plansToDelete).isEmpty else {
+            deletePlanErrorMessage = String(localized: "plans.delete.blockedActiveSession", bundle: .module)
+            return
+        }
         for plan in plansToDelete {
             for day in plan.days {
                 modelContext.delete(day)

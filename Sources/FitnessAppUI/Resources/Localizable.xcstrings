@@ -51544,6 +51544,29 @@
           }
         }
       }
+    },
+    "plans.delete.blockedActiveSession": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Plan hat eine laufende Trainingseinheit. Bitte zuerst beenden, dann den Plan löschen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This plan has a workout in progress. Finish it first, then delete the plan."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu planda devam eden bir antrenman var. Önce onu bitirin, sonra planı silin."
+          }
+        }
+      }
     }
   }
 }
