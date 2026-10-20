@@ -58,9 +58,10 @@ final class ExerciseLogPersistenceTests: XCTestCase {
         let reopened = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(url: storeURL))
         let logs = try reopened.mainContext.fetch(FetchDescriptor<ExerciseLog>())
         XCTAssertEqual(logs.count, 1, "muss einen echten Store-Neustart ueberstehen, nicht nur In-Memory-Retention")
-        XCTAssertEqual(logs.first?.weight, 102.06, accuracy: 1e-9)
-        XCTAssertEqual(logs.first?.reps, 8)
-        XCTAssertEqual(logs.first?.setIndex, 0)
+        let log = try XCTUnwrap(logs.first)
+        XCTAssertEqual(log.weight, 102.06, accuracy: 1e-9)
+        XCTAssertEqual(log.reps, 8)
+        XCTAssertEqual(log.setIndex, 0)
     }
 }
 #endif
