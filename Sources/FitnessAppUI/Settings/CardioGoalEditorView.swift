@@ -20,6 +20,7 @@ struct CardioGoalEditorView: View {
     @Bindable var profile: UserBodyProfile
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
 
     @Query(filter: #Predicate<WorkoutSession> { $0.isCompleted == true },
            sort: \WorkoutSession.startTime, order: .reverse)
@@ -128,6 +129,12 @@ struct CardioGoalEditorView: View {
         profile.weeklyBaseVolumeKm = draftWeeklyBaseVolumeKm
         profile.maxHeartRateBpm = draftMaxHeartRateBpm
         profile.current5kReferenceSeconds = PaceCalculator.parseDurationToSeconds(draftFiveKReferenceText)
+        // Geraete-Nachtest (Runde 5, docs/DELTIQ_DEVICE_ACCEPTANCE.md): ohne
+        // diesen expliziten Save ging ein gerade bestaetigtes Cardio-Update
+        // bei einem Kaltstart kurz danach wieder verloren (SwiftDatas
+        // impliziter Autosave kam nicht reproduzierbar rechtzeitig durch) -
+        // derselbe Musterfehler wie in `MeasurementPersistenceTests`/E01.
+        try? modelContext.save()
         dismiss()
     }
 
