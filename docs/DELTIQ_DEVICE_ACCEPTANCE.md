@@ -1,6 +1,8 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-20 (zwölfter Durchgang: Runde 11 — Onboarding/Laufcoach-
+Stand: 2026-10-20 (dreizehnter Durchgang: Paket 1, Teil 1 — A12-Fix,
+siehe Nachtrag „Paket 1 (Teil 1)" unten, HEAD `5146bfe`), davor zwölfter
+Durchgang: Runde 11 — Onboarding/Laufcoach-
 E2E-Abgleich: `GoalDrivenPlanSelectionBuilder` lässt bei Hybrid+„Both"
 (Laufen+Radfahren) am UI-Default von 3 Tagen/Woche Radfahren komplett und
 ohne jede sichtbare Meldung aus der generierten Auswahl heraus —
@@ -66,6 +68,67 @@ AX5-Spalten-Header-Fix vollständig gerätebestätigt. C01 seit Runde 5
 vollständig bestanden. D06 seit Runde 6 vollständig bestanden. A01 seit
 Runde 7 korrekt eingeordnet und gefixt. Gesamtabnahme weiterhin offen
 (kein vollständiger Abschluss aller 46 Fälle).**
+
+## Paket 1 (Teil 1): A12-Fix — Hybrid+„Both" verliert keine Sportart mehr still
+
+**Auftrag:** "Paket 1" des Laufcoach-Konzepts (Coach-Aktivierung →
+Plananpassungs-Vorschau) knapp zugeschnitten umsetzen, in Teilschritten.
+Dies ist Teil 1: die konkrete A12-Produktentscheidung des Nutzers
+umsetzen (bei Hybrid+„Both" und 3 Tagen: 1 Kraft + 1 Laufen + 1 Radfahren
+als transparente Alternative statt stillem Weglassen; bei echtem
+Tage-Mangel ein prüfbares Konflikt-Signal statt eines unsichtbaren
+Kompromisses).
+
+**Umgesetzt (Commit `5146bfe`):**
+- `GoalDrivenPlanSelectionBuilder.makeSelections` gibt bei Hybrid+„Both"
+  Kraft genau so viele Tage ab, wie nötig, damit jede gewählte
+  Ausdauer-Disziplin mindestens einen Tag bekommt (3 Tage/Woche → 1
+  Kraft + 1 Laufen + 1 Radfahren, exakt die vom Nutzer vorgegebene
+  Alternative). Keine Verhaltensänderung für den bereits korrekten
+  Einzel-Modalitäts-Fall (A03/A06/A08) — durch Tests abgesichert.
+- Neue `requiredMinimumDays(goal:enduranceModality:)` und
+  `distributionConflict(goal:enduranceModality:totalDaysPerWeek:)`:
+  liefert `nil`, wenn `makeSelections` alle gewählten Disziplinen
+  unterbringen kann, sonst ein `DistributionConflict` mit den vier vom
+  Nutzer vorgegebenen `Resolution`-Fällen (Verteilung ändern /
+  zusätzlichen Tag erlauben / Ziel ändern / Plan beibehalten) als reines
+  Datenmodell — noch OHNE UI-Anbindung (siehe „Offen" unten).
+- `GoalDrivenPlanSelectionBuilderTests`: der bisherige Pinning-Test (der
+  den Bug absichtlich festschrieb) wurde durch einen Test des NEUEN
+  Sollverhaltens ersetzt (1/1/1 bei 3 Tagen), plus zwei neue Tests für
+  `distributionConflict`.
+- **CI (`apple-ci-comparison.yml`):** Run `39481833188`, Commit `5146bfe`
+  — erfolgreich, alle Tests grün (inkl. neuer und unveränderter
+  bestehender `GoalDrivenPlanSelectionBuilderTests`).
+
+**A12 gilt damit für den geprüften Fall (Hybrid+„Both", 3 Tage/Woche,
+UI-Default) als gefixt und test-verifiziert — noch NICHT gerätebestätigt**
+(dieser Teilschritt war reine Logik-/Testebene, kein TestingBot-Einsatz
+nötig, Budget unverändert bei 21.238s aus Runde 11).
+
+**Bewusst NICHT in diesem Teilschritt umgesetzt (Komponenten 2–7 aus dem
+Paket-1-Zuschnitt — zurückgestellt für einen eigenen Folgeschritt, kein
+Teil dieses Commits):**
+- `RunCoachPlanAdjustment` (Diff-Logik: welche Läufe/Kraftarbeit sich
+  ändern), `CoachAdjustmentCardModel`/-`PreviewView`, die Anbindung in
+  `CardioGoalEditorView`, die Onboarding-Korrektur
+  (`onGenerated`/`finishOnboarding`) und die zugehörigen 9 Geräte-Nachweise.
+- **Grund, kein stiller Scope-Schnitt:** es gibt noch KEIN Konzept für
+  "manuell fixierte Tage/Übungen schützen" auf einem bereits
+  AKTIVEN, persistierten `TrainingPlan` — `PlanDraft.isContentFixed`/
+  `isPositionFixed` existieren nur in der Wizard-Entwurfsschicht
+  (`Sources/FitnessAppCore/Planning/PlanDraft.swift`), bevor ein Plan
+  überhaupt gespeichert wird, nicht danach. Der einzige vorhandene
+  Signal-Kandidat ist `TrainingDay.generationFingerprint` (zeigt, ob ein
+  Wizard-Tag seit der Erzeugung manuell verändert wurde — exakt das
+  Prinzip, das "neu rechnen" bereits nutzt) — das reicht vermutlich als
+  Schutzmechanismus, ist aber eine echte Designentscheidung, die vor der
+  Umsetzung bestätigt werden sollte, statt sie in einem einzelnen
+  Implementierungsschritt eigenmächtig zu treffen.
+- `distributionConflict` ist bewusst noch NICHT in `PlanBuilderView`
+  (Schritt 3, die Wochenvorschau) verdrahtet — die eigentliche
+  "sichtbare Entscheidung" (Konflikt-Banner mit den vier Optionen) ist
+  noch reine UI-Arbeit, ebenfalls zurückgestellt.
 
 ## Runde 11: Onboarding/Laufcoach-E2E-Abgleich (GoalDrivenPlanSelectionBuilder, PlanGeneratorInput, onGenerated/finishOnboarding)
 
@@ -1631,7 +1694,7 @@ Daten-/Logikebene beweist.
 | A09 | Unbekannte Referenzleistung → keine erfundenen Werte/stille Nullannahme | P2 | **keine erkennbare Implementierung gefunden** im Onboarding | kein Test gefunden | kein Geräte-Nachweis vorhanden | noch nicht geprüft | **Fachlicher Konflikt** (siehe unten): Dok. 02 §4 verlangt diese Fragen im Onboarding bei aktiviertem Coach; der Code stellt sie dort nicht. |
 | A10 | Eingebetteten Wocheneditor bestätigen → nur Onboarding-Entwurf geändert | P1 | `OnboardingView.finishOnboarding()` (kein früher Plan-Insert aus der Vorschau) | kein direkter Test; `PlanCreationOperationTests.swift`/`PlanDraftResultAdapterTests.swift` decken die angrenzende Logik ab (verwandt) | Build/Commit `fc2ad39`, TestingBot-Session (Runde 3). Im eingebetteten „Build Plan"-Wocheneditor eine Einheit per Drag verschoben (Position 2→1), danach den Haken getippt: Die App sprang DIREKT zum Dashboard mit bereits aktivem, persistiertem Plan — der Haken in diesem Einstiegspfad beendet das GESAMTE Onboarding in einem Schritt (keine Rückkehr zu einer separaten, noch bearbeitbaren Onboarding-Zusammenfassung). Die vorgenommene Reorder-Änderung war im fertigen, gespeicherten Plan korrekt übernommen (gleiche Reihenfolge wie im Entwurf). Anschließend genau "1 PLAN" in der Plan-Liste (kein verwaister/doppelter Datensatz). | teilweise | Die geprüfte Garantie "kein vorzeitiger/doppelter Plan-Insert" ist erfüllt (Entwurfsänderung korrekt übernommen, nur 1 Plan). Die genaue Lesart "Haken übernimmt NUR den Entwurf und führt zur Vorschau zurück" (Dok. 02 §6, Punkt 2) trifft auf den hier getesteten „Build Plan"-Pfad NICHT zu — dort ist der Haken zugleich die Onboarding-Abschlussaktion (Punkt 3). Ob es daneben einen separaten „kompakte Wochenvorschau mit eigenem Haken + eigenem späteren Finish"-Bildschirm gibt, der dieser engeren Lesart entspricht, wurde in dieser Runde nicht gefunden/getestet. |
 | A11 | Onboarding abbrechen/mehrfach abschließen → keine verwaisten/doppelten Pläne | P1 | `OnboardingView.finishOnboarding()` (`isFinishingOnboarding`-Guard), `OnboardingPlanCreationNotice` | `OnboardingPlanCreationNoticeTests.swift`, `OnboardingFinishPlanSelectionTests.swift` (verwandt: Notice-/Auswahl-Logik, nicht der Doppel-Tap-Guard selbst) | Build/Commit `b8b8f6e`, TestingBot-Session `f3e600cd…26223308`. a) Mehrfach-Tap: 6 schnell aufeinanderfolgende Taps auf "Finish" am letzten Onboarding-Schritt → Plans-Liste zeigt danach exakt "1 PLAN" (kein Dupe), Guard bestätigt wirksam. b) Abbruch: Onboarding bis zum letzten Schritt (vor "Finish") durchlaufen, App per `terminateApp` hart beendet und neu gestartet → sauberer Neustart bei Schritt 1 ("Welcome"), kein Absturz, kein sichtbar hängender Zustand. Onboarding danach regulär bis "Finish" wiederholt und abgeschlossen → ebenfalls exakt "1 PLAN" (kein verwaister Datensatz aus dem abgebrochenen Versuch). | bestanden | Kein Negativbeweis, dass tatsächlich ein `UserBodyProfile`-Datensatz aus dem abgebrochenen Versuch im Store verblieb (nur indirekt über "1 PLAN" nach Abschluss geschlossen, kein direkter Store-/Export-Dump geprüft). |
-| A12 | Hybrid + "Both"-Ausdauerform → beide gewählten Sportarten im generierten Plan, sonst sichtbarer Konflikt statt stillem Weglassen | P2 | `GoalDrivenPlanSelectionBuilder.makeSelections`/`enduranceSelections` (rundet Ausdauertage via `ceil`/Restwert, kein `else`-Zweig wenn eine Modalität auf 0 Tage rundet) | `GoalDrivenPlanSelectionBuilderTests.testHybridGoalWithBothModalityAtTheDefaultThreeDaysSilentlyDropsCycling` (neu, Runde 11, pinnt den Ist-Zustand) | Build/Commit `9956f8e`, TestingBot-Session `7f1a4aa358fb-8ccc5c0b64ef-388a7f4cec85-179252205753-68569042` (Runde 11). Hybrid + "Both" gewählt, Coach aus, Tage-Slider NICHT angefasst (Default "3 days per week" — der von den meisten Nutzern nie geänderte Standardwert). Wochenvorschau im Builder-Pfad zeigte 3 Einheiten (2x Kraft, 1x "Easy Run") — keine Radfahren-Einheit, keine Konflikt-/Hinweismeldung. Nach Bestätigen ("Adopt Plan") war der gespeicherte Plan deckungsgleich mit der Vorschau (Mon=Push&Pull, Wed=Easy Run, Fri=Pull&Push), exakt "1 PLAN". | teilweise (Bug reproduziert und gerätebestätigt, bewusst nicht gefixt) | Spezifikationskonformer Zustand verlangt eine sichtbare Entscheidung/Konflikt-Anzeige statt stillem Weglassen — das ist eine neue Konflikt-UI (Produktentscheidung), keine begrenzte Code-Korrektur, siehe Fachliche Widersprüche Punkt 7. Nur der 3-Tage-Default geprüft; andere Tage-Zahlen mit demselben Rundungsmuster sind nicht einzeln gerätegeprüft, aber durch dieselbe Code-Stelle plausibel gleichermaßen betroffen. |
+| A12 | Hybrid + "Both"-Ausdauerform → beide gewählten Sportarten im generierten Plan, sonst sichtbarer Konflikt statt stillem Weglassen | P2 | GEFIXT (Paket 1, Teil 1, Commit `5146bfe`): `makeSelections` gibt Kraft so viele Tage ab wie nötig, damit jede gewählte Disziplin mindestens einen Tag bekommt; `distributionConflict(...)` erkennt den verbleibenden echten Mangelfall (zu wenige Tage für alle Disziplinen) als prüfbares Signal, noch ohne UI-Anbindung | `GoalDrivenPlanSelectionBuilderTests.testHybridGoalWithBothModalityAtTheDefaultThreeDaysGivesEachDisciplineOneDay` + zwei neue `distributionConflict`-Tests (ersetzen den früheren Pinning-Test) | Logik-/CI-Ebene verifiziert (Run `39481833188`, Commit `5146bfe`, alle Tests grün) — NOCH NICHT erneut gerätebestätigt; ursprünglicher Bug-Nachweis (Build `9956f8e`, TestingBot-Session `7f1a4aa358fb-8ccc5c0b64ef-388a7f4cec85-179252205753-68569042`, Runde 11) bleibt als Befund-Beleg gültig. | teilweise (Logik gefixt und test-verifiziert, Geräte-Nachtest und UI-Anbindung des Konflikt-Signals stehen noch aus) | Ursprünglicher Spezifikationskonflikt (Punkt 7 unten) ist für die Kern-Verteilungslogik aufgelöst; die SICHTBARE Konflikt-Anzeige bei echtem Tage-Mangel ist weiterhin reine UI-Arbeit, siehe "Paket 1 (Teil 1)"-Nachtrag oben für den genauen Zuschnitt. |
 | B01 | Wocheneditor Drag & Drop → Reihenfolge korrekt, alternative Bedienung möglich | P2 | `PlanBuilderView.resultStepView`/`moveDraftDays`, `PlanDraft.moveDay` | `PlanDraftTests.testMoveDayReordersAndPreservesStableID` u.a. (exakte Logikabdeckung) | Build/Commit `fc2ad39`, TestingBot-Session (Runde 3). BEIDE Bedienwege im selben Wocheneditor geprüft: (1) „Move to…"-Menü (alternative/zugängliche Bedienung): "Easy Run" per Menü auf "Position 1" verschoben → Reihenfolge korrekt neu sortiert, sofort sichtbar. (2) Echte Drag-Geste (langer Druck + Bewegung über mehrere Zwischenschritte): "Bodyweight · Pull & Push" von Position 3 an Position 1 gezogen → Reihenfolge erneut korrekt neu sortiert (alle 3 Einheiten korrekt neu angeordnet, keine Duplikate/Lücken). Ein einzelner schneller Swipe ohne Haltephase loeste die Drag-Geste NICHT aus (Geraete-/Gesten-Nuance, kein Produktfehler — ein echter Finger haelt beim Drag typischerweise). | bestanden | Nur ein 3-Tage-Entwurf im „Build Plan"-Pfad geprüft, nicht die eigenständige Builder-Variante außerhalb des Onboardings; beide dürften laut Code dieselbe `moveDraftDays`/`PlanDraft.moveDay`-Logik nutzen. |
 | B02 | Inhalt fixiert, Woche neu verteilen → Inhalt bleibt, Position regelkonform behandelbar | P2 | `PlanDraft.setContentFixed`/`redistribute` | `PlanDraftTests.testRedistributeLeavesContentFixedDayCompletelyUntouchedButFillsOthersFromThePool`, `testContentFixationDoesNotPreventReordering` | kein Geräte-Nachweis vorhanden | bestanden | Reine Logikprüfung ausreichend und exakt passend; kein Geräte-Nachweis der UI-Darstellung. |
 | B03 | Position fixiert, Übungen variieren → Position bleibt, erlaubter Inhalt veränderbar | P2 | `PlanDraft.setPositionFixed`/`replaceContent` | `PlanDraftTests.testPositionFixationDoesNotPreventContentReplacement`, `testRedistributeAllowsNewContentOnAPositionFixedButNotContentFixedDay` | kein Geräte-Nachweis vorhanden | bestanden | Nur Logikebene; keine UI-Geräteprüfung. |
@@ -1827,10 +1890,16 @@ erneut melden statt pauschal zu wiederholen.
    keine Meldung, kein Hinweis, keine Rückfrage. Die spezifikationskonforme
    Lösung (sichtbare Entscheidung/Konflikt-Anzeige) ist eine neue
    Konflikt-UI und keine begrenzte Code-Korrektur im Sinne der erteilten
-   Aufträge — daher hier dokumentiert statt eigenmächtig gefixt. Ein
-   Regressionstest (`testHybridGoalWithBothModalityAtTheDefaultThreeDaysSilentlyDropsCycling`)
-   pinnt den aktuellen Zustand, damit ein künftiger bewusster Fix hier
-   sichtbar etwas ändern muss.
+   Aufträge — daher ursprünglich hier dokumentiert statt eigenmächtig
+   gefixt. **Update Paket 1 (Teil 1), Commit `5146bfe`:** der Nutzer hat
+   die Produktentscheidung explizit getroffen (1 Kraft+1 Laufen+1
+   Radfahren als transparente Alternative bei 3 Tagen, plus ein
+   `distributionConflict`-Signal für den verbleibenden echten
+   Mangelfall) — die Kern-Verteilungslogik ist jetzt gefixt und
+   test-verifiziert (siehe Zeile A12 und Nachtrag „Paket 1 (Teil 1)"
+   oben). Offen bleibt nur noch die UI-Anbindung des Konflikt-Signals
+   (sichtbarer Banner/Dialog bei echtem Tage-Mangel) sowie der
+   Geräte-Nachweis des Fixes selbst.
 
 ## F01–F08 differenziert geprüft (Nachtrag)
 
