@@ -1,44 +1,308 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-20 (zehnter Durchgang: Runde 9 — AX5-Spalten-Header-Fix
-vollständig gerätebestätigt, kg/lbs an die vier benannten Stellen
-angebunden und gerätebestätigt, dabei ein neuer, von kg/lbs unabhängiger
-Kaltstart-Datenverlust-Bug in `ExerciseCard.logSet()` gefunden und gefixt
-— siehe Nachtrag „Runde 9" unten), Branch `claude/smart-onboarding-epic`,
-HEAD `25d065a` (reine Testkorrektur `Double?`→`XCTUnwrap`; Fix-Commit
-dieser Runde `ac9fcc2` — `logSet()` fehlte `context.save()`; davor `0a3c68e`
-der eigentliche kg/lbs-Fix; davor `c299c22` reine Syntaxkorrektur Runde 8;
-davor `872f707` AX5-Spalten-Header-Fix Runde 8; davor `a4359f4` Fix-Commit
-Runde 7 [A01 doppelte Ziel-/Tage-Abfrage], davor `47678c1` Fix-Commit
-Runde 6 [D06 Cancel-Endlosschleife], davor `80eee60` reiner
-Dokumentations-Commit zur Speicherfehler-Codeprüfung, davor `1c8bf54`
-Fix-Commit Runde 5 (`CardioGoalEditorView.save()`), davor `47ab4d6` der
-ursprüngliche C01-Fix, davor `4ea8d7b` reiner Dokumentations-Commit zu
-Runde 3, davor `254d669` Korrektur-Commit zu E05, davor `64ba455` Fix-Commit
-E04, davor `3e67cb8` ursprünglicher — per Geräte-Nachtest widerlegter —
-E05-Versuch, davor `c96bf5c`). TestingBot-Verbrauch Runde 9: siehe
-Nachtrag „Runde 9" unten für Details und exakte Budget-Rekonstruktion.
-Kein Merge nach `main`, kein Release.
+Stand: 2026-10-20 (elfter Durchgang: Runde 10 — vom Nutzer anhand eines
+Screenshots gemeldete Punkte geprüft: Hantelrechner-Einstieg bestätigt
+unauffällig (kein Bug, nur ungesetztes Gewicht), neue optionale
+Satzanzeige „bisherige Darstellung"/„Spaltenübersicht" gebaut und
+gerätebestätigt, Gewicht/Wdh-Einzug in der Spaltenübersicht umgesetzt,
+echter Light-Mode-Tab-Icon-Bug gefunden und gefixt, gebündelter
+Geräte-Abnahme-Durchlauf — siehe Nachtrag „Runde 10" unten), Branch
+`claude/smart-onboarding-epic`, HEAD `c6f5e9c` (zweiter, am Gerät
+verifizierter Nachbesserungs-Fix für den neuen „Set display"-Picker bei
+AX5; davor `496a0cf` erster, am Gerät als unzureichend erkannter
+Fix-Versuch derselben Stelle; davor `9b1a2d2` CI-Kompilierfix; davor
+`d2a561f` Feature-Commit Satzanzeige-Umschalter + Gewicht/Wdh-Einzug;
+davor `949f161` Fix-Commit Tab-Icon-Light-Mode-Bug; davor `71eb368`
+Dokumentations-Commit Runde 9; davor `25d065a` reine Testkorrektur
+`Double?`→`XCTUnwrap`; Fix-Commit Runde 9 `ac9fcc2` — `logSet()` fehlte
+`context.save()`; davor `0a3c68e` der eigentliche kg/lbs-Fix; davor
+`c299c22` reine Syntaxkorrektur Runde 8; davor `872f707`
+AX5-Spalten-Header-Fix Runde 8; davor `a4359f4` Fix-Commit Runde 7 [A01
+doppelte Ziel-/Tage-Abfrage], davor `47678c1` Fix-Commit Runde 6 [D06
+Cancel-Endlosschleife], davor `80eee60` reiner Dokumentations-Commit zur
+Speicherfehler-Codeprüfung, davor `1c8bf54` Fix-Commit Runde 5
+(`CardioGoalEditorView.save()`), davor `47ab4d6` der ursprüngliche
+C01-Fix, davor `4ea8d7b` reiner Dokumentations-Commit zu Runde 3, davor
+`254d669` Korrektur-Commit zu E05, davor `64ba455` Fix-Commit E04, davor
+`3e67cb8` ursprünglicher — per Geräte-Nachtest widerlegter — E05-Versuch,
+davor `c96bf5c`). TestingBot-Verbrauch Runde 10: siehe Nachtrag
+„Runde 10" unten für Details und exakte Budget-Rekonstruktion. Kein
+Merge nach `main`, kein Release.
 
 **Gesamtstatus: A–F bearbeitet; deutliche Mehrheit bestanden, einzelne
 Fälle teilweise oder (A09/C04/E08/F04) noch offen als fachliche
-Implementierungslücken. Seit Runde 9: kg/lbs-Einheiten-Setting wirkt jetzt
-auch auf Satz-Logging, Körperdaten-Editor, Profil-Zusammenfassung und
-Dashboard-Gewichtstrend (gezielte Teilmenge, Volumen/PRs/Charts/CSV
-bleiben bewusst kg-only, siehe Nachtrag „Runde 9"); AX5-Spalten-Header-Fix
-vollständig gerätebestätigt (nicht nur Zeilenumbruch, auch Lesbarkeit/
-Überlappung geprüft). Dabei neuer, von kg/lbs unabhängiger Kaltstart-Bug
-in `ExerciseCard.logSet()` gefunden und gefixt — ein geloggter Satz ging
-sonst bei einem Kaltstart kurz danach verloren, trotz grünem Haken und
-aktualisierter Volumen-Anzeige. C01 seit Runde 5 vollständig bestanden.
-D06 seit Runde 6 vollständig bestanden (isolierter Cancel-Schritt
-gerätebestätigt; dabei gefundene Dialog-Endlosschleife gefixt und
-gerätebestätigt). A01 seit Runde 7 korrekt eingeordnet und gefixt
-(doppelte Ziel-/Tage-Abfrage beim Wechsel vom Onboarding in den
-eingebetteten PlanBuilder, siehe dortiger Nachtrag für die in Runde 6
-fälschlich geführte „kein Produktpfad"-Einordnung und ihre Rücknahme).
-Gesamtabnahme weiterhin offen (kein vollständiger Abschluss aller 45
-Fälle).**
+Implementierungslücken. Seit Runde 10: die vom Nutzer per Screenshot
+gemeldeten Punkte sind abgearbeitet — Hantelrechner-Einstieg war kein
+Bug (siehe Nachtrag), die Satzanzeige ist jetzt über Settings → Training
+zwischen „Spaltenübersicht" (Default, bisheriges Verhalten) und
+„bisherige Darstellung" (neu, selbst-beschriftete Felder ohne
+gemeinsamen Spaltenkopf) umschaltbar, beide Darstellungen teilen sich
+exakt dieselben Satz-Daten/Callbacks, Gewicht+Wdh sind in der
+Spaltenübersicht moderat eingerückt (RIR-Breite unverändert bei 44pt),
+und ein echter, geräteweit reproduzierbarer Light-Mode-Bug (inaktive
+Tab-Icons durch Weiss-auf-Weiss praktisch unsichtbar) wurde gefunden und
+gefixt. Dabei zusätzlich ein eigener, erst am Gerät entdeckter AX5-Bug im
+neuen Settings-Picker gefunden und in zwei Anläufen gefixt (erster
+Versuch unzureichend, siehe Nachtrag). Seit Runde 9: kg/lbs-Einheiten-
+Setting wirkt auch auf Satz-Logging, Körperdaten-Editor, Profil-
+Zusammenfassung und Dashboard-Gewichtstrend (gezielte Teilmenge, Volumen/
+PRs/Charts/CSV bleiben bewusst kg-only, siehe Nachtrag „Runde 9");
+AX5-Spalten-Header-Fix vollständig gerätebestätigt. C01 seit Runde 5
+vollständig bestanden. D06 seit Runde 6 vollständig bestanden. A01 seit
+Runde 7 korrekt eingeordnet und gefixt. Gesamtabnahme weiterhin offen
+(kein vollständiger Abschluss aller 45 Fälle).**
+
+## Runde 10: Screenshot-gemeldete UI-Punkte (Hantelrechner, Satzanzeige-Umschalter, Tab-Icon-Fix, Layout-Einzug)
+
+**Auftrag (vom Nutzer per Screenshot gemeldet, 5 Punkte):**
+1. Prüfen, ob der Hantelrechner-Einstieg für Langhantel-Übungen in der
+   neuen Spaltenübersicht fehlt; separat klären, ob die „BW"-Anzeige bei
+   Kniebeuge ein unkorrekt gesetztes Bodyweight-Equipment oder schlicht
+   ein ungesetztes Gewicht ist — NICHT allein aus dem Übungsnamen auf die
+   Equipment-Zuordnung schliessen.
+2. Die Spaltenübersicht optional machen: neue Settings → Training-Wahl
+   zwischen „bisherige Darstellung" und „Spaltenübersicht", gleicher
+   Persistenz-Mechanismus wie `weight_unit`, Kaltstart-fest, keine zweite
+   Logging-Implementierung, kein Datenverlust beim Umschalten.
+3. Gewicht+Wdh-Feldgruppe in der Spaltenübersicht moderat nach rechts
+   einrücken, Spaltenköpfe entsprechend ausrichten, RIR-Breite/Lesbarkeit
+   dabei NICHT verkleinern.
+4. Fehlende untere Tab-/Menüpunkte während eines aktiven Workouts
+   untersuchen (laut Nutzer geräteabhängig) — root-causen statt pauschal
+   die Oberfläche zu verschieben oder neue Nav-Einträge zu erfinden.
+5. Gebündelter Geräte-Abnahme-Durchlauf über sinnvolle Kombinationen
+   (Bildschirmbreite, Standard-/AX5-Schriftgrösse, Light/Dark, kg/lbs,
+   beide Satzanzeige-Modi, Hantel- und Bodyweight-Übung, Tastatur auf/zu).
+
+Standing Constraints unverändert: kein Merge, kein Release, CI bündeln,
+kein neuer allgemeiner Review, gefundene Bugs gezielt mit Regressionstest
+fixen statt Redesign.
+
+### Punkt 1 — Hantelrechner-Einstieg und „BW"-Anzeige: kein Bug gefunden
+
+Code-Recherche VOR jeder Änderung (wie vom Auftrag verlangt):
+- `SetRow.plateColumn`/`isBarbellExercise`/`plateCalculatorButton`
+  (`SetRow.swift`) sind unverändert gegenüber dem Stand, der in früheren
+  Runden bereits gerätebestätigt wurde: die Plate-Spalte reserviert für
+  JEDE Übung dieselbe Breite, zeigt den Button aber erst ab `weight > 0`
+  (`.opacity`/`.allowsHitTesting`). Kein separater Code-Pfad für
+  „Spaltenübersicht" vs. irgendeine andere Darstellung — dieselbe Logik
+  gilt in beiden Satzanzeige-Modi.
+- `ExerciseLibraryData.swift` Zeile 71: „Kniebeuge"/„Back Squat" ist
+  korrekt mit `equipment: .barbell` getaggt. Keine Bodyweight-
+  Fehlklassifizierung.
+- Schlussfolgerung VOR dem Geräte-Test: das im Nutzer-Screenshot gezeigte
+  „BW" ist mit sehr hoher Wahrscheinlichkeit schlicht ein noch nicht
+  eingetragenes Gewicht (Placeholder), kein Klassifizierungsfehler.
+
+**Geräte-Nachweis (iPhone 15/iOS 18.0, Light Mode, kg, Spaltenübersicht,
+Übung „Back Squat" aus Plan „Full Body 3x"):** vor Gewichtseingabe zeigt
+Satz 1 korrekt „BW" (Platzhalter, Plate-Spalte leer/nicht antippbar) —
+exakt der im Screenshot gemeldete Zustand, reproduziert und erklärt.
+Nach Eingabe von „60" im Gewichtsfeld erscheint der orange
+Hantel-Button sofort; Tap öffnet „Barbell Loading" mit korrektem Ergebnis
+(60 kg, Stange 20 kg, „Pro Seite: 1× 20 kg"). **Kein Bug — Punkt 1 ist
+damit vollständig durch Code-Lesen UND Geräte-Beleg als Fehlalarm
+bestätigt**, bewusst ohne die Equipment-Zuordnung anzufassen (wie vom
+Auftrag verlangt).
+
+### Punkt 2 — Optionale Satzanzeige „bisherige Darstellung"/„Spaltenübersicht"
+
+**Implementierung:**
+- Neuer `@AppStorage("pref_set_display_mode")`-Key (Default `"column"` —
+  bisheriges Verhalten bleibt unverändert der Default), identisch
+  deklariert in `SetRow.swift`, `ExerciseCard.swift` und
+  `SettingsAppExperienceView.swift` (durch eigenen Regressionstest
+  `SetDisplayModeSettingTests.testAllThreeCallSitesUseTheSameDisplayModeStorageKey`
+  gegen einen Tippfehler in einer der drei Stellen abgesichert).
+- Settings → App & Workout Experience → „Trainings-Verhalten" (Workout
+  Behavior) bekommt eine neue Zeile „Set display" mit Picker
+  „Column overview" / „Previous layout" (= „Spaltenübersicht" /
+  „bisherige Darstellung").
+- `ExerciseCard` blendet den gemeinsamen Spaltenkopf (`setRowColumnHeader`)
+  im `"classic"`-Modus aus. `SetRow` bekommt einen neuen `classicInputRow`/
+  `classicTwoLineRow`-Zweig, der dieselben `weightInput`/`repsInput`/
+  `plateColumn`/`rirCapsule`/`checkmarkButton`-Subviews wiederverwendet
+  (keine zweite Logging-Implementierung) und Gewicht/Wdh stattdessen
+  direkt über dem jeweiligen Feld beschriftet (`labeledField()`, nutzt
+  `.deltiqLabel()` — denselben bereits AX5-gehärteten Caption-Stil wie der
+  Spaltenkopf, siehe Punkt 3).
+- Die schmale Fallback-Zeile (`inputRowSecondaryLine`: Plate-Button,
+  RIR-Kapsel, Haken) ist zwischen Spalten- und klassischer Darstellung
+  identisch extrahiert, keine Duplikation.
+
+**Geräte-Nachweis (iPhone 15/iOS 18.0, Dark Mode, Satz 1 bereits mit
+60 kg/6 Wdh geloggt, laufender Pausentimer):**
+- Umschalten von „Column overview" auf „Previous layout" in den
+  Settings: zurück im Workout zeigt die Karte sofort die selbst-
+  beschriftete Darstellung (KG/REPS-Captions über den Feldern, kein
+  gemeinsamer Spaltenkopf mehr) — Satz 1 (60 kg, 6 Wdh, grüner Haken,
+  Hantel-Icon) UNVERÄNDERT erhalten, Volumen weiterhin korrekt
+  „360 KG", **der laufende Pausentimer lief währenddessen ohne
+  Unterbrechung weiter** (vor dem Wechsel „0:13", danach fortlaufend
+  weitergezählt) — keine der drei geforderten Erhaltungs-Eigenschaften
+  (Werte, Status, Timer) verletzt.
+- Satz 2 im klassischen Modus geloggt (BW/6 Wdh) — funktioniert
+  identisch zur Spaltenübersicht, keine fehlenden Funktionen.
+- **Kaltstart-Beleg:** App vollständig beendet (`terminateApp`) und neu
+  gestartet (`launchApp`, echter Prozess-Neustart, kein Backgrounding).
+  Nach dem Neustart: Dashboard zeigt „Resume running workout", nach
+  Fortsetzen ist die klassische Darstellung weiterhin aktiv, Satz 1 UND
+  Satz 2 weiterhin korrekt geloggt (60 kg/6 Wdh bzw. BW/6 Wdh, beide
+  Haken grün), Volumen weiterhin „360 KG" — Einstellung UND Satzdaten
+  überleben den Kaltstart.
+
+### Punkt 3 — Gewicht/Wdh-Einzug in der Spaltenübersicht
+
+**Implementierung:** neue Konstante
+`SetRow.SetRowColumns.weightGroupLeadingInset = 10` (ein fixer
+`Color.clear`-Spacer vor `weightInput` bzw. dem Gewicht-Spaltenkopf), in
+allen vier betroffenen Stellen konsistent angewendet:
+`ExerciseCard.fullSetRowColumnHeader`, `ExerciseCard.
+reducedSetRowColumnHeader`, `SetRow.singleLineInputRow`, `SetRow.
+twoLineInputRow`. `rirWidth` (44pt) bewusst unverändert gelassen — durch
+`SetDisplayModeSettingTests.
+testRirColumnWidthWasNotShrunkByTheWeightGroupIndent` als Regressionstest
+abgesichert.
+
+**Geräte-Nachweis:** Screenshot der Spaltenübersicht (Standardschrift,
+Light Mode) zeigt Gewicht+Wdh sichtbar nach rechts abgesetzt von der
+Satznummer, Spaltenkopf „Set | KG | REPS | RIR" exakt deckungsgleich mit
+den Satzzeilen darunter ausgerichtet. Bei AX5 (siehe unten) bleibt RIR in
+BEIDEN Darstellungen voll lesbar, nicht zusammengeschoben.
+
+### Punkt 4 — Fehlende untere Tab-Icons im Light Mode: echter Bug gefunden und gefixt
+
+**Root Cause (Code-Lesen vor der Änderung):**
+`RootView.swift`s `configureTabBarAppearance()` setzte die Icon-Farbe der
+inaktiven Tabs hart auf `UIColor.white.withAlphaComponent(0.35)`, unter
+der (im Code-Kommentar explizit genannten) Annahme eines IMMER dunklen
+Hintergrunds (`#1C1C1E`). `Color.Deltiq.surface` (`Theme.swift`) ist aber
+hell/dunkel-adaptiv — im Light Mode reines Weiss. Weiss-auf-Weiss machte
+die vier inaktiven Tabs (Dashboard, Measurement, Tools, More, je nachdem
+welcher gerade aktiv ist) im Light Mode de facto unsichtbar, nur der eine
+aktive orange Tab blieb erkennbar — exakt das vom Nutzer gemeldete
+Verhalten, und exakt „geräteabhängig" im Sinne von „abhängig vom
+Farbschema". `WorkoutRootView`/`ActiveWorkoutView` pushen die aktive
+Session reaktionsgenau per `NavigationStack`/`safeAreaInset` (kein
+`.fullScreenCover`, kein `.toolbar(.hidden, for: .tabBar)` im gesamten
+Code gefunden) — die Tab-Bar war also nie absichtlich ausgeblendet,
+sondern nur farblich unsichtbar.
+
+**Fix:** dieselbe Hell/Dunkel-Verzweigung wie `Color.init(deltiqLight:
+deltiqDark:)` (Theme.swift) statt eines harten Weiss-Werts:
+`UIColor(Color(deltiqLight: .black.opacity(0.35), deltiqDark: .white.
+opacity(0.35)))`. Eine CI-Unit-Test-Abdeckung wurde bewusst NICHT
+versucht: `canImport(UIKit)`-gegatete Tests laufen auf dem macOS-CI-
+Runner nie (siehe bereits in Vorrunden dokumentiertes Platform-Problem),
+ein solcher Test wäre stille Fake-Abdeckung gewesen — die einzige echte
+Verifikation ist der Geräte-Toggle.
+
+**Geräte-Nachweis:**
+- **Light Mode (vorher kaputt):** direkt nach Onboarding-Abschluss zeigt
+  das Dashboard alle 5 Tabs (Dashboard, Plan, Measurement, Tools, More)
+  klar lesbar in dunkelgrauer/schwarzer Farbe, nur „Dashboard" orange
+  aktiv — kein Weiss-auf-Weiss mehr sichtbar, über mehrere Screenshots
+  dieser Runde hinweg bestätigt (inkl. während eines laufenden
+  Pausentimers, der exakten vom Nutzer gemeldeten Situation).
+- **Dark Mode (vorher bereits korrekt, Regressionsprüfung):** nach
+  Umschalten auf Dark Mode in den Settings bleiben alle 5 Tabs weiterhin
+  klar lesbar (jetzt hellgrau/weiss auf dunklem Hintergrund) — Fix
+  verändert das vorher schon korrekte Dark-Mode-Verhalten nicht.
+- Beide Farbschemata zusätzlich bei AX5 geprüft (siehe unten) — Tab-Bar
+  bleibt in beiden Fällen vollständig erreichbar.
+
+### Gefundener Bug (abseits der 5 Punkte): AX5-Überlauf im neuen „Set display"-Picker — zwei Anläufe
+
+Beim AX5-Geräte-Nachtest von Punkt 2/3 fiel auf: der neue „Set display"-
+Picker in den Settings überlief bei maximaler Bedienungshilfen-
+Textgrösse (AX5) sichtbar in die Nachbar-Reihen („Quick check-in",
+„Four-week review", „Deload suggestions") hinein — ein von dieser Runde
+selbst verursachter Fund, nicht Teil der 5 ursprünglichen Punkte, aber
+nach etablierter Praxis dieser Session („ein Fund wird gemeldet und
+gefixt, nicht stillschweigend übergangen") sofort behoben:
+
+- **Erster Fix-Versuch (Commit `496a0cf`):** `.minimumScaleFactor(0.5)` +
+  `.frame(maxWidth: 150, alignment: .trailing)` auf den Picker. Am Gerät
+  nachgetestet — **wirkungslos**, der Text lief unverändert über mehrere
+  Reihen. Root Cause: `.pickerStyle(.menu)` rendert seinen eingeklappten
+  Wert über ein natives UIKit-Button-Label, das SwiftUIs
+  `.lineLimit`/`.minimumScaleFactor`/`.frame(maxWidth:)` schlicht
+  ignoriert und selbst mehrzeilig umbricht — ein Verhalten, das auch bei
+  mehreren bereits VOR dieser Runde bestehenden Picker-Zeilen
+  desselben Screens auftritt („Lead-in before start" → „10 seconds",
+  „Water reminder"-Frequenz → „Every 3 hours", Wochentag → „Sunday"),
+  dort aber wegen kürzerer Werte nie auffiel. Diese vorbestehenden
+  Stellen sind NICHT Teil dieser Runde und bleiben hier unverändert,
+  aber als bekannte, verwandte Lücke festgehalten.
+- **Zweiter Fix (Commit `c6f5e9c`, am Gerät bestätigt):** zusätzlich
+  `.frame(maxHeight: 44)` + `.clipped()`. Dadurch bleibt der angezeigte
+  Wert bei AX5 ggf. sichtbar unvollständig (ein einzelnes abgeschnittenes
+  Zeichen statt des vollen Worts), **fällt aber nie mehr in die
+  Nachbar-Reihen hinein** — bewusster Kompromiss zwischen
+  Eigenname-Lesbarkeit und Nicht-Überlappung, zugunsten Letzterem
+  entschieden. Das aufklappbare Dropdown-Menü selbst (System-eigene
+  Darstellung, kein `.menu`-Collapsed-Label) zeigt beide Optionen
+  („Column overview" / „Previous layout") bei AX5 weiterhin vollständig
+  lesbar, korrekt zweizeilig umgebrochen — nur die eingeklappte
+  Zeilen-Anzeige war betroffen.
+- Regressionstest `SetDisplayModeSettingTests.
+  testSetDisplayPickerConstrainsItsWidthSoLongValuesCannotOverflowIntoNeighboringRows`
+  prüft `maxWidth`+`maxHeight`+`.clipped()` im Quelltext (reiner
+  Text-Scan, da `canImport(UIKit)` auf dem CI-Runner nicht greift — die
+  tatsächliche Nicht-Überlappung ist nur am Gerät prüfbar, siehe oben).
+
+### Punkt 5 — Gebündelter Geräte-Abnahme-Durchlauf
+
+**Geräteflotte (TestingBot, Stand dieser Runde):** von allen iOS-17+-
+fähigen iPhone-Modellen (iPhone SE 2022/17.5, iPhone 14/17.6, iPhone
+15/18.0, iPhone 16/16 Pro/17/17 Pro/17 Pro Max) war zum Zeitpunkt dieser
+Runde **nur „iPhone 15"/iOS 18.0 als Simulator tatsächlich startbar** —
+alle anderen waren laut `/v1/devices` entweder `available: false` oder
+(wie „iPhone Air"/iOS 26.2) nur als **physisches Gerät** verfügbar, das
+unseren Simulator-Build (`FitnessApp-simulator.zip`) nicht ausführen
+kann. Ein echtes schmaleres iOS-17+-Gerät war damit — wie bereits in
+einer Vorrunde dokumentiert — strukturell nicht verfügbar. Als Ersatz für
+die geforderte „schmale Breite"-Kombination wurde wie in Runde 8/9 die
+etablierte Technik genutzt: AX5-Dynamic-Type erzwingt denselben
+schmalen `ViewThatFits`-Fallback (`twoLineInputRow`/`classicTwoLineRow`),
+den ein echtes schmales Gerät ausgelöst hätte.
+
+**Tatsächlich geprüfte Kombinationen (alle auf iPhone 15/iOS 18.0,
+Commit `c6f5e9c`):**
+
+| Kombination | Ergebnis |
+|---|---|
+| Light Mode, kg, Spaltenübersicht, Standardschrift, Hantel-Übung (Back Squat) mit echtem Gewicht | Hantelrechner sichtbar+funktionsfähig (60 kg, Stange 20 kg), Spaltenkopf+Einzug korrekt, Tabs voll sichtbar, Tastatur-Interaktion fehlerfrei |
+| Light Mode, Spaltenübersicht, laufender Pausentimer nach Satz-Log | Tab-Bar bleibt neben der RestTimerBar voll sichtbar (die exakte vom Nutzer gemeldete Situation) |
+| Dark Mode, Spaltenübersicht → klassische Darstellung umgeschaltet, laufender Pausentimer | Satz 1 (60 kg/6/✓) unverändert erhalten, Timer lief ununterbrochen weiter, Tabs weiterhin voll sichtbar |
+| Dark Mode, klassische Darstellung, Satz 2 (Bodyweight-Satz, „BW") geloggt | Funktioniert identisch zur Spaltenübersicht, RIR-Kapsel + Haken erreichbar |
+| Dark Mode, klassische Darstellung, **echter Kaltstart** (`terminateApp`+`launchApp`) | Anzeige-Modus UND beide geloggten Sätze überleben den Kaltstart unverändert |
+| Light Mode, AX5, Spaltenübersicht (Dashboard+Settings) | Tabs weiterhin voll sichtbar; vorbestehender AX5-Überlauf in mehreren Settings-Pickern bemerkt (siehe eigener Abschnitt), neuer „Set display"-Picker nach Fix NICHT mehr betroffen |
+| Dark Mode, AX5, klassische Darstellung, aktives Workout | KG/REPS/RIR-Captions gross aber vollständig lesbar, kein Überlappen von Satz 2/3 mit Haken/Plate-Button, Tabs weiterhin voll sichtbar |
+
+**Nicht geprüft / strukturelle Lücke (dokumentiert statt stillschweigend
+übergangen):** ein echtes schmaleres iOS-17+-Gerät (z. B. iPhone SE) war
+in der aktuellen TestingBot-Flotte nicht verfügbar — identisch zur bereits
+in einer Vorrunde festgehaltenen Lücke. Türkisch/Deutsch wurden in dieser
+Runde nicht erneut geprüft (kein Bezug zu den 5 gemeldeten Punkten, siehe
+Vorrunden für den dort bereits dokumentierten Stand).
+
+### Budget (Gesamtstand Runde 10)
+
+| Zeitpunkt | Wert | Quelle |
+|---|---|---|
+| Vor Runde 10 (Ende Runde 9) | 22.872 s | `docs/DELTIQ_DEVICE_ACCEPTANCE.md`, Runde-9-Nachtrag |
+| Session 1 (erster Build, Onboarding+Punkt-1-4-Nachweis) | 1.100 s | `/v1/tests` `duration` |
+| Session 2 (zweiter Build, erster Picker-Fix-Nachtest) | 325 s | `/v1/tests` `duration` |
+| Session 3 (dritter Build, zweiter Picker-Fix-Nachtest final) | 206 s | `/v1/tests` `duration` |
+| Summe Runde 10 | 1.631 s | Summe der drei Sessions |
+| Rechnerisch verbleibend nach Runde 10 | 21.241 s | 22.872 s − 1.631 s |
+| `GET /v1/user` zum Abschluss dieser Runde | 21.769 s | Konto-API (bekannter Abrechnungs-Nachlauf, siehe Vorrunden) |
+
+Keine offene TestingBot-Session am Ende dieser Runde (alle drei Sessions
+explizit per `DELETE` beendet, letzte `/v1/user`-Abfrage bestätigt
+`current_vm_concurrency: 0`).
 
 ## Runde 9: AX5-Fix-Nachtest + kg/lbs-Implementierungspaket
 
