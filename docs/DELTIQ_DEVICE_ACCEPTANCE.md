@@ -368,6 +368,20 @@ erneut melden statt pauschal zu wiederholen.
    wochenübergreifend und ohne jede Rückfrage-Logik. Echte
    Implementierungslücke gegenüber einer verbindlichen Vorgabe, kein
    reiner Testlücken-Befund (gleiche Kategorie wie A09/C04).
+5. **C01 / Dokument 01 §6**: Die Spezifikation verlangt "Nach gespeichertem
+   relevanten Update einmalig gebündelten Vorschlag anbieten, nicht bei
+   jedem Tastenanschlag." Geräte-Nachweis (Runde 4): die
+   Cardio-Feasibility-Karte in `ProfileEditorView` erscheint nachweislich
+   NICHT gebündelt nach einem Speichern-Schritt, sondern bereits bei JEDEM
+   einzelnen Tastendruck in den Cardio-Feldern — reproduziert direkt nach
+   dem ersten Zeichen im Wochenvolumen-Feld, Tastatur noch offen. Ursache:
+   `ProfileEditorView` hat für den gesamten Bildschirm keinen
+   Speichern-Schritt (laut eigenem Code-Kommentar "autosaves to SwiftData
+   on every keystroke"), die Cardio-Felder sind direkt an `$profile`
+   gebunden. Keine Datenverlust-/Mutationsgefahr (der bestehende Plan
+   bleibt bis zum expliziten Button-Tap unangetastet, siehe C01-Zeile),
+   aber eine Architekturentscheidung für den GESAMTEN Profil-Editor, kein
+   lokaler Zweizeiler — bewusst nicht eigenmächtig geändert.
 
 ## F01–F08 differenziert geprüft (Nachtrag)
 
