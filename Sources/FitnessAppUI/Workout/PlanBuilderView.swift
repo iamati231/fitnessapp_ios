@@ -1462,6 +1462,19 @@ public struct PlanBuilderView: View {
         )
     }
 
+    /// A12 (Paket 1, docs/DELTIQ_DEVICE_ACCEPTANCE.md): sichtbarer Hinweis
+    /// statt des stillen Weglassens einer gewaehlten Sportart. Nur im
+    /// Ziel-gefuehrten Pfad relevant (`isPreSeededFlow` waehlt Tage/Art
+    /// direkt, kein Disziplinen-Konflikt moeglich). `nil`, solange kein
+    /// Ziel/keine Ausdauerform gewaehlt ist - derselbe Default-Fallback wie
+    /// `GoalDrivenPlanSelectionBuilder.makeSelections` selbst.
+    private var distributionConflict: GoalDrivenPlanSelectionBuilder.DistributionConflict? {
+        guard !isPreSeededFlow, let goal = selectedTrainingGoal else { return nil }
+        return GoalDrivenPlanSelectionBuilder.distributionConflict(
+            goal: goal, enduranceModality: selectedEnduranceModality, totalDaysPerWeek: totalDaysPerWeek
+        )
+    }
+
     /// P3.2 (Audit "Wochenuebersicht-UI + Drag&Drop + 'Verschieben nach...'"):
     /// `List`+`.onMove` statt der bisherigen reinen `ScrollView`-Liste - der
     /// EINE native Mechanismus, der Drag&Drop UND eine darauf aufbauende
@@ -1478,6 +1491,18 @@ public struct PlanBuilderView: View {
         Group {
             if let draft, !draft.days.isEmpty {
                 List {
+                    if let conflict = distributionConflict {
+                        Section {
+                            Text(String(
+                                format: String(localized: "planBuilder.result.distributionConflict", bundle: .module),
+                                conflict.requiredDays, conflict.availableDays
+                            ))
+                            .font(.callout)
+                            .foregroundStyle(.primary)
+                        }
+                        .listRowBackground(Color.red.opacity(0.1))
+                    }
+
                     if let explanationKey {
                         Section {
                             Text(String(localized: String.LocalizationValue(explanationKey), bundle: .module))

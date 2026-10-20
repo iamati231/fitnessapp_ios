@@ -16332,6 +16332,29 @@
         }
       }
     },
+    "planBuilder.result.distributionConflict": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht genug Tage für alle gewählten Sportarten: %d Tage nötig, %d verfügbar. Geh zurück und ändere die Tage, oder übernimm den unten gezeigten bestmöglichen Kompromiss."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough days for all chosen sports: %d days needed, %d available. Go back and adjust days, or accept the closest compromise shown below."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seçilen tüm sporlar için yeterli gün yok: %d gün gerekli, %d gün mevcut. Geri dönüp günleri değiştirebilir veya aşağıda gösterilen en yakın uzlaşmayı kabul edebilirsin."
+          }
+        }
+      }
+    },
     "planBuilder.day.runEasy": {
       "extractionState": "manual",
       "localizations": {

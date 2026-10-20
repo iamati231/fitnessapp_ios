@@ -412,10 +412,21 @@ public struct OnboardingView: View {
                 preseededGoal: trainingGoal,
                 preseededDaysPerWeek: weeklyGoal,
                 onGenerated: { input, result in
+                    // Paket 1 (Laufcoach-Konzept, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+                    // der eingebettete Builder uebernimmt nur den Entwurf und
+                    // kehrt zur Wochenvorschau (`.preferencesAndPlan`) zurueck
+                    // - GENAU wie A10 es fuer den eingebetteten Editor ohnehin
+                    // vorschreibt ("nur Onboarding-Entwurf geaendert"). Das
+                    // "Build Plan"-Kaertchen zeigt dort bereits einen Haken,
+                    // sobald `customPlanInput != nil` ist; das gesamte
+                    // Onboarding endet weiterhin AUSSCHLIESSLICH ueber die
+                    // eigene, eindeutige Fertig-Aktion (`handlePrimaryAction()`
+                    // fuer `.preferencesAndPlan`, ruft `finishOnboarding()`
+                    // selbst auf) - der vorherige direkte Aufruf hier war ein
+                    // zweiter, impliziter Finish-Trigger und ist entfallen.
                     customPlanInput = input
                     customPlanResult = result
                     clearSelectedTemplate()
-                    finishOnboarding()
                     return .success
                 }, onEnduranceModalityChosen: { modality, runCoachWanted in
                     // P3.1: feuert synchron VOR `onGenerated` (siehe

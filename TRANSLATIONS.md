@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2252 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2253 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2252 / 2252** (100%) | 0 |
-| 🇬🇧 English (EN) | **2252 / 2252** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2252 / 2252** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2253 / 2253** (100%) | 0 |
+| 🇬🇧 English (EN) | **2253 / 2253** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2253 / 2253** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -1819,7 +1819,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.upperLower.name` | Upper-Lower-Split | Upper-Lower Split | Upper-Lower Split |
 | `plan.template.upperLower.tagline` | 4 Tage · Kraft & Hypertrophie | 4 Days · Strength & Hypertrophy | 4 Gün · Güç & Hipertrofi |
 
-## `planBuilder.*`  (87 Keys)
+## `planBuilder.*`  (88 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1866,6 +1866,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.result.alternatives` | Alternativen anzeigen | Show alternatives | Alternatifleri göster |
 | `planBuilder.result.alternatives.title` | Alternative für diesen Tag wählen | Choose an alternative for this day | Bu gün için bir alternatif seç |
 | `planBuilder.result.dayActions` | Tagesoptionen | Day options | Gün seçenekleri |
+| `planBuilder.result.distributionConflict` | Nicht genug Tage für alle gewählten Sportarten: %d Tage nötig, %d verfügbar. Geh zurück und ändere die Tage, oder übernimm den unten gezeigten bestmöglichen Kompromiss. | Not enough days for all chosen sports: %d days needed, %d available. Go back and adjust days, or accept the closest compromise shown below. | Seçilen tüm sporlar için yeterli gün yok: %d gün gerekli, %d gün mevcut. Geri dönüp günleri değiştirebilir veya aşağıda gösterilen en yakın uzlaşmayı kabul edebilirsin. |
 | `planBuilder.result.empty.message` | Für diese Kombination aus Ausrüstung und Erfahrung gibt es keine passenden Übungen in der Bibliothek. Wähle andere Optionen. | No matching exercises exist in the library for this combination of equipment and experience. Choose different options. | Bu ekipman ve deneyim kombinasyonu için kütüphanede uygun egzersiz yok. Farklı seçenekler dene. |
 | `planBuilder.result.empty.title` | Keine Übungen gefunden | No Exercises Found | Egzersiz Bulunamadı |
 | `planBuilder.result.explanation.spread` | Die Reihenfolge verteilt harte und leichte Einheiten über die Woche, statt sie zu häufen. | The order spreads hard and light sessions across the week instead of clustering them. | Sıralama, zor ve hafif antrenmanları haftaya yayar, art arda toplamaz. |
