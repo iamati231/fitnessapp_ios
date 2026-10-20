@@ -154,34 +154,34 @@ final class DayEditorPersistenceTests: XCTestCase {
     /// Nachtrag (Deltiq-Abnahme, Geraete-Nachtest desselben Fixes): der
     /// urspruengliche Fix (Loeschen + sofort `context.save()`, sonst nichts)
     /// loeste auf echtem Geraet einen ZWEITEN, bis dahin unentdeckten
-    /// Absturz aus, reproduzierbar, wenn genau der geloeschte Plan die
-    /// Session besitzt, deren `ActiveSessionBanner` in DERSELBEN `List`
-    /// angezeigt wird. Geraete-Log bestaetigt die exakte Ursache (nicht nur
-    /// Vermutung): `SwiftData/BackingData.swift:296: Fatal error: Context is
-    /// missing for ... TrainingDay/p6` — ein nicht fangbarer SwiftData-
-    /// interner Fatal-Error. `ActiveSessionBanner` liest `session.day?
-    /// .displayName`; waehrend der Plan->Day-Kaskade kann `session.day` fuer
-    /// einen Render-Moment noch auf die bereits aus ihrem Context entfernte
-    /// `TrainingDay` zeigen (dieselbe Unzuverlaessigkeit, die
-    /// `TrainingDay.sessions`s explizite inverse Relationship laut deren
-    /// eigener "P8-Fund"-Doku eigentlich schon einmal adressieren sollte,
-    /// aber nicht vollstaendig behebt) — SwiftData kann die Property dann
-    /// nicht mehr aufloesen und stuerzt hart ab.
+    /// Absturz aus, reproduzierbar beim Loeschen des Plans, der die laufende
+    /// Session besitzt. ZWEI Fix-Versuche danach (Save per
+    /// `DispatchQueue.main.async` verzoegern; `session.day` vorab nullen)
+    /// haben den Crash NACHWEISLICH NICHT behoben — beide auf dem Geraet
+    /// erneut reproduziert, identischer Fehler im iOS-Geraetelog:
+    /// `SwiftData/BackingData.swift:296: Fatal error: Context is missing for
+    /// ... TrainingDay/pN`, ausgeloest WAEHREND SwiftData selbst den
+    /// "CoreData: Executing write request" verarbeitet (nicht beim
+    /// naechsten SwiftUI-Render). Gezielter Geraete-Vergleich: derselbe Tag
+    /// (mit derselben laufenden Session) DIREKT geloescht
+    /// (`PlanEditorView.deleteDays`, EIN Cascade-Level: Day -> nullify
+    /// Session) crasht NICHT. Nur der ZWEISTUFIGE Cascade (Plan -> Day ->
+    /// [cascade Exercises + nullify Sessions], alles in einer Transaktion)
+    /// loest den SwiftData-internen Fehler aus.
     ///
-    /// Fix: `session.day` fuer jede betroffene, bereits im Speicher
-    /// gehaltene Session EXPLIZIT auf `nil` setzen, BEVOR der Plan (und
-    /// damit kaskadierend seine Tage) ueberhaupt geloescht wird — exakt die
-    /// Sequenz, die dieser Test unten nachbildet (nullify zuerst, dann
-    /// `delete`, dann EIN gemeinsamer `save()`). Das macht die Mutation, die
-    /// SwiftData sonst selbst (unzuverlaessig) als Teil der Kaskade
-    /// versucht, VORAB und garantiert abgeschlossen.
+    /// Fix: den zweistufigen Cascade vermeiden — jeder Tag des Plans wird
+    /// EINZELN geloescht (derselbe, auf dem Geraet bestaetigt sichere Pfad
+    /// wie `PlanEditorView.deleteDays`), bevor der jetzt tage-lose Plan
+    /// selbst geloescht wird; beides im selben `save()`. Dieser Test bildet
+    /// exakt diese Sequenz nach.
     ///
     /// Dieser Test beweist weiterhin nur die Persistenz-Technik (Session
     /// entkoppelt + Plan weg nach echtem Store-Neustart), nicht den
-    /// SwiftUI-Crash selbst — dafuer fehlt in diesem Repo ein UI-Test-
-    /// Harness (siehe Typ-Doku oben). Die tatsaechliche Regressionspruefung
-    /// fuer den Crash ist der TestingBot-Geraete-Nachtest (Swipe-Delete auf
-    /// den aktiven Plan mit laufender Session, kein Crash mehr).
+    /// SwiftUI-/SwiftData-Crash selbst — dafuer fehlt in diesem Repo ein
+    /// UI-Test-Harness (siehe Typ-Doku oben). Die tatsaechliche
+    /// Regressionspruefung fuer den Crash ist der TestingBot-Geraete-
+    /// Nachtest (Swipe-Delete auf den aktiven Plan mit laufender Session,
+    /// kein Crash mehr).
     func testPlanDeletionWithOpenSessionAndImmediateSaveSurvivesARealStoreRestart() throws {
         let storeURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("plans-list-delete-persistence-\(UUID().uuidString)")
@@ -209,12 +209,10 @@ final class DayEditorPersistenceTests: XCTestCase {
             context.insert(planToKeep)
             try context.save()
 
-            // Exakt die Sequenz aus `deletePlans(at:)` nach dem Fix: die
-            // Session-Referenz VORAB explizit entkoppeln, dann erst loeschen,
-            // dann EIN gemeinsamer Save.
-            for session in day.sessions {
-                session.day = nil
-            }
+            // Exakt die Sequenz aus `deletePlans(at:)` nach dem Fix: jeden
+            // Tag EINZELN loeschen (kein zweistufiger Plan->Day-Cascade),
+            // dann den jetzt tage-losen Plan, dann EIN gemeinsamer Save.
+            context.delete(day)
             context.delete(planToDelete)
             try context.save()
         }
