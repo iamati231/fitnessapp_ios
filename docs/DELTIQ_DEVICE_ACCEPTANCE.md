@@ -1,37 +1,44 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-20 (neunter Durchgang: Runde 8 — E04 Türkisch +
-Dezimalgewicht/Imperial-Einheiten in Deutsch, F01–F08 differenziert auf
-Erreichbarkeit ohne CSV-Export/Systemzeit geprüft, siehe Nachtrag „Runde 8"
-unten), Branch `claude/smart-onboarding-epic`, HEAD `c299c22` (reine
-Syntaxkorrektur einer fehlenden schließenden Klammer; Fix-Commit dieser
-Runde ist `872f707` — `deltiqLabel()`-Spalten-Header-Captions brachen bei
-maximaler Bedienungshilfen-Textgröße um, geräteverifiziert nach der
-Korrektur; davor `a4359f4` Fix-Commit Runde 7
-[A01 doppelte Ziel-/Tage-Abfrage], davor `47678c1` Fix-Commit Runde 6 [D06
-Cancel-Endlosschleife], davor `80eee60` reiner Dokumentations-Commit zur
-Speicherfehler-Codeprüfung, davor `1c8bf54` Fix-Commit Runde 5
-(`CardioGoalEditorView.save()`), davor `47ab4d6` der ursprüngliche C01-Fix,
-davor `4ea8d7b` reiner Dokumentations-Commit zu Runde 3, davor `254d669`
-Korrektur-Commit zu E05, davor `64ba455` Fix-Commit E04, davor `3e67cb8`
-ursprünglicher — per Geräte-Nachtest widerlegter — E05-Versuch, davor
-`c96bf5c`). TestingBot-Verbrauch Runde 8: siehe Nachtrag „Runde 8" unten
-für Details und exakte Budget-Rekonstruktion. Kein Merge nach `main`, kein
-Release.
+Stand: 2026-10-20 (zehnter Durchgang: Runde 9 — AX5-Spalten-Header-Fix
+vollständig gerätebestätigt, kg/lbs an die vier benannten Stellen
+angebunden und gerätebestätigt, dabei ein neuer, von kg/lbs unabhängiger
+Kaltstart-Datenverlust-Bug in `ExerciseCard.logSet()` gefunden und gefixt
+— siehe Nachtrag „Runde 9" unten), Branch `claude/smart-onboarding-epic`,
+HEAD `25d065a` (reine Testkorrektur `Double?`→`XCTUnwrap`; Fix-Commit
+dieser Runde `ac9fcc2` — `logSet()` fehlte `context.save()`; davor `0a3c68e`
+der eigentliche kg/lbs-Fix; davor `c299c22` reine Syntaxkorrektur Runde 8;
+davor `872f707` AX5-Spalten-Header-Fix Runde 8; davor `a4359f4` Fix-Commit
+Runde 7 [A01 doppelte Ziel-/Tage-Abfrage], davor `47678c1` Fix-Commit
+Runde 6 [D06 Cancel-Endlosschleife], davor `80eee60` reiner
+Dokumentations-Commit zur Speicherfehler-Codeprüfung, davor `1c8bf54`
+Fix-Commit Runde 5 (`CardioGoalEditorView.save()`), davor `47ab4d6` der
+ursprüngliche C01-Fix, davor `4ea8d7b` reiner Dokumentations-Commit zu
+Runde 3, davor `254d669` Korrektur-Commit zu E05, davor `64ba455` Fix-Commit
+E04, davor `3e67cb8` ursprünglicher — per Geräte-Nachtest widerlegter —
+E05-Versuch, davor `c96bf5c`). TestingBot-Verbrauch Runde 9: siehe
+Nachtrag „Runde 9" unten für Details und exakte Budget-Rekonstruktion.
+Kein Merge nach `main`, kein Release.
 
 **Gesamtstatus: A–F bearbeitet; deutliche Mehrheit bestanden, einzelne
 Fälle teilweise oder (A09/C04/E08/F04) noch offen als fachliche
-Implementierungslücken. Neu seit Runde 8: das kg/lbs-Einheiten-Setting
-wirkt NICHT auf das eigentliche Gewichts-Eingabefeld beim Satz-Logging
-(nur auf Hantel-Rechner/Warmup-Rampe) — echte Implementierungslücke,
-siehe dortiger Nachtrag. C01 seit Runde 5 vollständig bestanden. D06 seit
-Runde 6 vollständig bestanden (isolierter Cancel-Schritt gerätebestätigt;
-dabei gefundene Dialog-Endlosschleife gefixt und gerätebestätigt). A01 seit
-Runde 7 korrekt eingeordnet und gefixt (doppelte Ziel-/Tage-Abfrage beim
-Wechsel vom Onboarding in den eingebetteten PlanBuilder, siehe dortiger
-Nachtrag für die in Runde 6 fälschlich geführte „kein Produktpfad"-
-Einordnung und ihre Rücknahme). Gesamtabnahme weiterhin offen (kein
-vollständiger Abschluss aller 45 Fälle).**
+Implementierungslücken. Seit Runde 9: kg/lbs-Einheiten-Setting wirkt jetzt
+auch auf Satz-Logging, Körperdaten-Editor, Profil-Zusammenfassung und
+Dashboard-Gewichtstrend (gezielte Teilmenge, Volumen/PRs/Charts/CSV
+bleiben bewusst kg-only, siehe Nachtrag „Runde 9"); AX5-Spalten-Header-Fix
+vollständig gerätebestätigt (nicht nur Zeilenumbruch, auch Lesbarkeit/
+Überlappung geprüft). Dabei neuer, von kg/lbs unabhängiger Kaltstart-Bug
+in `ExerciseCard.logSet()` gefunden und gefixt — ein geloggter Satz ging
+sonst bei einem Kaltstart kurz danach verloren, trotz grünem Haken und
+aktualisierter Volumen-Anzeige. C01 seit Runde 5 vollständig bestanden.
+D06 seit Runde 6 vollständig bestanden (isolierter Cancel-Schritt
+gerätebestätigt; dabei gefundene Dialog-Endlosschleife gefixt und
+gerätebestätigt). A01 seit Runde 7 korrekt eingeordnet und gefixt
+(doppelte Ziel-/Tage-Abfrage beim Wechsel vom Onboarding in den
+eingebetteten PlanBuilder, siehe dortiger Nachtrag für die in Runde 6
+fälschlich geführte „kein Produktpfad"-Einordnung und ihre Rücknahme).
+Gesamtabnahme weiterhin offen (kein vollständiger Abschluss aller 45
+Fälle).**
 
 ## Runde 9: AX5-Fix-Nachtest + kg/lbs-Implementierungspaket
 
@@ -107,10 +114,126 @@ Geänderte Dateien:
   (DE/EN/TR), `dead_catalog_v3.py` bestätigt UNUSED:0,
   `generate_translations_md.py` regeneriert `TRANSLATIONS.md`.
 
-### F01–F08 / Budget
+### AX5-Geräte-Nachweis (Commit `c299c22`, vollständig abgeschlossen)
+
+**Testaufbau:** iPhone 15/iOS 18.0, Deutsch, über die Einstellungen-App
+"Bedienungshilfen → Anzeige & Textgröße → Größerer Text" den Schalter
+"Größerer dynamischer Text" aktiviert und den Slider auf Maximum (AX5)
+gezogen — ECHTE iOS-Bedienungshilfen-Einstellung, nicht nur eine
+Capability beim Sessionstart.
+
+**Geprüft (mehr als reiner Zeilenumbruch-Check):** Satz-Logging-Screen
+("Kniebeuge", aktives Training) bei AX5. Ergebnis:
+- Vollständige Spalten-Kopfzeile fällt korrekt auf die reduzierte Variante
+  zurück (`ViewThatFits`/`reducedSetRowColumnHeader`) — "KG"/"WDH" bleiben
+  als zusammenhängendes Wort lesbar, keine Buchstaben-für-Buchstabe-
+  Umbrüche mehr.
+- Keine Überlappung zwischen Spaltenkopf, Dateneingabezeile und der
+  Tab-Leiste darunter ("Plan" blieb klar getrennt sichtbar).
+- Gewichts-/Wdh-/RIR-Werte ("100"/"5"/"2,5") vollständig sichtbar, nicht
+  abgeschnitten; Haken und Hantelrechner-Symbol weiterhin erreichbar.
+- Einzige bekannte, bereits akzeptierte Kürzung (Satz-Label selbst als
+  "…", s. Runde 8) bestätigt unverändert — keine neue Verschlechterung.
+
+**AX5-Fix gilt damit als vollständig gerätebestätigt**, über den reinen
+Zeilenumbruch-Check aus Runde 8 hinaus.
+
+**Zusätzlich gefunden (nicht gefixt, kleine verbleibende Lücke):** die
+kombinierte Accessibility-Beschriftung des Spaltenkopfs
+(`set.column.header.accessibilityLabel`) nennt für VoiceOver weiterhin
+wörtlich "Kilogramm", unabhängig vom `weight_unit`-Setting — der
+sichtbare Text zeigt korrekt "LBS", die VoiceOver-Ansage würde aber
+weiterhin "Kilogramm" vorlesen. Außerhalb des AX5-Fix-Scopes dieser
+Runde, als offener Befund vermerkt.
+
+### kg/lbs Geräte-Verifikation (Commit `0a3c68e`, alle vier Stellen bestätigt)
+
+**Testaufbau:** frischer Onboarding-Durchlauf (Größe 180 cm, Gewicht
+80 kg, Zielgewicht 75 kg), danach Settings → Einheiten auf Imperial.
+
+- **`ProfileEditorView.bodyDataSummaryText`:** zeigte sofort korrekt
+  "180,00 cm · 176,37 lbs · Ziel 165,35 lbs" (80 kg/75 kg exakt
+  umgerechnet, Größe bewusst weiterhin cm).
+- **`BodyDataEditorView`:** Labels wechselten korrekt zu "Aktuelles
+  Gewicht (lbs)"/"Zielgewicht (lbs, optional)"; Platzhalter/Wert zeigten
+  die umgerechneten Werte (176,37/165,35).
+- **Neue Eingabe in lbs → korrekte kg-Speicherung:** "170" ins
+  Gewichtsfeld eingetragen und gespeichert, danach zurück auf Metrisch
+  umgeschaltet → Anzeige zeigte exakt "77,11 kg" (170 × 0,453592 =
+  77,11064, auf 2 Dezimalstellen gerundet wie beim Speichern) — korrekter
+  Rundtrip, kein veralteter oder falsch umgerechneter Wert.
+- **`SetRow`/`ExerciseCard` (Satz-Logging):** Spaltenkopf zeigte "LBS"
+  statt "KG"; ein mit "225" (lbs) geloggter Satz erzeugte "VOLUMEN
+  816 KG" (225 lbs × 8 Wdh = 1.800 lbs-Fuß; 225 lbs = 102,06 kg × 8 =
+  816,46 ≈ 816 kg) — bestätigt, dass die Eingabe korrekt in kg
+  umgerechnet gespeichert wird, während das (bewusst außerhalb des
+  Scopes bleibende) Volumen weiterhin kg zeigt, exakt wie in der
+  Scope-Grenze oben festgehalten.
+- **Dashboard-Hero-Kachel:** zeigte "169,9 lbs" (korrekt aus dem
+  gespeicherten 77,11 kg umgerechnet; die 0,1 lbs Abweichung von den
+  ursprünglich eingegebenen 170 lbs ist eine erwartete, unvermeidbare
+  Folge der 2-Dezimalstellen-kg-Speicherpräzision, kein Fehler — derselbe
+  Effekt träte bei jeder Rundung aufeinanderfolgender Einheiten auf).
+- **Kaltstart:** App terminiert + neu gestartet, Dashboard zeigte
+  weiterhin korrekt "169,9 lbs", Einstellung überstand den Kaltstart.
+- Trend-Chart/Zielgewicht-Linie nicht separat am Gerät gerendert (braucht
+  ≥3 Messungen, hier nur 1 vorhanden) — Code-Review bestätigt dieselbe
+  `dashboardWeightUnit.fromKg`-Konvertierung wie die bereits
+  gerätebestätigte Hero-Kachel, keine eigene Logik.
+
+**kg/lbs gilt für die vier benannten Stellen als vollständig
+gerätebestätigt.** Bewusst kg-only bleiben (siehe Scope-Grenze oben):
+Volumen-Aggregation, PR-Erkennung, sonstige Charts, CSV-Export/-Import.
+
+### Echter Bug gefunden und gefixt: `ExerciseCard.logSet()` verlor einen Satz bei Kaltstart
+
+Beim obigen kg/lbs-Nachtest (225 lbs geloggt, grüner Haken, "VOLUMEN
+816 KG" angezeigt) wurde die App unmittelbar danach terminiert und neu
+gestartet (derselbe Kaltstart-Test, der in dieser App bereits zwölf
+vorherige Instanzen desselben Musterfehlers gefunden hat) — der Satz war
+danach reproduzierbar wieder auf "0 / 3"/"BW" zurückgefallen, obwohl die
+laufende Trainings-Session selbst (Timer lief kontinuierlich weiter)
+nachweislich dieselbe blieb. **Unabhängig von kg/lbs** — betrifft jeden
+geloggten Satz, in jeder Einheit.
+
+**Ursache:** `ExerciseCard.logSet(setIndex:values:)` fügte den neuen
+`ExerciseLog` nur per `modelContext.insert(log)` ein, ohne anschließenden
+`context.save()`. Das direkt darunterliegende `unlogSet` hatte den Fix
+dafür bereits (eigener Doku-Kommentar dort referenzierte exakt dieses
+Fehlerbild) — `logSet` selbst war die verbleibende Lücke.
+
+**Fix (Commit `ac9fcc2`):** `try? modelContext.save()` direkt nach dem
+Insert, vor `onSetLogged(setIndex)`. Neuer Regressionstest
+`ExerciseLogPersistenceTests` (echter Store-Neustart, etabliertes Muster).
+
+**Geräte-Nachtest nach dem Fix (Build `25d065a`):** identischer Ablauf
+(Kniebeuge, 100 kg geloggt, "VOLUMEN 500 KG", sofortiger Kaltstart) —
+Satz blieb nach dem Neustart korrekt bei "1 / 3", grünem Haken, "100"/"5"
+und "VOLUMEN 500 KG" erhalten. **Fix gerätebestätigt.**
+
+### F01–F08
 
 Unverändert gegenüber Runde 8 — siehe dortigen Nachtrag. Kein neuer
 Lösungsversuch für den CSV-Export-Blocker ohne neue Hypothese.
+
+### Budget (Gesamtstand Runde 9)
+
+| Zeitpunkt | Quelle | Wert | Kontext |
+|---|---|---|---|
+| vor Runde 9 | Konto-API | 24.259 s | bestätigt, nahezu deckungsgleich mit Runde 8s Session-Summen-Wert (24.265 s) |
+| Session 1 (kg/lbs-Verifikation, inkl. Bugfund) | Test-ID 54031998 | 1.062 s | aktiv beendet |
+| Session 2 (logSet-Fix-Nachtest + AX5-Abschluss) | Test-ID 54032970 | 325 s | aktiv beendet |
+| nach Session 1 | Konto-API | 23.196 s | bestätigt (24.259 − 1.062 = 23.197, Abrechnung nahezu in Echtzeit) |
+| nach Session 2 | Konto-API | 23.196 s | unverändert zum Stand vor Session 2 — Session 2s 325 s noch nicht gebucht (Abrechnungsverzug) |
+
+Zusätzlich 3 gescheiterte Sessionstarts (WebDriverAgent-Infra-Fehler,
+"socket hang up", 0 s Verbrauch, kein Session-Leck, jeweils beim
+nächsten Versuch erfolgreich).
+
+**Restbudget nach Runde 9:** Session-Summe 24.259 − 1.062 − 325 =
+**22.872 Sekunden** (≈ 6,4 h) — genauerer Wert als die Konto-API, die
+Session 2 noch nicht gebucht hat. Abgleich beim nächsten regulären
+Budgetabruf. Keine zusätzliche Session/Abfrage nur zur Budgetprüfung.
 
 ## Runde 8: E04 Türkisch + Imperial-Einheiten (DE), F01–F08 Erreichbarkeit differenziert geprüft
 
@@ -1234,22 +1357,25 @@ erneut melden statt pauschal zu wiederholen.
    Cardio-Update einen Kaltstart kurz danach nicht reproduzierbar
    überlebte — siehe C01-Zeile und Nachtrag „Runde 5" für Details. C01
    gilt seither als vollständig bestanden, kein offener Rest mehr.
-6. **E04 / Settings-Hinweistext "App & Trainingserlebnis" — NEU (Runde 8)**:
-   der Hinweistext zum Einheiten-Umschalter verspricht wörtlich "steuert
-   ... die Anzeige in Eingabe-Feldern, im Hantel-Rechner und auf den
-   Karten". Geräte-Nachweis (Runde 8, Deutsch, Imperial-Umstellung):
-   Hantel-Rechner und Warmup-Rampe respektieren das Setting korrekt: das
-   eigentliche Gewichts-Eingabefeld beim Satz-Logging (`SetRow.weightInput`)
-   bindet `$weight` jedoch ohne jede Einheiten-Konvertierung — ein Wert
-   wird immer als kg interpretiert, der Spaltenkopf war zusätzlich hart
-   auf "KG" fixiert. Auch `ProfileEditorView`/`BodyDataEditorView`
-   (Körpergewicht/Zielgewicht) und das Dashboard-Gewichts-Trend-Widget
-   zeigen durchgehend kg, unabhängig vom Setting. Echte
-   Implementierungslücke (wie A09/C04/F04), kein kleiner gezielter Fix —
-   eine vollständige kg/lbs-Konvertierung am Eingabefeld selbst
-   (Anzeige/Parsing/Rückkonvertierung) wäre eine größere, noch nicht
-   umgesetzte Funktionalität. Nicht in dieser Runde implementiert, geht
-   als offene Entscheidung an den Nutzer zurück.
+6. **E04 / Settings-Hinweistext "App & Trainingserlebnis" — TEILWEISE
+   BEHOBEN (Runde 9), hier aus Nachvollziehbarkeit stehen gelassen statt
+   gelöscht.** Ursprünglicher Befund (Runde 8): der Hinweistext verspricht
+   wörtlich "steuert ... die Anzeige in Eingabe-Feldern, im Hantel-Rechner
+   und auf den Karten" — Hantel-Rechner/Warmup-Rampe respektierten das
+   Setting bereits, das eigentliche Gewichts-Eingabefeld beim
+   Satz-Logging, `ProfileEditorView`/`BodyDataEditorView` und das
+   Dashboard-Gewichts-Trend-Widget zeigten durchgehend kg.
+   Fix (Commit `0a3c68e`, Runde 9): `WeightUnit`-Typ bindet jetzt genau
+   diese vier Stellen an `weight_unit` an (Konvertierung/Eingabe-Parsing/
+   Rückkonvertierung), gerätebestätigt (siehe Nachtrag „Runde 9"). Bewusst
+   NICHT Teil dieses Fixes, weiterhin kg-only (Scope-Grenze VOR der
+   Umsetzung in Runde 9 explizit festgehalten, keine stille Ausweitung):
+   Trainingsvolumen-Aggregation, PR-Erkennung/-Banner, Übungs-
+   Gewichtsverlauf-Charts außerhalb des Dashboards, CSV-Export/-Import —
+   dieselbe Abgrenzung, die der ursprüngliche Code-Kommentar (DEL-220)
+   bereits als eigenes, größeres Thema benannt hatte. Diese verbleibende
+   Scope-Grenze geht weiterhin als offene Entscheidung an den Nutzer
+   zurück, nicht eigenmächtig erweitert.
 
 ## F01–F08 differenziert geprüft (Nachtrag)
 
@@ -1488,13 +1614,15 @@ Top-5-Geräteprüfung (E01, C06, D06, A11, D02), Runde 3 (Onboarding/
 Hybrid/Coach, Navigation, Drag&Drop, RIR, Bildschirmgröße), Runde 4
 (C01/C02-Kernfall), Runde 5 (C01-Fix-Retest inkl. Kaltstart-
 Persistenz-Bugfix), Runde 6 (D06-Fix), Runde 7 (A01 korrekt eingeordnet
-und gefixt, autoAcceptAlerts-Audit) und Runde 8 (E04 Türkisch,
+und gefixt, autoAcceptAlerts-Audit), Runde 8 (E04 Türkisch,
 Imperial-Einheiten-Lücke gefunden, Spalten-Header-Umbruch-Fix,
-F01–F08-Erreichbarkeit bestätigt unverändert blockiert) abgeschlossen —
-siehe jeweilige Nachträge oben für Details. **C01 ist seit Runde 5, D06
-seit Runde 6, A01 seit Runde 7 vollständig bestanden** (C01: Timing-Fix
-`47ab4d6` + Persistenz-Fix `1c8bf54`; D06: Cancel-Endlosschleifen-Fix
-`47678c1`; A01: Ziel-/Tage-Vorbefüllungs-Fix `a4359f4`, Runde 6s
+F01–F08-Erreichbarkeit bestätigt unverändert blockiert) und Runde 9
+(AX5-Fix vollständig gerätebestätigt, kg/lbs an vier Stellen angebunden
+und gerätebestätigt, dabei `logSet()`-Kaltstart-Bug gefunden und gefixt)
+abgeschlossen — siehe jeweilige Nachträge oben für Details. **C01 ist seit
+Runde 5, D06 seit Runde 6, A01 seit Runde 7 vollständig bestanden** (C01:
+Timing-Fix `47ab4d6` + Persistenz-Fix `1c8bf54`; D06: Cancel-Endlosschleifen-
+Fix `47678c1`; A01: Ziel-/Tage-Vorbefüllungs-Fix `a4359f4`, Runde 6s
 „kein Produktpfad"-Einordnung war falsch und wurde zurückgenommen).
 Offene bekannte Nachweislücken, in absteigender Priorität für eine
 künftige Runde:
@@ -1502,27 +1630,34 @@ künftige Runde:
 1. **E04-Rest** (teilweise): Deutsch (Standardbedingungen) seit Runde 7,
    Türkisch (Standardbedingungen) seit Runde 8 bestanden (Locale-
    Capability bei Session-Start behebt den Runde-3-Respring-Blocker für
-   beide Sprachen). Weiterhin offen: schmale Breite/große Schrift/
-   Dezimalgewicht/kg-lbs jeweils kombiniert mit Deutsch oder Türkisch (nur
-   Englisch+diese Bedingungen sind aus Runde 3 bestätigt); ein echtes
-   kleineres Gerät ist auf TestingBots aktueller Geräteflotte für iOS 17+
-   nicht verfügbar (geprüft: alle schmaleren iPhone-Modelle laufen dort
-   mit iOS < 17) — strukturell nicht testbar, kein Versäumnis.
-2. **kg/lbs-Einheiten-Implementierungslücke (NEU, Runde 8)**: das
-   Einheiten-Setting wirkt nicht auf `SetRow.weightInput` (Satz-Logging),
-   `ProfileEditorView`/`BodyDataEditorView` oder das Dashboard-Gewichts-
-   Trend-Widget — nur auf Hantel-Rechner und Warmup-Rampe. Sechster
-   fachlicher Widerspruch, siehe dortiger Eintrag; offene Entscheidung an
-   den Nutzer, kein kleiner Fix.
+   beide Sprachen). AX5 selbst ist seit Runde 9 vollständig
+   gerätebestätigt (Deutsch). Weiterhin offen: schmale Breite jeweils
+   kombiniert mit Deutsch/Türkisch, Dezimalgewicht/kg-lbs kombiniert mit
+   Deutsch/Türkisch (nur Englisch+diese Bedingungen sind aus Runde 3
+   bestätigt); ein echtes kleineres Gerät ist auf TestingBots aktueller
+   Geräteflotte für iOS 17+ nicht verfügbar (geprüft: alle schmaleren
+   iPhone-Modelle laufen dort mit iOS < 17) — strukturell nicht testbar,
+   kein Versäumnis.
+2. **kg/lbs-Einheiten (seit Runde 9 für die vier benannten Stellen
+   bestanden, Rest bewusst außerhalb des Scopes)**: Satz-Logging,
+   Profil-/Körperdaten-Editor und Dashboard-Gewichtstrend respektieren das
+   Setting jetzt (Commit `0a3c68e`, gerätebestätigt). Weiterhin bewusst
+   kg-only (sechster fachlicher Widerspruch, Scope-Grenze siehe Runde-9-
+   Nachtrag, nicht eigenmächtig erweitert): Trainingsvolumen-Aggregation,
+   PR-Erkennung/-Banner, Übungs-Gewichtsverlauf-Charts, CSV-Export/-Import.
+   Kleine verbleibende Lücke: `set.column.header.accessibilityLabel` nennt
+   VoiceOver weiterhin "Kilogramm" unabhängig vom Setting (Runde 9
+   gefunden, nicht gefixt).
 3. F01–F08: nur noch der reine UI-/Geräte-Teil von F01–F03/F06–F08 sowie
    F05s Beschwerden-Abklärungsweg offen, bestätigt weiterhin ausschließlich
    am CSV-Export-Hang blockiert (Runde 8: kein alternativer Weg ohne neue,
    umfangreiche Testinfrastruktur gefunden).
 4. Verbleibende P2-Fälle ohne Gerätenachweis: A02, C05, E02, E08.
 
-Von den fünf ursprünglich benannten fachlichen Widersprüchen ist C01 seit
-Runde 5 behoben (siehe dortiger Eintrag, aus Nachvollziehbarkeit stehen
-gelassen statt gelöscht); die verbleibenden vier (A09, C04,
-A02-Architekturfrage, F04, sowie A04s Abhängigkeit von A09) sowie der neue
-sechste (kg/lbs-Einheiten, Runde 8) gehen weiterhin als offene
-Entscheidungen an den Nutzer zurück, nicht eigenmächtig auflösen.
+Von den sechs benannten fachlichen Widersprüchen sind C01 (seit Runde 5)
+und kg/lbs (seit Runde 9, für die vier benannten Stellen) behoben (siehe
+jeweiliger Eintrag, aus Nachvollziehbarkeit stehen gelassen statt
+gelöscht); die verbleibenden vier (A09, C04, A02-Architekturfrage, F04,
+sowie A04s Abhängigkeit von A09) sowie die bewusste kg/lbs-Scope-Grenze
+(Volumen/PRs/Charts/CSV) gehen weiterhin als offene Entscheidungen an den
+Nutzer zurück, nicht eigenmächtig auflösen.
