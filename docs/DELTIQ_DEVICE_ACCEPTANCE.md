@@ -2,8 +2,14 @@
 
 Stand: 2026-10-20 (siebzehnter Durchgang: Zurück-Navigations-Beobachtung
 aus Durchgang 16 per vollständiger Code-Analyse aufgelöst — kein Bug,
-siehe Abschnitt „Zurück-Navigation geklärt" unten. Jetzt Beginn Paket 2
-(strukturierte Ausdauereinheiten). Davor sechzehnter Durchgang: Paket 1 — der beim
+siehe Abschnitt „Zurück-Navigation geklärt" unten. Paket 2 (strukturierte
+Ausdauereinheiten): vollständiger Umsetzungsplan erstellt (Komponente 1
+bereits erfüllt, Komponente 2+3 als Erweiterung von `.circuit`/
+`CircuitPlayerView` entworfen, 16 betroffene Codestellen einzeln
+aufgelistet) — **Code-Umsetzung bewusst NICHT in dieser Runde begonnen**
+(zu großer, unbeaufsichtigter Eingriffsradius ohne lokale
+Compiler-Prüfung in dieser Umgebung), siehe Abschnitt „Paket 2:
+Umsetzungsplan" unten. Davor sechzehnter Durchgang: Paket 1 — der beim
 Konfliktbanner-Nachtest entdeckte echte Bug [Übernahme war trotz
 ungelöstem `distributionConflict` nicht blockiert] gefixt und
 gerätebestätigt, HEAD `1cbffeb`, siehe Nachtrag „Übernahme-Blockade
@@ -94,6 +100,128 @@ Runde 7 korrekt eingeordnet und gefixt. Gesamtabnahme weiterhin offen
 (kein vollständiger Abschluss aller 46 Fälle). Paket 1 (Coach-Aktivierung →
 Plananpassung) ist seit der Geräteabnahme unten vollständig gerätebestätigt,
 alle 9 geforderten Nachweise bestanden, kein Bug gefunden.**
+
+## Paket 2: Umsetzungsplan (strukturierte Ausdauereinheiten) — Plan fertig, Umsetzung noch nicht begonnen
+
+**Wichtig:** dieser Abschnitt ist eine Planung/Recherche, KEIN Code wurde
+für Paket 2 geändert. Grund: die Recherche ergab einen deutlich größeren
+Eingriffsradius als ursprünglich angenommen (14 Stellen im Code müssen
+bei einer neuen `WorkoutTimeFormat`-Ausprägung angepasst werden, jede
+einzeln geprüft statt pauschal). Ohne lokalen Swift-Compiler in dieser
+Umgebung (reine Linux-Containerumgebung, kein `swift`-Toolchain
+installiert — jede Prüfung läuft ausschließlich über den entfernten
+macOS-CI-Lauf) ist ein unkontrolliertes Durchziehen aller 14 Stellen in
+einem einzigen, unbeaufsichtigten Schritt ein zu hohes Qualitätsrisiko.
+Diese Planung ist der vollständige, konkrete Fahrplan für die nächste
+Umsetzungsrunde.
+
+### Komponente 1 (einfache Ausdauereinheit): bereits erfüllt, keine neue Arbeit nötig
+
+Code-Befund: jede "Easy Run"/"Long Run"-Vorlage in `ProgramTemplates.swift`
+ist bereits exakt EIN `ExerciseSpec` mit `sets: 1, repsMin: 1, repsMax: 1,
+isCardio: true` plus `targetDistanceKm`/`targetDurationMinutes` (z. B.
+Zeile ~592, ~601, ~805-813 inkl. separater `role: .warmup`/`.cooldown`-
+Einträge für einen Spaziergang vor/nach dem Lauf). `SetRow.swift` rendert
+`content.isCardio`-Übungen bereits über eigene Distanz-/Dauer-Eingabefelder
+statt Gewicht/Wdh/RIR (siehe `previousLogHint`, Zeile ~1105ff., und die
+Cardio-Eingabefelder um Zeile 1344-1366) — "keine künstlichen Kraftsätze,
+kein Gewicht, kein RIR" ist damit bereits erfüllt. Geplante Vorlagen setzen
+teils SOWOHL `targetDistanceKm` ALS AUCH `targetDurationMinutes` (beide als
+informative Richtwerte, z. B. "Easy Run, ~30 Min · 5,0 km") — das ist
+bewusst keine erzwungene Einzelwahl auf Vorlagenebene, sondern reine
+Information; das tatsächliche ERGEBNIS wird laut bestehendem
+`ExerciseLog.distanceKm`/`durationSeconds` (beide optional, unabhängig
+voneinander befüllbar) bereits korrekt getrennt erfasst — "nur bekannte
+Werte anzeigen, fehlende Werte nicht als null interpretieren" ist in
+`SetRow`s Ergebnis-Rendering (Zeile ~1281-1286) bereits so umgesetzt.
+**Kein Codeänderungsbedarf für Komponente 1.**
+
+### Komponente 2+3 (strukturierte Einheit + Player): Entwurf
+
+**Vorhandenes Muster (Präzedenzfall):** `WorkoutTimeFormat.circuit` +
+`TrainingDay.circuitRounds/circuitRestSeconds/circuitMode` +
+`CircuitPlayerView` (Zwei-Phasen: ungezeitete Arbeit + gezeitete Pause,
+wanduhr-verankerter `restEndDate`, übersteht Hintergrund via `scenePhase`)
+ist strukturell fast identisch mit "Einlaufen → N×(Belastung/Erholung) →
+Auslaufen" — EINZIGER Unterschied: Belastung UND Erholung sind bei
+Ausdauer-Intervallen BEIDE gezeitet/streckenbasiert (nicht wie beim
+Zirkel: Arbeit ungezeitet/"User entscheidet"), und es kommen Einlauf-/
+Auslaufphasen vor der ersten/nach der letzten Runde dazu.
+
+**Geprüfte, aber VERWORFENE Alternative:** die N Belastungs-/
+Erholungsphasen stattdessen als eine flache Liste einzelner
+`ExerciseSpec`-Einträge "entrollen" (analog zum bereits bestehenden
+`role: .warmup`/`.cooldown`-Muster) — das würde KEINE neue
+`WorkoutTimeFormat`-Ausprägung und keine der 14 Stellen unten erfordern.
+Verworfen, weil das die in Komponente 3 geforderte zusammenhängende
+Abschnitts-/Wiederholungs-Anzeige ("3 von 5", automatischer
+Pausen-Countdown, Pause/Fortsetzen als EIN Bildschirm) nicht abbildet —
+eine flache Übungsliste wäre nur eine gewöhnliche Satzliste, kein
+Intervall-Player. Empfehlung bleibt: neue `WorkoutTimeFormat`-Ausprägung,
+analog `.circuit`.
+
+**Neue Felder (Vorschlag, mirror-Muster wie `circuit*`):**
+- `WorkoutTimeFormat.enduranceIntervals` (neuer Case in
+  `Sources/FitnessAppCore/Domain/DomainEnums.swift`).
+- `TrainingDay`/`DaySpec` (mirror, wie bei `circuitRounds` etc.):
+  `enduranceWarmupDurationSeconds: Int?`,
+  `enduranceCooldownDurationSeconds: Int?`,
+  `enduranceIntervalRounds: Int?`,
+  `enduranceWorkDurationSeconds: Int?`, `enduranceWorkDistanceKm: Double?`
+  (beide `nil` = "offen", wie bei `ExerciseSpec.targetDistanceKm`/
+  `targetDurationMinutes` bereits etabliert — NIE beide zugleich für einen
+  Arbeits-Abschnitt, anders als bei der einfachen Einheit oben, da hier
+  eine eindeutige Abschnittsziel-Art pro Segment gefordert ist),
+  `enduranceRestDurationSeconds: Int?` (Erholung bleibt für V1 bewusst
+  zeitbasiert — alle Nutzerbeispiele zeigen reine Zeit-Erholung, keine
+  Distanz-Erholung; spätere Erweiterung möglich, aber nicht Teil von V1).
+- `TrainingDay.currentContentFingerprint` (Zeile ~135-139) MUSS die neuen
+  Felder mit einschließen, exakt wie die bestehenden `circuitPart`-Felder
+  — sonst würde eine Bearbeitung dieser neuen Felder nicht als "vom Nutzer
+  angefasst" erkannt (Leitplanke aus Paket 1, Punkt 4: Schutz vor
+  Überschreiben via `generationFingerprint`-Vergleich).
+
+**Die 14 betroffenen Codestellen** (alle als exhaustive `switch` über
+`WorkoutTimeFormat` — der Compiler erzwingt, dass JEDE davon behandelt
+wird, kein Vergessen möglich):
+
+| # | Datei:Zeile | Empfehlung |
+|---|---|---|
+| 1 | `WorkoutHistoryView.swift:348` (Icon je Format) | eigenes Icon, z. B. `"figure.run"` |
+| 2 | `WorkoutHistoryView.swift:360` (Verlaufs-Kennzahl) | Runden-Anzahl analog AMRAP, oder Distanz/Dauer-Summe |
+| 3 | `DayEditorView.swift:544` (`case .amrap, .emom:`, Editor-Verzweigung) | eigener Zweig — Editor-UI für die neuen Felder kommt hier hin |
+| 4-6 | `WorkoutSummaryView.swift:336,1110,1269` (Zusammenfassung) | eigener Zweig, zeigt Runden + ggf. Gesamtdistanz/-dauer |
+| 7 | `TimedWorkoutPlayerView.swift:33` (Player-Routing) | `case .enduranceIntervals: EnduranceIntervalPlayerView(session: session)` — NEUE Datei, analog `CircuitWorkoutPlayerView.swift` |
+| 8 | `TimedWorkoutPlayerView.swift:191` (`case .amrap, .emom:`) | eigener Zweig prüfen (Kontext lesen, nicht blind mitgruppieren) |
+| 9 | `TimedWorkoutPlayerView.swift:208` (Format-Anzeigename) | z. B. `"Intervalle"` |
+| 10 | `TimedWorkoutPlayerView.swift:223` (Editor-Hinweistext-Key) | neuer xcstrings-Key |
+| 11 | `TimedWorkoutPlayerView.swift:244` (numerischer Default) | Kontext lesen, sinnvollen Default setzen |
+| 12 | `TimedWorkoutBackground.swift:222` (Hintergrundvisual) | eigener Zweig oder Fallback auf `.circuit`-Visual |
+| 13 | `DayAnalysisCard.swift:177` (Coaching-Hinweistext) | eigener Key oder bewusst ausblenden (Paket-3-Grenze beachten — KEINE neue Coaching-Logik, nur Textfall behandeln) |
+| 14 | `PlanGenerator.swift:718` (`case .forTime, .circuit:`, Strength-Timed-Format-Generator) | **vermutlich strukturell unerreichbar** für Ausdauertage (dieser Pfad generiert Kraft-Komplexe, Cardio-Tage laufen über `ProgramTemplates.swift`, nicht durch diesen Generator) — in dieselbe Fallgruppe wie `.circuit` aufnehmen (dort steht bereits "`.circuit` erreicht diese Funktion in der Praxis nie"), mit Kommentar warum |
+| 15 | `DayAnalyzer.swift:293` (Muskelvolumen-Mengenberechnung) | `case .forTime, .circuit:`-Gruppe erweitern (gleiche Semantik: `sets` ist dort faktisch eine Rundenzahl) — Cardio-Ausschluss aus Muskelvolumen läuft ohnehin separat über `isCardio`, nicht über `timeFormat` |
+| 16 | `PRDetector.swift:425` (`detectTimedFormatPR`, Format-PR-Erkennung) | eigener Fall oder bewusst `nil` zurückgeben (PR auf Zeit/Distanz für Ausdauer-Intervalle ist eine neue fachliche Frage — NICHT in Paket 2, siehe Abgrenzung zu Paket 3: "keine neue adaptive Coaching-/Progressionslogik") |
+
+(16 statt 14 beim Durchzählen — ursprüngliche Schnellzählung war ungenau,
+tatsächlich 16 Stellen, hier vollständig/korrigiert gelistet.)
+
+**Persistenz (Komponente 4):** `try? modelContext.save()` unmittelbar nach
+jeder Abschnitts-Bestätigung (gleiches, zwölffach bewährtes Muster dieser
+Session). Keine Export-/Importänderung nötig — jede abgeschlossene
+Wiederholung wird wie bisher als eigener `ExerciseLog`-Eintrag
+(`distanceKm`/`durationSeconds`) gespeichert, CSV-Export/-Import iteriert
+bereits über `ExerciseLog`-Zeilen unverändert. Migration: SwiftData hat in
+diesem Projekt für neue optionale/defaulted Properties bisher immer ohne
+manuelle Migration funktioniert (siehe `circuitRounds` etc.) — gleiches
+Muster erwartet, beim ersten CI-Lauf nach Hinzufügen der Felder
+verifizieren.
+
+**Nächster Schritt (nicht in dieser Runde begonnen):** die 16 Stellen
+oben in genau dieser Reihenfolge abarbeiten (Datenmodell + Fingerprint
+zuerst + Unit-Tests, dann Routing + neuer Player, dann Editor-UI zum
+Anlegen einer strukturierten Einheit, dann Geräte-Nachweise:
+Kaltstart-während-laufendem-Intervall, Pause/Fortsetzen, übersprungener
+Abschnitt, Easy-Run-Normalfall als Regressionscheck für Komponente 1).
 
 ## Zurück-Navigation geklärt (kein Bug, vollständige Code-Analyse statt Geräte-Session)
 
