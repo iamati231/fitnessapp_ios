@@ -56,6 +56,7 @@ public extension View {
             // Muster wie der bereits gefixte SetRow.weightInput (Runde 3).
             .lineLimit(1)
             .minimumScaleFactor(0.5)
+    }
 }
 
 // MARK: - Cross-platform toolbar placement
