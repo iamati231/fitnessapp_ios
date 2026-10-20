@@ -183,11 +183,45 @@ Stelle) — deshalb dort die Maskierung, hier nicht.
 | **2026-10-20T12:49:11Z** (vor Runde 7) | Konto-API | **26.990 s** | Abrechnungsverzug jetzt aufgeholt: 28.007 − 26.990 = 1.017 s = 177 s ausstehender Runde-5-Rest + 840 s Runde-6-Gesamtverbrauch — **exakt deckungsgleich**, keine Doppelzählung |
 | Runde 7 (1 Session, A01-Nachtest) | Session-Dauer-Summe (TestingBot-API, Test-ID 54026757) | 681 s | Onboarding-Durchlauf + Build-Plan-Verifikation, aktiv beendet (`DELETE /session`, Status `success`) |
 
+### E04-Rest (DE): neue Hypothese erfolgreich — kein Infrastrukturblocker mehr
+
+**Bekannter Blocker (Runde 3):** Systemsprachwechsel zur Laufzeit (über die
+iOS-Einstellungen-App) löst einen Respring aus, den die Appium-Session
+bisher nicht überlebte — die Automatisierung brach danach ab.
+
+**Neue Hypothese (Runde 7):** Sprache/Locale bereits bei Session-Start als
+WebDriver-Capability setzen (`appium:language: "de"`,
+`appium:locale: "DE"`), statt zur Laufzeit über die Einstellungen-App
+umzuschalten — die App startet dann direkt in der Zielsprache, kein
+Respring nötig. **Hypothese bestätigt:** App startete sauber auf Deutsch,
+Session blieb durchgehend stabil.
+
+**Geprüft (Build `tb://69c9fff4bfd115990736f838`, Commit `a4359f4`,
+`appium:language: "de"`/`appium:locale: "DE"`):** vollständiger
+Onboarding-Durchlauf (Willkommen → Profil → Ziel-/Tone-/Wochenziel-Step →
+Ausdauerform/Laufcoach-Step → Trainingshistorie → Equipment → Start-Check
+→ Abschluss → Dashboard) sowie `CardioGoalEditorView` (unsere eigene
+Änderung dieser Runden) mit aktiviertem Lauf-Coaching (alle Felder:
+Ausdauerform, Lauf-Ziel-Picker, 5-km-Zeit, Renn-Datum, Start-Laufvolumen,
+Maximalpuls). Durchgehend korrekte Übersetzung, korrekte Umlaute/ß, keine
+abgeschnittenen Texte, keine Layout-Brüche, kein Crash. Einzige bekannte
+Kürzung (Tag-Namen-Kacheln "Unterkörper &…") ist dieselbe, bereits aus dem
+Englischen bekannte Design-Kürzung, keine deutschspezifische Regression.
+
+**E04-Rest (DE) gilt damit als bestanden.** Türkisch wurde aus
+Zeitgründen in dieser Runde nicht mehr geprüft, bleibt offen; dieselbe
+Methode (Locale-Capability bei Session-Start) ist dafür direkt
+übertragbar.
+
+**TestingBot-Session (aktiv beendet):** Test-ID 54027366
+(`4a4a94879187-06cad78be6ed-a3a532314f04-179250253101-48459214`), Dauer
+282 s (Build/Commit identisch zum A01-Nachtest, kein neuer Build nötig).
+
 **Restbudget nach Runde 7 (Session-Summe, genauerer Wert als die ggf. noch
-nicht aufgeholte Konto-API):** 26.990 − 681 = **26.309 Sekunden** (≈ 7,3 h). Keine
-zusätzliche Session wurde nur zur Budgetprüfung gestartet — die
-26.990-Sekunden-Messung war die ohnehin fällige Vor-Runde-Prüfung, keine
-Zusatzabfrage.
+nicht aufgeholte Konto-API):** 26.990 − 681 (A01-Nachtest) − 282
+(E04-Rest-DE) = **26.027 Sekunden** (≈ 7,2 h). Keine zusätzliche Session
+wurde nur zur Budgetprüfung gestartet — die 26.990-Sekunden-Messung war
+die ohnehin fällige Vor-Runde-Prüfung, keine Zusatzabfrage.
 
 ## Runde 6: A01-Code-Klärung + D06-Cancel-Endlosschleife gefunden und gefixt
 
@@ -1149,12 +1183,12 @@ Runde 6, A01 seit Runde 7 vollständig bestanden** (C01: Timing-Fix
 Offene bekannte Nachweislücken, in absteigender Priorität für eine
 künftige Runde:
 
-1. **E04-Rest** (teilweise): Deltiq selbst in Deutsch (Automatisierung
-   überlebte den Systemsprachwechsel in dieser Runde nicht) und in
-   Türkisch (nicht versucht) bleiben ungeprüft; ein echtes kleineres
-   Gerät wurde nicht zusätzlich zur Dynamic-Type-Vergrößerung getestet.
-   In Runde 6 und 7 aus Zeit-/Umfangsgründen zurückgestellt, nicht erneut
-   versucht.
+1. **E04-Rest** (teilweise): Deutsch seit Runde 7 bestanden (neue
+   Hypothese — Locale-Capability bei Session-Start statt Laufzeit-
+   Sprachwechsel — behebt den Runde-3-Blocker vollständig). Türkisch
+   bleibt ungeprüft (aus Zeitgründen in Runde 7 zurückgestellt, dieselbe
+   Methode direkt übertragbar); ein echtes kleineres Gerät wurde weiterhin
+   nicht zusätzlich zur Dynamic-Type-Vergrößerung getestet.
 2. F01–F08: nur noch der reine UI-/Geräte-Teil von F01–F03/F06–F08 sowie
    F05s Beschwerden-Abklärungsweg offen — kein genereller Blocker mehr.
 3. Verbleibende P2-Fälle ohne Gerätenachweis: A02, C05, E02, E08.
