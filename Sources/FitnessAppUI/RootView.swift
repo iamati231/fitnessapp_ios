@@ -366,13 +366,27 @@ struct MainTabView: View {
     /// Vorgabe deutlich naeher als reines SwiftUI-`.tint()`, aber Blur-Radius
     /// und die 1pt-Oberkante aus dem Handoff sind damit nicht exakt
     /// erreichbar. Braucht Sichtpruefung im Simulator.
+    ///
+    /// Geraete-Abnahme (Runde 10, docs/DELTIQ_DEVICE_ACCEPTANCE.md): die
+    /// "Weiss ~35%"-Vorgabe oben ging von einem IMMER dunklen Hintergrund
+    /// aus (#1C1C1E, wie im Kommentar explizit benannt) - `Color.Deltiq.
+    /// surface` ist aber hell/dunkel-adaptiv (reines Weiss im Light Mode,
+    /// siehe Theme.swift). Weiss-auf-Weiss machte die vier inaktiven
+    /// Tab-Icons im Light Mode de facto unsichtbar (nur der aktive, orange
+    /// Tab blieb erkennbar) - exakt das vom Nutzer gemeldete "fehlende
+    /// untere Menuepunkte", abhaengig vom Farbschema. Fix: dieselbe
+    /// hell/dunkel-Verzweigung wie `Color.init(deltiqLight:deltiqDark:)`
+    /// oben im Theme, nicht die Oberflaechenfarbe selbst anfassen.
     private func configureTabBarAppearance() {
         #if canImport(UIKit)
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = UIColor(Color.Deltiq.surface).withAlphaComponent(0.92)
 
-        let normalColor = UIColor.white.withAlphaComponent(0.35)
+        // Dieselbe Hell/Dunkel-Verzweigung wie `Color.Deltiq.surface`
+        // (Theme.swift) — der Tab-Bar-Hintergrund ist adaptiv, die
+        // Icon-Farbe muss es also ebenfalls sein.
+        let normalColor = UIColor(Color(deltiqLight: .black.opacity(0.35), deltiqDark: .white.opacity(0.35)))
         let selectedColor = UIColor(Color.deltiqOrange)
         appearance.stackedLayoutAppearance.normal.iconColor = normalColor
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
