@@ -526,14 +526,7 @@ public struct DayEditorView: View {
             // reagiert bereits automatisch auf `day.timeFormat`.
             Picker(selection: $day.timeFormat) {
                 Text("day.editor.field.structure.sets", bundle: .module).tag(nil as WorkoutTimeFormat?)
-                // Paket 2: `.enduranceIntervals` bewusst NICHT hier anbieten
-                // - dieser Editor hat noch keine Eingabefelder fuer
-                // Einlauf-/Auslaufdauer, Rundenzahl, Belastungs-/Erholungs-
-                // ziel. Erst anbieten, wenn die zugehoerige Konfigurations-
-                // UI existiert (naechster Paket-2-Schritt), sonst waere das
-                // Ergebnis ein Tag mit gesetztem Format, aber ohne jede
-                // Konfiguration.
-                ForEach(WorkoutTimeFormat.allCases.filter { $0 != .enduranceIntervals }, id: \.self) { format in
+                ForEach(WorkoutTimeFormat.allCases, id: \.self) { format in
                     Text(timedFormatDisplayName(format)).tag(format as WorkoutTimeFormat?)
                 }
             } label: {
@@ -621,10 +614,101 @@ public struct DayEditorView: View {
                     .disabled(isReadOnly)
                     .listRowBackground(Color.Deltiq.surface)
                 case .enduranceIntervals:
-                    // Paket 2: strukturell unerreichbar - der Picker oben
-                    // bietet dieses Format bewusst nicht an (siehe dortiger
-                    // Kommentar), solange keine Konfigurations-UI existiert.
-                    EmptyView()
+                    Stepper(value: Binding(
+                        get: { (day.enduranceWarmupDurationSeconds ?? defaultEnduranceWarmupSeconds()) / 60 },
+                        set: { day.enduranceWarmupDurationSeconds = $0 * 60 }
+                    ), in: 0...30) {
+                        LabeledContent {
+                            Text("\((day.enduranceWarmupDurationSeconds ?? defaultEnduranceWarmupSeconds()) / 60) " + String(localized: "unit.minutes.short", bundle: .module))
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        } label: {
+                            Text("day.editor.field.enduranceWarmup", bundle: .module)
+                        }
+                    }
+                    .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
+
+                    Stepper(value: Binding(
+                        get: { day.enduranceIntervalRounds ?? defaultEnduranceIntervalRounds() },
+                        set: { day.enduranceIntervalRounds = $0 }
+                    ), in: 1...20) {
+                        LabeledContent {
+                            Text("\(day.enduranceIntervalRounds ?? defaultEnduranceIntervalRounds())")
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        } label: {
+                            Text("day.editor.field.enduranceRounds", bundle: .module)
+                        }
+                    }
+                    .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
+
+                    Picker(selection: enduranceWorkTargetModeBinding) {
+                        Text("day.editor.field.enduranceWorkTarget.time", bundle: .module).tag(EnduranceWorkTargetMode.time)
+                        Text("day.editor.field.enduranceWorkTarget.distance", bundle: .module).tag(EnduranceWorkTargetMode.distance)
+                        Text("day.editor.field.enduranceWorkTarget.open", bundle: .module).tag(EnduranceWorkTargetMode.open)
+                    } label: {
+                        Text("day.editor.field.enduranceWorkTarget", bundle: .module)
+                    }
+                    .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
+
+                    switch enduranceWorkTargetModeBinding.wrappedValue {
+                    case .time:
+                        Stepper(value: Binding(
+                            get: { day.enduranceWorkDurationSeconds ?? defaultEnduranceWorkDurationSeconds() },
+                            set: { day.enduranceWorkDurationSeconds = $0 }
+                        ), in: 15...600, step: 15) {
+                            LabeledContent {
+                                Text("\(day.enduranceWorkDurationSeconds ?? defaultEnduranceWorkDurationSeconds())" + String(localized: "unit.seconds.short", bundle: .module))
+                                    .foregroundStyle(Color.Deltiq.textSecondary)
+                            } label: {
+                                Text("day.editor.field.enduranceWorkDuration", bundle: .module)
+                            }
+                        }
+                        .disabled(isReadOnly)
+                        .listRowBackground(Color.Deltiq.surface)
+                    case .distance:
+                        TextField(String(localized: "day.editor.field.enduranceWorkDistance", bundle: .module),
+                                  value: Binding(
+                                    get: { day.enduranceWorkDistanceKm },
+                                    set: { day.enduranceWorkDistanceKm = $0 }
+                                  ),
+                                  format: .number,
+                                  prompt: Text("editor.exercise.field.distanceExample", bundle: .module))
+                            .decimalKeyboard()
+                            .disabled(isReadOnly)
+                            .listRowBackground(Color.Deltiq.surface)
+                    case .open:
+                        EmptyView()
+                    }
+
+                    Stepper(value: Binding(
+                        get: { day.enduranceRestDurationSeconds ?? defaultEnduranceRestDurationSeconds() },
+                        set: { day.enduranceRestDurationSeconds = $0 }
+                    ), in: 15...300, step: 15) {
+                        LabeledContent {
+                            Text("\(day.enduranceRestDurationSeconds ?? defaultEnduranceRestDurationSeconds())" + String(localized: "unit.seconds.short", bundle: .module))
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        } label: {
+                            Text("day.editor.field.enduranceRest", bundle: .module)
+                        }
+                    }
+                    .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
+
+                    Stepper(value: Binding(
+                        get: { (day.enduranceCooldownDurationSeconds ?? defaultEnduranceCooldownSeconds()) / 60 },
+                        set: { day.enduranceCooldownDurationSeconds = $0 * 60 }
+                    ), in: 0...30) {
+                        LabeledContent {
+                            Text("\((day.enduranceCooldownDurationSeconds ?? defaultEnduranceCooldownSeconds()) / 60) " + String(localized: "unit.minutes.short", bundle: .module))
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        } label: {
+                            Text("day.editor.field.enduranceCooldown", bundle: .module)
+                        }
+                    }
+                    .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
                 }
             }
         } header: {
@@ -637,6 +721,36 @@ public struct DayEditorView: View {
             }
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
+    }
+
+    /// Paket 2: reine UI-Auswahl, nicht persistiert - leitet sich aus
+    /// `day.enduranceWorkDurationSeconds`/`enduranceWorkDistanceKm` ab.
+    /// Genau eines der beiden Felder ist je Modus gesetzt (nie beide, siehe
+    /// `TrainingDay`-Doku) - das Setzen eines neuen Modus loescht das jeweils
+    /// andere Feld, statt einen veralteten Wert stehen zu lassen.
+    private enum EnduranceWorkTargetMode { case time, distance, open }
+
+    private var enduranceWorkTargetModeBinding: Binding<EnduranceWorkTargetMode> {
+        Binding(
+            get: {
+                if day.enduranceWorkDurationSeconds != nil { return .time }
+                if day.enduranceWorkDistanceKm != nil { return .distance }
+                return .open
+            },
+            set: { newMode in
+                switch newMode {
+                case .time:
+                    day.enduranceWorkDistanceKm = nil
+                    day.enduranceWorkDurationSeconds = defaultEnduranceWorkDurationSeconds()
+                case .distance:
+                    day.enduranceWorkDurationSeconds = nil
+                    day.enduranceWorkDistanceKm = 1.0
+                case .open:
+                    day.enduranceWorkDurationSeconds = nil
+                    day.enduranceWorkDistanceKm = nil
+                }
+            }
+        )
     }
 
     @ViewBuilder

@@ -161,6 +161,16 @@ public func defaultCircuitRounds() -> Int { 5 }
 /// Kettlebell-Komplex aus der Nutzer-Vorlage durchgehend verwendet.
 public func defaultCircuitRestSeconds() -> Int { 90 }
 
+/// Paket 2: Vorschlagswerte fuer einen neu angelegten Ausdauer-Intervall-Tag,
+/// solange das jeweilige Feld noch `nil` ist - entsprechen dem Beispiel aus
+/// dem Laufcoach-Konzept (Einlaufen 10 Min, 5 Runden, 2 Min Belastung, 2 Min
+/// Erholung, Auslaufen 5 Min), docs/DELTIQ_DEVICE_ACCEPTANCE.md.
+public func defaultEnduranceWarmupSeconds() -> Int { 600 }
+public func defaultEnduranceCooldownSeconds() -> Int { 300 }
+public func defaultEnduranceIntervalRounds() -> Int { 5 }
+public func defaultEnduranceWorkDurationSeconds() -> Int { 120 }
+public func defaultEnduranceRestDurationSeconds() -> Int { 120 }
+
 /// Difficulty classification for exercise templates — used by the library filter (F99).
 public enum DifficultyLevel: String, Codable, Sendable, CaseIterable {
     case beginner

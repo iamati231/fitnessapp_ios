@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2269 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2279 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2269 / 2269** (100%) | 0 |
-| 🇬🇧 English (EN) | **2269 / 2269** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2269 / 2269** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2279 / 2279** (100%) | 0 |
+| 🇬🇧 English (EN) | **2279 / 2279** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2279 / 2279** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -761,7 +761,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboardSettings.section.inactive.title` | Inaktive Widgets | Inactive Widgets | Pasif Widget'lar |
 | `dashboardSettings.title` | Dashboard anpassen | Customize Dashboard | Panoyu Özelleştir |
 
-## `day.*`  (71 Keys)
+## `day.*`  (81 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -807,6 +807,16 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `day.editor.field.circuitRest` | Pause zwischen Runden | Rest between rounds | Turlar arası mola |
 | `day.editor.field.circuitRounds` | Runden | Rounds | Tur |
 | `day.editor.field.duration` | Dauer | Duration | Süre |
+| `day.editor.field.enduranceCooldown` | Auslaufen | Cool-down | Soğuma |
+| `day.editor.field.enduranceRest` | Erholung | Recovery | Dinlenme |
+| `day.editor.field.enduranceRounds` | Runden | Rounds | Tur |
+| `day.editor.field.enduranceWarmup` | Einlaufen | Warm-up | Isınma |
+| `day.editor.field.enduranceWorkDistance` | Belastungsstrecke (km) | Effort distance (km) | Yüklenme mesafesi (km) |
+| `day.editor.field.enduranceWorkDuration` | Belastungsdauer | Effort duration | Yüklenme süresi |
+| `day.editor.field.enduranceWorkTarget` | Belastungsziel | Effort target | Yüklenme hedefi |
+| `day.editor.field.enduranceWorkTarget.distance` | Strecke | Distance | Mesafe |
+| `day.editor.field.enduranceWorkTarget.open` | Offen | Open | Açık |
+| `day.editor.field.enduranceWorkTarget.time` | Zeit | Time | Süre |
 | `day.editor.field.name` | Name | Name | Ad |
 | `day.editor.field.nextIntensity` | Nächste Intensität | Next Intensity | Sonraki Yoğunluk |
 | `day.editor.field.structure` | Struktur | Structure | Yapı |
