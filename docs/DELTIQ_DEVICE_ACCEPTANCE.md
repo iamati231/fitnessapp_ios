@@ -162,14 +162,20 @@ sichtbar war oder automatisch bestätigt wurde?
   belegt.
 
 **Ergebnis: keine der bisherigen PASS-Bewertungen (außer dem bereits in
-Runde 6 behandelten D06) muss zurückgenommen oder erneut getestet werden.**
-Der Grund: der gemeinsame `discardChangesConfirmation`-Modifier
-(`Theme.swift`) hat "Verwerfen" immer als ERSTEN Button — genau das von
-`autoAcceptAlerts` automatisch gewählte Verhalten deckt sich hier mit der
-jeweils behaupteten Aktion. D06s Dialoge (`PlanEditorView`s drei
+Runde 6 behandelten D06) muss zurückgenommen oder erneut getestet werden —
+maßgeblich dafür ist in jedem Einzelfall ausschließlich der oben geprüfte
+Folgezustand, nicht die Position des Buttons im Dialog.** Die
+Button-Reihenfolge im gemeinsamen `discardChangesConfirmation`-Modifier
+(`Theme.swift`, "Verwerfen" zuerst) ist dabei kein eigenständiger Beweis,
+sondern nur die Erklärung DAFÜR, warum `autoAcceptAlerts` hier zufällig
+dieselbe Aktion auslöste, die der jeweils dokumentierte Folgezustand
+ohnehin schon unabhängig belegt. Ohne einen eindeutig unterscheidenden
+Folgezustand wäre die Übereinstimmung der Button-Reihenfolge allein KEIN
+Nachweis gewesen. D06s Dialoge (`PlanEditorView`s drei
 Umgebungswechsel-Dialoge: Global-Sync/Adapt/Restore) sind strukturell
 anders aufgebaut (drei nicht-binäre Optionen, Cancel nicht an erster
-Stelle) — deshalb dort die Maskierung, hier nicht.
+Stelle) — deshalb dort die Maskierung, die erst durch den expliziten
+Nachtest mit `autoAcceptAlerts: false` aufgedeckt wurde.
 
 ### Budget-Rekonstruktion mit Zeitpunkten
 
@@ -208,20 +214,32 @@ abgeschnittenen Texte, keine Layout-Brüche, kein Crash. Einzige bekannte
 Kürzung (Tag-Namen-Kacheln "Unterkörper &…") ist dieselbe, bereits aus dem
 Englischen bekannte Design-Kürzung, keine deutschspezifische Regression.
 
-**E04-Rest (DE) gilt damit als bestanden.** Türkisch wurde aus
-Zeitgründen in dieser Runde nicht mehr geprüft, bleibt offen; dieselbe
-Methode (Locale-Capability bei Session-Start) ist dafür direkt
-übertragbar.
+**E04-Rest (DE) gilt nur für die tatsächlich geprüfte Kombination als
+bestanden:** Deutsch, Standard-Bildschirmbreite, Standard-Schriftgröße,
+Standard-Dynamic-Type, Default-Gewichtseinheit. NICHT mit geprüft (noch
+offen, auch für DE): schmale Bildschirmbreite, große Schrift/Dynamic Type,
+Dezimalgewicht-Eingabe, kg/lbs-Umschaltung — diese Bedingungen wurden in
+Runde 3 nur auf Englisch nachgewiesen (E04-Fix selbst, siehe dortiger
+Nachtrag), nicht in Kombination mit Deutsch. Türkisch (in keiner
+Kombination) wurde aus Zeitgründen in dieser Runde nicht mehr geprüft,
+bleibt vollständig offen; dieselbe Methode (Locale-Capability bei
+Session-Start) ist dafür direkt übertragbar.
 
 **TestingBot-Session (aktiv beendet):** Test-ID 54027366
 (`4a4a94879187-06cad78be6ed-a3a532314f04-179250253101-48459214`), Dauer
 282 s (Build/Commit identisch zum A01-Nachtest, kein neuer Build nötig).
 
-**Restbudget nach Runde 7 (Session-Summe, genauerer Wert als die ggf. noch
-nicht aufgeholte Konto-API):** 26.990 − 681 (A01-Nachtest) − 282
-(E04-Rest-DE) = **26.027 Sekunden** (≈ 7,2 h). Keine zusätzliche Session
-wurde nur zur Budgetprüfung gestartet — die 26.990-Sekunden-Messung war
-die ohnehin fällige Vor-Runde-Prüfung, keine Zusatzabfrage.
+**Restbudget nach Runde 7:** 26.990 − 681 (A01-Nachtest) − 282
+(E04-Rest-DE) = **26.027 Sekunden, rein aus der Session-Dauer-Summe
+berechnet — KEIN von der Konto-API bestätigter Wert.** Wie in den
+Vorrunden dokumentiert, hinkt die Konto-API (`GET /v1/user`) dem
+tatsächlichen Verbrauch zeitweise hinterher (zuletzt: 1.017 s
+Abrechnungsverzug über zwei Runden hinweg, siehe Tabelle oben); ob die
+840 s aus Runde 7 bereits vollständig gebucht sind, ist offen. Abgleich
+erfolgt beim tatsächlichen Verbrauch dieser Runde (963 s: 681 + 282) bereits vollständig
+gebucht sind, ist offen. Abgleich erfolgt beim nächsten ohnehin fälligen
+Budgetabruf (z. B. zu Beginn der nächsten Runde) — keine zusätzliche
+Abfrage oder Gerätesession allein zur Budgetprüfung.
 
 ## Runde 6: A01-Code-Klärung + D06-Cancel-Endlosschleife gefunden und gefixt
 
