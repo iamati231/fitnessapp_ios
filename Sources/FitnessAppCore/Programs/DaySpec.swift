@@ -44,6 +44,21 @@ public struct DaySpec: Sendable, Hashable {
     /// erkannt wird.
     public let circuitMode: CircuitRoundMode?
 
+    /// Paket 2: nur bei `timeFormat == .enduranceIntervals` gesetzt. Siehe
+    /// `WorkoutTimeFormat.enduranceIntervals`-Doku fuer die Bedeutung jedes
+    /// Felds. `enduranceWorkDurationSeconds`/`enduranceWorkDistanceKm`: nie
+    /// beide zugleich gesetzt (ein Belastungs-Abschnitt hat GENAU eine
+    /// Zielart — Zeit, Strecke, oder "offen" wenn beide `nil` sind), gleiches
+    /// Prinzip wie `ExerciseSpec.targetDistanceKm`/`targetDurationMinutes`.
+    public let enduranceWarmupDurationSeconds: Int?
+    public let enduranceCooldownDurationSeconds: Int?
+    public let enduranceIntervalRounds: Int?
+    public let enduranceWorkDurationSeconds: Int?
+    public let enduranceWorkDistanceKm: Double?
+    /// Erholung bleibt in dieser ersten Version bewusst zeitbasiert (alle
+    /// bekannten Beispiele zeigen reine Zeit-Erholung zwischen Belastungen).
+    public let enduranceRestDurationSeconds: Int?
+
     public init(
         name: String,
         localizationKey: String? = nil,
@@ -54,7 +69,13 @@ public struct DaySpec: Sendable, Hashable {
         timeCapMinutes: Int? = nil,
         circuitRounds: Int? = nil,
         circuitRestSeconds: Int? = nil,
-        circuitMode: CircuitRoundMode? = nil
+        circuitMode: CircuitRoundMode? = nil,
+        enduranceWarmupDurationSeconds: Int? = nil,
+        enduranceCooldownDurationSeconds: Int? = nil,
+        enduranceIntervalRounds: Int? = nil,
+        enduranceWorkDurationSeconds: Int? = nil,
+        enduranceWorkDistanceKm: Double? = nil,
+        enduranceRestDurationSeconds: Int? = nil
     ) {
         self.name = name
         self.localizationKey = localizationKey
@@ -66,5 +87,11 @@ public struct DaySpec: Sendable, Hashable {
         self.circuitRounds = circuitRounds
         self.circuitRestSeconds = circuitRestSeconds
         self.circuitMode = circuitMode
+        self.enduranceWarmupDurationSeconds = enduranceWarmupDurationSeconds
+        self.enduranceCooldownDurationSeconds = enduranceCooldownDurationSeconds
+        self.enduranceIntervalRounds = enduranceIntervalRounds
+        self.enduranceWorkDurationSeconds = enduranceWorkDurationSeconds
+        self.enduranceWorkDistanceKm = enduranceWorkDistanceKm
+        self.enduranceRestDurationSeconds = enduranceRestDurationSeconds
     }
 }

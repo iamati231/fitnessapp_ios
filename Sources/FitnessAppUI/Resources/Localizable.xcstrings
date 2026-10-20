@@ -52119,6 +52119,75 @@
           }
         }
       }
+    },
+    "timedWorkout.enduranceIntervals.pillLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intervalle"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intervals"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aralıklar"
+          }
+        }
+      }
+    },
+    "day.editor.timedFormat.hintEnduranceIntervals": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einlaufen, dann wiederholte Belastungs-/Erholungsrunden, dann Auslaufen — jede Phase kann zeit- oder streckenbasiert sein."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warm-up, then repeated work/rest rounds, then cool-down — each phase can be timed or distance-based."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Isınma, ardından tekrarlanan yüklenme/dinlenme turları, sonra soğuma — her aşama süreye veya mesafeye dayalı olabilir."
+          }
+        }
+      }
+    },
+    "day.analysis.coachNote.metabolicDensity.enduranceIntervals": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ strukturierte Intervalle — wiederholte Belastungen mit geplanter Erholung dazwischen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ of structured intervals — repeated efforts with planned recovery between them."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ yapılandırılmış aralıklar — aralarında planlı dinlenme olan tekrarlanan efor."
+          }
+        }
+      }
     }
   }
 }

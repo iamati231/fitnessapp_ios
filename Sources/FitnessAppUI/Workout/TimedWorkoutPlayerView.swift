@@ -34,6 +34,11 @@ public struct TimedWorkoutPlayerView: View {
         case .emom:    EMOMPlayerView(session: session)
         case .forTime: ForTimePlayerView(session: session)
         case .circuit: CircuitPlayerView(session: session)
+        // Paket 2: eigener Player ist Komponente 3, noch nicht gebaut -
+        // strukturell unerreichbar, solange keine Editor-/Generator-UI
+        // jemals `timeFormat == .enduranceIntervals` setzt (siehe
+        // `DayEditorView`-Picker, der dieses Format bewusst ausschliesst).
+        case .enduranceIntervals: EmptyView()
         case nil:      EmptyView()   // WorkoutRootView routet hierher nur mit gesetztem Format.
         }
     }
@@ -190,11 +195,14 @@ func timedFormatCircuitLabel(repsMin: Int, isTimeBased: Bool, sets: Int, format:
     switch format {
     case .amrap, .emom:
         return target
-    case .forTime, .circuit:
+    case .forTime, .circuit, .enduranceIntervals:
         // Zirkel-Tage spiegeln `TrainingDay.circuitRounds` redundant in
         // `ExerciseSpec.sets` (gleiche Konvention wie Auf-Zeit, das ebenso
         // kein eigenes Tages-Rundenfeld hat) - so braucht diese rein
         // anzeigende Funktion keinen dritten Parameter fuer die Rundenzahl.
+        // Paket 2: `.enduranceIntervals`-Exercises existieren noch nicht
+        // (keine Editor-UI), dieser Zweig ist fuer dieses Format aktuell
+        // unerreichbar.
         return "\(max(sets, 1))× \(target)"
     }
 }
@@ -209,6 +217,7 @@ func timedFormatDisplayName(_ format: WorkoutTimeFormat) -> String {
     case .emom:    return "EMOM"
     case .forTime: return String(localized: "timedWorkout.forTime.pillLabel", bundle: .module)
     case .circuit: return String(localized: "timedWorkout.circuit.pillLabel", bundle: .module)
+    case .enduranceIntervals: return String(localized: "timedWorkout.enduranceIntervals.pillLabel", bundle: .module)
     }
 }
 
@@ -224,6 +233,7 @@ func timedFormatHintKey(for format: WorkoutTimeFormat) -> String {
     case .emom:    return "day.editor.timedFormat.hintEmom"
     case .forTime: return "day.editor.timedFormat.hintForTime"
     case .circuit: return "day.editor.timedFormat.hintCircuit"
+    case .enduranceIntervals: return "day.editor.timedFormat.hintEnduranceIntervals"
     }
 }
 
@@ -245,6 +255,7 @@ func defaultTimedFormatDurationMinutes(for format: WorkoutTimeFormat) -> Int {
     case .emom: return 12
     case .forTime: return 0
     case .circuit: return 0
+    case .enduranceIntervals: return 0
     }
 }
 

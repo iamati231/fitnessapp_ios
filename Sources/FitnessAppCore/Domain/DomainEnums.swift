@@ -124,6 +124,17 @@ public enum WorkoutTimeFormat: String, Codable, Sendable, CaseIterable {
     /// Runde abgehakt) oder manuell ("Runde beenden"-Knopf bei einer
     /// Ausbelastungs-Runde ohne festes Wiederholungsziel).
     case circuit
+    /// Paket 2 (Laufcoach-Konzept, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+    /// Einlaufen (`enduranceWarmupDurationSeconds`) -> N Runden
+    /// Belastung/Erholung (`enduranceIntervalRounds`,
+    /// `enduranceWorkDurationSeconds`/`enduranceWorkDistanceKm` fuer die
+    /// Belastung, `enduranceRestDurationSeconds` fuer die Erholung) ->
+    /// Auslaufen (`enduranceCooldownDurationSeconds`). Fuer Laufen/
+    /// Radfahren, nicht fuer Kraft-Komplexe (dafuer bleibt `.circuit`
+    /// zustaendig). Analog zu `.circuit`s Zwei-Phasen-Modell, aber BEIDE
+    /// Phasen (Belastung UND Erholung) sind hier gezeitet/streckenbasiert
+    /// statt einer ungezeiteten Arbeitsphase.
+    case enduranceIntervals
 }
 
 /// Nur relevant, wenn `TrainingDay.timeFormat == .circuit` — legt fest, wie

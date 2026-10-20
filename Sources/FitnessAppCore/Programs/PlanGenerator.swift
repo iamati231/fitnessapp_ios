@@ -718,15 +718,18 @@ public enum PlanGenerator {
         case .amrap, .emom:
             sets = 1
             timeCapMinutes = min(30, max(10, selection.sessionDurationMinutes))
-        case .forTime, .circuit:
-            // `.circuit` erreicht diese Funktion in der Praxis nie - der
-            // Struktur-Picker fuer Laufen/Radfahren in PlanBuilderView
-            // bietet bewusst nur AMRAP/EMOM/Auf-Zeit an (ein rundenbasierter
-            // Zirkel mit Pause deckt sich fuer Cardio schon mit dem
-            // bestehenden `RunZone.interval`-Muster, siehe `cardioCandidates`
-            // oben). Faellt trotzdem auf dieselbe Behandlung wie Auf-Zeit
-            // zurueck statt eines nicht-exhaustiven Crashs, falls der Typ
-            // je anders erreicht wird.
+        case .forTime, .circuit, .enduranceIntervals:
+            // `.circuit`/`.enduranceIntervals` erreichen diese Funktion in
+            // der Praxis nie - der Struktur-Picker fuer Laufen/Radfahren in
+            // PlanBuilderView bietet bewusst nur AMRAP/EMOM/Auf-Zeit an (ein
+            // rundenbasierter Zirkel mit Pause deckt sich fuer Cardio schon
+            // mit dem bestehenden `RunZone.interval`-Muster, siehe
+            // `cardioCandidates` oben; `.enduranceIntervals` [Paket 2] ist
+            // eine eigene, noch ungebaute Struktur mit eigenen
+            // `TrainingDay.endurance*`-Feldern statt diesem Generator-Pfad).
+            // Faellt trotzdem auf dieselbe Behandlung wie Auf-Zeit zurueck
+            // statt eines nicht-exhaustiven Crashs, falls der Typ je anders
+            // erreicht wird.
             sets = 5
             timeCapMinutes = nil
         }

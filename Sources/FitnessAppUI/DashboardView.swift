@@ -2022,7 +2022,10 @@ public struct DashboardView: View {
             } label: {
                 Text("day.editor.field.structure.sets", bundle: .module)
             }
-            ForEach(WorkoutTimeFormat.allCases, id: \.self) { format in
+            // Paket 2: `.enduranceIntervals` bewusst ausgeschlossen, gleiche
+            // Begruendung wie `DayEditorView`s Struktur-Picker - noch kein
+            // Player/keine Konfigurations-UI dafuer.
+            ForEach(WorkoutTimeFormat.allCases.filter { $0 != .enduranceIntervals }, id: \.self) { format in
                 Button {
                     beginTimedAdHocWorkout(format: format)
                 } label: {

@@ -40,6 +40,15 @@ public final class TrainingDay {
     /// Nur bei `timeFormat == .circuit`. Siehe `DaySpec.circuitMode`.
     public var circuitMode: CircuitRoundMode?
 
+    /// Paket 2: nur bei `timeFormat == .enduranceIntervals`. Siehe
+    /// `DaySpec`/`WorkoutTimeFormat.enduranceIntervals`-Doku.
+    public var enduranceWarmupDurationSeconds: Int?
+    public var enduranceCooldownDurationSeconds: Int?
+    public var enduranceIntervalRounds: Int?
+    public var enduranceWorkDurationSeconds: Int?
+    public var enduranceWorkDistanceKm: Double?
+    public var enduranceRestDurationSeconds: Int?
+
     /// README 2.20: Fingerprint des Tagesinhalts unmittelbar NACH der
     /// Erzeugung durch den "Plan bauen"-Assistenten. Nil = kein Wizard-Tag
     /// (oder noch nicht generiert). "Neu rechnen" vergleicht diesen
@@ -118,7 +127,8 @@ public final class TrainingDay {
     /// verwirft "neu rechnen" sie kommentarlos. `timeFormat`/`timeCapMinutes`
     /// sowie die neuen `circuitRounds`/`circuitRestSeconds`/`circuitMode`
     /// fliessen ebenfalls ein — ein Struktur-Wechsel im Tag-Editor ist
-    /// genauso ein Edit.
+    /// genauso ein Edit. Paket 2: die `endurance*`-Felder ebenso, gleiches
+    /// Prinzip.
     public var currentContentFingerprint: String {
         let exercisePart = activeExercises
             .sorted { $0.orderIndex < $1.orderIndex }
@@ -136,7 +146,15 @@ public final class TrainingDay {
         let timeCapPart = timeCapMinutes.map(String.init) ?? "-"
         let customNamePart = customName ?? "-"
         let circuitPart = "\(circuitRounds.map(String.init) ?? "-")|\(circuitRestSeconds.map(String.init) ?? "-")|\(circuitMode?.rawValue ?? "-")"
-        return "\(exercisePart)#\(timeFormatPart)#\(timeCapPart)#\(customNamePart)#\(weekday)#\(type.rawValue)#\(circuitPart)"
+        let endurancePart = [
+            enduranceWarmupDurationSeconds.map(String.init) ?? "-",
+            enduranceCooldownDurationSeconds.map(String.init) ?? "-",
+            enduranceIntervalRounds.map(String.init) ?? "-",
+            enduranceWorkDurationSeconds.map(String.init) ?? "-",
+            enduranceWorkDistanceKm.map { "\($0)" } ?? "-",
+            enduranceRestDurationSeconds.map(String.init) ?? "-"
+        ].joined(separator: "|")
+        return "\(exercisePart)#\(timeFormatPart)#\(timeCapPart)#\(customNamePart)#\(weekday)#\(type.rawValue)#\(circuitPart)#\(endurancePart)"
     }
 
     public init(
@@ -152,6 +170,12 @@ public final class TrainingDay {
         circuitRounds: Int? = nil,
         circuitRestSeconds: Int? = nil,
         circuitMode: CircuitRoundMode? = nil,
+        enduranceWarmupDurationSeconds: Int? = nil,
+        enduranceCooldownDurationSeconds: Int? = nil,
+        enduranceIntervalRounds: Int? = nil,
+        enduranceWorkDurationSeconds: Int? = nil,
+        enduranceWorkDistanceKm: Double? = nil,
+        enduranceRestDurationSeconds: Int? = nil,
         generationFingerprint: String? = nil,
         generatorSequenceIndex: Int? = nil
     ) {
@@ -167,6 +191,12 @@ public final class TrainingDay {
         self.circuitRounds = circuitRounds
         self.circuitRestSeconds = circuitRestSeconds
         self.circuitMode = circuitMode
+        self.enduranceWarmupDurationSeconds = enduranceWarmupDurationSeconds
+        self.enduranceCooldownDurationSeconds = enduranceCooldownDurationSeconds
+        self.enduranceIntervalRounds = enduranceIntervalRounds
+        self.enduranceWorkDurationSeconds = enduranceWorkDurationSeconds
+        self.enduranceWorkDistanceKm = enduranceWorkDistanceKm
+        self.enduranceRestDurationSeconds = enduranceRestDurationSeconds
         self.generationFingerprint = generationFingerprint
         self.generatorSequenceIndex = generatorSequenceIndex
     }

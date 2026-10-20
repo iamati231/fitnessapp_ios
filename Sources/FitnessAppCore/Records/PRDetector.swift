@@ -466,6 +466,14 @@ public enum PRDetector {
             // Zeit variabel) - es gibt nichts, worauf sich ein Bestwert
             // beziehen koennte.
             return nil
+
+        case .enduranceIntervals:
+            // Paket 2 (docs/DELTIQ_DEVICE_ACCEPTANCE.md): PR-Erkennung fuer
+            // Ausdauer-Intervalle waere eine neue fachliche Frage (schnellste
+            // Belastungszeit? laengste Strecke?) - explizit ausserhalb des
+            // Paket-2-Scopes ("keine neue adaptive Coaching-/
+            // Progressionslogik"). Bewusst kein PR, wie bei EMOM/Zirkel.
+            return nil
         }
     }
 

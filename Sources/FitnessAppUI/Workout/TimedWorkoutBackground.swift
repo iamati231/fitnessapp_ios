@@ -239,6 +239,14 @@ final class TimedWorkoutBackground {
                 format: String(localized: "timedWorkout.circuit.roundContext", bundle: .module),
                 content.counter, total
             )
+        case .enduranceIntervals:
+            // Paket 2: Komponente 3 noch nicht gebaut, strukturell
+            // unerreichbar (kein Player liefert je `TimedLiveContent` fuer
+            // dieses Format) - reuse desselben Rundenkontext-Texts wie Zirkel.
+            status = String(
+                format: String(localized: "timedWorkout.circuit.roundContext", bundle: .module),
+                content.counter, total
+            )
         }
 
         let nextLabel = format == .emom

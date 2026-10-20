@@ -801,8 +801,11 @@ public struct PlanBuilderView: View {
                         // `RunZone.interval`-Muster in `PlanGenerator`
                         // (Intervall-Wiederholungen mit fester Pause, ueber
                         // das normale Saetze/Pause-Schema, kein eigenes
-                        // Zeitformat noetig).
-                        ForEach(WorkoutTimeFormat.allCases.filter { $0 != .circuit }, id: \.self) { format in
+                        // Zeitformat noetig). `.enduranceIntervals` (Paket 2)
+                        // ebenfalls ausgeschlossen: eigene Konfigurations-UI
+                        // (Einlauf/Runden/Belastung/Erholung) existiert hier
+                        // noch nicht.
+                        ForEach(WorkoutTimeFormat.allCases.filter { $0 != .circuit && $0 != .enduranceIntervals }, id: \.self) { format in
                             Text(timedFormatDisplayName(format)).tag(format as WorkoutTimeFormat?)
                         }
                     }

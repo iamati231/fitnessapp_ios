@@ -784,6 +784,12 @@ public enum PlanGeneratorInstantiator {
         let oldCircuitRounds: Int?
         let oldCircuitRestSeconds: Int?
         let oldCircuitMode: CircuitRoundMode?
+        let oldEnduranceWarmupDurationSeconds: Int?
+        let oldEnduranceCooldownDurationSeconds: Int?
+        let oldEnduranceIntervalRounds: Int?
+        let oldEnduranceWorkDurationSeconds: Int?
+        let oldEnduranceWorkDistanceKm: Double?
+        let oldEnduranceRestDurationSeconds: Int?
         let oldGenerationFingerprint: String?
     }
 
@@ -822,6 +828,12 @@ public enum PlanGeneratorInstantiator {
         let oldCircuitRounds = day.circuitRounds
         let oldCircuitRestSeconds = day.circuitRestSeconds
         let oldCircuitMode = day.circuitMode
+        let oldEnduranceWarmupDurationSeconds = day.enduranceWarmupDurationSeconds
+        let oldEnduranceCooldownDurationSeconds = day.enduranceCooldownDurationSeconds
+        let oldEnduranceIntervalRounds = day.enduranceIntervalRounds
+        let oldEnduranceWorkDurationSeconds = day.enduranceWorkDurationSeconds
+        let oldEnduranceWorkDistanceKm = day.enduranceWorkDistanceKm
+        let oldEnduranceRestDurationSeconds = day.enduranceRestDurationSeconds
         let oldGenerationFingerprint = day.generationFingerprint
 
         day.name = spec.name
@@ -839,6 +851,12 @@ public enum PlanGeneratorInstantiator {
         day.circuitRounds = spec.circuitRounds
         day.circuitRestSeconds = spec.circuitRestSeconds
         day.circuitMode = spec.circuitMode
+        day.enduranceWarmupDurationSeconds = spec.enduranceWarmupDurationSeconds
+        day.enduranceCooldownDurationSeconds = spec.enduranceCooldownDurationSeconds
+        day.enduranceIntervalRounds = spec.enduranceIntervalRounds
+        day.enduranceWorkDurationSeconds = spec.enduranceWorkDurationSeconds
+        day.enduranceWorkDistanceKm = spec.enduranceWorkDistanceKm
+        day.enduranceRestDurationSeconds = spec.enduranceRestDurationSeconds
 
         var insertedExercises: [Exercise] = []
         for (orderIndex, exerciseSpec) in spec.exercises.enumerated() {
@@ -867,6 +885,12 @@ public enum PlanGeneratorInstantiator {
             oldCircuitRounds: oldCircuitRounds,
             oldCircuitRestSeconds: oldCircuitRestSeconds,
             oldCircuitMode: oldCircuitMode,
+            oldEnduranceWarmupDurationSeconds: oldEnduranceWarmupDurationSeconds,
+            oldEnduranceCooldownDurationSeconds: oldEnduranceCooldownDurationSeconds,
+            oldEnduranceIntervalRounds: oldEnduranceIntervalRounds,
+            oldEnduranceWorkDurationSeconds: oldEnduranceWorkDurationSeconds,
+            oldEnduranceWorkDistanceKm: oldEnduranceWorkDistanceKm,
+            oldEnduranceRestDurationSeconds: oldEnduranceRestDurationSeconds,
             oldGenerationFingerprint: oldGenerationFingerprint
         )
     }
@@ -943,6 +967,12 @@ public enum PlanGeneratorInstantiator {
             day.circuitRounds = snapshot.oldCircuitRounds
             day.circuitRestSeconds = snapshot.oldCircuitRestSeconds
             day.circuitMode = snapshot.oldCircuitMode
+            day.enduranceWarmupDurationSeconds = snapshot.oldEnduranceWarmupDurationSeconds
+            day.enduranceCooldownDurationSeconds = snapshot.oldEnduranceCooldownDurationSeconds
+            day.enduranceIntervalRounds = snapshot.oldEnduranceIntervalRounds
+            day.enduranceWorkDurationSeconds = snapshot.oldEnduranceWorkDurationSeconds
+            day.enduranceWorkDistanceKm = snapshot.oldEnduranceWorkDistanceKm
+            day.enduranceRestDurationSeconds = snapshot.oldEnduranceRestDurationSeconds
             day.generationFingerprint = snapshot.oldGenerationFingerprint
         }
     }

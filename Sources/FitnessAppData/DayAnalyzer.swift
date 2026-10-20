@@ -293,12 +293,16 @@ public enum DayAnalyzer {
             case .amrap, .emom:
                 // Wdh. pro Runde statt der immer-1 Satzzahl.
                 quantity = Double(exercise.repsMin)
-            case .forTime, .circuit:
+            case .forTime, .circuit, .enduranceIntervals:
                 // `sets` ist bei Auf Zeit UND Zirkel die echte Rundenzahl -
                 // Produkt aus beidem. Bei einer Ausbelastungs-Runde (Zirkel
                 // .toFailure) ist `repsMin` nur die Reps EINES Durchgangs
                 // der Mini-Sequenz, keine feste Gesamtzahl - als grobe
                 // Naeherung trotzdem besser als eine willkuerliche Konstante.
+                // Paket 2 (`.enduranceIntervals`): strukturell unerreichbar
+                // hier - alle Uebungen eines Ausdauer-Tages sind `isCardio`
+                // und haben bereits KEIN `primaryMuscle` (siehe Guard oben),
+                // dieser Zweig wird fuer sie nie erreicht.
                 quantity = Double(exercise.sets) * Double(exercise.repsMin)
             }
             let total = quantity * perSet

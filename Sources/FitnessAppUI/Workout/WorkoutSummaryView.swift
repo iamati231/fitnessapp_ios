@@ -386,6 +386,10 @@ public struct WorkoutSummaryView: View {
                     }
                 }
                 .listRowBackground(Color.Deltiq.surface)
+            case .enduranceIntervals:
+                // Paket 2: Player/Ergebnis-Erfassung (Komponente 3) noch
+                // nicht gebaut - strukturell unerreichbar.
+                EmptyView()
             }
         } header: {
             sectionHeader(String(localized: "summary.editResult.header", bundle: .module))
@@ -1131,6 +1135,10 @@ public struct WorkoutSummaryView: View {
             let restSeconds = session.contentSnapshotCircuitRestSeconds
             SummaryStat(label: String(localized: "summary.stat.circuitRest", bundle: .module),
                         value: restSeconds.map { "\($0)s" } ?? "—")
+        case .enduranceIntervals:
+            // Paket 2: Komponente 3 noch nicht gebaut, strukturell
+            // unerreichbar.
+            EmptyView()
         }
     }
 
@@ -1290,6 +1298,12 @@ public struct WorkoutSummaryView: View {
             let completed = session.circuitRoundsCompleted ?? 0
             let value = session.contentSnapshotCircuitRounds.map { "\(completed)/\($0)" } ?? "\(completed)"
             return HeroStat(value: value, unit: timedFormatHeroUnit("summary.hero.unit.circuitRounds"))
+        case .enduranceIntervals:
+            // Paket 2: Komponente 3 noch nicht gebaut, strukturell
+            // unerreichbar - reuse derselben Rundenzahl-Darstellung wie
+            // Zirkel als Platzhalter.
+            let completed = session.circuitRoundsCompleted ?? 0
+            return HeroStat(value: "\(completed)", unit: timedFormatHeroUnit("summary.hero.unit.circuitRounds"))
         }
     }
 

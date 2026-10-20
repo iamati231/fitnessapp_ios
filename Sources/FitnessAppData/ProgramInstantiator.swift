@@ -154,7 +154,13 @@ public enum ProgramInstantiator {
                 timeCapMinutes: daySpec.timeCapMinutes,
                 circuitRounds: daySpec.circuitRounds,
                 circuitRestSeconds: daySpec.circuitRestSeconds,
-                circuitMode: daySpec.circuitMode
+                circuitMode: daySpec.circuitMode,
+                enduranceWarmupDurationSeconds: daySpec.enduranceWarmupDurationSeconds,
+                enduranceCooldownDurationSeconds: daySpec.enduranceCooldownDurationSeconds,
+                enduranceIntervalRounds: daySpec.enduranceIntervalRounds,
+                enduranceWorkDurationSeconds: daySpec.enduranceWorkDurationSeconds,
+                enduranceWorkDistanceKm: daySpec.enduranceWorkDistanceKm,
+                enduranceRestDurationSeconds: daySpec.enduranceRestDurationSeconds
             )
             context.insert(day)
 

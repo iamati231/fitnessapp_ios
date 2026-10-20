@@ -349,6 +349,7 @@ struct HistorySessionRow: View {
         case .emom: return "checkmark.circle"
         case .forTime: return "flag.checkered"
         case .circuit: return "arrow.triangle.2.circlepath"
+        case .enduranceIntervals: return "figure.run"
         }
     }
 
@@ -361,6 +362,11 @@ struct HistorySessionRow: View {
         case .emom: return "\(session.completedMinuteCount ?? 0)"
         case .forTime: return PaceCalculator.formatDuration(session.finishTimeSeconds ?? 0)
         case .circuit: return "\(session.circuitRoundsCompleted ?? 0)"
+        // Paket 2: Player (Komponente 3) noch nicht gebaut, dieser Fall ist
+        // aktuell unerreichbar (kein Session bekommt je dieses Format
+        // gesetzt) - reuse `circuitRoundsCompleted` statt eines neuen,
+        // ungenutzten Felds, bis der tatsaechliche Player existiert.
+        case .enduranceIntervals: return "\(session.circuitRoundsCompleted ?? 0)"
         }
     }
 

@@ -526,7 +526,14 @@ public struct DayEditorView: View {
             // reagiert bereits automatisch auf `day.timeFormat`.
             Picker(selection: $day.timeFormat) {
                 Text("day.editor.field.structure.sets", bundle: .module).tag(nil as WorkoutTimeFormat?)
-                ForEach(WorkoutTimeFormat.allCases, id: \.self) { format in
+                // Paket 2: `.enduranceIntervals` bewusst NICHT hier anbieten
+                // - dieser Editor hat noch keine Eingabefelder fuer
+                // Einlauf-/Auslaufdauer, Rundenzahl, Belastungs-/Erholungs-
+                // ziel. Erst anbieten, wenn die zugehoerige Konfigurations-
+                // UI existiert (naechster Paket-2-Schritt), sonst waere das
+                // Ergebnis ein Tag mit gesetztem Format, aber ohne jede
+                // Konfiguration.
+                ForEach(WorkoutTimeFormat.allCases.filter { $0 != .enduranceIntervals }, id: \.self) { format in
                     Text(timedFormatDisplayName(format)).tag(format as WorkoutTimeFormat?)
                 }
             } label: {
@@ -613,6 +620,11 @@ public struct DayEditorView: View {
                     }
                     .disabled(isReadOnly)
                     .listRowBackground(Color.Deltiq.surface)
+                case .enduranceIntervals:
+                    // Paket 2: strukturell unerreichbar - der Picker oben
+                    // bietet dieses Format bewusst nicht an (siehe dortiger
+                    // Kommentar), solange keine Konfigurations-UI existiert.
+                    EmptyView()
                 }
             }
         } header: {

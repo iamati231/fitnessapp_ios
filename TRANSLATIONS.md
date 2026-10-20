@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2266 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2269 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2266 / 2266** (100%) | 0 |
-| 🇬🇧 English (EN) | **2266 / 2266** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2266 / 2266** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2269 / 2269** (100%) | 0 |
+| 🇬🇧 English (EN) | **2269 / 2269** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2269 / 2269** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -761,7 +761,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboardSettings.section.inactive.title` | Inaktive Widgets | Inactive Widgets | Pasif Widget'lar |
 | `dashboardSettings.title` | Dashboard anpassen | Customize Dashboard | Panoyu Özelleştir |
 
-## `day.*`  (69 Keys)
+## `day.*`  (71 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -774,6 +774,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `day.analysis.coachNote.metabolicDensity.amrap` | %@ ohne feste Pause. Die Belastung kommt hier aus der Dichte, nicht aus dem Gewicht. | %@ with no fixed rest. The load here comes from density, not weight. | Sabit molasız %@. Buradaki yük ağırlıktan değil, yoğunluktan gelir. |
 | `day.analysis.coachNote.metabolicDensity.circuit` | %@ mit fester Pause zwischen den Runden. Die Belastung kommt aus der Dichte pro Runde, nicht aus dem Gewicht. | %@ with a fixed rest between rounds. The load comes from the density per round, not the weight. | %@ turlar arasında sabit molayla. Yük ağırlıktan değil, tur başına yoğunluktan gelir. |
 | `day.analysis.coachNote.metabolicDensity.emom` | %@ im Minutentakt. Die Pause steckt in der Minute selbst, nicht dazwischen. | %@ on the minute. The rest lives inside the minute itself, not between them. | %@ dakika bazında. Mola dakikanın kendi içinde, aralarda değil. |
+| `day.analysis.coachNote.metabolicDensity.enduranceIntervals` | %@ strukturierte Intervalle — wiederholte Belastungen mit geplanter Erholung dazwischen. | %@ of structured intervals — repeated efforts with planned recovery between them. | %@ yapılandırılmış aralıklar — aralarında planlı dinlenme olan tekrarlanan efor. |
 | `day.analysis.coachNote.metabolicDensity.forTime` | %@ im eigenen Tempo. Die Belastung kommt aus der Dichte, nicht aus dem Gewicht. | %@ at your own pace. The load comes from density, not weight. | %@ kendi temponda. Yük ağırlıktan değil, yoğunluktan gelir. |
 | `day.analysis.coachNote.veryHighStress` | Sehr hohe Belastung. Achte danach besonders auf Schlaf und Nahrung — und plane keinen zweiten harten Tag direkt im Anschluss. | Very high load. Pay extra attention to sleep and food afterwards — and don't stack another hard day right after. | Çok yüksek yük. Sonrasında uykuya ve beslenmeye özellikle dikkat et — ve hemen ardına başka bir zor gün koyma. |
 | `day.analysis.duration` | Geschätzte Dauer | Estimated Duration | Tahmini Süre |
@@ -828,6 +829,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `day.editor.timedFormat.hintAmrap` | Keine festen Pausen — so viele Runden wie möglich, bis die Zeit um ist. | No fixed rest — as many rounds as possible until time is up. | Sabit mola yok — süre bitene kadar mümkün olduğunca çok tur. |
 | `day.editor.timedFormat.hintCircuit` | Feste Rundenzahl, feste Pause dazwischen — je nach Modus zaehlst du entweder feste Wiederholungen ab oder beendest die Runde selbst, wenn du am Limit bist. | Fixed round count, fixed rest in between — depending on the mode you either count off fixed reps or end the round yourself once you've hit your limit. | Sabit tur sayısı, aralarda sabit mola — moda göre ya sabit tekrarları sayarsın ya da limitine ulaştığında turu kendin bitirirsin. |
 | `day.editor.timedFormat.hintEmom` | Keine festen Pausen — jede Minute startet neu. | No fixed rest — every minute starts fresh. | Sabit mola yok — her dakika yeniden başlar. |
+| `day.editor.timedFormat.hintEnduranceIntervals` | Einlaufen, dann wiederholte Belastungs-/Erholungsrunden, dann Auslaufen — jede Phase kann zeit- oder streckenbasiert sein. | Warm-up, then repeated work/rest rounds, then cool-down — each phase can be timed or distance-based. | Isınma, ardından tekrarlanan yüklenme/dinlenme turları, sonra soğuma — her aşama süreye veya mesafeye dayalı olabilir. |
 | `day.editor.timedFormat.hintForTime` | Keine festen Pausen — so schnell wie möglich durcharbeiten. | No fixed rest — work through it as fast as possible. | Sabit mola yok — mümkün olduğunca hızlı bitir. |
 | `day.editor.untitled` | Tag | Day | Gün |
 | `day.restDay.complete.button` | Ruhetag abschließen | Complete Rest Day | Dinlenme Gününü Tamamla |
@@ -2496,7 +2498,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `tab.plan` | Plan | Plan | Plan |
 | `tab.tools` | Werkzeuge | Tools | Araçlar |
 
-## `timedWorkout.*`  (37 Keys)
+## `timedWorkout.*`  (38 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -2529,6 +2531,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `timedWorkout.emom.notification.complete` | EMOM geschafft! Ergebnis speichern. | EMOM complete! Save your result. | EMOM tamamlandı! Sonucu kaydet. |
 | `timedWorkout.emom.notification.nextMinute` | Minute %lld beginnt | Minute %lld starts | %lld. dakika başlıyor |
 | `timedWorkout.emom.thisMinute` | DIESE MINUTE | THIS MINUTE | BU DAKİKA |
+| `timedWorkout.enduranceIntervals.pillLabel` | Intervalle | Intervals | Aralıklar |
 | `timedWorkout.finish.save` | Speichern | Save | Kaydet |
 | `timedWorkout.forTime.finishedLabel` | Geschafft! | Done! | Tamamlandı! |
 | `timedWorkout.forTime.lastRoundHint` | Das letzte Häkchen stoppt die Uhr. | The last checkmark stops the clock. | Son işaret saati durdurur. |
