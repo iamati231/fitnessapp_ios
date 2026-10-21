@@ -141,14 +141,10 @@ public struct AddMealView: View {
             )
             .listRowBackground(Color.Deltiq.surface)
 
-            Picker(selection: $draft.mealType) {
-                ForEach(MealType.allCases, id: \.self) { type in
-                    Text(mealTypeLabel(type)).tag(type)
-                }
-            } label: {
-                Text("nutrition.addMeal.mealTypeLabel", bundle: .module)
-            }
-            .pickerStyle(.segmented)
+            DeltiqSegmentedPicker(
+                options: MealType.allCases.map { DeltiqSegmentedOption($0, label: mealTypeLabel($0)) },
+                selection: $draft.mealType
+            )
             .listRowBackground(Color.Deltiq.surface)
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
@@ -219,32 +215,23 @@ public struct AddMealView: View {
                     .frame(maxWidth: 100)
             }
 
-            Picker(selection: $selectedUnit) {
-                ForEach(allowedUnits, id: \.self) { unit in
-                    Text(unitLabel(unit)).tag(unit)
-                }
-            } label: {
-                EmptyView()
-            }
-            .pickerStyle(.segmented)
+            DeltiqSegmentedPicker(
+                options: allowedUnits.map { DeltiqSegmentedOption($0, label: unitLabel($0)) },
+                selection: $selectedUnit
+            )
 
             Button {
                 addSelectedEntry()
             } label: {
-                HStack {
-                    Spacer()
-                    Text("common.add", bundle: .module)
-                    Spacer()
-                }
-                // Audit-Fund (siehe NutritionDayView.mealEntryRow /
-                // DashboardView-Nutrition-Tile): ein Spacer()-aufgespanntes
-                // HStack ist ausserhalb eines Form/List nicht automatisch
-                // hit-testable — ohne explizites .contentShape(Rectangle())
-                // reagiert nur die Text-Glyphe selbst auf Taps, nicht die
-                // ganze Button-Breite.
-                .contentShape(Rectangle())
+                Text("common.add", bundle: .module)
             }
-            .buttonStyle(.borderedProminent)
+            // Deltiq-CTA statt Ad-hoc-HStack: .deltiqButtonStyle() spannt die
+            // Label-Breite selbst per frame(maxWidth: .infinity) auf, der
+            // vormalige Spacer()-Hack samt .contentShape(Rectangle())-Fix
+            // (Audit-Fund, siehe NutritionDayView.mealEntryRow) entfaellt
+            // damit komplett — gleiches Muster wie DataExportView.startExport.
+            .buttonStyle(.plain)
+            .deltiqButtonStyle()
             .disabled((quantity ?? 0) <= 0)
         }
         .deltiqCardStyle()
