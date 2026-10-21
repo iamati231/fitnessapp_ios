@@ -1,13 +1,19 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-20 (achtzehnter Durchgang: Paket 2, Schritt 1 umgesetzt —
+Stand: 2026-10-21 (neunzehnter Durchgang: Paket 2, Schritt 2 umgesetzt —
+Konfigurations-UI für strukturierte Ausdauereinheiten in `DayEditorView`
+(Einlaufen/Auslaufen, Rundenzahl, Belastungsziel Zeit/Strecke/offen,
+Erholungsdauer), Struktur-Picker bietet `.enduranceIntervals` jetzt an.
+CI-grün nach einer vorsorglichen Vereinfachung (sechs Views in einem
+`switch`-Case in kleinere `@ViewBuilder`-Properties ausgelagert), HEAD
+`5abfe6d`. Noch kein Geräte-Nachtest nötig (reine Konfigurations-UI ohne
+Player). Siehe Abschnitt „Paket 2, Schritt 2" unten. Davor achtzehnter
+Durchgang: Paket 2, Schritt 1 umgesetzt —
 Datenmodell für strukturierte Ausdauereinheiten (`WorkoutTimeFormat.
 enduranceIntervals`, `DaySpec`/`TrainingDay`-Felder, Fingerprint,
 17 betroffene Switch-Stellen inkl. einer in `App/FitnessAppWidgets/`),
 CI-grün nach zwei Fix-Runden (Typchecker-Timeout, fehlender Case in der
-Widget-Extension), HEAD `4654775`. Noch kein Geräte-Nachtest nötig (reine
-Datenmodell-Ebene, alle Eingabe-Picker schließen das neue Format weiterhin
-bewusst aus). Siehe Abschnitt „Paket 2, Schritt 1" unten. Davor
+Widget-Extension), HEAD `4654775`. Siehe Abschnitt „Paket 2, Schritt 1" unten. Davor
 siebzehnter Durchgang: Zurück-Navigations-Beobachtung aus Durchgang 16
 per vollständiger Code-Analyse aufgelöst — kein Bug, siehe Abschnitt
 „Zurück-Navigation geklärt" unten. Davor sechzehnter Durchgang: Paket 1 — der beim
@@ -134,6 +140,59 @@ bestehende Formate).
 **Nächster Schritt:** Konfigurations-UI zum Anlegen einer strukturierten
 Einheit (Einlaufen/Runden/Belastung/Erholung/Auslaufen editierbar machen),
 dann `EnduranceIntervalPlayerView` (Komponente 3), dann Geräte-Nachweise.
+
+## Paket 2, Schritt 2: Konfigurations-UI umgesetzt, CI-grün (Commit `5abfe6d`)
+
+`DayEditorView`s Struktur-Picker bietet `.enduranceIntervals` jetzt an
+(die bisherige bewusste Ausblendung aus Schritt 1 ist aufgehoben) und
+rendert volle Konfiguration über die in Schritt 1 angelegten
+`TrainingDay`-Felder:
+
+- Einlaufen/Auslaufen als Minuten-Stepper (0–30 Min.)
+- Rundenzahl als Stepper (1–20)
+- Belastungsziel-Modus als Picker: Zeit / Strecke / offen —
+  `EnduranceWorkTargetMode` (reine UI-Ableitung aus
+  `enduranceWorkDurationSeconds`/`enduranceWorkDistanceKm`, nicht
+  persistiert) erzwingt "genau ein Zielfeld" und löscht beim Moduswechsel
+  das jeweils andere Feld
+- Belastungsdauer (15–600 Sek.) bzw. Streckeneingabe, je nach Modus
+- Erholungsdauer als Stepper (15–300 Sek.)
+
+`DashboardView` und `PlanBuilderView` bleiben bewusst unverändert — beide
+Routen würden auf unfertige Pfade treffen (direkter Player-Start ohne
+Konfigurationsschritt bzw. ein Generator, der für dieses Format keine
+Übungen erzeugen kann).
+
+Zwei Commits bis grün:
+
+1. `dec1ea7` — Konfigurations-UI, 10 neue xcstrings-Keys. CI-Lauf
+   `39512026538` zeigte nach dem Build-Schritt ein auffällig langes
+   Test-Schritt-Fenster; vorsorglich (ohne harte Fehlermeldung) als
+   möglichen zweiten Typchecker-Fall eingeordnet, siehe Fix unten.
+2. `5abfe6d` — die sechs neuen Views im `.enduranceIntervals`-Case (plus
+   ein verschachtelter zweiter `switch` für den Belastungsziel-Modus)
+   aus dem großen `switch format`-Block in zwei eigene
+   `@ViewBuilder`-Properties (`enduranceIntervalsFields`,
+   `enduranceWorkTargetFields`) ausgelagert — keine funktionale Änderung,
+   nur eine kleinere Typcheck-Einheit pro Case, analog zum
+   Schritt-1-Fund. **CI-Lauf `39513321915`: vollständig erfolgreich**
+   (Swift-Package-Build, -Tests, App+Widget-Build für den Simulator).
+
+**Nachtrag zur CI-Beobachtung:** die ersten beiden Wiederholungsversuche
+(Runs `39512367638`/`39512638338`) wurden von mir abgebrochen, weil
+Status-Abfragen über mehrere Minuten unverändert "in Arbeit" zeigten —
+im Nachhinein (Vergleich der von GitHub selbst gelieferten Zeitstempel)
+erwiesen sich beide Abbrüche als verfrüht: die Läufe liefen normal
+weiter, nur meine eigene Einschätzung der verstrichenen Zeit war in
+dieser Session zeitweise unzuverlässig. Der oben verlinkte ViewBuilder-
+Fix bleibt trotzdem sinnvoll (kleinere Typcheck-Einheiten sind unabhängig
+davon die robustere Struktur), war aber vermutlich keine zwingende
+Notwendigkeit für Schritt 2 selbst. Kein Geräte-Nachtest nötig für
+diesen Schritt (reine Konfigurations-UI, kein Player, keine
+Verhaltensänderung für bestehende Formate).
+
+**Nächster Schritt:** `EnduranceIntervalPlayerView` (Komponente 3),
+danach risikobasierte Geräte-Nachweise.
 
 ## Paket 2: ursprünglicher Umsetzungsplan (strukturierte Ausdauereinheiten)
 
