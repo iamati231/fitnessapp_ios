@@ -34,11 +34,7 @@ public struct TimedWorkoutPlayerView: View {
         case .emom:    EMOMPlayerView(session: session)
         case .forTime: ForTimePlayerView(session: session)
         case .circuit: CircuitPlayerView(session: session)
-        // Paket 2: eigener Player ist Komponente 3, noch nicht gebaut -
-        // strukturell unerreichbar, solange keine Editor-/Generator-UI
-        // jemals `timeFormat == .enduranceIntervals` setzt (siehe
-        // `DayEditorView`-Picker, der dieses Format bewusst ausschliesst).
-        case .enduranceIntervals: EmptyView()
+        case .enduranceIntervals: EnduranceIntervalPlayerView(session: session)
         case nil:      EmptyView()   // WorkoutRootView routet hierher nur mit gesetztem Format.
         }
     }

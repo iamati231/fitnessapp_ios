@@ -395,4 +395,59 @@ final class TimedLiveContentBackgroundAudioTests: XCTestCase {
         XCTAssertTrue(rest.needsAudioInBackground)
         XCTAssertFalse(done.needsAudioInBackground)
     }
+
+    // MARK: - Ausdauer-Intervalle (Paket 2)
+
+    func testEnduranceIntervalsCountsDownDuringAGezeitetePhase() {
+        let content = TimedLiveContent.enduranceIntervals(
+            anchor: anchor, currentPhase: .work, phaseEndDate: at(120),
+            pausedRemainingSeconds: nil, phaseDurationSeconds: 120,
+            roundNumber: 2, totalRounds: 5, isFinished: false, now: at(90)
+        )
+        XCTAssertEqual(content.phase, .running)
+        XCTAssertEqual(content.clock, .countdown(start: at(0), end: at(120)))
+        XCTAssertEqual(content.runEnd, at(120))
+        XCTAssertEqual(content.counter, 2)
+        XCTAssertEqual(content.counterTotal, 5)
+        XCTAssertTrue(content.needsAudioInBackground, "eine gezeitete Phase kuendigt ihr Ende an")
+    }
+
+    func testEnduranceIntervalsRestPhaseUsesTheRestLiveContentPhase() {
+        let content = TimedLiveContent.enduranceIntervals(
+            anchor: anchor, currentPhase: .rest, phaseEndDate: at(60),
+            pausedRemainingSeconds: nil, phaseDurationSeconds: 60,
+            roundNumber: 1, totalRounds: 5, isFinished: false, now: at(30)
+        )
+        XCTAssertEqual(content.phase, .rest)
+    }
+
+    func testEnduranceIntervalsUntimedWorkCountsUpSinceTheOverallAnchor() {
+        let content = TimedLiveContent.enduranceIntervals(
+            anchor: anchor, currentPhase: .work, phaseEndDate: nil,
+            pausedRemainingSeconds: nil, phaseDurationSeconds: 1,
+            roundNumber: 3, totalRounds: 5, isFinished: false, now: at(400)
+        )
+        XCTAssertEqual(content.phase, .running)
+        XCTAssertEqual(content.clock, .countUp(since: anchor))
+        XCTAssertFalse(content.needsAudioInBackground, "ungezeitete Belastung kuendigt kein Ende an")
+    }
+
+    func testEnduranceIntervalsPausedFreezesOnTheRemainingSeconds() {
+        let content = TimedLiveContent.enduranceIntervals(
+            anchor: anchor, currentPhase: .work, phaseEndDate: nil,
+            pausedRemainingSeconds: 45, phaseDurationSeconds: 120,
+            roundNumber: 1, totalRounds: 5, isFinished: false, now: at(10)
+        )
+        XCTAssertEqual(content.clock, .frozen(seconds: 45))
+    }
+
+    func testEnduranceIntervalsFinished() {
+        let content = TimedLiveContent.enduranceIntervals(
+            anchor: anchor, currentPhase: .cooldown, phaseEndDate: nil,
+            pausedRemainingSeconds: nil, phaseDurationSeconds: 1,
+            roundNumber: 5, totalRounds: 5, isFinished: true, now: at(1_800)
+        )
+        XCTAssertEqual(content.phase, .finished)
+        XCTAssertFalse(content.needsAudioInBackground)
+    }
 }

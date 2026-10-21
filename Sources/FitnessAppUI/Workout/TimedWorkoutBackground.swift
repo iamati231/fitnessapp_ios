@@ -240,9 +240,14 @@ final class TimedWorkoutBackground {
                 content.counter, total
             )
         case .enduranceIntervals:
-            // Paket 2: Komponente 3 noch nicht gebaut, strukturell
-            // unerreichbar (kein Player liefert je `TimedLiveContent` fuer
-            // dieses Format) - reuse desselben Rundenkontext-Texts wie Zirkel.
+            // Paket 2: reuse desselben Rundenkontext-Texts wie Zirkel - waehrend
+            // Einlaufen/Auslaufen zeigt das zwar "Runde 1/N" bzw. "Runde N/N"
+            // statt eines eigenen Einlauf-/Auslauf-Texts (die Phase-Unterscheidung
+            // oben kennt nur running/rest/finished, keinen eigenen Fall dafuer) -
+            // bewusst als kleine Ungenauigkeit auf der sekundaeren Live-Activity-
+            // Oberflaeche akzeptiert statt einer eigenen vierten Textvariante;
+            // der Player selbst (`EnduranceIntervalPlayerView`) zeigt den
+            // Abschnitt korrekt.
             status = String(
                 format: String(localized: "timedWorkout.circuit.roundContext", bundle: .module),
                 content.counter, total

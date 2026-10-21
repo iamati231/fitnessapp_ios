@@ -387,9 +387,22 @@ public struct WorkoutSummaryView: View {
                 }
                 .listRowBackground(Color.Deltiq.surface)
             case .enduranceIntervals:
-                // Paket 2: Player/Ergebnis-Erfassung (Komponente 3) noch
-                // nicht gebaut - strukturell unerreichbar.
-                EmptyView()
+                // Paket 2: einzige sinnvoll manuell korrigierbare Groesse
+                // ist die Anzahl abgeschlossener Runden - Phase/Skip-Flags
+                // sind Ablaufzustand, keine nachtraeglich editierbaren
+                // Ergebniswerte (anders als bei Zirkel/EMOM gibt es hier
+                // keine kontinuierliche Groesse wie "Minuten"/"Rundenzahl
+                // bei beliebiger Obergrenze").
+                Stepper(value: enduranceRoundsCompletedBinding, in: 0...(session.contentSnapshotEnduranceIntervalRounds ?? 20)) {
+                    LabeledContent {
+                        Text(enduranceRoundsCompletedValueText)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    } label: {
+                        Text("summary.editResult.enduranceRounds", bundle: .module)
+                            .font(.system(size: 15))
+                    }
+                }
+                .listRowBackground(Color.Deltiq.surface)
             }
         } header: {
             sectionHeader(String(localized: "summary.editResult.header", bundle: .module))
@@ -432,6 +445,19 @@ public struct WorkoutSummaryView: View {
     private var circuitRoundsCompletedValueText: String {
         let rounds = session.circuitRoundsCompleted ?? 0
         guard let target = session.contentSnapshotCircuitRounds else { return "\(rounds)" }
+        return "\(rounds) / \(target)"
+    }
+
+    private var enduranceRoundsCompletedBinding: Binding<Int> {
+        Binding(
+            get: { session.enduranceRoundsCompleted ?? 0 },
+            set: { session.enduranceRoundsCompleted = $0 }
+        )
+    }
+
+    private var enduranceRoundsCompletedValueText: String {
+        let rounds = session.enduranceRoundsCompleted ?? 0
+        guard let target = session.contentSnapshotEnduranceIntervalRounds else { return "\(rounds)" }
         return "\(rounds) / \(target)"
     }
 
@@ -1136,9 +1162,11 @@ public struct WorkoutSummaryView: View {
             SummaryStat(label: String(localized: "summary.stat.circuitRest", bundle: .module),
                         value: restSeconds.map { "\($0)s" } ?? "—")
         case .enduranceIntervals:
-            // Paket 2: Komponente 3 noch nicht gebaut, strukturell
-            // unerreichbar.
-            EmptyView()
+            // Paket 2: wie der Zirkel-Fall oben - die konfigurierte
+            // Erholungsdauer zwischen den Runden als Kontext.
+            let restSeconds = session.contentSnapshotEnduranceRestDurationSeconds
+            SummaryStat(label: String(localized: "summary.stat.circuitRest", bundle: .module),
+                        value: restSeconds.map { "\($0)s" } ?? "—")
         }
     }
 
@@ -1299,11 +1327,13 @@ public struct WorkoutSummaryView: View {
             let value = session.contentSnapshotCircuitRounds.map { "\(completed)/\($0)" } ?? "\(completed)"
             return HeroStat(value: value, unit: timedFormatHeroUnit("summary.hero.unit.circuitRounds"))
         case .enduranceIntervals:
-            // Paket 2: Komponente 3 noch nicht gebaut, strukturell
-            // unerreichbar - reuse derselben Rundenzahl-Darstellung wie
-            // Zirkel als Platzhalter.
-            let completed = session.circuitRoundsCompleted ?? 0
-            return HeroStat(value: "\(completed)", unit: timedFormatHeroUnit("summary.hero.unit.circuitRounds"))
+            // Paket 2: wie Zirkel oben - "3/5" liest sich als Fortschritt.
+            // Reuse desselben Unit-Texts ("RUNDEN") statt eines eigenen Keys -
+            // bedeutet hier dasselbe (abgeschlossene Belastungs-/Erholungs-
+            // Wiederholungen).
+            let completed = session.enduranceRoundsCompleted ?? 0
+            let value = session.contentSnapshotEnduranceIntervalRounds.map { "\(completed)/\($0)" } ?? "\(completed)"
+            return HeroStat(value: value, unit: timedFormatHeroUnit("summary.hero.unit.circuitRounds"))
         }
     }
 

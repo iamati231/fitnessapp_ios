@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2279 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2294 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2279 / 2279** (100%) | 0 |
-| 🇬🇧 English (EN) | **2279 / 2279** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2279 / 2279** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2294 / 2294** (100%) | 0 |
+| 🇬🇧 English (EN) | **2294 / 2294** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2294 / 2294** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -2422,7 +2422,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `substitution.reason.pullupToCableLatPulldown` | Ohne Klimmzugstange: der Latzug am Kabel trainiert dieselbe Zugrichtung mit einstellbarem Gewicht. | Without a pull-up bar: the cable lat pulldown trains the same pulling direction with adjustable weight. | Barfiks demiri olmadan: kablo lat pulldown aynı çekiş yönünü ayarlanabilir ağırlıkla çalıştırır. |
 | `substitution.reason.squatToGobletSquat` | Ohne Langhantel und Rack: Goblet Squat trainiert dieselbe Bewegung, aber mit geringerer Lastkapazität. | Without a barbell and rack: the goblet squat trains the same movement, but with lower load capacity. | Halter ve rack olmadan: Goblet Squat aynı hareketi çalıştırır, ancak daha düşük yük kapasitesiyle. |
 
-## `summary.*`  (71 Keys)
+## `summary.*`  (72 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -2457,6 +2457,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.editMeta.header` | Eckdaten | Key Data | Temel Veriler |
 | `summary.editResult.circuitRounds` | Runden geschafft | Rounds completed | Tamamlanan tur |
 | `summary.editResult.completedMinutes` | Geschaffte Minuten | Minutes completed | Tamamlanan dakika |
+| `summary.editResult.enduranceRounds` | Runden geschafft | Rounds completed | Tamamlanan tur |
 | `summary.editResult.finishTime` | Zielzeit | Finish time | Bitiş süresi |
 | `summary.editResult.footer` | Nachträglich korrigieren, falls beim Speichern etwas danebenging. | Correct after the fact if something was off when you saved. | Kaydederken bir şey yanlış gittiyse sonradan düzelt. |
 | `summary.editResult.header` | Ergebnis | Result | Sonuç |
@@ -2508,7 +2509,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `tab.plan` | Plan | Plan | Plan |
 | `tab.tools` | Werkzeuge | Tools | Araçlar |
 
-## `timedWorkout.*`  (38 Keys)
+## `timedWorkout.*`  (52 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -2541,7 +2542,21 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `timedWorkout.emom.notification.complete` | EMOM geschafft! Ergebnis speichern. | EMOM complete! Save your result. | EMOM tamamlandı! Sonucu kaydet. |
 | `timedWorkout.emom.notification.nextMinute` | Minute %lld beginnt | Minute %lld starts | %lld. dakika başlıyor |
 | `timedWorkout.emom.thisMinute` | DIESE MINUTE | THIS MINUTE | BU DAKİKA |
+| `timedWorkout.enduranceIntervals.cooldown` | AUSLAUFEN | COOL-DOWN | SOĞUMA |
+| `timedWorkout.enduranceIntervals.cooldownHint` | Lauf locker aus, um runterzukommen. | Ease off to cool down. | Yavaşlayarak soğu. |
+| `timedWorkout.enduranceIntervals.openTarget` | Kein festes Ziel | No fixed target | Sabit hedef yok |
+| `timedWorkout.enduranceIntervals.pause` | Pause | Pause | Duraklat |
+| `timedWorkout.enduranceIntervals.paused` | PAUSIERT | PAUSED | DURAKLATILDI |
 | `timedWorkout.enduranceIntervals.pillLabel` | Intervalle | Intervals | Aralıklar |
+| `timedWorkout.enduranceIntervals.rest` | ERHOLUNG | RECOVERY | TOPARLANMA |
+| `timedWorkout.enduranceIntervals.resume` | Fortsetzen | Resume | Devam et |
+| `timedWorkout.enduranceIntervals.skip` | Überspringen | Skip | Atla |
+| `timedWorkout.enduranceIntervals.warmup` | EINLAUFEN | WARM-UP | ISINMA |
+| `timedWorkout.enduranceIntervals.warmupHint` | Lauf dich locker ein - die Belastung startet automatisch, sobald die Zeit um ist. | Ease into it - the work phase starts automatically once time's up. | Yavaşça ısın - süre dolunca yüklenme otomatik başlar. |
+| `timedWorkout.enduranceIntervals.work` | BELASTUNG | WORK | ÇALIŞMA |
+| `timedWorkout.enduranceIntervals.workDone` | Fertig | Done | Bitti |
+| `timedWorkout.enduranceIntervals.workOpenHint` | Lauf dein Ziel, dann tippe auf „Fertig“. | Cover your target, then tap “Done”. | Hedefini tamamla, sonra “Bitti”'ye dokun. |
+| `timedWorkout.enduranceIntervals.workTimedHint` | Gib Gas, bis die Zeit um ist - danach folgt automatisch die Erholung. | Push until time's up - recovery follows automatically. | Süre dolana kadar yüklen - ardından toparlanma otomatik başlar. |
 | `timedWorkout.finish.save` | Speichern | Save | Kaydet |
 | `timedWorkout.forTime.finishedLabel` | Geschafft! | Done! | Tamamlandı! |
 | `timedWorkout.forTime.lastRoundHint` | Das letzte Häkchen stoppt die Uhr. | The last checkmark stops the clock. | Son işaret saati durdurur. |

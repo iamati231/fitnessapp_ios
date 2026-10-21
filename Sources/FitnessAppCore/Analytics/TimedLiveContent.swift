@@ -285,6 +285,69 @@ public struct TimedLiveContent: Codable, Hashable, Sendable {
             counterTotal: total
         )
     }
+
+    // MARK: - Ausdauer-Intervalle (Paket 2)
+
+    /// Einlaufen/Erholung/Auslaufen und eine GEZEITETE Belastung zeigen
+    /// einen Countdown; eine UNGEZEITETE Belastung (Strecke/offen) zaehlt
+    /// die GESAMTE Laufzeit hoch (`anchor` = `session.startTime`, nicht der
+    /// Rundenstart) - gleiches Prinzip wie die Zirkel-Arbeitsphase oben
+    /// ("der Player zeigt waehrend der Arbeit keine Uhr - auf dem
+    /// Sperrbildschirm ist die Trainingszeit die nuetzliche Zahl"). Eine
+    /// manuelle Pause friert die Anzeige auf den verbleibenden Sekunden ein,
+    /// statt stillschweigend weiterzuzaehlen.
+    public static func enduranceIntervals(
+        anchor: Date,
+        currentPhase: EnduranceIntervalPhase,
+        phaseEndDate: Date?,
+        pausedRemainingSeconds: Int?,
+        phaseDurationSeconds: Int,
+        roundNumber: Int,
+        totalRounds: Int,
+        isFinished: Bool,
+        now: Date
+    ) -> TimedLiveContent {
+        let total = max(1, totalRounds)
+        let round = min(max(1, roundNumber), total)
+        let livePhase: Phase = currentPhase == .rest ? .rest : .running
+        if isFinished {
+            return TimedLiveContent(
+                phase: .finished,
+                clock: .frozen(seconds: max(0, Int(now.timeIntervalSince(anchor)))),
+                runStart: anchor,
+                counter: round,
+                counterTotal: total
+            )
+        }
+        if let pausedRemainingSeconds {
+            return TimedLiveContent(
+                phase: livePhase,
+                clock: .frozen(seconds: max(0, pausedRemainingSeconds)),
+                runStart: anchor,
+                counter: round,
+                counterTotal: total
+            )
+        }
+        if let phaseEndDate {
+            let length = TimeInterval(max(1, phaseDurationSeconds))
+            return TimedLiveContent(
+                phase: livePhase,
+                clock: .countdown(start: phaseEndDate.addingTimeInterval(-length), end: phaseEndDate),
+                runStart: anchor,
+                runEnd: phaseEndDate,
+                counter: round,
+                counterTotal: total,
+                staleDate: phaseEndDate.addingTimeInterval(staleMargin)
+            )
+        }
+        return TimedLiveContent(
+            phase: .running,
+            clock: .countUp(since: anchor),
+            runStart: anchor,
+            counter: round,
+            counterTotal: total
+        )
+    }
 }
 
 // MARK: - Hintergrund-Audio
