@@ -160,10 +160,10 @@ final class NutritionCalculationsTests: XCTestCase {
         XCTAssertEqual(result?.proteinG, 62)
     }
 
-    func testMillilitersUsesExplicitDensityNotOneToOne() {
+    func testMillilitersUsesExplicitDensityNotOneToOne() throws {
         // 100 ml Milch wiegt 103 g, nicht 100 g — Spec 4.2
         let result = NutritionCalculations.nutrients(for: milk, quantity: 100, unit: .milliliter)
-        XCTAssertEqual(result?.kcal, 64 * 1.03, accuracy: 0.0001)
+        XCTAssertEqual(try XCTUnwrap(result).kcal, 64 * 1.03, accuracy: 0.0001)
     }
 
     func testMillilitersWithoutDensityReturnsNil() {
@@ -174,9 +174,9 @@ final class NutritionCalculationsTests: XCTestCase {
         XCTAssertNil(NutritionCalculations.nutrients(for: chicken, quantity: 1, unit: .piece))
     }
 
-    func testPieceUsesPieceWeight() {
+    func testPieceUsesPieceWeight() throws {
         let result = NutritionCalculations.nutrients(for: egg, quantity: 2, unit: .piece)
-        XCTAssertEqual(result?.kcal, 155 * 1.2, accuracy: 0.0001) // 2 × 60g = 120g
+        XCTAssertEqual(try XCTUnwrap(result).kcal, 155 * 1.2, accuracy: 0.0001) // 2 × 60g = 120g
     }
 
     func testNonPositiveQuantityReturnsNil() {
