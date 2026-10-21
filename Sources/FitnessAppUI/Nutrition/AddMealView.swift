@@ -226,12 +226,19 @@ public struct AddMealView: View {
                 Text("common.add", bundle: .module)
             }
             // Deltiq-CTA statt Ad-hoc-HStack: .deltiqButtonStyle() spannt die
-            // Label-Breite selbst per frame(maxWidth: .infinity) auf, der
-            // vormalige Spacer()-Hack samt .contentShape(Rectangle())-Fix
-            // (Audit-Fund, siehe NutritionDayView.mealEntryRow) entfaellt
-            // damit komplett — gleiches Muster wie DataExportView.startExport.
+            // Label-Breite per frame(maxWidth: .infinity) auf und zeichnet den
+            // vollbreiten Gradient-Hintergrund (gleiches Muster wie
+            // DataExportView.startExport). Das macht die Zeile aber nur
+            // VISUELL breit — der Tap-Bereich von Button+.buttonStyle(.plain)
+            // bleibt ohne explizites .contentShape(Rectangle()) auf die
+            // intrinsische Text-Glyphe begrenzt (Geraetetest-Fund: Taps links/
+            // rechts neben "Add" im sichtbar orangenen Bereich kamen NICHT bei
+            // addSelectedEntry() an). Exakt derselbe Audit-Fund wie zuvor bei
+            // der Spacer()-HStack-Variante, nur diesmal durch den Modifier
+            // verursacht statt durch Spacer().
             .buttonStyle(.plain)
             .deltiqButtonStyle()
+            .contentShape(Rectangle())
             .disabled((quantity ?? 0) <= 0)
         }
         .deltiqCardStyle()
