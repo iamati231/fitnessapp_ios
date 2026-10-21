@@ -3,6 +3,7 @@ import SwiftUI
 import SwiftData
 import FitnessAppCore
 import FitnessAppData
+import FitnessAppAI
 
 /// Task 6: Erfassungs-Sheet fuer eine neue Mahlzeit. Sammelt Positionen in
 /// einem `MealDraft` (reine Vorschau, siehe dortige Doku) und persistiert
@@ -20,6 +21,10 @@ public struct AddMealView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    // Task E (M2 in task-D-review.md): explicit UI locale instead of
+    // NutritionAIService's `.current` default, so the availability/language
+    // check always follows the language the user actually sees.
+    @Environment(\.locale) private var locale
 
     @StateObject private var draft: MealDraft
 
@@ -39,6 +44,12 @@ public struct AddMealView: View {
     @State private var showingSaveError: Bool = false
     @State private var showingDeleteConfirm: Bool = false
 
+    // Task E: local AI-assisted free-text meal draft parsing.
+    @State private var aiInputText: String = ""
+    @State private var isExtracting: Bool = false
+    @State private var aiCandidates: [MealDraftCandidate] = []
+    @State private var aiErrorMessage: String?
+
     public init(date: Date = Date(), mealType: MealType = .snack) {
         _draft = StateObject(wrappedValue: MealDraft(date: date, mealType: mealType))
         self.editingMeal = nil
@@ -53,6 +64,7 @@ public struct AddMealView: View {
         NavigationStack {
             Form {
                 detailsSection
+                aiSection
                 searchSection
                 if !draft.items.isEmpty {
                     itemsSection
@@ -185,6 +197,120 @@ public struct AddMealView: View {
             }
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
+    }
+
+    /// Task E: lokale KI-gestuetzte Freitext-Erfassung. Bei `.unavailable`
+    /// (jede Auspraegung) zeigt die Section NUR einen lokalisierten
+    /// Hinweistext mit Verweis auf die Suche darunter — kein Ausblenden,
+    /// kein leerer Zustand (Brief-Vorgabe). Die eigentliche Extraktion
+    /// liefert NIE einen Naehrwert selbst: jeder Kandidat laeuft ueber
+    /// `applyAICandidate` in genau denselben `quantityBottomBar`/`addSelectedEntry`-
+    /// Pfad wie eine manuelle Suchauswahl.
+    @ViewBuilder
+    private var aiSection: some View {
+        switch mealTextExtractor.availability() {
+        case .available:
+            Section {
+                ForEach(Array(aiCandidates.enumerated()), id: \.offset) { _, candidate in
+                    aiCandidateRow(candidate)
+                }
+
+                TextField(
+                    String(localized: "nutrition.addMeal.aiDraft.placeholder", bundle: .module),
+                    text: $aiInputText,
+                    axis: .vertical
+                )
+                .lineLimit(1...3)
+                .listRowBackground(Color.Deltiq.surface)
+
+                Button {
+                    runAIExtraction()
+                } label: {
+                    HStack {
+                        if isExtracting {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                        Text("nutrition.addMeal.aiDraft.action", bundle: .module)
+                    }
+                }
+                // Mandatory addition from task-D-review.md (#6): no concurrent
+                // requests from a double tap while one is already in flight.
+                .disabled(isExtracting || aiInputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .listRowBackground(Color.Deltiq.surface)
+
+                if let aiErrorMessage {
+                    Text(aiErrorMessage)
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .listRowBackground(Color.Deltiq.surface)
+                }
+            } header: {
+                Text("nutrition.addMeal.aiDraft.header", bundle: .module)
+            }
+            .listRowSeparatorTint(Color.Deltiq.divider)
+        default:
+            Section {
+                Text("nutrition.addMeal.aiDraft.unavailable", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .listRowBackground(Color.Deltiq.surface)
+            }
+            .listRowSeparatorTint(Color.Deltiq.divider)
+        }
+    }
+
+    /// Eine extrahierte Position: eindeutiger Treffer -> ein Button, der sie
+    /// wie eine manuelle Suchauswahl in den `quantityBottomBar` uebernimmt;
+    /// mehrdeutiger Treffer -> Auswahl-Buttons pro Katalogtreffer (NIE
+    /// automatisch der erste); kein Treffer -> Hinweistext + Uebernahme des
+    /// Suchtexts in die normale Suche darunter.
+    @ViewBuilder
+    private func aiCandidateRow(_ candidate: MealDraftCandidate) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(candidate.foodText)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.primary)
+
+            if candidate.needsQuantity {
+                Text("nutrition.addMeal.aiDraft.needsQuantity", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            }
+
+            if candidate.hasNoCatalogMatch {
+                Text("nutrition.addMeal.aiDraft.noMatch", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                Button {
+                    searchText = candidate.foodText
+                    removeAICandidate(candidate)
+                } label: {
+                    Text("nutrition.addMeal.aiDraft.searchManually", bundle: .module)
+                }
+            } else if candidate.isAmbiguous {
+                Text("nutrition.addMeal.aiDraft.ambiguous", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                ForEach(candidate.matches, id: \.catalogID) { match in
+                    if let entry = catalogEntries.first(where: { $0.catalogID == match.catalogID }) {
+                        Button {
+                            applyAICandidate(candidate, entry: entry)
+                        } label: {
+                            Text(resolvedName(for: entry))
+                        }
+                    }
+                }
+            } else if let match = candidate.matches.first,
+                      let entry = catalogEntries.first(where: { $0.catalogID == match.catalogID }) {
+                Button {
+                    applyAICandidate(candidate, entry: entry)
+                } label: {
+                    Text(String(format: String(localized: "nutrition.addMeal.aiDraft.useSuggestion", bundle: .module), resolvedName(for: entry)))
+                }
+            }
+        }
+        .listRowBackground(Color.Deltiq.surface)
     }
 
     /// Task A: Ersatz fuer das vormalige `quantitySection(for:)` — lebt jetzt
@@ -350,6 +476,12 @@ public struct AddMealView: View {
         return catalogEntries.filter { resolvedName(for: $0).localizedCaseInsensitiveContains(trimmed) }
     }
 
+    /// Task E (M2 in task-D-review.md): explicit `locale` instead of
+    /// `NutritionAIService`'s `.current` default.
+    private var mealTextExtractor: MealTextExtractor {
+        MealTextExtractor(service: NutritionAIService(locale: locale))
+    }
+
     // MARK: Actions
 
     private func selectEntry(_ entry: FoodCatalogEntry) {
@@ -376,6 +508,55 @@ public struct AddMealView: View {
         self.quantity = nil
         selectedUnit = .gram
         searchText = ""
+    }
+
+    /// Startet die Freitext-Extraktion. Die KI erzeugt NIE einen Naehrwert
+    /// selbst und schreibt NIE direkt in `draft` — das Ergebnis landet nur in
+    /// `aiCandidates`, von dort ausschliesslich ueber `applyAICandidate` (also
+    /// denselben `quantityBottomBar`/`addSelectedEntry`-Pfad wie eine manuelle
+    /// Auswahl) in den Entwurf.
+    private func runAIExtraction() {
+        // Mandatory addition from task-D-review.md (#6): no concurrent
+        // requests — a second tap while one is in flight is a no-op.
+        guard !isExtracting else { return }
+        let text = aiInputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+
+        isExtracting = true
+        aiErrorMessage = nil
+        let extractor = mealTextExtractor
+        let catalog = catalogEntries.map { MealTextCatalogEntry(catalogID: $0.catalogID, name: resolvedName(for: $0)) }
+
+        Task { @MainActor in
+            defer { isExtracting = false }
+            do {
+                aiCandidates = try await extractor.extractCandidates(from: text, catalog: catalog)
+                aiInputText = ""
+            } catch {
+                // Privacy: never log `text`/the model response anywhere here.
+                aiErrorMessage = String(localized: "nutrition.addMeal.aiDraft.error", bundle: .module)
+            }
+        }
+    }
+
+    /// Uebernimmt einen KI-Kandidaten in exakt denselben Zustand, den eine
+    /// manuelle Suchauswahl (`selectEntry`) erzeugt — der Nutzer sieht/bestaetigt
+    /// Menge und Einheit im bestehenden `quantityBottomBar`, bevor "Add"
+    /// tatsaechlich in `draft` schreibt. Fehlt die Menge, bleibt `quantity`
+    /// bewusst `nil` (Rueckfrage via `quantityBottomBar`s leeres Feld +
+    /// deaktiviertem Add-Button), statt still einen Default zu setzen.
+    private func applyAICandidate(_ candidate: MealDraftCandidate, entry: FoodCatalogEntry) {
+        selectedEntry = entry
+        let allowedUnits = FoodUnit.allCases.filter { entry.asCatalogItem.supports($0) }
+        let mappedUnit = candidate.unit.flatMap { FoodUnit(rawValue: $0.rawValue) }
+        selectedUnit = mappedUnit.flatMap { allowedUnits.contains($0) ? $0 : nil } ?? .gram
+        quantity = candidate.quantity
+        removeAICandidate(candidate)
+    }
+
+    private func removeAICandidate(_ candidate: MealDraftCandidate) {
+        guard let index = aiCandidates.firstIndex(of: candidate) else { return }
+        aiCandidates.remove(at: index)
     }
 
     private func saveMeal() {

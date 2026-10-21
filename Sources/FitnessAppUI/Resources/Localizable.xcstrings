@@ -56429,6 +56429,236 @@
         }
       }
     },
+    "nutrition.addMeal.aiDraft.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KI-Entwurf (Beta)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI Draft (Beta)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yapay Zeka Taslağı (Beta)"
+          }
+        }
+      }
+    },
+    "nutrition.addMeal.aiDraft.placeholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "z. B. 200 g Hähnchen und 150 g Reis zum Mittagessen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "e.g. 200g chicken and 150g rice for lunch"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "örn. öğle yemeğinde 200 g tavuk ve 150 g pirinç"
+          }
+        }
+      }
+    },
+    "nutrition.addMeal.aiDraft.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text analysieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analyze text"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Metni analiz et"
+          }
+        }
+      }
+    },
+    "nutrition.addMeal.aiDraft.error": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Analyse ist fehlgeschlagen. Bitte versuche es erneut oder nutze die Suche unten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The analysis failed. Please try again or use the search below."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analiz başarısız oldu. Lütfen tekrar deneyin veya aşağıdaki aramayı kullanın."
+          }
+        }
+      }
+    },
+    "nutrition.addMeal.aiDraft.unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KI-Entwurf ist auf diesem Gerät nicht verfügbar. Nutze stattdessen die Suche unten, um Lebensmittel manuell hinzuzufügen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI draft isn't available on this device. Use the search below instead to add food manually."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu cihazda yapay zeka taslağı kullanılamıyor. Bunun yerine yiyecekleri manuel olarak eklemek için aşağıdaki aramayı kullanın."
+          }
+        }
+      }
+    },
+    "nutrition.addMeal.aiDraft.needsQuantity": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menge unklar – bitte unten eintragen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quantity unclear – please enter it below."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miktar belirsiz – lütfen aşağıya girin."
+          }
+        }
+      }
+    },
+    "nutrition.addMeal.aiDraft.noMatch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Katalogtreffer gefunden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No catalog match found."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Katalogda eşleşme bulunamadı."
+          }
+        }
+      }
+    },
+    "nutrition.addMeal.aiDraft.searchManually": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Suche übernehmen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use in search"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aramada kullan"
+          }
+        }
+      }
+    },
+    "nutrition.addMeal.aiDraft.ambiguous": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mehrere Treffer – bitte auswählen:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Multiple matches – please choose:"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Birden fazla eşleşme – lütfen seçin:"
+          }
+        }
+      }
+    },
+    "nutrition.addMeal.aiDraft.useSuggestion": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übernehmen: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use: %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kullan: %@"
+          }
+        }
+      }
+    },
     "nutrition.mealType.breakfast.name": {
       "extractionState": "manual",
       "localizations": {

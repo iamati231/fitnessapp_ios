@@ -96,6 +96,56 @@ jobs:
           echo "Gefunden: $APP_PATH"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" FitnessApp-simulator.zip
 
+      # Task E / I1 (task-D-review.md): Task D only checked weak-linking on a
+      # Debug simulator dylib with no real FitnessAppAI callers. Now that
+      # AddMealView actually calls into FitnessAppAI, re-verify on a Release
+      # build: a non-weak FoundationModels reference (e.g. an un-gated
+      # @Generable conformance) would turn LC_LOAD_WEAK_DYLIB into
+      # LC_LOAD_DYLIB and crash at launch on iOS 17-25.
+      - name: App für iOS-Simulator bauen (Release, für I1-Weak-Link-Check)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project FitnessApp.xcodeproj \
+            -scheme FitnessApp \
+            -configuration Release \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build-release \
+            CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee xcodebuild-release-build.log
+
+      - name: FoundationModels-Weak-Link im Release-Binary prüfen (I1)
+        run: |
+          set -o pipefail
+          APP_PATH=$(find build-release/Build/Products -mindepth 2 -maxdepth 2 -iname "FitnessApp.app" | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "Keine Release-FitnessApp.app gefunden" >&2
+            find build-release/Build/Products -maxdepth 3
+            exit 1
+          fi
+          BINARY="$APP_PATH/FitnessApp"
+          echo "Binary: $BINARY"
+          file "$BINARY"
+          # Getrennte Dateinamen ohne reine Gross/Kleinschreibungs-Unterschied
+          # (macOS-Runner nutzen standardmaessig ein case-insensitive APFS-
+          # Volume — "otool-L-..." und "otool-l-..." waeren dieselbe Datei).
+          otool -L "$BINARY" | tee otool-dylibs-release.txt
+          otool -l "$BINARY" > otool-loadcommands-release.txt
+          if grep -q "FoundationModels" otool-dylibs-release.txt; then
+            echo "FoundationModels ist gelinkt — prüfe Load-Command-Typ:"
+            # otool -l listet je Dylib einen LC_LOAD_(WEAK_)DYLIB-Block mit
+            # dem Pfad in der folgenden "name"-Zeile — daher rückwärts von
+            # jedem FoundationModels-Treffer zum zugehörigen "cmd"-Feld.
+            awk '/cmd LC_LOAD_WEAK_DYLIB/{weak=1} /cmd LC_LOAD_DYLIB$/{weak=0} /name.*FoundationModels/{print (weak ? "WEAK" : "STRONG")}' otool-loadcommands-release.txt | tee foundationmodels-link-kind.txt
+            if grep -q "STRONG" foundationmodels-link-kind.txt; then
+              echo "FAIL: FoundationModels ist STARK (LC_LOAD_DYLIB) statt schwach gelinkt — Absturzrisiko auf iOS 17-25." >&2
+              exit 1
+            fi
+            echo "OK: FoundationModels ist ausschließlich LC_LOAD_WEAK_DYLIB."
+          else
+            echo "FoundationModels taucht in otool -L nicht auf (z.B. wenn der Linker einen ungenutzten schwachen Verweis entfernt hat) — kein Absturzrisiko, aber bitte im Report explizit vermerken." | tee foundationmodels-link-kind.txt
+          fi
+
       - name: Lauf-Metadaten festhalten
         if: always()
         run: |
@@ -124,3 +174,7 @@ jobs:
             swift-test-output.log
             xcodebuild-build.log
             FitnessApp-simulator.zip
+            xcodebuild-release-build.log
+            otool-dylibs-release.txt
+            otool-loadcommands-release.txt
+            foundationmodels-link-kind.txt
