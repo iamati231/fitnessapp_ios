@@ -84,12 +84,19 @@ public struct AddMealView: View {
                     // Operation als das Editieren ihrer Positionen — laeuft
                     // deshalb bewusst nicht ueber MealDraft, siehe deleteMeal().
                     ToolbarItem(placement: .destructiveAction) {
+                        // Final-review fix (important): Global Constraint
+                        // verlangt sichtbar textbeschriftete Controls statt
+                        // einem reinen Icon + Accessibility-Label.
                         Button(role: .destructive) {
                             showingDeleteConfirm = true
                         } label: {
-                            Image(systemName: "trash")
+                            Label {
+                                Text("nutrition.editMeal.delete", bundle: .module)
+                            } icon: {
+                                Image(systemName: "trash")
+                            }
                         }
-                        .accessibilityLabel(Text("nutrition.editMeal.delete", bundle: .module))
+                        .labelStyle(.titleAndIcon)
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
