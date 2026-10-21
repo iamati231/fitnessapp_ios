@@ -78,6 +78,50 @@ public enum MissedRunDayEvaluator {
         }
     }
 
+    /// Paket-3a-Restpunkt 1 (Re-Trigger-Korrektur, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+    /// liefert die Gesamtzahl faelliger Lauf-Gelegenheiten seit dem ECHTEN,
+    /// UNGECLAMPTEN `plan.activatedAt` — bewusst NICHT auf das rollierende
+    /// 14-Tage-Fenster begrenzt (anders als `evaluate`/`participationInput`
+    /// oben). Grund: `missedCount` aus dem rollierenden Fenster SAETTIGT
+    /// sich an der Fenster-Obergrenze, sobald der Plan laenger als das
+    /// Fenster aktiv ist — ab dann bleibt er bei fortgesetztem Versaeumnis
+    /// UNVERAENDERT, obwohl taeglich eine weitere, echte, abgeschlossene
+    /// Gelegenheit hinzukommt (mit jedem neuen Tag faellt gleichzeitig eine
+    /// alte aus dem Fenster heraus). Diese Funktion liefert stattdessen
+    /// einen monoton wachsenden Zaehler, der NUR von `activatedAt`/der
+    /// Schedule-Struktur/`now` abhaengt (reine Kalenderrechnung, kein
+    /// Sessions-Fetch noetig) — jede neu VERSTRICHENE faellige Gelegenheit
+    /// erhoeht ihn, unabhaengig davon, ob sie erfuellt oder verfehlt wurde.
+    /// `CardioCoachingAdvisor.missedRunHintFingerprint` nutzt ihn als
+    /// zusaetzliche Komponente, um genau dieses "neue Gelegenheit trotz
+    /// gedeckeltem `missedCount`"-Szenario von echtem Stillstand (nichts hat
+    /// sich veraendert) zu unterscheiden.
+    ///
+    /// `nil`, wenn `PlanParticipationEvaluator` denselben Plan/dieselbe
+    /// Schedule-Struktur ohnehin als `.notReliablyEvaluable` einstufen
+    /// wuerde (kein Aktivierungsanker, inaktiver Plan, keine Lauf-Tage, …) —
+    /// in diesem Fall liefert `evaluate` oben ebenfalls kein Ergebnis und
+    /// der Hinweis erscheint gar nicht erst.
+    public static func totalConcludedRunOpportunities(
+        plan: TrainingPlan,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Int? {
+        let runningDays = plan.days.filter(isRunningDay)
+        guard !runningDays.isEmpty, let activatedAt = plan.activatedAt else { return nil }
+        let input = PlanParticipationEvaluator.Input(
+            activatedAt: activatedAt,
+            isActive: plan.isActive,
+            occurrences: [],
+            nonRestDayCount: runningDays.count,
+            nonRestWeekdays: Set(runningDays.map(\.weekday)),
+            usesFixedWeekdays: plan.generatorInput?.usesFixedWeekdays,
+            calendar: calendar
+        )
+        guard case .evaluated(let summary) = PlanParticipationEvaluator.evaluate(input, asOf: now) else { return nil }
+        return summary.plannedCount
+    }
+
     private static func participationInput(
         plan: TrainingPlan,
         in context: ModelContext,

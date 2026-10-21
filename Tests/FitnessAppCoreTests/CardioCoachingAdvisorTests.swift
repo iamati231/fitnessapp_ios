@@ -156,8 +156,8 @@ final class CardioCoachingAdvisorTests: XCTestCase {
     /// Bindung an die Planfassung: ein anderer `planActivatedAt` (= nach
     /// einem Planwechsel/einer Re-Aktivierung) muss den Fingerprint ändern.
     func testFingerprintChangesWithDifferentPlanActivatedAt() {
-        let a = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: Date(timeIntervalSince1970: 0), summary: summary(missedCount: 2))
-        let b = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: Date(timeIntervalSince1970: 1_000_000), summary: summary(missedCount: 2))
+        let a = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: Date(timeIntervalSince1970: 0), summary: summary(missedCount: 2), concludedOpportunityCount: 2)
+        let b = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: Date(timeIntervalSince1970: 1_000_000), summary: summary(missedCount: 2), concludedOpportunityCount: 2)
         XCTAssertNotEqual(a, b)
     }
 
@@ -165,8 +165,8 @@ final class CardioCoachingAdvisorTests: XCTestCase {
     /// (anderes `scheduleKindUsed`) muss den Fingerprint ändern.
     func testFingerprintChangesWithDifferentScheduleKind() {
         let anchor = Date(timeIntervalSince1970: 0)
-        let a = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 2, scheduleKindUsed: .fixedWeekdays([2, 4])))
-        let b = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 2, scheduleKindUsed: .fixedWeekdays([2, 4, 6])))
+        let a = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 2, scheduleKindUsed: .fixedWeekdays([2, 4])), concludedOpportunityCount: 2)
+        let b = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 2, scheduleKindUsed: .fixedWeekdays([2, 4, 6])), concludedOpportunityCount: 2)
         XCTAssertNotEqual(a, b)
     }
 
@@ -174,15 +174,39 @@ final class CardioCoachingAdvisorTests: XCTestCase {
     /// Fingerprint ändern, obwohl Planfassung/Schedule identisch bleiben.
     func testFingerprintChangesWithDifferentMissedCount() {
         let anchor = Date(timeIntervalSince1970: 0)
-        let a = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 2))
-        let b = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 3))
+        let a = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 2), concludedOpportunityCount: 2)
+        let b = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 3), concludedOpportunityCount: 2)
         XCTAssertNotEqual(a, b)
+    }
+
+    /// Restpunkt 1 (Re-Trigger-Korrektur): ein gestiegener
+    /// `concludedOpportunityCount` muss den Fingerprint ändern, OBWOHL
+    /// `missedCount` (gedeckelt im rollierenden Fenster) unveraendert
+    /// bleibt - genau das Szenario, das `missedCount` allein nicht erkennen
+    /// kann (siehe `missedRunHintFingerprint`-Doku).
+    func testFingerprintChangesWithDifferentConcludedOpportunityCountEvenWhenMissedCountIsCapped() {
+        let anchor = Date(timeIntervalSince1970: 0)
+        let a = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 2), concludedOpportunityCount: 8)
+        let b = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 2), concludedOpportunityCount: 9)
+        XCTAssertNotEqual(a, b)
+    }
+
+    /// Kehrseite: bleibt `concludedOpportunityCount` UNVERAENDERT (keine
+    /// neue abgeschlossene Gelegenheit seit der letzten Unterdrueckung), ist
+    /// der Fingerprint stabil, auch wenn alle anderen Werte identisch
+    /// bleiben - kein "wiederholtes Anfordern ohne neue Gelegenheit".
+    func testFingerprintStableWhenConcludedOpportunityCountUnchanged() {
+        let anchor = Date(timeIntervalSince1970: 0)
+        let a = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 2), concludedOpportunityCount: 8)
+        let b = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 2), concludedOpportunityCount: 8)
+        XCTAssertEqual(a, b)
     }
 
     /// Bewusst STABIL trotz unterschiedlicher `periodStart`-Werte in der
     /// Summary (die bei einem rollierenden Fenster taeglich weiterwandern) —
-    /// nur `planActivatedAt`/`scheduleKindUsed`/`missedCount` fliessen ein,
-    /// siehe Typ-Doku ("sonst liefe eine Unterdrueckung taeglich ab").
+    /// nur `planActivatedAt`/`scheduleKindUsed`/`missedCount`/
+    /// `concludedOpportunityCount` fliessen ein, siehe Typ-Doku ("sonst
+    /// liefe eine Unterdrueckung taeglich ab").
     func testFingerprintIsStableAcrossRollingWindowDrift() {
         let anchor = Date(timeIntervalSince1970: 0)
         let day1 = PlanParticipationEvaluator.Summary(
@@ -197,15 +221,15 @@ final class CardioCoachingAdvisorTests: XCTestCase {
             partialCount: 0, startedOnlyCount: 0, missedCount: 2, extraOccurrenceCount: 0,
             countingRules: [], dataGaps: []
         )
-        let a = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: day1)
-        let b = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: day2)
+        let a = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: day1, concludedOpportunityCount: 8)
+        let b = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: day2, concludedOpportunityCount: 8)
         XCTAssertEqual(a, b)
     }
 
     func testFingerprintIsStableForIdenticalSummary() {
         let anchor = Date(timeIntervalSince1970: 0)
-        let a = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 2))
-        let b = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 2))
+        let a = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 2), concludedOpportunityCount: 8)
+        let b = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 2), concludedOpportunityCount: 8)
         XCTAssertEqual(a, b)
     }
 }

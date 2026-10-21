@@ -86,9 +86,17 @@ public struct CoachAdjustmentCardModel: Equatable {
     /// Leitplanke 2: ruehrt `profile.cardioCoachingEnabled` (Praeferenz)
     /// NIEMALS an — nur `cardioPlanAdjustmentFingerprint` (Zustand "wurde
     /// uebernommen"). Beide sind bewusst getrennte Dinge.
+    /// Paket-3a-Restpunkt 2 (Planbindung, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+    /// `now`/`calendar` sind injizierbar (Default = echtes `Date()`/`.current`,
+    /// identisches Muster wie `MissedRunDaysCardModel.make`) — nur fuer
+    /// deterministische Tests der Unterdrueckung unten gebraucht, das
+    /// Produktivverhalten bleibt unveraendert (echte Zeit).
     @discardableResult
     @MainActor
-    public func accept(plan: TrainingPlan, profile: UserBodyProfile, in context: ModelContext) throws -> Int {
+    public func accept(
+        plan: TrainingPlan, profile: UserBodyProfile, in context: ModelContext,
+        now: Date = Date(), calendar: Calendar = .current
+    ) throws -> Int {
         // Bugfix (Leitplanke 3, vor Geräteeinsatz gefunden): `self.isAlreadyApplied`
         // ist ein am `make`-Zeitpunkt eingefrorener Snapshot (Value-Type) -
         // ein zweiter `accept`-Aufruf auf DERSELBEN Modell-Instanz (z. B. ein
@@ -105,6 +113,26 @@ public struct CoachAdjustmentCardModel: Equatable {
         )
         guard count > 0 else { return 0 }
         profile.cardioPlanAdjustmentFingerprint = fingerprint
+
+        // Restpunkt 2 (Planbindung): dieser Pfad aendert DENSELBEN Plan
+        // in-place (`activatedAt` bleibt unveraendert, siehe Typ-Doku oben) -
+        // die bereits VOR dieser Anpassung aufgelaufenen Lauf-Versaeumnisse
+        // im rollierenden Fenster bleiben dadurch (anders als bei einem
+        // echten Planwechsel, der `activatedAt` neu setzt) unveraendert
+        // "verfehlt". Ohne diesen Schritt wuerde `MissedRunDaysCardModel`
+        // beim naechsten Rendern denselben oder sogar einen NEUEN Hinweis
+        // zeigen (ein vorher nicht-laufender Cardio-Tag kann durch die neuen
+        // `newCardioDays` erstmals zum Lauf-Tag werden und seine
+        // ebenfalls-nie-geloggte Vergangenheit rueckwirkend als verfehlt
+        // einbringen) - unmittelbar NACHDEM der Nutzer gerade reagiert hat.
+        // Reuse des bestehenden `dismiss()`-Mechanismus statt eines neuen
+        // Felds/Mutationspfads: markiert exakt den JETZT aktuellen
+        // (Post-Anpassungs-)Zustand als bereits gesehen. Ein echter NEUER
+        // Versaeumnis-Fall NACH der Anpassung hebt die Unterdrueckung ganz
+        // regulaer wieder auf (Restpunkt 1: `concludedOpportunityCount`
+        // steigt mit jeder weiteren verstrichenen Gelegenheit).
+        MissedRunDaysCardModel.make(for: profile, activePlan: plan, in: context, now: now, calendar: calendar)?
+            .dismiss(profile: profile)
         return count
     }
 }

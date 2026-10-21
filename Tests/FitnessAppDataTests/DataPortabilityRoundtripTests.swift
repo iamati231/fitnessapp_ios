@@ -1140,6 +1140,52 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertNil(imported?.cardioFeasibilityDismissedFingerprint)
     }
 
+    /// Paket-3a-Restpunkt 3 (Persistenz/Import, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+    /// Kaltstart — ein frisch angelegtes Profil (kein Export/Import im
+    /// Spiel) hat den Hinweis nie abgelehnt. Trivial durch den Konstruktor-
+    /// Default, aber ausdruecklich verlangt und hier eigenstaendig
+    /// nachgewiesen statt nur behauptet.
+    func testMissedRunHintDismissedFingerprintDefaultsToNilOnColdStart() {
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        XCTAssertNil(profile.missedRunHintDismissedFingerprint)
+    }
+
+    /// Paket-3a-Restpunkt 3: bewusster Vertrag (siehe `UserBodyProfile.
+    /// missedRunHintDismissedFingerprint`-Doc) — anders als
+    /// `cardioFeasibilityDismissedFingerprint` oben wird DIESES Feld beim
+    /// Export/Import NICHT mitgenommen, selbst wenn es vor dem Export
+    /// gesetzt war. Eigenstaendig nachgewiesen (nicht nur vom
+    /// `cardioPlanAdjustmentFingerprint`-Praezedenzfall abgeleitet) — ein
+    /// kuenftiger versehentlicher Export dieses Felds wuerde diesen Test
+    /// zum Fehlschlagen bringen.
+    func testMissedRunHintDismissedFingerprintResetsOnImport() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        profile.missedRunHintDismissedFingerprint = "1700000000#flex:1#2#8"
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertNil(imported?.missedRunHintDismissedFingerprint,
+                     "bewusst zurueckgesetzt, nicht exportiert/importiert — siehe UserBodyProfile-Doc")
+    }
+
     // Smart-Onboarding-Epic: `experience_track` ist eine additive CSV-Spalte
     // (ans Ende des Headers angehaengt) — ein gesetzter Wert muss Backup/
     // Restore ueberleben, sonst verliert ein Nutzer seine abgeleitete oder

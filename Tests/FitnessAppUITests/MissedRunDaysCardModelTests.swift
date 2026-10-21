@@ -313,6 +313,88 @@ final class MissedRunDaysCardModelTests: XCTestCase {
         XCTAssertNotEqual(reappeared.fingerprint, model.fingerprint)
     }
 
+    // MARK: - Restpunkt 1 (Re-Trigger-Korrektur): gedeckelter missedCount + neue Gelegenheit
+
+    /// Der eingangs dokumentierte Schwachpunkt: bei einem voll gesättigten
+    /// rollierenden Fenster bleibt `missedCount` nach dem Ablehnen auf der
+    /// Fenster-Obergrenze STEHEN, obwohl taeglich eine weitere Gelegenheit
+    /// verstreicht (eine alte faellt gleichzeitig aus dem Fenster heraus).
+    /// `concludedOpportunityCount` (ungeclampt) erkennt das trotzdem: eine
+    /// Woche nach dem Ablehnen ist genau eine neue, abgeschlossene
+    /// Lauf-Gelegenheit verstrichen (siehe `MissedRunDayEvaluatorTests.
+    /// testTotalConcludedRunOpportunitiesGrowsMonotonicallyAndIsNotWindowClamped`)
+    /// — die Auslöseschwelle (`missedCount >= 2`) bleibt dabei weiterhin
+    /// erfüllt, nur eben bei UNVERAENDERTEM Zaehler.
+    func testReappearsAfterDismissWhenNewOpportunityConcludedDespiteCappedMissedCount() throws {
+        let (profile, plan, _) = makeProfileAndPlan(activatedAt: d(2024, 1, 1))
+
+        let now1 = d(2024, 3, 1)
+        guard let model = MissedRunDaysCardModel.make(for: profile, activePlan: plan, in: context, now: now1, calendar: utc) else {
+            return XCTFail("Hinweis haette erscheinen muessen")
+        }
+        XCTAssertEqual(model.summary.missedCount, 2)
+        model.dismiss(profile: profile)
+        try context.save()
+        XCTAssertNil(MissedRunDaysCardModel.make(for: profile, activePlan: plan, in: context, now: now1, calendar: utc))
+
+        let now3 = d(2024, 3, 8)
+        guard let reappeared = MissedRunDaysCardModel.make(for: profile, activePlan: plan, in: context, now: now3, calendar: utc) else {
+            return XCTFail("eine neue abgeschlossene Gelegenheit haette den Hinweis wieder zeigen muessen, trotz gedeckeltem Zaehler")
+        }
+        XCTAssertEqual(reappeared.summary.missedCount, model.summary.missedCount, "Zaehler bleibt an der Fenster-Obergrenze gedeckelt")
+        XCTAssertNotEqual(reappeared.fingerprint, model.fingerprint)
+    }
+
+    /// Kehrseite: OHNE eine neue abgeschlossene Gelegenheit seit der letzten
+    /// Unterdrückung darf der Hinweis NICHT erneut erscheinen, auch wenn
+    /// seither Kalenderzeit vergangen ist.
+    func testStaysSuppressedWithoutNewOpportunityEvenAsTimePasses() throws {
+        let (profile, plan, _) = makeProfileAndPlan(activatedAt: d(2024, 1, 1))
+
+        let now1 = d(2024, 3, 1)
+        guard let model = MissedRunDaysCardModel.make(for: profile, activePlan: plan, in: context, now: now1, calendar: utc) else {
+            return XCTFail("Hinweis haette erscheinen muessen")
+        }
+        model.dismiss(profile: profile)
+        try context.save()
+
+        // Ein Tag spaeter: floor(62/7) == floor(61/7) == 8 - KEINE neue
+        // Gelegenheit ist verstrichen (siehe MissedRunDayEvaluatorTests).
+        let now2 = d(2024, 3, 2)
+        XCTAssertNil(MissedRunDaysCardModel.make(for: profile, activePlan: plan, in: context, now: now2, calendar: utc),
+                     "ohne neue abgeschlossene Gelegenheit darf der Hinweis nicht erneut aufgefordert werden")
+    }
+
+    // MARK: - Restpunkt 2 (Planbindung): Übernahme DESSELBEN Plans unterdrückt sofortiges erneutes Auslösen
+
+    /// `CoachAdjustmentCardModel.accept` passt `targetPlan` IN-PLACE an
+    /// (`activatedAt` bleibt unveraendert - kein Planwechsel). Die VOR der
+    /// Anpassung aufgelaufenen Versaeumnisse im rollierenden Fenster
+    /// duerfen danach nicht unmittelbar erneut den Hinweis ausloesen -
+    /// siehe `CoachAdjustmentCardModel.accept`-Kommentar (Restpunkt 2).
+    func testAcceptingAdjustmentOnSamePlanDoesNotImmediatelyRetriggerHintFromStaleMisses() throws {
+        let fixedNow = d(2024, 2, 1)
+        let (profile, plan, _) = makeProfileAndPlan(activatedAt: d(2024, 1, 1))
+        guard let model = MissedRunDaysCardModel.make(for: profile, activePlan: plan, in: context, now: fixedNow, calendar: utc) else {
+            return XCTFail("Hinweis haette erscheinen muessen")
+        }
+        guard let coachAdjustment = model.coachAdjustment else {
+            return XCTFail("fuer diesen Test wird ein verfuegbarer Anpassungsvorschlag erwartet")
+        }
+        let activatedAtBefore = plan.activatedAt
+
+        let appliedCount = try coachAdjustment.accept(plan: plan, profile: profile, in: context, now: fixedNow, calendar: utc)
+        XCTAssertGreaterThan(appliedCount, 0)
+        XCTAssertEqual(plan.activatedAt, activatedAtBefore, "DESSELBEN Plans - activatedAt bleibt unveraendert, kein Planwechsel")
+
+        // Unmittelbar danach, bei UNVERAENDERTEM `now`: die VOR der Anpassung
+        // aufgelaufenen alten Versaeumnisse duerfen den Hinweis nicht sofort
+        // erneut zeigen, obwohl im Fenster weiterhin keine Session geloggt
+        // ist.
+        XCTAssertNil(MissedRunDaysCardModel.make(for: profile, activePlan: plan, in: context, now: fixedNow, calendar: utc),
+                     "stale Versaeumnisse vor der gerade uebernommenen Anpassung duerfen nicht sofort wieder aufpoppen")
+    }
+
     // MARK: - 8. Frühere Annahme ist KEINE dauerhafte CTA-Sperre
 
     func testPreviousCoachAdjustmentAcceptanceDoesNotPermanentlyBlockCTA() throws {

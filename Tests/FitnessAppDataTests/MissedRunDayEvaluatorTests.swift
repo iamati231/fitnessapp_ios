@@ -100,5 +100,62 @@ final class MissedRunDayEvaluatorTests: XCTestCase {
         let result = MissedRunDayEvaluator.evaluate(plan: plan, in: context, now: d(2024, 2, 1), calendar: utc)
         XCTAssertEqual(result, .notReliablyEvaluable(.planHasNoTrainingDays))
     }
+
+    // MARK: - Paket-3a-Restpunkt 1: totalConcludedRunOpportunities
+
+    /// Monoton steigend (NICHT gedeckelt wie das rollierende Fenster von
+    /// `evaluate`): reiner Kalenderwert, haengt NICHT davon ab, ob Sessions
+    /// existieren — identische Zahlen wie das manuelle
+    /// `floor(elapsedDays/7)`-Kalkuel aus `MissedRunDaysCardModelTests`-Doku.
+    func testTotalConcludedRunOpportunitiesGrowsMonotonicallyAndIsNotWindowClamped() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: true, targetEnvironment: .gym)
+        plan.activatedAt = d(2024, 1, 1)
+        context.insert(plan)
+        let runDay = TrainingDay(name: "Run", weekday: 2, type: .cardio, plan: plan)
+        context.insert(runDay)
+        let run = Exercise(name: "Easy Run", isCardio: true, day: runDay)
+        run.enduranceSportKind = .running
+        context.insert(run)
+        runDay.exercises.append(run)
+        plan.days.append(runDay)
+        try context.save()
+
+        // Jan 1 .. Mar 1 (2024 ist ein Schaltjahr) = 61 Tage -> floor(61/7) = 8.
+        let day61 = MissedRunDayEvaluator.totalConcludedRunOpportunities(plan: plan, now: d(2024, 3, 1), calendar: utc)
+        XCTAssertEqual(day61, 8)
+        // Einen Tag spaeter (62 Tage, floor(62/7) = 8): KEINE neue Gelegenheit
+        // ist verstrichen - bewusst unveraendert, nicht einfach "je Tag +1".
+        let day62 = MissedRunDayEvaluator.totalConcludedRunOpportunities(plan: plan, now: d(2024, 3, 2), calendar: utc)
+        XCTAssertEqual(day62, 8)
+        // Eine Woche nach dem ersten Messpunkt (68 Tage, floor(68/7) = 9):
+        // genau eine neue Gelegenheit ist seither verstrichen - waehrend ein
+        // GLEICHZEITIG gerechnetes, rollierendes `evaluate`-Fenster bei
+        // vollstaendiger Saettigung unveraendert bliebe (siehe
+        // `MissedRunDaysCardModelTests.
+        // testReappearsAfterDismissWhenNewOpportunityConcludedDespiteCappedMissedCount`).
+        let day68 = MissedRunDayEvaluator.totalConcludedRunOpportunities(plan: plan, now: d(2024, 3, 8), calendar: utc)
+        XCTAssertEqual(day68, 9)
+    }
+
+    func testTotalConcludedRunOpportunitiesIsNilWithoutActivationAnchor() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: true, targetEnvironment: .gym)
+        context.insert(plan)
+        let runDay = TrainingDay(name: "Run", weekday: 2, type: .cardio, plan: plan)
+        context.insert(runDay)
+        let run = Exercise(name: "Easy Run", isCardio: true, day: runDay)
+        run.enduranceSportKind = .running
+        context.insert(run)
+        runDay.exercises.append(run)
+        plan.days.append(runDay)
+        try context.save()
+
+        XCTAssertNil(MissedRunDayEvaluator.totalConcludedRunOpportunities(plan: plan, now: d(2024, 2, 1), calendar: utc))
+    }
 }
 #endif

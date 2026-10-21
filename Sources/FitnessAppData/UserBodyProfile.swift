@@ -199,6 +199,23 @@ public final class UserBodyProfile {
     /// ablaufen koennen (Korrektur zum urspruenglichen Scope-Vorschlag: eine
     /// fruehere Plan-Uebernahme ist KEINE dauerhafte Sperre fuer diesen
     /// Hinweis). Nil = noch nie abgelehnt worden.
+    ///
+    /// **CSV-Export/-Import-Vertrag (Paket-3a-Restpunkt 3, eigenstaendig
+    /// geprueft — NICHT einfach vom `cardioPlanAdjustmentFingerprint`-
+    /// Praezedenzfall uebernommen): bewusst AUSGESCHLOSSEN.** Dieses Feld
+    /// erscheint WEDER in `DataExportService.buildProfile`s Spaltenliste
+    /// NOCH in `DataImportService`s Zeilen-Mapping — ein Import (egal ob
+    /// `.appendOnly` oder `.replaceAll`) liefert fuer dieses Feld immer den
+    /// Konstruktor-Default `nil`, UNABHAENGIG vom exportierten Zustand.
+    /// Entscheidung: eine bereits abgelehnte Unterdrueckung kann nach einem
+    /// Restore/einer Neuinstallation erneut erscheinen - das ist die
+    /// sicherere Default-Richtung (ein zu Unrecht WEITERHIN unterdrueckter
+    /// echter Versaeumnis-Hinweis waere das schlechtere Fehlverhalten als
+    /// ein einmalig erneut angezeigter, bereits bekannter Hinweis). Siehe
+    /// `DataPortabilityRoundtripTests.
+    /// testMissedRunHintDismissedFingerprintResetsOnImport`/
+    /// `testMissedRunHintDismissedFingerprintDefaultsToNilOnColdStart` fuer
+    /// den tatsaechlichen Nachweis (nicht nur diese Behauptung).
     public var missedRunHintDismissedFingerprint: String? = nil
 
     /// Smart-Onboarding-Epic: verhaltens-/pausenbasierte Track-Einstufung

@@ -60,7 +60,18 @@ public struct MissedRunDaysCardModel: Equatable {
               CardioCoachingAdvisor.isRecurringMissedRunDays(participation)
         else { return nil }
 
-        let fingerprint = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: planActivatedAt, summary: summary)
+        // Restpunkt 1 (Re-Trigger-Korrektur): ungeclampter Gesamtzaehler
+        // seit `planActivatedAt`, siehe `MissedRunDayEvaluator.
+        // totalConcludedRunOpportunities`-Doc. Kann praktisch nicht `nil`
+        // werden, wenn `participation` oben bereits `.evaluated` geliefert
+        // hat (identische Lauf-Tage/activatedAt-Grundlage) - `?? 0` nur als
+        // defensiver Fallback, kein beobachtbarer Normalfall.
+        let concludedOpportunityCount = MissedRunDayEvaluator.totalConcludedRunOpportunities(
+            plan: activePlan, now: now, calendar: calendar
+        ) ?? 0
+        let fingerprint = CardioCoachingAdvisor.missedRunHintFingerprint(
+            planActivatedAt: planActivatedAt, summary: summary, concludedOpportunityCount: concludedOpportunityCount
+        )
         guard profile.missedRunHintDismissedFingerprint != fingerprint else { return nil }
 
         return MissedRunDaysCardModel(

@@ -150,9 +150,29 @@ public enum CardioCoachingAdvisor {
     ///   * **Neue Beobachtung** — `summary.missedCount`: steigt dieser Wert
     ///     NACH dem Ablehnen weiter (zusaetzliche verfehlte Laeufe), aendert
     ///     sich der Fingerprint und der Hinweis kann erneut erscheinen.
+    ///   * **Restpunkt 1 (Re-Trigger-Korrektur):** `missedCount` allein
+    ///     erkennt eine neue Beobachtung NICHT zuverlaessig — er SAETTIGT
+    ///     sich an der rollierenden Fenster-Obergrenze, sobald der Plan
+    ///     laenger als `CardioCoachingAdvisor.missedRunWindowDays` aktiv ist:
+    ///     mit jedem neuen Tag faellt eine alte Gelegenheit aus dem Fenster
+    ///     heraus, waehrend eine neue hinzukommt - bleibt die neue ebenfalls
+    ///     verfehlt, bleibt `missedCount` UNVERAENDERT, obwohl tatsaechlich
+    ///     eine neue, abgeschlossene Lauf-Gelegenheit stattgefunden hat.
+    ///     `concludedOpportunityCount` (`MissedRunDayEvaluator.
+    ///     totalConcludedRunOpportunities`, UNGECLAMPT seit dem echten
+    ///     `activatedAt`, kein Fenster) steigt dagegen bei JEDER neu
+    ///     verstrichenen faelligen Gelegenheit monoton - egal ob erfuellt
+    ///     oder verfehlt. Er ist deshalb Teil des Fingerprints, NICHT als
+    ///     Ersatz fuer `missedCount` (die Auslöseschwelle bleibt weiterhin
+    ///     ausschliesslich ueber `isRecurringMissedRunDays`/`missedCount`
+    ///     entschieden), sondern als zusaetzliche Komponente, die eine neue
+    ///     Gelegenheit bei gedeckeltem `missedCount` von echtem Stillstand
+    ///     (seit der letzten Unterdrueckung ist NICHTS verstrichen)
+    ///     unterscheidet.
     public static func missedRunHintFingerprint(
         planActivatedAt: Date,
-        summary: PlanParticipationEvaluator.Summary
+        summary: PlanParticipationEvaluator.Summary,
+        concludedOpportunityCount: Int
     ) -> String {
         let schedulePart: String
         switch summary.scheduleKindUsed {
@@ -161,6 +181,6 @@ public enum CardioCoachingAdvisor {
         case .flexibleWeeklyCadence(let sessionsPerWeek):
             schedulePart = "flex:\(sessionsPerWeek)"
         }
-        return "\(Int(planActivatedAt.timeIntervalSince1970))#\(schedulePart)#\(summary.missedCount)"
+        return "\(Int(planActivatedAt.timeIntervalSince1970))#\(schedulePart)#\(summary.missedCount)#\(concludedOpportunityCount)"
     }
 }
