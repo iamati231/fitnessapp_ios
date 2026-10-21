@@ -94,10 +94,12 @@ public final class MealDraft: ObservableObject {
     ///   `.success(())` zurueckgegeben, OHNE den Context erneut anzufassen —
     ///   das ist der vollstaendige Schutz, unabhaengig vom UI-Button-Zustand.
     /// - Erfolg: `didSaveSuccessfully = true`.
-    /// - Fehler (Neuanlage): die eingefuegte `MealEntry` (kaskadiert ihre
-    ///   Items) wird wieder geloescht, `items`/`didSaveSuccessfully` bleiben
-    ///   unveraendert, der Fehler geht als `.failure` zurueck — der Entwurf
-    ///   bleibt fuer einen erneuten Versuch vollstaendig erhalten.
+    /// - Fehler (Neuanlage): die eingefuegte `MealEntry` UND ihre frisch
+    ///   eingefuegten `MealItem`s werden explizit wieder geloescht (nicht
+    ///   per Cascade-Delete verlassen — siehe Edit-Pfad unten fuer dieselbe
+    ///   Begruendung), `items`/`didSaveSuccessfully` bleiben unveraendert,
+    ///   der Fehler geht als `.failure` zurueck — der Entwurf bleibt fuer
+    ///   einen erneuten Versuch vollstaendig erhalten.
     /// - Fehler (Edit): bewusst KEIN `context.rollback()` — das wirkt auf den
     ///   GESAMTEN, geteilten Context und wuerde unabhaengige, anderswo
     ///   bereits bestaetigte Aenderungen mit zerstoeren (gleiche Begruendung
@@ -207,6 +209,7 @@ public final class MealDraft: ObservableObject {
 
         let meal = MealEntry(date: date, mealType: mealType)
         context.insert(meal)
+        var insertedItems: [MealItem] = []
         for item in items {
             let mealItem = MealItem(
                 catalogID: item.catalogID,
@@ -217,6 +220,7 @@ public final class MealDraft: ObservableObject {
                 meal: meal
             )
             context.insert(mealItem)
+            insertedItems.append(mealItem)
         }
 
         do {
@@ -224,8 +228,15 @@ public final class MealDraft: ObservableObject {
             didSaveSuccessfully = true
             return .success(())
         } catch {
-            // Rollback: MealEntry.items hat die Cascade-Delete-Rule (siehe
-            // MealEntry-Doku), das reisst die eingefuegten MealItems mit.
+            // Final-review fix (important): explicit cleanup instead of
+            // relying on `context.delete(meal)` cascading to its freshly-
+            // inserted, never-saved MealItems — untested in this codebase
+            // for un-inserted-then-deleted objects (same reasoning as the
+            // edit path's Apple-CI-Fund note below).
+            for inserted in insertedItems {
+                meal.items.removeAll { $0.persistentModelID == inserted.persistentModelID }
+                context.delete(inserted)
+            }
             context.delete(meal)
             return .failure(error)
         }

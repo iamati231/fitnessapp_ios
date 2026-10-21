@@ -60,6 +60,7 @@ final class MealDraftTests: XCTestCase {
         XCTAssertEqual(draft.items.count, itemCountBefore, "Entwurf bleibt nach Fehler erhalten")
         XCTAssertFalse(draft.didSaveSuccessfully)
         XCTAssertEqual(try context.fetchCount(FetchDescriptor<MealEntry>()), 0, "Fehlgeschlagener Save darf keine Spur hinterlassen")
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<MealItem>()), 0, "Fehlgeschlagener Save darf auch keine MealItems hinterlassen")
     }
 
     // Final-review fix (important): eine 0-kcal-Mahlzeit ohne Positionen
