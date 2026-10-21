@@ -710,6 +710,84 @@ bestätigt.** Verbleibend offen: der Re-Trigger-Fall als rein visueller
 Geräte-Nachweis (s.o., Swift-seitig bereits bewiesen). Paket 3b/3c
 weiterhin NICHT begonnen, kein Merge nach `main`, kein Release.
 
+### Konsolidierter Abschluss Paket 3a
+
+**Diese Doku-Ergänzung ist eine reine Zuordnung/Zusammenfassung bereits
+erbrachter Nachweise — kein neuer Code, kein neuer CI-Lauf, kein neues
+Gerätefenster.**
+
+**Nachweisarten getrennt geführt (nicht vermischt):**
+- **Tatsächliche Gerätebelege (TestingBot, visuell, Schritte A–E):**
+  siehe Abschnitt "Ergebnis je Schritt" oben — Dashboard-Text, CTA-Plan-
+  Zuordnung, Abbrechen ohne Mutation, Ablehnen übersteht echten
+  Kaltstart, Coach-aus entfernt den Hinweis. Alle fünf bestanden, Build
+  `tb://4966f1e70b7a2d0e3083ece6` / Commit `d5b9ed0`.
+- **Automatisierte Re-Trigger-Nachweise (Swift-Tests, kein Gerät):**
+  `MissedRunDaysCardModelTests.testReappearsAfterDismissWhenNewOpportunityConcludedDespiteCappedMissedCount`,
+  `testStaysSuppressedWithoutNewOpportunityEvenAsTimePasses`,
+  `MissedRunDayEvaluatorTests.testTotalConcludedRunOpportunitiesGrowsMonotonicallyAndIsNotWindowClamped`
+  — belegen die Re-Trigger-Regel vollständig auf Logik-Ebene. Der rein
+  visuelle Geräte-Nachweis dafür bleibt offen (konkrete, benannte
+  Grenze: kein Zeitraffer-/Systemzeit-Manipulationsweg im Produkt,
+  siehe Begründung oben), wird hier NICHT als gleichwertig mit A–E
+  geführt.
+
+**Eindeutige Zuordnung der drei angeforderten Punkte:**
+
+1. **Fixture-/Backfill-Fix (Commit `d5b9ed0`):** ausschließlich eine
+   **Debug-only-Änderung** — per `git show --stat d5b9ed0` verifiziert,
+   geändert wurden nur `Sources/FitnessAppUI/DeviceAcceptanceFixturePaket3a.swift`
+   (selbst vollständig hinter `#if DEBUG` + explizitem Launch-Argument)
+   und dessen Testdatei. Die betroffene **Produktionsfunktion**
+   `LibrarySeeder.backfillCustomNamesIfNeeded` (läuft reguläch bei jedem
+   App-Start in `RootView.task`) wurde selbst **nicht verändert** — der
+   Fix besteht darin, dass die Fixture `customName` jetzt explizit
+   mitsetzt, bevor sie den Fingerprint einfriert, statt sich auf den
+   späteren Backfill zu verlassen. Regressionstest:
+   `testCardioDaysStayEligibleForAdjustmentEvenAfterTheRealStartupBackfillRuns`
+   (lässt dieselbe Produktionsfunktion über die Fixture-Daten laufen).
+   Grüner Code-CI-Lauf danach: GitHub-Actions-Run `39600304050`,
+   Commit `d5b9ed0`, Status `success`.
+2. **Debug-Einstieg bleibt ausschließlich testbuildgebunden:** verifiziert
+   per Code-Lesen (`DeviceAcceptanceFixturePaket3a.swift` Z. 1/17–25,
+   `RootView.swift` Z. 78–84) — Typ existiert nur in `#if DEBUG`-Builds
+   (Release-/TestFlight-Build kompiliert ihn gar nicht ein, siehe
+   `testflight-release.yml` vs. `project.yml`), UND
+   `seedIfRequested(in:)` prüft zusätzlich zur Laufzeit explizit das
+   Launch-Argument `-deltiqDeviceAcceptanceFixturePaket3a`
+   (`ProcessInfo.processInfo.arguments.contains(...)`) — ohne dieses
+   Argument ein No-Op, verändert keinen bestehenden Datenbestand. Reguläre
+   App-Starts (Device-/TestFlight-/Store-Nutzer) setzen dieses Argument
+   nie.
+3. **Budget, zeitlich zugeordnet, nichts doppelt abgezogen:** Ausgangswert
+   (Konto-API, vor dieser Runde, Zeitpunkt siehe oben): **16.183 s**.
+   Diese Runde verbraucht: **677 s** (3 Sessions: 111 + 250 + 316 s,
+   siehe Tabelle oben). Rechnerischer Stand nach dieser Runde
+   (Session-Summe): **15.506 s**. Die Konto-API zeigte unmittelbar
+   danach weiterhin 16.183 s — als **ausstehende Abrechnung**, nicht als
+   aktueller Stand gekennzeichnet (bereits mehrfach dokumentierter
+   Abrechnungsverzug dieses Anbieters). Abgleich/Korrektur erst beim
+   nächsten regulären `GET /v1/user`-Abruf, kein Abzug wird hier doppelt
+   gebucht.
+
+**Arbeiten an Paket 3a sind hiermit beendet.** Paket 3b/3c werden NICHT
+automatisch begonnen — eine gesonderte Freigabe ist dafür erforderlich.
+Kein Merge nach `main`, kein Release.
+
+**Koordinationshinweis:** zeitgleich läuft in einer separaten Session
+Arbeit am Ernährungspaket auf diesem Repository. Diese Doku-Ergänzung
+wurde unmittelbar vor dem Commit per `git fetch`/`git status` gegen
+Fremdänderungen geprüft (keine gefunden) und bewusst eng auf den
+bestehenden "Paket 3a"-Abschnitt begrenzt — keine pauschale
+Staging-/Cleanup-Aktion, keine Berührung von Root-/Tab-Navigation,
+Lokalisierung, Import/Export oder gemeinsamen Modellen über das bereits
+in den vorherigen Paket-3a-Commits enthaltene Maß hinaus. TestingBot
+wurde in dieser Runde ausschließlich sequenziell genutzt
+(`max_concurrent=1`, nie mehr als 1 gleichzeitige Session); eine
+plattformseitige Kollision mit einer parallelen Gerätesession der
+Ernährungssession wäre ohnehin durch denselben Kontolimit verhindert
+worden.
+
 ## Paket 3: Scope-Vorschlag (noch nicht umgesetzt)
 
 **Status: reine Scope-/Abhängigkeitsplanung, kein Code.** Der Auftraggeber
