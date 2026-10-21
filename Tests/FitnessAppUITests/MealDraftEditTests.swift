@@ -44,5 +44,42 @@ final class MealDraftEditTests: XCTestCase {
         let items = try context.fetch(FetchDescriptor<MealItem>())
         XCTAssertEqual(items.map(\.nameSnapshot), ["Original"], "Unveraenderte Originaldaten trotz Entwurfs-Aenderung")
     }
+
+    // Review-Nachbesserung: ein fehlschlagender Edit-Save darf den Context
+    // nicht in einem halb-geaenderten Zustand zuruecklassen (Datum/Typ schon
+    // umgeschrieben, alte Positionen schon geloescht) — sonst wuerde ein
+    // spaeterer, voellig unabhaengiger `context.save()` irgendwo anders in
+    // der App diese eigentlich fehlgeschlagene Aenderung unbemerkt doch noch
+    // committen. Spiegelt `testSaveFailurePreservesDraftAndReportsFailure`
+    // aus `MealDraftTests` (Task 6), nur fuer den Edit-Pfad.
+    func testEditSaveFailureRevertsMealToOriginalState() throws {
+        struct Boom: Error {}
+        let meal = MealEntry(date: Date(), mealType: .lunch)
+        context.insert(meal)
+        context.insert(MealItem(catalogID: nil, nameSnapshot: "Original", quantity: 100, unit: .gram, nutrients: .zero, meal: meal))
+        try context.save()
+
+        let originalDate = meal.date
+        let originalMealType = meal.mealType
+
+        let draft = MealDraft(editing: meal)
+        draft.date = Date(timeIntervalSinceNow: 86_400)
+        draft.mealType = .dinner
+        draft.items.removeAll()
+        draft.addItem(catalogID: nil, nameSnapshot: "Wuerde-gespeichert", quantity: 50, unit: .gram, nutrients: .zero)
+
+        let result = draft.save(into: context) { _ in throw Boom() }
+
+        switch result {
+        case .success: XCTFail("Erwartet: Fehler")
+        case .failure: break
+        }
+        XCTAssertFalse(draft.didSaveSuccessfully)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<MealEntry>()), 1, "Fehlgeschlagener Edit-Save darf keine zweite MealEntry anlegen")
+        XCTAssertEqual(meal.date, originalDate, "Datum muss nach Fehler zurueckgesetzt sein")
+        XCTAssertEqual(meal.mealType, originalMealType, "Typ muss nach Fehler zurueckgesetzt sein")
+        let items = try context.fetch(FetchDescriptor<MealItem>())
+        XCTAssertEqual(items.map(\.nameSnapshot), ["Original"], "Fehlgeschlagener Edit-Save darf die Original-Positionen nicht verlieren")
+    }
 }
 #endif

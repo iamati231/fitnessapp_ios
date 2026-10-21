@@ -102,11 +102,16 @@ public final class MealDraft: ObservableObject {
     ///   GESAMTEN, geteilten Context und wuerde unabhaengige, anderswo
     ///   bereits bestaetigte Aenderungen mit zerstoeren (gleiche Begruendung
     ///   wie `PlanGeneratorInstantiator`-Typ-Doku/`PlansListView.deletePlans`).
-    ///   shortcut: der in-flight Item-Swap (alte MealItems zum Loeschen
-    ///   markiert, neue eingefuegt, Datum/Typ geaendert) bleibt im Context
-    ///   unkommittiert stehen statt feldgenau zurueckgedreht zu werden —
-    ///   kein Test deckt diesen Pfad ab; Upgrade falls noetig: Original-
-    ///   werte vor der Mutation sichern und im Fehlerfall manuell restaurieren.
+    ///   Stattdessen ein auf diesen Aufruf SKOPIERTER manueller Rueckbau,
+    ///   gleiches Prinzip wie `PlanGeneratorInstantiator.apply`/`.revert`:
+    ///   Datum/Typ werden aus einem Snapshot zurueckgeschrieben, frisch
+    ///   eingefuegte neue `MealItem`s werden wieder geloescht. `MealItem` hat
+    ///   — anders als `Exercise` — kein `isArchived`-Flag, die alten Items
+    ///   koennen also nicht reaktiviert werden; ihre Feldwerte wurden vor dem
+    ///   Loeschen gesichert und werden im Fehlerfall als neue, WERT-
+    ///   aequivalente `MealItem`s wiederhergestellt (gleicher Inhalt, andere
+    ///   `PersistentIdentifier` als vorher — das ist der einzige Unterschied
+    ///   zu einem Byte-fuer-Byte-Rueckbau).
     @discardableResult
     public func save(
         into context: ModelContext,
@@ -120,12 +125,28 @@ public final class MealDraft: ObservableObject {
             guard let meal = context.model(for: originalMealID) as? MealEntry else {
                 return .failure(MealDraftError.originalMealMissing)
             }
-            // Vor jeder Aenderung einsammeln: `meal.items` wuerde nach dem
-            // Einfuegen der neuen MealItems (gleiche Inverse-Relationship)
-            // auch diese enthalten.
+
+            // Snapshot ALLES, was wir gleich ueberschreiben/loeschen — einzige
+            // Grundlage fuer den Rueckbau im catch-Zweig unten. Vor jeder
+            // Aenderung einsammeln: `meal.items` wuerde nach dem Einfuegen der
+            // neuen MealItems (gleiche Inverse-Relationship) auch diese
+            // enthalten.
+            let oldDate = meal.date
+            let oldMealType = meal.mealType
             let oldItems = meal.items
+            let oldItemSnapshots = oldItems.map { oldItem in
+                OldMealItemSnapshot(
+                    catalogID: oldItem.catalogID,
+                    nameSnapshot: oldItem.nameSnapshot,
+                    quantity: oldItem.quantity,
+                    unit: oldItem.unit,
+                    nutrients: oldItem.nutrientsSnapshot
+                )
+            }
+
             meal.date = date
             meal.mealType = mealType
+            var insertedItems: [MealItem] = []
             for item in items {
                 let mealItem = MealItem(
                     catalogID: item.catalogID,
@@ -136,6 +157,7 @@ public final class MealDraft: ObservableObject {
                     meal: meal
                 )
                 context.insert(mealItem)
+                insertedItems.append(mealItem)
             }
             for oldItem in oldItems {
                 context.delete(oldItem)
@@ -146,6 +168,31 @@ public final class MealDraft: ObservableObject {
                 didSaveSuccessfully = true
                 return .success(())
             } catch {
+                // Rueckbau exakt auf den Zustand von VOR diesem Aufruf
+                // (gleiches Prinzip wie `PlanGeneratorInstantiator.revert`).
+                meal.date = oldDate
+                meal.mealType = oldMealType
+                for inserted in insertedItems {
+                    // Apple-CI-Fund (siehe `PlanGeneratorInstantiator.revert`-
+                    // Doku): bei einem frisch inserteten, nie gespeicherten
+                    // Objekt bleibt `meal.items` ohne explizite Entfernung aus
+                    // dem Array manchmal noch mit dem geloeschten Objekt
+                    // bestueckt, bis ein Save/Re-Fetch die Relationship-Array-
+                    // Seite aktualisiert hat.
+                    meal.items.removeAll { $0.persistentModelID == inserted.persistentModelID }
+                    context.delete(inserted)
+                }
+                for snapshot in oldItemSnapshots {
+                    let restored = MealItem(
+                        catalogID: snapshot.catalogID,
+                        nameSnapshot: snapshot.nameSnapshot,
+                        quantity: snapshot.quantity,
+                        unit: snapshot.unit,
+                        nutrients: snapshot.nutrients,
+                        meal: meal
+                    )
+                    context.insert(restored)
+                }
                 return .failure(error)
             }
         }
@@ -183,5 +230,17 @@ public enum MealDraftError: Error {
     /// wurde, existiert im uebergebenen Context nicht mehr (z.B. zwischen-
     /// zeitlich geloescht).
     case originalMealMissing
+}
+
+/// Reine Feldwerte eines `MealItem`, gesichert kurz bevor `MealDraft.save`
+/// es im Edit-Pfad loescht — einzige Grundlage fuer die Wiederherstellung
+/// im Fehlerfall (siehe dortige Doku). Kein `Identifiable`/keine Objekt-
+/// Referenz: das waere nach dem Delete ohnehin nicht mehr sinnvoll nutzbar.
+private struct OldMealItemSnapshot {
+    let catalogID: String?
+    let nameSnapshot: String
+    let quantity: Double
+    let unit: FoodUnit
+    let nutrients: NutrientValues
 }
 #endif
