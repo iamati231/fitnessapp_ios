@@ -298,11 +298,18 @@ final class PersonalRecordSyncTests: XCTestCase {
     /// `startTime` — z.B. wenn ein Nutzer eine Session nachtraeglich
     /// rueckdatiert und `recordPRs` danach fuer die rueckdatierte (aeltere)
     /// Session laeuft, waehrend die juengere Session schon im Store steckt.
-    /// `rebuild(in:)` sieht pro Session dagegen nur Lifts STRIKT DAVOR. Vor
-    /// dem Fix wichen die beiden Pfade hier auseinander: session1 (day 1,
-    /// 80kg) haette faelschlich KEINEN Baseline-PR bekommen, weil die
-    /// spaetere session2 (day 2, 100kg) als Historie mitzaehlte.
+    /// `rebuild(in:)` sieht pro Session dagegen nur Lifts STRIKT DAVOR.
+    ///
+    /// Ohne echte AELTERE Historie (session0) waere JEDE Erwartung hier nur
+    /// Zufall: PRDetector verlangt per Vertrag mindestens einen Historie-
+    /// Eintrag, bevor ueberhaupt ein PR moeglich ist ("erste Session liefert
+    /// nur die Baseline, kein PR") — das gilt auch fuer `rebuild(in:)`, das
+    /// der chronologisch ersten Session ebenfalls KEINEN PR gibt. Der
+    /// eigentliche Fund: ohne den Datums-Filter wuerde session1 (day 1,
+    /// 80kg) faelschlich gegen session2 (day 2, 100kg) verglichen und damit
+    /// ihre echte Verbesserung gegenueber session0 (day 0, 50kg) verlieren.
     func testForwardSaveIgnoresLaterSessionsAsHistory() throws {
+        makeSession(weight: 50, reps: 5, date: day(0))
         makeSession(weight: 100, reps: 5, date: day(2))
         let session1 = makeSession(weight: 80, reps: 5, date: day(1))
         try context.save()
@@ -311,11 +318,12 @@ final class PersonalRecordSyncTests: XCTestCase {
         try context.save()
 
         XCTAssertFalse(detected.isEmpty,
-                       "session1 is chronologically first — it must get a baseline PR, " +
-                       "matching rebuild(in:)'s chronological semantics")
+                       "session1 (80kg) beats session0's 50kg baseline — the later " +
+                       "session2 (100kg) must not be counted as history and hide that")
         let heaviest = detected.first { $0.kind == .heaviestWeight }
         XCTAssertNotNil(heaviest)
         XCTAssertEqual(heaviest?.newValue, 80)
+        XCTAssertEqual(heaviest?.previousValue, 50)
     }
 
     // MARK: - Cross-cutting: bodyweight + time-based
