@@ -39,7 +39,9 @@ public enum AppSchema {
         PersonalRecordEntry.self,
         Gear.self,
         PeriodicCheckIn.self,
-        FoodCatalogEntry.self
+        FoodCatalogEntry.self,
+        MealEntry.self,
+        MealItem.self
     ]
 }
 #endif
