@@ -54,7 +54,11 @@ let package = Package(
         .target(
             name: "FitnessAppUI",
             dependencies: ["FitnessAppCore", "FitnessAppData",
-                           "FitnessAppHealth", "FitnessAppActivities"],
+                           "FitnessAppHealth", "FitnessAppActivities",
+                           // Task E: AddMealView calls NutritionAIService/MealTextExtractor
+                           // directly. Still a one-way dependency — FitnessAppAI itself
+                           // depends on nothing, so a broken AI layer can't break Core/Data.
+                           "FitnessAppAI"],
             path: "Sources/FitnessAppUI",
             // ExerciseGifs liegt bewusst NICHT unter Resources/: `.process()`
             // flacht verschachtelte Ordner ab (alle Dateien landen direkt im

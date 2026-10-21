@@ -48,15 +48,21 @@ public struct FoundationModelsTextGenerator: NutritionAITextGenerating {
 public struct NutritionAIService: Sendable {
     private let availabilityChecker: any NutritionAIAvailabilityChecking
     private let generator: any NutritionAITextGenerating
+    /// Task E (I2): typed meal-candidate extraction, gated the same way as
+    /// `generateText`. Injectable so tests can simulate broken/incomplete
+    /// model responses without touching FoundationModels.
+    private let mealExtractor: any NutritionAIMealExtracting
     private let locale: Locale
 
     public init(
         availabilityChecker: any NutritionAIAvailabilityChecking = SystemNutritionAIAvailabilityChecker(),
         generator: any NutritionAITextGenerating = FoundationModelsTextGenerator(),
+        mealExtractor: any NutritionAIMealExtracting = FoundationModelsMealExtractor(),
         locale: Locale = .current
     ) {
         self.availabilityChecker = availabilityChecker
         self.generator = generator
+        self.mealExtractor = mealExtractor
         self.locale = locale
     }
 
@@ -71,4 +77,18 @@ public struct NutritionAIService: Sendable {
         guard status == .available else { throw NutritionAIError.unavailable(status) }
         return try await generator.generateText(instructions: instructions, prompt: prompt)
     }
+
+    /// Same gate as `generateText`, structured output instead of free text.
+    public func extractMealCandidates(from text: String) async throws -> [MealTextCandidate] {
+        let status = availability()
+        guard status == .available else { throw NutritionAIError.unavailable(status) }
+        return try await mealExtractor.extractMealCandidates(instructions: Self.extractionInstructions, prompt: text)
+    }
+
+    private static let extractionInstructions = """
+    You extract structured meal-logging candidates from short, casual text about \
+    food eaten, in whatever language the text is written in. Extract one entry \
+    per distinct food or drink mentioned. Never invent a quantity, unit, or meal \
+    type that was not stated or clearly implied — omit it instead.
+    """
 }
