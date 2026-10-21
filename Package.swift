@@ -13,7 +13,8 @@ let package = Package(
         .library(name: "FitnessAppData",       targets: ["FitnessAppData"]),
         .library(name: "FitnessAppHealth",     targets: ["FitnessAppHealth"]),
         .library(name: "FitnessAppActivities", targets: ["FitnessAppActivities"]),
-        .library(name: "FitnessAppUI",         targets: ["FitnessAppUI"])
+        .library(name: "FitnessAppUI",         targets: ["FitnessAppUI"]),
+        .library(name: "FitnessAppAI",         targets: ["FitnessAppAI"])
     ],
     // DEL-173: ZIPFoundation für on-device ZIP-Erstellung beim CSV-Export.
     // Pure-Swift, MIT-Lizenz, weit verbreitet — wird nur von FitnessAppData
@@ -69,6 +70,18 @@ let package = Package(
                 .process("Resources"),
                 .copy("ExerciseGifs")
             ]
+        ),
+        .target(
+            // Optional on-device AI (Foundation Models, iOS/macOS 26+). No
+            // dependencies on purpose: Core/Data/manual entry must never need it.
+            // FoundationModels is imported only here, behind canImport/#available.
+            name: "FitnessAppAI",
+            path: "Sources/FitnessAppAI"
+        ),
+        .testTarget(
+            name: "FitnessAppAITests",
+            dependencies: ["FitnessAppAI"],
+            path: "Tests/FitnessAppAITests"
         ),
         .testTarget(
             name: "FitnessAppCoreTests",

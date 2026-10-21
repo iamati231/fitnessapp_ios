@@ -78,6 +78,9 @@ targets:
         product: FitnessAppActivities
       - package: FitnessApp
         product: FitnessAppUI
+      # Optional on-device AI (Foundation Models); runtime-gated, iOS 17 still launches.
+      - package: FitnessApp
+        product: FitnessAppAI
       - target: FitnessAppWidgets
         embed: true                        # bundles the widget into the app
 
