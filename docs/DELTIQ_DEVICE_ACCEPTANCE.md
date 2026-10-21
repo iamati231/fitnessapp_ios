@@ -1,8 +1,15 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-21 (einundzwanzigster Durchgang: Paket 2 um die Sportart-
-Unterscheidung Laufen/Radfahren als begrenzten Restumfang ergänzt und
-gerätebestätigt, CI-grün auf HEAD `8b6a931`. Siehe Abschnitt „Paket 2:
+Stand: 2026-10-21 (zweiundzwanzigster Durchgang: Paket 3 vom Auftraggeber
+grundsätzlich freigegeben ("begrenzt zuschneiden lassen"), ohne eigene
+Detailspezifikation. Reine Scope-/Abhängigkeitsplanung erarbeitet und
+dokumentiert, NICHT umgesetzt — kein Code, kein Commit über diese
+Doku-Ergänzung hinaus. Siehe Abschnitt „Paket 3: Scope-Vorschlag (noch
+nicht umgesetzt)" unten für den vorgeschlagenen Zuschnitt, bewusste
+Nicht-Umfänge, Wiederverwendung und offene Produktfragen, die vor jeder
+Umsetzung zu klären sind. Davor einundzwanzigster Durchgang: Paket 2 um die
+Sportart-Unterscheidung Laufen/Radfahren als begrenzten Restumfang ergänzt
+und gerätebestätigt, CI-grün auf HEAD `8b6a931`. Siehe Abschnitt „Paket 2:
 Sportart-Unterscheidung — finaler Abschluss" unten. Davor zwanzigster
 Durchgang: Paket 2, Schritt 3 umgesetzt und
 gerätebestätigt — `EnduranceIntervalPlayerView` (Komponente 3) inkl.
@@ -118,6 +125,178 @@ Runde 7 korrekt eingeordnet und gefixt. Gesamtabnahme weiterhin offen
 (kein vollständiger Abschluss aller 46 Fälle). Paket 1 (Coach-Aktivierung →
 Plananpassung) ist seit der Geräteabnahme unten vollständig gerätebestätigt,
 alle 9 geforderten Nachweise bestanden, kein Bug gefunden.**
+
+## Paket 3: Scope-Vorschlag (noch nicht umgesetzt)
+
+**Status: reine Scope-/Abhängigkeitsplanung, kein Code.** Der Auftraggeber
+hat Paket 3 grundsätzlich freigegeben, den konkreten Zuschnitt aber
+ausdrücklich offengelassen ("Paket 3 freigeben, begrenzt zuschneiden
+lassen") — anders als bei Paket 1/2 gab es keine eigene Detailspezifikation.
+Dieser Abschnitt schlägt den kleinstmöglichen, in sich abgeschlossenen
+ersten Ausbau vor, bevor irgendetwas gebaut wird. Kein Merge, kein Release,
+kein Commit über diese Doku-Ergänzung hinaus.
+
+Das ursprüngliche Laufcoach-Konzept nannte Paket 3 "Coaching mit
+tatsächlichen Ergebnissen verbinden" (siehe "Nächste Schritte" unten) und
+hat es in Paket 1/2 durchgehend bewusst ausgeklammert ("keine neue adaptive
+Coaching-/Progressionslogik", u. a. Komponente 5 der Paket-2-Spezifikation
+und die PR-Erkennungs-Lücke bei `.enduranceIntervals`). Dieser Vorschlag
+löst genau diese Klammer zum ersten Mal, aber auf das kleinstmögliche Stück
+begrenzt.
+
+### Vorgeschlagener Zuschnitt (genau EIN Stück, keine Sammlung)
+
+**Wiederkehrend verfehlte/übersprungene strukturierte Lauf-Einheiten lösen
+einen sichtbaren Coach-Hinweis aus, der ausschließlich auf den bereits
+existierenden Paket-1-Anpassungspfad verweist — keine neue Mutation, keine
+neue Planänderungslogik.**
+
+Konkret:
+
+1. Ein neues, reines Signal bestimmt "wurden zuletzt mehrere geplante
+   Lauf-Tage nicht absolviert" — auf Basis von bereits vorhandenen,
+   bewährten Bausteinen (siehe "Wiederverwendung" unten), nicht einer neuen
+   Analyse-Engine.
+2. Trifft das Signal zu, erscheint ein neuer `CoachingReason`-Fall im
+   bestehenden Dashboard-Hinweis-System (gleiche Mechanik wie
+   `cardioVolumeSpike`/`cardioMissedLongRun`) — reiner Text + ein CTA.
+3. Der CTA tut NICHTS automatisch. Er öffnet — exakt wie heute —
+   `CoachAdjustmentPreviewView`/`CoachAdjustmentCardModel`, wenn für das
+   aktuelle Profil ein Vorschlag existiert (`CoachAdjustmentCardModel.make`
+   liefert nicht `nil`). Jede Planänderung läuft weiterhin ausschließlich
+   über das dort bereits etablierte explizite "Vorschau ansehen →
+   übernehmen/ablehnen" (Paket 1, Komponente 4) — kein stiller Eingriff,
+   keine neue Mutationsfunktion.
+4. Ist aktuell kein Vorschlag verfügbar (Coach aus, kein Ziel/Renndatum
+   gepflegt, oder `isAlreadyApplied == true` für die aktuelle Kombination),
+   bleibt der Hinweis rein informativ ohne CTA — er stößt dann NICHT das
+   Onboarding/die Coach-Aktivierung an (das wäre eine zweite, hier nicht
+   beauftragte Produktentscheidung, siehe offene Frage 2 unten).
+
+### Bewusst draußen (für dieses erste Stück)
+
+- **Keine neue Anpassungs-/Reduktions-Mutation.** Es wird keine neue
+  Berechnung "wie stark reduzieren" eingeführt (das wäre eine eigene, nicht
+  belegte Heuristik analog `ComebackAdvisor`, nur eben für Lauf-Volumen statt
+  Pausen-Rückkehr — ein eigenes, größeres Ticket). `accept()` aus Paket 1
+  bleibt unverändert; dieses Stück entscheidet nur, WANN der bestehende
+  Hinweis zusätzlich (und mit anderem Anlass) sichtbar wird.
+- **Kein Radfahren in diesem ersten Schritt.** Das Signal betrachtet nur
+  Lauf-Tage (`enduranceSportKind == .running`, Paket-2-Sportart-Unterscheidung).
+  Eine Cardio-Ermüdungs-/Progressionslogik für Radfahren ist eine eigene,
+  spätere Entscheidung.
+- **Keine Reaktivierung von `cardioJunkMiles`.** Bleibt unabhängig blockiert
+  auf fehlende `targetDistanceKm`/Pace-Zonen-Daten (siehe Kommentar in
+  `CoachingTypes.swift`) — Paket 3 behebt das nicht nebenbei.
+- **Keine Auswertung der Intra-Workout-Skip-Flags**
+  (`enduranceWarmupSkipped`/`enduranceCooldownSkipped`, `enduranceRoundsCompleted`
+  vs. `enduranceCurrentRoundNumber`). Diese sind Signale INNERHALB einer
+  bereits absolvierten Session (ein Athlet ist gelaufen, hat aber z. B. das
+  Auslaufen übersprungen) und etwas fachlich anderes als "der geplante
+  Lauf-Tag fand gar nicht statt". Vermischen beider würde das Signal
+  verwässern. Dieses Stück bleibt auf der Tagesebene (fand überhaupt eine
+  Session statt?).
+- **Keine neue UI-Fläche.** Wiederverwendung des bestehenden
+  Dashboard-Hinweis-Slots und der bestehenden `CoachAdjustmentPreviewView`
+  — kein neues Sheet, keine neue Card-Komponente.
+- **Keine Schema-/Modelländerung.** Alles benötigte existiert bereits aus
+  Paket 1 (`UserBodyProfile.cardioCoachingEnabled/cardioRaceDate/
+  weeklyBaseVolumeKm/cardioPlanAdjustmentFingerprint`) und aus der
+  P6.2-Teilnahme-Infrastruktur (siehe unten).
+
+### Wiederverwendung bestehender Bausteine (kein zweiter Analyse-Pfad)
+
+- **`PlanParticipationEvaluator` (P6.2, `Sources/FitnessAppCore/Analytics/
+  PlanParticipationEvaluator.swift`)** liefert bereits eine reine,
+  deterministische Soll-Ist-Teilnahmeauswertung inkl. `missedCount` — exakt
+  das "wurden geplante Tage verfehlt"-Signal, das dieses Stück braucht. Er
+  ist bewusst plan-weit (alle Tage, nicht sportartspezifisch) und wird
+  aktuell nur vom 4-Wochen-Review (`FourWeekReviewOrchestrator`) gefüttert.
+  Für Paket 3 wird **kein neuer Evaluator gebaut**, sondern derselbe
+  Evaluator mit einer **gefilterten Projektion** aufgerufen: nur Lauf-Tage
+  als `occurrences`/`nonRestDayCount`/`nonRestWeekdays` statt aller
+  Trainingstage. Das ist eine kleine Mapping-Funktion im Aufrufer, keine
+  neue Analyse-Engine.
+- **Muster "Signal auswerten → Vorschlag anzeigen → Nutzer entscheidet
+  explizit"** aus `DeloadAdvisor`/`ComebackAdvisor`/`CardioCoachingAdvisor`:
+  reine, test- und CI-fähige Funktion ohne SwiftData-Zugriff, die nur
+  `Bool`/einen Vorschlag zurückgibt — nie selbst mutiert. Der neue
+  Schwellwert-Entscheid ("ist das wiederkehrend genug?") wird nach exakt
+  diesem Muster gebaut, z. B. als neue Funktion in `CardioCoachingAdvisor`
+  (`isRecurringMissedRunSessions` o. ä.), nicht als neue Datei/Architektur.
+- **`CoachAdjustmentCardModel`/`CoachAdjustmentPreviewView`/
+  `RunCoachPlanAdjustment`/`PlanGeneratorInstantiator.
+  applyCoachCardioAdjustment` (Paket 1)** bleiben die EINZIGE
+  Mutationsstelle. Paket 3 fügt keinen zweiten Schreibpfad auf
+  `TrainingDay`/`TrainingPlan` hinzu.
+- **`CoachingTypes.swift`/Dashboard-Hinweis-Rangfolge (DEL-248-Muster)**:
+  neuer `CoachingReason`-Fall nach demselben Schema wie `cardioVolumeSpike`/
+  `cardioMissedLongRun` (Priorität in der bestehenden Kette einordnen, keine
+  neue Anzeige-Infrastruktur).
+
+### Offene Produktentscheidungen (vor dem Bauen zu klären, nicht geraten)
+
+1. **Schwellwert für "wiederkehrend".** Wie viele verfehlte Lauf-Tage in
+   welchem Fenster lösen den Hinweis aus (analog `DeloadAdvisor`s "2 von 14
+   Tagen" oder `ComebackAdvisor`s Stufenlogik)? `PlanParticipationEvaluator`
+   rechnet aktuell ab `activatedAt` (seit Planaktivierung) — für ein
+   Lauf-Coaching-Signal ist vermutlich ein rollierendes, kürzeres Fenster
+   (z. B. letzte 2–4 Wochen) treffender. Das ist eine neue Produktentscheidung,
+   kein technisches Detail.
+2. **Soll der Hinweis auch erscheinen, wenn der Coach noch gar nicht aktiv
+   ist** (kein Ziel/Renndatum gepflegt)? Dann wäre der Hinweis zusätzlich ein
+   Onboarding-Nudge ("aktiviere den Laufcoach"), nicht nur ein
+   Plan-Anpassungs-Hinweis — zwei unterschiedliche Produktaussagen mit
+   unterschiedlichem CTA-Ziel. Vorschlag für dieses erste Stück: NEIN, der
+   Hinweis erscheint nur, wenn der Coach bereits aktiv ist (reduziert Scope
+   und Verwechslungsgefahr mit `CardioFeasibilityCardModel`s "kein aktiver
+   Plan"-Fall, Leitplanke 6 aus Paket 1) — zu bestätigen.
+3. **Zentrale Lücke: Re-Trigger nach bereits übernommenem Vorschlag.**
+   `CoachAdjustmentCardModel.accept()` ist für dieselbe
+   Ziel/Renndatum/Wochenvolumen-Kombination ein dokumentiertes No-Op
+   (`isAlreadyApplied`-Guard). Verfehlt ein Nutzer weiterhin Lauf-Einheiten,
+   NACHDEM er den Paket-1-Vorschlag bereits einmal übernommen hat, würde ein
+   erneuter Tap auf denselben CTA inhaltlich nichts verändern — das Profil
+   (Ziel/Renndatum/Wochenvolumen) hat sich ja nicht geändert. Vorschlag für
+   dieses erste Stück: der CTA erscheint NUR, solange `isAlreadyApplied ==
+   false` ist (siehe Punkt 4 im Zuschnitt oben); ist bereits übernommen,
+   bleibt der Hinweis rein informativ ohne CTA, statt einen wirkungslosen
+   erneuten Tap anzubieten. Eine echte "reduziere mein Wochenvolumen, weil
+   ich wiederholt verfehle"-Aktion wäre die eigentliche Progressionslogik
+   und ausdrücklich NICHT Teil dieses Stücks — eigenes künftiges Ticket,
+   falls gewünscht.
+4. **Wiederhol-/Unterdrückungslogik nach Ablehnen.** Soll ein einmal
+   weggewischter Hinweis erst bei einer "stärkeren" Stufe erneut erscheinen
+   (Muster `ComebackAdvisor.isSuppressed`), oder reicht die natürliche
+   Fluktuation (Hinweis verschwindet, sobald wieder genug Lauf-Tage
+   absolviert wurden)?
+5. **Abgrenzung "Lauf-Tag".** Zählt jeder Tag mit `isCardio`-Übung, oder nur
+   `enduranceSportKind == .running` (Paket-2-Unterscheidung)? Letzteres ist
+   präziser, setzt aber voraus, dass ältere/Hybrid-Pläne das Feld
+   durchgängig gesetzt haben (siehe Paket-2-Legacy-Test
+   `testLegacy...EnduranceSportKind` — keine Namensableitung).
+
+### Grobe Implementierungsschritte (NICHT Teil dieser Runde, nur Planung)
+
+1. `CardioCoachingAdvisor` um eine neue, reine Funktion erweitern (Signal,
+   Schwellwert nach offener Frage 1), mit Unit-Tests nach bestehendem Muster.
+2. Kleine Projektions-/Mapping-Funktion in `FitnessAppData`, die aus den
+   realen Sessions + dem aktiven Plan nur die Lauf-Tage als
+   `PlanParticipationEvaluator.Input` aufbereitet (reuse, kein neuer
+   Evaluator).
+3. Neuer `CoachingReason`-Fall in `CoachingTypes.swift` + Einordnung in die
+   bestehende Prioritätskette + dreisprachige Catalog-Keys (DEL-248-Muster).
+4. Dashboard-Verdrahtung: Signal berechnen, Hinweis anzeigen, CTA öffnet
+   `CoachAdjustmentPreviewView` nur wenn `CoachAdjustmentCardModel.make`
+   nicht `nil` UND `isAlreadyApplied == false` (siehe offene Frage 3).
+5. Unit-Tests für die neue Signal-Funktion + die Projektion; kein neuer
+   SwiftData-Mutationscode, daher kein neuer Geräte-Nachweis für
+   Mutationen nötig — ein Geräte-Nachweis für die NEUE Hinweis-Sichtbarkeit
+   (erscheint/verschwindet korrekt) bleibt sinnvoll, analog den
+   bestehenden `cardioVolumeSpike`/`cardioMissedLongRun`-Nachweisen.
+
+Vor Schritt 1 müssen die offenen Fragen 1–5 beantwortet sein; andernfalls
+rät die Umsetzung Produktentscheidungen, die nicht geraten werden sollen.
 
 ## Paket 2, Schritt 1: Datenmodell umgesetzt, CI-grün (Commit `4654775`)
 
