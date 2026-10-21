@@ -249,7 +249,7 @@ public final class MealDraft: ObservableObject {
     }
 }
 
-/// Fehler, die nur im Edit-Pfad von `MealDraft.save` auftreten koennen.
+/// Fehler, die `MealDraft.save` zurueckgeben kann.
 public enum MealDraftError: Error, Equatable {
     /// Die `MealEntry`, aus der dieser Entwurf per `init(editing:)` gebaut
     /// wurde, existiert im uebergebenen Context nicht mehr (z.B. zwischen-
