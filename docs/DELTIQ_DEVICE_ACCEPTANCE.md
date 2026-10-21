@@ -300,6 +300,110 @@ für Komponenten 1–4 der ursprünglichen Spezifikation. Komponente 5
 adaptive Coaching-/Progressionslogik, `PRDetector` liefert für
 `.enduranceIntervals` weiterhin bewusst `nil`.
 
+## Paket 2: begrenzter Abschluss — Anforderungszuordnung, Restlücken, offener Produktbefund
+
+Die vier Schritt-3-Gerätenachweise (Easy-Run-Normalfall, Pause/Fortsetzen,
+übersprungener Abschnitt, Kaltstart während Belastung) gelten weiterhin als
+erbracht, nicht wiederholt. Diese Runde ordnet jede der acht
+Paket-2-Anforderungen einem konkreten Nachweis zu und benennt echte Lücken,
+statt Paket 2 pauschal als "fertig" zu führen.
+
+### Zuordnungstabelle
+
+| # | Anforderung | Nachweis | Status |
+|---|---|---|---|
+| 1 | Einfache Einheit: ein Hauptblock, Zeit/Strecke/offen, kein Kraft/Gewicht/RIR | `ProgramTemplates.swift` (Easy/Long-Run-Vorlagen) + `SetRow.swift`-Cardio-Rendering, siehe "Komponente 1: bereits erfüllt" unten — **unveränderter, bereits vor Paket 2 bestehender Code**, kein neues Risiko durch Paket 2 | Abgedeckt (Code-Review, keine neue Gerätepflicht, da keine Verhaltensänderung) |
+| 2 | Konfiguration bearbeiten, speichern, **erneut öffnen** | Schritt-2/3-Geräteläufe bestätigten nur Rendern+Übernehmen beim ERSTEN Anlegen, keine explizite Wiederöffnung zur Round-Trip-Kontrolle | **Lücke** — nicht device-getestet |
+| 3 | Planvorschau entspricht gestartetem Player | Indirekt plausibilisiert (die in Schritt 3 konfigurierten 2 Runden erschienen im Player korrekt als "1/2"/"2/2"), aber keine explizite Vorschau-vs-Player-Gegenprobe (z. B. Dashboard-"Nächstes Training"-Kachel vs. tatsächlicher Playerstart) | **Teilweise** — plausibel, nicht explizit gegengeprüft |
+| 4 | Laufen UND Radfahren mit jeweils gewählter Sportart | `DayEditorView.enduranceIntervalsFields` (Zeile ~668-738) enthält **keinerlei Sportart-Feld** — Warmup/Cooldown/Runden/Belastungsziel/Erholung sind komplett sportartneutral, keine Unterscheidung Laufen/Radfahren existiert strukturell | **Kein Gerätetest sinnvoll — echter Produktbefund**: die Anforderung "funktioniert mit der gewählten Sportart" setzt eine Sportartauswahl voraus, die es im gebauten Feature nicht gibt (nur ein freier Tagesname). Siehe Einordnung unten. |
+| 5 | Streckenbasierte/offene Abschnitte manuell beendbar ohne erfundene Distanz | `EnduranceIntervalPlayerView.advancePhase`/`workDoneBar` (Code gelesen): ungezeitete Belastung nutzt denselben Pfad wie ein regulärer Phasenwechsel, `skipped: false` bei manuellem "Fertig" — symmetrisch zum bereits gerätebestätigten Zeit-Fall. Schritt-3-Geräteläufe nutzten jedoch ausschließlich Zeit-Ziele, kein Strecken-/offener Fall live geprüft | **Teilweise** — Code stimmig, kein Geräte-Nachweis für genau diesen Modus |
+| 6 | Coach aus: strukturierte Einheit bleibt ausführbar | `grep cardioCoachingEnabled` über `EnduranceIntervalPlayerView.swift`/`TimedWorkoutPlayerView.swift`/`DayEditorView.swift`: **keine einzige Fundstelle** — die Ausführung ist strukturell vollständig von `cardioCoachingEnabled` entkoppelt | Abgedeckt (Code-Review, eindeutig — keine Kopplung vorhanden, die blockieren könnte) |
+| 7 | Abgeschlossene Ergebnisse inkl. Skips bleiben nach erneutem Öffnen/Kaltstart erhalten | Schritt-3-Fall 4 testete Kaltstart **während** einer laufenden Phase (Resume-Pfad), nicht das Wiederöffnen einer bereits **abgeschlossenen** Session aus der Historie nach einem Kaltstart. CSV-/Snapshot-Persistenz jetzt per Unit-Test belegt (`testEnduranceIntervalsDayAndSessionSurviveRoundtrip`, neu, s.u.) — das deckt Datenebene, nicht das UI-Rendering in `WorkoutHistoryView` nach echtem Kaltstart | **Teilweise** — Datenebene jetzt bewiesen, UI-nach-Kaltstart-Anzeige nicht device-geprüft |
+| 8 | Bestehende einfache Ausdauereinheiten bleiben kompatibel | Unverändertes `ExerciseLog`/`ProgramTemplates`-Verhalten, keine Migration nötig (Komponente 1 unverändert) | Abgedeckt (Code-Review, keine Schemaänderung an den betroffenen Feldern) |
+
+### Echter, neu gefundener Lückenbeleg: CSV-Export/-Import war unbewiesen
+
+Punkt 7 deckte eine zweite, unabhängige Lücke auf: Schritt 3 behauptete
+"CSV-Export/-Import additiv ergänzt", ohne Testnachweis — anders als der
+direkte Präzedenzfall `testCircuitDayAndSessionSurviveRoundtrip` für
+`.circuit`. Neuer Unit-Test `testEnduranceIntervalsDayAndSessionSurviveRoundtrip`
+(`Tests/FitnessAppDataTests/DataPortabilityRoundtripTests.swift`, Commit
+`2c3182b`) schließt das nach demselben Muster — alle sechs `TrainingDay`-
+Konfigurationsfelder und sieben `WorkoutSession`-Ergebnisfelder (inkl. des
+laufenden-Pause-Falls `endurancePausedRemainingSeconds` und der
+Skip-Flags) überleben einen echten Export/Import-Roundtrip in einen neuen
+Store. **CI-Lauf `39571660822`: erfolgreich.** Kein neuer Gerätetest nötig
+für diesen Teil (reine Daten-/Persistenzebene).
+
+### Punkt 4 eingeordnet: kein Testumfang, sondern eine offene Produktentscheidung
+
+"Laufen und Radfahren funktionieren mit der jeweils gewählten Sportart"
+setzt voraus, dass eine Sportart überhaupt wählbar ist. Das gebaute
+Feature (Schritt 1-3) hat dafür **keine** Modellierung — `TrainingDay`
+bekam nur generische Einlauf-/Auslauf-/Runden-/Belastungs-/Erholungsfelder,
+keine Sportart-Dimension. Aktuell unterscheidet sich eine "Lauf"- von
+einer "Rad"-Einheit ausschließlich durch den frei eingegebenen Tagesnamen
+— rein kosmetisch, ohne jede fachliche Auswirkung (Icon, Log-Klassifizierung,
+Analytics). Das ist **keine Testlücke, die ein Gerätenachweis schließen
+könnte** — eine Gerätesession würde nur denselben sportartneutralen Ablauf
+unter einem anderen Tagesnamen zeigen und nichts Neues belegen. Dies wird
+als offener Produktbefund zurückgemeldet statt eigenmächtig eine
+Sportart-Auswahl-UI nachzuschieben (wäre eine neue Scope-Erweiterung ohne
+expliziten Auftrag).
+
+### Verbleibende, echte Restlücken (device-abhängig, nicht in dieser Runde getestet)
+
+Bewusst nicht in dieser Runde ausgeführt — ein vollständiger, unbeaufsichtigter
+TestingBot-Durchlauf (Session-Setup, mehrstufige Appium-Interaktion) in einem
+einzelnen, nicht fortsetzbaren Durchgang trägt das Risiko einer
+hängengebliebenen Session ohne Rückmeldemöglichkeit. Empfehlung: ein
+dediziertes, gebündeltes Gerätefenster für:
+
+1. Konfiguration bearbeiten → verlassen → erneut öffnen → gespeicherte
+   Werte bestätigen (Punkt 2).
+2. Ein Belastungsziel als Strecke ODER offen (nicht Zeit) konfigurieren,
+   im Player manuell per "Fertig" beenden, Ergebnis prüfen (Punkt 5).
+3. Eine vollständige Einheit mit mindestens einem Skip bis zur Summary
+   durchlaufen, App hart beenden, neu starten, die Session aus der
+   Historie (nicht im Resume-Pfad) erneut öffnen, Rundenzahl/Skip-Status
+   in der Anzeige bestätigen (Punkt 7, UI-Ebene).
+4. Dashboard-/Plan-Tab-Vorschau einmal explizit gegen den gestarteten
+   Player abgleichen (Punkt 3).
+
+### Zurück-Navigation: Status unverändert
+
+Die "Zurück verwirft den Entwurf"-Beobachtung aus einer früheren Runde
+bleibt wie dokumentiert eingeordnet: vollständige Code-Analyse (Commit
+`8bbec96`) ergab keinen Bug — `goToPreviousStep()` ändert nur den
+Wizard-Schritt, `generatePreviewIfNeeded()` regeneriert den Entwurf
+ausschließlich bei tatsächlich geänderter Struktur-Eingabe (erwartetes
+Verhalten, kein stiller Verlust ohne Änderungsanlass). Keine neue
+Navigationsprüfung in dieser Runde.
+
+### Budget
+
+**18.493 Sekunden — ausdrücklich nur der Vor-Block-Stand** (letzter
+bekannter `GET /v1/user`-Wert, unverändert, da in dieser Runde keine neue
+TestingBot-Session gestartet wurde — nur CI). Die vier Einzel-Session-
+Dauern/IDs aus dem vorherigen Schritt-3-Bericht sind in dieser
+fortgeführten Runde nicht mehr im Kontext rekonstruierbar; nur die in der
+Schritt-3-Dokumentation oben bereits festgehaltenen Ergebnisse gelten.
+Abgleich mit der Konto-API erfolgt beim nächsten ohnehin fälligen
+Gerätedurchgang (siehe "Verbleibende, echte Restlücken" oben) — keine
+Zusatzabfrage, kein Geräte-Lauf nur zur Budgetklärung.
+
+### Gesamtstatus Paket 2 nach diesem Abschluss
+
+**Nicht pauschal "fertig"**: Komponenten 1, 6, 8 vollständig abgedeckt
+(Code-Review, keine neue Gerätepflicht). Komponente 2 (Persistenz/CSV)
+jetzt mit Testnachweis vollständig. Komponenten 3/5/7 (Konfigurations-
+Round-Trip, Strecken-/offener manueller Abschluss, Ergebnis-nach-Kaltstart-
+UI, Vorschau-Abgleich) bleiben **teilweise** bis zum empfohlenen
+dedizierten Gerätefenster oben. Komponente 4 (Sportartauswahl Laufen/
+Radfahren) ist kein Testumfang, sondern ein offener Produktbefund, der an
+den Auftraggeber zurückgeht. Kein Merge, kein Release. Paket 3 nicht
+begonnen.
+
 ## Paket 2: ursprünglicher Umsetzungsplan (strukturierte Ausdauereinheiten)
 
 **Hinweis:** Schritt 1 dieses Plans ist seit obigem Nachtrag umgesetzt
