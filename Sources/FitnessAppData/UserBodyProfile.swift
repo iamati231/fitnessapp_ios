@@ -188,6 +188,19 @@ public final class UserBodyProfile {
     /// bleibt davon komplett unberuehrt - siehe dortige Doku.
     public var cardioPlanAdjustmentFingerprint: String? = nil
 
+    /// Paket 3a (Laufversäumnis-Hinweis, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+    /// "Nicht jetzt" fuer `MissedRunDaysCardModel`. Gleiches Fingerprint-
+    /// Muster wie `cardioFeasibilityDismissedFingerprint`/
+    /// `cardioPlanAdjustmentFingerprint` oben, aber bewusst ein DRITTES,
+    /// eigenes Feld statt eines der beiden bestehenden: dieser Fingerprint
+    /// kodiert etwas anderes (Planfassung + Versaeumnis-Beobachtung ueber
+    /// `CardioCoachingAdvisor.missedRunHintFingerprint`, NICHT Ziel/
+    /// Renndatum/Volumen) und muss unabhaengig von einer Paket-1-Annahme
+    /// ablaufen koennen (Korrektur zum urspruenglichen Scope-Vorschlag: eine
+    /// fruehere Plan-Uebernahme ist KEINE dauerhafte Sperre fuer diesen
+    /// Hinweis). Nil = noch nie abgelehnt worden.
+    public var missedRunHintDismissedFingerprint: String? = nil
+
     /// Smart-Onboarding-Epic: verhaltens-/pausenbasierte Track-Einstufung
     /// (Einstieg/Wiedereinstieg/volle Automatik) — separat von
     /// `coachingTone`/`trainingGoal`. Nil = noch nicht hergeleitet (z. B.

@@ -93,4 +93,74 @@ public enum CardioCoachingAdvisor {
     public static func isJunkMiles(actualPaceMinPerKm: Double, targetPaceMinPerKm: Double) -> Bool {
         actualPaceMinPerKm < targetPaceMinPerKm - junkMilesThresholdMinutesPerKm
     }
+
+    // MARK: - Paket 3a: Wiederkehrend verfehlte Lauf-Tage
+    //
+    // Reine Schwellwert-Entscheidung auf einem bereits fertigen
+    // `PlanParticipationEvaluator`-Ergebnis, exakt wie `isVolumeSpike`/
+    // `isLongRunOverdue` oben - der Aufrufer (`MissedRunDayEvaluator` in
+    // `FitnessAppData`) projiziert vorher nur die Lauf-Tage in die
+    // bestehende Teilnahme-Auswertung, baut aber KEINE zweite Analyse-Engine.
+    // Fenster/Mindestdaten/Schwelle sind - Korrektur zum urspruenglichen
+    // Paket-3-Scope-Vorschlag - bewusst festgelegte, neue Produktregeln
+    // (keine gelernte/adaptive Heuristik), reiner Beobachtungsbefund ohne
+    // Ursachenzuschreibung ("ueberfordert"/"untrainiert" o.ae. kommt hier
+    // nirgends vor).
+
+    /// Rollierendes Beobachtungsfenster in Tagen. Bewusst kuerzer als die
+    /// (potenziell monatelange) Soll-Ist-Auswertung seit Planaktivierung,
+    /// die `PlanParticipationEvaluator` normalerweise liefert - fuer ein
+    /// Lauf-Versaeumnis-Signal ist die juengste Vergangenheit relevanter.
+    /// Angelehnt an `DeloadAdvisor`s 14-Tage-Fenster fuer harte Sessions.
+    public static let missedRunWindowDays: Int = 14
+
+    /// Ab wie vielen verfehlten Gelegenheiten IM FENSTER das Muster als
+    /// "wiederkehrend" gilt - analog `DeloadAdvisor.minimumHardSessions`
+    /// (auch dort: 2 in 14 Tagen).
+    public static let minimumMissedRunDaysToFlag: Int = 2
+
+    /// `.notReliablyEvaluable` liefert fuer JEDEN Grund `false` - unklare
+    /// oder unzureichende Daten duerfen nie als "verfehlt" gewertet werden
+    /// (siehe `PlanParticipationEvaluator`s eigene Typ-Doku: "nie eine Zahl
+    /// erfinden"). Nur ein tatsaechlich ausgewertetes Ergebnis mit
+    /// `missedCount >= minimumMissedRunDaysToFlag` triggert.
+    public static func isRecurringMissedRunDays(_ participation: PlanParticipationEvaluator.Result) -> Bool {
+        guard case .evaluated(let summary) = participation else { return false }
+        return summary.missedCount >= minimumMissedRunDaysToFlag
+    }
+
+    /// Bindet die Unterdrueckung dieses Hinweises GLEICHZEITIG an die
+    /// Planfassung UND an neue Beobachtungen (ausdrueckliche Korrektur zum
+    /// urspruenglichen Scope-Vorschlag, der ein dauerhaftes Ausblenden nach
+    /// "Ablehnen" vorschlug). Reuse des etablierten Fingerprint-Musters
+    /// (`CardioFeasibilityCalculator.suppressionFingerprint`): ein einzelner
+    /// String-Vergleich traegt beide Bedingungen, kein zweites
+    /// Zeitstempel-/Versions-Feld noetig.
+    ///   * **Planfassung** — `planActivatedAt`, der ECHTE (nicht auf ein
+    ///     rollierendes Fenster geclampte) Aktivierungszeitpunkt des Plans
+    ///     (aendert sich NUR bei einer tatsaechlichen Re-Aktivierung/einem
+    ///     Planwechsel) + `summary.scheduleKindUsed` (aendert sich, wenn
+    ///     sich die Lauf-Tage-Struktur selbst aendert, z.B. ein Lauf-Tag
+    ///     wird hinzugefuegt/entfernt oder die Kadenz wechselt). BEWUSST
+    ///     NICHT `summary.periodStart`: dieser Wert ist auf das rollierende
+    ///     Fenster geclampt (`MissedRunDayEvaluator`) und wuerde dadurch bei
+    ///     jedem neuen Kalendertag weiterwandern, selbst wenn sich am Plan
+    ///     und an der Beobachtung NICHTS geaendert hat — eine Unterdrueckung
+    ///     wuerde dann taeglich faelschlich ablaufen.
+    ///   * **Neue Beobachtung** — `summary.missedCount`: steigt dieser Wert
+    ///     NACH dem Ablehnen weiter (zusaetzliche verfehlte Laeufe), aendert
+    ///     sich der Fingerprint und der Hinweis kann erneut erscheinen.
+    public static func missedRunHintFingerprint(
+        planActivatedAt: Date,
+        summary: PlanParticipationEvaluator.Summary
+    ) -> String {
+        let schedulePart: String
+        switch summary.scheduleKindUsed {
+        case .fixedWeekdays(let weekdays):
+            schedulePart = "fixed:" + weekdays.sorted().map(String.init).joined(separator: ",")
+        case .flexibleWeeklyCadence(let sessionsPerWeek):
+            schedulePart = "flex:\(sessionsPerWeek)"
+        }
+        return "\(Int(planActivatedAt.timeIntervalSince1970))#\(schedulePart)#\(summary.missedCount)"
+    }
 }

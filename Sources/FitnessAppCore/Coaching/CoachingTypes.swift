@@ -292,6 +292,18 @@ public enum CoachingContext: String, Sendable {
     /// Pace-Daten liefert.
     case cardioJunkMiles
 
+    /// Paket 3a (Laufversäumnis-Hinweis, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+    /// wiederholt verfehlte/übersprungene geplante Lauf-Tage in einem
+    /// rollierenden Fenster (`CardioCoachingAdvisor.missedRunWindowDays`).
+    /// Reine Beobachtung ("wurde nicht protokolliert"), KEINE Aussage zur
+    /// Ursache ("überfordert"/"untrainiert"/Erholung) und KEINE automatische
+    /// Planänderung — der zugehörige CTA öffnet ausschließlich den
+    /// bestehenden Paket-1-Pfad (`CoachAdjustmentCardModel`/
+    /// `CoachAdjustmentPreviewView`). Entscheidung via
+    /// `CardioCoachingAdvisor.isRecurringMissedRunDays`, zusammengebaut vom
+    /// Core/Data-Projektionslayer `MissedRunDayEvaluator`.
+    case cardioMissedRunDays
+
     /// Letzte Körpermessung > 14 Tage her, obwohl der User das Feature
     /// aktiv nutzt (>= 2 Messungen vorhanden). Sanfter Mess-Reminder.
     case measurementOverdue

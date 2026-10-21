@@ -155,6 +155,11 @@ public struct DashboardView: View {
     /// NavigationLink im `.toolbar`.
     @State private var showingNewMeasurement = false
 
+    /// Paket 3a (Laufversäumnis-Hinweis): CTA der `coachingInsightCard`
+    /// öffnet ausschließlich diesen bestehenden Paket-1-Pfad — kein neues
+    /// Sheet/keine neue Card-Komponente.
+    @State private var showingMissedRunAdjustmentPreview = false
+
     public init() {}
 
     public var body: some View {
@@ -305,6 +310,14 @@ public struct DashboardView: View {
         .sheet(item: $comebackAssessment) { assessment in
             ComebackPromptSheet(assessment: assessment) { factor in
                 resolveComeback(factor: factor)
+            }
+        }
+        // Paket 3a: der CTA des Laufversäumnis-Hinweises öffnet exakt
+        // dieselbe View wie der Paket-1-Pfad in `ProfileEditorView` — kein
+        // neuer Anpassungs-Mechanismus.
+        .sheet(isPresented: $showingMissedRunAdjustmentPreview) {
+            if let profile = profiles.first, let plan = activePlans.first {
+                CoachAdjustmentPreviewView(profile: profile, activePlan: plan)
             }
         }
         // DEL-042: Conflict-Dialog wenn der User in Plan A starten will,
@@ -1251,6 +1264,35 @@ public struct DashboardView: View {
         activeCoachingContext == nil && activeSoftCoachingContext == .deloadRecommended
     }
 
+    // MARK: - Paket 3a Laufversäumnis-Hinweis
+
+    /// Live gerechnet bei jedem Render, keine gespeicherte "ausstehende
+    /// Empfehlung" — gleiches Prinzip wie `cardioFeasibilityModel`/
+    /// `coachAdjustmentModel`. `nil` deckt sowohl "Coach aus"/"kein aktiver
+    /// Plan" als auch "Daten unklar/unzureichend" als auch "unter der
+    /// Schwelle" als auch "aktuell abgelehnt" ab (siehe
+    /// `MissedRunDaysCardModel.make`-Dokumentation).
+    private var missedRunDaysModel: MissedRunDaysCardModel? {
+        guard let profile = profiles.first else { return nil }
+        return MissedRunDaysCardModel.make(for: profile, activePlan: activePlans.first, in: modelContext)
+    }
+
+    /// Zeigt die CTA-/Ablehnen-Zeile unter dem Hinweistext — nur wenn dieser
+    /// Kontext tatsächlich der aktive ist (gleiches Gate wie
+    /// `showsDeloadApplyAction`).
+    private var showsMissedRunDaysActions: Bool {
+        activeCoachingContext == nil && activeSoftCoachingContext == .cardioMissedRunDays
+    }
+
+    /// "Nicht jetzt": blendet den Hinweis aus (siehe
+    /// `MissedRunDaysCardModel.dismiss`-Dokumentation zur
+    /// Planfassung-/Beobachtungs-Bindung). Rührt den Plan nicht an.
+    private func dismissMissedRunDaysHint() {
+        guard let profile = profiles.first, let model = missedRunDaysModel else { return }
+        model.dismiss(profile: profile)
+        try? modelContext.save()
+    }
+
     /// Startet die Deload-Woche: Gewichte via DeloadManager halbieren,
     /// Ablaufdatum setzen. Bei 0 angepassten Übungen (kein aktiver Plan
     /// mit Gewichten) passiert nichts — kein Phantom-Deload-Banner.
@@ -1446,15 +1488,25 @@ public struct DashboardView: View {
     ///      Der wichtigste Re-Engagement-Hinweis.
     ///   4. **volumeRecord**        — Letzte volle Woche war die
     ///      volumenstaerkste der Historie (DEL-198).
-    ///   5. **cardioMissedLongRun** — Plan sieht einen langen Lauf vor, aber
+    ///   5. **cardioMissedRunDays** — Paket 3a: wiederholt verfehlte/
+    ///      uebersprungene geplante Lauf-Tage in einem rollierenden Fenster
+    ///      (`CardioCoachingAdvisor.missedRunWindowDays`). Rangiert VOR
+    ///      `cardioMissedLongRun`: wer wiederholt Lauf-Tage verfehlt, erfuellt
+    ///      ueblicherweise auch dessen engere Bedingung (ein einzelner
+    ///      verpasster langer Lauf) gleich mit - das breitere, konsolidierte
+    ///      Muster ist die wichtigere Aussage. Dieselbe Prioritaetskette IST
+    ///      hier die Koordination gegen konkurrierende Hinweise fuer denselben
+    ///      Anlass (ein Treffer belegt den einzigen Karten-Slot) - kein
+    ///      zusaetzlicher Abgleich noetig.
+    ///   6. **cardioMissedLongRun** — Plan sieht einen langen Lauf vor, aber
     ///      keiner in den letzten 7 Tagen geloggt (DEL-248).
-    ///   6. **postVolume**/**postCardio** — gestrige Session ueber 5.000 kg
+    ///   7. **postVolume**/**postCardio** — gestrige Session ueber 5.000 kg
     ///      bzw. 5 km (Volumen gewinnt bei Gleichstand).
-    ///   7. **streak**              — ≥5 reale Sessions in den letzten 7 Tagen.
-    ///   8. **trainedYesterday**    — irgendeine reale Session gestern
-    ///      (DEL-211, faengt alles ab, was 6. nicht schon abdeckt).
-    ///   9. **planPreview**         — heutiger Plan-Tag ist ein Trainings-Tag.
-    ///  10. **measurementOverdue**/**hydrationLow**/**backupOverdue** —
+    ///   8. **streak**              — ≥5 reale Sessions in den letzten 7 Tagen.
+    ///   9. **trainedYesterday**    — irgendeine reale Session gestern
+    ///      (DEL-211, faengt alles ab, was 7. nicht schon abdeckt).
+    ///  10. **planPreview**         — heutiger Plan-Tag ist ein Trainings-Tag.
+    ///  11. **measurementOverdue**/**hydrationLow**/**backupOverdue** —
     ///      Feature-Nudges, niedrigste Prioritaet.
     /// Sonst nil → Dashboard zeigt den neutralen Empty-State (DEL-166).
     ///
@@ -1478,6 +1530,9 @@ public struct DashboardView: View {
         // DEL-198: Volumen-Rekord schlägt die generischen Post-Workout-
         // Komplimente — "beste Woche ever" ist die stärkere Nachricht.
         if hadVolumeRecordWeek { return .volumeRecord }
+        // Paket 3a: wiederholt verfehlte Lauf-Tage rangieren VOR dem
+        // engeren `cardioMissedLongRun` (siehe Dokumentation oben).
+        if missedRunDaysModel != nil { return .cardioMissedRunDays }
         // DEL-248: ein fehlendes Schluessel-Training (Long Run) ist wichtiger
         // als die generischen Post-Workout-Komplimente unten.
         if isLongRunOverdueForActivePlan { return .cardioMissedLongRun }
@@ -1804,6 +1859,30 @@ public struct DashboardView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(Color.deltiqOrange)
+                    }
+                    // Paket 3a: CTA öffnet ausschließlich den bestehenden
+                    // Paket-1-Pfad; "Nicht jetzt" lehnt NUR diesen Hinweis ab
+                    // (siehe `MissedRunDaysCardModel.dismiss`).
+                    if showsMissedRunDaysActions {
+                        HStack(spacing: 12) {
+                            if missedRunDaysModel?.coachAdjustment != nil {
+                                Button {
+                                    showingMissedRunAdjustmentPreview = true
+                                } label: {
+                                    Text("dashboard.missedRunDays.reviewButton", bundle: .module)
+                                        .font(.caption.weight(.semibold))
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .tint(Color.deltiqOrange)
+                            }
+                            Button {
+                                withAnimation { dismissMissedRunDaysHint() }
+                            } label: {
+                                Text("dashboard.missedRunDays.dismissButton", bundle: .module)
+                                    .font(.caption.weight(.semibold))
+                            }
+                            .buttonStyle(.bordered)
+                        }
                     }
                 }
                 Spacer(minLength: 0)

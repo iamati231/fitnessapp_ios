@@ -52794,6 +52794,121 @@
           }
         }
       }
+    },
+    "coaching.soft.cardioMissedRunDays.analytical": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In den letzten 2 Wochen sind mehrere deiner geplanten Laufeinheiten ohne Eintrag geblieben. Dein Laufcoach kann den Plan dazu prüfen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Several of your planned running sessions in the last 2 weeks have no logged entry. Your running coach can review the plan for this."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son 2 haftadır planlanan koşu antrenmanlarından birkaçı kaydedilmemiş. Koşu koçun planı buna göre gözden geçirebilir."
+          }
+        }
+      }
+    },
+    "coaching.soft.cardioMissedRunDays.motivating": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein paar geplante Läufe sind zuletzt liegen geblieben – kein Drama. Dein Laufcoach schaut gern mit dir, wie der Plan dazu passt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A few planned runs slipped by recently – no big deal. Your running coach is happy to take a look at how the plan fits."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son zamanlarda birkaç planlı koşu atlandı – sorun değil. Koşu koçun planın buna nasıl uyduğuna birlikte bakabilir."
+          }
+        }
+      }
+    },
+    "coaching.soft.cardioMissedRunDays.strict": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mehrere geplante Läufe der letzten 2 Wochen wurden nicht protokolliert. Lass deinen Laufcoach den Plan jetzt prüfen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Several planned runs from the last 2 weeks were not logged. Have your running coach review the plan now."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son 2 haftadaki planlı koşulardan birkaçı kaydedilmedi. Koşu koçunun planı şimdi gözden geçirmesini sağla."
+          }
+        }
+      }
+    },
+    "dashboard.missedRunDays.reviewButton": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan prüfen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review plan"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planı incele"
+          }
+        }
+      }
+    },
+    "dashboard.missedRunDays.dismissButton": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht jetzt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not now"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şimdi değil"
+          }
+        }
+      }
     }
   }
 }
