@@ -3,6 +3,7 @@ import SwiftUI
 import SwiftData
 import FitnessAppCore
 import FitnessAppData
+import FitnessAppAI
 
 /// Task 8: reine, UI-unabhaengige Gruppierung/Summierung ueber bereits
 /// geladene `[MealEntry]`. Synchron, kein `ModelContext`-Zugriff — der
@@ -18,6 +19,17 @@ public enum NutritionDayAggregator {
 
     public static func dailyTotal(meals: [MealEntry]) -> NutrientValues {
         NutrientValues.sum(meals.flatMap { $0.items.map(\.nutrientsSnapshot) })
+    }
+}
+
+/// Task F: pure gating for the optional AI insight section — visible exactly
+/// when the local AI is `.available` AND the selected day has at least one
+/// meal (Brief). Pulled out as a free function (no SwiftUI/SwiftData) so the
+/// exact condition can be unit-tested without instantiating the view.
+@available(iOS 17.0, macOS 14.0, *)
+enum NutritionInsightVisibility {
+    static func isVisible(availability: NutritionAIAvailability, hasMeals: Bool) -> Bool {
+        availability == .available && hasMeals
     }
 }
 
@@ -40,6 +52,9 @@ public enum NutritionDayAggregator {
 public struct NutritionDayView: View {
 
     @Environment(\.dismiss) private var dismiss
+    // Task F: explicit UI locale instead of NutritionAIService's `.current`
+    // default, same reasoning as AddMealView (Task E review, M2).
+    @Environment(\.locale) private var locale
 
     @Query private var profiles: [UserBodyProfile]
 
@@ -53,6 +68,12 @@ public struct NutritionDayView: View {
     @State private var showingAddMeal = false
     @State private var showingGoals = false
     @State private var editingMeal: MealEntry?
+
+    // Task F: optional local AI coaching text. `nil` = not (yet) shown, either
+    // still generating or the last attempt failed — the rest of the screen
+    // (totals, goals, meal list) never depends on any of this.
+    @State private var insightText: String?
+    @State private var isGeneratingInsight = false
 
     public init() {}
 
@@ -89,6 +110,9 @@ public struct NutritionDayView: View {
                 } else {
                     mealSections
                 }
+                if showsInsightSection {
+                    insightSection
+                }
             }
             .deltiqScreen()
         }
@@ -101,6 +125,13 @@ public struct NutritionDayView: View {
         // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
         // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
         .deltiqSwipeBackEnabled()
+        // Task F: re-generates only when the underlying facts actually
+        // change (not on every re-render) — `.task(id:)` also cancels any
+        // in-flight generation for the previous id first, so there's never
+        // more than one concurrent request from this screen.
+        .task(id: insightContext) {
+            await loadInsight()
+        }
         .sheet(isPresented: $showingAddMeal) {
             AddMealView(date: selectedDate)
         }
@@ -225,6 +256,33 @@ public struct NutritionDayView: View {
         }
     }
 
+    /// Task F: optional local coaching/analysis text. Never rendered unless
+    /// `showsInsightSection` is true (Brief: AI available AND day has >=1
+    /// meal) — while generation is pending or failed, this just shows
+    /// nothing but the (already-visible, because `showsInsightSection` is
+    /// already true) section header, never an invented number.
+    private var insightSection: some View {
+        DeltiqSection(String(localized: "nutrition.day.insight.header", bundle: .module).uppercased()) {
+            VStack(alignment: .leading, spacing: 6) {
+                if isGeneratingInsight && insightText == nil {
+                    ProgressView()
+                } else if let insightText {
+                    Text(insightText)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.primary)
+                }
+                // Mandatory, visible labeling (Brief): every AI-generated
+                // text must carry this — never unlabeled AI text next to the
+                // deterministic numbers above.
+                Text("nutrition.day.insight.disclaimer", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textTertiary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+        }
+    }
+
     @ViewBuilder
     private var emptyState: some View {
         DashboardEmptyState(
@@ -317,6 +375,69 @@ public struct NutritionDayView: View {
 
     private func mealTotal(_ meal: MealEntry) -> NutrientValues {
         NutritionDayAggregator.dailyTotal(meals: [meal])
+    }
+
+    // MARK: Task F — optional AI insight
+
+    private var insightGenerator: NutritionInsightGenerator {
+        NutritionInsightGenerator(service: NutritionAIService(locale: locale))
+    }
+
+    private var showsInsightSection: Bool {
+        NutritionInsightVisibility.isVisible(
+            availability: insightGenerator.availability(),
+            hasMeals: !mealsForSelectedDate.isEmpty
+        )
+    }
+
+    /// Identifies "the facts the insight is about" — `.task(id:)` re-runs
+    /// `loadInsight()` only when one of these actually changes (new day,
+    /// a meal added/edited/removed, or a goal changed), never on every
+    /// unrelated re-render.
+    private struct InsightContext: Equatable {
+        let day: Date
+        let total: NutrientValues
+        let calorieGoal: Int?
+        let proteinGoal: Double?
+        let carbGoal: Double?
+        let fatGoal: Double?
+    }
+
+    private var insightContext: InsightContext {
+        let profile = profiles.first
+        return InsightContext(
+            day: Calendar.current.startOfDay(for: selectedDate),
+            total: dailyTotal,
+            calorieGoal: profile?.dailyCalorieGoalKcal,
+            proteinGoal: profile?.dailyProteinGoalG,
+            carbGoal: profile?.dailyCarbGoalG,
+            fatGoal: profile?.dailyFatGoalG
+        )
+    }
+
+    /// Minimal context only (Brief: "nur die fuer DIESE Analyse noetigen
+    /// Werte") — the day's total plus whichever goals are actually set, never
+    /// the full meal history.
+    private func loadInsight() async {
+        insightText = nil
+        guard showsInsightSection else { return }
+        let context = insightContext
+        let input = NutritionInsightInput(
+            totalKcal: context.total.kcal,
+            totalProteinG: context.total.proteinG,
+            totalCarbsG: context.total.carbsG,
+            totalFatG: context.total.fatG,
+            calorieGoalKcal: context.calorieGoal,
+            proteinGoalG: context.proteinGoal,
+            carbGoalG: context.carbGoal,
+            fatGoalG: context.fatGoal
+        )
+        isGeneratingInsight = true
+        defer { isGeneratingInsight = false }
+        // `.unavailable` can't happen here (just checked by `showsInsightSection`
+        // above), and any other failure (e.g. guardrail refusal) just leaves
+        // `insightText` nil — the rest of the screen is unaffected either way.
+        insightText = try? await insightGenerator.generateInsight(for: input)
     }
 
     private struct GoalRow {

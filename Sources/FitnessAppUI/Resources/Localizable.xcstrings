@@ -56544,6 +56544,52 @@
         }
       }
     },
+    "nutrition.day.insight.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KI-Analyse"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI insights"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yapay zeka analizi"
+          }
+        }
+      }
+    },
+    "nutrition.day.insight.disclaimer": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Von der KI erstellt – keine medizinische Beratung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI-generated – not medical advice."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yapay zeka tarafından oluşturuldu – tıbbi tavsiye değildir."
+          }
+        }
+      }
+    },
     "nutrition.addMeal.aiDraft.needsQuantity": {
       "extractionState": "manual",
       "localizations": {
