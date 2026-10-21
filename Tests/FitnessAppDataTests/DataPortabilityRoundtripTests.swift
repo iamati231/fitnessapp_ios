@@ -584,6 +584,39 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertFalse(importedSession?.enduranceCooldownSkipped ?? true)
     }
 
+    /// Altbestand/Legacy-Fall: ein Tag mit einem Namen, der eine Sportart
+    /// nahelegt ("Radfahren"), aber ohne gesetztes `enduranceSportKind` -
+    /// muss nach dem Roundtrip weiterhin `nil` sein. Beweist, dass die
+    /// additive CSV-Spalte bei Fehlen NIE aus dem Tagnamen zurueckgeraten
+    /// wird (siehe `TrainingDay.enduranceSportKind`-Doku).
+    func testEnduranceSportKindDefaultsToNilOnRoundtripAndIsNotDerivedFromDayName() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Altbestand-Plan", programType: "custom", isActive: false)
+        ctx.insert(plan)
+        let day = TrainingDay(name: "Radfahren", weekday: 5, type: .cardio, plan: plan)
+        ctx.insert(day)
+        let exercise = Exercise(
+            name: "Radfahren", sets: 1, repsMin: 1, repsMax: 1,
+            isCardio: true, targetDurationMinutes: 45, day: day
+        )
+        ctx.insert(exercise)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<TrainingDay>()).first
+        XCTAssertNil(imported?.enduranceSportKind)
+        XCTAssertNil(imported?.exercises.first?.enduranceSportKind)
+    }
+
     /// P8 Stufe-2, Paket D: der eingefrorene Tagesinhalts-Snapshot
     /// (`contentSnapshotJSON`/`contentSnapshotCapturedAt`) ist additiv und
     /// muss exakt die drei "gültigen" Fälle unterscheidbar überleben — nie
