@@ -54,15 +54,22 @@ public struct AddMealView: View {
             Form {
                 detailsSection
                 searchSection
-                if let selectedEntry {
-                    quantitySection(for: selectedEntry)
-                }
                 if !draft.items.isEmpty {
                     itemsSection
                     previewSection
                 }
                 if editingMeal != nil {
                     deleteSection
+                }
+            }
+            // Task A: Mengenbereich haengt NICHT mehr im scrollenden Form-Flow
+            // (vorher musste man die bis zu ~130 Eintraege lange Trefferliste
+            // ganz durchscrollen, um ihn ueberhaupt zu erreichen) — stattdessen
+            // unten verankert, unabhaengig vom Scroll-Stand der Suche. Exaktes
+            // Vorbild: ActiveWorkoutView.swift's RestTimerBar-safeAreaInset.
+            .safeAreaInset(edge: .bottom) {
+                if let selectedEntry {
+                    quantityBottomBar(for: selectedEntry)
                 }
             }
             .scrollContentBackground(.hidden)
@@ -184,12 +191,24 @@ public struct AddMealView: View {
         .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
+    /// Task A: Ersatz fuer das vormalige `quantitySection(for:)` — lebt jetzt
+    /// ausserhalb des `Form`-Flows (siehe `.safeAreaInset` in `body`), daher
+    /// kein `Section`/`listRowBackground` mehr, sondern eine eigenstaendige,
+    /// ueber `.deltiqCardStyle()` vom Hintergrund abgesetzte Karte.
     @ViewBuilder
-    private func quantitySection(for entry: FoodCatalogEntry) -> some View {
+    private func quantityBottomBar(for entry: FoodCatalogEntry) -> some View {
         // Nur die laut FoodCatalogItem.supports(_:) zulaessigen Einheiten
         // (Spec 4.2) — niemals Stueck/Milliliter pauschal anbieten.
         let allowedUnits = FoodUnit.allCases.filter { entry.asCatalogItem.supports($0) }
-        Section {
+        VStack(alignment: .leading, spacing: 12) {
+            // Name des gewaehlten Lebensmittels zur Orientierung — ohne die
+            // Trefferliste zu scrollen, sieht man sonst nicht mehr, wofuer
+            // man gerade die Menge eintraegt.
+            Text(resolvedName(for: entry))
+                .font(.headline)
+                .foregroundStyle(Color.primary)
+                .lineLimit(1)
+
             HStack {
                 Text("nutrition.addMeal.quantityLabel", bundle: .module)
                 Spacer()
@@ -199,7 +218,6 @@ public struct AddMealView: View {
                     .fitnessNumberStyle()
                     .frame(maxWidth: 100)
             }
-            .listRowBackground(Color.Deltiq.surface)
 
             Picker(selection: $selectedUnit) {
                 ForEach(allowedUnits, id: \.self) { unit in
@@ -209,7 +227,6 @@ public struct AddMealView: View {
                 EmptyView()
             }
             .pickerStyle(.segmented)
-            .listRowBackground(Color.Deltiq.surface)
 
             Button {
                 addSelectedEntry()
@@ -220,10 +237,13 @@ public struct AddMealView: View {
                     Spacer()
                 }
             }
+            .buttonStyle(.borderedProminent)
             .disabled((quantity ?? 0) <= 0)
-            .listRowBackground(Color.Deltiq.surface)
         }
-        .listRowSeparatorTint(Color.Deltiq.divider)
+        .deltiqCardStyle()
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+        .background(Color.Deltiq.background)
     }
 
     private var itemsSection: some View {
