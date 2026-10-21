@@ -76,6 +76,13 @@ public struct RootView: View {
             navigation.returnToDashboard()
         }
         .task {
+            // Paket-3a-Geraetenachweis (docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+            // No-Op in jedem regulaeren Start — siehe Typ-Doku dort fuer die
+            // beiden Bedingungen (Debug-Build UND explizites Launch-Argument).
+            #if DEBUG
+            DeviceAcceptanceFixturePaket3a.seedIfRequested(in: modelContext)
+            #endif
+
             // DEL-134-Recovery: wenn der vorige Reset-Versuch mid-flight
             // crashed (sehr selten — z.B. iOS-Background-Termination kurz
             // nach `modelContext.save`), bleibt `isResetting=true` in
