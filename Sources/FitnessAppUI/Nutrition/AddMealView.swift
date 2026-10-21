@@ -23,6 +23,12 @@ public struct AddMealView: View {
 
     @StateObject private var draft: MealDraft
 
+    /// Non-nil im Edit-Modus (Task 7) — bestimmt Titel/Button-Labels und
+    /// schaltet den Loeschen-Button frei. Das Loeschen der ganzen Mahlzeit
+    /// laeuft bewusst NICHT ueber `MealDraft` (das kennt nur den Positions-
+    /// Entwurf), sondern direkt via `context.delete(meal)`.
+    private let editingMeal: MealEntry?
+
     @Query(sort: \FoodCatalogEntry.catalogID)
     private var catalogEntries: [FoodCatalogEntry]
 
@@ -31,9 +37,16 @@ public struct AddMealView: View {
     @State private var quantity: Double?
     @State private var selectedUnit: FoodUnit = .gram
     @State private var showingSaveError: Bool = false
+    @State private var showingDeleteConfirm: Bool = false
 
     public init(date: Date = Date(), mealType: MealType = .snack) {
         _draft = StateObject(wrappedValue: MealDraft(date: date, mealType: mealType))
+        self.editingMeal = nil
+    }
+
+    public init(editing meal: MealEntry) {
+        _draft = StateObject(wrappedValue: MealDraft(editing: meal))
+        self.editingMeal = meal
     }
 
     public var body: some View {
@@ -51,7 +64,7 @@ public struct AddMealView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color.Deltiq.background.ignoresSafeArea())
-            .navigationTitle(Text("nutrition.addMeal.title", bundle: .module))
+            .navigationTitle(Text(editingMeal == nil ? "nutrition.addMeal.title" : "nutrition.editMeal.title", bundle: .module))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -66,11 +79,24 @@ public struct AddMealView: View {
                         Text("nutrition.addMeal.cancel", bundle: .module)
                     }
                 }
+                if editingMeal != nil {
+                    // Loeschen der GESAMTEN Mahlzeit ist eine separate, simplere
+                    // Operation als das Editieren ihrer Positionen — laeuft
+                    // deshalb bewusst nicht ueber MealDraft, siehe deleteMeal().
+                    ToolbarItem(placement: .destructiveAction) {
+                        Button(role: .destructive) {
+                            showingDeleteConfirm = true
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .accessibilityLabel(Text("nutrition.editMeal.delete", bundle: .module))
+                    }
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
                         saveMeal()
                     } label: {
-                        Text("nutrition.addMeal.save", bundle: .module)
+                        Text(editingMeal == nil ? "nutrition.addMeal.save" : "nutrition.editMeal.save", bundle: .module)
                     }
                     // UI-seitige Zusatz-Absicherung — der eigentliche
                     // Doppeltap-Schutz sitzt in MealDraft.save() selbst.
@@ -87,6 +113,21 @@ public struct AddMealView: View {
                 }
             } message: {
                 Text("nutrition.addMeal.saveFailed.message", bundle: .module)
+            }
+            .confirmationDialog(
+                Text("nutrition.editMeal.deleteConfirm", bundle: .module),
+                isPresented: $showingDeleteConfirm,
+                titleVisibility: .visible
+            ) {
+                Button(role: .destructive) {
+                    deleteMeal()
+                } label: {
+                    Text("nutrition.editMeal.delete", bundle: .module)
+                }
+                Button(role: .cancel) {
+                } label: {
+                    Text("common.cancel", bundle: .module)
+                }
             }
         }
     }
@@ -286,6 +327,21 @@ public struct AddMealView: View {
         case .success:
             dismiss()
         case .failure:
+            showingSaveError = true
+        }
+    }
+
+    /// Loescht die GESAMTE Mahlzeit (Task 7) — bewusst NICHT ueber
+    /// `MealDraft`, das kennt nur den Positions-Entwurf. `MealEntry.items`
+    /// hat die Cascade-Delete-Rule (siehe dortige Doku), `context.delete`
+    /// reisst alle `MealItem`s also automatisch mit.
+    private func deleteMeal() {
+        guard let editingMeal else { return }
+        modelContext.delete(editingMeal)
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
             showingSaveError = true
         }
     }
