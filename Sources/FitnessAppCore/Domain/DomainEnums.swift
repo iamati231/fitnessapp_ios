@@ -150,6 +150,19 @@ public enum CircuitRoundMode: String, Codable, Sendable, CaseIterable {
     case toFailure
 }
 
+/// Paket 2 (Laufcoach-Konzept): aktueller Abschnitt eines laufenden
+/// strukturierten Ausdauer-Intervall-Laufs - Einlaufen -> N x (Belastung/
+/// Erholung) -> Auslaufen, siehe `WorkoutTimeFormat.enduranceIntervals`.
+/// Auf `WorkoutSession.endurancePhase` zugleich der "schon gestartet"-
+/// Marker (`nil` = Vorlauf noch nicht durchlaufen), analoges Muster zu
+/// `WorkoutSession.circuitRoundsCompleted` beim Zirkel.
+public enum EnduranceIntervalPhase: String, Codable, Sendable, CaseIterable {
+    case warmup
+    case work
+    case rest
+    case cooldown
+}
+
 /// Vorschlagswert fuer die Rundenzahl eines neu angelegten Zirkel-Tages,
 /// solange `circuitRounds` noch `nil` ist. In Core statt in FitnessAppUI,
 /// weil sowohl `DayAnalyzer` (FitnessAppData) als auch `DayEditorView`/

@@ -1240,6 +1240,15 @@ public enum DataImportService {
             // siehe DataExportService.buildDays - aeltere ZIPs ohne sie ->
             // alle drei nil, der Bestandsfall "kein Zirkel-Tag".
             let circuitMode = row.optionalString("circuit_mode").flatMap(CircuitRoundMode.init(rawValue:))
+            // Paket 2 (Komponente 4): additive Spalten, siehe
+            // DataExportService.buildDays - aeltere ZIPs ohne sie -> alle
+            // sechs nil, der Bestandsfall "kein Ausdauer-Intervall-Tag".
+            let enduranceWarmupDurationSeconds = row.int("endurance_warmup_seconds")
+            let enduranceCooldownDurationSeconds = row.int("endurance_cooldown_seconds")
+            let enduranceIntervalRounds = row.int("endurance_interval_rounds")
+            let enduranceWorkDurationSeconds = row.int("endurance_work_duration_seconds")
+            let enduranceWorkDistanceKm = row.double("endurance_work_distance_km")
+            let enduranceRestDurationSeconds = row.int("endurance_rest_duration_seconds")
             // Bugfix (Audit): `generation_fingerprint`/`generator_sequence_index`
             // fehlten hier komplett, siehe DataExportService.buildDays. Aeltere
             // ZIPs ohne die Spalten -> beide nil, exakt der Bestandsfall
@@ -1260,6 +1269,12 @@ public enum DataImportService {
                 circuitRounds: row.int("circuit_rounds"),
                 circuitRestSeconds: row.int("circuit_rest_seconds"),
                 circuitMode: circuitMode,
+                enduranceWarmupDurationSeconds: enduranceWarmupDurationSeconds,
+                enduranceCooldownDurationSeconds: enduranceCooldownDurationSeconds,
+                enduranceIntervalRounds: enduranceIntervalRounds,
+                enduranceWorkDurationSeconds: enduranceWorkDurationSeconds,
+                enduranceWorkDistanceKm: enduranceWorkDistanceKm,
+                enduranceRestDurationSeconds: enduranceRestDurationSeconds,
                 generationFingerprint: generationFingerprint,
                 generatorSequenceIndex: generatorSequenceIndex
             )
@@ -1316,6 +1331,11 @@ public enum DataImportService {
             // bleibt nil (normale Krafteinheit), die restlichen Felder ihre
             // Modell-Defaults (nil/false) - unveraendertes Verhalten von vorher.
             let timeFormatSnapshot = row.optionalString("time_format_snapshot").flatMap(WorkoutTimeFormat.init(rawValue:))
+            // Paket 2 (Komponente 4): additive Spalten, siehe
+            // DataExportService.buildWorkouts - aeltere ZIPs ohne sie ->
+            // alle sieben Modell-Defaults (nil/false), der Bestandsfall
+            // "keine Ausdauer-Intervall-Session".
+            let endurancePhase = row.optionalString("endurance_phase").flatMap(EnduranceIntervalPhase.init(rawValue:))
 
             let s = WorkoutSession(
                 startTime: start,
@@ -1340,6 +1360,13 @@ public enum DataImportService {
                 circuitRestEndDate: row.date("circuit_rest_end_date_utc"),
                 circuitCurrentRoundCheckedRaw: row.optionalString("circuit_current_round_checked_raw"),
                 completedTarget: row.bool("completed_target") ?? false,
+                endurancePhase: endurancePhase,
+                enduranceCurrentRoundNumber: row.int("endurance_current_round_number"),
+                enduranceRoundsCompleted: row.int("endurance_rounds_completed"),
+                endurancePhaseEndDate: row.date("endurance_phase_end_date_utc"),
+                endurancePausedRemainingSeconds: row.int("endurance_paused_remaining_seconds"),
+                enduranceWarmupSkipped: row.bool("endurance_warmup_skipped") ?? false,
+                enduranceCooldownSkipped: row.bool("endurance_cooldown_skipped") ?? false,
                 importSourceName: row.optionalString("import_source_name"),
                 healthKitSampleUUID: row.optionalString("healthkit_sample_uuid")
             )

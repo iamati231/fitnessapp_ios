@@ -99,5 +99,50 @@ final class TrainingDayEnduranceIntervalFieldsTests: XCTestCase {
         XCTAssertEqual(spec.enduranceWorkDurationSeconds, 120)
         XCTAssertEqual(spec.enduranceRestDurationSeconds, 120)
     }
+
+    /// Paket 2, Schritt "buildSnapshot fertigstellen": die sechs
+    /// `endurance*`-Konfigurationsfelder muessen denselben P8-Stufe-2-
+    /// Snapshot-Pfad durchlaufen wie `circuitRounds`/`circuitRestSeconds`/
+    /// `circuitMode` - sonst wuerde eine waehrend einer laufenden Session
+    /// extern geaenderte Tageskonfiguration den `EnduranceIntervalPlayerView`
+    /// mitten im Lauf beeinflussen (siehe `WorkoutSessionContentSnapshotFirst`-
+    /// Doku).
+    func testSnapshotRoundtripPreservesEnduranceFields() throws {
+        let context = container.mainContext
+        let day = makeDay()
+        day.enduranceWorkDurationSeconds = nil
+        day.enduranceWorkDistanceKm = 2.5
+        context.insert(day)
+
+        let session = WorkoutSession(day: day, timeFormatSnapshot: .enduranceIntervals)
+        context.insert(session)
+        XCTAssertTrue(TrainingDayContentSnapshotWriter.capture(for: session, in: context))
+
+        XCTAssertEqual(session.contentSnapshotEnduranceWarmupDurationSeconds, 600)
+        XCTAssertEqual(session.contentSnapshotEnduranceCooldownDurationSeconds, 300)
+        XCTAssertEqual(session.contentSnapshotEnduranceIntervalRounds, 5)
+        XCTAssertNil(session.contentSnapshotEnduranceWorkDurationSeconds)
+        XCTAssertEqual(session.contentSnapshotEnduranceWorkDistanceKm, 2.5)
+        XCTAssertEqual(session.contentSnapshotEnduranceRestDurationSeconds, 120)
+
+        // Eine spaetere externe Aenderung am lebenden Tag darf den
+        // eingefrorenen Snapshot nicht mehr beeinflussen.
+        day.enduranceIntervalRounds = 10
+        XCTAssertEqual(session.contentSnapshotEnduranceIntervalRounds, 5, "Snapshot muss den Stand bei Session-Start einfrieren, nicht live mitziehen")
+    }
+
+    /// Dokumentiert den "schon gestartet"-Marker und die Trennung zwischen
+    /// Positions- (`enduranceCurrentRoundNumber`) und Ergebniszaehler
+    /// (`enduranceRoundsCompleted`), siehe Feld-Doku auf `WorkoutSession`.
+    func testEnduranceSessionFieldsDefaultToNotStarted() throws {
+        let session = WorkoutSession()
+        XCTAssertNil(session.endurancePhase, "nil bis zum ersten echten Start, analog circuitRoundsCompleted")
+        XCTAssertNil(session.enduranceCurrentRoundNumber)
+        XCTAssertNil(session.enduranceRoundsCompleted)
+        XCTAssertNil(session.endurancePhaseEndDate)
+        XCTAssertNil(session.endurancePausedRemainingSeconds)
+        XCTAssertFalse(session.enduranceWarmupSkipped)
+        XCTAssertFalse(session.enduranceCooldownSkipped)
+    }
 }
 #endif

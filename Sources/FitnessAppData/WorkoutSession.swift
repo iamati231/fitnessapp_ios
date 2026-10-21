@@ -112,6 +112,49 @@ public final class WorkoutSession {
     /// als "nicht verifiziert vollstaendig" statt faelschlich als komplett.
     public var completedTarget: Bool = false
 
+    // MARK: - Ausdauer-Intervalle (Paket 2)
+    //
+    // Eigene Feldgruppe statt Wiederverwendung der Zirkel-Felder oben: anders
+    // als beim Zirkel kann eine Belastungsphase hier auch UNGEZEITET sein
+    // (Strecken-/offenes Ziel) und manuell uebersprungen werden, ohne dass
+    // die Runde als abgeschlossen zaehlt (Komponente 3: "uebersprungene
+    // Abschnitte nicht als vollstaendig absolviert protokollieren") - dafuer
+    // braucht es die Position (`enduranceCurrentRoundNumber`) getrennt vom
+    // Ergebnis-Zaehler (`enduranceRoundsCompleted`).
+
+    /// Aktueller Abschnitt. `nil` bis zum allerersten echten Start nach dem
+    /// Vorlauf - zugleich der "schon gestartet"-Marker, analog
+    /// `circuitRoundsCompleted` beim Zirkel.
+    public var endurancePhase: EnduranceIntervalPhase?
+    /// 1-basierte Position innerhalb der Belastungs-/Erholungs-Wiederholung
+    /// (unabhaengig davon, ob diese Runde am Ende als abgeschlossen zaehlt) -
+    /// `nil` waehrend des Einlaufens, vor dem Start der ersten Runde gesetzt.
+    public var enduranceCurrentRoundNumber: Int?
+    /// Anzahl der Runden, deren Belastungsphase reguliert (nicht manuell
+    /// uebersprungen) beendet wurde. Das ist NICHT dasselbe wie
+    /// `enduranceCurrentRoundNumber` - eine uebersprungene Runde erhoeht die
+    /// Position, aber nicht dieses Ergebnis.
+    public var enduranceRoundsCompleted: Int?
+    /// Ende der aktuell laufenden GEZEITETEN Phase (Einlaufen/Erholung/
+    /// Auslaufen immer, Belastung nur bei Zeit-Ziel) - Wanduhr-Anker wie
+    /// `circuitRestEndDate`, ueberlebt Hintergrund/Resume. `nil` waehrend
+    /// einer ungezeiteten Belastungsphase (Strecke/offen) ODER waehrend
+    /// einer manuellen Pause (siehe `endurancePausedRemainingSeconds`).
+    public var endurancePhaseEndDate: Date?
+    /// Non-nil GENAU waehrend einer manuellen Pause ("Pause"-Knopf): die zum
+    /// Pausenzeitpunkt verbleibenden Sekunden der laufenden gezeiteten
+    /// Phase. "Fortsetzen" berechnet daraus einen neuen
+    /// `endurancePhaseEndDate`-Anker und setzt dieses Feld zurueck auf
+    /// `nil`. Bleibt `nil`, wenn die aktuelle Phase ungezeitet ist (eine
+    /// ungezeitete Belastungsphase braucht keine Pause - es laeuft ja keine
+    /// Uhr, die weiterzaehlen koennte).
+    public var endurancePausedRemainingSeconds: Int?
+    /// True wenn das Einlaufen manuell vorzeitig beendet wurde (nicht
+    /// regulaer ausgelaufen) - fuer eine ehrliche Zusammenfassung.
+    public var enduranceWarmupSkipped: Bool = false
+    /// Wie `enduranceWarmupSkipped`, fuer das Auslaufen.
+    public var enduranceCooldownSkipped: Bool = false
+
     /// Name der Quell-App, wenn diese Session automatisch aus einem externen
     /// HealthKit-Workout importiert wurde (z.B. "Adidas Running"). `nil` fuer
     /// jede nativ in der App erfasste Session — das ist der einzige Provenienz-
@@ -219,6 +262,13 @@ public final class WorkoutSession {
         circuitRestEndDate: Date? = nil,
         circuitCurrentRoundCheckedRaw: String? = nil,
         completedTarget: Bool = false,
+        endurancePhase: EnduranceIntervalPhase? = nil,
+        enduranceCurrentRoundNumber: Int? = nil,
+        enduranceRoundsCompleted: Int? = nil,
+        endurancePhaseEndDate: Date? = nil,
+        endurancePausedRemainingSeconds: Int? = nil,
+        enduranceWarmupSkipped: Bool = false,
+        enduranceCooldownSkipped: Bool = false,
         importSourceName: String? = nil,
         healthKitSampleUUID: String? = nil,
         healthKitExportedAt: Date? = nil
@@ -246,6 +296,13 @@ public final class WorkoutSession {
         self.circuitRestEndDate = circuitRestEndDate
         self.circuitCurrentRoundCheckedRaw = circuitCurrentRoundCheckedRaw
         self.completedTarget = completedTarget
+        self.endurancePhase = endurancePhase
+        self.enduranceCurrentRoundNumber = enduranceCurrentRoundNumber
+        self.enduranceRoundsCompleted = enduranceRoundsCompleted
+        self.endurancePhaseEndDate = endurancePhaseEndDate
+        self.endurancePausedRemainingSeconds = endurancePausedRemainingSeconds
+        self.enduranceWarmupSkipped = enduranceWarmupSkipped
+        self.enduranceCooldownSkipped = enduranceCooldownSkipped
         self.importSourceName = importSourceName
         self.healthKitSampleUUID = healthKitSampleUUID
         self.healthKitExportedAt = healthKitExportedAt

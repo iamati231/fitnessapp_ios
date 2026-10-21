@@ -47,6 +47,33 @@ extension WorkoutSession {
         contentSnapshotFirst({ $0.circuitMode }, liveFallback: { day?.circuitMode })
     }
 
+    /// Paket 2: wie die drei Zirkel-Accessor oben - steuert bei
+    /// `EnduranceIntervalPlayerView` die tatsaechliche Timer-/Phasenlogik,
+    /// nicht nur eine Anzeige.
+    public var contentSnapshotEnduranceWarmupDurationSeconds: Int? {
+        contentSnapshotFirst({ $0.enduranceWarmupDurationSeconds }, liveFallback: { day?.enduranceWarmupDurationSeconds })
+    }
+
+    public var contentSnapshotEnduranceCooldownDurationSeconds: Int? {
+        contentSnapshotFirst({ $0.enduranceCooldownDurationSeconds }, liveFallback: { day?.enduranceCooldownDurationSeconds })
+    }
+
+    public var contentSnapshotEnduranceIntervalRounds: Int? {
+        contentSnapshotFirst({ $0.enduranceIntervalRounds }, liveFallback: { day?.enduranceIntervalRounds })
+    }
+
+    public var contentSnapshotEnduranceWorkDurationSeconds: Int? {
+        contentSnapshotFirst({ $0.enduranceWorkDurationSeconds }, liveFallback: { day?.enduranceWorkDurationSeconds })
+    }
+
+    public var contentSnapshotEnduranceWorkDistanceKm: Double? {
+        contentSnapshotFirst({ $0.enduranceWorkDistanceKm }, liveFallback: { day?.enduranceWorkDistanceKm })
+    }
+
+    public var contentSnapshotEnduranceRestDurationSeconds: Int? {
+        contentSnapshotFirst({ $0.enduranceRestDurationSeconds }, liveFallback: { day?.enduranceRestDurationSeconds })
+    }
+
     /// P8 Stufe-2-Nachbesserung (Geräteabnahme-Befund, Block D): steuert,
     /// welcher Player überhaupt geöffnet wird (`WorkoutRootView`) und,
     /// innerhalb eines Zeitformat-Tags, welcher der vier Unterspieler

@@ -129,6 +129,19 @@ public struct TrainingDayContentSnapshot: Codable, Sendable, Equatable {
     public let circuitRounds: Int?
     public let circuitRestSeconds: Int?
     public let circuitMode: CircuitRoundMode?
+    /// Paket 2: wie `circuitRounds`/`circuitRestSeconds`/`circuitMode` oben -
+    /// steuert bei `.enduranceIntervals` die tatsaechliche Timer-/
+    /// Rundenlogik von `EnduranceIntervalPlayerView`, nicht nur eine
+    /// Anzeige. Neue, rein additive Felder (alle optional): ein aeltere
+    /// Snapshot ohne diese Keys dekodiert dank `Optional`-Synthese
+    /// automatisch zu `nil` je Feld - kein Schemaversions-Sprung noetig,
+    /// gleiches Muster wie `ExerciseEntry.instanceID`.
+    public let enduranceWarmupDurationSeconds: Int?
+    public let enduranceCooldownDurationSeconds: Int?
+    public let enduranceIntervalRounds: Int?
+    public let enduranceWorkDurationSeconds: Int?
+    public let enduranceWorkDistanceKm: Double?
+    public let enduranceRestDurationSeconds: Int?
     /// Geordnete, VOLLSTÄNDIGE Liste — eine leere Liste ist ein gültiger
     /// Zustand (z. B. ein Ad-hoc-Training im Moment der Erzeugung, bevor die
     /// erste Übung hinzugefügt wurde), kein Fehler und keine Datenlücke.
@@ -145,6 +158,12 @@ public struct TrainingDayContentSnapshot: Codable, Sendable, Equatable {
         circuitRounds: Int?,
         circuitRestSeconds: Int?,
         circuitMode: CircuitRoundMode?,
+        enduranceWarmupDurationSeconds: Int? = nil,
+        enduranceCooldownDurationSeconds: Int? = nil,
+        enduranceIntervalRounds: Int? = nil,
+        enduranceWorkDurationSeconds: Int? = nil,
+        enduranceWorkDistanceKm: Double? = nil,
+        enduranceRestDurationSeconds: Int? = nil,
         exercises: [ExerciseEntry]
     ) {
         self.schemaVersion = Self.currentSchemaVersion
@@ -158,6 +177,12 @@ public struct TrainingDayContentSnapshot: Codable, Sendable, Equatable {
         self.circuitRounds = circuitRounds
         self.circuitRestSeconds = circuitRestSeconds
         self.circuitMode = circuitMode
+        self.enduranceWarmupDurationSeconds = enduranceWarmupDurationSeconds
+        self.enduranceCooldownDurationSeconds = enduranceCooldownDurationSeconds
+        self.enduranceIntervalRounds = enduranceIntervalRounds
+        self.enduranceWorkDurationSeconds = enduranceWorkDurationSeconds
+        self.enduranceWorkDistanceKm = enduranceWorkDistanceKm
+        self.enduranceRestDurationSeconds = enduranceRestDurationSeconds
         self.exercises = exercises
     }
 
@@ -179,6 +204,12 @@ public struct TrainingDayContentSnapshot: Codable, Sendable, Equatable {
             circuitRounds: circuitRounds,
             circuitRestSeconds: circuitRestSeconds,
             circuitMode: circuitMode,
+            enduranceWarmupDurationSeconds: enduranceWarmupDurationSeconds,
+            enduranceCooldownDurationSeconds: enduranceCooldownDurationSeconds,
+            enduranceIntervalRounds: enduranceIntervalRounds,
+            enduranceWorkDurationSeconds: enduranceWorkDurationSeconds,
+            enduranceWorkDistanceKm: enduranceWorkDistanceKm,
+            enduranceRestDurationSeconds: enduranceRestDurationSeconds,
             exercises: exercises
         )
     }

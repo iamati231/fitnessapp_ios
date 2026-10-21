@@ -289,6 +289,12 @@ public enum TrainingDayContentSnapshotWriter {
             circuitRounds: day.circuitRounds,
             circuitRestSeconds: day.circuitRestSeconds,
             circuitMode: day.circuitMode,
+            enduranceWarmupDurationSeconds: day.enduranceWarmupDurationSeconds,
+            enduranceCooldownDurationSeconds: day.enduranceCooldownDurationSeconds,
+            enduranceIntervalRounds: day.enduranceIntervalRounds,
+            enduranceWorkDurationSeconds: day.enduranceWorkDurationSeconds,
+            enduranceWorkDistanceKm: day.enduranceWorkDistanceKm,
+            enduranceRestDurationSeconds: day.enduranceRestDurationSeconds,
             exercises: exercises
         )
     }

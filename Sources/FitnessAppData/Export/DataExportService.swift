@@ -532,11 +532,18 @@ public enum DataExportService {
         // gleiches Bugfix-Muster wie `time_format`/`time_cap_minutes` oben,
         // sonst verliert ein Zirkel-Tag diese drei Felder nach jedem
         // Export/Import-Roundtrip.
+        // Paket 2 (Komponente 4, Persistenz/Kompatibilität): gleiches
+        // additive-Spalten-Muster für die sechs `endurance*`-Felder -
+        // sonst verliert ein strukturierter Ausdauertag seine Konfiguration
+        // nach jedem Export/Import-Roundtrip.
         var w = CSVWriter(headers: [
             "id", "plan_id", "name", "custom_name", "weekday",
             "type", "next_intensity", "localization_key",
             "time_format", "time_cap_minutes",
             "circuit_rounds", "circuit_rest_seconds", "circuit_mode",
+            "endurance_warmup_seconds", "endurance_cooldown_seconds",
+            "endurance_interval_rounds", "endurance_work_duration_seconds",
+            "endurance_work_distance_km", "endurance_rest_duration_seconds",
             "generation_fingerprint", "generator_sequence_index"
         ])
         for d in items {
@@ -554,6 +561,12 @@ public enum DataExportService {
                 d.circuitRounds.map(String.init) ?? "",
                 d.circuitRestSeconds.map(String.init) ?? "",
                 d.circuitMode?.rawValue ?? "",
+                d.enduranceWarmupDurationSeconds.map(String.init) ?? "",
+                d.enduranceCooldownDurationSeconds.map(String.init) ?? "",
+                d.enduranceIntervalRounds.map(String.init) ?? "",
+                d.enduranceWorkDurationSeconds.map(String.init) ?? "",
+                CSVWriter.decimal(d.enduranceWorkDistanceKm),
+                d.enduranceRestDurationSeconds.map(String.init) ?? "",
                 d.generationFingerprint ?? "",
                 d.generatorSequenceIndex.map(String.init) ?? ""
             ])
@@ -669,6 +682,13 @@ public enum DataExportService {
             "circuit_rounds_completed", "circuit_rest_end_date_utc",
             "circuit_current_round_checked_raw",
             "completed_target",
+            // Paket 2 (Komponente 4): additive Spalten fuer die sieben
+            // Ausdauer-Intervall-Ergebnisfelder, gleiches Muster wie die
+            // Zirkel-Resume-Felder direkt darueber.
+            "endurance_phase", "endurance_current_round_number",
+            "endurance_rounds_completed", "endurance_phase_end_date_utc",
+            "endurance_paused_remaining_seconds",
+            "endurance_warmup_skipped", "endurance_cooldown_skipped",
             "import_source_name", "healthkit_sample_uuid",
             // P8 Stufe-2: additive Spalten fuer den eingefrorenen
             // Tagesinhalts-Snapshot. `content_snapshot_json` traegt die
@@ -707,6 +727,13 @@ public enum DataExportService {
                 s.circuitRestEndDate.map { CSVWriter.iso8601($0) } ?? "",
                 s.circuitCurrentRoundCheckedRaw ?? "",
                 CSVWriter.bool(s.completedTarget),
+                s.endurancePhase?.rawValue ?? "",
+                s.enduranceCurrentRoundNumber.map(String.init) ?? "",
+                s.enduranceRoundsCompleted.map(String.init) ?? "",
+                s.endurancePhaseEndDate.map { CSVWriter.iso8601($0) } ?? "",
+                s.endurancePausedRemainingSeconds.map(String.init) ?? "",
+                CSVWriter.bool(s.enduranceWarmupSkipped),
+                CSVWriter.bool(s.enduranceCooldownSkipped),
                 s.importSourceName ?? "",
                 s.healthKitSampleUUID ?? "",
                 s.contentSnapshotJSON ?? "",
