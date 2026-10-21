@@ -496,6 +496,78 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(importedSession?.circuitCurrentRoundCheckedRaw, "0,2")
     }
 
+    /// Paket 2 (strukturierte Ausdauereinheiten): CSV-Export/-Import der
+    /// sechs neuen `TrainingDay`-Konfigurationsfelder und der sieben neuen
+    /// `WorkoutSession`-Ergebnisfelder, gleiches Prinzip wie
+    /// `testCircuitDayAndSessionSurviveRoundtrip` fuer `.circuit` - bisher
+    /// war dieser Pfad nur per Code-Review behauptet ("additiv ergaenzt"),
+    /// nicht durch einen Test belegt (docs/DELTIQ_DEVICE_ACCEPTANCE.md,
+    /// Paket-2-Abschlussnachtrag).
+    func testEnduranceIntervalsDayAndSessionSurviveRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Lauf-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let day = TrainingDay(
+            name: "Intervalle", weekday: 3, type: .fullBody, plan: plan,
+            timeFormat: .enduranceIntervals,
+            enduranceWarmupDurationSeconds: 600,
+            enduranceCooldownDurationSeconds: 300,
+            enduranceIntervalRounds: 5,
+            enduranceWorkDurationSeconds: nil,
+            enduranceWorkDistanceKm: 1.0,
+            enduranceRestDurationSeconds: 120
+        )
+        ctx.insert(day)
+        let phaseEnd = Date(timeIntervalSince1970: 1_760_500_090)
+        let session = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_760_500_000),
+            endTime: Date(timeIntervalSince1970: 1_760_500_090),
+            isCompleted: false, dayName: "Intervalle", day: day,
+            timeFormatSnapshot: .enduranceIntervals,
+            endurancePhase: .rest,
+            enduranceCurrentRoundNumber: 2,
+            enduranceRoundsCompleted: 1,
+            endurancePhaseEndDate: phaseEnd,
+            endurancePausedRemainingSeconds: 42,
+            enduranceWarmupSkipped: true,
+            enduranceCooldownSkipped: false
+        )
+        ctx.insert(session)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let importedDay = try target.mainContext.fetch(FetchDescriptor<TrainingDay>()).first
+        XCTAssertEqual(importedDay?.timeFormat, .enduranceIntervals)
+        XCTAssertEqual(importedDay?.enduranceWarmupDurationSeconds, 600)
+        XCTAssertEqual(importedDay?.enduranceCooldownDurationSeconds, 300)
+        XCTAssertEqual(importedDay?.enduranceIntervalRounds, 5)
+        XCTAssertNil(importedDay?.enduranceWorkDurationSeconds)
+        XCTAssertEqual(importedDay?.enduranceWorkDistanceKm, 1.0)
+        XCTAssertEqual(importedDay?.enduranceRestDurationSeconds, 120)
+
+        let importedSession = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
+        XCTAssertEqual(importedSession?.timeFormatSnapshot, .enduranceIntervals)
+        XCTAssertEqual(importedSession?.endurancePhase, .rest)
+        XCTAssertEqual(importedSession?.enduranceCurrentRoundNumber, 2)
+        XCTAssertEqual(importedSession?.enduranceRoundsCompleted, 1, "uebersprungene Runde darf den Ergebnis-Zaehler nicht erreicht haben")
+        XCTAssertEqual(
+            importedSession?.endurancePhaseEndDate.map { $0.timeIntervalSince1970.rounded() },
+            phaseEnd.timeIntervalSince1970.rounded()
+        )
+        XCTAssertEqual(importedSession?.endurancePausedRemainingSeconds, 42, "eine laufende Pause muss ein Backup/Restore ueberleben")
+        XCTAssertTrue(importedSession?.enduranceWarmupSkipped ?? false)
+        XCTAssertFalse(importedSession?.enduranceCooldownSkipped ?? true)
+    }
+
     /// P8 Stufe-2, Paket D: der eingefrorene Tagesinhalts-Snapshot
     /// (`contentSnapshotJSON`/`contentSnapshotCapturedAt`) ist additiv und
     /// muss exakt die drei "gültigen" Fälle unterscheidbar überleben — nie
