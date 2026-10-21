@@ -121,6 +121,14 @@ public final class MealDraft: ObservableObject {
             return .success(())
         }
 
+        // Final-review fix (important): an empty 0-kcal meal must never be
+        // persisted — neither as a brand-new MealEntry nor as the result of
+        // editing an existing one down to zero items. UI-seitig gespiegelt
+        // durch AddMealView's Save-Button-`.disabled`.
+        guard !items.isEmpty else {
+            return .failure(MealDraftError.noItems)
+        }
+
         if let originalMealID {
             guard let meal = context.model(for: originalMealID) as? MealEntry else {
                 return .failure(MealDraftError.originalMealMissing)
@@ -225,11 +233,15 @@ public final class MealDraft: ObservableObject {
 }
 
 /// Fehler, die nur im Edit-Pfad von `MealDraft.save` auftreten koennen.
-public enum MealDraftError: Error {
+public enum MealDraftError: Error, Equatable {
     /// Die `MealEntry`, aus der dieser Entwurf per `init(editing:)` gebaut
     /// wurde, existiert im uebergebenen Context nicht mehr (z.B. zwischen-
     /// zeitlich geloescht).
     case originalMealMissing
+    /// Final-review fix (important): `save()` wurde ohne Positionen
+    /// aufgerufen — weder eine neue noch eine editierte Mahlzeit darf mit
+    /// 0 Items persistiert werden.
+    case noItems
 }
 
 /// Reine Feldwerte eines `MealItem`, gesichert kurz bevor `MealDraft.save`

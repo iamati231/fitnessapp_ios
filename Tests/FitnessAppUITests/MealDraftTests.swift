@@ -61,5 +61,21 @@ final class MealDraftTests: XCTestCase {
         XCTAssertFalse(draft.didSaveSuccessfully)
         XCTAssertEqual(try context.fetchCount(FetchDescriptor<MealEntry>()), 0, "Fehlgeschlagener Save darf keine Spur hinterlassen")
     }
+
+    // Final-review fix (important): eine 0-kcal-Mahlzeit ohne Positionen
+    // darf nie persistiert werden.
+    func testSaveWithNoItemsIsNoOp() throws {
+        let draft = MealDraft(date: Date(), mealType: .lunch)
+
+        let result = draft.save(into: context)
+
+        switch result {
+        case .success: XCTFail("Erwartet: Fehler bei leerem Entwurf")
+        case .failure(let error):
+            XCTAssertEqual(error as? MealDraftError, .noItems)
+        }
+        XCTAssertFalse(draft.didSaveSuccessfully)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<MealEntry>()), 0)
+    }
 }
 #endif

@@ -98,9 +98,10 @@ public struct AddMealView: View {
                     } label: {
                         Text(editingMeal == nil ? "nutrition.addMeal.save" : "nutrition.editMeal.save", bundle: .module)
                     }
-                    // UI-seitige Zusatz-Absicherung — der eigentliche
-                    // Doppeltap-Schutz sitzt in MealDraft.save() selbst.
-                    .disabled(draft.didSaveSuccessfully)
+                    // UI-seitige Zusatz-Absicherung — die eigentlichen
+                    // Garantien (Doppeltap-Schutz, leere-Items-Guard) sitzen
+                    // in MealDraft.save() selbst.
+                    .disabled(draft.didSaveSuccessfully || draft.items.isEmpty)
                 }
             }
             .alert(
