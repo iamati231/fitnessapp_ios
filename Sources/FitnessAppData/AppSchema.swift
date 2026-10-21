@@ -38,7 +38,8 @@ public enum AppSchema {
         WaterEntry.self,
         PersonalRecordEntry.self,
         Gear.self,
-        PeriodicCheckIn.self
+        PeriodicCheckIn.self,
+        FoodCatalogEntry.self
     ]
 }
 #endif
