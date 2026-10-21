@@ -81,20 +81,29 @@ public struct MealDraftCandidate: Sendable, Equatable {
     public let unit: MealTextCandidateUnit?
     public let mealType: MealTextCandidateMealType?
     /// Catalog entries whose name matches `foodText`. Empty = no catalog hit
-    /// (manual search only), one = confident match, more than one = ambiguous
+    /// (manual search only), one EXACT match = confident, anything else
+    /// (more than one match, or a single substring-only match) = ambiguous
     /// (manual pick required).
     public let matches: [MealTextCatalogEntry]
+    /// I1 fix: true only when `matches` came from an exact (case-/diacritic-
+    /// insensitive) name match. A single substring-only hit (e.g.
+    /// "Apfelstrudel" -> "Apfel") is semantically unreliable and must never be
+    /// offered as a one-tap confident suggestion — see `isAmbiguous`.
+    public let isExactMatch: Bool
 
-    public init(foodText: String, quantity: Double?, unit: MealTextCandidateUnit?, mealType: MealTextCandidateMealType?, matches: [MealTextCatalogEntry]) {
+    public init(foodText: String, quantity: Double?, unit: MealTextCandidateUnit?, mealType: MealTextCandidateMealType?, matches: [MealTextCatalogEntry], isExactMatch: Bool) {
         self.foodText = foodText
         self.quantity = quantity
         self.unit = unit
         self.mealType = mealType
         self.matches = matches
+        self.isExactMatch = isExactMatch
     }
 
     public var needsQuantity: Bool { quantity == nil }
-    public var isAmbiguous: Bool { matches.count > 1 }
+    /// More than one match is always ambiguous; a single match is ambiguous
+    /// too unless it came from an exact name match (I1 fix).
+    public var isAmbiguous: Bool { matches.count > 1 || (matches.count == 1 && !isExactMatch) }
     public var hasNoCatalogMatch: Bool { matches.isEmpty }
 }
 
@@ -187,24 +196,34 @@ public struct MealTextExtractor: Sendable {
             let foodText = candidate.foodText.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !foodText.isEmpty else { return nil }
             let sanitizedQuantity = (candidate.quantity ?? 0) > 0 ? candidate.quantity : nil
+            let (matches, isExact) = Self.matchCatalog(foodText: foodText, catalog: catalog)
             return MealDraftCandidate(
                 foodText: foodText,
                 quantity: sanitizedQuantity,
                 unit: candidate.unit,
                 mealType: candidate.mealType,
-                matches: Self.matchCatalog(foodText: foodText, catalog: catalog)
+                matches: matches,
+                isExactMatch: isExact
             )
         }
     }
 
-    /// Case-insensitive exact match first; falls back to substring match in
-    /// either direction (e.g. "Reis" matching "Reis, gekocht"). Pure string
-    /// comparison only — the actual nutrient lookup always goes through Core.
-    static func matchCatalog(foodText: String, catalog: [MealTextCatalogEntry]) -> [MealTextCatalogEntry] {
-        let exact = catalog.filter { $0.name.caseInsensitiveCompare(foodText) == .orderedSame }
-        if !exact.isEmpty { return exact }
-        return catalog.filter {
+    /// Case-/diacritic-insensitive exact match first (the only kind that counts
+    /// as "confident" — I1 fix); falls back to substring match in either
+    /// direction (e.g. "Reis" matching "Reis, gekocht") when no exact match
+    /// exists, flagged as NOT exact so the UI always routes it through manual
+    /// pick instead of a one-tap suggestion. Pure string comparison only — the
+    /// actual nutrient lookup always goes through Core.
+    static func matchCatalog(foodText: String, catalog: [MealTextCatalogEntry]) -> (matches: [MealTextCatalogEntry], isExact: Bool) {
+        let exact = catalog.filter { isExactNameMatch($0.name, foodText) }
+        if !exact.isEmpty { return (exact, true) }
+        let substring = catalog.filter {
             $0.name.localizedCaseInsensitiveContains(foodText) || foodText.localizedCaseInsensitiveContains($0.name)
         }
+        return (substring, false)
+    }
+
+    private static func isExactNameMatch(_ lhs: String, _ rhs: String) -> Bool {
+        lhs.compare(rhs, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
     }
 }

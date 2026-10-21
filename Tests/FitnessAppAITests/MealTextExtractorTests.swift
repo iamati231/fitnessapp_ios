@@ -117,6 +117,50 @@ final class MealTextExtractorTests: XCTestCase {
         XCTAssertTrue(candidates.isEmpty)
     }
 
+    // MARK: I1 — a substring-only hit is never "confident", even if it's the only one
+
+    /// "Apfelstrudel" contains "Apfel" as a substring, but is NOT the same food
+    /// — this must never be offered as a one-tap confident suggestion.
+    func testSubstringOnlyMatch_apfelstrudelVsApfel_isNeverConfident() async throws {
+        let catalog = [MealTextCatalogEntry(catalogID: "apple_raw", name: "Apfel")]
+        let (extractor, _) = extractor(candidates: [
+            MealTextCandidate(foodText: "Apfelstrudel", quantity: 1, unit: .piece, mealType: nil)
+        ])
+        let candidates = try await extractor.extractCandidates(from: "ein Apfelstrudel", catalog: catalog)
+
+        XCTAssertEqual(candidates.count, 1)
+        XCTAssertFalse(candidates[0].isExactMatch, "a substring hit must never be marked exact")
+        XCTAssertTrue(candidates[0].isAmbiguous, "a single substring-only match must be routed through manual pick, never a one-tap suggestion")
+    }
+
+    /// "tavuk suyu" (chicken broth) contains "Su" ("water") as a substring —
+    /// same requirement as above, from the review's own example.
+    func testSubstringOnlyMatch_tavukSuyuVsSu_isNeverConfident() async throws {
+        let catalog = [MealTextCatalogEntry(catalogID: "water", name: "Su")]
+        let (extractor, _) = extractor(candidates: [
+            MealTextCandidate(foodText: "tavuk suyu", quantity: 200, unit: .milliliter, mealType: nil)
+        ])
+        let candidates = try await extractor.extractCandidates(from: "200ml tavuk suyu", catalog: catalog)
+
+        XCTAssertEqual(candidates.count, 1)
+        XCTAssertFalse(candidates[0].isExactMatch)
+        XCTAssertTrue(candidates[0].isAmbiguous)
+    }
+
+    /// An exact (case-/diacritic-insensitive) match is still the only path to
+    /// a confident one-tap suggestion.
+    func testExactMatch_caseAndDiacriticInsensitive_isConfident() async throws {
+        let catalog = [MealTextCatalogEntry(catalogID: "apple_raw", name: "Äpfel")]
+        let (extractor, _) = extractor(candidates: [
+            MealTextCandidate(foodText: "apfel", quantity: 1, unit: .piece, mealType: nil)
+        ])
+        let candidates = try await extractor.extractCandidates(from: "ein apfel", catalog: catalog)
+
+        XCTAssertEqual(candidates.count, 1)
+        XCTAssertTrue(candidates[0].isExactMatch, "'apfel' vs 'Äpfel' differs only in case + diacritic, must still count as exact")
+        XCTAssertFalse(candidates[0].isAmbiguous)
+    }
+
     // MARK: No catalog hit -> empty matches, not a crash, not an auto-pick
 
     func testNoCatalogMatch_returnsEmptyMatches() async throws {

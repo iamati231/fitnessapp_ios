@@ -51,9 +51,15 @@ public struct NutritionInsightInput: Sendable, Equatable {
 /// number, so the model can't invent or imply one.
 public struct NutritionInsightGenerator: Sendable {
     private let service: NutritionAIService
+    // I2: the locale actually driving what language the model is told to
+    // answer in — same explicit-locale reasoning as `NutritionAIService`
+    // itself (see its doc comment), so the UI's `\.environment(\.locale)`
+    // always wins over `.current`.
+    private let locale: Locale
 
-    public init(service: NutritionAIService = NutritionAIService()) {
+    public init(service: NutritionAIService = NutritionAIService(), locale: Locale = .current) {
         self.service = service
+        self.locale = locale
     }
 
     public func availability() -> NutritionAIAvailability {
@@ -62,19 +68,71 @@ public struct NutritionInsightGenerator: Sendable {
 
     /// Throws `NutritionAIError.unavailable(_)` (propagated from `service`,
     /// without calling the model) when `availability()` isn't `.available`.
+    /// I5 safety net: also throws `.generationFailed` when the generated text
+    /// contains any number that doesn't exactly match one of the real input
+    /// numbers (totals + any goals that were actually set) — a fabricated
+    /// number is treated as a failed generation, never shown.
     public func generateInsight(for input: NutritionInsightInput) async throws -> String {
-        try await service.generateText(instructions: Self.instructions, prompt: Self.prompt(for: input))
+        let text = try await service.generateText(instructions: Self.instructions(for: locale), prompt: Self.prompt(for: input))
+        guard Self.onlyContainsVerifiedNumbers(text, input: input) else {
+            throw NutritionAIError.generationFailed
+        }
+        return text
     }
 
-    static let instructions = """
-    You summarize one day's already-computed nutrition numbers for the user \
-    in their own language. Use ONLY the numbers given to you below — never \
-    calculate, estimate, convert, or guess any number yourself. Some goals \
-    are marked "not set": for those, never state a number and never say the \
-    goal was reached or missed — simply don't mention that goal at all. Give \
-    only brief, general, non-medical observations and encouragement. Never \
-    give a diagnosis, a treatment recommendation, or any other medical advice.
+    private static let baseInstructions = """
+    You summarize one day's already-computed nutrition numbers for the user. \
+    Use ONLY the numbers given to you below — never calculate, estimate, \
+    convert, or guess any number yourself. Some goals are marked "not set": \
+    for those, never state a number and never say the goal was reached or \
+    missed — simply don't mention that goal at all. Give only brief, general, \
+    non-medical observations and encouragement. Never give a diagnosis, a \
+    treatment recommendation, or any other medical advice.
     """
+
+    /// I2 fix: a plain "respond in the user's language" instruction left the
+    /// actual target language to the model to infer, and the `Locale` passed
+    /// into this type/`NutritionAIService` was previously used only for the
+    /// availability check, never told to the model — so a DE/TR user could
+    /// get an English paragraph. This states the language explicitly, by
+    /// name, derived from the real locale.
+    static func instructions(for locale: Locale) -> String {
+        "\(languageDirective(for: locale)) \(baseInstructions)"
+    }
+
+    static func languageDirective(for locale: Locale) -> String {
+        let code = locale.language.languageCode?.identifier ?? "en"
+        let languageName = Locale(identifier: "en_US").localizedString(forLanguageCode: code) ?? "English"
+        return "Respond only in \(languageName)."
+    }
+
+    // MARK: I5 — code-level check that no number was invented
+
+    /// Every integer that appears in `text` must be one of the real input
+    /// numbers (the four totals, plus any goal that was actually set) — the
+    /// only hard guarantee that the model didn't fabricate or hallucinate a
+    /// nutrient value or a not-set goal, on top of the instructions above.
+    static func onlyContainsVerifiedNumbers(_ text: String, input: NutritionInsightInput) -> Bool {
+        let allowed = allowedNumbers(for: input)
+        return numbers(in: text).allSatisfy { allowed.contains($0) }
+    }
+
+    private static func allowedNumbers(for input: NutritionInsightInput) -> Set<Int> {
+        var numbers: Set<Int> = [
+            safeInt(input.totalKcal), safeInt(input.totalProteinG),
+            safeInt(input.totalCarbsG), safeInt(input.totalFatG)
+        ]
+        if let goal = input.calorieGoalKcal { numbers.insert(goal) }
+        if let goal = input.proteinGoalG { numbers.insert(safeInt(goal)) }
+        if let goal = input.carbGoalG { numbers.insert(safeInt(goal)) }
+        if let goal = input.fatGoalG { numbers.insert(safeInt(goal)) }
+        return numbers
+    }
+
+    private static func numbers(in text: String) -> [Int] {
+        text.split(whereSeparator: { !$0.isNumber })
+            .compactMap { Int($0) }
+    }
 
     /// Deterministic, side-effect-free prompt text — the single place that
     /// decides what the model is allowed to see. A `nil` goal always becomes
@@ -82,10 +140,10 @@ public struct NutritionInsightGenerator: Sendable {
     static func prompt(for input: NutritionInsightInput) -> String {
         """
         Today's totals:
-        Calories: \(Int(input.totalKcal)) kcal
-        Protein: \(Int(input.totalProteinG)) g
-        Carbs: \(Int(input.totalCarbsG)) g
-        Fat: \(Int(input.totalFatG)) g
+        Calories: \(safeInt(input.totalKcal)) kcal
+        Protein: \(safeInt(input.totalProteinG)) g
+        Carbs: \(safeInt(input.totalCarbsG)) g
+        Fat: \(safeInt(input.totalFatG)) g
 
         Goals:
         Calorie goal: \(goalText(input.calorieGoalKcal.map(Double.init), unit: "kcal"))
@@ -99,6 +157,18 @@ public struct NutritionInsightGenerator: Sendable {
 
     private static func goalText(_ value: Double?, unit: String) -> String {
         guard let value else { return notSetMarker }
-        return "\(Int(value)) \(unit)"
+        return "\(safeInt(value)) \(unit)"
+    }
+
+    /// M1 fix: `Int(Double)` traps on NaN/infinity/out-of-range magnitudes.
+    /// Goals/quantities have no enforced upper bound elsewhere in the app, so
+    /// an extreme value must not crash the day view. Mirrors the guard
+    /// `Double.formattedRIR` already uses in `DoubleFormatting.swift` — not
+    /// reused directly since `FitnessAppAI` deliberately has no dependency on
+    /// `FitnessAppCore` (see `NutritionInsightInput`'s doc comment above).
+    private static func safeInt(_ value: Double) -> Int {
+        guard value.isFinite else { return 0 }
+        let clamped = Swift.max(Swift.min(value, Double(Int.max - 1)), Double(Int.min + 1))
+        return Int(clamped)
     }
 }

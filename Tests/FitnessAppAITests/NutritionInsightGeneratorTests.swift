@@ -15,11 +15,13 @@ final class NutritionInsightGeneratorTests: XCTestCase {
     private actor SpyGenerator: NutritionAITextGenerating {
         private(set) var callCount = 0
         private(set) var lastPrompt: String?
+        private(set) var lastInstructions: String?
         private let result: String
         init(result: String = "generated insight") { self.result = result }
         func generateText(instructions: String, prompt: String) async throws -> String {
             callCount += 1
             lastPrompt = prompt
+            lastInstructions = instructions
             return result
         }
     }
@@ -127,5 +129,82 @@ final class NutritionInsightGeneratorTests: XCTestCase {
             generator: SpyGenerator()
         ))
         XCTAssertEqual(generator.availability(), .languageNotSupported)
+    }
+
+    // MARK: I2 — explicit per-locale language directive
+
+    /// German and Turkish must each get their own explicit "respond only in
+    /// X" sentence — not the same English-only instructions regardless of
+    /// locale (the bug: the model was never actually told which language to
+    /// answer in, only the availability check used the locale).
+    func testInstructions_differPerLocale_andNameTheLanguageExplicitly() {
+        let de = NutritionInsightGenerator.instructions(for: Locale(identifier: "de"))
+        let tr = NutritionInsightGenerator.instructions(for: Locale(identifier: "tr"))
+        let en = NutritionInsightGenerator.instructions(for: Locale(identifier: "en"))
+
+        XCTAssertTrue(de.contains("German"), "expected an explicit German directive, got:\n\(de)")
+        XCTAssertTrue(tr.contains("Turkish"), "expected an explicit Turkish directive, got:\n\(tr)")
+        XCTAssertNotEqual(de, tr)
+        XCTAssertNotEqual(de, en)
+    }
+
+    /// End-to-end: the instructions the generator actually hands to the model
+    /// carry the locale-specific directive, proven via the same spy pattern
+    /// as `NutritionAIAvailabilityTests`/`MealTextExtractorTests`.
+    func testGenerateInsight_passesLocaleSpecificInstructionsToTheModel() async throws {
+        let spy = SpyGenerator()
+        let generator = NutritionInsightGenerator(
+            service: NutritionAIService(
+                availabilityChecker: FixedAvailability(status: .available),
+                generator: spy
+            ),
+            locale: Locale(identifier: "tr")
+        )
+        _ = try await generator.generateInsight(for: fullInput)
+        let instructions = await spy.lastInstructions
+        XCTAssertEqual(instructions, NutritionInsightGenerator.instructions(for: Locale(identifier: "tr")))
+        XCTAssertTrue(instructions?.contains("Turkish") ?? false)
+    }
+
+    // MARK: I5 — fabricated numbers in the generated text are never shown
+
+    func testGeneratedText_withFabricatedNumber_isTreatedAsFailure() async {
+        // "5000" appears nowhere in `fullInput`'s totals or goals.
+        let spy = SpyGenerator(result: "You ate 5000 kcal more than anyone else today!")
+        let generator = NutritionInsightGenerator(service: NutritionAIService(
+            availabilityChecker: FixedAvailability(status: .available),
+            generator: spy
+        ))
+        do {
+            _ = try await generator.generateInsight(for: fullInput)
+            XCTFail("a fabricated number must not be returned as a valid insight")
+        } catch let error as NutritionAIError {
+            XCTAssertEqual(error, .generationFailed)
+        } catch {
+            XCTFail("unexpected error type: \(error)")
+        }
+    }
+
+    func testGeneratedText_withOnlyRealNumbers_passesThrough() async throws {
+        // 1850/120/180/60 are the totals, 2200/140/220/70 the goals in `fullInput`.
+        let spy = SpyGenerator(result: "You had 1850 kcal, 120g protein toward your 140g and 2200 kcal goals.")
+        let generator = NutritionInsightGenerator(service: NutritionAIService(
+            availabilityChecker: FixedAvailability(status: .available),
+            generator: spy
+        ))
+        let text = try await generator.generateInsight(for: fullInput)
+        XCTAssertEqual(text, "You had 1850 kcal, 120g protein toward your 140g and 2200 kcal goals.")
+    }
+
+    // MARK: M1 — extreme/non-finite values never crash the prompt/verification
+
+    func testExtremeValues_neverCrashPromptOrVerification() {
+        let extreme = NutritionInsightInput(
+            totalKcal: .infinity, totalProteinG: .nan, totalCarbsG: -.infinity, totalFatG: .greatestFiniteMagnitude,
+            calorieGoalKcal: nil, proteinGoalG: .nan, carbGoalG: nil, fatGoalG: nil
+        )
+        // Must not trap (Int(Double) on these values would crash).
+        _ = NutritionInsightGenerator.prompt(for: extreme)
+        XCTAssertTrue(NutritionInsightGenerator.onlyContainsVerifiedNumbers("no numbers here", input: extreme))
     }
 }

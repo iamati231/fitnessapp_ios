@@ -380,7 +380,10 @@ public struct NutritionDayView: View {
     // MARK: Task F — optional AI insight
 
     private var insightGenerator: NutritionInsightGenerator {
-        NutritionInsightGenerator(service: NutritionAIService(locale: locale))
+        // I2: `locale` passed to both the service (availability check) AND
+        // the generator itself (the explicit language directive in its
+        // instructions) — see `NutritionInsightGenerator`'s doc comment.
+        NutritionInsightGenerator(service: NutritionAIService(locale: locale), locale: locale)
     }
 
     private var showsInsightSection: Bool {
@@ -433,11 +436,18 @@ public struct NutritionDayView: View {
             fatGoalG: context.fatGoal
         )
         isGeneratingInsight = true
-        defer { isGeneratingInsight = false }
         // `.unavailable` can't happen here (just checked by `showsInsightSection`
         // above), and any other failure (e.g. guardrail refusal) just leaves
         // `insightText` nil — the rest of the screen is unaffected either way.
-        insightText = try? await insightGenerator.generateInsight(for: input)
+        let result = try? await insightGenerator.generateInsight(for: input)
+        // M2 fix: `.task(id:)` cancels this task when the user navigates to a
+        // different day while generation is still in flight, but a cancelled
+        // task's own code keeps running unless it checks for that itself — a
+        // stale completion must never clear the spinner or write text for
+        // what is by then the wrong day.
+        guard !Task.isCancelled else { return }
+        isGeneratingInsight = false
+        insightText = result
     }
 
     private struct GoalRow {

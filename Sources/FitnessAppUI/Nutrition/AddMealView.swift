@@ -157,6 +157,13 @@ public struct AddMealView: View {
                 options: MealType.allCases.map { DeltiqSegmentedOption($0, label: mealTypeLabel($0)) },
                 selection: $draft.mealType
             )
+            // I4 fix: Task B replaced the labelled Picker with this segmented
+            // control, which has no visible label of its own — leaving
+            // "nutrition.addMeal.mealTypeLabel" both orphaned (dead_catalog_v3
+            // UNUSED) and, for VoiceOver users, this picker's purpose
+            // unannounced. Reusing the key as the accessibility label fixes
+            // both without changing the visual design Task B intended.
+            .accessibilityLabel(String(localized: "nutrition.addMeal.mealTypeLabel", bundle: .module))
             .listRowBackground(Color.Deltiq.surface)
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
@@ -299,6 +306,16 @@ public struct AddMealView: View {
                         } label: {
                             Text(resolvedName(for: entry))
                         }
+                        // C1 fix: several default-style Buttons sharing one
+                        // VStack inside a single Form row become ONE tap
+                        // target in SwiftUI — tapping anywhere in the row runs
+                        // every button's action, so only the LAST one's action
+                        // actually won regardless of which label was tapped.
+                        // `.borderless` (same reasoning as DeltiqSegmentedPicker's
+                        // `.plain` in Theme.swift) gives each button its own
+                        // real, independently tappable hit target instead of
+                        // merging them into the row's single default tap area.
+                        .buttonStyle(.borderless)
                     }
                 }
             } else if let match = candidate.matches.first,
@@ -549,8 +566,14 @@ public struct AddMealView: View {
         selectedEntry = entry
         let allowedUnits = FoodUnit.allCases.filter { entry.asCatalogItem.supports($0) }
         let mappedUnit = candidate.unit.flatMap { FoodUnit(rawValue: $0.rawValue) }
-        selectedUnit = mappedUnit.flatMap { allowedUnits.contains($0) ? $0 : nil } ?? .gram
-        quantity = candidate.quantity
+        let validUnit = mappedUnit.flatMap { allowedUnits.contains($0) ? $0 : nil }
+        selectedUnit = validUnit ?? .gram
+        // I3 fix: an unknown/invalid unit means the extracted quantity can't be
+        // trusted for THIS food (e.g. "2 Eier" with unit "piece" invalid for a
+        // gram-only entry would otherwise silently become "2 g"). Drop the
+        // quantity too so the existing "needs quantity" follow-up (empty field,
+        // disabled Add button) kicks in instead of a silently wrong number.
+        quantity = validUnit != nil ? candidate.quantity : nil
         removeAICandidate(candidate)
     }
 
