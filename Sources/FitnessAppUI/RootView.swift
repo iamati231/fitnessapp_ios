@@ -112,6 +112,12 @@ public struct RootView: View {
             // Seed the canonical exercise library on first launch (idempotent
             // — fetchCount short-circuits when rows already exist).
             LibrarySeeder.seedIfNeeded(in: modelContext)
+            // Final-review fix (critical): was only ever called from
+            // AddMealView's #Preview and tests, so on a real device
+            // @Query FoodCatalogEntry stayed empty forever and no food
+            // could ever be added. Idempotent — fetchCount short-circuits
+            // when rows already exist, same as LibrarySeeder above.
+            FoodCatalogSeeder.seedIfNeeded(in: modelContext)
             // README 2.35: Backfill fuer Library-Eintraege, die NACH dem
             // ersten Seed hinzugekommen sind (z.B. "Lauf-Intervall"/
             // "Rad-Intervall") - ohne das waeren sie fuer jeden
