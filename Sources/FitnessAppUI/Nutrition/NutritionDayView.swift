@@ -284,6 +284,11 @@ public struct NutritionDayView: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
                 .frame(minHeight: 44)
+                // Audit-Fund (Geraetetest): ohne contentShape war nur der
+                // Icon-/Namens-Bereich links tappbar, nicht der Spacer/
+                // kcal-Bereich rechts — derselbe Fund wie beim Dashboard-
+                // Nutrition-Tile, siehe dortigen Kommentar.
+                .contentShape(Rectangle())
                 if showsDivider {
                     Rectangle()
                         .fill(Color.Deltiq.divider)
