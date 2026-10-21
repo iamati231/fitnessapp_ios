@@ -211,7 +211,7 @@ struct EnduranceIntervalPlayerView: View {
         }
 
         DeltiqSection {
-            timedWorkoutHintRow(String(localized: phaseHintKey, bundle: .module))
+            timedWorkoutHintRow(String(localized: String.LocalizationValue(stringLiteral: phaseHintKey), bundle: .module))
         }
     }
 
